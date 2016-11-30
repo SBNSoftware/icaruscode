@@ -1,0 +1,53 @@
+# This @product_deps@ file defines dependencies for this package. 
+
+# The *parent* line must the first non-commented line and defines this product and version
+# The version must be of the form vxx_yy_zz (e.g. v01_02_03)
+parent icaruscode v06_15_01
+defaultqual e10
+
+# These optional lines define where headers, libraries, and executables go and should
+# be used only if your product does not conform to the defaults.
+# Format: directory_type directory_path directory_name
+#   where directory_type is one of incdir, libdir, or bindir
+#   where directory_path is one of product_dir, fq_dir and - 
+# Defaults:
+# incdir  product_dir  include
+# fcldir  product_dir  fcl
+# libdir  fq_dir       lib
+# bindir  fq_dir       bin
+#
+fcldir  product_dir job
+gdmldir product_dir gdml
+
+# table fragment to set FW_SEARCH_PATH needed 
+# to find gdml files:
+table_fragment_begin
+    pathPrepend(FW_SEARCH_PATH, ${ICARUSCODE_DIR}/gdml)
+    pathPrepend(FHICL_FILE_PATH, .:./job)
+table_fragment_end
+
+# With "product  version" table below, we now define depdendencies
+
+# Add the dependent product and version
+
+product          version
+larsoft         v06_15_01
+
+cetbuildtools	v5_06_00	-	only_for_build
+end_product_list
+
+
+# We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
+# Make a table by adding columns before "notes". 
+# e10  - with gcc 4.9.3 and -std=c++1y
+qualifier	larsoft		notes
+e10:debug	e10:debug	
+e10:opt		e10:opt		
+e10:prof	e10:prof	
+end_qualifier_list
+
+# Preserve tabs and formatting in emacs and vi / vim:
+
+### Local Variables:
+### tab-width: 8
+### End:
