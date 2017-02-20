@@ -135,27 +135,23 @@ icarus_message_services_interactive.destinations.LogStandardError.categories:{
 
 icarus_basic_services:
 {
-  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  scheduler:                           { defaultExceptions: false }    # Make all uncaught exceptions fatal.
 
   # Load the service that manages root files for histograms.
-  TFileService: { fileName: "larg4_hist_icarus.root" }
+  TFileService:                        { fileName: "test_hist_icarus.root" }
 
-  TimeTracker:  {}
-  MemoryTracker:     { ignoreTotal: 1 } # default is one
+  TimeTracker:                         {}
+  MemoryTracker:                       { ignoreTotal: 1 } # default is one
 
-  RandomNumberGenerator: {} #ART native random number generator
-  #FileCatalogMetadata:  @local::art_file_catalog_mc
+  RandomNumberGenerator:               {} #ART native random number generator
+  #FileCatalogMetadata:                @local::art_file_catalog_mc
 
-  ChannelStatus:         @local::standard_channelstatus
-  PedestalRetrieval:     @local::standard_siov_detpedestal_service
+  ChannelStatus:                       @local::standard_channelstatus
+  PedestalRetrieval:                   @local::standard_siov_detpedestal_service
 
-  message:               @local::icarus_message_services_interactive
+  message:                             @local::icarus_message_services_interactive
 
-  ExptGeoHelperInterface:
-  { 
-    service_provider : StandardGeometryHelper
-  }
-
+  ExptGeoHelperInterface:              @local::icarus_geometry_helper
   Geometry:                            @local::icarus_geo
   #LArSeedService:                     @local::random_seedservice #use provided seeed service
   NuRandomService:                     @local::random_NuRandomService

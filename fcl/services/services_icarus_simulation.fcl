@@ -1,5 +1,5 @@
-#include "services_icarus.fcl"
 #include "simulationservices_icarus.fcl"
+#include "services_icarus.fcl"
 
 #
 # This file defines a set of service configurations for ICARUS simulation.
@@ -107,7 +107,6 @@ icarus_detsim_services:                   @local::icarus_detsim_dark_services
 #icarus_detsim_services.UBOpticalChConfig: @local::icarus_optical_ch_config
 icarus_detsim_services.LArPropertiesService.ScintPreScale:        0.0093   # DocDB 4914, @MToups
 #icarus_detsim_services.UBOpReadoutMap:                      @local::icarus_opreadoutmap_mc
-#icarus_detsim_services.ExptGeoHelperInterface:              @local::icarus_geometry_helper
                                                                       # MUST match between g4 and detsim
 
 # Define icarus_simulation_services ... (all*) = (1*) + (2) + (2*)
@@ -116,7 +115,6 @@ icarus_simulation_services:                                 @local::icarus_g4_se
 #icarus_simulation_services.SignalShapingServiceIcarus:      @local::icarus_signalshapingservice
 #icarus_simulation_services.UBOpticalChConfig:               @local::icarus_optical_ch_config
 #icarus_simulation_services.UBOpReadoutMap:                  @local::icarus_opreadoutmap_mc
-#icarus_simulation_services.ExptGeoHelperInterface:          @local::icarus_geometry_helper
 #icarus_simulation_services.DetPedestalService:              @local::icarus_detpedestalservice
 #icarus_simulation_services.ChannelStatusService:            @local::icarus_channelstatus_service
 #icarus_simulation_services.PmtGainService:                  @local::icarus_pmtgain_service
