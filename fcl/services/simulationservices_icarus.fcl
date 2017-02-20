@@ -1,0 +1,13 @@
+#include "simulationservices.fcl"
+
+BEGIN_PROLOG
+
+icarus_largeantparameters: @local::standard_largeantparameters
+
+icarus_largeantparameters.ElectronClusterSize: 20.0
+
+#icarus_largeantparameters.IonAndScintCalculator: "NEST"
+
+icarus_larvoxelcalculator: @local::standard_larvoxelcalculator
+
+END_PROLOG

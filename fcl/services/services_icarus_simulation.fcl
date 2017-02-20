@@ -1,0 +1,125 @@
+#include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+#
+# This file defines a set of service configurations for ICARUS simulation.
+# Simulation consists of 3 steps:
+#
+#  (0) event generator ... making a particle to inject into G4
+#  (1) Geant4 ............ G4 particle tracking simulation in the detector
+#  (2) readout ........... Readout electronics simulation (make waveforms)
+#
+# Fhicl configurations for each simulation steps above are:
+# 
+#  (0) icarus_gen_services
+#  (1) icarus_g4_dark_services
+#  (2) icarus_detsim_dark_services
+#
+#  (all) icarus_simulation_dark_services ... include all services in (0), (1), and (2).
+#
+# Above configurations do not include scintillation light or optical detector
+# readout simulation. If you wish to include those, use followings:
+#
+#  (1*) icarus_g4_services
+#  (2*) icarus_detsim_services
+#
+#  (all*) icarus_simulation_services
+#
+
+BEGIN_PROLOG
+
+#
+# First define services w/o optical simulation
+#
+
+# Define icarus_gen_services ... (0)
+icarus_gen_services:                @local::icarus_basic_services
+icarus_gen_services.MagneticField:  @local::no_mag_larsoft
+
+# Define icarus_g4_dark_services ... (1)
+icarus_g4_dark_services:                                       @local::icarus_gen_services
+icarus_g4_dark_services.LArG4Parameters:                       @local::icarus_largeantparameters
+icarus_g4_dark_services.LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
+icarus_g4_dark_services.LArG4Parameters.KeepEMShowerDaughters: true
+icarus_g4_dark_services.LArG4Parameters.StoreTrajectories:     true
+icarus_g4_dark_services.LArG4Parameters.UseModBoxRecomb:       true
+
+# Define icarus_detsim_dark_services ... (2)
+icarus_detsim_dark_services:                                @local::icarus_basic_services
+#icarus_detsim_dark_services.LArFFT:                         @local::icarus_larfft
+#icarus_detsim_dark_services.SignalShapingServiceIcarus:     @local::icarus_signalshapingservice
+#icarus_detsim_dark_services.DetPedestalService:             @local::icarus_detpedestalservice
+#icarus_detsim_dark_services.ChannelStatusService:           @local::icarus_channelstatus_service
+#icarus_detsim_dark_services.PmtGainService:                 @local::icarus_pmtgain_service
+#icarus_detsim_dark_services.ElectronicsCalibService:        @local::icarus_electronicscalib_service
+
+
+# Define icarus_simulation_dark ... (all) = (0) + (1) + (2)
+icarus_simulation_dark_services:                               @local::icarus_g4_dark_services
+#icarus_simulation_dark_services.LArFFT:                        @local::icarus_larfft
+#icarus_simulation_dark_services.SignalShapingServiceIcarus:    @local::icarus_signalshapingservice
+#icarus_simulation_dark_services.DetPedestalService:            @local::icarus_detpedestalservice
+#icarus_simulation_dark_services.ChannelStatusService:          @local::icarus_channelstatus_service
+#icarus_simulation_dark_services.PmtGainService:                @local::icarus_pmtgain_service
+#icarus_simulation_dark_services.ElectronicsCalibService:       @local::icarus_electronicscalib_service
+
+#
+# Define optical simulation included ones
+#
+
+# Define icarus_g4_services ... (1*)
+icarus_g4_services:                                     @local::icarus_g4_dark_services
+#icarus_g4_services.PhotonVisibilityService:             @local::icarus_photonvisibilityservice
+icarus_g4_services.LArPropertiesService.ScintYield:     40000  # 40000 ph/MeV DocDB 4914, @MToups
+icarus_g4_services.LArPropertiesService.ScintPreScale:  0.0093 # 40000 ph/MeV DocDB 4914, @MToups
+                                                               # MUST match between g4 and detsim
+
+icarus_g4_services.LArPropertiesService.ScintYieldRatio: 0.23
+
+icarus_g4_services.LArPropertiesService.MuonScintYield:          40000
+icarus_g4_services.LArPropertiesService.MuonScintYieldRatio:     0.23
+icarus_g4_services.LArPropertiesService.ScintByParticleType:     true
+icarus_g4_services.LArPropertiesService.PionScintYield:          40000
+icarus_g4_services.LArPropertiesService.PionScintYieldRatio:     0.23
+icarus_g4_services.LArPropertiesService.ElectronScintYield:      33333
+icarus_g4_services.LArPropertiesService.ElectronScintYieldRatio: 0.27
+icarus_g4_services.LArPropertiesService.KaonScintYield:          40000
+icarus_g4_services.LArPropertiesService.KaonScintYieldRatio:     0.23
+icarus_g4_services.LArPropertiesService.ProtonScintYield:        32000
+icarus_g4_services.LArPropertiesService.ProtonScintYieldRatio:   0.29
+icarus_g4_services.LArPropertiesService.AlphaScintYield:         28000
+icarus_g4_services.LArPropertiesService.AlphaScintYieldRatio:    0.56
+
+icarus_g4_services.LArPropertiesService.EnableCerenkovLight: false # Cerenkov light OFF by default
+icarus_g4_services.LArG4Parameters.UseCustomPhysics:  true
+icarus_g4_services.LArG4Parameters.EnabledPhysics:    [ "Em",
+                                                        "FastOptical",
+                                                        "SynchrotronAndGN",
+                                                        "Ion",
+                                                        "Hadron",
+                                                        "Decay",
+                                                        "HadronElastic",
+                                                        "Stopping"]
+                                                        # Save neutrons  #"NeutronTrackingCut" ]
+
+# Define icarus_detsim_services ... (2*)
+icarus_detsim_services:                   @local::icarus_detsim_dark_services
+#icarus_detsim_services.UBOpticalChConfig: @local::icarus_optical_ch_config
+icarus_detsim_services.LArPropertiesService.ScintPreScale:        0.0093   # DocDB 4914, @MToups
+#icarus_detsim_services.UBOpReadoutMap:                      @local::icarus_opreadoutmap_mc
+#icarus_detsim_services.ExptGeoHelperInterface:              @local::icarus_geometry_helper
+                                                                      # MUST match between g4 and detsim
+
+# Define icarus_simulation_services ... (all*) = (1*) + (2) + (2*)
+icarus_simulation_services:                                 @local::icarus_g4_services
+#icarus_simulation_services.LArFFT:                          @local::icarus_larfft
+#icarus_simulation_services.SignalShapingServiceIcarus:      @local::icarus_signalshapingservice
+#icarus_simulation_services.UBOpticalChConfig:               @local::icarus_optical_ch_config
+#icarus_simulation_services.UBOpReadoutMap:                  @local::icarus_opreadoutmap_mc
+#icarus_simulation_services.ExptGeoHelperInterface:          @local::icarus_geometry_helper
+#icarus_simulation_services.DetPedestalService:              @local::icarus_detpedestalservice
+#icarus_simulation_services.ChannelStatusService:            @local::icarus_channelstatus_service
+#icarus_simulation_services.PmtGainService:                  @local::icarus_pmtgain_service
+#icarus_simulation_services.ElectronicsCalibService:         @local::icarus_electronicscalib_service
+
+END_PROLOG
