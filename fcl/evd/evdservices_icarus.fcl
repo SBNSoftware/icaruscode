@@ -1,0 +1,47 @@
+#include "evdservices_base.fcl"
+#include "services_icarus.fcl"
+
+BEGIN_PROLOG
+
+icarus_colordrawingopt:                       @local::standard_colordrawingopt
+icarus_colordrawingopt.ColorOrGrayScale:      0
+
+icarus_rawdrawingopt:                         @local::standard_rawdrawingopt
+#icarus_rawdrawingopt.TotalTicks:              9600
+
+icarus_recodrawingopt:                        @local::standard_recodrawingopt
+icarus_recodrawingopt.HitModuleLabels:        ["gaushit"]
+icarus_recodrawingopt.ClusterModuleLabels:    ["fuzzycluster"]
+icarus_recodrawingopt.DrawClusters:           0
+icarus_recodrawingopt.DrawHits:               1
+
+icarus_analysisdrawingopt:                    @local::standard_analysisdrawingopt
+
+icarus_simdrawingopt:                         @local::standard_simdrawingopt
+icarus_simdrawingopt.ShowMCTruthText:         false
+icarus_simdrawingopt.ShowMCTruthVectors:      false
+icarus_simdrawingopt.ShowMCTruthTrajectories: false
+
+icarus_evdlayoutopt:                          @local::standard_evdlayoutopt
+icarus_evdlayoutopt.ChangeWire: 	          0
+
+icarus_evd:                                   @local::standard_evd
+
+icarus_infotransfer:                          @local::standard_infotransfer
+
+icarus_disp:
+{
+   ColorDrawingOptions:      @local::icarus_colordrawingopt
+   SimulationDrawingOptions: @local::icarus_simdrawingopt
+   RawDrawingOptions:        @local::icarus_rawdrawingopt
+   RecoDrawingOptions:       @local::icarus_recodrawingopt
+   AnalysisDrawingOptions:   @local::icarus_analysisdrawingopt
+   EvdLayoutOptions:	     @local::icarus_evdlayoutopt
+   InfoTransfer:             @local::icarus_infotransfer
+   EventDisplay:             @local::icarus_evd
+                             @table::icarus_basic_services
+}
+
+#######################################
+
+END_PROLOG
