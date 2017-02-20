@@ -1,0 +1,10 @@
+#include "singles.fcl"
+
+BEGIN_PROLOG
+
+icarus_singlep: @local::standard_singlep
+icarus_singlep.Theta0YZ: [ 0.0 ]  # beam is along the z axis.
+icarus_singlep.X0:       [125]    # in cm in world coordinates, ie x = 0 is at the wire plane          
+icarus_singlep.Z0:       [50]     # in cm in world coordinates
+
+END_PROLOG
