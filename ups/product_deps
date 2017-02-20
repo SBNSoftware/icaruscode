@@ -31,7 +31,7 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-larsoft         v06_15_01
+larsoft         v06_24_00
 
 cetbuildtools	v5_06_00	-	only_for_build
 end_product_list
