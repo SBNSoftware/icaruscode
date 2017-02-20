@@ -91,7 +91,8 @@ icarus_g4_services:
     service_provider: "DetectorPropertiesServiceStandard"
 
     # Drift properties 
-    Temperature:      87.5             #Kelvin
+    Temperature:      89               #Kelvin - ~ average between the two cryostats
+                                       #         this needs to be addressed in future
     Efield:           [0.5,0.83,0.83 ] #kV/cm to first,second,third wire planes
     Electronlifetime: 9000             #microseconds
  
