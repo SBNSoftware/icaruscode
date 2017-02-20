@@ -1,0 +1,24 @@
+#include "detectorproperties.fcl"
+
+BEGIN_PROLOG
+
+icarus_detproperties:                           @local::standard_detproperties
+icarus_detproperties.ElectronsToADC:            1.208041e-3     # in ADC/e; 6241.5 electrons = 1fC
+icarus_detproperties.Temperature:               87.5
+icarus_detproperties.Electronlifetime:          9600 
+icarus_detproperties.Efield:                    [0.5,0.83,0.83 ] #kV/cm to first,second,third wire planes
+ 
+icarus_detproperties.SternheimerA:              0.1956           # Ar Sternheimer parameter a.
+icarus_detproperties.SternheimerK:              3.0000           # Ar Sternheimer parameter k.
+icarus_detproperties.SternheimerX0:             0.2000           # Ar Sternheimer parameter x0.
+icarus_detproperties.SternheimerX1:             3.0000           # Ar Sternheimer parameter x0.
+icarus_detproperties.SternheimerCbar:           5.2146           # Ar Sternheimer parameter Cbar.
+
+icarus_detproperties.NumberTimeSamples:         4096
+icarus_detproperties.TimeOffsetU:               0.
+icarus_detproperties.TimeOffsetV:               0.
+icarus_detproperties.TimeOffsetZ:               0.
+icarus_detproperties.ReadOutWindowSize:         4096
+icarus_detproperties.InheritNumberTimeSamples:  true
+
+END_PROLOG
