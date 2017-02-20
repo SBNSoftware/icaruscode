@@ -59,8 +59,8 @@ standard_largeantparameters:
   #  for, eg, DUNE wireplane development.
   #
   OpticalParamParameters:   [ [ [60,  3, 0.15],
-                              [-60, 3, 0.15],
-                              [0,   3, 0.15] ] ]      
+                                [-60, 3, 0.15],
+                                [0,   3, 0.15] ] ]      
   UseLitePhotons: false
 } 
 
@@ -91,22 +91,22 @@ icarus_g4_services:
     service_provider: "DetectorPropertiesServiceStandard"
 
     # Drift properties 
-    Temperature:      91                #Kelvin
-    Efield:           [0.5,0.66,0.8 ]   #kV/cm to first,second,third wire planes
-    Electronlifetime: 9000               #microseconds
+    Temperature:      87.5             #Kelvin
+    Efield:           [0.5,0.83,0.83 ] #kV/cm to first,second,third wire planes
+    Electronlifetime: 9000             #microseconds
  
-    SternheimerA:     0.1956  # Ar Sternheimer parameter a.
-    SternheimerK:     3.0000  # Ar Sternheimer parameter k.
-    SternheimerX0:    0.2000  # Ar Sternheimer parameter x0.
-    SternheimerX1:    3.0000  # Ar Sternheimer parameter x0.
-    SternheimerCbar:  5.2146  # Ar Sternheimer parameter Cbar.
+    SternheimerA:     0.1956           # Ar Sternheimer parameter a.
+    SternheimerK:     3.0000           # Ar Sternheimer parameter k.
+    SternheimerX0:    0.2000           # Ar Sternheimer parameter x0.
+    SternheimerX1:    3.0000           # Ar Sternheimer parameter x0.
+    SternheimerCbar:  5.2146           # Ar Sternheimer parameter Cbar.
  
-    ElectronsToADC:    1.208041e-3  # in ADC/e; 6241.5 electrons = 1fC
-    NumberTimeSamples: 4096         # ticks of the clock per readout frame
+    ElectronsToADC:    1.208041e-3     # in ADC/e; 6241.5 electrons = 1fC
+    NumberTimeSamples: 4096            # ticks of the clock per readout frame
     ReadOutWindowSize: 4096
-    TimeOffsetU:       -5.193       # relative time offsets in ticks between planes
-    TimeOffsetV:       0.585        # relative time offsets in ticks between planes
-    TimeOffsetZ:       0            # relative time offsets in ticks between planes
+    TimeOffsetU:       0.0             # relative time offsets in ticks between planes
+    TimeOffsetV:       0.0             # relative time offsets in ticks between planes
+    TimeOffsetZ:       0.0             # relative time offsets in ticks between planes
 
   }
 
