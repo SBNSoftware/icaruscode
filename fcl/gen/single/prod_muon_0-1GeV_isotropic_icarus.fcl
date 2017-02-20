@@ -2,7 +2,7 @@
 
 process_name: SinglesGen
 
-outputs.out1.fileName: "prod_eminus_0-1GeV_isotropic_icarus_%tc_gen.root"
+outputs.out1.fileName: "prod_muon_0-1GeV_isotropic_icarus_%tc_gen.root"
 
 physics.producers.generator.PDG: [ 13 ]            # muon
 physics.producers.generator.PosDist: 0             # Flat position dist.
