@@ -3,6 +3,7 @@
 #include "magfield_larsoft.fcl"
 
 #include "geometry_icarus.fcl"
+#include "detectorproperties_icarus.fcl"
 
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
@@ -156,30 +157,7 @@ icarus_basic_services:
   #LArSeedService:                     @local::random_seedservice #use provided seeed service
   NuRandomService:                     @local::random_NuRandomService
 
-  DetectorPropertiesService:
-  {
-    service_provider: "DetectorPropertiesServiceStandard"
-
-    # Drift properties 
-    Temperature:      87.5             #Kelvin - current best estimate based on previous running
-    Efield:           [0.5,0.83,0.83 ] #kV/cm to first,second,third wire planes
-    Electronlifetime: 9000             #microseconds
- 
-    SternheimerA:     0.1956           # Ar Sternheimer parameter a.
-    SternheimerK:     3.0000           # Ar Sternheimer parameter k.
-    SternheimerX0:    0.2000           # Ar Sternheimer parameter x0.
-    SternheimerX1:    3.0000           # Ar Sternheimer parameter x0.
-    SternheimerCbar:  5.2146           # Ar Sternheimer parameter Cbar.
- 
-    ElectronsToADC:    1.208041e-3     # in ADC/e; 6241.5 electrons = 1fC
-    NumberTimeSamples: 4096            # ticks of the clock per readout frame
-    ReadOutWindowSize: 4096
-    TimeOffsetU:       0.0             # relative time offsets in ticks between planes
-    TimeOffsetV:       0.0             # relative time offsets in ticks between planes
-    TimeOffsetZ:       0.0             # relative time offsets in ticks between planes
-
-  }
-
+  DetectorPropertiesService:           @local::icarus_detproperties
   LArPropertiesService:                @local::standard_properties
 
   #assuming not much in optical here.
