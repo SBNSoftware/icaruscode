@@ -1,0 +1,32 @@
+<?xml version='1.0'?>
+<gdml>
+<define>
+
+<!--
+
+-->
+
+   <position name="posActiveInTPC"   unit="cm" x="0.457499999999996" y="0" z="0"/>
+
+   <position name="posTPC0inCryo"    unit="cm" x="-75.7125" y="-11.27"    z="-1.26999999999998" />
+   <position name="posCathode"  unit="cm" x="0"  y="-11.27"    z="-1.26999999999998" />
+   <position name="posTPC1inCryo"    unit="cm" x="75.7125" y="-11.27"    z="-1.26999999999998" />
+
+   <position name="posCryo1InDetEnc"  unit="cm" x="-207.44" y="25" z="0" />
+   <position name="posCryo2InDetEnc"  unit="cm" x="207.44" y="25" z="0" />
+
+   <position name="posDetEncInWorld" unit="cm" x="343.925"     y="-15"     z="995"/>
+
+
+   <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
+   <rotation name="rPlus90AboutX"       unit="deg" x="90" y="0" z="0"/>
+   <rotation name="rPlus90AboutY"	unit="deg" x="0" y="90"   z="0"/>
+   <rotation name="rPlus90AboutZ"	unit="deg" x="0" y="0"   z="90"/>
+   <rotation name="rMinus90AboutY"      unit="deg" x="0" y="270" z="0"/>
+   <rotation name="rMinus90AboutYMinus90AboutX"       unit="deg" x="270" y="270" z="0"/>
+   <rotation name="rPlusUAngleAboutX"	unit="deg" x="30" y="0"   z="0"/>  
+   <rotation name="rPlusVAngleAboutX"	unit="deg" x="150" y="0"   z="0"/>
+   <rotation name="rPlus180AboutY"	unit="deg" x="0" y="180"   z="0"/>
+   <rotation name="rIdentity"		unit="deg" x="0" y="0"   z="0"/>
+</define>
+</gdml>

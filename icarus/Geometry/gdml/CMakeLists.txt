@@ -1,4 +1,4 @@
 
 install_gdml( SUBDIRS GDMLSchema )
 
-#add_subdirectory(microboone)
+#add_subdirectory(icarus)

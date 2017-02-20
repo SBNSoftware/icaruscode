@@ -1,0 +1,49 @@
+Quick guide to playing with GDML detector-geometry files
+21-Jan-2010 <seligman@nevis.columbia.edu>
+
+Key scripts: generate_gdml.pl and make_gdml.pl. Try running each
+script with the -h option to see what the options are.
+
+
+
+For MicroBooNE:
+--------------
+
+# cp microboone-gdml-parameters.xml generate-gdml.pl make-gdml.pl <your-directory>
+# cd <your-directory>
+
+Edit microboone-gdml-parameters.xml
+
+# ./generate_gdml.pl -i microboone-gdml-parameters.xml | ./make_gdml.pl -o microboone.gdml
+
+
+For multiple versions, e.g., detector-design studies:
+
+# version=<some version tag>
+# cp microboone-gdml-parameters.xml microboone-gdml-parameters-${version}.xml
+
+Edit microboone-gdml-parameters-$version.xml
+
+# ./generate_gdml.pl -i microboone-gdml-parameters.xml -s ${version} | ./make_gdml.pl -o microboone-${version}.gdml
+
+
+
+
+For Bo and Argoneut geometries: 
+------------------------------
+
+Edit *.gdml files in the appropriate directory. Then:
+
+# ./make-gdml.pl -i bo-gdml-fragments.xml -o bo.gdml
+
+or
+
+# ./make-gdml.pl -i argoneut-gdml-fragments.xml -o argoneut.gdml
+
+
+
+For more information, see the LArSoft wiki page:
+<http://www.nevis.columbia.edu/twiki/bin/view/LArSoft/CreatingGDML>
+
+Account: LArSoft    (case-sensitive)
+Password: argon!

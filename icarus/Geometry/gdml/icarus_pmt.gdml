@@ -1,0 +1,17 @@
+<?xml version='1.0'?>
+<gdml>
+<solids>
+ <tube name="PMTVolume"
+  rmax="10.16"
+  z="2.54"
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+</solids>
+<structure>
+ <volume name="volOpDetSensitive">
+  <materialref ref="Glass"/>
+  <solidref ref="PMTVolume"/>
+ </volume>
+</structure>
+</gdml>

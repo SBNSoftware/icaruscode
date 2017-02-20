@@ -1,0 +1,21 @@
+<?xml version='1.0'?>
+<gdml>
+<solids>
+    <box name="World" lunit="cm" 
+      x="2104.44" 
+      y="1125.08" 
+      z="4705.08"/>
+</solids>
+<structure>
+    <volume name="volWorld" >
+      <materialref ref="Air"/>
+      <solidref ref="World"/>
+
+      <physvol>
+        <volumeref ref="volDetEnclosure"/>
+	<positionref ref="posDetEncInWorld"/>
+      </physvol>
+
+    </volume>
+</structure>
+</gdml>
