@@ -5,7 +5,7 @@
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
 
-#include "detsimmodules_ICARUS.fcl"
+#include "detsimmodules_icarus.fcl"
 #include "databaseutil.fcl"
 #include "larfft.fcl"
 #include "backtracker.fcl"

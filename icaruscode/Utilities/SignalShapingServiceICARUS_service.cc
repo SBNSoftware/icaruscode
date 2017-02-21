@@ -1,4 +1,3 @@
-
 ////////////////////////////////////////////////////////////////////////
 /// \file   SignalShapingServiceICARUS_service.cc
 /// \author H. Greenlee
@@ -1108,7 +1107,7 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype,double shap
     }
     
     //Gain and shaping time variables from fcl file:
-    double Ao = 1.0;//Gain
+    //double Ao = 1.0;//Gain
     double To = shapingtime;  //peaking time
     std::cout << " electronic shaping time " << shapingtime << std::endl;
     // this is actually sampling time, in ns

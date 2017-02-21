@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
 // $Id: SimWireICARUS.cxx,v 1.22 2010/04/23 20:30:53 seligman Exp $
 //
 // SimWireICARUS class designed to simulate signal on a wire in the TPC
@@ -56,7 +56,7 @@
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
-#include "SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "lardataobj/Simulation/sim.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
@@ -225,7 +225,7 @@ namespace detsim {
 
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
-    fShapingTimeOrder = { {0.5, 0}, {1.0, 1}, {2.0, 2}, {3.0, 3} };
+    fShapingTimeOrder = { {0.5, 0}, {1.0, 1}, {1, 2}, {3.0, 3} };
 
     if(fGetNoiseFromHisto)
     {
@@ -761,7 +761,7 @@ namespace detsim {
 //        << "\033[93m"
 //        << "Shaping Time received from signalservices_microboone.fcl is not one of allowed values"
 //        << std::endl
-//        << "Allowed values: 0.5, 1.0, 2.0, 3.0 usec"
+//        << "Allowed values: 0.5, 1.0, 1.5, 3.0 usec"
 //        << "\033[00m"
 //        << std::endl;
 //      }
@@ -848,9 +848,9 @@ namespace detsim {
       
       
       //Get pedestal with random gaussian variation
-     // CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(chan));
+      CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(chan));
       float ped_mean = pedestalRetrievalAlg.PedMean(chan) + rGaussPed.fire();
-       // float ped_mean=0;
+      //float ped_mean=0;
      
       //Generate Noise
 
@@ -858,12 +858,12 @@ namespace detsim {
 
       double             noise_factor;
       auto tempNoiseVec = sss->GetNoiseFactVec();
-       double shapingTime = sss->GetShapingTime(0);
-        double asicGain    = sss->GetASICGain(0);
+      double shapingTime = sss->GetShapingTime(0);
+      double asicGain    = sss->GetASICGain(0);
       
       //  double shapingTime=1.;
      //       double asicGain=1.;
-   /*     std::cout << "Sim params: " << chan << " " << shapingTime << " " << asicGain << std::endl;
+      std::cout << "Sim params: " << chan << " " << shapingTime << " " << asicGain << std::endl;
       if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() ) {
         noise_factor  = tempNoiseVec[view].at( fShapingTimeOrder.find( shapingTime )->second );
         noise_factor *= asicGain/4.7;
@@ -897,7 +897,6 @@ namespace detsim {
         }
       }
       ++step;
-    */
 
       //If the channel is bad, we can stop here
       //if you are using the UbooneChannelStatusService, then this removes disconnected, "dead", and "low noise" channels
