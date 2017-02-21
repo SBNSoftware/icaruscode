@@ -282,7 +282,6 @@ raw::ChannelID_t ChannelMapIcarusAlg::PlaneWireToChannel
 //----------------------------------------------------------------------------
 SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
 {
-    // still assume one cryostat for now -- faster
     unsigned int nChanPerCryo = fNchannels/fNcryostat;
     unsigned int cryostat = channel / nChanPerCryo;  
     unsigned int chan_in_cryo = channel % nChanPerCryo ;
@@ -312,31 +311,64 @@ SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
 //----------------------------------------------------------------------------
 View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
 {
-    // still assume one cryostat for now -- faster
-    unsigned int nChanPerTPC = fNchannels/fNTPC[0];
-    // casting wil trunc towards 0 -- faster than floor
-    unsigned int tpc = channel / nChanPerTPC;
+  unsigned int nChanPerCryo = fNchannels/fNcryostat;
+  unsigned int cryostat = channel / nChanPerCryo;  
+  unsigned int chan_in_cryo = channel % nChanPerCryo ;
+  
+  unsigned int nChanPerTPC = nChanPerCryo/fNTPC[0];
+  // casting wil trunc towards 0 -- faster than floor
+  unsigned int tpc = chan_in_cryo / nChanPerTPC;  
+  
+  //need number of planes to know Collection 
+  unsigned int PlanesThisTPC = fNPlanes[0][tpc];
 
-    View_t view = geo::kUnknown;
-
+  View_t view = geo::kUnknown;
+  
+  
+  //THIS IS A TEMPORARY THING!
+  //If 4 planes, the first two are U
+  //If 3 planes, the first one is U.
+  
+  if(PlanesThisTPC==4){
+    
     //first "two planes" are with horizontal wires: give them same view
-    if(      (channel >= fFirstChannelInThisPlane[0][tpc][0]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][0])    ){ view = geo::kU; }
-    else if( (channel >= fFirstChannelInThisPlane[0][tpc][1]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][1])    ){ view = geo::kU; }
-
-    else if( (channel >= fFirstChannelInThisPlane[0][tpc][2]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][2])    ){ view = geo::kV; }
-    else if( (channel >= fFirstChannelInThisPlane[0][tpc][3]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][3])    ){ view = geo::kW; }
+    if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kU; }
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kU; }
+    
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kV; }
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][3]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][3])    ){ view = geo::kW; }
     else
-        mf::LogWarning("BadChannelSignalType") << "Channel " << channel
-                                               << " not given view type.";
-
+      mf::LogWarning("BadChannelSignalType") << "Channel " << channel
+					     << " not given view type.";
+    
+      return view;
+  }
+  else if(PlanesThisTPC==3){
+    if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kU; }
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kV; }
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kW; }
+    else
+      mf::LogWarning("BadChannelSignalType") << "Channel " << channel
+					     << " not given view type.";
+    
     return view;
-}  
-
-//----------------------------------------------------------------------------
+  }
+  else{
+    mf::LogWarning("BadChannelSignalType") << "nPLanes is weird! " << PlanesThisTPC
+					   << ".";
+    
+    return view;
+  }
+}
+  
+  //----------------------------------------------------------------------------
 std::set<View_t> const& ChannelMapIcarusAlg::Views() const
 {
     return fViews;
