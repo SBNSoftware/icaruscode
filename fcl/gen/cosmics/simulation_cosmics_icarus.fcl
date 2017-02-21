@@ -2,9 +2,6 @@
 
 process_name: GenCry
 
-physics.producers.mcreco.MCRecoPart.SavePathPDGList: [13,-13,211,-211,111,311,310,130,321,-321,2212,2112,2224,2214,2114,1114,3122,
-                                                      1000010020,1000010030,1000020030,1000020040]
-
 physics.producers.generator.BufferBox: [ -1000.0,1000.0,-500.0,500.0,-2300.0,2300.0 ]
 physics.producers.generator.SubBoxLength: "subboxLength 21 "
 physics.producers.generator.EnergyThreshold:      1e-2
