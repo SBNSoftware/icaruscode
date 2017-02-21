@@ -4,7 +4,7 @@ process_name: SinglesGen
 
 outputs.out1.fileName: "prod_proton_0-1GeV_isotropic_icarus_%tc_gen.root"
 
-physics.producers.generator.PDG: [ 2112 ]            # proton ?
+physics.producers.generator.PDG: [ 2212 ]            # proton ?
 physics.producers.generator.PosDist: 0             # Flat position dist.
 physics.producers.generator.X0: [  40.0 ]
 physics.producers.generator.Y0: [   0.0 ]
