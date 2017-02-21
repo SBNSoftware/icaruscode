@@ -283,17 +283,23 @@ raw::ChannelID_t ChannelMapIcarusAlg::PlaneWireToChannel
 SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
 {
     // still assume one cryostat for now -- faster
-    unsigned int nChanPerTPC = fNchannels/fNTPC[0];
+    unsigned int nChanPerCryo = fNchannels/fNcryostat;
+    unsigned int cryostat = channel / nChanPerCryo;
+    unsigned int chan_in_cryo = channel % nChanPerCryo ;
+    
+    unsigned int nChanPerTPC = nChanPerCryo/fNTPC[0];
     // casting wil trunc towards 0 -- faster than floor
-    unsigned int tpc = channel / nChanPerTPC;
+    unsigned int tpc = chan_in_cryo / nChanPerTPC;
     //need number of planes to know Collection
     unsigned int PlanesThisTPC = fNPlanes[0][tpc];
-  
+    
+    
+    
     SigType_t sigt = geo::kMysteryType;
-    if(      (channel >= fFirstChannelInThisPlane[0][tpc][0]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][PlanesThisTPC-2])    ){ sigt = geo::kInduction; }
-    else if( (channel >= fFirstChannelInThisPlane[0][tpc][PlanesThisTPC-1]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][PlanesThisTPC-1])    ){ sigt = geo::kCollection; }
+    if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
+             (channel <  fFirstChannelInNextPlane[cryostat][tpc][PlanesThisTPC-2])    ){ sigt = geo::kInduction; }
+    else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][PlanesThisTPC-1]) &&
+             (channel <  fFirstChannelInNextPlane[cryostat][tpc][PlanesThisTPC-1])    ){ sigt = geo::kCollection; }
     else
         mf::LogWarning("BadChannelSignalType") << "Channel " << channel
                                                << " not given signal type." << std::endl;
