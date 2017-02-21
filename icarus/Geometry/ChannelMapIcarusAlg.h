@@ -5,8 +5,8 @@
 /// \version $Id:  $
 /// \author  brebel@fnal.gov
 ////////////////////////////////////////////////////////////////////////
-#ifndef LARCORE_GEOMETRY_CHANNELSTANDARDMAPALG_H
-#define LARCORE_GEOMETRY_CHANNELSTANDARDMAPALG_H
+#ifndef LARCORE_GEOMETRY_CHANNELMAPICARUSALG_H
+#define LARCORE_GEOMETRY_CHANNELMAPICARUSALG_H
 
 #include <vector>
 #include <set>

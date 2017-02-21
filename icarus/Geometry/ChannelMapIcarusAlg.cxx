@@ -284,13 +284,14 @@ SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
 {
     // still assume one cryostat for now -- faster
     unsigned int nChanPerCryo = fNchannels/fNcryostat;
-    unsigned int cryostat = channel / nChanPerCryo;
+    unsigned int cryostat = channel / nChanPerCryo;  
     unsigned int chan_in_cryo = channel % nChanPerCryo ;
     
     unsigned int nChanPerTPC = nChanPerCryo/fNTPC[0];
     // casting wil trunc towards 0 -- faster than floor
-    unsigned int tpc = chan_in_cryo / nChanPerTPC;
-    //need number of planes to know Collection
+    unsigned int tpc = chan_in_cryo / nChanPerTPC;  
+
+    //need number of planes to know Collection 
     unsigned int PlanesThisTPC = fNPlanes[0][tpc];
     
     
@@ -318,12 +319,16 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
 
     View_t view = geo::kUnknown;
 
+    //first "two planes" are with horizontal wires: give them same view
     if(      (channel >= fFirstChannelInThisPlane[0][tpc][0]) &&
              (channel <  fFirstChannelInNextPlane[0][tpc][0])    ){ view = geo::kU; }
     else if( (channel >= fFirstChannelInThisPlane[0][tpc][1]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][1])    ){ view = geo::kV; }
+             (channel <  fFirstChannelInNextPlane[0][tpc][1])    ){ view = geo::kU; }
+
     else if( (channel >= fFirstChannelInThisPlane[0][tpc][2]) &&
-             (channel <  fFirstChannelInNextPlane[0][tpc][2])    ){ view = geo::kZ; }
+             (channel <  fFirstChannelInNextPlane[0][tpc][2])    ){ view = geo::kV; }
+    else if( (channel >= fFirstChannelInThisPlane[0][tpc][3]) &&
+             (channel <  fFirstChannelInNextPlane[0][tpc][3])    ){ view = geo::kW; }
     else
         mf::LogWarning("BadChannelSignalType") << "Channel " << channel
                                                << " not given view type.";
