@@ -225,7 +225,7 @@ namespace detsim {
 
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
-    fShapingTimeOrder = { {0.5, 0}, {1.0, 1}, {1, 2}, {3.0, 3} };
+    fShapingTimeOrder = { {0.5, 0}, {1.5, 1}, {1, 2}, {3.0, 3} };
 
     if(fGetNoiseFromHisto)
     {

@@ -25,65 +25,10 @@ standard_simwire:
   TestCharge:        [ 0. ]
   Sample:            -1
   fNoiseHistoName:    "prova_noise.root"        
-
-
 }
 
+icarus_simwire:  @local::standard_simwire
 
-standard_simwireana:
-{ 
- module_type:       "SimWireAna"
- DetSimModuleLabel: "daq"
-}
-# extra comment to test check-in
-argoneut_simwire:
-{ 
- module_type:        "SimWireT962"
- DriftEModuleLabel:  "largeant"
- ResponseFile:       "shape-argo.root"
- NoiseFact:          0.132        #Noise Scale
- NoiseWidth:         62.4         #Exponential Noise width (kHz)
- LowCutoff:          7.5          #Low frequency filter cutoff (kHz)
- FieldBins:          75
- Col3DCorrection:    2.5
- Ind3DCorrection:    1.5
- ColFieldRespAmp:    0.0354
- IndFieldRespAmp:    0.018
- ShapeTimeConst:     [ 3000., 900. ]
- CompressionType:    "none"        #could also be Huffman
-}
-argoneut_simwireana: @local::standard_simwireana
-
-microboone_simwire:  
-{ 
- module_type:        "SimWireMicroBooNE"
- DriftEModuleLabel:  "largeant"
- NoiseFact:          0.0132       #Noise Scale
- #NoiseFact:          0.15       #Noise Scale to use with histogram
- NoiseWidth:         62.4         #Exponential Noise width (kHz)
- LowCutoff:          7.5          #Low frequency filter cutoff (kHz)
- CompressionType:    "none"       #could also be none
- GetNoiseFromHisto:   false  
- NoiseFileFname:      "uboone_noise_v0.1.root"
- NoiseHistoName:      "NoiseFreq"    
-
-}
-microboone_simwireana: @local::standard_simwireana
-
-
-
-
-
-standard_wienerfilterana: 
-{
- module_type:        "WienerFilterAna"
- DetSimModuleLabel:  "daq"
-}
-
-bo_wienerfilterana:         @local::standard_wienerfilterana
-argoneut_wienerfilterana:   @local::standard_wienerfilterana
-microboone_wienerfilterana: @local::standard_wienerfilterana
-
-
+icarus_simwire.NoiseFact: 0.0132       #Noise Scale
 
 END_PROLOG
