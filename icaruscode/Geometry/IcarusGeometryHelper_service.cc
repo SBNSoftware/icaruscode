@@ -7,8 +7,8 @@
 
 // Migration note:
 // Geometry --> Icarus/Geometry
-#include "Icarus/Geometry/IcarusGeometryHelper.h"
-#include "Icarus/Geometry/ChannelMapIcarusAlg.h"
+#include "icaruscode/Geometry/IcarusGeometryHelper.h"
+#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 
 //#include "larcore/Geometry/ChannelMapAlg.h"
 #include "larcore/Geometry/GeometryCore.h" // larcore. geo::GeometryData_t

@@ -68,7 +68,7 @@ include(ArtMake)
 include(BuildPlugins)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
-add_subdirectory(icarus)
+add_subdirectory(icaruscode)
 # subdirectory for test code
 #add_subdirectory(test)
 

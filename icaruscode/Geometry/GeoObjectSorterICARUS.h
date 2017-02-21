@@ -21,6 +21,7 @@ namespace geo{
     GeoObjectSorterICARUS(fhicl::ParameterSet const& p);
     ~GeoObjectSorterICARUS();
 
+    void SortCryostats      (std::vector<geo::CryostatGeo*>        & cgeo)     const;
     void SortTPCs     	    (std::vector<geo::TPCGeo*>      	   & tgeo)     const;
     void SortPlanes   	    (std::vector<geo::PlaneGeo*>    	   & pgeo,	      
 		      	     geo::DriftDirection_t     	     const & driftDir) const;
