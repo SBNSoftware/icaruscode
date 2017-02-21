@@ -16,11 +16,13 @@
 
 #include "messagefacility/MessageLogger/MessageLogger.h" 
 
+#include "icaruscode/Geometry/GeoObjectSorterICARUS.h"
+
 namespace geo{
 
 //----------------------------------------------------------------------------
 ChannelMapIcarusAlg::ChannelMapIcarusAlg(fhicl::ParameterSet const& p)
-  : fSorter(geo::GeoObjectSorterStandard(p))
+  : fSorter(geo::GeoObjectSorterICARUS(p))
 {
 }
 

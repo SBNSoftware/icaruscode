@@ -10,17 +10,19 @@
 
 #include <vector>
 
-#include "larcore/Geometry/GeoObjectSorterStandard.h"
+#include "larcore/Geometry/GeoObjectSorter.h"
 
 namespace geo{
 
-  class GeoObjectSorterICARUS : public GeoObjectSorterStandard {
+  class GeoObjectSorterICARUS : public GeoObjectSorter {
 
   public:
 
     GeoObjectSorterICARUS(fhicl::ParameterSet const& p);
     ~GeoObjectSorterICARUS();
 
+    void SortAuxDets        (std::vector<geo::AuxDetGeo*>          & adgeo)    const;
+    void SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo*> & adsgeo)   const;
     void SortCryostats      (std::vector<geo::CryostatGeo*>        & cgeo)     const;
     void SortTPCs     	    (std::vector<geo::TPCGeo*>      	   & tgeo)     const;
     void SortPlanes   	    (std::vector<geo::PlaneGeo*>    	   & pgeo,	      

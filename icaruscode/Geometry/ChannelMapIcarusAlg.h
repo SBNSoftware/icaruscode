@@ -14,7 +14,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h" // readout::TPCsetID, ...
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "larcore/Geometry/ChannelMapAlg.h"
-#include "larcore/Geometry/GeoObjectSorterStandard.h"
+#include "icaruscode/Geometry/GeoObjectSorterICARUS.h"
 #include "fhiclcpp/ParameterSet.h"
 
 namespace geo{
@@ -251,7 +251,7 @@ namespace geo{
     PlaneInfoMap_t<unsigned int>                         fWiresPerPlane;  ///< The number of wires in this plane 
                                                                           ///< in the heirachy
 
-    geo::GeoObjectSorterStandard                         fSorter;         ///< class to sort geo objects
+    geo::GeoObjectSorterICARUS                           fSorter;         ///< class to sort geo objects
     
     
     /// Retrieved the wire cound for the specified plane ID
