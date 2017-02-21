@@ -8,12 +8,48 @@
 
 #include "icaruscode/Geometry/GeoObjectSorterICARUS.h"
 
+#include "larcore/Geometry/AuxDetGeo.h"
+#include "larcore/Geometry/AuxDetSensitiveGeo.h"
 #include "larcore/Geometry/CryostatGeo.h"
 #include "larcore/Geometry/TPCGeo.h"
 #include "larcore/Geometry/PlaneGeo.h"
 #include "larcore/Geometry/WireGeo.h"
 
 namespace geo{
+
+  //----------------------------------------------------------------------------
+  // Define sort order for cryostats in standard configuration
+  static bool sortAuxDetStandard(const AuxDetGeo* ad1, const AuxDetGeo* ad2)
+  {
+
+    // sort based off of GDML name, assuming ordering is encoded
+    std::string ad1name = (ad1->TotalVolume())->GetName();
+    std::string ad2name = (ad2->TotalVolume())->GetName();
+
+    // assume volume name is "volAuxDet##"
+    int ad1Num = atoi( ad1name.substr( 9, ad1name.size()).c_str() );
+    int ad2Num = atoi( ad2name.substr( 9, ad2name.size()).c_str() );
+    
+    return ad1Num < ad2Num;
+   
+  }
+
+  //----------------------------------------------------------------------------
+  // Define sort order for cryostats in standard configuration
+  static bool sortAuxDetSensitiveStandard(const AuxDetSensitiveGeo* ad1, const AuxDetSensitiveGeo* ad2)
+  {
+
+    // sort based off of GDML name, assuming ordering is encoded
+    std::string ad1name = (ad1->TotalVolume())->GetName();
+    std::string ad2name = (ad2->TotalVolume())->GetName();
+
+    // assume volume name is "volAuxDetSensitive##"
+    int ad1Num = atoi( ad1name.substr( 9, ad1name.size()).c_str() );
+    int ad2Num = atoi( ad2name.substr( 9, ad2name.size()).c_str() );
+    
+    return ad1Num < ad2Num;
+   
+  }
 
   //----------------------------------------------------------------------------
   // Define sort order for cryostats in standard configuration
@@ -82,14 +118,29 @@ namespace geo{
   }
 
   //----------------------------------------------------------------------------
-  GeoObjectSorterICARUS::GeoObjectSorterICARUS(fhicl::ParameterSet const& p) :
-    GeoObjectSorterStandard(p)
+  GeoObjectSorterICARUS::GeoObjectSorterICARUS(fhicl::ParameterSet const& p)
   {
   }
 
   //----------------------------------------------------------------------------
   GeoObjectSorterICARUS::~GeoObjectSorterICARUS()
   {
+  }
+
+  //----------------------------------------------------------------------------
+  void GeoObjectSorterICARUS::SortAuxDets(std::vector<geo::AuxDetGeo*> & adgeo) const
+  {
+    std::sort(adgeo.begin(), adgeo.end(), sortAuxDetStandard);
+    
+    return;
+  }
+
+  //----------------------------------------------------------------------------
+  void GeoObjectSorterICARUS::SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo*> & adsgeo) const
+  {
+    std::sort(adsgeo.begin(), adsgeo.end(), sortAuxDetSensitiveStandard);
+    
+    return;
   }
 
   //----------------------------------------------------------------------------
