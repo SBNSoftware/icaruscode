@@ -24,8 +24,8 @@ icarus_reco_producers:
   rns:                 { module_type: RandomNumberSaver }
 
   ### calwire producers
-  #caldata:                        @local::icarus_calwire
-  caldata:                        @local::icarus_calwireroi
+  caldata:                        @local::icarus_calwire
+  #caldata:                        @local::icarus_calwireroi
 
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder
