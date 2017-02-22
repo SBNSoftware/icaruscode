@@ -4,6 +4,7 @@
 
 #include "geometry_icarus.fcl"
 #include "detectorproperties_icarus.fcl"
+#include "signalservices_icarus.fcl"
 
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
@@ -159,6 +160,8 @@ icarus_basic_services:
 
   DetectorPropertiesService:           @local::icarus_detproperties
   LArPropertiesService:                @local::standard_properties
+
+  SignalShapingServiceICARUS:          @local::signalshapingservice_icarus
 
   #assuming not much in optical here.
   LArG4Parameters:
