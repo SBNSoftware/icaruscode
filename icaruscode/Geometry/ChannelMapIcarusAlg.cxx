@@ -37,7 +37,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
   
     fNcryostat = cgeo.size();
   
-    mf::LogInfo("ChannelMapIcarusAlg") << "Initializing Standard ChannelMap...";
+    mf::LogInfo("ChannelMapIcarusAlg") << "Initializing ICARUS ChannelMap...";
 
     fSorter.SortCryostats(cgeo);
     fSorter.SortAuxDets(adgeo);
