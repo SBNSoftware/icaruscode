@@ -4,6 +4,27 @@
 
 BEGIN_PROLOG
 
+icarus_calwireroi:
+{
+ module_type:                           "CalWireROI"
+ DigitModuleLabel:                      "daq"
+ NoiseSource:                           3
+ NumBinsHalf:                           3 
+ Threshold:                             [ 3, 3, 3 ] # abs(threshold) for finding a Region Of Interest
+ NumSigma:                              [ 4, 4, 6 ]
+ uPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
+ vPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
+ zPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
+ DoBaselineSub:                         true # subtract baseline after deconvolution?
+ uPlaneRamp:                            true # Set true if U plane response includes a pre-ROI ramp
+ FFTSize:                               256      # re-initialize FFT service to this size
+ SaveWireWF:                            0
+ MinAllowedChannelStatus:               3 # All channels greater than or equal to this status level are considered
+ DoBaselineSub_WaveformPropertiesAlg:   false # subtract baseline after deconvolution?
+ DodQdxCalib:                           false  # apply wire-by-wire calibration?
+ dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
+}
+
 icarus_calwire:
 {
   module_type:        "CalWireICARUS"

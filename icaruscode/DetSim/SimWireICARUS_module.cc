@@ -251,8 +251,6 @@ namespace detsim {
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     fSampleRate    = detprop->SamplingRate();
     fNTimeSamples  = detprop->NumberTimeSamples();
-
-      std::cout << " samplerate " << fSampleRate << " ntimesamples " << fNTimeSamples << std::endl;
       
       
     // make the histos if not already made
@@ -430,9 +428,6 @@ namespace detsim {
     // of entries as the number of channels in the detector
     // and set the entries for the channels that have signal on them
     // using the chanHandle
-      
-      std::cout << " getting simchannels " << std::endl;
-      
     std::vector<const sim::SimChannel*> channels(N_CHANNELS,nullptr);
     if(!fTest){
       std::vector<const sim::SimChannel*> chanHandle;
@@ -472,13 +467,10 @@ namespace detsim {
     // In this version we assume that adjacent channels <-> adjacent wires, in the same plane/view
     // Is this always true?
     std::vector<int> first_channel_in_view(N_VIEWS,-1);
-
-      std::cout << " YZresp " << YZresponse << std::endl;
       
     // scale ionization depending on plane, wire and YZ location 
       if(YZresponse){
       for(unsigned int chan = 0; chan < N_CHANNELS; chan++) {
-          std::cout << " looping on channel " << chan << std::endl;
 	auto wid = geo->ChannelToWire(chan);
 	size_t view = (size_t)geo->View(chan);
 	
@@ -687,7 +679,6 @@ namespace detsim {
       if(!YZresponse) {
 
 	for(unsigned int chan = 0; chan < N_CHANNELS; chan++) {
-          std::cout << " looping on channel " << chan << std::endl;
 	  auto wid = geo->ChannelToWire(chan);
 	  size_t view = (size_t)geo->View(chan);
 
@@ -730,7 +721,6 @@ namespace detsim {
 	      int wireChan = (int) chan;
 	      if(wireChan<0 || wireChan>= (int)N_CHANNELS) continue;
 	      if((size_t)geo->View(wireChan)!=view) continue;
-            std::cout << " filling response params chan " << wireChan << " index " << wireIndex << " charge " << charge << " rawdigit " << raw_digit_index << std::endl;
             responseParamsVec[wireChan][wireIndex].emplace_back(new ResponseParams(charge, raw_digit_index));
 	    } // loop over wires
 	  } // loop over tdcs
@@ -798,7 +788,6 @@ namespace detsim {
       }
     }
  */
-      std::cout << " end of loop " << std::endl;
       
     //--------------------------------------------------------------------
     //
@@ -863,7 +852,6 @@ namespace detsim {
       
       //  double shapingTime=1.;
      //       double asicGain=1.;
-      std::cout << "Sim params: " << chan << " " << shapingTime << " " << asicGain << std::endl;
       if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() ) {
         noise_factor  = tempNoiseVec[view].at( fShapingTimeOrder.find( shapingTime )->second );
         noise_factor *= asicGain/4.7;
@@ -932,7 +920,6 @@ namespace detsim {
           if(charge==0) continue;
 	  auto raw_digit_index = item->getTime();
 	  if(raw_digit_index > 0 && raw_digit_index < fNTicks) {
-          std::cout << " before convolution " << raw_digit_index << " charge " << charge << std::endl;
             tempWork.at(raw_digit_index) += charge;
 	  }
         }
@@ -940,7 +927,6 @@ namespace detsim {
         // now we have the tempWork for the adjacent wire of interest
         // convolve it with the appropriate response function
 	sss->Convolute(chan, fabs(wire), tempWork);
-std::cout << " after convolution " << std::endl;
 	// this is to generate some plots
         if(view==1 && wireNum==360 && fSample>=0) {
           if(abs(wire)>2) continue;
@@ -1012,8 +998,6 @@ std::cout << " after convolution " << std::endl;
 	   adcval = 0;
 
       adcvec[i] = (unsigned short)TMath::Nint(adcval);
-      if(adcval!=0)
-        std::cout << " sample " << i << " ADC " << adcval << std::endl;
     }// end loop over signal size
 
     // compress the adc vector using the desired compression scheme,
