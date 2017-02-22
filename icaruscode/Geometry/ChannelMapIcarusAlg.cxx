@@ -335,14 +335,14 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
     
     //first "two planes" are with horizontal wires: give them same view
     if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kU; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kY; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kU; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kY; }
     
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kV; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kU; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][3]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][3])    ){ view = geo::kW; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][3])    ){ view = geo::kV; }
     else
       mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
@@ -351,11 +351,11 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
   }
   else if(PlanesThisTPC==3){
     if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kU; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kY; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kV; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kU; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kW; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kV; }
     else
       mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
