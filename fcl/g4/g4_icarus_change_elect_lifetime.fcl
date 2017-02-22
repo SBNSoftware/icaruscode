@@ -1,0 +1,6 @@
+#include "standard_g4_icarus.fcl"
+
+process_name: G4
+
+
+services.DetectorPropertiesService.Electronlifetime: 5000  # introducing a new value for the purity study 
