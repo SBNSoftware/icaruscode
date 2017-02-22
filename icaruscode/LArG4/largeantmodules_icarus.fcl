@@ -1,0 +1,9 @@
+#include "largeantmodules.fcl"
+
+BEGIN_PROLOG
+
+icarus_largeant: @local::standard_largeant
+
+icarus_largeantana: @local::standard_largeantana
+
+END_PROLOG
