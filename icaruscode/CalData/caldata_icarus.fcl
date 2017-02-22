@@ -1,0 +1,17 @@
+#include "caldata.fcl"
+##include "roialg.fcl"
+##include "database_microboone.fcl"
+
+BEGIN_PROLOG
+
+icarus_calwire:
+{
+  module_type:        "CalWireICARUS"
+  DigitModuleLabel:   "daq"
+  ResponseFile:       "ArgoResponse1.5.root"
+  ExponentialEndBins: 300
+  PostsampleBins:     300
+}
+
+
+END_PROLOG
