@@ -3,4 +3,4 @@
 process_name: G4
 
 
-services.DetectorPropertiesService.Electronlifetime: 5000  # introducing a new value for the purity study 
+services.DetectorPropertiesService.Electronlifetime: 15000  # introducing a new value for the purity study 
