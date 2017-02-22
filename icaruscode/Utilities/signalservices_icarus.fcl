@@ -1,0 +1,60 @@
+BEGIN_PROLOG
+
+signalshapingservice_icarus:
+{
+    #GenNoise:                       1
+    FieldBins:                  10
+    Col3DCorrection:            0.
+    Ind3DCorrection:            0.
+    FieldRespAmpVec:            [ 1., 1., 1. ]
+    ShapeTimeConst:             [[ 1.5, 1.5, 1.5 ]]
+    FilterVec:                  [ 0., 0., 0. ]
+    FilterParamsVec:            [ 0., 0., 0. ]
+    NConfigs:                   1
+    ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
+    NViews:                         3
+    ViewIndex:                      [ 0, 1, 2]
+    ViewForNormalization:           2
+    NResponses:                     [[ 1, 1,1],[1,1,1]]
+    NYZResponses:                     [[ 1, 1,1],[1,1,1]]
+    NdatadrivenResponses:                     [[ 1, 1,1],[1,1,1]]
+    NActiveResponses:                     [[ 1, 1,1],[1,1,1]]
+    NYZActiveResponses:                     [[ 1, 1,1],[1,1,1]]
+    NdatadrivenActiveResponses:                     [[ 1, 1,1],[1,1,1]]
+    PrintResponses:                  "true"
+    YZdependentResponse:             "false"
+    datadrivenResponse:              "false"
+    YZchargeScaling:                 [[ 1., 1., 1.]]
+    IncludeMisconfiguredU:           "false"
+    MisconfiguredU:                  [[ 1, 1, 1 ]]
+    DeconNorm:                       200.
+    ADCPerPCAtLowestASICGain:        5500.
+    DefaultDriftVelocity:            [ -1,-1,-1 ]
+    CalibResponseTOffset:            [ 1., 1., 1. ]
+    #NoiseFactVec:                    [[ 0., 0.,0. ]]
+    NoiseFactVec:    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
+    Drift3DCorrVec:                  [ 1., 1., 1. ]
+    DeconvPol:                       [ -1, 1, 1 ]
+    GetFilterFromHisto:              "false"
+    FilterParamsVec:                 [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
+    FilterParamsVecICTime:                 [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
+    FilterScaleVecICTime:                 [0.,0.,0.]
+    FilterNormVecIC:                 [1.,1.,1.]
+    FilterScaleVecICWire:                 [0.,0.,0.]
+    FilterParamsVecICWire:                 [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
+    FilterFuncVecICTime:                 ["x","x","x"]
+    FilterFuncVecICWire:                 ["x","x","x"]
+    FilterFuncVec:                 [0., 0., 0. ]
+    UseCalibratedResponses:         "false"
+    FieldResponseFNameBase:         "fresponseICARUS"
+    FieldResponseFVersion:          ["v0.0","v0.0","v0.0"]
+    DefaultEField:                  0.5
+    DefaultTemperature:             87.5
+    TimeScaleParams:                [1.,1.,1.]
+    StretchFullResponse:            "false"
+    FieldResponseHNameBase:         "fresp"
+
+
+}
+
+END_PROLOG

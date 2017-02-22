@@ -1,0 +1,70 @@
+## 
+##  ICARUS reconstruction
+##  modeled on uboone version
+##
+
+#include "services_icarus.fcl"
+#include "caldata_icarus.fcl"
+#include "hitfindermodules.fcl"
+
+#include "mchitmodules.fcl"
+#include "mcreco.fcl"
+
+BEGIN_PROLOG
+
+icarus_reco_services:
+{
+   @table::icarus_basic_services
+}
+
+### This is the complete list of all producers! ###
+icarus_reco_producers:
+{
+  ### random number saver
+  rns:                 { module_type: RandomNumberSaver }
+
+  ### calwire producers
+  caldata:                        @local::icarus_calwire
+
+  ### hit-finder producers
+  gaushit:                        @local::gaus_hitfinder
+
+  ### cluster-finder producers
+#  fuzzycluster:                   @local::icarus_fuzzycluster
+
+  ### pandora cosmic pass
+#  pandoraCosmic:                  @local::icarus_pandora
+
+  ### mc producers
+  mchitfinder:                    @local::standard_mchitfinder
+}
+
+icarus_reco_filters:
+{ 
+}
+
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_reco_signalprocessing: [     caldata ] #,
+                                    #gaushit ]
+
+#icarus_reco_fuzzycluster: [        fuzzycluster ]
+
+#icarus_reco_fuzzypath: [           @sequence::icarus_reco_fuzzycluster ]
+
+### Below we include overrides for the modules above
+### These are for MCC 7
+
+icarus_reco_producers.caldata.DigitModuleLabel:                         "daq"
+
+icarus_reco_producers.gaushit.CalDataModuleLabel:                       "caldata"
+icarus_reco_producers.gaushit.MinSig:                                   [10.,  10.,  10.  ]
+icarus_reco_producers.gaushit.InitWidth:                                [ 6.0,  6.0,  7.8 ]
+icarus_reco_producers.gaushit.MinWidth:                                 [ 1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.AreaNorms:                                [ 1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.MaxMultiHit:                              6
+icarus_reco_producers.gaushit.TryNplus1Fits:                            false
+icarus_reco_producers.gaushit.Chi2NDF:                                  50.
+
+END_PROLOG

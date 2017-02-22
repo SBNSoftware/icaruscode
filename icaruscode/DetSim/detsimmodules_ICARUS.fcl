@@ -1,0 +1,34 @@
+BEGIN_PROLOG
+
+standard_simwire:
+{
+  module_type:        "SimWireICARUS"
+  DriftEModuleLabel:  "largeant"
+  NoiseFact:           0.0132      # Noise Scale
+  NoiseWidth:         62.4         # Exponential Noise width (kHz)
+  LowCutoff:           7.5         # Low frequency filter cutoff (kHz)
+  FieldBins:          75
+  Col3DCorrection:    2.5
+  Ind3DCorrection:    1.5
+  ColFieldRespAmp:    0.0354
+  Ind1FieldRespAmp:    0.018
+  Ind2FieldRespAmp:    0.018
+  ShapeTimeConst:     [ 1500., 900. ]
+  CompressionType:    "none"
+  NoiseRand:          0.
+  GetNoiseFromHisto:  "false"
+  GenNoise:           0
+  SimDeadChannels:    "false"
+  Test:              "false"
+  TestWire:          0
+  TestIndex:         [ 0. ]
+  TestCharge:        [ 0. ]
+  Sample:            -1
+  fNoiseHistoName:    "prova_noise.root"        
+}
+
+icarus_simwire:  @local::standard_simwire
+
+icarus_simwire.NoiseFact: 0.0132       #Noise Scale
+
+END_PROLOG
