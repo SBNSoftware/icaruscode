@@ -305,10 +305,6 @@ namespace util {
         
         std::vector<DoubleVec> fElectResponse;
         
-        // Filters.
-        
-        std::vector<std::vector<TComplex> > FilterVec;
-        
         bool fPrintResponses;
         bool fManualInterpolation;
         

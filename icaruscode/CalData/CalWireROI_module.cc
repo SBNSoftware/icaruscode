@@ -33,6 +33,8 @@
 #include "art/Framework/Services/Optional/TFileService.h" 
 #include "canvas/Utilities/Exception.h"
 
+#include "art/Framework/Services/Registry/ServiceMacros.h"
+
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
 #include "larcore/Geometry/Geometry.h"
@@ -95,8 +97,7 @@ class CalWireROI : public art::EDProducer
                  unsigned int                                          thePlane,
                  const std::vector<std::pair<size_t, size_t>>&         rois,
                  const std::vector<std::pair<size_t, size_t>>&         holderInfo,
-                 recob::Wire::RegionsOfInterest_t&                     ROIVec,
-                 art::ServiceHandle<util::SignalShapingServiceICARUS>& sss);
+                 recob::Wire::RegionsOfInterest_t&                     ROIVec);
     
     float SubtractBaseline(std::vector<float>& holder,
                            float               basePre,
@@ -107,14 +108,21 @@ class CalWireROI : public art::EDProducer
 
     float SubtractBaseline(const std::vector<float>& holder);
     
-  protected: 
+    const geo::GeometryCore&             fGeometry;
+    util::SignalShapingServiceICARUS&    fSignalServices;
+    const lariov::ChannelStatusProvider& fChanFilt;
+    
+  protected:
     
   }; // class CalWireROI
 
   DEFINE_ART_MODULE(CalWireROI)
   
   //-------------------------------------------------
-  CalWireROI::CalWireROI(fhicl::ParameterSet const& pset)
+  CalWireROI::CalWireROI(fhicl::ParameterSet const& pset) :
+      fGeometry(*lar::providerFrom<geo::Geometry>()),
+      fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
+      fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
   {
     this->reconfigure(pset);
 
@@ -131,9 +139,8 @@ class CalWireROI : public art::EDProducer
 void CalWireROI::reconfigure(fhicl::ParameterSet const& p)
 {
     // Get signal shaping service.
-    art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
     bool doInducedChargeDeconv = false;
-    std::vector<std::vector<size_t> > respNums = sss->GetNResponses();
+    std::vector<std::vector<size_t> > respNums = fSignalServices.GetNResponses();
     for (size_t i = 0; i < respNums.at(1).size(); i++)
     {
         if (respNums.at(1).at(i) > 1) {
@@ -256,9 +263,6 @@ void CalWireROI::produce(art::Event& evt)
 {
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
-  
-    // get the geometry
-    art::ServiceHandle<geo::Geometry> geom;
 
     // get the FFT service to have access to the FFT size
     art::ServiceHandle<util::LArFFT> fFFT;
@@ -277,11 +281,8 @@ void CalWireROI::produce(art::Event& evt)
     if (!digitVecHandle->size())  return;
     
     raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
-    
-    const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
 
-    art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
-    double deconNorm = sss->GetDeconNorm();
+    double deconNorm = fSignalServices.GetDeconNorm();
 
     // We'll need to set the transform size once we get the waveform and know its size
     size_t transformSize = 0;
@@ -301,20 +302,20 @@ void CalWireROI::produce(art::Event& evt)
         channel = digitVec->Channel();
 
         // The following test is meant to be temporary until the "correct" solution is implemented
-        if (!chanFilt.IsPresent(channel)) continue;
+        if (!fChanFilt.IsPresent(channel)) continue;
 
         // Testing an idea about rejecting channels
         if (digitVec->GetPedestal() < 0.) continue;
         
         // skip bad channels
-        if( chanFilt.Status(channel) >= fMinAllowedChanStatus)
+        if( fChanFilt.Status(channel) >= fMinAllowedChanStatus)
         {
             size_t dataSize = digitVec->Samples();
             
             // vector holding uncompressed adc values
             std::vector<short> rawadc(dataSize);
             
-            std::vector<geo::WireID> wids     = geom->ChannelToWire(channel);
+            std::vector<geo::WireID> wids     = fGeometry.ChannelToWire(channel);
             size_t                   thePlane = wids[0].Plane;
             
             // Set up the deconvolution and the vector to deconvolve
@@ -324,11 +325,9 @@ void CalWireROI::produce(art::Event& evt)
             //   unless the FFT vector length changes (which it shouldn't for a run)
             if (!transformSize)
             {
-                sss->SetDecon(dataSize, channel);
+                fSignalServices.SetDecon(dataSize, channel);
                 transformSize = fFFT->FFTSize();
             }
-            //sss->SetDecon(dataSize, channel);
-            //size_t transformSize = fFFT->FFTSize();
             
             std::vector<float> rawAdcLessPedVec;
             
@@ -342,7 +341,7 @@ void CalWireROI::produce(art::Event& evt)
             size_t numBins   = 2 * fNumBinsHalf + 1;
             float  pdstl     = pedestalRetrievalAlg.PedMean(channel);
             float  rms_noise = digitVec->GetSigma();
-            float  raw_noise = sss->GetRawNoise(channel);
+            float  raw_noise = fSignalServices.GetRawNoise(channel);
             
             if      (fNoiseSource == 1) raw_noise = rms_noise;
             else if (fNoiseSource != 2) raw_noise = std::max(raw_noise,rms_noise);
@@ -451,7 +450,7 @@ void CalWireROI::produce(art::Event& evt)
             }
             
             // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
-            sss->Deconvolute(channel,rawAdcLessPedVec);
+            fSignalServices.Deconvolute(channel,rawAdcLessPedVec);
             
             std::vector<float> holder;
             
@@ -480,7 +479,7 @@ void CalWireROI::produce(art::Event& evt)
                     float  basePost = std::accumulate(holder.end()-binsToAve,holder.end(),0.) / float(binsToAve);
                     
                     // emulate method for refining baseline from original version of CalWireROI
-                    float deconNoise = 1.26491 * sss->GetDeconNoise(channel);    // 4./sqrt(10) * noise
+                    float deconNoise = 1.26491 * fSignalServices.GetDeconNoise(channel);    // 4./sqrt(10) * noise
 
                     // If the estimated baseline from the front of the roi does not agree well with that from the end
                     // of the roi then we'll extend the roi hoping for good agreement
@@ -579,6 +578,8 @@ void CalWireROI::produce(art::Event& evt)
         }
     }
     
+    std::cout << "wireCol size: " << wirecol->size() << std::endl;
+    
     evt.put(std::move(wirecol), fSpillName);
     evt.put(std::move(WireDigitAssn), fSpillName);
 
@@ -651,10 +652,9 @@ void CalWireROI::doDecon(std::vector<float>&                                   h
                          unsigned int                                          thePlane,
                          const std::vector<std::pair<size_t,size_t>>&          rois,
                          const std::vector<std::pair<size_t,size_t>>&          holderInfo,
-                         recob::Wire::RegionsOfInterest_t&                     ROIVec,
-                         art::ServiceHandle<util::SignalShapingServiceICARUS>& sss)
+                         recob::Wire::RegionsOfInterest_t&                     ROIVec)
 {
-    sss->Deconvolute(channel,holder);
+    fSignalServices.Deconvolute(channel,holder);
 
     // transfer the ROIs and start bins into the vector that will be
     // put into the event

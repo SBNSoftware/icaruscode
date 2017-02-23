@@ -51,7 +51,17 @@ util::SignalShapingServiceICARUS::SignalShapingServiceICARUS(const fhicl::Parame
 //----------------------------------------------------------------------
 // Destructor.
 util::SignalShapingServiceICARUS::~SignalShapingServiceICARUS()
-{}
+{
+    std::cout << "In SignalShapingServiceICARUS destructor" << std::endl;
+    std::cout << "Filter vec size: " << fFilterVec.size() << std::endl;
+    for(size_t idx = 0; idx < fFilterVec.size(); idx++)
+    {
+        std::cout << "--> size: " << fFilterVec[idx].size() << std::endl;
+        fFilterVec[idx].clear();
+    }
+    fFilterVec.clear();
+    return;
+}
 
 
 //----------------------------------------------------------------------
@@ -150,7 +160,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         bool badN = false;
         
         for(size_t ktype=0; ktype<1; ++ktype) {
-            for(_vw=0; _vw<fNViews; ++_vw) {
+            for(_vw=0; _vw<geo->Nplanes(); ++_vw) {
                 if(!fYZdependentResponse) {
                     std::cout << " No YZdep " << _vw << std::endl;
                     if(fNResponses[ktype][_vw] < fNActiveResponses[ktype][_vw])  {
@@ -266,7 +276,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     fFieldResponseTOffset.resize(2);
     std:: cout << " after field response " << std::endl;
     for(size_t ktype=0;ktype<2;++ktype) {
-        fFieldResponseTOffset[ktype].resize(fNViews);
+        fFieldResponseTOffset[ktype].resize(geo->Nplanes());
     }
     
     std::cout << " after field response " << std::endl;
@@ -275,6 +285,8 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     std::cout << "CalibResponseTOffsets: ";
     for(auto& x : fCalibResponseTOffset) { std::cout << x << " "; }
     std::cout << std::endl;
+    
+    std::cout << "Def vel size: " << fDefaultDriftVelocity.size() << ", resp size: " << fFieldResponseTOffset.size() << ", geo: " << geo->Nplanes() << std::endl;
     
     for(size_t ktype=0;ktype<2;++ktype) {
         if(fDefaultDriftVelocity.size() != geo->Nplanes() ||
@@ -308,9 +320,9 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         fFilterParamsVec = pset.get< DoubleVec2 >("FilterParamsVec");
         fFilterFuncVec = pset.get<std::vector<std::string> > ("FilterFuncVec");
         
-        fFilterTF1Vec.resize(fNViews);
-        std::cout << " before loop " << fNViews << std::endl;
-        for(_vw=0;_vw<fNViews; ++_vw) {
+        fFilterTF1Vec.resize(geo->Nplanes());
+        std::cout << " before loop " << geo->Nplanes() << std::endl;
+        for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
             std::cout << " view " << _vw << std::endl;
             std::string name = Form("Filter_vw%02i_wr%02i", (int)_vw, (int)_wr);
             std::cout << " filter size " <<fFilterParamsVec[_vw].size() << std::endl;
@@ -330,7 +342,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         sp.find_file(pset.get<std::string>("FilterFunctionFname"), fname);
         
         TFile * in=new TFile(fname.c_str(),"READ");
-        for(_vw=0;_vw<fNViews;_vw++){
+        for(_vw=0;_vw<geo->Nplanes();_vw++){
             std::string name = Form("%s_vw%02i", histoname.c_str(), (int)_vw);
             fFilterHistVec[_vw] = (TH1D *)in->Get(name.c_str());
         }
@@ -341,17 +353,17 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     
     // Load 2D filters for induced charge deconvolution (M. Mooney)
     
-    fFilterFuncVecICTime.resize(fNViews);
-    fFilterFuncVecICWire.resize(fNViews);
+    fFilterFuncVecICTime.resize(geo->Nplanes());
+    fFilterFuncVecICWire.resize(geo->Nplanes());
     mf::LogInfo("SignalShapingServiceICARUS") << "Getting 2D Filters from .fcl file" ;
     
     DoubleVec2 paramsICTime = pset.get< DoubleVec2 >("FilterParamsVecICTime");
     fFilterFuncVecICTime = pset.get<std::vector<std::string> > ("FilterFuncVecICTime");
     
-    fFilterTF1VecICTime.resize(fNViews);
-    fFilterICTimeMaxFreq.resize(fNViews);
-    fFilterICTimeMaxVal.resize(fNViews);
-    for(_vw=0;_vw<fNViews; ++_vw) {
+    fFilterTF1VecICTime.resize(geo->Nplanes());
+    fFilterICTimeMaxFreq.resize(geo->Nplanes());
+    fFilterICTimeMaxVal.resize(geo->Nplanes());
+    for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
         std::string name = Form("FilterICTime_vw%02i_wr%02i", (int)_vw, (int)_wr);
         fFilterTF1VecICTime[_vw] = new TF1(name.c_str(), fFilterFuncVecICTime[_vw].c_str() );
         for(_ind=0; _ind<paramsICTime[_vw].size(); ++_ind) {
@@ -364,10 +376,10 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     DoubleVec2 paramsICWire = pset.get< DoubleVec2 >("FilterParamsVecICWire");
     fFilterFuncVecICWire = pset.get<std::vector<std::string> > ("FilterFuncVecICWire");
     
-    fFilterTF1VecICWire.resize(fNViews);
-    fFilterICWireMaxFreq.resize(fNViews);
-    fFilterICWireMaxVal.resize(fNViews);
-    for(_vw=0;_vw<fNViews; ++_vw) {
+    fFilterTF1VecICWire.resize(geo->Nplanes());
+    fFilterICWireMaxFreq.resize(geo->Nplanes());
+    fFilterICWireMaxVal.resize(geo->Nplanes());
+    for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
         std::string name = Form("FilterICWire_vw%02i_wr%02i", (int)_vw, (int)_wr);
         fFilterTF1VecICWire[_vw] = new TF1(name.c_str(), fFilterFuncVecICWire[_vw].c_str() );
         for(_ind=0; _ind<paramsICWire[_vw].size(); ++_ind) {
@@ -426,19 +438,19 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
                 _vw = 0;
                 std::cout << "ktype " << ktype << " in " << fNConfigs << std::endl;
                 for(auto& plane : fFieldResponseHistVec[config][ktype]) {
-                    std::string fname0 = Form("%s_vw%02i_%s.root", fileNameBase.c_str(), (int)_vw, version[ktype].c_str());
+                    std::string fname0 = Form("%s_vw%02i_%s.root", fileNameBase.c_str(), int(fViewIndex[_vw]), version[ktype].c_str());
                     std::cout << " fname0 " << fname0 << std::endl;
                     std::string fname;
                     sp.find_file(fname0, fname);
                     std::cout << " fname " << fname << std::endl;
-                    plane.resize(fNResponses[ktype][_vw]);
+                    plane.resize(fNResponses[ktype][int(fViewIndex[_vw])]);
                     std::cout << " resized " << fname << std::endl;
                     std::unique_ptr<TFile> fin(new TFile(fname.c_str(), "READ"));
                     _wr = 0;
                     // load up the response functions
                     for(auto& resp : plane) {
                         std::cout << " wr " << _wr << std::endl;
-                        TString histName = Form("%s_vw%02i_%s.root", histNameBase.c_str(), (int)_vw, version[ktype].c_str());
+                        TString histName = Form("%s_vw%02i_%s.root", histNameBase.c_str(), int(fViewIndex[_vw]), version[ktype].c_str());
                         std::cout << " histName " << histName << std::endl;
                         resp = (TH1F*)fin->Get(histName);
                         auto Xaxis = resp->GetXaxis();
@@ -595,14 +607,14 @@ void util::SignalShapingServiceICARUS::SetFieldResponseTOffsets(const TH1F* resp
         }
     }
     
-    std::cout << "view " << _vw << ", wire " << _wr << ", toffset " << tOffset << std::endl;
-    tOffset *= f3DCorrectionVec[_vw];
-    std::cout << "view " << _vw << ", wire " << _wr << ", 3d toffset " << tOffset << std::endl;
+    std::cout << "view " << int(fViewIndex[_vw]) << ", wire " << _wr << ", toffset " << tOffset << std::endl;
+    tOffset *= f3DCorrectionVec[int(fViewIndex[_vw])];
+    std::cout << "view " << int(fViewIndex[_vw]) << ", wire " << _wr << ", 3d toffset " << tOffset << std::endl;
 
     tOffset *= fTimeScaleFactor;
-    fFieldResponseTOffset[ktype].at(_vw) = (-tOffset+ fCalibResponseTOffset[_vw]*1000.);
-    std::cout << "view " << _vw << " toffset " << tOffset << std::endl;
-     std::cout << "caliboffset " << fCalibResponseTOffset[_vw]<< " fieldoffset " << (-tOffset+ fCalibResponseTOffset[_vw])*1000. << std::endl;
+    fFieldResponseTOffset[ktype].at(int(fViewIndex[_vw])) = (-tOffset+ fCalibResponseTOffset[int(fViewIndex[_vw])]*1000.);
+    std::cout << "view " << int(fViewIndex[_vw]) << " toffset " << tOffset << std::endl;
+     std::cout << "caliboffset " << fCalibResponseTOffset[int(fViewIndex[_vw])]<< " fieldoffset " << (-tOffset+ fCalibResponseTOffset[int(fViewIndex[_vw])])*1000. << std::endl;
     
 }
 
@@ -619,14 +631,16 @@ util::SignalShapingServiceICARUS::SignalShaping(size_t channel, size_t wire, siz
     art::ServiceHandle<geo::Geometry> geom;
     //geo::SigType_t sigtype = geom->SignalType(channel);
     
-    auto view = (size_t)geom->View(channel);
+    geo::View_t view = geom->View(channel);
     
     // Return appropriate shaper.
     
-    if(view<fViewIndex[0]||view>fViewIndex[fNViews-1]) {
+    if(view > fViewIndex.size()) {
         throw cet::exception("SignalShapingServiceICARUS")<< "can't determine"
         << " View\n";
     }
+    
+    size_t plane = fViewIndex[view];
     
     size_t config = GetConfig(channel);
     
@@ -636,11 +650,11 @@ util::SignalShapingServiceICARUS::SignalShaping(size_t channel, size_t wire, siz
     //if(ktype==0&&view==0) std::cout << "SS Params " << channel << " " << config << " " << std::endl;
     
     
-    if(fYZdependentResponse == true && view == 1 && wire == 1 && fdatadrivenResponse == false){
-        view = 2;
+    if(fYZdependentResponse == true && plane == 1 && wire == 1 && fdatadrivenResponse == false){
+        plane = 2;
         wire = 0;
     }
-    return fSignalShapingVec[config][ktype][view][wire];
+    return fSignalShapingVec[config][ktype][plane][wire];
 }
 
 
@@ -653,6 +667,8 @@ void util::SignalShapingServiceICARUS::init()
     std::cout << " initializing " << fNConfigs << std::endl;
     if(!fInit) {
         fInit = true;
+        
+        art::ServiceHandle<geo::Geometry> geo;
         
         // Do ICARUS-specific configuration of SignalShaping by providing
         // ICARUS response and filter functions.
@@ -680,7 +696,7 @@ void util::SignalShapingServiceICARUS::init()
                 
                 std::cout << "Input field responses" << std::endl;
                 
-                for(_vw=0;_vw<fNViews; ++_vw) {
+                for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
                     SetElectResponse(ktype,fShapeTimeConst[config].at(_vw),fASICGainInMVPerFC[config].at(_vw));
                     //Electronic response
                     std::cout << " ktype " << ktype << " Electonic response " << fElectResponse[ktype].size() << " bins" << std::endl;
@@ -740,7 +756,7 @@ void util::SignalShapingServiceICARUS::init()
                     }
                     if(fYZdependentResponse && fdatadrivenResponse){
                         for(_wr=0; _wr<fNdatadrivenResponses[ktype][_vw]; ++_wr) {
-                            if(_vw == 0 && _wr == 2){
+                            if(int(fViewIndex[_vw]) == 0 && _wr == 2){
                                 SetElectResponse(ktype, 1.0, 4.7); // for U-plane misconfigured channels
                             }
                             if(fPrintResponses) {          std::cout << "Input field response for view " << _vw << " wire " << _wr
@@ -777,7 +793,7 @@ void util::SignalShapingServiceICARUS::init()
                 if(config==0) SetFilters();
                 
                 // Configure deconvolution kernels.
-                for(_vw=0;_vw<fNViews; ++_vw) {
+                for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
                     // std::cout << "filtervec size" << fFilterVec[_vw].size() << std::endl;
                     //if(!fYZdependentResponse){
                     for(_wr=0; _wr<fNResponses[ktype][_vw]; ++_wr) {
@@ -1185,6 +1201,7 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype,double shap
 void util::SignalShapingServiceICARUS::SetFilters()
 {
     // Get services.
+    art::ServiceHandle<geo::Geometry> geo;
     
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     art::ServiceHandle<util::LArFFT> fft;
@@ -1192,14 +1209,12 @@ void util::SignalShapingServiceICARUS::SetFilters()
     double ts = detprop->SamplingRate();
     size_t nFFT2 = fft->FFTSize() / 2;
     
-    
-    
     // Calculate collection filter.
     
-    fFilterVec.resize(fNViews);
-    for(auto& filter : fFilterVec) {
-        filter.resize(nFFT2+1);
-    }
+    fFilterVec.resize(geo->Nplanes());
+//    for(auto& filter : fFilterVec) {
+//        filter.resize(nFFT2+1);
+//    }
     
     if(!fGetFilterFromHisto)
     {
@@ -1212,9 +1227,9 @@ void util::SignalShapingServiceICARUS::SetFilters()
             // now to scale the filter function!
             // only scale params 1,2 &3
             
-            double timeFactor = fTimeScaleFactor*f3DCorrectionVec[_vw]*fFilterWidthCorrectionFactor[_vw];
+            double timeFactor = fTimeScaleFactor*f3DCorrectionVec[int(fViewIndex[_vw])]*fFilterWidthCorrectionFactor[int(fViewIndex[_vw])];
             for(size_t i=1;i<4;++i) {
-                func->SetParameter(i, fFilterParamsVec[_vw][i]/timeFactor);
+                func->SetParameter(i, fFilterParamsVec[int(fViewIndex[_vw])][i]/timeFactor);
             }
             
             for(_bn=0; _bn<=nFFT2; ++_bn) {
@@ -1222,7 +1237,8 @@ void util::SignalShapingServiceICARUS::SetFilters()
                 double freq = 500.*_bn/(ts*nFFT2);
                 double f = func->Eval(freq);
                 if(f!=0.0) count++;
-                fFilterVec[_vw][_bn] = TComplex(f, 0.);
+                //fFilterVec[int(fViewIndex[_vw])][_bn] = TComplex(f, 0.);
+                fFilterVec[int(fViewIndex[_vw])].push_back(TComplex(f, 0.));
             }
             //std::cout << count << " non-zero bins out of " << nFFT2 << std::endl;
             _vw++;
@@ -1233,7 +1249,8 @@ void util::SignalShapingServiceICARUS::SetFilters()
         for(auto hist : fFilterHistVec) {
             for(_bn=1; _bn<=nFFT2+1; ++_bn) {
                 double f = hist->GetBinContent(_bn);
-                fFilterVec[_vw][_bn-1] = TComplex(f, 0.);
+                //fFilterVec[int(fViewIndex[_vw])][_bn-1] = TComplex(f, 0.);
+                fFilterVec[int(fViewIndex[_vw])].push_back(TComplex(f, 0.));
             }
             _vw++;
         }
@@ -1267,11 +1284,11 @@ void util::SignalShapingServiceICARUS::SetResponseSampling(size_t ktype, size_t 
     size_t view0, view1;
     if(mode==0) {
         view0 = 0;
-        view1 = fNViews;
+        view1 = geo->Nplanes();
     } else {
         geo::View_t view = geo->View(channel);
         view0 = view;
-        view1 = std::min(fNViews,(size_t)view+1);
+        view1 = std::min(int(geo->Nplanes()),view+1);
     }
     
     //std::cout << "view0/1 " << view0 << " " << view1 << std::endl;
@@ -1617,7 +1634,7 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     int temp;
     if (std::abs(shapingtime - 0.5)<1e-6){
         temp = 0;
-    }else if (std::abs(shapingtime - 1.0)<1e-6){
+    }else if (std::abs(shapingtime - 1.5)<1e-6){
         temp = 1;
     }else if (std::abs(shapingtime - 2.0)<1e-6){
         temp = 2;
