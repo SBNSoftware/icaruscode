@@ -17,6 +17,7 @@ icarus_detproperties.SternheimerCbar:           5.2146           # Ar Sternheime
 icarus_detproperties.NumberTimeSamples:         4096
 icarus_detproperties.TimeOffsetU:               0.
 icarus_detproperties.TimeOffsetV:               0.
+icarus_detproperties.TimeOffsetY:               0.
 icarus_detproperties.TimeOffsetZ:               0.
 icarus_detproperties.ReadOutWindowSize:         4096
 icarus_detproperties.InheritNumberTimeSamples:  true

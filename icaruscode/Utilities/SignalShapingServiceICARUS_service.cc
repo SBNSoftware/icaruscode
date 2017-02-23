@@ -1550,13 +1550,13 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
     double gain = 0;
     size_t config = GetConfig(channel);
     switch(view){
-        case geo::kU:
+        case geo::kY:
             gain = fASICGainInMVPerFC[config].at(0);
             break;
-        case geo::kV:
+        case geo::kU:
             gain = fASICGainInMVPerFC[config].at(1);
             break;
-        case geo::kZ:
+        case geo::kV:
             gain = fASICGainInMVPerFC[config].at(2);
             break;
         default:
@@ -1576,13 +1576,13 @@ double util::SignalShapingServiceICARUS::GetShapingTime(unsigned int  channel) c
     
     double shaping_time(0);
     switch(view){
-        case geo::kU:
+        case geo::kY:
             shaping_time = fShapeTimeConst[config].at(0);
             break;
-        case geo::kV:
+        case geo::kU:
             shaping_time = fShapeTimeConst[config].at(1);
             break;
-        case geo::kZ:
+        case geo::kV:
             shaping_time = fShapeTimeConst[config].at(2);
             break;
         default:
@@ -1599,13 +1599,13 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     
     size_t config = GetConfig(channel);
     switch(view){
-        case geo::kU:
+        case geo::kY:
             plane = 0;
             break;
-        case geo::kV:
+        case geo::kU:
             plane = 1;
             break;
-        case geo::kZ:
+        case geo::kV:
             plane = 2;
             break;
         default:
@@ -1641,13 +1641,13 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     
     size_t config = GetConfig(channel);
     switch(view){
-        case geo::kU:
+        case geo::kY:
             plane = 0;
             break;
-        case geo::kV:
+        case geo::kU:
             plane = 1;
             break;
-        case geo::kZ:
+        case geo::kV:
             plane = 2;
             break;
         default:
@@ -1680,13 +1680,13 @@ int util::SignalShapingServiceICARUS::FieldResponseTOffset(unsigned int const ch
     
     double time_offset = 0;
     switch(view){
-        case geo::kU:
+        case geo::kY:
             time_offset = fFieldResponseTOffset[ktype].at(0);
             break;
-        case geo::kV:
+        case geo::kU:
             time_offset = fFieldResponseTOffset[ktype].at(1);
             break;
-        case geo::kZ: 
+        case geo::kV:
             time_offset = fFieldResponseTOffset[ktype].at(2); 
             break;
         default:
