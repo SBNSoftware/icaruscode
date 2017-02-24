@@ -790,7 +790,7 @@ void util::SignalShapingServiceICARUS::init()
                 
                 
                 // Calculate filter functions.
-                if(config==0) SetFilters();
+                if(config==0 && ktype == 0) SetFilters();
                 
                 // Configure deconvolution kernels.
                 for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
