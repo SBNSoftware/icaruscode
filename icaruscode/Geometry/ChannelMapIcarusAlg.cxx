@@ -41,8 +41,90 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
 
     fSorter.SortCryostats(cgeo);
     fSorter.SortAuxDets(adgeo);
-    for(size_t c = 0; c < cgeo.size(); ++c)
-        cgeo[c]->SortSubVolumes(fSorter);
+    
+    double xyz_center[3],xyz_start[3],xyz_end[3];
+    std::cout << "Before sort" << std::endl;
+    for(size_t cs = 0; cs < cgeo.size(); ++cs){
+      for(size_t t=0; t < cgeo[cs]->NTPC(); ++t){
+	for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p){
+	  PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
+	  std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
+	  for (size_t w=0; w<plane.Nwires(); ++w){
+	    WireGeo const& wire = plane.Wire(w);
+	    wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);	    
+	    std::cout << "\t\tw=" << w << ":  "
+		      <<  "start_(xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << ") "
+		      <<  "center_(xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << ") "
+		      <<  "end_(xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << ") "
+		      <<  " length=" << 2*wire.HalfL() << std::endl;
+	  }
+	}
+      }
+    }
+	  /*
+	  WireGeo wire = plane.Wire(0);
+	  
+	  double xyz_center[3],xyz_start[3],xyz_end[3];
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWire0 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWire0 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWire0 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.Wire(1);
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWire1 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWire1 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWire1 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.MiddleWire();
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWireM center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWireM start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWireM end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.LastWire();
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWireL center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWireL start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWireL end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+	  */
+	
+    
+      
+  for(size_t c = 0; c < cgeo.size(); ++c)
+    cgeo[c]->SortSubVolumes(fSorter);
+  /*
+    std::cout << "After sort" << std::endl;
+    for(size_t cs = 0; cs < cgeo.size(); ++cs)
+      for(size_t t=0; t < cgeo[cs]->NTPC(); ++t)
+	for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p){
+	  PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
+	  std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
+	  WireGeo & wire = plane.Wire(0);
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWire0 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWire0 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWire0 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.Wire(1);
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWire1 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWire1 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWire1 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.MiddleWire();
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWireM center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWireM start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWireM end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+
+	  wire = plane.LastWire();
+	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+	  std::cout << "\tWireL center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
+	  std::cout << "\tWireL start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
+	  std::cout << "\tWireL end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
+	}
+  */
   
     fNTPC.resize(fNcryostat);
     fWireCounts.resize(fNcryostat);
@@ -52,7 +134,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
     fOrthVectorsZ.resize(fNcryostat);
     fPlaneBaselines.resize(fNcryostat);
     fWiresPerPlane.resize(fNcryostat);
-        fFirstChannelInNextPlane.resize(fNcryostat);
+    fFirstChannelInNextPlane.resize(fNcryostat);
     fFirstChannelInThisPlane.resize(fNcryostat);
     fViews.clear();
     fPlaneIDs.clear();
@@ -107,7 +189,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
                     OrthZ *= -1;
                     OrthY *= -1;
                 }
-        
+		
                 // Overall we are trying to build an expression that looks like
                 //  int NearestWireNumber = round((worldPos.OrthVector - FirstWire.OrthVector)/WirePitch);
                 // That runs as fast as humanly possible.
@@ -130,6 +212,17 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
                 fFirstChannelInThisPlane[cs].at(TPCCount).push_back(fTopChannel);
                 fTopChannel += WiresThisPlane;
                 fFirstChannelInNextPlane[cs].at(TPCCount).push_back(fTopChannel);
+
+		std::cout<< "\tFor Plane cs=" << cs << " tpc=" << TPCCount << " plane=" << PlaneCount << std::endl;
+		std::cout << "\t\tWirePitch = " << ThisWirePitch << std::endl;
+		std::cout << "\t\tWireCenter1 (x,y,z)=(" << WireCentre1[0] << "," << WireCentre1[1] << "," << WireCentre1[2] << ")" << std::endl;
+		std::cout << "\t\tWireCenter2 (x,y,z)=(" << WireCentre2[0] << "," << WireCentre2[1] << "," << WireCentre2[2] << ")" << std::endl;
+		std::cout << "\t\t(cth,sth)=(" << cth << "," << sth << ")" << std::endl;
+		std::cout << "\t\t(orthy,orthz)=(" << OrthY << "," << OrthZ << ")" << std::endl;
+		std::cout << "\t\t(orthVectorY,orthVectorZ)=(" << fOrthVectorsY[cs][TPCCount][PlaneCount] << "," << fOrthVectorsZ[cs][TPCCount][PlaneCount] << ")" << std::endl;
+		std::cout << "\t\tfFirstWireProj=" << fFirstWireProj[cs][TPCCount][PlaneCount] << std::endl;
+		
+		
             }// end loop over planes
         }// end loop over TPCs
     }// end loop over cryostats
@@ -340,9 +433,12 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
 	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kY; }
     
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kU; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    )
+      { if(tpc==0) view = geo::kU; else if(tpc==1) view = geo::kV; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][3]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][3])    ){ view = geo::kV; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][3])    )
+      { if(tpc==0) view = geo::kV; else if(tpc==1) view = geo::kU; }
+
     else
       mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
@@ -353,9 +449,12 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
     if(      (channel >= fFirstChannelInThisPlane[cryostat][tpc][0]) &&
 	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kY; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    ){ view = geo::kU; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    )
+      { if(tpc==0) view = geo::kU; else if(tpc==1) view = geo::kV; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
-	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    ){ view = geo::kV; }
+	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    )
+      { if(tpc==0) view = geo::kV; else if(tpc==1) view = geo::kU; }
+
     else
       mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
