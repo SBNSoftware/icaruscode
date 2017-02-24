@@ -153,11 +153,11 @@ namespace detsim {
   */
   DEFINE_ART_MODULE(SimWireICARUS)
 
-  //-------------------------------------------------
-  SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
-  : fNoiseHist(0),
-    fGeometry(*lar::providerFrom<geo::Geometry>())
-  {
+//-------------------------------------------------
+SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
+    : fNoiseHist(0),
+      fGeometry(*lar::providerFrom<geo::Geometry>())
+{
     this->reconfigure(pset);
 
     produces< std::vector<raw::RawDigit>   >();
@@ -171,126 +171,123 @@ namespace detsim {
     art::ServiceHandle<rndm::NuRandomService> Seeds;
     Seeds->createEngine(*this, "HepJamesRandom", "noise", pset, "Seed");
     Seeds->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal");
+}
 
-  }
-
-  //-------------------------------------------------
-  SimWireICARUS::~SimWireICARUS()
-  {
+//-------------------------------------------------
+SimWireICARUS::~SimWireICARUS()
+{
     delete fNoiseHist;
-  }
+}
 
-  //-------------------------------------------------
-  void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
-  {
-    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel");
-    fNoiseWidth       = p.get< double              >("NoiseWidth");
-    fNoiseRand        = p.get< double              >("NoiseRand");
-    fLowCutoff        = p.get< double              >("LowCutoff");
-    fGetNoiseFromHisto= p.get< bool                >("GetNoiseFromHisto");
-    fGenNoise         = p.get< unsigned short      >("GenNoise");
-    fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
-    fMakeNoiseDists   = p.get< bool                >("MakeNoiseDists", false);
+ //-------------------------------------------------
+ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
+ {
+     fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel");
+     fNoiseWidth       = p.get< double              >("NoiseWidth");
+     fNoiseRand        = p.get< double              >("NoiseRand");
+     fLowCutoff        = p.get< double              >("LowCutoff");
+     fGetNoiseFromHisto= p.get< bool                >("GetNoiseFromHisto");
+     fGenNoise         = p.get< unsigned short      >("GenNoise");
+     fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
+     fMakeNoiseDists   = p.get< bool                >("MakeNoiseDists", false);
 
-   //fTrigModName      = p.get< std::string         >("TrigModName");
-    fTrigModName="";
-    fTest             = p.get<bool                 >("Test");
-    fTestWire         = p.get< size_t              >("TestWire");
-    fTestIndex        = p.get< std::vector<size_t> >("TestIndex");
-    fTestCharge       = p.get< std::vector<double> >("TestCharge");
-    
-    if(fTestIndex.size() != fTestCharge.size())
-      throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
-    fSample           = p.get<int                  >("Sample");
+     //fTrigModName      = p.get< std::string         >("TrigModName");
+     fTrigModName="";
+     fTest             = p.get<bool                 >("Test");
+     fTestWire         = p.get< size_t              >("TestWire");
+     fTestIndex        = p.get< std::vector<size_t> >("TestIndex");
+     fTestCharge       = p.get< std::vector<double> >("TestCharge");
+   
+     if(fTestIndex.size() != fTestCharge.size())
+         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
+     fSample           = p.get<int                  >("Sample");
 
-    //fYZwireOverlap    = p.get<std::vector<std::vector<std::vector<int> > > >("YZwireOverlap");
+     //Map the Shaping Times to the entry position for the noise ADC
+     //level in fNoiseFactInd and fNoiseFactColl
+     fShapingTimeOrder = { {0.5, 0}, {1.5, 1}, {1, 2}, {3.0, 3} };
 
-    //Map the Shaping Times to the entry position for the noise ADC
-    //level in fNoiseFactInd and fNoiseFactColl
-    fShapingTimeOrder = { {0.5, 0}, {1.5, 1}, {1, 2}, {3.0, 3} };
+     if(fGetNoiseFromHisto)
+     {
+         fNoiseHistoName= p.get< std::string>("NoiseHistoName");
 
-    if(fGetNoiseFromHisto)
-    {
-      fNoiseHistoName= p.get< std::string>("NoiseHistoName");
+         cet::search_path sp("FW_SEARCH_PATH");
+         sp.find_file(p.get<std::string>("NoiseFileFname"), fNoiseFileFname);
+     }
+     //detector properties information
+     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+     fSampleRate    = detprop->SamplingRate();
+     fNTimeSamples  = detprop->NumberTimeSamples();
+     
+     // make the histos if not already made
+     // get access to the TFile service
+     art::ServiceHandle<art::TFileService> tfs;
 
-      cet::search_path sp("FW_SEARCH_PATH");
-      sp.find_file(p.get<std::string>("NoiseFileFname"), fNoiseFileFname);
-    }
-    //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fSampleRate    = detprop->SamplingRate();
-    fNTimeSamples  = detprop->NumberTimeSamples();
-      
-      
-    // make the histos if not already made
-    // get access to the TFile service
-    art::ServiceHandle<art::TFileService> tfs;
+     if(hTest[0] == 0)
+     {
+         char buffer[80];
 
-    if(hTest[0] == 0) {
-      char buffer[80];
-      //char buffer1[80];
+         if(fSample>=0)
+         {
+             for(size_t i=0;i<5;++i)
+             {
+                 sprintf(buffer, "hTest%i",(int)i);
+                 hTest[i] = tfs->make<TH1D>(buffer, buffer, 500, -250., 250.);
+             }
+         }
+     }
 
-      if(fSample>=0) {
-        for(size_t i=0;i<5;++i) {
-          sprintf(buffer, "hTest%i",(int)i);
-          hTest[i] = tfs->make<TH1D>(buffer, buffer, 500, -250., 250.);
-        }
-      }
-    }
+     return;
+}
 
-    return;
-  }
+ //-------------------------------------------------
+ void SimWireICARUS::beginJob()
+ {
+     // get access to the TFile service
+     art::ServiceHandle<art::TFileService> tfs;
 
-  //-------------------------------------------------
-  void SimWireICARUS::beginJob()
-  {
+     char buff0[80], buff1[80];
 
-    // get access to the TFile service
-    art::ServiceHandle<art::TFileService> tfs;
+     if(fMakeNoiseDists)
+     {
+         fNoiseDist.resize(fGeometry.Nplanes(),0);
+         for(size_t plane = 0; plane < fGeometry.Nplanes(); plane++)
+         {
+             sprintf(buff0, "Noise%i", int(plane));
+             sprintf(buff1, ";Noise on Plane %i(ADC);", int(plane));
+             fNoiseDist[plane]  = tfs->make<TH1D>(buff0, buff1, 1000,   -30., 30.);
+         }
+     }
 
-    char buff0[80], buff1[80];
+     if(fTest)
+     {
+         if(fGeometry.Nchannels()<=fTestWire)
+             throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
 
-    if(fMakeNoiseDists)
-    {
-      fNoiseDist.resize(fGeometry.Nplanes(),0);
-      for(size_t plane = 0; plane < fGeometry.Nplanes(); plane++)
-      {
-        sprintf(buff0, "Noise%i", int(plane));
-        sprintf(buff1, ";Noise on Plane %i(ADC);", int(plane));
-        fNoiseDist[plane]  = tfs->make<TH1D>(buff0, buff1, 1000,   -30., 30.);
-      }
-    }
+         std::vector<unsigned int> channels;
+         for(auto const& plane_id : fGeometry.IteratePlaneIDs())
+             channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
 
-    if(fTest){
-      if(fGeometry.Nchannels()<=fTestWire)
-        throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
+         double xyz[3] = { std::numeric_limits<double>::max() };
+         for(auto const& ch : channels)
+         {
+             fTestSimChannel_v.push_back(sim::SimChannel(ch));
 
-      std::vector<unsigned int> channels;
-      for(auto const& plane_id : fGeometry.IteratePlaneIDs())
-        channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
+             for(size_t i=0; i<fTestIndex.size(); ++i)
+             {
+                 fTestSimChannel_v.back().AddIonizationElectrons(-1,
+                                                                 fTestIndex[i],
+                                                                 fTestCharge[i],
+                                                                 xyz,
+                                                                 std::numeric_limits<double>::max());
+             }
+         }
+     }
+     return;
+}
 
-      double xyz[3] = { std::numeric_limits<double>::max() };
-      for(auto const& ch : channels) {
-
-        fTestSimChannel_v.push_back(sim::SimChannel(ch));
-
-        for(size_t i=0; i<fTestIndex.size(); ++i){
-
-          fTestSimChannel_v.back().AddIonizationElectrons(-1,
-                                                          fTestIndex[i],
-                                                          fTestCharge[i],
-                                                          xyz,
-                                                          std::numeric_limits<double>::max());
-        }
-      }
-    }
-    return;
-
-  }
-
-  //-------------------------------------------------
-  void SimWireICARUS::endJob()
-  {}
+//-------------------------------------------------
+void SimWireICARUS::endJob()
+{}
 
 void SimWireICARUS::produce(art::Event& evt)
 {
