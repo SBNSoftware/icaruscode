@@ -24,8 +24,8 @@ icarus_reco_producers:
   rns:                 { module_type: RandomNumberSaver }
 
   ### calwire producers
-  caldata:                        @local::icarus_calwire
-  #caldata:                        @local::icarus_calwireroi
+  #caldata:                        @local::icarus_calwire
+  caldata:                        @local::icarus_calwireroi
 
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder
@@ -47,8 +47,8 @@ icarus_reco_filters:
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_reco_signalprocessing: [     caldata ] #,
-                                    #gaushit ]
+icarus_reco_signalprocessing: [     caldata,
+                                    gaushit ]
 
 #icarus_reco_fuzzycluster: [        fuzzycluster ]
 
@@ -60,7 +60,7 @@ icarus_reco_signalprocessing: [     caldata ] #,
 icarus_reco_producers.caldata.DigitModuleLabel:                         "daq"
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "caldata"
-icarus_reco_producers.gaushit.MinSig:                                   [10.,  10.,  10.  ]
+icarus_reco_producers.gaushit.MinSig:                                   [ 4.,   4.,   4.  ]
 icarus_reco_producers.gaushit.InitWidth:                                [ 6.0,  6.0,  7.8 ]
 icarus_reco_producers.gaushit.MinWidth:                                 [ 1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [ 1.0,  1.0,  1.0 ]

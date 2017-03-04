@@ -12,7 +12,7 @@ signalshapingservice_icarus:
     NConfigs:                   1
     ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
     NViews:                         4
-    ViewIndex:                      [ 0, 1, 2, 0]
+    ViewIndex:                      [ 1, 2, 0, 0]
     ViewForNormalization:           2
     NResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
     NYZResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
@@ -47,12 +47,12 @@ signalshapingservice_icarus:
     FilterFuncVec:                 [0., 0., 0. ]
     UseCalibratedResponses:         "false"
     FieldResponseFNameBase:         "t600_response"
+    FieldResponseHNameBase:         "t600_response"
     FieldResponseFVersion:          ["v0.0","v0.0","v0.0"]
     DefaultEField:                  0.5
     DefaultTemperature:             87.5
     TimeScaleParams:                [1.,1.,1.]
     StretchFullResponse:            "false"
-    FieldResponseHNameBase:         "fresp"
 
 
 }

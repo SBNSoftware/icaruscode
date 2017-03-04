@@ -32,8 +32,8 @@ void IcarusGeometryHelper::doConfigureChannelMapAlg( fhicl::ParameterSet const &
     fChannelMap.reset();
     std::string const detectorName = geom->DetectorName();
 
-    if ( detectorName.find("microboone") == std::string::npos ) {
-        std::cout << __PRETTY_FUNCTION__ << ": WARNING USING CHANNEL MAP ALG WITH NON-MICROBOONE GEO!" << std::endl;
+    if ( detectorName.find("icarus") == std::string::npos ) {
+        std::cout << __PRETTY_FUNCTION__ << ": WARNING USING CHANNEL MAP ALG WITH NON-ICARUS GEO!" << std::endl;
     }
 
 //    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset, sortingParameters );

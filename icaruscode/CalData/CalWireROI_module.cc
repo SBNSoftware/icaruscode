@@ -318,6 +318,8 @@ void CalWireROI::produce(art::Event& evt)
             std::vector<geo::WireID> wids     = fGeometry.ChannelToWire(channel);
             size_t                   thePlane = wids[0].Plane;
             
+            std::cout << "CalWireROI-> channel: " << channel << ", plane: " << thePlane << ", wire: " << wids[0].Wire << ", size: " << dataSize << std::endl;
+            
             // Set up the deconvolution and the vector to deconvolve
           
             // Set up the deconvolution and the vector to deconvolve
@@ -526,27 +528,29 @@ void CalWireROI::produce(art::Event& evt)
                 
                 if (baseSet) std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
 
-		// apply wire-by-wire calibration
-		if (fDodQdxCalib){
-		  if(fdQdxCalib.find(channel) != fdQdxCalib.end()){
-		    float constant = fdQdxCalib[channel];
-		    //std::cout<<channel<<" "<<constant<<std::endl;
-		    for (size_t iholder = 0; iholder < holder.size(); ++iholder){
-		      holder[iholder] *= constant;
-		    }
-		  }
-		}
+                // apply wire-by-wire calibration
+                if (fDodQdxCalib){
+                    if(fdQdxCalib.find(channel) != fdQdxCalib.end()){
+                        float constant = fdQdxCalib[channel];
+                        //std::cout<<channel<<" "<<constant<<std::endl;
+                        for (size_t iholder = 0; iholder < holder.size(); ++iholder){
+                            holder[iholder] *= constant;
+                        }
+                    }
+                }
 
-		//wes 23.12.2016 --- sum up the roi, and if it's very negative get rid of it
-		float average_val = std::accumulate(holder.begin(),holder.end(),0.0) / holder.size();
-		float min = *std::min_element(holder.begin(),holder.end());
-		float max = *std::max_element(holder.begin(),holder.end());
-		if(average_val>fMinROIAverageTickThreshold || std::abs(min)<std::abs(max)){
-		  // add the range into ROIVec
-		  ROIVec.add_range(roi.first, std::move(holder));
-		}
+                //wes 23.12.2016 --- sum up the roi, and if it's very negative get rid of it
+                float average_val = std::accumulate(holder.begin(),holder.end(),0.0) / holder.size();
+                float min = *std::min_element(holder.begin(),holder.end());
+                float max = *std::max_element(holder.begin(),holder.end());
+                if(average_val>fMinROIAverageTickThreshold || std::abs(min)<std::abs(max)){
+                    // add the range into ROIVec
+                    ROIVec.add_range(roi.first, std::move(holder));
+                }
             }
         } // end if not a bad channel
+        
+        std::cout << "   --> # roi's: " << ROIVec.size() << std::endl;
 
         // create the new wire directly in wirecol
         wirecol->push_back(recob::WireCreator(std::move(ROIVec),*digitVec).move());

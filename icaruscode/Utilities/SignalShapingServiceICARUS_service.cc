@@ -78,20 +78,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     
     _pl = 0; // just to use it
     
-    
-    // test
-    //  fTestParams = pset.get< DoubleVec3 > ("TestParams");
-    //  // and print it out
-    //  for(auto& config : fTestParams) {
-    //    for(auto& plane : config) {
-    //      for(auto& item : plane) {
-    //        std::cout << item << " ";
-    //      }
-    //      std::cout << " / " ;
-    //    }
-    //    std::cout << std::endl;
-    //  }
-    
     fNConfigs = pset.get<size_t>("NConfigs");
     std::cout << fNConfigs << " TPC ASIC configs are activated" << std::endl;
     std::cout << "init flag " << fInitConfigMap << std::endl;
@@ -147,7 +133,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     
     fPrintResponses   = pset.get<bool>("PrintResponses");
     fYZdependentResponse = pset.get<bool>("YZdependentResponse");
-    fdatadrivenResponse = pset.get<bool>("datadrivenResponse");
     fYZchargeScaling  = pset.get<std::vector<std::vector<double> > >("YZchargeScaling");
     //fYZwireOverlap    = pset.get<std::vector<std::vector<std::vector<int> > > >("YZwireOverlap");
     fIncludeMisconfiguredU = pset.get<bool>("IncludeMisconfiguredU");
@@ -170,21 +155,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
                          " > fNResponses[" << _vw << "] = " << fNResponses[ktype][_vw] << std::endl;
                         
                         badN = true;
-                    }
-                }
-                if(fYZdependentResponse) {
-                    if(fNResponses[ktype][_vw] > 1){
-                        throw art::Exception( art::errors::Configuration ) << "Don't use DIC with YZ dependent responses enabled; make all elements of NResponses == 1" << std::endl;
-                    }
-                    if(fdatadrivenResponse){
-                        if(fNdatadrivenResponses[ktype][_vw]<fNdatadrivenActiveResponses[ktype][_vw]){
-                            badN = true;
-                        }
-                    }
-                    else{
-                        if(fNYZResponses[ktype][_vw] < fNYZActiveResponses[ktype][_vw]) {
-                            badN = true;
-                        }
                     }
                 }
             }
@@ -214,14 +184,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
                     std::cout << " resizing shapings " << ktype << " " << _vw << std::endl;
 
                 }
-                if(fYZdependentResponse) {
-                    if(fdatadrivenResponse){
-                        nWires = fNdatadrivenResponses[ktype][_vw];
-                    }
-                    else{
-                        nWires = fNYZResponses[ktype][_vw];
-                    }
-                }
                 plane.resize(nWires);
                 for (auto& ss : plane) {
                     ss.Reset();
@@ -245,14 +207,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
                 if(!fYZdependentResponse) {
                     nWires = fNResponses[ktype][_vw];
                     std::cout << " resizing responses " << ktype << " " << _vw << std::endl;
-                }
-                if(fYZdependentResponse) {
-                    if(fdatadrivenResponse){
-                        nWires = fNdatadrivenResponses[ktype][_vw];
-                    }
-                    else{
-                        nWires = fNYZResponses[ktype][_vw];
-                    }
                 }
                 plane.resize(nWires);
              
@@ -429,7 +383,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     // calculate the time scale factor for this job
     if(!fUseCalibratedResponses) SetTimeScaleFactor();
     
-    if(!fdatadrivenResponse){
+    if(1){
         fFieldResponseHistVec.resize(fNConfigs);
         for(size_t config=0;config<fNConfigs; ++config) {
             fFieldResponseHistVec[config].resize(2);
@@ -473,53 +427,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
             }
         }
     }
-    
-    if(fdatadrivenResponse){
-        fFieldResponseHistVec.resize(fNConfigs);
-        for(size_t config=0; config<fNConfigs; ++config){
-            fFieldResponseHistVec[config].resize(2);
-            for(size_t ktype=0; ktype<2; ++ktype){
-                fFieldResponseHistVec[config][ktype].resize(fNViews);
-                _vw = 0;
-                for(auto& plane : fFieldResponseHistVec[config][ktype]){
-                    plane.resize(fNdatadrivenResponses[ktype][_vw]);
-                    _wr = 0;
-                    int ctr = 0;
-                    // load up the response functions
-                    for(auto& resp : plane) {
-                        std::string fname0;
-                        std::string fname;
-                        if( (ctr == 0) || (_vw == 0 && ctr == 2) ){
-                            fname0 = Form("%s_vw%02i_nominal_%s.root", fileNameBase.c_str(), (int)_vw, version[ktype].c_str());
-                        }
-                        if( (_vw == 0 && ctr == 1) || (_vw == 1 && ctr == 2) ){
-                            fname0 = Form("%s_vw%02i_shortedY_%s.root", fileNameBase.c_str(), (int)_vw, version[ktype].c_str());
-                        }
-                        if( (_vw == 1 && ctr == 1) || (_vw == 2 && ctr == 1) ){
-                            fname0 = Form("%s_vw%02i_shortedU_%s.root", fileNameBase.c_str(), (int)_vw, version[ktype].c_str());
-                        }
-                        sp.find_file(fname0, fname);
-                        std::unique_ptr<TFile> fin(new TFile(fname.c_str(), "READ"));
-                        TString histName = Form("%s_vw%02i_wr%02i", histNameBase.c_str(), (int)_vw, (int)_wr);
-                        
-                        resp = (TH1F*)fin->Get(histName);
-                        auto Xaxis = resp->GetXaxis();
-                        fNFieldBins[ktype] = Xaxis->GetNbins();
-                        fFieldLowEdge[ktype] = resp->GetBinCenter(1) - 0.5*resp->GetBinWidth(1);
-                        fFieldBin1Center[ktype] = resp->GetBinCenter(1);
-                        // internal time is in nsec
-                        fFieldBinWidth[ktype] = resp->GetBinWidth(1)*1000.;
-                        // get the offsets for each plane... use wire 0 and either peak or zero-crossing
-                        SetFieldResponseTOffsets(resp, ktype);
-                        ctr++;
-                        fin->Close();
-                    }
-                    //fin->Close();
-                    _vw++;
-                }
-            }
-        }
-    }
 }
 
 void util::SignalShapingServiceICARUS::SetTimeScaleFactor()
@@ -555,14 +462,6 @@ void util::SignalShapingServiceICARUS::SetFieldResponseTOffsets(const TH1F* resp
     
     // this is for the calibrated response, for now we disable this so that the timing
     //   for the standard and BNL responses is the same.
-    
-    /*
-     if(fUseCalibratedResponses) {
-     double calibResponseTOffset = fCalibResponseTOffset[_vw];
-     fFieldResponseTOffset[ktype].at(_vw) = (-tOffset + calibResponseTOffset)*1000.0;
-     return;
-     }
-     */
     
     // this is for the standard response
     if(_wr==0 && _vw==fViewForNormalization) {
@@ -631,29 +530,12 @@ util::SignalShapingServiceICARUS::SignalShaping(size_t channel, size_t wire, siz
     art::ServiceHandle<geo::Geometry> geom;
     //geo::SigType_t sigtype = geom->SignalType(channel);
     
-    geo::View_t view = geom->View(channel);
-    
-    // Return appropriate shaper.
-    
-    if(view > fViewIndex.size()) {
-        throw cet::exception("SignalShapingServiceICARUS")<< "can't determine"
-        << " View\n";
-    }
-    
-    size_t plane = fViewIndex[view];
+        //use channel number to set some useful numbers
+    std::vector<geo::WireID> widVec  = geom->ChannelToWire(channel);
+    size_t                   plane   = widVec[0].Plane;
     
     size_t config = GetConfig(channel);
-    
-    // something very wrong here... why doesn't map behave the way it's supposed to???
-    //thisView = fViewMap[view];
-    
-    //if(ktype==0&&view==0) std::cout << "SS Params " << channel << " " << config << " " << std::endl;
-    
-    
-    if(fYZdependentResponse == true && plane == 1 && wire == 1 && fdatadrivenResponse == false){
-        plane = 2;
-        wire = 0;
-    }
+
     return fSignalShapingVec[config][ktype][plane][wire];
 }
 
@@ -709,7 +591,7 @@ void util::SignalShapingServiceICARUS::init()
                         }
                         std::cout << std::endl;
                     }
-                    if(!fYZdependentResponse && !fdatadrivenResponse){
+                    if(1){
                         for(_wr=0; _wr<fNResponses[ktype][_vw]; ++_wr) {
                             
                             if(fPrintResponses) {          std::cout << "Input field response for view " << _vw << " wire " << _wr
@@ -723,51 +605,6 @@ void util::SignalShapingServiceICARUS::init()
                             std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wore " << _wr << std::endl;
                             (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fFieldResponseVec[config][ktype][_vw][_wr]);
                             std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wore " << _wr << std::endl;
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fElectResponse[ktype]);
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).save_response();
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).set_normflag(false);
-                        }
-                    }
-                    if(fYZdependentResponse && !fdatadrivenResponse){
-                        bool YZflag = true;
-                        for(_wr=0; _wr<fNYZResponses[ktype][_vw]; ++_wr) {
-                            if(YZflag == false){
-                                _wr = 0;
-                                _vw = 2;
-                            }
-                            if(fPrintResponses) {          std::cout << "Input field response for view " << _vw << " wire " << _wr
-                                << ", " << (fFieldResponseVec[config][ktype][_vw][_wr]).size() << " bins" << std::endl;
-                                for(size_t i = 0; i<(fFieldResponseVec[config][ktype][_vw][_wr]).size(); ++i) {
-                                    std::cout << fFieldResponseVec[config][ktype][_vw][_wr][i] << " " ;
-                                    if((i+1)%10==0) std::cout << std::endl;
-                                }
-                                std::cout << std::endl;
-                            }
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fFieldResponseVec[config][ktype][_vw][_wr]);
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fElectResponse[ktype]);
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).save_response();
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).set_normflag(false);
-                            if(YZflag == false){
-                                _wr = 2;
-                                _vw = 1;
-                            }
-                            YZflag = false;
-                        }
-                    }
-                    if(fYZdependentResponse && fdatadrivenResponse){
-                        for(_wr=0; _wr<fNdatadrivenResponses[ktype][_vw]; ++_wr) {
-                            if(int(fViewIndex[_vw]) == 0 && _wr == 2){
-                                SetElectResponse(ktype, 1.0, 4.7); // for U-plane misconfigured channels
-                            }
-                            if(fPrintResponses) {          std::cout << "Input field response for view " << _vw << " wire " << _wr
-                                << ", " << (fFieldResponseVec[config][ktype][_vw][_wr]).size() << " bins" << std::endl;
-                                for(size_t i = 0; i<(fFieldResponseVec[config][ktype][_vw][_wr]).size(); ++i) {
-                                    std::cout << fFieldResponseVec[config][ktype][_vw][_wr][i] << " " ;
-                                    if((i+1)%10==0) std::cout << std::endl;
-                                }
-                                std::cout << std::endl;
-                            }
-                            (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fFieldResponseVec[config][ktype][_vw][_wr]);
                             (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fElectResponse[ktype]);
                             (fSignalShapingVec[config][ktype][_vw][_wr]).save_response();
                             (fSignalShapingVec[config][ktype][_vw][_wr]).set_normflag(false);

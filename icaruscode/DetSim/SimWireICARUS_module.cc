@@ -291,8 +291,6 @@ void SimWireICARUS::endJob()
 
 void SimWireICARUS::produce(art::Event& evt)
 {
-    std::cout << " producing ... " << std::endl;
-
     //--------------------------------------------------------------------
     //
     // Get all of the services we will be using
@@ -390,10 +388,12 @@ void SimWireICARUS::produce(art::Event& evt)
     // resize the vector to incorporate the number of responses corresponding 
     // to each channel; note that this is plane dependent 
     responseParamsVec.resize(N_CHANNELS);
-    for(unsigned int i = 0; i<N_CHANNELS; i++)
+    for(size_t channel = 0; channel < N_CHANNELS; channel++)
     {
-        size_t view = (size_t)fGeometry.View((int)i);
-        responseParamsVec[i].resize(N_RESPONSES[0][view]);
+        std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+        size_t                   plane  = widVec[0].Plane;
+        
+        responseParamsVec[channel].resize(N_RESPONSES[0][plane]);
     }
 
     //--------------------------------------------------------------------                                                                                                                           
@@ -412,6 +412,7 @@ void SimWireICARUS::produce(art::Event& evt)
 
         // get the sim::SimChannel for this channel
         const sim::SimChannel* sc = channels.at(channel);
+        
         if( !sc ) continue;
 
         // remove the time offset

@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v06_25_00
+parent icaruscode v06_26_00
 defaultqual e10
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -31,7 +31,7 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-larsoft         v06_25_00
+larsoft         v06_26_00
 
 cetbuildtools	v5_06_00	-	only_for_build
 end_product_list
