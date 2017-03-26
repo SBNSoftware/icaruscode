@@ -37,7 +37,7 @@ void IcarusGeometryHelper::doConfigureChannelMapAlg( fhicl::ParameterSet const &
     }
 
 //    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset, sortingParameters );
-    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( sortingParameters );
+    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset );
 
     if ( fChannelMap )
     {

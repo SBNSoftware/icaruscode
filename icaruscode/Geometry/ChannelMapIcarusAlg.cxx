@@ -27,39 +27,42 @@ ChannelMapIcarusAlg::ChannelMapIcarusAlg(fhicl::ParameterSet const& p)
 }
 
 //----------------------------------------------------------------------------
-void ChannelMapIcarusAlg::Initialize( GeometryData_t& geodata )
+void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
 {
     // start over:
     Uninitialize();
   
-    std::vector<geo::CryostatGeo*>& cgeo = geodata.cryostats;
-    std::vector<geo::AuxDetGeo*>  & adgeo = geodata.auxDets;
+    const std::vector<geo::CryostatGeo*>& cgeo  = geodata.cryostats;
+//    const std::vector<geo::AuxDetGeo*>  & adgeo = geodata.auxDets;
   
     fNcryostat = cgeo.size();
   
     mf::LogInfo("ChannelMapIcarusAlg") << "Initializing ICARUS ChannelMap...";
 
-    fSorter.SortCryostats(cgeo);
-    fSorter.SortAuxDets(adgeo);
+//    fSorter.SortCryostats(cgeo);
+//    fSorter.SortAuxDets(adgeo);
     
     double xyz_center[3],xyz_start[3],xyz_end[3];
     std::cout << "Before sort" << std::endl;
-    for(size_t cs = 0; cs < cgeo.size(); ++cs){
-      for(size_t t=0; t < cgeo[cs]->NTPC(); ++t){
-	for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p){
-	  PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
-	  std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
-	  for (size_t w=0; w<plane.Nwires(); ++w){
-	    WireGeo const& wire = plane.Wire(w);
-	    wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);	    
-	    std::cout << "\t\tw=" << w << ":  "
-		      <<  "start_(xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << ") "
-		      <<  "center_(xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << ") "
-		      <<  "end_(xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << ") "
-		      <<  " length=" << 2*wire.HalfL() << std::endl;
-	  }
-	}
-      }
+    for(size_t cs = 0; cs < cgeo.size(); ++cs)
+    {
+        for(size_t t=0; t < cgeo[cs]->NTPC(); ++t)
+        {
+            for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p)
+            {
+                PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
+                std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
+                for (size_t w=0; w<plane.Nwires(); ++w){
+                    WireGeo const& wire = plane.Wire(w);
+                    wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
+                    std::cout << "\t\tw=" << w << ":  "
+                        <<  "start_(xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << ") "
+                        <<  "center_(xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << ") "
+                        <<  "end_(xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << ") "
+                        <<  " length=" << 2*wire.HalfL() << std::endl;
+                }
+            }
+        }
     }
 	  /*
 	  WireGeo wire = plane.Wire(0);
