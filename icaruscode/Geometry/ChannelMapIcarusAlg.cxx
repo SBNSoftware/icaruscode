@@ -33,102 +33,11 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
     Uninitialize();
   
     const std::vector<geo::CryostatGeo*>& cgeo  = geodata.cryostats;
-//    const std::vector<geo::AuxDetGeo*>  & adgeo = geodata.auxDets;
   
     fNcryostat = cgeo.size();
   
     mf::LogInfo("ChannelMapIcarusAlg") << "Initializing ICARUS ChannelMap...";
 
-//    fSorter.SortCryostats(cgeo);
-//    fSorter.SortAuxDets(adgeo);
-    
-    double xyz_center[3],xyz_start[3],xyz_end[3];
-    std::cout << "Before sort" << std::endl;
-    for(size_t cs = 0; cs < cgeo.size(); ++cs)
-    {
-        for(size_t t=0; t < cgeo[cs]->NTPC(); ++t)
-        {
-            for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p)
-            {
-                PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
-                std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
-                for (size_t w=0; w<plane.Nwires(); ++w){
-                    WireGeo const& wire = plane.Wire(w);
-                    wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-                    std::cout << "\t\tw=" << w << ":  "
-                        <<  "start_(xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << ") "
-                        <<  "center_(xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << ") "
-                        <<  "end_(xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << ") "
-                        <<  " length=" << 2*wire.HalfL() << std::endl;
-                }
-            }
-        }
-    }
-	  /*
-	  WireGeo wire = plane.Wire(0);
-	  
-	  double xyz_center[3],xyz_start[3],xyz_end[3];
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWire0 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWire0 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWire0 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.Wire(1);
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWire1 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWire1 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWire1 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.MiddleWire();
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWireM center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWireM start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWireM end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.LastWire();
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWireL center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWireL start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWireL end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-	  */
-	
-    
-      
-  for(size_t c = 0; c < cgeo.size(); ++c)
-    cgeo[c]->SortSubVolumes(fSorter);
-  /*
-    std::cout << "After sort" << std::endl;
-    for(size_t cs = 0; cs < cgeo.size(); ++cs)
-      for(size_t t=0; t < cgeo[cs]->NTPC(); ++t)
-	for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p){
-	  PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
-	  std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
-	  WireGeo & wire = plane.Wire(0);
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWire0 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWire0 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWire0 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.Wire(1);
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWire1 center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWire1 start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWire1 end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.MiddleWire();
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWireM center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWireM start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWireM end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-
-	  wire = plane.LastWire();
-	  wire.GetCenter(xyz_center); wire.GetStart(xyz_start); wire.GetEnd(xyz_end);
-	  std::cout << "\tWireL center: (xyz)=(" << xyz_center[0] << "," << xyz_center[1] << "," << xyz_center[2] << std::endl;
-	  std::cout << "\tWireL start: (xyz)=(" << xyz_start[0] << "," << xyz_start[1] << "," << xyz_start[2] << std::endl;
-	  std::cout << "\tWireL end: (xyz)=(" << xyz_end[0] << "," << xyz_end[1] << "," << xyz_end[2] << std::endl;
-	}
-  */
-  
     fNTPC.resize(fNcryostat);
     fWireCounts.resize(fNcryostat);
     fNPlanes.resize(fNcryostat);
