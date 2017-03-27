@@ -48,7 +48,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
     {
         for(size_t t=0; t < cgeo[cs]->NTPC(); ++t)
         {
-            for(size_t p=0; t < cgeo[cs]->TPC(t).Nplanes(); ++p)
+            for(size_t p=0; p < cgeo[cs]->TPC(t).Nplanes(); ++p)
             {
                 PlaneGeo plane = cgeo[cs]->TPC(t).Plane(p);
                 std::cout << "(c,s,t,p)=(" << cs << "," << t <<","<<p<<")" << std::endl;
