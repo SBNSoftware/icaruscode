@@ -12,7 +12,7 @@ signalshapingservice_icarus:
     NConfigs:                   1
     ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
     NViews:                         4
-    ViewIndex:                      [ 1, 2, 0, 0]
+    ViewIndex:                      [ 0, 1, 2, 2]
     ViewForNormalization:           2
     NResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
     NYZResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
@@ -20,7 +20,7 @@ signalshapingservice_icarus:
     NActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
     NYZActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
     NdatadrivenActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    PrintResponses:                  "true"
+    PrintResponses:                  "false"
     YZdependentResponse:             "false"
     datadrivenResponse:              "false"
     YZchargeScaling:                 [[ 1., 1., 1., 1.]]

@@ -58,13 +58,13 @@ icarus_reco_signalprocessing: [     caldata,
 ### These are for MCC 7
 
 icarus_reco_producers.caldata.DigitModuleLabel:                         "daq"
+icarus_reco_producers.caldata.Threshold:                                [1, 1, 1]
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "caldata"
-icarus_reco_producers.gaushit.MinSig:                                   [ 4.,   4.,   4.  ]
-icarus_reco_producers.gaushit.InitWidth:                                [ 6.0,  6.0,  7.8 ]
+icarus_reco_producers.gaushit.MinSig:                                   [ 2.,   2.,   2.  ]
 icarus_reco_producers.gaushit.MinWidth:                                 [ 1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [ 1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.MaxMultiHit:                              6
+icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
 

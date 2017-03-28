@@ -602,9 +602,9 @@ void util::SignalShapingServiceICARUS::init()
                                 }
                                 std::cout << std::endl;
                             }
-                            std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wore " << _wr << std::endl;
+                            std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wire " << _wr << std::endl;
                             (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fFieldResponseVec[config][ktype][_vw][_wr]);
-                            std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wore " << _wr << std::endl;
+                            std::cout << " adding response for config " << config << " ktype " << ktype << " view " << _vw << " wire " << _wr << std::endl;
                             (fSignalShapingVec[config][ktype][_vw][_wr]).AddResponseFunction(fElectResponse[ktype]);
                             (fSignalShapingVec[config][ktype][_vw][_wr]).save_response();
                             (fSignalShapingVec[config][ktype][_vw][_wr]).set_normflag(false);
@@ -1026,8 +1026,6 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype,double shap
         
         if(element > last_max) last_max = element;
         last_integral += element * fFieldBinWidth[ktype] / detprop->SamplingRate();
-        std::cout << " electronic sampling rate " << detprop->SamplingRate() << std::endl;
-
     }
     return;
 }
