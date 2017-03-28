@@ -1,0 +1,56 @@
+#include "evdservices_icarus.fcl"
+#include "services_icarus.fcl"
+
+process_name: EvdIcarus
+
+services:
+{
+  @table::icarus_disp
+}
+
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+outputs:{}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ producers: {}
+
+ filters:{}
+
+ analyzers:
+ {
+  evdisp:{module_type: EVD}
+ }
+ 
+ #list the modules for this path, order matters, filters reject all following items
+ evd: [ evdisp ] 
+
+ #end_path are things that do not modify art::Event, includes analyzers 
+ #and output modules. all items here can be run simultaneously
+ end_paths: [evd]  
+}
+services.RawDrawingOptions.TotalTicks: 4100
+
+services.Geometry.GDML: "test_22Mar.gdml"
+services.Geometry.ROOT: "test_22Mar.gdml"
+
+services.SimulationDrawingOptions.ShowMCTruthVectors:      false
+services.SimulationDrawingOptions.ShowMCTruthTrajectories: true
+services.SimulationDrawingOptions.MinimumEnergyDeposition: 0.0001  # in GeV
+
+services.RecoDrawingOptions.HitModuleLabels:               ["gaushit"]
+services.RecoDrawingOptions.WireModuleLabels:              ["caldata"] 
+
+
