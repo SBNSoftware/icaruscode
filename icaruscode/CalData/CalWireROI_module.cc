@@ -138,23 +138,6 @@ class CalWireROI : public art::EDProducer
 //////////////////////////////////////////////////////
 void CalWireROI::reconfigure(fhicl::ParameterSet const& p)
 {
-    // Get signal shaping service.
-    bool doInducedChargeDeconv = false;
-    std::vector<std::vector<size_t> > respNums = fSignalServices.GetNResponses();
-    for (size_t i = 0; i < respNums.at(1).size(); i++)
-    {
-        if (respNums.at(1).at(i) > 1) {
-            doInducedChargeDeconv = true;
-        }
-    }
-
-    // Throw exception if deconvolution should include dynamic induced charge effects (not yet implemented in CalROI) - M. Mooney
-    if (doInducedChargeDeconv == true)
-    {
-        throw art::Exception(art::errors::Configuration)
-            << "CalWireROI can not yet handle deconvolution with dynamic induced charge effects turned on.  Please use CalWireICARUS instead.";
-    }
-
     std::vector<unsigned short> uin;    std::vector<unsigned short> vin;
     std::vector<unsigned short> zin;
     
