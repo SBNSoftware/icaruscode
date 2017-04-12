@@ -117,7 +117,8 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         std::cout << "Config map first/last channels: " << fConfigMapFirstChannel << " " << fConfigMapLastChannel << std::endl;
     }
     std::cout << " before reading fhicl " << std::endl;
-    fASICGainInMVPerFC    = pset.get< DoubleVec2 >("ASICGainInMVPerFC");
+   // fASICGainInMVPerFC    = pset.get< DoubleVec2 >("ASICGainInMVPerFC");
+     fFCperADCMicroS = pset.get< double >("FCperADCMicroS");
     
     fNPlanes = geo->Nplanes();
     fNViews  = pset.get<size_t>("NViews");
@@ -221,7 +222,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     fDeconNorm = pset.get<double>("DeconNorm");
     std:: cout << " before ADC " << std::endl;
 
-    fADCPerPCAtLowestASICGain = pset.get<double>("ADCPerPCAtLowestASICGain");
+   // fADCPerPCAtLowestASICGain = pset.get<double>("ADCPerPCAtLowestASICGain");
     std:: cout << " after ADC " << std::endl;
 
     fDefaultDriftVelocity = pset.get< DoubleVec >("DefaultDriftVelocity");
@@ -579,7 +580,7 @@ void util::SignalShapingServiceICARUS::init()
                 std::cout << "Input field responses" << std::endl;
                 
                 for(_vw=0;_vw<geo->Nplanes(); ++_vw) {
-                    SetElectResponse(ktype,fShapeTimeConst[config].at(_vw),fASICGainInMVPerFC[config].at(_vw));
+                    SetElectResponse(ktype,fShapeTimeConst[config].at(_vw),fFCperADCMicroS);
                     //Electronic response
                     std::cout << " ktype " << ktype << " Electonic response " << fElectResponse[ktype].size() << " bins" << std::endl;
                     
@@ -1007,21 +1008,17 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype,double shap
     double last_integral=0;
     double last_max=0;
     
-    //Normalization are the following
-    // Peak is firstly normalized to 1
-    // thus we expect peak to be 1 * 9390 (fADCPerPCtAtLowestAsicGain) * 1.602e-7 * (1 fC) = 9.39 ADC
-    // At 4.7 mV/fC, the ADC value should be 4.7 (mV/fC) * 2 (ADC/mV) ~ 9.4 ADC/fC
-    // so the normalization are consistent
+    // ICARUS Normalization are the following
+    // Field response is normalized to 1 electron. Shaping function written as (t/tau)*exp(-t/tau) is normalized to 1
+    // From test pulse measurement with FLIC@CERN we have 0.027 fC/(ADC*us)
+    // Therefore 0.027*6242 electrons/(ADC*us)
     
     
     
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     for(auto& element : fElectResponse[ktype]){
-        element /= (max);
-        element *= gain / 6.5 ;
-        
-       element *= fADCPerPCAtLowestASICGain * 1.60217657e-7;
-       // element *= gain / 4.7;
+        element /= (gain*6242.);
+        max/= (gain*6242.);
         
         
         if(element > last_max) last_max = element;
@@ -1394,30 +1391,6 @@ void util::SignalShapingServiceICARUS::SetResponseSampling(size_t ktype, size_t 
 }
 
 
-//-----Give Gain Settings to SimWire-----//jyoti
-double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) const
-{
-    art::ServiceHandle<geo::Geometry> geom;
-    geo::View_t view = geom->View(channel);
-    double gain = 0;
-    size_t config = GetConfig(channel);
-    switch(view){
-        case geo::kY:
-            gain = fASICGainInMVPerFC[config].at(0);
-            break;
-        case geo::kU:
-            gain = fASICGainInMVPerFC[config].at(1);
-            break;
-        case geo::kV:
-            gain = fASICGainInMVPerFC[config].at(2);
-            break;
-        default:
-            throw cet::exception(__FUNCTION__) << "Invalid geo::View_t ... " << view << std::endl;
-    }
-    return gain;
-}
-
-
 //-----Give Shaping time to SimWire-----//jyoti
 double util::SignalShapingServiceICARUS::GetShapingTime(unsigned int  channel) const
 {
@@ -1465,7 +1438,8 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     }
     
     double shapingtime = fShapeTimeConst[config].at(plane);
-    double gain = fASICGainInMVPerFC[config].at(plane);
+    //temporarily neutralized (we don't plan to use this method in ICARUS anyway)
+    double gain = 0;
     int temp;
     if (std::abs(shapingtime - 0.5)<1e-6){
         temp = 0;

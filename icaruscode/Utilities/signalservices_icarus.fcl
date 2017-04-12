@@ -10,7 +10,7 @@ signalshapingservice_icarus:
     ShapeTimeConst:             [[ 1.5, 1.5, 1.5 ]]
     FilterVec:                  [ 0., 0., 0. ]
     NConfigs:                   1
-    ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
+#    ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
     NViews:                         4
     ViewIndex:                      [ 0, 1, 2, 2]
     ViewForNormalization:           2
@@ -27,11 +27,12 @@ signalshapingservice_icarus:
     IncludeMisconfiguredU:           "false"
     MisconfiguredU:                  [[ 1, 1, 1, 1 ]]
     DeconNorm:                       200.
-    ADCPerPCAtLowestASICGain:        5500.
+#    ADCPerPCAtLowestASICGain:        10000.
+    FCperADCMicroS:                  0.027
     DefaultDriftVelocity:            [ -1,-1,-1 ]
     CalibResponseTOffset:            [ 1., 1., 1. ]
-    #NoiseFactVec:                    [[ 0., 0.,0., 0. ]]
-    NoiseFactVec:    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
+#NoiseFactVec:                    [[ 0., 0.,0., 0. ],[ 0., 0.,0., 0. ],[ 0., 0.,0., 0. ]]
+NoiseFactVec:    [ [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ] ]
     Drift3DCorrVec:                  [ 1., 1., 1., 1. ]
     DeconvPol:                       [ -1, 1, 1, -1 ]
     GetFilterFromHisto:              "false"

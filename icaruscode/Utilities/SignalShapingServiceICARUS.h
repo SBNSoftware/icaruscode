@@ -134,7 +134,7 @@ namespace util {
         bool IsdatadrivenResponse()     { return fdatadrivenResponse; }
         bool IsMisconfiguredUIncluded() { return fIncludeMisconfiguredU; }
         
-        double GetASICGain(unsigned int const channel) const;
+        //double GetASICGain(unsigned int const channel) const;
         double GetShapingTime(unsigned int const channel) const;
         
         double GetRawNoise(unsigned int const channel) const ;
@@ -216,9 +216,11 @@ namespace util {
         size_t                   fViewForNormalization;
         
         double fDeconNorm;
-        double fADCPerPCAtLowestASICGain; ///< Pulse amplitude gain for a 1 pc charge impulse after convoluting it the with field and electronics response with the lowest ASIC gain setting of 4.7 mV/fC
+        //double fADCPerPCAtLowestASICGain; ///< Pulse amplitude gain for a 1 pc charge impulse after convoluting it the with field and electronics response with the lowest ASIC gain setting of 4.7 mV/fC
         
         DoubleVec2 fNoiseFactVec;       ///< RMS noise in ADCs for lowest gain setting
+        
+        double fFCperADCMicroS;
         
         std::vector<std::vector<size_t> > fNResponses;
         std::vector<std::vector<size_t> > fNYZResponses;
@@ -235,7 +237,7 @@ namespace util {
         bool fdatadrivenResponse;
         bool fIncludeMisconfiguredU;
         
-        DoubleVec2 fASICGainInMVPerFC;       ///< Cold electronics ASIC gain setting in mV/fC
+       // DoubleVec2 fASICGainInMVPerFC;       ///< Cold electronics ASIC gain setting in mV/fC
         
         DoubleVec fDefaultDriftVelocity;  ///< Default drift velocity of electrons in cm/usec
         DoubleVec2  fFieldResponseTOffset;  ///< Time offset for field response in ns
