@@ -1,5 +1,6 @@
 BEGIN_PROLOG
 
+
 FieldResponseTool:
 {
     tool_type: FieldResponse
@@ -8,23 +9,26 @@ FieldResponseTool:
     FieldResponseFileName:    "t600_response"
     FieldResponseFileVersion: "v0.0"
     FieldResponseHistName:    "t600_response"
+    FieldResponseAmplitude:   1.
+    TimeCorrectionFactor:     1000. 
+}
+
+ElectronicsResponseTool:
+{
+    tool_type: ElectronicsResponse
+    Plane:                    0
+    ASICGainInMVPerFC:        5.5
+    ASICShapingTime:          1.5
+    ADCPerPCAtLowestASICGain: 5500.
 }
 
 signalshapingservice_icarus:
 {
-    #GenNoise:                       1
-    FieldBins:                       10
-    Col3DCorrection:                 0.
-    Ind3DCorrection:                 0.
-    FieldRespAmpVec:                 [ 1., 1., 1. ]
-    ShapeTimeConst:                  [ 1.5, 1.5, 1.5 ]
     FilterVec:                       [ 0., 0., 0. ]
-    ASICGainInMVPerFC:               [ 5.5, 5.5, 5.5 ]
     PlaneForNormalization:           2
     PrintResponses:                  "false"
     IncludeMisconfiguredU:           "false"
     DeconNorm:                       200.
-    ADCPerPCAtLowestASICGain:        5500.
     DefaultDriftVelocity:            [ -1,-1,-1 ]
     CalibResponseTOffset:            [ 0., 0., 0. ]
     NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
@@ -40,21 +44,28 @@ signalshapingservice_icarus:
     TimeScaleParams:                 [1.,1.,1.]
     StretchFullResponse:             "false"
 
-    FieldResponseTools:
+    ResponseTools:
     {
-        FieldResponsePlane0: @local::FieldResponseTool
-        FieldResponsePlane1: @local::FieldResponseTool
-        FieldResponsePlane2: @local::FieldResponseTool
+        FieldResponsePlane0:       @local::FieldResponseTool
+        FieldResponsePlane1:       @local::FieldResponseTool
+        FieldResponsePlane2:       @local::FieldResponseTool
+        ElectronicsResponsePlane0: @local::ElectronicsResponseTool
+        ElectronicsResponsePlane1: @local::ElectronicsResponseTool
+        ElectronicsResponsePlane2: @local::ElectronicsResponseTool
     }
 }
 
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane0.Plane:      0
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane0.SignalType: 0
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane0.Plane:       0
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane0.SignalType:  0
 
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane1.Plane:      1
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane1.SignalType: 0
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane1.Plane:       1
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane1.SignalType:  0
 
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane2.Plane:      2
-signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane2.SignalType: 1
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane2.Plane:       2
+signalshapingservice_icarus.ResponseTools.FieldResponsePlane2.SignalType:  1
+
+signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane0.Plane: 0
+signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane1.Plane: 1
+signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane2.Plane: 2
 
 END_PROLOG

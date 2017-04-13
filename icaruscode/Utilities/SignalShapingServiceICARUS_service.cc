@@ -20,6 +20,7 @@
 
 #include "art/Utilities/make_tool.h"
 #include "tools/IFieldResponse.h"
+#include "tools/IElectronicsResponse.h"
 
 #include <fstream>
 
@@ -57,18 +58,27 @@ util::SignalShapingServiceICARUS::~SignalShapingServiceICARUS()
 void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& pset)
 {
     // Implement the tools for handling the responses
-    const fhicl::ParameterSet& fieldResponseTools = pset.get<fhicl::ParameterSet>("FieldResponseTools");
+    const fhicl::ParameterSet& responseTools = pset.get<fhicl::ParameterSet>("ResponseTools");
     
-    for(const std::string& responseTool : fieldResponseTools.get_pset_names())
+    for(const std::string& responseTool : responseTools.get_pset_names())
     {
-        const fhicl::ParameterSet& responseToolParamSet = fieldResponseTools.get<fhicl::ParameterSet>(responseTool);
+        const fhicl::ParameterSet& responseToolParamSet = responseTools.get<fhicl::ParameterSet>(responseTool);
         size_t                     planeIdx             = responseToolParamSet.get<size_t>("Plane");
         
-        fPlaneToFieldResponseVec[planeIdx].push_back(art::make_tool<icarus_tool::IFieldResponse>(responseToolParamSet));
+        if (responseTool.find("Field") != std::string::npos)
+        {
+            fPlaneToFieldResponseVec[planeIdx].push_back(art::make_tool<icarus_tool::IFieldResponse>(responseToolParamSet));
         
-        std::cout << "Field response set up for plane " << fPlaneToFieldResponseVec[planeIdx].back()->getPlane() << std::endl;
-        std::cout << "   --> Bin width: " << fPlaneToFieldResponseVec[planeIdx].back()->getBinWidth() << std::endl;
-        std::cout << "   --> T offset: " << fPlaneToFieldResponseVec[planeIdx].back()->getTOffset() << " # bins: " << fPlaneToFieldResponseVec[planeIdx].back()->getNumBins() << std::endl;
+            std::cout << "Field response set up for plane " << fPlaneToFieldResponseVec[planeIdx].back()->getPlane() << std::endl;
+            std::cout << "   --> Bin width: " << fPlaneToFieldResponseVec[planeIdx].back()->getBinWidth() << std::endl;
+            std::cout << "   --> T offset: " << fPlaneToFieldResponseVec[planeIdx].back()->getTOffset() << " # bins: " << fPlaneToFieldResponseVec[planeIdx].back()->getNumBins() << std::endl;
+        }
+        else
+        {
+            fPlaneToElectronicsResponseVec[planeIdx].push_back(art::make_tool<icarus_tool::IElectronicsResponse>(responseToolParamSet));
+            
+            std::cout << "Electronics response set up for plane " << fPlaneToElectronicsResponseVec[planeIdx].back()->getPlane() << std::endl;
+        }
     }
     
     // add a comment here
@@ -77,9 +87,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     // Reset initialization flag.
     
     fInit = false;
-    
-    std::cout << " before reading fhicl " << std::endl;
-    fASICGainInMVPerFC    = pset.get< DoubleVec >("ASICGainInMVPerFC");
     
     fViewForNormalization = pset.get<size_t>("PlaneForNormalization");
     fPrintResponses   = pset.get<bool>("PrintResponses");
@@ -114,9 +121,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     fDeconNorm = pset.get<double>("DeconNorm");
     std:: cout << " before ADC " << std::endl;
 
-    fADCPerPCAtLowestASICGain = pset.get<double>("ADCPerPCAtLowestASICGain");
-    std:: cout << " after ADC " << std::endl;
-
     fDefaultDriftVelocity = pset.get< DoubleVec >("DefaultDriftVelocity");
     std:: cout << " after drift velocity " << std::endl;
     
@@ -131,9 +135,6 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     
     f3DCorrectionVec = pset.get<DoubleVec>("Drift3DCorrVec");
     
-    fFieldRespAmpVec = pset.get<DoubleVec>("FieldRespAmpVec");
-    
-    fShapeTimeConst = pset.get<DoubleVec >("ShapeTimeConst");
     fDeconvPol = pset.get<std::vector<int> >("DeconvPol");
     
     fGetFilterFromHisto= pset.get<bool>("GetFilterFromHisto");
@@ -286,6 +287,9 @@ void util::SignalShapingServiceICARUS::init()
         
         std::string kset[2] = { "Convolution ", "Deconvolution "};
         
+        fElectResponse.resize(2);
+        for(auto& electByPlane : fElectResponse) electByPlane.resize(geo->Nplanes());
+        
         for(size_t ktype=0;ktype<2;++ktype) {
             std::cout << std::endl << kset[ktype] << " setting functions:" << std::endl;
             int fftsize2 = (int) fFFT->FFTSize();
@@ -303,7 +307,14 @@ void util::SignalShapingServiceICARUS::init()
                 if (nFieldBins*4>fftsize)
                     fFFT->ReinitializeFFT( (size_t)nFieldBins*4, options, fitbins);
                 
-                SetElectResponse(ktype,planeIdx, fShapeTimeConst.at(planeIdx),fASICGainInMVPerFC.at(planeIdx));
+                // handle the electronics response for this plane
+                icarus_tool::IElectronicsResponse* electronicsResponseTool = fPlaneToElectronicsResponseVec.at(planeIdx).front().get();
+                
+                electronicsResponseTool->setResponse(fftsize, fPlaneToFieldResponseVec.at(planeIdx).front()->getBinWidth());
+                
+                fElectResponse[ktype][planeIdx] = electronicsResponseTool->getResponseVec();
+                
+//                SetElectResponse(ktype,planeIdx, fShapeTimeConst.at(planeIdx),fASICGainInMVPerFC.at(planeIdx));
                 //Electronic response
                 std::cout << " ktype " << ktype << " Electonic response " << fElectResponse[ktype].size() << " bins" << std::endl;
 
@@ -320,7 +331,7 @@ void util::SignalShapingServiceICARUS::init()
                 std::cout << " adding response for ktype " << ktype << " plane " << planeIdx << std::endl;
                 (fSignalShapingVec[ktype][planeIdx]).AddResponseFunction(fFieldResponseVec[ktype][planeIdx]);
                 std::cout << " adding response for ktype " << ktype << " view " << planeIdx << std::endl;
-                (fSignalShapingVec[ktype][planeIdx]).AddResponseFunction(fElectResponse[ktype]);
+                (fSignalShapingVec[ktype][planeIdx]).AddResponseFunction(fElectResponse[ktype][planeIdx]);
                 (fSignalShapingVec[ktype][planeIdx]).save_response();
                 (fSignalShapingVec[ktype][planeIdx]).set_normflag(false);
             }
@@ -416,8 +427,6 @@ void util::SignalShapingServiceICARUS::SetFieldResponse(size_t ktype)
     ////////////////////////////////////////////////////
     art::ServiceHandle<art::TFileService> tfs;
     
-    char buff0[80]; //buff1[80];
-    
     // Ticks in nanosecond
     // Calculate the normalization of the collection plane
     double integral = fPlaneToFieldResponseVec.at(fViewForNormalization).front().get()->getIntegral();
@@ -435,62 +444,19 @@ void util::SignalShapingServiceICARUS::SetFieldResponse(size_t ktype)
         if(!fStretchFullResponse) timeFactor *= fTimeScaleFactor;
         std::cout << " after scale corr " << timeFactor << std::endl;
         std::cout << " ktype " << ktype << " plane " << planeIdx << std::endl;
-        // simplify the code
-        DoubleVec* responsePtr = &fFieldResponseVec[ktype][planeIdx];
-        std::cout << " response ptr " << std::endl;
         
-        const icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToFieldResponseVec.at(planeIdx).front().get();
+        icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToFieldResponseVec.at(planeIdx).front().get();
         
-        size_t nBins = fieldResponsePtr->getNumBins();
-        std::cout << " nBins " << nBins << " timeFactor " << timeFactor << std::endl;
-        size_t nResponseBins = nBins*timeFactor;
-        responsePtr->resize(nResponseBins);
-        //double x0 = histPtr->GetBinCenter(1);
-        //double xf = histPtr->GetBinCenter(nBins);
-        double x0 = fieldResponsePtr->getBinCenter(1);
-        double xf = fieldResponsePtr->getBinCenter(nBins);
-        double deltaX = (xf - x0)/(nBins-1);
-        std::cout << "lims " << x0 << " " << xf << " " << deltaX << std::endl;
+        fieldResponsePtr->setResponse(weight, f3DCorrectionVec[planeIdx], fTimeScaleFactor);
         
-        for(size_t bin = 1; bin <= nResponseBins; bin++)
-        {
-            double xVal = x0 + deltaX*(bin-1)/timeFactor;
-            if(bin==1) std::cout << "1st bin " << x0 << " " << xVal << std::endl;
-            double yVal = fieldResponsePtr->interpolate(xVal);
-            responsePtr->at(bin-1) = yVal;
-            responsePtr->at(bin-1) *= fFieldRespAmpVec[planeIdx]*weight;
-        }
-        
-        std::cout << " after yval " << std::endl;
-        
-        // fill some histos
-        sprintf(buff0, "hRawResp_%i_%i", (int)ktype, (int)planeIdx);
-        TH1D* rawResponse = tfs->make<TH1D>(buff0, buff0, nBins, x0-0.5*deltaX, xf+0.5*deltaX);
-        sprintf(buff0, "hStretchedResp_%i_%i", (int)ktype, (int)planeIdx);
-        double x0S = timeFactor*x0 - 0.5*deltaX/timeFactor;
-        double xfS = timeFactor*xf + 0.5*deltaX/timeFactor;
-        std::cout << "title " << buff0 << std::endl;
-        std::cout << " NBINS " << nBins << std::endl;
-        std::cout << " NRESPONSEBINS " << nResponseBins << std::endl;
-        std::cout << " x0S " << x0S << " xfS " << xfS <<std::endl;
-        TH1D* stretchedResponse = tfs->make<TH1D>(buff0, buff0, nResponseBins, x0S, xfS);
-        std::cout << " NBINS " << nBins << std::endl;
-
-        for(size_t i=0;i<nBins; ++i) {
-            rawResponse->SetBinContent(i, fieldResponsePtr->getBinContent(i));
-            std::cout << "bin " << i <<  " xVal " << rawResponse->GetBinCenter(i) << " response " << rawResponse->GetBinContent(i) << std::endl;
-        }
-        for(size_t i=0;i<nResponseBins; ++i) {
-            stretchedResponse->SetBinContent(i+1, responsePtr->at(i));
-            std::cout << "vbin " << i <<  " xVal " << stretchedResponse->GetBinCenter(i) << " response " << stretchedResponse->GetBinContent(i) << std::endl;
-        }
+        fFieldResponseVec[ktype][planeIdx] = fieldResponsePtr->getResponseVec();
     }
     
     std::cout << " end SetFieldResponse " << std::endl;
     return;
 }
 
-
+/*
 //----------------------------------------------------------------------
 // Calculate ICARUS field response.
 void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype, size_t planeIdx, double shapingtime, double gain)
@@ -560,8 +526,8 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype, size_t pla
     // then normalize by the actual ASIC gain setting used.
     // This code is executed only during initialization of service,
     // so don't worry about code inefficiencies here.
-    double last_integral=0;
-    double last_max=0;
+//    double last_integral=0;
+//    double last_max=0;
     
     //Normalization are the following
     // Peak is firstly normalized to 1
@@ -571,21 +537,23 @@ void util::SignalShapingServiceICARUS::SetElectResponse(size_t ktype, size_t pla
     
     
     
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    for(auto& element : fElectResponse[ktype]){
+//    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    for(auto& element : fElectResponse[ktype])
+    {
         element /= (max);
         element *= gain / 6.5 ;
         
-       element *= fADCPerPCAtLowestASICGain * 1.60217657e-7;
-       // element *= gain / 4.7;
+        element *= fADCPerPCAtLowestASICGain * 1.60217657e-7;
+        // element *= gain / 4.7;
         
         
-        if(element > last_max) last_max = element;
-        last_integral += element * binWidth / detprop->SamplingRate();
+//        if(element > last_max) last_max = element;
+//        last_integral += element * binWidth / detprop->SamplingRate();
     }
+    
     return;
 }
-
+*/
 
 //----------------------------------------------------------------------
 // Calculate ICARUS filter functions.
@@ -812,7 +780,7 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain = fASICGainInMVPerFC.at(planeIdx);
+    double gain     = fPlaneToElectronicsResponseVec.at(planeIdx).front()->getASICGain();
     
     return gain;
 }
@@ -822,9 +790,8 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
 double util::SignalShapingServiceICARUS::GetShapingTime(unsigned int  channel) const
 {
     art::ServiceHandle<geo::Geometry> geom;
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    
-    double shaping_time = fShapeTimeConst.at(planeIdx);
+    size_t planeIdx     = geom->ChannelToWire(channel)[0].Plane;
+    double shaping_time = fPlaneToElectronicsResponseVec.at(planeIdx).front()->getASICShapingTime();
 
     return shaping_time;
 }
@@ -834,14 +801,14 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
     
-    double shapingtime = fShapeTimeConst.at(planeIdx);
-    double gain = fASICGainInMVPerFC.at(planeIdx);
+    double gain         = fPlaneToElectronicsResponseVec.at(planeIdx).front()->getASICGain();
+    double shaping_time = fPlaneToElectronicsResponseVec.at(planeIdx).front()->getASICShapingTime();
     int temp;
-    if (std::abs(shapingtime - 0.5)<1e-6){
+    if (std::abs(shaping_time - 0.5)<1e-6){
         temp = 0;
-    }else if (std::abs(shapingtime - 1.5)<1e-6){
+    }else if (std::abs(shaping_time - 1.5)<1e-6){
         temp = 1;
-    }else if (std::abs(shapingtime - 2.0)<1e-6){
+    }else if (std::abs(shaping_time - 2.0)<1e-6){
         temp = 2;
     }else{
         temp = 3;
@@ -860,13 +827,13 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
     
-    double shapingtime = fShapeTimeConst.at(planeIdx);
+    double shaping_time = fPlaneToElectronicsResponseVec.at(planeIdx).front()->getASICShapingTime();
     int temp;
-    if (std::abs(shapingtime - 0.5)<1e-6){
+    if (std::abs(shaping_time - 0.5)<1e-6){
         temp = 0;
-    }else if (std::abs(shapingtime - 1.0)<1e-6){
+    }else if (std::abs(shaping_time - 1.0)<1e-6){
         temp = 1;
-    }else if (std::abs(shapingtime - 2.0)<1e-6){
+    }else if (std::abs(shaping_time - 2.0)<1e-6){
         temp = 2;
     }else{
         temp = 3;

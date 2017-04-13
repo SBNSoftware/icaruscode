@@ -99,6 +99,7 @@ using TH1FVec2   = std::vector<std::vector<TH1F*>>;
 namespace icarus_tool
 {
     class IFieldResponse;
+    class IElectronicsResponse;
 }
 
 namespace util {
@@ -143,9 +144,13 @@ namespace util {
     private:
         
         // Private configuration methods.
-        using IFieldResponsePtr       = std::unique_ptr<icarus_tool::IFieldResponse>;
-        using FieldResponseVec        = std::vector<IFieldResponsePtr>;
-        using PlaneToFieldResponseMap = std::map<size_t, FieldResponseVec>;
+        using IFieldResponsePtr             = std::unique_ptr<icarus_tool::IFieldResponse>;
+        using FieldResponseVec              = std::vector<IFieldResponsePtr>;
+        using PlaneToFieldResponseMap       = std::map<size_t, FieldResponseVec>;
+        
+        using IElectronicsResponsePtr       = std::unique_ptr<icarus_tool::IElectronicsResponse>;
+        using ElectronicsResponseVec        = std::vector<IElectronicsResponsePtr>;
+        using PlaneToElectronicsResponseMap = std::map<size_t, ElectronicsResponseVec>;
         
         // Post-constructor initialization.
         
@@ -158,7 +163,7 @@ namespace util {
         
         void SetFieldResponse(size_t ktype);
         
-        void SetElectResponse(size_t ktype, size_t plane, double shapingtime, double gain);  //changed to read different peaking time for different planes
+//        void SetElectResponse(size_t ktype, size_t plane, double shapingtime, double gain);  //changed to read different peaking time for different planes
         
         // Calculate filter functions.
         void SetFilters();
@@ -174,10 +179,8 @@ namespace util {
         size_t                              fViewForNormalization;
         
         double                              fDeconNorm;
-        double                              fADCPerPCAtLowestASICGain; ///< Pulse amplitude gain for a 1 pc charge impulse after convoluting it the with field and electronics response with the lowest ASIC gain setting of 4.7 mV/fC
         
         DoubleVec2                          fNoiseFactVec;       ///< RMS noise in ADCs for lowest gain setting
-        DoubleVec                           fASICGainInMVPerFC;       ///< Cold electronics ASIC gain setting in mV/fC
         DoubleVec                           fDefaultDriftVelocity;  ///< Default drift velocity of electrons in cm/usec
         bool                                fUseCalibratedResponses;         //Flag to use Calibrated Responses for 70kV
         
@@ -185,6 +188,7 @@ namespace util {
         
         // Field response tools
         PlaneToFieldResponseMap             fPlaneToFieldResponseVec;
+        PlaneToElectronicsResponseMap       fPlaneToElectronicsResponseVec;
         
         // test
         
@@ -193,8 +197,6 @@ namespace util {
         double                              fTimeScaleFactor;
         bool                                fStretchFullResponse;
         
-        DoubleVec                           fFieldRespAmpVec;
-        DoubleVec                           fShapeTimeConst; ///< time constants for exponential shaping
         std::vector<int>                    fDeconvPol;         ///< switch for DeconvKernel normalization sign (+ -> max pos ADC, - -> max neg ADC). Entry 0,1,2 = U,V,Y plane settings
         std::vector<TF1*>                   fFilterTF1Vec;     ///< Vector of Parameterized filter functions
         std::vector<std::string>            fFilterFuncVec;
@@ -220,7 +222,7 @@ namespace util {
         
         // Electronics response.
         
-        std::vector<DoubleVec>              fElectResponse;
+        std::vector<DoubleVec2 >            fElectResponse;
         
         bool                                fPrintResponses;
         bool                                fManualInterpolation;

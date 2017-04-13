@@ -38,6 +38,11 @@ simple_plugin( FieldResponse  "tool"
 	       BASENAME_ONLY
         )
 
+simple_plugin( ElectronicsResponse  "tool"
+               ${icarus_tool_lib_list}
+	       BASENAME_ONLY
+        )
+
 
 install_headers()
 install_source()
