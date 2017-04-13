@@ -29,35 +29,43 @@ public:
     
     ~FieldResponse() {}
     
-    void configure(const fhicl::ParameterSet& pset) override;
+    void configure(const fhicl::ParameterSet& pset)                         override;
+    void setResponse(double weight, double correct3D, double timeScaleFctr) override;
     
-    size_t getPlane()             const;
-    size_t getNumBins()           const;
-    double getBinCenter(int bin)  const;
-    double getBinContent(int bin) const;
-    double getLowEdge()           const;
-    double getHighEdge()          const;
-    double getBinWidth()          const;
-    double getTOffset()           const;
-    double getIntegral()          const;
-    double interpolate(double x)  const;
+    size_t                     getPlane()             const override;
+    size_t                     getNumBins()           const override;
+    double                     getBinCenter(int bin)  const override;
+    double                     getBinContent(int bin) const override;
+    double                     getLowEdge()           const override;
+    double                     getHighEdge()          const override;
+    double                     getBinWidth()          const override;
+    double                     getTOffset()           const override;
+    double                     getIntegral()          const override;
+    double                     interpolate(double x)  const override;
+    
+    const std::vector<double>& getResponseVec()       const override {return fFieldResponseVec;}
     
 private:
     // Make sure we have been initialized
-    bool           fIsValid;
+    bool                fIsValid;
     
     // Member variables from the fhicl file
-    size_t         fThisPlane;
-    geo::SigType_t fSignalType;
-    std::string    fFieldResponseFileName;
-    std::string    fFieldResponseFileVersion;
-    std::string    fFieldResponseHistName;
+    size_t              fThisPlane;
+    geo::SigType_t      fSignalType;
+    std::string         fFieldResponseFileName;
+    std::string         fFieldResponseFileVersion;
+    std::string         fFieldResponseHistName;
+    double              fFieldResponseAmplitude;
+    double              fTimeCorrectionFactor;
     
     // Pointer to the input histogram
-    TH1D*          fFieldResponseHist;
+    TH1D*               fFieldResponseHist;
+    
+    // Container for the field response "function"
+    std::vector<double> fFieldResponseVec;
     
     // Derived variables
-    double         fT0Offset;
+    double              fT0Offset;
 };
     
 //----------------------------------------------------------------------
@@ -76,6 +84,8 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fFieldResponseFileName    = pset.get<std::string>("FieldResponseFileName");
     fFieldResponseFileVersion = pset.get<std::string>("FieldResponseFileVersion");
     fFieldResponseHistName    = pset.get<std::string>("FieldResponseHistName");
+    fFieldResponseAmplitude   = pset.get<double>("FieldResponseAmplitude");
+    fTimeCorrectionFactor     = pset.get<double>("TimeCorrectionFactor");
     
     // Recover the input field response histogram
     std::string fileName = fFieldResponseFileName + Form("_vw%02i_", int(fThisPlane)) + fFieldResponseFileVersion + ".root";
@@ -124,6 +134,28 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     }
     
     fIsValid = true;
+    
+    return;
+}
+    
+void FieldResponse::setResponse(double weight, double correction3D, double timeScaleFctr)
+{
+    double timeFactor    = correction3D * timeScaleFctr;
+    size_t numBins       = getNumBins();
+    size_t nResponseBins = numBins * timeFactor;
+    
+    fFieldResponseVec.resize(nResponseBins);
+
+    double x0     = getBinCenter(1);
+    double xf     = getBinCenter(numBins);
+    double deltaX = (xf - x0)/(numBins-1);
+    
+    for(size_t bin = 1; bin <= nResponseBins; bin++)
+    {
+        double xVal = x0 + deltaX * (bin-1) / timeFactor;
+        
+        fFieldResponseVec.at(bin-1) = interpolate(xVal) * fFieldResponseAmplitude * weight;
+    }
     
     return;
 }
@@ -183,7 +215,7 @@ double FieldResponse::getBinWidth() const
     if (!fIsValid)
         throw cet::exception("FieldResponse::getPlane") << "Attempting to access plane info when tool is invalid state" << std::endl;
     
-    return fFieldResponseHist->GetBinWidth(1) * 1000.;
+    return fFieldResponseHist->GetBinWidth(1) * fTimeCorrectionFactor;
 }
     
 double FieldResponse::getTOffset() const

@@ -22,18 +22,21 @@ namespace icarus_tool
     public:
         virtual ~IFieldResponse() noexcept = default;
         
-        virtual void   configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void setResponse(double weight, double correct3D, double timeScaleFctr) = 0;
         
-        virtual size_t getPlane()             const = 0;
-        virtual size_t getNumBins()           const = 0;
-        virtual double getBinCenter(int bin)  const = 0;
-        virtual double getBinContent(int bin) const = 0;
-        virtual double getLowEdge()           const = 0;
-        virtual double getHighEdge()          const = 0;
-        virtual double getBinWidth()          const = 0;
-        virtual double getTOffset()           const = 0;
-        virtual double getIntegral()          const = 0;
-        virtual double interpolate(double x)  const = 0;
+        virtual size_t                     getPlane()             const = 0;
+        virtual size_t                     getNumBins()           const = 0;
+        virtual double                     getBinCenter(int bin)  const = 0;
+        virtual double                     getBinContent(int bin) const = 0;
+        virtual double                     getLowEdge()           const = 0;
+        virtual double                     getHighEdge()          const = 0;
+        virtual double                     getBinWidth()          const = 0;
+        virtual double                     getTOffset()           const = 0;
+        virtual double                     getIntegral()          const = 0;
+        virtual double                     interpolate(double x)  const = 0;
+        
+        virtual const std::vector<double>& getResponseVec()       const = 0;
     };
 }
 
