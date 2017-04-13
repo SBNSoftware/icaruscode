@@ -1,5 +1,15 @@
 BEGIN_PROLOG
 
+FieldResponseTool:
+{
+    tool_type: FieldResponse
+    Plane:                    0
+    SignalType:               0
+    FieldResponseFileName:    "t600_response"
+    FieldResponseFileVersion: "v0.0"
+    FieldResponseHistName:    "t600_response"
+}
+
 signalshapingservice_icarus:
 {
     #GenNoise:                       1
@@ -23,18 +33,8 @@ signalshapingservice_icarus:
     GetFilterFromHisto:              "false"
     FilterParamsVec:                 [[1., 0., 0.1 ],[1., 0., 0.1 ],[1.,0.,0.1]]
     FilterWidthCorrectionFactor:     [ 1.0, 1.0, 1.0 ]
-    FilterParamsVecICTime:           [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
-    FilterScaleVecICTime:            [0.,0.,0.]
-    FilterNormVecIC:                 [1.,1.,1.]
-    FilterScaleVecICWire:            [0.,0.,0.]
-    FilterParamsVecICWire:           [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
-    FilterFuncVecICTime:             ["x","x","x"]
-    FilterFuncVecICWire:             ["x","x","x"]
     FilterFuncVec:                   [0., 0., 0. ]
     UseCalibratedResponses:          "false"
-    FieldResponseFNameBase:          "t600_response"
-    FieldResponseHNameBase:          "t600_response"
-    FieldResponseFVersion:           ["v0.0","v0.0","v0.0"]
     DefaultEField:                   0.5
     DefaultTemperature:              87.5
     TimeScaleParams:                 [1.,1.,1.]
@@ -42,37 +42,19 @@ signalshapingservice_icarus:
 
     FieldResponseTools:
     {
-        FieldResponsePlane0:
-        {
-            tool_type: FieldResponse
-            Plane:                    0
-            SignalType:               0
-            FieldResponseFileName:    "t600_response"
-            FieldResponseFileVersion: "v0.0"
-            FieldResponseHistName:    "t600_response"
-        }
-
-        FieldResponsePlane1:
-        {
-            tool_type: FieldResponse
-            Plane:                    1
-            SignalType:               0
-            FieldResponseFileName:    "t600_response"
-            FieldResponseFileVersion: "v0.0"
-            FieldResponseHistName:    "t600_response"
-        }
-
-        FieldResponsePlane2:
-        {
-            tool_type: FieldResponse
-            Plane:                    2
-            SignalType:               1
-            FieldResponseFileName:    "t600_response"
-            FieldResponseFileVersion: "v0.0"
-            FieldResponseHistName:    "t600_response"
-        }
+        FieldResponsePlane0: @local::FieldResponseTool
+        FieldResponsePlane1: @local::FieldResponseTool
+        FieldResponsePlane2: @local::FieldResponseTool
     }
-
 }
+
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane0.Plane:      0
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane0.SignalType: 0
+
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane1.Plane:      1
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane1.SignalType: 0
+
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane2.Plane:      2
+signalshapingservice_icarus.FieldResponseTools.FieldResponsePlane2.SignalType: 1
 
 END_PROLOG

@@ -56,7 +56,7 @@ util::SignalShapingServiceICARUS::~SignalShapingServiceICARUS()
 // Reconfigure method.
 void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& pset)
 {
-    // Quick test...
+    // Implement the tools for handling the responses
     const fhicl::ParameterSet& fieldResponseTools = pset.get<fhicl::ParameterSet>("FieldResponseTools");
     
     for(const std::string& responseTool : fieldResponseTools.get_pset_names())
@@ -183,52 +183,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         in->Close();
         delete in;
     }
-    
-    // Load 2D filters for induced charge deconvolution (M. Mooney)
-    
-    fFilterFuncVecICTime.resize(geo->Nplanes());
-    fFilterFuncVecICWire.resize(geo->Nplanes());
-    mf::LogInfo("SignalShapingServiceICARUS") << "Getting 2D Filters from .fcl file" ;
-    
-    DoubleVec2 paramsICTime = pset.get< DoubleVec2 >("FilterParamsVecICTime");
-    fFilterFuncVecICTime = pset.get<std::vector<std::string> > ("FilterFuncVecICTime");
-    
-    fFilterTF1VecICTime.resize(geo->Nplanes());
-    fFilterICTimeMaxFreq.resize(geo->Nplanes());
-    fFilterICTimeMaxVal.resize(geo->Nplanes());
-    for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
-    {
-        std::string name = Form("FilterICTime_vw%02i_wr00", (int)planeIdx);
-        fFilterTF1VecICTime[planeIdx] = new TF1(name.c_str(), fFilterFuncVecICTime[planeIdx].c_str() );
-        for(size_t idx = 0; idx < paramsICTime[planeIdx].size(); idx++) {
-            fFilterTF1VecICTime[planeIdx]->SetParameter(idx, paramsICTime[planeIdx][idx]);
-            fFilterICTimeMaxFreq[planeIdx] = fFilterTF1VecICTime[planeIdx]->GetMaximumX();
-            fFilterICTimeMaxVal[planeIdx] = fFilterTF1VecICTime[planeIdx]->GetMaximum();
-        }
-    }
-    
-    DoubleVec2 paramsICWire = pset.get< DoubleVec2 >("FilterParamsVecICWire");
-    fFilterFuncVecICWire = pset.get<std::vector<std::string> > ("FilterFuncVecICWire");
-    
-    fFilterTF1VecICWire.resize(geo->Nplanes());
-    fFilterICWireMaxFreq.resize(geo->Nplanes());
-    fFilterICWireMaxVal.resize(geo->Nplanes());
-    for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
-    {
-        std::string name = Form("FilterICWire_vw%02i_wr00", (int)planeIdx);
-        fFilterTF1VecICWire[planeIdx] = new TF1(name.c_str(), fFilterFuncVecICWire[planeIdx].c_str() );
-        for(size_t idx = 0; idx < paramsICWire[planeIdx].size(); idx++)
-        {
-            fFilterTF1VecICWire[planeIdx]->SetParameter(idx, paramsICWire[planeIdx][idx]);
-            fFilterICWireMaxFreq[planeIdx] = fFilterTF1VecICWire[planeIdx]->GetMaximumX();
-            fFilterICWireMaxVal[planeIdx] = fFilterTF1VecICWire[planeIdx]->GetMaximum();
-        }
-    }
-    
-    fFilterScaleVecICTime = pset.get<DoubleVec>("FilterScaleVecICTime");
-    fFilterScaleVecICWire = pset.get<DoubleVec>("FilterScaleVecICWire");
-    fFilterNormVecIC = pset.get<DoubleVec>("FilterNormVecIC");
-    
+
     /*
      We allow different drift velocities.
      kDVel is ratio of what was used in LArG4 to field response simulation.
@@ -249,18 +204,11 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     mf::LogInfo("SignalShapingServiceICARUS") << " using the field response provided from a .root file " ;
     
     // constructor decides if initialized value is a path or an environment variable
-    std::string fileNameBase = pset.get<std::string>("FieldResponseFNameBase");
-    std::vector<std::string> version      = pset.get<std::vector<std::string> >("FieldResponseFVersion");
     fDefaultEField                 = pset.get<double>("DefaultEField");
     fDefaultTemperature            = pset.get<double>("DefaultTemperature");
     
     fTimeScaleParams               = pset.get<DoubleVec>("TimeScaleParams");
     fStretchFullResponse           = pset.get<bool>("StretchFullResponse");
-    
-    std::string histNameBase = pset.get<std::string>("FieldResponseHNameBase");
-    cet::search_path sp("FW_SEARCH_PATH");
-    
-    DoubleVec tOffset(geo->Nplanes(), 0.0);
     
     // calculate the time scale factor for this job
     if(!fUseCalibratedResponses) SetTimeScaleFactor();
@@ -949,68 +897,6 @@ int util::SignalShapingServiceICARUS::FieldResponseTOffset(unsigned int const ch
 
     auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
     return tpc_clock.Ticks(time_offset/1.e3);
-}
-
-//----------------------------------------------------------------------
-// Get convolution kernel from SignalShaping service for use in CalWire's
-// DeconvoluteInducedCharge() - added by M. Mooney
-const std::vector<TComplex>& util::SignalShapingServiceICARUS::GetConvKernel(unsigned int channel) const
-{
-    if(!fInit)
-        init();
-    
-    art::ServiceHandle<geo::Geometry> geom;
-    //geo::SigType_t sigtype = geom->SignalType(channel);
-    
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    // Return appropriate shaper.
-    
-    return fSignalShapingVec[0][planeIdx].ConvKernel();
-}
-
-//----------------------------------------------------------------------
-// Evaluate 2D filter used in induced charge deconvolution (M. Mooney)
-
-double util::SignalShapingServiceICARUS::Get2DFilterVal(size_t planeNum, size_t freqDimension, double binFrac) const
-{
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double ts = detprop->SamplingRate();
-    
-    double freq;
-    double filtVal;
-    double val;
-    if(freqDimension == 1) {
-        freq = fFilterScaleVecICTime.at(planeNum)*(500.0/ts)*2.0*(0.5-fabs(binFrac-0.5));
-        filtVal = fFilterTF1VecICTime.at(planeNum)->Eval(freq);
-        
-        if(freq < fFilterICTimeMaxFreq.at(planeNum))
-            val = fFilterICTimeMaxVal.at(planeNum);
-        else
-            val = filtVal;
-        
-        return val;
-    }
-    else if(freqDimension == 2) {
-        freq = fFilterScaleVecICWire.at(planeNum)*(0.5-fabs(binFrac-0.5));
-        filtVal = fFilterTF1VecICWire.at(planeNum)->Eval(freq);
-        
-        if(freq < fFilterICWireMaxFreq.at(planeNum))
-            val = fFilterICWireMaxVal.at(planeNum);
-        else
-            val = filtVal;
-        
-        return val;
-    }
-    else {
-        return 0.0;
-    }
-}
-
-//----------------------------------------------------------------------
-// Return 2D filter normalization, used in induced charge deconvolution (M. Mooney)
-double util::SignalShapingServiceICARUS::Get2DFilterNorm(size_t planeNum) const
-{
-    return fFilterNormVecIC.at(planeNum);
 }
 
 namespace util {

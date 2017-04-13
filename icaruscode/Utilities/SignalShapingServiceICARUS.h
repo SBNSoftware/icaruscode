@@ -124,10 +124,6 @@ namespace util {
         double GetRawNoise(unsigned int const channel) const ;
         double GetDeconNoise(unsigned int const channel) const;
         
-        const std::vector<TComplex>& GetConvKernel(unsigned int channel) const;  // M. Mooney
-        double Get2DFilterVal(size_t planeNum, size_t freqDimension, double binFrac) const;  // M. Mooney
-        double Get2DFilterNorm(size_t planeNum) const;  // M. Mooney
-        
         const util::SignalShaping& SignalShaping(size_t channel, size_t ktype = 0) const;
         
         int FieldResponseTOffset(unsigned int const channel, size_t ktype) const;
@@ -205,22 +201,7 @@ namespace util {
         std::vector<std::vector<TComplex> > fFilterVec;
         DoubleVec2                          fFilterParamsVec;
         DoubleVec                           fFilterWidthCorrectionFactor;  // a knob
-        
-        // Induced charge deconvolution additions (M. Mooney)
-        std::vector<TF1*>                   fFilterTF1VecICTime;
-        std::vector<std::string>            fFilterFuncVecICTime;
-        std::vector<TF1*>                   fFilterTF1VecICWire;
-        std::vector<std::string>            fFilterFuncVecICWire;
-        DoubleVec                           fFilterScaleVecICTime;
-        DoubleVec                           fFilterScaleVecICWire;
-        DoubleVec                           fFilterNormVecIC;
-        
-        std::vector<double>                 fFilterICTimeMaxFreq;
-        DoubleVec                           fFilterICTimeMaxVal;
-        
-        DoubleVec                           fFilterICWireMaxFreq;
-        DoubleVec                           fFilterICWireMaxVal;
-        
+
         bool                                fGetFilterFromHisto;   		///< Flag that allows to use a filter function from a histogram instead of the functional dependency
         
         double                              fDefaultEField;
