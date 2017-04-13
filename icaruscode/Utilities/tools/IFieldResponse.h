@@ -1,0 +1,40 @@
+///////////////////////////////////////////////////////////////////////
+///
+/// \file   IFieldResponse.h
+///
+/// \brief  This is the interface class for a tool to handle the field response
+///         It is assumed that the field response is described in a to be
+///         input histogram, the member
+///
+/// \author T. Usher
+///
+////////////////////////////////////////////////////////////////////////
+
+#ifndef IFieldResponse_H
+#define IFieldResponse_H
+
+#include "fhiclcpp/ParameterSet.h"
+
+namespace icarus_tool
+{
+    class IFieldResponse
+    {
+    public:
+        virtual ~IFieldResponse() noexcept = default;
+        
+        virtual void   configure(const fhicl::ParameterSet& pset) = 0;
+        
+        virtual size_t getPlane()             const = 0;
+        virtual size_t getNumBins()           const = 0;
+        virtual double getBinCenter(int bin)  const = 0;
+        virtual double getBinContent(int bin) const = 0;
+        virtual double getLowEdge()           const = 0;
+        virtual double getHighEdge()          const = 0;
+        virtual double getBinWidth()          const = 0;
+        virtual double getTOffset()           const = 0;
+        virtual double getIntegral()          const = 0;
+        virtual double interpolate(double x)  const = 0;
+    };
+}
+
+#endif
