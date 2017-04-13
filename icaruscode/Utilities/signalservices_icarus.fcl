@@ -16,7 +16,7 @@ signalshapingservice_icarus:
     DeconNorm:                       200.
     ADCPerPCAtLowestASICGain:        5500.
     DefaultDriftVelocity:            [ -1,-1,-1 ]
-    CalibResponseTOffset:            [ 1., 1., 1. ]
+    CalibResponseTOffset:            [ 0., 0., 0. ]
     NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
     Drift3DCorrVec:                  [ 1., 1., 1. ]
     DeconvPol:                       [ -1, 1, 1 ]
@@ -40,6 +40,38 @@ signalshapingservice_icarus:
     TimeScaleParams:                 [1.,1.,1.]
     StretchFullResponse:             "false"
 
+    FieldResponseTools:
+    {
+        FieldResponsePlane0:
+        {
+            tool_type: FieldResponse
+            Plane:                    0
+            SignalType:               0
+            FieldResponseFileName:    "t600_response"
+            FieldResponseFileVersion: "v0.0"
+            FieldResponseHistName:    "t600_response"
+        }
+
+        FieldResponsePlane1:
+        {
+            tool_type: FieldResponse
+            Plane:                    1
+            SignalType:               0
+            FieldResponseFileName:    "t600_response"
+            FieldResponseFileVersion: "v0.0"
+            FieldResponseHistName:    "t600_response"
+        }
+
+        FieldResponsePlane2:
+        {
+            tool_type: FieldResponse
+            Plane:                    2
+            SignalType:               1
+            FieldResponseFileName:    "t600_response"
+            FieldResponseFileVersion: "v0.0"
+            FieldResponseHistName:    "t600_response"
+        }
+    }
 
 }
 

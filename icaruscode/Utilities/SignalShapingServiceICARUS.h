@@ -96,6 +96,11 @@ using DoubleVec  = std::vector<double>;
 using DoubleVec2 = std::vector<DoubleVec>;
 using TH1FVec2   = std::vector<std::vector<TH1F*>>;
 
+namespace icarus_tool
+{
+    class IFieldResponse;
+}
+
 namespace util {
     class SignalShapingServiceICARUS {
     public:
@@ -142,6 +147,9 @@ namespace util {
     private:
         
         // Private configuration methods.
+        using IFieldResponsePtr       = std::unique_ptr<icarus_tool::IFieldResponse>;
+        using FieldResponseVec        = std::vector<IFieldResponsePtr>;
+        using PlaneToFieldResponseMap = std::map<size_t, FieldResponseVec>;
         
         // Post-constructor initialization.
         
@@ -154,7 +162,7 @@ namespace util {
         
         void SetFieldResponse(size_t ktype);
         
-        void SetElectResponse(size_t ktype, double shapingtime, double gain);  //changed to read different peaking time for different planes
+        void SetElectResponse(size_t ktype, size_t plane, double shapingtime, double gain);  //changed to read different peaking time for different planes
         
         // Calculate filter functions.
         void SetFilters();
@@ -166,8 +174,6 @@ namespace util {
         // drift velocity of electrons
         void SetResponseSampling(size_t ktype, int mode=0, size_t channel=0);
         
-        void SetFieldResponseTOffsets( const TH1F* resp, size_t ktype, size_t planeIdx);
-        
         // Fcl parameters.
         size_t                              fViewForNormalization;
         
@@ -177,17 +183,14 @@ namespace util {
         DoubleVec2                          fNoiseFactVec;       ///< RMS noise in ADCs for lowest gain setting
         DoubleVec                           fASICGainInMVPerFC;       ///< Cold electronics ASIC gain setting in mV/fC
         DoubleVec                           fDefaultDriftVelocity;  ///< Default drift velocity of electrons in cm/usec
-        DoubleVec2                          fFieldResponseTOffset;  ///< Time offset for field response in ns
         bool                                fUseCalibratedResponses;         //Flag to use Calibrated Responses for 70kV
         
         DoubleVec                           fCalibResponseTOffset; // calibrated time offset to align U/V/Y Signals
         
-        // test
+        // Field response tools
+        PlaneToFieldResponseMap             fPlaneToFieldResponseVec;
         
-        int                                 fNFieldBins[2]; // BR
-        double                              fFieldLowEdge[2];           ///< low edge of the field response histo (for test output)
-        double                              fFieldBin1Center[2];
-        double                              fFieldBinWidth[2];       ///<  Bin with of the input field response.
+        // test
         
         DoubleVec                           f3DCorrectionVec;  ///< correction factor to account for 3D path of electrons, 1 for each plane (default = 1.0)
         
@@ -219,8 +222,6 @@ namespace util {
         DoubleVec                           fFilterICWireMaxVal;
         
         bool                                fGetFilterFromHisto;   		///< Flag that allows to use a filter function from a histogram instead of the functional dependency
-        
-        TH1FVec2                            fFieldResponseHistVec;
         
         double                              fDefaultEField;
         double                              fDefaultTemperature;
