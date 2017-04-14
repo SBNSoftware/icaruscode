@@ -91,9 +91,7 @@ using DoubleVec2 = std::vector<DoubleVec>;
 
 namespace icarus_tool
 {
-    class IFieldResponse;
-    class IElectronicsResponse;
-    class IFilter;
+    class IResponse;
 }
 
 namespace util {
@@ -136,17 +134,9 @@ namespace util {
     private:
         
         // Private configuration methods.
-        using IFieldResponsePtr             = std::unique_ptr<icarus_tool::IFieldResponse>;
-        using FieldResponseVec              = std::vector<IFieldResponsePtr>;
-        using PlaneToFieldResponseMap       = std::map<size_t, FieldResponseVec>;
-        
-        using IElectronicsResponsePtr       = std::unique_ptr<icarus_tool::IElectronicsResponse>;
-        using ElectronicsResponseVec        = std::vector<IElectronicsResponsePtr>;
-        using PlaneToElectronicsResponseMap = std::map<size_t, ElectronicsResponseVec>;
-        
-        using IFilterPtr                    = std::unique_ptr<icarus_tool::IFilter>;
-        using FilterVec                     = std::vector<IFilterPtr>;
-        using PlaneToFilterMap              = std::map<size_t, FilterVec>;
+        using IResponsePtr             = std::unique_ptr<icarus_tool::IResponse>;
+        using ResponseVec              = std::vector<IResponsePtr>;
+        using PlaneToResponseMap       = std::map<size_t, ResponseVec>;
         
         // Post-constructor initialization.
         
@@ -178,9 +168,7 @@ namespace util {
         DoubleVec                           fCalibResponseTOffset; // calibrated time offset to align U/V/Y Signals
         
         // Field response tools
-        PlaneToFieldResponseMap             fPlaneToFieldResponseMap;
-        PlaneToElectronicsResponseMap       fPlaneToElectronicsResponseMap;
-        PlaneToFilterMap                    fPlaneToFilterMap;
+        PlaneToResponseMap                  fPlaneToResponseMap;
         
         // test
         

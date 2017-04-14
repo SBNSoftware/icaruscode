@@ -24,6 +24,7 @@
 #include "larcore/Geometry/PlaneGeo.h"
 
 #include "art/Utilities/make_tool.h"
+#include "tools/IResponse.h"
 #include "tools/IFieldResponse.h"
 #include "tools/IElectronicsResponse.h"
 #include "tools/IFilter.h"
@@ -64,9 +65,7 @@ util::SignalShapingServiceICARUS::~SignalShapingServiceICARUS()
 void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& pset)
 {
     // If called again, then we need to clear out the existing tools...
-    fPlaneToFieldResponseMap.clear();
-    fPlaneToElectronicsResponseMap.clear();
-    fPlaneToFilterMap.clear();
+    fPlaneToResponseMap.clear();
     
     // Implement the tools for handling the responses
     const fhicl::ParameterSet& responseTools = pset.get<fhicl::ParameterSet>("ResponseTools");
@@ -76,26 +75,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         const fhicl::ParameterSet& responseToolParamSet = responseTools.get<fhicl::ParameterSet>(responseTool);
         size_t                     planeIdx             = responseToolParamSet.get<size_t>("Plane");
         
-        if (responseTool.find("Field") != std::string::npos)
-        {
-            fPlaneToFieldResponseMap[planeIdx].push_back(art::make_tool<icarus_tool::IFieldResponse>(responseToolParamSet));
-        
-            std::cout << "Field response set up for plane " << fPlaneToFieldResponseMap[planeIdx].back()->getPlane() << std::endl;
-            std::cout << "   --> Bin width: " << fPlaneToFieldResponseMap[planeIdx].back()->getBinWidth() << std::endl;
-            std::cout << "   --> T offset: " << fPlaneToFieldResponseMap[planeIdx].back()->getTOffset() << " # bins: " << fPlaneToFieldResponseMap[planeIdx].back()->getNumBins() << std::endl;
-        }
-        else if (responseTool.find("Electronics") != std::string::npos)
-        {
-            fPlaneToElectronicsResponseMap[planeIdx].push_back(art::make_tool<icarus_tool::IElectronicsResponse>(responseToolParamSet));
-            
-            std::cout << "Electronics response set up for plane " << fPlaneToElectronicsResponseMap[planeIdx].back()->getPlane() << std::endl;
-        }
-        else
-        {
-            fPlaneToFilterMap[planeIdx].push_back(art::make_tool<icarus_tool::IFilter>(responseToolParamSet));
-            
-            std::cout << "Filter set up for plane " << fPlaneToFilterMap[planeIdx].back()->getPlane() << std::endl;
-        }
+        fPlaneToResponseMap[planeIdx].push_back(art::make_tool<icarus_tool::IResponse>(responseToolParamSet));
     }
     
     // add a comment here
@@ -224,8 +204,6 @@ void util::SignalShapingServiceICARUS::init()
         // re-initialize the FFT service for the request size
         art::ServiceHandle<util::LArFFT> fFFT;
         std::string options = fFFT->FFTOptions();
-        size_t fitbins = fFFT->FFTFitBins();
-        //size_t fftsize = fFFT->FFTSize();
         int fftsize = (int) fFFT->FFTSize();
         std::cout << " fftsize " << fftsize << std::endl;
         // Calculate field and electronics response functions.
@@ -238,80 +216,28 @@ void util::SignalShapingServiceICARUS::init()
         fFilterVec.resize(2);
         for(auto& filter : fFilterVec) filter.resize(geo->Nplanes());
         
+        // Get the normalization from the field response for the collection plane
+        double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
+        double weight   = 1. / integral;
+        
         for(size_t ktype=0;ktype<2;++ktype) {
             std::cout << std::endl << kset[ktype] << " setting functions:" << std::endl;
             int fftsize2 = (int) fFFT->FFTSize();
             std::cout << " fftsize2 " << fftsize2 << std::endl;
-            // call this first, so that the binning will be known to SetElectResponse
-            SetFieldResponse(ktype);
             
             std::cout << "Input field responses" << std::endl;
             
             for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
             {
-                // Make sure the FFT can handle this
-                int nFieldBins = fPlaneToFieldResponseMap.at(planeIdx).front()->getNumBins();
+                fPlaneToResponseMap[planeIdx].front().get()->setResponse(weight);
                 
-                if (nFieldBins*4>fftsize)
-                    fFFT->ReinitializeFFT( (size_t)nFieldBins*4, options, fitbins);
+                fSignalShapingVec[ktype][planeIdx] = fPlaneToResponseMap[planeIdx].front().get()->getSignalShaping();
                 
-                // handle the electronics response for this plane
-                icarus_tool::IElectronicsResponse* electronicsResponseTool = fPlaneToElectronicsResponseMap.at(planeIdx).front().get();
-                
-                electronicsResponseTool->setResponse(fftsize, fPlaneToFieldResponseMap.at(planeIdx).front()->getBinWidth());
-                
-                fElectResponse[ktype][planeIdx] = electronicsResponseTool->getResponseVec();
-                
-                // Set up the filter
-                icarus_tool::IFilter* filterTool = fPlaneToFilterMap.at(planeIdx).front().get();
-                
-                filterTool->setResponse(fftsize, f3DCorrectionVec[planeIdx], fTimeScaleFactor);
-                
-                fFilterVec[ktype][planeIdx] = filterTool->getResponseVec();
-
-                //Electronic response
-                std::cout << " ktype " << ktype << " Electonic response " << fElectResponse[ktype].size() << " bins" << std::endl;
-
-                if(fPrintResponses)
-                {
-                    std::cout << "Input field response for view " << planeIdx << ", " << (fFieldResponseVec[ktype][planeIdx]).size() << " bins" << std::endl;
-                    for(size_t i = 0; i<(fFieldResponseVec[ktype][planeIdx]).size(); ++i)
-                    {
-                        std::cout << fFieldResponseVec[ktype][planeIdx][i] << " " ;
-                        if((i+1)%10==0) std::cout << std::endl;
-                    }
-                    std::cout << std::endl;
-                }
-                std::cout << " adding response for ktype " << ktype << " plane " << planeIdx << std::endl;
-                (fSignalShapingVec[ktype][planeIdx]).AddResponseFunction(fFieldResponseVec[ktype][planeIdx]);
-                std::cout << " adding response for ktype " << ktype << " view " << planeIdx << std::endl;
-                (fSignalShapingVec[ktype][planeIdx]).AddResponseFunction(fElectResponse[ktype][planeIdx]);
-                (fSignalShapingVec[ktype][planeIdx]).save_response();
-                (fSignalShapingVec[ktype][planeIdx]).set_normflag(false);
-            }
-            // see if we get the same toffsets
-            SetResponseSampling(ktype);
-            
-            // Currently we only have fine binning "fFieldBinWidth"
-            // for the field and electronic responses.
-            // Now we are sampling the convoluted field-electronic response
-            // with the nominal sampling.
-            // We may consider to do the same for the filters as well.
-            if ((int)fftsize!=fFFT->FFTSize()){
-                std::string options = fFFT->FFTOptions();
-                int fitbins = fFFT->FFTFitBins();
-                fFFT->ReinitializeFFT( (size_t)fftsize, options, fitbins);
-            }
-            
-            // Configure deconvolution kernels.
-            for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
-            {
-                (fSignalShapingVec[ktype][planeIdx]).AddFilterFunction(fFilterVec[ktype][planeIdx]);
-                (fSignalShapingVec[ktype][planeIdx]).SetDeconvKernelPolarity( fDeconvPol.at(planeIdx));
-                (fSignalShapingVec[ktype][planeIdx]).CalculateDeconvKernel();
             }
         }
     }
+    
+    return;
 }
 
 void util::SignalShapingServiceICARUS::SetDecon(size_t fftsize, size_t channel)
@@ -329,9 +255,9 @@ void util::SignalShapingServiceICARUS::SetDecon(size_t fftsize, size_t channel)
         size_t planeIdx = geo->ChannelToWire(channel)[0].Plane;
         
         // Set up the filter
-        icarus_tool::IFilter* filterTool = fPlaneToFilterMap.at(planeIdx).front().get();
+        const icarus_tool::IFilter* filterTool = fPlaneToResponseMap.at(planeIdx).front().get()->getFilter();
         
-        filterTool->setResponse(fFFT->FFTSize(), f3DCorrectionVec[planeIdx], fTimeScaleFactor);
+//        filterTool->setResponse(fFFT->FFTSize(), f3DCorrectionVec[planeIdx], fTimeScaleFactor);
         
         fFilterVec[ktype][planeIdx] = filterTool->getResponseVec();
     }
@@ -377,7 +303,7 @@ void util::SignalShapingServiceICARUS::SetFieldResponse(size_t ktype)
     
     // Ticks in nanosecond
     // Calculate the normalization of the collection plane
-    double integral = fPlaneToFieldResponseMap.at(fPlaneForNormalization).front().get()->getIntegral();
+    double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
     double weight   = 1. / integral;
     
     std::cout << " Integral " << integral << " weight " << weight << std::endl;
@@ -393,9 +319,9 @@ void util::SignalShapingServiceICARUS::SetFieldResponse(size_t ktype)
         std::cout << " after scale corr " << timeFactor << std::endl;
         std::cout << " ktype " << ktype << " plane " << planeIdx << std::endl;
         
-        icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToFieldResponseMap.at(planeIdx).front().get();
+        const icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToResponseMap.at(planeIdx).front().get()->getFieldResponse();
         
-        fieldResponsePtr->setResponse(weight, f3DCorrectionVec[planeIdx], fTimeScaleFactor);
+//        fieldResponsePtr->setResponse(weight, f3DCorrectionVec[planeIdx], fTimeScaleFactor);
         
         fFieldResponseVec[ktype][planeIdx] = fieldResponsePtr->getResponseVec();
     }
@@ -460,7 +386,7 @@ void util::SignalShapingServiceICARUS::SetResponseSampling(size_t ktype, int mod
         const DoubleVec* pResp = &((fSignalShapingVec[ktype][planeIdx]).Response_save());
         
         // recover the field response tool for this plane
-        const icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToFieldResponseMap.at(planeIdx).front().get();
+        const icarus_tool::IFieldResponse* fieldResponsePtr = fPlaneToResponseMap.at(planeIdx).front().get()->getFieldResponse();
         
         double deltaInputTime = fieldResponsePtr->getBinWidth();
         int    nFieldBins     = fieldResponsePtr->getNumBins();
@@ -561,7 +487,7 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain     = fPlaneToElectronicsResponseMap.at(planeIdx).front()->getASICGain();
+    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICGain();
     
     return gain;
 }
@@ -572,7 +498,7 @@ double util::SignalShapingServiceICARUS::GetShapingTime(unsigned int  channel) c
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx     = geom->ChannelToWire(channel)[0].Plane;
-    double shaping_time = fPlaneToElectronicsResponseMap.at(planeIdx).front()->getASICShapingTime();
+    double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
 
     return shaping_time;
 }
@@ -582,8 +508,8 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
     
-    double gain         = fPlaneToElectronicsResponseMap.at(planeIdx).front()->getASICGain();
-    double shaping_time = fPlaneToElectronicsResponseMap.at(planeIdx).front()->getASICShapingTime();
+    double gain         = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICGain();
+    double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int    temp;
     
     if (std::abs(shaping_time - 0.5)<1e-6){
@@ -610,7 +536,7 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
     
-    double shaping_time = fPlaneToElectronicsResponseMap.at(planeIdx).front()->getASICShapingTime();
+    double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int temp;
     
     if (std::abs(shaping_time - 0.5)<1e-6){
@@ -638,7 +564,7 @@ int util::SignalShapingServiceICARUS::FieldResponseTOffset(unsigned int const ch
     
     try
     {
-        time_offset = fPlaneToFieldResponseMap.at(planeIdx).front()->getTOffset();
+        time_offset = fPlaneToResponseMap.at(planeIdx).front()->getFieldResponse()->getTOffset();
     }
     catch (...)
     {
