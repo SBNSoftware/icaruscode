@@ -43,6 +43,11 @@ simple_plugin( ElectronicsResponse  "tool"
 	       BASENAME_ONLY
         )
 
+simple_plugin( Filter  "tool"
+               ${icarus_tool_lib_list}
+	       BASENAME_ONLY
+        )
+
 
 install_headers()
 install_source()
