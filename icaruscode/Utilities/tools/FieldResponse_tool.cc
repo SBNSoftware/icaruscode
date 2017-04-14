@@ -11,13 +11,11 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-//#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-//#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-//#include "lardata/Utilities/LArFFT.h"
 #include "TFile.h"
 #include "TH1D.h"
 
 #include <fstream>
+#include <iomanip>
 
 namespace icarus_tool
 {
@@ -46,6 +44,9 @@ public:
     const std::vector<double>& getResponseVec()       const override {return fFieldResponseVec;}
     
 private:
+    // Utility routine for converting numbers to strings
+    std::string         numberToString(int number);
+    
     // Make sure we have been initialized
     bool                fIsValid;
     
@@ -88,7 +89,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fTimeCorrectionFactor     = pset.get<double>("TimeCorrectionFactor");
     
     // Recover the input field response histogram
-    std::string fileName = fFieldResponseFileName + Form("_vw%02i_", int(fThisPlane)) + fFieldResponseFileVersion + ".root";
+    std::string fileName = fFieldResponseFileName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
     
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
@@ -99,7 +100,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     if (!inputFile.IsOpen())
         throw cet::exception("FieldResponse::configure") << "Unable to open input file: " << fileName << std::endl;
     
-    std::string histName = fFieldResponseHistName + Form("_vw%02i_", int(fThisPlane)) + fFieldResponseFileVersion + ".root";
+    std::string histName = fFieldResponseHistName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
     
     fFieldResponseHist = (TH1D*)inputFile.Get(histName.c_str());
     
@@ -241,7 +242,15 @@ double FieldResponse::interpolate(double x) const
     
     return fFieldResponseHist->Interpolate(x);
 }
+
+std::string FieldResponse::numberToString(int number)
+{
+    std::ostringstream string;
     
+    string << std::setfill('0') << std::setw(2) << number;
+    
+    return string.str();
+}
 
     
 DEFINE_ART_CLASS_TOOL(FieldResponse)
