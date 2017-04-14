@@ -22,6 +22,15 @@ ElectronicsResponseTool:
     ADCPerPCAtLowestASICGain: 5500.
 }
 
+FilterTool:
+{
+    tool_type: Filter
+    Plane:                       0
+    FilterParametersVec:         [1., 0., 0.1 ]
+    FilterFunction:              0.
+    FilterWidthCorrectionFactor: 1.0
+}
+
 signalshapingservice_icarus:
 {
     FilterVec:                       [ 0., 0., 0. ]
@@ -34,10 +43,6 @@ signalshapingservice_icarus:
     NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
     Drift3DCorrVec:                  [ 1., 1., 1. ]
     DeconvPol:                       [ -1, 1, 1 ]
-    GetFilterFromHisto:              "false"
-    FilterParamsVec:                 [[1., 0., 0.1 ],[1., 0., 0.1 ],[1.,0.,0.1]]
-    FilterWidthCorrectionFactor:     [ 1.0, 1.0, 1.0 ]
-    FilterFuncVec:                   [0., 0., 0. ]
     UseCalibratedResponses:          "false"
     DefaultEField:                   0.5
     DefaultTemperature:              87.5
@@ -52,6 +57,9 @@ signalshapingservice_icarus:
         ElectronicsResponsePlane0: @local::ElectronicsResponseTool
         ElectronicsResponsePlane1: @local::ElectronicsResponseTool
         ElectronicsResponsePlane2: @local::ElectronicsResponseTool
+        FilterPlane0:              @local::FilterTool
+        FilterPlane1:              @local::FilterTool
+        FilterPlane2:              @local::FilterTool
     }
 }
 
@@ -67,5 +75,9 @@ signalshapingservice_icarus.ResponseTools.FieldResponsePlane2.SignalType:  1
 signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane0.Plane: 0
 signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane1.Plane: 1
 signalshapingservice_icarus.ResponseTools.ElectronicsResponsePlane2.Plane: 2
+
+signalshapingservice_icarus.ResponseTools.FilterPlane0.Plane:              0
+signalshapingservice_icarus.ResponseTools.FilterPlane1.Plane:              1
+signalshapingservice_icarus.ResponseTools.FilterPlane2.Plane:              2
 
 END_PROLOG

@@ -84,36 +84,30 @@
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Services/Registry/ServiceMacros.h"
 #include "lardata/Utilities/SignalShaping.h"
-#include "TF1.h"
 #include "TH1D.h"
-
-// LArSoft include
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/Geometry/TPCGeo.h"
-#include "larcore/Geometry/PlaneGeo.h"
 
 using DoubleVec  = std::vector<double>;
 using DoubleVec2 = std::vector<DoubleVec>;
-using TH1FVec2   = std::vector<std::vector<TH1F*>>;
 
 namespace icarus_tool
 {
     class IFieldResponse;
     class IElectronicsResponse;
+    class IFilter;
 }
 
 namespace util {
-    class SignalShapingServiceICARUS {
+    
+    class SignalShapingServiceICARUS
+    {
     public:
         
         // Constructor, destructor.
-        
         SignalShapingServiceICARUS(const fhicl::ParameterSet& pset,
                                        art::ActivityRegistry& reg);
         ~SignalShapingServiceICARUS();
         
         // Update configuration parameters.
-        
         void reconfigure(const fhicl::ParameterSet& pset);
         
         // Accessors.
@@ -130,15 +124,13 @@ namespace util {
         int FieldResponseTOffset(unsigned int const channel, size_t ktype) const;
         
         // Do convolution calcution (for simulation).
-        
         template <class T> void Convolute(size_t channel, std::vector<T>& func) const;
         
         // Do deconvolution calcution (for reconstruction).
-        
         template <class T> void Deconvolute(size_t channel, std::vector<T>& func) const;
         
-        void SetDecon(size_t fftsize, size_t channel);
-        double GetDeconNorm(){return fDeconNorm;};
+        void   SetDecon(size_t fftsize, size_t channel);
+        double GetDeconNorm() {return fDeconNorm;};
         
         
     private:
@@ -152,6 +144,10 @@ namespace util {
         using ElectronicsResponseVec        = std::vector<IElectronicsResponsePtr>;
         using PlaneToElectronicsResponseMap = std::map<size_t, ElectronicsResponseVec>;
         
+        using IFilterPtr                    = std::unique_ptr<icarus_tool::IFilter>;
+        using FilterVec                     = std::vector<IFilterPtr>;
+        using PlaneToFilterMap              = std::map<size_t, FilterVec>;
+        
         // Post-constructor initialization.
         
         void init() const{const_cast<SignalShapingServiceICARUS*>(this)->init();}
@@ -163,11 +159,6 @@ namespace util {
         
         void SetFieldResponse(size_t ktype);
         
-//        void SetElectResponse(size_t ktype, size_t plane, double shapingtime, double gain);  //changed to read different peaking time for different planes
-        
-        // Calculate filter functions.
-        void SetFilters();
-        
         // Attributes.
         bool fInit;               ///< Initialization flag
         
@@ -176,7 +167,7 @@ namespace util {
         void SetResponseSampling(size_t ktype, int mode=0, size_t channel=0);
         
         // Fcl parameters.
-        size_t                              fViewForNormalization;
+        size_t                              fPlaneForNormalization;
         
         double                              fDeconNorm;
         
@@ -187,8 +178,9 @@ namespace util {
         DoubleVec                           fCalibResponseTOffset; // calibrated time offset to align U/V/Y Signals
         
         // Field response tools
-        PlaneToFieldResponseMap             fPlaneToFieldResponseVec;
-        PlaneToElectronicsResponseMap       fPlaneToElectronicsResponseVec;
+        PlaneToFieldResponseMap             fPlaneToFieldResponseMap;
+        PlaneToElectronicsResponseMap       fPlaneToElectronicsResponseMap;
+        PlaneToFilterMap                    fPlaneToFilterMap;
         
         // test
         
@@ -198,20 +190,11 @@ namespace util {
         bool                                fStretchFullResponse;
         
         std::vector<int>                    fDeconvPol;         ///< switch for DeconvKernel normalization sign (+ -> max pos ADC, - -> max neg ADC). Entry 0,1,2 = U,V,Y plane settings
-        std::vector<TF1*>                   fFilterTF1Vec;     ///< Vector of Parameterized filter functions
-        std::vector<std::string>            fFilterFuncVec;
-        std::vector<std::vector<TComplex> > fFilterVec;
-        DoubleVec2                          fFilterParamsVec;
-        DoubleVec                           fFilterWidthCorrectionFactor;  // a knob
-
-        bool                                fGetFilterFromHisto;   		///< Flag that allows to use a filter function from a histogram instead of the functional dependency
         
         double                              fDefaultEField;
         double                              fDefaultTemperature;
         
         DoubleVec                           fTimeScaleParams;
-        
-        std::vector<TH1D*>                  fFilterHistVec;
         
         // Following attributes hold the convolution and deconvolution kernels
         
@@ -224,8 +207,11 @@ namespace util {
         
         std::vector<DoubleVec2 >            fElectResponse;
         
+        // Filter
+        
+        std::vector<std::vector<std::vector<TComplex>>> fFilterVec;
+        
         bool                                fPrintResponses;
-        bool                                fManualInterpolation;
         
         // some diagnostic histograms
         
