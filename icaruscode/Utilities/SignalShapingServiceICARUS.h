@@ -106,29 +106,29 @@ namespace util {
         ~SignalShapingServiceICARUS();
         
         // Update configuration parameters.
-        void reconfigure(const fhicl::ParameterSet& pset);
+        void                       reconfigure(const fhicl::ParameterSet& pset);
         
         // Accessors.
-        DoubleVec2 GetNoiseFactVec()              { return fNoiseFactVec; }
+        DoubleVec2                 GetNoiseFactVec() { return fNoiseFactVec; }
         
-        double GetASICGain(unsigned int const channel) const;
-        double GetShapingTime(unsigned int const channel) const;
+        double                     GetASICGain(unsigned int const channel)            const;
+        double                     GetShapingTime(unsigned int const channel)         const;
         
-        double GetRawNoise(unsigned int const channel) const ;
-        double GetDeconNoise(unsigned int const channel) const;
+        double                     GetRawNoise(unsigned int const channel)            const ;
+        double                     GetDeconNoise(unsigned int const channel)          const;
         
-        const util::SignalShaping& SignalShaping(size_t channel, size_t ktype = 0) const;
+        const util::SignalShaping& SignalShaping(size_t channel)                      const;
         
-        int FieldResponseTOffset(unsigned int const channel, size_t ktype) const;
+        int                        FieldResponseTOffset(unsigned int const channel)   const;
         
         // Do convolution calcution (for simulation).
-        template <class T> void Convolute(size_t channel, std::vector<T>& func) const;
+        template <class T> void    Convolute(size_t channel, std::vector<T>& func)    const;
         
         // Do deconvolution calcution (for reconstruction).
-        template <class T> void Deconvolute(size_t channel, std::vector<T>& func) const;
+        template <class T> void     Deconvolute(size_t channel, std::vector<T>& func) const;
         
-        void   SetDecon(size_t fftsize, size_t channel);
-        double GetDeconNorm() {return fDeconNorm;};
+        void                        SetDecon(size_t fftsize, size_t channel);
+        double                      GetDeconNorm() {return fDeconNorm;};
         
         
     private:
@@ -139,71 +139,24 @@ namespace util {
         using PlaneToResponseMap       = std::map<size_t, ResponseVec>;
         
         // Post-constructor initialization.
-        
         void init() const{const_cast<SignalShapingServiceICARUS*>(this)->init();}
         void init();
-        
-        // Calculate response functions.
-        // Copied from SimWireICARUS.
-        void SetTimeScaleFactor();
-        
-        void SetFieldResponse(size_t ktype);
         
         // Attributes.
         bool fInit;               ///< Initialization flag
         
-        // Sample the response function, including a configurable
-        // drift velocity of electrons
-        void SetResponseSampling(size_t ktype, int mode=0, size_t channel=0);
-        
         // Fcl parameters.
         size_t                              fPlaneForNormalization;
-        
         double                              fDeconNorm;
-        
         DoubleVec2                          fNoiseFactVec;       ///< RMS noise in ADCs for lowest gain setting
-        DoubleVec                           fDefaultDriftVelocity;  ///< Default drift velocity of electrons in cm/usec
-        bool                                fUseCalibratedResponses;         //Flag to use Calibrated Responses for 70kV
-        
         DoubleVec                           fCalibResponseTOffset; // calibrated time offset to align U/V/Y Signals
+        double                              fDefaultEField;
+        double                              fDefaultTemperature;
+        DoubleVec                           fTimeScaleParams;
+        bool                                fPrintResponses;
         
         // Field response tools
         PlaneToResponseMap                  fPlaneToResponseMap;
-        
-        // test
-        
-        DoubleVec                           f3DCorrectionVec;  ///< correction factor to account for 3D path of electrons, 1 for each plane (default = 1.0)
-        
-        double                              fTimeScaleFactor;
-        bool                                fStretchFullResponse;
-        
-        std::vector<int>                    fDeconvPol;         ///< switch for DeconvKernel normalization sign (+ -> max pos ADC, - -> max neg ADC). Entry 0,1,2 = U,V,Y plane settings
-        
-        double                              fDefaultEField;
-        double                              fDefaultTemperature;
-        
-        DoubleVec                           fTimeScaleParams;
-        
-        // Following attributes hold the convolution and deconvolution kernels
-        
-        std::vector<std::vector<util::SignalShaping> > fSignalShapingVec;
-        // Field response.
-        
-        std::vector<DoubleVec2 >            fFieldResponseVec;
-        
-        // Electronics response.
-        
-        std::vector<DoubleVec2 >            fElectResponse;
-        
-        // Filter
-        
-        std::vector<std::vector<std::vector<TComplex>>> fFilterVec;
-        
-        bool                                fPrintResponses;
-        
-        // some diagnostic histograms
-        
-        bool fHistDoneF[3];
     };
 }
 
@@ -214,10 +167,10 @@ namespace util {
 // Do convolution.
 template <class T> inline void util::SignalShapingServiceICARUS::Convolute(size_t channel, std::vector<T>& func) const
 {
-    SignalShaping(channel, 0).Convolute(func);
+    SignalShaping(channel).Convolute(func);
     
     //negative number
-    int time_offset = FieldResponseTOffset(channel,0);
+    int time_offset = FieldResponseTOffset(channel);
     
     std::vector<T> temp;
     if (time_offset <=0){
@@ -236,10 +189,9 @@ template <class T> inline void util::SignalShapingServiceICARUS::Convolute(size_
 // Do deconvolution.
 template <class T> inline void util::SignalShapingServiceICARUS::Deconvolute(size_t channel, std::vector<T>& func) const
 {
-    size_t ktype = 1;
-    SignalShaping(channel, ktype).Deconvolute(func);
+    SignalShaping(channel).Deconvolute(func);
     
-    int time_offset = FieldResponseTOffset(channel,ktype);
+    int time_offset = FieldResponseTOffset(channel);
     
     std::vector<T> temp;
     if (time_offset <=0){

@@ -45,21 +45,15 @@ ResponseTool:
 
 signalshapingservice_icarus:
 {
-    FilterVec:                       [ 0., 0., 0. ]
     PlaneForNormalization:           2
     PrintResponses:                  "false"
-    IncludeMisconfiguredU:           "false"
     DeconNorm:                       200.
-    DefaultDriftVelocity:            [ -1,-1,-1 ]
     CalibResponseTOffset:            [ 0., 0., 0. ]
     NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
-    Drift3DCorrVec:                  [ 1., 1., 1. ]
-    DeconvPol:                       [ -1, 1, 1 ]
     UseCalibratedResponses:          "false"
     DefaultEField:                   0.5
     DefaultTemperature:              87.5
     TimeScaleParams:                 [1.,1.,1.]
-    StretchFullResponse:             "false"
 
     ResponseTools:
     {
