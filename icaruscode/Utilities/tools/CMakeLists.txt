@@ -33,10 +33,15 @@ set( icarus_tool_lib_list
     )
 
 
-simple_plugin( FieldResponse  "tool"
+simple_plugin( Response  "tool"
                ${icarus_tool_lib_list}
 	       BASENAME_ONLY
         )
+
+simple_plugin( FieldResponse  "tool"
+               ${icarus_tool_lib_list}
+               BASENAME_ONLY
+             )
 
 simple_plugin( ElectronicsResponse  "tool"
                ${icarus_tool_lib_list}
