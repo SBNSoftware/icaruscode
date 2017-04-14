@@ -2,9 +2,8 @@
 ///
 /// \file   IElectronicsResponse.h
 ///
-/// \brief  This is the interface class for a tool to handle the field response
-///         It is assumed that the field response is described in a to be
-///         input histogram, the member
+/// \brief  This is the interface class for a tool to handle the
+///         electronics response.
 ///
 /// \author T. Usher
 ///

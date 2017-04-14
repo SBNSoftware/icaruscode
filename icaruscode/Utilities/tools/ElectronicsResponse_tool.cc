@@ -64,6 +64,9 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = detprop->SamplingRate();
     
+    // what is this number supposed to be?
+    samplingRate = 1000.;
+    
     fElectronicsResponseVec.resize(numBins, 0.);
     
     // This note from Filippo:
