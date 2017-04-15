@@ -265,7 +265,7 @@ int util::SignalShapingServiceICARUS::FieldResponseTOffset(unsigned int const ch
 
     auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
     
-    return tpc_clock.Ticks(time_offset/1.e3);
+    return tpc_clock.Ticks(time_offset / 1.e3);
 }
 
 namespace util {

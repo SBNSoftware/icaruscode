@@ -61,11 +61,11 @@ void ElectronicsResponse::configure(const fhicl::ParameterSet& pset)
     
 void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
 {
-    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = detprop->SamplingRate();
+//    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+//    double      samplingRate = detprop->SamplingRate();
+    double      timeCorrect  = 1.e-3;
     
-    // what is this number supposed to be?
-    samplingRate = 1000.;
+    binWidth *= timeCorrect;
     
     fElectronicsResponseVec.resize(numBins, 0.);
     
@@ -82,7 +82,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
     {
-        double time = double(timeIdx) * binWidth / samplingRate;
+        double time = double(timeIdx) * binWidth;
         
         fElectronicsResponseVec.at(timeIdx) = time / fASICShapingTime * exp(-time / fASICShapingTime);
     }

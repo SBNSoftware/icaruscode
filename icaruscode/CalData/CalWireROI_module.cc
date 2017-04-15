@@ -261,7 +261,12 @@ void CalWireROI::produce(art::Event& evt)
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else evt.getByLabel(fDigitModuleLabel, digitVecHandle);
 
-    if (!digitVecHandle->size())  return;
+    if (!digitVecHandle->size())
+    {
+        evt.put(std::move(wirecol), fSpillName);
+        evt.put(std::move(WireDigitAssn), fSpillName);
+        return;
+    }
     
     raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
 
@@ -300,8 +305,6 @@ void CalWireROI::produce(art::Event& evt)
             
             std::vector<geo::WireID> wids     = fGeometry.ChannelToWire(channel);
             size_t                   thePlane = wids[0].Plane;
-            
-            std::cout << "CalWireROI-> channel: " << channel << ", plane: " << thePlane << ", wire: " << wids[0].Wire << ", size: " << dataSize << std::endl;
             
             // Set up the deconvolution and the vector to deconvolve
           
@@ -532,8 +535,6 @@ void CalWireROI::produce(art::Event& evt)
                 }
             }
         } // end if not a bad channel
-        
-        std::cout << "   --> # roi's: " << ROIVec.size() << std::endl;
 
         // create the new wire directly in wirecol
         wirecol->push_back(recob::WireCreator(std::move(ROIVec),*digitVec).move());
@@ -564,8 +565,6 @@ void CalWireROI::produce(art::Event& evt)
             }
         }
     }
-    
-    std::cout << "wireCol size: " << wirecol->size() << std::endl;
     
     evt.put(std::move(wirecol), fSpillName);
     evt.put(std::move(WireDigitAssn), fSpillName);

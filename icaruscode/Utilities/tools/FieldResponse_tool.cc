@@ -105,34 +105,26 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fFieldResponseHist = (TH1D*)inputFile.Get(histName.c_str());
     
     // Calculation of the T0 offset depends on the signal type
+    int binOfInterest = fFieldResponseHist->GetMinimumBin();
+    
     // For collection planes it is as simple as finding the maximum bin
-    if (fSignalType == geo::kCollection)
+    if (fSignalType == geo::kCollection) binOfInterest = fFieldResponseHist->GetMaximumBin();
+    
+    // Do a backwards search to find the first positive bin
+    while(1)
     {
-        int binWithMaxValue = fFieldResponseHist->GetMaximumBin();
-        
-        fT0Offset = fFieldResponseHist->GetXaxis()->GetBinCenter(binWithMaxValue) - fFieldResponseHist->GetXaxis()->GetBinCenter(1);
-    }
-    else
-    {
-        // The technique below from Leon Rochester
-        int binWithMinimumValue = fFieldResponseHist->GetMinimumBin();
-        
-        // Do a search backward to find the zero point cross over
-        while(1)
-        {
-            // Did we go too far?
-            if (binWithMinimumValue < 0)
-                throw cet::exception("FieldResponse::configure") << "Cannot find zero-point crossover for induction response!" << std::endl;
-                
-            double content = fFieldResponseHist->GetBinContent(binWithMinimumValue);
+        // Did we go too far?
+        if (binOfInterest < 0)
+            throw cet::exception("FieldResponse::configure") << "Cannot find zero-point crossover for induction response!" << std::endl;
             
-            if (content > 0.) break;
-            
-            binWithMinimumValue--;
-        }
+        double content = fFieldResponseHist->GetBinContent(binOfInterest);
         
-        fT0Offset = fFieldResponseHist->GetXaxis()->GetBinCenter(binWithMinimumValue) - fFieldResponseHist->GetXaxis()->GetBinCenter(1);
+        if (content > 0.) break;
+        
+        binOfInterest--;
     }
+    
+    fT0Offset = -(fFieldResponseHist->GetXaxis()->GetBinCenter(binOfInterest) - fFieldResponseHist->GetXaxis()->GetBinCenter(1)) * fTimeCorrectionFactor;
     
     fIsValid = true;
     

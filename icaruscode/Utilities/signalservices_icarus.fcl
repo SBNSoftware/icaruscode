@@ -27,7 +27,7 @@ FilterTool:
     tool_type: Filter
     Plane:                       0
     FilterParametersVec:         [1., 0., 0.1 ]
-    FilterFunction:              0.
+    FilterFunction:              "(x>0.0)*gaus"
     FilterWidthCorrectionFactor: 1.0
 }
 

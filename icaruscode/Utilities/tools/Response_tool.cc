@@ -140,7 +140,7 @@ void Response::setResponse(double weight)
     std::vector<double> SamplingTime( fftSize, 0. );
     
     for ( size_t itime = 0; itime < fftSize; itime++ )
-        SamplingTime[itime] = (1.*itime) * detprop->SamplingRate();
+        SamplingTime[itime] = double(itime) * detprop->SamplingRate();
     
     // Sampling
     // we want to implement new scheme (fStretchFullResponse==false) while retaining the old
@@ -157,7 +157,7 @@ void Response::setResponse(double weight)
     
     std::vector<double> InputTime(nticks_input, 0. );
     for (size_t itime = 0; itime < nticks_input; itime++ )
-        InputTime[itime] = (1.*itime) * deltaInputTime*timeFactor;
+        InputTime[itime] = double(itime) * deltaInputTime * timeFactor;
     
     std::vector<double> SamplingResp(fftSize, 0. );
     
