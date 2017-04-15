@@ -176,7 +176,9 @@ SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
 //-------------------------------------------------
 SimWireICARUS::~SimWireICARUS()
 {
+    std::cout << " before deleting noisehist " << std::endl;
     delete fNoiseHist;
+    std::cout << " after deleting noisehist " << std::endl;
 }
 
  //-------------------------------------------------
@@ -213,6 +215,19 @@ SimWireICARUS::~SimWireICARUS()
          cet::search_path sp("FW_SEARCH_PATH");
          sp.find_file(p.get<std::string>("NoiseFileFname"), fNoiseFileFname);
      }
+     std::cout << "fNoiseFileFname " << fNoiseFileFname << std::endl;
+     TFile * in=new TFile(fNoiseFileFname.c_str(),"READ");
+     TH1D * temp=(TH1D *)in->Get(fNoiseHistoName.c_str());
+     if(temp!=NULL)
+     {
+         fNoiseHist=new TH1D(fNoiseHistoName.c_str(),fNoiseHistoName.c_str(),temp->GetNbinsX(),0,temp->GetNbinsX());
+         temp->Copy(*fNoiseHist);
+     }
+     else
+         throw cet::exception("SimWireMicroBooNE") << "Could not find noise histogram in Root file\n";
+     in->Close();
+     delete in;
+     delete temp;
      //detector properties information
      auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
      fSampleRate    = detprop->SamplingRate();
@@ -351,7 +366,7 @@ void SimWireICARUS::produce(art::Event& evt)
     // per plane and scaling for YZ dependent responses 
     // or data driven field responses
     art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
-//    std::vector<std::vector<size_t> > N_RESPONSES = sss->GetNActiveResponses();
+    std::vector<std::vector<size_t> > N_RESPONSES = sss->GetNActiveResponses();
     
     //--------------------------------------------------------------------
     //
@@ -391,10 +406,9 @@ void SimWireICARUS::produce(art::Event& evt)
     for(size_t channel = 0; channel < N_CHANNELS; channel++)
     {
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-//        size_t                   plane  = widVec[0].Plane;
+        size_t                   plane  = widVec[0].Plane;
         
-        //responseParamsVec[channel].resize(N_RESPONSES[0][plane]);
-        responseParamsVec[channel].resize(1);
+        responseParamsVec[channel].resize(N_RESPONSES[0][plane]);
     }
 
     //--------------------------------------------------------------------                                                                                                                           
@@ -409,7 +423,7 @@ void SimWireICARUS::produce(art::Event& evt)
 	for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
     {
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-//        size_t                   plane  = widVec[0].Plane;
+        size_t                   plane  = widVec[0].Plane;
 
         // get the sim::SimChannel for this channel
         const sim::SimChannel* sc = channels.at(channel);
@@ -438,13 +452,12 @@ void SimWireICARUS::produce(art::Event& evt)
             if(raw_digit_index <= 0 || raw_digit_index >= (int)fNTicks) continue;
 
             // here fill ResponseParams... all the wires!
-            size_t wireIndex(0);
-//            for(int wire = -(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane]; ++wire)
-//            {
-//                auto wireIndex = (size_t)wire+N_RESPONSES[0][plane] - 1;
-//                if((int)wireIndex == (int)N_RESPONSES[0][plane]) continue;
+            for(int wire = -(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane]; ++wire)
+            {
+                auto wireIndex = (size_t)wire+N_RESPONSES[0][plane] - 1;
+                if((int)wireIndex == (int)N_RESPONSES[0][plane]) continue;
                 responseParamsVec[channel][wireIndex].emplace_back(new ResponseParams(charge, raw_digit_index));
-//            } // loop over wires
+            } // loop over wires
         } // loop over tdcs
     } // loop over channels
 
@@ -465,11 +478,11 @@ void SimWireICARUS::produce(art::Event& evt)
     int step = 0;
 
     // various constants: not fcl-configurable
-//    double slope0[5] = { 0., 2.1575, 6.4725 , 13.946, 40.857};
-//    double t0[5] =     { 4450., 6107., 6170., 6305., 6695. };
-//    double wire0[3] =  { 337., 332., -0.7 };
-//    double factor[3] = { 2.0, 2.0, 1.0 };
-//    int tickCut = 250;
+    double slope0[5] = { 0., 2.1575, 6.4725 , 13.946, 40.857};
+    double t0[5] =     { 4450., 6107., 6170., 6305., 6695. };
+    double wire0[3] =  { 337., 332., -0.7 };
+    double factor[3] = { 2.0, 2.0, 1.0 };
+    int tickCut = 250;
 
         // loop over the collected responses
     //   this is needed because hits generate responses on adjacent wires!
@@ -489,7 +502,10 @@ void SimWireICARUS::produce(art::Event& evt)
 	
         //use channel number to set some useful numbers
         std::vector<geo::WireID> widVec  = fGeometry.ChannelToWire(channel);
+        size_t                   wireNum = widVec[0].Wire;
         size_t                   plane   = widVec[0].Plane;
+        
+        auto& thisChan = responseParamsVec[channel];
       
         //Get pedestal with random gaussian variation
         CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
@@ -499,12 +515,13 @@ void SimWireICARUS::produce(art::Event& evt)
         double noise_factor;
         auto   tempNoiseVec = sss->GetNoiseFactVec();
         double shapingTime  = sss->GetShapingTime(0);
-        double asicGain     = sss->GetASICGain(0);
+        //double asicGain     = sss->GetASICGain(0);
       
         if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
         {
             noise_factor  = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
-            noise_factor *= asicGain/4.7;
+            //noise_factor *= asicGain/4.7;
+           // std::cout << "  noise factor " << noise_factor << std::endl;
           
         }
         else {//Throw exception...
@@ -525,10 +542,13 @@ void SimWireICARUS::produce(art::Event& evt)
    
         //Add Noise to NoiseDist Histogram
         //geo::SigType_t sigtype = fGeometry.SignalType(chan);
-        geo::View_t vw = fGeometry.View(channel);
+        //geo::View_t vw = fGeometry.View(channel);
         if(fMakeNoiseDists) {
-            for (size_t i=step; i < fNTimeSamples; i+=1000) {
-                fNoiseDist[vw]->Fill(noisetmp[i]);
+            //int plane=fGeometry.plane();
+           //std::cout << " filling noisedist plane " << plane << " step " << step << std::endl;
+            for (size_t i=0; i < fNTimeSamples; i+=1) {
+             //  std::cout << " filling noisetmp " << noisetmp[i] << std::endl;
+                fNoiseDist[plane]->Fill(noisetmp[i]);
             }
         }
         ++step;
@@ -543,28 +563,29 @@ void SimWireICARUS::produce(art::Event& evt)
             continue;
         }
       
-
-//        size_t                   wireNum = widVec[0].Wire;
-        auto& thisChan = responseParamsVec[channel];
- 
+        
         //Channel is good, so fill the chargeWork vector with charges
-//        int tick0 = 0;
-//        if(fSample>=0) tick0 = t0[fSample] - factor[plane]*slope0[fSample]*(wireNum-wire0[plane]) + 0.5;
-
-        size_t wireIndex = 0;
-//        for(int wire=-(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane];++wire)
-//        {
-//            size_t wireIndex = (size_t)(wire + (int)N_RESPONSES[0][plane] - 1);
+        int tick0 = 0;
+        if(fSample>=0) tick0 = t0[fSample] - factor[plane]*slope0[fSample]*(wireNum-wire0[plane]) + 0.5;
+        //std::cout << " before convoluting charge " << std::endl;
+        //std::cout << " plane " << plane << std::endl;
+        //std::cout << " nresp " << N_RESPONSES[0][plane] << std::endl;
+        for(int wire=-(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane];++wire)
+        {
+            size_t wireIndex = (size_t)(wire + (int)N_RESPONSES[0][plane] - 1);
             
-//            if((int)wireIndex >= (int)N_RESPONSES[0][plane]) continue;
+            if((int)wireIndex >= (int)N_RESPONSES[0][plane]) continue;
 
             auto & thisWire = thisChan[wireIndex];
+            if(!thisWire.empty())
+            std::cout << " non-empty wire " << thisWire.empty() << std::endl;
             if(thisWire.empty()) continue;
             std::fill(tempWork.begin(), tempWork.end(), 0.);
 
             for(auto& item : thisWire)
             {
                 auto charge = item->getCharge();
+                std::cout << " convoluting charge " << charge << std::endl;
                 if(charge==0) continue;
                 auto raw_digit_index = item->getTime();
                 if(raw_digit_index > 0 && raw_digit_index < fNTicks) {
@@ -574,31 +595,31 @@ void SimWireICARUS::produce(art::Event& evt)
           
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
-            sss->Convolute(channel, tempWork);
+            sss->Convolute(channel, fabs(wire), tempWork);
 	
             // this is to generate some plots
-//            if(plane==1 && wireNum==360 && fSample>=0) {
-//                if(abs(wire)>2) continue;
-//                size_t index = wire + 2;
-//                bool printWF = false;
-//                if(printWF)std::cout << "printout of waveform, index = " << index << std::endl;
-//                for(int i=tick0-tickCut; i<tick0+tickCut;++i) {
-//                    double val = tempWork[i];
-//                    if(printWF) {
-//                        if((i+1)%10==0) std::cout << std::endl << i << " " << i-tick0 << " ";
-//                        std::cout << val << " " ;
-//                    }
-//                    hTest[index]->Fill(i*1.-tick0, val);
-//                }
-//                if(printWF) std::cout << std::endl;
-//            }
+            if(plane==1 && wireNum==360 && fSample>=0) {
+                if(abs(wire)>2) continue;
+                size_t index = wire + 2;
+                bool printWF = false;
+                if(printWF)std::cout << "printout of waveform, index = " << index << std::endl;
+                for(int i=tick0-tickCut; i<tick0+tickCut;++i) {
+                    double val = tempWork[i];
+                    if(printWF) {
+                        if((i+1)%10==0) std::cout << std::endl << i << " " << i-tick0 << " ";
+                        std::cout << val << " " ;
+                    }
+                    hTest[index]->Fill(i*1.-tick0, val);
+                }
+                if(printWF) std::cout << std::endl;
+            }
 
             // now add the result into the "charge" vector
             for(size_t bin = 0; bin < fNTicks; ++bin)
             {
                 chargeWork[bin] += tempWork[bin];
             }
-//        }//end loop over response wires
+        }//end loop over response wires
 
 
         // add this digit to the collection;
@@ -612,6 +633,9 @@ void SimWireICARUS::produce(art::Event& evt)
         raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
         rd.SetPedestal(ped_mean);
         digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
+     // std::cout << " after filling rawdigit " << std::endl;
+        // for(unsigned int i = 0; i < fNTimeSamples; ++i)
+         //    std::cout << " i "<<  i << " rd " << rd.ADC(i) << std::endl;
     }// end of 2nd loop over channels
 
  
@@ -628,6 +652,7 @@ void SimWireICARUS::produce(art::Event& evt)
     for(unsigned int i = 0; i < fNTimeSamples; ++i) {
 
        float adcval = noisevec[i] + chargevec[i] + ped_mean;
+   //    std::cout << " i "<<  i << " noisevec " << noisevec[i] << " chargevec " << chargevec[i] << " adcval " << adcval << std::endl;
 
       //allow for ADC saturation
       if ( adcval > adcsaturation )
@@ -643,6 +668,11 @@ void SimWireICARUS::produce(art::Event& evt)
     // if raw::kNone is selected nothing happens to adcvec
     // This shrinks adcvec, if fCompression is not kNone.
     raw::Compress(adcvec, fCompression);
+      
+     // for(unsigned int i = 0; i < fNTimeSamples; ++i) {
+     //float adcval = noisevec[i] + chargevec[i] + ped_mean;
+      //    std::cout << " after compression i "<<  i << " noisevec " << noisevec[i] << " chargevec " << chargevec[i] << " adcval " << adcval << std::endl;
+     // }
   }
 
 
@@ -667,9 +697,9 @@ void SimWireICARUS::produce(art::Event& evt)
   void SimWireICARUS::GenNoiseInFreq(std::vector<float> &noise, double noise_factor) const
   {
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-   // CLHEP::HepRandomEngine &engine = rng->getEngine("noise");
-    //CLHEP::RandFlat flat(engine,-1,1);
-
+    CLHEP::HepRandomEngine &engine = rng->getEngine("noise");
+    CLHEP::RandFlat flat(engine,-1,1);
+    //  std::cout << " GenNoiseInFreq " << std::endl;
     if(noise.size() != fNTicks)
       throw cet::exception("SimWireICARUS")
       << "\033[93m"
@@ -690,7 +720,7 @@ void SimWireICARUS::produce(art::Event& evt)
     double binWidth = 1.0/(fNTicks*fSampleRate*1.0e-6);
     for(size_t i=0; i< fNTicks/2+1; ++i){
       // exponential noise spectrum
-      //flat.fireArray(2,rnd,0,1);
+      flat.fireArray(2,rnd,0,1);
       //if not from histo or in time --> then hardcoded freq. spectrum
       if( !fGetNoiseFromHisto )
       {
@@ -705,12 +735,17 @@ void SimWireICARUS::produce(art::Event& evt)
       
       else
       {
+        // std::cout << " i+1 " << i+1 << " bin content " << fNoiseHist->GetBinContent(i+1) << std::endl;
         // histogram starts in bin 1!
         pval = fNoiseHist->GetBinContent(i+1)*((1-fNoiseRand)+2*fNoiseRand*rnd[0])*noise_factor;
+         // std::cout << " pval " << pval << std::endl;
         //mf::LogInfo("SimWireICARUS")  << " pval: " << pval;
       }
       phase = rnd[1]*2.*TMath::Pi();
+       // std::cout << " phase " << phase << std::endl;
       TComplex tc(pval*cos(phase),pval*sin(phase));
+      //if(tc==0)
+      // std::cout << " i " << i << " zero noisefreq " << tc << std::endl;
       noiseFrequency.at(i) += tc;
     }
     
@@ -729,8 +764,12 @@ void SimWireICARUS::produce(art::Event& evt)
     //Also need to scale so that noise RMS matches that asked
     //in fhicl parameter (somewhat arbitrary scaling otherwise)
     //harcode this scaling factor (~20) for now
-    for(unsigned int i = 0; i < noise.size(); ++i) noise.at(i) *= 1.*(fNTicks/20.);
-    
+      for(unsigned int i = 0; i < noise.size(); ++i) {
+      //noise.at(i) /= 1.*(fNTicks);
+    //std::cout << " noise after rescaling " << noise.at(i) << std::endl;
+      }
+      
+      
   }
   
 }

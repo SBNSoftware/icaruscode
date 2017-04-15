@@ -4,7 +4,7 @@ standard_simwire:
 {
   module_type:        "SimWireICARUS"
   DriftEModuleLabel:  "largeant"
-  NoiseFact:           0.0132      # Noise Scale
+  NoiseFact:           1.    # Noise Scale
   NoiseWidth:         62.4         # Exponential Noise width (kHz)
   LowCutoff:           7.5         # Low frequency filter cutoff (kHz)
   FieldBins:          75
@@ -16,19 +16,22 @@ standard_simwire:
   ShapeTimeConst:     [ 1500., 900. ]
   CompressionType:    "none"
   NoiseRand:          0.
-  GetNoiseFromHisto:  "false"
-  GenNoise:           0
+  GetNoiseFromHisto:  "true"
+  GenNoise:           2
   SimDeadChannels:    "false"
   Test:              "false"
   TestWire:          0
   TestIndex:         [ 0. ]
   TestCharge:        [ 0. ]
   Sample:            -1
-  fNoiseHistoName:    "prova_noise.root"        
+  NoiseHistoName:    "hnoiseC"
+  NoiseFileFname:    "T600noise.root"
+MakeNoiseDists:      "true"
+MakeFastHitDists:    "true"
 }
 
 icarus_simwire:  @local::standard_simwire
 
-icarus_simwire.NoiseFact: 0.0132       #Noise Scale
+#icarus_simwire.NoiseFact: 0.0132       #Noise Scale
 
 END_PROLOG
