@@ -26,14 +26,14 @@ public:
     void setResponse(size_t numBins, double binWidth) override;
     
     size_t                     getPlane()           const override {return fPlane;}
-    double                     getASICGain()        const override {return fASICGain;}
+    double                     getFCperADCMicroS()  const override {return fFCperADCMicroS;}
     double                     getASICShapingTime() const override {return fASICShapingTime;}
     const std::vector<double>& getResponseVec()     const override {return fElectronicsResponseVec;}
     
 private:
     // Member variables from the fhicl file
     size_t              fPlane;
-    double              fASICGain;
+    double              fFCperADCMicroS;
     double              fASICShapingTime;
     double              fADCPerPCAtLowestASICGain;
     
@@ -52,7 +52,7 @@ void ElectronicsResponse::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
     fPlane                    = pset.get<size_t>("Plane");
-    fASICGain                 = pset.get<double>("ASICGainInMVPerFC");
+    fFCperADCMicroS           = pset.get<double>("FCperADCMicroS");
     fASICShapingTime          = pset.get<double>("ASICShapingTime");
     fADCPerPCAtLowestASICGain = pset.get<double>("ADCPerPCAtLowestASICGain");
     
@@ -87,7 +87,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
         fElectronicsResponseVec.at(timeIdx) = time / fASICShapingTime * exp(-time / fASICShapingTime);
     }
     
-    double maxValue = *std::max_element(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end());
+//    double maxValue = *std::max_element(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end());
     
     // normalize fElectResponse[i], before the convolution
     // Put in overall normalization in a pedantic way:
@@ -98,14 +98,13 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     //    double last_integral=0;
     //    double last_max=0;
     
-    //Normalization are the following
-    // Peak is firstly normalized to 1
-    // thus we expect peak to be 1 * 9390 (fADCPerPCtAtLowestAsicGain) * 1.602e-7 * (1 fC) = 9.39 ADC
-    // At 4.7 mV/fC, the ADC value should be 4.7 (mV/fC) * 2 (ADC/mV) ~ 9.4 ADC/fC
-    // so the normalization are consistent
+    // ICARUS Normalization are the following
+    // Field response is normalized to 1 electron. Shaping function written as (t/tau)*exp(-t/tau) is normalized to 1
+    // From test pulse measurement with FLIC@CERN we have 0.027 fC/(ADC*us)
+    // Therefore 0.027*6242 electrons/(ADC*us)
     
     for (auto& element : fElectronicsResponseVec)
-        element *= (fASICGain / 6.5) * (fADCPerPCAtLowestASICGain * 1.60217657e-7) / maxValue;
+        element /= (fFCperADCMicroS * 6242.);
     
     return;
 }

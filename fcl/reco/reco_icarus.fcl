@@ -61,9 +61,9 @@ icarus_reco_producers.caldata.DigitModuleLabel:                         "daq"
 icarus_reco_producers.caldata.Threshold:                                [1, 1, 1]
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "caldata"
-icarus_reco_producers.gaushit.MinSig:                                   [ 2.,   2.,   2.  ]
-icarus_reco_producers.gaushit.MinWidth:                                 [ 1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.AreaNorms:                                [ 1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.MinSig:                                   [ 15.,  15.,  15.  ]
+icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.

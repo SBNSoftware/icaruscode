@@ -17,7 +17,7 @@ ElectronicsResponseTool:
 {
     tool_type: ElectronicsResponse
     Plane:                    0
-    ASICGainInMVPerFC:        5.5
+    FCperADCMicroS:           0.027
     ASICShapingTime:          1.5
     ADCPerPCAtLowestASICGain: 5500.
 }

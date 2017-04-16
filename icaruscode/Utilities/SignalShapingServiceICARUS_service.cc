@@ -179,7 +179,7 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICGain();
+    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS();
     
     return gain;
 }
@@ -199,7 +199,7 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
     
-    double gain         = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICGain();
+    double gain         = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS();
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int    temp;
     
