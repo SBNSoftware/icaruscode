@@ -366,7 +366,7 @@ void SimWireICARUS::produce(art::Event& evt)
     // per plane and scaling for YZ dependent responses 
     // or data driven field responses
     art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
-    std::vector<std::vector<size_t> > N_RESPONSES = sss->GetNActiveResponses();
+//    std::vector<std::vector<size_t> > N_RESPONSES = sss->GetNActiveResponses();
     
     //--------------------------------------------------------------------
     //
@@ -406,9 +406,10 @@ void SimWireICARUS::produce(art::Event& evt)
     for(size_t channel = 0; channel < N_CHANNELS; channel++)
     {
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-        size_t                   plane  = widVec[0].Plane;
+//        size_t                   plane  = widVec[0].Plane;
         
-        responseParamsVec[channel].resize(N_RESPONSES[0][plane]);
+        //responseParamsVec[channel].resize(N_RESPONSES[0][plane]);
+        responseParamsVec[channel].resize(1);
     }
 
     //--------------------------------------------------------------------                                                                                                                           
@@ -423,7 +424,7 @@ void SimWireICARUS::produce(art::Event& evt)
 	for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
     {
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-        size_t                   plane  = widVec[0].Plane;
+//        size_t                   plane  = widVec[0].Plane;
 
         // get the sim::SimChannel for this channel
         const sim::SimChannel* sc = channels.at(channel);
@@ -452,12 +453,13 @@ void SimWireICARUS::produce(art::Event& evt)
             if(raw_digit_index <= 0 || raw_digit_index >= (int)fNTicks) continue;
 
             // here fill ResponseParams... all the wires!
-            for(int wire = -(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane]; ++wire)
-            {
-                auto wireIndex = (size_t)wire+N_RESPONSES[0][plane] - 1;
-                if((int)wireIndex == (int)N_RESPONSES[0][plane]) continue;
+            size_t wireIndex(0);
+//            for(int wire = -(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane]; ++wire)
+//            {
+//                auto wireIndex = (size_t)wire+N_RESPONSES[0][plane] - 1;
+//                if((int)wireIndex == (int)N_RESPONSES[0][plane]) continue;
                 responseParamsVec[channel][wireIndex].emplace_back(new ResponseParams(charge, raw_digit_index));
-            } // loop over wires
+//            } // loop over wires
         } // loop over tdcs
     } // loop over channels
 
@@ -478,11 +480,11 @@ void SimWireICARUS::produce(art::Event& evt)
     int step = 0;
 
     // various constants: not fcl-configurable
-    double slope0[5] = { 0., 2.1575, 6.4725 , 13.946, 40.857};
-    double t0[5] =     { 4450., 6107., 6170., 6305., 6695. };
-    double wire0[3] =  { 337., 332., -0.7 };
-    double factor[3] = { 2.0, 2.0, 1.0 };
-    int tickCut = 250;
+//    double slope0[5] = { 0., 2.1575, 6.4725 , 13.946, 40.857};
+//    double t0[5] =     { 4450., 6107., 6170., 6305., 6695. };
+//    double wire0[3] =  { 337., 332., -0.7 };
+//    double factor[3] = { 2.0, 2.0, 1.0 };
+//    int tickCut = 250;
 
         // loop over the collected responses
     //   this is needed because hits generate responses on adjacent wires!
@@ -502,7 +504,6 @@ void SimWireICARUS::produce(art::Event& evt)
 	
         //use channel number to set some useful numbers
         std::vector<geo::WireID> widVec  = fGeometry.ChannelToWire(channel);
-        size_t                   wireNum = widVec[0].Wire;
         size_t                   plane   = widVec[0].Plane;
         
         auto& thisChan = responseParamsVec[channel];
@@ -565,16 +566,15 @@ void SimWireICARUS::produce(art::Event& evt)
       
         
         //Channel is good, so fill the chargeWork vector with charges
-        int tick0 = 0;
-        if(fSample>=0) tick0 = t0[fSample] - factor[plane]*slope0[fSample]*(wireNum-wire0[plane]) + 0.5;
-        //std::cout << " before convoluting charge " << std::endl;
-        //std::cout << " plane " << plane << std::endl;
-        //std::cout << " nresp " << N_RESPONSES[0][plane] << std::endl;
-        for(int wire=-(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane];++wire)
-        {
-            size_t wireIndex = (size_t)(wire + (int)N_RESPONSES[0][plane] - 1);
+//        int tick0 = 0;
+//        if(fSample>=0) tick0 = t0[fSample] - factor[plane]*slope0[fSample]*(wireNum-wire0[plane]) + 0.5;
+
+        size_t wireIndex = 0;
+//        for(int wire=-(N_RESPONSES[0][plane]-1); wire<(int)N_RESPONSES[0][plane];++wire)
+//        {
+//            size_t wireIndex = (size_t)(wire + (int)N_RESPONSES[0][plane] - 1);
             
-            if((int)wireIndex >= (int)N_RESPONSES[0][plane]) continue;
+//            if((int)wireIndex >= (int)N_RESPONSES[0][plane]) continue;
 
             auto & thisWire = thisChan[wireIndex];
             if(!thisWire.empty())
@@ -595,31 +595,31 @@ void SimWireICARUS::produce(art::Event& evt)
           
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
-            sss->Convolute(channel, fabs(wire), tempWork);
+            sss->Convolute(channel, tempWork);
 	
             // this is to generate some plots
-            if(plane==1 && wireNum==360 && fSample>=0) {
-                if(abs(wire)>2) continue;
-                size_t index = wire + 2;
-                bool printWF = false;
-                if(printWF)std::cout << "printout of waveform, index = " << index << std::endl;
-                for(int i=tick0-tickCut; i<tick0+tickCut;++i) {
-                    double val = tempWork[i];
-                    if(printWF) {
-                        if((i+1)%10==0) std::cout << std::endl << i << " " << i-tick0 << " ";
-                        std::cout << val << " " ;
-                    }
-                    hTest[index]->Fill(i*1.-tick0, val);
-                }
-                if(printWF) std::cout << std::endl;
-            }
+//            if(plane==1 && wireNum==360 && fSample>=0) {
+//                if(abs(wire)>2) continue;
+//                size_t index = wire + 2;
+//                bool printWF = false;
+//                if(printWF)std::cout << "printout of waveform, index = " << index << std::endl;
+//                for(int i=tick0-tickCut; i<tick0+tickCut;++i) {
+//                    double val = tempWork[i];
+//                    if(printWF) {
+//                        if((i+1)%10==0) std::cout << std::endl << i << " " << i-tick0 << " ";
+//                        std::cout << val << " " ;
+//                    }
+//                    hTest[index]->Fill(i*1.-tick0, val);
+//                }
+//                if(printWF) std::cout << std::endl;
+//            }
 
             // now add the result into the "charge" vector
             for(size_t bin = 0; bin < fNTicks; ++bin)
             {
                 chargeWork[bin] += tempWork[bin];
             }
-        }//end loop over response wires
+//        }//end loop over response wires
 
 
         // add this digit to the collection;
