@@ -125,10 +125,10 @@ namespace util {
         template <class T> void    Convolute(size_t channel, std::vector<T>& func)    const;
         
         // Do deconvolution calcution (for reconstruction).
-        template <class T> void     Deconvolute(size_t channel, std::vector<T>& func) const;
+        template <class T> void    Deconvolute(size_t channel, std::vector<T>& func)  const;
         
-        void                        SetDecon(size_t fftsize, size_t channel);
-        double                      GetDeconNorm() {return fDeconNorm;};
+        void                       SetDecon(size_t fftsize, size_t channel);
+        double                     GetDeconNorm() {return fDeconNorm;};
         
         
     private:
