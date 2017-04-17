@@ -352,7 +352,7 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
       { if(tpc==0) view = geo::kV; else if(tpc==1) view = geo::kU; }
 
     else
-      mf::LogWarning("BadChannelSignalType") << "Channel " << channel
+        mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
     
       return view;
@@ -362,22 +362,22 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
 	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][0])    ){ view = geo::kY; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][1]) &&
 	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][1])    )
-      { if(tpc==0) view = geo::kU; else if(tpc==1) view = geo::kV; }
+        { if(tpc==0) view = geo::kU; else if(tpc==1) view = geo::kV; }
     else if( (channel >= fFirstChannelInThisPlane[cryostat][tpc][2]) &&
 	     (channel <  fFirstChannelInNextPlane[cryostat][tpc][2])    )
-      { if(tpc==0) view = geo::kV; else if(tpc==1) view = geo::kU; }
+        { if(tpc==0) view = geo::kV; else if(tpc==1) view = geo::kU; }
 
     else
-      mf::LogWarning("BadChannelSignalType") << "Channel " << channel
+        mf::LogWarning("BadChannelSignalType") << "Channel " << channel
 					     << " not given view type.";
     
     return view;
   }
   else{
-    mf::LogWarning("BadChannelSignalType") << "nPLanes is weird! " << PlanesThisTPC
+      mf::LogWarning("BadChannelSignalType") << "nPLanes is weird! " << PlanesThisTPC
 					   << ".";
     
-    return view;
+      return view;
   }
 }
   
