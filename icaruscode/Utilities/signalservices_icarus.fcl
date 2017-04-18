@@ -8,7 +8,7 @@ signalshapingservice_icarus:
     Ind3DCorrection:            0.
     FieldRespAmpVec:            [ 1., 1., 1. ]
     ShapeTimeConst:             [[ 1.5, 1.5, 1.5 ]]
-    FilterVec:                  [ 0., 0., 0. ]
+    FilterVec:                  [ 1., 1., 1. ]
     NConfigs:                   1
 #    ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
     NViews:                         4
@@ -26,7 +26,7 @@ signalshapingservice_icarus:
     YZchargeScaling:                 [[ 1., 1., 1., 1.]]
     IncludeMisconfiguredU:           "false"
     MisconfiguredU:                  [[ 1, 1, 1, 1 ]]
-    DeconNorm:                       200.
+DeconNorm:                            1.
 #    ADCPerPCAtLowestASICGain:        10000.
     FCperADCMicroS:                  0.027
     DefaultDriftVelocity:            [ -1,-1,-1 ]

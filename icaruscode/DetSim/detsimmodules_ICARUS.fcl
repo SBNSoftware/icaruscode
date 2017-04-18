@@ -25,7 +25,7 @@ standard_simwire:
   TestCharge:        [ 0. ]
   Sample:            -1
   NoiseHistoName:    "hnoiseC"
-  NoiseFileFname:    "T600noise.root"
+  NoiseFileFname:    "T600noise_corr.root"
 MakeNoiseDists:      "true"
 MakeFastHitDists:    "true"
 }
