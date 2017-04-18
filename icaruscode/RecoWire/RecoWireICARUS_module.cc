@@ -1,13 +1,13 @@
 ////////////////////////////////////////////////////////////////////////
-// $Id: CalWireICARUS.cxx,v 1.36 2010/09/15  bpage Exp $
+// $Id: RecoWireICARUS.cxx,v 1.36 2010/09/15  bpage Exp $
 //
-// CalWireICARUS class
+// RecoWireICARUS class
 //
 // brebel@fnal.gov
 //
 ////////////////////////////////////////////////////////////////////////
-#ifndef CALWIREICARUS_H
-#define CALWIREICARUS_H
+#ifndef RecoWireICARUS_H
+#define RecoWireICARUS_H
 
 // ROOT includes
 #include <TFile.h>
@@ -41,16 +41,16 @@
 #include "lardata/Utilities/AssociationUtil.h"
 
 ///creation of calibrated signals on wires
-namespace caldata {
+namespace recowire {
 
-  class CalWireICARUS : public art::EDProducer {
+  class RecoWireICARUS : public art::EDProducer {
 
   public:
     
     // create calibrated signals on wires. this class runs 
     // an fft to remove the electronics shaping.     
-    explicit CalWireICARUS(fhicl::ParameterSet const& pset); 
-    virtual ~CalWireICARUS();
+    explicit RecoWireICARUS(fhicl::ParameterSet const& pset); 
+    virtual ~RecoWireICARUS();
     
     void produce(art::Event& evt); 
     void beginJob(); 
@@ -80,13 +80,13 @@ namespace caldata {
                                                        ///< have which response functions
   protected: 
     
-  }; // class CalWireICARUS
+  }; // class RecoWireICARUS
 }
 
-namespace caldata{
+namespace recowire{
 
   //-------------------------------------------------
-  CalWireICARUS::CalWireICARUS(fhicl::ParameterSet const& pset)
+  RecoWireICARUS::RecoWireICARUS(fhicl::ParameterSet const& pset)
   {
     this->reconfigure(pset);
     
@@ -96,12 +96,12 @@ namespace caldata{
   }
   
   //-------------------------------------------------
-  CalWireICARUS::~CalWireICARUS()
+  RecoWireICARUS::~RecoWireICARUS()
   {
   }
 
   //////////////////////////////////////////////////////
-  void CalWireICARUS::reconfigure(fhicl::ParameterSet const& p)
+  void RecoWireICARUS::reconfigure(fhicl::ParameterSet const& p)
   {
     fDigitModuleLabel = p.get< std::string >("DigitModuleLabel", "daq");
     cet::search_path sp("FW_SEARCH_PATH");
@@ -111,15 +111,15 @@ namespace caldata{
   }
 
   //-------------------------------------------------
-  void CalWireICARUS::beginJob()
+  void RecoWireICARUS::beginJob()
   {  
     
-    LOG_DEBUG("CalWireICARUS") << "CalWireICARUS_plugin: Opening  Electronics Response File: " 
+    LOG_DEBUG("RecoWireICARUS") << "RecoWireICARUS_plugin: Opening  Electronics Response File: " 
 			 << fResponseFile.c_str();
     
     TFile f(fResponseFile.c_str());
     if( f.IsZombie() )
-      mf::LogWarning("CalWireICARUS") << "Cannot open response file " 
+      mf::LogWarning("RecoWireICARUS") << "Cannot open response file " 
 				<< fResponseFile.c_str();
     
     TH2D *respRe       = dynamic_cast<TH2D*>(f.Get("real/RespRe")   );
@@ -173,12 +173,12 @@ namespace caldata{
   }
 
   //////////////////////////////////////////////////////
-  void CalWireICARUS::endJob()
+  void RecoWireICARUS::endJob()
   {  
   }
   
   //////////////////////////////////////////////////////
-  void CalWireICARUS::produce(art::Event& evt)
+  void RecoWireICARUS::produce(art::Event& evt)
   {
     
       
@@ -214,7 +214,7 @@ namespace caldata{
     evt.getByLabel(fDigitModuleLabel, digitVecHandle);
 
     if (!digitVecHandle->size())  return;
-    mf::LogInfo("CalWireICARUS") << "CalWireICARUS:: digitVecHandle size is " << digitVecHandle->size();
+    mf::LogInfo("RecoWireICARUS") << "RecoWireICARUS:: digitVecHandle size is " << digitVecHandle->size();
 
     // Use the handle to get a particular (0th) element of collection.
     art::Ptr<raw::RawDigit> digitVec0(digitVecHandle, 0);
@@ -257,9 +257,9 @@ namespace caldata{
       else if(sigtype == geo::kCollection)
 	k = 1;
       else
-	throw cet::exception("CalWireICARUS") << "Bad signal type = " << sigtype << "\n";
+	throw cet::exception("RecoWireICARUS") << "Bad signal type = " << sigtype << "\n";
       if (k >= kernel.size())
-	throw cet::exception("CalWireICARUS") << "kernel size < " << k << "!\n";
+	throw cet::exception("RecoWireICARUS") << "kernel size < " << k << "!\n";
 
       if(k==0)
 	{
@@ -376,7 +376,7 @@ namespace caldata{
     } // for raw digits
 
     if(wirecol->size() == 0)
-      mf::LogWarning("CalWireICARUS") << "No wires made for this event.";
+      mf::LogWarning("RecoWireICARUS") << "No wires made for this event.";
     
     evt.put(std::move(wirecol));
     evt.put(std::move(WireDigitAssn));
@@ -384,15 +384,15 @@ namespace caldata{
     return;
   }
   
-} // end namespace caldata
+} // end namespace recowire
 
 
-namespace caldata{
+namespace recowire{
 
-  DEFINE_ART_MODULE(CalWireICARUS)
+  DEFINE_ART_MODULE(RecoWireICARUS)
   
-} // end namespace caldata
+} // end namespace recowire
 
 
-#endif // CALWIREICARUS_H
+#endif // RecoWireICARUS_H
 

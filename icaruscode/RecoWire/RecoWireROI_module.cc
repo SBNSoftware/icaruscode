@@ -1,6 +1,6 @@
 ////////////////////////////////////////////////////////////////////////
 //
-// CalWireROI class - variant of CalWire that deconvolves in 
+// RecoWireROI class - variant of RecoWire that deconvolves in 
 // Regions Of Interest
 //
 // baller@fnal.gov
@@ -51,15 +51,15 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 ///creation of calibrated signals on wires
-namespace caldata {
+namespace recowire {
 
-class CalWireROI : public art::EDProducer
+class RecoWireROI : public art::EDProducer
 {
   public:
     // create calibrated signals on wires. this class runs 
     // an fft to remove the electronics shaping.     
-    explicit CalWireROI(fhicl::ParameterSet const& pset); 
-    virtual ~CalWireROI();
+    explicit RecoWireROI(fhicl::ParameterSet const& pset); 
+    virtual ~RecoWireROI();
     
     void produce(art::Event& evt); 
     void beginJob(); 
@@ -114,12 +114,12 @@ class CalWireROI : public art::EDProducer
     
   protected:
     
-  }; // class CalWireROI
+  }; // class RecoWireROI
 
-  DEFINE_ART_MODULE(CalWireROI)
+  DEFINE_ART_MODULE(RecoWireROI)
   
   //-------------------------------------------------
-  CalWireROI::CalWireROI(fhicl::ParameterSet const& pset) :
+  RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) :
       fGeometry(*lar::providerFrom<geo::Geometry>()),
       fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
       fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
@@ -131,12 +131,12 @@ class CalWireROI : public art::EDProducer
   }
   
   //-------------------------------------------------
-  CalWireROI::~CalWireROI()
+  RecoWireROI::~RecoWireROI()
   {
   }
 
 //////////////////////////////////////////////////////
-void CalWireROI::reconfigure(fhicl::ParameterSet const& p)
+void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
 {
     std::vector<unsigned short> uin;    std::vector<unsigned short> vin;
     std::vector<unsigned short> zin;
@@ -218,7 +218,7 @@ void CalWireROI::reconfigure(fhicl::ParameterSet const& p)
 }
 
 
-void CalWireROI::reconfFFT(int temp_fftsize)
+void RecoWireROI::reconfFFT(int temp_fftsize)
 {
     // re-initialize the FFT service for the request size
     art::ServiceHandle<util::LArFFT> fFFT;
@@ -231,18 +231,18 @@ void CalWireROI::reconfFFT(int temp_fftsize)
 }
 
 //-------------------------------------------------
-void CalWireROI::beginJob()
+void RecoWireROI::beginJob()
 {
     fEventCount = 0;
 } // beginJob
 
 //////////////////////////////////////////////////////
-void CalWireROI::endJob()
+void RecoWireROI::endJob()
 {
 }
   
 //////////////////////////////////////////////////////
-void CalWireROI::produce(art::Event& evt)
+void RecoWireROI::produce(art::Event& evt)
 {
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
@@ -466,7 +466,7 @@ void CalWireROI::produce(art::Event& evt)
                     float  basePre  = std::accumulate(holder.begin(),holder.begin()+binsToAve,0.) / float(binsToAve);
                     float  basePost = std::accumulate(holder.end()-binsToAve,holder.end(),0.) / float(binsToAve);
                     
-                    // emulate method for refining baseline from original version of CalWireROI
+                    // emulate method for refining baseline from original version of RecoWireROI
                     float deconNoise = 1.26491 * fSignalServices.GetDeconNoise(channel);    // 4./sqrt(10) * noise
 
                     // If the estimated baseline from the front of the roi does not agree well with that from the end
@@ -550,7 +550,7 @@ void CalWireROI::produce(art::Event& evt)
     }
 
     if(wirecol->size() == 0)
-      mf::LogWarning("CalWireROI") << "No wires made for this event.";
+      mf::LogWarning("RecoWireROI") << "No wires made for this event.";
 
     //Make Histogram of recob::wire objects from Signal() vector
     // get access to the TFile service
@@ -575,7 +575,7 @@ void CalWireROI::produce(art::Event& evt)
 } // produce
 
 
-float CalWireROI::SubtractBaseline(std::vector<float>& holder,
+float RecoWireROI::SubtractBaseline(std::vector<float>& holder,
                                    float               basePre,
                                    float               basePost,
                                    size_t              roiStart,
@@ -633,7 +633,7 @@ float CalWireROI::SubtractBaseline(std::vector<float>& holder,
 }
 
   
-void CalWireROI::doDecon(std::vector<float>&                                   holder,
+void RecoWireROI::doDecon(std::vector<float>&                                   holder,
                          raw::ChannelID_t                                      channel,
                          unsigned int                                          thePlane,
                          const std::vector<std::pair<size_t,size_t>>&          rois,
@@ -684,4 +684,4 @@ void CalWireROI::doDecon(std::vector<float>&                                   h
 } // doDecon
 
 
-} // end namespace caldata
+} // end namespace recowire

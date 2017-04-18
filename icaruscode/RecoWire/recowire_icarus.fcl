@@ -4,9 +4,9 @@
 
 BEGIN_PROLOG
 
-icarus_calwireroi:
+icarus_recowireroi:
 {
- module_type:                           "CalWireROI"
+ module_type:                           "RecoWireROI"
  DigitModuleLabel:                      "daq"
  NoiseSource:                           3
  NumBinsHalf:                           3 
@@ -25,9 +25,9 @@ icarus_calwireroi:
  dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
 }
 
-icarus_calwire:
+icarus_recowire:
 {
-  module_type:        "CalWireICARUS"
+  module_type:        "RecoWireICARUS"
   DigitModuleLabel:   "daq"
   ResponseFile:       "ArgoResponse1.5.root"
   ExponentialEndBins: 300
