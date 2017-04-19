@@ -1,3 +1,6 @@
+add_subdirectory(tools)
+
+
 art_make( BASENAME_ONLY
           EXCLUDE SimWireICARUS_module.cc 
           MODULE_LIBRARIES larcore_Geometry

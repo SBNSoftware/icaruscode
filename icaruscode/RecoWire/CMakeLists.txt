@@ -1,5 +1,4 @@
-art_make( BASENAME_ONLY
-          LIBRARY_NAME CalData
+art_make( LIBRARY_NAME RecoWire
           LIB_LIBRARIES 
 			lardataobj_RawData
                         lardataobj_RecoBase

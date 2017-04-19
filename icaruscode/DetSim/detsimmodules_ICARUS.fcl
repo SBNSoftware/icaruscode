@@ -1,5 +1,14 @@
 BEGIN_PROLOG
 
+
+NoiseFromHistTool:
+{
+    tool_type:         NoiseFromHist
+    NoiseRand:         0.
+    NoiseHistFileName: "T600noise.root"
+    HistogramName:     "hnoiseI1"
+}
+
 standard_simwire:
 {
   module_type:        "SimWireICARUS"
@@ -25,9 +34,10 @@ standard_simwire:
   TestCharge:        [ 0. ]
   Sample:            -1
   NoiseHistoName:    "hnoiseC"
-  NoiseFileFname:    "T600noise_corr.root"
-MakeNoiseDists:      "true"
-MakeFastHitDists:    "true"
+  NoiseFileFname:    "T600noise.root"
+  MakeNoiseDists:    "true"
+  MakeFastHitDists:  "true"
+  NoiseGenTool:      @local::NoiseFromHistTool
 }
 
 icarus_simwire:  @local::standard_simwire

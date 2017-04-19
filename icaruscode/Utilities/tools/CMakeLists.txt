@@ -1,7 +1,6 @@
 cet_enable_asserts()
-add_subdirectory(tools)
 
-set( icarus_util_lib_list
+set( icarus_tool_lib_list
                         lardata_Utilities_LArFFT_service
 			larcore_Geometry
 			larevt_CalibrationDBI_IOVData
@@ -34,10 +33,26 @@ set( icarus_util_lib_list
     )
 
 
-simple_plugin( SignalShapingServiceICARUS  "service"
-               ${icarus_util_lib_list}
+simple_plugin( Response  "tool"
+               ${icarus_tool_lib_list}
 	       BASENAME_ONLY
         )
+
+simple_plugin( FieldResponse  "tool"
+               ${icarus_tool_lib_list}
+               BASENAME_ONLY
+             )
+
+simple_plugin( ElectronicsResponse  "tool"
+               ${icarus_tool_lib_list}
+	       BASENAME_ONLY
+        )
+
+simple_plugin( Filter  "tool"
+               ${icarus_tool_lib_list}
+	       BASENAME_ONLY
+        )
+
 
 install_headers()
 install_source()

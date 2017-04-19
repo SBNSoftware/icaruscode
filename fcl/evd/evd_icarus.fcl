@@ -51,6 +51,6 @@ services.SimulationDrawingOptions.ShowMCTruthTrajectories: true
 services.SimulationDrawingOptions.MinimumEnergyDeposition: 0.0001  # in GeV
 
 services.RecoDrawingOptions.HitModuleLabels:               ["gaushit"]
-services.RecoDrawingOptions.WireModuleLabels:              ["caldata"] 
+services.RecoDrawingOptions.WireModuleLabels:              ["recowire"] 
 
 

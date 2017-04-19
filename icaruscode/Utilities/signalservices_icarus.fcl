@@ -1,61 +1,85 @@
 BEGIN_PROLOG
 
+
+FieldResponseTool:
+{
+    tool_type: FieldResponse
+    Plane:                    0
+    SignalType:               0
+    FieldResponseFileName:    "t600_response"
+    FieldResponseFileVersion: "v0.0"
+    FieldResponseHistName:    "t600_response"
+    FieldResponseAmplitude:   1.
+    TimeCorrectionFactor:     1000. 
+}
+
+ElectronicsResponseTool:
+{
+    tool_type: ElectronicsResponse
+    Plane:                    0
+    FCperADCMicroS:           0.027
+    ASICShapingTime:          1.5
+    ADCPerPCAtLowestASICGain: 5500.
+}
+
+FilterTool:
+{
+    tool_type: Filter
+    Plane:                       0
+    FilterParametersVec:         [1., 0., 0.1 ]
+    FilterFunction:              "(x>0.0)*gaus"
+    FilterWidthCorrectionFactor: 1.0
+}
+
+ResponseTool:
+{
+    tool_type: Response
+    Plane:               0
+    Correction3D:        1.
+    TimeScaleFactor:     1.
+    DeconvPol:           1
+    FieldResponse:       @local::FieldResponseTool
+    ElectronicsResponse: @local::ElectronicsResponseTool
+    Filter:              @local::FilterTool
+}
+
 signalshapingservice_icarus:
 {
-    #GenNoise:                       1
-    FieldBins:                  10
-    Col3DCorrection:            0.
-    Ind3DCorrection:            0.
-    FieldRespAmpVec:            [ 1., 1., 1. ]
-    ShapeTimeConst:             [[ 1.5, 1.5, 1.5 ]]
-    FilterVec:                  [ 1., 1., 1. ]
-    NConfigs:                   1
-#    ASICGainInMVPerFC:              [ [ 5.5, 5.5, 5.5 ] ]
-    NViews:                         4
-    ViewIndex:                      [ 0, 1, 2, 2]
-    ViewForNormalization:           2
-    NResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    NYZResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    NdatadrivenResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    NActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    NYZActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
-    NdatadrivenActiveResponses:                     [[ 1, 1,1,1],[1,1,1,1]]
+    PlaneForNormalization:           2
     PrintResponses:                  "false"
-    YZdependentResponse:             "false"
-    datadrivenResponse:              "false"
-    YZchargeScaling:                 [[ 1., 1., 1., 1.]]
-    IncludeMisconfiguredU:           "false"
-    MisconfiguredU:                  [[ 1, 1, 1, 1 ]]
-DeconNorm:                            1.
-#    ADCPerPCAtLowestASICGain:        10000.
-    FCperADCMicroS:                  0.027
-    DefaultDriftVelocity:            [ -1,-1,-1 ]
-    CalibResponseTOffset:            [ 1., 1., 1. ]
-#NoiseFactVec:                    [[ 0., 0.,0., 0. ],[ 0., 0.,0., 0. ],[ 0., 0.,0., 0. ]]
-NoiseFactVec:    [ [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ] ]
-    Drift3DCorrVec:                  [ 1., 1., 1., 1. ]
-    DeconvPol:                       [ -1, 1, 1, -1 ]
-    GetFilterFromHisto:              "false"
-    FilterParamsVec:                 [[1., 0., 0.1 ],[1., 0., 0.1 ],[1.,0.,0.1]]
-    FilterWidthCorrectionFactor:     [ 1.0, 1.0, 1.0 ]
-    FilterParamsVecICTime:                 [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
-    FilterScaleVecICTime:                 [0.,0.,0.]
-    FilterNormVecIC:                 [1.,1.,1.]
-    FilterScaleVecICWire:                 [0.,0.,0.]
-    FilterParamsVecICWire:                 [[0., 0., 0. ],[0., 0., 0.],[0.,0.,0.]]
-    FilterFuncVecICTime:                 ["x","x","x"]
-    FilterFuncVecICWire:                 ["x","x","x"]
-    FilterFuncVec:                 [0., 0., 0. ]
-    UseCalibratedResponses:         "false"
-    FieldResponseFNameBase:         "t600_response"
-    FieldResponseHNameBase:         "t600_response"
-    FieldResponseFVersion:          ["v0.0","v0.0","v0.0"]
-    DefaultEField:                  0.5
-    DefaultTemperature:             87.5
-    TimeScaleParams:                [1.,1.,1.]
-    StretchFullResponse:            "false"
+    DeconNorm:                       50. #200.
+    CalibResponseTOffset:            [ 0., 0., 0. ]
+    NoiseFactVec:                    [ [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ] ]
+    UseCalibratedResponses:          "false"
+    DefaultEField:                   0.5
+    DefaultTemperature:              87.5
+    TimeScaleParams:                 [1.,1.,1.]
 
-
+    ResponseTools:
+    {
+        ResponsePlane0: @local::ResponseTool
+        ResponsePlane1: @local::ResponseTool
+        ResponsePlane2: @local::ResponseTool
+    }
 }
+
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Plane:                     0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.DeconvPol:                 -1
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.Plane:       0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.SignalType:  0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane: 0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.Plane:              0
+
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Plane:                     1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:       1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:  0
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane: 1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:              1
+
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                     2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:       2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.SignalType:  1
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane: 2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.Plane:              2
 
 END_PROLOG

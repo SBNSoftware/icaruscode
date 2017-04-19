@@ -4,7 +4,7 @@
 ##
 
 #include "services_icarus.fcl"
-#include "caldata_icarus.fcl"
+#include "recowire_icarus.fcl"
 #include "hitfindermodules.fcl"
 
 #include "mchitmodules.fcl"
@@ -24,8 +24,8 @@ icarus_reco_producers:
   rns:                 { module_type: RandomNumberSaver }
 
   ### calwire producers
-  #caldata:                        @local::icarus_calwire
-  caldata:                        @local::icarus_calwireroi
+  #recowire:                       @local::icarus_recowire
+  recowire:                       @local::icarus_recowireroi
 
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder
@@ -47,7 +47,7 @@ icarus_reco_filters:
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_reco_signalprocessing: [     caldata,
+icarus_reco_signalprocessing: [     recowire,
                                     gaushit ]
 
 #icarus_reco_fuzzycluster: [        fuzzycluster ]
@@ -57,13 +57,13 @@ icarus_reco_signalprocessing: [     caldata,
 ### Below we include overrides for the modules above
 ### These are for MCC 7
 
-icarus_reco_producers.caldata.DigitModuleLabel:                         "daq"
-icarus_reco_producers.caldata.Threshold:                                [1, 1, 1]
+icarus_reco_producers.recowire.DigitModuleLabel:                        "daq"
+icarus_reco_producers.recowire.Threshold:                               [1, 1, 1]
 
-icarus_reco_producers.gaushit.CalDataModuleLabel:                       "caldata"
-icarus_reco_producers.gaushit.MinSig:                                   [ 2.,   2.,   2.  ]
-icarus_reco_producers.gaushit.MinWidth:                                 [ 1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.AreaNorms:                                [ 1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowire"
+icarus_reco_producers.gaushit.MinSig:                                   [ 15.,  15.,  15.  ]
+icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
