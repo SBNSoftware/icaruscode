@@ -5,7 +5,7 @@ NoiseFromHistTool:
 {
     tool_type:         NoiseFromHist
     NoiseRand:         0.
-    NoiseHistFileName: "T600noise.root"
+    NoiseHistFileName: "T600noise_corr.root"
     HistogramName:     "hnoiseI1"
 }
 
