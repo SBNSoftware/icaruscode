@@ -15,13 +15,16 @@ art_make( BASENAME_ONLY
 	  LIB_LIBRARIES larcore_Geometry
                         ${MF_MESSAGELOGGER}
                         ${CETLIB}
+			${CETLIB_EXCEPT}
                         ${FHICLCPP}
+                        ${ROOT_GEOM}
                         ${ROOT_BASIC_LIB_LIST}
 	  SERVICE_LIBRARIES icarus_Geometry
 	  		icarus_Geometry
 			${MF_UTILITIES}
 	                ${FHICLCPP}
 			${CETLIB}
+			${CETLIB_EXCEPT}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}

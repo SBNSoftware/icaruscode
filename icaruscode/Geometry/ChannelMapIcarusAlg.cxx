@@ -240,7 +240,7 @@ WireID ChannelMapIcarusAlg::NearestWireID
         if(NearestWireNumber < 0 ) NearestWireNumber = 0;
         else                       NearestWireNumber = WireCount(planeID) - 1;
     
-        throw InvalidWireIDError("Geometry", wireNumber, NearestWireNumber)
+        throw InvalidWireError("Geometry", wireNumber, NearestWireNumber)
         << "Can't Find Nearest Wire for position ("
         << worldPos[0] << "," << worldPos[1] << "," << worldPos[2] << ")"
         << " in plane " << std::string(planeID) << " approx wire number # "
