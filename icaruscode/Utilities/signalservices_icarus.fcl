@@ -27,8 +27,8 @@ FilterTool:
     tool_type: Filter
     Plane:                       0
     FilterParametersVec:         [1., 0., 0.1 ]
-    #FilterFunction:              "(x>0.0)*gaus"
-    FilterFunction:              "1."
+    FilterFunction:              "(x>0.0)*gaus"
+    #FilterFunction:              "1."
     FilterWidthCorrectionFactor: 1.0
 }
 
@@ -48,7 +48,7 @@ signalshapingservice_icarus:
 {
     PlaneForNormalization:           2
     PrintResponses:                  "false"
-    DeconNorm:                       1. #200.
+    DeconNorm:                       50. #200.
     CalibResponseTOffset:            [ 0., 0., 0. ]
     NoiseFactVec:                    [ [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ] ]
     UseCalibratedResponses:          "false"

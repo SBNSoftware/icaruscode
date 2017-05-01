@@ -300,6 +300,12 @@ void RecoWireROI::produce(art::Event& evt)
         {
             size_t dataSize = digitVec->Samples();
             
+            if (!dataSize)
+            {
+                std::cout << "***>> zero length data buffer, channel: " << channel << std::endl;
+                continue;
+            }
+            
             // vector holding uncompressed adc values
             std::vector<short> rawadc(dataSize);
             
@@ -341,7 +347,8 @@ void RecoWireROI::produce(art::Event& evt)
             size_t startBin(binOffset);
             size_t stopBin(binOffset+numBins);
             
-            float startThreshold = sqrt(float(numBins)) * (fNumSigma[thePlane] * raw_noise + fThreshold[thePlane]);
+            //float startThreshold = sqrt(float(numBins)) * (fNumSigma[thePlane] * raw_noise + fThreshold[thePlane]);
+            float startThreshold = float(numBins) * (fNumSigma[thePlane] * raw_noise + fThreshold[thePlane]);
             float stopThreshold  = startThreshold;
             
             // Get the pedestal subtracted data, centered in the deconvolution vector
