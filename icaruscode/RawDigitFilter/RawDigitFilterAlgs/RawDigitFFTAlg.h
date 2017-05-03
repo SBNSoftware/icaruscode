@@ -28,6 +28,11 @@
 
 #include "TProfile.h"
 
+namespace icarus_tool
+{
+    class IWaveformTool;
+}
+
 namespace caldata
 {
     
@@ -51,12 +56,12 @@ public:
     
 private:
     
-    using PeakTuple    = std::tuple<size_t,size_t,size_t>; // first bin, peak bin, last bin
-    using PeakTupleVec = std::vector<PeakTuple>;
+ //   using PeakTuple    = std::tuple<size_t,size_t,size_t>; // first bin, peak bin, last bin
+ //   using PeakTupleVec = std::vector<PeakTuple>;
     
-    void triangleSmooth(std::vector<double>&, size_t = 0)               const;
-    void firstDerivative(std::vector<double>&, std::vector<double>&)    const;
-    void findPeaks(std::vector<double>&, PeakTupleVec&, double, size_t) const;
+ //   void triangleSmooth(std::vector<double>&, size_t = 0)               const;
+ //   void firstDerivative(std::vector<double>&, std::vector<double>&)    const;
+ //   void findPeaks(std::vector<double>&, PeakTupleVec&, double, size_t) const;
     
     std::vector<bool>      fTransformViewVec;      ///< apply FFT transform to this view
     bool                   fFillHistograms;        ///< if true then will fill diagnostic hists
@@ -69,6 +74,8 @@ private:
     std::vector<TProfile*> fFFTImaginaryVec;
     std::vector<TProfile*> fSmoothPowerVec;
     std::vector<TProfile*> fFFTCorValHistVec;
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service

@@ -4,10 +4,13 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include <cmath>
 #include <algorithm>
@@ -46,10 +49,13 @@ RawDigitFFTAlg::~RawDigitFFTAlg()
 ///
 void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
 {
-    fTransformViewVec   = pset.get<std::vector<bool>>("TransformViewVec",     std::vector<bool>() = {true,false,false});
-    fFillHistograms     = pset.get<bool             >("FillHistograms",                                          false);
-    fHistDirName        = pset.get<std::string      >("HistDirName",                                       "FFT_hists");
+    fTransformViewVec = pset.get<std::vector<bool>>("TransformViewVec",     std::vector<bool>() = {true,false,false});
+    fFillHistograms   = pset.get<bool             >("FillHistograms",                                          false);
+    fHistDirName      = pset.get<std::string      >("HistDirName",                                       "FFT_hists");
     
+    const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
+    
+    fWaveformTool     = art::make_tool<icarus_tool::IWaveformTool>(waveformParamSet);
 }
     
 //----------------------------------------------------------------------------
@@ -293,19 +299,19 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
 //            double realRunSum       = std::accumulate(realVals.begin()      + firstBin + 1, realVals.begin()      + lastBin + 1, 0.);
 //            double imaginaryRunSum  = std::accumulate(imaginaryVals.begin() + firstBin + 1, imaginaryVals.begin() + lastBin + 1, 0.);
             
-            triangleSmooth(powerVec);
+            fWaveformTool->triangleSmooth(powerVec, powerVec);
 //            triangleSmooth(powerVec);
 //            triangleSmooth(realVals);
 //            triangleSmooth(imaginaryVals);
             
             std::vector<double> powerDerivVec;
             
-            firstDerivative(powerVec, powerDerivVec);
+            fWaveformTool->firstDerivative(powerVec, powerDerivVec);
             
             // Find the peaks...
-            PeakTupleVec peakTupleVec;
+            icarus_tool::IWaveformTool::PeakTupleVec peakTupleVec;
             
-            findPeaks(powerDerivVec, peakTupleVec, 10., 300);
+            fWaveformTool->findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
             
             // Try smoothing the peak regions
             for(const auto& peakTuple : peakTupleVec)
@@ -412,7 +418,7 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
 }
 
 template void RawDigitFFTAlg::getFFTCorrection<float>(std::vector<float>& corValVec, size_t maxBin) const;
-    
+/*
 void RawDigitFFTAlg::triangleSmooth(std::vector<double>& smoothVec, size_t lowestBin) const
 {
     std::vector<double>::iterator curItr  = smoothVec.begin() + 2 + lowestBin;
@@ -476,5 +482,5 @@ void RawDigitFFTAlg::findPeaks(std::vector<double>& derivVec, PeakTupleVec& peak
     
     return;
 }
-    
+*/    
 }

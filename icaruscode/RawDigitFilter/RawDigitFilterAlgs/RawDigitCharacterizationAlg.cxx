@@ -52,7 +52,7 @@ void RawDigitCharacterizationAlg::reconfigure(fhicl::ParameterSet const & pset)
     fMaxPedestalDiff       = pset.get<double>             ("MaxPedestalDiff",                                           10.);
     fHistsWireGroup        = pset.get<std::vector<size_t>>("FFTHistsWireGroup",         std::vector<size_t>() = {1, 33, 34});
     fNumWiresToGroup       = pset.get<std::vector<size_t>>("NumWiresToGroup",          std::vector<size_t>() = {48, 48, 96});
-    fFillHistograms        = pset.get<bool>               ("FillHistograms",                                          false);
+    fFillHistograms        = pset.get<bool>               ("FillHistograms",                                           true);
 }
 
 //----------------------------------------------------------------------------
@@ -77,21 +77,21 @@ void RawDigitCharacterizationAlg::initializeHists(art::ServiceHandle<art::TFileS
         fPedValHist[1]    = tfs->make<TH1D>("PedVPlane", ";Ped",   200,  1950,  2150.);
         fPedValHist[2]    = tfs->make<TH1D>("PedWPlane", ";Ped",   200,   350,   550.);
     
-        fRmsValProf[0]    = tfs->make<TProfile>("RmsUPlaneProf",    ";Wire #",  2400, 0., 2400., 0., 100.);
-        fRmsValProf[1]    = tfs->make<TProfile>("RmsVPlaneProf",    ";Wire #",  2400, 0., 2400., 0., 100.);
-        fRmsValProf[2]    = tfs->make<TProfile>("RmsWPlaneProf",    ";Wire #",  3456, 0., 3456., 0., 100.);
+        fRmsValProf[0]    = tfs->make<TProfile>("RmsPlane0Prof",    ";Wire #",  1200, 0., 1200., 0., 100.);
+        fRmsValProf[1]    = tfs->make<TProfile>("RmsPlane1Prof",    ";Wire #",  5000, 0., 5000., 0., 100.);
+        fRmsValProf[2]    = tfs->make<TProfile>("RmsPlane2Prof",    ";Wire #",  5000, 0., 5000., 0., 100.);
     
-        fMinMaxValProf[0] = tfs->make<TProfile>("MinMaxUPlaneProf", ";Wire #",  2400, 0., 2400., 0., 200.);
-        fMinMaxValProf[1] = tfs->make<TProfile>("MinMaxVPlaneProf", ";Wire #",  2400, 0., 2400., 0., 200.);
-        fMinMaxValProf[2] = tfs->make<TProfile>("MinMaxWPlaneProf", ";Wire #",  3456, 0., 3456., 0., 200.);
+        fMinMaxValProf[0] = tfs->make<TProfile>("MinMaxPlane0Prof", ";Wire #",  1200, 0., 1200., 0., 200.);
+        fMinMaxValProf[1] = tfs->make<TProfile>("MinMaxPlane1Prof", ";Wire #",  5000, 0., 5000., 0., 200.);
+        fMinMaxValProf[2] = tfs->make<TProfile>("MinMaxPlane2Prof", ";Wire #",  5000, 0., 5000., 0., 200.);
 
-        fPedValProf[0]    = tfs->make<TProfile>("PedUPlaneProf",    ";Wire #",  2400, 0., 2400., 1500., 2500.);
-        fPedValProf[1]    = tfs->make<TProfile>("PedVPlaneProf",    ";Wire #",  2400, 0., 2400., 1500., 2500.);
-        fPedValProf[2]    = tfs->make<TProfile>("PedWPlaneProf",    ";Wire #",  3456, 0., 3456.,    0., 1000.);
+        fPedValProf[0]    = tfs->make<TProfile>("PedPlane0Prof",    ";Wire #",  1200, 0., 1200., 1500., 2500.);
+        fPedValProf[1]    = tfs->make<TProfile>("PedPlane1Prof",    ";Wire #",  5000, 0., 5000., 1500., 2500.);
+        fPedValProf[2]    = tfs->make<TProfile>("PedPlane2Prof",    ";Wire #",  5000, 0., 5000.,    0., 1000.);
     
-        fAverageHist[0]   = tfs->make<TH1D>("AverageU", ";Bin", 1000, 1500., 2500.);
-        fAverageHist[1]   = tfs->make<TH1D>("AverageV", ";Bin", 1000, 1500., 2500.);
-        fAverageHist[2]   = tfs->make<TH1D>("AverageW", ";Bin", 1000,    0., 1000.);
+        fAverageHist[0]   = tfs->make<TH1D>("Average0", ";Bin", 1000, 1500., 2500.);
+        fAverageHist[1]   = tfs->make<TH1D>("Average1", ";Bin", 1000, 1500., 2500.);
+        fAverageHist[2]   = tfs->make<TH1D>("Average2", ";Bin", 1000,    0., 1000.);
     
         fMinMaxProfiles.resize(3);
         fSkewnessProfiles.resize(3);

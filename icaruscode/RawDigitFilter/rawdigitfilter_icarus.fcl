@@ -1,5 +1,14 @@
+#include "waveformtools_icarus.fcl"
 
 BEGIN_PROLOG
+
+FFT_algorithm:
+{
+    TransformViewVec:      [true, true, true]
+    FillHistograms:        true
+    HistDirName:           "FFTAlg"
+    WaveformTool:          @local::Waveform_Tool
+}
 
 icarus_rawdigitfilter:
 {
@@ -24,7 +33,7 @@ icarus_rawdigitfilter:
         MaxPedestalDiff:       10.
         FFTHistsWireGroup:     [1, 33, 34]
         NumWiresToGroup:       [48, 48, 96]
-        FillHistograms:        false
+        FillHistograms:        true
     }
     CorrelatedCorrectionAlg:
     {
@@ -40,6 +49,7 @@ icarus_rawdigitfilter:
         FillHistograms:        false
         RunFFTCorrectedWires:  false
         NumRmsToSmooth:        [6., 6., 6.]
+        FFTAlg:                @local::FFT_algorithm
     }
     FilterAlg:
     {
@@ -47,15 +57,7 @@ icarus_rawdigitfilter:
         StructuringElement:    30
         FillHistograms:        false
     }
-    FFTAlg:
-    {
-        TransformViewVec:      [true, true, true]
-        ZigZagCorrectVec:      [false, false,  false]
-        ZigZagCorrectBin:      2800
-        FillHistograms:        true
-        HistDirName:           "FFTAlg"
-    }
+    FFTAlg:                    @local::FFT_algorithm
 }
-
 
 END_PROLOG

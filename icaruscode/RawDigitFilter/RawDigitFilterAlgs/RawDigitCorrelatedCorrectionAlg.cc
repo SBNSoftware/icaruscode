@@ -23,7 +23,7 @@ namespace caldata
 /// pset - Fcl parameters.
 ///
 RawDigitCorrelatedCorrectionAlg::RawDigitCorrelatedCorrectionAlg(fhicl::ParameterSet const & pset) :
-    fFFTAlg(pset)
+    fFFTAlg(pset.get<fhicl::ParameterSet>("FFTAlg"))
 {
     reconfigure(pset);
 
