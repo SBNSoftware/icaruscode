@@ -20,6 +20,11 @@ namespace util
     class SignalShaping;
 }
 
+namespace art
+{
+    class TFileDirectory;
+}
+
 namespace icarus_tool
 {
     class IFieldResponse;
@@ -31,8 +36,9 @@ namespace icarus_tool
     public:
         virtual ~IResponse() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)  = 0;
-        virtual void setResponse(double weight)                  = 0;
+        virtual void configure(const fhicl::ParameterSet& pset)   = 0;
+        virtual void setResponse(double weight)                   = 0;
+        virtual void outputHistograms(art::TFileDirectory&) const = 0;
         
         virtual size_t                      getPlane()               const = 0;
         

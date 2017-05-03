@@ -143,17 +143,14 @@ namespace util {
         void init();
         
         // Attributes.
-        bool fInit;               ///< Initialization flag
+        bool fInit;                                                 ///< Initialization flag
         
         // Fcl parameters.
         size_t                              fPlaneForNormalization;
         double                              fDeconNorm;
-        DoubleVec2                          fNoiseFactVec;       ///< RMS noise in ADCs for lowest gain setting
-        DoubleVec                           fCalibResponseTOffset; // calibrated time offset to align U/V/Y Signals
-        double                              fDefaultEField;
-        double                              fDefaultTemperature;
-        DoubleVec                           fTimeScaleParams;
+        DoubleVec2                          fNoiseFactVec;          ///< RMS noise in ADCs for lowest gain setting
         bool                                fPrintResponses;
+        bool                                fStoreHistograms;
         
         // Field response tools
         PlaneToResponseMap                  fPlaneToResponseMap;

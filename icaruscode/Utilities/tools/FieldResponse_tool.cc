@@ -6,6 +6,7 @@
 #include <cmath>
 #include "IFieldResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -27,8 +28,9 @@ public:
     
     ~FieldResponse() {}
     
-    void configure(const fhicl::ParameterSet& pset)                         override;
-    void setResponse(double weight, double correct3D, double timeScaleFctr) override;
+    void configure(const fhicl::ParameterSet&)        override;
+    void setResponse(double, double, double)          override;
+    void outputHistograms(art::TFileDirectory&) const override;
     
     size_t                     getPlane()             const override;
     size_t                     getNumBins()           const override;
@@ -45,7 +47,7 @@ public:
     
 private:
     // Utility routine for converting numbers to strings
-    std::string         numberToString(int number);
+    std::string         numberToString(int number);    
     
     // Make sure we have been initialized
     bool                fIsValid;
@@ -149,6 +151,22 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
         
         fFieldResponseVec.at(bin-1) = interpolate(xVal) * fFieldResponseAmplitude * weight;
     }
+    
+    return;
+}
+    
+void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // It is assumed that the input TFileDirectory has been set up to group histograms into a common
+    // folder at the calling routine's level. Here we create one more level of indirection to keep
+    // histograms made by this tool separate.
+    art::TFileDirectory dir = histDir.mkdir(fFieldResponseHistName.c_str());
+    
+    TAxis* xAxis = fFieldResponseHist->GetXaxis();
+    
+    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
+    
+    for(int idx = 0; idx < xAxis->GetNbins(); idx++) hist->Fill(idx,fFieldResponseHist->GetBinContent(idx));
     
     return;
 }

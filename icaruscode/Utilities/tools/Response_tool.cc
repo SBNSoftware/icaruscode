@@ -6,6 +6,7 @@
 #include <cmath>
 #include "IResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -33,8 +34,9 @@ public:
     
     ~Response() {}
     
-    void configure(const fhicl::ParameterSet& pset)  override;
-    void setResponse(double weight)                  override;
+    void configure(const fhicl::ParameterSet& pset)   override;
+    void setResponse(double weight)                   override;
+    void outputHistograms(art::TFileDirectory&) const override;
     
     size_t                      getPlane()               const override {return fThisPlane;}
     
@@ -200,6 +202,19 @@ void Response::setResponse(double weight)
     fSignalShaping.AddFilterFunction(fFilter->getResponseVec());
     fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );
     fSignalShaping.CalculateDeconvKernel();
+    
+    return;
+}
+    
+void Response::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // Create a subfolder in which to place the "response" histograms
+    std::string thisResponse = "ResponsesPlane_" + std::to_string(fThisPlane);
+    
+    art::TFileDirectory dir = histDir.mkdir(thisResponse.c_str());
+    
+    // Do the field response histograms
+    fFieldResponse->outputHistograms(dir);
     
     return;
 }

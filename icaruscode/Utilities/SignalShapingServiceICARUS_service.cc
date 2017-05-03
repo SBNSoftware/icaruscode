@@ -69,15 +69,11 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
         fPlaneToResponseMap[planeIdx].push_back(art::make_tool<icarus_tool::IResponse>(responseToolParamSet));
     }
     
-    fPlaneForNormalization  = pset.get<size_t>("PlaneForNormalization");
-    fPrintResponses         = pset.get<bool>("PrintResponses");
-    fDeconNorm              = pset.get<double>("DeconNorm");
-    fCalibResponseTOffset   = pset.get< DoubleVec >("CalibResponseTOffset");
-    fNoiseFactVec           = pset.get<DoubleVec2>("NoiseFactVec");
-    
-    // constructor decides if initialized value is a path or an environment variable
-    fDefaultEField          = pset.get<double>("DefaultEField");
-    fDefaultTemperature     = pset.get<double>("DefaultTemperature");
+    fPlaneForNormalization  = pset.get<size_t>(    "PlaneForNormalization");
+    fPrintResponses         = pset.get<bool>(      "PrintResponses"       );
+    fDeconNorm              = pset.get<double>(    "DeconNorm"            );
+    fNoiseFactVec           = pset.get<DoubleVec2>("NoiseFactVec"         );
+    fStoreHistograms        = pset.get<bool>(      "StoreHistograms"      );
     
     fInit = false;
     
@@ -132,6 +128,19 @@ void util::SignalShapingServiceICARUS::init()
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
         {
             fPlaneToResponseMap[planeIdx].front().get()->setResponse(weight);                
+        }
+        
+        // Check to see if we want histogram output
+        if (fStoreHistograms)
+        {
+            art::ServiceHandle<art::TFileService> tfs;
+            
+            // Make a directory for these histograms
+            art::TFileDirectory dir = tfs->mkdir("SignalShaping");
+            
+            // Loop through response tools first
+            for(const auto& response: fPlaneToResponseMap) response.second.front().get()->outputHistograms(dir);
+
         }
     }
     
