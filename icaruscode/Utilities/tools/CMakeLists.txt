@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
 set( icarus_tool_lib_list
-                        lardata_Utilities_LArFFT_service
+            lardata_Utilities_LArFFT_service
 			larcore_Geometry
 			larevt_CalibrationDBI_IOVData
 			larevt_CalibrationDBI_Providers
@@ -53,6 +53,11 @@ simple_plugin( Filter  "tool"
 	       BASENAME_ONLY
         )
 
+
+simple_plugin( Waveform  "tool"
+               ${icarus_tool_lib_list}
+               BASENAME_ONLY
+             )
 
 install_headers()
 install_source()
