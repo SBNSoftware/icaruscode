@@ -215,6 +215,8 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     // Do the field response histograms
     fFieldResponse->outputHistograms(dir);
+    fElectronicsResponse->outputHistograms(dir);
+    fFilter->outputHistograms(dir);
     
     return;
 }

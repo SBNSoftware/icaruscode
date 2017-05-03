@@ -135,6 +135,9 @@ void util::SignalShapingServiceICARUS::init()
         {
             art::ServiceHandle<art::TFileService> tfs;
             
+            // Make sure we are at the top level
+            tfs->file().cd();
+            
             // Make a directory for these histograms
             art::TFileDirectory dir = tfs->mkdir("SignalShaping");
             
