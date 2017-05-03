@@ -166,7 +166,14 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     
     TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
     
-    for(int idx = 0; idx < xAxis->GetNbins(); idx++) hist->Fill(idx,fFieldResponseHist->GetBinContent(idx));
+    double binWidth = (xAxis->GetXmax() - xAxis->GetXmin()) / double(xAxis->GetNbins());
+    
+    for(int idx = 0; idx < xAxis->GetNbins(); idx++)
+    {
+        double xBin = xAxis->GetXmin() + idx * binWidth;
+        
+        hist->Fill(xBin,fFieldResponseHist->GetBinContent(idx));
+    }
     
     return;
 }

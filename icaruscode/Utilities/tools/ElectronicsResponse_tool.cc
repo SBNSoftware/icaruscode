@@ -11,6 +11,8 @@
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
+#include "TH1D.h"
+
 #include <fstream>
 
 namespace icarus_tool
@@ -39,7 +41,7 @@ private:
     double              fASICShapingTime;
     double              fADCPerPCAtLowestASICGain;
     
-    // Container for the field response "function"
+    // Container for the electronics response "function"
     std::vector<double> fElectronicsResponseVec;
 };
     
@@ -119,6 +121,12 @@ void ElectronicsResponse::outputHistograms(art::TFileDirectory& histDir) const
     std::string dirName = "ElectronicsPlane_" + std::to_string(fPlane);
     
     art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
+    
+    std::string histName = "ElectronicsResponse_" + std::to_string(fPlane);
+    
+    TH1D* hist = dir.make<TH1D>(histName.c_str(), "Response", fElectronicsResponseVec.size(), 0., fElectronicsResponseVec.size());
+    
+    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx, fElectronicsResponseVec.at(idx));
     
     return;
 }
