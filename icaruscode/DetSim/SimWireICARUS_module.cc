@@ -379,8 +379,8 @@ void SimWireICARUS::produce(art::Event& evt)
         {
             std::fill(chargeWork.begin(), chargeWork.end(), 0.);
         
-            // remove the time offset
-            int time_offset = 0; //sss->FieldResponseTOffset(chan);
+            // remove the field response time offset
+            int time_offset = sss->FieldResponseTOffset(channel);
         
             // loop over the tdcs and grab the number of electrons for each
             for(int tick = 0; tick < (int)fNTicks; tick++)
