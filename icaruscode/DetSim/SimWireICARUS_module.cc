@@ -379,9 +379,6 @@ void SimWireICARUS::produce(art::Event& evt)
         {
             std::fill(chargeWork.begin(), chargeWork.end(), 0.);
         
-            // remove the field response time offset
-            int time_offset = sss->FieldResponseTOffset(channel);
-        
             // loop over the tdcs and grab the number of electrons for each
             for(int tick = 0; tick < (int)fNTicks; tick++)
             {
@@ -394,14 +391,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 
                 if(charge==0) continue;
             
-                // Apply artificial time offset to take care of field response convolution
-                // wrap the negative times to the end of the buffer
-                // The offset should be take care of in shaping service, by shifting the response
-                int raw_digit_index = ( (tick + time_offset) >= 0 ? tick + time_offset : (fNTicks + (tick + time_offset)) );
-            
-                if(raw_digit_index <= 0 || raw_digit_index >= (int)fNTicks) continue;
-            
-                chargeWork.at(raw_digit_index) += charge;
+                chargeWork.at(tick) += charge;
             } // loop over tdcs
         
             // now we have the tempWork for the adjacent wire of interest
