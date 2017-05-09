@@ -17,6 +17,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "IFieldResponse.h"
 #include "IElectronicsResponse.h"
 #include "IFilter.h"
@@ -218,6 +219,46 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     fElectronicsResponse->outputHistograms(dir);
     fFilter->outputHistograms(dir);
     
+    // Now make hists for the full response
+    std::string dirName = "Response_" + std::to_string(fThisPlane);
+    
+    art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
+    const std::vector<double>& responseVec  = this->getSignalShaping().Response();
+    double                     numBins      = responseVec.size();
+    std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
+    TH1D*                      hist         = dir.make<TH1D>(histName.c_str(), "Response;Time(ticks)", numBins, 0., numBins);
+    
+    for(int bin = 0; bin < numBins; bin++)
+    {
+        hist->Fill(bin, responseVec.at(bin));
+    }
+
+    // Get the FFT, need the waveform tool for consistency
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    
+    std::vector<double> powerVec;
+    
+    waveformTool->getFFTPower(responseVec, powerVec);
+    
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double      samplingRate = detprop->SamplingRate();
+    double      maxFreq      = 500. / samplingRate;
+    double      freqWidth    = maxFreq / powerVec.size();
+    std::string freqName     = "Response_FFTPlane_" + std::to_string(fThisPlane);
+    TH1D*       freqHist     = dir.make<TH1D>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    {
+        double freq = freqWidth * (idx + 0.5);
+        
+        freqHist->Fill(freq, powerVec.at(idx));
+    }
+    
+
     return;
 }
 

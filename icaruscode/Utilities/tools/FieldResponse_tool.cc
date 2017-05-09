@@ -6,12 +6,14 @@
 #include <cmath>
 #include "IFieldResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "TFile.h"
 #include "TH1D.h"
 
@@ -164,15 +166,64 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     
     TAxis* xAxis = fFieldResponseHist->GetXaxis();
     
-    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
+    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
     
     double binWidth = (xAxis->GetXmax() - xAxis->GetXmin()) / double(xAxis->GetNbins());
     
+    std::vector<double> histResponseVec(xAxis->GetNbins());
+    
     for(int idx = 0; idx < xAxis->GetNbins(); idx++)
+    {
+        double xBin   = xAxis->GetXmin() + idx * binWidth;
+        double binVal = fFieldResponseHist->GetBinContent(idx);
+        
+        hist->Fill(xBin, binVal);
+        histResponseVec.at(idx) = binVal;
+    }
+    
+    // Let's apply some smoothing as an experiment... first let's get the tool we need
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    // Make a copy of the response vec
+    std::vector<double> smoothedResponseVec;
+    
+    // Run the triangulation smoothing
+    waveformTool->triangleSmooth(histResponseVec, smoothedResponseVec);
+
+    // Now make histogram of this
+    std::string histName = "Smooth_" + fFieldResponseHistName;
+    
+    TH1D* smoothHist = dir.make<TH1D>(histName.c_str(), "Field Response; Time(us)", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
+    
+    for(size_t idx = 0; idx < smoothedResponseVec.size(); idx++)
     {
         double xBin = xAxis->GetXmin() + idx * binWidth;
         
-        hist->Fill(xBin,fFieldResponseHist->GetBinContent(idx));
+        smoothHist->Fill(xBin,smoothedResponseVec.at(idx));
+    }
+    
+    // Get the FFT of the response
+    std::vector<double> powerVec;
+    
+    waveformTool->getFFTPower(histResponseVec, powerVec);
+    
+    // Now we can plot this...
+    double maxFreq   = 0.5 / binWidth;   // binWidth will be in us, maxFreq will be units of MHz
+    double freqWidth = maxFreq / powerVec.size();
+    
+    histName = "FFT_" + fFieldResponseHistName;
+    
+    TH1D* fftHist = dir.make<TH1D>(histName.c_str(), "Field Response FFT; Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    {
+        double bin = (idx + 0.5) * freqWidth;
+        
+        fftHist->Fill(bin, powerVec.at(idx));
     }
     
     return;

@@ -127,7 +127,7 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     double      maxFreq      = 500. / samplingRate;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
     
-    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter", numBins2, 0., maxFreq);
+    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter;Frequency(MHz)", numBins2, 0., maxFreq);
     
     for(int bin = 0; bin < numBins2; bin++)
     {
