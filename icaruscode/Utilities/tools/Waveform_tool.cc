@@ -17,6 +17,8 @@
 
 #include "art/Utilities/make_tool.h"
 
+#include "TVirtualFFT.h"
+
 #include <fstream>
 #include <iomanip>
 
@@ -35,16 +37,18 @@ public:
     using PeakTuple    = std::tuple<size_t,size_t,size_t>; // first bin, peak bin, last bin
     using PeakTupleVec = std::vector<PeakTuple>;
     
-    void triangleSmooth(std::vector<float>&,  std::vector<float>&,  size_t = 0)                                 const;
-    void triangleSmooth(std::vector<double>&, std::vector<double>&, size_t = 0)                                 const;
-    void firstDerivative(std::vector<float>&,  std::vector<float>&)                                             const;
-    void firstDerivative(std::vector<double>&, std::vector<double>&)                                            const;
+    void triangleSmooth(const std::vector<float>&,  std::vector<float>&,  size_t = 0)                           const;
+    void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const;
+    void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const;
+    void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const;
     void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const;
     void findPeaks(std::vector<double>::iterator, std::vector<double>::iterator, PeakTupleVec&, double, size_t) const;
+    void getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec)                    const;
+    void getFFTPower(const std::vector<double>& inputVec, std::vector<double>& outputPowerVec)                  const;
     
 private:
-    template <typename T> void triangleSmooth(std::vector<T>&, std::vector<T>&, size_t = 0)                              const;
-    template <typename T> void firstDerivative(std::vector<T>&,  std::vector<T>&)                                        const;
+    template <typename T> void triangleSmooth(const std::vector<T>&, std::vector<T>&, size_t = 0)                                        const;
+    template <typename T> void firstDerivative(const std::vector<T>&,  std::vector<T>&)                                                  const;
     template <typename T> void findPeaks(typename std::vector<T>::iterator, typename std::vector<T>::iterator, PeakTupleVec&, T, size_t) const;
 };
     
@@ -63,30 +67,30 @@ void Waveform::configure(const fhicl::ParameterSet& pset)
     return;
 }
     
-void Waveform::triangleSmooth(std::vector<double>& inputVec, std::vector<double>& smoothVec, size_t lowestBin) const
+void Waveform::triangleSmooth(const std::vector<double>& inputVec, std::vector<double>& smoothVec, size_t lowestBin) const
 {
     triangleSmooth<double>(inputVec, smoothVec, lowestBin);
     
     return;
 }
     
-void Waveform::triangleSmooth(std::vector<float>& inputVec, std::vector<float>& smoothVec, size_t lowestBin) const
+void Waveform::triangleSmooth(const std::vector<float>& inputVec, std::vector<float>& smoothVec, size_t lowestBin) const
 {
     triangleSmooth<float>(inputVec, smoothVec, lowestBin);
     
     return;
 }
 
-template <typename T> void Waveform::triangleSmooth(std::vector<T>& inputVec, std::vector<T>& smoothVec, size_t lowestBin) const
+template <typename T> void Waveform::triangleSmooth(const std::vector<T>& inputVec, std::vector<T>& smoothVec, size_t lowestBin) const
 {
     if (inputVec.size() != smoothVec.size()) smoothVec.resize(inputVec.size());
     
     std::copy(inputVec.begin(), inputVec.begin() + 2 + lowestBin, smoothVec.begin());
     std::copy(inputVec.end() - 2, inputVec.end(), smoothVec.end() - 2);
     
-    typename std::vector<T>::iterator curItr    = smoothVec.begin() + 2 + lowestBin;
-    typename std::vector<T>::iterator curInItr  = inputVec.begin() + 1 + lowestBin;
-    typename std::vector<T>::iterator stopInItr = inputVec.end()   - 2;
+    typename std::vector<T>::iterator       curItr    = smoothVec.begin() + 2 + lowestBin;
+    typename std::vector<T>::const_iterator curInItr  = inputVec.begin() + 1 + lowestBin;
+    typename std::vector<T>::const_iterator stopInItr = inputVec.end()   - 2;
     
     while(curInItr++ != stopInItr)
     {
@@ -98,21 +102,21 @@ template <typename T> void Waveform::triangleSmooth(std::vector<T>& inputVec, st
     return;
 }
 
-void Waveform::firstDerivative(std::vector<double>& inputVec, std::vector<double>& derivVec) const
+void Waveform::firstDerivative(const std::vector<double>& inputVec, std::vector<double>& derivVec) const
 {
     firstDerivative<double>(inputVec, derivVec);
     
     return;
 }
     
-void Waveform::firstDerivative(std::vector<float>& inputVec, std::vector<float>& derivVec) const
+void Waveform::firstDerivative(const std::vector<float>& inputVec, std::vector<float>& derivVec) const
 {
     firstDerivative<float>(inputVec, derivVec);
     
     return;
 }
     
-template <typename T> void Waveform::firstDerivative(std::vector<T>& inputVec, std::vector<T>& derivVec) const
+template <typename T> void Waveform::firstDerivative(const std::vector<T>& inputVec, std::vector<T>& derivVec) const
 {
     derivVec.resize(inputVec.size(), 0.);
     
@@ -216,7 +220,47 @@ template <typename T> void Waveform::findPeaks(typename std::vector<T>::iterator
 
     return;
 }
+    
+void Waveform::getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec) const
+{
+    std::vector<double> inputDoubleVec(inputVec.size());
+    std::vector<double> outputDoubleVec(inputVec.size()/2);
+    
+    std::copy(inputVec.begin(),inputVec.end(),inputDoubleVec.begin());
+    
+    getFFTPower(inputDoubleVec, outputDoubleVec);
+    
+    if (outputDoubleVec.size() != outputPowerVec.size()) outputPowerVec.resize(outputDoubleVec.size());
+    
+    std::copy(outputDoubleVec.begin(),outputDoubleVec.end(),outputPowerVec.begin());
+    
+    return;
+}
 
+void Waveform::getFFTPower(const std::vector<double>& inputVec, std::vector<double>& outputPowerVec) const
+{
+    // Get the FFT of the response
+    int fftDataSize = inputVec.size();
+    
+    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C");
+    
+    fftr2c->SetPoints(inputVec.data());
+    fftr2c->Transform();
+    
+    // Recover the results so we can compute the power spectrum
+    size_t halfFFTDataSize(fftDataSize/2);
+    
+    std::vector<double> realVals(halfFFTDataSize);
+    std::vector<double> imaginaryVals(halfFFTDataSize);
+    
+    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
+    
+    if (outputPowerVec.size() != halfFFTDataSize) outputPowerVec.resize(halfFFTDataSize,0.);
+    
+    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), outputPowerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
+    
+    return;
+}
     
 DEFINE_ART_CLASS_TOOL(Waveform)
 }
