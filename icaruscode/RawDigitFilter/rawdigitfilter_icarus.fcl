@@ -15,6 +15,7 @@ icarus_rawdigitfilter:
     module_type:           "RawDigitFilterICARUS"
     DigitModuleLabel:      "daq"
     ProcessNoise:          false
+    FFTNoise:              true
     ApplyBinAverage:       true
     ApplyTopHatFilter:     true
     SmoothCorrelatedNoise: true

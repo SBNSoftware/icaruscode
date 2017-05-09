@@ -80,7 +80,8 @@ private:
 
     // Fcl parameters.
     std::string          fDigitModuleLabel;      ///< The full collection of hits
-    bool                 fProcessNoise;          ///< Process the noise
+    bool                 fDoCorrelatedNoise;     ///< Process the noise
+    bool                 fDoFFTCorrection;       ///< Run the FFT noise correction
     bool                 fApplyBinAverage;       ///< Do bin averaging to get rid of high frequency noise
     bool                 fApplyTopHatFilter;     ///< Apply the top hat filter
     bool                 fSmoothCorrelatedNoise; ///< Should we smooth the noise?
@@ -151,7 +152,8 @@ RawDigitFilterICARUS::~RawDigitFilterICARUS()
 void RawDigitFilterICARUS::reconfigure(fhicl::ParameterSet const & pset)
 {
     fDigitModuleLabel      = pset.get<std::string>        ("DigitModuleLabel",                                        "daq");
-    fProcessNoise          = pset.get<bool>               ("ProcessNoise",                                             true);
+    fDoCorrelatedNoise     = pset.get<bool>               ("ProcessNoise",                                             true);
+    fDoFFTCorrection       = pset.get<bool>               ("FFTNoise",                                                 true);
     fApplyBinAverage       = pset.get<bool>               ("ApplyBinAverage",                                          true);
     fApplyTopHatFilter     = pset.get<bool>               ("ApplyTopHatFilter",                                        true);
     fSmoothCorrelatedNoise = pset.get<bool>               ("SmoothCorrelatedNoise",                                    true);
@@ -324,7 +326,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             // Recover the database version of the pedestal
             float pedestal = fPedestalRetrievalAlg.PedMean(channel);
             
-            fFFTAlg.filterFFT(rawadc, view, wire, pedestal);
+            if (fDoFFTCorrection) fFFTAlg.filterFFT(rawadc, view, wire, pedestal);
             
             // Get the kitchen sink
             fCharacterizationAlg.getWaveformParams(rawadc,
@@ -343,7 +345,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                                                    pedCorWireVec[wireIdx]);
             
             // This allows the module to be used simply to truncate waveforms with no noise processing
-            if (!fProcessNoise)
+            if (!fDoCorrelatedNoise)
             {
                 caldata::RawDigitVector pedCorrectedVec;
                 
