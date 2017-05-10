@@ -164,17 +164,15 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     // histograms made by this tool separate.
     art::TFileDirectory dir = histDir.mkdir(fFieldResponseHistName.c_str());
     
-    TAxis* xAxis = fFieldResponseHist->GetXaxis();
+    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
     
-    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
+    double binWidth = getBinWidth() / fTimeCorrectionFactor;
     
-    double binWidth = (xAxis->GetXmax() - xAxis->GetXmin()) / double(xAxis->GetNbins());
+    std::vector<double> histResponseVec(getNumBins());
     
-    std::vector<double> histResponseVec(xAxis->GetNbins());
-    
-    for(int idx = 0; idx < xAxis->GetNbins(); idx++)
+    for(size_t idx = 0; idx < getNumBins(); idx++)
     {
-        double xBin   = xAxis->GetXmin() + idx * binWidth;
+        double xBin   = getLowEdge() + idx * binWidth;
         double binVal = fFieldResponseHist->GetBinContent(idx);
         
         hist->Fill(xBin, binVal);
@@ -197,11 +195,11 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     // Now make histogram of this
     std::string histName = "Smooth_" + fFieldResponseHistName;
     
-    TH1D* smoothHist = dir.make<TH1D>(histName.c_str(), "Field Response; Time(us)", xAxis->GetNbins(), xAxis->GetXmin(), xAxis->GetXmax());
+    TH1D* smoothHist = dir.make<TH1D>(histName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
     
     for(size_t idx = 0; idx < smoothedResponseVec.size(); idx++)
     {
-        double xBin = xAxis->GetXmin() + idx * binWidth;
+        double xBin = getLowEdge() + idx * binWidth;
         
         smoothHist->Fill(xBin,smoothedResponseVec.at(idx));
     }
