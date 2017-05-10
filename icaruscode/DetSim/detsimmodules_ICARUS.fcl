@@ -25,9 +25,9 @@ standard_simwire:
   NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
 }
 
-standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
-standard_simwire.NoiseGenToolVec[1].HistogramName: "hnoiseI2"
-standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
+#standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
+#standard_simwire.NoiseGenToolVec[1].HistogramName: "hnoiseI2"
+#standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
 
 icarus_simwire:  @local::standard_simwire
 
