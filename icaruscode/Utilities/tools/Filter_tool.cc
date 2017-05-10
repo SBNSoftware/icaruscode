@@ -123,15 +123,15 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = detprop->SamplingRate();
-    double      numBins2     = fFilterVec.size();
+    double      numBins      = fFilterVec.size();
     double      maxFreq      = 500. / samplingRate;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
     
-    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter;Frequency(MHz)", numBins2, 0., maxFreq);
+    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter;Frequency(MHz)", numBins, 0., maxFreq);
     
-    for(int bin = 0; bin < numBins2; bin++)
+    for(int bin = 0; bin < numBins; bin++)
     {
-        double freq = 500. * bin / (samplingRate * numBins2);
+        double freq = maxFreq * double(bin + 0.5) / double(numBins);
         
         hist->Fill(freq, fFilterVec.at(bin).Re());
     }
