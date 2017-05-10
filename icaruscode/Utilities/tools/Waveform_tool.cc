@@ -248,7 +248,7 @@ void Waveform::getFFTPower(const std::vector<double>& inputVec, std::vector<doub
     fftr2c->Transform();
     
     // Recover the results so we can compute the power spectrum
-    size_t halfFFTDataSize(fftDataSize/2);
+    size_t halfFFTDataSize(fftDataSize/2 + 1);
     
     std::vector<double> realVals(halfFFTDataSize);
     std::vector<double> imaginaryVals(halfFFTDataSize);
