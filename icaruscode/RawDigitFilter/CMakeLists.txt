@@ -9,7 +9,7 @@ art_make( LIBRARY_NAME RawDigitFilter
                         cetlib cetlib_except
                         ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
-                        larcore_Geometry
+                        larcorealg_Geometry
                         RawDigitFilterAlgs
                         larcore_Geometry_Geometry_service
                         lardata_Utilities

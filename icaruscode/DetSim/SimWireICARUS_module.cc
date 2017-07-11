@@ -53,7 +53,7 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larcore/Geometry/Geometry.h"
-#include "larcore/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable

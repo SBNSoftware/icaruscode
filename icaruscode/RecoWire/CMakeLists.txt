@@ -6,7 +6,7 @@ art_make( LIBRARY_NAME RecoWire
 	                ${FHICLCPP}
 			${CETLIB}
 			${ROOT_BASIC_LIB_LIST}
-	  MODULE_LIBRARIES larcore_Geometry
+	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 	                lardata_Utilities
 			larevt_Filters
