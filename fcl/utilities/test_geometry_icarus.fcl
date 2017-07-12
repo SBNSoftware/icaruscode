@@ -1,7 +1,7 @@
 #
-# Geometry test module on "generic" LArTPC detector geometry
+# Geometry test module on ICARUS detector geometry
 # 
-# Version: 1.1
+# Version: 1.0
 #
 
 #include "geometry.fcl"
