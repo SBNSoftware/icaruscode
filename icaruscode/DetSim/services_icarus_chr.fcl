@@ -109,6 +109,8 @@ NuRandomService:                    @local::random_NuRandomService
     TimeOffsetV:       0.585        # relative time offsets in ticks between planes
     TimeOffsetZ:       0            # relative time offsets in ticks between planes
 
+    SimpleBoundaryProcess: true  #enable opticalBoundaryProcessSimple instead of G4 default
+
   }
 
   LArPropertiesService:  @local::standard_properties
