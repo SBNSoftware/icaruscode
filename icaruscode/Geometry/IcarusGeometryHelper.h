@@ -13,8 +13,8 @@
 #define Icarus_ExptGeoHelperInterface_h
 
 #include "larcore/Geometry/ExptGeoHelperInterface.h"
-#include "larcore/Geometry/CryostatGeo.h"
-#include "larcore/Geometry/AuxDetGeo.h"
+#include "larcorealg/Geometry/CryostatGeo.h"
+#include "larcorealg/Geometry/AuxDetGeo.h"
 
 #include <memory>
 #include <vector>

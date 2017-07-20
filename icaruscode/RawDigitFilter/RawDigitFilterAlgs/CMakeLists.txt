@@ -6,7 +6,7 @@ art_make( LIBRARY_NAME RawDigitFilterAlgs
                         ${FHICLCPP}
                         cetlib cetlib_except
                         ${ROOT_BASIC_LIB_LIST}
-                        larcore_Geometry
+                        larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
                         larevt_Filters

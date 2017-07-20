@@ -35,7 +35,7 @@ art_make( BASENAME_ONLY
 
 simple_plugin(SimWireICARUS "module"
           BASENAME_ONLY
-              larcore_Geometry
+              larcorealg_Geometry
               larcore_Geometry_Geometry_service
               larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
               lardata_Utilities
