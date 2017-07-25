@@ -3,7 +3,7 @@ add_subdirectory(tools)
 
 art_make( BASENAME_ONLY
           EXCLUDE SimWireICARUS_module.cc 
-          MODULE_LIBRARIES larcore_Geometry
+          MODULE_LIBRARIES larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
                         lardata_Utilities
