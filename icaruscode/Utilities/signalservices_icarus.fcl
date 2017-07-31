@@ -27,8 +27,8 @@ FilterTool:
     tool_type: Filter
     Plane:                       0
     FilterParametersVec:         [1., 0., 0.1 ]
-    #FilterFunction:              "(x>0.0)*gaus"
-    FilterFunction:              "1."
+    FilterFunction:              "(x>0.0)*gaus"
+    #FilterFunction:              "1."
     FilterWidthCorrectionFactor: 1.0
 }
 
@@ -48,13 +48,9 @@ signalshapingservice_icarus:
 {
     PlaneForNormalization:           2
     PrintResponses:                  "false"
-    DeconNorm:                       1. #200.
-    CalibResponseTOffset:            [ 0., 0., 0. ]
-    NoiseFactVec:                    [ [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ], [ 1.3, 1.3, 1.3, 1.3 ] ]
-    UseCalibratedResponses:          "false"
-    DefaultEField:                   0.5
-    DefaultTemperature:              87.5
-    TimeScaleParams:                 [1.,1.,1.]
+    DeconNorm:                       50. #200.
+    NoiseFactVec:                    [ [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ] ]
+    StoreHistograms:                 true
 
     ResponseTools:
     {
@@ -64,23 +60,26 @@ signalshapingservice_icarus:
     }
 }
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Plane:                     0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.DeconvPol:                 -1
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.Plane:       0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.SignalType:  0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane: 0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.Plane:              0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Plane:                       0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.DeconvPol:                   -1
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.Plane:         0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.SignalType:    0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:   0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.Plane:                0
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.05]
 
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.Plane:                     1
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:       1
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:  0
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane: 1
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:              1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.1]
 
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                     2
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:       2
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.SignalType:  1
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane: 2
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.Plane:              2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.05]
 
 END_PROLOG

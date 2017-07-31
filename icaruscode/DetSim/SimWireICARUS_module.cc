@@ -53,7 +53,7 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larcore/Geometry/Geometry.h"
-#include "larcore/Geometry/GeometryCore.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
@@ -93,20 +93,15 @@ namespace detsim {
     std::string             fDriftEModuleLabel; ///< module making the ionization electrons
     raw::Compress_t         fCompression;       ///< compression type to use
 
-    double                  fNoiseWidth;        ///< exponential noise width (kHz)
-    double                  fNoiseRand;         ///< fraction of random "wiggle" in noise in freq. spectrum
-    double                  fLowCutoff;         ///< low frequency filter cutoff (kHz)
-    double                  fSampleRate;        ///< sampling rate in ns
-
     size_t                  fNTicks;	        ///< number of ticks of the clock    
     unsigned int            fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)	 	   
 
     std::map< double, int > fShapingTimeOrder;
-    std::string             fTrigModName;       ///< Trigger data product producer name
     
     bool                    fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
+    bool                    fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
       
-    std::unique_ptr<icarus_tool::IGenNoise> fNoiseTool; ///< Tool for generating noise
+    std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
 
     bool fMakeNoiseDists;
 
@@ -117,8 +112,6 @@ namespace detsim {
     std::vector<double> fTestCharge;
 
     int         fSample; // for histograms, -1 means no histos
-
-    //std::vector<std::vector<std::vector<int> > > fYZwireOverlap; //channel ranges for shorted wires and corresponding channel ranges for wires effected on other planes
 
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
@@ -173,14 +166,10 @@ SimWireICARUS::~SimWireICARUS() {}
  void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
  {
      fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel");
-     fNoiseWidth       = p.get< double              >("NoiseWidth");
-     fNoiseRand        = p.get< double              >("NoiseRand");
-     fLowCutoff        = p.get< double              >("LowCutoff");
      fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
+     fSuppressNoSignal = p.get< bool                >("SuppressNoSignal");
      fMakeNoiseDists   = p.get< bool                >("MakeNoiseDists", false);
 
-     //fTrigModName      = p.get< std::string         >("TrigModName");
-     fTrigModName="";
      fTest             = p.get<bool                 >("Test");
      fTestWire         = p.get< size_t              >("TestWire");
      fTestIndex        = p.get< std::vector<size_t> >("TestIndex");
@@ -190,9 +179,10 @@ SimWireICARUS::~SimWireICARUS() {}
          throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
      fSample           = p.get<int                  >("Sample");
      
-     const fhicl::ParameterSet& noiseToolParamSet = p.get<fhicl::ParameterSet>("NoiseGenTool");
+     std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
      
-     fNoiseTool        = art::make_tool<icarus_tool::IGenNoise>(noiseToolParamSet);
+     for(auto& noiseToolParams : noiseToolParamSetVec)
+         fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
 
      //Map the Shaping Times to the entry position for the noise ADC
      //level in fNoiseFactInd and fNoiseFactColl
@@ -200,8 +190,8 @@ SimWireICARUS::~SimWireICARUS() {}
 
      //detector properties information
      auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-     fSampleRate    = detprop->SamplingRate();
-     fNTimeSamples  = detprop->NumberTimeSamples();
+     
+     fNTimeSamples = detprop->NumberTimeSamples();
 
      return;
 }
@@ -284,18 +274,6 @@ void SimWireICARUS::produce(art::Event& evt)
     // In case trigger simulation is run in the same job...
     tss->preProcessEvent(evt);
     auto const* ts = tss->provider();
-   
-    // Check if trigger data product exists or not. If not, throw a warning
-    art::Handle< std::vector<raw::Trigger> > trig_array;
-    evt.getByLabel(fTrigModName, trig_array);
-    if(!trig_array.isValid())
-      std::cout << std::endl << "  "
-      << "\033[95m" << "<<" << __PRETTY_FUNCTION__ << ">>" << "\033[00m"
-      << std::endl << "  "
-      << "\033[93m"
-      << " No trigger data exists => will use the default trigger time set in TimeService..."
-      << "\033[00m"
-      << std::endl;
 
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const size_t N_CHANNELS = fGeometry.Nchannels();
@@ -345,24 +323,26 @@ void SimWireICARUS::produce(art::Event& evt)
     // vectors for working in the following for loop
     std::vector<short>  adcvec(fNTimeSamples, 0);
     std::vector<double> chargeWork(fNTicks,0.);
-    std::vector<double> tempWork(fNTicks,0.);
+    std::vector<double> zeroCharge(fNTicks,0.);
     std::vector<float>  noisetmp(fNTicks,0.);
+    
+    // make sure chargeWork is correct size
+    if (chargeWork.size() < fNTimeSamples)
+        throw std::range_error("SimWireICARUS: chargeWork vector too small");
 
     // loop over the collected responses
     //   this is needed because hits generate responses on adjacent wires!
     for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
     {
+        // get the sim::SimChannel for this channel
+        // Look up first so we can suppress before doing any work if no signal
+        const sim::SimChannel* sc = channels.at(channel);
+        
+        if (fSuppressNoSignal && !sc) continue;
+        
         //clean up working vectors from previous iteration of loop
-        adcvec.resize(fNTimeSamples); //compression may have changed the size of this vector
-        noisetmp.resize(fNTicks); //just in case
-        std::fill(adcvec.begin(),     adcvec.end(),     0);
-        std::fill(chargeWork.begin(), chargeWork.end(), 0.);
-        std::fill(tempWork.begin(),   tempWork.end(),   0.);
-        std::fill(noisetmp.begin(),   noisetmp.end(),   0.);
-      
-        // make sure chargeWork is correct size
-        if (chargeWork.size() < fNTimeSamples)
-            throw std::range_error("SimWireICARUS: chargeWork vector too small");
+        adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
+        noisetmp.resize(fNTicks, 0.);     //just in case
 	
         //use channel number to set some useful numbers
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
@@ -391,54 +371,38 @@ void SimWireICARUS::produce(art::Event& evt)
             << std::endl;
         }
 
-        fNoiseTool->GenerateNoise(noisetmp, noise_factor);
-
-        //If the channel is bad, we can stop here
-        //if you are using the UbooneChannelStatusService, then this removes disconnected, "dead", and "low noise" channels
-        if (fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel)) )
+        // Use the desired noise tool to actually generate the noise on this wire
+        fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor);
+        
+        // If there is something on this wire, and it is not dead, then add the signal to the wire
+        if(sc && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
         {
+            std::fill(chargeWork.begin(), chargeWork.end(), 0.);
+        
+            // loop over the tdcs and grab the number of electrons for each
+            for(int tick = 0; tick < (int)fNTicks; tick++)
+            {
+                int tdc = ts->TPCTick2TDC(tick);
+            
+                // continue if tdc < 0
+                if( tdc < 0 ) continue;
+            
+                double charge = sc->Charge(tdc);
+                
+                if(charge==0) continue;
+            
+                chargeWork.at(tick) += charge;
+            } // loop over tdcs
+        
+            // now we have the tempWork for the adjacent wire of interest
+            // convolve it with the appropriate response function
+            sss->Convolute(channel, chargeWork);
+            
+            // "Make" the ADC vector
             MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
-            raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
-            rd.SetPedestal(ped_mean);
-            digcol->push_back(std::move(rd));
-            continue;
         }
-        
-        // get the sim::SimChannel for this channel
-        const sim::SimChannel* sc = channels.at(channel);
-        
-        if( !sc ) continue;
-        
-        // remove the time offset
-        int time_offset = 0; //sss->FieldResponseTOffset(chan);
-        
-        // loop over the tdcs and grab the number of electrons for each
-        for(int tick = 0; tick < (int)fNTicks; tick++)
-        {
-            int tdc = ts->TPCTick2TDC(tick);
-            
-            // continue if tdc < 0
-            if( tdc < 0 ) continue;
-            
-            double charge = sc->Charge(tdc);
-            if(charge==0) continue;
-            
-            // Apply artificial time offset to take care of field response convolution
-            // wrap the negative times to the end of the buffer
-            // The offset should be take care of in shaping service, by shifting the response
-            int raw_digit_index = ( (tick + time_offset) >= 0 ? tick + time_offset : (fNTicks + (tick + time_offset)) );
-            
-            if(raw_digit_index <= 0 || raw_digit_index >= (int)fNTicks) continue;
-            
-            tempWork.at(raw_digit_index) += charge;
-        } // loop over tdcs
-        
-        // now we have the tempWork for the adjacent wire of interest
-        // convolve it with the appropriate response function
-        sss->Convolute(channel, tempWork);
-
-        // now add the result into the "charge" vector
-        for(size_t bin = 0; bin < fNTicks; ++bin) chargeWork[bin] += tempWork[bin];
+        // "Make" an ADC vector with zero charge added
+        else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
 
         // add this digit to the collection;
         // adcvec is copied, not moved: in case of compression, adcvec will show
@@ -447,13 +411,13 @@ void SimWireICARUS::produce(art::Event& evt)
         // is still there, although unused; a copy of adcvec will instead have
         // only 5000 items. All 9600 items of adcvec will be recovered for free
         // and used on the next loop.
-        MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
         raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
         rd.SetPedestal(ped_mean);
         digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
     }// end of 2nd loop over channels
  
     evt.put(std::move(digcol));
+    
     return;
 }
 

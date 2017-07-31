@@ -2,7 +2,7 @@
 art_make( BASENAME_ONLY
 	  LIBRARY_NAME icarus_Geometry
 	  MODULE_LIBRARIES
-			larcore_Geometry
+			larcorealg_Geometry
 	                ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_IO_ROOT}
 			${ART_FRAMEWORK_MODULES}
@@ -12,7 +12,7 @@ art_make( BASENAME_ONLY
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
 			${BOOST_LIB}
                         ${FHICLCPP}
-	  LIB_LIBRARIES larcore_Geometry
+	  LIB_LIBRARIES larcorealg_Geometry
                         ${MF_MESSAGELOGGER}
                         ${CETLIB}
 			${CETLIB_EXCEPT}

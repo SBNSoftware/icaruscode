@@ -6,11 +6,14 @@
 #include <cmath>
 #include "IFieldResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "TFile.h"
 #include "TH1D.h"
 
@@ -27,8 +30,9 @@ public:
     
     ~FieldResponse() {}
     
-    void configure(const fhicl::ParameterSet& pset)                         override;
-    void setResponse(double weight, double correct3D, double timeScaleFctr) override;
+    void configure(const fhicl::ParameterSet&)        override;
+    void setResponse(double, double, double)          override;
+    void outputHistograms(art::TFileDirectory&) const override;
     
     size_t                     getPlane()             const override;
     size_t                     getNumBins()           const override;
@@ -45,7 +49,7 @@ public:
     
 private:
     // Utility routine for converting numbers to strings
-    std::string         numberToString(int number);
+    std::string         numberToString(int number);    
     
     // Make sure we have been initialized
     bool                fIsValid;
@@ -148,6 +152,76 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
         double xVal = x0 + deltaX * (bin-1) / timeFactor;
         
         fFieldResponseVec.at(bin-1) = interpolate(xVal) * fFieldResponseAmplitude * weight;
+    }
+    
+    return;
+}
+    
+void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // It is assumed that the input TFileDirectory has been set up to group histograms into a common
+    // folder at the calling routine's level. Here we create one more level of indirection to keep
+    // histograms made by this tool separate.
+    art::TFileDirectory dir = histDir.mkdir(fFieldResponseHistName.c_str());
+    
+    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
+    
+    double binWidth = getBinWidth() / fTimeCorrectionFactor;
+    
+    std::vector<double> histResponseVec(getNumBins());
+    
+    for(size_t idx = 0; idx < getNumBins(); idx++)
+    {
+        double xBin   = getLowEdge() + idx * binWidth;
+        double binVal = fFieldResponseHist->GetBinContent(idx);
+        
+        hist->Fill(xBin, binVal);
+        histResponseVec.at(idx) = binVal;
+    }
+    
+    // Let's apply some smoothing as an experiment... first let's get the tool we need
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    // Make a copy of the response vec
+    std::vector<double> smoothedResponseVec;
+    
+    // Run the triangulation smoothing
+    waveformTool->triangleSmooth(histResponseVec, smoothedResponseVec);
+
+    // Now make histogram of this
+    std::string histName = "Smooth_" + fFieldResponseHistName;
+    
+    TH1D* smoothHist = dir.make<TH1D>(histName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
+    
+    for(size_t idx = 0; idx < smoothedResponseVec.size(); idx++)
+    {
+        double xBin = getLowEdge() + idx * binWidth;
+        
+        smoothHist->Fill(xBin,smoothedResponseVec.at(idx));
+    }
+    
+    // Get the FFT of the response
+    std::vector<double> powerVec;
+    
+    waveformTool->getFFTPower(histResponseVec, powerVec);
+    
+    // Now we can plot this...
+    double maxFreq   = 0.5 / binWidth;   // binWidth will be in us, maxFreq will be units of MHz
+    double freqWidth = maxFreq / powerVec.size();
+    
+    histName = "FFT_" + fFieldResponseHistName;
+    
+    TH1D* fftHist = dir.make<TH1D>(histName.c_str(), "Field Response FFT; Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    {
+        double bin = (idx + 0.5) * freqWidth;
+        
+        fftHist->Fill(bin, powerVec.at(idx));
     }
     
     return;

@@ -10,8 +10,8 @@
 #include "icaruscode/Geometry/IcarusGeometryHelper.h"
 #include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 
-//#include "larcore/Geometry/ChannelMapAlg.h"
-#include "larcore/Geometry/GeometryCore.h" // larcore. geo::GeometryData_t
+//#include "larcorealg/Geometry/ChannelMapAlg.h"
+#include "larcorealg/Geometry/GeometryCore.h" // larcore. geo::GeometryData_t
 
 #include "TString.h"
 

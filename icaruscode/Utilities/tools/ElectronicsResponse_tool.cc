@@ -6,9 +6,12 @@
 #include <cmath>
 #include "IElectronicsResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+#include "TH1D.h"
 
 #include <fstream>
 
@@ -22,8 +25,9 @@ public:
     
     ~ElectronicsResponse() {}
     
-    void configure(const fhicl::ParameterSet& pset)   override;
-    void setResponse(size_t numBins, double binWidth) override;
+    void configure(const fhicl::ParameterSet& pset)         override;
+    void setResponse(size_t numBins, double binWidth)       override;
+    void outputHistograms(art::TFileDirectory&)       const override;
     
     size_t                     getPlane()           const override {return fPlane;}
     double                     getFCperADCMicroS()  const override {return fFCperADCMicroS;}
@@ -37,7 +41,7 @@ private:
     double              fASICShapingTime;
     double              fADCPerPCAtLowestASICGain;
     
-    // Container for the field response "function"
+    // Container for the electronics response "function"
     std::vector<double> fElectronicsResponseVec;
 };
     
@@ -105,6 +109,24 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for (auto& element : fElectronicsResponseVec)
         element /= (fFCperADCMicroS * 6242.);
+    
+    return;
+}
+    
+void ElectronicsResponse::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // It is assumed that the input TFileDirectory has been set up to group histograms into a common
+    // folder at the calling routine's level. Here we create one more level of indirection to keep
+    // histograms made by this tool separate.
+    std::string dirName = "ElectronicsPlane_" + std::to_string(fPlane);
+    
+    art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
+    
+    std::string histName = "ElectronicsResponse_" + std::to_string(fPlane);
+    
+    TH1D* hist = dir.make<TH1D>(histName.c_str(), "Response", fElectronicsResponseVec.size(), 0., fElectronicsResponseVec.size());
+    
+    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx, fElectronicsResponseVec.at(idx));
     
     return;
 }

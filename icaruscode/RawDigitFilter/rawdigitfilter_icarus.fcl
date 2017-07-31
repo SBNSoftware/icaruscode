@@ -1,0 +1,64 @@
+#include "waveformtools_icarus.fcl"
+
+BEGIN_PROLOG
+
+FFT_algorithm:
+{
+    TransformViewVec:      [true, true, true]
+    FillHistograms:        true
+    HistDirName:           "FFTAlg"
+    WaveformTool:          @local::Waveform_Tool
+}
+
+icarus_rawdigitfilter:
+{
+    module_type:           "RawDigitFilterICARUS"
+    DigitModuleLabel:      "daq"
+    ProcessNoise:          false
+    FFTNoise:              true
+    ApplyBinAverage:       true
+    ApplyTopHatFilter:     true
+    SmoothCorrelatedNoise: true
+    NumWiresToGroup:       [48, 48, 96]  # these correspond to observed groupings
+    TruncateTicks:         false
+    WindowSize:            6400
+    NumTicksToDropFront:   2400   # these values will put 70 kV drift time in "middle"
+    CharacterizationAlg:
+    {
+        TruncMeanFraction:     0.15
+        RMSRejectionCutHi:     [25., 25., 25.]
+        RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+        RMSSelectionCut:       [1.40, 1.40, 1.40]
+        MinMaxSelectionCut:    [13, 13, 11]
+        TheChosenWire:         1200
+        MaxPedestalDiff:       10.
+        FFTHistsWireGroup:     [1, 33, 34]
+        NumWiresToGroup:       [48, 48, 96]
+        FillHistograms:        true
+    }
+    CorrelatedCorrectionAlg:
+    {
+        TruncMeanFraction:     0.15
+        ApplyCorSmoothing:     true
+        ApplyFFTCorrection:    true
+        FillFFTHistograms:     false
+        FFTHistsWireGroup:     [1, 33, 34]
+        FFTNumWaveHistograms:  [10,48,48]
+        FFTWaveHistsStartTick: [96., 96., 7670.]
+        FFTPowerThreshold:     [100., 75., 500.]
+        NumWiresToGroup:       [48, 48, 96]
+        FillHistograms:        false
+        RunFFTCorrectedWires:  false
+        NumRmsToSmooth:        [6., 6., 6.]
+        FFTAlg:                @local::FFT_algorithm
+    }
+    FilterAlg:
+    {
+        TruncMeanFraction:     0.15
+        StructuringElement:    30
+        FillHistograms:        false
+    }
+    FFTAlg:                    @local::FFT_algorithm
+}
+
+END_PROLOG

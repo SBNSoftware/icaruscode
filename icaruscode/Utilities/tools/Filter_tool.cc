@@ -6,11 +6,13 @@
 #include <cmath>
 #include "IFilter.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "TF1.h"
+#include "TH1D.h"
 #include "TComplex.h"
 
 #include <fstream>
@@ -27,6 +29,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                          override;
     void setResponse(size_t numBins, double correct3D, double timeScaleFctr) override;
+    void outputHistograms(art::TFileDirectory&)                        const override;
     
     size_t                       getPlane()       const override {return fPlane;}
     const std::vector<TComplex>& getResponseVec() const override {return fFilterVec;}
@@ -105,6 +108,34 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
         
         fFilterVec.push_back(TComplex(f, 0.));
     }
+    
+    return;
+}
+    
+void Filter::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // It is assumed that the input TFileDirectory has been set up to group histograms into a common
+    // folder at the calling routine's level. Here we create one more level of indirection to keep
+    // histograms made by this tool separate.
+    std::string dirName = "FilterPlane_" + std::to_string(fPlane);
+    
+    art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
+    
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double      samplingRate = detprop->SamplingRate();
+    double      numBins      = fFilterVec.size();
+    double      maxFreq      = 500. / samplingRate;
+    std::string histName     = "FilterPlane_" + std::to_string(fPlane);
+    
+    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter;Frequency(MHz)", numBins, 0., maxFreq);
+    
+    for(int bin = 0; bin < numBins; bin++)
+    {
+        double freq = maxFreq * double(bin + 0.5) / double(numBins);
+        
+        hist->Fill(freq, fFilterVec.at(bin).Re());
+    }
+    
     
     return;
 }

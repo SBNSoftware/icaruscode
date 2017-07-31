@@ -6,6 +6,7 @@
 #include <cmath>
 #include "IResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
@@ -16,6 +17,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "IFieldResponse.h"
 #include "IElectronicsResponse.h"
 #include "IFilter.h"
@@ -33,8 +35,9 @@ public:
     
     ~Response() {}
     
-    void configure(const fhicl::ParameterSet& pset)  override;
-    void setResponse(double weight)                  override;
+    void configure(const fhicl::ParameterSet& pset)   override;
+    void setResponse(double weight)                   override;
+    void outputHistograms(art::TFileDirectory&) const override;
     
     size_t                      getPlane()               const override {return fThisPlane;}
     
@@ -129,65 +132,54 @@ void Response::setResponse(double weight)
     fSignalShaping.AddResponseFunction(fElectronicsResponse->getResponseVec());
     fSignalShaping.save_response();
     fSignalShaping.set_normflag(false);
-
-    /* This could be a warning, but in principle, there's no reason to restrict the binning
-     // Operation permitted only if output of rebinning has a larger bin size
-     if( fFieldBinWidth > samplingRate )
-     throw cet::exception(__FUNCTION__) << "\033[93m"
-     << "Invalid operation: cannot rebin to a more finely binned vector!"
-     << "\033[00m" << std::endl;
-     */
-    std::vector<double> SamplingTime( fftSize, 0. );
     
-    for ( size_t itime = 0; itime < fftSize; itime++ )
-        SamplingTime[itime] = double(itime) * detprop->SamplingRate();
+    // Now set to the task of determing the actual sampling response
+    // We hve to remember that the bin size for determining the field response probably
+    // does not match that for the detector readout so we'll need to "convert"
+    // from one to the other.
+    std::vector<double> samplingTimeVec( fftSize, 0. );
     
-    // Sampling
-    // we want to implement new scheme (fStretchFullResponse==false) while retaining the old
-    // time factor is already included in the calibrated response
-    double timeFactor = f3DCorrection * fTimeScaleFactor;
+    // Recover the combined response from above
+    const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
     
-    double timeFactorInv = 1. / timeFactor;
+    // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
+    double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
+    double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
+    double rateRatio    = samplingRate / responseRate;
     
-    const std::vector<double>* pResp = &fSignalShaping.Response_save();
+    // The idea is to step through each bin of the sampling response vector and then to
+    // look up the corresponding bins in the current response vector. Since the two sample
+    // rates are not the same there will be some "stretching" between the two. In addition,
+    // we want to continue to allow for the possibility for further sample stretching
+    double binScaleFactor = rateRatio * f3DCorrection * fTimeScaleFactor;
     
-    double deltaInputTime = fFieldResponse->getBinWidth();
-    
-    size_t nticks_input = pResp->size();
-    
-    std::vector<double> InputTime(nticks_input, 0. );
-    for (size_t itime = 0; itime < nticks_input; itime++ )
-        InputTime[itime] = double(itime) * deltaInputTime * timeFactor;
-    
-    std::vector<double> SamplingResp(fftSize, 0. );
-    
-    size_t SamplingCount = 0;
-    
-    size_t startJ = 1;
-    SamplingResp[0] = (*pResp)[0];
-    for ( size_t itime = 1; itime < fftSize; itime++ )
+    // ok, do the loop
+    for(size_t sampleIdx = 0; sampleIdx < samplingTimeVec.size(); sampleIdx++)
     {
-        size_t low, high;
-        for ( size_t jtime = startJ; jtime < nticks_input; jtime++ )
+        // calculate the index for the response
+        size_t responseLowIdx = std::floor(sampleIdx * binScaleFactor);
+        
+        if (responseLowIdx < curResponseVec.size())
         {
-            if ( InputTime[jtime] >= SamplingTime[itime] )
+            // Calculate the index for the next bin
+            size_t responseHiIdx = std::floor((sampleIdx + 1) * binScaleFactor);
+            
+            // This can't happen? But protect against zero divides...
+            if (responseHiIdx == responseLowIdx) responseHiIdx += 1;
+            
+            if (responseHiIdx < curResponseVec.size())
             {
-                low  = jtime - 1;
-                high = jtime;
-                //            if(jtime<2&&itime<2) std::cout << itime << " " << jtime << " " << low << " " << up << std::endl;
-                double interpolationFactor = ((*pResp)[high]-(*pResp)[low])/deltaInputTime;
-                SamplingResp[itime] = ((*pResp)[low] + ( SamplingTime[itime] - InputTime[low] ) * interpolationFactor);
-                // note: timeFactor = timeFactorInv =  1.0 for calibrated responses
-                SamplingResp[itime] *= timeFactorInv;
-                SamplingCount++;
-                startJ = jtime;
-                break;
+                
+                // Now interpolate between the two bins to get the sampling response for this bin
+                double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
+                double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
+                
+                samplingTimeVec.at(sampleIdx) = response;
             }
-        } // for (  jtime = 0; jtime < nticks; jtime++ )
-    } // for (  itime = 0; itime < nticks; itime++ )
-    //std::cout << "SamplingResponse done " << std::endl;
-    
-    fSignalShaping.AddResponseFunction( SamplingResp, true);
+        }
+    }
+
+    fSignalShaping.AddResponseFunction( samplingTimeVec, true);
     
     // Currently we only have fine binning "fFieldBinWidth"
     // for the field and electronic responses.
@@ -201,6 +193,61 @@ void Response::setResponse(double weight)
     fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );
     fSignalShaping.CalculateDeconvKernel();
     
+    return;
+}
+    
+void Response::outputHistograms(art::TFileDirectory& histDir) const
+{
+    // Create a subfolder in which to place the "response" histograms
+    std::string thisResponse = "ResponsesPlane_" + std::to_string(fThisPlane);
+    
+    art::TFileDirectory dir = histDir.mkdir(thisResponse.c_str());
+    
+    // Do the field response histograms
+    fFieldResponse->outputHistograms(dir);
+    fElectronicsResponse->outputHistograms(dir);
+    fFilter->outputHistograms(dir);
+    
+    // Now make hists for the full response
+    std::string dirName = "Response_" + std::to_string(fThisPlane);
+    
+    art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
+    const std::vector<double>& responseVec  = this->getSignalShaping().Response();
+    double                     numBins      = responseVec.size();
+    std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
+    TH1D*                      hist         = dir.make<TH1D>(histName.c_str(), "Response;Time(ticks)", numBins, 0., numBins);
+    
+    for(int bin = 0; bin < numBins; bin++)
+    {
+        hist->Fill(bin, responseVec.at(bin));
+    }
+
+    // Get the FFT, need the waveform tool for consistency
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    
+    std::vector<double> powerVec;
+    
+    waveformTool->getFFTPower(responseVec, powerVec);
+    
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double      samplingRate = detprop->SamplingRate();
+    double      maxFreq      = 500. / samplingRate;
+    double      freqWidth    = maxFreq / powerVec.size();
+    std::string freqName     = "Response_FFTPlane_" + std::to_string(fThisPlane);
+    TH1D*       freqHist     = dir.make<TH1D>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    {
+        double freq = freqWidth * (idx + 0.5);
+        
+        freqHist->Fill(freq, powerVec.at(idx));
+    }
+    
+
     return;
 }
 
