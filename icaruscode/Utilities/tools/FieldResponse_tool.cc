@@ -97,7 +97,8 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file(fileName, fullFileName);
+    if (!searchPath.find_file(fileName, fullFileName))
+        throw cet::exception("FieldResponse::configure") << "Can't find input file: '" << fileName << "'\n";
     
     TFile inputFile(fullFileName.c_str(), "READ");
     
