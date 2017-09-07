@@ -88,7 +88,7 @@ outputs:
 
 #physics.producers.generator.T0: 0
 #physics.producers.generator.SigmaT: 0.1
-#physics.producers.generator.N: 10
+physics.producers.generator.N: 10
 #physics.producers.generator.FirstVoxel: 0
 #physics.producers.generator.LastVoxel: -1
 #physics.producers.generator.P: 9.7
