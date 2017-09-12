@@ -35,19 +35,19 @@ services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 
 # services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "test_hist_icarus.root"
+services.PhotonVisibilityService.LibraryFile: "small.root"
 
-services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: -300
-services.PhotonVisibilityService.XMax: -150
-services.PhotonVisibilityService.YMin: -150 
-services.PhotonVisibilityService.YMax: 150
-services.PhotonVisibilityService.ZMin: -1000
-services.PhotonVisibilityService.ZMax: 1000
+#services.PhotonVisibilityService.UseCryoBoundary: false
+#services.PhotonVisibilityService.XMin: -300
+#services.PhotonVisibilityService.XMax: -150
+#services.PhotonVisibilityService.YMin: -150 
+#services.PhotonVisibilityService.YMax: 150
+#services.PhotonVisibilityService.ZMin: -1000
+#services.PhotonVisibilityService.ZMax: 1000
 
-services.PhotonVisibilityService.NX: 20 
-services.PhotonVisibilityService.NY: 20
-services.PhotonVisibilityService.NZ: 400
+#services.PhotonVisibilityService.NX: 20 
+#services.PhotonVisibilityService.NY: 20
+#services.PhotonVisibilityService.NZ: 400
 
 #Start each new event with an empty event.
 source:
@@ -111,7 +111,10 @@ outputs:
 }
 
 # set quantum efficiency supressed scint yield to 0.03 * 24000
-# services.DetectorPropertiesService.ScintYield: 24000
+# services.LArPropertiesService.ScintYield: 24000
+services.LArPropertiesService.ScintPreScale: 1
+
+
 
 # enable optical physics in LArG4
 services.LArG4Parameters.EnabledPhysics: [ "Em",
@@ -130,7 +133,7 @@ services.LArG4Parameters.UseCustomPhysics: true
 # disable cerenkov light
 #services.DetectorPropertiesService.EnableCerenkovLight: false
 
-physics.producers.generator.PDG: [ 13 ]            # muon
+physics.producers.generator.PDG: [ 11 ]            # muon
 
 physics.producers.generator.SigmaThetaXZ: [ 0 ]
 physics.producers.generator.SigmaThetaYZ: [ 0 ]
@@ -138,7 +141,7 @@ physics.producers.generator.SigmaThetaYZ: [ 0 ]
 physics.producers.generator.Y0: [ 0.0 ]
 physics.producers.generator.X0: [ -200.0 ]
 physics.producers.generator.Z0: [ -500.0 ]
-physics.producers.generator.P0: [ 1.5 ]
+physics.producers.generator.P0: [ 0.2 ]
 
 physics.producers.generator.FillTree: true
 

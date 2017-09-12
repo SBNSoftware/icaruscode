@@ -30,7 +30,7 @@ source:
 {
   module_type: EmptyEvent
   timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-  maxEvents:   100           # Number of events to create
+  maxEvents:   10           # Number of events to create
   firstRun:    1           # Run number to use for this file
   firstEvent:  1           # number of first event in the file
 }
@@ -88,7 +88,7 @@ outputs:
 
 #physics.producers.generator.T0: 0
 #physics.producers.generator.SigmaT: 0.1
-physics.producers.generator.N: 10
+physics.producers.generator.N: 10000
 #physics.producers.generator.FirstVoxel: 0
 #physics.producers.generator.LastVoxel: -1
 #physics.producers.generator.P: 9.7
@@ -99,8 +99,8 @@ physics.producers.generator.UseCustomRegion: true
 physics.producers.generator.XSteps: 1
 physics.producers.generator.YSteps: 1
 physics.producers.generator.ZSteps: 1
-physics.producers.generator.RegionMin: [ 99 , -75 , 1000 ]
-physics.producers.generator.RegionMax: [ 100 , -76 , 1001 ]
+physics.producers.generator.RegionMin: [ 99 , -99 , 1000 ]
+physics.producers.generator.RegionMax: [ 100 , -100 , 1001 ]
 
 
 # set quantum efficiency supressed scint yield to 0.03 * 24000 

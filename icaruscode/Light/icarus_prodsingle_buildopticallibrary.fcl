@@ -30,17 +30,17 @@ services:
 services.PhotonVisibilityService: @local::standard_photonvisibilityservice_buildlib
 services.PhotonVisibilityService.DoNotLoadLibrary: true
 services.PhotonVisibilityService.LibraryBuildJob: true
-services.PhotonVisibilityService.UseCryoBoundary: true
-services.PhotonVisibilityService.XMin: -300
-services.PhotonVisibilityService.XMax: -150
-services.PhotonVisibilityService.YMin: -150 
-services.PhotonVisibilityService.YMax: 150
-services.PhotonVisibilityService.ZMin: -1000
-services.PhotonVisibilityService.ZMax: 1000
+services.PhotonVisibilityService.UseCryoBoundary: false
+services.PhotonVisibilityService.XMin: -210	#-300
+services.PhotonVisibilityService.XMax: -190	#-150
+services.PhotonVisibilityService.YMin: -10 	#-150 
+services.PhotonVisibilityService.YMax: 10	#150
+services.PhotonVisibilityService.ZMin: -510	#-1000
+services.PhotonVisibilityService.ZMax: -490	#1000
 
-services.PhotonVisibilityService.NX: 3 
-services.PhotonVisibilityService.NY: 6
-services.PhotonVisibilityService.NZ: 40
+services.PhotonVisibilityService.NX: 4	#3 
+services.PhotonVisibilityService.NY: 4	#6
+services.PhotonVisibilityService.NZ: 4	#40
 
 
 # services.PhotonVisibilityService: @local::standard_photonvisibilityservice
@@ -52,7 +52,8 @@ source:
 {
   module_type: EmptyEvent
   timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-  maxEvents:   720           # Number of events to create
+#  maxEvents:   720           # Number of events to create
+  maxEvents:   64           # Number of events to create
   firstRun:    1           # Run number to use for this file
   firstEvent:  1           # number of first event in the file
 }
@@ -121,6 +122,8 @@ services.LArPropertiesService.ScintYield: 24000
 # enable this custom physics list
 services.LArG4Parameters.UseCustomPhysics: true
 
+physics.producers.generator.N: 400000
+
 # do not allow lightsource to write output into root file
 physics.producers.generator.FillTree: true 
 physics.analyzers.pmtresponse.MakeAllPhotonsTree: true 
@@ -129,4 +132,3 @@ physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true
 physics.analyzers.pmtresponse.MakeSimPhotonsTree: true	
 physics.analyzers.pmtresponse.MakeEventsTree: true	
 physics.analyzers.pmtresponse.MakeLightAnalysisTree: false	
-physics.producers.generator.N: 10000
