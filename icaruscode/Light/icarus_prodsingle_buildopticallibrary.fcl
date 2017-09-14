@@ -31,12 +31,12 @@ services.PhotonVisibilityService: @local::standard_photonvisibilityservice_build
 services.PhotonVisibilityService.DoNotLoadLibrary: true
 services.PhotonVisibilityService.LibraryBuildJob: true
 services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: -210	#-300
-services.PhotonVisibilityService.XMax: -190	#-150
+services.PhotonVisibilityService.XMin: -250	#-300
+services.PhotonVisibilityService.XMax: -230	#-150
 services.PhotonVisibilityService.YMin: -10 	#-150 
 services.PhotonVisibilityService.YMax: 10	#150
-services.PhotonVisibilityService.ZMin: -510	#-1000
-services.PhotonVisibilityService.ZMax: -490	#1000
+services.PhotonVisibilityService.ZMin: -50	#-1000
+services.PhotonVisibilityService.ZMax: -30	#1000
 
 services.PhotonVisibilityService.NX: 4	#3 
 services.PhotonVisibilityService.NY: 4	#6
