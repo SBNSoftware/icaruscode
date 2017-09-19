@@ -35,11 +35,11 @@ services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibil
 
 # services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "near.root"
+services.PhotonVisibilityService.LibraryFile: "near_positive.root"
 
 services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: -350	#-350	#-300
-services.PhotonVisibilityService.XMax: -330	#-330	#-150
+services.PhotonVisibilityService.XMin: 230	#-350	#-300
+services.PhotonVisibilityService.XMax: 250	#-330	#-150
 services.PhotonVisibilityService.YMin: -10 	#-150 
 services.PhotonVisibilityService.YMax: 10	#150
 services.PhotonVisibilityService.ZMin: -50	#-50	#-1000
@@ -54,7 +54,7 @@ source:
 {
   module_type: EmptyEvent
   timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-  maxEvents:   5        # Number of events to create
+  maxEvents:   5           # Number of events to create
   firstRun:    1           # Run number to use for this file
   firstEvent:  1           # number of first event in the file
 }
@@ -139,7 +139,7 @@ physics.producers.generator.SigmaThetaXZ: [ 0 ]
 physics.producers.generator.SigmaThetaYZ: [ 0 ]
 
 physics.producers.generator.Y0: [ 0.0 ]
-physics.producers.generator.X0: [ -340.0 ]
+physics.producers.generator.X0: [ 240.0 ]
 physics.producers.generator.Z0: [ -40.0 ]
 physics.producers.generator.P0: [ 0.2 ]
 
