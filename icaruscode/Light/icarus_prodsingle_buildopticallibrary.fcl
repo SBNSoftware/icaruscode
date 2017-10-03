@@ -33,15 +33,16 @@ services.PhotonVisibilityService.LibraryBuildJob: true
 services.PhotonVisibilityService.UseCryoBoundary: false
 services.PhotonVisibilityService.XMin: 230	#-300
 services.PhotonVisibilityService.XMax: 250	#-150
-services.PhotonVisibilityService.YMin: -10 	#-150 
-services.PhotonVisibilityService.YMax: 10	#150
-services.PhotonVisibilityService.ZMin: -50	#-1000
-services.PhotonVisibilityService.ZMax: -30	#1000
+services.PhotonVisibilityService.YMin: -35 	#-150 
+services.PhotonVisibilityService.YMax: -15	#150
+services.PhotonVisibilityService.ZMin: -10	#-1000
+services.PhotonVisibilityService.ZMax: 10	#1000
 
 services.PhotonVisibilityService.NX: 4	#3 
 services.PhotonVisibilityService.NY: 4	#6
 services.PhotonVisibilityService.NZ: 4	#40
 
+services.Geometry.GDML: "test_27Sep.gdml"
 
 # services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 # services.LArFFT: ""
@@ -121,6 +122,17 @@ services.LArPropertiesService.ScintYield: 24000
 
 # enable this custom physics list
 services.LArG4Parameters.UseCustomPhysics: true
+
+//standard_properties.ReflectiveSurfaceEnergies:         [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 7., 15. ]
+//standard_properties.ReflectiveSurfaceNames:            [ "STEEL_STAINLESS_Fe7Cr2Ni"] 
+//standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042 ] ]
+
+//standard_properties.ReflectiveSurfaceNames:            [ "STEEL_STAINLESS_Fe7Cr2Ni", "Copper", "G10", "vm2000" ]
+//standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042 ],
+//                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
+//                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
+//                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ] ]
+
 
 physics.producers.generator.N: 400000
 
