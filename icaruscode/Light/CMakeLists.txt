@@ -1,4 +1,6 @@
-art_make( BASENAME_ONLY
+art_make( 
+          BASENAME_ONLY
+#          EXCLUDE PMTcoordinates_module.cc 
           LIBRARY_NAME Light
           LIB_LIBRARIES 
 			lardataobj_RawData
@@ -40,4 +42,3 @@ art_make( BASENAME_ONLY
 install_headers()
 install_fhicl()
 install_source()
-
