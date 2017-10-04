@@ -71,7 +71,7 @@ icarus_simulation_dark_services:                               @local::icarus_g4
 icarus_g4_services:                                     @local::icarus_g4_dark_services
 #icarus_g4_services.PhotonVisibilityService:             @local::icarus_photonvisibilityservice
 icarus_g4_services.LArPropertiesService.ScintYield:     40000  # 40000 ph/MeV DocDB 4914, @MToups
-icarus_g4_services.LArPropertiesService.ScintPreScale:  0.0093 # 40000 ph/MeV DocDB 4914, @MToups
+icarus_g4_services.LArPropertiesService.ScintPreScale:  1 # 40000 ph/MeV DocDB 4914, @MToups
                                                                # MUST match between g4 and detsim
 
 icarus_g4_services.LArPropertiesService.ScintYieldRatio: 0.23
