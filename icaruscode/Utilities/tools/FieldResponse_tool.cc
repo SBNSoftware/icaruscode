@@ -97,18 +97,8 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
-<<<<<<< HEAD
     if (!searchPath.find_file(fileName, fullFileName))
         throw cet::exception("FieldResponse::configure") << "Can't find input file: '" << fileName << "'\n";
-=======
-//    searchPath.find_file(fileName, fullFileName);
-
-    if (!searchPath.find_file(fileName, fullFileName))
-    {
-     throw cet::exception("FieldResponse::configure") << "Unable to find input file: " << fileName << std::endl;
-
-    }
->>>>>>> feature/falcone_light
     
     TFile inputFile(fullFileName.c_str(), "READ");
     
