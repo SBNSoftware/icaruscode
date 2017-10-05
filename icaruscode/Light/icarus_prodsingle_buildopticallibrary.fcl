@@ -31,18 +31,29 @@ services.PhotonVisibilityService: @local::standard_photonvisibilityservice_build
 services.PhotonVisibilityService.DoNotLoadLibrary: true
 services.PhotonVisibilityService.LibraryBuildJob: true
 services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: 230	#-300
-services.PhotonVisibilityService.XMax: 250	#-150
+
+//version51 e 27Sep
+//services.PhotonVisibilityService.XMin: 230	#-300
+//services.PhotonVisibilityService.XMax: 250	#-150
+//services.PhotonVisibilityService.YMin: -35 	#-150 
+//services.PhotonVisibilityService.YMax: -15	#150
+//services.PhotonVisibilityService.ZMin: -10	#-1000
+//services.PhotonVisibilityService.ZMax: 10	#1000
+
+//version51_near e senza crt
+services.PhotonVisibilityService.XMin: 320	#-300
+services.PhotonVisibilityService.XMax: 340	#-150
 services.PhotonVisibilityService.YMin: -35 	#-150 
 services.PhotonVisibilityService.YMax: -15	#150
 services.PhotonVisibilityService.ZMin: -10	#-1000
 services.PhotonVisibilityService.ZMax: 10	#1000
 
+
 services.PhotonVisibilityService.NX: 4	#3 
 services.PhotonVisibilityService.NY: 4	#6
 services.PhotonVisibilityService.NZ: 4	#40
 
-services.Geometry.GDML: "test_27Sep.gdml"
+services.Geometry.GDML: "test_27Sep_nocrt.gdml"
 
 # services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 # services.LArFFT: ""

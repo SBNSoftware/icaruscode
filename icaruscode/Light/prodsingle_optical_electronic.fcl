@@ -35,11 +35,11 @@ services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibil
 
 services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "27Sep_norefl.root"
+services.PhotonVisibilityService.LibraryFile: "version51_near.root"
 
 services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: 230	#-300
-services.PhotonVisibilityService.XMax: 250	#-150
+services.PhotonVisibilityService.XMin: 320	#-300
+services.PhotonVisibilityService.XMax: 340	#-150
 services.PhotonVisibilityService.YMin: -35 	#-150 
 services.PhotonVisibilityService.YMax: -15	#150
 services.PhotonVisibilityService.ZMin: -10	#-1000
@@ -141,7 +141,7 @@ physics.producers.generator.SigmaThetaXZ: [ 0 ]
 physics.producers.generator.SigmaThetaYZ: [ 0 ]
 
 physics.producers.generator.Y0: [ -25.0 ]
-physics.producers.generator.X0: [ 240.0 ]
+physics.producers.generator.X0: [ 330.0 ]
 physics.producers.generator.Z0: [ 0.0 ]
 physics.producers.generator.P0: [ 0.2 ]
 
