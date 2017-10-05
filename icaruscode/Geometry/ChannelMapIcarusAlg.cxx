@@ -32,7 +32,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
     // start over:
     Uninitialize();
   
-    const std::vector<geo::CryostatGeo*>& cgeo  = geodata.cryostats;
+    const std::vector<geo::CryostatGeo>& cgeo  = geodata.cryostats;
   
     fNcryostat = cgeo.size();
   
@@ -56,7 +56,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
 
     for(unsigned int cs = 0; cs != fNcryostat; ++cs)
     {
-        fNTPC[cs] = cgeo[cs]->NTPC();
+        fNTPC[cs] = cgeo[cs].NTPC();
     
         // Size up all the vectors
         fWireCounts[cs]             .resize(fNTPC[cs]);
@@ -71,7 +71,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
 
         for(unsigned int TPCCount = 0; TPCCount != fNTPC[cs]; ++TPCCount)
         {
-            unsigned int PlanesThisTPC = cgeo[cs]->TPC(TPCCount).Nplanes();
+            unsigned int PlanesThisTPC = cgeo[cs].TPC(TPCCount).Nplanes();
             fWireCounts[cs][TPCCount]   .resize(PlanesThisTPC);
             fFirstWireProj[cs][TPCCount].resize(PlanesThisTPC);
             fOrthVectorsY[cs][TPCCount] .resize(PlanesThisTPC);
@@ -79,19 +79,19 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
             fNPlanes[cs][TPCCount]=PlanesThisTPC;
             for(unsigned int PlaneCount = 0; PlaneCount != PlanesThisTPC; ++PlaneCount)
             {
-                fViews.emplace(cgeo[cs]->TPC(TPCCount).Plane(PlaneCount).View());
+                fViews.emplace(cgeo[cs].TPC(TPCCount).Plane(PlaneCount).View());
                 fPlaneIDs.emplace(PlaneID(cs, TPCCount, PlaneCount));
-                double ThisWirePitch = cgeo[cs]->TPC(TPCCount).WirePitch(0, 1, PlaneCount);
-                fWireCounts[cs][TPCCount][PlaneCount] = cgeo[cs]->TPC(TPCCount).Plane(PlaneCount).Nwires();
+                double ThisWirePitch = cgeo[cs].TPC(TPCCount).WirePitch(0, 1, PlaneCount);
+                fWireCounts[cs][TPCCount][PlaneCount] = cgeo[cs].TPC(TPCCount).Plane(PlaneCount).Nwires();
         
                 double  WireCentre1[3] = {0.,0.,0.};
                 double  WireCentre2[3] = {0.,0.,0.};
         
-                const geo::WireGeo& firstWire = cgeo[cs]->TPC(TPCCount).Plane(PlaneCount).Wire(0);
+                const geo::WireGeo& firstWire = cgeo[cs].TPC(TPCCount).Plane(PlaneCount).Wire(0);
                 const double sth = firstWire.SinThetaZ(), cth = firstWire.CosThetaZ();
         
                 firstWire.GetCenter(WireCentre1,0);
-                cgeo[cs]->TPC(TPCCount).Plane(PlaneCount).Wire(1).GetCenter(WireCentre2,0);
+                cgeo[cs].TPC(TPCCount).Plane(PlaneCount).Wire(1).GetCenter(WireCentre2,0);
         
                 // figure out if we need to flip the orthogonal vector
                 // (should point from wire n -> n+1)
@@ -115,7 +115,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
                 fFirstWireProj[cs][TPCCount][PlaneCount] /= ThisWirePitch;
         
                 // now to count up wires in each plane and get first channel in each plane
-                int WiresThisPlane = cgeo[cs]->TPC(TPCCount).Plane(PlaneCount).Nwires();
+                int WiresThisPlane = cgeo[cs].TPC(TPCCount).Plane(PlaneCount).Nwires();
                 fWiresPerPlane[cs] .at(TPCCount).push_back(WiresThisPlane);
                 fPlaneBaselines[cs].at(TPCCount).push_back(RunningTotal);
         
