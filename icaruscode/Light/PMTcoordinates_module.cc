@@ -24,6 +24,7 @@
 #include "art/Framework/Services/Optional/TFileDirectory.h"
 #include "canvas/Persistency/Common/FindOneP.h" 
 #include "canvas/Persistency/Common/FindManyP.h"
+#include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h" 
 //#include "cetlib/maybe_ref.h"
 
@@ -45,6 +46,8 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
+#include "larana/OpticalDetector/SimPhotonCounter.h"
+#include "lardataobj/Simulation/SimPhotons.h"
 
 // #####################
 // ### ROOT includes ###
@@ -89,12 +92,16 @@ double coordinate [3][nPMTs];
 int PMT [nPMTs];
 
 float photons [nPMTs];
+  
+art::InputTag photonLabel;
+  
 };
 
 
 icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
   :
-  EDAnalyzer(p)  // ,
+  EDAnalyzer(p),
+  photonLabel(p.get<art::InputTag>("fottoni", "largeant"))
  // More initializers here.
 {
 
@@ -103,24 +110,40 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
 void icarus::PMTcoordinates::analyze(art::Event const & e)
 {
  art::ServiceHandle<geo::Geometry> geom;
- art::ServiceHandle<opdet::SimPhotonCounter> optical;
+ 
+ std::vector<sim::SimPhotons> const& optical = *(e.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
+ //std::vector<float> const& lic = optical->TotalPhotonVector();
 
- optical->TotalPhotonVector(total);	
+ //int total = lic.size();	
 
 
   //auto event = evt.id().event();
 
+  for (std::size_t channel = 0; channel < optical.size(); ++channel) {
+    sim::SimPhotons const& photons = optical[channel];
+    mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photons.size() << " photons";
+  }
+//	std::map <int,int> content = optical->DetectedPhotons;
+	
+//	std::vector<int> channels;
+//	std::vector<int> collected_photons;
+
+//	for(std::map<int,int>::iterator it = content.begin(); it != content.end(); ++it) {
+ // 	channels.push_back(it->first);
+ //	collected_photons.push_back(it->second);
+//  	std::cout << it->first << '\t' << it->second << std::endl;}
+
 for (int channel=0; channel < nPMTs; channel++)
 {
  double xyz[3];
- float total;
+
  geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
 
  coordinate[0][channel] = xyz[0];
  coordinate[1][channel] = xyz[1];
  coordinate[2][channel] = xyz[2];
 
- std::cout<< total << '\t'<< coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
+ std::cout << coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
 }
 
 }
