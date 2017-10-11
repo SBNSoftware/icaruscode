@@ -70,7 +70,7 @@ include(BuildPlugins)
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(icaruscode)
 # subdirectory for test code
-#add_subdirectory(test)
+add_subdirectory(test)
 
 # Top level fcl files.
 add_subdirectory(fcl)

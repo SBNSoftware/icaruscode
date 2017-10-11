@@ -18,5 +18,9 @@ icarus_geometry_helper:
   service_provider: IcarusGeometryHelper
 }
 
+icarus_geometry_services: {
+  Geometry:               @local::icarus_geo
+  ExptGeoHelperInterface: @local::icarus_geometry_helper
+}
 
 END_PROLOG

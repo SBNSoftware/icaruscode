@@ -112,10 +112,6 @@ void icarus::PMTcoordinates::analyze(art::Event const & e)
  art::ServiceHandle<geo::Geometry> geom;
  
  std::vector<sim::SimPhotons> const& optical = *(e.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
- //std::vector<float> const& lic = optical->TotalPhotonVector();
-
- //int total = lic.size();	
-
 
   //auto event = evt.id().event();
 
@@ -143,7 +139,9 @@ for (int channel=0; channel < nPMTs; channel++)
  coordinate[1][channel] = xyz[1];
  coordinate[2][channel] = xyz[2];
 
+
  std::cout << coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
+
 }
 
 }
