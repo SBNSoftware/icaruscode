@@ -1,0 +1,83 @@
+#
+# File:    dump_icarus_channelmap.fcl
+# Purpose: dumps the full channel mapping of ICARUS detector
+# Author:  Gianluca Petrillo (petrillo@fnal.gov)
+# Date:    October 10, 2017
+# Version: 1.0
+# 
+# Dependencies:
+# - geometry service
+#
+# Changes:
+# 20171010 [v1.0] (petrillo@fnal.gov)
+#   adapted from SBND's dump_sbnd_channelmap.fcl
+#
+
+#include "geometry_icarus.fcl"
+
+process_name: DumpChannelMap
+
+services: {
+  
+  @table::icarus_geometry_services 
+  
+  message: {
+    destinations: {
+      LogChannelMap: { 
+        type:       "file"
+        filename:   "icarus_channelmap.txt"
+        append:     false
+        threshold:  "INFO"
+        categories:{
+          default:        { limit:  0 }
+          DumpChannelMap: { limit: -1 }
+        }
+      }
+      LogStandardOut: {
+        type:       "cout"
+        threshold:  "INFO"
+        categories:{
+          default:{ limit: -1 }
+          GeometryBadInputPoint: { limit: 5 timespan: 1000}
+        }
+      }
+      LogStandardError: {
+        type:       "cerr"
+        threshold:  "ERROR"
+        categories:{
+          default:{ }
+        }
+      }
+    } # destinations
+  } # message
+} # services
+
+source: {
+  module_type: EmptyEvent
+  maxEvents:   1       # Number of events to create
+}
+
+outputs: { }
+
+physics: {
+  
+  analyzers: {
+    dumpchannelmap: {
+      module_type:  "DumpChannelMap"
+      module_label: "dumpchannelmap"
+      
+      ChannelToWires: true
+      WireToChannel:  true
+      
+      OutputCategory: DumpChannelMap
+      
+    } # dumpchannelmap
+  } # analyzers
+  
+  ana:           [ dumpchannelmap ]
+  
+  trigger_paths: [ ]
+  end_paths:     [ ana ]
+  
+} # physics
+
