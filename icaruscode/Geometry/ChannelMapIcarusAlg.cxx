@@ -60,12 +60,12 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
     
         // Size up all the vectors
         fWireCounts[cs]             .resize(fNTPC[cs]);
-        fFirstWireProj[cs]           .resize(fNTPC[cs]);
-        fOrthVectorsY[cs]            .resize(fNTPC[cs]);
-        fOrthVectorsZ[cs]            .resize(fNTPC[cs]);
-        fPlaneBaselines[cs]          .resize(fNTPC[cs]);
-        fWiresPerPlane[cs]           .resize(fNTPC[cs]);
-        fNPlanes[cs]                     .resize(fNTPC[cs]);
+        fFirstWireProj[cs]          .resize(fNTPC[cs]);
+        fOrthVectorsY[cs]           .resize(fNTPC[cs]);
+        fOrthVectorsZ[cs]           .resize(fNTPC[cs]);
+        fPlaneBaselines[cs]         .resize(fNTPC[cs]);
+        fWiresPerPlane[cs]          .resize(fNTPC[cs]);
+        fNPlanes[cs]                .resize(fNTPC[cs]);
         fFirstChannelInThisPlane[cs].resize(fNTPC[cs]);
         fFirstChannelInNextPlane[cs].resize(fNTPC[cs]);
 
@@ -125,14 +125,14 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
                 fTopChannel += WiresThisPlane;
                 fFirstChannelInNextPlane[cs].at(TPCCount).push_back(fTopChannel);
 
-		std::cout<< "\tFor Plane cs=" << cs << " tpc=" << TPCCount << " plane=" << PlaneCount << std::endl;
-		std::cout << "\t\tWirePitch = " << ThisWirePitch << std::endl;
-		std::cout << "\t\tWireCenter1 (x,y,z)=(" << WireCentre1[0] << "," << WireCentre1[1] << "," << WireCentre1[2] << ")" << std::endl;
-		std::cout << "\t\tWireCenter2 (x,y,z)=(" << WireCentre2[0] << "," << WireCentre2[1] << "," << WireCentre2[2] << ")" << std::endl;
-		std::cout << "\t\t(cth,sth)=(" << cth << "," << sth << ")" << std::endl;
-		std::cout << "\t\t(orthy,orthz)=(" << OrthY << "," << OrthZ << ")" << std::endl;
-		std::cout << "\t\t(orthVectorY,orthVectorZ)=(" << fOrthVectorsY[cs][TPCCount][PlaneCount] << "," << fOrthVectorsZ[cs][TPCCount][PlaneCount] << ")" << std::endl;
-		std::cout << "\t\tfFirstWireProj=" << fFirstWireProj[cs][TPCCount][PlaneCount] << std::endl;
+                std::cout<< "\tFor Plane cs=" << cs << " tpc=" << TPCCount << " plane=" << PlaneCount << std::endl;
+                std::cout << "\t\tWirePitch = " << ThisWirePitch << std::endl;
+                std::cout << "\t\tWireCenter1 (x,y,z)=(" << WireCentre1[0] << "," << WireCentre1[1] << "," << WireCentre1[2] << ")" << std::endl;
+                std::cout << "\t\tWireCenter2 (x,y,z)=(" << WireCentre2[0] << "," << WireCentre2[1] << "," << WireCentre2[2] << ")" << std::endl;
+                std::cout << "\t\t(cth,sth)=(" << cth << "," << sth << ")" << std::endl;
+                std::cout << "\t\t(orthy,orthz)=(" << OrthY << "," << OrthZ << ")" << std::endl;
+                std::cout << "\t\t(orthVectorY,orthVectorZ)=(" << fOrthVectorsY[cs][TPCCount][PlaneCount] << "," << fOrthVectorsZ[cs][TPCCount][PlaneCount] << ")" << std::endl;
+                std::cout << "\t\tfFirstWireProj=" << fFirstWireProj[cs][TPCCount][PlaneCount] << std::endl;
 		
 		
             }// end loop over planes
