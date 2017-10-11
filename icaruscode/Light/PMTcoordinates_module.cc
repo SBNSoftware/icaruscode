@@ -87,6 +87,8 @@ private:
 double coordinate [3][nPMTs];
 
 int PMT [nPMTs];
+
+float photons [nPMTs];
 };
 
 
@@ -101,19 +103,24 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
 void icarus::PMTcoordinates::analyze(art::Event const & e)
 {
  art::ServiceHandle<geo::Geometry> geom;
+ art::ServiceHandle<opdet::SimPhotonCounter> optical;
+
+ optical->TotalPhotonVector(total);	
+
 
   //auto event = evt.id().event();
 
 for (int channel=0; channel < nPMTs; channel++)
 {
  double xyz[3];
+ float total;
  geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
 
-coordinate[0][channel] = xyz[0]; //geom->OpDetGeoFromOpChannel(channel).GetCenter(0);
-coordinate[1][channel] = xyz[1]; //geom->OpDetGeoFromOpChannel(channel).GetCenter(1);
-coordinate[2][channel] = xyz[2]; //geom->OpDetGeoFromOpChannel(channel).GetCenter(2);
+ coordinate[0][channel] = xyz[0];
+ coordinate[1][channel] = xyz[1];
+ coordinate[2][channel] = xyz[2];
 
-std::cout<< coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
+ std::cout<< total << '\t'<< coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
 }
 
 }
