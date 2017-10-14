@@ -9,6 +9,11 @@ NoiseFromHistTool:
   HistogramName:     "hnoiseI1"
 }
 
+WhiteNoiseTool:
+{
+  tool_type:         RandomNoise
+}
+
 NoNoiseTool:
 {
   tool_type:         NoNoise
