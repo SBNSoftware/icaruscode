@@ -1,0 +1,78 @@
+## 
+##  ICARUS reconstruction
+##  modeled on uboone version
+##
+
+#include "services_icarus.fcl"
+#include "rawdigitfilter_icarus.fcl"
+#include "recowire_icarus.fcl"
+
+#include "hitfindermodules.fcl"
+#include "mchitmodules.fcl"
+#include "mcreco.fcl"
+
+BEGIN_PROLOG
+
+icarus_reco_services:
+{
+   @table::icarus_basic_services
+}
+
+### This is the complete list of all producers! ###
+icarus_reco_producers:
+{
+  ### random number saver
+  rns:                 { module_type: RandomNumberSaver }
+
+  ### noise filtering module
+  rawdigitfilter:                 @local::icarus_rawdigitfilter
+
+  ### calwire producers
+  #recowire:                       @local::icarus_recowire
+  recowire:                       @local::icarus_recowireroi
+
+  ### hit-finder producers
+  gaushit:                        @local::gaus_hitfinder
+
+  ### cluster-finder producers
+  #fuzzycluster:                   @local::icarus_fuzzycluster
+
+  ### pandora cosmic pass
+  #pandoraCosmic:                  @local::icarus_pandora
+
+  ### mc producers
+  mchitfinder:                    @local::standard_mchitfinder
+}
+
+icarus_reco_filters:
+{ 
+}
+
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_reco_signalprocessing: [     rawdigitfilter,
+                                    recowire,
+                                    gaushit ]
+
+#icarus_reco_fuzzycluster: [        fuzzycluster ]
+
+#icarus_reco_fuzzypath: [           @sequence::icarus_reco_fuzzycluster ]
+
+### Below we include overrides for the modules above
+
+icarus_reco_producers.rawdigitfilter.ProcessNoise:                      false
+
+icarus_reco_producers.recowire.DigitModuleLabel:                        "rawdigitfilter" #"daq"
+icarus_reco_producers.recowire.Threshold:                               [0, 0, 0]
+icarus_reco_producers.recowire.NumSigma:                                [3, 3, 3]
+
+icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowire"
+icarus_reco_producers.gaushit.MinSig:                                   [  7.,   7.,   6.  ]
+icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.MaxMultiHit:                              4
+icarus_reco_producers.gaushit.TryNplus1Fits:                            false
+icarus_reco_producers.gaushit.Chi2NDF:                                  50.
+
+END_PROLOG
