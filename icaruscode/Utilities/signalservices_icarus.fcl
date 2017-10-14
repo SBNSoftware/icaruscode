@@ -73,7 +73,7 @@ signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:   
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:  0
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane: 1
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:              1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.1]
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.05]
 
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                     2
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:       2
