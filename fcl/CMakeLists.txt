@@ -1,3 +1,4 @@
+add_subdirectory(configurations)
 add_subdirectory(evd)
 add_subdirectory(detsim)
 add_subdirectory(g4)

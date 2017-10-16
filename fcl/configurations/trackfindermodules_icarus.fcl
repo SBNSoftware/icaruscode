@@ -1,0 +1,19 @@
+#include "trackfindermodules.fcl"
+
+BEGIN_PROLOG
+
+icarus_pmalgtrackmaker:                                  @local::standard_pmalgtrackmaker
+icarus_pmalgtrackmaker.HitModuleLabel:                   "linecluster"
+icarus_pmalgtrackmaker.ClusterModuleLabel:               "linecluster"
+icarus_pmalgtrackmaker.WireModuleLabel:                  "recowire"
+icarus_pmalgtrackmaker.PMAlgTracking.FlipToBeam:         true
+icarus_pmalgtrackmaker.PMAlgTracking.AutoFlip_dQdx:      false
+icarus_pmalgtrackmaker.PMAlgTracking.RunVertexing:       true
+
+icarus_pmalgtrajfitter:                                  @local::standard_pmalgtrajfitter
+icarus_pmalgtrajfitter.HitModuleLabel:                   "gaushit"
+icarus_pmalgtrajfitter.PfpModuleLabel:                   "pandora"
+icarus_pmalgtrajfitter.PMAlgFitting.RunVertexing:        false
+icarus_pmalgtrajfitter.PMAlgFitting.TrackingSkipPdg:     [11]
+
+END_PROLOG
