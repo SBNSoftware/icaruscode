@@ -8,6 +8,9 @@
 #include "recowire_icarus.fcl"
 
 #include "hitfindermodules.fcl"
+#include "cluster_icarus.fcl"
+#include "trackfindermodules_icarus.fcl"
+
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
 
@@ -34,11 +37,11 @@ icarus_reco_producers:
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder
 
-  ### cluster-finder producers
-  #fuzzycluster:                   @local::icarus_fuzzycluster
+  ### linecluster
+  linecluster:                    @local::icarus_linecluster
 
-  ### pandora cosmic pass
-  #pandoraCosmic:                  @local::icarus_pandora
+  ### PM algorithm
+  pmAlgTracker:                   @local::icarus_pmalgtrackmaker
 
   ### mc producers
   mchitfinder:                    @local::standard_mchitfinder
@@ -53,7 +56,9 @@ icarus_reco_filters:
 
 icarus_reco_signalprocessing: [     rawdigitfilter,
                                     recowire,
-                                    gaushit ]
+                                    gaushit,
+                                    linecluster,
+                                    pmAlgTracker]
 
 #icarus_reco_fuzzycluster: [        fuzzycluster ]
 
