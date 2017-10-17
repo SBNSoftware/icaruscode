@@ -9,6 +9,7 @@
 #include "art/Framework/Services/Optional/TFileDirectory.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -133,7 +134,7 @@ BasicTrackAnalysis::~BasicTrackAnalysis()
 ///
 void BasicTrackAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fTrackProducerLable = pset.get<art::InputTag>("TrackProducerLabel",                 "");
+    fTrackProducerLabel = pset.get<art::InputTag>("TrackProducerLabel",                 "");
     fLocalDirName       = pset.get<std::string>(  "LocalDirName",       std::string("wow"));
 }
 
@@ -159,7 +160,7 @@ void BasicTrackAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& 
     return;
 }
     
-void BasicTrackAnalysis::fillHistograms(const TrackPtrVec& trackPtrVec) const
+void BasicTrackAnalysis::fillHistograms(const art::Event& event) const
 {
     // The game plan for this module is to look at recob::Tracks and objects associated to tracks
     // To do this we need a valid track collection for those we are hoping to look at
