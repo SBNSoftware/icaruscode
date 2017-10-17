@@ -10,7 +10,7 @@ art_make( BASENAME_ONLY
                         larevt_Filters
                         lardataobj_RawData
                         SignalShapingServiceICARUS_service
-			larevt_CalibrationDBI_Providers
+			            larevt_CalibrationDBI_Providers
                         nutools_RandomUtils_NuRandomService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
@@ -21,7 +21,7 @@ art_make( BASENAME_ONLY
                         art_Persistency_Common
                         art_Persistency_Provenance
                         art_Utilities
-			canvas
+			            canvas
                         ${MF_MESSAGELOGGER}
                         ${MF_UTILITIES}
                         ${FHICLCPP}
@@ -54,7 +54,7 @@ simple_plugin(SimWireICARUS "module"
               art_Persistency_Common
               art_Persistency_Provenance
               art_Utilities
-	      canvas
+	          canvas
               ${MF_MESSAGELOGGER}
               ${MF_UTILITIES}
               ${FHICLCPP}
