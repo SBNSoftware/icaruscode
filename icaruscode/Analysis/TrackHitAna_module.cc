@@ -249,6 +249,7 @@ void TrackHitAna::endJob()
 double TrackHitAna::length(const recob::Track* track)
 {
     double   result(0.);
+/*
     TVector3 disp(track->LocationAtPoint(0));
     TVector3 lastPoint(track->LocationAtPoint(0));
     TVector3 lastDir(0.,0.,0.);
@@ -272,7 +273,7 @@ double TrackHitAna::length(const recob::Track* track)
         lastPoint = pos;
         lastDir   = trajDir;
     }
-
+*/
     return result;
 }
 
@@ -281,6 +282,7 @@ double TrackHitAna::length(const recob::Track* track)
 double TrackHitAna::projectedLength(const recob::Track* track)
 {
     double   result(0.);
+/*
     TVector3 lastPoint(track->LocationAtPoint(0));
     TVector3 lastDir(track->DirectionAtPoint(0));
     int      n(track->NumberTrajectoryPoints());
@@ -296,7 +298,7 @@ double TrackHitAna::projectedLength(const recob::Track* track)
         lastPoint  = lastPoint + arcLenToDoca * lastDir;
         lastDir    = track->DirectionAtPoint(i);
     }
-
+*/
     return result;
 }
 
@@ -309,7 +311,7 @@ int TrackHitAna::traversePFParticleHierarchy(art::Handle<std::vector<recob::PFPa
 {
     // So far no daughters...
     int nDaughters(0);
-
+/*
     // Get pointer to PFParticle
     art::Ptr<recob::PFParticle> pfParticle(pfParticleHandle,pfParticleIdx);
 
@@ -325,7 +327,7 @@ int TrackHitAna::traversePFParticleHierarchy(art::Handle<std::vector<recob::PFPa
     {
         nDaughters += traversePFParticleHierarchy(pfParticleHandle, daughterIdx, trackAssns, vertexAssns, nTracks, nVertices);
     }
-
+*/
     return nDaughters;
 }
 
