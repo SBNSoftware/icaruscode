@@ -3,7 +3,7 @@
 process_name: McRecoAll
 
 services.TFileService.fileName: "reco_all_hist.root"
-physics.reco: [@sequence::icarus_reco_signalprocessing]
+physics.reco: [@sequence::icarus_track_reconstruction]
 physics.trigger_paths: [ reco ]
 outputs.out1.fileName: "%ifb_%tc_reco.root"
 outputs.out1.dataTier: "reconstructed"

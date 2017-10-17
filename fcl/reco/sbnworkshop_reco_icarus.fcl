@@ -56,13 +56,15 @@ icarus_reco_filters:
 
 icarus_reco_signalprocessing: [     rawdigitfilter,
                                     recowire,
-                                    gaushit,
-                                    linecluster,
-                                    pmAlgTracker]
+                                    gaushit]
 
-#icarus_reco_fuzzycluster: [        fuzzycluster ]
+icarus_reco_linecluster: [          linecluster  ]
 
-#icarus_reco_fuzzypath: [           @sequence::icarus_reco_fuzzycluster ]
+icarus_reco_pmAlgTracker: [         pmAlgTracker ]
+
+icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
+                               @sequence::icarus_reco_linecluster,
+                               @sequence::icarus_reco_pmAlgTracker ]
 
 ### Below we include overrides for the modules above
 
