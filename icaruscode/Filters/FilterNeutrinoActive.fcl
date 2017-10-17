@@ -10,7 +10,7 @@ icarus_FilterNeutrinoActive:
  Ymin: -173.
  Zmax: 883.
  Zmin: -913.
- filterType : 1
+ filterType : 0
  Interaction : 1001
 }
 

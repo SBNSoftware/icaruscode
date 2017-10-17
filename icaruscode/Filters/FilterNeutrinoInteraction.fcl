@@ -10,7 +10,7 @@ icarus_FinalStateSelectFilter:
         #Return an inclusive final state
  isInclusive: true
         # List of particles to search for
- PDG: [ 13, -13, 11, -11, 111, 211, -211] #NC 1 photon
+ PDG: [ 13, -13, 11, -11, 111, 211, -211] # we want to select numuCC 0pi
         # Will return events with this many of above particles
  PDGCount: [1, 0, 0, 0, 0, 0, 0]
         # Will return events with only the specified number
