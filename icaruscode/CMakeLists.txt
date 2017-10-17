@@ -9,4 +9,5 @@ add_subdirectory(RecoWire)
 add_subdirectory(Light)
 add_subdirectory(LArG4)
 add_subdirectory(Utilities)
+add_subdirectory(Filters)
 

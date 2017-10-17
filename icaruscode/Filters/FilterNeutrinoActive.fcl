@@ -1,0 +1,17 @@
+BEGIN_PROLOG
+
+icarus_FilterNeutrinoActive:
+{ 
+ module_type:              "FilterNeutrinosActiveVolume"
+ inActive: 1
+ Xmax: 368.2
+ Xmin: 67.1
+ Ymax: 143.
+ Ymin: -173.
+ Zmax: 883.
+ Zmin: -913.
+ filterType : 0
+ Interaction : 1001
+}
+
+END_PROLOG
