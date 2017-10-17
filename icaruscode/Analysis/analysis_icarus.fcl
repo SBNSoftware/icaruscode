@@ -1,0 +1,15 @@
+#include "analysis_tools_icarus.fcl"
+
+BEGIN_PROLOG
+
+icarus_BasicHitAnalysis:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "gaushit"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "trackkalmanhit"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+}
+
+END_PROLOG

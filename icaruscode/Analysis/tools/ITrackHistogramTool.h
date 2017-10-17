@@ -1,13 +1,13 @@
-#ifndef IHITHISTOGRAMTOOL_H
-#define IHITHISTOGRAMTOOL_H
+#ifndef ITrackHistogramTOOL_H
+#define ITrackHistogramTOOL_H
 ////////////////////////////////////////////////////////////////////////
 //
-// Class:       IHitHistogramTool
+// Class:       ITrackHistogramTool
 // Module Type: tool
-// File:        IHitHistogramTool.h
+// File:        ITrackHistogramTool.h
 //
 //              This provides an interface for tools which do histogramming
-//              of various quantities associated to recob::Hit objects
+//              of various quantities associated to recob::Track objects
 //
 // Created by Tracy Usher (usher@slac.stanford.edu) on October 16, 2017
 //
@@ -16,16 +16,17 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
+#include "art/Framework/Principal/Event.h"
 #include "canvas/Persistency/Common/Ptr.h"
-#include "lardataobj/RecoBase/Hit.h"
+#include "lardataobj/RecoBase/Track.h"
 
-class IHitHistogramTool
+class ITrackHistogramTool
 {
 public:
     /**
      *  @brief  Virtual Destructor
      */
-    virtual ~IHitHistogramTool() noexcept = default;
+    virtual ~ITrackHistogramTool() noexcept = default;
     
     /**
      *  @brief Interface for configuring the particular algorithm tool
@@ -52,9 +53,7 @@ public:
     /**
      *  @brief Interface for filling histograms
      */
-    using HitPtrVec = std::vector<art::Ptr<recob::Hit>>;
-    
-    virtual void fillHistograms(const HitPtrVec&)  const = 0;
+    virtual void fillHistograms(const art::Event&)  const = 0;
 };
 
 #endif

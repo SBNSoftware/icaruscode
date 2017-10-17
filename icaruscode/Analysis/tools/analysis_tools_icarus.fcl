@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+BasicHitAnalysisTool:
+{
+  tool_type:         "BasicHitAnalysis"
+  LocalDirName:      "BasicHists"
+}
+
+END_PROLOG
