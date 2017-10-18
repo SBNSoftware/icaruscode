@@ -32,7 +32,7 @@ table_fragment_end
 
 product          version
 larsoft         v06_52_00
-icurusutil      v06_52_00_01
+icarusutil      v06_52_00_01
 icarus_data     v06_52_00_02
 
 cetbuildtools	v5_14_00	-	only_for_build
