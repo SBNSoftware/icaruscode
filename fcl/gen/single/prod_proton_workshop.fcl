@@ -1,0 +1,25 @@
+#include "prodsingle_common_icarus.fcl"
+
+process_name: SinglesGen
+
+outputs.out1.fileName: "prod_proton_workshop_icarus_%tc_gen.root"
+
+physics.producers.generator.PDG: [ 2212 ]            # proton
+physics.producers.generator.PosDist: 0             # Flat position dist.
+physics.producers.generator.X0: [ -230.95 ]
+physics.producers.generator.Y0: [ -15.0 ]
+physics.producers.generator.Z0: [ -15.0 ]
+physics.producers.generator.SigmaX: [ -149.95 ]      # x = (0, 256)
+physics.producers.generator.SigmaY: [ 158.41 ]      # y = (-116.5, 116.5)
+physics.producers.generator.SigmaZ: [ 894.9 ]      # z = (0, 1037)
+#physics.producers.generator.SigmaT: [ 0.0 ]        # In time
+physics.producers.generator.PDist: 1                
+physics.producers.generator.P0: [ 0.3 ]
+physics.producers.generator.SigmaP: [ 0.2 ]           
+physics.producers.generator.Theta0XZ: [ 0. ]       # y-azimuth
+physics.producers.generator.Theta0YZ: [ 0. ]       # y-latitude
+physics.producers.generator.SigmaThetaXZ: [ 60. ] # Quasi-isotropic
+physics.producers.generator.SigmaThetaYZ: [ 60. ]
+physics.producers.generator.AngleDist: 1
+physics.producers.generator.PHist: [ "dummy" ]
+physics.producers.generator.ThetaXzYzHist: [ "dummy" ]
