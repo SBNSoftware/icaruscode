@@ -43,9 +43,9 @@ end_product_list
 # Make a table by adding columns before "notes". 
 # e10  - with gcc 4.9.3 and -std=c++1y
 qualifier	larsoft		icarusutil  icarus_data notes
-e14:debug	e14:debug	e14:debug   nq
-e14:opt		e14:opt		e14:opt     nq
-e14:prof	e14:prof	e14:prof    nq
+e14:debug	e14:debug	e14:debug   -nq-
+e14:opt		e14:opt		e14:opt     -nq-
+e14:prof	e14:prof	e14:prof    -nq-
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
