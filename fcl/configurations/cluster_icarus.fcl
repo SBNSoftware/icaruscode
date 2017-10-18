@@ -31,18 +31,19 @@ icarus_cchitfinderalg.ChgNorms:             [1.0, 1.0]
 icarus_linecluster:                         @local::standard_linecluster
 icarus_linecluster.ClusterCrawlerAlg:       @local::icarus_clustercrawleralg
 
-icarus_standardhit3dbuilder:                @local::standard_standardhit3dbuilder
-icarus_spacepointhit3dbuilder:              @local::standard_spacepointhit3dbuilder
-icarus_cluster3dMergeAlg:                   @local::standard_cluster3dMergeAlg
-icarus_cluster3dPathAlg:                    @local::standard_cluster3dPathAlg
-icarus_cluster3ddbscanalg:                  @local::standard_cluster3ddbscanalg
-icarus_cluster3dminSpanTreeAlg:             @local::standard_cluster3dminSpanTreeAlg
-icarus_cluster3dprincipalcomponentsalg:     @local::standard_cluster3dprincipalcomponentsalg
-icarus_cluster3dskeletonalg:                @local::standard_cluster3dskeletonalg 
-icarus_cluster3dhoughseedfinderalg:         @local::standard_cluster3dhoughseedfinderalg 
-icarus_cluster3dpcaseedfinderalg:           @local::standard_cluster3dpcaseedfinderalg
-icarus_cluster3dparallelhitsseedfinderalg:  @local::standard_cluster3dparallelhitsseedfinderalg
-icarus_cluster3dkdtree:                     @local::standard_cluster3dkdTree
+# future development
+#icarus_standardhit3dbuilder:                @local::standard_standardhit3dbuilder
+#icarus_spacepointhit3dbuilder:              @local::standard_spacepointhit3dbuilder
+#icarus_cluster3dMergeAlg:                   @local::standard_cluster3dMergeAlg
+#icarus_cluster3dPathAlg:                    @local::standard_cluster3dPathAlg
+#icarus_cluster3ddbscanalg:                  @local::standard_cluster3ddbscanalg
+#icarus_cluster3dminSpanTreeAlg:             @local::standard_cluster3dminSpanTreeAlg
+#icarus_cluster3dprincipalcomponentsalg:     @local::standard_cluster3dprincipalcomponentsalg
+#icarus_cluster3dskeletonalg:                @local::standard_cluster3dskeletonalg
+#icarus_cluster3dhoughseedfinderalg:         @local::standard_cluster3dhoughseedfinderalg
+#icarus_cluster3dpcaseedfinderalg:           @local::standard_cluster3dpcaseedfinderalg
+#icarus_cluster3dparallelhitsseedfinderalg:  @local::standard_cluster3dparallelhitsseedfinderalg
+#icarus_cluster3dkdtree:                     @local::standard_cluster3dkdTree
 
 #icarus_cluster3d:                           @local::standard_cluster3d
 #icarus_cluster3d.Hit3DBuilderAlg:           @local::icarus_standardhit3dbuilder
