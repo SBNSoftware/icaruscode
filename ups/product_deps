@@ -32,7 +32,7 @@ table_fragment_end
 
 product          version
 larsoft         v06_52_00
-icurusutil      v06_52_00_01
+icarusutil      v06_52_00_01
 icarus_data     v06_52_00_02
 
 cetbuildtools	v5_14_00	-	only_for_build
@@ -43,9 +43,9 @@ end_product_list
 # Make a table by adding columns before "notes". 
 # e10  - with gcc 4.9.3 and -std=c++1y
 qualifier	larsoft		icarusutil  icarus_data notes
-e14:debug	e14:debug	e14:debug   nq
-e14:opt		e14:opt		e14:opt     nq
-e14:prof	e14:prof	e14:prof    nq
+e14:debug	e14:debug	e14:debug   -nq-
+e14:opt		e14:opt		e14:opt     -nq-
+e14:prof	e14:prof	e14:prof    -nq-
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
