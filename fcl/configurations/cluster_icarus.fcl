@@ -44,13 +44,13 @@ icarus_cluster3dpcaseedfinderalg:           @local::standard_cluster3dpcaseedfin
 icarus_cluster3dparallelhitsseedfinderalg:  @local::standard_cluster3dparallelhitsseedfinderalg
 icarus_cluster3dkdtree:                     @local::standard_cluster3dkdTree
 
-icarus_cluster3d:                           @local::standard_cluster3d
-icarus_cluster3d.Hit3DBuilderAlg:           @local::icarus_standardhit3dbuilder
-icarus_cluster3d.ClusterAlg:                @local::icarus_cluster3ddbscanalg
-icarus_cluster3d.PrincipalComponentsAlg:    @local::icarus_cluster3dprincipalcomponentsalg
-icarus_cluster3d.SkeletonAlg:               @local::icarus_cluster3dskeletonalg
-icarus_cluster3d.SeedFinderAlg:             @local::icarus_cluster3dhoughseedfinderalg
-icarus_cluster3d.PCASeedFinderAlg:          @local::icarus_cluster3dpcaseedfinderalg
-icarus_cluster3d.ParallelHitsAlg:           @local::icarus_cluster3dparallelhitsseedfinderalg
+#icarus_cluster3d:                           @local::standard_cluster3d
+#icarus_cluster3d.Hit3DBuilderAlg:           @local::icarus_standardhit3dbuilder
+#icarus_cluster3d.ClusterAlg:                @local::icarus_cluster3ddbscanalg
+#icarus_cluster3d.PrincipalComponentsAlg:    @local::icarus_cluster3dprincipalcomponentsalg
+#icarus_cluster3d.SkeletonAlg:               @local::icarus_cluster3dskeletonalg
+#icarus_cluster3d.SeedFinderAlg:             @local::icarus_cluster3dhoughseedfinderalg
+#icarus_cluster3d.PCASeedFinderAlg:          @local::icarus_cluster3dpcaseedfinderalg
+#icarus_cluster3d.ParallelHitsAlg:           @local::icarus_cluster3dparallelhitsseedfinderalg
 
 END_PROLOG
