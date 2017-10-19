@@ -1,0 +1,20 @@
+#include "genie.fcl"
+
+BEGIN_PROLOG
+
+icarus_genie_simple:                        @local::standard_genie
+icarus_genie_simple.FluxType:               "simple_flux"
+icarus_genie_simple.GenFlavors:             [12]
+#icarus_genie_simple.TopVolume:              "volTPCActive"
+#icarus_genie_simple.TopVolume:              "volCryostat"
+icarus_genie_simple.BeamName:               "booster"
+icarus_genie_simple.EventGeneratorList:     "Default+CCMEC+NCMEC"
+#icarus_genie_simple.EventGeneratorList:     "Default"
+#icarus_genie_simple.FluxCopyMethod:         "IFDH"
+icarus_genie_simple.FluxSearchPaths:        "/pnfs/icarus/persistent/bnb_gsimple/fluxes_Oct2017/"
+icarus_genie_simple.FluxFiles:              ["converted_beammc_icarus_*.root"]
+icarus_genie_simple.GHepPrintLevel:         13
+icarus_genie_simple.POTPerSpill:            5.e12
+
+END_PROLOG
+
