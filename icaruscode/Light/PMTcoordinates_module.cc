@@ -124,6 +124,11 @@ float reco_barycentre_y;
 float reco_barycentre_z;
 
 float total_quenched_energy;
+int total_coll_photons;
+
+float PMT_error_y;
+float PMT_error_z;
+float PMT_total_error;
   
 art::InputTag photonLabel;
 art::InputTag chargeLabel;
@@ -204,7 +209,6 @@ true_barycentre_z = true_barycentre_z/total_quenched_energy;
 total_quenched_energy = total_quenched_energy/3; 
 
 
-
 for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 	sim::SimPhotons const& photon_vec = optical[channel];
@@ -222,6 +226,10 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	PMTx[channel] = xyz[0];
 	PMTy[channel] = xyz[1];
 	PMTz[channel] = xyz[2];
+
+	reco_barycentre_y = reco_barycentre_y + PMTy[channel]*photons_collected[channel];
+	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];
+	total_coll_photons= total_coll_photons + photons_collected[channel];
 
 //	mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photon_vec.size() << " photons";
 
@@ -264,6 +272,14 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	if (PMTx[channel]>200){TPC[channel]=3;}
     	
 }
+
+reco_barycentre_y = reco_barycentre_y/total_coll_photons;
+reco_barycentre_z = reco_barycentre_z/total_coll_photons;
+
+PMT_error_y = reco_barycentre_y-true_barycentre_y;
+PMT_error_z = reco_barycentre_z-true_barycentre_z;
+PMT_total_error = sqrt((PMT_error_y*PMT_error_y)+(PMT_error_z*PMT_error_z));
+
 //	std::map <int,int> content = optical->DetectedPhotons;
 	
 //	std::vector<int> channels;
@@ -284,25 +300,28 @@ art::ServiceHandle<art::TFileService> tfs;
 fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
 fTree->Branch("event",&event,"event/I");
-fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
-fTree->Branch("noPMT",&noPMT,("noPMT[" + std::to_string(nPMTs) + "]/I").c_str());
+fTree->Branch("total_quenched_energy",&total_quenched_energy,"total_quenched_energy");
 fTree->Branch("Cryostat",&Cryostat,("Cryostat[" + std::to_string(nPMTs) + "]/I").c_str());
 fTree->Branch("TPC",&TPC,("TPC[" + std::to_string(nPMTs) + "]/I").c_str());
+fTree->Branch("noPMT",&noPMT,("noPMT[" + std::to_string(nPMTs) + "]/I").c_str());
 fTree->Branch("PMTx",&PMTx,("PMTx[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTy",&PMTy,("PMTy[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTz",&PMTz,("PMTz[" + std::to_string(nPMTs) + "]/D").c_str());
+fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
+fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
 fTree->Branch("dis",&dis,"dis[360][10000]/F");
 fTree->Branch("firstphoton_velocity",&firstphoton_velocity,("firstphoton_velocity[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_velocity",&photon_velocity,"photon_velocity[360][10000]/F");
-fTree->Branch("total_quenced_energy",&total_quenced_energy,"total_quenced_energy");
 fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
 fTree->Branch("true_barycentre_z",&true_barycentre_z,"true_barycentre_z/F");
-//fTree->Branch("reco_barycentre_y",reco_barycentre_y,"reco_barycentre_y/F");
-//fTree->Branch("reco_barycentre_z",reco_barycentre_z,"reco_barycentre_z/F");
-
+fTree->Branch("reco_barycentre_y",&reco_barycentre_y,"reco_barycentre_y/F");
+fTree->Branch("reco_barycentre_z",&reco_barycentre_z,"reco_barycentre_z/F");
+fTree->Branch("PMT_error_y",&PMT_error_y,"PMT_error_y/F");
+fTree->Branch("PMT_error_z",&PMT_error_z,"PMT_error_z/F");
+fTree->Branch("PMT_total_error",&PMT_total_error,"PMT_total_error/F");
 }
 
 DEFINE_ART_MODULE(icarus::PMTcoordinates)
