@@ -62,7 +62,7 @@ outputs:
  {
    module_type: RootOutput
    fileName:    "single_gen_icarus.root"
-   #dataTier:    "generated"
+   dataTier:    "generated"
    compressionLevel: 1
  }
 }
