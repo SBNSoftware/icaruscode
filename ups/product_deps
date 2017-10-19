@@ -34,6 +34,7 @@ product          version
 larsoft         v06_54_00
 icarusutil      v06_54_00
 icarus_data     v06_54_00
+genie_xsec      v2_12_6
 
 cetbuildtools	v5_14_00	-	only_for_build
 end_product_list
@@ -42,10 +43,10 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
 # e10  - with gcc 4.9.3 and -std=c++1y
-qualifier	larsoft		icarusutil  icarus_data notes
-e14:debug	e14:debug	e14:debug   -nq-
-e14:opt		e14:opt		e14:opt     -nq-
-e14:prof	e14:prof	e14:prof    -nq-
+qualifier	larsoft		icarusutil  icarus_data genie_xsec notes
+e14:debug	e14:debug	e14:debug   -nq-        DefaultPlusMECWithNC
+e14:opt		e14:opt		e14:opt     -nq-        DefaultPlusMECWithNC
+e14:prof	e14:prof	e14:prof    -nq-        DefaultPlusMECWithNC
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
