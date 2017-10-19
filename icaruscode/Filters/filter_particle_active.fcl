@@ -1,7 +1,15 @@
+#include "seedservice.fcl"
+#include "singles.fcl"
+#include "larproperties.fcl"
+#include "magfield_larsoft.fcl"
+#include "FilterParticleActive.fcl"
+#include "largeantmodules.fcl"
+#include "genie_icarus.fcl"
+#include "mcreco.fcl"
+#include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
-#include "singles_icarus.fcl"
 
-process_name: SinglesGen
+process_name: GenPartFilter
 
 services:
 {
@@ -15,14 +23,15 @@ services:
   @table::icarus_gen_services
 }
 
+#services.Geometry.SurfaceY:  560 # This value has been introduced because at the moment using 690 cry provides an error... maybe related to Geometry.. to be fixed!
+
 #Start each new event with an empty event.
 source:
 {
-  module_type: EmptyEvent
-  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-  maxEvents:   10          # Number of events to create
-  firstRun:    1           # Run number to use for this file
-  firstEvent:  1           # number of first event in the file
+  module_type:     RootInput
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
 }
 
 # Define and configure some modules to do work on each event.
@@ -31,22 +40,21 @@ source:
 physics:
 {
 
- producers:
- {
-   generator: @local::icarus_singlep
-   rns:       { module_type: "RandomNumberSaver" }
- }
+filters:
+{
+  eventActive: @local::icarus_FilterParticleActive
+}
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, generator ]
+ filter: [ eventActive ]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
 
  #trigger_paths is a keyword and contains the paths that modify the art::event, 
  #ie filters and producers
- trigger_paths: [simulate] 
+ trigger_paths: [ filter ] 
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
  #ie analyzers and output streams.  these all run simultaneously
@@ -61,8 +69,11 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_gen_icarus.root"
-   dataTier:    "generated"
+   fileName:    "single_crygen_icarus.root"
+   dataTier:    "simulated"
    compressionLevel: 1
+   fastCloning: false
+   SelectEvents: [filter]
  }
 }
+

@@ -1,7 +1,16 @@
-#include "services_icarus_simulation.fcl"
-#include "singles_icarus.fcl"
+#include "seedservice.fcl"
+#include "singles.fcl"
+#include "larproperties.fcl"
+#include "magfield_larsoft.fcl"
 
-process_name: SinglesGen
+#include "largeantmodules.fcl"
+#include "corsika_icarus.fcl"
+#include "mcreco.fcl"
+#include "services_icarus.fcl"
+#include "genie_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+
+process_name: GenGenieCorsika
 
 services:
 {
@@ -18,11 +27,11 @@ services:
 #Start each new event with an empty event.
 source:
 {
-  module_type: EmptyEvent
+  module_type:     EmptyEvent
   timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-  maxEvents:   10          # Number of events to create
-  firstRun:    1           # Run number to use for this file
-  firstEvent:  1           # number of first event in the file
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
 }
 
 # Define and configure some modules to do work on each event.
@@ -33,13 +42,14 @@ physics:
 
  producers:
  {
-   generator: @local::icarus_singlep
+   generator: @local::icarus_genie_simple
+   cosmgen:   @local::icarus_corsika_cmc  
    rns:       { module_type: "RandomNumberSaver" }
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, generator ]
+ simulate: [ rns, generator, cosmgen ]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
@@ -61,8 +71,12 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_gen_icarus.root"
-   dataTier:    "generated"
+   fileName:    "single_crygen_icarus.root"
+   dataTier:    "simulated"
    compressionLevel: 1
+   fastCloning: false
  }
 }
+
+#physics.producers.cosmgen.EnergyThreshold: 2e-1
+#physics.producers.cosmgen.SubBoxLength: "subboxLength 60 "

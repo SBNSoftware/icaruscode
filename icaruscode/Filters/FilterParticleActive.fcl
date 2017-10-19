@@ -1,0 +1,16 @@
+BEGIN_PROLOG
+
+icarus_FilterParticleActive:
+{ 
+ module_type:              "FilterParticlesActiveVolume"
+ inActive: 1
+ Xmax: 368.2
+ Xmin: 67.1
+ Ymax: 143.
+ Ymin: -173.
+ Zmax: 883.
+ Zmin: -913.
+ filterpart : 13
+}
+
+END_PROLOG
