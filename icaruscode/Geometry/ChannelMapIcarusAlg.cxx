@@ -314,7 +314,7 @@ SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
     return sigt;
 }
 
-
+/*
 //----------------------------------------------------------------------------
 View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
 {
@@ -378,13 +378,13 @@ View_t ChannelMapIcarusAlg::View(raw::ChannelID_t const channel) const
       return view;
   }
 }
-  
+
   //----------------------------------------------------------------------------
 std::set<View_t> const& ChannelMapIcarusAlg::Views() const
 {
     return fViews;
 }
-
+*/
 //----------------------------------------------------------------------------
 std::set<PlaneID> const& ChannelMapIcarusAlg::PlaneIDs() const
 {

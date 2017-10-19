@@ -64,9 +64,7 @@ namespace geo{
       { return PlaneWireToChannel(geo::WireID(cstat, tpc, plane, wire)); }
     //@}
     
-    virtual View_t                   View( raw::ChannelID_t const channel )       const override;
     virtual SigType_t                SignalType( raw::ChannelID_t const channel ) const override;
-    virtual std::set<View_t>  const& Views()                                      const override;
     virtual std::set<PlaneID> const& PlaneIDs()                                   const override;
     
     
