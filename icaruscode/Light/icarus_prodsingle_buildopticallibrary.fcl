@@ -138,20 +138,21 @@ services.LArG4Parameters.UseCustomPhysics: true
 //standard_properties.ReflectiveSurfaceNames:            [ "STEEL_STAINLESS_Fe7Cr2Ni"] 
 //standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042 ] ]
 
-//standard_properties.ReflectiveSurfaceNames:            [ "STEEL_STAINLESS_Fe7Cr2Ni", "Copper", "G10", "vm2000" ]
-//standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042 ],
-//                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
-//                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
-//                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ] ]
+standard_properties.ReflectiveSurfaceNames:            [ "STEEL_STAINLESS_Fe7Cr2Ni", "Copper", "G10", "vm2000" ]
+standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042, 0.042 ],
+                                                       [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],
+                                                       [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ],
+                                                       [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ] ]
 
 
 physics.producers.generator.N: 400000
 
 # do not allow lightsource to write output into root file
-physics.producers.generator.FillTree: true 
-physics.analyzers.pmtresponse.MakeAllPhotonsTree: true 
+//physics.producers.generator.FillTree: true 
+physics.producers.generator.FillTree: false 
+physics.analyzers.pmtresponse.MakeAllPhotonsTree: false 
 
-physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true	
-physics.analyzers.pmtresponse.MakeSimPhotonsTree: true	
-physics.analyzers.pmtresponse.MakeEventsTree: true	
+physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: false	
+physics.analyzers.pmtresponse.MakeSimPhotonsTree: false	
+physics.analyzers.pmtresponse.MakeEventsTree: false	
 physics.analyzers.pmtresponse.MakeLightAnalysisTree: false	

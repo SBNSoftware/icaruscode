@@ -49,6 +49,8 @@
 #include "larana/OpticalDetector/SimPhotonCounter.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 
+#include "lardataobj/Simulation/SimChannel.h"
+
 // #####################
 // ### ROOT includes ###
 // #####################
@@ -61,6 +63,7 @@
 
 const int nPMTs = 360;
 const int PMTs_per_TPC = 90;
+const int MaxPhotons = 10000;
 
 namespace icarus {
   class PMTcoordinates;
@@ -70,55 +73,213 @@ namespace icarus {
 class icarus::PMTcoordinates : public art::EDAnalyzer 
 {
 public:
-  explicit PMTcoordinates(fhicl::ParameterSet const & p);
+explicit PMTcoordinates(fhicl::ParameterSet const & p);
 
-  // Plugins should not be copied or assigned.
-  PMTcoordinates(PMTcoordinates const &) = delete;
-  PMTcoordinates(PMTcoordinates &&) = delete;
-  PMTcoordinates & operator = (PMTcoordinates const &) = delete;
-  PMTcoordinates & operator = (PMTcoordinates &&) = delete;
+// Plugins should not be copied or assigned.
+PMTcoordinates(PMTcoordinates const &) = delete;
+PMTcoordinates(PMTcoordinates &&) = delete;
+PMTcoordinates & operator = (PMTcoordinates const &) = delete;
+PMTcoordinates & operator = (PMTcoordinates &&) = delete;
 
-  // Required functions.
-  void analyze(art::Event const & e) override;
+// Required functions.
+void analyze(art::Event const & e) override;
 
-  // Selected optional functions.
-  //void beginJob();
-  //void reconfigure(fhicl::ParameterSet const & p);
+// Selected optional functions.
+void beginJob();
+//void reconfigure(fhicl::ParameterSet const & p);
 
 private:
 
-double coordinate [3][nPMTs];
+TTree* fTree;
 
-int PMT [nPMTs];
+int event;
 
-float photons [nPMTs];
+int noPMT[nPMTs];
+
+int turned_PMT;
+
+double PMTx[nPMTs];
+double PMTy[nPMTs];
+double PMTz[nPMTs];
+
+int Cryostat[nPMTs];	
+int TPC[nPMTs];
+
+float photons_collected[nPMTs];
+float photon_time[nPMTs][MaxPhotons];
+float photon_velocity[nPMTs][MaxPhotons];
+
+float ics[nPMTs][MaxPhotons];
+float ipsilon[nPMTs][MaxPhotons];
+float zeta[nPMTs][MaxPhotons];
+
+float dis[nPMTs][MaxPhotons];
+
+float firstphoton_time[nPMTs];
+float firstphoton_velocity[nPMTs];
+
+float true_barycentre_y;
+float true_barycentre_z;
+float reco_barycentre_y;
+float reco_barycentre_z;
+
+float total_quenched_energy;
+int total_coll_photons;
+
+float PMT_error_y;
+float PMT_error_z;
+float PMT_total_error;
   
 art::InputTag photonLabel;
-  
+art::InputTag chargeLabel;
 };
 
 
 icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
   :
   EDAnalyzer(p),
-  photonLabel(p.get<art::InputTag>("fottoni", "largeant"))
+  photonLabel(p.get<art::InputTag>("fottoni", "largeant")),
+  chargeLabel(p.get<art::InputTag>("carconi", "largeant"))
  // More initializers here.
 {
 
 }
 
-void icarus::PMTcoordinates::analyze(art::Event const & e)
+void icarus::PMTcoordinates::analyze(art::Event const & evt)
 {
- art::ServiceHandle<geo::Geometry> geom;
+
+art::ServiceHandle<geo::Geometry> geom;
  
- std::vector<sim::SimPhotons> const& optical = *(e.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
+std::vector<sim::SimPhotons> const& optical = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
+std::vector<sim::SimChannel> const& charge  = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
 
-  //auto event = evt.id().event();
+event = evt.id().event();
 
-  for (std::size_t channel = 0; channel < optical.size(); ++channel) {
-    sim::SimPhotons const& photons = optical[channel];
-    mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photons.size() << " photons";
-  }
+for (int g=0; g<10000; g++)
+{
+	for (int u=0; u<360; u++)
+	{
+		photon_time[u][g]=0;
+		photon_velocity[u][g]=0;
+
+		firstphoton_time[u]=100000000;
+		firstphoton_velocity[u]=0;
+	}
+} 
+
+true_barycentre_y =0;
+true_barycentre_z =0;
+
+total_quenched_energy =0;
+
+turned_PMT=0;
+
+reco_barycentre_y=0;
+reco_barycentre_z=0;
+
+for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechannel) //loop sui canali del SimChannel
+{ 	
+	auto const& channeltdcide = charge.at(chargechannel).TDCIDEMap();
+	
+	for (std::size_t TDCnu = 0;  TDCnu<channeltdcide.size(); ++TDCnu) 	//loop sui TDC dei canali
+	{
+
+		sim::TDCIDE const& tdcide = channeltdcide.at(TDCnu);
+
+		for (std::size_t IDEnu = 0;  IDEnu<tdcide.second.size(); ++IDEnu) 	//loop sulle IDE dei TDC
+		{
+			sim::IDE const& ida = tdcide.second.at(IDEnu);
+
+			std::cout << "IDA     " << ida.x << '\t' << ida.y << '\t' << ida.z << std::endl;
+
+			true_barycentre_y = true_barycentre_y + ida.y*ida.energy;
+			true_barycentre_z = true_barycentre_z + ida.z*ida.energy;
+			total_quenched_energy      = total_quenched_energy + ida.energy;
+
+		}
+		
+	}
+
+}
+
+
+true_barycentre_y = true_barycentre_y/total_quenched_energy;
+true_barycentre_z = true_barycentre_z/total_quenched_energy;
+
+total_quenched_energy = total_quenched_energy/3; 
+
+
+for (std::size_t channel = 0; channel < optical.size(); ++channel) {
+
+	sim::SimPhotons const& photon_vec = optical[channel];
+
+	noPMT[channel] = channel;	
+
+	photons_collected[channel]=photon_vec.size();
+
+	if (photons_collected[channel]>0){turned_PMT++;}
+
+	double xyz[3];
+
+	geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
+
+	PMTx[channel] = xyz[0];
+	PMTy[channel] = xyz[1];
+	PMTz[channel] = xyz[2];
+
+	reco_barycentre_y = reco_barycentre_y + PMTy[channel]*photons_collected[channel];
+	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];
+	total_coll_photons= total_coll_photons + photons_collected[channel];
+
+//	mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photon_vec.size() << " photons";
+
+	firstphoton_time[channel] = 100000000;
+	firstphoton_velocity[channel] = 0;
+
+	if (photons_collected[channel]>0)
+	{
+		for (size_t i = 0; i<photon_vec.size() && int(i)< MaxPhotons; ++i)
+		{
+			photon_time[channel][i]= photon_vec.at(i).Time;
+
+			ics[channel][i] = photon_vec.at(i).InitialPosition.X()/10;
+			ipsilon[channel][i] = photon_vec.at(i).InitialPosition.Y()/10;
+			zeta[channel][i] = photon_vec.at(i).InitialPosition.Z()/10;
+
+			dis[channel][i] = sqrt(((ics[channel][i]-PMTx[channel])*(ics[channel][i]-PMTx[channel]))+((ipsilon[channel][i]-PMTy[channel])*(ipsilon[channel][i]-PMTy[channel]))+((zeta[channel][i]-PMTz[channel])*(zeta[channel][i]-PMTz[channel])));
+
+			photon_velocity[channel][i]= dis[channel][i]/photon_time[channel][i];
+
+			if (photon_time[channel][i]<firstphoton_time[channel])
+			{				
+				firstphoton_time[channel]=photon_time[channel][i];
+				firstphoton_velocity[channel]=dis[channel][i]/firstphoton_time[channel];
+			}
+
+		}
+
+	}
+
+
+//	std::cout << PMTx[channel] << '\t' << PMTy[channel] << '\t' << PMTz[channel] << std::endl;
+
+	if (PMTx[channel]<0){Cryostat[channel]=0;}
+	if (PMTx[channel]>0){Cryostat[channel]=1;}
+
+	if (PMTx[channel]<-200){TPC[channel]=0;}
+	if (PMTx[channel]>-200 && PMTx[channel]<0){TPC[channel]=1;}
+	if (PMTx[channel]<200 && PMTx[channel]>0){TPC[channel]=2;}
+	if (PMTx[channel]>200){TPC[channel]=3;}
+    	
+}
+
+reco_barycentre_y = reco_barycentre_y/total_coll_photons;
+reco_barycentre_z = reco_barycentre_z/total_coll_photons;
+
+PMT_error_y = reco_barycentre_y-true_barycentre_y;
+PMT_error_z = reco_barycentre_z-true_barycentre_z;
+PMT_total_error = sqrt((PMT_error_y*PMT_error_y)+(PMT_error_z*PMT_error_z));
+
 //	std::map <int,int> content = optical->DetectedPhotons;
 	
 //	std::vector<int> channels;
@@ -129,21 +290,38 @@ void icarus::PMTcoordinates::analyze(art::Event const & e)
  //	collected_photons.push_back(it->second);
 //  	std::cout << it->first << '\t' << it->second << std::endl;}
 
-for (int channel=0; channel < nPMTs; channel++)
-{
- double xyz[3];
-
- geom->OpDetGeoFromOpChannel(channel).GetCenter(xyz);
-
- coordinate[0][channel] = xyz[0];
- coordinate[1][channel] = xyz[1];
- coordinate[2][channel] = xyz[2];
-
-
- std::cout << coordinate[0][channel] << '\t' << coordinate[1][channel] << '\t' << coordinate[2][channel] << std::endl;
-
+fTree->Fill();
 }
 
+void icarus::PMTcoordinates::beginJob()
+{
+
+art::ServiceHandle<art::TFileService> tfs;
+fTree = tfs->make<TTree>("lighttree","tree for the light response");
+
+fTree->Branch("event",&event,"event/I");
+fTree->Branch("total_quenched_energy",&total_quenched_energy,"total_quenched_energy");
+fTree->Branch("Cryostat",&Cryostat,("Cryostat[" + std::to_string(nPMTs) + "]/I").c_str());
+fTree->Branch("TPC",&TPC,("TPC[" + std::to_string(nPMTs) + "]/I").c_str());
+fTree->Branch("noPMT",&noPMT,("noPMT[" + std::to_string(nPMTs) + "]/I").c_str());
+fTree->Branch("PMTx",&PMTx,("PMTx[" + std::to_string(nPMTs) + "]/D").c_str());
+fTree->Branch("PMTy",&PMTy,("PMTy[" + std::to_string(nPMTs) + "]/D").c_str());
+fTree->Branch("PMTz",&PMTz,("PMTz[" + std::to_string(nPMTs) + "]/D").c_str());
+fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
+fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons");
+fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+fTree->Branch("dis",&dis,"dis[360][10000]/F");
+fTree->Branch("firstphoton_velocity",&firstphoton_velocity,("firstphoton_velocity[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("photon_velocity",&photon_velocity,"photon_velocity[360][10000]/F");
+fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
+fTree->Branch("true_barycentre_z",&true_barycentre_z,"true_barycentre_z/F");
+fTree->Branch("reco_barycentre_y",&reco_barycentre_y,"reco_barycentre_y/F");
+fTree->Branch("reco_barycentre_z",&reco_barycentre_z,"reco_barycentre_z/F");
+fTree->Branch("PMT_error_y",&PMT_error_y,"PMT_error_y/F");
+fTree->Branch("PMT_error_z",&PMT_error_z,"PMT_error_z/F");
+fTree->Branch("PMT_total_error",&PMT_total_error,"PMT_total_error/F");
 }
 
 DEFINE_ART_MODULE(icarus::PMTcoordinates)

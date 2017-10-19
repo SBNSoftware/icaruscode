@@ -35,7 +35,7 @@ services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibil
 
 services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "nocrt.root"
+services.PhotonVisibilityService.LibraryFile: "piccolo.root"
 
 services.PhotonVisibilityService.UseCryoBoundary: false
 services.PhotonVisibilityService.XMin: 320	#-300
@@ -135,7 +135,7 @@ services.LArG4Parameters.UseCustomPhysics: true
 # disable cerenkov light
 #services.DetectorPropertiesService.EnableCerenkovLight: false
 
-physics.producers.generator.PDG: [ 2212 ]            # muon
+physics.producers.generator.PDG: [ 13 ]            # muon
 
 physics.producers.generator.SigmaThetaXZ: [ 0 ]
 physics.producers.generator.SigmaThetaYZ: [ 0 ]
@@ -143,7 +143,7 @@ physics.producers.generator.SigmaThetaYZ: [ 0 ]
 physics.producers.generator.Y0: [ -25.0 ]
 physics.producers.generator.X0: [ 330.0 ]
 physics.producers.generator.Z0: [ 0.0 ]
-physics.producers.generator.P0: [ 1.0 ]
+physics.producers.generator.P0: [ 0.2 ]
 
 physics.producers.opdigi.QE: [1]
 physics.producers.opdigi.DarkRate: 0
