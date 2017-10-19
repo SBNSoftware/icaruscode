@@ -89,8 +89,8 @@ outputs:
  {
    module_type: RootOutput
    #SelectEvents: {SelectEvents:[reco]}
-   fileName:    "BeamOn_NoPileUp_Filter.root"
-   dataTier:    "reconstructed-2d"
+   fileName:    "testing_light.root"
+   dataTier:    "detector-simulated"
    compressionLevel: 1
  }
 }
