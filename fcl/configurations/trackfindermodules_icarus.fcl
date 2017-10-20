@@ -1,4 +1,5 @@
 #include "trackfindermodules.fcl"
+#include "kalmanfilterfinaltrackfitter.fcl"
 
 BEGIN_PROLOG
 
@@ -15,5 +16,13 @@ icarus_pmalgtrajfitter.HitModuleLabel:                   "gaushit"
 icarus_pmalgtrajfitter.PfpModuleLabel:                   "pandora"
 icarus_pmalgtrajfitter.PMAlgFitting.RunVertexing:        false
 icarus_pmalgtrajfitter.PMAlgFitting.TrackingSkipPdg:     [11]
+
+icarus_pmalgkalmantrack:                                 @local::kalmantrackfit
+icarus_pmalgkalmantrack.inputs.inputPFParticleLabel:     "pmAlgTracker"
+icarus_pmalgkalmantrack.inputs.inputTracksLabel:         ""
+icarus_pmalgkalmantrack.inputs.inputShowersLabel:        ""
+icarus_pmalgkalmantrack.inputs.inputCaloLabel:           ""
+icarus_pmalgkalmantrack.inputs.inputPidLabel:            ""
+icarus_pmalgkalmantrack.options.trackFromPF:             true
 
 END_PROLOG
