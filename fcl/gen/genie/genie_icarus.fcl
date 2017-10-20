@@ -6,7 +6,7 @@ icarus_genie_simple:                        @local::standard_genie
 icarus_genie_simple.FluxType:               "simple_flux"
 icarus_genie_simple.GenFlavors:             [12, 14, -12, -14]
 #icarus_genie_simple.TopVolume:              "volTPCActive"
-icarus_genie_simple.TopVolume:              "volCryostat"
+#icarus_genie_simple.TopVolume:              "volCryostat"
 icarus_genie_simple.BeamName:               "booster"
 icarus_genie_simple.EventGeneratorList:     "Default+CCMEC+NCMEC"
 #icarus_genie_simple.EventGeneratorList:     "Default"

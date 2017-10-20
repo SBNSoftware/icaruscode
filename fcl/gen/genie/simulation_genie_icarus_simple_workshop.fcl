@@ -76,4 +76,5 @@ outputs:
  }
 }
 
+physics.producers.generator.TopVolume:  "volTPCActive"
 physics.producers.generator.GenFlavors: [ 14 ]
