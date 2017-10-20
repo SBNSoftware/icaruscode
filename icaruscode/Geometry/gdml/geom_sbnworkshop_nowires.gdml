@@ -1,0 +1,1206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<gdml xmlns:gdml="http://cern.ch/2001/Schemas/GDML"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="GDMLSchema/gdml.xsd">
+<define>
+
+<!--
+-->
+
+   <position name="posActiveInTPC"   unit="cm" x="" y="" z=""/>
+   <position name="posTPC0inCryo"    unit="cm" x="-74.745" y="-15"    z="-15" />
+   <position name="posCathode"  unit="cm" x="0"  y="-15"    z="-15" />
+   <position name="posTPC1inCryo"    unit="cm" x="74.745" y="-15"    z="-15" />
+   <position name="posCryo1InWarmVessel"  unit="cm" x="-216.215" y="0" z="0" />
+   <position name="posCryo2InWarmVessel"  unit="cm" x="216.215" y="0" z="0" />
+   <position name="posDetEncInWorld" unit="cm" x="0"     y="0"     z="0"/>
+   <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
+   <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="0" z="0"/>
+
+   <position name="posBuildingInWorld" unit="cm" x="0" y="1300" z="0"/>
+   <position name="posExpHallInWorld" unit="cm" x="0" y="195" z="0"/>
+
+   <rotation name="rPlus90AboutZPlus90AboutY"  unit="deg" x="0" y="90" z="90"/>
+   <rotation name="rPlus90AboutX"       unit="deg" x="90" y="0" z="0"/>
+   <rotation name="rPlus90AboutY"	unit="deg" x="0" y="90"   z="0"/>
+   <rotation name="rPlus90AboutZ"	unit="deg" x="0" y="0"   z="90"/>
+   <rotation name="rMinus90AboutY"      unit="deg" x="0" y="270" z="0"/>
+   <rotation name="rMinus90AboutYMinus90AboutX"       unit="deg" x="270" y="270" z="0"/>
+   <rotation name="rPlus90VAngleAboutX"	unit="deg" x="30" y="0"   z="0"/>  
+   <rotation name="rPlus90UAngleAboutX"	unit="deg" x="150" y="0"   z="0"/>
+   <rotation name="rPlus180AboutY"	unit="deg" x="0" y="180"   z="0"/>
+   <rotation name="rIdentity"		unit="deg" x="0" y="0"   z="0"/>
+   <rotation name="rPlusUAngleAboutX" 	unit="deg" x="60" y="0" z="0"/>
+   <rotation name="rMinusVAngleAboutX" 	unit="deg" x="300" y="0" z="0"/>
+</define>
+<materials>
+  <element name="videRef" formula="VACUUM" Z="1">  <atom value="1"/> </element>
+  <element name="bromine" formula="Br" Z="35"> <atom value="79.904"/> </element>
+  <element name="hydrogen" formula="H" Z="1">  <atom value="1.0079"/> </element>
+  <element name="nitrogen" formula="N" Z="7">  <atom value="14.0067"/> </element>
+  <element name="oxygen" formula="O" Z="8">  <atom value="15.999"/> </element>
+  <element name="aluminum" formula="Al" Z="13"> <atom value="26.9815"/>  </element>
+  <element name="silicon" formula="Si" Z="14"> <atom value="28.0855"/>  </element>
+  <element name="carbon" formula="C" Z="6">  <atom value="12.0107"/>  </element>
+  <element name="potassium" formula="K" Z="19"> <atom value="39.0983"/>  </element>
+  <element name="chromium" formula="Cr" Z="24"> <atom value="51.9961"/>  </element>
+  <element name="iron" formula="Fe" Z="26"> <atom value="55.8450"/>  </element>
+  <element name="nickel" formula="Ni" Z="28"> <atom value="58.6934"/>  </element>
+  <element name="calcium" formula="Ca" Z="20"> <atom value="40.078"/>   </element>
+  <element name="magnesium" formula="Mg" Z="12"> <atom value="24.305"/>   </element>
+  <element name="sodium" formula="Na" Z="11"> <atom value="22.99"/>    </element>
+  <element name="titanium" formula="Ti" Z="22"> <atom value="47.867"/>   </element>
+  <element name="argon" formula="Ar" Z="18"> <atom value="39.9480"/>  </element>
+  <element name="sulphur" formula="S" Z="16"> <atom value="32.065"/>  </element>
+  <element name="phosphorus" formula="P" Z="16"> <atom value="30.973"/>  </element>
+
+  <material name="Vacuum" formula="Vacuum">
+   <D value="1.e-25" unit="g/cm3"/>
+   <fraction n="1.0" ref="videRef"/>
+  </material>
+
+  <material name="ALUMINUM_Al" formula="ALUMINUM_Al">
+   <D value="2.6990" unit="g/cm3"/>
+   <fraction n="1.0000" ref="aluminum"/>
+  </material>
+
+  <material name="SILICON_Si" formula="SILICON_Si">
+   <D value="2.3300" unit="g/cm3"/>
+   <fraction n="1.0000" ref="silicon"/>
+  </material>
+
+  <material name="epoxy_resin" formula="C38H40O6Br4">
+   <D value="1.1250" unit="g/cm3"/>
+   <composite n="38" ref="carbon"/>
+   <composite n="40" ref="hydrogen"/>
+   <composite n="6" ref="oxygen"/>
+   <composite n="4" ref="bromine"/>
+  </material>
+
+  <material name="SiO2" formula="SiO2">
+   <D value="2.2" unit="g/cm3"/>
+   <composite n="1" ref="silicon"/>
+   <composite n="2" ref="oxygen"/>
+  </material>
+
+  <material name="Al2O3" formula="Al2O3">
+   <D value="3.97" unit="g/cm3"/>
+   <composite n="2" ref="aluminum"/>
+   <composite n="3" ref="oxygen"/>
+  </material>
+
+  <material name="Fe2O3" formula="Fe2O3">
+   <D value="5.24" unit="g/cm3"/>
+   <composite n="2" ref="iron"/>
+   <composite n="3" ref="oxygen"/>
+  </material>
+
+  <material name="CaO" formula="CaO">
+   <D value="3.35" unit="g/cm3"/>
+   <composite n="1" ref="calcium"/>
+   <composite n="1" ref="oxygen"/>
+  </material>
+
+  <material name="MgO" formula="MgO">
+   <D value="3.58" unit="g/cm3"/>
+   <composite n="1" ref="magnesium"/>
+   <composite n="1" ref="oxygen"/>
+  </material>
+
+  <material name="Na2O" formula="Na2O">
+   <D value="2.27" unit="g/cm3"/>
+   <composite n="2" ref="sodium"/>
+   <composite n="1" ref="oxygen"/>
+  </material>
+
+  <material name="TiO2" formula="TiO2">
+   <D value="4.23" unit="g/cm3"/>
+   <composite n="1" ref="titanium"/>
+   <composite n="2" ref="oxygen"/>
+  </material>
+
+  <material name="FeO" formula="FeO">
+   <D value="5.745" unit="g/cm3"/>
+   <composite n="1" ref="iron"/>
+   <composite n="1" ref="oxygen"/>
+  </material>
+
+  <material name="CO2" formula="CO2">
+   <D value="1.562" unit="g/cm3"/>
+   <composite n="1" ref="iron"/>
+   <composite n="2" ref="oxygen"/>
+  </material>
+
+  <material name="P2O5" formula="P2O5">
+   <D value="1.562" unit="g/cm3"/>
+   <composite n="2" ref="phosphorus"/>
+   <composite n="5" ref="oxygen"/>
+  </material>
+
+  <material formula=" " name="DUSEL_Rock">
+    <D value="2.82" unit="g/cm3"/>
+    <fraction n="0.5267" ref="SiO2"/>
+    <fraction n="0.1174" ref="FeO"/>
+    <fraction n="0.1025" ref="Al2O3"/>
+    <fraction n="0.0473" ref="MgO"/>
+    <fraction n="0.0422" ref="CO2"/>
+    <fraction n="0.0382" ref="CaO"/>
+    <fraction n="0.0240" ref="carbon"/>
+    <fraction n="0.0186" ref="sulphur"/>
+    <fraction n="0.0053" ref="Na2O"/>
+    <fraction n="0.00070" ref="P2O5"/>
+    <fraction n="0.0771" ref="oxygen"/>
+  </material> 
+
+  <material name="fibrous_glass">
+   <D value="2.74351" unit="g/cm3"/>
+   <fraction n="0.600" ref="SiO2"/>
+   <fraction n="0.118" ref="Al2O3"/>
+   <fraction n="0.001" ref="Fe2O3"/>
+   <fraction n="0.224" ref="CaO"/>
+   <fraction n="0.034" ref="MgO"/>
+   <fraction n="0.010" ref="Na2O"/>
+   <fraction n="0.013" ref="TiO2"/>
+  </material>
+
+  <material name="FR4">
+   <D value="1.98281" unit="g/cm3"/>
+   <fraction n="0.47" ref="epoxy_resin"/>
+   <fraction n="0.53" ref="fibrous_glass"/>
+  </material>
+
+  <material name="STEEL_STAINLESS_Fe7Cr2Ni" formula="STEEL_STAINLESS_Fe7Cr2Ni">
+   <D value="7.9300" unit="g/cm3"/>
+   <fraction n="0.0010" ref="carbon"/>
+   <fraction n="0.1792" ref="chromium"/>
+   <fraction n="0.7298" ref="iron"/>
+   <fraction n="0.0900" ref="nickel"/>
+  </material>
+
+  <material name="LAr" formula="LAr">
+   <D value="1.40" unit="g/cm3"/>
+   <fraction n="1.0000" ref="argon"/>
+  </material>
+
+  <material name="ArGas" formula="ArGas">
+   <D value="0.00166" unit="g/cm3"/>
+   <fraction n="1.0" ref="argon"/>
+  </material>
+
+  <material formula=" " name="Air">
+   <D value="0.001205" unit="g/cm3"/>
+   <fraction n="0.781154" ref="nitrogen"/>
+   <fraction n="0.209476" ref="oxygen"/>
+   <fraction n="0.00934" ref="argon"/>
+  </material>
+
+  <material formula=" " name="G10">
+   <D value="1.7" unit="g/cm3"/>
+   <fraction n="0.2805" ref="silicon"/>
+   <fraction n="0.3954" ref="oxygen"/>
+   <fraction n="0.2990" ref="carbon"/>
+   <fraction n="0.0251" ref="hydrogen"/>
+  </material>
+
+  <material formula=" " name="Granite">
+   <D value="2.7" unit="g/cm3"/>
+   <fraction n="0.438" ref="oxygen"/>
+   <fraction n="0.257" ref="silicon"/>
+   <fraction n="0.222" ref="sodium"/>
+   <fraction n="0.049" ref="aluminum"/>
+   <fraction n="0.019" ref="iron"/>
+   <fraction n="0.015" ref="potassium"/>
+  </material>
+
+  <material formula=" " name="ShotRock">
+   <D value="1.62" unit="g/cm3"/>
+   <fraction n="0.438" ref="oxygen"/>
+   <fraction n="0.257" ref="silicon"/>
+   <fraction n="0.222" ref="sodium"/>
+   <fraction n="0.049" ref="aluminum"/>
+   <fraction n="0.019" ref="iron"/>
+   <fraction n="0.015" ref="potassium"/>
+  </material>
+
+  <material formula=" " name="Dirt">
+   <D value="1.7" unit="g/cm3"/>
+   <fraction n="0.438" ref="oxygen"/>
+   <fraction n="0.257" ref="silicon"/>
+   <fraction n="0.222" ref="sodium"/>
+   <fraction n="0.049" ref="aluminum"/>
+   <fraction n="0.019" ref="iron"/>
+   <fraction n="0.015" ref="potassium"/>
+  </material>
+
+  <material formula=" " name="Concrete">
+   <D value="2.3" unit="g/cm3"/>
+   <fraction n="0.530" ref="oxygen"/>
+   <fraction n="0.335" ref="silicon"/>
+   <fraction n="0.060" ref="calcium"/>
+   <fraction n="0.015" ref="sodium"/>
+   <fraction n="0.020" ref="iron"/>
+   <fraction n="0.040" ref="aluminum"/>
+  </material>
+
+  <material formula="H2O" name="Water">
+   <D value="1.0" unit="g/cm3"/>
+   <fraction n="0.1119" ref="hydrogen"/>
+   <fraction n="0.8881" ref="oxygen"/>
+  </material>
+
+  <material formula="Ti" name="Titanium">
+   <D value="4.506" unit="g/cm3"/>
+   <fraction n="1." ref="titanium"/>
+  </material>
+
+  <material name="TPB" formula="TPB">
+   <D value="1.40" unit="g/cm3"/>
+   <fraction n="1.0000" ref="argon"/>
+  </material>
+
+  <material name="Glass">
+   <D value="2.74351" unit="g/cm3"/>
+   <fraction n="0.600" ref="SiO2"/>
+   <fraction n="0.118" ref="Al2O3"/>
+   <fraction n="0.001" ref="Fe2O3"/>
+   <fraction n="0.224" ref="CaO"/>
+   <fraction n="0.034" ref="MgO"/>
+   <fraction n="0.010" ref="Na2O"/>
+   <fraction n="0.013" ref="TiO2"/>
+  </material>
+
+  <material name="Acrylic">
+   <D value="1.19" unit="g/cm3"/>
+   <fraction n="0.600" ref="carbon"/>
+   <fraction n="0.320" ref="oxygen"/>
+   <fraction n="0.080" ref="hydrogen"/>
+  </material>
+
+  <material name="Polystyrene">
+   <D unit="g/cm3" value="1.06"/>
+   <fraction n="0.077418" ref="hydrogen"/>
+   <fraction n="0.922582" ref="carbon"/>
+  </material>
+
+</materials>
+<solids>
+    <box name="TPC" lunit="cm" 
+      x="149.34" 
+      y="390" 
+      z="1960"/>
+    <box name="TPCPlane" lunit="cm" 
+      x="0.03" 
+      y="316.82" 
+      z="1795.5"/>
+    <box name="TPCActive" lunit="cm"
+      x="148.2"
+      y="316.82"
+      z="1789.90130454168"/>
+
+<!--+++++++++++++++++++ Y Wire Solids ++++++++++++++++++++++-->
+
+
+        <!-- This GDML version has no wires and uses much less memory -->
+
+
+
+<!--+++++++++++++++++++ U Wire Solids ++++++++++++++++++++++-->
+
+
+
+                   <!-- no wires in this GDML -->
+
+
+
+<!--+++++++++++++++++++ V Wire Solids ++++++++++++++++++++++-->
+
+
+
+                   <!-- no wires in this GDML -->
+
+
+ <tube name="PMTVolume"
+  rmax="10.16"
+  z="0.5" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+
+
+    <box name="Cryostat" lunit="cm" 
+      x="392.43" 
+      y="494" 
+      z="2155"/>
+    <box name="ArgonInterior" lunit="cm" 
+      x="362.43"
+      y="457.5"
+      z="2125"/>
+    <box name="GaseousArgon" lunit="cm" 
+      x="362.43"
+      y="6.5"
+      z="2125"/>
+    <subtraction name="SteelShell">
+      <first ref="Cryostat"/>
+      <second ref="ArgonInterior"/>
+    </subtraction>
+
+    <box name="Cathode" lunit="cm"
+      x="0.15"
+      y="390"
+      z="1960"/>
+
+    <box name="PMTPlane" lunit="cm" 
+      x="13" 
+      y="316.82" 
+      z="1789.90130454168"/>
+
+
+
+    <box lunit="cm" name="MINOSStrip" x="4.1" y="1" z="800"/>
+    <box lunit="cm" name="MINOSShortStrip" x="4.1" y="1" z="330"/>
+    <box lunit="cm" name="DCStrip" x="5" y="1" z="322.5"/>
+    <box lunit="cm" name="CERNStrip" x="23" y="1.5" z="184"/>
+
+    <box lunit="cm" name="ModuleSkin_a" x="82.1" y="1.1" z="800.1"/>
+    <box lunit="cm" name="ModuleSkin_b" x="82" y="1" z="800"/>
+    <subtraction name="ModuleSkin">
+      <first ref="ModuleSkin_a"/>
+      <second ref="ModuleSkin_b"/>
+      <position name="posAlSkin" unit="cm" x="0" y="0" z="0"/>
+      <rotation name="rotAlSkin" unit="deg" x="0" y="0" z="0"/>
+    </subtraction>
+
+    <box lunit="cm" name="ShortModuleSkin_a" x="82.1" y="1.1" z="330.1"/>
+    <box lunit="cm" name="ShortModuleSkin_b" x="82" y="1" z="330"/>
+    <subtraction name="ShortModuleSkin">
+      <first ref="ShortModuleSkin_a"/>
+      <second ref="ShortModuleSkin_b"/>
+      <position name="posShortAlSkin" unit="cm" x="0" y="0" z="0"/>
+      <rotation name="rotShortAlSkin" unit="deg" x="0" y="0" z="0"/>
+    </subtraction>
+
+    <box lunit="cm" name="DCModuleSkin_a" x="162.6" y="2.1" z="362.6"/>
+    <box lunit="cm" name="DCModuleSkin_b" x="162.5" y="2" z="362.5"/>
+    <subtraction name="DCModuleSkin">
+      <first ref="DCModuleSkin_a"/>
+      <second ref="DCModuleSkin_b"/>
+      <position name="posDCAlSkin" unit="cm" x="0" y="0" z="0"/>
+      <rotation name="rotDCAlSkin" unit="deg" x="0" y="0" z="0"/>
+    </subtraction>
+
+    <box lunit="cm" name="CERNModuleSkin_a" x="184.2" y="3.1" z="184.2"/>
+    <box lunit="cm" name="CERNModuleSkin_b" x="184" y="3" z="184"/>
+    <subtraction name="CERNModuleSkin">
+      <first ref="CERNModuleSkin_a"/>
+      <second ref="CERNModuleSkin_b"/>
+      <position name="posCERNAlSkin" unit="cm" x="0" y="0" z="0"/>
+      <rotation name="rotCERNAlSkin" unit="deg" x="0" y="0" z="0"/>
+    </subtraction>
+
+
+
+    <box name="DetEnclosure" lunit="cm" 
+      x="1164.86"
+      y="814"
+      z="2475"/>
+
+    <box name="WarmVessel" lunit="cm" 
+      x="964.86"
+      y="614"
+      z="2275"/>
+
+    <box name="WarmVesselInterior" lunit="cm" 
+      x="937.46"
+      y="586.6"
+      z="2247.6"/>
+
+    <subtraction name="WarmVesselShell">
+      <first ref="WarmVessel"/>
+      <second ref="WarmVesselInterior"/>
+    </subtraction>
+
+
+    <box name="World" lunit="cm" 
+      x="10000" 
+      y="10000" 
+      z="10000"/>
+
+    <box name="DirtWorld" lunit="cm" 
+      x="10000" 
+      y="5780" 
+      z="10000"/>
+    <box name="OverburdenUp" lunit="cm" 
+      x="1830" 
+      y="100" 
+      z="3810"/>
+
+    <box name="OverburdenDown" lunit="cm" 
+      x="1830" 
+      y="200" 
+      z="3810"/>
+
+
+    <box name="Building" lunit="cm" 
+      x="1890" 
+      y="1040" 
+      z="3870"/>
+
+    <box name="AirBuilding" lunit="cm" 
+      x="1830" 
+      y="1010 " 
+      z="3810"/>
+
+    <subtraction name="WallBuilding">
+     <first ref="Building"/>
+     <second ref="AirBuilding"/>
+     <position name="posAirBuilding" unit="cm" x="0" y="-15" z="0"/>
+     </subtraction>
+
+    <box name="ExpHall" lunit="cm" 
+      x="1890" 
+      y="1170" 
+      z="3870"/>
+
+    <box name="AirExpHall" lunit="cm" 
+      x="1830" 
+      y="1140" 
+      z="3810"/>
+
+    <subtraction name="WallExpHall">
+     <first ref="ExpHall"/>
+     <second ref="AirExpHall"/>
+     <position name="posAirExpHall" unit="cm" x="0" y="30" z="0"/>
+     </subtraction>
+</solids>
+<structure>
+    <volume name="volTPCActive">
+      <materialref ref="LAr"/>
+      <solidref ref="TPCActive"/>
+    </volume>
+
+<!--+++++++++++++++++ Wire Logical Volumes ++++++++++++++++++++-->
+
+
+        <!-- This GDML version has no wires and uses much less memory -->
+
+
+
+<!--+++++++++++++++++++++ Y Plane ++++++++++++++++++++++++-->
+
+
+    <volume name="volTPCPlaneY">
+      <materialref ref="LAr"/>
+      <solidref ref="TPCPlane"/>
+
+           <!-- no wires -->
+
+    </volume>
+
+
+<!--+++++++++++++++++++++ U Plane ++++++++++++++++++++++++-->
+
+
+    <volume name="volTPCPlaneU">
+      <materialref ref="LAr"/>
+      <solidref ref="TPCPlane"/>
+
+           <!-- no wires -->
+
+    </volume>
+
+<!--+++++++++++++++++++++ V Plane ++++++++++++++++++++++++-->
+
+
+    <volume name="volTPCPlaneV">
+      <materialref ref="LAr"/>
+      <solidref ref="TPCPlane"/>
+
+           <!-- no wires -->
+
+    </volume>
+    <volume name="volTPC">
+      <materialref ref="LAr" />
+      <solidref ref="TPC" />
+     <physvol>
+       <volumeref ref="volTPCPlaneY" />
+       <position name="posTPCPlaneY" unit="cm" x="-73.77" y="0" z="0" />
+     </physvol>
+     <physvol>
+       <volumeref ref="volTPCPlaneU" />
+       <position name="posTPCPlaneU" unit="cm" x="-74.07" y="0" z="0" />
+     </physvol>
+     <physvol>
+       <volumeref ref="volTPCPlaneV" />
+       <position name="posTPCPlaneV" unit="cm" x="-74.37" y="0" z="0" />
+     </physvol>
+     <physvol>
+       <volumeref ref="volTPCActive"/>
+       <positionref ref="posActiveInTPC"/>
+     </physvol>
+    </volume>
+
+
+<!--+++++++++++++++++ PMT Logical Volumes ++++++++++++++++++++-->
+
+    <volume name="volOpDetSensitive"> 
+      <materialref ref="LAr"/>  
+      <solidref ref="PMTVolume"/>
+    </volume>
+
+    <volume name="volSteelShell">
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni" />
+      <solidref ref="SteelShell" />
+    </volume>
+    <volume name="volGaseousArgon">
+      <materialref ref="ArGas"/>
+      <solidref ref="GaseousArgon"/>
+    </volume>
+
+    <volume name="volCathode">
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni" />
+      <solidref ref="Cathode" />
+    </volume>
+
+    <volume name="volPMTPlane">
+      <materialref ref="LAr"/>
+      <solidref ref="PMTPlane"/>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT00" unit="cm"  x=" 0" y="-105.6" z="-823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT01" unit="cm"  x=" 0" y="-105.6" z="-773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT02" unit="cm"  x=" 0" y="-105.6" z="-623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT03" unit="cm"  x=" 0" y="-105.6" z="-573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT04" unit="cm"  x=" 0" y="-105.6" z="-423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT05" unit="cm"  x=" 0" y="-105.6" z="-374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT06" unit="cm"  x=" 0" y="-105.6" z="-224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT07" unit="cm"  x=" 0" y="-105.6" z="-174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT08" unit="cm"  x=" 0" y="-105.6" z="-24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT09" unit="cm"  x=" 0" y="-105.6" z="24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT010" unit="cm"  x=" 0" y="-105.6" z="174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT011" unit="cm"  x=" 0" y="-105.6" z="224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT012" unit="cm"  x=" 0" y="-105.6" z="374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT013" unit="cm"  x=" 0" y="-105.6" z="423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT014" unit="cm"  x=" 0" y="-105.6" z="573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT015" unit="cm"  x=" 0" y="-105.6" z="623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT016" unit="cm"  x=" 0" y="-105.6" z="773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT017" unit="cm"  x=" 0" y="-105.6" z="823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT018" unit="cm"  x=" 0" y="-52.8" z="-872.9"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT019" unit="cm"  x=" 0" y="-52.8" z="-723.26"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT020" unit="cm"  x=" 0" y="-52.8" z="-673.38"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT021" unit="cm"  x=" 0" y="-52.8" z="-523.74"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT022" unit="cm"  x=" 0" y="-52.8" z="-473.86"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT023" unit="cm"  x=" 0" y="-52.8" z="-324.22"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT024" unit="cm"  x=" 0" y="-52.8" z="-274.34"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT025" unit="cm"  x=" 0" y="-52.8" z="-124.7"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT026" unit="cm"  x=" 0" y="-52.8" z="-74.82"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT027" unit="cm"  x=" 0" y="-52.8" z="74.82"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT028" unit="cm"  x=" 0" y="-52.8" z="124.7"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT029" unit="cm"  x=" 0" y="-52.8" z="274.34"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT030" unit="cm"  x=" 0" y="-52.8" z="324.22"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT031" unit="cm"  x=" 0" y="-52.8" z="473.86"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT032" unit="cm"  x=" 0" y="-52.8" z="523.74"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT033" unit="cm"  x=" 0" y="-52.8" z="673.38"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT034" unit="cm"  x=" 0" y="-52.8" z="723.26"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT035" unit="cm"  x=" 0" y="-52.8" z="872.9"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT036" unit="cm"  x=" 0" y="0" z="-823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT037" unit="cm"  x=" 0" y="0" z="-773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT038" unit="cm"  x=" 0" y="0" z="-623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT039" unit="cm"  x=" 0" y="0" z="-573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT040" unit="cm"  x=" 0" y="0" z="-423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT041" unit="cm"  x=" 0" y="0" z="-374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT042" unit="cm"  x=" 0" y="0" z="-224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT043" unit="cm"  x=" 0" y="0" z="-174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT044" unit="cm"  x=" 0" y="0" z="-24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT045" unit="cm"  x=" 0" y="0" z="24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT046" unit="cm"  x=" 0" y="0" z="174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT047" unit="cm"  x=" 0" y="0" z="224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT048" unit="cm"  x=" 0" y="0" z="374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT049" unit="cm"  x=" 0" y="0" z="423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT050" unit="cm"  x=" 0" y="0" z="573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT051" unit="cm"  x=" 0" y="0" z="623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT052" unit="cm"  x=" 0" y="0" z="773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT053" unit="cm"  x=" 0" y="0" z="823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT054" unit="cm"  x=" 0" y="52.8" z="-872.9"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT055" unit="cm"  x=" 0" y="52.8" z="-723.26"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT056" unit="cm"  x=" 0" y="52.8" z="-673.38"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT057" unit="cm"  x=" 0" y="52.8" z="-523.74"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT058" unit="cm"  x=" 0" y="52.8" z="-473.86"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT059" unit="cm"  x=" 0" y="52.8" z="-324.22"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT060" unit="cm"  x=" 0" y="52.8" z="-274.34"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT061" unit="cm"  x=" 0" y="52.8" z="-124.7"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT062" unit="cm"  x=" 0" y="52.8" z="-74.82"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT063" unit="cm"  x=" 0" y="52.8" z="74.82"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT064" unit="cm"  x=" 0" y="52.8" z="124.7"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT065" unit="cm"  x=" 0" y="52.8" z="274.34"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT066" unit="cm"  x=" 0" y="52.8" z="324.22"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT067" unit="cm"  x=" 0" y="52.8" z="473.86"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT068" unit="cm"  x=" 0" y="52.8" z="523.74"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT069" unit="cm"  x=" 0" y="52.8" z="673.38"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT070" unit="cm"  x=" 0" y="52.8" z="723.26"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT071" unit="cm"  x=" 0" y="52.8" z="872.9"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT072" unit="cm"  x=" 0" y="105.6" z="-823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT073" unit="cm"  x=" 0" y="105.6" z="-773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT074" unit="cm"  x=" 0" y="105.6" z="-623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT075" unit="cm"  x=" 0" y="105.6" z="-573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT076" unit="cm"  x=" 0" y="105.6" z="-423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT077" unit="cm"  x=" 0" y="105.6" z="-374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT078" unit="cm"  x=" 0" y="105.6" z="-224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT079" unit="cm"  x=" 0" y="105.6" z="-174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT080" unit="cm"  x=" 0" y="105.6" z="-24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT081" unit="cm"  x=" 0" y="105.6" z="24.94"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT082" unit="cm"  x=" 0" y="105.6" z="174.58"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT083" unit="cm"  x=" 0" y="105.6" z="224.46"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT084" unit="cm"  x=" 0" y="105.6" z="374.1"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT085" unit="cm"  x=" 0" y="105.6" z="423.98"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT086" unit="cm"  x=" 0" y="105.6" z="573.62"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT087" unit="cm"  x=" 0" y="105.6" z="623.5"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT088" unit="cm"  x=" 0" y="105.6" z="773.14"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+  <physvol>
+   <volumeref ref="volOpDetSensitive"/>
+   <position name="posPMT089" unit="cm"  x=" 0" y="105.6" z="823.02"/>
+   <rotationref ref="rPlus90AboutY"/>
+  </physvol>
+    </volume>
+    <volume name="volCryostat">
+      <materialref ref="LAr" />
+      <solidref ref="Cryostat" />
+      <physvol>
+        <volumeref ref="volGaseousArgon"/>
+        <position name="posGaseousArgon" unit="cm" x="0" y="225.5" z="0"/>
+      </physvol>
+      <physvol>
+        <volumeref ref="volSteelShell"/>
+        <position name="posSteelShell" unit="cm" x="0" y="0" z="0"/>
+      </physvol>
+
+     <physvol>
+       <volumeref ref="volPMTPlane" />
+       <position name="posPMTPlane" unit="cm" x="-155.84" y="-15" z="0" />
+     </physvol>
+
+      <physvol>
+        <volumeref ref="volTPC"/>
+        <positionref ref="posTPC0inCryo"/>
+	<rotationref ref="rIdentity"/>
+      </physvol>
+      <physvol>
+        <volumeref ref="volCathode" />
+        <positionref ref="posCathode"/>
+      </physvol>
+      <physvol>
+        <volumeref ref="volTPC"/>
+        <positionref ref="posTPC1inCryo"/>
+	<rotationref ref="rPlus180AboutY"/>
+      </physvol>
+
+     <physvol>
+       <volumeref ref="volPMTPlane" />
+       <position name="posPMTPlane" unit="cm" x="155.84" y="-15" z="0" />
+     </physvol>
+
+    </volume>
+
+
+    <volume name="volModuleSkin">
+      <materialref ref="ALUMINUM_Al"/>
+      <solidref ref="ModuleSkin"/>
+    </volume>
+    <volume name="volMINOSStrip">
+      <materialref ref="Polystyrene"/>
+      <solidref ref="MINOSStrip"/>
+    </volume>
+
+    <volume name="volShortModuleSkin">
+      <materialref ref="ALUMINUM_Al"/>
+      <solidref ref="ShortModuleSkin"/>
+    </volume>
+    <volume name="volMINOSShortStrip">
+      <materialref ref="Polystyrene"/>
+      <solidref ref="MINOSShortStrip"/>
+    </volume>
+
+    <volume name="volDCModuleSkin">
+      <materialref ref="ALUMINUM_Al"/>
+      <solidref ref="DCModuleSkin"/>
+    </volume>
+    <volume name="volDCStrip">
+      <materialref ref="Polystyrene"/>
+      <solidref ref="DCStrip"/>
+    </volume>
+
+    <volume name="volCERNModuleSkin">
+      <materialref ref="ALUMINUM_Al"/>
+      <solidref ref="CERNModuleSkin"/>
+    </volume>
+    <volume name="volCERNStrip">
+      <materialref ref="Polystyrene"/>
+      <solidref ref="CERNStrip"/>
+    </volume>
+
+
+
+    <volume name="volWarmVessel">
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>
+      <solidref ref="WarmVesselShell"/>
+    </volume>
+
+    <volume name="volDetEnclosure">
+      <materialref ref="Air"/>
+      <solidref ref="DetEnclosure"/>
+
+    <physvol>
+      <volumeref ref="volWarmVessel"/>
+      <positionref ref="posWarmVesselInDetEncl"/>
+    </physvol>
+
+    <physvol>
+      <volumeref ref="volCryostat"/>
+      <positionref ref="posCryo1InWarmVessel"/>
+    </physvol>
+
+    <physvol>
+      <volumeref ref="volCryostat"/>
+      <positionref ref="posCryo2InWarmVessel"/>
+    </physvol>
+	
+
+        <!-- This GDML version has no crt and uses much less memory -->
+
+
+</volume>
+
+
+
+    <volume name="volWallBuilding" >
+      <materialref ref="Concrete"/>
+      <solidref ref="WallBuilding"/>
+    </volume>
+
+    <volume name="volBuilding" >
+      <materialref ref="Air"/>
+      <solidref ref="AirBuilding"/>
+    </volume>
+
+    <volume name="volWallExpHall" >
+      <materialref ref="Concrete"/>
+      <solidref ref="WallExpHall"/>
+    </volume>
+
+    <volume name="volExpHall" >
+      <materialref ref="Air"/>
+      <solidref ref="AirExpHall"/>
+    </volume>
+
+    <volume name="volOverburdenUp" >
+      <materialref ref="Concrete"/>
+      <solidref ref="OverburdenUp"/>
+    </volume>
+
+    <volume name="volOverburdenDown" >
+      <materialref ref="Concrete"/>
+      <solidref ref="OverburdenDown"/>
+    </volume>
+
+    <volume name="volDirtWorld" >
+      <materialref ref="Dirt"/>
+      <solidref ref="DirtWorld"/>
+    </volume>
+
+    <volume name="volWorld" >
+      <materialref ref="Air"/>
+      <solidref ref="World"/>
+   
+
+      <physvol>
+        <volumeref ref="volDirtWorld"/>
+	<position name="posDirtWorld" unit="cm" x="0" y="-2110" z="0"/>
+      </physvol>
+
+
+      <physvol>
+        <volumeref ref="volWallExpHall"/>
+	<positionref ref="posExpHallInWorld"/>
+      </physvol>
+
+      <physvol>
+        <volumeref ref="volWallBuilding"/>
+	<positionref ref="posBuildingInWorld"/>
+      </physvol>
+     <physvol>
+        <volumeref ref="volOverburdenUp"/>
+	<position name="posOverburdenUp" unit="cm" x="0" y="830" z="0" />
+      </physvol>
+
+     <physvol>
+        <volumeref ref="volOverburdenDown"/>
+	<position name="posOverburdenDown" unit="cm" x="0" y="680" z="0" />
+      </physvol>
+
+
+      <physvol>
+        <volumeref ref="volDetEnclosure"/>
+	<positionref ref="posDetEncInWorld"/>
+      </physvol>
+
+    </volume>
+</structure>
+
+<setup name="Default" version="1.0">
+  <world ref="volWorld" />
+</setup>
+
+</gdml>
