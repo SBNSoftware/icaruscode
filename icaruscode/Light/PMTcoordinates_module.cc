@@ -61,6 +61,7 @@
 #include "TTree.h"
 #include "TTimeStamp.h"
 
+////////////////////////////////// Define some constant variable //////////////////////////////
 const int nPMTs = 360;
 const int PMTs_per_TPC = 90;
 const int MaxPhotons = 10000;
@@ -92,6 +93,8 @@ private:
 
 TTree* fTree;
 
+////////////////////////////////// Variable in th tree//////////////////////////////
+
 int event;
 
 int noPMT[nPMTs];
@@ -113,7 +116,7 @@ float ics[nPMTs][MaxPhotons];
 float ipsilon[nPMTs][MaxPhotons];
 float zeta[nPMTs][MaxPhotons];
 
-float dis[nPMTs][MaxPhotons];
+float photon_linear_path[nPMTs][MaxPhotons];
 
 float firstphoton_time[nPMTs];
 float firstphoton_velocity[nPMTs];
@@ -148,12 +151,18 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
 void icarus::PMTcoordinates::analyze(art::Event const & evt)
 {
 
+////////////////////////////////// Create the LArsoft services and service handle//////////////////////////////
+
 art::ServiceHandle<geo::Geometry> geom;
  
 std::vector<sim::SimPhotons> const& optical = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
 std::vector<sim::SimChannel> const& charge  = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
 
+////////////////////////////////// Event number//////////////////////////////
+
 event = evt.id().event();
+
+////////////////////////////////// Putting at 0 all the variables//////////////////////////////
 
 for (int g=0; g<10000; g++)
 {
@@ -177,16 +186,18 @@ turned_PMT=0;
 reco_barycentre_y=0;
 reco_barycentre_z=0;
 
-for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechannel) //loop sui canali del SimChannel
+////////////////////////////////// Charge part: identify the baricentre of the event //////////////////////////////
+
+for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechannel) //loop on SimChannel
 { 	
 	auto const& channeltdcide = charge.at(chargechannel).TDCIDEMap();
 	
-	for (std::size_t TDCnu = 0;  TDCnu<channeltdcide.size(); ++TDCnu) 	//loop sui TDC dei canali
+	for (std::size_t TDCnu = 0;  TDCnu<channeltdcide.size(); ++TDCnu) 	//loop on TDC
 	{
 
 		sim::TDCIDE const& tdcide = channeltdcide.at(TDCnu);
 
-		for (std::size_t IDEnu = 0;  IDEnu<tdcide.second.size(); ++IDEnu) 	//loop sulle IDE dei TDC
+		for (std::size_t IDEnu = 0;  IDEnu<tdcide.second.size(); ++IDEnu) 	//loop on IDE
 		{
 			sim::IDE const& ida = tdcide.second.at(IDEnu);
 
@@ -196,11 +207,11 @@ for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechanne
 			true_barycentre_z = true_barycentre_z + ida.z*ida.energy;
 			total_quenched_energy      = total_quenched_energy + ida.energy;
 
-		}
+		}	//loop on IDE
 		
-	}
+	} 	//loop on TDC
 
-}
+}//loop on SimChannel
 
 
 true_barycentre_y = true_barycentre_y/total_quenched_energy;
@@ -208,6 +219,7 @@ true_barycentre_z = true_barycentre_z/total_quenched_energy;
 
 total_quenched_energy = total_quenched_energy/3; 
 
+////////////////////////////////// Light part //////////////////////////////////////////////////
 
 for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
@@ -246,14 +258,14 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 			ipsilon[channel][i] = photon_vec.at(i).InitialPosition.Y()/10;
 			zeta[channel][i] = photon_vec.at(i).InitialPosition.Z()/10;
 
-			dis[channel][i] = sqrt(((ics[channel][i]-PMTx[channel])*(ics[channel][i]-PMTx[channel]))+((ipsilon[channel][i]-PMTy[channel])*(ipsilon[channel][i]-PMTy[channel]))+((zeta[channel][i]-PMTz[channel])*(zeta[channel][i]-PMTz[channel])));
+			photon_linear_path[channel][i] = sqrt(((ics[channel][i]-PMTx[channel])*(ics[channel][i]-PMTx[channel]))+((ipsilon[channel][i]-PMTy[channel])*(ipsilon[channel][i]-PMTy[channel]))+((zeta[channel][i]-PMTz[channel])*(zeta[channel][i]-PMTz[channel])));
 
-			photon_velocity[channel][i]= dis[channel][i]/photon_time[channel][i];
+			photon_velocity[channel][i]= photon_linear_path[channel][i]/photon_time[channel][i];
 
 			if (photon_time[channel][i]<firstphoton_time[channel])
 			{				
 				firstphoton_time[channel]=photon_time[channel][i];
-				firstphoton_velocity[channel]=dis[channel][i]/firstphoton_time[channel];
+				firstphoton_velocity[channel]=photon_linear_path[channel][i]/firstphoton_time[channel];
 			}
 
 		}
@@ -312,7 +324,7 @@ fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
-fTree->Branch("dis",&dis,"dis[360][10000]/F");
+fTree->Branch("photon_linear_path",&photon_linear_path,"photon_linear_path[360][10000]/F");
 fTree->Branch("firstphoton_velocity",&firstphoton_velocity,("firstphoton_velocity[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_velocity",&photon_velocity,"photon_velocity[360][10000]/F");
 fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
