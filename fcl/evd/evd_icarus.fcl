@@ -43,8 +43,8 @@ physics:
 }
 services.RawDrawingOptions.TotalTicks: 4100
 
-services.Geometry.GDML: "test_22Mar.gdml"
-services.Geometry.ROOT: "test_22Mar.gdml"
+#services.Geometry.GDML: "test_22Mar.gdml"
+#services.Geometry.ROOT: "test_22Mar.gdml"
 
 services.SimulationDrawingOptions.ShowMCTruthVectors:      false
 services.SimulationDrawingOptions.ShowMCTruthTrajectories: true
