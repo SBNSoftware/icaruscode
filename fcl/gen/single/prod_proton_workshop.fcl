@@ -6,10 +6,10 @@ outputs.out1.fileName: "prod_proton_workshop_icarus_%tc_gen.root"
 
 physics.producers.generator.PDG: [ 2212 ]            # proton
 physics.producers.generator.PosDist: 0             # Flat position dist.
-physics.producers.generator.X0: [ -230.95 ]
+physics.producers.generator.X0: [ -215.95 ]
 physics.producers.generator.Y0: [ -15.0 ]
 physics.producers.generator.Z0: [ -15.0 ]
-physics.producers.generator.SigmaX: [ 149.95 ]      # x = (0, 256)
+physics.producers.generator.SigmaX: [ 148.85 ]      # x = (0, 256)
 physics.producers.generator.SigmaY: [ 158.41 ]      # y = (-116.5, 116.5)
 physics.producers.generator.SigmaZ: [ 894.9 ]      # z = (0, 1037)
 #physics.producers.generator.SigmaT: [ 0.0 ]        # In time
