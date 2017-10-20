@@ -44,11 +44,12 @@ physics:
 filters:
 {
   eventActive: @local::icarus_FilterNeutrinoActive
+  eventType:   @local::icarus_FinalStateSelectFilter
 }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- filter: [ eventActive ]
+ filter: [ eventActive, eventType ]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
