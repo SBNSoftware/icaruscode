@@ -53,7 +53,7 @@ function DoICARUSgallerySetup() {
   #
   # 
   #
-  local -r ExpSetupVarName="SETUP_${ExpCode^^}"
+  local -r ExpSetupVarName="SETUP_$(tr [a-z] [A-Z] <<< "$ExpCode")"
   if [[ -n "${!ExpSetupVarName}" ]]; then
     #
     # if we have icaruscode set up, check that the version is not unexpected
@@ -81,7 +81,7 @@ function DoICARUSgallerySetup() {
       fi
     fi
   elif [[ -n "$MRB_QUALS" ]]; then
-    local -r ExpVersionVarName="${ExpCode^^}_VERSION"
+    local -r ExpVersionVarName="$(tr [a-z] [A-Z] <<< "$ExpCode" )_VERSION"
     if [[ -z "${!ExpVersionVarName}" ]]; then
       cat <<EOM >&2
 To set up gallery environment, you either need:
@@ -126,7 +126,7 @@ EOM
   local -a ReferencePkgVersions
   local -a ReferencePkgQualifiers
   for ReferencePkg in "${SortedReferencePkgs[@]}" ; do
-    local ReferencePkgSetupVarName="SETUP_${ReferencePkg^^}"
+    local ReferencePkgSetupVarName="SETUP_$(tr [a-z] [A-Z] <<< "$ReferencePkg")"
     if [[ -z "${!ReferencePkgSetupVarName}" ]]; then
       echo "ERROR: configuration mess! the reference UPS product ${ReferencePkg} is not set up (or at least, there is no '${ReferencePkgSetupVarName}' variable in the environment)." >&2
       return 1
