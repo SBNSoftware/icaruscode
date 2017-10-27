@@ -17,7 +17,7 @@
 
 
 # use cmake 2.8 or later
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.3)
 
 project(icaruscode)
 
@@ -64,22 +64,17 @@ cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
-include(ArtMake)
-include(BuildPlugins)
+include(CetMake)
+include(BasicPlugin)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(icaruscode)
+
 # subdirectory for test code
 add_subdirectory(test)
 
 # Top level fcl files.
 add_subdirectory(fcl)
-
-# Stand alone compiled executables.
-#add_subdirectory(tools)
-
-# release database
-#add_subdirectory(releaseDB)
 
 # ups - table and config files
 add_subdirectory(ups)
