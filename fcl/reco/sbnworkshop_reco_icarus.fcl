@@ -13,6 +13,7 @@
 
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
+#include "mctrutht0matching.fcl"
 
 BEGIN_PROLOG
 
@@ -48,6 +49,7 @@ icarus_reco_producers:
 
   ### mc producers
   mchitfinder:                    @local::standard_mchitfinder
+  mcassociations:                 @local::standard_mctrutht0matching
 }
 
 icarus_reco_filters:
@@ -66,9 +68,12 @@ icarus_reco_linecluster: [          linecluster  ]
 icarus_reco_pmAlgTracker: [         pmAlgTracker,
                                     pmAlgKalmanTrack ]
 
+icarus_reco_mcreco:       [         mcassociations ]
+
 icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
                                @sequence::icarus_reco_linecluster,
-                               @sequence::icarus_reco_pmAlgTracker ]
+                               @sequence::icarus_reco_pmAlgTracker,
+                               @sequence::icarus_reco_mcreco]
 
 ### Below we include overrides for the modules above
 
@@ -79,11 +84,16 @@ icarus_reco_producers.recowire.Threshold:                               [0, 0, 0
 icarus_reco_producers.recowire.NumSigma:                                [3, 3, 3]
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowire"
-icarus_reco_producers.gaushit.MinSig:                                   [  7.,   7.,   6.  ]
+icarus_reco_producers.gaushit.MinSig:                                   [  5.,   5.,   5.  ]
 icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
+icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_derivative
+
+icarus_reco_producers.mcassociations.TrackModuleLabel:                  "pmAlgTracker"
+icarus_reco_producers.mcassociations.HitModuleLabel:                    "gaushit"
+icarus_reco_producers.mcassociations.makeT0Assns:                       false
 
 END_PROLOG
