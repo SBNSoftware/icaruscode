@@ -430,7 +430,7 @@ print DEF <<EOF;
    <position name="posDetEncInWorld" unit="cm" x="$OriginXSet"     y="$OriginYSet"     z="$OriginZSet"/>
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
    <position name="posWarmVesselInDetEncl" unit="cm" x="$WarmVesselInDetEncl_x" y="$WarmVesselInDetEncl_y" z="$WarmVesselInDetEncl_y"/>
-   <position name="posExpHallInWorld" unit="cm" x="0" y="@{[Building_y + $ExpHall_y/2]}" z="0"/>
+   <position name="posExpHallInWorld" unit="cm" x="0" y="@{[$Building_y + $ExpHall_y/2]}" z="0"/>
 
    <rotation name="rPlus90AboutZPlus90AboutY"  unit="deg" x="0" y="90" z="90"/>
    <rotation name="rPlus90AboutX"       unit="deg" x="90" y="0" z="0"/>
