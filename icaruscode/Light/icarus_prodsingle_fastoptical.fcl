@@ -1,6 +1,7 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
-#include "backtracker.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 #include "singles_icarus.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
@@ -22,7 +23,8 @@ services:
   TimeTracker:  {}
   RandomNumberGenerator: {} #ART native random number generator
                 @table::icarus_simulation_services
-  BackTracker:  @local::standard_backtracker # defined in backtracker.fcl
+  BackTrackerService:  @local::standard_backtrackerservice # defined in backtracker.fcl
+  ParticleInventoryService: @local::standard_particleinventoryservice
 
   OpDetResponseInterface:  @local::standard_opdetresponse
 }
@@ -70,7 +72,6 @@ physics:
    generator: @local::icarus_singlep	  
    largeant:  @local::icarus_largeant	  
    daq:       @local::icarus_simwire  
-   backtrack: @local::standard_backtrackerloader
 #   opdigi:    @local::standard_opdigi
    rns:       {module_type: "RandomNumberSaver"}
  }
@@ -84,7 +85,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ generator, largeant, daq, backtrack, rns ] 
+ simulate: [ generator, largeant, daq,  rns ] 
  analyzeIt:  [ largana, pmtresponse]
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
