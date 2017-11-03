@@ -656,8 +656,6 @@ namespace hit {
       for (int i = 0; i < numHits; i++)
       {
           if(cryostat!=0||tpc!=0) continue;
-        
-          FitHit(hits[i],holder,1,1);
           
         amplitude     = hits[i].peakHeight;
         position      = hits[i].iDrift;

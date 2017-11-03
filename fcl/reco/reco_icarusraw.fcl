@@ -9,6 +9,8 @@
 
 #include "hitfindermodules.fcl"
 
+#include "hitfindermodules_icarus.fcl"
+
 #include "clustermodules.fcl"
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
