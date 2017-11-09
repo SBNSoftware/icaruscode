@@ -317,11 +317,13 @@ namespace hit {
       unsigned int nnhitsC(0),nnhitsI1(0),nnhitsI2(0); //total number of reconstructed hits in a view
 
       int minWireC=2536; //empirical
-      int maxWireC=4700;
+      int maxWireC=3142;
       int minWireI2=2536; //empirical
-      int maxWireI2=4700;
-      int minDrift=850;
-      int maxDrift=1500;
+      int maxWireI2=3102;
+      int minWireI1=0; //empirical
+      int maxWireI1=497;
+     // int minDrift=850;
+     // int maxDrift=1500;
       
       //### Looping over the wires ###
       //##############################
@@ -650,12 +652,14 @@ namespace hit {
       numHits = hits.size();
           int nghC=0;
           int nghI2=0;
+          int nghI1=0;
           
        //  if(cryostat==0&&tpc==0&&plane==2)
          //    std::cout << "  Wire " << iwire << " numhits " << numHits << std::endl;
       for (int i = 0; i < numHits; i++)
       {
           if(cryostat!=0||tpc!=0) continue;
+        
           
         amplitude     = hits[i].peakHeight;
         position      = hits[i].iDrift;
@@ -704,20 +708,24 @@ namespace hit {
           
         hcol.emplace_back(hit.move(), wire, rawdigits);
           
-          bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
+          //bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
           bool wireWindowC=hits[i].iWire>=minWireC+200&&hits[i].iWire<=maxWireC-200;
           bool wireWindowI2=hits[i].iWire>=minWireI2+200&&hits[i].iWire<=maxWireI2-200;
-          bool outDriftWindow=hits[i].iDrift<=minDrift-200||hits[i].iDrift>=maxDrift+200;
+          bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
+
+          //bool outDriftWindow=hits[i].iDrift<=minDrift-200||hits[i].iDrift>=maxDrift+200;
           bool outWireWindowC=hits[i].iWire<=minWireC-200||hits[i].iWire>=maxWireC+200;
           bool outWireWindowI2=hits[i].iWire<=minWireI2-200||hits[i].iWire>=maxWireI2+200;
+          bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
 
          // if(plane==2)
            //   std::cout << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
           
-          if(plane==0&&driftWindow)  {
+          if(plane==0&&wireWindowI1)  {
            //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
-        
-           nw1hitI1++;
+              nghI1++;
+              if(nghI1==1) nw1hitI1++;
+      
              //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
               fHeightI1->Fill(amplitude);
               fWidthI1->Fill(end-start);
@@ -741,7 +749,7 @@ namespace hit {
           if(plane==1) nhitsI2++;
           if(plane==2) nhitsC++;
           
-          if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
+          if(plane==0&&tpc==0&&cryostat==0&&outWireWindowI1) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
           if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
             //if(cryostat==0&&tpc==0)
               //    std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << std::endl;
@@ -759,8 +767,8 @@ namespace hit {
              double NoiseWC=5119-480-(maxWireC-minWireC+1)-400;
       double PhysWI2=maxWireI2-minWireI2+1-400;
       double NoiseWI2=5119-480-(maxWireI2-minWireI2+1)-400;
-      double PhysWI1=1056;
-      double NoiseWI1=1056;
+      double PhysWI1=maxWireI1-minWireI1+1-400;
+      double NoiseWI1=1056-(maxWireI2-minWireI2+1)-400;;
     
       std::cout << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
       std::cout << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
