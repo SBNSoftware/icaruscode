@@ -12,4 +12,5 @@ add_subdirectory(Utilities)
 add_subdirectory(Filters)
 add_subdirectory(HitFinder)
 add_subdirectory(gallery)
+add_subdirectory(RecoUtils)
 
