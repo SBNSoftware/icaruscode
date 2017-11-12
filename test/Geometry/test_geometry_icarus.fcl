@@ -66,6 +66,8 @@ physics: {
 #        "-WireCoordAngle",
 #        "-NearestWire",
 #        "-WirePitch",
+        # check for overlaps
+        "+CheckOverlaps",
         # in addition (overriding the default): print wires
         "+PrintWires"
       ]
@@ -84,5 +86,5 @@ physics: {
 }
 
 # Uncomment if you want to check for overlaps
-# physics.analyzers.geotest.CheckForOverlaps: true 
+ physics.analyzers.geotest.CheckForOverlaps: true 
 
