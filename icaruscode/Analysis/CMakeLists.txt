@@ -6,6 +6,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            lardataobj_Simulation
                            lardata_Utilities
                            larevt_Filters
+                           larsim_MCCheater_BackTracker_service
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
                            nutools_RandomUtils_NuRandomService_service
@@ -28,6 +29,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            ${ROOT_XMLIO}
                            ${ROOT_GDML}
                            ${ROOT_BASIC_LIB_LIST}
+                           icaruscode_RecoUtils
         )
 
 #install_headers()

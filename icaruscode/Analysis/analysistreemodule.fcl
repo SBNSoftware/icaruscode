@@ -1,0 +1,33 @@
+BEGIN_PROLOG
+
+icarus_analysistree:
+{ 
+ # we specify the full path of the module, because there are way too many
+ # "AnalysisTree" modules on the market
+ module_type:              "icaruscode/Analysis/AnalysisTree"
+ DigitModuleLabel:         "daq"
+ HitsModuleLabel:          "gaushit"
+ LArGeantModuleLabel:      "largeant"
+ CalDataModuleLabel:       "caldata"
+ GenieGenModuleLabel:      "generator"
+ CryGenModuleLabel:        "generator"
+ G4ModuleLabel:            "largeant"
+ TrackModuleLabel:         [ "pmAlgTracker" ]
+ VertexModuleLabel:        "vertex3d"
+ CalorimetryModuleLabel:   [ "calorimetry" ]
+ ParticleIDModuleLabel:    [ "pid" ]
+ POTModuleLabel:           "generator"
+ UseBuffers:               false
+ SaveAuxDetInfo:           false
+ SaveCryInfo:              true
+ SaveGenieInfo:            true
+ SaveGeantInfo:            true
+ SaveHitInfo:              true
+ SaveTrackInfo:            true
+ SaveVertexInfo:           false
+ SaveCaloCosmics:          false
+ isCosmics:		   false
+ G4MinE:                   0.01
+}
+
+END_PROLOG
