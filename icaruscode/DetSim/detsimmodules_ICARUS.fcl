@@ -25,14 +25,15 @@ standard_simwire:
   DriftEModuleLabel:  "largeant"
   CompressionType:    "none"
   SimDeadChannels:    false
-  SuppressNoSignal:   false
+  SuppressNoSignal:   true
   Test:               false
   TestWire:           0
   TestIndex:          [ 0. ]
   TestCharge:         [ 0. ]
   Sample:             -1
   MakeNoiseDists:     "true"
-  NoiseGenToolVec:    [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
+  NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
+#  NoiseGenToolVec:    [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
 }
 
 #standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
