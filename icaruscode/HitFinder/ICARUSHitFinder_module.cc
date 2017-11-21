@@ -658,7 +658,7 @@ namespace hit {
          //    std::cout << "  Wire " << iwire << " numhits " << numHits << std::endl;
       for (int i = 0; i < numHits; i++)
       {
-          if(cryostat!=0||tpc!=0) continue;
+         // if(cryostat!=0||tpc!=0) continue;
         
           
         amplitude     = hits[i].peakHeight;
@@ -670,8 +670,9 @@ namespace hit {
         positionErr   = 1.0;
         goodnessOfFit = -1;
         chargeErr     = -1;
-        totSig        = hits[i].iAdcMax;
+        totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
           
+          std::cout << " check totSig " << totSig << std::endl;
 
         std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
         geo::WireID wid = wids[0];
@@ -703,6 +704,7 @@ namespace hit {
             goodnessOfFit,                                                                 //WIRE ID.
             int(end-start+1)                                                               //DEGREES OF FREEDOM.
             );
+          
          // std::cout << " before emplace back " << std::endl;
    //       filteredHitVec.push_back(hit.copy());
           
@@ -763,7 +765,7 @@ namespace hit {
     } //end channel condition
     } //end loop on channels
       
-             double PhysWC=maxWireC-minWireC+1-400;
+  /*           double PhysWC=maxWireC-minWireC+1-400;
              double NoiseWC=5119-480-(maxWireC-minWireC+1)-400;
       double PhysWI2=maxWireI2-minWireI2+1-400;
       double NoiseWI2=5119-480-(maxWireI2-minWireI2+1)-400;
@@ -776,7 +778,7 @@ namespace hit {
       std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
       std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
       std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
-
+*/
       
       
     hcol.put_into(evt);

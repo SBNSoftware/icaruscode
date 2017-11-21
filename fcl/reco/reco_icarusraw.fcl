@@ -43,7 +43,6 @@ icarushit:                        @local::icarus_hitfinder
   ### cluster-finder producers
   #fuzzycluster:                   @local::icarus_fuzzycluster
   linecluster:                   @local::standard_linecluster
-  icaruslinecluster:                   @local::icarus_linecluster
 
 
   ### pandora cosmic pass
@@ -63,7 +62,7 @@ icarus_reco_filters:
 icarus_reco_signalprocessing: [     rawdigitfilter,
                                     recowireraw,
                                     icarushit,
-                                    icaruslinecluster ]
+                                    linecluster ]
 
 #icarus_reco_fuzzycluster: [        fuzzycluster ]
 
@@ -84,5 +83,7 @@ icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
 
 icarus_reco_producers.icarushit.CalDataModuleLabel:                       "recowireraw"
+icarus_reco_producers.linecluster.HitFinderModuleLabel:                       "icarushit"
+
 
 END_PROLOG
