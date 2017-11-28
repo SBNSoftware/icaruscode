@@ -1,0 +1,27 @@
+#include "mctruthassociations_uboone.fcl"
+
+BEGIN_PROLOG
+
+BackTrackerTruthTool:
+{
+  tool_type:          "BackTrackerTruth"
+  TrackProducerLabel: "pandoraNu"
+}
+
+AssociationsTruthTool:
+{
+  tool_type:           "AssociationsTruth"
+  AssnsProducerLabels: ["gaushitTruthMatch", "pandoraCosmicHitRemoval"]
+  G4ProducerLabel:     "largeant"
+  MCTruthAssociations: @local::MCTruthAssociations
+}
+
+MCTruthTestAna:
+{
+  module_type:         "MCTruthTestAna"
+  HitModuleLabel:      "gaushit"
+  TrackProducerLabel:  "pandoraCosmic"
+  MCTruthMatching:     @local::BackTrackerTruthTool
+}
+
+END_PROLOG
