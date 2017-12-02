@@ -8,7 +8,6 @@ art_make( LIB_LIBRARIES lardataobj_RecoBase
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         ${CETLIB}
-                        cetlib_except
                         ${Boost_FILESYSTEM_LIBRARY}
                         ${Boost_SYSTEM_LIBRARY}
                         ${CLHEP}

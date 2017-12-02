@@ -21,6 +21,7 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 
 #include "nutools/ParticleNavigation/ParticleList.h"
+#include "nutools/ParticleNavigation/EmEveIdCalculator.h"
 
 #include <cmath>
 #include <algorithm>
@@ -224,13 +225,18 @@ void AssociationsTruth::Rebuild(const art::Event& evt)
     
         partHitAssnsVec.emplace_back(&*partHitAssnsHandle);
     }
-    
+      
     // Recover the associations between MCTruth and MCParticles
-    art::Handle<MCTruthParticleAssociations> truthPartAssnsHandle;
-    evt.getByLabel(fG4ProducerLabel, truthPartAssnsHandle);
+    art::Handle<std::vector<simb::MCParticle>> mcParticleHandle;
+    evt.getByLabel(fG4ProducerLabel, mcParticleHandle);
     
+    std::vector<art::Ptr<simb::MCParticle>> mcParticlePtrVec;
+    art::fill_ptr_vector(mcParticlePtrVec, mcParticleHandle);
+    
+    MCTruthAssns mcTruthAssns(mcParticleHandle, evt, fG4ProducerLabel);
+  
     // Pass this to the truth associations code
-    fMCTruthAssociations.setup(partHitAssnsVec, *truthPartAssnsHandle, *fGeometry, *fDetectorProperties);
+    fMCTruthAssociations.setup(partHitAssnsVec, mcParticlePtrVec, mcTruthAssns, *fGeometry, *fDetectorProperties);
     
     // Ugliness to follow! Basically, we need to build the "particle list" and the current implementation of
     // that code requires a copy...
@@ -244,6 +250,9 @@ void AssociationsTruth::Rebuild(const art::Event& evt)
     {
         fParticleList.Add(new simb::MCParticle(*(element.second)));
     }
+    
+    // Just to be consistent with the backtracker...
+    fParticleList.AdoptEveIdCalculator(new sim::EmEveIdCalculator);
 }
 
 //----------------------------------------------------------------------
@@ -280,13 +289,20 @@ const std::vector< art::Ptr<simb::MCTruth> >&  AssociationsTruth::MCTruthVector(
 //----------------------------------------------------------------------
 std::vector<sim::TrackIDE> AssociationsTruth::HitToTrackID(recob::Hit const& hit) const
 {
-    return fMCTruthAssociations.HitToTrackID(&hit);
+    std::vector<truth::TrackIDE> locTrackIDEVec = fMCTruthAssociations.HitToTrackID(&hit);
+    std::vector<sim::TrackIDE>   outputVec;
+    
+    outputVec.reserve(locTrackIDEVec.size());
+
+    for(const auto& trackIDE : locTrackIDEVec) outputVec.emplace_back(trackIDE.trackID,trackIDE.energyFrac,trackIDE.energy,trackIDE.numElectrons);
+    
+    return outputVec;
 }
 
 //----------------------------------------------------------------------
 std::vector<sim::TrackIDE> AssociationsTruth::HitToTrackID(art::Ptr<recob::Hit> const& hit) const
 {
-    return fMCTruthAssociations.HitToTrackID(hit);
+    return HitToTrackID(*hit.get());
 }
 
 //----------------------------------------------------------------------
@@ -302,7 +318,14 @@ const std::vector<std::vector<art::Ptr<recob::Hit>>> AssociationsTruth::TrackIDs
 // the one you always want to use
 std::vector<sim::TrackIDE> AssociationsTruth::HitToEveID(art::Ptr<recob::Hit> const& hit) const
 {
-    return fMCTruthAssociations.HitToEveID(hit);
+    std::vector<truth::TrackIDE> locTrackIDEVec = fMCTruthAssociations.HitToEveID(hit);
+    std::vector<sim::TrackIDE>   outputVec;
+    
+    outputVec.reserve(locTrackIDEVec.size());
+    
+    for(const auto& trackIDE : locTrackIDEVec) outputVec.emplace_back(trackIDE.trackID,trackIDE.energyFrac,trackIDE.energy,trackIDE.numElectrons);
+    
+    return outputVec;
 }
     
 //----------------------------------------------------------------------
