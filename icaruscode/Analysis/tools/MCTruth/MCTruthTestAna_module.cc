@@ -48,7 +48,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
 // The stuff we really need
-#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 #include "icaruscode/Analysis/tools/MCTruth/IMCTruthMatching.h"
 
 // ROOT includes. Note: To look up the properties of the ROOT classes,
@@ -199,14 +200,15 @@ void MCTruthTestAna::reconfigure(fhicl::ParameterSet const& pset)
 void MCTruthTestAna::analyze(const art::Event& event)
 {
     // Recover the backtracker
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    
+    art::ServiceHandle<cheat::BackTrackerService>       backTracker;
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+   
     // "Rebuild" the maps used by the parallel backtracker
     fMCTruthMatching->Rebuild(event);
     
     // Begin the comparisons by simply checking that the number of MCParticles agree between the two
     const sim::ParticleList& particleList = fMCTruthMatching->ParticleList();
-    const sim::ParticleList& btPartList   = backTracker->ParticleList();
+    const sim::ParticleList& btPartList   = partInventory->ParticleList();
     
     if (particleList.size() != btPartList.size())
     {
@@ -229,7 +231,7 @@ void MCTruthTestAna::analyze(const art::Event& event)
             
             // Check the claimed parentage of the current hit
             std::vector<sim::TrackIDE> trackIDEVec = fMCTruthMatching->HitToTrackID(hit);
-            std::vector<sim::TrackIDE> btTrkIDEVec = backTracker->HitToTrackID(hit);
+            std::vector<sim::TrackIDE> btTrkIDEVec = backTracker->HitToTrackIDEs(hit);
             
             int deltaIDs = int(btTrkIDEVec.size()) - int(trackIDEVec.size());
             

@@ -14,7 +14,8 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardataobj/RecoBase/Hit.h"
-#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 
 #include <cmath>
 #include <algorithm>
@@ -187,73 +188,81 @@ void BackTrackerTruth::reconfigure(fhicl::ParameterSet const & pset)
 //----------------------------------------------------------------------
 const sim::ParticleList& BackTrackerTruth::ParticleList() const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->ParticleList();
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->ParticleList();
 }
 
     
 //----------------------------------------------------------------------
 const simb::MCParticle* BackTrackerTruth::TrackIDToParticle(int const& id) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->TrackIDToParticle(id);
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->TrackIdToParticle_P(id);
 }
     
 //----------------------------------------------------------------------
 const simb::MCParticle* BackTrackerTruth::TrackIDToMotherParticle(int const& id) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->TrackIDToMotherParticle(id);
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->TrackIdToMotherParticle_P(id);
 }
     
 //----------------------------------------------------------------------
 const art::Ptr<simb::MCTruth>& BackTrackerTruth::TrackIDToMCTruth(int const& id) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->TrackIDToMCTruth(id);
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->TrackIdToMCTruth_P(id);
 }
     
 //----------------------------------------------------------------------
 const art::Ptr<simb::MCTruth>& BackTrackerTruth::ParticleToMCTruth(const simb::MCParticle* p) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->ParticleToMCTruth(p);
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->ParticleToMCTruth_P(p);
 }
     
 //----------------------------------------------------------------------
 std::vector<const simb::MCParticle*> BackTrackerTruth::MCTruthToParticles(art::Ptr<simb::MCTruth> const& mct) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->MCTruthToParticles(mct);
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->MCTruthToParticles_Ps(mct);
 }
     
 //----------------------------------------------------------------------
 const std::vector< art::Ptr<simb::MCTruth> >&  BackTrackerTruth::MCTruthVector() const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->MCTruthVector();
+    art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
+    return partInventory->MCTruthVector_Ps();
 }
 
 //----------------------------------------------------------------------
 std::vector<sim::TrackIDE> BackTrackerTruth::HitToTrackID(recob::Hit const& hit) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->HitToTrackID(hit);
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->HitToTrackIDEs(hit);
 }
 
 //----------------------------------------------------------------------
 std::vector<sim::TrackIDE> BackTrackerTruth::HitToTrackID(art::Ptr<recob::Hit> const& hit) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->HitToTrackID(*hit);
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->HitToTrackIDEs(*hit);
 }
 
 //----------------------------------------------------------------------
 const std::vector<std::vector<art::Ptr<recob::Hit>>> BackTrackerTruth::TrackIDsToHits(std::vector<art::Ptr<recob::Hit>> const& allhits,
                                                                                  std::vector<int> const& tkIDs) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->TrackIDsToHits(allhits,tkIDs);
+    std::vector<std::vector<art::Ptr<recob::Hit>>> tkIDsToHitsVec;
+    art::ServiceHandle<cheat::BackTrackerService>  backTracker;
+
+    for(const auto& tkID : tkIDs)
+    {
+        std::vector<art::Ptr<recob::Hit>> hitVec = backTracker->TrackIdToHits_Ps(tkID, allhits);
+        tkIDsToHitsVec.push_back(hitvec);
+    }
+
+    return tkIDsToHitsVec;
 }
     
 //----------------------------------------------------------------------
@@ -262,49 +271,49 @@ const std::vector<std::vector<art::Ptr<recob::Hit>>> BackTrackerTruth::TrackIDsT
 // the one you always want to use
 std::vector<sim::TrackIDE> BackTrackerTruth::HitToEveID(art::Ptr<recob::Hit> const& hit) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->HitToEveID(hit);
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->HitToEveTrackIDEs(hit);
 }
     
 //----------------------------------------------------------------------
 std::set<int> BackTrackerTruth::GetSetOfEveIDs() const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->GetSetOfEveIDs();
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->GetSetOfEveIds();
 }
     
 //----------------------------------------------------------------------
 std::set<int> BackTrackerTruth::GetSetOfTrackIDs() const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->GetSetOfTrackIDs();
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->GetSetOfTrackIds();
 }
     
 //----------------------------------------------------------------------
 std::set<int> BackTrackerTruth::GetSetOfEveIDs(std::vector< art::Ptr<recob::Hit> > const& hits) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->GetSetOfEveIDs(hits);
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->GetSetOfEveIds(hits);
 }
     
 //----------------------------------------------------------------------
 std::set<int> BackTrackerTruth::GetSetOfTrackIDs(std::vector< art::Ptr<recob::Hit> > const& hits) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->GetSetOfTrackIDs(hits);
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->GetSetOfTrackIds(hits);
 }
     
 //----------------------------------------------------------------------
 double BackTrackerTruth::HitCollectionPurity(std::set<int> trackIDs, std::vector< art::Ptr<recob::Hit> > const& hits) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->HitCollectionPurity(trackIDs, hits);
 }
     
 //----------------------------------------------------------------------
 double BackTrackerTruth::HitChargeCollectionPurity(std::set<int> trackIDs, std::vector< art::Ptr<recob::Hit> > const& hits) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->HitChargeCollectionPurity(trackIDs, hits);
 }
     
@@ -315,7 +324,7 @@ double BackTrackerTruth::HitCollectionEfficiency(std::set<int> trackIDs,
                                             std::vector< art::Ptr<recob::Hit> > const& allhits,
                                             geo::View_t const& view) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->HitCollectionEfficiency(trackIDs, hits, allhits, view);
 }
     
@@ -325,31 +334,38 @@ double BackTrackerTruth::HitChargeCollectionEfficiency(std::set<int>            
                                                   std::vector< art::Ptr<recob::Hit> > const& allhits,
                                                   geo::View_t                         const& view) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->HitChargeCollectionEfficiency(trackIDs, hits, allhits, view);
 }
     
 //----------------------------------------------------------------------
 std::vector<double> BackTrackerTruth::HitToXYZ(art::Ptr<recob::Hit> const& hit) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->HitToXYZ(hit);
 }
     
 //----------------------------------------------------------------------
 std::vector<double> BackTrackerTruth::SpacePointToXYZ(art::Ptr<recob::SpacePoint>         const& spt,
-                                                 art::Event                          const& evt,
-                                                 std::string                         const& label) const
+                                                      art::Event                          const& evt,
+                                                      std::string                         const& label) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->SpacePointToXYZ(spt, evt, label);
+    std::vector<double> hitVec = {0.,0.,0.};
+
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    //backTracker->SpacePointHitsToWeightedXYZ(spt, evt, label);
+
+    return hitVec;
 }
     
 //----------------------------------------------------------------------
 std::vector<double> BackTrackerTruth::SpacePointHitsToXYZ(art::PtrVector<recob::Hit> const& hits) const
 {
-    art::ServiceHandle<cheat::BackTracker> backTracker;
-    return backTracker->SpacePointHitsToXYZ(hits);
+    std::vector<art::Ptr<recob::Hit>> hitVec;
+    for(int idx=0; idx<hits.size(); idx++) hitVec.push_back(hits.at(idx));
+
+    art::ServiceHandle<cheat::BackTrackerService> backTracker;
+    return backTracker->SpacePointHitsToWeightedXYZ(hitVec);
 }
 
 //----------------------------------------------------------------------------

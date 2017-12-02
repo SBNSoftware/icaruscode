@@ -107,7 +107,8 @@
 // #include "larcore/Utilities/AssociationUtil.h"
 // #include "larcore/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
-#include "larsim/MCCheater/BackTracker.h"
+#include "larsim/MCCheater/BackTrackerService.h"
+#include "larsim/MCCheater/ParticleInventoryService.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -1740,7 +1741,8 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
 {
   //services
   art::ServiceHandle<geo::Geometry> geom;
-  art::ServiceHandle<cheat::BackTracker> bt;
+  art::ServiceHandle<cheat::BackTrackerService> backTracker;
+  art::ServiceHandle<cheat::ParticleInventoryService> partInventory;
   // auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
   // auto const* LArProp = lar::providerFrom<detinfo::LArPropertiesService>();
 
@@ -1802,9 +1804,9 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
       if (isfirsttime){
 	for (size_t i = 0; i<hitlist.size(); i++){
 	  //if (hitlist[i]->View() == geo::kV){//collection view
-	  std::vector<sim::TrackIDE> eveIDs = bt->HitToEveID(hitlist[i]);
+	  std::vector<sim::TrackIDE> eveIDs = partInventory->HitToEveTrackIDEs(hitlist[i]);
 	  for (size_t e = 0; e<eveIDs.size(); e++){
-	    art::Ptr<simb::MCTruth> ev_mctruth = bt->TrackIDToMCTruth(eveIDs[e].trackID);
+	    art::Ptr<simb::MCTruth>& ev_mctruth = partInventory->TrackIdToMCTruth_P(eveIDs[e].trackID);
 	    //mctruthemap[ev_mctruth]+=eveIDs[e].energy;
 	    if (ev_mctruth->Origin() == simb::kCosmicRay) isCosmics = true;
 	  }
@@ -1831,7 +1833,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
       if (mctruth->NeutrinoSet()) nGeniePrimaries = mctruth->NParticles();
 	//} //end (fSaveGenieInfo)
       
-      const sim::ParticleList& plist = bt->ParticleList();
+      const sim::ParticleList& plist = partInventory->ParticleList();
       nGEANTparticles = plist.size();
 
       // to know the number of particles in AV would require
@@ -2277,17 +2279,17 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
           HitsPurity(hits[ipl],TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl],maxe);
         //std::cout<<"\n"<<iTracker<<"\t"<<iTrk<<"\t"<<ipl<<"\t"<<trkidtruth[iTracker][iTrk][ipl]<<"\t"<<trkpurtruth[iTracker][iTrk][ipl]<<"\t"<<maxe;
           if (TrackerData.trkidtruth[iTrk][ipl]>0){
-            const art::Ptr<simb::MCTruth> mc = bt->TrackIDToMCTruth(TrackerData.trkidtruth[iTrk][ipl]);
+            const art::Ptr<simb::MCTruth> mc = partInventory->TrackIdToMCTruth(TrackerData.trkidtruth[iTrk][ipl]);
             TrackerData.trkorigin[iTrk][ipl] = mc->Origin();
-            const simb::MCParticle *particle = bt->TrackIDToParticle(TrackerData.trkidtruth[iTrk][ipl]);
+            const simb::MCParticle *particle = partInventory->TrackIdToParticle(TrackerData.trkidtruth[iTrk][ipl]);
             double tote = 0;
-            std::vector<sim::IDE> vide(bt->TrackIDToSimIDE(TrackerData.trkidtruth[iTrk][ipl]));
-            for (const sim::IDE& ide: vide) {
-               tote += ide.energy;
-               TrackerData.trksimIDEenergytruth[iTrk][ipl] = ide.energy;
-               TrackerData.trksimIDExtruth[iTrk][ipl] = ide.x;
-               TrackerData.trksimIDEytruth[iTrk][ipl] = ide.y;
-               TrackerData.trksimIDEztruth[iTrk][ipl] = ide.z;
+            const std::vector<const sim::IDE*> vide(backTracker->TrackIdToSimIDEs_Ps(TrackerData.trkidtruth[iTrk][ipl]));
+            for (auto ide: vide) {
+                tote += ide->energy;
+                TrackerData.trksimIDEenergytruth[iTrk][ipl] = ide->energy;
+                TrackerData.trksimIDExtruth[iTrk][ipl]      = ide->x;
+                TrackerData.trksimIDEytruth[iTrk][ipl]      = ide->y;
+                TrackerData.trksimIDEztruth[iTrk][ipl]      = ide->z;
             }
             TrackerData.trkpdgtruth[iTrk][ipl] = particle->PdgCode();
             TrackerData.trkefftruth[iTrk][ipl] = maxe/(tote/kNplanes); //tote include both induction and collection energies
@@ -2450,7 +2452,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
 
       //GEANT particles information
       if (fSaveGeantInfo){ 
-        const sim::ParticleList& plist = bt->ParticleList();
+        const sim::ParticleList& plist = partInventory->ParticleList();
         
         std::string pri("primary");
         int primary=0;
@@ -2520,7 +2522,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
             //2017/10/17
             //Issue 17918
             //Get the mother neutrino of this particle and use the hosting art::Ptr key as the matched ID
-            const art::Ptr<simb::MCTruth> matched_mctruth = bt->ParticleToMCTruth(pPart);
+            const art::Ptr<simb::MCTruth>& matched_mctruth = partInventory->ParticleToMCTruth_P(pPart);
             fData->MotherNuId[iPart] = matched_mctruth.key();
            } 
             //access auxiliary detector parameters
@@ -2693,7 +2695,7 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
   trackid = -1;
   purity = -1;
 
-  art::ServiceHandle<cheat::BackTracker> bt;
+  art::ServiceHandle<cheat::BackTrackerService> bt;
 
   std::map<int,double> trkide;
 
@@ -2701,8 +2703,8 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
 
     art::Ptr<recob::Hit> hit = hits[h];
     std::vector<sim::IDE> ides;
-    //bt->HitToSimIDEs(hit,ides);
-    std::vector<sim::TrackIDE> eveIDs = bt->HitToEveID(hit);
+   
+    std::vector<sim::TrackIDE> eveIDs = partInventory->HitToEveTrackIDEs(hit);
 
     for(size_t e = 0; e < eveIDs.size(); ++e){
       //std::cout<<h<<" "<<e<<" "<<eveIDs[e].trackID<<" "<<eveIDs[e].energy<<" "<<eveIDs[e].energyFrac<<std::endl;
