@@ -1804,9 +1804,9 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
       if (isfirsttime){
 	for (size_t i = 0; i<hitlist.size(); i++){
 	  //if (hitlist[i]->View() == geo::kV){//collection view
-	  std::vector<sim::TrackIDE> eveIDs = partInventory->HitToEveTrackIDEs(hitlist[i]);
+	  std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(hitlist[i]);
 	  for (size_t e = 0; e<eveIDs.size(); e++){
-	    art::Ptr<simb::MCTruth>& ev_mctruth = partInventory->TrackIdToMCTruth_P(eveIDs[e].trackID);
+	    art::Ptr<simb::MCTruth> ev_mctruth = partInventory->TrackIdToMCTruth_P(eveIDs[e].trackID);
 	    //mctruthemap[ev_mctruth]+=eveIDs[e].energy;
 	    if (ev_mctruth->Origin() == simb::kCosmicRay) isCosmics = true;
 	  }
@@ -2279,9 +2279,9 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
           HitsPurity(hits[ipl],TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl],maxe);
         //std::cout<<"\n"<<iTracker<<"\t"<<iTrk<<"\t"<<ipl<<"\t"<<trkidtruth[iTracker][iTrk][ipl]<<"\t"<<trkpurtruth[iTracker][iTrk][ipl]<<"\t"<<maxe;
           if (TrackerData.trkidtruth[iTrk][ipl]>0){
-            const art::Ptr<simb::MCTruth> mc = partInventory->TrackIdToMCTruth(TrackerData.trkidtruth[iTrk][ipl]);
+            const art::Ptr<simb::MCTruth> mc = partInventory->TrackIdToMCTruth_P(TrackerData.trkidtruth[iTrk][ipl]);
             TrackerData.trkorigin[iTrk][ipl] = mc->Origin();
-            const simb::MCParticle *particle = partInventory->TrackIdToParticle(TrackerData.trkidtruth[iTrk][ipl]);
+            const simb::MCParticle *particle = partInventory->TrackIdToParticle_P(TrackerData.trkidtruth[iTrk][ipl]);
             double tote = 0;
             const std::vector<const sim::IDE*> vide(backTracker->TrackIdToSimIDEs_Ps(TrackerData.trkidtruth[iTrk][ipl]));
             for (auto ide: vide) {
@@ -2695,7 +2695,7 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
   trackid = -1;
   purity = -1;
 
-  art::ServiceHandle<cheat::BackTrackerService> bt;
+  art::ServiceHandle<cheat::BackTrackerService> backTracker;
 
   std::map<int,double> trkide;
 
@@ -2704,7 +2704,7 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
     art::Ptr<recob::Hit> hit = hits[h];
     std::vector<sim::IDE> ides;
    
-    std::vector<sim::TrackIDE> eveIDs = partInventory->HitToEveTrackIDEs(hit);
+    std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(hit);
 
     for(size_t e = 0; e < eveIDs.size(); ++e){
       //std::cout<<h<<" "<<e<<" "<<eveIDs[e].trackID<<" "<<eveIDs[e].energy<<" "<<eveIDs[e].energyFrac<<std::endl;

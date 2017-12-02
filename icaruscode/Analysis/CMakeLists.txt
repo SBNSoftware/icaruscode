@@ -6,7 +6,8 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            lardataobj_Simulation
                            lardata_Utilities
                            larevt_Filters
-                           larsim_MCCheater_BackTracker_service
+                           larsim_MCCheater_BackTrackerService_service
+                           larsim_MCCheater_ParticleInventoryService_service
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
                            nutools_RandomUtils_NuRandomService_service
@@ -19,7 +20,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            art_Persistency_Common
                            art_Persistency_Provenance
                            art_Utilities
-			               canvas
+			                  canvas
                            ${MF_MESSAGELOGGER}
                            ${MF_UTILITIES}
                            ${FHICLCPP}

@@ -259,7 +259,7 @@ const std::vector<std::vector<art::Ptr<recob::Hit>>> BackTrackerTruth::TrackIDsT
     for(const auto& tkID : tkIDs)
     {
         std::vector<art::Ptr<recob::Hit>> hitVec = backTracker->TrackIdToHits_Ps(tkID, allhits);
-        tkIDsToHitsVec.push_back(hitvec);
+        tkIDsToHitsVec.push_back(hitVec);
     }
 
     return tkIDsToHitsVec;
@@ -362,7 +362,7 @@ std::vector<double> BackTrackerTruth::SpacePointToXYZ(art::Ptr<recob::SpacePoint
 std::vector<double> BackTrackerTruth::SpacePointHitsToXYZ(art::PtrVector<recob::Hit> const& hits) const
 {
     std::vector<art::Ptr<recob::Hit>> hitVec;
-    for(int idx=0; idx<hits.size(); idx++) hitVec.push_back(hits.at(idx));
+    for(size_t idx=0; idx<hits.size(); idx++) hitVec.push_back(hits.at(idx));
 
     art::ServiceHandle<cheat::BackTrackerService> backTracker;
     return backTracker->SpacePointHitsToWeightedXYZ(hitVec);
