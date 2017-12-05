@@ -20,7 +20,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            art_Persistency_Common
                            art_Persistency_Provenance
                            art_Utilities
-			                  canvas
+                           canvas
                            ${MF_MESSAGELOGGER}
                            ${MF_UTILITIES}
                            ${FHICLCPP}
