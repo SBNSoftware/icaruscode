@@ -271,8 +271,8 @@ icarus_basic_services:
 
  DatabaseUtil:	                 @local::standard_database           
 
- BackTrackerService:                    @local::standard_backtrackerservice        
- ParticleInventoryService:                    @local::standard_particleinventoryservice       
+ BackTrackerService:             @local::standard_backtrackerservice
+ ParticleInventoryService:       @local::standard_particleinventoryservice       
 
 }
 
