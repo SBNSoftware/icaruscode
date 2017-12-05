@@ -12,7 +12,8 @@
 #include "detsimmodules.fcl"
 #include "databaseutil.fcl"
 #include "larfft.fcl"
-#include "backtracker.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 
 #include "channelstatus.fcl"
 #include "database_standard.fcl"
@@ -270,7 +271,8 @@ icarus_basic_services:
 
  DatabaseUtil:	                 @local::standard_database           
 
- BackTracker:                    @local::standard_backtracker        
+ BackTrackerService:                    @local::standard_backtrackerservice        
+ ParticleInventoryService:                    @local::standard_particleinventoryservice       
 
 }
 
