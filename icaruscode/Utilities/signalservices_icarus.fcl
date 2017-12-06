@@ -49,8 +49,8 @@ signalshapingservice_icarus:
     PlaneForNormalization:           2
     PrintResponses:                  "false"
     DeconNorm:                       50. #200.
-# NoiseFactVec:                    [ [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ] ]
-    NoiseFactVec:                    [ [ 3., 3., 3., 3. ], [ 3., 3., 3., 3. ], [ 3., 3., 3., 3. ] ]
+    NoiseFactVec:                    [ [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ] ]
+#    NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
     StoreHistograms:                 true
 
     ResponseTools:
