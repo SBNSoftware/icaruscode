@@ -78,6 +78,7 @@ icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
 ### Below we include overrides for the modules above
 
 icarus_reco_producers.rawdigitfilter.ProcessNoise:                      false
+icarus_reco_producers.rawdigitfilter.FFTNoise:                          false
 
 icarus_reco_producers.recowire.DigitModuleLabel:                        "rawdigitfilter" #"daq"
 icarus_reco_producers.recowire.Threshold:                               [0, 0, 0]
