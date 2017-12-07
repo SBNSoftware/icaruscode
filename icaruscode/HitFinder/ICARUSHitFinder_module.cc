@@ -96,7 +96,8 @@ namespace hit {
       
       };
       
-
+      void expandHit(ICARUSHit& h, std::vector<float> holder );
+      
 
 
     private:
@@ -144,6 +145,8 @@ namespace hit {
       TH1F* fHeightC;
       TH1F* fWidthC;
       TH1F* fNoiseC;
+      TH1F* fAreaC;
+
       TH1F* fHeightI2;
       TH1F* fWidthI2;
       TH1F* fNoiseI2;
@@ -223,6 +226,7 @@ namespace hit {
       fHeightC	= tfs->make<TH1F>("fHeightC", "height(ADC#)", 100, 0, 100);
       fWidthC	        = tfs->make<TH1F>("fWidthC", "width(samples)", 100, 0, 100);
       fNoiseC	        = tfs->make<TH1F>("fNoiseC", "Noise Area(ADC#)", 100, 0, 100);
+      fAreaC            = tfs->make<TH1F>("fAreaC", "fArea(ADC#)", 1500, 0, 1500);
       fHeightI2	= tfs->make<TH1F>("fHeightI2", "height(ADC#)", 100, 0, 100);
       fWidthI2	        = tfs->make<TH1F>("fWidthI2", "width(samples)", 100, 0, 100);
       fNoiseI2	        = tfs->make<TH1F>("fNoiseI2", "Noise Area(ADC#)", 100, 0, 100);
@@ -316,14 +320,20 @@ namespace hit {
       
       unsigned int nnhitsC(0),nnhitsI1(0),nnhitsI2(0); //total number of reconstructed hits in a view
 
-      int minWireC=2536; //empirical
+      //45 deg
+      /*int minWireC=2536; //empirical
       int maxWireC=3142;
       int minWireI2=2536; //empirical
       int maxWireI2=3102;
       int minWireI1=0; //empirical
-      int maxWireI1=497;
-     // int minDrift=850;
-     // int maxDrift=1500;
+      int maxWireI1=497;*/
+    
+      int minWireC=2536; //empirical
+      int maxWireC=4700;
+      int minWireI2=2536; //empirical
+      int maxWireI2=4700;
+      int minDrift=850;
+      int maxDrift=1500;
       
       //### Looping over the wires ###
       //##############################
@@ -548,7 +558,7 @@ namespace hit {
                                       h.iniDrift=begin;
                                       //		      h.finDrift=i+iniSamp;
                                       h.finDrift=localminidx;
-                                      //expandHit(h,pf,iniSamp,finSamp);
+                                      expandHit(h,holder);
                                       if((h.finDrift-h.iDrift)>=fall && h.finDrift-h.iniDrift>width)
                                       { //6
                                           h.iwindow=h.iniDrift;
@@ -585,10 +595,11 @@ namespace hit {
                                       h.fwindow=h.finDrift;
                                    //if(iwire==4526&&plane==1&&cryostat==0&&tpc==0)
                                     //std::cout << " adding hit case 2, tick " << i << std::endl;
+                                      expandHit(h,holder);
                                       hits.push_back(h);
                                           //InsertHit(&h);
                                       //  if ( typ != BasicData::ISBASICPLANE_PMT)
-                                     //  expandHit(h,pf,iniSamp,finSamp);
+                                    
                                   }
                                   
                                   peakheight=-9999;
@@ -619,7 +630,7 @@ namespace hit {
                           
                           if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
                           {		    
-                            //  expandHit(h,pf,iniSamp,finSamp);
+                              expandHit(h,holder);
                               h.iwindow=h.iniDrift;
                               h.fwindow=h.finDrift;
                               //std::cout << " adding hit case 3 " << i << std::endl;
@@ -672,7 +683,7 @@ namespace hit {
         chargeErr     = -1;
         totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
           
-          std::cout << " check totSig " << totSig << std::endl;
+          std::cout << " wire " << hits[i].iWire << " inidrift " << hits[i].iniDrift << " findrift " << hits[i].finDrift <<std::endl;
 
         std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
         geo::WireID wid = wids[0];
@@ -710,20 +721,20 @@ namespace hit {
           
         hcol.emplace_back(hit.move(), wire, rawdigits);
           
-          //bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
+          bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
           bool wireWindowC=hits[i].iWire>=minWireC+200&&hits[i].iWire<=maxWireC-200;
           bool wireWindowI2=hits[i].iWire>=minWireI2+200&&hits[i].iWire<=maxWireI2-200;
-          bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
+          //bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
 
-          //bool outDriftWindow=hits[i].iDrift<=minDrift-200||hits[i].iDrift>=maxDrift+200;
+          bool outDriftWindow=hits[i].iDrift<=minDrift-200||hits[i].iDrift>=maxDrift+200;
           bool outWireWindowC=hits[i].iWire<=minWireC-200||hits[i].iWire>=maxWireC+200;
           bool outWireWindowI2=hits[i].iWire<=minWireI2-200||hits[i].iWire>=maxWireI2+200;
-          bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
+          //bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
 
          // if(plane==2)
            //   std::cout << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
           
-          if(plane==0&&wireWindowI1)  {
+          if(plane==0&&driftWindow)  {
            //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
               nghI1++;
               if(nghI1==1) nw1hitI1++;
@@ -745,13 +756,14 @@ namespace hit {
               if(nghC==1) nw1hitC++;
               fHeightC->Fill(amplitude);
               fWidthC->Fill(end-start);
+              fAreaC->Fill(totSig);
           }
 
           if(plane==0) nhitsI1++;
           if(plane==1) nhitsI2++;
           if(plane==2) nhitsC++;
           
-          if(plane==0&&tpc==0&&cryostat==0&&outWireWindowI1) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
+          if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
           if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
             //if(cryostat==0&&tpc==0)
               //    std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << std::endl;
@@ -765,12 +777,12 @@ namespace hit {
     } //end channel condition
     } //end loop on channels
       
-  /*           double PhysWC=maxWireC-minWireC+1-400;
+            double PhysWC=maxWireC-minWireC+1-400;
              double NoiseWC=5119-480-(maxWireC-minWireC+1)-400;
       double PhysWI2=maxWireI2-minWireI2+1-400;
       double NoiseWI2=5119-480-(maxWireI2-minWireI2+1)-400;
-      double PhysWI1=maxWireI1-minWireI1+1-400;
-      double NoiseWI1=1056-(maxWireI2-minWireI2+1)-400;;
+      double PhysWI1=1056;
+      double NoiseWI1=1056;
     
       std::cout << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
       std::cout << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
@@ -778,7 +790,7 @@ namespace hit {
       std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
       std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
       std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
-*/
+
       
       
     hcol.put_into(evt);
@@ -787,6 +799,66 @@ namespace hit {
       
   } //end produce
 
+    
+    void ICARUSHitFinder::expandHit(ICARUSHit& h, std::vector<float> holder)
+    {
+        // Given a hit or hit candidate <hit> expand its limits to the closest minima
+        int nsamp=6;
+        int cut=1;
+        int upordown;
+        int found=0;
+        
+        int first=h.iniDrift;
+        int last =h.finDrift;
+        
+        // look for first sample
+        while(!found)
+        {
+            if(first==0)
+                break;
+            
+            upordown=0;
+            for(int l=0;l<nsamp;l++)
+            {
+                if(first-nsamp/2+l<4095) {
+                    if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]>0) upordown++;
+                    else if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]<0) upordown--;
+            } }
+            
+            if(upordown>cut)
+                first--;
+            else
+                found=1;
+        }
+        
+        // look for last sample
+        found=0;
+        while(!found)
+        {
+            if(last==4095)
+            {
+                found=1;
+                break;
+            }
+            
+            upordown=0;
+            for(int l=0;l<nsamp;l++)
+            {
+                if(last+nsamp/2-l>0) {
+                    if(holder[last+nsamp/2-l]-holder[last+nsamp/2-l-1]>0) upordown++;
+                    else if(holder[last+nsamp/2-l]-holder[last+nsamp/2-l-1]<0) upordown--;
+                } }
+            
+            if(upordown<-cut)
+                last++;
+            else
+                found=1;
+        }
+        
+        h.iniDrift=first;
+        h.finDrift=last;
+    }
+    
 
   
   DEFINE_ART_MODULE(ICARUSHitFinder)   

@@ -27,7 +27,9 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Core/EDProducer.h" // include the proper bit of the framework
-#include "art/Framework/Core/ModuleMacros.h" 
+#include "art/Framework/Core/ModuleMacros.h"
+#include "art/Framework/Services/Optional/TFileService.h"
+
 
 // LArSoft includes
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
@@ -64,6 +66,8 @@ namespace recowireraw {
     
     int          fDataSize;          ///< size of raw data on one wire
     std::string  fDigitModuleLabel;  ///< module that made digits
+    TH1F* fWireRMS;
+
 
   protected: 
     
@@ -97,8 +101,11 @@ namespace recowireraw{
 
   //-------------------------------------------------
   void RecoWireICARUSRaw::beginJob()
-  {  
-    
+  {
+      // get access to the TFile service
+      art::ServiceHandle<art::TFileService> tfs;
+      
+      fWireRMS    = tfs->make<TH1F>("fWireRMS", "RMS(ADC#)", 1000, 0, 10);
   }
 
   //////////////////////////////////////////////////////
@@ -165,8 +172,8 @@ namespace recowireraw{
            // std::cout << " before integration sample " << j << " wave " << holder[j] << std::endl;
               if(holder[j]>max_raw) max_raw=holder[j];
           }
-      OfflineIntegration(holder);
-            DoubleRebinning(holder);
+             OfflineIntegration(holder);
+             DoubleRebinning(holder);
            for(int j=0;j<4096;j++) {
            // std::cout << " after integration sample " << j << " wave " << holder[j] << std::endl;
             if(holder[j]>max_reb) max_reb=holder[j];
@@ -174,7 +181,14 @@ namespace recowireraw{
         
            
         }
-
+        float media=0;
+        float rms2=0;
+        for(int js=0;js<4096;js++)
+            media+=(holder[js]/4096.);
+        for(int js=0;js<4096;js++)
+            rms2+=(holder[js]-media)*(holder[js]-media)/4096.;
+        float rms=sqrt(rms2);
+        fWireRMS->Fill(rms);
         
       wirecol->push_back(recob::WireCreator(holder,*digitVec).move());
         

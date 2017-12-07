@@ -63,10 +63,10 @@ icarus_reco_signalprocessing: [     rawdigitfilter,
 
 icarus_reco_producers.recowire.DigitModuleLabel:                        "rawdigitfilter" #"daq"
 icarus_reco_producers.recowire.Threshold:                               [0, 0, 0]
-icarus_reco_producers.recowire.NumSigma:                                [3, 3, 3]
+icarus_reco_producers.recowire.NumSigma:                                [3, 2, 3]
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowire"
-icarus_reco_producers.gaushit.MinSig:                                   [ 10.,  5.,   6.  ]
+icarus_reco_producers.gaushit.MinSig:                                   [ 9.,  20.,   6.  ]
 icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
