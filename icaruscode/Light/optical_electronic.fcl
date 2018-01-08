@@ -29,19 +29,31 @@ services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibil
 
 services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "workshop.root"
+services.PhotonVisibilityService.LibraryFile: "19dic_library.root"
 
-services.PhotonVisibilityService.UseCryoBoundary: false
-services.PhotonVisibilityService.XMin: 320	#-300
-services.PhotonVisibilityService.XMax: 340	#-150
-services.PhotonVisibilityService.YMin: -35 	#-150 
-services.PhotonVisibilityService.YMax: -15	#150
-services.PhotonVisibilityService.ZMin: -10	#-1000
-services.PhotonVisibilityService.ZMax: 10	#1000
+//version51_near e senza crt e arcathode
+//services.PhotonVisibilityService.XMin: 320	#-300
+//services.PhotonVisibilityService.XMax: 340	#-150
+//services.PhotonVisibilityService.YMin: -35 	#-150 
+//services.PhotonVisibilityService.YMax: -15	#150
+//services.PhotonVisibilityService.ZMin: -10	#-1000
+//services.PhotonVisibilityService.ZMax: 10	#1000
 
-services.PhotonVisibilityService.NX: 4 
-services.PhotonVisibilityService.NY: 4
-services.PhotonVisibilityService.NZ: 4
+//version test_final
+services.PhotonVisibilityService.XMin: -366	
+services.PhotonVisibilityService.XMax: -66	
+services.PhotonVisibilityService.YMin: -210 	 
+services.PhotonVisibilityService.YMax: 180	
+services.PhotonVisibilityService.ZMin: -995	
+services.PhotonVisibilityService.ZMax: 965	
+
+//services.PhotonVisibilityService.NX: 4	 
+//services.PhotonVisibilityService.NY: 4	
+//services.PhotonVisibilityService.NZ: 4	
+
+//services.PhotonVisibilityService.NX: 60	 
+//services.PhotonVisibilityService.NY: 78	
+//services.PhotonVisibilityService.NZ: 392
 
 # services.DetectorClocksService.ClockSpeedOptical: 1000
 

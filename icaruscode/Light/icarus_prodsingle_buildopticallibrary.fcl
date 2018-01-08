@@ -64,7 +64,7 @@ services.PhotonVisibilityService.NX: 60
 services.PhotonVisibilityService.NY: 78	
 services.PhotonVisibilityService.NZ: 392	
 
-services.Geometry.GDML: "test_final.gdml"
+#services.Geometry.GDML: "test_final.gdml"
 
 # services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 # services.LArFFT: ""
@@ -75,9 +75,9 @@ source:
 {
   module_type: EmptyEvent
   timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
-#  maxEvents:   720           # Number of events to create
+  maxEvents:   100000           # Number of events to create
 #  maxEvents:   64           # Number of events to create
-  maxEvents:   4680           # Number of events to create
+#  maxEvents:   4680           # Number of events to create
   firstRun:    1           # Run number to use for this file
   firstEvent:  1           # number of first event in the file
 }
@@ -103,8 +103,6 @@ physics:
  #filters reject all following items.  see lines starting physics.producers below
  simulate: [ generator, largeant ] 
  analyzeIt:  [ pmtresponse ]
- #define the output stream, there could be more than one if using filters 
- stream1:  [ ]
 
  #trigger_paths is a keyword and contains the paths that modify the art::event, 
  #ie filters and producers
@@ -115,17 +113,6 @@ physics:
  end_paths:     [analyzeIt]  
 }
 
-#block to define where the output goes.  if you defined a filter in the physics
-#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
-#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
-outputs:
-{
- out1:
- {
-   module_type: RootOutput
-   fileName:    "single_gen_icarus.root" #default file name, can override from command line with -o or --output
- }
-}
 
 # Begin optical specific parts:
 
@@ -157,8 +144,8 @@ standard_properties.ReflectiveSurfaceReflectances:     [ [ 0.042, 0.042, 0.042, 
                                                        [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ] ]
 
 
-#physics.producers.generator.N: 400000
-physics.producers.generator.N: 4
+physics.producers.generator.N: 400000
+
 
 # do not allow lightsource to write output into root file
 //physics.producers.generator.FillTree: true 
