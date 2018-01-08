@@ -74,7 +74,7 @@ int main(int argc, char const** argv) {
   
   IcarusGeometryConfiguration config
     ("geometry_iterator_loop_test_ICARUS");
-  config.SetMainTesterParameterSetName("geotest");
+  config.SetMainTesterParameterSetName("geoitertest");
   
   //
   // parameter parsing

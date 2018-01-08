@@ -25,7 +25,7 @@ standard_simwire:
   DriftEModuleLabel:  "largeant"
   CompressionType:    "none"
   SimDeadChannels:    false
-  SuppressNoSignal:   true
+  SuppressNoSignal:   false
   Test:               false
   TestWire:           0
   TestIndex:          [ 0. ]

@@ -21,5 +21,4 @@ physics.producers.generator.Theta0YZ: [ 0. ]       # y-latitude
 physics.producers.generator.SigmaThetaXZ: [ 50. ] # Quasi-isotropic
 physics.producers.generator.SigmaThetaYZ: [ 50. ]
 physics.producers.generator.AngleDist: 1
-physics.producers.generator.PHist: [ "dummy" ]
-physics.producers.generator.ThetaXzYzHist: [ "dummy" ]
+

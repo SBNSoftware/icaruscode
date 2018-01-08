@@ -117,6 +117,8 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     // For collection planes it is as simple as finding the maximum bin
     if (fSignalType == geo::kCollection) binOfInterest = fFieldResponseHist->GetMaximumBin();
     
+    std::cout << " signal type " << fSignalType << " bin of interest " << binOfInterest << std::endl;
+    
     // Do a backwards search to find the first positive bin
     while(1)
     {
@@ -126,7 +128,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
             
         double content = fFieldResponseHist->GetBinContent(binOfInterest);
         
-        if (content > 0.) break;
+        if (content >= 0.) break;
         
         binOfInterest--;
     }

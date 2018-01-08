@@ -1,6 +1,7 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
-#include "backtracker.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 #include "singles_icarus.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
@@ -22,7 +23,8 @@ services:
   TimeTracker:  {}
   RandomNumberGenerator: {} #ART native random number generator
                 @table::icarus_simulation_services
-  BackTracker:  @local::standard_backtracker # defined in backtracker.fcl
+  BackTrackerService:  @local::standard_backtrackerservice # defined in backtracker.fcl
+  ParticleInventoryService: @local::standard_particleinventoryservice
 
   OpDetResponseInterface:  @local::standard_opdetresponse
 }

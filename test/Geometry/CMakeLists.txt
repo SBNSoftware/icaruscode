@@ -37,6 +37,8 @@ cet_test(geometry_icarus_test
 # this uses BOOST for the test
 cet_test(geometry_iterator_icarus_test
   SOURCES geometry_iterator_icarus_test.cxx
+  DATAFILES ./test_geometry_iterators_icarus.fcl
+  TEST_ARGS ./test_geometry_iterators_icarus.fcl
   LIBRARIES icarus_Geometry
             larcorealg_Geometry
             GeometryTestLib
@@ -52,6 +54,8 @@ cet_test(geometry_iterator_icarus_test
 # unit test (use the hard-coded configuration for ICARUS geometry)
 cet_test(geometry_iterator_loop_icarus_test
   SOURCES geometry_iterator_loop_icarus_test.cxx
+  DATAFILES ./test_geometry_iterators_icarus.fcl
+  TEST_ARGS ./test_geometry_iterators_icarus.fcl
   LIBRARIES icarus_Geometry
             larcorealg_Geometry
             GeometryTestLib

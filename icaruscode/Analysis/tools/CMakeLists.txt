@@ -1,4 +1,5 @@
 cet_enable_asserts()
+add_subdirectory(MCTruth)
 
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
                          larcorealg_Geometry

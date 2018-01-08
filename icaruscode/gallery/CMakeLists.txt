@@ -1,4 +1,5 @@
 add_subdirectory(helpers)
+add_subdirectory(MCTruthBase)
 
 foreach(ExampleDir IN ITEMS galleryAnalysis )
   
