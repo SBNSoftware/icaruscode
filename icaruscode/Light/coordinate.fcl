@@ -1,7 +1,5 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
-#include "backtrackerservice.fcl"
-#include "particleinventoryservice.fcl"
 #include "singles_icarus.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
