@@ -181,11 +181,6 @@ true_barycentre_z =0;
 
 total_quenched_energy =0;
 
-turned_PMT=0;
-
-reco_barycentre_y=0;
-reco_barycentre_z=0;
-
 ////////////////////////////////// Charge part: identify the baricentre of the event //////////////////////////////
 
 for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechannel) //loop on SimChannel
@@ -220,6 +215,12 @@ true_barycentre_z = true_barycentre_z/total_quenched_energy;
 total_quenched_energy = total_quenched_energy/3; 
 
 ////////////////////////////////// Light part //////////////////////////////////////////////////
+turned_PMT=0;
+
+reco_barycentre_y=0;
+reco_barycentre_z=0;
+
+total_coll_photons=0;
 
 for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
@@ -227,9 +228,12 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 	noPMT[channel] = channel;	
 
-	photons_collected[channel]=photon_vec.size();
+	photons_collected[channel]= photon_vec.size();
 
-	if (photons_collected[channel]>0){turned_PMT++;}
+	if (photons_collected[channel]>0){
+
+	turned_PMT++;
+	}
 
 	double xyz[3];
 
@@ -242,6 +246,8 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	reco_barycentre_y = reco_barycentre_y + PMTy[channel]*photons_collected[channel];
 	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];
 	total_coll_photons= total_coll_photons + photons_collected[channel];
+
+//	std::cout << " fotoni channel = " << photons_collected[channel] << "  totali=  " <<total_coll_photons <<std::endl; 
 
 //	mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photon_vec.size() << " photons";
 
@@ -285,8 +291,13 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
     	
 }
 
+total_coll_photons = total_coll_photons;
+
+//std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
+
 reco_barycentre_y = reco_barycentre_y/total_coll_photons;
 reco_barycentre_z = reco_barycentre_z/total_coll_photons;
+
 
 PMT_error_y = reco_barycentre_y-true_barycentre_y;
 PMT_error_z = reco_barycentre_z-true_barycentre_z;
@@ -320,7 +331,7 @@ fTree->Branch("PMTx",&PMTx,("PMTx[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTy",&PMTy,("PMTy[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTz",&PMTz,("PMTz[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
-fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons");
+fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/I");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
