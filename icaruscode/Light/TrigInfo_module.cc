@@ -72,7 +72,7 @@
 ////////////////////////////////// Define some constant variable //////////////////////////////
 const int nPMTs = 360;
 const int PMTs_per_TPC = 90;
-const int MaxPhotons = 10000;
+const int MaxPhotons = 5000;
 const int QE = 0.06;
 
 namespace sim{	
@@ -227,7 +227,7 @@ for(size_t mcl = 0; mcl < type.size(); ++mcl)
 
 ////////////////////////////////// Putting at 0 all the variables//////////////////////////////
 
-for (int g=0; g<10000; g++)
+for (int g=0; g<MaxPhotons; g++)
 {
 	for (int u=0; u<360; u++)
 	{
@@ -256,7 +256,7 @@ for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechanne
 		{
 			sim::IDE const& ida = tdcide.second.at(IDEnu);
 
-			std::cout << "IDA     " << ida.x << '\t' << ida.y << '\t' << ida.z << std::endl;
+//			std::cout << "IDA     " << ida.x << '\t' << ida.y << '\t' << ida.z << std::endl;
 
 			true_barycentre_x = true_barycentre_x + ida.x*ida.energy;
 			true_barycentre_y = true_barycentre_y + ida.y*ida.energy;
@@ -295,7 +295,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 //	QE_photons_collected[channel]= Ran.Poisson(media);
 
-	QE_photons_collected[channel]= photons_collected[channel]*QE;
+	QE_photons_collected[channel]= 0.06*photons_collected[channel];
 
 	if (photons_collected[channel]>0){
 
@@ -321,6 +321,11 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 		for (size_t i = 0; i<photon_vec.size() && int(i)< MaxPhotons; ++i)
 		{
 			photon_time[channel][i]= photon_vec.at(i).Time;
+
+			if (photon_time[channel][i]<firstphoton_time[channel])
+			{				
+				firstphoton_time[channel]=photon_time[channel][i];
+			}
 		}
 
 	}
@@ -375,9 +380,9 @@ fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std:
 fTree->Branch("QE_photons_colleted",&QE_photons_collected,("QE_photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
-fTree->Branch("vertex_x",&vertex_x,"vertex_x/F");
-fTree->Branch("vertex_y",&vertex_y,"vertex_y/F");
-fTree->Branch("vertex_z",&vertex_z,"vertex_z/F");
+fTree->Branch("vertex_x",&vertex_x,"vertex_x/D");
+fTree->Branch("vertex_y",&vertex_y,"vertex_y/D");
+fTree->Branch("vertex_z",&vertex_z,"vertex_z/D");
 fTree->Branch("true_barycentre_x",&true_barycentre_x,"true_barycentre_x/F");
 fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
 fTree->Branch("true_barycentre_z",&true_barycentre_z,"true_barycentre_z/F");
