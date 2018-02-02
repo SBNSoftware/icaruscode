@@ -51,6 +51,14 @@
 
 #include "lardataobj/Simulation/SimChannel.h"
 
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
+
+#include "nutools/ParticleNavigation/ParticleList.h"
+
+#include "lardataobj/Simulation/sim.h"
+
 // #####################
 // ### ROOT includes ###
 // #####################
@@ -66,6 +74,10 @@ const int nPMTs = 360;
 const int PMTs_per_TPC = 90;
 const int MaxPhotons = 10000;
 const int QE = 0.06;
+
+namespace sim{	
+  class ParticleList;
+}
 
 namespace icarus {
   class TrigInfo;
@@ -91,7 +103,7 @@ public:
   //void reconfigure(fhicl::ParameterSet const & p);
 
 private:
-
+//TRandom* Ran;
  
 TTree* fTree;
 
@@ -100,6 +112,9 @@ TTree* fTree;
 int event;
 
 int event_type;
+
+int is_Neutrino;
+int Neutrino_Interaction;
 
 int noPMT[nPMTs];
 
@@ -122,19 +137,23 @@ float true_barycentre_x;
 float true_barycentre_y;
 float true_barycentre_z;
 
-float vertex_x;
-float vertex_y;
-float vertex_z;
+double vertex_x;
+double vertex_y;
+double vertex_z;
 
 float reco_barycentre_y;
 float reco_barycentre_z;
 
 float total_quenched_energy;
 float total_coll_photons;
+
+float PMT_error_y;
+float PMT_error_z;
+float PMT_total_error;
   
 art::InputTag photonLabel;
 art::InputTag chargeLabel;
-art::InputTag eventLabel;
+art::InputTag typoLabel;
 
 
 };
@@ -144,8 +163,8 @@ icarus::TrigInfo::TrigInfo(fhicl::ParameterSet const & p)
   :
   EDAnalyzer(p),
   photonLabel(p.get<art::InputTag>("fottoni", "largeant")),
-  chargeLabel(p.get<art::InputTag>("carconi", "largeant"))
-  typoLabel  (p.get<art::InputTag>("tiponi", "largeant"))
+  chargeLabel(p.get<art::InputTag>("carconi", "largeant")),
+  typoLabel  (p.get<art::InputTag>("tiponi", "generator"))
  // More initializers here.
 {
 
@@ -159,19 +178,52 @@ void icarus::TrigInfo::analyze(art::Event const & evt)
 
 art::ServiceHandle<geo::Geometry> geom;
  
-std::vector<sim::SimPhotons> const& optical = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
-std::vector<sim::SimChannel> const& charge  = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
-std::vector<simb::MCTruth>   const& type    = *(evt.getValidHandle<std::vector<simb::MCTruth>>(typoLabel));
+std::vector<sim::SimPhotons> const& optical  = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
+std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
+//std::vector<simb::MCTruth> const& type    = *(evt.getValidHandle<std::vector<simb::MCTruth>>(typoLabel));
 
 ////////////////////////////////// Event number//////////////////////////////
 
 event = evt.id().event();
 
-event_type = type.GetParticle(0).PdgCode();
+std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
+evt.getManyByType(type);
 
-vertex_x = type.GetParticle(0).Vx();
-vertex_y = type.GetParticle(0).Vy();
-vertex_z = type.GetParticle(0).Vz();
+for(size_t mcl = 0; mcl < type.size(); ++mcl)
+{	
+	art::Handle< std::vector<simb::MCTruth> > mclistHandle = type[mcl];
+	
+	for(size_t m = 0; m < mclistHandle->size(); ++m)
+	{
+		art::Ptr<simb::MCTruth> mct(mclistHandle, m);	
+//		for(int ipart=0;ipart<mct->NParticles();ipart++)
+//		{	
+//			int pdg=mct->GetParticle(ipart).PdgCode();	
+//			double xx=mct->GetParticle(ipart).Vx();	
+//			double yy=mct->GetParticle(ipart).Vy();
+//                	double zz=mct->GetParticle(ipart).Vz();
+
+			event_type=mct->GetParticle(0).PdgCode();	
+//			vertex_x=mct->GetParticle(0).Vx();	
+//			vertex_y=mct->GetParticle(0).Vy();
+//                  	vertex_z=mct->GetParticle(0).Vz();
+
+			if (event_type==12||event_type==-12||event_type==14||event_type==-14||event_type==16||event_type==-16)
+			{
+				is_Neutrino=1;
+				Neutrino_Interaction=mct->GetNeutrino().InteractionType();
+			}	
+			else
+			{
+				is_Neutrino=0;
+				Neutrino_Interaction=-9999;			
+			}		
+
+//		}
+	}
+
+}
+
 
 ////////////////////////////////// Putting at 0 all the variables//////////////////////////////
 
@@ -239,9 +291,11 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 	photons_collected[channel]= photon_vec.size();
 
-	double media = photons_collected[channel]*QE;
+//	double media = photons_collected[channel]*QE;
 
-	QE_photons_collected[channel]= Ran.Poisson(media);
+//	QE_photons_collected[channel]= Ran.Poisson(media);
+
+	QE_photons_collected[channel]= photons_collected[channel]*QE;
 
 	if (photons_collected[channel]>0){
 
@@ -267,13 +321,6 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 		for (size_t i = 0; i<photon_vec.size() && int(i)< MaxPhotons; ++i)
 		{
 			photon_time[channel][i]= photon_vec.at(i).Time;
-
-			if (photon_time[channel][i]<firstphoton_time[channel])
-			{				
-				firstphoton_time[channel]=photon_time[channel][i];
-				firstphoton_velocity[channel]=photon_linear_path[channel][i]/firstphoton_time[channel];
-			}
-
 		}
 
 	}
@@ -313,6 +360,8 @@ fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
 fTree->Branch("event",&event,"event/I");
 fTree->Branch("event_type",&event_type,"event_type/I");
+fTree->Branch("is_Neutrino",&is_Neutrino,"is_Neutrino/I");
+fTree->Branch("Neutrino_Interaction",&Neutrino_Interaction,"Neutrino_Interaction/I");
 fTree->Branch("total_quenched_energy",&total_quenched_energy,"total_quenched_energy");
 fTree->Branch("Cryostat",&Cryostat,("Cryostat[" + std::to_string(nPMTs) + "]/I").c_str());
 fTree->Branch("TPC",&TPC,("TPC[" + std::to_string(nPMTs) + "]/I").c_str());
