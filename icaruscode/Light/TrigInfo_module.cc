@@ -204,9 +204,9 @@ for(size_t mcl = 0; mcl < type.size(); ++mcl)
 //                	double zz=mct->GetParticle(ipart).Vz();
 
 			event_type=mct->GetParticle(0).PdgCode();	
-//			vertex_x=mct->GetParticle(0).Vx();	
-//			vertex_y=mct->GetParticle(0).Vy();
-//                  	vertex_z=mct->GetParticle(0).Vz();
+			vertex_x=mct->GetParticle(0).Vx();	
+			vertex_y=mct->GetParticle(0).Vy();
+                  	vertex_z=mct->GetParticle(0).Vz();
 
 			if (event_type==12||event_type==-12||event_type==14||event_type==-14||event_type==16||event_type==-16)
 			{
