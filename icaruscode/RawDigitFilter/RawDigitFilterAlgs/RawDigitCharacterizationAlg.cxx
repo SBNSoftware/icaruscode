@@ -272,12 +272,12 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
         float  leastNeighborRatio = float(std::min(leftNeighbor,rightNeighbor)) / float(maxBinItr->second);
         size_t wireIdx            = wire % fNumWiresToGroup[view];
         
-        if (skewness > 0. && leastNeighborRatio < 0.7)
-        {
-            short threshold(6);
-            
-            RawDigitVector::const_iterator stopChirpItr = std::find_if(rawWaveform.begin(),rawWaveform.end(),[mean,threshold](const short& elem){return abs(elem - mean) > threshold;});
-        }
+//        if (skewness > 0. && leastNeighborRatio < 0.7)
+//        {
+//            short threshold(6);
+//            
+//            RawDigitVector::const_iterator stopChirpItr = std::find_if(rawWaveform.begin(),rawWaveform.end(),[mean,threshold](const short& elem){return abs(elem - mean) > threshold;});
+//        }
         
         if (fHistsInitialized)
         {
