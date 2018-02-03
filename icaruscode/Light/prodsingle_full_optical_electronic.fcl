@@ -1,6 +1,5 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
-#include "backtracker.fcl"
 #include "singles_icarus.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
@@ -22,7 +21,7 @@ services:
   TimeTracker:  {}
   RandomNumberGenerator: {} #ART native random number generator
                 @table::icarus_simulation_services
-  BackTracker:  @local::standard_backtracker # defined in backtracker.fcl
+  # BackTracker:  @local::standard_backtracker # defined in backtracker.fcl
 
   OpDetResponseInterface:  @local::standard_opdetresponse
 }
@@ -35,7 +34,7 @@ services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibil
 
 services.OpDigiProperties:        @local::standard_opdigiproperties
 
-services.PhotonVisibilityService.LibraryFile: "19dic_library.root"
+services.PhotonVisibilityService.LibraryFile: "14gen_nocat.root"
 
 
 services.PhotonVisibilityService.UseCryoBoundary: false
@@ -47,9 +46,9 @@ services.PhotonVisibilityService.YMax: 180
 services.PhotonVisibilityService.ZMin: -995	
 services.PhotonVisibilityService.ZMax: 965	
 	
-//services.PhotonVisibilityService.NX: 60	 
-//services.PhotonVisibilityService.NY: 78	
-//services.PhotonVisibilityService.NZ: 392
+services.PhotonVisibilityService.NX: 60	 
+services.PhotonVisibilityService.NY: 78	
+services.PhotonVisibilityService.NZ: 392
 
 
 services.DetectorClocksService.ClockSpeedOptical: 1000

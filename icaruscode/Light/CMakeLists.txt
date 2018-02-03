@@ -19,6 +19,7 @@ art_make(
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
 			SignalShapingServiceICARUS_service
+			nusimdata_SimulationBase
                         ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}
