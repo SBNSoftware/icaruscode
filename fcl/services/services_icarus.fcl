@@ -240,7 +240,7 @@ icarus_basic_services:
         TrigModuleName:    ""
         InheritClockConfig: true
         G4RefTime:        -1.15e3  # G4 time [us] where electronics clock counting start
-        TriggerOffsetTPC: -0.286e3 # Time offset for TPC readout start time w.r.t. trigger [us]
+        TriggerOffsetTPC: -0.340e3 # Time offset for TPC readout start time w.r.t. trigger [us]
         FramePeriod:       1638.4  # Frame period [us]; 4096 * 400 ns
         ClockSpeedTPC:     2.5     # TPC clock speed in MHz;
         ClockSpeedOptical: 500     # Optical clock speed in MHz
