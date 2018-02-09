@@ -24,179 +24,28 @@ BEGIN_PROLOG
 
 standard_largeantparameters:
 {
-  OpticalSimVerbosity:      0       #verbosity of optical simulation, soon to be depricated
-  ParticleKineticEnergyCut: 0.01e-3  #in GeV
-  StoreTrajectories:        true
-  VisualizationEnergyCut:   10.e-3  #depricated, in GeV
-  VisualizeNeutrals:        false   #depricated
-  UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
-  KeepEMShowerDaughters:    false   #save secondary, tertiary, etc particles in EM showers
-  LongitudinalDiffusion:    6.2e-9  #in cm^2/ns
-  TransverseDiffusion:      16.3e-9 #in cm^2/ns
-  ElectronClusterSize:      600.0   #number of ionization electrons to drift in a unit
-  MinNumberOfElCluster:     0       #minimum number of electron clusters
-  EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
-                              "Decay", "HadronElastic", "Stopping", "NeutronTrackingCut" ]
-  CosmogenicK0Bias:         0 # 0 is off. N is the number of secondaries to produce.
-  CosmogenicXSMNBiasOn:     0 # 0 is off. 1 works. 2 still in development.
-  CosmogenicXSMNBiasFactor: 1 # Not more than 5-ish cuz of numerical instabilities.
-  DisableWireplanes:        false #if set true, charge drift simulation does not run - used for optical sim jobs OR just when you don't wanna drift the e's.
-  SkipWireSignalInTPCs:     []     # put here TPC id's which should not receive ionization electrons - used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
-  UseModBoxRecomb:          true   # use Modified Box recombination instead of Birks
-
-  # The following parameters specify details of wireplanes or similar
-  #  areas with optically parameterized transmissions (Ben J 2013)
-  #  volume names to be associated with an optical wireplane model
-  OpticalParamVolumes:      ["volTPCPlaneVert_PV"]
-
-  #  specification of which model to use for each volume
-  OpticalParamModels:       ["OverlaidWireplanes"]
-
-  # orientation of each wireplane set
-  #  0 = Xdrift, 1 = Ydrift, 2 = Zdrift
-  OpticalParamOrientations: [0]
-
-  # This a set of floats which is specific to the particular model used.
-  # For overlaid wireplanes, should be a vector of vectors of
-  #                                 [plane angle, pitch/mm, wire diameter/mm]
-  #
-  # This format is chosen to allow for future extensions to the model
-  #  for, eg, DUNE wireplane development.
-  #
-  OpticalParamParameters:   [ [ [60,  3, 0.15],
-                                [-60, 3, 0.15],
-                                [0,   3, 0.15] ] ]      
-  UseLitePhotons: false
-} 
-
-icarus_message_services:
-{
-  debugModules: ["*"]
-
-  destinations: {
-    LogDebugFile: { 
-      type:       "file"
-      filename:   "debug.log"
-      append:     false
-      threshold:  "DEBUG"
-      categories:{
-        default:{ limit: 0 }
-      }
-    }
-    LogStandardOut: {
-      type:       "cout"
-      threshold:  "WARNING"
-      categories:{
-        default:{ }
-      }
-    }
-    LogStandardError: {
-      type:       "cerr"
-      threshold:  "ERROR"
-      categories:{
-        default:{ }
-      }
-    }
-  }
-}
-
-icarus_message_services_prod_debug:
-{
-  debugModules: ["*"]
-
-  destinations: {
-
-  LogDebugFile:      @local::icarus_message_services.destinations.LogDebugFile
-  LogStandardOut:    @local::icarus_message_services.destinations.LogStandardOut
-  LogStandardError:  @local::icarus_message_services.destinations.LogStandardError
-  }
-}
-
-icarus_message_services_prod_debug.destinations.LogDebugFile.categories:{
-  default: { }
-}
-
-icarus_message_services_interactive:
-{
-  debugModules: ["*"]
-
-  destinations: {
-
-    LogDebugFile:      @local::icarus_message_services.destinations.LogDebugFile
-    LogStandardOut:    @local::icarus_message_services.destinations.LogStandardOut
-    LogStandardError:  @local::icarus_message_services.destinations.LogStandardError
-  }
-}
-icarus_message_services_interactive.destinations.LogStandardOut.threshold:  "DEBUG"
-icarus_message_services_interactive.destinations.LogStandardOut.categories:{
-  default: { limit: -1 }
-}
-icarus_message_services_interactive.destinations.LogStandardError.threshold:  "DEBUG"
-icarus_message_services_interactive.destinations.LogStandardError.categories:{
-  default: { }
-}
-
-icarus_basic_services:
-{
-  scheduler:                           { defaultExceptions: false }    # Make all uncaught exceptions fatal.
-
-  # Load the service that manages root files for histograms.
-  TFileService:                        { fileName: "test_hist_icarus.root" }
-
-  TimeTracker:                         {}
-  MemoryTracker:                       {} 
-
-  RandomNumberGenerator:               {} #ART native random number generator
-  #FileCatalogMetadata:                @local::art_file_catalog_mc
-
-  ChannelStatus:                       @local::standard_channelstatus
-  PedestalRetrieval:                   @local::standard_siov_detpedestal_service
-
-  message:                             @local::icarus_message_services_interactive
-
-  ExptGeoHelperInterface:              @local::icarus_geometry_helper
-  Geometry:                            @local::icarus_geo
-  #LArSeedService:                     @local::random_seedservice #use provided seeed service
-  NuRandomService:                     @local::random_NuRandomService
-
-  DetectorPropertiesService:           @local::icarus_detproperties
-  LArPropertiesService:                @local::standard_properties
-
-  SignalShapingServiceICARUS:          @local::signalshapingservice_icarus
-
-  #assuming not much in optical here.
-  LArG4Parameters:
-  {
-
     OpticalSimVerbosity:      0       #verbosity of optical simulation, soon to be depricated
     ParticleKineticEnergyCut: 0.01e-3  #in GeV
     StoreTrajectories:        true
-
-    VisualizationEnergyCut:   10.e-3  #in GeV
-    VisualizeNeutrals:        false
-
+    VisualizationEnergyCut:   10.e-3  #depricated, in GeV
+    VisualizeNeutrals:        false   #depricated
     UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
-    EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron", 
-                                "Decay", "HadronElastic", "Stopping" ] #, "NeutronTrackingCut" ]
-    KeepEMShowerDaughters:    true   #save secondary, tertiary, etc particles in EM showers
-
+    KeepEMShowerDaughters:    false   #save secondary, tertiary, etc particles in EM showers
     LongitudinalDiffusion:    6.2e-9  #in cm^2/ns
     TransverseDiffusion:      16.3e-9 #in cm^2/ns
     ElectronClusterSize:      600.0   #number of ionization electrons to drift in a unit
     MinNumberOfElCluster:     0       #minimum number of electron clusters
-    UseModBoxRecomb:          true  # use Modified Box recombination instead of Birks
-
-    CosmogenicK0Bias:         0     # 0 is off. N is the number of secondaries to produce.
-    CosmogenicXSMNBiasOn:     0     # 0 is off. 1 works. 2 still in development.
-    CosmogenicXSMNBiasFactor: 1     # Not more than 5-ish cuz of numerical instabilities.
-    DisableWireplanes:        false # if set true, charge drift simulation does not run - used for optical sim jobs
-    			            # OR just when you don't wanna drift the e's.
-    SkipWireSignalInTPCs:     []    # put here TPC id's which should not receive ionization electrons -
-    			            # used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
+    EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
+                                "Decay", "HadronElastic", "Stopping", "NeutronTrackingCut" ]
+    CosmogenicK0Bias:         0 # 0 is off. N is the number of secondaries to produce.
+    CosmogenicXSMNBiasOn:     0 # 0 is off. 1 works. 2 still in development.
+    CosmogenicXSMNBiasFactor: 1 # Not more than 5-ish cuz of numerical instabilities.
+    DisableWireplanes:        false #if set true, charge drift simulation does not run - used for optical sim jobs OR just when you don't wanna drift the e's.
+    SkipWireSignalInTPCs:     []     # put here TPC id's which should not receive ionization electrons - used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
+    UseModBoxRecomb:          true   # use Modified Box recombination instead of Birks
 
     # The following parameters specify details of wireplanes or similar
     #  areas with optically parameterized transmissions (Ben J 2013)
-
     #  volume names to be associated with an optical wireplane model
     OpticalParamVolumes:      ["volTPCPlaneVert_PV"]
 
@@ -208,72 +57,216 @@ icarus_basic_services:
     OpticalParamOrientations: [0]
 
     # This a set of floats which is specific to the particular model used.
-    # For overlaid wireplanes, should be a vector of vectors of 
+    # For overlaid wireplanes, should be a vector of vectors of
     #                                 [plane angle, pitch/mm, wire diameter/mm]
     #
     # This format is chosen to allow for future extensions to the model
     #  for, eg, DUNE wireplane development.
     #
-    OpticalParamParameters:   [ [ [ 60,  3, 0.15 ], 
-                               	  [ -60, 3, 0.15 ],
-                               	  [ 0,   3, 0.15 ] ] ]       
-    UseLitePhotons: false 
+    OpticalParamParameters:   [ [ [ 60, 3, 0.15],
+                                  [-60, 3, 0.15],
+                                  [  0, 3, 0.15] ] ]
+    UseLitePhotons: false
+} 
 
+icarus_message_services:
+{
+    debugModules: ["*"]
 
-  }
+    destinations: {
+        LogDebugFile: {
+            type:       "file"
+            filename:   "debug.log"
+            append:     false
+            threshold:  "DEBUG"
+            categories:{
+                default:{ limit: 0 }
+            }
+        }
+        LogStandardOut: {
+            type:       "cout"
+            threshold:  "WARNING"
+            categories:{
+                default:{ }
+            }
+        }
+        LogStandardError: {
+            type:       "cerr"
+            threshold:  "ERROR"
+            categories:{
+                default:{ }
+            }
+        }
+    }
+}
 
-  LArVoxelCalculator:
-  {
-    VoxelSizeX:     0.03    #in cm
-    VoxelSizeY:     0.03    #in cm
-    VoxelSizeZ:     0.03    #in cm
-    VoxelSizeT:     5000.0  #in ns
-    VoxelOffsetX:   0.0     #in cm
-    VoxelOffsetY:   0.0     #in cm
-    VoxelOffsetZ:   0.0     #in cm
-    VoxelOffsetT:   -2500.0 #in ns
-    VoxelEnergyCut: 1.e-6   #in GeV
-  }
+icarus_message_services_prod_debug:
+{
+    debugModules: ["*"]
 
-  #DatabaseUtil:                   @local::microboone_database
+    destinations: {
+        LogDebugFile:      @local::icarus_message_services.destinations.LogDebugFile
+        LogStandardOut:    @local::icarus_message_services.destinations.LogStandardOut
+        LogStandardError:  @local::icarus_message_services.destinations.LogStandardError
+    }
+}
 
-  DetectorClocksService:
-  {
-    service_provider: "DetectorClocksServiceStandard"
+icarus_message_services_prod_debug.destinations.LogDebugFile.categories:{
+    default: { }
+}
+
+icarus_message_services_interactive:
+{
+    debugModules: ["*"]
+
+    destinations: {
+        LogDebugFile:      @local::icarus_message_services.destinations.LogDebugFile
+        LogStandardOut:    @local::icarus_message_services.destinations.LogStandardOut
+        LogStandardError:  @local::icarus_message_services.destinations.LogStandardError
+    }
+}
+
+icarus_message_services_interactive.destinations.LogStandardOut.threshold:  "DEBUG"
+icarus_message_services_interactive.destinations.LogStandardOut.categories:{
+    default: { limit: -1 }
+}
+icarus_message_services_interactive.destinations.LogStandardError.threshold:  "DEBUG"
+icarus_message_services_interactive.destinations.LogStandardError.categories:{
+    default: { }
+}
+
+icarus_basic_services:
+{
+    scheduler:                           { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+
+    # Load the service that manages root files for histograms.
+    TFileService:                        { fileName: "test_hist_icarus.root" }
+
+    TimeTracker:                         {}
+    MemoryTracker:                       {}
+
+    RandomNumberGenerator:               {} #ART native random number generator
+    #FileCatalogMetadata:                @local::art_file_catalog_mc
+
+    ChannelStatus:                       @local::standard_channelstatus
+    PedestalRetrieval:                   @local::standard_siov_detpedestal_service
+
+    message:                             @local::icarus_message_services_interactive
+
+    ExptGeoHelperInterface:              @local::icarus_geometry_helper
+    Geometry:                            @local::icarus_geo
+    #LArSeedService:                     @local::random_seedservice #use provided seeed service
+    NuRandomService:                     @local::random_NuRandomService
+
+    DetectorPropertiesService:           @local::icarus_detproperties
+    LArPropertiesService:                @local::standard_properties
+
+    SignalShapingServiceICARUS:          @local::signalshapingservice_icarus
+
+    #assuming not much in optical here.
+    LArG4Parameters:
+    {
+        OpticalSimVerbosity:      0       #verbosity of optical simulation, soon to be depricated
+        ParticleKineticEnergyCut: 0.01e-3  #in GeV
+        StoreTrajectories:        true
+
+        VisualizationEnergyCut:   10.e-3  #in GeV
+        VisualizeNeutrals:        false
+
+        UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
+        EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
+                                    "Decay", "HadronElastic", "Stopping" ] #, "NeutronTrackingCut" ]
+        KeepEMShowerDaughters:    true   #save secondary, tertiary, etc particles in EM showers
+
+        LongitudinalDiffusion:    6.2e-9  #in cm^2/ns
+        TransverseDiffusion:      16.3e-9 #in cm^2/ns
+        ElectronClusterSize:      600.0   #number of ionization electrons to drift in a unit
+        MinNumberOfElCluster:     0       #minimum number of electron clusters
+        UseModBoxRecomb:          true  # use Modified Box recombination instead of Birks
+
+        CosmogenicK0Bias:         0     # 0 is off. N is the number of secondaries to produce.
+        CosmogenicXSMNBiasOn:     0     # 0 is off. 1 works. 2 still in development.
+        CosmogenicXSMNBiasFactor: 1     # Not more than 5-ish cuz of numerical instabilities.
+        DisableWireplanes:        false # if set true, charge drift simulation does not run - used for optical sim jobs
+    			                        # OR just when you don't wanna drift the e's.
+        SkipWireSignalInTPCs:     []    # put here TPC id's which should not receive ionization electrons -
+    			                        # used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
+
+        # The following parameters specify details of wireplanes or similar
+        #  areas with optically parameterized transmissions (Ben J 2013)
+
+        #  volume names to be associated with an optical wireplane model
+        OpticalParamVolumes:      ["volTPCPlaneVert_PV"]
+
+        #  specification of which model to use for each volume
+        OpticalParamModels:       ["OverlaidWireplanes"]
+
+        # orientation of each wireplane set
+        #  0 = Xdrift, 1 = Ydrift, 2 = Zdrift
+        OpticalParamOrientations: [0]
+
+        # This a set of floats which is specific to the particular model used.
+        # For overlaid wireplanes, should be a vector of vectors of
+        #                                 [plane angle, pitch/mm, wire diameter/mm]
+        #
+        # This format is chosen to allow for future extensions to the model
+        #  for, eg, DUNE wireplane development.
+        #
+        OpticalParamParameters:   [ [ [  60, 3, 0.15 ],
+                                      [ -60, 3, 0.15 ],
+                               	      [   0, 3, 0.15 ] ] ]
+        UseLitePhotons: false
+    }
+
+    LArVoxelCalculator:
+    {
+        VoxelSizeX:     0.03    #in cm
+        VoxelSizeY:     0.03    #in cm
+        VoxelSizeZ:     0.03    #in cm
+        VoxelSizeT:     5000.0  #in ns
+        VoxelOffsetX:   0.0     #in cm
+        VoxelOffsetY:   0.0     #in cm
+        VoxelOffsetZ:   0.0     #in cm
+        VoxelOffsetT:   -2500.0 #in ns
+        VoxelEnergyCut: 1.e-6   #in GeV
+    }
+
+    #DatabaseUtil:                   @local::microboone_database
+
+    DetectorClocksService:
+    {
+        service_provider: "DetectorClocksServiceStandard"
   
-    TrigModuleName:    ""
-    InheritClockConfig: true
-    G4RefTime:         0       # G4 time [us] where electronics clock counting start
-    TriggerOffsetTPC:  0       # Time offset for TPC readout start time w.r.t. trigger [us]
-    FramePeriod:       1638.4  # Frame period [us]; 4096 * 400 ns
-    ClockSpeedTPC:     2.5     # TPC clock speed in MHz;
-    ClockSpeedOptical: 500     # Optical clock speed in MHz
-    ClockSpeedTrigger: 16      # Trigger clock speed in MHz
-    ClockSpeedExternal:31.25   # External clock speed in MHz
-    DefaultTrigTime:   0       # Default trigger time in electronics clock [us]
-    DefaultBeamTime:   0       # Default beam gate time in electronics clock [us]
-  }
+        TrigModuleName:    ""
+        InheritClockConfig: true
+        G4RefTime:        -1.15e3  # G4 time [us] where electronics clock counting start
+        TriggerOffsetTPC: -0.340e3 # Time offset for TPC readout start time w.r.t. trigger [us]
+        FramePeriod:       1638.4  # Frame period [us]; 4096 * 400 ns
+        ClockSpeedTPC:     2.5     # TPC clock speed in MHz;
+        ClockSpeedOptical: 500     # Optical clock speed in MHz
+        ClockSpeedTrigger: 16      # Trigger clock speed in MHz
+        ClockSpeedExternal:31.25   # External clock speed in MHz
+        DefaultTrigTime:   1.15e3  # Default trigger time in electronics clock [us]
+        DefaultBeamTime:   1.15e3  # Default beam gate time in electronics clock [us]
+    }
 
-  MagneticField: @local::no_mag_larsoft
+    MagneticField: @local::no_mag_larsoft
 
-  SpaceCharge:
-  {
-    service_provider:       SpaceChargeServiceStandard
+    SpaceCharge:
+    {
+        service_provider:       SpaceChargeServiceStandard
 
-    EnableSimSpatialSCE:    false
-    EnableSimEfieldSCE:    false
-    EnableCorrSCE:   false
-    RepresentationType:     "Parametric"
-    InputFilename:          "SCEoffsets.root"
-  }
+        EnableSimSpatialSCE:    false
+        EnableSimEfieldSCE:     false
+        EnableCorrSCE:          false
+        RepresentationType:     "Parametric"
+        InputFilename:          "SCEoffsets.root"
+    }
   
- LArFFT:                         @local::standard_larfft             
-
- DatabaseUtil:	                 @local::standard_database           
-
- BackTrackerService:             @local::standard_backtrackerservice
- ParticleInventoryService:       @local::standard_particleinventoryservice       
-
+    LArFFT:                     @local::standard_larfft
+    DatabaseUtil:	            @local::standard_database
+    BackTrackerService:         @local::standard_backtrackerservice
+    ParticleInventoryService:   @local::standard_particleinventoryservice
 }
 
 END_PROLOG
