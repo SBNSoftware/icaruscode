@@ -1,0 +1,23 @@
+#include "detsimmodules_ICARUS.fcl"
+	
+BEGIN_PROLOG
+	
+icarus_simpmt:	
+{	
+ module_type:        "SimPMTIcarus"
+ InputModule:        "largeant"
+ PreTrigger:         200.0      #ns	
+ ReadoutWindow:      2000.0     #ns	
+ RiseTime:           3.8        #ns	
+ FallTime:           13.7       #ns	
+ MeanAmplitude:	     0.9        #in pC	
+ AmpNoise:	     1.0        #in ADC	
+ DarkNoiseRate:      1000.0     #in Hz	
+ TransitTime:        55.1       #ns	
+ ADC:                -11.1927   #charge to adc factor	
+ Baseline:           8000.0     #in ADC	
+ QE:                 0.07       #TPB coated PMT quantum efficiency	
+ Sampling:           0.5        #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency	
+}
+	
+END_PROLOG

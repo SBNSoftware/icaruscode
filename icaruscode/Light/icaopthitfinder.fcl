@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+	
+ica_opthitfinder:	
+{
+  module_type: 	"OpHitFinderIcarus"
+  InputModule:  "ophit"
+  HitThreshold: 50 
+}
+
+END_PROLOG
