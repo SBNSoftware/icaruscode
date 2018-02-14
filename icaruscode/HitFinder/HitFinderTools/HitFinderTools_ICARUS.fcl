@@ -1,0 +1,30 @@
+
+BEGIN_PROLOG
+
+hitfinderwaveformalgs:
+{
+    tool_type: WaveformAlgs
+}
+
+candhitfinder_derivative:
+{
+    tool_type:    CandHitDerivative
+    WaveformAlgs: @local::hitfinderwaveformalgs
+}
+
+candhitfinder_standard:
+{
+    tool_type: CandHitStandard
+}
+
+peakfitter_ICARUS:
+{
+    tool_type:     "PeakFitterICARUS"
+    MinWidth:      0.5
+    MaxWidthMult:  3.
+    PeakRangeFact: 2.
+    PeakAmpRange:  2.
+}
+
+
+END_PROLOG
