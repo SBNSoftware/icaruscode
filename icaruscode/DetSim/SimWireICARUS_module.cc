@@ -112,6 +112,10 @@ namespace detsim {
     std::vector<double> fTestCharge;
 
     int         fSample; // for histograms, -1 means no histos
+      
+    TH1F* fSimCharge;
+    TH2F* fSimChargeWire;
+
 
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
@@ -226,6 +230,10 @@ SimWireICARUS::~SimWireICARUS() {}
              }
          }
      }
+     
+     fSimCharge    = tfs->make<TH1F>("fSimCharge", "simulated charge", 150, 0, 1500);
+     fSimChargeWire = tfs->make<TH2F>("fSimChargeWire", "simulated charge", 5600,0.,5600.,500, 0, 1500);
+ 
      return;
 }
 
@@ -266,9 +274,6 @@ void SimWireICARUS::produce(art::Event& evt)
       mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
       << fNTimeSamples << " greater than FFTSize " << fNTicks << "!";
 
-    // TFileService
-    art::ServiceHandle<art::TFileService> tfs;
- 
     //TimeService
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
     // In case trigger simulation is run in the same job...
@@ -374,12 +379,16 @@ void SimWireICARUS::produce(art::Event& evt)
         // Use the desired noise tool to actually generate the noise on this wire
         fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor);
         
+        double gain=sss->GetASICGain(channel);
+        
         // If there is something on this wire, and it is not dead, then add the signal to the wire
         if(sc && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
         {
             std::fill(chargeWork.begin(), chargeWork.end(), 0.);
         
             // loop over the tdcs and grab the number of electrons for each
+            double totCharge=0;
+            
             for(int tick = 0; tick < (int)fNTicks; tick++)
             {
                 int tdc = ts->TPCTick2TDC(tick);
@@ -391,12 +400,33 @@ void SimWireICARUS::produce(art::Event& evt)
                 
                 if(charge==0) continue;
             
-                chargeWork.at(tick) += charge;
+                //std::cout << " charge " << charge << std::endl;
+                //std::cout << " gain " << gain << std::endl;
+
+                chargeWork.at(tick) += charge/gain;
+                totCharge+=charge/gain;
+                if(chargeWork.at(tick)>0.001&&widVec[0].Wire==3333&&widVec[0].Plane==2)
+                std::cout << " tick " << tick << " chargework " << chargeWork.at(tick) << std::endl;
+
             } // loop over tdcs
-        
+            if(widVec[0].Plane==2) {
+            fSimCharge->Fill(totCharge*2.5);
+            fSimChargeWire->Fill(widVec[0].Wire,totCharge*2.5);
+             //   std::cout << " wire " <<  widVec[0].Wire << " filling simcharge " << totCharge*2.5 << std::endl;
+            }
+            //std::cout << " totCharge " << totCharge << std::endl;
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
-            sss->Convolute(channel, chargeWork);
+           sss->Convolute(channel, chargeWork);
+            
+            double decCharge=0;
+            for(int tick = 0; tick < (int)fNTicks; tick++) {
+             decCharge+=chargeWork[tick];
+//if(chargeWork.at(tick)>0.001&&widVec[0].Wire==3333&&widVec[0].Plane==2)
+  //  std::cout << " tick " << tick << " chargework " << chargeWork.at(tick) << std::endl;
+            }
+           //std::cout << " decCharge ratio" << decCharge/totCharge << std::endl;
+
             
             // "Make" the ADC vector
             MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
@@ -404,6 +434,10 @@ void SimWireICARUS::produce(art::Event& evt)
         // "Make" an ADC vector with zero charge added
         else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
 
+      //  std::cout << " ped mean " << ped_mean << std::endl;
+        
+    
+        
         // add this digit to the collection;
         // adcvec is copied, not moved: in case of compression, adcvec will show
         // less data: e.g. if the uncompressed adcvec has 9600 items, after
@@ -429,7 +463,7 @@ void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> co
     for(unsigned int i = 0; i < fNTimeSamples; ++i)
     {
         float adcval = noisevec[i] + chargevec[i] + ped_mean;
-
+        //std::cout << " chargevec " << chargevec[i] << std::endl;
         //allow for ADC saturation
         if ( adcval > adcsaturation ) adcval = adcsaturation;
     

@@ -123,6 +123,7 @@ void util::SignalShapingServiceICARUS::init()
         
         // Get the normalization from the field response for the collection plane
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
+        std::cout << " field response integral " << integral << std::endl;
         double weight   = 1. / integral;
         
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
@@ -191,7 +192,7 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
 {
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS();
+    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS()*6242;
     
     return gain;
 }

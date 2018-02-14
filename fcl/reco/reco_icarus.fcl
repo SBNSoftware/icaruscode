@@ -10,6 +10,13 @@
 #include "hitfindermodules.fcl"
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
+#include "trackfindermodules_icarus.fcl"
+#include "clustermodules.fcl"
+#include "mctrutht0matching.fcl"
+
+
+#include "calorimetry_icarus.fcl"
+
 
 BEGIN_PROLOG
 
@@ -42,6 +49,19 @@ icarus_reco_producers:
 
   ### mc producers
   mchitfinder:                    @local::standard_mchitfinder
+
+linecluster:                   @local::standard_linecluster
+
+### PM algorithm
+pmAlgTracker:                   @local::icarus_pmalgtrackmaker
+
+### cluster3d trackkalman
+pmAlgKalmanTrack:               @local::icarus_pmalgkalmantrack
+
+calorimetry:                     @local::icarus_trackcalorimetry
+
+mcassociations:                 @local::standard_mctrutht0matching
+
 }
 
 icarus_reco_filters:
@@ -53,7 +73,13 @@ icarus_reco_filters:
 
 icarus_reco_signalprocessing: [     rawdigitfilter,
                                     recowire,
-                                    gaushit ]
+                                    gaushit,
+linecluster ,
+pmAlgTracker,
+pmAlgKalmanTrack,
+mcassociations
+]
+
 
 #icarus_reco_fuzzycluster: [        fuzzycluster ]
 
@@ -72,5 +98,13 @@ icarus_reco_producers.gaushit.AreaNorms:                                [  1.0, 
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
+icarus_reco_producers.gaushit.ThetaAngle:                               0
+
+icarus_reco_producers.mcassociations.TrackModuleLabel:                               "PmAlgTracker"
+icarus_reco_producers.mcassociations.SpacePointModuleLabel:                         "PmAlgTracker"
+
+icarus_reco_producers.rawdigitfilter.ProcessNoise:                      false
+icarus_reco_producers.rawdigitfilter.FFTNoise:                          false
+icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_derivative
 
 END_PROLOG

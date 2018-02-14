@@ -102,8 +102,11 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     // Now ready to set the response vector
     for(size_t bin = 0; bin <= size_t(numBins2); bin++)
     {
+        std::cout << " sampling rate " << samplingRate << std::endl;
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = 500. * bin / (samplingRate * numBins2);
+        std::cout << " frequency " << freq << std::endl;
+
         double f = fFunction->Eval(freq);
         
         fFilterVec.push_back(TComplex(f, 0.));

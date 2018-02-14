@@ -7,8 +7,10 @@ FieldResponseTool:
     Plane:                    0
     SignalType:               0
     FieldResponseFileName:    "t600_response"
+#FieldResponseFileName:    "fresponseDelta"
     FieldResponseFileVersion: "v0.0"
     FieldResponseHistName:    "t600_response"
+#FieldResponseHistName:    "fresp"
     FieldResponseAmplitude:   1.
     TimeCorrectionFactor:     1000. 
 }
@@ -48,7 +50,7 @@ signalshapingservice_icarus:
 {
     PlaneForNormalization:           2
     PrintResponses:                  "false"
-    DeconNorm:                       50. #200.
+    DeconNorm:                       1.
     NoiseFactVec:                    [ [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ] ]
 #    NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
     StoreHistograms:                 true

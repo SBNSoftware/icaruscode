@@ -91,8 +91,8 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
         fElectronicsResponseVec.at(timeIdx) = time / fASICShapingTime * exp(-time / fASICShapingTime);
         
         if(fElectronicsResponseVec.at(timeIdx)>0.001)
-         std::cout << " timeIdx " << timeIdx << " time " << time << " response " << fElectronicsResponseVec.at(timeIdx) << std::endl;
-       // if(timeIdx==0)
+        std::cout << " timeIdx " << timeIdx << " time " << time << " response " << fElectronicsResponseVec.at(timeIdx) << std::endl;
+        //if(timeIdx==0)
         //fElectronicsResponseVec.at(timeIdx) = 1./binWidth;
         //else
         //fElectronicsResponseVec.at(timeIdx) = 0;
@@ -116,7 +116,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // Therefore 0.027*6242 electrons/(ADC*us)
     
     for (auto& element : fElectronicsResponseVec)
-        element /= (fFCperADCMicroS * 6242. * fASICShapingTime);
+        element /= (fASICShapingTime);
     
     float respIntegral=0;
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
