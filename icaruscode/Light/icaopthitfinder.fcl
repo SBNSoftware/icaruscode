@@ -1,10 +1,13 @@
 BEGIN_PROLOG
 	
-ica_opthitfinder:	
+icarus_opthitfinder:	
 {
-  module_type: 	"OpHitFinderIcarus"
-  InputModule:  "ophit"
-  HitThreshold: 50 
+  module_type: 	"OpHitFinderICARUS"
+  InputModule: "opdet"
+  HitThreshold:   0.2    # PE
+  SPEArea:        1330   # If AreaToPE is true, this number is 
+                         # used as single PE area (in ADC counts)
+  BaselineSample: 10
 }
 
 END_PROLOG

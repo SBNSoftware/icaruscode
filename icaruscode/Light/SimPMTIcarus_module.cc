@@ -98,6 +98,8 @@ private:
   double fBaseline; //waveform baseline
   double fAmpNoise; //amplitude of gaussian noise
   double fDarkNoiseRate; //in Hz
+  double fSaturation; //equivalent to the number of p.e. that saturates the electronic signal	
+
   
   void AddNoise(std::vector<double>& wave); //add noise to baseline
   void AddDarkNoise(std::vector<double>& wave); //add noise to baseline
@@ -124,6 +126,7 @@ SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
   fDarkNoiseRate   = p.get< double >("DarkNoiseRate"); //in Hz
   fReadoutWindow   = p.get< double >("ReadoutWindow"); //in ns
   fPreTrigger      = p.get< double >("PreTrigger"   ); //in ns
+  fSaturation      = p.get< double >("Saturation"   ); //in number of p.e.
   double temp_fQE  = p.get< double >("QE"           ); //PMT quantum efficiency
 
 //Correction due to scalling factor applied during simulation if any
@@ -187,6 +190,11 @@ void SimPMTIcarus::produce(art::Event & e)
 
   int ch;
   double t_min = 1e15;
+  double tadd; //to add pre trigger considering there is electron transit time (5 is the rise time)	
+  double ttop = 1.272*fRiseTime; //time it takes to go from 10% of MaxAmplitude to MaxAmplitude	
+  if(fPreTrigger<(fTransitTime-ttop)) tadd=(fTransitTime-ttop-fPreTrigger);
+  else tadd=(fPreTrigger-fTransitTime+ttop);
+
 
   for (auto const& simphotons : (*pmtHandle)){
 	ch = simphotons.OpChannel();
@@ -198,11 +206,17 @@ void SimPMTIcarus::produce(art::Event & e)
 	}
 
 	for(size_t i=0; i<simphotons.size(); i++){
-	  if((gRandom->Uniform(1.0))<(fQE)) AddSPE((fPreTrigger+simphotons[i].Time-t_min)*fSampling,waves[ch]);
+	  if((gRandom->Uniform(1.0))<(fQE)) AddSPE((tadd+simphotons[i].Time-t_min)*fSampling,waves[ch]);
 	}
 
 	if(fAmpNoise>0.0) AddNoise(waves[ch]);
 	if (fDarkNoiseRate > 0.0) AddDarkNoise(waves[ch]);
+
+        for(size_t k=0; k<fNsamples; k++){ //Implementing saturation effects
+                if(waves[ch][k]<(fBaseline+fSaturation*fADC*fMeanAmplitude))	
+                  waves[ch][k]=fBaseline+fSaturation*fADC*fMeanAmplitude;          	
+                  //std::cout << waves[ch][k] << std::endl;	
+            }
 
 	//  for(size_t k=0; k<fNsamples; k++)std::cout << waves[ch][k] << std::endl;
 	waveforms[ch] = std::vector<short unsigned int> (waves[ch].begin(), waves[ch].end());
