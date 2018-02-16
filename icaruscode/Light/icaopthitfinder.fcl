@@ -3,11 +3,11 @@ BEGIN_PROLOG
 icarus_opthitfinder:	
 {
   module_type: 	"OpHitFinderICARUS"
-  InputModule: "opdet"
-  HitThreshold:   0.2    # PE
-  SPEArea:        1330   # If AreaToPE is true, this number is 
-                         # used as single PE area (in ADC counts)
-  BaselineSample: 10
+  InputModule:  "opdaq"
+  HitThreshold:   1                # PE
+  SPEArea:        11.1927            # If AreaToPE is true, this number is 
+                                     # used as single PE area (in ADC counts)
+  BaselineSample: 50
 }
 
 END_PROLOG
