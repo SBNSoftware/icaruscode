@@ -91,10 +91,12 @@ icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowir
 icarus_reco_producers.gaushit.MinSig:                                   [  5.,   5.,   5.  ]
 icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.MaxMultiHit:                              4
+icarus_reco_producers.gaushit.MaxMultiHit:                              20
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
 icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_derivative
+icarus_reco_producers.gaushit.LongMaxHits:                              [25, 25, 25]
+icarus_reco_producers.gaushit.LongPulseWidth:                           [10, 10, 10]
 
 icarus_reco_producers.mcassociations.TrackModuleLabel:                  "pmAlgTracker"
 icarus_reco_producers.mcassociations.HitModuleLabel:                    "gaushit"
