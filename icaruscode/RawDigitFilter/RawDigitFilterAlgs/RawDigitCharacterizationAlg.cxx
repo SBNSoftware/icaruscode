@@ -4,9 +4,6 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include <cmath>
-#include <algorithm>
-
 namespace caldata
 {
 //----------------------------------------------------------------------------
@@ -198,11 +195,10 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
     pedCorVal = truncMean - pedestal;
     
     // Determine the range of ADC values on this wire
-    short minVal = *std::min_element(rawWaveform.begin(), rawWaveform.end());
-    short maxVal = *std::max_element(rawWaveform.begin(), rawWaveform.end());
+    std::pair<RawDigitVector::const_iterator,RawDigitVector::const_iterator> minMaxItrPair = std::minmax_element(rawWaveform.begin(),rawWaveform.end());
     
-    minMax = std::min(maxVal - minVal + 1, 199);  // for the purposes of histogramming
-    
+    minMax = std::min(*minMaxItrPair.second - *minMaxItrPair.first + 1, 199);  // for the purposes of histogramming
+
     // We also want mean, median, rms, etc., for all ticks on the waveform
     std::vector<short> localTimeVec = rawWaveform;
     
