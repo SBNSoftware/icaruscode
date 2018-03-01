@@ -6,8 +6,8 @@ icarus_geo:
  # NOTE: When changing these fields, the corresponding fields in microboone_crt_geo.fcl
  #       will also need to be changed.
  Name:            "icarus"
- GDML:            "test_final.gdml"
- ROOT:            "test_final.gdml"
+ GDML:            "test_crt_01feb2018.gdml"
+ ROOT:            "test_crt_01feb2018.gdml"
  DisableWiresInG4: true                           # Whether to use wirefree geometry in LArG4
                                                   #  As per Brians request, wire free file is specified by
                                                   #  [GDMLFileName]_nowires.gdml
@@ -18,9 +18,22 @@ icarus_geometry_helper:
   service_provider: IcarusGeometryHelper
 }
 
+icarus_auxdetgeo:
+{
+  @table::icarus_geo
+  SortingParameters: {}
+}
+
+icarus_auxdetgeometry_helper:
+{
+ service_provider: "icaruscode/CRT/CRTGeometryHelper"
+}
+
 icarus_geometry_services: {
   Geometry:               @local::icarus_geo
   ExptGeoHelperInterface: @local::icarus_geometry_helper
+  AuxDetGeometry:                  @local::icarus_auxdetgeo
+  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
 }
 
 END_PROLOG
