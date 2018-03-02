@@ -31,12 +31,12 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-larsoft         v06_69_01
-icarusutil      v06_69_01
+larsoft         v06_70_00
+icarusutil      v06_70_00
 icarus_data     v06_67_01
 genie_xsec      v2_12_8
 
-cetbuildtools	v6_01_01	-	only_for_build
+cetbuildtools	v7_00_03	-	only_for_build
 end_product_list
 
 
