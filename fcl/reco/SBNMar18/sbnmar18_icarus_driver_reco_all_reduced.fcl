@@ -1,0 +1,8 @@
+#include "sbnmar18_icarus_driver_reco_all.fcl"
+
+physics.reco.rawdigitfilter.TruncateChannels:   true
+physics.reco.rawdigitfilter.NRMSChannelReject:  [5.,5.,5.]
+
+outputs.out1.outputCommands: ["keep *_*_*_*",
+#                              "drop sim::SimChannels_*_*_*",
+                              "drop raw::RawDigits_daq_*_*"]
