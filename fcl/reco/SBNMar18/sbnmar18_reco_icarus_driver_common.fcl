@@ -2,7 +2,7 @@
 ##  Shared art job configuartions for ICARUS reco
 ##
 #include "services_icarus.fcl"
-#include "sbnworkshop_reco_icarus.fcl"
+#include "sbnmar18_reco_icarus.fcl"
 
 services:
 {

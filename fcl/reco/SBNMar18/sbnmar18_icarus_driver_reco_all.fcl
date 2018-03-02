@@ -1,4 +1,4 @@
-#include "sbnworkshop_reco_icarus_driver_common.fcl"
+#include "sbnmar18_reco_icarus_driver_common.fcl"
 
 process_name: McRecoAll
 
