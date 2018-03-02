@@ -92,19 +92,18 @@ icarus_reco_producers.recowire.Threshold:                               [0, 0, 0
 icarus_reco_producers.recowire.NumSigma:                                [3, 2, 3]
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                       "recowire"
-icarus_reco_producers.gaushit.MinSig:                                   [ 9.,  20.,   6.  ]
+icarus_reco_producers.gaushit.MinSig:                                   [ 9.,  20.,   7.  ]
 icarus_reco_producers.gaushit.MinWidth:                                 [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.AreaNorms:                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushit.MaxMultiHit:                              4
 icarus_reco_producers.gaushit.TryNplus1Fits:                            false
 icarus_reco_producers.gaushit.Chi2NDF:                                  50.
-icarus_reco_producers.gaushit.ThetaAngle:                               0
+icarus_reco_producers.gaushit.ThetaAngle:                               20
 
 icarus_reco_producers.mcassociations.TrackModuleLabel:                               "PmAlgTracker"
 icarus_reco_producers.mcassociations.SpacePointModuleLabel:                         "PmAlgTracker"
 
 icarus_reco_producers.rawdigitfilter.ProcessNoise:                      false
 icarus_reco_producers.rawdigitfilter.FFTNoise:                          false
-icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_derivative
-
+icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_standard
 END_PROLOG
