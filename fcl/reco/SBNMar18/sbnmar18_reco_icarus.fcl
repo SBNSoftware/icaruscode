@@ -10,6 +10,7 @@
 #include "hitfindermodules.fcl"
 #include "cluster_icarus.fcl"
 #include "trackfindermodules_icarus.fcl"
+#include "pandoramodules_icarus.fcl"
 
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
@@ -38,8 +39,13 @@ icarus_reco_producers:
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder
 
-  ### linecluster
+  ### trajcluster
   trajcluster:                    @local::icarus_trajcluster
+
+  ### pandora
+  pandora:                        @local::icarus_pandora
+  pandoraTrack:                   @local::icarus_pandoraTrackCreation
+  pandoraShower:                  @local::icarus_pandoraShowerCreation
 
   ### PM algorithm
   pmAlgTracker:                   @local::icarus_pmalgtrackmaker
@@ -68,6 +74,10 @@ icarus_reco_trajcluster: [          trajcluster  ]
 icarus_reco_pmAlgTracker: [         pmAlgTracker,
                                     pmAlgKalmanTrack ]
 
+icarus_reco_pandora: [              pandora,
+                                    pandoraTrack,
+                                    pandoraShower]
+
 icarus_reco_mcreco:       [         mcassociations ]
 
 icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
@@ -95,6 +105,10 @@ icarus_reco_producers.gaushit.Chi2NDF:                                  50.
 icarus_reco_producers.gaushit.CandidateHits:                            @local::candhitfinder_derivative
 icarus_reco_producers.gaushit.LongMaxHits:                              [25, 25, 25]
 icarus_reco_producers.gaushit.LongPulseWidth:                           [10, 10, 10]
+
+icarus_reco_producers.pandora.HitFinderModuleLabel:                     "gaushit"
+icarus_reco_producers.pandoraTrack.PFParticleLabel:                     "pandora"
+icarus_reco_producers.pandoraShower.PFParticleLabel:                    "pandora"
 
 icarus_reco_producers.mcassociations.TrackModuleLabel:                  "pmAlgTracker"
 icarus_reco_producers.mcassociations.HitModuleLabel:                    "gaushit"
