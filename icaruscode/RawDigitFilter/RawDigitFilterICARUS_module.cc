@@ -196,7 +196,6 @@ void RawDigitFilterICARUS::beginJob()
 ///
 void RawDigitFilterICARUS::produce(art::Event & event)
 {
-    std::cout << " rawdigitfilter produce " << std::endl;
     ++fNumEvent;
     
     // Agreed convention is to ALWAYS output to the event store so get a pointer to our collection
@@ -349,16 +348,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                                                    minMaxWireVec[wireIdx],
                                                    neighborRatioWireVec[wireIdx],
                                                    pedCorWireVec[wireIdx]);
-            
-            if(view==2) {
-                for(int js=0;js<4096;js++)
-                    area+=(rawadc[js]-400);
-                
-                //std::cout << "  wire " << wire << " rawadc0 " << rawadc[0] << std::endl;
-                
-                if(area>0)
-                    std::cout << " rawdigitfilter wire " << wire << " area " << area << std::endl;
-            }
             
             // This allows the module to be used simply to truncate waveforms with no noise processing
             if (!fDoCorrelatedNoise)

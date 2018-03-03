@@ -7,11 +7,10 @@ FieldResponseTool:
     Plane:                    0
     SignalType:               0
 #    FieldResponseFileName:    "t600_response"
-#FieldResponseFileName:    "fresponseDelta"
-FieldResponseFileName:    "fresponseICARUS"
+    FieldResponseFileName:    "fresponseICARUS"
     FieldResponseFileVersion: "v0.0"
 #    FieldResponseHistName:    "t600_response"
-FieldResponseHistName:    "fresp"
+    FieldResponseHistName:    "fresp"
     FieldResponseAmplitude:   1.
     TimeCorrectionFactor:     1000. 
 }

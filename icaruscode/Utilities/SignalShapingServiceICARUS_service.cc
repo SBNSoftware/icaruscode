@@ -44,8 +44,6 @@ util::SignalShapingServiceICARUS::SignalShapingServiceICARUS(const fhicl::Parame
 // Destructor
 util::SignalShapingServiceICARUS::~SignalShapingServiceICARUS()
 {
-    std::cout << "In SignalShapingServiceICARUS destructor" << std::endl;
-
     return;
 }
 
@@ -116,14 +114,12 @@ void util::SignalShapingServiceICARUS::init()
         art::ServiceHandle<util::LArFFT> fFFT;
         std::string options = fFFT->FFTOptions();
         int fftsize = (int) fFFT->FFTSize();
-        std::cout << " fftsize " << fftsize << std::endl;
+
         // Calculate field and electronics response functions.
-        
         std::string kset[2] = { "Convolution ", "Deconvolution "};
         
         // Get the normalization from the field response for the collection plane
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
-        std::cout << " field response integral " << integral << std::endl;
         double weight   = 1. / integral;
         
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
@@ -187,7 +183,7 @@ void util::SignalShapingServiceICARUS::SetDecon(size_t fftsize, size_t channel)
     }
 }
 
-//-----Give Gain Settings to SimWire-----//jyoti
+//-----Give Gain Settings to SimWire-----
 double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) const
 {
     art::ServiceHandle<geo::Geometry> geom;
@@ -197,7 +193,7 @@ double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) cons
     return gain;
 }
 
-//-----Give Shaping time to SimWire-----//jyoti
+//-----Give Shaping time to SimWire-----
 double util::SignalShapingServiceICARUS::GetShapingTime(unsigned int  channel) const
 {
     art::ServiceHandle<geo::Geometry> geom;
