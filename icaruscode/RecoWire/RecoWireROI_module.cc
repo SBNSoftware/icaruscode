@@ -50,6 +50,9 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+
 ///creation of calibrated signals on wires
 namespace recowire {
 
@@ -267,6 +270,8 @@ void RecoWireROI::produce(art::Event& evt)
     
     raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
 
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double      samplingRate = detprop->SamplingRate()/1000.;
     double deconNorm = fSignalServices.GetDeconNorm();
 
     // We'll need to set the transform size once we get the waveform and know its size
@@ -461,7 +466,9 @@ void RecoWireROI::produce(art::Event& evt)
                 holder.resize(roiLen);
                 
                 std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roi.second, holder.begin());
-                std::transform(holder.begin(),holder.end(),holder.begin(),[deconNorm](float& deconVal){return deconVal/deconNorm;});
+                float dnorm=samplingRate*deconNorm;
+               // std::cout << " dnorm " << dnorm << std::endl;
+                std::transform(holder.begin(),holder.end(),holder.begin(),[dnorm](float& deconVal){return deconVal/dnorm;});
 
                 // Now we do the baseline determination (and I'm left wondering if there is a better way using the entire waveform?)
                 bool  baseSet(false);

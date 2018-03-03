@@ -6,9 +6,12 @@ FieldResponseTool:
     tool_type: FieldResponse
     Plane:                    0
     SignalType:               0
-    FieldResponseFileName:    "t600_response"
+#    FieldResponseFileName:    "t600_response"
+#FieldResponseFileName:    "fresponseDelta"
+FieldResponseFileName:    "fresponseICARUS"
     FieldResponseFileVersion: "v0.0"
-    FieldResponseHistName:    "t600_response"
+#    FieldResponseHistName:    "t600_response"
+FieldResponseHistName:    "fresp"
     FieldResponseAmplitude:   1.
     TimeCorrectionFactor:     1000. 
 }
@@ -27,8 +30,8 @@ FilterTool:
     tool_type: Filter
     Plane:                       0
     FilterParametersVec:         [1., 0., 0.1 ]
-    FilterFunction:              "(x>0.0)*gaus"
-#    FilterFunction:              "1."
+#    FilterFunction:              "(x>0.0)*gaus"
+    FilterFunction:              "1."
     FilterWidthCorrectionFactor: 1.0
 }
 
@@ -48,7 +51,7 @@ signalshapingservice_icarus:
 {
     PlaneForNormalization:           2
     PrintResponses:                  "false"
-    DeconNorm:                       50. #200.
+    DeconNorm:                       1.
     NoiseFactVec:                    [ [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ], [ 1.1, 1.1, 1.1, 1.1 ] ]
 #    NoiseFactVec:                    [ [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ], [ 0., 0., 0., 0. ] ]
     StoreHistograms:                 true

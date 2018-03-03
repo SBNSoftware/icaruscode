@@ -227,8 +227,8 @@ namespace hit {
       fColRMS = p.get< double  >("ColRMS");
       fThetaAngle=p.get< double  >("ThetaAngle");
       
-      //fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(p.get<fhicl::ParameterSet>("CandidateHits"));
-      //fPeakFitterTool = art::make_tool<reco_tool::IPeakFitter>(p.get<fhicl::ParameterSet>("PeakFitter"));
+      fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(p.get<fhicl::ParameterSet>("CandidateHits"));
+      fPeakFitterTool = art::make_tool<reco_tool::IPeakFitter>(p.get<fhicl::ParameterSet>("PeakFitter"));
       
     mf::LogInfo("ICARUSHitFinder_module") << "fDigitModuleLabel: " << fDigitModuleLabel << std::endl;
   }
@@ -276,7 +276,7 @@ namespace hit {
   //-------------------------------------------------
   void ICARUSHitFinder::produce(art::Event& evt)
   {      //0
-      std::ofstream output("areaNoFit.out");
+      
       std::cout << " ICARUSHitFinder produce " << std::endl;
       
     //GET THE GEOMETRY.
@@ -499,7 +499,6 @@ namespace hit {
           else if(plane == 1) width=fInd2Width;
           else if(plane == 2) width=fColWidth;
 
-        //  std::cout << " col width " << fColWidth << std::endl;
 
           int iw=iwire;
           unsigned int i;
@@ -608,10 +607,11 @@ namespace hit {
                                       h.iniDrift=begin;
                                       //		      h.finDrift=i+iniSamp;
                                       h.finDrift=localminidx;
-                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
+                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
                                         std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
-                                     // expandHit(h,holder,hits);
-                                      
+                                      expandHit(h,holder,hits);
+                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
+                                        std::cout << "  after expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                                       if((h.finDrift-h.iDrift)>=fall && h.finDrift-h.iniDrift>width)
                                       { //6
                                           h.iwindow=h.iniDrift;
@@ -648,10 +648,11 @@ namespace hit {
                                       h.fwindow=h.finDrift;
                                    //if(iwire==4526&&plane==1&&cryostat==0&&tpc==0)
                                     //std::cout << " adding hit case 2, tick " << i << std::endl;
-                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
+                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
                                       std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
-                                      //expandHit(h,holder,hits);
-                                    
+                                      expandHit(h,holder,hits);
+                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
+                                      std::cout << "  after expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                                       hits.push_back(h);
                                           //InsertHit(&h);
                                       //  if ( typ != BasicData::ISBASICPLANE_PMT)
@@ -686,10 +687,11 @@ namespace hit {
                           
                           if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
                           {		    
-                              if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
+                              if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
                               std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
-                             // expandHit(h,holder,hits);
-                     
+                              expandHit(h,holder,hits);
+                              if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
+                                std::cout << "  after expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                               h.iwindow=h.iniDrift;
                               h.fwindow=h.finDrift;
                               //std::cout << " adding hit case 3 " << i << std::endl;
@@ -725,17 +727,10 @@ namespace hit {
           int nghI2=0;
           int nghI1=0;
           
-         if(cryostat==0&&tpc==0&&plane==2)
-             std::cout << "  Wire " << iwire << " numhits " << numHits << std::endl;
-          for (int i = 0; i < numHits; i++) {
-           expandHit(hits[i],holder,hits);
-              hits[i].iwindow=hits[i].iniDrift;
-              hits[i].fwindow=hits[i].finDrift;
-          }
+       //  if(cryostat==0&&tpc==0&&plane==2)
+         //    std::cout << "  Wire " << iwire << " numhits " << numHits << std::endl;
       for (int i = 0; i < numHits; i++)
       {
-          if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-              std::cout << "  after expand ini " << hits[i].iniDrift << " fin " << hits[i].finDrift << std::endl;
           totSig=0;
           intSig=0;
          // if(cryostat!=0||tpc!=0) continue;
@@ -752,7 +747,6 @@ namespace hit {
         chargeErr     = -1;
           
         computeBestLocalMean(hits[i],holder,hits);
-        //hits[i].localmean=0;
           
        // totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
           for(unsigned int js=start;js<=end;js++)
@@ -760,11 +754,11 @@ namespace hit {
           if(!i)
           for(unsigned int js=0;js<=4095;js++)
            intSig+=(holder[js]-hits[i].localmean);
-          if(plane==2&&hits[i].iWire==4451)
-              for(unsigned int js=0;js<=4095;js++)
-                  std::cout << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
-         // if(cryostat==0&&tpc==0&&plane==2&&hits[i].localmean!=0)
-           //std::cout << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
+        //  if(plane==2&&hits[i].iWire==2696)
+          //    for(unsigned int js=0;js<=4095;js++)
+            //      std::cout << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
+         // if(cryostat==0&&tpc==0&&plane==2)
+         // std::cout << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
 
      
           
@@ -833,8 +827,8 @@ namespace hit {
               wCharge[hits[i].iWire]+=totSig;
               wInt[hits[i].iWire]+=intSig;
 
-              if(intSig<0.&&hits[i].iWire==4451)
-              std::cout << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
+           //   if(intSig<0.)
+             // std::cout << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
           }
 
           if(plane==0) nhitsI1++;
@@ -851,14 +845,11 @@ namespace hit {
           
         ++hitIndex;
       } //end loop on found hits
-          if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
-           std::cout << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
+         // if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
+          // std::cout << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
           if(plane==2&&cryostat==0&&tpc==0)
            if(wCharge[iwire]>0)
            fAreaC->Fill(wCharge[iwire]);
-          if(plane==2&&cryostat==0&&tpc==0)
-              if(wCharge[iwire]>0)
-                  output << iwire << " " <<wCharge[iwire] << std::endl;
           if(plane==2&&cryostat==0&&tpc==0)
           if(wInt[iwire]>0)
           fIntegralC->Fill(wInt[iwire]);
@@ -941,7 +932,7 @@ namespace hit {
                     if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]>0) upordown++;
                     else if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]<0) upordown--;
             } }
-           // std::cout << " checking " << first << " upordown " << upordown << std::endl;
+            //std::cout << " checking " << first << " upordown " << upordown << std::endl;
             if(upordown>cut)
                 first--;
             else
@@ -961,9 +952,8 @@ namespace hit {
             for(hiter=hlist.begin();hiter!=hlist.end();hiter++)
             {
                 ICARUSHit h2=*hiter;
-                if(last==h2.iniDrift)
+                if(first==h2.iniDrift)
                 found=1;
-                std::cout << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
             }
             
             if(found==1) break;

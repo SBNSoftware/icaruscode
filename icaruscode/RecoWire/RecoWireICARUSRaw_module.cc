@@ -164,6 +164,8 @@ namespace recowireraw{
       
       for(bin = 0; bin < dataSize; ++bin) 
 	    holder[bin]=(rawadc[bin]-digitVec->GetPedestal());
+        
+       // std::cout << " pedestal " << digitVec->GetPedestal() << std::endl;
    
         if(wid.Plane==1) {
             float max_raw=0;

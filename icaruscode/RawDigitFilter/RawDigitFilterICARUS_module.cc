@@ -196,6 +196,7 @@ void RawDigitFilterICARUS::beginJob()
 ///
 void RawDigitFilterICARUS::produce(art::Event & event)
 {
+    std::cout << " rawdigitfilter produce " << std::endl;
     ++fNumEvent;
     
     // Agreed convention is to ALWAYS output to the event store so get a pointer to our collection
@@ -247,6 +248,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
         // Commence looping over raw digits
         for(const auto& rawDigit : rawDigitVec)
         {
+            double area(0);
             raw::ChannelID_t channel = rawDigit->Channel();
         
             bool goodChan(true);
@@ -348,6 +350,16 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                                                    neighborRatioWireVec[wireIdx],
                                                    pedCorWireVec[wireIdx]);
             
+            if(view==2) {
+                for(int js=0;js<4096;js++)
+                    area+=(rawadc[js]-400);
+                
+                //std::cout << "  wire " << wire << " rawadc0 " << rawadc[0] << std::endl;
+                
+                if(area>0)
+                    std::cout << " rawdigitfilter wire " << wire << " area " << area << std::endl;
+            }
+            
             // This allows the module to be used simply to truncate waveforms with no noise processing
             if (!fDoCorrelatedNoise)
             {
@@ -362,7 +374,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 std::transform(rawadc.begin(),rawadc.end(),pedCorrectedVec.begin(),std::bind2nd(std::minus<short>(),pedCorWireVec[wireIdx]));
                 
                 saveRawDigits(filteredRawDigit, channel, pedCorrectedVec, truncMeanWireVec[wireIdx], truncRmsWireVec[wireIdx]);
-                
+             
                 continue;
             }
             
@@ -383,6 +395,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 continue;
             }
             
+        
             // Add this wire to the map and try to do some classification here
             if (!fCharacterizationAlg.classifyRawDigitVec(rawadc, plane, wire, truncRmsWireVec[wireIdx], minMaxWireVec[wireIdx], meanWireVec[wireIdx],skewnessWireVec[wireIdx], neighborRatioWireVec[wireIdx], groupToDigitIdxPairMap))
             {
@@ -428,6 +441,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                     caldata::RawDigitVector& rawDataVec = rawDataWireTimeVec[locWireIdx];
                     
                     fCharacterizationAlg.getTruncatedRMS(rawDataVec, deltaPed, rmsVal);
+                    
                     
                     // The ultra high noise channels are simply zapped
                     if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))

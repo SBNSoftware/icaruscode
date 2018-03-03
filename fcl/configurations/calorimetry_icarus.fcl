@@ -55,4 +55,10 @@ icarus_trackcalorimetryalg.CalorimetryAlg: @local::icarus_calorimetryalgmc
 icarus_trackcalorimetry:                     @local::standard_trackcalorimetry
 icarus_trackcalorimetry.TrackCalorimetryAlg: @local::icarus_trackcalorimetryalg
 
+icarus_trackcalorimetry.TrackModuleLabel: "pmAlgTracker"
+icarus_trackcalorimetry.SpacePointModuleLabel: "pmAlgTracker"
+icarus_trackcalorimetry.HitModuleLabel: "gaushit"
+
+
+
 END_PROLOG

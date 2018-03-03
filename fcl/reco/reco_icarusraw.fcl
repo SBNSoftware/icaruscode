@@ -85,5 +85,7 @@ icarus_reco_producers.gaushit.Chi2NDF:                                  50.
 icarus_reco_producers.icarushit.CalDataModuleLabel:                       "recowireraw"
 icarus_reco_producers.linecluster.HitFinderModuleLabel:                       "icarushit"
 
+icarus_reco_producers.rawdigitfilter.ProcessNoise:                      false
+icarus_reco_producers.rawdigitfilter.FFTNoise:                          false
 
 END_PROLOG
