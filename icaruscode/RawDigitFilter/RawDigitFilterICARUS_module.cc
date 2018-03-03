@@ -247,7 +247,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
         // Commence looping over raw digits
         for(const auto& rawDigit : rawDigitVec)
         {
-            double area(0);
             raw::ChannelID_t channel = rawDigit->Channel();
         
             bool goodChan(true);

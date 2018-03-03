@@ -113,7 +113,6 @@ void util::SignalShapingServiceICARUS::init()
         // re-initialize the FFT service for the request size
         art::ServiceHandle<util::LArFFT> fFFT;
         std::string options = fFFT->FFTOptions();
-        int fftsize = (int) fFFT->FFTSize();
 
         // Calculate field and electronics response functions.
         std::string kset[2] = { "Convolution ", "Deconvolution "};
