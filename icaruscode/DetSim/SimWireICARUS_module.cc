@@ -349,7 +349,7 @@ void SimWireICARUS::produce(art::Event& evt)
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
 
         size_t                   plane  = widVec[0].Plane;
-        size_t                   wire  = widVec[0].Wire;
+//        size_t                   wire  = widVec[0].Wire;
 
         //Get pedestal with random gaussian variation
         CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
