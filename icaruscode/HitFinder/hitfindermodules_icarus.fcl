@@ -40,8 +40,8 @@ ActiveInd1:         1.
 ActiveInd2:         1.
 ActiveCol:          1.
 ThetaAngle:         0
-PeakFitter:           @local::peakfitter_ICARUS
-CandidateHits:        @local::candhitfinder_ICARUS
+#PeakFitter:           @local::peakfitter_ICARUS
+#CandidateHits:        @local::candhitfinder_ICARUS
 
 }
 
