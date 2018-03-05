@@ -9,6 +9,7 @@ art_make(
 	                ${FHICLCPP}
 			${CETLIB}
 			${ROOT_BASIC_LIB_LIST}
+			${Boost_SYSTEM_LIBRARY}
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 	                lardata_Utilities
@@ -38,6 +39,7 @@ art_make(
                         ${ROOT_GDML}
 			${ROOT_FFTW}
 			${ROOT_BASIC_LIB_LIST}
+			${Boost_SYSTEM_LIBRARY}
         )
 
 install_headers()
