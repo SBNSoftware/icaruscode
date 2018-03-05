@@ -7,9 +7,13 @@
 #include "photpropservices.fcl"
 #include "opticaldetectormodules.fcl"
 #include "opticaldetectorservices.fcl"
+#include "backtrackerservice.fcl"
+
+#include "opdetsim_pmt_icarus.fcl"
+#include "wvfana.fcl"
+#include "icaopthitfinder.fcl"
 
 #include "mcreco.fcl"
-
 
 
 process_name: SinglesGen
@@ -21,20 +25,17 @@ services:
   TimeTracker:  {}
   RandomNumberGenerator: {} #ART native random number generator
                 @table::icarus_simulation_services
-  # BackTracker:  @local::standard_backtracker # defined in backtracker.fcl
 
   OpDetResponseInterface:  @local::standard_opdetresponse
 }
 
-services.MemoryPeakReporter: @erase
-services.MemoryTracker: @erase
-services.TimeTracker: @erase
+#services.MemoryPeakReporter: @erase
+#services.MemoryTracker: @erase
+#services.TimeTracker: @erase
 
 services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibilityservice
 
-services.OpDigiProperties:        @local::standard_opdigiproperties
-
-services.PhotonVisibilityService.LibraryFile: "14gen_nocat.root"
+services.PhotonVisibilityService.LibraryFile: "14gen_nocat_small.root"
 
 
 services.PhotonVisibilityService.UseCryoBoundary: false
@@ -75,7 +76,8 @@ physics:
    largeant:  @local::icarus_largeant	  
    daq:       @local::icarus_simwire  
    backtrack: @local::standard_backtrackerloader
-   opdigi:    @local::standard_opdigi
+   opdaq:     @local::icarus_simpmt
+   ophit:     @local::icarus_opthitfinder 
    rns:       {module_type: "RandomNumberSaver"}
  }
 
@@ -83,13 +85,14 @@ physics:
  {
    largana:   @local::standard_largeantana
    pmtresponse: @local::standard_simphotoncounter
-   opdigiana: @local::standard_opdigiana
+   wvfanalyzer:    @local::wvf_ana_icarus
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ generator, largeant, daq, backtrack, opdigi, rns ] 
- analyzeIt:  [ largana, pmtresponse, opdigiana]
+ #simulate: [ generator, largeant, daq, backtrack, opdaq, rns ]
+ simulate: [ generator, largeant, daq, backtrack, opdaq, ophit, rns ] 
+ analyzeIt:  [ largana, pmtresponse, wvfanalyzer]
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
 
@@ -153,18 +156,11 @@ physics.producers.generator.Theta0YZ: [ 0. ]       # y-latitude
 physics.producers.generator.SigmaThetaXZ: [ 0. ] # Quasi-isotropic
 physics.producers.generator.SigmaThetaYZ: [ 0. ]
 
-physics.producers.opdigi.QE: [1]
-physics.producers.opdigi.DarkRate: 0
-physics.producers.opdigi.SaturationScale: 2e7
-
-services.OpDigiProperties.QE: 1
-services.OpDigiProperties.SampleFreq: 500
-services.OpDigiProperties.TimeBegin: 0
-services.OpDigiProperties.TimeEnd: 10
-
-physics.producers.generator.FillTree: true
-
 #services.PhotonVisibilityService.IncludePropTime: true
+#services.PhotonVisibilityService.D_max: 750
+#services.PhotonVisibilityService.T0_max: 55
+
+#physics.producers.generator.FillTree: true
 
 physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
 physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true

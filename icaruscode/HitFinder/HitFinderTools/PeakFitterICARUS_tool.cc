@@ -3,7 +3,7 @@
 /// \author T. Usher
 ////////////////////////////////////////////////////////////////////////
 
-#include "larreco/HitFinder/HitFinderTools/IPeakFitter.h"
+#include "icaruscode/HitFinder/HitFinderTools/IPeakFitter.h"
 
 #include "art/Utilities/ToolMacros.h"
 #include "art/Utilities/make_tool.h"
@@ -184,11 +184,11 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
             peakParams.peakCenterError    = Func.GetParError(2);
     //std::cout << " rising time " << Func.GetParameter(3) << " falling time " <<Func.GetParameter(4) << std::endl;
             peakParams.peakTauLeft        = Func.GetParameter(3);
-            peakParams.peakTauLeftError        = Func.GetParError(3);
-            peakParams.peakTauRight        = Func.GetParameter(4);
-            peakParams.peakTauRightError        = Func.GetParError(4);
-            peakParams.peakBaseline        = Func.GetParameter(0);
-            peakParams.peakBaselineError        = Func.GetParError(0);
+            peakParams.peakTauLeftError   = Func.GetParError(3);
+            peakParams.peakTauRight       = Func.GetParameter(4);
+            peakParams.peakTauRightError  = Func.GetParError(4);
+            peakParams.peakBaseline       = Func.GetParameter(0);
+            peakParams.peakBaselineError  = Func.GetParError(0);
             
             peakParamsVec.emplace_back(peakParams);
             

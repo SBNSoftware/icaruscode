@@ -4,8 +4,8 @@
 BEGIN_PROLOG
 
 icarus_pmalgtrackmaker:                                  @local::standard_pmalgtrackmaker
-icarus_pmalgtrackmaker.HitModuleLabel:                   "linecluster"
-icarus_pmalgtrackmaker.ClusterModuleLabel:               "linecluster"
+icarus_pmalgtrackmaker.HitModuleLabel:                   "trajcluster"
+icarus_pmalgtrackmaker.ClusterModuleLabel:               "trajcluster"
 icarus_pmalgtrackmaker.WireModuleLabel:                  "recowire"
 icarus_pmalgtrackmaker.PMAlgTracking.FlipToBeam:         true
 icarus_pmalgtrackmaker.PMAlgTracking.AutoFlip_dQdx:      false

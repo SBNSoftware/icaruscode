@@ -67,29 +67,12 @@ physics:
  
  filt:[  ]
 
- #define the output stream, there could be more than one if using filters 
- stream1:  [ out1 ]
-
  #trigger_paths is a keyword and contains the paths that modify the art::event, 
  #ie filters and producers
  trigger_paths: [reco] 
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
  #ie analyzers and output streams.  these all run simultaneously
- end_paths:     [ana, stream1]  
+ end_paths:     [ana]  
 }
 
-#block to define where the output goes.  if you defined a filter in the physics
-#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
-#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
-outputs:
-{
- out1:
- {
-   module_type: RootOutput
-   #SelectEvents: {SelectEvents:[reco]}
-   fileName:    "info_light.root"
-   dataTier:    "detector-simulated"
-   compressionLevel: 1
- }
-}

@@ -72,9 +72,9 @@ using namespace util;
 namespace detsim {
 
   // Base class for creation of raw signals on wires.
-  class SimWireICARUS : public art::EDProducer {
+class SimWireICARUS : public art::EDProducer {
 
-  public:
+public:
 
     explicit SimWireICARUS(fhicl::ParameterSet const& pset);
     virtual ~SimWireICARUS();
@@ -85,7 +85,7 @@ namespace detsim {
     void endJob();
     void reconfigure(fhicl::ParameterSet const& p);
 
-  private:
+private:
 
     void MakeADCVec(std::vector<short>& adc, std::vector<float> const& noise,
                     std::vector<double> const& charge, float ped_mean) const;
@@ -124,25 +124,20 @@ namespace detsim {
     // little helper class to hold the params of each charge dep
     class ResponseParams {
     public:
-      ResponseParams(double charge, size_t time) : m_charge(charge), m_time(time) {}
-      double getCharge() { return m_charge; }
-      size_t getTime()   { return m_time; }
+        ResponseParams(double charge, size_t time) : m_charge(charge), m_time(time) {}
+        double getCharge() { return m_charge; }
+        size_t getTime()   { return m_time; }
     private:
-      double m_charge;
-      size_t m_time;
+        double m_charge;
+        size_t m_time;
     };
       
     //services
     const geo::GeometryCore& fGeometry;
+    
+}; // class SimWireICARUS
 
-  }; // class SimWireICARUS
-
-  /*  namespace {
-    size_t _ch = 0;
-    size_t _wr = 0;
-  }
-  */
-  DEFINE_ART_MODULE(SimWireICARUS)
+DEFINE_ART_MODULE(SimWireICARUS)
 
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
@@ -231,7 +226,7 @@ SimWireICARUS::~SimWireICARUS() {}
          }
      }
      
-     fSimCharge    = tfs->make<TH1F>("fSimCharge", "simulated charge", 150, 0, 1500);
+     fSimCharge     = tfs->make<TH1F>("fSimCharge", "simulated charge", 150, 0, 1500);
      fSimChargeWire = tfs->make<TH2F>("fSimChargeWire", "simulated charge", 5600,0.,5600.,500, 0, 1500);
  
      return;
@@ -248,8 +243,6 @@ void SimWireICARUS::produce(art::Event& evt)
     // Get all of the services we will be using
     //
     //--------------------------------------------------------------------
-    
-    std::ofstream output("simCharge.out");
     
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg
@@ -356,12 +349,13 @@ void SimWireICARUS::produce(art::Event& evt)
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
 
         size_t                   plane  = widVec[0].Plane;
-        size_t                   wire  = widVec[0].Wire;
+//        size_t                   wire  = widVec[0].Wire;
 
         //Get pedestal with random gaussian variation
         CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
-     //   float ped_mean = pedestalRetrievalAlg.PedMean(channel) + rGaussPed.fire();
-      float ped_mean = pedestalRetrievalAlg.PedMean(channel);
+//        float ped_mean = pedestalRetrievalAlg.PedMean(channel) + rGaussPed.fire();
+//******** do we want this change? taken out in the raw digit filter
+        float ped_mean = pedestalRetrievalAlg.PedMean(channel);
         
         
         //Generate Noise
@@ -414,38 +408,17 @@ void SimWireICARUS::produce(art::Event& evt)
                 totCharge+=charge/gain;
                 if(chargeWork.at(tick)>0.001&&widVec[0].Wire==3333&&widVec[0].Plane==2)
                 std::cout << " tick " << tick << " chargework " << chargeWork.at(tick) << std::endl;
-
             } // loop over tdcs
-            
-           /* if(widVec[0].Plane==2) {
-            fSimCharge->Fill(totCharge*2.5);
-            fSimChargeWire->Fill(widVec[0].Wire,totCharge*2.5);
-                output <<widVec[0].Wire << " " <<totCharge*2.5 << std::endl;
-             //   std::cout << " wire " <<  widVec[0].Wire << " filling simcharge " << totCharge*2.5 << std::endl;
-            }*/
-            //std::cout << " totCharge " << totCharge << std::endl;
+
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
-           sss->Convolute(channel, chargeWork);
-            
-            double decCharge=0;
-            for(int tick = 0; tick < (int)fNTicks; tick++) {
-             decCharge+=chargeWork[tick];
-//if(chargeWork.at(tick)>0.001&&widVec[0].Wire==3333&&widVec[0].Plane==2)
-  //  std::cout << " tick " << tick << " chargework " << chargeWork.at(tick) << std::endl;
-            }
-          // std::cout << " convoluted Charge "<< decCharge/(-2.5) << " ratio " << decCharge/totCharge/(-2.5) << std::endl;
-
+            sss->Convolute(channel, chargeWork);
             
             // "Make" the ADC vector
             MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
         }
         // "Make" an ADC vector with zero charge added
         else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
-
-      //  std::cout << " ped mean " << ped_mean << std::endl;
-        
-    
         
         // add this digit to the collection;
         // adcvec is copied, not moved: in case of compression, adcvec will show
@@ -456,21 +429,15 @@ void SimWireICARUS::produce(art::Event& evt)
         // and used on the next loop.
         raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
         
-        if(plane==2) {
+        if(plane==2)
+        {
             for(int js=0;js<4096;js++)
                 area+=(adcvec[js]-400);
             
-            //std::cout << "  wire " << wire << " adcvec0 " << adcvec[0]-400 << std::endl;
-            
-            if(area>0) {
-                std::cout << " adcvec wire " << wire << " area " << area << std::endl;
-
+            if(area>0)
+            {
                 fSimCharge->Fill(area);
                 fSimChargeWire->Fill(widVec[0].Wire,area);
-         
-                output << wire  << " " <<area << std::endl;
-                //   std::cout << " wire " <<  widVec[0].Wire << " filling simcharge " << totCharge*2.5 << std::endl;
-            
             }
         }
         

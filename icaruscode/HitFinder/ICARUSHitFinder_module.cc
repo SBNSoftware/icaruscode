@@ -48,7 +48,7 @@
 #include "larcorealg/Geometry/PlaneGeo.h"
 
 #include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
-#include "larreco/HitFinder/HitFinderTools/IPeakFitter.h"
+#include "icaruscode/HitFinder/HitFinderTools/IPeakFitter.h"
 
 //ROOT from CalData
 #include "TComplex.h"
@@ -192,40 +192,40 @@ namespace hit {
 
   void ICARUSHitFinder::reconfigure(fhicl::ParameterSet const& p)
   {
-       fUncompressWithPed  = p.get< bool         >("UncompressWithPed", true);
-    fDigitModuleLabel   = p.get< art::InputTag >("DigitModuleLabel", "daq");
-    fCalDataModuleLabel = p.get< std::string  >("CalDataModuleLabel");
-  fActiveInd1 = p.get< double  >("ActiveInd1");
-      fActiveInd2 = p.get< double  >("ActiveInd2");
-      fActiveCol = p.get< double  >("ActiveCol");
-      fInd1Width = p.get< int  >("Ind1Width");
-      fInd2Width = p.get< int  >("Ind2Width");
-      fColWidth = p.get< int  >("ColWidth");
-      fInd1Window = p.get< unsigned int  >("Ind1Window");
-      fInd2Window = p.get< unsigned int  >("Ind2Window");
-      fColWindow = p.get< unsigned int  >("ColWindow");
-      fInd1Threshold = p.get< int  >("Ind1Threshold");
-      fInd2Threshold = p.get< int  >("Ind2Threshold");
-      fColThreshold = p.get< int  >("ColThreshold");
-      fInd1Above = p.get< int  >("Ind1Above");
-      fInd2Above = p.get< int  >("Ind2Above");
-      fColAbove = p.get< int  >("ColAbove");
-      fInd1Fall = p.get< int  >("Ind1Fall");
-      fInd2Fall = p.get< int  >("Ind2Fall");
-      fColFall = p.get< int  >("ColFall");
-      fInd1Multi = p.get< double  >("Ind1Multi");
-      fInd2Multi = p.get< double  >("Ind2Multi");
-      fColMulti = p.get< double  >("ColMulti");
-      fInd1100kHz = p.get< double  >("Ind1100kHz");
-      fInd2100kHz = p.get< double  >("Ind2100kHz");
-      fCol100kHz = p.get< double  >("Col100kHz");
-      fInd1Isolated = p.get< double  >("Ind1Isolated");
-      fInd2Isolated = p.get< double  >("Ind2Isolated");
-      fColIsolated = p.get< double  >("ColIsolated");
-      fInd1RMS = p.get< double  >("Ind1RMS");
-      fInd2RMS = p.get< double  >("Ind2RMS");
-      fColRMS = p.get< double  >("ColRMS");
-      fThetaAngle=p.get< double  >("ThetaAngle");
+      fUncompressWithPed  = p.get< bool         >("UncompressWithPed", true);
+      fDigitModuleLabel   = p.get< art::InputTag >("DigitModuleLabel", "daq");
+      fCalDataModuleLabel = p.get< std::string  >("CalDataModuleLabel");
+      fActiveInd1         = p.get< double  >("ActiveInd1");
+      fActiveInd2         = p.get< double  >("ActiveInd2");
+      fActiveCol          = p.get< double  >("ActiveCol");
+      fInd1Width          = p.get< int  >("Ind1Width");
+      fInd2Width          = p.get< int  >("Ind2Width");
+      fColWidth           = p.get< int  >("ColWidth");
+      fInd1Window         = p.get< unsigned int  >("Ind1Window");
+      fInd2Window         = p.get< unsigned int  >("Ind2Window");
+      fColWindow          = p.get< unsigned int  >("ColWindow");
+      fInd1Threshold      = p.get< int  >("Ind1Threshold");
+      fInd2Threshold      = p.get< int  >("Ind2Threshold");
+      fColThreshold       = p.get< int  >("ColThreshold");
+      fInd1Above          = p.get< int  >("Ind1Above");
+      fInd2Above          = p.get< int  >("Ind2Above");
+      fColAbove           = p.get< int  >("ColAbove");
+      fInd1Fall           = p.get< int  >("Ind1Fall");
+      fInd2Fall           = p.get< int  >("Ind2Fall");
+      fColFall            = p.get< int  >("ColFall");
+      fInd1Multi          = p.get< double  >("Ind1Multi");
+      fInd2Multi          = p.get< double  >("Ind2Multi");
+      fColMulti           = p.get< double  >("ColMulti");
+      fInd1100kHz         = p.get< double  >("Ind1100kHz");
+      fInd2100kHz         = p.get< double  >("Ind2100kHz");
+      fCol100kHz          = p.get< double  >("Col100kHz");
+      fInd1Isolated       = p.get< double  >("Ind1Isolated");
+      fInd2Isolated       = p.get< double  >("Ind2Isolated");
+      fColIsolated        = p.get< double  >("ColIsolated");
+      fInd1RMS            = p.get< double  >("Ind1RMS");
+      fInd2RMS            = p.get< double  >("Ind2RMS");
+      fColRMS             = p.get< double  >("ColRMS");
+      fThetaAngle         = p.get< double  >("ThetaAngle");
       
       //fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(p.get<fhicl::ParameterSet>("CandidateHits"));
       //fPeakFitterTool = art::make_tool<reco_tool::IPeakFitter>(p.get<fhicl::ParameterSet>("PeakFitter"));

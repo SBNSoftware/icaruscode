@@ -33,7 +33,7 @@ standard_simwire:
   Sample:             -1
   MakeNoiseDists:     "true"
   NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
-#NoiseGenToolVec:    [@local::NoNoiseTool, @local::NoNoiseTool, @local::NoNoiseTool]
+  #NoiseGenToolVec:    [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
 }
 
 #standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"

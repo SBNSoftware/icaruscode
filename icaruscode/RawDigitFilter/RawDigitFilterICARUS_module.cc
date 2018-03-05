@@ -86,11 +86,13 @@ private:
     bool                 fApplyTopHatFilter;     ///< Apply the top hat filter
     bool                 fSmoothCorrelatedNoise; ///< Should we smooth the noise?
     std::vector<size_t>  fNumWiresToGroup;       ///< If smoothing, the number of wires to look at
-    bool                 fTruncateTicks;         ///< If true then drop channels off ends of wires
+    bool                 fTruncateTicks;         ///< If true then drop ticks off ends of wires
+    bool                 fTruncateChannels;      ///< If true then we drop channels with "no signal"
     unsigned int         fWindowSize;            ///< # ticks to keep in window
     unsigned int         fNumTicksToDropFront;   ///< # ticks to drop from front of waveform
     std::vector<float>   fRmsRejectionCutHi;     ///< Maximum rms for input channels, reject if larger
     std::vector<float>   fRmsRejectionCutLow;    ///< Minimum rms to consider channel "alive"
+    std::vector<float>   fNRmsChannelReject;     ///< # rms to reject channel as no signal
 
     // Statistics.
     int fNumEvent;        ///< Number of events seen.
@@ -159,10 +161,12 @@ void RawDigitFilterICARUS::reconfigure(fhicl::ParameterSet const & pset)
     fSmoothCorrelatedNoise = pset.get<bool>               ("SmoothCorrelatedNoise",                                    true);
     fNumWiresToGroup       = pset.get<std::vector<size_t>>("NumWiresToGroup",          std::vector<size_t>() = {48, 48, 96});
     fTruncateTicks         = pset.get<bool>               ("TruncateTicks",                                           false);
+    fTruncateChannels      = pset.get<bool>               ("TruncateChannels",                                        false);
     fWindowSize            = pset.get<size_t>             ("WindowSize",                                               6400);
     fNumTicksToDropFront   = pset.get<size_t>             ("NumTicksToDropFront",                                      2400);
     fRmsRejectionCutHi     = pset.get<std::vector<float>> ("RMSRejectionCutHi",     std::vector<float>() = {25.0,25.0,25.0});
     fRmsRejectionCutLow    = pset.get<std::vector<float>> ("RMSRejectionCutLow",    std::vector<float>() = {0.70,0.70,0.70});
+    fNRmsChannelReject     = pset.get<std::vector<float>> ("NRMSChannelReject",     std::vector<float>() = {3.,  3.,  3.  });
 }
 
 //----------------------------------------------------------------------------
@@ -192,7 +196,6 @@ void RawDigitFilterICARUS::beginJob()
 ///
 void RawDigitFilterICARUS::produce(art::Event & event)
 {
-    std::cout << " rawdigitfilter produce " << std::endl;
     ++fNumEvent;
     
     // Agreed convention is to ALWAYS output to the event store so get a pointer to our collection
@@ -222,7 +225,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
         // Because we need to unpack each wire's data, we will need to "explode" it out into a data structure
         // here... with the good news that we'll release the memory at the end of the module so should not
         // impact downstream processing (I hope!).
-        // What we are going to do is make a vector over views of vectors over wires of vectors over time samples
+        // What we are going to do is make a vector over planes of vectors over wires of vectors over time samples
         //std::vector<RawDigitVector> rawDataWireTimeVec;
         std::vector<caldata::RawDigitVector> rawDataWireTimeVec;
         std::vector<float>                   truncMeanWireVec;
@@ -244,7 +247,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
         // Commence looping over raw digits
         for(const auto& rawDigit : rawDigitVec)
         {
-            double area(0);
             raw::ChannelID_t channel = rawDigit->Channel();
         
             bool goodChan(true);
@@ -264,35 +266,35 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             if (channel >= maxChannels || !goodChan) continue;
         
             // Recover plane and wire in the plane
-            unsigned int view = wids[0].Plane;
-            unsigned int wire = wids[0].Wire;
-        
+            unsigned int plane = wids[0].Plane;
+            unsigned int wire  = wids[0].Wire;
+         
             unsigned int dataSize = rawDigit->Samples();
-            unsigned int wireIdx  = wire % fNumWiresToGroup[view];
+            unsigned int wireIdx  = wire % fNumWiresToGroup[plane];
             
             if (dataSize < 1)
             {
-                std::cout << "****>> Found zero length raw digit buffer, channel: " << channel << ", plane: " << view << ", wire: " << wire << std::endl;
+                std::cout << "****>> Found zero length raw digit buffer, channel: " << channel << ", plane: " << plane << ", wire: " << wire << std::endl;
                 continue;
             }
             
             // Cross check that our storage arrays are the correct size
             // (note there is a possible boundary issue here that we are going to ignore...)
-            if (rawDataWireTimeVec.size() != fNumWiresToGroup[view])
+            if (rawDataWireTimeVec.size() != fNumWiresToGroup[plane])
             {
-                // For each view we need to presize the vector to the number of wires
-                rawDataWireTimeVec.resize(fNumWiresToGroup[view]);
-                truncMeanWireVec.resize(fNumWiresToGroup[view]);
-                truncRmsWireVec.resize(fNumWiresToGroup[view]);
-                meanWireVec.resize(fNumWiresToGroup[view]);
-                medianWireVec.resize(fNumWiresToGroup[view]);
-                modeWireVec.resize(fNumWiresToGroup[view]);
-                skewnessWireVec.resize(fNumWiresToGroup[view]);
-                fullRmsWireVec.resize(fNumWiresToGroup[view]);
-                minMaxWireVec.resize(fNumWiresToGroup[view]);
-                neighborRatioWireVec.resize(fNumWiresToGroup[view]);
-                pedCorWireVec.resize(fNumWiresToGroup[view]);
-                channelWireVec.resize(fNumWiresToGroup[view]);
+                // For each plane we need to presize the vector to the number of wires
+                rawDataWireTimeVec.resize(fNumWiresToGroup[plane]);
+                truncMeanWireVec.resize(fNumWiresToGroup[plane]);
+                truncRmsWireVec.resize(fNumWiresToGroup[plane]);
+                meanWireVec.resize(fNumWiresToGroup[plane]);
+                medianWireVec.resize(fNumWiresToGroup[plane]);
+                modeWireVec.resize(fNumWiresToGroup[plane]);
+                skewnessWireVec.resize(fNumWiresToGroup[plane]);
+                fullRmsWireVec.resize(fNumWiresToGroup[plane]);
+                minMaxWireVec.resize(fNumWiresToGroup[plane]);
+                neighborRatioWireVec.resize(fNumWiresToGroup[plane]);
+                pedCorWireVec.resize(fNumWiresToGroup[plane]);
+                channelWireVec.resize(fNumWiresToGroup[plane]);
                 groupToDigitIdxPairMap.clear();
             }
         
@@ -328,12 +330,12 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             // Recover the database version of the pedestal
             float pedestal = fPedestalRetrievalAlg.PedMean(channel);
             
-            if (fDoFFTCorrection) fFFTAlg.filterFFT(rawadc, view, wire, pedestal);
+            if (fDoFFTCorrection) fFFTAlg.filterFFT(rawadc, plane, wire, pedestal);
             
             // Get the kitchen sink
             fCharacterizationAlg.getWaveformParams(rawadc,
                                                    channel,
-                                                   view,
+                                                   plane,
                                                    wire,
                                                    truncMeanWireVec[wireIdx],
                                                    truncRmsWireVec[wireIdx],
@@ -346,19 +348,13 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                                                    neighborRatioWireVec[wireIdx],
                                                    pedCorWireVec[wireIdx]);
             
-            if(view==2) {
-                for(int js=0;js<4096;js++)
-                    area+=(rawadc[js]-400);
-                
-                //std::cout << "  wire " << wire << " rawadc0 " << rawadc[0] << std::endl;
-                
-                if(area>0)
-                    std::cout << " rawdigitfilter wire " << wire << " area " << area << std::endl;
-            }
-            
             // This allows the module to be used simply to truncate waveforms with no noise processing
             if (!fDoCorrelatedNoise)
             {
+                // Is this channel "quiet" and should be rejected?
+                // Note that the "max - min" range is to be compared to twice the rms cut
+                if (fTruncateChannels && minMaxWireVec[wireIdx] < 2. * fNRmsChannelReject[plane] * truncRmsWireVec[wireIdx]) continue;
+                
                 caldata::RawDigitVector pedCorrectedVec;
                 
                 pedCorrectedVec.resize(rawadc.size(),0);
@@ -375,7 +371,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             if (!fSmoothCorrelatedNoise)
             {
                 // Filter out the very high noise wires
-                if (truncRmsWireVec[wireIdx] < fRmsRejectionCutHi[view])
+                if (truncRmsWireVec[wireIdx] < fRmsRejectionCutHi[plane])
                     saveRawDigits(filteredRawDigit, channel, rawadc, truncMeanWireVec[wireIdx], truncRmsWireVec[wireIdx]);
                 else
                 {
@@ -389,22 +385,22 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             
         
             // Add this wire to the map and try to do some classification here
-            if (!fCharacterizationAlg.classifyRawDigitVec(rawadc, view, wire, truncRmsWireVec[wireIdx], minMaxWireVec[wireIdx], meanWireVec[wireIdx],skewnessWireVec[wireIdx], neighborRatioWireVec[wireIdx], groupToDigitIdxPairMap))
+            if (!fCharacterizationAlg.classifyRawDigitVec(rawadc, plane, wire, truncRmsWireVec[wireIdx], minMaxWireVec[wireIdx], meanWireVec[wireIdx],skewnessWireVec[wireIdx], neighborRatioWireVec[wireIdx], groupToDigitIdxPairMap))
             {
                 // If the waveform was not classified then we need to baseline correct...
                 std::transform(rawadc.begin(),rawadc.end(),rawadc.begin(),std::bind2nd(std::minus<short>(),pedCorWireVec[wireIdx]));
             }
 
             // Are we at the correct boundary for dealing with the noise?
-            if (!((wireIdx + 1) % fNumWiresToGroup[view]))
+            if (!((wireIdx + 1) % fNumWiresToGroup[plane]))
             {
-                int baseWireIdx = wire - wire % fNumWiresToGroup[view];
+                int baseWireIdx = wire - wire % fNumWiresToGroup[plane];
 
                 // Now go through the groups to remove correlated noise in those groups
                 for(auto& groupToDigitIdxPair : groupToDigitIdxPairMap)
                 {
                     fCorCorrectAlg.removeCorrelatedNoise(groupToDigitIdxPair.second,
-                                                         view,
+                                                         plane,
                                                          truncMeanWireVec,
                                                          truncRmsWireVec,
                                                          minMaxWireVec,
@@ -415,10 +411,10 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 }
                 
                 // One more pass through to store the good channels
-                for (size_t locWireIdx = 0; locWireIdx < fNumWiresToGroup[view]; locWireIdx++)
+                for (size_t locWireIdx = 0; locWireIdx < fNumWiresToGroup[plane]; locWireIdx++)
                 {
                     // Try baseline correction?
-                    if (fApplyTopHatFilter && view != 2 && skewnessWireVec[locWireIdx] > 0.)
+                    if (fApplyTopHatFilter && plane != 2 && skewnessWireVec[locWireIdx] > 0.)
                     {
                         //doAdaptiveFilter(rawDataWireTimeVec[locWireIdx]);
                         fFilterAlg.doTopHatFilter(rawDataWireTimeVec[locWireIdx], baseWireIdx + locWireIdx);
@@ -436,7 +432,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                     
                     
                     // The ultra high noise channels are simply zapped
-                    if (rmsVal < fRmsRejectionCutHi[view]) // && ImAGoodWire(view,baseWireIdx + locWireIdx))
+                    if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))
                     {
                         saveRawDigits(filteredRawDigit, channelWireVec[locWireIdx], rawDataVec, pedestal, rmsVal);
                     }

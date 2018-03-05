@@ -58,7 +58,7 @@ namespace recowire {
 
 class RecoWireROI : public art::EDProducer
 {
-  public:
+public:
     // create calibrated signals on wires. this class runs 
     // an fft to remove the electronics shaping.     
     explicit RecoWireROI(fhicl::ParameterSet const& pset); 
@@ -71,7 +71,7 @@ class RecoWireROI : public art::EDProducer
     
     void reconfFFT(int temp_fftsize);
     
-  private:
+private:
     
     std::string                 fDigitModuleLabel;     ///< module that made digits
     std::string                 fSpillName;            ///< nominal spill is an empty string
@@ -114,29 +114,26 @@ class RecoWireROI : public art::EDProducer
     const geo::GeometryCore&             fGeometry;
     util::SignalShapingServiceICARUS&    fSignalServices;
     const lariov::ChannelStatusProvider& fChanFilt;
-    
-  protected:
-    
-  }; // class RecoWireROI
+}; // class RecoWireROI
 
-  DEFINE_ART_MODULE(RecoWireROI)
+DEFINE_ART_MODULE(RecoWireROI)
   
-  //-------------------------------------------------
-  RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) :
-      fGeometry(*lar::providerFrom<geo::Geometry>()),
-      fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
-      fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
-  {
+//-------------------------------------------------
+RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) :
+    fGeometry(*lar::providerFrom<geo::Geometry>()),
+    fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
+    fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
+{
     this->reconfigure(pset);
 
-    produces< std::vector<recob::Wire> >(fSpillName);
+    produces< std::vector<recob::Wire>  >(fSpillName);
     produces<art::Assns<raw::RawDigit, recob::Wire>>(fSpillName);
-  }
-  
-  //-------------------------------------------------
-  RecoWireROI::~RecoWireROI()
-  {
-  }
+}
+
+//-------------------------------------------------
+RecoWireROI::~RecoWireROI()
+{
+}
 
 //////////////////////////////////////////////////////
 void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
@@ -361,6 +358,11 @@ void RecoWireROI::produce(art::Event& evt)
             std::fill(rawAdcLessPedVec.begin(),rawAdcLessPedVec.begin()+startBin,0.);        //rawAdcLessPedVec.at(startBin));
             std::fill(rawAdcLessPedVec.begin()+startBin+dataSize,rawAdcLessPedVec.end(),0.); //rawAdcLessPedVec.at(startBin+dataSize-1));
             
+            // Try a loose cut to see if there is a potential for activity on this channel
+            std::vector<float>::iterator overThreshItr = std::find_if(rawAdcLessPedVec.begin(),rawAdcLessPedVec.end(),[raw_noise](const auto& val){return val > 2.5 * raw_noise;});
+            
+            if (overThreshItr == rawAdcLessPedVec.end()) continue;
+
             float runningSum = std::accumulate(rawAdcLessPedVec.begin()+startBin,rawAdcLessPedVec.begin()+stopBin, 0.);
             
             size_t roiStartBin(0);
@@ -529,13 +531,13 @@ void RecoWireROI::produce(art::Event& evt)
                 if (baseSet) std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
 
                 // apply wire-by-wire calibration
-                if (fDodQdxCalib){
-                    if(fdQdxCalib.find(channel) != fdQdxCalib.end()){
+                if (fDodQdxCalib)
+                {
+                    if(fdQdxCalib.find(channel) != fdQdxCalib.end())
+                    {
                         float constant = fdQdxCalib[channel];
                         //std::cout<<channel<<" "<<constant<<std::endl;
-                        for (size_t iholder = 0; iholder < holder.size(); ++iholder){
-                            holder[iholder] *= constant;
-                        }
+                        for (size_t iholder = 0; iholder < holder.size(); ++iholder) holder[iholder] *= constant;
                     }
                 }
 
@@ -555,7 +557,8 @@ void RecoWireROI::produce(art::Event& evt)
         
         // add an association between the last object in wirecol
         // (that we just inserted) and digitVec
-        if (!util::CreateAssn(*this, evt, *wirecol, digitVec, *WireDigitAssn, fSpillName)) {
+        if (!util::CreateAssn(*this, evt, *wirecol, digitVec, *WireDigitAssn, fSpillName))
+        {
             throw art::Exception(art::errors::ProductRegistrationFailure)
                 << "Can't associate wire #" << (wirecol->size() - 1)
                 << " with raw digit #" << digitVec.key();
@@ -568,20 +571,19 @@ void RecoWireROI::produce(art::Event& evt)
 
     //Make Histogram of recob::wire objects from Signal() vector
     // get access to the TFile service
-    if ( fSaveWireWF ){
+    if ( fSaveWireWF )
+    {
         art::ServiceHandle<art::TFileService> tfs;
-        for (size_t wireN = 0; wireN < wirecol->size(); wireN++){
+        for (size_t wireN = 0; wireN < wirecol->size(); wireN++)
+        {
             std::vector<float> sigTMP = wirecol->at(wireN).Signal();
-            TH1D* fWire = tfs->make<TH1D>(Form("Noise_Evt%04zu_N%04zu",fEventCount,wireN), ";Noise (ADC);",
-				      sigTMP.size(),-0.5,sigTMP.size()-0.5);
-            for (size_t tick = 0; tick < sigTMP.size(); tick++){
-                fWire->SetBinContent(tick+1, sigTMP.at(tick) );
-            }
+            TH1D* fWire = tfs->make<TH1D>(Form("Noise_Evt%04zu_N%04zu",fEventCount,wireN), ";Noise (ADC);", sigTMP.size(),-0.5,sigTMP.size()-0.5);
+            for (size_t tick = 0; tick < sigTMP.size(); tick++) fWire->SetBinContent(tick+1, sigTMP.at(tick) );
         }
     }
     
-    evt.put(std::move(wirecol), fSpillName);
-    evt.put(std::move(WireDigitAssn), fSpillName);
+    evt.put(std::move(wirecol),             fSpillName);
+    evt.put(std::move(WireDigitAssn),       fSpillName);
 
     fEventCount++;
 

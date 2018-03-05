@@ -4,9 +4,6 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-#include <cmath>
-#include <algorithm>
-
 namespace caldata
 {
 //----------------------------------------------------------------------------
@@ -198,11 +195,10 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
     pedCorVal = truncMean - pedestal;
     
     // Determine the range of ADC values on this wire
-    short minVal = *std::min_element(rawWaveform.begin(), rawWaveform.end());
-    short maxVal = *std::max_element(rawWaveform.begin(), rawWaveform.end());
+    std::pair<RawDigitVector::const_iterator,RawDigitVector::const_iterator> minMaxItrPair = std::minmax_element(rawWaveform.begin(),rawWaveform.end());
     
-    minMax = std::min(maxVal - minVal + 1, 199);  // for the purposes of histogramming
-    
+    minMax = std::min(*minMaxItrPair.second - *minMaxItrPair.first + 1, 199);  // for the purposes of histogramming
+
     // We also want mean, median, rms, etc., for all ticks on the waveform
     std::vector<short> localTimeVec = rawWaveform;
     
@@ -272,12 +268,12 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
         float  leastNeighborRatio = float(std::min(leftNeighbor,rightNeighbor)) / float(maxBinItr->second);
         size_t wireIdx            = wire % fNumWiresToGroup[view];
         
-        if (skewness > 0. && leastNeighborRatio < 0.7)
-        {
-            short threshold(6);
-            
-            RawDigitVector::const_iterator stopChirpItr = std::find_if(rawWaveform.begin(),rawWaveform.end(),[mean,threshold](const short& elem){return abs(elem - mean) > threshold;});
-        }
+//        if (skewness > 0. && leastNeighborRatio < 0.7)
+//        {
+//            short threshold(6);
+//            
+//            RawDigitVector::const_iterator stopChirpItr = std::find_if(rawWaveform.begin(),rawWaveform.end(),[mean,threshold](const short& elem){return abs(elem - mean) > threshold;});
+//        }
         
         if (fHistsInitialized)
         {

@@ -89,14 +89,6 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
        double time = double(timeIdx) * binWidth;
         
         fElectronicsResponseVec.at(timeIdx) = time / fASICShapingTime * exp(-time / fASICShapingTime);
-        
-       // if(fElectronicsResponseVec.at(timeIdx)>0.001)
-       // std::cout << " timeIdx " << timeIdx << " time " << time << " response " << fElectronicsResponseVec.at(timeIdx) << std::endl;
-       // if(timeIdx==0)
-       // fElectronicsResponseVec.at(timeIdx) = 1./binWidth;
-       // else
-       // fElectronicsResponseVec.at(timeIdx) = 0;
-
     }
     
 //    double maxValue = *std::max_element(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end());
@@ -121,8 +113,6 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     float respIntegral=0;
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
         respIntegral+=(fElectronicsResponseVec.at(timeIdx)*binWidth);
- 
-    std::cout << " elec resp integral " << respIntegral << std::endl;
 
     for (auto& element : fElectronicsResponseVec)
         element /= respIntegral;
@@ -130,10 +120,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     respIntegral=0;
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
         respIntegral+=(fElectronicsResponseVec.at(timeIdx)*binWidth);
-    
-    
-    std::cout << " corrected elec resp integral " << respIntegral << std::endl;
-    
+        
     return;
 }
     

@@ -1,0 +1,14 @@
+//#include "trackfinderalgorithms.fcl"
+	
+BEGIN_PROLOG
+	
+wvf_ana_icarus:	
+{
+  module_type: 	"wvfAnaicarus"
+  InputModule: "opdaq"
+  ClusterModuleLabel: "linecluster"
+  Sampling:           0.5 
+  MinSize:	      10
+}
+
+END_PROLOG
