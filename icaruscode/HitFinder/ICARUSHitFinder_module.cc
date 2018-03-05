@@ -745,7 +745,8 @@ namespace hit {
         position      = hits[i].iDrift;
         start         = hits[i].iniDrift;
         end           = hits[i].finDrift;
-       // hrms          = hitrms[i];
+        //temporary definition of hrms for ICARUS non-Gaussian hits
+        hrms          = (end-start)/3.;
         amplitudeErr  = -1;
         positionErr   = 1.0;
         goodnessOfFit = -1;
