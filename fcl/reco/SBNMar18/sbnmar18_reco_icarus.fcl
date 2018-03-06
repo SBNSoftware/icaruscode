@@ -41,7 +41,8 @@ icarus_reco_producers:
   icarushit:                      @local::icarus_hitfinder
 
   ### trajcluster
-  trajcluster:                    @local::icarus_trajcluster
+  trajclustergaus:                @local::icarus_trajcluster
+  trajclustericarus:              @local::icarus_trajcluster
 
   ### pandora
   pandora:                        @local::icarus_pandora

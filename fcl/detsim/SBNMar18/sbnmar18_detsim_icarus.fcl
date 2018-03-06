@@ -1,7 +1,7 @@
 #include "services_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
 ##include "triggersim_icarus.fcl"
-include "opdetsim_pmt_icarus.fcl"
+#include "opdetsim_pmt_icarus.fcl"
 ##include "time_memory_tracker_icarus.fcl"
 ##include "swtrigger_icarus.fcl"
 
