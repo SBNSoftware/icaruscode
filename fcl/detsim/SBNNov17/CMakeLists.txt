@@ -1,8 +1,5 @@
-# add underlying subfolders
-add_subdirectory(SBNNov17)
-add_subdirectory(SBNMar18)
-
 # Install fcl files in /job subdirectory.
+
 install_fhicl()
 
 # Also put a copy in the source tree.
