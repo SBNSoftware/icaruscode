@@ -65,8 +65,8 @@ void RandomNoise::GenerateNoise(std::vector<float> &noise, double noise_factor) 
 {
     //ART random number service
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine &engine = rng->getEngine("noise");
-     CLHEP::RandGaussQ rGauss(engine, 0.0, noise_factor);
+    CLHEP::HepRandomEngine&                        engine = rng->getEngine("noise");
+    CLHEP::RandGaussQ                              rGauss(engine, 0.0, noise_factor);
     
     //In this case noise_factor is a value in ADC counts
     //It is going to be the Noise RMS
