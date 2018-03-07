@@ -110,6 +110,8 @@ icarus_reco_producers.gaushit.CandidateHits:                                 @lo
 icarus_reco_producers.gaushit.LongMaxHits:                                   [25, 25, 25]
 icarus_reco_producers.gaushit.LongPulseWidth:                                [10, 10, 10]
 
+icarus_reco_producers.icarushit.CalDataModuleLabel:                          "recowire"
+
 icarus_reco_producers.pandora.HitFinderModuleLabel:                          "gaushit"
 icarus_reco_producers.pandoraTrack.PFParticleLabel:                          "pandora"
 icarus_reco_producers.pandoraShower.PFParticleLabel:                         "pandora"
