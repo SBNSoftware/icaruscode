@@ -264,7 +264,6 @@ namespace hit {
       fHeightI1	= tfs->make<TH1F>("fHeightI1", "height(ADC#)", 100, 0, 100);
       fWidthI1	        = tfs->make<TH1F>("fWidthI1", "width(samples)", 100, 0, 100);
       fNoiseI1	        = tfs->make<TH1F>("fNoiseI1", "Noise Area(ADC#)", 100, 0, 100);
-      std::cout << " ICARUSHitfinder begin " << std::endl;
   }
 
   void ICARUSHitFinder::endJob()
@@ -277,7 +276,6 @@ namespace hit {
   void ICARUSHitFinder::produce(art::Event& evt)
   {      //0
       std::ofstream output("areaNoFit.out");
-      std::cout << " ICARUSHitFinder produce " << std::endl;
       
     //GET THE GEOMETRY.
     art::ServiceHandle<geo::Geometry> geom;
@@ -293,15 +291,11 @@ namespace hit {
 
       //    if (fAllHitsInstanceName != "") filteredHitCol = &hcol;
       
-      std::cout << " before reading wirelist " << std::endl;
-      
       // ##########################################
       // ### Reading in the Wire List object(s) ###
       // ##########################################
       art::Handle< std::vector<recob::Wire> > wireVecHandle;
       evt.getByLabel(fCalDataModuleLabel,wireVecHandle);
-      
-      std::cout << " after reading wirelist " << fCalDataModuleLabel << std::endl;
 
       
       // #################################################################
@@ -309,8 +303,6 @@ namespace hit {
       // #################################################################
       art::FindOneP<raw::RawDigit> RawDigits
       (wireVecHandle, evt, fCalDataModuleLabel);
-      
-      std::cout << " after reading rawdigits " << std::endl;
 
       
       // Channel Number
