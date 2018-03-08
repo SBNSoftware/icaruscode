@@ -15,7 +15,7 @@ physics.producers.generator.SigmaZ: [ 894.9 ]      # z = (0, 1037)
 physics.producers.generator.PDist: 2                
 physics.producers.generator.PHist: [ "hPHist_electrons" ]           
 physics.producers.generator.ThetaXzYzHist: [ "hThetaXzYzHist_electrons" ]       # y-azimuth
-physics.producers.generator.HistogramFile: "particlegun_bnb_hists.root"        # y-latitude
+physics.producers.generator.HistogramFile: "/pnfs/icarus/persistent/particlegun_bnb_hists.root"        # y-latitude
 physics.producers.generator.P0: @erase
 physics.producers.generator.SigmaP: @erase
 physics.producers.generator.AngleDist: 2
