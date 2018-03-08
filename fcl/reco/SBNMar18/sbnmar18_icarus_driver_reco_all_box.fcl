@@ -1,0 +1,10 @@
+#include "sbnmar18_icarus_driver_reco_all.fcl"
+
+# Swap to the box model responses
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.SignalType:             1
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseFileName:  "fresponseICARUS"
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseHistName:  "fresp"
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseFileName:  "fresponseICARUS"
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseHistName:  "fresp"
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseFileName:  "fresponseICARUS"
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseHistName:  "fresp"
