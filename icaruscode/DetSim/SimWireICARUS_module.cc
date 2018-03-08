@@ -100,18 +100,19 @@ private:
     
     bool                    fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
     bool                    fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
+    bool                    fSmearPedestals;    ///< If True then we smear the pedees
       
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
 
     bool fMakeNoiseDists;
 
-    bool        fTest; // for forcing a test case
+    bool                         fTest; // for forcing a test case
     std::vector<sim::SimChannel> fTestSimChannel_v;
-    size_t      fTestWire;
-    std::vector<size_t> fTestIndex;
-    std::vector<double> fTestCharge;
+    size_t                       fTestWire;
+    std::vector<size_t>          fTestIndex;
+    std::vector<double>          fTestCharge;
 
-    int         fSample; // for histograms, -1 means no histos
+    int                          fSample; // for histograms, -1 means no histos
       
     TH1F* fSimCharge;
     TH2F* fSimChargeWire;
@@ -168,6 +169,8 @@ SimWireICARUS::~SimWireICARUS() {}
      fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
      fSuppressNoSignal = p.get< bool                >("SuppressNoSignal");
      fMakeNoiseDists   = p.get< bool                >("MakeNoiseDists", false);
+     fSample           = p.get< int                 >("Sample");
+     fSmearPedestals   = p.get< bool                >("SmearPedestals", true);
 
      fTest             = p.get<bool                 >("Test");
      fTestWire         = p.get< size_t              >("TestWire");
@@ -176,7 +179,6 @@ SimWireICARUS::~SimWireICARUS() {}
    
      if(fTestIndex.size() != fTestCharge.size())
          throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
-     fSample           = p.get<int                  >("Sample");
      
      std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
      
@@ -347,16 +349,16 @@ void SimWireICARUS::produce(art::Event& evt)
 	
         //use channel number to set some useful numbers
         std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-
         size_t                   plane  = widVec[0].Plane;
-//        size_t                   wire  = widVec[0].Wire;
 
         //Get pedestal with random gaussian variation
-        CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
-//        float ped_mean = pedestalRetrievalAlg.PedMean(channel) + rGaussPed.fire();
-//******** do we want this change? taken out in the raw digit filter
         float ped_mean = pedestalRetrievalAlg.PedMean(channel);
         
+        if (fSmearPedestals )
+        {
+            CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+            ped_mean += rGaussPed.fire();
+        }
         
         //Generate Noise
         double noise_factor(0.);
@@ -388,8 +390,6 @@ void SimWireICARUS::produce(art::Event& evt)
             std::fill(chargeWork.begin(), chargeWork.end(), 0.);
         
             // loop over the tdcs and grab the number of electrons for each
-            double totCharge=0;
-            
             for(int tick = 0; tick < (int)fNTicks; tick++)
             {
                 int tdc = ts->TPCTick2TDC(tick);
@@ -400,14 +400,8 @@ void SimWireICARUS::produce(art::Event& evt)
                 double charge = sc->Charge(tdc);
                 
                 if(charge==0) continue;
-            
-                //std::cout << " charge " << charge << std::endl;
-                //std::cout << " gain " << gain << std::endl;
 
                 chargeWork.at(tick) += charge/gain;
-                totCharge+=charge/gain;
-                if(chargeWork.at(tick)>0.001&&widVec[0].Wire==3333&&widVec[0].Plane==2)
-                std::cout << " tick " << tick << " chargework " << chargeWork.at(tick) << std::endl;
             } // loop over tdcs
 
             // now we have the tempWork for the adjacent wire of interest
