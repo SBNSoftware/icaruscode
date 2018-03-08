@@ -1,8 +1,10 @@
 #include "trackfindermodules.fcl"
+#include "pandoramodules_icarus.fcl"
 #include "kalmanfilterfinaltrackfitter.fcl"
 
 BEGIN_PROLOG
 
+# Projection matching algorithm
 icarus_pmalgtrackmaker:                                  @local::standard_pmalgtrackmaker
 icarus_pmalgtrackmaker.HitModuleLabel:                   "trajcluster"
 icarus_pmalgtrackmaker.ClusterModuleLabel:               "trajcluster"
@@ -11,12 +13,14 @@ icarus_pmalgtrackmaker.PMAlgTracking.FlipToBeam:         true
 icarus_pmalgtrackmaker.PMAlgTracking.AutoFlip_dQdx:      false
 icarus_pmalgtrackmaker.PMAlgTracking.RunVertexing:       true
 
+# Projection matching algorithm trajectory fitter
 icarus_pmalgtrajfitter:                                  @local::standard_pmalgtrajfitter
 icarus_pmalgtrajfitter.HitModuleLabel:                   "gaushit"
 icarus_pmalgtrajfitter.PfpModuleLabel:                   "pandora"
 icarus_pmalgtrajfitter.PMAlgFitting.RunVertexing:        false
 icarus_pmalgtrajfitter.PMAlgFitting.TrackingSkipPdg:     [11]
 
+# kalman track fits
 icarus_pmalgkalmantrack:                                 @local::kalmantrackfit
 icarus_pmalgkalmantrack.inputs.inputPFParticleLabel:     "pmAlgTracker"
 icarus_pmalgkalmantrack.inputs.inputTracksLabel:         ""

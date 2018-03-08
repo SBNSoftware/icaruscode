@@ -12,9 +12,9 @@ icarus_recowireroi:
  NumBinsHalf:                           3 
  Threshold:                             [ 1, 1, 1 ] # abs(threshold) for finding a Region Of Interest
  NumSigma:                              [ 5, 5, 5 ]
- uPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
- vPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
- zPlaneROIPad:                          [ 50, 50 ] # number of bins to pad both ends of the ROIs
+ uPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
+ vPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
+ zPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
  DoBaselineSub:                         true # subtract baseline after deconvolution?
  uPlaneRamp:                            true # Set true if U plane response includes a pre-ROI ramp
  FFTSize:                               256      # re-initialize FFT service to this size

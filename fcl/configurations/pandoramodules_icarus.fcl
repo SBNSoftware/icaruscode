@@ -42,7 +42,7 @@ icarus_pandoraTrackCreation:
 
 icarus_pandoraShowerCreation:
 {
-    module_type:                              "LArPandoraShowerCreation"
+    module_type:                             "LArPandoraShowerCreation"
 }
 
 END_PROLOG
