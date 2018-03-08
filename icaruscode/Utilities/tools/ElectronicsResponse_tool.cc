@@ -107,9 +107,8 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // From test pulse measurement with FLIC@CERN we have 0.027 fC/(ADC*us)
     // Therefore 0.027*6242 electrons/(ADC*us)
     
-    // Since we normalize the distribution this scaling is redundant so comment out
-//    for (auto& element : fElectronicsResponseVec)
-//       element /= (fFCperADCMicroS);
+    for (auto& element : fElectronicsResponseVec)
+       element /= (fFCperADCMicroS);
     
     float respIntegral=0;
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
