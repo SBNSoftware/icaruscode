@@ -956,7 +956,7 @@ namespace hit {
                 ICARUSHit h2=*hiter;
                 if(last==h2.iniDrift)
                 found=1;
-                std::cout << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
+                mf::LogDebug("ICARUSHitFinder") << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
             }
             
             if(found==1) break;
