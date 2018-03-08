@@ -26,6 +26,7 @@ standard_simwire:
   CompressionType:    "none"
   SimDeadChannels:    false
   SuppressNoSignal:   false
+  SmearPedestals:     true
   Test:               false
   TestWire:           0
   TestIndex:          [ 0. ]
