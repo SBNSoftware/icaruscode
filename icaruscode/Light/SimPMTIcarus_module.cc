@@ -133,10 +133,10 @@ SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
   auto const *LarProp = lar::providerFrom<detinfo::LArPropertiesService>();
   fQE = temp_fQE/(LarProp->ScintPreScale());
   
-  std::cout << "PMT corrected efficiency = " << fQE << std::endl;
+    mf::LogDebug("SimPMTICARUS") << "PMT corrected efficiency = " << fQE << std::endl;
 
   if(fQE>1.0001)
-	std::cout << "WARNING: Quantum efficiency set in fhicl file " << temp_fQE << " seems to be too large! Final QE must be equal or smaller than the scintillation pre scale applied at simulation time. Please check this number (ScintPreScale): " << LarProp->ScintPreScale() << std::endl;
+	mf::LogDebug("SimPMTICARUS") << "WARNING: Quantum efficiency set in fhicl file " << temp_fQE << " seems to be too large! Final QE must be equal or smaller than the scintillation pre scale applied at simulation time. Please check this number (ScintPreScale): " << LarProp->ScintPreScale() << std::endl;
 
   if(p.get <double>("Sampling")==-1){
     auto const *timeService = lar::providerFrom< detinfo::DetectorClocksService >();
@@ -144,7 +144,7 @@ SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
   }else	
     fSampling = p.get <double>("Sampling");
   
-  std::cout << "Sampling = " << fSampling << " GHz." << std::endl;
+  mf::LogDebug("SimPMTICARUS") << "Sampling = " << fSampling << " GHz." << std::endl;
   
   fNsamples = (int)((fPreTrigger+fReadoutWindow)*fSampling);
   
@@ -172,7 +172,7 @@ void SimPMTIcarus::produce(art::Event & e)
   std::unique_ptr< std::vector< raw::OpDetWaveform > > pulseVecPtr(std::make_unique< std::vector< raw::OpDetWaveform > > ());
 
   // Implementation of required member function here.
-  std::cout <<"Event: " << e.id().event() << std::endl;
+  mf::LogDebug("SimPMTICARUS") <<"Event: " << e.id().event() << std::endl;
 
   art::Handle< std::vector<sim::SimPhotons> > pmtHandle;
   e.getByLabel(fInputModuleName, pmtHandle);
@@ -181,7 +181,7 @@ void SimPMTIcarus::produce(art::Event & e)
     std::cout <<Form("Did not find any G4 photons from a producer: %s", "largeant") << std::endl;
   }
   
-  std::cout << "Number of photon channels: " << pmtHandle->size() << std::endl;
+  mf::LogDebug("SimPMTICARUS") << "Number of photon channels: " << pmtHandle->size() << std::endl;
   unsigned int nChannels = pmtHandle->size();
 
   std::vector<std::vector<short unsigned int>> waveforms(nChannels,std::vector<short unsigned int> (fNsamples,0));
@@ -198,7 +198,7 @@ void SimPMTIcarus::produce(art::Event & e)
 
   for (auto const& simphotons : (*pmtHandle)){
 	ch = simphotons.OpChannel();
-  	std::cout <<"Channel: " << ch << std::endl;
+  	mf::LogDebug("SimPMTICARUS") <<"Channel: " << ch << std::endl;
         t_min = 1e15;
 
 	for(size_t i=0; i<simphotons.size(); i++){
