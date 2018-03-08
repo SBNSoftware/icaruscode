@@ -34,7 +34,7 @@
 //----------------------------------------------------------------------
 // Constructor.
 util::SignalShapingServiceICARUS::SignalShapingServiceICARUS(const fhicl::ParameterSet& pset,
-                                                                     art::ActivityRegistry& /* reg */)
+                                                             art::ActivityRegistry& /* reg */)
 : fInit(false)
 {
     reconfigure(pset);
@@ -185,9 +185,11 @@ void util::SignalShapingServiceICARUS::SetDecon(size_t fftsize, size_t channel)
 //-----Give Gain Settings to SimWire-----
 double util::SignalShapingServiceICARUS::GetASICGain(unsigned int  channel) const
 {
+    static const double fcToElectrons(6241.50975);
+    
     art::ServiceHandle<geo::Geometry> geom;
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS()*6242;
+    double gain     = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getFCperADCMicroS() * fcToElectrons;
     
     return gain;
 }
