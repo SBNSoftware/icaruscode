@@ -17,6 +17,7 @@ services:
   # Load the service that manages root files for histograms.
   TFileService: { fileName: "single_hist_uboone.root" }
   TimeTracker:  {}
+  IFDH:         {}
   MemoryTracker:     { ignoreTotal: 1 } # default is one
   RandomNumberGenerator: {} #ART native random number generator
   #FileCatalogMetadata:  @local::art_file_catalog_mc
