@@ -122,66 +122,64 @@ namespace recowireraw{
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
     // ... and an association set
-    std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn
-      (new art::Assns<raw::RawDigit,recob::Wire>);
+    std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
     
-      std::cout << " before wirecol size " << wirecol->size() << std::endl;
+      mf::LogDebug("RecoWireICARUSRaw") << " before wirecol size " << wirecol->size() << std::endl;
       
     // Read in the digit List object(s). 
     art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
     evt.getByLabel(fDigitModuleLabel, digitVecHandle);
+      
+    if (digitVecHandle.isValid() && digitVecHandle->size() > 0)
+    {
+        mf::LogInfo("RecoWireICARUSRaw") << "RecoWireICARUSRaw:: digitVecHandle size is " << digitVecHandle->size();
 
-    if (!digitVecHandle->size())  return;
-    mf::LogInfo("RecoWireICARUSRaw") << "RecoWireICARUSRaw:: digitVecHandle size is " << digitVecHandle->size();
-
-    // Use the handle to get a particular (0th) element of collection.
-    art::Ptr<raw::RawDigit> digitVec0(digitVecHandle, 0);
+        // Use the handle to get a particular (0th) element of collection.
+        art::Ptr<raw::RawDigit> digitVec0(digitVecHandle, 0);
         
-    unsigned int dataSize = digitVec0->Samples(); //size of raw data vectors
+        unsigned int dataSize = digitVec0->Samples(); //size of raw data vectors
     
-    raw::ChannelID_t channel(raw::InvalidChannelID); // channel number
+        raw::ChannelID_t channel(raw::InvalidChannelID); // channel number
     
-    unsigned int bin(0);     // time bin loop variable
+        unsigned int bin(0);     // time bin loop variable
     
-    std::vector<float> holder;                // holds signal data
-    std::vector<short> rawadc(dataSize);  // vector holding uncompressed adc values
+        std::vector<float> holder;                // holds signal data
+        std::vector<short> rawadc(dataSize);  // vector holding uncompressed adc values
 
-    wirecol->reserve(digitVecHandle->size()); 
-    // loop over all wires
+        wirecol->reserve(digitVecHandle->size());
+        // loop over all wires
       
-    for(unsigned int rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter) { // ++ move
-      holder.clear();
+        for(unsigned int rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter) { // ++ move
+            holder.clear();
       
-      art::Ptr<raw::RawDigit> digitVec(digitVecHandle, rdIter);
-     channel = digitVec->Channel();
-        std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
-        geo::WireID wid = wids[0];
-//     std::cout << " cryo " << wid.Cryostat << " TPC " << wid.TPC << " view " << wid.Plane << " wire " << wid.Wire << std::endl;
-      holder.resize(dataSize);
+            art::Ptr<raw::RawDigit> digitVec(digitVecHandle, rdIter);
+            channel = digitVec->Channel();
+            std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+            geo::WireID wid = wids[0];
+//          std::cout << " cryo " << wid.Cryostat << " TPC " << wid.TPC << " view " << wid.Plane << " wire " << wid.Wire << std::endl;
+            holder.resize(dataSize);
       
-      // uncompress the data
-      raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
+            // uncompress the data
+            raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
       
-      for(bin = 0; bin < dataSize; ++bin) 
-	    holder[bin]=(rawadc[bin]-digitVec->GetPedestal());
+            for(bin = 0; bin < dataSize; ++bin)
+                holder[bin]=(rawadc[bin]-digitVec->GetPedestal());
         
-       // std::cout << " pedestal " << digitVec->GetPedestal() << std::endl;
+            // std::cout << " pedestal " << digitVec->GetPedestal() << std::endl;
    
-        if(wid.Plane==1) {
-            float max_raw=0;
-            float max_reb=0;
-          for(int j=0;j<4096;j++) {
-           // std::cout << " before integration sample " << j << " wave " << holder[j] << std::endl;
-              if(holder[j]>max_raw) max_raw=holder[j];
-          }
-             OfflineIntegration(holder);
-             DoubleRebinning(holder);
-           for(int j=0;j<4096;j++) {
-           // std::cout << " after integration sample " << j << " wave " << holder[j] << std::endl;
-            if(holder[j]>max_reb) max_reb=holder[j];
-        }
-        
-           
+            if(wid.Plane==1) {
+                float max_raw=0;
+                float max_reb=0;
+                for(int j=0;j<4096;j++) {
+                    // std::cout << " before integration sample " << j << " wave " << holder[j] << std::endl;
+                    if(holder[j]>max_raw) max_raw=holder[j];
+                }
+            OfflineIntegration(holder);
+            DoubleRebinning(holder);
+            for(int j=0;j<4096;j++) {
+                // std::cout << " after integration sample " << j << " wave " << holder[j] << std::endl;
+                if(holder[j]>max_reb) max_reb=holder[j];
+            }
         }
         float media=0;
         float rms2=0;
@@ -192,7 +190,7 @@ namespace recowireraw{
         float rms=sqrt(rms2);
         fWireRMS->Fill(rms);
         
-      wirecol->push_back(recob::WireCreator(holder,*digitVec).move());
+        wirecol->push_back(recob::WireCreator(holder,*digitVec).move());
         
         // add an association between the last object in wirecol
         // (that we just inserted) and digitVec
@@ -205,6 +203,7 @@ namespace recowireraw{
 
         
     	}
+    }
 
       //std::cout << " after wirecol size " << wirecol->size() << std::endl;
 
