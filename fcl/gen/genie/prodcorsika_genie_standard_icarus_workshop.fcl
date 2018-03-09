@@ -22,6 +22,7 @@ services:
   RandomNumberGenerator: {} #ART native random number generator
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_gen_services
+  IFDH:         {}
 }
 
 #Start each new event with an empty event.
