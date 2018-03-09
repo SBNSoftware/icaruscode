@@ -168,36 +168,27 @@ namespace recowireraw{
             // std::cout << " pedestal " << digitVec->GetPedestal() << std::endl;
    
             if(wid.Plane==1) {
-                float max_raw=0;
-                float max_reb=0;
-                for(int j=0;j<4096;j++) {
-                    // std::cout << " before integration sample " << j << " wave " << holder[j] << std::endl;
-                    if(holder[j]>max_raw) max_raw=holder[j];
-                }
-            OfflineIntegration(holder);
-            DoubleRebinning(holder);
-            for(int j=0;j<4096;j++) {
-                // std::cout << " after integration sample " << j << " wave " << holder[j] << std::endl;
-                if(holder[j]>max_reb) max_reb=holder[j];
+                OfflineIntegration(holder);
+                DoubleRebinning(holder);
             }
-        }
-        float media=0;
-        float rms2=0;
-        for(int js=0;js<4096;js++)
-            media+=(holder[js]/4096.);
-        for(int js=0;js<4096;js++)
-            rms2+=(holder[js]-media)*(holder[js]-media)/4096.;
-        float rms=sqrt(rms2);
-        fWireRMS->Fill(rms);
+            
+            float media=0;
+            float rms2=0;
+            for(int js=0;js<4096;js++)
+                media+=(holder[js]/4096.);
+            for(int js=0;js<4096;js++)
+                rms2+=(holder[js]-media)*(holder[js]-media)/4096.;
+            float rms=sqrt(rms2);
+            fWireRMS->Fill(rms);
         
-        wirecol->push_back(recob::WireCreator(holder,*digitVec).move());
+            wirecol->push_back(recob::WireCreator(holder,*digitVec).move());
         
-        // add an association between the last object in wirecol
-        // (that we just inserted) and digitVec
-        if (!util::CreateAssn(*this, evt, *wirecol, digitVec, *WireDigitAssn)) {
-            throw art::Exception(art::errors::ProductRegistrationFailure)
-            << "Can't associate wire #" << (wirecol->size() - 1)
-            << " with raw digit #" << digitVec.key();
+            // add an association between the last object in wirecol
+            // (that we just inserted) and digitVec
+            if (!util::CreateAssn(*this, evt, *wirecol, digitVec, *WireDigitAssn)) {
+                throw art::Exception(art::errors::ProductRegistrationFailure)
+                    << "Can't associate wire #" << (wirecol->size() - 1)
+                    << " with raw digit #" << digitVec.key();
         } // if failed to add association
         //else std::cout << " creating association channel " << channel << std::endl;
 
