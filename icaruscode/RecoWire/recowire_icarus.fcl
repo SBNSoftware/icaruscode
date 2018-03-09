@@ -33,6 +33,7 @@ icarus_recowire:
   ExponentialEndBins: 300
   PostsampleBins:     300
 }
+
 icarus_recowireraw:
 {
 module_type:        "RecoWireICARUSRaw"
