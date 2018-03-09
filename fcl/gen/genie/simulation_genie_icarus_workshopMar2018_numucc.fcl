@@ -69,7 +69,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_numucc_icarus.root"
+   fileName:    "single_numu_icarus.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false

@@ -69,7 +69,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_nue_icarus.root"
+   fileName:    "single_nu_icarus.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
@@ -77,4 +77,4 @@ outputs:
 }
 
 physics.producers.generator.TopVolume:  "volTPCActive"
-physics.producers.generator.GenFlavors: [ 12 ]
+physics.producers.generator.GenFlavors: [ 12, 14, -12, -14 ]
