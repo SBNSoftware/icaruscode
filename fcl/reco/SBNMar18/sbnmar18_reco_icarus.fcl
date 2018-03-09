@@ -32,7 +32,7 @@ icarus_reco_producers:
   rawdigitfilter:                 @local::icarus_rawdigitfilter
 
   ### calwire producers
-  #recowire:                       @local::icarus_recowire
+  recowireraw:                    @local::icarus_recowireraw
   recowire:                       @local::icarus_recowireroi
 
   ### hit-finder producers
@@ -61,7 +61,8 @@ icarus_reco_producers:
 
   ### mc producers
   mchitfinder:                    @local::standard_mchitfinder
-  mcassociations:                 @local::standard_mctrutht0matching
+  mcassociationsGaus:             @local::standard_mctrutht0matching
+  mcassociationsICARUS:           @local::standard_mctrutht0matching
 }
 
 icarus_reco_filters:
@@ -74,6 +75,7 @@ icarus_reco_filters:
 icarus_reco_signalprocessing:     [ rawdigitfilter,
                                     recowire,
                                     gaushit,
+                                    recowireraw,
                                     icarushit]
 
 icarus_reco_trajclusterGaus:      [ trajclusterGaus]
@@ -115,9 +117,11 @@ icarus_reco_producers.rawdigitfilter.ProcessNoise:                              
 icarus_reco_producers.rawdigitfilter.FFTNoise:                                   false
 icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                            [1, 1, 1]
 
-icarus_reco_producers.recowire.DigitModuleLabel:                                 "rawdigitfilter" #"daq"
+icarus_reco_producers.recowire.DigitModuleLabel:                                 "rawdigitfilter"
 icarus_reco_producers.recowire.Threshold:                                        [0, 0, 0]
 icarus_reco_producers.recowire.NumSigma:                                         [3, 3, 3]
+
+icarus_reco_producers.recowireraw.DigitModuleLabel:                              "rawdigitfilter"
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                                "recowire"
 icarus_reco_producers.gaushit.MinSig:                                            [  5.,   5.,   5.  ]
@@ -130,7 +134,7 @@ icarus_reco_producers.gaushit.CandidateHits:                                    
 icarus_reco_producers.gaushit.LongMaxHits:                                       [25, 25, 25]
 icarus_reco_producers.gaushit.LongPulseWidth:                                    [10, 10, 10]
 
-icarus_reco_producers.icarushit.CalDataModuleLabel:                              "recowire"
+icarus_reco_producers.icarushit.CalDataModuleLabel:                              "recowireraw"
 
 icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                          "gaushit"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                          "pandoraGaus"
