@@ -16,5 +16,8 @@ icarus_genie_simple.FluxFiles:              ["converted_beammc_icarus_*.root"]
 icarus_genie_simple.GHepPrintLevel:         13
 icarus_genie_simple.POTPerSpill:            5.e12
 
+icarus_genie_simple.GlobalTimeOffset:       0.
+icarus_genie_simple.RandomTimeOffset:       1600.
+
 END_PROLOG
 
