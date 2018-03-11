@@ -268,7 +268,7 @@ namespace hit {
 
   void ICARUSHitFinder::endJob()
   {
-      std::cout << " ICARUSHitFinder endjob " << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " ICARUSHitFinder endjob " << std::endl;
    
   }
 
@@ -277,8 +277,8 @@ namespace hit {
   {      //0
       std::ofstream output("areaNoFit.out");
       
-    //GET THE GEOMETRY.
-    art::ServiceHandle<geo::Geometry> geom;
+      //GET THE GEOMETRY.
+      art::ServiceHandle<geo::Geometry> geom;
       
       // ###############################################
       // ### Making a ptr vector to put on the event ###
@@ -296,22 +296,18 @@ namespace hit {
       // ##########################################
       art::Handle< std::vector<recob::Wire> > wireVecHandle;
       evt.getByLabel(fCalDataModuleLabel,wireVecHandle);
-
       
       // #################################################################
       // ### Reading in the RawDigit associated with these wires, too  ###
       // #################################################################
       art::FindOneP<raw::RawDigit> RawDigits
       (wireVecHandle, evt, fCalDataModuleLabel);
-
       
       // Channel Number
       raw::ChannelID_t channel = raw::InvalidChannelID;
       
-      
       std::vector<float> holder;      //HOLDS SIGNAL DATA.
       std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
-      
       std::vector<float> startTimes;  //STORES TIME OF WINDOW START.
       std::vector<float> maxTimes;    //STORES TIME OF LOCAL MAXIMUM.
       std::vector<float> endTimes;    //STORES TIME OF WINDOW END.
@@ -348,7 +344,6 @@ namespace hit {
       for(int jw=0;jw<5600;jw++)
       wInt[jw]=0;
       
-      
       unsigned int nhitsC(0),nhitsI1(0),nhitsI2(0); //total number of reconstructed hits in a view
       
       unsigned int nnhitsC(0),nnhitsI1(0),nnhitsI2(0); //total number of reconstructed hits in a view
@@ -362,7 +357,6 @@ namespace hit {
       if(fThetaAngle==70) {minWireC=2539; maxWireC=2805;}
       if(fThetaAngle==80) {minWireC=2539; maxWireC=2740;}
       
-
       //45 deg
       /*int minWireC=2539; //empirical
       int maxWireC=3142;
@@ -371,7 +365,6 @@ namespace hit {
       int minWireI1=0; //empirical
       int maxWireI1=497;*/
     
- 
       int minWireI2=2539; //empirical
       int maxWireI2=4700;
       int minDrift=850;
@@ -391,7 +384,6 @@ namespace hit {
           channel = wire->Channel();
           
           std::vector<float> signal(wire->Signal());
-
           
           // get the WireID for this hit
           std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
@@ -402,492 +394,465 @@ namespace hit {
           size_t cryostat=wid.Cryostat;
           size_t tpc=wid.TPC;
 
+          holder.clear();
 
+          //GET THE REFERENCE TO THE CURRENT raw::RawDigit.
+          channel   = rawdigits->Channel();
+          fDataSize = rawdigits->Samples();
 
-      holder.clear();
-
-      //GET THE REFERENCE TO THE CURRENT raw::RawDigit.
-      channel   = rawdigits->Channel();
-      fDataSize = rawdigits->Samples();
-
-        std::vector<geo::WireID> widVec = geom->ChannelToWire(channel);
-        size_t                   iwire  = widVec[0].Wire;
+          std::vector<geo::WireID> widVec = geom->ChannelToWire(channel);
+          size_t                   iwire  = widVec[0].Wire;
      //   size_t plane = widVec[0].Plane;
-
         
-      rawadc.resize(fDataSize);
-      holder.resize(fDataSize);
+          rawadc.resize(fDataSize);
+          holder.resize(fDataSize);
 
-      //UNCOMPRESS THE DATA.
-      if (fUncompressWithPed) {
-        int pedestal = (int)rawdigits->GetPedestal();
-        raw::Uncompress(rawdigits->ADCs(), rawadc, pedestal, rawdigits->Compression());
-      }
-      else{
-        raw::Uncompress(rawdigits->ADCs(), rawadc, rawdigits->Compression());
-      }
+          //UNCOMPRESS THE DATA.
+          if (fUncompressWithPed) {
+              int pedestal = (int)rawdigits->GetPedestal();
+              raw::Uncompress(rawdigits->ADCs(), rawadc, pedestal, rawdigits->Compression());
+          }
+          else{
+              raw::Uncompress(rawdigits->ADCs(), rawadc, rawdigits->Compression());
+          }
 
-      //GET THE LIST OF BAD CHANNELS.
-      lariov::ChannelStatusProvider const& channelStatus
-        = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
+          //GET THE LIST OF BAD CHANNELS.
+          lariov::ChannelStatusProvider const& channelStatus
+            = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
 
-      lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
-        = channelStatus.BadChannels();
+          lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
+            = channelStatus.BadChannels();
 
-      for(unsigned int bin = 0; bin < fDataSize; ++bin){ 
-        //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
-        holder[bin]=signal[bin];
-          if(plane == 0) holder[bin]=-holder[bin];
-          //if(plane == 1) holder[bin]=-holder[bin];
-         if(plane==2&&iwire==3600&&abs(holder[bin])>0.1) std::cout << " col wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
-         if(plane==1&&iwire==3600&&abs(holder[bin])>0.1) std::cout << " in2 wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
-         if(plane==0&&iwire==600&&abs(holder[bin])>0.1) std::cout << " in1 wire 600 bin " << bin << " signal " << holder[bin] << std::endl;
-      }
+          for(unsigned int bin = 0; bin < fDataSize; ++bin){
+              //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
+              holder[bin]=signal[bin];
+              if(plane == 0) holder[bin]=-holder[bin];
+              //if(plane == 1) holder[bin]=-holder[bin];
+              if(plane==2&&iwire==3600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " col wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
+              if(plane==1&&iwire==3600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " in2 wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
+              if(plane==0&&iwire==600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " in1 wire 600 bin " << bin << " signal " << holder[bin] << std::endl;
+          }
 
-        if(plane==0&&iwire<lwI1) lwI1=iwire;
-        if(plane==0&&iwire>hwI1) hwI1=iwire;
-        if(plane==1&&iwire<lwI2) lwI2=iwire;
-        if(plane==1&&iwire>hwI2) hwI2=iwire;
-        if(plane==2&&iwire<lwC) lwC=iwire;
-        if(plane==2&&iwire>hwC) hwC=iwire;
+          if(plane==0&&iwire<lwI1) lwI1=iwire;
+          if(plane==0&&iwire>hwI1) hwI1=iwire;
+          if(plane==1&&iwire<lwI2) lwI2=iwire;
+          if(plane==1&&iwire>hwI2) hwI2=iwire;
+          if(plane==2&&iwire<lwC) lwC=iwire;
+          if(plane==2&&iwire>hwC) hwC=iwire;
         
+          // sigType = geom->SignalType(channel);
+
+          peakHeight.clear();
+          endTimes.clear();
+          startTimes.clear();
+          maxTimes.clear();
+          charge.clear();
+          hitrms.clear();
         
-        
-     // sigType = geom->SignalType(channel);
+          bool channelSwitch = false;
 
-      peakHeight.clear();
-      endTimes.clear();
-      startTimes.clear();
-      maxTimes.clear();
-      charge.clear();
-      hitrms.clear();
-        
-             bool channelSwitch = false;
+          for(auto it = BadChannels.begin(); it != BadChannels.end(); it++)
+          {
+              if(channel==*it)
+              {
+                  channelSwitch = true;
+                  break;
+              }
+          }
 
-      for(auto it = BadChannels.begin(); it != BadChannels.end(); it++)
-      {
-        if(channel==*it)
-        {
-          channelSwitch = true;
-          break;
-        }
-      }
+          if(channelSwitch==false)
+          { //1
+              // mf::LogDebug("ICARUSHitFinder") << " inside channel switch " << std::endl;
+          
+              if(plane == 0) threshold=fInd1Threshold;
+              else if(plane == 1) threshold=fInd2Threshold;
+              else if(plane == 2) threshold=fColThreshold;
+              if(plane == 0) window=fInd1Window;
+              else if(plane == 1) window=fInd2Window;
+              else if(plane == 2) window=fColWindow;
+              if(plane == 0) abovecut=fInd1Above;
+              else if(plane == 1) abovecut=fInd2Above;
+              else if(plane == 2) abovecut=fColAbove;
+              if(plane == 0) fall=fInd1Fall;
+              else if(plane == 1) fall=fInd2Fall;
+              else if(plane == 2) fall=fColFall;
+              if(plane == 0) width=fInd1Width;
+              else if(plane == 1) width=fInd2Width;
+              else if(plane == 2) width=fColWidth;
 
-      if(channelSwitch==false)
-      { //1
-         // std::cout << " inside channel switch " << std::endl;
-          
-          if(plane == 0) threshold=fInd1Threshold;
-          else if(plane == 1) threshold=fInd2Threshold;
-          else if(plane == 2) threshold=fColThreshold;
-          if(plane == 0) window=fInd1Window;
-          else if(plane == 1) window=fInd2Window;
-          else if(plane == 2) window=fColWindow;
-          if(plane == 0) abovecut=fInd1Above;
-          else if(plane == 1) abovecut=fInd2Above;
-          else if(plane == 2) abovecut=fColAbove;
-          if(plane == 0) fall=fInd1Fall;
-          else if(plane == 1) fall=fInd2Fall;
-          else if(plane == 2) fall=fColFall;
-          if(plane == 0) width=fInd1Width;
-          else if(plane == 1) width=fInd2Width;
-          else if(plane == 2) width=fColWidth;
+              //  mf::LogDebug("ICARUSHitFinder") << " col width " << fColWidth << std::endl;
 
-        //  std::cout << " col width " << fColWidth << std::endl;
-
-          int iw=iwire;
-          unsigned int i;
+              int iw=iwire;
+              unsigned int i;
           
-          int iflag;
-          int localbellow,rising;
-          int begin;
-         // int nSamp=digitVec->Samples();
-          int lastcomputedmean,count;
-          int peakheight;
-          int localminidx,localmin;
-         // int jj, jcount;
-         // float area;
-          ICARUSHit h;
-          std::vector<ICARUSHit> hits;
-
-   
-
+              int iflag;
+              int localbellow,rising;
+              int begin;
+              // int nSamp=digitVec->Samples();
+              int lastcomputedmean,count;
+              int peakheight;
+              int localminidx,localmin;
+              // int jj, jcount;
+              // float area;
+              ICARUSHit h;
+              std::vector<ICARUSHit> hits;
           
-          // Hit finding parameters
+              // Hit finding parameters
+              const int rise=5;
           
+              // initialize parameters
+              iflag=0;                // equal to one if we are within a hit candidate
+              peakheight=-9999;       // last found hit maximum
+              begin=-1;               // last found hit initial sample
+              localbellow=0;          // number of times we are bellow peakheight
+              lastcomputedmean=0;     // the value we compare with to know if we have a hit
+              count=0;
+              for(unsigned int j=0;j<window;j++)
+                  count+=holder[j];
+              lastcomputedmean=(count>=0)? 0 : count/window;
+              //      negpeakwidth=0;
+              //      if(lastcomputedmean<0) negpeakwidth++;
+              localmin=9999;
+              localminidx=-1;
+              //     if ( typ == BasicData::ISBASICPLANE_PMT && iw==1 ){
+              //cout << "window, mean " <<  window <<" "<<lastcomputedmean<<endl;
+              //cout << "wire, nsamp " <<  iw <<" "<<nSamp<<endl;
+              //}
+              // loop on the selected samples
           
-          const int rise=5;
+//          mf::LogDebug("ICARUSHitFinder") << " before loop fDataSize " << fDataSize << std::endl;
           
-                  // initialize parameters
-                  iflag=0;                // equal to one if we are within a hit candidate
-                  peakheight=-9999;       // last found hit maximum
-                  begin=-1;               // last found hit initial sample
-                  localbellow=0;          // number of times we are bellow peakheight
-                  lastcomputedmean=0;     // the value we compare with to know if we have a hit
-                  count=0;
-                  for(unsigned int j=0;j<window;j++)
-                      count+=holder[j];
-                  lastcomputedmean=(count>=0)? 0 : count/window;
-                  //      negpeakwidth=0;
-                  //      if(lastcomputedmean<0) negpeakwidth++;
-                  localmin=9999;
-                  localminidx=-1;
-                  //     if ( typ == BasicData::ISBASICPLANE_PMT && iw==1 ){
-                  //cout << "window, mean " <<  window <<" "<<lastcomputedmean<<endl;
-                  //cout << "wire, nsamp " <<  iw <<" "<<nSamp<<endl;
-                  //}
-                  // loop on the selected samples
-          
-//          std::cout << " before loop fDataSize " << fDataSize << std::endl;
-          
-                      for(i=0;i<fDataSize;i++)
-                      { //2
-                          //std::cout << " i " << i << " holder " << holder[i] << std::endl;
-                          // skip sharp peaks
-                          //if(abs(holder[i]-lastcomputedmean)>100)
-                            //  continue;
+              for(i=0;i<fDataSize;i++)
+              { //2
+                  //mf::LogDebug("ICARUSHitFinder") << " i " << i << " holder " << holder[i] << std::endl;
+                  // skip sharp peaks
+                  //if(abs(holder[i]-lastcomputedmean)>100)
+                    //  continue;
+                  
+                  if(!iflag)
+                      lastcomputedmean=0;
+                  
+                  if(holder[i]-lastcomputedmean>threshold) // we're within a hit OR hit group
+                  { //3
+                  //  if(plane==0&&cryostat==0&&tpc==0)
+                    //    mf::LogDebug("ICARUSHitFinder") << " iwire " << iwire <<"  over threshold bin " << i << std::endl;
+                      iflag=1;
+                      
+                      // we're in the beginning of the hit
+                      if(begin<0) {
                           
-                          if(!iflag)
-                              lastcomputedmean=0;
+                          begin=i;     // hit starting point
+                      }
+                      
+                      // keep peak info
+                      if(holder[i]-lastcomputedmean>peakheight)
+                      {
+                          peakheight=holder[i]-lastcomputedmean;
+                          h.iAdcMax=holder[i];
+                          h.peakHeight=peakheight;
+                          h.iWire=iw;
+                          h.iDrift=i;
+                          localbellow=0;
+                      }
+                      
+                      // resolve close hits
+                      //	      if(*(pf+i)-(peakheight+lastcomputedmean)<-threshold) // we're in the slope down
+                      if(holder[i]-(peakheight+lastcomputedmean)<-1) // we're in the slope down
+                      {
+                          localbellow++;
+                          //mf::LogDebug("ICARUSHitFinder") << " localbellow " << localbellow << " abovecut " << abovecut << std::endl;
+                      }
+                      if(localbellow>abovecut)
+                      { //4
+                          //if ( typ == BasicData::ISBASICPLANE_PMT && iw==1 )
+                          //	     cout << "localbellow ab cut"<<i << endl;
+                          // keep local minimum as border between consecutive hits
+                          if(holder[i]<localmin) {localmin=holder[i];localminidx=i;}
                           
-                          if(holder[i]-lastcomputedmean>threshold) // we're within a hit OR hit group
-                          { //3
-                          //  if(plane==0&&cryostat==0&&tpc==0)
-                            //    std::cout << " iwire " << iwire <<"  over threshold bin " << i << std::endl;
-                              iflag=1;
-                              
-                              // we're in the beginning of the hit
-                              if(begin<0) {
-                                  
-                                  begin=i;     // hit starting point
-                              }
-                              
-                              // keep peak info
-                              if(holder[i]-lastcomputedmean>peakheight)
-                              {
-                                  peakheight=holder[i]-lastcomputedmean;
-                                  h.iAdcMax=holder[i];
-                                  h.peakHeight=peakheight;
-                                  h.iWire=iw;
-                                  h.iDrift=i;
-                                  localbellow=0;
-                              }
-                              
-                              // resolve close hits
-                              //	      if(*(pf+i)-(peakheight+lastcomputedmean)<-threshold) // we're in the slope down
-                              if(holder[i]-(peakheight+lastcomputedmean)<-1) // we're in the slope down
-                              {
-                                  localbellow++;
-                                  //std::cout << " localbellow " << localbellow << " abovecut " << abovecut << std::endl;
-                              }
-                              if(localbellow>abovecut)
-                              { //4
-                                  //if ( typ == BasicData::ISBASICPLANE_PMT && iw==1 )
-                                  //	     cout << "localbellow ab cut"<<i << endl;
-                                  // keep local minimum as border between consecutive hits
-                                  if(holder[i]<localmin) {localmin=holder[i];localminidx=i;}
-                                  
-                                  // count the number of rising samples within the following n=<rise> samples
-                                  rising=0;
-                                  for(int l=0;l<rise;l++)
-                                  {
-                                      if(i+l<fDataSize) {
-                                          if(holder[i+l+1]-holder[i+l]>0) rising++;
-                                          else if(holder[i+l+1]-holder[i+l]<0) rising--;
-                                      }
-                                  }
-                                  // if after a slope down there's a slope up save the previous hit
-                                  if(rising>abovecut)
-                                  { //5
-                                      h.iniDrift=begin;
-                                      //		      h.finDrift=i+iniSamp;
-                                      h.finDrift=localminidx;
-                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                                        std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
-                                     // expandHit(h,holder,hits);
-                                      
-                                      if((h.finDrift-h.iDrift)>=fall && h.finDrift-h.iniDrift>width)
-                                      { //6
-                                          h.iwindow=h.iniDrift;
-                                          h.fwindow=h.finDrift;
-                                         // std::cout << " adding hit case 1" << std::endl;
-                                          hits.push_back(h);
-                                          peakheight=-9999;
-                                          h.iAdcMax=0;
-                                          //begin=i+iniSamp+1;
-                                          begin=localminidx+1;
-                                          localbellow=0;
-                                          localminidx=-1;
-                                          localmin=9999;
-                                      }
-                                  }
+                          // count the number of rising samples within the following n=<rise> samples
+                          rising=0;
+                          for(int l=0;l<rise;l++)
+                          {
+                              if(i+l<fDataSize) {
+                                  if(holder[i+l+1]-holder[i+l]>0) rising++;
+                                  else if(holder[i+l+1]-holder[i+l]<0) rising--;
                               }
                           }
-                          else // outside the hit
-                          { //3
-                              //if (  typ == BasicData::ISBASICPLANE_PMT  && iw==1){
-                              //	cout << "out hit " << iflag << "iadc " << h.iAdcMax <<endl;
-                              //	cout << " in, fin " << begin << " " << i+iniSamp << "peak "<<h.iDrift <<endl;}
-                              if (iflag==1 && h.iAdcMax) //just getting out of the latest hit
-                              { //4
-                                  h.iniDrift=begin;
-                                  h.finDrift=i;
-                                  if(iwire==4526&&plane==2&&cryostat==0&&tpc==0) {
-                                      //std::cout << " end hit  " << i << " fall? " << h.finDrift-h.iDrift <<" width? " << h.finDrift-h.iniDrift << std::endl;
-//                                       std::cout << " end hit  " << i << " fall par " << fall <<" width par " << width << std::endl;
-                                  }
-                                  if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
-                                  { //5
-                                      h.iwindow=h.iniDrift;
-                                      h.fwindow=h.finDrift;
-                                   //if(iwire==4526&&plane==1&&cryostat==0&&tpc==0)
-                                    //std::cout << " adding hit case 2, tick " << i << std::endl;
-                                      if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                                      std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
-                                      //expandHit(h,holder,hits);
-                                    
-                                      hits.push_back(h);
-                                          //InsertHit(&h);
-                                      //  if ( typ != BasicData::ISBASICPLANE_PMT)
-                                    
-                                  }
-                                  
-                                  peakheight=-9999;
-                                  begin=-1;
-                                  iflag=0;
-                                  localbellow=0;
-                              }
-                              
-                          }
-                          
-                          //keep the last mean value to which we have to come back after the hit
-                          if(i>=window && window) {
-                              if(holder[i]-count/window>-10)
-                              {
-                                  count+=holder[i];
-                                  count-=holder[i-window];
-                                  //		if((float) count/window<0) negpeakwidth++;
-                                  //		else negpeakwidth=0;
-                              }	  
-                          }
-                      } //end loop on samples
-          
-                      //if we were within a hit while reaching last sample, keep it
-                      if(iflag==1 && h.iAdcMax) //just getting out of the latest hit
-                      { //3
-                          h.iniDrift=begin;
-                          h.finDrift=i-1;
-                          
-                          if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
-                          {		    
+                          // if after a slope down there's a slope up save the previous hit
+                          if(rising>abovecut)
+                          { //5
+                              h.iniDrift=begin;
+                              //		      h.finDrift=i+iniSamp;
+                              h.finDrift=localminidx;
                               if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                              std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                                mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                              // expandHit(h,holder,hits);
-                     
-                              h.iwindow=h.iniDrift;
-                              h.fwindow=h.finDrift;
-                              //std::cout << " adding hit case 3 " << i << std::endl;
-                              hits.push_back(h);
-                             // InsertHit(&h);
+                              
+                              if((h.finDrift-h.iDrift)>=fall && h.finDrift-h.iniDrift>width)
+                              { //6
+                                  h.iwindow=h.iniDrift;
+                                  h.fwindow=h.finDrift;
+                                 // mf::LogDebug("ICARUSHitFinder") << " adding hit case 1" << std::endl;
+                                  hits.push_back(h);
+                                  peakheight=-9999;
+                                  h.iAdcMax=0;
+                                  //begin=i+iniSamp+1;
+                                  begin=localminidx+1;
+                                  localbellow=0;
+                                  localminidx=-1;
+                                  localmin=9999;
+                              }
                           }
                       }
-        
+                  }
+                  else // outside the hit
+                  { //3
+                      //if (  typ == BasicData::ISBASICPLANE_PMT  && iw==1){
+                      //	cout << "out hit " << iflag << "iadc " << h.iAdcMax <<endl;
+                      //	cout << " in, fin " << begin << " " << i+iniSamp << "peak "<<h.iDrift <<endl;}
+                      if (iflag==1 && h.iAdcMax) //just getting out of the latest hit
+                      { //4
+                          h.iniDrift=begin;
+                          h.finDrift=i;
+                          if(iwire==4526&&plane==2&&cryostat==0&&tpc==0) {
+                              //mf::LogDebug("ICARUSHitFinder") << " end hit  " << i << " fall? " << h.finDrift-h.iDrift <<" width? " << h.finDrift-h.iniDrift << std::endl;
+//                               mf::LogDebug("ICARUSHitFinder") << " end hit  " << i << " fall par " << fall <<" width par " << width << std::endl;
+                          }
+                                  if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
+                          { //5
+                              h.iwindow=h.iniDrift;
+                              h.fwindow=h.finDrift;
+                           //if(iwire==4526&&plane==1&&cryostat==0&&tpc==0)
+                            //mf::LogDebug("ICARUSHitFinder") << " adding hit case 2, tick " << i << std::endl;
+                              if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
+                              mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                              //expandHit(h,holder,hits);
+                            
+                              hits.push_back(h);
+                                  //InsertHit(&h);
+                              //  if ( typ != BasicData::ISBASICPLANE_PMT)
+                            
+                          }
+                          
+                          peakheight=-9999;
+                          begin=-1;
+                          iflag=0;
+                          localbellow=0;
+                      }
+                  }
+                          
+                   //keep the last mean value to which we have to come back after the hit
+                   if(i>=window && window) {
+                       if(holder[i]-count/window>-10)
+                       {
+                           count+=holder[i];
+                           count-=holder[i-window];
+                           //		if((float) count/window<0) negpeakwidth++;
+                           //		else negpeakwidth=0;
+                       }
+                   }
+               } //end loop on samples
           
-      
+               //if we were within a hit while reaching last sample, keep it
+               if(iflag==1 && h.iAdcMax) //just getting out of the latest hit
+               { //3
+                   h.iniDrift=begin;
+                   h.finDrift=i-1;
+                   
+                   if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
+                   {
+                       if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
+                       mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                      // expandHit(h,holder,hits);
+               
+                       h.iwindow=h.iniDrift;
+                       h.fwindow=h.finDrift;
+                       //mf::LogDebug("ICARUSHitFinder") << " adding hit case 3 " << i << std::endl;
+                       hits.push_back(h);
+                      // InsertHit(&h);
+                   }
+               }
           
-    
-      int    numHits(0);                       //NUMBER OF CONSECUTIVE HITS BEING FITTED.
-      int    hitIndex(0);                      //INDEX OF CURRENT HIT IN SEQUENCE.
-      double amplitude(0), position(0);        //FIT PARAMETERS.
-      double start(0), end(0);
-      double amplitudeErr(0), positionErr(0);  //FIT ERRORS.
-      double goodnessOfFit(0), chargeErr(0);   //CHI2/NDF and error on charge.
-      double hrms(0);
-      double totSig(0);
-      double intSig(0);
+              int    numHits(0);                       //NUMBER OF CONSECUTIVE HITS BEING FITTED.
+              int    hitIndex(0);                      //INDEX OF CURRENT HIT IN SEQUENCE.
+              double amplitude(0), position(0);        //FIT PARAMETERS.
+              double start(0), end(0);
+              double amplitudeErr(0), positionErr(0);  //FIT ERRORS.
+              double goodnessOfFit(0), chargeErr(0);   //CHI2/NDF and error on charge.
+              double hrms(0);
+              double totSig(0);
+              double intSig(0);
 
-          
-          
-
-          std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+              std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
        //   geo::WireID wid = wids[0];
 
-
+              numHits = hits.size();
+              int nghC=0;
+              int nghI2=0;
+              int nghI1=0;
           
-      numHits = hits.size();
-          int nghC=0;
-          int nghI2=0;
-          int nghI1=0;
+              if(cryostat==0&&tpc==0&&plane!=2)
+                  mf::LogDebug("ICARUSHitFinder") << " plane " << plane <<  "  Wire " << iwire << " numhits " << numHits << std::endl;
+              for (int i = 0; i < numHits; i++) {
+                  expandHit(hits[i],holder,hits);
+                  hits[i].iwindow=hits[i].iniDrift;
+                  hits[i].fwindow=hits[i].finDrift;
+              }
+              for (int i = 0; i < numHits; i++)
+              {
+                  if(cryostat==0&&tpc==0&&plane==1)
+                      mf::LogDebug("ICARUSHitFinder") << "  middle ind hit " << hits[i].iniDrift << " fin " << hits[i].finDrift << std::endl;
+                  totSig=0;
+                  intSig=0;
+                  // if(cryostat!=0||tpc!=0) continue;
           
-         if(cryostat==0&&tpc==0&&plane!=2)
-             std::cout << " plane " << plane <<  "  Wire " << iwire << " numhits " << numHits << std::endl;
-          for (int i = 0; i < numHits; i++) {
-           expandHit(hits[i],holder,hits);
-              hits[i].iwindow=hits[i].iniDrift;
-              hits[i].fwindow=hits[i].finDrift;
-          }
-      for (int i = 0; i < numHits; i++)
-      {
-          if(cryostat==0&&tpc==0&&plane==1)
-              std::cout << "  middle ind hit " << hits[i].iniDrift << " fin " << hits[i].finDrift << std::endl;
-          totSig=0;
-          intSig=0;
-          // if(cryostat!=0||tpc!=0) continue;
+                  amplitude     = hits[i].peakHeight;
+                  position      = hits[i].iDrift;
+                  start         = hits[i].iniDrift;
+                  end           = hits[i].finDrift;
+                  //temporary definition of hrms for ICARUS non-Gaussian hits
+                  hrms          = (end-start)/3.;
+                  amplitudeErr  = -1;
+                  positionErr   = 1.0;
+                  goodnessOfFit = -1;
+                  chargeErr     = -1;
           
+                  computeBestLocalMean(hits[i],holder,hits);
+                  //hits[i].localmean=0;
           
-          amplitude     = hits[i].peakHeight;
-          position      = hits[i].iDrift;
-          start         = hits[i].iniDrift;
-          end           = hits[i].finDrift;
-          //temporary definition of hrms for ICARUS non-Gaussian hits
-          hrms          = (end-start)/3.;
-          amplitudeErr  = -1;
-          positionErr   = 1.0;
-          goodnessOfFit = -1;
-          chargeErr     = -1;
+                  // totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+                  for(unsigned int js=start;js<=end;js++)
+                      totSig+=(holder[js]-hits[i].localmean);
+                  if(!i)
+                      for(unsigned int js=0;js<=4095;js++)
+                          intSig+=(holder[js]-hits[i].localmean);
+                  // if(plane==2&&hits[i].iWire==4451)
+                  //   for(unsigned int js=0;js<=4095;js++)
+                  //     mf::LogDebug("ICARUSHitFinder") << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
+                  // if(cryostat==0&&tpc==0&&plane==2&&hits[i].localmean!=0)
+                  //mf::LogDebug("ICARUSHitFinder") << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
           
-          computeBestLocalMean(hits[i],holder,hits);
-          //hits[i].localmean=0;
+                  //mf::LogDebug("ICARUSHitFinder") << " before hit creator " << std::endl;
+                  recob::HitCreator hit(
+                                        *wire,                                                                     //RAW DIGIT REFERENCE.
+                                        wid,                                                                           //WIRE ID.
+                                        start,                                                                         //START TICK.
+                                        end,                                                                           //END TICK.
+                                        hrms,                                                                          //RMS.
+                                        position,                                                                      //PEAK_TIME.
+                                        positionErr,                                                                   //SIGMA_PEAK_TIME.
+                                        amplitude,                                                                     //PEAK_AMPLITUDE.
+                                        amplitudeErr,                                                                  //SIGMA_PEAK_AMPLITUDE.
+                                        totSig,                                                                        //HIT_INTEGRAL.
+                                        chargeErr,                                                                     //HIT_SIGMA_INTEGRAL.
+                                        std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.), //SUMMED CHARGE.
+                                        1,                                                                             //MULTIPLICITY.
+                                        -1,                                                                            //LOCAL_INDEX.
+                                        goodnessOfFit,                                                                 //WIRE ID.
+                                        int(end-start+1)                                                               //DEGREES OF FREEDOM.
+                                        );
           
-          // totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
-          for(unsigned int js=start;js<=end;js++)
-              totSig+=(holder[js]-hits[i].localmean);
-          if(!i)
-              for(unsigned int js=0;js<=4095;js++)
-                  intSig+=(holder[js]-hits[i].localmean);
-          // if(plane==2&&hits[i].iWire==4451)
-          //   for(unsigned int js=0;js<=4095;js++)
-          //     std::cout << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
-          // if(cryostat==0&&tpc==0&&plane==2&&hits[i].localmean!=0)
-          //std::cout << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
+                  // mf::LogDebug("ICARUSHitFinder") << " before emplace back " << std::endl;
+                  //       filteredHitVec.push_back(hit.copy());
           
+                  hcol.emplace_back(hit.move(), wire, rawdigits);
           
+                  // bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
+                  bool wireWindowC=hits[i].iWire>=minWireC&&hits[i].iWire<=maxWireC;
+                  bool wireWindowI2=hits[i].iWire>=minWireI2&&hits[i].iWire<=maxWireI2;
+                  //bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
           
-          //std::cout << " before hit creator " << std::endl;
-          recob::HitCreator hit(
-                                *wire,                                                                     //RAW DIGIT REFERENCE.
-                                wid,                                                                           //WIRE ID.
-                                start,                                                                         //START TICK.
-                                end,                                                                           //END TICK.
-                                hrms,                                                                          //RMS.
-                                position,                                                                      //PEAK_TIME.
-                                positionErr,                                                                   //SIGMA_PEAK_TIME.
-                                amplitude,                                                                     //PEAK_AMPLITUDE.
-                                amplitudeErr,                                                                  //SIGMA_PEAK_AMPLITUDE.
-                                totSig,                                                                        //HIT_INTEGRAL.
-                                chargeErr,                                                                     //HIT_SIGMA_INTEGRAL.
-                                std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.), //SUMMED CHARGE.
-                                1,                                                                             //MULTIPLICITY.
-                                -1,                                                                            //LOCAL_INDEX.
-                                goodnessOfFit,                                                                 //WIRE ID.
-                                int(end-start+1)                                                               //DEGREES OF FREEDOM.
-                                );
+                  bool outDriftWindow=hits[i].iDrift<=minDrift||hits[i].iDrift>=maxDrift;
+                  bool outWireWindowC=hits[i].iWire<=minWireC||hits[i].iWire>=maxWireC;
+                  bool outWireWindowI2=hits[i].iWire<=minWireI2||hits[i].iWire>=maxWireI2;
+                  //bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
           
-          // std::cout << " before emplace back " << std::endl;
-          //       filteredHitVec.push_back(hit.copy());
+                  // if(plane==2)
+                  //   mf::LogDebug("ICARUSHitFinder") << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
           
-          hcol.emplace_back(hit.move(), wire, rawdigits);
-          
-          // bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
-          bool wireWindowC=hits[i].iWire>=minWireC&&hits[i].iWire<=maxWireC;
-          bool wireWindowI2=hits[i].iWire>=minWireI2&&hits[i].iWire<=maxWireI2;
-          //bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
-          
-          bool outDriftWindow=hits[i].iDrift<=minDrift||hits[i].iDrift>=maxDrift;
-          bool outWireWindowC=hits[i].iWire<=minWireC||hits[i].iWire>=maxWireC;
-          bool outWireWindowI2=hits[i].iWire<=minWireI2||hits[i].iWire>=maxWireI2;
-          //bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
-          
-          // if(plane==2)
-          //   std::cout << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
-          
-          if(plane==0)  {
-              //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
-              nghI1++;
-              if(nghI1==1) nw1hitI1++;
+                  if(plane==0)  {
+                      //   mf::LogDebug("ICARUSHitFinder") << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+                      nghI1++;
+                      if(nghI1==1) nw1hitI1++;
               
-              //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
-              fHeightI1->Fill(amplitude);
-              fWidthI1->Fill(end-start);
-          }
-          if(plane==1&&wireWindowI2) {
-              //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
-              nghI2++;
-              if(nghI2==1) nw1hitI2++;
-              // std::cout << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].iDrift << " amplitude " << amplitude << std::endl;
-              fHeightI2->Fill(amplitude);
-              fWidthI2->Fill(end-start);
-          }
-          if(plane==2&&wireWindowC) {
-              nghC++;
-              if(nghC==1) nw1hitC++;
-              nhWire[hits[i].iWire]++;
-              fHeightC->Fill(amplitude);
-              fWidthC->Fill(end-start);
-              // fAreaC->Fill(totSig);
-              wCharge[hits[i].iWire]+=totSig;
-              wInt[hits[i].iWire]+=intSig;
+                      //  mf::LogDebug("ICARUSHitFinder") << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
+                      fHeightI1->Fill(amplitude);
+                      fWidthI1->Fill(end-start);
+                  }
+                  if(plane==1&&wireWindowI2) {
+                      //   mf::LogDebug("ICARUSHitFinder") << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+                      nghI2++;
+                      if(nghI2==1) nw1hitI2++;
+                      // mf::LogDebug("ICARUSHitFinder") << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].iDrift << " amplitude " << amplitude << std::endl;
+                      fHeightI2->Fill(amplitude);
+                      fWidthI2->Fill(end-start);
+                  }
+                  if(plane==2&&wireWindowC) {
+                      nghC++;
+                      if(nghC==1) nw1hitC++;
+                      nhWire[hits[i].iWire]++;
+                      fHeightC->Fill(amplitude);
+                      fWidthC->Fill(end-start);
+                      // fAreaC->Fill(totSig);
+                      wCharge[hits[i].iWire]+=totSig;
+                      wInt[hits[i].iWire]+=intSig;
               
-              if(intSig<0.&&hits[i].iWire==4451)
-                  std::cout << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
-          }
+                      if(intSig<0.&&hits[i].iWire==4451)
+                          mf::LogDebug("ICARUSHitFinder") << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
+                  }
           
-          if(plane==0) nhitsI1++;
-          if(plane==1) nhitsI2++;
-          if(plane==2) nhitsC++;
+                  if(plane==0) nhitsI1++;
+                  if(plane==1) nhitsI2++;
+                  if(plane==2) nhitsC++;
           
-          if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
-          if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
-              if(cryostat==0&&tpc==0)
-                  std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << " nnhit2 " << nnhitsI2 <<  std::endl;
-          }
-          if(plane==2&&tpc==0&&cryostat==0&&outWireWindowC) { nnhitsC++; fNoiseC->Fill(amplitude); }
+                  if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
+                  if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
+                      if(cryostat==0&&tpc==0)
+                          mf::LogDebug("ICARUSHitFinder") << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << " nnhit2 " << nnhitsI2 <<  std::endl;
+                  }
+                  if(plane==2&&tpc==0&&cryostat==0&&outWireWindowC) { nnhitsC++; fNoiseC->Fill(amplitude); }
           
-          
-          ++hitIndex;
-      } //end loop on found hits
-          if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
-           std::cout << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
-          if(plane==2&&cryostat==0&&tpc==0)
-           if(wCharge[iwire]>0)
-           fAreaC->Fill(wCharge[iwire]);
-          if(plane==2&&cryostat==0&&tpc==0)
-              if(wCharge[iwire]>0)
-                  output << iwire << " " <<wCharge[iwire] << std::endl;
-          if(plane==2&&cryostat==0&&tpc==0)
-          if(wInt[iwire]>0)
-          fIntegralC->Fill(wInt[iwire]);
-          if(wInt[iwire]>0&&cryostat==0&&tpc==0)
-              fAreaInt->Fill(wCharge[iwire]/wInt[iwire]);
-          //if(wCharge[iwire]>0&&cryostat==0&&tpc==0&&wCharge[iwire]/wInt[iwire]<0.9)
-            //  std::cout << " wire " << iwire << " ratio " << wCharge[iwire]/wInt[iwire] << std::endl;
-          
-    } //end channel condition
+                  ++hitIndex;
+              } //end loop on found hits
+              if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
+                  mf::LogDebug("ICARUSHitFinder") << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
+              if(plane==2&&cryostat==0&&tpc==0)
+                  if(wCharge[iwire]>0)
+                      fAreaC->Fill(wCharge[iwire]);
+              if(plane==2&&cryostat==0&&tpc==0)
+                  if(wCharge[iwire]>0)
+                      output << iwire << " " <<wCharge[iwire] << std::endl;
+              if(plane==2&&cryostat==0&&tpc==0)
+                  if(wInt[iwire]>0)
+                      fIntegralC->Fill(wInt[iwire]);
+              if(wInt[iwire]>0&&cryostat==0&&tpc==0)
+                  fAreaInt->Fill(wCharge[iwire]/wInt[iwire]);
+            //if(wCharge[iwire]>0&&cryostat==0&&tpc==0&&wCharge[iwire]/wInt[iwire]<0.9)
+              //  mf::LogDebug("ICARUSHitFinder") << " wire " << iwire << " ratio " << wCharge[iwire]/wInt[iwire] << std::endl;
+          } //end channel condition
 
-    } //end loop on channels
+      } //end loop on channels
       
-            double PhysWC=maxWireC-minWireC+1;
-             double NoiseWC=5119-480-(maxWireC-minWireC+1);
+      double PhysWC=maxWireC-minWireC+1;
+      double NoiseWC=5119-480-(maxWireC-minWireC+1);
       double PhysWI2=maxWireI2-minWireI2+1;
       double NoiseWI2=5119-480-(maxWireI2-minWireI2+1);
       double PhysWI1=1056;
       double NoiseWI1=1056;
     
-      std::cout << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
-      std::cout << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
-      std::cout << " Physical ind2 wires " << PhysWI2 << " single hit wires " << nw1hitI2 << " noise " << nnhitsI2 << " efficiency " << float(nw1hitI2)/PhysWI2 << std::endl;
-      std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
-      std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
-      std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Physical ind2 wires " << PhysWI2 << " single hit wires " << nw1hitI2 << " noise " << nnhitsI2 << " efficiency " << float(nw1hitI2)/PhysWI2 << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
+      mf::LogDebug("ICARUSHitFinder") << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
 
       for(int jw=minWireC;jw<maxWireC;jw++)
           fnhwC->Fill(nhWire[jw]);
       
       
-    hcol.put_into(evt);
-      std::cout << " end ICARUSHitfinder " << std::endl;
-      
-      
+      hcol.put_into(evt);
+        mf::LogDebug("ICARUSHitFinder") << " end ICARUSHitfinder " << std::endl;
   } //end produce
 
     
@@ -936,7 +901,7 @@ namespace hit {
                     if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]>0) upordown++;
                     else if(holder[first-nsamp/2+l+1]-holder[first-nsamp/2+l]<0) upordown--;
             } }
-           // std::cout << " checking " << first << " upordown " << upordown << std::endl;
+           // mf::LogDebug("ICARUSHitFinder") << " checking " << first << " upordown " << upordown << std::endl;
             if(upordown>cut)
                 first--;
             else
@@ -958,7 +923,7 @@ namespace hit {
                 ICARUSHit h2=*hiter;
                 if(last==h2.iniDrift)
                 found=1;
-             //   std::cout << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
+             //   mf::LogDebug("ICARUSHitFinder") << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
             }
             
             if(found==1) break;
@@ -1064,7 +1029,7 @@ namespace hit {
         if(count1<min1) min1=count1;
         if(count2<min2) min2=count2;
         
-       // std::cout << " localmean count1 " << count1 << " count2 " << count2 << std::endl;
+       // mf::LogDebug("ICARUSHitFinder") << " localmean count1 " << count1 << " count2 " << count2 << std::endl;
         //for the moment take the highest value
         if((foundborder1 && !foundborder2)  || (shift1 && !shift2))
         h.localmean=((float) min2)/meanw;
