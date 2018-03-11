@@ -435,13 +435,13 @@ namespace hit {
         = channelStatus.BadChannels();
 
       for(unsigned int bin = 0; bin < fDataSize; ++bin){ 
-        holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
-         //holder[bin]=signal[bin];
-          //if(plane == 0) holder[bin]=-holder[bin];
+        //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
+        holder[bin]=signal[bin];
+          if(plane == 0) holder[bin]=-holder[bin];
           //if(plane == 1) holder[bin]=-holder[bin];
-         if(plane==2&&iwire==3600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " col wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
-         if(plane==1&&iwire==3600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " in2 wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
-         if(plane==0&&iwire==600&&abs(holder[bin])>0.1) mf::LogDebug("ICARUSHitFinder") << " in1 wire 600 bin " << bin << " signal " << holder[bin] << std::endl;
+         if(plane==2&&iwire==3600&&abs(holder[bin])>0.1) std::cout << " col wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
+         if(plane==1&&iwire==3600&&abs(holder[bin])>0.1) std::cout << " in2 wire 3600 bin " << bin << " signal " << holder[bin] << std::endl;
+         if(plane==0&&iwire==600&&abs(holder[bin])>0.1) std::cout << " in1 wire 600 bin " << bin << " signal " << holder[bin] << std::endl;
       }
 
         if(plane==0&&iwire<lwI1) lwI1=iwire;
@@ -552,8 +552,8 @@ namespace hit {
                           
                           if(holder[i]-lastcomputedmean>threshold) // we're within a hit OR hit group
                           { //3
-                            if(plane==0&&cryostat==0&&tpc==0)
-                                mf::LogDebug("ICARUSHitFinder") << " iwire " << iwire <<"  over threshold bin " << i << std::endl;
+                          //  if(plane==0&&cryostat==0&&tpc==0)
+                            //    std::cout << " iwire " << iwire <<"  over threshold bin " << i << std::endl;
                               iflag=1;
                               
                               // we're in the beginning of the hit
@@ -603,7 +603,7 @@ namespace hit {
                                       //		      h.finDrift=i+iniSamp;
                                       h.finDrift=localminidx;
                                       if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                                        mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                                        std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                                      // expandHit(h,holder,hits);
                                       
                                       if((h.finDrift-h.iDrift)>=fall && h.finDrift-h.iniDrift>width)
@@ -643,7 +643,7 @@ namespace hit {
                                    //if(iwire==4526&&plane==1&&cryostat==0&&tpc==0)
                                     //std::cout << " adding hit case 2, tick " << i << std::endl;
                                       if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                                      mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                                      std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                                       //expandHit(h,holder,hits);
                                     
                                       hits.push_back(h);
@@ -681,7 +681,7 @@ namespace hit {
                           if((h.finDrift-h.iDrift)>=fall && (h.finDrift-h.iniDrift)>width)
                           {		    
                               if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-                              mf::LogDebug("ICARUSHitFinder") << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
+                              std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                              // expandHit(h,holder,hits);
                      
                               h.iwindow=h.iniDrift;
@@ -719,8 +719,8 @@ namespace hit {
           int nghI2=0;
           int nghI1=0;
           
-         if(cryostat==0&&tpc==0&&plane==0)
-             mf::LogDebug("ICARUSHitFinder") << " plane " << plane <<  "  Wire " << iwire << " numhits " << numHits << std::endl;
+         if(cryostat==0&&tpc==0&&plane!=2)
+             std::cout << " plane " << plane <<  "  Wire " << iwire << " numhits " << numHits << std::endl;
           for (int i = 0; i < numHits; i++) {
            expandHit(hits[i],holder,hits);
               hits[i].iwindow=hits[i].iniDrift;
@@ -728,93 +728,93 @@ namespace hit {
           }
       for (int i = 0; i < numHits; i++)
       {
-          if(cryostat==0&&tpc==0&&plane==2&&h.iWire==4326)
-              mf::LogDebug("ICARUSHitFinder") << "  after expand ini " << hits[i].iniDrift << " fin " << hits[i].finDrift << std::endl;
+          if(cryostat==0&&tpc==0&&plane==1)
+              std::cout << "  middle ind hit " << hits[i].iniDrift << " fin " << hits[i].finDrift << std::endl;
           totSig=0;
           intSig=0;
-         // if(cryostat!=0||tpc!=0) continue;
-        
+          // if(cryostat!=0||tpc!=0) continue;
           
-        amplitude     = hits[i].peakHeight;
-        position      = hits[i].iDrift;
-        start         = hits[i].iniDrift;
-        end           = hits[i].finDrift;
-        //temporary definition of hrms for ICARUS non-Gaussian hits
-        hrms          = (end-start)/3.;
-        amplitudeErr  = -1;
-        positionErr   = 1.0;
-        goodnessOfFit = -1;
-        chargeErr     = -1;
           
-        computeBestLocalMean(hits[i],holder,hits);
-        //hits[i].localmean=0;
+          amplitude     = hits[i].peakHeight;
+          position      = hits[i].iDrift;
+          start         = hits[i].iniDrift;
+          end           = hits[i].finDrift;
+          //temporary definition of hrms for ICARUS non-Gaussian hits
+          hrms          = (end-start)/3.;
+          amplitudeErr  = -1;
+          positionErr   = 1.0;
+          goodnessOfFit = -1;
+          chargeErr     = -1;
           
-       // totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+          computeBestLocalMean(hits[i],holder,hits);
+          //hits[i].localmean=0;
+          
+          // totSig        = std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
           for(unsigned int js=start;js<=end;js++)
-           totSig+=(holder[js]-hits[i].localmean);
+              totSig+=(holder[js]-hits[i].localmean);
           if(!i)
-          for(unsigned int js=0;js<=4095;js++)
-           intSig+=(holder[js]-hits[i].localmean);
-         // if(plane==2&&hits[i].iWire==4451)
-           //   for(unsigned int js=0;js<=4095;js++)
-             //     std::cout << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
-         // if(cryostat==0&&tpc==0&&plane==2&&hits[i].localmean!=0)
-           //std::cout << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
-
-     
+              for(unsigned int js=0;js<=4095;js++)
+                  intSig+=(holder[js]-hits[i].localmean);
+          // if(plane==2&&hits[i].iWire==4451)
+          //   for(unsigned int js=0;js<=4095;js++)
+          //     std::cout << " tick " << js << " signal " << holder[js] << " localmean " << hits[i].localmean << " intSig " << holder[js]-hits[i].localmean << std::endl;
+          // if(cryostat==0&&tpc==0&&plane==2&&hits[i].localmean!=0)
+          //std::cout << " wire " << hits[i].iWire << " localmean " << hits[i].localmean <<std::endl;
           
-//std::cout << " before hit creator " << std::endl;
-        recob::HitCreator hit(
-            *wire,                                                                     //RAW DIGIT REFERENCE.
-            wid,                                                                           //WIRE ID.
-            start,                                                                         //START TICK.
-            end,                                                                           //END TICK. 
-            hrms,                                                                          //RMS.
-            position,                                                                      //PEAK_TIME.
-            positionErr,                                                                   //SIGMA_PEAK_TIME.
-            amplitude,                                                                     //PEAK_AMPLITUDE.
-            amplitudeErr,                                                                  //SIGMA_PEAK_AMPLITUDE.
-            totSig,                                                                        //HIT_INTEGRAL.
-            chargeErr,                                                                     //HIT_SIGMA_INTEGRAL.
-            std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.), //SUMMED CHARGE. 
-            1,                                                                             //MULTIPLICITY.
-            -1,                                                                            //LOCAL_INDEX.
-            goodnessOfFit,                                                                 //WIRE ID.
-            int(end-start+1)                                                               //DEGREES OF FREEDOM.
-            );
           
-         // std::cout << " before emplace back " << std::endl;
-   //       filteredHitVec.push_back(hit.copy());
           
-        hcol.emplace_back(hit.move(), wire, rawdigits);
+          //std::cout << " before hit creator " << std::endl;
+          recob::HitCreator hit(
+                                *wire,                                                                     //RAW DIGIT REFERENCE.
+                                wid,                                                                           //WIRE ID.
+                                start,                                                                         //START TICK.
+                                end,                                                                           //END TICK.
+                                hrms,                                                                          //RMS.
+                                position,                                                                      //PEAK_TIME.
+                                positionErr,                                                                   //SIGMA_PEAK_TIME.
+                                amplitude,                                                                     //PEAK_AMPLITUDE.
+                                amplitudeErr,                                                                  //SIGMA_PEAK_AMPLITUDE.
+                                totSig,                                                                        //HIT_INTEGRAL.
+                                chargeErr,                                                                     //HIT_SIGMA_INTEGRAL.
+                                std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.), //SUMMED CHARGE.
+                                1,                                                                             //MULTIPLICITY.
+                                -1,                                                                            //LOCAL_INDEX.
+                                goodnessOfFit,                                                                 //WIRE ID.
+                                int(end-start+1)                                                               //DEGREES OF FREEDOM.
+                                );
           
-          bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
+          // std::cout << " before emplace back " << std::endl;
+          //       filteredHitVec.push_back(hit.copy());
+          
+          hcol.emplace_back(hit.move(), wire, rawdigits);
+          
+          // bool driftWindow=hits[i].iDrift>=minDrift&&hits[i].iDrift<=maxDrift;
           bool wireWindowC=hits[i].iWire>=minWireC&&hits[i].iWire<=maxWireC;
           bool wireWindowI2=hits[i].iWire>=minWireI2&&hits[i].iWire<=maxWireI2;
           //bool wireWindowI1=hits[i].iWire>=minWireI1+200&&hits[i].iWire<=maxWireI1-200;
-
+          
           bool outDriftWindow=hits[i].iDrift<=minDrift||hits[i].iDrift>=maxDrift;
           bool outWireWindowC=hits[i].iWire<=minWireC||hits[i].iWire>=maxWireC;
           bool outWireWindowI2=hits[i].iWire<=minWireI2||hits[i].iWire>=maxWireI2;
           //bool outWireWindowI1=hits[i].iWire<=minWireI1-200||hits[i].iWire>=maxWireI1+200;
-
-         // if(plane==2)
-           //   std::cout << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
           
-          if(plane==0&&driftWindow)  {
-           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+          // if(plane==2)
+          //   std::cout << " wire " << hits[i].iWire << " drift " << hits[i].iDrift << " driftwindow " << driftWindow << " wireWindowI2 " << wireWindowI2 << std::endl;
+          
+          if(plane==0)  {
+              //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
               nghI1++;
               if(nghI1==1) nw1hitI1++;
-      
-             //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
+              
+              //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
               fHeightI1->Fill(amplitude);
               fWidthI1->Fill(end-start);
           }
           if(plane==1&&wireWindowI2) {
-           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+              //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
               nghI2++;
               if(nghI2==1) nw1hitI2++;
-             // std::cout << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].iDrift << " amplitude " << amplitude << std::endl;
+              // std::cout << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].iDrift << " amplitude " << amplitude << std::endl;
               fHeightI2->Fill(amplitude);
               fWidthI2->Fill(end-start);
           }
@@ -824,30 +824,30 @@ namespace hit {
               nhWire[hits[i].iWire]++;
               fHeightC->Fill(amplitude);
               fWidthC->Fill(end-start);
-             // fAreaC->Fill(totSig);
+              // fAreaC->Fill(totSig);
               wCharge[hits[i].iWire]+=totSig;
               wInt[hits[i].iWire]+=intSig;
-
+              
               if(intSig<0.&&hits[i].iWire==4451)
-              mf::LogDebug("ICARUSHitFinder") << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
+                  std::cout << "  intsig " << intSig << " localmean " << hits[i].localmean << " wire " << hits[i].iWire << std::endl;
           }
-
+          
           if(plane==0) nhitsI1++;
           if(plane==1) nhitsI2++;
           if(plane==2) nhitsC++;
           
           if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
           if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
-            //if(cryostat==0&&tpc==0)
-              //    std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << std::endl;
+              if(cryostat==0&&tpc==0)
+                  std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].iDrift << " nnhit2 " << nnhitsI2 <<  std::endl;
           }
           if(plane==2&&tpc==0&&cryostat==0&&outWireWindowC) { nnhitsC++; fNoiseC->Fill(amplitude); }
           
           
-        ++hitIndex;
+          ++hitIndex;
       } //end loop on found hits
           if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
-           mf::LogDebug("ICARUSHitFinder") << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
+           std::cout << " filling  wire  " << iwire << " area " << wCharge[iwire] << std::endl;
           if(plane==2&&cryostat==0&&tpc==0)
            if(wCharge[iwire]>0)
            fAreaC->Fill(wCharge[iwire]);
@@ -873,19 +873,19 @@ namespace hit {
       double PhysWI1=1056;
       double NoiseWI1=1056;
     
-      mf::LogDebug("ICARUSHitFinder") << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
-      mf::LogDebug("ICARUSHitFinder") << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
-      mf::LogDebug("ICARUSHitFinder") << " Physical ind2 wires " << PhysWI2 << " single hit wires " << nw1hitI2 << " noise " << nnhitsI2 << " efficiency " << float(nw1hitI2)/PhysWI2 << std::endl;
-      mf::LogDebug("ICARUSHitFinder") << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
-      mf::LogDebug("ICARUSHitFinder") << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
-      mf::LogDebug("ICARUSHitFinder") << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
+      std::cout << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
+      std::cout << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
+      std::cout << " Physical ind2 wires " << PhysWI2 << " single hit wires " << nw1hitI2 << " noise " << nnhitsI2 << " efficiency " << float(nw1hitI2)/PhysWI2 << std::endl;
+      std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
+      std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
+      std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
 
       for(int jw=minWireC;jw<maxWireC;jw++)
           fnhwC->Fill(nhWire[jw]);
       
       
     hcol.put_into(evt);
-      mf::LogDebug("ICARUSHitFinder") << " end ICARUSHitfinder " << std::endl;
+      std::cout << " end ICARUSHitfinder " << std::endl;
       
       
   } //end produce
@@ -958,7 +958,7 @@ namespace hit {
                 ICARUSHit h2=*hiter;
                 if(last==h2.iniDrift)
                 found=1;
-                mf::LogDebug("ICARUSHitFinder") << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
+             //   std::cout << " last " << last << " h2ini " << h2.iniDrift << " found " << found << std::endl;
             }
             
             if(found==1) break;
