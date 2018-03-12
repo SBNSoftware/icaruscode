@@ -39,7 +39,6 @@
 
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Persistency/Common/Ptr.h"
