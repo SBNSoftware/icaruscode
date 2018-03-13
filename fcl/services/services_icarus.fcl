@@ -5,6 +5,7 @@
 #include "geometry_icarus.fcl"
 #include "detectorproperties_icarus.fcl"
 #include "signalservices_icarus.fcl"
+#include "photpropservices_icarus.fcl"
 
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
@@ -36,7 +37,7 @@ standard_largeantparameters:
     ElectronClusterSize:      600.0   #number of ionization electrons to drift in a unit
     MinNumberOfElCluster:     0       #minimum number of electron clusters
     EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
-                                "Decay", "HadronElastic", "Stopping", "NeutronTrackingCut" ]
+                                "Decay", "HadronElastic", "Stopping", "NeutronTrackingCut"]
     CosmogenicK0Bias:         0 # 0 is off. N is the number of secondaries to produce.
     CosmogenicXSMNBiasOn:     0 # 0 is off. 1 works. 2 still in development.
     CosmogenicXSMNBiasFactor: 1 # Not more than 5-ish cuz of numerical instabilities.

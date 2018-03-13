@@ -1,4 +1,4 @@
-#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "mcreco.fcl"
 ##include "time_memory_tracker_microboone.fcl"
