@@ -1,0 +1,20 @@
+#include "photpropservices.fcl"
+
+BEGIN_PROLOG
+
+icarus_photonvisibilityservice: @local::standard_photonvisibilityservice
+
+icarus_photonvisibilityservice.LibraryFile:     "14gen_nocat_small.root"
+icarus_photonvisibilityservice.UseCryoBoundary: false
+
+icarus_photonvisibilityservice.XMin: -366
+icarus_photonvisibilityservice.XMax: -66
+icarus_photonvisibilityservice.YMin: -210
+icarus_photonvisibilityservice.YMax:  180
+icarus_photonvisibilityservice.ZMin: -995
+icarus_photonvisibilityservice.ZMax:  965
+icarus_photonvisibilityservice.NX:     60
+icarus_photonvisibilityservice.NY:     78
+icarus_photonvisibilityservice.NZ:    392
+
+END_PROLOG
