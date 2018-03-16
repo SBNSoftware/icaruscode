@@ -2,7 +2,9 @@
 
 process_name: GenCry
 
-physics.producers.generator.BufferBox: [ -1000.0,1000.0,-500.0,500.0,-2300.0,2300.0 ]
-physics.producers.generator.SubBoxLength: "subboxLength 21 "
-physics.producers.generator.EnergyThreshold:      1e-2
-#physics.producers.generator.SampleTime: 3.0e-3
+physics.producers.generator.BufferBox:        [ -1000.0,1000.0,-500.0,500.0,-2300.0,2300.0 ]
+physics.producers.generator.SubBoxLength:     "subboxLength 21 "
+physics.producers.generator.EnergyThreshold:  1e-2
+physics.producers.generator.SampleTime:       3.3e-3
+physics.producers.generator.TimeOffset:      -1.1e-3
+
