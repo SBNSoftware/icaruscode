@@ -69,7 +69,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_crygen_icarus.root"
+   fileName:    "single_corsika_icarus.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
