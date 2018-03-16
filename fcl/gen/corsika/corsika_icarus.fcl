@@ -6,14 +6,14 @@ icarus_corsika_p:                  @local::standard_CORSIKAGen_protons
 icarus_corsika_p.SampleTime:       3.3e-3
 icarus_corsika_p.ShowerInputFiles: [ "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/p_*.db" ]
 icarus_corsika_p.TimeOffset:       -1.1e-3
-icarus_corsika_p.BufferBox:        [ -5000.0, 5000.0,-5000.0,5000.0,-5000.0,5000.0 ]   #in cm
+icarus_corsika_p.BufferBox:        [ -1000.0, 1000.0,-1000.0,1000.0,-1000.0,1000.0 ]   #in cm
 icarus_corsika_p.ProjectToHeight:  1800  #height to which particles are projected in cm
 
 icarus_corsika_cmc:                @local::standard_CORSIKAGen_CMC
 icarus_corsika_cmc.SampleTime:     3.3e-3
 icarus_corsika_cmc.ShowerInputFiles: [ "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/p_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/N_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Mg_showers_*.db", "/pnfs/larsoft/persistent/physics/cosmics/Fermilab/CORSIKA/standard/Fe_showers_*.db" ]
 icarus_corsika_cmc.TimeOffset:     -1.1e-3
-icarus_corsika_cmc.BufferBox:        [ -5000.0, 5000.0,-5000.0,5000.0,-5000.0,5000.0 ]   #in cm
+icarus_corsika_cmc.BufferBox:        [ -1000.0, 1000.0,-1000.0,1000.0,-1000.0,1000.0 ]   #in cm
 icarus_corsika_cmc.ProjectToHeight:  1800  #height to which particles are projected in cm
 
 #README: the directory written here are the place where you can find the files... you can download them and then change the "ShowerInputFiles" parameter to take into account of the path where you locally put the files
