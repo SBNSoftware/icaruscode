@@ -99,8 +99,8 @@ icarus_g4_services.LArG4Parameters.EnabledPhysics:    [ "Em",
                                                         "Hadron",
                                                         "Decay",
                                                         "HadronElastic",
-                                                        "Stopping",
-                                                        "OpFastScintillation"]
+                                                        "Stopping"]
+                                                        #"OpFastScintillation"]
                                                         # Save neutrons  #"NeutronTrackingCut" ]
 
 # Define icarus_detsim_services ... (2*)
