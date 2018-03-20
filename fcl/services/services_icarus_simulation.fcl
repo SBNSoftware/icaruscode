@@ -70,23 +70,23 @@ icarus_simulation_dark_services:                               @local::icarus_g4
 # Define icarus_g4_services ... (1*)
 icarus_g4_services:                                     @local::icarus_g4_dark_services
 icarus_g4_services.PhotonVisibilityService:             @local::icarus_photonvisibilityservice
-icarus_g4_services.LArPropertiesService.ScintYield:     40000  # 40000 ph/MeV DocDB 4914, @MToups
-icarus_g4_services.LArPropertiesService.ScintPreScale:  0.0093 # 40000 ph/MeV DocDB 4914, @MToups
+icarus_g4_services.LArPropertiesService.ScintYield:     24000  # 24000 ph/MeV assume 500 MV/cm
+icarus_g4_services.LArPropertiesService.ScintPreScale:  0.07   # 24000 ph/MeV QE is 7%
                                                                # MUST match between g4 and detsim
 
 icarus_g4_services.LArPropertiesService.ScintYieldRatio:         0.23
-icarus_g4_services.LArPropertiesService.MuonScintYield:          40000
+icarus_g4_services.LArPropertiesService.MuonScintYield:          24000
 icarus_g4_services.LArPropertiesService.MuonScintYieldRatio:     0.23
 icarus_g4_services.LArPropertiesService.ScintByParticleType:     true
-icarus_g4_services.LArPropertiesService.PionScintYield:          40000
+icarus_g4_services.LArPropertiesService.PionScintYield:          24000
 icarus_g4_services.LArPropertiesService.PionScintYieldRatio:     0.23
-icarus_g4_services.LArPropertiesService.ElectronScintYield:      33333
+icarus_g4_services.LArPropertiesService.ElectronScintYield:      20000
 icarus_g4_services.LArPropertiesService.ElectronScintYieldRatio: 0.27
-icarus_g4_services.LArPropertiesService.KaonScintYield:          40000
+icarus_g4_services.LArPropertiesService.KaonScintYield:          24000
 icarus_g4_services.LArPropertiesService.KaonScintYieldRatio:     0.23
-icarus_g4_services.LArPropertiesService.ProtonScintYield:        32000
+icarus_g4_services.LArPropertiesService.ProtonScintYield:        19200
 icarus_g4_services.LArPropertiesService.ProtonScintYieldRatio:   0.29
-icarus_g4_services.LArPropertiesService.AlphaScintYield:         28000
+icarus_g4_services.LArPropertiesService.AlphaScintYield:         16800
 icarus_g4_services.LArPropertiesService.AlphaScintYieldRatio:    0.56
 
 icarus_g4_services.LArPropertiesService.EnableCerenkovLight: false # Cerenkov light OFF by default
