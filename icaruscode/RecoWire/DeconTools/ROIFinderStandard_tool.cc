@@ -189,7 +189,6 @@ void ROIFinderStandard::FindROIs(const Waveform& waveform, size_t channel, doubl
     return;
 }
 
-    
 void ROIFinderStandard::outputHistograms(art::TFileDirectory& histDir) const
 {
     // It is assumed that the input TFileDirectory has been set up to group histograms into a common
