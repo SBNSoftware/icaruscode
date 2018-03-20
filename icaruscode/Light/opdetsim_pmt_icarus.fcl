@@ -9,7 +9,7 @@ icarus_simpmt:
   module_type:        "SimPMTIcarus"
   InputModule:        "largeant"
   PreTrigger:         200.0          #ns
-  ReadoutWindow:      2000.0         #ns
+  ReadoutWindow:      20000.0        #ns
   RiseTime:           3.8            #ns
   FallTime:           13.7           #ns
   MeanAmplitude:	  0.9            #in pC
@@ -19,7 +19,8 @@ icarus_simpmt:
   ADC:                -11.1927       #charge to adc factor
   Saturation:         300            #in number of p.e. to see saturation effects in the signal
   Baseline:           8000.0         #in ADC
-  QE:                 0.07           #TPB coated PMT quantum efficiency
+  #QE:                 0.07           #TPB coated PMT quantum efficiency
+  QE:                 1.0            #TPB coated PMT quantum efficiency but is handled in the simulation and set to 1 here
   Sampling:           0.5            #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency
 }
 
