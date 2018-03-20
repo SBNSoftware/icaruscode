@@ -26,9 +26,14 @@ FilterTool:
 {
     tool_type: Filter
     Plane:                       0
+    # This is the original Wiener filter
+    #FilterFunction:               "(x>0.0)? (gaus(0)*exp(-0.5*pow(x/[3],[4]))): 0.0"
+    #FilterParametersVec:          [ 1.849030, 1.46, 1.33, 0.23, 4.89 ]
+    # This defines the gaussian filter
     FilterParametersVec:         [1., 0., 0.1 ]
     FilterFunction:              "(x>0.0)*gaus"
-#    FilterFunction:              "1."
+    # This turns the filter off (effectively)
+    #    FilterFunction:              "(x>0.0)*1."
     FilterWidthCorrectionFactor: 1.0
 }
 
