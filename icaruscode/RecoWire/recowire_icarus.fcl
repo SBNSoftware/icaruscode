@@ -1,4 +1,5 @@
 #include "caldata.fcl"
+#include "deconTools_icarus.fcl"
 ##include "roialg.fcl"
 ##include "database_microboone.fcl"
 
@@ -23,6 +24,18 @@ icarus_recowireroi:
  DoBaselineSub_WaveformPropertiesAlg:   false # subtract baseline after deconvolution?
  DodQdxCalib:                           false  # apply wire-by-wire calibration?
  dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
+}
+
+icarus_recowireroiicarus:
+{
+  module_type:                "RecoWireROIICARUS"
+  DigitModuleLabel:           "daq"
+  NoiseSource:                3
+  FFTSize:                    128      # re-initialize FFT service to this size
+  SaveWireWF:                 0
+  MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
+  ROIFinder:                  @local::icarus_roifinderstandard
+  Deconvolution:              @local::icarus_fullwiredeconvolution
 }
 
 icarus_recowire:

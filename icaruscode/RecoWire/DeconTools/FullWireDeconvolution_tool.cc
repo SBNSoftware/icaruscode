@@ -1,10 +1,10 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   MCC7Deconvolution.cc
+/// \file   FullWireDeconvolution.cc
 /// \author T. Usher
 ////////////////////////////////////////////////////////////////////////
 
 #include <cmath>
-#include "uboone/CalData/DeconTools/IDeconvolution.h"
+#include "icaruscode/RecoWire/DeconTools/IDeconvolution.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
@@ -12,11 +12,11 @@
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "uboone/Utilities/SignalShapingServiceMicroBooNE.h"
+#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "lardata/Utilities/LArFFT.h"
 
 #include "art/Utilities/make_tool.h"
-#include "uboone/CalData/DeconTools/IBaseline.h"
+#include "icaruscode/RecoWire/DeconTools/IBaseline.h"
 
 #include "TH1D.h"
 
@@ -25,12 +25,12 @@
 namespace uboone_tool
 {
 
-class MCC7Deconvolution : public IDeconvolution
+class FullWireDeconvolution : public IDeconvolution
 {
 public:
-    explicit MCC7Deconvolution(const fhicl::ParameterSet& pset);
+    explicit FullWireDeconvolution(const fhicl::ParameterSet& pset);
     
-    ~MCC7Deconvolution();
+    ~FullWireDeconvolution();
     
     void configure(const fhicl::ParameterSet& pset)              override;
     void outputHistograms(art::TFileDirectory&)            const override;
@@ -43,29 +43,29 @@ public:
 private:
     
     // Member variables from the fhicl file
-    bool                                                     fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
-    std::string                                              fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
-    std::map<unsigned int, float>                            fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
+    bool                                                 fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
+    std::string                                          fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
+    std::map<unsigned int, float>                        fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
     
-    std::unique_ptr<uboone_tool::IBaseline>                  fBaseline;
+    std::unique_ptr<uboone_tool::IBaseline>              fBaseline;
     
-    const geo::GeometryCore*                                 fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                         fFFT;
-    art::ServiceHandle<util::SignalShapingServiceMicroBooNE> fSignalShaping;
+    const geo::GeometryCore*                             fGeometry = lar::providerFrom<geo::Geometry>();
+    art::ServiceHandle<util::LArFFT>                     fFFT;
+    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
 };
     
 //----------------------------------------------------------------------
 // Constructor.
-MCC7Deconvolution::MCC7Deconvolution(const fhicl::ParameterSet& pset) 
+FullWireDeconvolution::FullWireDeconvolution(const fhicl::ParameterSet& pset) 
 {
     configure(pset);
 }
     
-MCC7Deconvolution::~MCC7Deconvolution()
+FullWireDeconvolution::~FullWireDeconvolution()
 {
 }
     
-void MCC7Deconvolution::configure(const fhicl::ParameterSet& pset)
+void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
     //wire-by-wire calibration
@@ -104,16 +104,16 @@ void MCC7Deconvolution::configure(const fhicl::ParameterSet& pset)
     fBaseline  = art::make_tool<uboone_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
     
     // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceMicroBooNE>();
+    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
     fFFT           = art::ServiceHandle<util::LArFFT>();
     
     return;
 }
     
-void MCC7Deconvolution::Deconvolve(IROIFinder::Waveform const&       waveform,
-                                   raw::ChannelID_t                  channel,
-                                   IROIFinder::CandidateROIVec const& roiVec,
-                                   recob::Wire::RegionsOfInterest_t& ROIVec) const
+void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        waveform,
+                                       raw::ChannelID_t                   channel,
+                                       IROIFinder::CandidateROIVec const& roiVec,
+                                       recob::Wire::RegionsOfInterest_t&  ROIVec) const
 {
     // The goal of this function is to reproduce "exactly" the operation of the deconvolution process in MCC7
     // hence the copying over of some of the code that has been pushed into external tools.
@@ -122,7 +122,7 @@ void MCC7Deconvolution::Deconvolve(IROIFinder::Waveform const&       waveform,
     size_t dataSize = waveform.size();
     
     // Make sure the deconvolution size is set correctly (this will probably be a noop after first call)
-    fSignalShaping->SetDecon(dataSize);
+    fSignalShaping->SetDecon(dataSize, channel);
     
     size_t transformSize = fFFT->FFTSize();
     
@@ -138,7 +138,7 @@ void MCC7Deconvolution::Deconvolve(IROIFinder::Waveform const&       waveform,
     std::copy(waveform.begin(),waveform.end(),rawAdcLessPedVec.begin()+binOffset);
     
     // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
-    fSignalShaping->Deconvolute(channel,rawAdcLessPedVec,"nominal");
+    fSignalShaping->Deconvolute(channel,rawAdcLessPedVec);
     
     std::vector<float> holder;
     
@@ -177,34 +177,34 @@ void MCC7Deconvolution::Deconvolve(IROIFinder::Waveform const&       waveform,
     return;
 }
     
-void MCC7Deconvolution::outputHistograms(art::TFileDirectory& histDir) const
+void FullWireDeconvolution::outputHistograms(art::TFileDirectory& histDir) const
 {
     // It is assumed that the input TFileDirectory has been set up to group histograms into a common
     // folder at the calling routine's level. Here we create one more level of indirection to keep
     // histograms made by this tool separate.
 /*
-    std::string dirName = "MCC7DeconvolutionPlane_" + std::to_string(fPlane);
+    std::string dirName = "FullWireDeconvolutionPlane_" + std::to_string(fPlane);
  
     art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
  
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = detprop->SamplingRate();
-    double      numBins      = fMCC7DeconvolutionVec.size();
+    double      numBins      = fFullWireDeconvolutionVec.size();
     double      maxFreq      = 500. / samplingRate;
-    std::string histName     = "MCC7DeconvolutionPlane_" + std::to_string(fPlane);
+    std::string histName     = "FullWireDeconvolutionPlane_" + std::to_string(fPlane);
     
-    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "MCC7Deconvolution;Frequency(MHz)", numBins, 0., maxFreq);
+    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "FullWireDeconvolution;Frequency(MHz)", numBins, 0., maxFreq);
     
     for(int bin = 0; bin < numBins; bin++)
     {
         double freq = maxFreq * double(bin + 0.5) / double(numBins);
         
-        hist->Fill(freq, fMCC7DeconvolutionVec.at(bin).Re());
+        hist->Fill(freq, fFullWireDeconvolutionVec.at(bin).Re());
     }
 */
     
     return;
 }
     
-DEFINE_ART_CLASS_TOOL(MCC7Deconvolution)
+DEFINE_ART_CLASS_TOOL(FullWireDeconvolution)
 }
