@@ -71,11 +71,10 @@ icarus_simulation_dark_services:                               @local::icarus_g4
 icarus_g4_services:                                     @local::icarus_g4_dark_services
 icarus_g4_services.PhotonVisibilityService:             @local::icarus_photonvisibilityservice
 icarus_g4_services.LArPropertiesService.ScintYield:     40000  # 40000 ph/MeV DocDB 4914, @MToups
-icarus_g4_services.LArPropertiesService.ScintPreScale:  1 # 40000 ph/MeV DocDB 4914, @MToups
+icarus_g4_services.LArPropertiesService.ScintPreScale:  0.0093 # 40000 ph/MeV DocDB 4914, @MToups
                                                                # MUST match between g4 and detsim
 
 icarus_g4_services.LArPropertiesService.ScintYieldRatio:         0.23
-
 icarus_g4_services.LArPropertiesService.MuonScintYield:          40000
 icarus_g4_services.LArPropertiesService.MuonScintYieldRatio:     0.23
 icarus_g4_services.LArPropertiesService.ScintByParticleType:     true
@@ -103,12 +102,14 @@ icarus_g4_services.LArG4Parameters.EnabledPhysics:    [ "Em",
                                                         #"OpFastScintillation"]
                                                         # Save neutrons  #"NeutronTrackingCut" ]
 
+#icarus_g4_services.LArG4Parameters.UseLitePhotons:    true
+
 # Define icarus_detsim_services ... (2*)
-icarus_detsim_services:                    @local::icarus_detsim_dark_services
-#icarus_detsim_services.UBOpticalChConfig: @local::icarus_optical_ch_config
-icarus_detsim_services.LArPropertiesService.ScintPreScale:        0.0093   # DocDB 4914, @MToups
+icarus_detsim_services:                                     @local::icarus_detsim_dark_services
+#icarus_detsim_services.UBOpticalChConfig:                   @local::icarus_optical_ch_config
+icarus_detsim_services.LArPropertiesService.ScintPreScale:  0.0093   # DocDB 4914, @MToups
 #icarus_detsim_services.UBOpReadoutMap:                      @local::icarus_opreadoutmap_mc
-                                                                      # MUST match between g4 and detsim
+                                                            # MUST match between g4 and detsim
 
 # Define icarus_simulation_services ... (all*) = (1*) + (2) + (2*)
 icarus_simulation_services:                                  @local::icarus_g4_services
