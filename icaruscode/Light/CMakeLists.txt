@@ -1,18 +1,20 @@
-art_make( 
+add_subdirectory(OpticalTools)
+
+art_make(
           BASENAME_ONLY
 #          EXCLUDE PMTcoordinates_module.cc 
           LIBRARY_NAME Light
           LIB_LIBRARIES 
-			lardataobj_RawData
-                        lardataobj_RecoBase
-	                lardata_Utilities
-	                ${FHICLCPP}
+            lardataobj_RawData
+            lardataobj_RecoBase
+            lardata_Utilities
+            ${FHICLCPP}
 			${CETLIB}
 			${ROOT_BASIC_LIB_LIST}
 			${Boost_SYSTEM_LIBRARY}
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
-	                lardata_Utilities
+	        lardata_Utilities
 			larevt_Filters
 			lardataobj_RawData
 			larevt_CalibrationDBI_IOVData
@@ -21,7 +23,7 @@ art_make(
 			lardata_ArtDataHelper
 			SignalShapingServiceICARUS_service
 			nusimdata_SimulationBase
-                        ${ART_FRAMEWORK_CORE}
+            ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}
 			${ART_FRAMEWORK_SERVICES_OPTIONAL}

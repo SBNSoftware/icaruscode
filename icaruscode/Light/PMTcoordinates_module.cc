@@ -6,7 +6,7 @@
 // Generated at Mon Sep 25 15:10:31 2017 by Andrea Falcone using cetskelgen
 // from cetlib version v3_00_01.
 ////////////////////////////////////////////////////////////////////////
-
+ 
 // ##########################
 // ### Framework includes ###
 // ##########################
@@ -51,6 +51,14 @@
 
 #include "lardataobj/Simulation/SimChannel.h"
 
+#include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCTruth.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
+
+#include "nutools/ParticleNavigation/ParticleList.h"
+
+#include "lardataobj/Simulation/sim.h"
+
 // #####################
 // ### ROOT includes ###
 // #####################
@@ -91,11 +99,18 @@ void beginJob();
 
 private:
 
+//TRandom* Ran;
+ 
 TTree* fTree;
 
 ////////////////////////////////// Variable in th tree//////////////////////////////
 
 int event;
+
+int event_type;
+
+int is_Neutrino;
+int Neutrino_Interaction;
 
 int noPMT[nPMTs];
 
@@ -109,25 +124,24 @@ int Cryostat[nPMTs];
 int TPC[nPMTs];
 
 float photons_collected[nPMTs];
+float QE_photons_collected[nPMTs];
 float photon_time[nPMTs][MaxPhotons];
-float photon_velocity[nPMTs][MaxPhotons];
-
-float ics[nPMTs][MaxPhotons];
-float ipsilon[nPMTs][MaxPhotons];
-float zeta[nPMTs][MaxPhotons];
-
-float photon_linear_path[nPMTs][MaxPhotons];
 
 float firstphoton_time[nPMTs];
-float firstphoton_velocity[nPMTs];
 
+float true_barycentre_x;
 float true_barycentre_y;
 float true_barycentre_z;
+
+double vertex_x;
+double vertex_y;
+double vertex_z;
+
 float reco_barycentre_y;
 float reco_barycentre_z;
 
 float total_quenched_energy;
-int total_coll_photons;
+float total_coll_photons;
 
 float PMT_error_y;
 float PMT_error_z;
@@ -135,6 +149,8 @@ float PMT_total_error;
   
 art::InputTag photonLabel;
 art::InputTag chargeLabel;
+art::InputTag typoLabel;
+
 };
 
 
@@ -142,7 +158,8 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
   :
   EDAnalyzer(p),
   photonLabel(p.get<art::InputTag>("fottoni", "largeant")),
-  chargeLabel(p.get<art::InputTag>("carconi", "largeant"))
+  chargeLabel(p.get<art::InputTag>("carconi", "largeant")),
+  typoLabel  (p.get<art::InputTag>("tiponi", "generator"))
  // More initializers here.
 {
 
@@ -150,32 +167,68 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
 
 void icarus::PMTcoordinates::analyze(art::Event const & evt)
 {
-
 ////////////////////////////////// Create the LArsoft services and service handle//////////////////////////////
 
 art::ServiceHandle<geo::Geometry> geom;
  
-std::vector<sim::SimPhotons> const& optical = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
-std::vector<sim::SimChannel> const& charge  = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
+std::vector<sim::SimPhotons> const& optical  = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
+std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
+//std::vector<simb::MCTruth> const& type    = *(evt.getValidHandle<std::vector<simb::MCTruth>>(typoLabel));
 
 ////////////////////////////////// Event number//////////////////////////////
 
 event = evt.id().event();
 
+std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
+evt.getManyByType(type);
+
+for(size_t mcl = 0; mcl < type.size(); ++mcl)
+{	
+	art::Handle< std::vector<simb::MCTruth> > mclistHandle = type[mcl];
+	
+	for(size_t m = 0; m < mclistHandle->size(); ++m)
+	{
+		art::Ptr<simb::MCTruth> mct(mclistHandle, m);	
+//		for(int ipart=0;ipart<mct->NParticles();ipart++)
+//		{	
+//			int pdg=mct->GetParticle(ipart).PdgCode();	
+//			double xx=mct->GetParticle(ipart).Vx();	
+//			double yy=mct->GetParticle(ipart).Vy();
+//                	double zz=mct->GetParticle(ipart).Vz();
+
+			event_type=mct->GetParticle(0).PdgCode();	
+			vertex_x=mct->GetParticle(0).Vx();	
+			vertex_y=mct->GetParticle(0).Vy();
+                  	vertex_z=mct->GetParticle(0).Vz();
+
+			if (event_type==12||event_type==-12||event_type==14||event_type==-14||event_type==16||event_type==-16)
+			{
+				is_Neutrino=1;
+				Neutrino_Interaction=mct->GetNeutrino().InteractionType();
+			}	
+			else
+			{
+				is_Neutrino=0;
+				Neutrino_Interaction=-9999;			
+			}		
+
+//		}
+	}
+
+}
+
+
 ////////////////////////////////// Putting at 0 all the variables//////////////////////////////
 
-for (int g=0; g<10000; g++)
+for (int g=0; g<MaxPhotons; g++)
 {
 	for (int u=0; u<360; u++)
 	{
 		photon_time[u][g]=0;
-		photon_velocity[u][g]=0;
-
-		firstphoton_time[u]=100000000;
-		firstphoton_velocity[u]=0;
 	}
 } 
 
+true_barycentre_x =0;
 true_barycentre_y =0;
 true_barycentre_z =0;
 
@@ -196,8 +249,9 @@ for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechanne
 		{
 			sim::IDE const& ida = tdcide.second.at(IDEnu);
 
-			std::cout << "IDA     " << ida.x << '\t' << ida.y << '\t' << ida.z << std::endl;
+//			std::cout << "IDA     " << ida.x << '\t' << ida.y << '\t' << ida.z << std::endl;
 
+			true_barycentre_x = true_barycentre_x + ida.x*ida.energy;
 			true_barycentre_y = true_barycentre_y + ida.y*ida.energy;
 			true_barycentre_z = true_barycentre_z + ida.z*ida.energy;
 			total_quenched_energy      = total_quenched_energy + ida.energy;
@@ -208,7 +262,7 @@ for (std::size_t chargechannel = 0;  chargechannel<charge.size(); ++chargechanne
 
 }//loop on SimChannel
 
-
+true_barycentre_x = true_barycentre_x/total_quenched_energy;
 true_barycentre_y = true_barycentre_y/total_quenched_energy;
 true_barycentre_z = true_barycentre_z/total_quenched_energy;
 
@@ -230,6 +284,12 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 	photons_collected[channel]= photon_vec.size();
 
+//	double media = photons_collected[channel]*QE;
+
+//	QE_photons_collected[channel]= Ran.Poisson(media);
+
+	QE_photons_collected[channel]= 0.06*photons_collected[channel];
+
 	if (photons_collected[channel]>0){
 
 	turned_PMT++;
@@ -247,12 +307,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];
 	total_coll_photons= total_coll_photons + photons_collected[channel];
 
-//	std::cout << " fotoni channel = " << photons_collected[channel] << "  totali=  " <<total_coll_photons <<std::endl; 
-
-//	mf::LogVerbatim("PMTcoordinates") << "Channel #" << channel << ": " << photon_vec.size() << " photons";
-
 	firstphoton_time[channel] = 100000000;
-	firstphoton_velocity[channel] = 0;
 
 	if (photons_collected[channel]>0)
 	{
@@ -260,20 +315,10 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 		{
 			photon_time[channel][i]= photon_vec.at(i).Time;
 
-			ics[channel][i] = photon_vec.at(i).InitialPosition.X()/10;
-			ipsilon[channel][i] = photon_vec.at(i).InitialPosition.Y()/10;
-			zeta[channel][i] = photon_vec.at(i).InitialPosition.Z()/10;
-
-			photon_linear_path[channel][i] = sqrt(((ics[channel][i]-PMTx[channel])*(ics[channel][i]-PMTx[channel]))+((ipsilon[channel][i]-PMTy[channel])*(ipsilon[channel][i]-PMTy[channel]))+((zeta[channel][i]-PMTz[channel])*(zeta[channel][i]-PMTz[channel])));
-
-			photon_velocity[channel][i]= photon_linear_path[channel][i]/photon_time[channel][i];
-
 			if (photon_time[channel][i]<firstphoton_time[channel])
 			{				
 				firstphoton_time[channel]=photon_time[channel][i];
-				firstphoton_velocity[channel]=photon_linear_path[channel][i]/firstphoton_time[channel];
 			}
-
 		}
 
 	}
@@ -291,7 +336,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
     	
 }
 
-total_coll_photons = total_coll_photons;
+//total_coll_photons = total_coll_photons;
 
 //std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
 
@@ -303,16 +348,6 @@ PMT_error_y = reco_barycentre_y-true_barycentre_y;
 PMT_error_z = reco_barycentre_z-true_barycentre_z;
 PMT_total_error = sqrt((PMT_error_y*PMT_error_y)+(PMT_error_z*PMT_error_z));
 
-//	std::map <int,int> content = optical->DetectedPhotons;
-	
-//	std::vector<int> channels;
-//	std::vector<int> collected_photons;
-
-//	for(std::map<int,int>::iterator it = content.begin(); it != content.end(); ++it) {
- // 	channels.push_back(it->first);
- //	collected_photons.push_back(it->second);
-//  	std::cout << it->first << '\t' << it->second << std::endl;}
-
 fTree->Fill();
 }
 
@@ -323,6 +358,9 @@ art::ServiceHandle<art::TFileService> tfs;
 fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
 fTree->Branch("event",&event,"event/I");
+fTree->Branch("event_type",&event_type,"event_type/I");
+fTree->Branch("is_Neutrino",&is_Neutrino,"is_Neutrino/I");
+fTree->Branch("Neutrino_Interaction",&Neutrino_Interaction,"Neutrino_Interaction/I");
 fTree->Branch("total_quenched_energy",&total_quenched_energy,"total_quenched_energy");
 fTree->Branch("Cryostat",&Cryostat,("Cryostat[" + std::to_string(nPMTs) + "]/I").c_str());
 fTree->Branch("TPC",&TPC,("TPC[" + std::to_string(nPMTs) + "]/I").c_str());
@@ -333,11 +371,13 @@ fTree->Branch("PMTz",&PMTz,("PMTz[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
 fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/I");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("QE_photons_colleted",&QE_photons_collected,("QE_photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
-fTree->Branch("photon_linear_path",&photon_linear_path,"photon_linear_path[360][10000]/F");
-fTree->Branch("firstphoton_velocity",&firstphoton_velocity,("firstphoton_velocity[" + std::to_string(nPMTs) + "]/F").c_str());
-fTree->Branch("photon_velocity",&photon_velocity,"photon_velocity[360][10000]/F");
+fTree->Branch("vertex_x",&vertex_x,"vertex_x/D");
+fTree->Branch("vertex_y",&vertex_y,"vertex_y/D");
+fTree->Branch("vertex_z",&vertex_z,"vertex_z/D");
+fTree->Branch("true_barycentre_x",&true_barycentre_x,"true_barycentre_x/F");
 fTree->Branch("true_barycentre_y",&true_barycentre_y,"true_barycentre_y/F");
 fTree->Branch("true_barycentre_z",&true_barycentre_z,"true_barycentre_z/F");
 fTree->Branch("reco_barycentre_y",&reco_barycentre_y,"reco_barycentre_y/F");

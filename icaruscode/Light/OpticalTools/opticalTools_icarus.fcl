@@ -1,0 +1,17 @@
+BEGIN_PROLOG
+
+icarus_roifinderstandard:
+{
+    tool_type:      OpHitFinderStandard
+    HitThreshold:   1.            # PE
+    SPEArea:        11.1927       # If AreaToPE is true, this number is
+                                  # used as single PE area (in ADC counts)
+    BaselineSample: 50
+}
+
+icarus_roifinderstandard:
+{
+    tool_type:      OpHitFinder
+}
+
+END_PROLOG
