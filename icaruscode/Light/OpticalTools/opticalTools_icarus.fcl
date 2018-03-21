@@ -1,6 +1,8 @@
+#include "HitFinderTools.fcl"
+
 BEGIN_PROLOG
 
-icarus_roifinderstandard:
+icarus_ophitfinderstandard:
 {
     tool_type:      OpHitFinderStandard
     HitThreshold:   1.            # PE
@@ -9,9 +11,10 @@ icarus_roifinderstandard:
     BaselineSample: 50
 }
 
-icarus_roifinderstandard:
+icarus_ophitfinder:
 {
     tool_type:      OpHitFinder
+    CandidateHits:  @local::candhitfinder_standard
 }
 
 END_PROLOG

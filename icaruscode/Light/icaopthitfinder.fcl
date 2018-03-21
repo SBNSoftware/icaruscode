@@ -6,7 +6,7 @@ icarus_opthitfinder:
 {
   module_type: 	"OpHitFinderICARUS"
   InputModule:  "opdaq"
-OpHitFinder:    @local::OpHitFinderStandard
+  OpHitFinder:  @local::icarus_ophitfinderstandard
 }
 
 END_PROLOG

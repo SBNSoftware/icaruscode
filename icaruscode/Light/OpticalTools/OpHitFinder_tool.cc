@@ -3,17 +3,17 @@
 /// \author T. Usher
 ////////////////////////////////////////////////////////////////////////
 
-#include <cmath>
-#include "icaruscode/Light/OpticalTools/IOpHitFinder.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 
-#include "TH1D.h"
+#include "icaruscode/Light/OpticalTools/IOpHitFinder.h"
+#include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
 
+#include <cmath>
 #include <fstream>
 
 namespace light
@@ -35,7 +35,9 @@ private:
     // fhicl parameters
     int    fNumBinsToAverage;
     
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    float getBaseline(const raw::OpDetWaveform&) const;
+    
+    std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
 };
     
 //----------------------------------------------------------------------
@@ -54,9 +56,8 @@ void OpHitFinder::configure(const fhicl::ParameterSet& pset)
     // Start by recovering the parameters
     fNumBinsToAverage = pset.get<int>("NumBinsToAverage", 20);
     
-    // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
-    
+    fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
+
     return;
 }
 
@@ -64,9 +65,68 @@ void OpHitFinder::configure(const fhicl::ParameterSet& pset)
 void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
                              recob::OpHit&             opHit) const
 {
+    // The plan here:
+    // 1) copy to a local vector
+    // 2) Find the mean and rms
+    // 3) Fill a map to find the most probable value
+    float baseline = getBaseline(opDetWaveform);
     
+    std::vector<float> locWaveform;
+    
+    locWaveform.resize(opDetWaveform.size());
+    
+    // The aim here is to baseline correct AND invert the waveform
+    std::transform(opDetWaveform.begin(),opDetWaveform.end(),locWaveform.begin(),[baseline](const auto& val){return baseline - val;});
+    
+    reco_tool::ICandidateHitFinder::HitCandidateVec      hitCandidateVec;
+    reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
+    
+    fHitFinderTool->findHitCandidates(locWaveform, 0, 0, hitCandidateVec);
+    fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
+
     return;
 }
+
+float OpHitFinder::getBaseline(const raw::OpDetWaveform& locWaveform) const
+{
+    float meanVal = std::accumulate(locWaveform.begin(),locWaveform.end(),0.) / float(locWaveform.size());
+    
+    // now fill a map to determine the most probable value
+    std::map<raw::ADC_Count_t,int> adcFrequencyMap;
+    
+    raw::ADC_Count_t maxBin(0);
+    int              maxCount(0);
+    
+    for(const auto& adc : locWaveform)
+    {
+        int& adcFrequency = adcFrequencyMap[adc];
+        
+        if (++adcFrequency > maxCount)
+        {
+            maxBin   = adc;
+            maxCount = adcFrequency;
+        }
+    }
+    
+    if (std::abs(float(maxBin) - meanVal) > 5.) std::cout << "screw up" << std::endl;
+    
+    float mostProbableBaseline(0.);
+    int   mostProbableCount(0);
+    
+    for(raw::ADC_Count_t adcBin = maxBin - 3; adcBin <= maxBin + 3; adcBin++)
+    {
+        try{
+            mostProbableBaseline += adcFrequencyMap.at(adcBin);
+            mostProbableCount++;
+        }
+        catch(...) {}
+    }
+    
+    mostProbableBaseline /= mostProbableCount;
+   
+    return mostProbableBaseline;
+}
+
     
 void OpHitFinder::outputHistograms(art::TFileDirectory& histDir) const
 {
