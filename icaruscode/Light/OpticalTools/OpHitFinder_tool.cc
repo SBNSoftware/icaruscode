@@ -11,7 +11,7 @@
 #include "cetlib/exception.h"
 
 #include "icaruscode/Light/OpticalTools/IOpHitFinder.h"
-#include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
+//#include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
 
 #include <cmath>
 #include <fstream>
@@ -34,10 +34,11 @@ public:
 private:
     // fhicl parameters
     float fSPEArea;         //conversion between phe and Adc*ns
+    float fSaturationCut;   //Saturation occurs at this point
 
     float getBaseline(const raw::OpDetWaveform&) const;
     
-    std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
+//    std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
 };
     
 //----------------------------------------------------------------------
@@ -54,9 +55,10 @@ OpHitFinder::~OpHitFinder()
 void OpHitFinder::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fSPEArea = pset.get< float >("SPEArea");
+    fSPEArea       = pset.get< float >("SPEArea");
+    fSaturationCut = pset.get< float >("SaturationCut", 2800.);
 
-    fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
+//    fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
 
     return;
 }
@@ -70,8 +72,9 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     // 2) Copy to a local vector doing baseline subtraction and inversion
     // 3) Set up and call the standard gaushit finder tools for finding peaks
     // 4) Return the parameters for an ophit
+/*
     float baseline = getBaseline(opDetWaveform);
-    
+
     std::vector<float> locWaveform;
     
     locWaveform.resize(opDetWaveform.size());
@@ -91,7 +94,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     }
     else
     {
-        HitCandidate hitCandidate;
+        reco_tool::ICandidateHitFinder::HitCandidate hitCandidate;
         
         hitCandidate.startTick     = 0;
         hitCandidate.stopTick      = 0;
@@ -104,7 +107,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         hitCandidate.hitHeight     = *minMaxItr.second - *minMaxItr.first;
         
         hitCandidateVec.push_back(hitCandidate);
-        merged
+        mergedCandidateHitVec.push_back(hitCandidateVec);
     }
     
     // Recover the channel number
@@ -135,7 +138,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
             opHitVec.emplace_back(chNumber, peakMean, peakTimeAbs, frame, 2.35 * peakSigma, peakArea, amplitude, nPhotoElec, fastTotal);//including hit info
         }
     }
-
+*/
     return;
 }
 
