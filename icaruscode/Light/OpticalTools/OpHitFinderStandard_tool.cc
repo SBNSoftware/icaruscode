@@ -177,7 +177,8 @@ void OpHitFinderStandard::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     
     recob::OpHit opHit(chNumber, min_time_to_put, time_abs, frame, FWHM, Area, min_to_put, phelec, fasttotal);
     
-    opHitVec.push_back(opHit);//including hit info
+    opHitVec.push_back(recob::OpHit());
+    opHitVec.back() = opHit;
 
     return;
 }
