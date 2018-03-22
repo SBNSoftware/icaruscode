@@ -14,7 +14,13 @@ icarus_ophitfinderstandard:
 icarus_ophitfinder:
 {
     tool_type:      OpHitFinder
+    SPEArea:        11.1927       # If AreaToPE is true, this number is
+                    # used as single PE area (in ADC counts)
     CandidateHits:  @local::candhitfinder_standard
 }
+
+icarus_ophitfinder.CandidateHits.MinDeltaTicks: [ 2]
+icarus_ophitfinder.CandidateHits.MaxDeltaTicks: [10]
+icarus_ophitfinder.CandidateHits.MinDeltaPeaks: [ 2.]
 
 END_PROLOG

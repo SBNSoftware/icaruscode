@@ -29,12 +29,12 @@ public:
     void configure(const fhicl::ParameterSet& pset)                 override;
     void outputHistograms(art::TFileDirectory&)               const override;
     
-    void FindOpHits(const raw::OpDetWaveform&, recob::OpHit&) const override;
+    void FindOpHits(const raw::OpDetWaveform&, OpHitVec&)     const override;
     
 private:
     // fhicl parameters
-    int    fNumBinsToAverage;
-    
+    float fSPEArea;         //conversion between phe and Adc*ns
+
     float getBaseline(const raw::OpDetWaveform&) const;
     
     std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
@@ -54,8 +54,8 @@ OpHitFinder::~OpHitFinder()
 void OpHitFinder::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fNumBinsToAverage = pset.get<int>("NumBinsToAverage", 20);
-    
+    fSPEArea = pset.get< float >("SPEArea");
+
     fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
 
     return;
@@ -63,12 +63,13 @@ void OpHitFinder::configure(const fhicl::ParameterSet& pset)
 
     
 void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
-                             recob::OpHit&             opHit) const
+                             OpHitVec&                 opHitVec) const
 {
     // The plan here:
-    // 1) copy to a local vector
-    // 2) Find the mean and rms
-    // 3) Fill a map to find the most probable value
+    // 1) Get the baseline
+    // 2) Copy to a local vector doing baseline subtraction and inversion
+    // 3) Set up and call the standard gaushit finder tools for finding peaks
+    // 4) Return the parameters for an ophit
     float baseline = getBaseline(opDetWaveform);
     
     std::vector<float> locWaveform;
@@ -78,20 +79,69 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     // The aim here is to baseline correct AND invert the waveform
     std::transform(opDetWaveform.begin(),opDetWaveform.end(),locWaveform.begin(),[baseline](const auto& val){return baseline - val;});
     
+    std::pair<std::vector<float>::iterator,std::vector<float>::iterator> minMaxItr = std::minmax_element(locWaveform.begin(),locWaveform.end());
+    
     reco_tool::ICandidateHitFinder::HitCandidateVec      hitCandidateVec;
     reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
     
-    fHitFinderTool->findHitCandidates(locWaveform, 0, 0, hitCandidateVec);
-    fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
+    if (*minMaxItr.second - *minMaxItr.first < fSaturationCut)
+    {
+        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, hitCandidateVec);
+        fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
+    }
+    else
+    {
+        HitCandidate hitCandidate;
+        
+        hitCandidate.startTick     = 0;
+        hitCandidate.stopTick      = 0;
+        hitCandidate.maxTick       = 0;
+        hitCandidate.minTick       = 0;
+        hitCandidate.maxDerivative = 0;
+        hitCandidate.minDerivative = 0;
+        hitCandidate.hitCenter     = std::distance(locWaveform.begin(),minMaxItr.second);
+        hitCandidate.hitSigma      = 50.;
+        hitCandidate.hitHeight     = *minMaxItr.second - *minMaxItr.first;
+        
+        hitCandidateVec.push_back(hitCandidate);
+        merged
+    }
+    
+    // Recover the channel number
+    raw::Channel_t chNumber = opDetWaveform.ChannelNumber();
+
+    // Go through the hit candidates and convert to ophits
+    // Note that the "merged candidates" represent lists of candidate hits that
+    // are in one pulse train... so we need a double loop
+    for(const auto& mergedCands : mergedCandidateHitVec)
+    {
+//        int    startT = mergedCands.front().startTick;
+//        int    endT   = mergedCands.back().stopTick;
+        
+        for(const auto& candidateHit : mergedCands)
+        {
+            float peakMean    = candidateHit.hitCenter;
+            float peakSigma   = candidateHit.hitSigma;
+            float amplitude   = candidateHit.hitHeight;
+            float peakArea    = amplitude * peakSigma * 2.5066;  // * sqrt(2pi)
+            float nPhotoElec  = peakArea / fSPEArea;
+            
+            float peakTimeAbs = peakMean;   // NOTE: these times will need to be corrected
+            int   frame       = 1;          //       also this needs to be the clock frame
+            float fastTotal   = 0.;         //       not sure what this is
+            
+            std::cout << "==> ch #" << chNumber << ", time: " << peakMean << ", sigma: " << peakSigma << ", amp: " << amplitude << ", pe: " << nPhotoElec << std::endl;
+            
+            opHitVec.emplace_back(chNumber, peakMean, peakTimeAbs, frame, 2.35 * peakSigma, peakArea, amplitude, nPhotoElec, fastTotal);//including hit info
+        }
+    }
 
     return;
 }
 
 float OpHitFinder::getBaseline(const raw::OpDetWaveform& locWaveform) const
 {
-    float meanVal = std::accumulate(locWaveform.begin(),locWaveform.end(),0.) / float(locWaveform.size());
-    
-    // now fill a map to determine the most probable value
+    // Fill a map to determine the most probable value
     std::map<raw::ADC_Count_t,int> adcFrequencyMap;
     
     raw::ADC_Count_t maxBin(0);
@@ -108,16 +158,14 @@ float OpHitFinder::getBaseline(const raw::OpDetWaveform& locWaveform) const
         }
     }
     
-    if (std::abs(float(maxBin) - meanVal) > 5.) std::cout << "screw up" << std::endl;
-    
     float mostProbableBaseline(0.);
     int   mostProbableCount(0);
     
     for(raw::ADC_Count_t adcBin = maxBin - 3; adcBin <= maxBin + 3; adcBin++)
     {
         try{
-            mostProbableBaseline += adcFrequencyMap.at(adcBin);
-            mostProbableCount++;
+            mostProbableBaseline += adcFrequencyMap.at(adcBin) * float(adcBin);
+            mostProbableCount    += adcFrequencyMap.at(adcBin);
         }
         catch(...) {}
     }

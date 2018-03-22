@@ -122,11 +122,12 @@ void OpHitFinderICARUS::produce(art::Event & e)
 //    for(size_t wftime; wftime< wfHandle.size(); wftime++)
     for(auto const& wvf : (*wfHandle))
     {
-        recob::OpHit adcVec;
+        light::OpHitVec opHitVec;
         
-        fOpHitFinder->FindOpHits(wvf, adcVec);
+        fOpHitFinder->FindOpHits(wvf, opHitVec);
         
-        pulseVecPtr->emplace_back(std::move(adcVec));
+        for(auto& opHit : opHitVec)
+            pulseVecPtr->emplace_back(opHit);
     }
     // Store results into the event
     e.put(std::move(pulseVecPtr));

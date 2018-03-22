@@ -30,7 +30,7 @@ public:
     void configure(const fhicl::ParameterSet& pset)                  override;
     void outputHistograms(art::TFileDirectory&)                const override;
     
-    void FindOpHits(const raw::OpDetWaveform&, recob::OpHit&) const override;
+    void FindOpHits(const raw::OpDetWaveform&, OpHitVec&)      const override;
     
 private:
     double fSPEArea;         //conversion between phe and Adc*ns
@@ -60,7 +60,7 @@ void OpHitFinderStandard::configure(const fhicl::ParameterSet& pset)
 
     
 void OpHitFinderStandard::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
-                                     recob::OpHit&             opHit) const
+                                     OpHitVec&                 opHitVec) const
 {
     raw::Channel_t chNumber = opDetWaveform.ChannelNumber();
     std::cout << "Photon channel: " << chNumber << std::endl;
@@ -175,7 +175,7 @@ void OpHitFinderStandard::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         phelec=0;
     }
     
-    opHit = recob::OpHit(chNumber, min_time_to_put, time_abs, frame, FWHM, Area, min_to_put, phelec, fasttotal);//including hit info
+    opHitVec.emplace_back(chNumber, min_time_to_put, time_abs, frame, FWHM, Area, min_to_put, phelec, fasttotal);//including hit info
 
     return;
 }

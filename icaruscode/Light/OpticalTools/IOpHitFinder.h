@@ -23,6 +23,8 @@ namespace art
 
 namespace light
 {
+    using OpHitVec = std::vector<recob::OpHit>;
+    
     class IOpHitFinder
     {
     public:
@@ -32,7 +34,7 @@ namespace light
         virtual void outputHistograms(art::TFileDirectory&)               const = 0;
         
         // Find the baseline
-        virtual void FindOpHits(const raw::OpDetWaveform&, recob::OpHit&) const = 0;
+        virtual void FindOpHits(const raw::OpDetWaveform&, OpHitVec&)     const = 0;
     };
 }
 
