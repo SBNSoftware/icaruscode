@@ -12,4 +12,11 @@ icarus_BasicHitAnalysis:
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
 }
 
+icarus_RawDigitAnalysis:
+{
+  module_type:               "RawDigitAna"
+  RawDigitModuleLabel:       "rawdigitfilter"
+  RawDigitHistogramToolList: [ @local::RawDigitAnalysisTool ]
+}
+
 END_PROLOG

@@ -2,6 +2,7 @@ cet_enable_asserts()
 add_subdirectory(MCTruth)
 
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
+                         RawDigitFilterAlgs
                          larcorealg_Geometry
                          larcore_Geometry_Geometry_service
                          lardata_RecoObjects
