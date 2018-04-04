@@ -47,6 +47,9 @@ qualifier	larsoft		icarusutil  icarus_data genie_xsec notes
 e15:debug	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
 e15:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
 e15:prof	e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
+c2:debug	c2:debug	c2:debug    -nq-        DefaultPlusMECWithNC
+c2:opt	    c2:opt	    c2:opt      -nq-        DefaultPlusMECWithNC
+c2:prof  	c2:prof	    ec2:prof    -nq-        DefaultPlusMECWithNC
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
