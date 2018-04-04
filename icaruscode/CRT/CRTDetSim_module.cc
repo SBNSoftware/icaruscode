@@ -253,7 +253,7 @@ void CRTDetSim::produce(art::Event & e) {
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
       if (q0 > fQThreshold &&
           q1 > fQThreshold &&
-          abs(t0 - t1) < fStripCoincidenceWindow) {
+          std::abs(int(t0 - t1)) < fStripCoincidenceWindow) {
         Tagger& tagger = taggers[nodeTagger->GetName()];
         tagger.planesHit.insert(planeID);
         tagger.data.push_back(icarus::crt::CRTData(channel0ID, t0, ppsTicks, q0));
@@ -277,7 +277,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT level 3 (tagger): " << nodeTagger->GetName() << "\n"
         << "CRT PLANE ID: " << planeID << "\n"
         << "CRT distToReadout: " << distToReadout << " " << (top ? "top" : "bot") << "\n"
-        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << abs(t0-t1) << "\n";
+        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << std::abs(int(t0-t1)) << "\n";
     }
   }
 

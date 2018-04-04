@@ -115,9 +115,6 @@ private:
     std::vector<size_t>  fHistsWireGroup;        ///< Wire Group to pick on
     std::vector<size_t>  fNumWiresToGroup;       ///< If smoothing, the number of wires to look at
     bool                 fFillHistograms;        ///< if true then will fill diagnostic hists
-
-    // Statistics.
-    int                  fNumEvent;        ///< Number of events seen.
     
     // Make sure hists for this instance are initialized
     bool                 fHistsInitialized;

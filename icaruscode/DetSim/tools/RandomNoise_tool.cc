@@ -35,7 +35,6 @@ public:
     
 private:
     // Member variables from the fhicl file
-    double              fNoiseRand;
     std::string         fInputNoiseHistFileName;
     std::string         fHistogramName;
     

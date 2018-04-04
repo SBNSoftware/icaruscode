@@ -64,7 +64,6 @@ namespace recowireraw {
  
   private:
     
-    int          fDataSize;          ///< size of raw data on one wire
     std::string  fDigitModuleLabel;  ///< module that made digits
     TH1F* fWireRMS;
 

@@ -70,10 +70,8 @@
 #include "TTimeStamp.h"
 
 ////////////////////////////////// Define some constant variable //////////////////////////////
-const int nPMTs = 360;
-const int PMTs_per_TPC = 90;
+const int nPMTs      = 360;
 const int MaxPhotons = 5000;
-const int QE = 0.06;
 
 namespace sim{	
   class ParticleList;
@@ -99,7 +97,7 @@ public:
   // Required functions.
   void analyze(art::Event const & e) override;
   // Selected optional functions.
-  void beginJob();
+  void beginJob() override;
   //void reconfigure(fhicl::ParameterSet const & p);
 
 private:

@@ -358,7 +358,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 
                 pedCorrectedVec.resize(rawadc.size(),0);
                 
-                std::transform(rawadc.begin(),rawadc.end(),pedCorrectedVec.begin(),std::bind2nd(std::minus<short>(),pedCorWireVec[wireIdx]));
+                std::transform(rawadc.begin(),rawadc.end(),pedCorrectedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorWireVec[wireIdx]));
                 
                 saveRawDigits(filteredRawDigit, channel, pedCorrectedVec, truncMeanWireVec[wireIdx], truncRmsWireVec[wireIdx]);
              
@@ -386,7 +386,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             if (!fCharacterizationAlg.classifyRawDigitVec(rawadc, plane, wire, truncRmsWireVec[wireIdx], minMaxWireVec[wireIdx], meanWireVec[wireIdx],skewnessWireVec[wireIdx], neighborRatioWireVec[wireIdx], groupToDigitIdxPairMap))
             {
                 // If the waveform was not classified then we need to baseline correct...
-                std::transform(rawadc.begin(),rawadc.end(),rawadc.begin(),std::bind2nd(std::minus<short>(),pedCorWireVec[wireIdx]));
+                std::transform(rawadc.begin(),rawadc.end(),rawadc.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorWireVec[wireIdx]));
             }
 
             // Are we at the correct boundary for dealing with the noise?

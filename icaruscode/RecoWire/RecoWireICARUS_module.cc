@@ -61,8 +61,7 @@ namespace recowire {
     
     std::string  fResponseFile;      ///< response file containing transformed 
                                      ///< shape histograms and decay constants
-    int          fDataSize;          ///< size of raw data on one wire
-    int          fExpEndBins;        ///< number of end bins to consider for tail fit    
+    int          fExpEndBins;        ///< number of end bins to consider for tail fit
     int          fPostsample;        ///< number of postsample bins
     std::string  fDigitModuleLabel;  ///< module that made digits
 
@@ -271,7 +270,7 @@ namespace recowire{
         {
             if (holder[bin]>9) {
                 for (int ijk=0; ijk<30; ijk++) {
-                    if ((bin-ijk)>=0 && (bin+ijk)<4096) {
+                    if ((int(bin)-ijk)>=0 && (bin+ijk)<4096) {
                         shortADC[bin-ijk]=1;
                         shortADC[bin+ijk]=1;
                     }

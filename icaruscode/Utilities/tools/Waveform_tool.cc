@@ -37,14 +37,14 @@ public:
     using PeakTuple    = std::tuple<size_t,size_t,size_t>; // first bin, peak bin, last bin
     using PeakTupleVec = std::vector<PeakTuple>;
     
-    void triangleSmooth(const std::vector<float>&,  std::vector<float>&,  size_t = 0)                           const;
-    void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const;
-    void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const;
-    void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const;
-    void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const;
-    void findPeaks(std::vector<double>::iterator, std::vector<double>::iterator, PeakTupleVec&, double, size_t) const;
-    void getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec)                    const;
-    void getFFTPower(const std::vector<double>& inputVec, std::vector<double>& outputPowerVec)                  const;
+    void triangleSmooth(const std::vector<float>&,  std::vector<float>&,  size_t = 0)                           const override;
+    void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const override;
+    void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const override;
+    void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const override;
+    void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const override;
+    void findPeaks(std::vector<double>::iterator, std::vector<double>::iterator, PeakTupleVec&, double, size_t) const override;
+    void getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec)                    const override;
+    void getFFTPower(const std::vector<double>& inputVec, std::vector<double>& outputPowerVec)                  const override;
     
 private:
     template <typename T> void triangleSmooth(const std::vector<T>&, std::vector<T>&, size_t = 0)                                        const;

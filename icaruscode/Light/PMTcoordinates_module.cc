@@ -70,8 +70,7 @@
 #include "TTimeStamp.h"
 
 ////////////////////////////////// Define some constant variable //////////////////////////////
-const int nPMTs = 360;
-const int PMTs_per_TPC = 90;
+const int nPMTs      = 360;
 const int MaxPhotons = 10000;
 
 namespace icarus {
@@ -94,7 +93,7 @@ PMTcoordinates & operator = (PMTcoordinates &&) = delete;
 void analyze(art::Event const & e) override;
 
 // Selected optional functions.
-void beginJob();
+void beginJob() override;
 //void reconfigure(fhicl::ParameterSet const & p);
 
 private:

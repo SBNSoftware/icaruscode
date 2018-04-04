@@ -76,7 +76,6 @@ namespace simfilter {
       double fYmin;
       int finActive;
       int filtpart;
-      int typetofilt;
   };
 
 } // namespace simfilter

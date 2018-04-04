@@ -1336,7 +1336,7 @@ void icarus::AnalysisTreeDataStruct::ClearLocalData() {
 void icarus::AnalysisTreeDataStruct::Clear() {
   ClearLocalData();
   std::for_each
-    (TrackData.begin(), TrackData.end(), std::mem_fun_ref(&TrackDataStruct::Clear));
+    (TrackData.begin(), TrackData.end(), std::mem_fn(&TrackDataStruct::Clear));
 } // icarus::AnalysisTreeDataStruct::Clear()
 
 void icarus::AnalysisTreeDataStruct::ResizeMCNeutrino(int nNeutrinos){

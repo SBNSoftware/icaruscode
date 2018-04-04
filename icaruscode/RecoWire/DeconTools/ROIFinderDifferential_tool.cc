@@ -301,7 +301,7 @@ void ROIFinderDifferential::findROICandidates(Waveform::const_iterator       sta
                 maxItr--;
             }
         
-            minItr = std::find_if(minItr,stopItr,std::bind2nd(std::greater<float>(),0.));
+            minItr = std::find_if(minItr,stopItr,std::bind(std::greater<float>(),std::placeholders::_1,0.));
         
             // Before saving this ROI, look for candidates preceeding this one
             // Note that preceeding snippet will reference to the current roiStartTick

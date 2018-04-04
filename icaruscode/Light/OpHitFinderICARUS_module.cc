@@ -84,7 +84,6 @@ public:
 private:
 
     size_t fEvNumber;
-    size_t fChNumber;
 
     std::string fInputModuleName;
     

@@ -213,7 +213,7 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
     
     adcLessPedVec.resize(localTimeVec.size());
     
-    std::transform(localTimeVec.begin(),localTimeVec.end(),adcLessPedVec.begin(),std::bind2nd(std::minus<short>(),mean));
+    std::transform(localTimeVec.begin(),localTimeVec.end(),adcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,mean));
     
     rms      = std::sqrt(std::inner_product(adcLessPedVec.begin(), adcLessPedVec.end(), adcLessPedVec.begin(), 0.) / float(adcLessPedVec.size()));
     skewness = 3. * float(mean - median) / rms;
@@ -295,7 +295,7 @@ void RawDigitCharacterizationAlg::getTruncatedRMS(const RawDigitVector& rawWavef
     adcLessPedVec.resize(rawWaveform.size());
     
     // Fill the vector
-    std::transform(rawWaveform.begin(),rawWaveform.end(),adcLessPedVec.begin(),std::bind2nd(std::minus<short>(),pedestal));
+    std::transform(rawWaveform.begin(),rawWaveform.end(),adcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
     
     // sort in ascending order so we can truncate the sume
     std::sort(adcLessPedVec.begin(), adcLessPedVec.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});

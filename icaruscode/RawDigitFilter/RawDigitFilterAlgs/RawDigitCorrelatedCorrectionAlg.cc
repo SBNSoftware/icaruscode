@@ -162,7 +162,7 @@ void RawDigitCorrelatedCorrectionAlg::smoothCorrectionVec(std::vector<float>& co
     float meanCorVal = corValSum / float(nTruncVal);
     
     std::vector<float> diffVec(nTruncVal);
-    std::transform(localCorValVec.begin(),localCorValVec.begin() + nTruncVal, diffVec.begin(), std::bind2nd(std::minus<float>(),meanCorVal));
+    std::transform(localCorValVec.begin(),localCorValVec.begin() + nTruncVal, diffVec.begin(), std::bind(std::minus<float>(),std::placeholders::_1,meanCorVal));
     
     float rmsValSq   = std::inner_product(diffVec.begin(),diffVec.end(),diffVec.begin(),0.);
     float rmsVal     = std::sqrt(rmsValSq / float(nTruncVal));

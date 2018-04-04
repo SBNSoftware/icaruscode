@@ -17,7 +17,6 @@ namespace caldata
 /// pset - Fcl parameters.
 ///
 RawDigitFilterAlg::RawDigitFilterAlg(fhicl::ParameterSet const & pset) :
-    fFirstEvent(false),
     fHistsInitialized(false),
     fCharacterizationAlg(pset),
     fBinAverageAlg(pset),

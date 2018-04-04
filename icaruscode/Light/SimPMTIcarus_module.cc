@@ -82,7 +82,6 @@ private:
   double fFallTime;       //fall time of 1PE in ns
   double fRiseTime;      //rise time in ns
   double fTransitTime;   //to be added to pulse minimum time
-  double fTransitSpread; //transit time spread
   double sigma1;
   double sigma2;
   double fMeanAmplitude;  //in pC

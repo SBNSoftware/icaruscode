@@ -75,7 +75,7 @@ private:
 
     // Fcl parameters.
     float                fTruncMeanFraction;     ///< Fraction for truncated mean
-    bool                 fSmoothCorrelatedNoise; ///< Should we smooth the noise?
+//    bool                 fSmoothCorrelatedNoise; ///< Should we smooth the noise?
     bool                 fApplyCorSmoothing;     ///< Attempt to smooth the correlated noise correction?
     bool                 fApplyFFTCorrection;    ///< Use an FFT to get the correlated noise correction
     bool                 fFillFFTHistograms;     ///< Fill associated FFT histograms
