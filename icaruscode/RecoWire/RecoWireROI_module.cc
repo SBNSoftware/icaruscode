@@ -272,7 +272,7 @@ void RecoWireROI::produce(art::Event& evt)
 
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = detprop->SamplingRate()/1000.;
-    double deconNorm = fSignalServices.GetDeconNorm();
+    double      deconNorm    = fSignalServices.GetDeconNorm();
 
     // We'll need to set the transform size once we get the waveform and know its size
     size_t transformSize = 0;

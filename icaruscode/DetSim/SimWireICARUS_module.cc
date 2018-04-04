@@ -449,7 +449,6 @@ void SimWireICARUS::produce(art::Event& evt)
 void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> const& noisevec, 
                                    std::vector<double> const& chargevec, float ped_mean) const
 {
-    double chargeArea(0),ADCArea(0);
     for(unsigned int i = 0; i < fNTimeSamples; ++i)
     {
         float adcval = noisevec[i] + chargevec[i] + ped_mean;
@@ -461,11 +460,8 @@ void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> co
         if ( adcval < 0 ) adcval = 0;
 
         adcvec[i] = (unsigned short)TMath::Nint(adcval);
-        chargeArea+=chargevec[i];
-        ADCArea+=(adcvec[i]-ped_mean);
     }// end loop over signal size
 
-    //std::cout << " chargeArea" << chargeArea << " ADCArea " << ADCArea << " ratio " << ADCArea/chargeArea << std::endl;
     // compress the adc vector using the desired compression scheme,
     // if raw::kNone is selected nothing happens to adcvec
     // This shrinks adcvec, if fCompression is not kNone.

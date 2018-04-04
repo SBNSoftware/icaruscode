@@ -181,6 +181,14 @@ art::ServiceHandle<geo::Geometry> geom;
 std::vector<sim::SimPhotons> const& optical  = *(evt.getValidHandle<std::vector<sim::SimPhotons>>(photonLabel));
 std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<sim::SimChannel>>(chargeLabel));
 //std::vector<simb::MCTruth> const& type    = *(evt.getValidHandle<std::vector<simb::MCTruth>>(typoLabel));
+    
+    std::cout << "---> Size of optical: " << optical.size() << ", size of charge: " << charge.size() << std::endl;
+    
+    art::Handle< std::vector<sim::SimPhotons>> simPhotonsHandle;
+    evt.getByLabel(photonLabel, simPhotonsHandle);
+    
+    std::cout << "---> handle of simphotons claims: " << simPhotonsHandle->size() << std::endl;
+
 
 ////////////////////////////////// Event number//////////////////////////////
 
@@ -286,6 +294,8 @@ total_coll_photons=0;
 for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 	sim::SimPhotons const& photon_vec = optical[channel];
+    
+    std::cout << "   channel: " << channel << ", SimPhotons: " << photon_vec.size() << std::endl;
 
 	noPMT[channel] = channel;	
 

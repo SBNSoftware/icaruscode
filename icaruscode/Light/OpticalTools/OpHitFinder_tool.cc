@@ -11,7 +11,7 @@
 #include "cetlib/exception.h"
 
 #include "icaruscode/Light/OpticalTools/IOpHitFinder.h"
-//#include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
+#include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
 
 #include <cmath>
 #include <fstream>
@@ -33,12 +33,13 @@ public:
     
 private:
     // fhicl parameters
-    float fSPEArea;         //conversion between phe and Adc*ns
-    float fSaturationCut;   //Saturation occurs at this point
+    float fSPEArea;         // conversion between phe and Adc*ns
+    float fSaturationCut;   // Saturation occurs at this point
+    int   fMaxSatChannels;  // maximum saturated channels
 
     float getBaseline(const raw::OpDetWaveform&) const;
     
-//    std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
+    std::unique_ptr<reco_tool::ICandidateHitFinder> fHitFinderTool;  ///< For finding candidate hits
 };
     
 //----------------------------------------------------------------------
@@ -55,10 +56,11 @@ OpHitFinder::~OpHitFinder()
 void OpHitFinder::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fSPEArea       = pset.get< float >("SPEArea");
-    fSaturationCut = pset.get< float >("SaturationCut", 2800.);
+    fSPEArea        = pset.get< float >("SPEArea"              );
+    fSaturationCut  = pset.get< float >("SaturationCut",  3000.);
+    fMaxSatChannels = pset.get< int   >("MaxSatChannels",    10);
 
-//    fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
+    fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
 
     return;
 }
@@ -72,7 +74,6 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     // 2) Copy to a local vector doing baseline subtraction and inversion
     // 3) Set up and call the standard gaushit finder tools for finding peaks
     // 4) Return the parameters for an ophit
-/*
     float baseline = getBaseline(opDetWaveform);
 
     std::vector<float> locWaveform;
@@ -87,7 +88,22 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     reco_tool::ICandidateHitFinder::HitCandidateVec      hitCandidateVec;
     reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
     
-    if (*minMaxItr.second - *minMaxItr.first < fSaturationCut)
+    bool  notSaturated(true);
+    int   numSatChans(0);
+    float maxAdc = *minMaxItr.second;
+    float minAdc = *minMaxItr.first;
+    
+    if (maxAdc - minAdc > fSaturationCut)
+    {
+        float unSatAdc = 0.5 * (maxAdc - minAdc) + minAdc;
+        std::vector<float>::iterator unSatItr = std::find_if(minMaxItr.second,locWaveform.end(),[unSatAdc](const auto& elem){return elem < unSatAdc;});
+        
+        numSatChans = std::distance(minMaxItr.second,unSatItr);
+        
+        if (numSatChans > fMaxSatChannels) notSaturated = false;
+    }
+        
+    if (notSaturated)
     {
         fHitFinderTool->findHitCandidates(locWaveform, 0, 0, hitCandidateVec);
         fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
@@ -103,8 +119,10 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         hitCandidate.maxDerivative = 0;
         hitCandidate.minDerivative = 0;
         hitCandidate.hitCenter     = std::distance(locWaveform.begin(),minMaxItr.second);
-        hitCandidate.hitSigma      = 50.;
-        hitCandidate.hitHeight     = *minMaxItr.second - *minMaxItr.first;
+        hitCandidate.hitSigma      = std::min(40,numSatChans);
+        hitCandidate.hitHeight     = maxAdc - minAdc;
+        
+        std::cout << "***>> Saturated PMT, numSatChans: " << numSatChans << ", range: " << maxAdc-minAdc << std::endl;
         
         hitCandidateVec.push_back(hitCandidate);
         mergedCandidateHitVec.push_back(hitCandidateVec);
@@ -118,9 +136,6 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
     // are in one pulse train... so we need a double loop
     for(const auto& mergedCands : mergedCandidateHitVec)
     {
-//        int    startT = mergedCands.front().startTick;
-//        int    endT   = mergedCands.back().stopTick;
-        
         for(const auto& candidateHit : mergedCands)
         {
             float peakMean    = candidateHit.hitCenter;
@@ -133,12 +148,10 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
             int   frame       = 1;          //       also this needs to be the clock frame
             float fastTotal   = 0.;         //       not sure what this is
             
-            std::cout << "==> ch #" << chNumber << ", time: " << peakMean << ", sigma: " << peakSigma << ", amp: " << amplitude << ", pe: " << nPhotoElec << std::endl;
-            
             opHitVec.emplace_back(chNumber, peakMean, peakTimeAbs, frame, 2.35 * peakSigma, peakArea, amplitude, nPhotoElec, fastTotal);//including hit info
         }
     }
-*/
+
     return;
 }
 

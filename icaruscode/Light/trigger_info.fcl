@@ -8,6 +8,8 @@
 #include "opticaldetectormodules.fcl"
 #include "opticaldetectorservices.fcl"
 
+#include "wvfana.fcl"
+
 ## You will write whatever name you want this process to be called 
 ## It is important to note that the same process name cannot be called
 ## twice on a ROOT file, so you may have to change this 
@@ -49,6 +51,7 @@ physics:
  analyzers:
  {
    tri: { module_type: "TrigInfo" }
+   wave : @local::wvf_ana_icarus
  }
  
  ### Here you will define any filter modules you want to run ###
@@ -63,7 +66,7 @@ physics:
  
  reco: [  ]
  
- ana:[tri]
+ ana:[tri, wave]
  
  filt:[  ]
 

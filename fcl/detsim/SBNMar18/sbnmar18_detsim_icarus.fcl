@@ -58,7 +58,6 @@ physics:
 
 # For SBN workshop revert to white noise in the simulation
 physics.producers.daq.NoiseGenToolVec:  [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
-physics.producers.daq.NoiseFactVec:     [ [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ], [ 1.8, 1.8, 1.8, 1.8 ] ]
 physics.producers.daq.SuppressNoSignal: true
 
 #block to define where the output goes.  if you defined a filter in the physics

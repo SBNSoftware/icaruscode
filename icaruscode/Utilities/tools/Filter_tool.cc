@@ -87,23 +87,24 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = detprop->SamplingRate();
     double      numBins2     = numBins / 2;
+    double      lowFreq      = 500. / (samplingRate * numBins2);   // lowest frequency in cycles/us
+//    double      hiFreq       = 500. / samplingRate;                // highest frequency in cycles/us
     
     // Set the range on the function
-    fFunction->SetRange(0., double(numBins2));
-    
+    fFunction->SetRange(0, double(numBins2));
+
     // now to scale the filter function!
     // only scale params 1,2 &3
     double timeFactor = 1. / (timeScaleFctr * correct3D * fFilterWidthCorrectionFactor);
     size_t paramIdx(0);
     
-    while(paramIdx++ < 3)
-        fFunction->SetParameter(paramIdx, timeFactor * fParameters[paramIdx]);
+    for(const auto& parameter : fParameters) fFunction->SetParameter(paramIdx++, timeFactor * parameter);
 
     // Now ready to set the response vector
     for(size_t bin = 0; bin <= size_t(numBins2); bin++)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
-        double freq = 500. * bin / (samplingRate * numBins2);
+        double freq = bin * lowFreq;
 
         double f = fFunction->Eval(freq);
         

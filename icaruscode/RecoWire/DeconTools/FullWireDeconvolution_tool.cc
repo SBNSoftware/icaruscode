@@ -49,7 +49,8 @@ private:
     
     std::unique_ptr<uboone_tool::IBaseline>              fBaseline;
     
-    const geo::GeometryCore*                             fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::GeometryCore*                             fGeometry           = lar::providerFrom<geo::Geometry>();
+    detinfo::DetectorProperties const*                   fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     art::ServiceHandle<util::LArFFT>                     fFFT;
     art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
 };
@@ -131,8 +132,10 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     
     rawAdcLessPedVec.resize(transformSize,0.);
     
-    size_t binOffset = transformSize > dataSize ? (transformSize - dataSize) / 2 : 0;
-    double deconNorm = fSignalShaping->GetDeconNorm();
+    size_t binOffset    = transformSize > dataSize ? (transformSize - dataSize) / 2 : 0;
+    float  samplingRate = fDetectorProperties->SamplingRate()/1000.; // want this in us
+    float  deconNorm    = fSignalShaping->GetDeconNorm();
+    float  normFactor   = 1. / (samplingRate * deconNorm);
     
     // Copy the input (assumed pedestal subtracted) waveforms into our zero padded deconvolution buffer
     std::copy(waveform.begin(),waveform.end(),rawAdcLessPedVec.begin()+binOffset);
@@ -152,8 +155,8 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         holder.resize(roiLen);
         
         std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roi.second, holder.begin());
-        std::transform(holder.begin(),holder.end(),holder.begin(),[deconNorm](float& deconVal){return deconVal/deconNorm;});
-        
+        std::transform(holder.begin(),holder.end(),holder.begin(),[normFactor](float& deconVal){return deconVal * normFactor;});
+
         // Get the baseline from the tool
         float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
         

@@ -109,13 +109,10 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for (auto& element : fElectronicsResponseVec)
        element /= (fFCperADCMicroS);
-    
-    float respIntegral=0;
-    for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
-        respIntegral+=(fElectronicsResponseVec.at(timeIdx)*binWidth);
 
-    for (auto& element : fElectronicsResponseVec)
-        element /= respIntegral;
+    float respIntegral = binWidth * std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
+    
+    std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),[respIntegral](auto& elem){return elem/respIntegral;});
     
     return;
 }

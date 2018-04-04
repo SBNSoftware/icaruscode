@@ -138,7 +138,6 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& p)
     fFFTSize                    = p.get< size_t >        ("FFTSize"                );
     fSaveWireWF                 = p.get< int >           ("SaveWireWF"             );
     fMinAllowedChanStatus       = p.get< int >           ("MinAllowedChannelStatus");
-    
     fTruncRMSThreshold          = p.get< float >         ("TruncRMSThreshold",    6.);
     fTruncRMSMinFraction        = p.get< float >         ("TruncRMSMinFraction", 0.6);
     fOutputHistograms           = p.get< bool  >         ("OutputHistograms",   true);
@@ -222,7 +221,12 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
 
-    if (!digitVecHandle->size())  return;
+    if (!digitVecHandle->size())
+    {
+        evt.put(std::move(wirecol), fSpillName);
+        evt.put(std::move(WireDigitAssn), fSpillName);
+        return;
+    }
     
     raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
     

@@ -49,11 +49,11 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "RawDigitFilterAlgs/RawDigitNoiseFilterDefs.h"
-#include "RawDigitFilterAlgs/RawDigitBinAverageAlg.h"
-#include "RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
-#include "RawDigitFilterAlgs/RawDigitCorrelatedCorrectionAlg.h"
-#include "RawDigitFilterAlgs/RawDigitFilterAlg.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitNoiseFilterDefs.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitBinAverageAlg.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCorrelatedCorrectionAlg.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitFilterAlg.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -382,7 +382,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 continue;
             }
             
-        
             // Add this wire to the map and try to do some classification here
             if (!fCharacterizationAlg.classifyRawDigitVec(rawadc, plane, wire, truncRmsWireVec[wireIdx], minMaxWireVec[wireIdx], meanWireVec[wireIdx],skewnessWireVec[wireIdx], neighborRatioWireVec[wireIdx], groupToDigitIdxPairMap))
             {
@@ -428,7 +427,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                     caldata::RawDigitVector& rawDataVec = rawDataWireTimeVec[locWireIdx];
                     
                     fCharacterizationAlg.getTruncatedRMS(rawDataVec, deltaPed, rmsVal);
-                    
                     
                     // The ultra high noise channels are simply zapped
                     if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))

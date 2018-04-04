@@ -56,13 +56,6 @@ public:
     
 private:
     
- //   using PeakTuple    = std::tuple<size_t,size_t,size_t>; // first bin, peak bin, last bin
- //   using PeakTupleVec = std::vector<PeakTuple>;
-    
- //   void triangleSmooth(std::vector<double>&, size_t = 0)               const;
- //   void firstDerivative(std::vector<double>&, std::vector<double>&)    const;
- //   void findPeaks(std::vector<double>&, PeakTupleVec&, double, size_t) const;
-    
     std::vector<bool>      fTransformViewVec;      ///< apply FFT transform to this view
     bool                   fFillHistograms;        ///< if true then will fill diagnostic hists
     std::string            fHistDirName;           ///< If writing histograms, the folder name
