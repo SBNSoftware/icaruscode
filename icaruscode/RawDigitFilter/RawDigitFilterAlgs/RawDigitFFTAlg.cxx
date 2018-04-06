@@ -11,11 +11,13 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/Utilities/tools/IFilter.h"
 
 #include <cmath>
 #include <algorithm>
 
 #include "TVirtualFFT.h"
+#include "TComplex.h"
 
 namespace caldata
 {
@@ -49,13 +51,25 @@ RawDigitFFTAlg::~RawDigitFFTAlg()
 ///
 void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
 {
-    fTransformViewVec = pset.get<std::vector<bool>>("TransformViewVec",     std::vector<bool>() = {true,false,false});
-    fFillHistograms   = pset.get<bool             >("FillHistograms",                                          false);
-    fHistDirName      = pset.get<std::string      >("HistDirName",                                       "FFT_hists");
-    
+    fTransformViewVec = pset.get<std::vector<bool>>  ("TransformViewVec", std::vector<bool>() = {true,false,false});
+    fFillHistograms   = pset.get<bool             >  ("FillHistograms",                                      false);
+    fHistDirName      = pset.get<std::string      >  ("HistDirName",                                   "FFT_hists");
+    fLoWireByPlane    = pset.get<std::vector<size_t>>("LoWireByPlane",               std::vector<size_t>()={0,0,0});
+    fHiWireByPlane    = pset.get<std::vector<size_t>>("HiWireByPlane",         std::vector<size_t>()={100,100,100});
+
     const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
     
     fWaveformTool     = art::make_tool<icarus_tool::IWaveformTool>(waveformParamSet);
+    
+    // Implement the tools for handling the responses
+    const fhicl::ParameterSet& filterTools = pset.get<fhicl::ParameterSet>("FilterTools");
+    
+    for(const std::string& filterTool : filterTools.get_pset_names())
+    {
+        const fhicl::ParameterSet& filterToolParamSet = filterTools.get<fhicl::ParameterSet>(filterTool);
+        size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
+    fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+    }
 }
     
 //----------------------------------------------------------------------------
@@ -69,53 +83,44 @@ void RawDigitFFTAlg::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
         // is drawn.
         
         // hijack hists here
-        //    double sampleRate  = fDetectorProperties->SamplingRate();
+        double sampleRate  = fDetectorProperties->SamplingRate();
         double readOutSize = fDetectorProperties->ReadOutWindowSize();
-        //    double maxFreq     = 1000000. / (2. * sampleRate);
-        //    double minFreq     = 1000000. / (2. * sampleRate * readOutSize);
-        //    int    numSamples  = (readOutSize / 2 + 1) / 4;
+        double maxFreq     = 1.e6 / (2. * sampleRate);
+        double minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
         int numSamples     = readOutSize / 2;
-        
-        fCorValHistVec.resize(20);
-        fFFTPowerVec.resize(20);
-        fFFTPowerDerivVec.resize(20);
-        fFFTRealVec.resize(20);
-        fFFTImaginaryVec.resize(20);
-        fFFTCorValHistVec.resize(20);
-        fSmoothPowerVec.resize(20);
-        
+
         // Make a directory for these histograms
         art::TFileDirectory dir = tfs->mkdir(fHistDirName.c_str());
+
+        fFFTPowerVec.resize(3);
+        fAveFFTPowerVec.resize(3);
+        fConvFFTPowerVec.resize(3);
+        fFilterFuncVec.resize(3);
         
-        for(size_t idx = 0; idx < 20; idx++)
+        for(size_t plane = 0; plane < 3; plane++)
         {
-            std::string histName = "RawWaveform_" + std::to_string(idx);
+            size_t numHists = fHiWireByPlane[plane] - fLoWireByPlane[plane];
             
-            fCorValHistVec[idx] = dir.make<TProfile>(histName.c_str(), "Raw Waveform;Tick", readOutSize, 0., readOutSize, -100., 100.);
+            fFFTPowerVec[plane].resize(numHists);
+           
+            for(size_t idx = 0; idx < 20; idx++)
+            {
+                std::string histName = "FFTPower_" + std::to_string(plane) + "-" + std::to_string(idx);
+                
+                fFFTPowerVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 10000.);
+            }
             
-            histName = "FFTPower_" + std::to_string(idx);
+            std::string histName = "AveFFTPower_" + std::to_string(plane);
             
-            fFFTPowerVec[idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0, numSamples, 0., 10000.);
+            fAveFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
             
-            histName = "FFTPowerDeriv_" + std::to_string(idx);
+            histName = "ConvFFTPower_" + std::to_string(plane);
             
-            fFFTPowerDerivVec[idx] = dir.make<TProfile>(histName.c_str(),  "Power Deriv;kHz;Power", numSamples, 0, numSamples, -500., 500.);
+            fConvFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
             
-            histName = "FFTReal_" + std::to_string(idx);
+            histName = "FilterFunc_" + std::to_string(plane);
             
-            fFFTRealVec[idx] = dir.make<TProfile>(histName.c_str(),  "Real values;kHz;Power", numSamples, 0, numSamples, -10000., 10000.);
-            
-            histName = "FFTImaginary_" + std::to_string(idx);
-            
-            fFFTImaginaryVec[idx] = dir.make<TProfile>(histName.c_str(),  "Imaginary values;kHz;Power", numSamples, 0, numSamples, -10000., 10000.);
-            
-            histName = "SmoothPWR_" + std::to_string(idx);
-            
-            fSmoothPowerVec[idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0, numSamples, 0., 10000.);
-            
-            histName = "FFTCorrected_" + std::to_string(idx);
-            
-            fFFTCorValHistVec[idx] = dir.make<TProfile>(histName.c_str(),  "Corrected Waveform;Tick", readOutSize, 0., readOutSize, -100., 100.);
+            fFilterFuncVec[plane] = dir.make<TProfile>(histName.c_str(),  "Filter Function;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
         }
     }
     
@@ -234,185 +239,95 @@ template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVe
     
 void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) const
 {
-    if (fTransformViewVec[plane])
+    // Check there is something to do
+    if (!fTransformViewVec.at(plane)) return;
+    
+    // Step one is to setup and then get the FFT transform of the input waveform
+    int    fftDataSize = rawadc.size();
+    double sampleRate  = fDetectorProperties->SamplingRate();
+    double readOutSize = fDetectorProperties->ReadOutWindowSize();
+
+    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C M");
+    
+    std::vector<double> fftInputVec;
+    
+    fftInputVec.resize(fftDataSize, 0.);
+    
+    std::transform(rawadc.begin(),rawadc.end(),fftInputVec.begin(),[pedestal](const auto& val){return double(float(val) - pedestal);});
+    
+    fftr2c->SetPoints(fftInputVec.data());
+    fftr2c->Transform();
+    
+    // Now we set up and recover the FFT power spectrum
+    std::vector<double>   realVals;
+    std::vector<double>   imaginaryVals;
+    std::vector<TComplex> complexVals;
+    
+    size_t halfFFTDataSize(fftDataSize/2 + 1);
+    
+    realVals.resize(halfFFTDataSize,0.);
+    imaginaryVals.resize(halfFFTDataSize,0.);
+    
+    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
+    
+    std::vector<double> powerVec;
+    powerVec.resize(halfFFTDataSize, 0.);
+    
+    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
+    
+    // Not sure the better way to do this...
+    for(size_t complexIdx = 0; complexIdx < halfFFTDataSize; complexIdx++) complexVals.emplace_back(realVals.at(complexIdx),imaginaryVals.at(complexIdx));
+    
+    // Recover the filter function we are using...
+    const std::vector<TComplex>& filter = fFilterToolMap.at(plane)->getResponseVec();
+    
+    // Convolve this with the FFT of the input waveform
+    std::transform(complexVals.begin(), complexVals.end(), filter.begin(), complexVals.begin(), std::multiplies<TComplex>());
+    std::transform(complexVals.begin(), complexVals.end(), realVals.begin(),      [](const auto& val){return val.Re();});
+    std::transform(complexVals.begin(), complexVals.end(), imaginaryVals.begin(), [](const auto& val){return val.Im();});
+
+    // Fill hists
+    if (fFillHistograms)
     {
-        size_t lowWire(350);
-        size_t hiWire(370);
-    
-        //                double sampleFreq  = 1000000. / fDetectorProperties->SamplingRate();
-        //                double readOutSize = fDetectorProperties->ReadOutWindowSize();
-        //                double binSize     = sampleFreq / readOutSize;
-        int    fftDataSize = rawadc.size();
-    
-        TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C M");
-    
-        std::vector<double> fftInputVec;
-        
-        fftInputVec.resize(fftDataSize, 0.);
-    
-        for(size_t tick = 0; tick < rawadc.size(); tick++)
-        {
-            fftInputVec[tick] = rawadc[tick] - pedestal;
-        
-            if (fFillHistograms && plane == 0 && wire >= lowWire && wire < hiWire)
-                fCorValHistVec[wire-lowWire]->Fill(tick, fftInputVec[tick], 1.);
-        }
-    
-        fftr2c->SetPoints(fftInputVec.data());
-        fftr2c->Transform();
-    
-        // Recover the power spectrum...
-        std::vector<double> realVals;
-        std::vector<double> imaginaryVals;
-        
-        size_t halfFFTDataSize(fftDataSize/2 + 1);
-        
-        realVals.resize(halfFFTDataSize,0.);
-        imaginaryVals.resize(halfFFTDataSize,0.);
-    
-        fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
-    
-        std::vector<double> powerVec;
-        powerVec.resize(halfFFTDataSize, 0.);
-    
-        std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
-    
-        if (fFillHistograms && plane == 0 && wire >= lowWire && wire < hiWire)
+        // Fill any individual wire histograms we want to look at
+        if (wire >= fLoWireByPlane[plane] && wire < fHiWireByPlane[plane])
         {
             // Fill the power spectrum histogram
             for(size_t idx = 0; idx < halfFFTDataSize; idx++)
-                fFFTPowerVec[wire-lowWire]->Fill(idx, std::min(powerVec[idx],9999.), 1.);
-        }
-    
-        if (fTransformViewVec[plane])
-        {
-            // Idea here is to run through the power spectrum and keep a running average of the n bins around the current bin
-            size_t numBinsToAve(9);  // number bins either size of current bin
-            size_t lowestBin(3);    //(275);   // Go no lower than this?
-
-            size_t currentBin(halfFFTDataSize - numBinsToAve - 1);
-//            size_t firstBin(currentBin - numBinsToAve - 1);
-//            size_t lastBin(halfFFTDataSize - 1);
-            
-            // Initialization of running sum to start one bin past the first, include the "current" and "last"
-//            double powerRunSum      = std::accumulate(powerVec.begin()      + firstBin + 1, powerVec.begin()      + lastBin + 1, 0.);
-//            double realRunSum       = std::accumulate(realVals.begin()      + firstBin + 1, realVals.begin()      + lastBin + 1, 0.);
-//            double imaginaryRunSum  = std::accumulate(imaginaryVals.begin() + firstBin + 1, imaginaryVals.begin() + lastBin + 1, 0.);
-            
-            fWaveformTool->triangleSmooth(powerVec, powerVec);
-//            triangleSmooth(powerVec);
-//            triangleSmooth(realVals);
-//            triangleSmooth(imaginaryVals);
-            
-            std::vector<double> powerDerivVec;
-            
-            fWaveformTool->firstDerivative(powerVec, powerDerivVec);
-            
-            // Find the peaks...
-            icarus_tool::IWaveformTool::PeakTupleVec peakTupleVec;
-            
-            fWaveformTool->findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
-            
-            // Try smoothing the peak regions
-            for(const auto& peakTuple : peakTupleVec)
             {
-                if (std::get<0>(peakTuple) >= powerVec.size() || std::get<2>(peakTuple) >= powerVec.size())
-                {
-                    std::cout << "indexing problem - first: " << std::get<0>(peakTuple) << ", last: " << std::get<2>(peakTuple) << std::endl;
-                    continue;
-                }
-                
-                size_t firstBin    = std::get<0>(peakTuple);
-                size_t lastBin     = std::get<2>(peakTuple);
-                double firstBinVal = powerVec.at(firstBin);
-                double lastBinVal  = powerVec.at(lastBin);
-                double stepVal     = (lastBinVal - firstBinVal) / double(lastBin - firstBin);
-                double newBinVal   = firstBinVal + stepVal;
-                
-                while(++firstBin < lastBin)
-                {
-                    // Update the power first
-                    powerVec.at(firstBin)  = newBinVal;
-                    newBinVal             += stepVal;
-                    
-                    // Now scale the real and imaginary values...
-                    double scaleFactor = 1. / sqrt(realVals.at(firstBin)*realVals.at(firstBin) + imaginaryVals.at(firstBin)*imaginaryVals.at(firstBin));
-                    
-                    realVals.at(firstBin)      *= powerVec.at(firstBin) * scaleFactor;
-                    imaginaryVals.at(firstBin) *= powerVec.at(firstBin) * scaleFactor;
-                }
-            }
-            
-            while(currentBin > lowestBin)
-            {
-/*
-                // update running sum
-                powerRunSum     += powerVec.at(firstBin);
-                powerRunSum     -= powerVec.at(lastBin);
-                
-                realRunSum      += realVals.at(firstBin);
-                realRunSum      -= realVals.at(lastBin);
-                
-                imaginaryRunSum += imaginaryVals.at(firstBin);
-                imaginaryRunSum -= imaginaryVals.at(lastBin);
-                
-                double runningCnt      = lastBin - firstBin - 1;
-                double thisBinValue    = powerVec.at(currentBin);
-                double avePowerThisBin = (powerRunSum - thisBinValue) / runningCnt;
-                
-                if (thisBinValue - avePowerThisBin > 150.)
-                {
-                    double aveRealThisBin      = (realRunSum      - realVals.at(currentBin))      / runningCnt;
-                    double aveImaginaryThisBin = (imaginaryRunSum - imaginaryVals.at(currentBin)) / runningCnt;
-                    
-                    realRunSum                   -= realVals.at(currentBin) - aveRealThisBin;
-                    realVals.at(currentBin)       = aveRealThisBin;
-                    
-                    imaginaryRunSum              -= imaginaryVals.at(currentBin) - aveImaginaryThisBin;
-                    imaginaryVals.at(currentBin)  = aveImaginaryThisBin;
-                    
-                    powerRunSum                  -= thisBinValue - avePowerThisBin;
-                    powerVec.at(currentBin)       = avePowerThisBin;
-                }
-*/
-                double avePowerThisBin(powerVec.at(currentBin));
-                
-                if (fFillHistograms && plane == 0 && wire >= lowWire && wire < hiWire)
-                {
-                    fSmoothPowerVec[wire-lowWire]->Fill(currentBin, avePowerThisBin, 1.);
-                    fFFTPowerDerivVec[wire-lowWire]->Fill(currentBin, powerDerivVec.at(currentBin), 1.);
-                    fFFTRealVec[wire-lowWire]->Fill(currentBin, realVals.at(currentBin), 1.);
-                    fFFTImaginaryVec[wire-lowWire]->Fill(currentBin, imaginaryVals.at(currentBin), 1.);
-                }
-                
-                currentBin--;
-//                firstBin--;
-//                lastBin--;
-            }
-            
-            // Remove the bins at the bottom
-            for(size_t idx = 0; idx < numBinsToAve; idx++)
-            {
-                realVals[idx]      = 0.;
-                imaginaryVals[idx] = 0.;
+                double freq = 1.e6 * double(idx + 1)/ (sampleRate * readOutSize);
+                fFFTPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, std::min(powerVec[idx],999.), 1.);
             }
         }
-    
-        // Finally, we invert the resulting time domain values to recover the new waveform
-        TVirtualFFT* fftc2r = TVirtualFFT::FFT(1, &fftDataSize, "C2R M");
-    
-        fftc2r->SetPointsComplex(realVals.data(),imaginaryVals.data());
-        fftc2r->Transform();
-    
-        double* fftOutputArray = fftc2r->GetPointsReal();
-    
-        double normFctr = 1. / double(fftDataSize);
-    
-        std::transform(fftOutputArray, fftOutputArray + fftDataSize, rawadc.begin(), [normFctr,pedestal](const double& real){return std::round(real * normFctr + pedestal);});
         
-        if (fFillHistograms && plane == 0 && wire >= lowWire && wire < hiWire)
-            for(int idx = 0; idx < fftDataSize; idx++) fFFTCorValHistVec[wire-lowWire]->Fill(idx, rawadc[idx] - pedestal, 1.);
+        for(size_t idx = 0; idx < halfFFTDataSize; idx++)
+        {
+            double freq = 1.e6 * double(idx + 1)/ (sampleRate * readOutSize);
+            fAveFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],999.), 1.);
+        }
+        
+        // Get the filter power vec
+        std::transform(complexVals.begin(), complexVals.end(), powerVec.begin(), [](const auto& val){return val.Rho();});
+
+        for(size_t idx = 0; idx < halfFFTDataSize; idx++)
+        {
+            double freq = 1.e6 * double(idx)/ (sampleRate * readOutSize);
+            fConvFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],999.), 1.);
+            fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
+        }
     }
+    
+    // Finally, we invert the resulting time domain values to recover the new waveform
+    TVirtualFFT* fftc2r = TVirtualFFT::FFT(1, &fftDataSize, "C2R M");
+    
+    fftc2r->SetPointsComplex(realVals.data(),imaginaryVals.data());
+    fftc2r->Transform();
+    
+    double* fftOutputArray = fftc2r->GetPointsReal();
+    
+    double normFctr = 1. / double(fftDataSize);
+    
+    std::transform(fftOutputArray, fftOutputArray + fftDataSize, rawadc.begin(), [normFctr,pedestal](const double& real){return std::round(real * normFctr + pedestal);});
     
     return;
 }

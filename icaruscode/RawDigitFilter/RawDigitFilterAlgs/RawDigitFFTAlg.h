@@ -31,6 +31,7 @@
 namespace icarus_tool
 {
     class IWaveformTool;
+    class IFilter;
 }
 
 namespace caldata
@@ -59,16 +60,16 @@ private:
     std::vector<bool>      fTransformViewVec;      ///< apply FFT transform to this view
     bool                   fFillHistograms;        ///< if true then will fill diagnostic hists
     std::string            fHistDirName;           ///< If writing histograms, the folder name
-    
-    std::vector<TProfile*> fCorValHistVec;
-    std::vector<TProfile*> fFFTPowerVec;
-    std::vector<TProfile*> fFFTPowerDerivVec;
-    std::vector<TProfile*> fFFTRealVec;
-    std::vector<TProfile*> fFFTImaginaryVec;
-    std::vector<TProfile*> fSmoothPowerVec;
-    std::vector<TProfile*> fFFTCorValHistVec;
-    
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    std::vector<size_t>    fLoWireByPlane;         ///< Low wire for individual wire histograms
+    std::vector<size_t>    fHiWireByPlane;         ///< Hi wire for individual wire histograms
+
+    std::vector<std::vector<TProfile*>> fFFTPowerVec;
+    std::vector<TProfile*>              fAveFFTPowerVec;
+    std::vector<TProfile*>              fConvFFTPowerVec;
+    std::vector<TProfile*>              fFilterFuncVec;
+
+    std::unique_ptr<icarus_tool::IWaveformTool>            fWaveformTool;
+    std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service

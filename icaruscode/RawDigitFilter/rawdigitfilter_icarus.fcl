@@ -1,3 +1,4 @@
+#include "signalservices_icarus.fcl"
 #include "waveformtools_icarus.fcl"
 
 BEGIN_PROLOG
@@ -8,6 +9,12 @@ FFT_algorithm:
     FillHistograms:        true
     HistDirName:           "FFTAlg"
     WaveformTool:          @local::Waveform_Tool
+    FilterTools:
+    {
+        FilterPlane0: @local::FilterTool
+        FilterPlane1: @local::FilterTool
+        FilterPlane2: @local::FilterTool
+    }
 }
 
 icarus_rawdigitfilter:
@@ -60,5 +67,15 @@ icarus_rawdigitfilter:
     }
     FFTAlg:                    @local::FFT_algorithm
 }
+
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                0
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                1
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                2
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
 
 END_PROLOG
