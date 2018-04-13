@@ -16,16 +16,24 @@ icarus_simpmt:
   MeanAmplitude:             0.9            #in pC
   AmpNoise:                  1.0            #in ADC
   DarkNoiseRate:             1000.0         #in Hz
-  ReadoutWindowSize:         20000.0        #ns
-  PreTrigFraction:           0.1            # Assumed to be 10% based on previous numbers
-  #PreTrigger:               200.0          #ns
-  ThresholdADC:              1              #ADC Threshold for self-triggered readout
-  PulsePolarity:             1              #Pulse polarity (1 = positive, -1 = negative)
-  TriggerOffsetPMT:          0              #Time (us) relative to trigger that readout begins
-  ReadoutEnablePeriod:       20000.         #Time (us) for which pmt readout is enabled
-  CreateBeamGateTriggers:    false          #Option to create unbiased readout around beam spill
-  BeamGateTriggerRepPeriod:  0              #Repetition Period (us) for BeamGateTriggers
-  BeamGateTriggerNReps:      0              #Number of beamgate trigger reps to produce
+
+  ##This is the readout window size for each "trigger" on the electronics
+  ReadoutWindowSize:         2000           #ticks (if 2ns each --> 4us)
+
+  ##fraction of readout window size that should come before the "trigger" on the electronics
+  PreTrigFraction:           0.25           # fraction
+
+  ##Threshold in ADC counts for a PMT self-trigger.
+  ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
+  ThresholdADC:              10             #ADC counts
+
+  ##Pulse polarity: +1 for positive pulses, -1 for negative pulses
+  PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
+  TriggerOffsetPMT:          -1150          #Time (us) relative to trigger that readout begins
+  ReadoutEnablePeriod:       3450           #Time (us) for which pmt readout is enabled
+  CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
+  BeamGateTriggerRepPeriod:  2.0            #Repetition Period (us) for BeamGateTriggers
+  BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce
   Saturation:                300            #in number of p.e. to see saturation effects in the signal
   #QE:                        0.07           #TPB coated PMT quantum efficiency
   QE:                        1.0            #TPB coated PMT quantum efficiency but is handled in the simulation and set to 1 here
