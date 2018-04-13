@@ -242,18 +242,29 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
         freqHist->Fill(freq, powerVec.at(idx), 1.);
     }
     
-    const std::vector<TComplex>& response = this->getSignalShaping().ConvKernel();
+    const std::vector<TComplex>& convKernel = this->getSignalShaping().ConvKernel();
     
-    std::string freqNameResp     = "FullResponse_" + std::to_string(fThisPlane);
-    TProfile*   fullResponseHist = dir.make<TProfile>(freqNameResp.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    std::string convKernelName   = "ConvKernel_" + std::to_string(fThisPlane);
+    TProfile*   fullResponseHist = dir.make<TProfile>(convKernelName.c_str(), "Convolution Kernel;Frequency(MHz)", convKernel.size(), 0., maxFreq);
 
-    for(size_t idx = 0; idx < response.size(); idx++)
+    for(size_t idx = 0; idx < convKernel.size(); idx++)
     {
         double freq = freqWidth * (idx + 0.5);
         
-        fullResponseHist->Fill(freq, response.at(idx).Rho(), 1.);
+        fullResponseHist->Fill(freq, convKernel.at(idx).Rho(), 1.);
     }
-
+    
+    const std::vector<TComplex>& deconKernel = this->getSignalShaping().DeconvKernel();
+    
+    std::string deconName = "DeconKernel_" + std::to_string(fThisPlane);
+    TProfile*   deconHist = dir.make<TProfile>(deconName.c_str(), "Deconvolution Kernel;Frequency(MHz)", deconKernel.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < deconKernel.size(); idx++)
+    {
+        double freq = freqWidth * (idx + 0.5);
+        
+        deconHist->Fill(freq, deconKernel.at(idx).Rho(), 1.);
+    }
 
     return;
 }
