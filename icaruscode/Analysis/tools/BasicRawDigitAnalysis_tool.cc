@@ -186,7 +186,7 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
     double maxFreq     = 1.e6 / (2. * sampleRate);
-    int    numSamples  = readOutSize / 2;
+    size_t numSamples  = readOutSize / 2;
     
     fTruncMeanHist.resize(3);
     fTruncRmsHist.resize(3);
