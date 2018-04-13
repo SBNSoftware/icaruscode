@@ -22,6 +22,8 @@
 #include "IElectronicsResponse.h"
 #include "IFilter.h"
 
+#include "TProfile.h"
+
 #include <fstream>
 #include <iomanip>
 
@@ -83,7 +85,7 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fThisPlane       = pset.get<size_t>("Plane");
     f3DCorrection    = pset.get<size_t>("Correction3D");
     fTimeScaleFactor = pset.get<size_t>("TimeScaleFactor");
-    fDeconvPol       = pset.get<int>("DeconvPol");
+    fDeconvPol       = pset.get<int   >("DeconvPol");
     
     // Build out the underlying tools we'll be using
     fFieldResponse       = art::make_tool<icarus_tool::IFieldResponse>(pset.get<fhicl::ParameterSet>("FieldResponse"));
@@ -103,14 +105,16 @@ void Response::setResponse(double weight)
     // Recover the current set up
     std::string fftOptions  = fastFourierTransform->FFTOptions();
     size_t      nFFTFitBins = fastFourierTransform->FFTFitBins();
-    size_t      fftSizeIn   = fastFourierTransform->FFTSize();
-    size_t      fftSize     = fftSizeIn;
-    
+    //size_t      fftSizeIn   = fastFourierTransform->FFTSize();
+    //size_t      fftSize     = fftSizeIn;
+    size_t      fftSize     = fastFourierTransform->FFTSize();
+
     // First of all set the field response
     fFieldResponse->setResponse(weight, f3DCorrection, fTimeScaleFactor);
-    
+
     // Make sure the FFT can handle this
-    size_t nFieldBins = fFieldResponse->getNumBins();
+    size_t nFieldBins    = fFieldResponse->getResponseVec().size();
+    double fieldBinWidth = fFieldResponse->getBinWidth();
     
     // Reset the FFT if it is not big enough to handle current size
     if (nFieldBins * 4 > fftSize)
@@ -119,12 +123,9 @@ void Response::setResponse(double weight)
         
         fastFourierTransform->ReinitializeFFT( fftSize, fftOptions, nFFTFitBins);
     }
-        
+
     // handle the electronics response for this plane
-    fElectronicsResponse->setResponse(fftSize, fFieldResponse->getBinWidth());
-    
-    // Set up the filter
-    fFilter->setResponse(fftSizeIn, f3DCorrection, fTimeScaleFactor);
+    fElectronicsResponse->setResponse(4 * nFieldBins, fieldBinWidth); //fftSize, fieldBinWidth);
     
     // Add these elements to the SignalShaping class
     fSignalShaping.Reset();
@@ -134,7 +135,7 @@ void Response::setResponse(double weight)
     fSignalShaping.set_normflag(false);
     
     // Now set to the task of determing the actual sampling response
-    // We hve to remember that the bin size for determining the field response probably
+    // We have to remember that the bin size for determining the field response probably
     // does not match that for the detector readout so we'll need to "convert"
     // from one to the other.
     std::vector<double> samplingTimeVec( fftSize, 0. );
@@ -167,27 +168,21 @@ void Response::setResponse(double weight)
             // This can't happen? But protect against zero divides...
             if (responseHiIdx == responseLowIdx) responseHiIdx += 1;
             
-            if (responseHiIdx < curResponseVec.size())
-            {
-                
-                // Now interpolate between the two bins to get the sampling response for this bin
-                double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
-                double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
-                
-                samplingTimeVec.at(sampleIdx) = response;
-            }
+            if (responseHiIdx >= curResponseVec.size()) break;
+            
+            // Now interpolate between the two bins to get the sampling response for this bin
+            double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
+            double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
+            
+            samplingTimeVec.at(sampleIdx) = response;
         }
     }
 
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
-    
-    // Currently we only have fine binning "fFieldBinWidth"
-    // for the field and electronic responses.
-    // Now we are sampling the convoluted field-electronic response
-    // with the nominal sampling.
-    // We may consider to do the same for the filters as well.
-    if (fftSizeIn != fftSize) fastFourierTransform->ReinitializeFFT(fftSizeIn, fftOptions, nFFTFitBins);
-    
+
+    // Set up the filter
+    fFilter->setResponse(fftSize, f3DCorrection, fTimeScaleFactor);
+
     // Finalize the Signal Shaping
     fSignalShaping.AddFilterFunction(fFilter->getResponseVec());
     fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );
@@ -215,11 +210,11 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     const std::vector<double>& responseVec  = this->getSignalShaping().Response();
     double                     numBins      = responseVec.size();
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
-    TH1D*                      hist         = dir.make<TH1D>(histName.c_str(), "Response;Time(ticks)", numBins, 0., numBins);
+    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(ticks)", numBins, 0., numBins);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        hist->Fill(bin, responseVec.at(bin));
+        hist->Fill(bin, responseVec.at(bin), 1.);
     }
 
     // Get the FFT, need the waveform tool for consistency
@@ -234,19 +229,31 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     waveformTool->getFFTPower(responseVec, powerVec);
     
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = detprop->SamplingRate();
-    double      maxFreq      = 500. / samplingRate;
+    double      samplingRate = 1.e-3 * detprop->SamplingRate();
+    double      maxFreq      = 0.5 / samplingRate;
     double      freqWidth    = maxFreq / powerVec.size();
     std::string freqName     = "Response_FFTPlane_" + std::to_string(fThisPlane);
-    TH1D*       freqHist     = dir.make<TH1D>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    TProfile*   freqHist     = dir.make<TProfile>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
     
     for(size_t idx = 0; idx < powerVec.size(); idx++)
     {
         double freq = freqWidth * (idx + 0.5);
         
-        freqHist->Fill(freq, powerVec.at(idx));
+        freqHist->Fill(freq, powerVec.at(idx), 1.);
     }
     
+    const std::vector<TComplex>& response = this->getSignalShaping().ConvKernel();
+    
+    std::string freqNameResp     = "FullResponse_" + std::to_string(fThisPlane);
+    TProfile*   fullResponseHist = dir.make<TProfile>(freqNameResp.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+
+    for(size_t idx = 0; idx < response.size(); idx++)
+    {
+        double freq = freqWidth * (idx + 0.5);
+        
+        fullResponseHist->Fill(freq, response.at(idx).Rho(), 1.);
+    }
+
 
     return;
 }

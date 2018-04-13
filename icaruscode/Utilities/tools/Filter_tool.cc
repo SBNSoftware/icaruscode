@@ -12,7 +12,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "TF1.h"
-#include "TH1D.h"
+#include "TProfile.h"
 #include "TComplex.h"
 
 #include <fstream>
@@ -85,13 +85,12 @@ void Filter::configure(const fhicl::ParameterSet& pset)
 void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
 {
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = detprop->SamplingRate();
-    double      numBins2     = numBins / 2;
-    double      lowFreq      = 500. / (samplingRate * numBins2);   // lowest frequency in cycles/us
-//    double      hiFreq       = 500. / samplingRate;                // highest frequency in cycles/us
+    double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Note sampling rate is in ns, convert to us
+    double      maxFreq      = 1. / (2. * samplingRate);        // highest frequency in cycles/us
+    double      freqRes      = maxFreq / double(numBins);       // frequency resolution in cycles/us
     
     // Set the range on the function
-    fFunction->SetRange(0, double(numBins2));
+    fFunction->SetRange(0, double(numBins));
 
     // now to scale the filter function!
     // only scale params 1,2 &3
@@ -101,10 +100,10 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     for(const auto& parameter : fParameters) fFunction->SetParameter(paramIdx++, timeFactor * parameter);
 
     // Now ready to set the response vector
-    for(size_t bin = 0; bin <= size_t(numBins2); bin++)
+    for(size_t bin = 0; bin <= numBins; bin++)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
-        double freq = bin * lowFreq;
+        double freq = bin * freqRes;
 
         double f = fFunction->Eval(freq);
         
@@ -124,18 +123,19 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
     
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = detprop->SamplingRate();
+    double      samplingRate = 1.e-3 * detprop->SamplingRate();  // want in us
     double      numBins      = fFilterVec.size();
-    double      maxFreq      = 500. / samplingRate;
+    double      maxFreq      = 1. / (2. * samplingRate);
+    double      freqRes      = maxFreq / double(numBins);       // frequency resolution in cycles/us
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
     
-    TH1D*       hist         = dir.make<TH1D>(histName.c_str(), "Filter;Frequency(MHz)", numBins, 0., maxFreq);
+    TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, 0., maxFreq);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        double freq = maxFreq * double(bin + 0.5) / double(numBins);
+        double freq = bin * freqRes;
         
-        hist->Fill(freq, fFilterVec.at(bin).Re());
+        hist->Fill(freq, fFilterVec.at(bin).Re(), 1.);
     }
     
     

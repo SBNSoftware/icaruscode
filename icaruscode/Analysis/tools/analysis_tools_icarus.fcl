@@ -13,6 +13,12 @@ RawDigitAnalysisTool:
   tool_type:         "BasicRawDigitAnalysis"
   LoWireByPlane:     [400, 3600, 3600]
   HiWireByPlane:     [420, 3620, 3620]
+  FFTFunctionVec:    ["(x>0.) ? (x<0.06) ? (0)+gaus(1) : (0)+gaus(4) : 0.",
+                      "(x>0.) ? (x<0.06) ? (0)+gaus(1) : (0)+gaus(4) : 0.",
+                      "(x>0.) ? (0)+gaus(1)                          : 0."]
+  FFTFuncParamsVec:  [[100,1.,0.06,0.1,1.,0.06,0.2],
+                      [100,1.,0.06,0.1,1.,0.06,0.2],
+                      [100,1.,0.06,0.1            ] ]
   WaveformTool:      @local::Waveform_Tool
   CharacterizationAlg:
   {

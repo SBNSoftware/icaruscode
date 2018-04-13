@@ -15,7 +15,7 @@
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "TFile.h"
-#include "TH1D.h"
+#include "TProfile.h"
 
 #include <fstream>
 #include <iomanip>
@@ -140,6 +140,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     
 void FieldResponse::setResponse(double weight, double correction3D, double timeScaleFctr)
 {
+    // This sets the field response in the time domain
     double timeFactor    = correction3D * timeScaleFctr;
     size_t numBins       = getNumBins();
     size_t nResponseBins = numBins * timeFactor;
@@ -167,7 +168,7 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     // histograms made by this tool separate.
     art::TFileDirectory dir = histDir.mkdir(fFieldResponseHistName.c_str());
     
-    TH1D* hist = dir.make<TH1D>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
+    TProfile* hist = dir.make<TProfile>(fFieldResponseHistName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
     
     double binWidth = getBinWidth() / fTimeCorrectionFactor;
     
@@ -178,7 +179,7 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
         double xBin   = getLowEdge() + idx * binWidth;
         double binVal = fFieldResponseHist->GetBinContent(idx);
         
-        hist->Fill(xBin, binVal);
+        hist->Fill(xBin, binVal, 1.);
         histResponseVec.at(idx) = binVal;
     }
     
@@ -198,13 +199,13 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     // Now make histogram of this
     std::string histName = "Smooth_" + fFieldResponseHistName;
     
-    TH1D* smoothHist = dir.make<TH1D>(histName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
+    TProfile* smoothHist = dir.make<TProfile>(histName.c_str(), "Field Response; Time(us)", getNumBins(), getLowEdge(), getHighEdge());
     
     for(size_t idx = 0; idx < smoothedResponseVec.size(); idx++)
     {
         double xBin = getLowEdge() + idx * binWidth;
         
-        smoothHist->Fill(xBin,smoothedResponseVec.at(idx));
+        smoothHist->Fill(xBin,smoothedResponseVec.at(idx), 1.);
     }
     
     // Get the FFT of the response
@@ -218,13 +219,13 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     
     histName = "FFT_" + fFieldResponseHistName;
     
-    TH1D* fftHist = dir.make<TH1D>(histName.c_str(), "Field Response FFT; Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    TProfile* fftHist = dir.make<TProfile>(histName.c_str(), "Field Response FFT; Frequency(MHz)", powerVec.size(), 0., maxFreq);
     
     for(size_t idx = 0; idx < powerVec.size(); idx++)
     {
         double bin = (idx + 0.5) * freqWidth;
         
-        fftHist->Fill(bin, powerVec.at(idx));
+        fftHist->Fill(bin, powerVec.at(idx), 1.);
     }
     
     return;

@@ -11,7 +11,7 @@
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-#include "TH1D.h"
+#include "TProfile.h"
 
 #include <fstream>
 
@@ -65,9 +65,9 @@ void ElectronicsResponse::configure(const fhicl::ParameterSet& pset)
     
 void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
 {
-//    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-//    double      samplingRate = detprop->SamplingRate();
-    double      timeCorrect  = 1.e-3;
+    // The input binWidth is in nanoseconds, we need to convert to microseconds to match the
+    // parameters for the electronics response which are given in us
+    double timeCorrect  = 1.e-3;
     
     binWidth *= timeCorrect;
     
@@ -86,9 +86,9 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
     {
-       double time = double(timeIdx) * binWidth;
+       double funcArg = double(timeIdx) * binWidth / fASICShapingTime;
         
-        fElectronicsResponseVec.at(timeIdx) = time / fASICShapingTime * exp(-time / fASICShapingTime);
+        fElectronicsResponseVec.at(timeIdx) = funcArg * exp(-funcArg);
     }
     
 //    double maxValue = *std::max_element(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end());
@@ -107,8 +107,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // From test pulse measurement with FLIC@CERN we have 0.027 fC/(ADC*us)
     // Therefore 0.027*6242 electrons/(ADC*us)
     
-    for (auto& element : fElectronicsResponseVec)
-       element /= (fFCperADCMicroS);
+    for (auto& element : fElectronicsResponseVec) element /= fFCperADCMicroS;
 
     float respIntegral = binWidth * std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
     
@@ -128,9 +127,9 @@ void ElectronicsResponse::outputHistograms(art::TFileDirectory& histDir) const
     
     std::string histName = "ElectronicsResponse_" + std::to_string(fPlane);
     
-    TH1D* hist = dir.make<TH1D>(histName.c_str(), "Response", fElectronicsResponseVec.size(), 0., fElectronicsResponseVec.size());
+    TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response", fElectronicsResponseVec.size(), 0., fElectronicsResponseVec.size());
     
-    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx, fElectronicsResponseVec.at(idx));
+    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx, fElectronicsResponseVec.at(idx), 1.);
     
     return;
 }

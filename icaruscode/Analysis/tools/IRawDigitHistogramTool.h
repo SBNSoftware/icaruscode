@@ -18,6 +18,7 @@
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "lardataobj/RawData/RawDigit.h"
+#include "lardataobj/Simulation/SimChannel.h"
 
 class IRawDigitHistogramTool
 {
@@ -53,8 +54,9 @@ public:
      *  @brief Interface for filling histograms
      */
     using RawDigitPtrVec = std::vector<art::Ptr<raw::RawDigit>>;
+    using SimChannelMap  = std::map<raw::ChannelID_t, const sim::SimChannel*>;
     
-    virtual void fillHistograms(const RawDigitPtrVec&)  const = 0;
+    virtual void fillHistograms(const RawDigitPtrVec&, const SimChannelMap&)  const = 0;
 };
 
 #endif

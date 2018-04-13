@@ -23,6 +23,7 @@
 #include "TH2.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
+#include "TF1.h"
 #include "TVirtualFFT.h"
 
 #include <cmath>
@@ -83,14 +84,16 @@ public:
     /**
      *  @brief Interface for filling histograms
      */
-    void fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec&) const override;
+    void fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec&, const IRawDigitHistogramTool::SimChannelMap&) const override;
     
 private:
-    void filterFFT(std::vector<short>&, raw::ChannelID_t, size_t, size_t, float) const;
+    void filterFFT(std::vector<short>&, raw::ChannelID_t, size_t, size_t, float, bool) const;
 
     // Fcl parameters.
-    std::vector<size_t> fLoWireByPlane;    ///< Low wire for individual wire histograms
-    std::vector<size_t> fHiWireByPlane;    ///< Hi wire for individual wire histograms
+    std::vector<size_t>              fLoWireByPlane;    ///< Low wire for individual wire histograms
+    std::vector<size_t>              fHiWireByPlane;    ///< Hi wire for individual wire histograms
+    std::vector<std::string>         fFFTFitFuncVec;    ///< Function definitions for fitting the average FFT power spectra
+    std::vector<std::vector<double>> fParameterVec;     ///< Initial parameters for fit function
 
     // Pointers to the histograms we'll create.
     std::vector<TH1D*>                  fTruncMeanHist;
@@ -105,6 +108,7 @@ private:
     
     std::vector<TProfile*>              fAveFFTPowerVec;
     std::vector<TProfile*>              fConvFFTPowerVec;
+    std::vector<TProfile*>              fConvKernelVec;
     std::vector<TProfile*>              fFilterFuncVec;
     std::vector<TProfile*>              fAveFFTPowerDerivVec;
     std::vector<TProfile*>              fAveFFTRealVec;
@@ -157,8 +161,10 @@ BasicRawDigitAnalysis::~BasicRawDigitAnalysis()
 ///
 void BasicRawDigitAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fLoWireByPlane  = pset.get<std::vector<size_t>>("LoWireByPlane",        std::vector<size_t>()={0,0,0});
-    fHiWireByPlane  = pset.get<std::vector<size_t>>("HiWireByPlane",  std::vector<size_t>()={100,100,100});
+    fLoWireByPlane  = pset.get<std::vector<size_t>>             ("LoWireByPlane",                         std::vector<size_t>()={0,0,0});
+    fHiWireByPlane  = pset.get<std::vector<size_t>>             ("HiWireByPlane",                   std::vector<size_t>()={100,100,100});
+    fFFTFitFuncVec  = pset.get<std::vector<std::string>>        ("FFTFunctionVec",             std::vector<std::string>()={"1","1","1"});
+    fParameterVec   = pset.get<std::vector<std::vector<double>>>("FFTFuncParamsVec", std::vector<std::vector<double>>() = {{1},{1},{1}});
 
     const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
     
@@ -180,9 +186,7 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
     double maxFreq     = 1.e6 / (2. * sampleRate);
-    double minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
-    //    int    numSamples  = (readOutSize / 2 + 1) / 4;
-    int numSamples     = readOutSize / 2;
+    int    numSamples  = readOutSize / 2;
     
     fTruncMeanHist.resize(3);
     fTruncRmsHist.resize(3);
@@ -196,13 +200,14 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     
     fAveFFTPowerVec.resize(3);
     fConvFFTPowerVec.resize(3);
+    fConvKernelVec.resize(3);
     fFilterFuncVec.resize(3);
     fAveFFTPowerDerivVec.resize(3);
     fAveFFTRealVec.resize(3);
     fAveFFTImaginaryVec.resize(3);
     fAveSmoothPowerVec.resize(3);
 
-    for(size_t plane = 0; plane < 3; plane++)
+    for(size_t plane = 0; plane < fGeometry.Nplanes(); plane++)
     {
         size_t numHists = fHiWireByPlane[plane] - fLoWireByPlane[plane];
         
@@ -216,56 +221,60 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
         {
             std::string histName = "FFTPower_" + std::to_string(plane) + "-" + std::to_string(idx);
         
-            fFFTPowerVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 10000.);
+            fFFTPowerVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0., maxFreq, 0., 10000.);
         
             histName = "FFTPowerDeriv_" + std::to_string(plane) + "-" + std::to_string(idx);
         
-            fFFTPowerDerivVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Deriv;kHz;Power", numSamples, minFreq, maxFreq, -500., 500.);
+            fFFTPowerDerivVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Deriv;kHz;Power", numSamples, 0., maxFreq, -500., 500.);
         
             histName = "FFTReal_" + std::to_string(plane) + "-" + std::to_string(idx);
         
-            fFFTRealVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Real values;kHz;Power", numSamples, minFreq, maxFreq, -10000., 10000.);
+            fFFTRealVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Real values;kHz;Power", numSamples, 0., maxFreq, -10000., 10000.);
         
             histName = "FFTImaginary_" + std::to_string(plane) + "-" + std::to_string(idx);
         
-            fFFTImaginaryVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Imaginary values;kHz;Power", numSamples, minFreq, maxFreq, -10000., 10000.);
+            fFFTImaginaryVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Imaginary values;kHz;Power", numSamples, 0., maxFreq, -10000., 10000.);
         
             histName = "SmoothPWR_" + std::to_string(plane) + "-" + std::to_string(idx);
         
-            fSmoothPowerVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 10000.);
+            fSmoothPowerVec[plane][idx] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0., maxFreq, 0., 10000.);
         }
         
         std::string histName = "AveFFTPower_" + std::to_string(plane);
         
-        fAveFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
+        fAveFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0., maxFreq, 0., 1000.);
         
         histName = "ConvFFTPower_" + std::to_string(plane);
         
-        fConvFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
+        fConvFFTPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0., maxFreq, 0., 1000.);
+        
+        histName = "ConvKernel_" + std::to_string(plane);
+        
+        fConvKernelVec[plane] = dir.make<TProfile>(histName.c_str(),  "Convolution Kernel;kHz;Power", numSamples, 0., maxFreq, 0., 1000.);
         
         histName = "FilterFunc_" + std::to_string(plane);
         
-        fFilterFuncVec[plane] = dir.make<TProfile>(histName.c_str(),  "Filter Function;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
+        fFilterFuncVec[plane] = dir.make<TProfile>(histName.c_str(),  "Filter Function;kHz;Power", numSamples, 0., maxFreq, 0., 1000.);
 
         histName = "AveFFTPowerDeriv_" + std::to_string(plane);
 
-        fAveFFTPowerDerivVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Deriv;kHz;Power", numSamples, minFreq, maxFreq, -500., 500.);
+        fAveFFTPowerDerivVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Deriv;kHz;Power", numSamples, 0., maxFreq, -500., 500.);
         
         histName = "AveFFTReal_" + std::to_string(plane);
         
-        fAveFFTRealVec[plane] = dir.make<TProfile>(histName.c_str(),  "Real values;kHz;Power", numSamples, minFreq, maxFreq, -10000., 1000.);
+        fAveFFTRealVec[plane] = dir.make<TProfile>(histName.c_str(),  "Real values;kHz;Power", numSamples, 0., maxFreq, -10000., 1000.);
         
         histName = "AveFFTImaginary_" + std::to_string(plane);
         
-        fAveFFTImaginaryVec[plane] = dir.make<TProfile>(histName.c_str(),  "Imaginary values;kHz;Power", numSamples, minFreq, maxFreq, -1000., 1000.);
+        fAveFFTImaginaryVec[plane] = dir.make<TProfile>(histName.c_str(),  "Imaginary values;kHz;Power", numSamples, 0., maxFreq, -1000., 1000.);
         
         histName = "AveSmoothPWR_" + std::to_string(plane);
         
-        fAveSmoothPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, minFreq, maxFreq, 0., 1000.);
+        fAveSmoothPowerVec[plane] = dir.make<TProfile>(histName.c_str(),  "Power Spectrum;kHz;Power", numSamples, 0., maxFreq, 0., 1000.);
         
         histName = "TruncMean_" + std::to_string(plane);
         
-        fTruncMeanHist[plane] = dir.make<TH1D>(histName.c_str(), ";ADC", 200, 300., 500.);
+        fTruncMeanHist[plane] = dir.make<TH1D>(histName.c_str(), ";ADC", 200, -50., 50.);
         
         histName = "TruncRMS_" + std::to_string(plane);
         
@@ -274,12 +283,27 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
         histName = "FullRMS_" + std::to_string(plane);
         
         fFullRmsHist[plane] = dir.make<TH1D>(histName.c_str(), ";ADC", 100, 0., 20.);
+        
+        // Need a channel...
+        raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(plane,0);
+        
+        // Recover the filter from signal shaping services...
+        const std::vector<TComplex>& response = fSignalServices.SignalShaping(channel).ConvKernel();
+        const std::vector<TComplex>& filter   = fSignalServices.SignalShaping(channel).Filter();
+        
+        for(size_t idx = 0; idx < numSamples; idx++)
+        {
+            double freq = 1.e6 * double(idx)/ (sampleRate * readOutSize);
+            fConvKernelVec[plane]->Fill(freq, response.at(idx).Rho(), 1.);
+            fFilterFuncVec[plane]->Fill(freq, filter.at(idx).Rho(), 1.);
+        }
     }
 
     return;
 }
     
-void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec) const
+void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec,
+                                           const IRawDigitHistogramTool::SimChannelMap&  channelMap) const
 {
     // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
     // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
@@ -357,6 +381,9 @@ void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigi
             continue;
         }
         
+        // If MC, does this channel have signal?
+        bool hasSignal = channelMap.find(channel) != channelMap.end();
+
         // vector holding uncompressed adc values
         std::vector<short>& rawadc = rawDataWireTimeVec[0];
         
@@ -368,34 +395,38 @@ void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigi
         // Recover the database version of the pedestal
         float pedestal = fPedestalRetrievalAlg.PedMean(channel);
         
-        filterFFT(rawadc, channel, plane, wire, pedestal);
+        filterFFT(rawadc, channel, plane, wire, pedestal, hasSignal);
         
-        // Get the kitchen sink
-        fCharacterizationAlg.getWaveformParams(rawadc,
-                                               channel,
-                                               plane,
-                                               wire,
-                                               truncMeanWireVec[0],
-                                               truncRmsWireVec[0],
-                                               meanWireVec[0],
-                                               medianWireVec[0],
-                                               modeWireVec[0],
-                                               skewnessWireVec[0],
-                                               fullRmsWireVec[0],
-                                               minMaxWireVec[0],
-                                               neighborRatioWireVec[0],
-                                               pedCorWireVec[0]);
+        // Only rest if no signal on wire
+        if (!hasSignal)
+        {
+            // Get the kitchen sink
+            fCharacterizationAlg.getWaveformParams(rawadc,
+                                                   channel,
+                                                   plane,
+                                                   wire,
+                                                   truncMeanWireVec[0],
+                                                   truncRmsWireVec[0],
+                                                   meanWireVec[0],
+                                                   medianWireVec[0],
+                                                   modeWireVec[0],
+                                                   skewnessWireVec[0],
+                                                   fullRmsWireVec[0],
+                                                   minMaxWireVec[0],
+                                                   neighborRatioWireVec[0],
+                                                   pedCorWireVec[0]);
         
-        // Now fill histograms...
-        fTruncMeanHist[plane]->Fill(truncMeanWireVec[0], 1.);
-        fTruncRmsHist[plane]->Fill(truncRmsWireVec[0], 1.);
-        fFullRmsHist[plane]->Fill(fullRmsWireVec[0], 1.);
+            // Now fill histograms...
+            fTruncMeanHist[plane]->Fill(truncMeanWireVec[0] - pedestal, 1.);
+            fTruncRmsHist[plane]->Fill(truncRmsWireVec[0], 1.);
+            fFullRmsHist[plane]->Fill(fullRmsWireVec[0], 1.);
+        }
     }
     
     return;
 }
     
-void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID_t channel, size_t plane, size_t wire, float pedestal) const
+void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID_t channel, size_t plane, size_t wire, float pedestal, bool hasSignal) const
 {
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
@@ -521,17 +552,16 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     }
     
     // Recover the filter from signal shaping services...
-    const std::vector<TComplex>& filter = fSignalServices.SignalShaping(channel).Filter();
+    const std::vector<TComplex>& filter   = fSignalServices.SignalShaping(channel).Filter();
     
     // Convolve this with the FFT of the input waveform
     std::transform(complexVals.begin(),complexVals.end(),filter.begin(),complexVals.begin(),std::multiplies<TComplex>());
     std::transform(complexVals.begin(), complexVals.end(), powerVec.begin(), [](const auto& val){return val.Rho();});
-    
+
     for(size_t idx = 0; idx < halfFFTDataSize; idx++)
     {
         double freq = 1.e6 * double(idx)/ (sampleRate * readOutSize);
         fConvFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],999.), 1.);
-        fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
     }
 
     return;
@@ -540,6 +570,47 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
 // Useful for normalizing histograms
 void BasicRawDigitAnalysis::endJob(int numEvents)
 {
+    // A task to complete is to fit the average power displays with aim to develop a "good" filter function and
+    // get the signal to noise ratio
+    for(size_t planeIdx = 0; planeIdx < fGeometry.Nplanes(); planeIdx++)
+    {
+        TH1* avePowerHist = fAveFFTPowerVec[planeIdx];
+        
+        // Create the fitting function, use the histogram name to help
+        std::string funcName = std::string(avePowerHist->GetName()) + "_func";
+        
+        // Create the function object
+        TF1 fitFunc(funcName.c_str(),fFFTFitFuncVec.at(planeIdx).c_str(),avePowerHist->GetMinimum(),avePowerHist->GetMaximum());
+        
+        // Set initial parameters
+        int paramIdx(0);
+        
+        for(const auto& param : fParameterVec.at(planeIdx)) fitFunc.SetParameter(paramIdx++, param);
+        
+        int fitResult(-1);
+        
+        try
+        { fitResult = avePowerHist->Fit(&fitFunc,"QNRWB","", avePowerHist->GetMinimum(),avePowerHist->GetMaximum());}
+        catch(...)
+        {
+            std::cout << "******* FFT power vec fit failure, skipping *******" << std::endl;
+            continue;
+        }
+        
+        if (!fitResult)
+        {
+            double chi2PerNDF = (fitFunc.GetChisquare() / fitFunc.GetNDF());
+            int    NDF        = fitFunc.GetNDF();
+            
+            std::cout << "******************** Fit of " << avePowerHist->GetName() << " ********************" << std::endl;
+            std::cout << "-- Function:   " << fFFTFitFuncVec.at(planeIdx) << ", chi2PerNDF: " << chi2PerNDF << ", NDF: " << NDF << std::endl;
+            std::cout << "-- Parameters - 0: " << fitFunc.GetParameter(0);
+            
+            for(size_t idx = 1; idx < fParameterVec.at(planeIdx).size(); idx++) std::cout << ", " << idx << ": " << fitFunc.GetParameter(idx);
+            
+            std::cout << std::endl;
+        }
+    }
     
     return;
 }
