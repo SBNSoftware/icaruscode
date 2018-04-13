@@ -73,9 +73,7 @@ namespace opdet{
     art::InputTag fInputModuleName;
     
     double fSampling;       //wave sampling frequency (GHz)
-    double fReadoutWindow;  //waveform time interval (ns)
     unsigned int fNsamples; //Samples per waveform
-    double fPreTrigger;     //(ns)
     double fQE;             //PMT quantum efficiency
     
     size_t fReadoutWindowSize;     ///ReadoutWindowSize in samples
@@ -96,7 +94,6 @@ namespace opdet{
     double fFallTime;       //fall time of 1PE in ns
     double fRiseTime;      //rise time in ns
     double fTransitTime;   //to be added to pulse minimum time
-    double fTransitSpread; //transit time spread
     double sigma1;
     double sigma2;
     double fMeanAmplitude;  //in pC
@@ -149,7 +146,7 @@ namespace opdet{
     fDarkNoiseRate   = p.get< double >("DarkNoiseRate"); //in Hz
     
     fReadoutWindowSize   = p.get<size_t>("ReadoutWindowSize"); ///ReadoutWindowSize
-    fPretrigFraction     = p.get<float>("PretrigFraction");    ///Fraction of window size to be before "trigger"
+    fPretrigFraction     = p.get<float>("PreTrigFraction");    ///Fraction of window size to be before "trigger"
     fThresholdADC        = p.get<float>("ThresholdADC");       ///ADC Threshold for self-triggered readout
     fPulsePolarity       = p.get<int>("PulsePolarity");        ///Pulse polarity (=1 for positive, =-1 for negative)
     fTriggerOffsetPMT    = p.get<double>("TriggerOffsetPMT");   ///Time (us) relative to trigger that readout begins
