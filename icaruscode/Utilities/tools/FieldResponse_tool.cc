@@ -84,13 +84,13 @@ FieldResponse::FieldResponse(const fhicl::ParameterSet& pset) :
 void FieldResponse::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fThisPlane                = pset.get<size_t>("Plane");
-    fSignalType               = pset.get<size_t>("SignalType") == 0 ? geo::kInduction : geo::kCollection;
-    fFieldResponseFileName    = pset.get<std::string>("FieldResponseFileName");
-    fFieldResponseFileVersion = pset.get<std::string>("FieldResponseFileVersion");
-    fFieldResponseHistName    = pset.get<std::string>("FieldResponseHistName");
-    fFieldResponseAmplitude   = pset.get<double>("FieldResponseAmplitude");
-    fTimeCorrectionFactor     = pset.get<double>("TimeCorrectionFactor");
+    fThisPlane                = pset.get< size_t      >("Plane");
+    fSignalType               = pset.get< size_t      >("SignalType") == 0 ? geo::kInduction : geo::kCollection;
+    fFieldResponseFileName    = pset.get< std::string >("FieldResponseFileName");
+    fFieldResponseFileVersion = pset.get< std::string >("FieldResponseFileVersion");
+    fFieldResponseHistName    = pset.get< std::string >("FieldResponseHistName");
+    fFieldResponseAmplitude   = pset.get< double      >("FieldResponseAmplitude");
+    fTimeCorrectionFactor     = pset.get< double      >("TimeCorrectionFactor");
     
     // Recover the input field response histogram
     std::string fileName = fFieldResponseFileName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
@@ -148,8 +148,7 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
     fFieldResponseVec.resize(nResponseBins);
 
     double x0     = getBinCenter(1);
-    double xf     = getBinCenter(numBins);
-    double deltaX = (xf - x0)/(numBins-1);
+    double deltaX = fFieldResponseHist->GetBinWidth(1);  // This gets returned in us
     
     for(size_t bin = 1; bin <= nResponseBins; bin++)
     {
