@@ -6,10 +6,12 @@
 #include <cmath>
 #include "IElectronicsResponse.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include "TProfile.h"
 
@@ -41,13 +43,17 @@ private:
     double              fASICShapingTime;
     double              fADCPerPCAtLowestASICGain;
     
+    // Keep track of the bin width (for histograms)
+    double              fBinWidth;
+    
     // Container for the electronics response "function"
     std::vector<double> fElectronicsResponseVec;
 };
     
 //----------------------------------------------------------------------
 // Constructor.
-ElectronicsResponse::ElectronicsResponse(const fhicl::ParameterSet& pset)
+ElectronicsResponse::ElectronicsResponse(const fhicl::ParameterSet& pset) :
+    fBinWidth(0.)
 {
     configure(pset);
 }
@@ -69,7 +75,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // parameters for the electronics response which are given in us
     double timeCorrect  = 1.e-3;
     
-    binWidth *= timeCorrect;
+    fBinWidth = binWidth * timeCorrect;
     
     fElectronicsResponseVec.resize(numBins, 0.);
     
@@ -86,7 +92,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
     {
-       double funcArg = double(timeIdx) * binWidth / fASICShapingTime;
+       double funcArg = double(timeIdx) * fBinWidth / fASICShapingTime;
         
         fElectronicsResponseVec.at(timeIdx) = funcArg * exp(-funcArg);
     }
@@ -109,7 +115,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     
     for (auto& element : fElectronicsResponseVec) element /= fFCperADCMicroS;
 
-    float respIntegral = binWidth * std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
+    double respIntegral = fBinWidth * std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
     
     std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),[respIntegral](auto& elem){return elem/respIntegral;});
     
@@ -127,10 +133,39 @@ void ElectronicsResponse::outputHistograms(art::TFileDirectory& histDir) const
     
     std::string histName = "ElectronicsResponse_" + std::to_string(fPlane);
     
-    TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response", fElectronicsResponseVec.size(), 0., fElectronicsResponseVec.size());
+    double hiEdge = fElectronicsResponseVec.size() * fBinWidth;
     
-    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx, fElectronicsResponseVec.at(idx), 1.);
+    TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", fElectronicsResponseVec.size(), 0., hiEdge);
     
+    for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx * fBinWidth, fElectronicsResponseVec.at(idx), 1.);
+    
+    // Let's apply some smoothing as an experiment... first let's get the tool we need
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    
+    // Get the FFT of the response
+    std::vector<double> powerVec;
+    
+    waveformTool->getFFTPower(fElectronicsResponseVec, powerVec);
+    
+    // Now we can plot this...
+    double maxFreq   = 0.5 / fBinWidth;   // binWidth will be in us, maxFreq will be units of MHz
+    double freqWidth = maxFreq / powerVec.size();
+    
+    histName = "FFT_" + histName;
+    
+    TProfile* fftHist = dir.make<TProfile>(histName.c_str(), "Electronics FFT; Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    
+    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    {
+        double bin = (idx + 0.5) * freqWidth;
+        
+        fftHist->Fill(bin, powerVec.at(idx), 1.);
+    }
+
     return;
 }
     
