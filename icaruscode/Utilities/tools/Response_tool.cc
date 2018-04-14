@@ -101,31 +101,26 @@ void Response::setResponse(double weight)
     art::ServiceHandle<util::LArFFT> fastFourierTransform;
     
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    
-    // Recover the current set up
-    std::string fftOptions  = fastFourierTransform->FFTOptions();
-    size_t      nFFTFitBins = fastFourierTransform->FFTFitBins();
-    //size_t      fftSizeIn   = fastFourierTransform->FFTSize();
-    //size_t      fftSize     = fftSizeIn;
-    size_t      fftSize     = fastFourierTransform->FFTSize();
 
     // First of all set the field response
     fFieldResponse->setResponse(weight, f3DCorrection, fTimeScaleFactor);
 
     // Make sure the FFT can handle this
-    size_t nFieldBins    = fFieldResponse->getResponseVec().size();
-    double fieldBinWidth = fFieldResponse->getBinWidth();
+    size_t fftSize    = fastFourierTransform->FFTSize();
+    size_t nFieldBins = fFieldResponse->getResponseVec().size();
     
     // Reset the FFT if it is not big enough to handle current size
     if (nFieldBins * 4 > fftSize)
     {
         fftSize = 4 * nFieldBins;
         
-        fastFourierTransform->ReinitializeFFT( fftSize, fftOptions, nFFTFitBins);
+        fastFourierTransform->ReinitializeFFT( fftSize, fastFourierTransform->FFTOptions(), fastFourierTransform->FFTFitBins());
+        
+        fftSize = fastFourierTransform->FFTSize();
     }
 
     // handle the electronics response for this plane
-    fElectronicsResponse->setResponse(4 * nFieldBins, fieldBinWidth); //fftSize, fieldBinWidth);
+    fElectronicsResponse->setResponse(4 * nFieldBins, fFieldResponse->getBinWidth());
     
     // Add these elements to the SignalShaping class
     fSignalShaping.Reset();
@@ -208,13 +203,15 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
     const std::vector<double>& responseVec  = this->getSignalShaping().Response();
+    auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double                     samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
     double                     numBins      = responseVec.size();
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
-    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(ticks)", numBins, 0., numBins);
+    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins*samplingRate);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        hist->Fill(bin, responseVec.at(bin), 1.);
+        hist->Fill(bin * samplingRate, responseVec.at(bin), 1.);
     }
 
     // Get the FFT, need the waveform tool for consistency
@@ -228,12 +225,10 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     waveformTool->getFFTPower(responseVec, powerVec);
     
-    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = 1.e-3 * detprop->SamplingRate();
-    double      maxFreq      = 0.5 / samplingRate;
-    double      freqWidth    = maxFreq / powerVec.size();
-    std::string freqName     = "Response_FFTPlane_" + std::to_string(fThisPlane);
-    TProfile*   freqHist     = dir.make<TProfile>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
+    double      maxFreq   = 0.5 / samplingRate;
+    double      freqWidth = maxFreq / (powerVec.size() - 1);
+    std::string freqName  = "Response_FFTPlane_" + std::to_string(fThisPlane);
+    TProfile*   freqHist  = dir.make<TProfile>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), 0., maxFreq);
     
     for(size_t idx = 0; idx < powerVec.size(); idx++)
     {
