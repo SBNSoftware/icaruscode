@@ -11,29 +11,56 @@ icarus_roifinderstandard:
     zPlaneROIPad: [ 50, 50 ] # number of bins to pad both ends of the ROIs
 }
 
-icarus_roifinderdifferential:
+icarus_standardroifinder:
 {
-    tool_type:      ROIFinderDifferential
-    NumSigma:            [  4.0,  4.0,  4.0]
-    NumBinsToAve:        [ 10,   10,   10   ]
-    Max2MinDistance:     [ 60,   60,   60   ]
-    TruncRMSMinFraction: 0.6
-    uPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
-    vPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
-    zPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
+    tool_type:    ROIFinderStandard
+    Plane:        0
+    NumBinsHalf:  3
+    Threshold:    3  # abs(threshold) for finding a Region Of Interest
+    NumSigma:     4 
+    zPlaneROIPad: [ 50, 50 ] # number of bins to pad both ends of the ROIs
 }
 
-icarus_roifindermorphological:
+icarus_differentialroifinder:
 {
-    tool_type:      ROIFinderMorphological
-    NumSigma:            [  4.5,  4.5,  4.25]
-    Max2MinDistance:     [ 60,   60,   60   ]
-    HalfWindowSize:      [10, 10, 10]
+    tool_type:           ROIFinderDifferential
+    Plane:               0
+    NumSigma:            4.0
+    NumBinsToAve:        10
+    Max2MinDistance:     60
+    MaxTicksGap:         50
     TruncRMSMinFraction: 0.6
-    uPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
-    vPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
-    zPlaneROIPad:        [ 50, 50 ] # number of bins to pad both ends of the ROIs
+    ROILeadTrailPadding: [ 50, 50 ] # number of bins to pad both ends of the ROIs
+    OutputHistograms:    false
 }
+
+icarus_differentialroifinder_0: @local::icarus_differentialroifinder
+icarus_differentialroifinder_1: @local::icarus_differentialroifinder
+icarus_differentialroifinder_2: @local::icarus_differentialroifinder
+
+icarus_differentialroifinder_0.Plane: 0
+icarus_differentialroifinder_1.Plane: 1
+icarus_differentialroifinder_2.Plane: 2
+
+icarus_morphologicalroifinder:
+{
+    tool_type:           ROIFinderMorphological
+    Plane:               0
+    NumSigma:            4.5         # Number sigma for threshold
+    Max2MinDistance:     10
+    HalfWindowSize:      10
+    roiLeadTrailPad:     [ 50, 50 ]  # number of bins to pad on the leading/trailing side
+    TruncRMSMinFraction: 0.6
+    OutputHistograms:    false
+}
+
+icarus_morphologicalroifinder_0: @local::icarus_morphologicalroifinder
+icarus_morphologicalroifinder_1: @local::icarus_morphologicalroifinder
+icarus_morphologicalroifinder_2: @local::icarus_morphologicalroifinder
+
+icarus_morphologicalroifinder_0.Plane: 0
+icarus_morphologicalroifinder_1.Plane: 1
+icarus_morphologicalroifinder_2.Plane: 2
 
 icarus_baselinestandard:
 {
@@ -43,12 +70,13 @@ icarus_baselinestandard:
 
 icarus_baselinemostprobave:
 {
-    tool_type: BaselineMostProbAve
+    tool_type:    BaselineMostProbAve
+    MaxROILength: 100
 }
 
 icarus_nobaseline:
 {
-    tool_type:        NoBaseline
+    tool_type: NoBaseline
 }
 
 icarus_roideconvolution:

@@ -7,51 +7,55 @@ BEGIN_PROLOG
 
 icarus_recowireroi:
 {
- module_type:                           "RecoWireROI"
- DigitModuleLabel:                      "daq"
- NoiseSource:                           3
- NumBinsHalf:                           3 
- Threshold:                             [ 1, 1, 1 ] # abs(threshold) for finding a Region Of Interest
- NumSigma:                              [ 5, 5, 5 ]
- uPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
- vPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
- zPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
- DoBaselineSub:                         true # subtract baseline after deconvolution?
- uPlaneRamp:                            true # Set true if U plane response includes a pre-ROI ramp
- FFTSize:                               256      # re-initialize FFT service to this size
- SaveWireWF:                            0
- MinAllowedChannelStatus:               3 # All channels greater than or equal to this status level are considered
- DoBaselineSub_WaveformPropertiesAlg:   false # subtract baseline after deconvolution?
- DodQdxCalib:                           false  # apply wire-by-wire calibration?
- dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
+    module_type:                           "RecoWireROI"
+    DigitModuleLabel:                      "daq"
+    NoiseSource:                           3
+    NumBinsHalf:                           3
+    Threshold:                             [ 1, 1, 1 ] # abs(threshold) for finding a Region Of Interest
+    NumSigma:                              [ 5, 5, 5 ]
+    uPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
+    vPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
+    zPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
+    DoBaselineSub:                         true # subtract baseline after deconvolution?
+    uPlaneRamp:                            true # Set true if U plane response includes a pre-ROI ramp
+    FFTSize:                               256      # re-initialize FFT service to this size
+    SaveWireWF:                            0
+    MinAllowedChannelStatus:               3 # All channels greater than or equal to this status level are considered
+    DoBaselineSub_WaveformPropertiesAlg:   false # subtract baseline after deconvolution?
+    DodQdxCalib:                           false  # apply wire-by-wire calibration?
+    dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
 }
 
 icarus_recowireroiicarus:
 {
-  module_type:                "RecoWireROIICARUS"
-  DigitModuleLabel:           "daq"
-  NoiseSource:                3
-  FFTSize:                    128      # re-initialize FFT service to this size
-  SaveWireWF:                 0
-  MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
-  ROIFinder:                  @local::icarus_roifinderstandard
-  Deconvolution:              @local::icarus_fullwiredeconvolution
+    module_type:                "RecoWireROIICARUS"
+    DigitModuleLabel:           "daq"
+    NoiseSource:                3
+    FFTSize:                    128      # re-initialize FFT service to this size
+    SaveWireWF:                 0
+    MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
+    ROIFinderToolVec:
+    {
+        ROIFinderToolPlane0 : @local::icarus_standardroifinder
+        ROIFinderToolPlane1 : @local::icarus_standardroifinder
+        ROIFinderToolPlane2 : @local::icarus_standardroifinder
+    }
+    Deconvolution:              @local::icarus_fullwiredeconvolution
 }
 
 icarus_recowire:
 {
-  module_type:        "RecoWireICARUS"
-  DigitModuleLabel:   "daq"
-  ResponseFile:       "ArgoResponse1.5.root"
-  ExponentialEndBins: 300
-  PostsampleBins:     300
+    module_type:        "RecoWireICARUS"
+    DigitModuleLabel:   "daq"
+    ResponseFile:       "ArgoResponse1.5.root"
+    ExponentialEndBins: 300
+    PostsampleBins:     300
 }
 
 icarus_recowireraw:
 {
-module_type:        "RecoWireICARUSRaw"
-DigitModuleLabel:   "daq"
+    module_type:        "RecoWireICARUSRaw"
+    DigitModuleLabel:   "daq"
 }
-
 
 END_PROLOG

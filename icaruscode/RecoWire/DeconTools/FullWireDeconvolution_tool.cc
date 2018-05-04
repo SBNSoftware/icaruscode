@@ -22,7 +22,7 @@
 
 #include <fstream>
 
-namespace uboone_tool
+namespace icarus_tool
 {
 
 class FullWireDeconvolution : public IDeconvolution
@@ -33,7 +33,7 @@ public:
     ~FullWireDeconvolution();
     
     void configure(const fhicl::ParameterSet& pset)              override;
-    void outputHistograms(art::TFileDirectory&)            const override;
+    void initializeHistograms(art::TFileDirectory&)        const override;
     
     void Deconvolve(IROIFinder::Waveform const&,
                     raw::ChannelID_t,
@@ -47,7 +47,7 @@ private:
     std::string                                          fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
     std::map<unsigned int, float>                        fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
     
-    std::unique_ptr<uboone_tool::IBaseline>              fBaseline;
+    std::unique_ptr<icarus_tool::IBaseline>              fBaseline;
     
     const geo::GeometryCore*                             fGeometry           = lar::providerFrom<geo::Geometry>();
     detinfo::DetectorProperties const*                   fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
@@ -102,7 +102,7 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
     }
     
     // Recover the baseline tool
-    fBaseline  = art::make_tool<uboone_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
+    fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
     
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
@@ -180,7 +180,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     return;
 }
     
-void FullWireDeconvolution::outputHistograms(art::TFileDirectory& histDir) const
+void FullWireDeconvolution::initializeHistograms(art::TFileDirectory& histDir) const
 {
     // It is assumed that the input TFileDirectory has been set up to group histograms into a common
     // folder at the calling routine's level. Here we create one more level of indirection to keep

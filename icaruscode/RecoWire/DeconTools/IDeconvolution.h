@@ -23,7 +23,7 @@ namespace art
     class TFileDirectory;
 }
 
-namespace uboone_tool
+namespace icarus_tool
 {
     class IDeconvolution
     {
@@ -31,7 +31,7 @@ namespace uboone_tool
         virtual ~IDeconvolution() noexcept = default;
         
         virtual void configure(const fhicl::ParameterSet& pset)           = 0;
-        virtual void outputHistograms(art::TFileDirectory&)         const = 0;
+        virtual void initializeHistograms(art::TFileDirectory&)     const = 0;
         
         // Find the ROI's
         virtual void Deconvolve(IROIFinder::Waveform const&,

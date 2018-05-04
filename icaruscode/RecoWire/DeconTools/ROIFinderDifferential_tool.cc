@@ -6,17 +6,21 @@
 #include <cmath>
 #include "icaruscode/RecoWire/DeconTools/IROIFinder.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
-#include "TH1D.h"
+#include "TH1F.h"
+#include "TH2F.h"
+#include "TProfile.h"
 
 #include <fstream>
 
-namespace uboone_tool
+namespace icarus_tool
 {
 
 class ROIFinderDifferential : public IROIFinder
@@ -26,41 +30,53 @@ public:
     
     ~ROIFinderDifferential();
     
-    void configure(const fhicl::ParameterSet& pset)                          override;
-    void outputHistograms(art::TFileDirectory&)                        const override;
-    
-    void FindROIs(const Waveform&, size_t, double, CandidateROIVec&)   const override;
+    void configure(const fhicl::ParameterSet& pset)                        override;
+    void initializeHistograms(art::TFileDirectory&)                  const override;
+    size_t plane()                                                   const override {return fPlane;}
+
+    void FindROIs(const Waveform&, size_t, size_t, double, CandidateROIVec&) const override;
     
 private:
     // The actual ROI finding algorithm
-    void findROICandidates(Waveform::const_iterator       startItr,
-                           Waveform::const_iterator       stopItr,
-                           const geo::PlaneID::PlaneID_t& plane,
-                           size_t                         roiStartTick,
-                           float                          roiThreshold,
-                           CandidateROIVec&               roiCandidateVec) const;
-    // Average the input waveform
-    void averageInputWaveform(const Waveform&, size_t, Waveform&) const;
-    
-    // grrrrr
-    float fixTheFreakingWaveform(const Waveform&, Waveform&) const;
-    
-    // recover the rms
-    float getTruncatedRMS(const Waveform&) const;
-    
+    void findROICandidates(Waveform::const_iterator startItr,
+                           Waveform::const_iterator stopItr,
+                           size_t                   channel,
+                           size_t                   roiStartTick,
+                           float                    roiThreshold,
+                           CandidateROIVec&         roiCandidateVec) const;
+    // Average/Smooth the input waveform
+    void averageInputWaveform(const Waveform&, Waveform&) const;
+    void smoothInputWaveform(const Waveform&, Waveform&)  const;
+
     // Member variables from the fhicl file
-    std::vector<float>              fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
-    std::vector<int>                fNumBinsToAve;               ///< Controls the averaging
-    std::vector<size_t>             fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
-    std::vector<unsigned short>     fPreROIPad;                  ///< ROI padding
-    std::vector<unsigned short>     fPostROIPad;                 ///< ROI padding
-    float                           fTruncRMSMinFraction;        ///< or at least this fraction of time bins
+    size_t                                      fPlane;
+    float                                       fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
+    int                                         fNumBinsToAve;               ///< Controls the averaging
+    size_t                                      fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
+    size_t                                      fMaxTicksGap;                ///< Maximum gap between ROI's before merging
+    unsigned short                              fPreROIPad;                  ///< ROI padding
+    unsigned short                              fPostROIPad;                 ///< ROI padding
+    float                                       fTruncRMSMinFraction;        ///< or at least this fraction of time bins
+    bool                                        fOutputHistograms;           ///< Output histograms?
+
+    std::vector<float>                          fAveWeightVec;
+    float                                       fWeightSum;
     
-    std::vector<std::vector<float>> fAveWeightVec;
-    std::vector<float>              fWeightSum;
+    art::TFileDirectory*                        fHistDirectory;
+
+    // Define some useful global histograms here
+    TH1F*                                       fDiffMeanHist;
+    TH1F*                                       fDiffRmsHist;
     
+    TH1F*                                       fMinMaxDPeakHist;
+    TH1F*                                       fMinMaxDistHist;
+    TH1F*                                       fMinMaxSigmaHist;
+    TH2F*                                       fDPeakVDistHist;
+
+    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+
     // Services
-    const geo::GeometryCore*        fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
 };
     
 //----------------------------------------------------------------------
@@ -77,61 +93,76 @@ ROIFinderDifferential::~ROIFinderDifferential()
 void ROIFinderDifferential::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    std::vector<unsigned short> uin;
-    std::vector<unsigned short> vin;
     std::vector<unsigned short> zin;
     
-    fNumSigma            = pset.get< std::vector<float> >         ("NumSigma"       );
-    fNumBinsToAve        = pset.get< std::vector<int> >           ("NumBinsToAve"   );
-    fMax2MinDistance     = pset.get< std::vector<size_t> >        ("Max2MinDistance");
-    uin                  = pset.get< std::vector<unsigned short> >("uPlaneROIPad"   );
-    vin                  = pset.get< std::vector<unsigned short> >("vPlaneROIPad"   );
-    zin                  = pset.get< std::vector<unsigned short> >("zPlaneROIPad"   );
-    fTruncRMSMinFraction = pset.get< float >                      ("TruncRMSMinFraction", 0.6);
-    
-    if(uin.size() != 2 || vin.size() != 2 || zin.size() != 2) {
-        throw art::Exception(art::errors::Configuration)
-        << "u/v/z plane ROI pad size != 2";
-    }
-    
-    fPreROIPad.resize(3);
-    fPostROIPad.resize(3);
-    
+    fPlane               = pset.get< size_t >                     ("Plane"                     );
+    fNumSigma            = pset.get< float >                      ("NumSigma"                  );
+    fNumBinsToAve        = pset.get< int >                        ("NumBinsToAve"              );
+    fMax2MinDistance     = pset.get< size_t >                     ("Max2MinDistance"           );
+    fMaxTicksGap         = pset.get< size_t >                     ("MaxTicksGap",            50);
+    zin                  = pset.get< std::vector<unsigned short> >("ROILeadTrailPadding"       );
+    fTruncRMSMinFraction = pset.get< float >                      ("TruncRMSMinFraction",   0.6);
+    fOutputHistograms    = pset.get< bool  >                      ("OutputHistograms",    false);
+
     // put the ROI pad sizes into more convenient vectors
-    fPreROIPad[0]  = uin[0];
-    fPostROIPad[0] = uin[1];
-    fPreROIPad[1]  = vin[0];
-    fPostROIPad[1] = vin[1];
-    fPreROIPad[2]  = zin[0];
-    fPostROIPad[2] = zin[1];
+    fPreROIPad  = zin[0];
+    fPostROIPad = zin[1];
     
-    // precalculate the weight vector to use in the averaging
-    fAveWeightVec.resize(3);
-    fWeightSum.resize(3);
+    // The "Max2MinDistance" is input in ticks but needs to be scaled if we are averaging
+//    if (fNumBinsToAve > 1) fMax2MinDistance = std::round(fMax2MinDistance / fNumBinsToAve) + 1;
     
-    for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
+    // Recover an instance of the waveform tool
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    // If asked, define some histograms
+    if (fOutputHistograms)
     {
-        fAveWeightVec.at(planeIdx).resize(fNumBinsToAve.at(planeIdx));
-    
-        if (fNumBinsToAve.at(planeIdx) > 1)
-        {
-            for(int idx = 0; idx < fNumBinsToAve.at(planeIdx)/2; idx++)
-            {
-                float weight = idx + 1;
-            
-                fAveWeightVec.at(planeIdx).at(idx)                                  = weight;
-                fAveWeightVec.at(planeIdx).at(fNumBinsToAve.at(planeIdx) - idx - 1) = weight;
-            }
-        }
-        else fAveWeightVec.at(planeIdx).at(1) = 1.;
-    
-        fWeightSum.at(planeIdx) = std::accumulate(fAveWeightVec.at(planeIdx).begin(),fAveWeightVec.at(planeIdx).end(), 0.);
+        // Access ART's TFileService, which will handle creating and writing
+        // histograms and n-tuples for us.
+        art::ServiceHandle<art::TFileService> tfs;
+        
+        fHistDirectory = tfs.get();
+        
+        // Make a directory for these histograms
+        art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu",fPlane));
+        
+        fDiffMeanHist    = dir.make<TH1F>("DiffMean",    ";Diff Mean;",    100, -20.,  20.);
+        fDiffRmsHist     = dir.make<TH1F>("DiffRms",     ";Diff RMS;",     100,   0.,   5.);
+        
+        fMinMaxDPeakHist = dir.make<TH1F>("MinMaxDPeak", ";Delta Peak;",   200, 0.,  50.);
+        fMinMaxDistHist  = dir.make<TH1F>("MinMaxDist",  ";Peak Sep;",      50, 0.,  50.);
+        fMinMaxSigmaHist = dir.make<TH1F>("MinMaxSigma", ";Peak Sep/rms;", 200, 0., 200.);
+        fDPeakVDistHist  = dir.make<TH2F>("DPeakVDist",  ";Delta Peak; Peak Sep", 200, 0, 50., 50, 0., 50.);
     }
+
+    // precalculate the weight vector to use in the averaging
+    fAveWeightVec.resize(fNumBinsToAve);
+    
+    if (fNumBinsToAve > 1)
+    {
+        for(int idx = 0; idx < fNumBinsToAve/2; idx++)
+        {
+            float weight = idx + 1;
+        
+            fAveWeightVec.at(idx)                     = weight;
+            fAveWeightVec.at(fNumBinsToAve - idx - 1) = weight;
+        }
+        
+        // Watch for case of fNumBinsToAve being odd
+        if (fNumBinsToAve % 2 > 0) fAveWeightVec.at(fNumBinsToAve/2) = fNumBinsToAve/2 + 1;
+    }
+    else fAveWeightVec.at(0) = 1.;
+    
+    fWeightSum = std::accumulate(fAveWeightVec.begin(),fAveWeightVec.end(), 0.);
     
     return;
 }
 
-void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, double rmsNoise, CandidateROIVec& roiVec) const
+void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, size_t cnt, double rmsNoise, CandidateROIVec& roiVec) const
 {
     // The idea here is to consider the input waveform - if an induction plane then it is already in differential form,
     // if a collection plane then we form the differential - then smooth and look for peaks. The technique will be to
@@ -147,44 +178,85 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, d
     Waveform waveformDeriv(waveform.size());
     
     // If we have a collection plane then take the derivative
-    if (sigType == geo::kCollection)
-    {
-        waveformDeriv[0]                 = 0;
-        waveformDeriv[waveform.size()-1] = 0;
-        
-        for(size_t idx = 1; idx < waveform.size()-1; idx++)
-            waveformDeriv[idx] = 0.5 * (waveform.at(idx+1) - waveform.at(idx-1));
-    }
+    if (sigType == geo::kCollection) fWaveformTool->firstDerivative(waveform, waveformDeriv);
     // Otherwise a straight copy since the bipolar pulses are, effectively, derivatives
     else std::copy(waveform.begin(),waveform.end(),waveformDeriv.begin());
     
     // Do the averaging
     Waveform aveWaveformDeriv;
     
-    averageInputWaveform(waveformDeriv, planeID.Plane, aveWaveformDeriv);
-    
-    // Experiment with smoothing this as well
-    // Now smooth the derivative vector
-//    Waveform tempVec = aveWaveformDeriv;
-    
-//    for(size_t idx = 2; idx < tempVec.size() - 2; idx++)
-//        aveWaveformDeriv.at(idx) = (tempVec.at(idx-2) + 2.*tempVec.at(idx-1) + 3.*tempVec.at(idx) + 2.*tempVec.at(idx+1) + tempVec.at(idx+2))/9.;
+//    averageInputWaveform(waveformDeriv, aveWaveformDeriv);
+    smoothInputWaveform(waveformDeriv, aveWaveformDeriv);
+//    fWaveformTool->triangleSmooth(waveform,aveWaveformDeriv);
     
     // Scheme for finding a suitable threshold
-    float truncRMS = getTruncatedRMS(aveWaveformDeriv);
+    float truncMean(0.);
+    float truncRMS(0.);
     
+    fWaveformTool->getTruncatedMeanRMS(aveWaveformDeriv, truncMean, truncRMS);
+    
+    // Put a floor on the value of the truncated RMS...
+    float truncRMSFloor = std::max(truncRMS, float(0.25));
+
     // Now find the ROI's
-    findROICandidates(aveWaveformDeriv.begin(),aveWaveformDeriv.end(),planeID.Plane,0,truncRMS,roiVec);
+    findROICandidates(aveWaveformDeriv.begin(),aveWaveformDeriv.end(),channel,0,truncRMSFloor,roiVec);
     
+    TProfile* roiHist(0);
+
+    if (fOutputHistograms)
+    {
+        fDiffMeanHist->Fill(truncMean, 1.);
+        fDiffRmsHist->Fill(truncRMS, 1.);
+        
+        // Try to limit to the wire number (since we are already segregated by plane)
+        std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+        size_t                   wire = wids[0].Wire;
+        
+        // Make a directory for these histograms
+        art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu/%03zu/wire_%05zu",fPlane,cnt,wire));
+        
+        // We keep track of four histograms:
+        try
+        {
+            TProfile* waveformHist    = dir.make<TProfile>(Form("Wfm_%03zu_c%05zu",cnt,wire), "Waveform",   waveform.size(),         0, waveform.size(),         -500., 500.);
+            TProfile* derivativeHist  = dir.make<TProfile>(Form("Der_%03zu_c%05zu",cnt,wire), "Derivative", waveformDeriv.size(),    0, waveformDeriv.size(),    -500., 500.);
+            TProfile* aveDerivHist    = dir.make<TProfile>(Form("Ave_%03zu_c%05zu",cnt,wire), "AveDeriv",   aveWaveformDeriv.size(), 0, aveWaveformDeriv.size(), -500., 500.);
+            
+            roiHist = dir.make<TProfile>(Form("ROI_%03zu_c%05zu",cnt,wire), "ROI", waveform.size(), 0, waveform.size(), -500., 500.);
+
+            for(size_t binIdx = 0; binIdx < waveform.size(); binIdx++)
+            {
+                waveformHist->Fill(binIdx, waveform.at(binIdx));
+                derivativeHist->Fill(binIdx, waveformDeriv.at(binIdx));
+            }
+
+            int binIdx(0);
+            
+            for(const auto& val : aveWaveformDeriv) aveDerivHist->Fill(binIdx++, val);
+            
+        } catch(...)
+        {
+            std::cout << "Caught exception trying to make new hists, plane,cnt,wire: " << fPlane << ", " << cnt << ", " << wire << std::endl;
+        }
+    }
+
     if (roiVec.empty()) return;
+    
+    int nMultiplier = 1; // fNumBinsToAve
     
     // pad the ROIs
     for(auto& roi : roiVec)
     {
+        if (roiHist)
+        {
+            roiHist->Fill(int(nMultiplier * roi.first),  std::max(3.*truncRMS,1.));
+            roiHist->Fill(int(nMultiplier * roi.second), std::max(3.*truncRMS,1.));
+        }
+        
         // low ROI end
-        roi.first  = std::max(int(fNumBinsToAve.at(planeID.Plane) * roi.first - fPreROIPad[planeID.Plane]),0);
+        roi.first  = std::max(int(nMultiplier * roi.first - fPreROIPad),0);
         // high ROI end
-        roi.second = std::min(fNumBinsToAve.at(planeID.Plane) * roi.second + fNumBinsToAve.at(planeID.Plane) + fPostROIPad[planeID.Plane], waveform.size() - 1);
+        roi.second = std::min(nMultiplier * roi.second + fNumBinsToAve + fPostROIPad, waveform.size() - 1);
     }
     
     // merge overlapping (or touching) ROI's
@@ -199,7 +271,7 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, d
         
         for(auto& roi : roiVec)
         {
-            if (roi.first <= stopRoi + 50) stopRoi = roi.second;
+            if (roi.first <= stopRoi + fMaxTicksGap) stopRoi = roi.second;
             else
             {
                 tempRoiVec.push_back(CandidateROI(startRoi,stopRoi));
@@ -218,71 +290,79 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, d
     return;
 }
     
-void ROIFinderDifferential::findROICandidates(Waveform::const_iterator       startItr,
-                                              Waveform::const_iterator       stopItr,
-                                              const geo::PlaneID::PlaneID_t& plane,
-                                              size_t                         roiStartTick,
-                                              float                          truncRMS,
-                                              CandidateROIVec&               roiCandidateVec) const
+void ROIFinderDifferential::findROICandidates(Waveform::const_iterator startItr,
+                                              Waveform::const_iterator stopItr,
+                                              size_t                   channel,
+                                              size_t                   roiStartTick,
+                                              float                    truncRMS,
+                                              CandidateROIVec&         roiCandidateVec) const
 {
     // Require a minimum length
     size_t roiLength = std::distance(startItr,stopItr);
     
     if (roiLength > 0)
     {
-        // The idea here is to find the largest positive value in the input waveform and use this as the basis of
-        // our search for a candidate hit
+        // The idea is to recover the two maxima from the input waveform and center our search for the ROI
+        // around them.
         std::pair<Waveform::const_iterator,Waveform::const_iterator> minMaxItr = std::minmax_element(startItr,  stopItr);
         
         Waveform::const_iterator maxItr = minMaxItr.second;
         Waveform::const_iterator minItr = minMaxItr.first;
 
-        // Reset either the max or min iterator depending on which is bigger
-        if (*maxItr > std::fabs(*minItr))
+        // It can be that what has been returned are the lobes of two completely separate pulses which may be separated
+        // by a large number of ticks. So we can't simply assume they belong together... unless they are "close" with
+        // the minimum after the maximum
+        if (std::distance(maxItr,minItr) < 0 || std::distance(maxItr,minItr) > fMax2MinDistance)
         {
-            // Check distance to the minimum we found
-            if (std::distance(maxItr,minItr) > 2 || (std::distance(maxItr,minItr) < 0 && std::distance(maxItr,stopItr) > 0))
+            // Given that, we key off the larger of the lobes and do a forward or backward search to find the minimum/maximum
+            // which we think is associated to the lobe we have chosen.
+            // First consider that the maximum is larger than the minimum...
+            if (*maxItr > std::fabs(*minItr))
             {
-                // The maximum is larger so search forward from here for the true minimum
-                minItr = maxItr;
-                
-                float prevValue = *minItr++;
-                
-                while(minItr != stopItr)
+                // Check distance to the minimum we found
+                if (std::distance(maxItr,stopItr) > 0)
                 {
-                    // Look for the point where it turns back up
-                    if (prevValue < 0. && *minItr > prevValue)
+                    // The maximum is larger so search forward from here for the true minimum
+                    minItr = maxItr;
+                
+                    float prevValue = *minItr++;
+                
+                    while(minItr != stopItr)
                     {
-                        // reset to what was the actual minimum value
-                        minItr -= 1;
-                        break;
-                    }
+                        // Look for the point where it turns back up
+                        if (prevValue < 0. && *minItr > prevValue)
+                        {
+                            // reset to what was the actual minimum value
+                            minItr -= 1;
+                            break;
+                        }
                     
-                    prevValue = *minItr++;
+                        prevValue = *minItr++;
+                    }
                 }
             }
-        }
-        else
-        {
-            // Check distance to the max
-            if (std::distance(maxItr,minItr) > 2 || (std::distance(maxItr,minItr) < 0 && std::distance(startItr,minItr) > 0))
+            else
             {
-                // Otherwise, we are starting at the minimum and searching backwards to find the max
-                maxItr = minItr;
-                
-                float prevValue = *maxItr--;
-                
-                while(maxItr != startItr)
+                // Check distance to the max
+                if (std::distance(startItr,minItr) > 0)
                 {
-                    // Decreasing for two bins
-                    if (prevValue > 0. && *maxItr < prevValue)
+                    // Otherwise, we are starting at the minimum and searching backwards to find the max
+                    maxItr = minItr;
+                
+                    float prevValue = *maxItr--;
+                
+                    while(maxItr != startItr)
                     {
-                        // reset to what was the actual minimum value
-                        maxItr += 1;
-                        break;
-                    }
+                        // Decreasing for two bins
+                        if (prevValue > 0. && *maxItr < prevValue)
+                        {
+                            // reset to what was the actual minimum value
+                            maxItr += 1;
+                            break;
+                        }
                     
-                    prevValue = *maxItr--;
+                        prevValue = *maxItr--;
+                    }
                 }
             }
         }
@@ -291,21 +371,26 @@ void ROIFinderDifferential::findROICandidates(Waveform::const_iterator       sta
         float maxMinRange    = *maxItr - *minItr;
         int   maxMinDistance = std::distance(maxItr,minItr);
         
-        if (maxMinRange > fNumSigma.at(plane) * truncRMS && maxMinDistance >= 0 && maxMinDistance < int(fMax2MinDistance.at(plane)))
+        if (fOutputHistograms && maxMinRange > 2. * truncRMS)
         {
-            // to complete the edges of the ROI, search both sides for the point which is essentially back to zero
-            // Somehow should be able to do this with reverse iterators but it seems startItr's constness is an issue
-            while(maxItr != startItr)
-            {
-                if (*maxItr < 0.) break;
-                maxItr--;
-            }
+            fMinMaxDPeakHist->Fill(maxMinRange, 1.);
+            fMinMaxDistHist->Fill(maxMinDistance, 1.);
+            fMinMaxSigmaHist->Fill(maxMinRange/truncRMS, 1.);
+            fDPeakVDistHist->Fill(maxMinRange, maxMinDistance, 1.);
+        }
         
-            minItr = std::find_if(minItr,stopItr,std::bind(std::greater<float>(),std::placeholders::_1,0.));
+        if (maxMinRange > fNumSigma * truncRMS && maxMinDistance >= 0 && maxMinDistance < int(fMax2MinDistance))
+        {
+            // To complete the edges of the ROI, search both sides for the point which is essentially back to zero,
+            // or in reality back into the rms level...
+            Waveform::const_reverse_iterator revItr = std::find_if(std::make_reverse_iterator(maxItr), std::make_reverse_iterator(startItr), std::bind(std::less<float>(),std::placeholders::_1,truncRMS));
+
+            maxItr = revItr.base();
+            minItr = std::find_if(minItr,stopItr,std::bind(std::greater<float>(),std::placeholders::_1,-truncRMS));
         
             // Before saving this ROI, look for candidates preceeding this one
             // Note that preceeding snippet will reference to the current roiStartTick
-            findROICandidates(startItr, maxItr, plane, roiStartTick, truncRMS, roiCandidateVec);
+            findROICandidates(startItr, maxItr, channel, roiStartTick, truncRMS, roiCandidateVec);
         
             // Save this ROI
             size_t newStartTick = std::distance(startItr,maxItr) + roiStartTick;
@@ -314,30 +399,27 @@ void ROIFinderDifferential::findROICandidates(Waveform::const_iterator       sta
             roiCandidateVec.push_back(CandidateROI(newStartTick, newStopTick));
         
             // Now look for candidate ROI's downstream of this one
-            findROICandidates(minItr, stopItr, plane, newStopTick, truncRMS, roiCandidateVec);
+            findROICandidates(minItr, stopItr, channel, newStopTick, truncRMS, roiCandidateVec);
         }
     }
     
     return;
 }
     
-void ROIFinderDifferential::averageInputWaveform(const Waveform& inputWaveform, size_t plane, Waveform& outputWaveform) const
+void ROIFinderDifferential::averageInputWaveform(const Waveform& inputWaveform, Waveform& outputWaveform) const
 {
     // Vector reduction - take the 10 bin average
-    float                     aveSum(0.);
-    int                       nBinsToAve(fNumBinsToAve.at(plane));
-    const std::vector<float>& weightVec = fAveWeightVec.at(plane);
-    float                     weightSum = fWeightSum.at(plane);
+    float aveSum(0.);
     
-    outputWaveform.resize(inputWaveform.size()/nBinsToAve);
+    if (outputWaveform.size() != inputWaveform.size()) outputWaveform.resize(inputWaveform.size());
     
     for(size_t idx = 0; idx < inputWaveform.size(); idx++)
     {
-        aveSum += weightVec.at(idx % nBinsToAve) * inputWaveform.at(idx);
+        aveSum += fAveWeightVec.at(idx % fNumBinsToAve) * inputWaveform.at(idx);
         
-        if ((idx + 1) % nBinsToAve == 0)
+        if ((idx + 1) % fNumBinsToAve == 0)
         {
-            outputWaveform[idx/nBinsToAve] = aveSum / weightSum;
+            outputWaveform[idx/fNumBinsToAve] = aveSum / fWeightSum;
             
             aveSum = 0.;
         }
@@ -346,64 +428,30 @@ void ROIFinderDifferential::averageInputWaveform(const Waveform& inputWaveform, 
     return;
 }
     
-float ROIFinderDifferential::getTruncatedRMS(const Waveform& waveform) const
+void ROIFinderDifferential::smoothInputWaveform(const Waveform& inputWaveform, Waveform& outputWaveform) const
 {
-    // do rms calculation - the old fashioned way and over all adc values
-    Waveform locWaveform = waveform;
+    // Vector smoothing - take the 10 bin average
+    int   halfBins = fNumBinsToAve / 2;
     
-    // sort in ascending order so we can truncate the sume
-    std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
+    outputWaveform.resize(inputWaveform.size());
     
-    float localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + locWaveform.size()/2, locWaveform.begin(), 0.);
+    // Set the edge bins which can't be smoothed
+    std::copy(inputWaveform.begin(),inputWaveform.begin()+halfBins,outputWaveform.begin());
+    std::copy(inputWaveform.end()-halfBins,inputWaveform.end(),outputWaveform.end()-halfBins);
     
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(locWaveform.size()/2)));
+    for(size_t idx = halfBins; idx < inputWaveform.size() - halfBins; idx++)
+    {
+        float weightedSum(0.);
+        
+        for(size_t wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * inputWaveform.at(idx - wIdx + halfBins);
+        
+        outputWaveform.at(idx) = weightedSum / fWeightSum;
+    }
     
-    float threshold = 6. * localRMS;
-    
-    std::vector<float>::iterator threshItr = std::find_if(locWaveform.begin(),locWaveform.end(),[threshold](const auto& val){return std::fabs(val) > threshold;});
-    
-    int minNumBins = std::max(int(fTruncRMSMinFraction * locWaveform.size()),int(std::distance(locWaveform.begin(),threshItr)));
-    
-    // Get the truncated sum
-    localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + minNumBins, locWaveform.begin(), 0.);
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(minNumBins)));
-    
-    return localRMS;
-}
-    
-float ROIFinderDifferential::fixTheFreakingWaveform(const Waveform& waveform, Waveform& fixedWaveform) const
-{
-    // do rms calculation - the old fashioned way and over all adc values
-    Waveform locWaveform = waveform;
-    
-    // sort in ascending order so we can truncate the sume
-    std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
-    
-    float localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + locWaveform.size()/2, locWaveform.begin(), 0.);
-    
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(locWaveform.size()/2)));
-    
-    float threshold = 6. * localRMS;
-    
-    std::vector<float>::iterator threshItr = std::find_if(locWaveform.begin(),locWaveform.end(),[threshold](const auto& val){return std::fabs(val) > threshold;});
-    
-    int minNumBins = std::max(int(fTruncRMSMinFraction * locWaveform.size()),int(std::distance(locWaveform.begin(),threshItr)));
-    
-    // Get the truncated sum
-    localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + minNumBins, locWaveform.begin(), 0.);
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(minNumBins)));
-    
-    // Now get the average value
-    float aveSum      = std::accumulate(locWaveform.begin(), locWaveform.begin() + minNumBins, 0.);
-    float newPedestal = aveSum / minNumBins;
-    
-    std::transform(waveform.begin(), waveform.end(), fixedWaveform.begin(), [newPedestal](const auto& val){return val - newPedestal;});
-    
-    return localRMS;
+    return;
 }
 
-    
-void ROIFinderDifferential::outputHistograms(art::TFileDirectory& histDir) const
+void ROIFinderDifferential::initializeHistograms(art::TFileDirectory& histDir) const
 {
     // It is assumed that the input TFileDirectory has been set up to group histograms into a common
     // folder at the calling routine's level. Here we create one more level of indirection to keep

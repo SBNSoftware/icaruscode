@@ -16,7 +16,7 @@
 
 #include <fstream>
 
-namespace uboone_tool
+namespace icarus_tool
 {
 
 class BaselineStandard : public IBaseline

@@ -27,6 +27,10 @@ namespace icarus_tool
         
         virtual void triangleSmooth(const std::vector<float>&,  std::vector<float>&,  size_t = 0)                           const = 0;
         virtual void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const = 0;
+        virtual void medianSmooth(  const std::vector<float>&,  std::vector<float>&,  size_t = 3)                           const = 0;
+        virtual void medianSmooth(  const std::vector<double>&, std::vector<double>&, size_t = 3)                           const = 0;
+        virtual void getTruncatedMeanRMS(const std::vector<float>&, float&, float&)                                         const = 0;
+        virtual void getTruncatedMeanRMS(const std::vector<double>&, double&, double&)                                      const = 0;
         virtual void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const = 0;
         virtual void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const = 0;
         virtual void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float,  size_t) const = 0;

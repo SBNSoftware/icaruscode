@@ -39,6 +39,10 @@ public:
     
     void triangleSmooth(const std::vector<float>&,  std::vector<float>&,  size_t = 0)                           const override;
     void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const override;
+    void medianSmooth(  const std::vector<float>&,  std::vector<float>&,  size_t = 3)                           const override;
+    void medianSmooth(  const std::vector<double>&, std::vector<double>&, size_t = 3)                           const override;
+    void getTruncatedMeanRMS(const std::vector<double>&, double&, double&)                                      const override;
+    void getTruncatedMeanRMS(const std::vector<float>&, float&, float&)                                         const override;
     void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const override;
     void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const override;
     void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const override;
@@ -48,6 +52,8 @@ public:
     
 private:
     template <typename T> void triangleSmooth(const std::vector<T>&, std::vector<T>&, size_t = 0)                                        const;
+    template <typename T> void medianSmooth(  const std::vector<T>&, std::vector<T>&, size_t = 3)                                        const;
+    template <typename T> void getTruncatedMeanRMS(const std::vector<T>&, T&, T&)                                                        const;
     template <typename T> void firstDerivative(const std::vector<T>&,  std::vector<T>&)                                                  const;
     template <typename T> void findPeaks(typename std::vector<T>::iterator, typename std::vector<T>::iterator, PeakTupleVec&, T, size_t) const;
 };
@@ -99,6 +105,125 @@ template <typename T> void Waveform::triangleSmooth(const std::vector<T>& inputV
         
         *curItr++ = newVal;
     }
+    return;
+}
+    
+void Waveform::medianSmooth(const std::vector<float>&inputVec, std::vector<float>& smoothVec, size_t nBins) const
+{
+    medianSmooth<float>(inputVec, smoothVec, nBins);
+    
+    return;
+}
+
+void Waveform::medianSmooth(const std::vector<double>& inputVec, std::vector<double>& smoothVec, size_t nBins) const
+{
+    medianSmooth<double>(inputVec, smoothVec, nBins);
+    
+    return;
+}
+
+template <typename T> void Waveform::medianSmooth(const std::vector<T>& inputVec, std::vector<T>& smoothVec, size_t nBins) const
+{
+    // For our purposes, nBins must be odd
+    if (nBins % 2 == 0) nBins++;
+    
+    // Make sure the input vector is right sized
+    if (inputVec.size() != smoothVec.size()) smoothVec.resize(inputVec.size());
+    
+    // Basic set up
+    typename std::vector<T> medianVec(nBins);
+    typename std::vector<T>::const_iterator startItr = inputVec.begin();
+    typename std::vector<T>::const_iterator stopItr  = startItr;
+    
+    std::advance(stopItr, inputVec.size() - nBins);
+    
+    size_t medianBin = nBins/2;
+    size_t smoothBin = medianBin;
+    
+    // First bins are not smoothed
+    std::copy(startItr, startItr + medianBin, smoothVec.begin());
+    
+    while(std::distance(startItr,stopItr) > 0)
+    {
+        std::copy(startItr,startItr+nBins,medianVec.begin());
+        std::sort(medianVec.begin(),medianVec.end());
+        
+        T medianVal = medianVec[medianBin];
+        
+        smoothVec[smoothBin++] = medianVal;
+        
+        startItr++;
+    }
+    
+    // Last bins are not smoothed
+    std::copy(startItr + medianBin, inputVec.end(), smoothVec.begin() + smoothBin);
+    
+    return;
+}
+    
+void Waveform::getTruncatedMeanRMS(const std::vector<double>& waveform, double& mean, double& rms) const
+{
+    getTruncatedMeanRMS<double>(waveform, mean, rms);
+}
+    
+void Waveform::getTruncatedMeanRMS(const std::vector<float>& waveform, float& mean, float& rms) const
+{
+    getTruncatedMeanRMS<float>(waveform, mean, rms);
+}
+
+template <typename T> void Waveform::getTruncatedMeanRMS(const std::vector<T>& waveform, T& mean, T& rms) const
+{
+    // We need to get a reliable estimate of the mean and can't assume the input waveform will be ~zero mean...
+    // Basic idea is to find the most probable value in the ROI presented to us
+    // From that we can develop an average of the true baseline of the ROI.
+    // To do that we employ a map based scheme
+    std::map<int,int> frequencyMap;
+    int               mpCount(0);
+    int               mpVal(0);
+    
+    for(const auto& val : waveform)
+    {
+        int intVal = std::round(4.*val);
+        
+        frequencyMap[intVal]++;
+        
+        if (frequencyMap.at(intVal) > mpCount)
+        {
+            mpCount = frequencyMap.at(intVal);
+            mpVal   = intVal;
+        }
+    }
+    
+    // take a weighted average of two neighbor bins
+    int meanCnt  = 0;
+    int meanSum  = 0;
+    int binRange = std::min(16, int(frequencyMap.size()/2 + 1));
+    
+    for(int idx = -binRange; idx <= binRange; idx++)
+    {
+        std::map<int,int>::iterator neighborItr = frequencyMap.find(mpVal+idx);
+        
+        if (neighborItr != frequencyMap.end() && 5 * neighborItr->second > mpCount)
+        {
+            meanSum += neighborItr->first * neighborItr->second;
+            meanCnt += neighborItr->second;
+        }
+    }
+    
+    mean = 0.25 * float(meanSum) / float(meanCnt);  // Note that bins were expanded by a factor of 4 above
+    
+    // do rms calculation - the old fashioned way and over all adc values
+    typename std::vector<T> locWaveform = waveform;
+    
+    std::transform(locWaveform.begin(), locWaveform.end(), locWaveform.begin(),std::bind(std::minus<T>(),std::placeholders::_1,mean));
+    
+    // sort in ascending order so we can truncate the sume
+    std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
+
+    // recalculate the rms
+    T localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + meanCnt, locWaveform.begin(), 0.);
+    rms = std::sqrt(std::max(T(0.),localRMS / T(meanCnt)));
+    
     return;
 }
 

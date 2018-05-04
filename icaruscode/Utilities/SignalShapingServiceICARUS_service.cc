@@ -242,9 +242,9 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     
     if (std::abs(shaping_time - 0.5)<1e-6){
         temp = 0;
-    }else if (std::abs(shaping_time - 1.0)<1e-6){
+    }else if (std::abs(shaping_time - 1.5)<1e-6){
         temp = 1;
-    }else if (std::abs(shaping_time - 2.0)<1e-6){
+    }else if (std::abs(shaping_time - 2.0)<1.e-6){
         temp = 2;
     }else{
         temp = 3;
@@ -252,8 +252,8 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     auto   tempNoise  = fNoiseFactVec.at(planeIdx);
     double deconNoise = tempNoise.at(temp);
     
-    deconNoise = deconNoise /4096.*2000./4.7 *6.241*1000/fDeconNorm;
-    
+    //deconNoise = deconNoise /4096.*2000./4.7 *6.241*1000/fDeconNorm; <== I don't know where these numbers come from...
+
     return deconNoise;
 }
 

@@ -28,6 +28,7 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h" 
 #include "art/Framework/Principal/Handle.h" 
+#include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
@@ -49,10 +50,10 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
-#include "art/Utilities/make_tool.h"
 #include "icaruscode/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/RecoWire/DeconTools/IBaseline.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 ///creation of calibrated signals on wires
 namespace caldata {
@@ -78,26 +79,27 @@ class RecoWireROIICARUS : public art::EDProducer
     
     float getTruncatedRMS(const std::vector<float>&) const;
     
-    std::string                                          fDigitModuleLabel;           ///< module that made digits
-    std::string                                          fSpillName;                  ///< nominal spill is an empty string
-                                                                                      ///< it is set by the DigitModuleLabel
-                                                                                      ///< ex.:  "daq:preSpill" for prespill data
-    unsigned short                                       fNoiseSource;                ///< Used to determine ROI threshold
-    size_t                                               fFFTSize;                    ///< FFT size for ROI deconvolution
-    int                                                  fSaveWireWF;                 ///< Save recob::wire object waveforms
-    size_t                                               fEventCount;                 ///< count of event processed
-    int                                                  fMinAllowedChanStatus;       ///< Don't consider channels with lower status
+    std::string                                             fDigitModuleLabel;           ///< module that made digits
+    std::string                                             fSpillName;                  ///< nominal spill is an empty string
+                                                                                         ///< it is set by the DigitModuleLabel
+                                                                                         ///< ex.:  "daq:preSpill" for prespill data
+    unsigned short                                          fNoiseSource;                ///< Used to determine ROI threshold
+    size_t                                                  fFFTSize;                    ///< FFT size for ROI deconvolution
+    int                                                     fSaveWireWF;                 ///< Save recob::wire object waveforms
+    size_t                                                  fEventCount;                 ///< count of event processed
+    int                                                     fMinAllowedChanStatus;       ///< Don't consider channels with lower status
     
-    float                                                fTruncRMSThreshold;          ///< Calculate RMS up to this threshold...
-    float                                                fTruncRMSMinFraction;        ///< or at least this fraction of time bins
-    bool                                                 fOutputHistograms;           ///< Output histograms?
+    float                                                   fTruncRMSThreshold;          ///< Calculate RMS up to this threshold...
+    float                                                   fTruncRMSMinFraction;        ///< or at least this fraction of time bins
+    bool                                                    fOutputHistograms;           ///< Output histograms?
     
-    std::unique_ptr<uboone_tool::IROIFinder>             fROIFinder;
-    std::unique_ptr<uboone_tool::IDeconvolution>         fDeconvolution;
+    std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
+    std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
+    std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
     
-    const geo::GeometryCore*                             fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                     fFFT;
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
+    art::ServiceHandle<util::LArFFT>                        fFFT;
+    art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
     
     // Define here a temporary set of histograms...
     std::vector<TH1D*>     fPedestalOffsetVec;
@@ -127,20 +129,40 @@ RecoWireROIICARUS::~RecoWireROIICARUS()
 }
 
 //////////////////////////////////////////////////////
-void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& p)
+void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
 {
-   
-    fROIFinder = art::make_tool<uboone_tool::IROIFinder>        (p.get<fhicl::ParameterSet>("ROIFinder"));
-    fDeconvolution = art::make_tool<uboone_tool::IDeconvolution>(p.get<fhicl::ParameterSet>("Deconvolution"));
+    // Recover the vector of fhicl parameters for the ROI tools
+    const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
     
-    fDigitModuleLabel           = p.get< std::string >   ("DigitModuleLabel", "daq");
-    fNoiseSource                = p.get< unsigned short >("NoiseSource",          3);
-    fFFTSize                    = p.get< size_t >        ("FFTSize"                );
-    fSaveWireWF                 = p.get< int >           ("SaveWireWF"             );
-    fMinAllowedChanStatus       = p.get< int >           ("MinAllowedChannelStatus");
-    fTruncRMSThreshold          = p.get< float >         ("TruncRMSThreshold",    6.);
-    fTruncRMSMinFraction        = p.get< float >         ("TruncRMSMinFraction", 0.6);
-    fOutputHistograms           = p.get< bool  >         ("OutputHistograms",   true);
+    fROIFinderVec.resize(roiFinderTools.get_pset_names().size());
+    
+    for(const std::string& roiFinderTool : roiFinderTools.get_pset_names())
+    {
+        const fhicl::ParameterSet& roiFinderToolParamSet = roiFinderTools.get<fhicl::ParameterSet>(roiFinderTool);
+        size_t                     planeIdx              = roiFinderToolParamSet.get<size_t>("Plane");
+        
+        fROIFinderVec.at(planeIdx) = art::make_tool<icarus_tool::IROIFinder>(roiFinderToolParamSet);
+    }
+    
+    std::sort(fROIFinderVec.begin(),fROIFinderVec.end(),[](const auto& left,const auto& right){return left->plane() < right->plane();});
+
+    fDeconvolution = art::make_tool<icarus_tool::IDeconvolution>(pset.get<fhicl::ParameterSet>("Deconvolution"));
+    
+    // Let's apply some smoothing as an experiment... first let's get the tool we need
+    fhicl::ParameterSet waveformToolParams;
+    
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
+    fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);
+    fFFTSize                    = pset.get< size_t >        ("FFTSize"                );
+    fSaveWireWF                 = pset.get< int >           ("SaveWireWF"             );
+    fMinAllowedChanStatus       = pset.get< int >           ("MinAllowedChannelStatus");
+    fTruncRMSThreshold          = pset.get< float >         ("TruncRMSThreshold",    6.);
+    fTruncRMSMinFraction        = pset.get< float >         ("TruncRMSMinFraction", 0.6);
+    fOutputHistograms           = pset.get< bool  >         ("OutputHistograms",   true);
     
     fSpillName.clear();
     
@@ -256,6 +278,10 @@ void RecoWireROIICARUS::produce(art::Event& evt)
         {
             size_t dataSize = digitVec->Samples();
             
+            // Recover the plane info
+            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+            const geo::PlaneID&      planeID = wids[0].planeID();
+
             // vector holding uncompressed adc values
             std::vector<short> rawadc(dataSize);
             
@@ -277,11 +303,15 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             // Recover a measure of the noise on the channel for use in the ROI finder
             //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
             
+            // Try smoothing the input waveform
+//            std::vector<float> rawAdcSmoothVec;
+//            fWaveformTool->medianSmooth(rawAdcLessPedVec,rawAdcSmoothVec);
+            
             // vector of candidate ROI begin and end bins
-            uboone_tool::IROIFinder::CandidateROIVec candRoiVec;
+            icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
 
             // Now find the candidate ROI's
-            fROIFinder->FindROIs(rawAdcLessPedVec, channel, raw_noise, candRoiVec);
+            fROIFinderVec.at(planeID.Plane)->FindROIs(rawAdcLessPedVec, channel, fEventCount, raw_noise, candRoiVec);
             
             // Do the deconvolution
             fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, candRoiVec, ROIVec);

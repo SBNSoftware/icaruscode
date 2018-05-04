@@ -17,7 +17,7 @@
 
 #include <fstream>
 
-namespace uboone_tool
+namespace icarus_tool
 {
 
 class ROIFinderStandard : public IROIFinder
@@ -27,13 +27,15 @@ public:
     
     ~ROIFinderStandard();
     
-    void configure(const fhicl::ParameterSet& pset)                          override;
-    void outputHistograms(art::TFileDirectory&)                        const override;
-    
-    void FindROIs(const Waveform&, size_t, double, CandidateROIVec&)   const override;
+    void   configure(const fhicl::ParameterSet& pset)                        override;
+    void   initializeHistograms(art::TFileDirectory&)                  const override;
+    size_t plane()                                                   const override {return fPlane;}
+
+    void FindROIs(const Waveform&, size_t, size_t, double, CandidateROIVec&) const override;
     
 private:
     // Member variables from the fhicl file
+    size_t                        fPlane;
     unsigned short                fNumBinsHalf;                ///< Determines # bins in ROI running sum
     std::vector<unsigned short>   fThreshold;                  ///< abs(threshold) ADC counts for ROI
     std::vector<int>              fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
@@ -92,7 +94,7 @@ void ROIFinderStandard::configure(const fhicl::ParameterSet& pset)
     return;
 }
     
-void ROIFinderStandard::FindROIs(const Waveform& waveform, size_t channel, double rmsNoise, CandidateROIVec& roiVec) const
+void ROIFinderStandard::FindROIs(const Waveform& waveform, size_t channel, size_t cnt, double rmsNoise, CandidateROIVec& roiVec) const
 {
     // First up, translate the channel to plane
     std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
@@ -189,7 +191,7 @@ void ROIFinderStandard::FindROIs(const Waveform& waveform, size_t channel, doubl
     return;
 }
 
-void ROIFinderStandard::outputHistograms(art::TFileDirectory& histDir) const
+void ROIFinderStandard::initializeHistograms(art::TFileDirectory& histDir) const
 {
     // It is assumed that the input TFileDirectory has been set up to group histograms into a common
     // folder at the calling routine's level. Here we create one more level of indirection to keep

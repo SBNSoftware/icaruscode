@@ -20,7 +20,7 @@ namespace art
     class TFileDirectory;
 }
 
-namespace uboone_tool
+namespace icarus_tool
 {
     class IBaseline
     {

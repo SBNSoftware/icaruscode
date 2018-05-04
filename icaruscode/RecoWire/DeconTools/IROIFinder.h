@@ -20,15 +20,16 @@ namespace art
     class TFileDirectory;
 }
 
-namespace uboone_tool
+namespace icarus_tool
 {
     class IROIFinder
     {
     public:
         virtual ~IROIFinder() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)                  = 0;
-        virtual void outputHistograms(art::TFileDirectory&)                const = 0;
+        virtual void   configure(const fhicl::ParameterSet& pset)                = 0;
+        virtual void   initializeHistograms(art::TFileDirectory&)          const = 0;
+        virtual size_t plane()                                             const = 0;
         
         // Define the waveform container
         using Waveform        = std::vector<float>;
@@ -38,7 +39,7 @@ namespace uboone_tool
         using CandidateROIVec = std::vector<CandidateROI>;
         
         // Find the ROI's
-        virtual void FindROIs(const Waveform&, size_t, double, CandidateROIVec&) const = 0;
+        virtual void FindROIs(const Waveform&, size_t, size_t, double, CandidateROIVec&) const = 0;
     };
 }
 

@@ -15,7 +15,7 @@
 #include <fstream>
 #include <algorithm> // std::minmax_element()
 
-namespace uboone_tool
+namespace icarus_tool
 {
 
 class BaselineMostProbAve : IBaseline
@@ -32,6 +32,8 @@ public:
     
 private:
     std::pair<float,int> GetBaseline(const std::vector<float>&, int, size_t, size_t) const;
+    
+    size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
     art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
 };
@@ -49,6 +51,9 @@ BaselineMostProbAve::~BaselineMostProbAve()
     
 void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
 {
+    // Recover our fhicl variable
+    fMaxROILength = pset.get<size_t>("MaxROILength", 100);
+    
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
     
@@ -68,11 +73,11 @@ float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
         // Recover the expected electronics noise on this channel
         float  deconNoise = 1.26491 * fSignalShaping->GetDeconNoise(channel);
         int    binRange   = std::max(1, int(deconNoise));
-        size_t halfLen    = std::min(size_t(100),roiLen/2);
+        size_t halfLen    = std::min(fMaxROILength,roiLen/2);
         size_t roiStop    = roiStart + roiLen;
         
-        std::pair<float,int> baseFront = GetBaseline(holder, binRange, roiStart,          roiStop);
-        std::pair<float,int> baseBack  = GetBaseline(holder, binRange, roiStop - halfLen, roiStop);
+        std::pair<float,int> baseFront = GetBaseline(holder, binRange, roiStart,          roiStart + halfLen);
+        std::pair<float,int> baseBack  = GetBaseline(holder, binRange, roiStop - halfLen, roiStop           );
         
         if (std::fabs(baseFront.first - baseBack.first) > deconNoise)
         {
