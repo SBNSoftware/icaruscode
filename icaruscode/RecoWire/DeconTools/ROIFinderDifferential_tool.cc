@@ -52,7 +52,7 @@ private:
     size_t                                      fPlane;
     float                                       fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
     int                                         fNumBinsToAve;               ///< Controls the averaging
-    size_t                                      fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
+    int                                         fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
     size_t                                      fMaxTicksGap;                ///< Maximum gap between ROI's before merging
     unsigned short                              fPreROIPad;                  ///< ROI padding
     unsigned short                              fPostROIPad;                 ///< ROI padding
@@ -98,7 +98,7 @@ void ROIFinderDifferential::configure(const fhicl::ParameterSet& pset)
     fPlane               = pset.get< size_t >                     ("Plane"                     );
     fNumSigma            = pset.get< float >                      ("NumSigma"                  );
     fNumBinsToAve        = pset.get< int >                        ("NumBinsToAve"              );
-    fMax2MinDistance     = pset.get< size_t >                     ("Max2MinDistance"           );
+    fMax2MinDistance     = pset.get< int >                        ("Max2MinDistance"           );
     fMaxTicksGap         = pset.get< size_t >                     ("MaxTicksGap",            50);
     zin                  = pset.get< std::vector<unsigned short> >("ROILeadTrailPadding"       );
     fTruncRMSMinFraction = pset.get< float >                      ("TruncRMSMinFraction",   0.6);
@@ -379,7 +379,7 @@ void ROIFinderDifferential::findROICandidates(Waveform::const_iterator startItr,
             fDPeakVDistHist->Fill(maxMinRange, maxMinDistance, 1.);
         }
         
-        if (maxMinRange > fNumSigma * truncRMS && maxMinDistance >= 0 && maxMinDistance < int(fMax2MinDistance))
+        if (maxMinRange > fNumSigma * truncRMS && maxMinDistance >= 0 && maxMinDistance < fMax2MinDistance)
         {
             // To complete the edges of the ROI, search both sides for the point which is essentially back to zero,
             // or in reality back into the rms level...
