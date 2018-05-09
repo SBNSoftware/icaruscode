@@ -43,6 +43,8 @@ private:
     std::string         fInputNoiseHistFileName;
     std::string         fHistogramName;
     
+    double              fHistNormFactor;
+
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
     std::vector<double> fNoiseHistVec;
@@ -65,6 +67,7 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
     fNoiseRand              = pset.get< double>("NoiseRand");
     fInputNoiseHistFileName = pset.get<std::string>("NoiseHistFileName");
     fHistogramName          = pset.get<std::string>("HistogramName");
+    fHistNormFactor         = pset.get<double>("HistNormFactor");
     
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
@@ -114,9 +117,10 @@ void NoiseFromHist::GenerateNoise(std::vector<float> &noise, double noise_factor
     // noise in frequency space
     std::vector<TComplex> noiseFrequency(nFFTTicks/2+1, 0.);
     
-    double pval   = 0.;
-    double phase  = 0.;
-    double rnd[2] = {0.};
+    double pval        = 0.;
+    double phase       = 0.;
+    double rnd[2]      = {0.};
+    double scaleFactor = fHistNormFactor * noise_factor;
     
     // width of frequencyBin in kHz
     
@@ -125,7 +129,7 @@ void NoiseFromHist::GenerateNoise(std::vector<float> &noise, double noise_factor
         // exponential noise spectrum
         flat.fireArray(2,rnd,0,1);
         
-        pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd[0]) * noise_factor;
+        pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd[0]) * scaleFactor;
 
         phase = rnd[1] * 2. * TMath::Pi();
 

@@ -7,6 +7,7 @@ NoiseFromHistTool:
   NoiseRand:         0.
   NoiseHistFileName: "T600noise_corr.root"
   HistogramName:     "hnoiseI1"
+  HistNormFactor:    0.45  # --> Histogram rms noise = 1
 }
 
 WhiteNoiseTool:
