@@ -102,13 +102,14 @@ class RecoWireROIICARUS : public art::EDProducer
     art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
     
     // Define here a temporary set of histograms...
-    std::vector<TH1D*>     fPedestalOffsetVec;
-    std::vector<TH1D*>     fTruncRMSVec;
-    std::vector<TH1D*>     fNumTruncBinsVec;
+    std::vector<TH1F*>     fPedestalOffsetVec;
+    std::vector<TH1F*>     fFullRMSVec;
+    std::vector<TH1F*>     fTruncRMSVec;
+    std::vector<TH1F*>     fNumTruncBinsVec;
     std::vector<TProfile*> fPedByChanVec;
     std::vector<TProfile*> fTruncRMSByChanVec;
-    std::vector<TH1D*>     fNumROIsHistVec;
-    std::vector<TH1D*>     fROILenHistVec;
+    std::vector<TH1F*>     fNumROIsHistVec;
+    std::vector<TH1F*>     fROILenHistVec;
     
 }; // class RecoWireROIICARUS
 
@@ -180,6 +181,7 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
         art::ServiceHandle<art::TFileService> tfs;
     
         fPedestalOffsetVec.resize(3);
+        fFullRMSVec.resize(3);
         fTruncRMSVec.resize(3);
         fNumTruncBinsVec.resize(3);
         fPedByChanVec.resize(3);
@@ -189,13 +191,14 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
     
         for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
         {
-            fPedestalOffsetVec[planeIdx] = tfs->make<TH1D>(    Form("PedPlane_%02zu",planeIdx),            ";Pedestal Offset (ADC);", 100, -5., 5.);
-            fTruncRMSVec[planeIdx]       = tfs->make<TH1D>(    Form("RMSPlane_%02zu",planeIdx),            ";RMS (ADC);", 100, 0., 10.);
-            fNumTruncBinsVec[planeIdx]   = tfs->make<TH1D>(    Form("NTruncBins_%02zu",planeIdx),          ";# bins",     640, 0., 6400.);
+            fPedestalOffsetVec[planeIdx] = tfs->make<TH1F>(    Form("PedPlane_%02zu",planeIdx),            ";Pedestal Offset (ADC);", 100, -5., 5.);
+            fFullRMSVec[planeIdx]        = tfs->make<TH1F>(    Form("RMSFPlane_%02zu",planeIdx),           "Full RMS;RMS (ADC);", 100, 0., 10.);
+            fTruncRMSVec[planeIdx]       = tfs->make<TH1F>(    Form("RMSTPlane_%02zu",planeIdx),           "Truncated RMS;RMS (ADC);", 100, 0., 10.);
+            fNumTruncBinsVec[planeIdx]   = tfs->make<TH1F>(    Form("NTruncBins_%02zu",planeIdx),          ";# bins",     640, 0., 6400.);
             fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fGeometry->Nwires(planeIdx), 0., fGeometry->Nwires(planeIdx), -5., 5.);
             fTruncRMSByChanVec[planeIdx] = tfs->make<TProfile>(Form("TruncRMSByWirePlane_%02zu",planeIdx), ";Wire#", fGeometry->Nwires(planeIdx), 0., fGeometry->Nwires(planeIdx),  0., 10.);
-            fNumROIsHistVec[planeIdx]    = tfs->make<TH1D>(    Form("NROISplane_%02zu",planeIdx),          ";# ROIs;",   100, 0, 100);
-            fROILenHistVec[planeIdx]     = tfs->make<TH1D>(    Form("ROISIZEplane_%02zu",planeIdx),        ";ROI size;", 500, 0, 500);
+            fNumROIsHistVec[planeIdx]    = tfs->make<TH1F>(    Form("NROISplane_%02zu",planeIdx),          ";# ROIs;",   100, 0, 100);
+            fROILenHistVec[planeIdx]     = tfs->make<TH1F>(    Form("ROISIZEplane_%02zu",planeIdx),        ";ROI size;", 500, 0, 500);
         }
     }
     
@@ -440,8 +443,13 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
         // Recover plane and wire in the plane
         size_t plane = wids[0].Plane;
         size_t wire  = wids[0].Wire;
+        
+        float fullRMS = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
+        
+        fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(locWaveform.size())));
     
         fPedestalOffsetVec[plane]->Fill(newPedestal,1.);
+        fFullRMSVec[plane]->Fill(fullRMS, 1.);
         fTruncRMSVec[plane]->Fill(localRMS, 1.);
         fNumTruncBinsVec[plane]->Fill(minNumBins, 1.);
         fPedByChanVec[plane]->Fill(wire, newPedestal, 1.);
