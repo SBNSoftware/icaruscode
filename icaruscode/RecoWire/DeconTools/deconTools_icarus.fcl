@@ -46,11 +46,11 @@ icarus_morphologicalroifinder:
 {
     tool_type:           ROIFinderMorphological
     Plane:               0
-    NumSigma:            4.5         # Number sigma for threshold
-    Max2MinDistance:     10
+    NumSigma:            3.0         # Number sigma for threshold
+    NumBinsToAve:        10
+    Max2MinDistance:     4
     HalfWindowSize:      10
     roiLeadTrailPad:     [ 50, 50 ]  # number of bins to pad on the leading/trailing side
-    TruncRMSMinFraction: 0.6
     OutputHistograms:    false
 }
 
