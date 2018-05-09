@@ -68,14 +68,14 @@ icarus_rawdigitfilter:
     FFTAlg:                    @local::FFT_algorithm
 }
 
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                0
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                1
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.Plane:                2
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterFunction:       "x<0.2 ? gaus(0) : 1."
-icarus_rawdigitfilter.FFT_algorithm.FilterTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0.2, 0.005]
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.Plane:                0
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.2, 0.005]
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.Plane:                1
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterParametersVec:  [1., 0.2, 0.005]
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.Plane:                2
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterFunction:       "x<0.2 ? gaus(0) : 1."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.2, 0.005]
 
 END_PROLOG
