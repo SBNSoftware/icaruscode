@@ -68,7 +68,9 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
     {
         const fhicl::ParameterSet& filterToolParamSet = filterTools.get<fhicl::ParameterSet>(filterTool);
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
-    fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+        
+        fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+        fFilterSizeMap.insert(std::pair<size_t,int>(planeIdx,0));
     }
 }
     
@@ -87,7 +89,7 @@ void RawDigitFFTAlg::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
         double readOutSize = fDetectorProperties->ReadOutWindowSize();
         double maxFreq     = 1.e6 / (2. * sampleRate);
         double minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
-        int numSamples     = readOutSize / 2;
+        int    numSamples  = readOutSize / 2;
 
         // Make a directory for these histograms
         art::TFileDirectory dir = tfs->mkdir(fHistDirName.c_str());
@@ -103,7 +105,7 @@ void RawDigitFFTAlg::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
             
             fFFTPowerVec[plane].resize(numHists);
            
-            for(size_t idx = 0; idx < 20; idx++)
+            for(size_t idx = 0; idx < fHiWireByPlane[plane] - fLoWireByPlane[plane]; idx++)
             {
                 std::string histName = "FFTPower_" + std::to_string(plane) + "-" + std::to_string(idx);
                 
@@ -278,6 +280,9 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     // Not sure the better way to do this...
     for(size_t complexIdx = 0; complexIdx < halfFFTDataSize; complexIdx++) complexVals.emplace_back(realVals.at(complexIdx),imaginaryVals.at(complexIdx));
     
+    // Make sure the filter has been correctly initialized
+    if (fFilterSizeMap.at(plane) != fftDataSize) fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
+
     // Recover the filter function we are using...
     const std::vector<TComplex>& filter = fFilterToolMap.at(plane)->getResponseVec();
     
