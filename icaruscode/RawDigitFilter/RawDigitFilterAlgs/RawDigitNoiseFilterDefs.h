@@ -19,19 +19,19 @@
 namespace caldata
 {
     // Provide definitions of the raw waveforms for internal use
-    typedef raw::RawDigit::ADCvector_t                        RawDigitVector;
-    typedef RawDigitVector::iterator                          RawDigitVectorItr;
-    typedef std::pair<RawDigitVectorItr,RawDigitVectorItr>    RawDigitVectorItrPair;
+    using RawDigitVector           = raw::RawDigit::ADCvector_t;
+    using RawDigitVectorItr        = RawDigitVector::iterator;
+    using RawDigitVectorItrPair    = std::pair<RawDigitVectorItr,RawDigitVectorItr>;
     
     // The following set up the organization of handling of channels for
     // the classifying waveforms and handling the correlated noise correction
-    typedef std::pair<size_t,size_t>                          RawDigitVectorIdxPair;
-    typedef std::map<size_t, RawDigitVectorIdxPair>           WireToAdcIdxMap;
-    typedef std::pair<size_t, RawDigitVector&>                WireToRawDigitVecPair;
-    typedef std::map<size_t, RawDigitVector&>                 WireToRawDigitVecMap;
+    using RawDigitVectorIdxPair    = std::pair<size_t,size_t>;
+    using WireToAdcIdxMap          = std::map<size_t, RawDigitVectorIdxPair>;
+    using WireToRawDigitVecPair    = std::pair<size_t, RawDigitVector&>;
+    using WireToRawDigitVecMap     = std::map<size_t, RawDigitVector&>;
     
-    typedef std::pair<WireToRawDigitVecMap,WireToAdcIdxMap>   RawDigitAdcIdxPair;
-    typedef std::map<size_t,RawDigitAdcIdxPair>               GroupToDigitIdxPairMap;
+    using RawDigitAdcIdxPair       = std::pair<WireToRawDigitVecMap,WireToAdcIdxMap>;
+    using GroupToDigitIdxPairMap   = std::map<size_t,RawDigitAdcIdxPair>;
 
 } // end caldata namespace
 #endif
