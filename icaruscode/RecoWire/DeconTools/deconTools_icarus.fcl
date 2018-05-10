@@ -49,7 +49,7 @@ icarus_morphologicalroifinder:
     NumSigma:            3.0         # Number sigma for threshold
     NumBinsToAve:        10
     Max2MinDistance:     4
-    HalfWindowSize:      10
+    StructuringElement:  20
     roiLeadTrailPad:     [ 50, 50 ]  # number of bins to pad on the leading/trailing side
     OutputHistograms:    false
 }
