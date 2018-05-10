@@ -17,6 +17,23 @@ FFT_algorithm:
     }
 }
 
+icarus_RawDigitFilterTool:
+{
+    tool_type:             RawDigitFilterAlg
+    TruncMeanFraction:     0.15
+    StructuringElement:    30
+    FillHistograms:        false
+}
+
+icarus_MorphologicalFilterTool:
+{
+    tool_type:             MorphologicalFilter
+    Plane:                 0
+    NumBinsToAve:          5
+    StructuringElement:    80
+    OutputHistograms:      false
+}
+
 icarus_rawdigitfilter:
 {
     module_type:           "RawDigitFilterICARUS"
@@ -59,12 +76,7 @@ icarus_rawdigitfilter:
         NumRmsToSmooth:        [6., 6., 6.]
         FFTAlg:                @local::FFT_algorithm
     }
-    FilterAlg:
-    {
-        TruncMeanFraction:     0.15
-        StructuringElement:    30
-        FillHistograms:        false
-    }
+    RawDigitFilterTool:        @local::icarus_RawDigitFilterTool
     FFTAlg:                    @local::FFT_algorithm
 }
 

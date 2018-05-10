@@ -41,6 +41,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -53,7 +54,7 @@
 #include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitBinAverageAlg.h"
 #include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
 #include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCorrelatedCorrectionAlg.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitFilterAlg.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/IRawDigitFilter.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -68,7 +69,7 @@ public:
     virtual ~RawDigitFilterICARUS();
 
     // Overrides.
-    virtual void reconfigure(fhicl::ParameterSet const & pset);
+    virtual void configure(fhicl::ParameterSet const & pset);
     virtual void produce(art::Event & e);
     virtual void beginJob();
     virtual void endJob();
@@ -100,8 +101,9 @@ private:
     caldata::RawDigitBinAverageAlg               fBinAverageAlg;
     caldata::RawDigitCharacterizationAlg         fCharacterizationAlg;
     caldata::RawDigitCorrelatedCorrectionAlg     fCorCorrectAlg;
-    caldata::RawDigitFilterAlg                   fFilterAlg;
     caldata::RawDigitFFTAlg                      fFFTAlg;
+    
+    std::unique_ptr<caldata::IRawDigitFilter>    fRawDigitFilterTool;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
@@ -123,7 +125,6 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset) :
                       fBinAverageAlg(pset),
                       fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),
                       fCorCorrectAlg(pset.get<fhicl::ParameterSet>("CorrelatedCorrectionAlg")),
-                      fFilterAlg(pset.get<fhicl::ParameterSet>("FilterAlg")),
                       fFFTAlg(pset.get<fhicl::ParameterSet>("FFTAlg")),
                       fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
@@ -131,7 +132,7 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset) :
     fGeometry = lar::providerFrom<geo::Geometry>();
     fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
-    reconfigure(pset);
+    configure(pset);
     produces<std::vector<raw::RawDigit> >();
 
     // Report.
@@ -150,7 +151,7 @@ RawDigitFilterICARUS::~RawDigitFilterICARUS()
 ///
 /// pset - Fcl parameter set.
 ///
-void RawDigitFilterICARUS::reconfigure(fhicl::ParameterSet const & pset)
+void RawDigitFilterICARUS::configure(fhicl::ParameterSet const & pset)
 {
     fDigitModuleLabel      = pset.get<std::string>        ("DigitModuleLabel",                                        "daq");
     fDoCorrelatedNoise     = pset.get<bool>               ("ProcessNoise",                                             true);
@@ -166,6 +167,8 @@ void RawDigitFilterICARUS::reconfigure(fhicl::ParameterSet const & pset)
     fRmsRejectionCutHi     = pset.get<std::vector<float>> ("RMSRejectionCutHi",     std::vector<float>() = {25.0,25.0,25.0});
     fRmsRejectionCutLow    = pset.get<std::vector<float>> ("RMSRejectionCutLow",    std::vector<float>() = {0.70,0.70,0.70});
     fNRmsChannelReject     = pset.get<std::vector<float>> ("NRMSChannelReject",     std::vector<float>() = {3.,  3.,  3.  });
+    
+    fRawDigitFilterTool = art::make_tool<caldata::IRawDigitFilter>(pset.get<fhicl::ParameterSet>("RawDigitFilterTool"));
 }
 
 //----------------------------------------------------------------------------
@@ -178,9 +181,12 @@ void RawDigitFilterICARUS::beginJob()
     
     fCharacterizationAlg.initializeHists(tfs);
     fCorCorrectAlg.initializeHists(tfs);
-    fFilterAlg.initializeHists(tfs);
     fFFTAlg.initializeHists(tfs);
     
+    art::TFileDirectory dir = tfs->mkdir(Form("RawDigitFilter"));
+
+    fRawDigitFilterTool->initializeHistograms(dir);
+
     return;
 }
 
@@ -328,8 +334,10 @@ void RawDigitFilterICARUS::produce(art::Event & event)
             
             // Recover the database version of the pedestal
             float pedestal = fPedestalRetrievalAlg.PedMean(channel);
-            
+
             if (fDoFFTCorrection) fFFTAlg.filterFFT(rawadc, plane, wire, pedestal);
+//            if (fDoFFTCorrection) fRawDigitFilterTool->FilterWaveform(rawadc, channel, size_t(fNumEvent), pedestal);
+
             
             // Get the kitchen sink
             fCharacterizationAlg.getWaveformParams(rawadc,
@@ -415,7 +423,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                     if (fApplyTopHatFilter && plane != 2 && skewnessWireVec[locWireIdx] > 0.)
                     {
                         //doAdaptiveFilter(rawDataWireTimeVec[locWireIdx]);
-                        fFilterAlg.doTopHatFilter(rawDataWireTimeVec[locWireIdx], baseWireIdx + locWireIdx);
+                        fRawDigitFilterTool->FilterWaveform(rawDataWireTimeVec[locWireIdx], baseWireIdx + locWireIdx, plane);
                     }
                     
                     // recalculate rms for the output
