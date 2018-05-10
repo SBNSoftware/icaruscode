@@ -12,9 +12,26 @@
 #define IWaveformTool_H
 
 #include "fhiclcpp/ParameterSet.h"
+#include "TProfile.h"
 
 namespace icarus_tool
 {
+    template <class T> using Waveform = std::vector<T>;
+    
+    enum HistogramType : int
+    {
+        WAVEFORM,
+        EROSION,
+        DILATION,
+        AVERAGE,
+        DIFFERENCE,
+        OPENING,
+        CLOSING,
+        LASTELEMENT
+    };
+    
+    using HistogramMap = std::map<int, TProfile*>;
+    
     class IWaveformTool
     {
     public:
@@ -37,6 +54,47 @@ namespace icarus_tool
         virtual void findPeaks(std::vector<double>::iterator, std::vector<double>::iterator, PeakTupleVec&, double, size_t) const = 0;
         virtual void getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec)                    const = 0;
         virtual void getFFTPower(const std::vector<double>& inputVec, std::vector<double>& outputPowerVec)                  const = 0;
+        
+        virtual void getErosionDilationAverageDifference(const Waveform<short>&,                //< Input waveform
+                                                         int,                                   //< Structuring element
+                                                         HistogramMap&,                         //< Map of histograms to fill
+                                                         Waveform<short>&,                      //< Output erosion vector
+                                                         Waveform<short>&,                      //< Output dilation vector
+                                                         Waveform<short>&,                      //< Output ave erosion & dilation
+                                                         Waveform<short>&)         const = 0;   //< Output diff erosion and dilation
+       virtual void getErosionDilationAverageDifference(const Waveform<float>&,
+                                                         int,
+                                                         HistogramMap&,
+                                                         Waveform<float>&,
+                                                         Waveform<float>&,
+                                                         Waveform<float>&,
+                                                         Waveform<float>&)         const = 0;
+        virtual void getErosionDilationAverageDifference(const Waveform<double>&,
+                                                         int,
+                                                         HistogramMap&,
+                                                         Waveform<double>&,
+                                                         Waveform<double>&,
+                                                         Waveform<double>&,
+                                                         Waveform<double>&)         const = 0;
+        
+        virtual void getOpeningAndClosing(const Waveform<short>&,                                //< Input erosions vector
+                                          const Waveform<short>&,                                //< Input dilation vector
+                                          int,                                                   //< Structuring element
+                                          HistogramMap&,                                         //< Map of histograms to fill
+                                          Waveform<short>&,                                      //< Output closing vector
+                                          Waveform<short>&)         const = 0;                   //< Output opening vector
+        virtual void getOpeningAndClosing(const Waveform<float>&,                                //< Input erosions vector
+                                          const Waveform<float>&,                                //< Input dilation vector
+                                          int,                                                   //< Structuring element
+                                          HistogramMap&,                                         //< Map of histograms to fill
+                                          Waveform<float>&,                                      //< Output closing vector
+                                          Waveform<float>&)         const = 0;                   //< Output opening vector
+        virtual void getOpeningAndClosing(const Waveform<double>&,                               //< Input erosions vector
+                                          const Waveform<double>&,                               //< Input dilation vector
+                                          int,                                                   //< Structuring element
+                                          HistogramMap&,                                         //< Map of histograms to fill
+                                          Waveform<double>&,                                     //< Output closing vector
+                                          Waveform<double>&)         const = 0;                  //< Output opening vector
     };
 }
 
