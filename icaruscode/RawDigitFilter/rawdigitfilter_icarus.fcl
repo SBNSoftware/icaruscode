@@ -39,12 +39,13 @@ icarus_rawdigitfilter:
     module_type:           "RawDigitFilterICARUS"
     DigitModuleLabel:      "daq"
     ProcessNoise:          false
-    FFTNoise:              true
+    FFTNoise:              false
     ApplyBinAverage:       true
     ApplyTopHatFilter:     true
     SmoothCorrelatedNoise: true
-    NumWiresToGroup:       [48, 48, 96]  # these correspond to observed groupings
+    NumWiresToGroup:       [ 1, 1, 1] #[48, 48, 96]  # these correspond to observed groupings
     TruncateTicks:         false
+    TruncateChannels:      false
     WindowSize:            6400
     NumTicksToDropFront:   2400   # these values will put 70 kV drift time in "middle"
     CharacterizationAlg:
