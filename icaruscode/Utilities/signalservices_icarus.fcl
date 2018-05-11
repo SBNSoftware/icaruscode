@@ -32,8 +32,6 @@ FilterTool:
     # This defines the gaussian filter
     FilterParametersVec:         [1., 0., 0.1 ]
     FilterFunction:              "(x>0.0)*gaus"
-    # This turns the filter off (effectively)
-    #    FilterFunction:              "(x>0.0)*1."
     FilterWidthCorrectionFactor: 1.0
 }
 
@@ -72,20 +70,22 @@ signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.Plane:   
 signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.SignalType:    0
 signalshapingservice_icarus.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:   0
 signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.Plane:                0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.05]
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Plane:                     1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:       1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:  0
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane: 1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:              1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.05]
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Plane:                       1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:         1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:                1
+signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                     2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:       2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.SignalType:  1
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane: 2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.Plane:              2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.05]
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                       2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:         2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.SignalType:    1
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:   2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.Plane:                2
+signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.08]
 
 END_PROLOG
