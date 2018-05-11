@@ -78,7 +78,7 @@ signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:   
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:                1
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
+signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
 signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
 
 signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                       2
