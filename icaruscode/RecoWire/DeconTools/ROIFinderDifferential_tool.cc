@@ -445,7 +445,7 @@ void ROIFinderDifferential::smoothInputWaveform(const Waveform& inputWaveform, W
     {
         float weightedSum(0.);
         
-        for(size_t wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * inputWaveform.at(idx - wIdx + halfBins);
+        for(int wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * inputWaveform.at(idx - wIdx + halfBins);
         
         outputWaveform.at(idx) = weightedSum / fWeightSum;
     }

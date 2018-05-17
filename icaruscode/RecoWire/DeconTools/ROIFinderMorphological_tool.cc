@@ -62,7 +62,7 @@ private:
     size_t                                      fPlane;
     float                                       fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
     int                                         fNumBinsToAve;               ///< Controls the smoothing
-    size_t                                      fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
+    int                                         fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
     int                                         fStructuringElement;         ///< The window size
     unsigned short                              fPreROIPad;                  ///< ROI padding
     unsigned short                              fPostROIPad;                 ///< ROI padding
@@ -107,7 +107,7 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
     fPlane                 = pset.get<size_t>                      ("Plane"                     );
     fNumSigma              = pset.get< float>                      ("NumSigma"                  );
     fNumBinsToAve          = pset.get< int >                       ("NumBinsToAve"              );
-    fMax2MinDistance       = pset.get< size_t>                     ("Max2MinDistance"           );
+    fMax2MinDistance       = pset.get< int >                       ("Max2MinDistance"           );
     fStructuringElement    = pset.get< int>                        ("StructuringElement"        );
     zin                    = pset.get< std::vector<unsigned short>>("roiLeadTrailPad"           );
     fOutputHistograms      = pset.get< bool  >                     ("OutputHistograms",    false);
@@ -392,7 +392,7 @@ void ROIFinderMorphological::smoothInputWaveform(const Waveform& inputWaveform, 
     {
         float weightedSum(0.);
         
-        for(size_t wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
+        for(int wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
         
         outputWaveform.at(idx) = weightedSum / fWeightSum;
     }
