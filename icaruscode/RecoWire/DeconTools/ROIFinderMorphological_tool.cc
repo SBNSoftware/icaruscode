@@ -202,10 +202,12 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     fWaveformTool->getErosionDilationAverageDifference(smoothWaveform, fStructuringElement, histogramMap, erosionVec, dilationVec, averageVec, differenceVec);
 
     // Use the average vector to find ROI's
+    float fullRMS;
     float truncRMS;
     float truncMean;
+    int   nTrunc;
     
-    fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, truncRMS);
+    fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, fullRMS, truncRMS, nTrunc);
     
     // If histogramming, do the global hists here
     if (fOutputHistograms)

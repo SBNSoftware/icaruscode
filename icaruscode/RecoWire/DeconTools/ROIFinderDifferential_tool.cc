@@ -192,8 +192,10 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
     // Scheme for finding a suitable threshold
     float truncMean(0.);
     float truncRMS(0.);
+    float fullRMS(0.);
+    int   nTrunc(0);
     
-    fWaveformTool->getTruncatedMeanRMS(aveWaveformDeriv, truncMean, truncRMS);
+    fWaveformTool->getTruncatedMeanRMS(aveWaveformDeriv, truncMean, fullRMS, truncRMS, nTrunc);
     
     // Put a floor on the value of the truncated RMS...
     float truncRMSFloor = std::max(truncRMS, float(0.25));
