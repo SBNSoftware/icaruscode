@@ -41,8 +41,8 @@ public:
     void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const override;
     void medianSmooth(  const std::vector<float>&,  std::vector<float>&,  size_t = 3)                           const override;
     void medianSmooth(  const std::vector<double>&, std::vector<double>&, size_t = 3)                           const override;
-    void getTruncatedMeanRMS(const std::vector<double>&, double&, double&)                                      const override;
-    void getTruncatedMeanRMS(const std::vector<float>&, float&, float&)                                         const override;
+    void getTruncatedMeanRMS(const std::vector<double>&, double&, double&, double&, int&)                       const override;
+    void getTruncatedMeanRMS(const std::vector<float>&, float&, float&, float&, int&)                           const override;
     void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const override;
     void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const override;
     void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const override;
@@ -79,7 +79,7 @@ public:
 private:
     template <typename T> void triangleSmooth(const std::vector<T>&, std::vector<T>&, size_t = 0)                                        const;
     template <typename T> void medianSmooth(  const std::vector<T>&, std::vector<T>&, size_t = 3)                                        const;
-    template <typename T> void getTruncatedMeanRMS(const std::vector<T>&, T&, T&)                                                        const;
+    template <typename T> void getTruncatedMeanRMS(const std::vector<T>&, T&, T&, T&, int&)                                              const;
     template <typename T> void firstDerivative(const std::vector<T>&,  std::vector<T>&)                                                  const;
     template <typename T> void findPeaks(typename std::vector<T>::iterator, typename std::vector<T>::iterator, PeakTupleVec&, T, size_t) const;
 
@@ -197,17 +197,17 @@ template <typename T> void WaveformTools::medianSmooth(const std::vector<T>& inp
     return;
 }
     
-void WaveformTools::getTruncatedMeanRMS(const std::vector<double>& waveform, double& mean, double& rms) const
+void WaveformTools::getTruncatedMeanRMS(const std::vector<double>& waveform, double& mean, double& rmsFull, double& rmsTrunc, int& nTrunc) const
 {
-    getTruncatedMeanRMS<double>(waveform, mean, rms);
+    getTruncatedMeanRMS<double>(waveform, mean, rmsFull, rmsTrunc, nTrunc);
 }
     
-void WaveformTools::getTruncatedMeanRMS(const std::vector<float>& waveform, float& mean, float& rms) const
+void WaveformTools::getTruncatedMeanRMS(const std::vector<float>& waveform, float& mean, float& rmsFull, float& rmsTrunc, int& nTrunc) const
 {
-    getTruncatedMeanRMS<float>(waveform, mean, rms);
+    getTruncatedMeanRMS<float>(waveform, mean, rmsFull, rmsTrunc, nTrunc);
 }
 
-template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<T>& waveform, T& mean, T& rms) const
+template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<T>& waveform, T& mean, T& rmsFull, T& rmsTrunc, int& nTrunc) const
 {
     // We need to get a reliable estimate of the mean and can't assume the input waveform will be ~zero mean...
     // Basic idea is to find the most probable value in the ROI presented to us
@@ -256,9 +256,14 @@ template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<
     // sort in ascending order so we can truncate the sume
     std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
 
-    // recalculate the rms
-    T localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + meanCnt, locWaveform.begin(), 0.);
-    rms = std::sqrt(std::max(T(0.),localRMS / T(meanCnt)));
+    // recalculate the rms for truncation
+    rmsFull = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
+    rmsFull = std::sqrt(std::max(T(0.),rmsFull / T(locWaveform.size())));
+
+    // recalculate the rms for truncation
+    rmsTrunc = std::inner_product(locWaveform.begin(), locWaveform.begin() + meanCnt, locWaveform.begin(), 0.);
+    rmsTrunc = std::sqrt(std::max(T(0.),rmsTrunc / T(meanCnt)));
+    nTrunc   = meanCnt;
     
     return;
 }
