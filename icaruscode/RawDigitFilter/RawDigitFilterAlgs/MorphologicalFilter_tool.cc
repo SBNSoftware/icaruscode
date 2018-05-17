@@ -222,7 +222,7 @@ void MorphologicalFilter::smoothInputWaveform(const RawDigitVector& inputWavefor
     {
         float weightedSum(0.);
         
-        for(size_t wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
+        for(int wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
         
         outputWaveform.at(idx) = weightedSum / fWeightSum;
     }
