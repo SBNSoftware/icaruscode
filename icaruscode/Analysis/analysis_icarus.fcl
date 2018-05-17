@@ -12,6 +12,14 @@ icarus_BasicHitAnalysis:
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
 }
 
+icarus_WireAnalysis:
+{
+  module_type:           "WireAna"
+  WireModuleLabel:       "recowireicarus"
+  SimChannelModuleLabel: "largeant"
+  WireHistogramToolList: [ @local::WireAnalysisTool ]
+}
+
 icarus_RawDigitAnalysis:
 {
   module_type:               "RawDigitAna"

@@ -1,4 +1,5 @@
 #include "waveformtools_icarus.fcl"
+#include "HitFinderTools.fcl"
 
 BEGIN_PROLOG
 
@@ -6,6 +7,18 @@ BasicHitAnalysisTool:
 {
   tool_type:         "BasicHitAnalysis"
   LocalDirName:      "BasicHists"
+}
+
+WireAnalysisTool:
+{
+  tool_type:           "BasicWireAnalysis"
+  MinDeltaTicks:       [    0,     0,     0]
+  MaxDeltaTicks:       [   30,    30,    30]
+  MinDeltaPeaks:       [0.025, 0.025, 0.025]
+  MinHitHeight:        2.0
+  NumInterveningTicks: 6
+  StructuringElement:  20
+  WaveformAlgs:        @local::hitfinderwaveformalgs
 }
 
 RawDigitAnalysisTool:
