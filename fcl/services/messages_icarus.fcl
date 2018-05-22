@@ -1,0 +1,238 @@
+#
+# File:    messages_icarus.fcl
+# Purpose: presets for art message logging
+# Author:  Gianluca Petrillo
+# Date:    May 21st, 2018
+# Version: 1.0
+# 
+# Provided presets:
+# - icarus_message_services: kind of "standard"
+# - icarus_message_services_prod: non-interactive jobs (like in production)
+# - icarus_message_services_prod_debug: non-interactive jobs with debugging
+# - icarus_message_services_interactive: interactive jobs
+# - icarus_message_services_interactive_debug: interactive jobs with debugging
+# 
+# Reminder: to limit a number of messages in a specific category,
+# add in a destination a configuration for that category:
+#     
+#     categories: {
+#       
+#       # suppress all the messages in "UselessMessage" category
+#       UselessMessage: { limit: 0 }
+#       
+#       # reduce the messages from "AnnoyingMessage" category;
+#       # they will still appear now and then
+#       AnnoyingMessage: { limit: 5 timespan: 10 }
+#       
+#       # this means no limit
+#       default: {}
+#     
+#     }
+#     
+# 
+# Usage:
+#     
+#     services.message: @local::icarus_message_services
+#     
+# 
+# Changes:
+# 20180521 (petrillo@slac.stanford.edu) [v1.0]
+#   adapted from messages_sbnd.fcl (sbndcode v06_76_00)
+#
+
+
+BEGIN_PROLOG
+
+#
+# standard ICARUS message destinations
+#
+message_debugfile_icarus: {
+  #
+  # message destination: all debug messages to a file
+  #
+  type:       "file"
+  filename:   "debug.log"
+  append:     false
+  threshold:  "DEBUG"
+  categories: {
+    default: {}
+  }
+} # message_debugfile_icarus
+
+
+message_infofile_icarus: {
+  #
+  # message destination: all debug messages to a file
+  #
+  type:       "file"
+  filename:   "messages.log"
+  append:     false
+  threshold:  "INFO"
+  categories: {
+    default: {}
+  }
+} # message_infofile_icarus
+
+
+message_errorfile_icarus: {
+  #
+  # message destination: all error messages to "errors.log" file
+  #
+  type:       "file"
+  filename:   "errors.log"
+  append:     false
+  threshold:  "ERROR"
+  categories: {
+    default:  {}
+  }
+} # message_errorfile_icarus
+
+
+message_stdout_warning_icarus: {
+  #
+  # message destination: all warning messages to standard output
+  #
+  type:       "cout"
+  threshold:  "WARNING"
+  categories:{
+    default:  {}
+    GeometryBadInputPoint: { limit: 5 timespan: 1000}
+  }
+} # message_stdout_warning_icarus
+
+
+message_stderr_icarus: {
+  #
+  # message destination: all error messages to standard error
+  #
+  type:       "cerr"
+  threshold:  "ERROR"
+  categories:{
+    default: {}
+  }
+} # message_stderr_icarus
+
+
+
+#
+# icarus_message_services
+# ------------------------
+# 
+# Enables debug messages. Errors saved in a file.
+#
+# - standard output with only WARNING and worse
+# - "errors.log" collecting error messages (also included in standard output)
+# - "debug.log" with DEBUG (that is, every message) for all modules;
+#   in non-debug qualifier builds, LOG_DEBUG and LOG_TRACE are disabled and
+#   their messages are never produced (that is, won't be in "debug.log" either).
+# 
+# No special stream for errors.
+#
+icarus_message_services:
+{
+  destinations: {
+    LogStandardOut:   @local::message_stdout_warning_icarus
+    LogInfoFile:      @local::message_infofile_icarus
+    LogErrorFile:     @local::message_errorfile_icarus
+  }
+  
+} # icarus_message_services
+
+
+#
+# icarus_message_services_prod_debug
+# -----------------------------------
+# 
+# Enables debug messages.
+#
+# - standard error with only ERROR and worse
+# - standard output with only WARNING and worse (will also repeat the error
+#   messages, that will appear in error messages being printed twice if the
+#   standard output and error are directed to the same file or to the console)
+# - "debug.log" with DEBUG (that is, every message) for all modules;
+#   in non-debug qualifier builds, LOG_DEBUG and LOG_TRACE are disabled and
+#   their messages are never produced (that is, won't be in "debug.log" either).
+#
+icarus_message_services_prod_debug:
+{
+  debugModules: ["*"]
+
+  destinations: {
+    LogDebugFile:     @local::message_debugfile_icarus
+    LogStandardOut:   @local::message_stdout_warning_icarus
+    LogStandardError: @local::message_stderr_icarus
+  }
+} # icarus_message_services_prod_debug
+
+
+icarus_message_services_prod_debug.destinations.LogDebugFile.categories:{
+  default: { }
+  GeometryBadInputPoint: { limit: 5 timespan: 1000}
+}
+
+
+#
+# icarus_message_services_prod
+# -----------------------------
+# 
+# - standard error with only ERROR and worse
+# - standard output with only WARNING and worse (will also repeat the error
+#   messages, that will appear in error messages being printed twice if the
+#   standard output and error are directed to the same file or to the console)
+#
+#
+icarus_message_services_prod:
+{
+  destinations: {
+    LogStandardOut:   @local::message_stdout_warning_icarus
+    LogStandardError: @local::message_stderr_icarus
+  }
+}
+
+
+#
+# icarus_message_services_interactive
+# ------------------------------------
+# 
+# - standard output with only INFO and worse
+# - "errors.log" collecting warning and error messages (also included in
+#   standard output)
+# 
+# No special stream for errors.
+#
+#
+icarus_message_services_interactive:
+{
+  destinations: {
+    LogStandardOut:   @local::message_stdout_warning_icarus
+    LogErrorFile:     @local::message_errorfile_icarus
+  }
+}
+icarus_message_services_interactive.destinations.LogStandardOut.threshold: "INFO"
+icarus_message_services_interactive.destinations.LogErrorFile.threshold: "WARNING"
+
+
+#
+# icarus_message_services_interactive_debug
+# ------------------------------------------
+# 
+# Enables debug messages.
+#
+# - standard output with only INFO and worse
+# - "errors.log" collecting warning and error messages (also included in
+#   standard output)
+# - "debug.log" with DEBUG (that is, every message) for all modules;
+#   in non-debug qualifier builds, LOG_DEBUG and LOG_TRACE are disabled and
+#   their messages are never produced (that is, won't be in "debug.log" either).
+# 
+# No special stream for errors.
+#
+#
+icarus_message_services_interactive_debug: {
+  debugModules: ["*"]
+  @table::icarus_message_services_interactive
+}
+icarus_message_services_interactive_debug.destinations.LogDebugFile: @local::message_debugfile_icarus
+
+
+END_PROLOG

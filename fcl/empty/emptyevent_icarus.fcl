@@ -1,0 +1,41 @@
+#
+# File:    emptyevent_icarus.fcl
+# Purpose: Configuration for input source from an empty event
+# Author:  Gianluca Petrillo (petrillo@fnal.gov)
+# Date:    May 21, 2018
+# Version: 1.0
+#
+# Provides:
+# 
+# - emptyevent_icarus: creation of an empty event (maximum 10 by default).
+#   Use it as:
+#       
+#       source: @local::emptyevent_icarus
+#       
+# 
+#
+# Changes:
+# 20180521 (petrillo@fnal.gov) [v1.0]
+#   adapted from `emptyevent_sbnd.fcl` (`sbndcode` `v06_76_00`)
+#
+
+BEGIN_PROLOG
+
+#
+# emptyevent_icarus
+# 
+# Creates an empty event, starting with run and subrun #1.
+# Initialises the time stamp with the execution node clock.
+#
+emptyevent_icarus:
+{
+  
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:      10          # Number of events to create
+  firstRun:        1          # Run number to use for this file
+  firstEvent:      1          # number of first event in the file
+
+} # emptyevent_icarus
+
+END_PROLOG

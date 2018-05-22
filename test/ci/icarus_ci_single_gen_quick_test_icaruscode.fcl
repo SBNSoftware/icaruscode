@@ -1,0 +1,9 @@
+#include "messages_icarus.fcl"
+#include "prod_muon_20deg.fcl"
+
+# non-interactive output settings, but keep them verbose
+services.message: @local::icarus_message_services_prod_debug
+
+# the test uses an input file (empty events with set timestamp)
+source: @erase
+
