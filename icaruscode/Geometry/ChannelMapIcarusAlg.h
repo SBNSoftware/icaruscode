@@ -86,7 +86,7 @@ namespace geo{
      * On any type of error (e.g., invalid or unknown channel ID),
      * geo::kMysteryType is returned.
      */
-    geo::SigType_t SignalTypeForChannelImpl(raw::ChannelID_t const channel) override const;
+    geo::SigType_t SignalTypeForChannelImpl(raw::ChannelID_t const channel) const override;
     
     //
     // TPC set interface
