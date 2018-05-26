@@ -87,6 +87,8 @@ namespace geo{
      * geo::kMysteryType is returned.
      */
     geo::SigType_t SignalTypeForChannelImpl(raw::ChannelID_t const channel) const override;
+
+  public:
     
     //
     // TPC set interface
