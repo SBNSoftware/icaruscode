@@ -64,9 +64,29 @@ namespace geo{
       { return PlaneWireToChannel(geo::WireID(cstat, tpc, plane, wire)); }
     //@}
     
-    virtual SigType_t                SignalType( raw::ChannelID_t const channel ) const override;
-    virtual std::set<PlaneID> const& PlaneIDs()                                   const override;
+    virtual std::set<PlaneID> const& PlaneIDs() const override;
     
+    /**
+     * @brief Return the signal type of the specified channel
+     * @param channel ID of the channel
+     * @return signal type of the channel, or geo::kMysteryType if not known
+     * 
+     * On any type of error (e.g., invalid or unknown channel ID),
+     * geo::kMysteryType is returned.
+     */
+
+    geo::SigType_t SignalTypeForChannel(raw::ChannelID_t const channel) const;
+
+  protected:
+    /**
+     * @brief Return the signal type of the specified channel
+     * @param channel ID of the channel
+     * @return signal type of the channel, or geo::kMysteryType if not known
+     *
+     * On any type of error (e.g., invalid or unknown channel ID),
+     * geo::kMysteryType is returned.
+     */
+    virtual geo::SigType_t SignalTypeForChannelImpl(raw::ChannelID_t const channel) const = 0;
     
     //
     // TPC set interface

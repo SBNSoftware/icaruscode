@@ -16,7 +16,7 @@
 #include "nutools/RandomUtils/NuRandomService.h"
 
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardata/DetectorInfo/ElecClock.h"
+#include "lardataalg/DetectorInfo/ElecClock.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/AuxDetGeo.h"

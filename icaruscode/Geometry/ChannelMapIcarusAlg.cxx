@@ -285,7 +285,7 @@ raw::ChannelID_t ChannelMapIcarusAlg::PlaneWireToChannel
     return raw::InvalidChannelID;
 }
 
-
+/*
 //----------------------------------------------------------------------------
 SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
 {
@@ -313,7 +313,7 @@ SigType_t ChannelMapIcarusAlg::SignalType(raw::ChannelID_t const channel) const
     
     return sigt;
 }
-
+*/
 //----------------------------------------------------------------------------
 std::set<PlaneID> const& ChannelMapIcarusAlg::PlaneIDs() const
 {
@@ -515,6 +515,21 @@ geo::PlaneID ChannelMapIcarusAlg::ConvertROPtoWirePlane
         (geo::PlaneID::PlaneID_t) ropid.ROP
     };
 } // ChannelMapIcarusAlg::ConvertROPtoWirePlane()
+
+geo::SigType_t ChannelMapAlg::SignalTypeForChannel(raw::ChannelID_t const channel) const
+{
+    return SignalTypeForChannelImpl(channel);
+}
+
+geo::SigType_t ChannelMapAlg::SignalTypeForROPID(readout::ROPID const& ropid) const
+{
+    return SignalTypeForROPIDImpl(ropid);
+}
+
+geo::SigType_t ChannelMapAlg::SignalTypeForROPIDImpl(readout::ROPID const& ropid) const
+{
+    return SignalTypeForChannel(FirstChannelInROP(ropid));
+}
 
 
 //----------------------------------------------------------------------------

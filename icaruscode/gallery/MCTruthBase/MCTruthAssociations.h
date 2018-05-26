@@ -12,7 +12,7 @@
 
 // LArSoft libraries
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardata/DetectorInfo/DetectorProperties.h"
+#include "lardataalg/DetectorInfo/DetectorProperties.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/RecoBase/Track.h"
