@@ -516,17 +516,17 @@ geo::PlaneID ChannelMapIcarusAlg::ConvertROPtoWirePlane
     };
 } // ChannelMapIcarusAlg::ConvertROPtoWirePlane()
 
-geo::SigType_t ChannelMapAlg::SignalTypeForChannel(raw::ChannelID_t const channel) const
+geo::SigType_t ChannelMapIcarusAlg::SignalTypeForChannel(raw::ChannelID_t const channel) const
 {
     return SignalTypeForChannelImpl(channel);
 }
 
-geo::SigType_t ChannelMapAlg::SignalTypeForROPID(readout::ROPID const& ropid) const
+geo::SigType_t ChannelMapIcarusAlg::SignalTypeForROPID(readout::ROPID const& ropid) const
 {
     return SignalTypeForROPIDImpl(ropid);
 }
 
-geo::SigType_t ChannelMapAlg::SignalTypeForROPIDImpl(readout::ROPID const& ropid) const
+geo::SigType_t ChannelMapIcarusAlg::SignalTypeForROPIDImpl(readout::ROPID const& ropid) const
 {
     return SignalTypeForChannel(FirstChannelInROP(ropid));
 }
