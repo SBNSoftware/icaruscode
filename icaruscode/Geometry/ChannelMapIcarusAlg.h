@@ -65,17 +65,6 @@ namespace geo{
     //@}
     
     virtual std::set<PlaneID> const& PlaneIDs() const override;
-    
-    /**
-     * @brief Return the signal type of the specified channel
-     * @param channel ID of the channel
-     * @return signal type of the channel, or geo::kMysteryType if not known
-     * 
-     * On any type of error (e.g., invalid or unknown channel ID),
-     * geo::kMysteryType is returned.
-     */
-
-    geo::SigType_t SignalTypeForChannel(raw::ChannelID_t const channel) const;
 
   protected:
     /**

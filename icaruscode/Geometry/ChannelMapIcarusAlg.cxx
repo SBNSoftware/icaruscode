@@ -516,11 +516,6 @@ geo::PlaneID ChannelMapIcarusAlg::ConvertROPtoWirePlane
     };
 } // ChannelMapIcarusAlg::ConvertROPtoWirePlane()
 
-geo::SigType_t ChannelMapIcarusAlg::SignalTypeForChannel(raw::ChannelID_t const channel) const
-{
-    return SignalTypeForChannelImpl(channel);
-}
-
 
 //----------------------------------------------------------------------------
   
