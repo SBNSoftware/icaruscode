@@ -90,35 +90,35 @@ private:
     std::string fLocalDirName;     ///< Fraction for truncated mean
     
     // Pointers to the histograms we'll create.
-    TH1D*     fHitsByWire[3];
-    TH1D*     fDriftTimes[3];
-    TH1D*     fHitsByTime[3];
-    TH1D*     fPulseHeight[3];
-    TH1D*     fPulseHeightSingle[3];
-    TH1D*     fPulseHeightMulti[3];
-    TH1D*     fChi2DOF[3];
-    TH1D*     fNumDegFree[3];
-    TH1D*     fChi2DOFSingle[3];
-    TH1D*     fHitMult[3];
-    TH1D*     fHitCharge[3];
-    TH1D*     fFitWidth[3];
-    TH1D*     fHitSumADC[3];
-    TH2D*     fNDFVsChi2[3];
-    TH2D*     fPulseHVsWidth[3];
-    TH2D*     fPulseHVsCharge[3];
-    TH1D*     fBadWPulseHeight;
-    TH2D*     fBadWPulseHVsWidth;
-    TH1D*     fBadWHitsByWire;
-    TProfile* fPulseHVsHitNo[3];
-    TProfile* fChargeVsHitNo[3];
-    TProfile* fChargeVsHitNoS[3];
+    std::vector<TH1D*> fHitsByWire;
+    TH1D*              fDriftTimes[3];
+    TH1D*              fHitsByTime[3];
+    TH1D*              fPulseHeight[3];
+    TH1D*              fPulseHeightSingle[3];
+    TH1D*              fPulseHeightMulti[3];
+    TH1D*              fChi2DOF[3];
+    TH1D*              fNumDegFree[3];
+    TH1D*              fChi2DOFSingle[3];
+    TH1D*              fHitMult[3];
+    TH1D*              fHitCharge[3];
+    TH1D*              fFitWidth[3];
+    TH1D*              fHitSumADC[3];
+    TH2D*              fNDFVsChi2[3];
+    TH2D*              fPulseHVsWidth[3];
+    TH2D*              fPulseHVsCharge[3];
+    TH1D*              fBadWPulseHeight;
+    TH2D*              fBadWPulseHVsWidth;
+    TH1D*              fBadWHitsByWire;
+    TProfile*          fPulseHVsHitNo[3];
+    TProfile*          fChargeVsHitNo[3];
+    TProfile*          fChargeVsHitNoS[3];
     
-    TH2D*     fSPHvsIdx[3];
-    TH2D*     fSWidVsIdx[3];
-    TH2D*     f1PPHvsWid[3];
-    TH2D*     fSPPHvsWid[3];
-    TH2D*     fSOPHvsWid[3];
-    TH2D*     fPHRatVsIdx[3];
+    TH2D*              fSPHvsIdx[3];
+    TH2D*              fSWidVsIdx[3];
+    TH2D*              f1PPHvsWid[3];
+    TH2D*              fSPPHvsWid[3];
+    TH2D*              fSOPHvsWid[3];
+    TH2D*              fPHRatVsIdx[3];
     
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
@@ -166,6 +166,8 @@ void BasicHitAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& tf
 {
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
+    
+    fHitsByWire.resize(fGeometry->Nplanes());
 
     fHitsByWire[0]            = dir.make<TH1D>("HitsByWire0", ";Wire #", fGeometry->Nwires(0), 0., fGeometry->Nwires(0));
     fHitsByWire[1]            = dir.make<TH1D>("HitsByWire1", ";Wire #", fGeometry->Nwires(1), 0., fGeometry->Nwires(1));
@@ -377,10 +379,13 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
 // Useful for normalizing histograms
 void BasicHitAnalysis::endJob(int numEvents)
 {
-    // Normalize wire profiles to be hits/event
-    double normFactor(1./numEvents);
+    if (!fHitsByWire.empty())
+    {
+        // Normalize wire profiles to be hits/event
+        double normFactor(1./numEvents);
     
-    for(size_t idx = 0; idx < 3; idx++) fHitsByWire[idx]->Scale(normFactor);
+        for(size_t idx = 0; idx < 3; idx++) fHitsByWire[idx]->Scale(normFactor);
+    }
     
     return;
 }
