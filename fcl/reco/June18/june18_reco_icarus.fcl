@@ -1,0 +1,167 @@
+## 
+##  ICARUS reconstruction
+##  modeled on uboone version
+##
+
+#include "services_icarus.fcl"
+#include "rawdigitfilter_icarus.fcl"
+#include "recowire_icarus.fcl"
+
+#include "hitfindermodules_icarus.fcl"
+#include "cluster_icarus.fcl"
+#include "trackfindermodules_icarus.fcl"
+
+#include "mchitmodules.fcl"
+#include "mcreco.fcl"
+#include "mctrutht0matching.fcl"
+
+BEGIN_PROLOG
+
+icarus_reco_services:
+{
+   @table::icarus_basic_services
+}
+
+### This is the complete list of all producers! ###
+icarus_reco_producers:
+{
+  ### random number saver
+  rns:                 { module_type: RandomNumberSaver }
+
+  ### noise filtering module
+  rawdigitfilter:                 @local::icarus_rawdigitfilter
+
+  ### calwire producers
+  recowireraw:                    @local::icarus_recowireraw
+  recowire:                       @local::icarus_recowireicarus
+
+  ### hit-finder producers
+  gaushit:                        @local::gaus_hitfinder
+  icarushit:                      @local::icarus_hitfinder
+
+  ### trajcluster
+  trajclusterGaus:                @local::icarus_trajcluster
+  trajclusterICARUS:              @local::icarus_trajcluster
+
+  ### pandora
+  pandoraGaus:                    @local::icarus_pandora
+  pandoraTrackGaus:               @local::icarus_pandoraTrackCreation
+  pandoraShowerGaus:              @local::icarus_pandoraShowerCreation
+  pandoraICARUS:                  @local::icarus_pandora
+  pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
+  pandoraShowerICARUS:            @local::icarus_pandoraShowerCreation
+
+  ### PM algorithm
+  pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
+  pmAlgTrackerICARUS:             @local::icarus_pmalgtrackmaker
+
+  ### PM kalman tracks
+  pmAlgKalmanTrackGaus:           @local::icarus_pmalgkalmantrack
+  pmAlgKalmanTrackICARUS:         @local::icarus_pmalgkalmantrack
+
+  ### mc producers
+  mchitfinder:                    @local::standard_mchitfinder
+  mcassociationsGaus:             @local::standard_mctrutht0matching
+  mcassociationsICARUS:           @local::standard_mctrutht0matching
+}
+
+icarus_reco_filters:
+{ 
+}
+
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_reco_signalprocessing:     [ rawdigitfilter,
+                                    recowire,
+                                    gaushit,
+                                    recowireraw,
+                                    icarushit]
+
+icarus_reco_trajclusterGaus:      [ trajclusterGaus]
+
+icarus_reco_trajclusterICARUS:    [ trajclusterICARUS]
+
+icarus_reco_pmAlgTrackerGaus:     [ pmAlgTrackerGaus,
+                                    pmAlgKalmanTrackGaus]
+
+icarus_reco_pmAlgTrackerICARUS:   [ pmAlgTrackerICARUS,
+                                    pmAlgKalmanTrackICARUS]
+
+icarus_reco_pandoraGaus:          [ pandoraGaus,
+                                    pandoraTrackGaus,
+                                    pandoraShowerGaus,
+                                    pandoraKalmanTrackGaus]
+
+icarus_reco_pandoraICARUS:        [ pandoraICARUS,
+                                    pandoraTrackICARUS,
+                                    pandoraShowerICARUS,
+                                    pandoraKalmanTrackICARUS]
+
+icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
+
+icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
+
+# Define the full reconstruction sequence
+icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
+                               @sequence::icarus_reco_trajclusterGaus,
+                               @sequence::icarus_reco_pmAlgTrackerGaus,
+                               @sequence::icarus_reco_trajclusterICARUS,
+                               @sequence::icarus_reco_pmAlgTrackerICARUS,
+                               @sequence::icarus_reco_mcrecoGaus,
+                               @sequence::icarus_reco_mcrecoICARUS]
+
+### Below we include overrides for the modules above
+
+icarus_reco_producers.rawdigitfilter.ProcessNoise:                               false
+icarus_reco_producers.rawdigitfilter.FFTNoise:                                   false
+icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                            [1, 1, 1]
+
+icarus_reco_producers.recowire.DigitModuleLabel:                                 "rawdigitfilter"
+icarus_reco_producers.recowire.Threshold:                                        [0, 0, 0]
+icarus_reco_producers.recowire.NumSigma:                                         [3, 3, 3]
+
+icarus_reco_producers.recowireraw.DigitModuleLabel:                              "rawdigitfilter"
+
+icarus_reco_producers.gaushit.CalDataModuleLabel:                                "recowire"
+icarus_reco_producers.gaushit.MinSig:                                            [  5.,   5.,   5.  ]
+icarus_reco_producers.gaushit.MinWidth:                                          [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.AreaNorms:                                         [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.MaxMultiHit:                                       20
+icarus_reco_producers.gaushit.TryNplus1Fits:                                     false
+icarus_reco_producers.gaushit.Chi2NDF:                                           50.
+icarus_reco_producers.gaushit.CandidateHits:                                     @local::candhitfinder_derivative
+icarus_reco_producers.gaushit.LongMaxHits:                                       [25, 25, 25]
+icarus_reco_producers.gaushit.LongPulseWidth:                                    [10, 10, 10]
+
+icarus_reco_producers.icarushit.CalDataModuleLabel:                              "recowireraw"
+
+icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                          "gaushit"
+icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                          "pandoraGaus"
+icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                         "pandoraGaus"
+
+icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                           "trajclusterGaus"
+icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                       "trajclusterGaus"
+
+icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:          "pmAlgTrackerGaus"
+
+icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:     "icarushit"
+
+icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                        "icarushit"
+icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                        "pandoraICARUS"
+icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                       "pandoraICARUS"
+
+icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                         "trajclusterICARUS"
+icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                     "trajclusterICARUS"
+
+icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:        "pmAlgTrackerICARUS"
+
+icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                       "pmAlgTrackerGaus"
+icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                         "gaushit"
+icarus_reco_producers.mcassociationsGaus.makeT0Assns:                            false
+
+icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                     "pmAlgTrackerICARUS"
+icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                       "icarushit"
+icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                          false
+
+END_PROLOG
