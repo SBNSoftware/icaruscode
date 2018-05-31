@@ -108,7 +108,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         
     if (notSaturated)
     {
-        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, fEventCount, hitCandidateVec);
+        fHitFinderTool->findHitCandidates(locWaveform, 0, fEventCount, hitCandidateVec);
         fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
     }
     else

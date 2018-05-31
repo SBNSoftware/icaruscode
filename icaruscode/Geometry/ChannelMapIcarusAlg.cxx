@@ -81,7 +81,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
             {
                 fViews.emplace(cgeo[cs].TPC(TPCCount).Plane(PlaneCount).View());
                 fPlaneIDs.emplace(PlaneID(cs, TPCCount, PlaneCount));
-                double ThisWirePitch = cgeo[cs].TPC(TPCCount).WirePitch(0, 1, PlaneCount);
+                double ThisWirePitch = cgeo[cs].TPC(TPCCount).WirePitch(PlaneCount);
                 fWireCounts[cs][TPCCount][PlaneCount] = cgeo[cs].TPC(TPCCount).Plane(PlaneCount).Nwires();
         
                 double  WireCentre1[3] = {0.,0.,0.};
