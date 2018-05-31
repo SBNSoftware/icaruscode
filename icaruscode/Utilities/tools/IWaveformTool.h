@@ -27,6 +27,7 @@ namespace icarus_tool
         DIFFERENCE,
         OPENING,
         CLOSING,
+        DOPENCLOSING,
         LASTELEMENT
     };
     

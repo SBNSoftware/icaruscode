@@ -33,9 +33,10 @@ public:
     
 private:
     // fhicl parameters
-    float fSPEArea;         // conversion between phe and Adc*ns
-    float fSaturationCut;   // Saturation occurs at this point
-    int   fMaxSatChannels;  // maximum saturated channels
+    float          fSPEArea;         //< conversion between phe and Adc*ns
+    float          fSaturationCut;   //< Saturation occurs at this point
+    int            fMaxSatChannels;  //< maximum saturated channels
+    mutable size_t fEventCount;      //< Keep track of the number of events processed
 
     float getBaseline(const raw::OpDetWaveform&) const;
     
@@ -59,6 +60,8 @@ void OpHitFinder::configure(const fhicl::ParameterSet& pset)
     fSPEArea        = pset.get< float >("SPEArea"              );
     fSaturationCut  = pset.get< float >("SaturationCut",  3000.);
     fMaxSatChannels = pset.get< int   >("MaxSatChannels",    10);
+    
+    fEventCount     = 0;
 
     fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(pset.get<fhicl::ParameterSet>("CandidateHits"));
 
@@ -105,7 +108,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         
     if (notSaturated)
     {
-        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, hitCandidateVec);
+        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, fEventCount, hitCandidateVec);
         fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
     }
     else
@@ -151,6 +154,8 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
             opHitVec.emplace_back(chNumber, peakMean, peakTimeAbs, frame, 2.35 * peakSigma, peakArea, amplitude, nPhotoElec, fastTotal);//including hit info
         }
     }
+    
+    fEventCount++;
 
     return;
 }

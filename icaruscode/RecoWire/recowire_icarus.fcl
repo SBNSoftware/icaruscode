@@ -36,9 +36,9 @@ icarus_recowireroiicarus:
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
     ROIFinderToolVec:
     {
-        ROIFinderToolPlane0 : @local::icarus_standardroifinder
-        ROIFinderToolPlane1 : @local::icarus_standardroifinder
-        ROIFinderToolPlane2 : @local::icarus_standardroifinder
+        ROIFinderToolPlane0 : @local::icarus_morphologicalroifinder_0
+        ROIFinderToolPlane1 : @local::icarus_morphologicalroifinder_1
+        ROIFinderToolPlane2 : @local::icarus_morphologicalroifinder_2
     }
     Deconvolution:              @local::icarus_fullwiredeconvolution
 }

@@ -380,9 +380,11 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
             histogramMap[icarus_tool::DIFFERENCE] =
               dir.make<TProfile>(Form("WDif_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
             histogramMap[icarus_tool::CLOSING] =
-              dir.make<TProfile>(Form("WClo_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
+              dir.make<TProfile>(Form("WClo_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Closing", waveform.size(), 0, waveform.size(), -500., 500.);
             histogramMap[icarus_tool::OPENING] =
-              dir.make<TProfile>(Form("WOpe_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
+              dir.make<TProfile>(Form("WOpe_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Opening", waveform.size(), 0, waveform.size(), -500., 500.);
+            histogramMap[icarus_tool::DOPENCLOSING] =
+                dir.make<TProfile>(Form("WDOC_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
 
             // Compute the morphological filter vectors
             fWaveformTool->getErosionDilationAverageDifference(waveform, fStructuringElement, histogramMap, erosionVec, dilationVec, averageVec, differenceVec);

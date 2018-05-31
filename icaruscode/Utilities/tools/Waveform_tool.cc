@@ -652,6 +652,7 @@ template <typename T> void WaveformTools::getOpeningAndClosing(const Waveform<T>
             int curBin = std::distance(dilationVec.begin(),inputItr);
             
             histogramMap.at(CLOSING)->Fill(curBin, *minElementItr);
+            histogramMap.at(DOPENCLOSING)->Fill(curBin, *minElementItr - openingVec.at(curBin));
         }
     }
 
