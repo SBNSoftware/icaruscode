@@ -33,7 +33,7 @@ icarus_reco_producers:
 
   ### calwire producers
   recowireraw:                    @local::icarus_recowireraw
-  recowire:                       @local::icarus_recowireicarus
+  recowire:                       @local::icarus_recowireroiicarus
 
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder

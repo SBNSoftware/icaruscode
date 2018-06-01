@@ -1,4 +1,4 @@
-#include "sbnmar18_icarus_driver_reco_all.fcl"
+#include "june18_icarus_driver_reco_all.fcl"
 
 # Swap to the box model responses
 services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.SignalType:             1

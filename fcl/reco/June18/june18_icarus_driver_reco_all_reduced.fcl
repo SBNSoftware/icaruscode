@@ -1,4 +1,4 @@
-#include "sbnmar18_icarus_driver_reco_all.fcl"
+#include "june18_icarus_driver_reco_all.fcl"
 
 physics.reco.rawdigitfilter.TruncateChannels:   true
 physics.reco.rawdigitfilter.NRMSChannelReject:  [6.5,6.5,6.5]
