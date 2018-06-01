@@ -131,6 +131,8 @@ icarus_reco_producers.gaushit.MaxMultiHit:                                      
 icarus_reco_producers.gaushit.TryNplus1Fits:                                     false
 icarus_reco_producers.gaushit.Chi2NDF:                                           50.
 icarus_reco_producers.gaushit.CandidateHits:                                     @local::candhitfinder_derivative
+icarus_reco_producers.gaushit.CandidateHits.MinDeltaTicks:                       5
+icarus_reco_producers.gaushit.CandidateHits.MinDeltaPeaks:                       3
 icarus_reco_producers.gaushit.LongMaxHits:                                       [25, 25, 25]
 icarus_reco_producers.gaushit.LongPulseWidth:                                    [10, 10, 10]
 
