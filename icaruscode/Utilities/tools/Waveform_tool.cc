@@ -7,7 +7,7 @@
 #include "IWaveformTool.h"
 #include "art/Utilities/ToolMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "lardata/Utilities/SignalShaping.h"

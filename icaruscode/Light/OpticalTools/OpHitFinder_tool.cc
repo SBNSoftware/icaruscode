@@ -8,7 +8,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 
 #include "icaruscode/Light/OpticalTools/IOpHitFinder.h"
 #include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
@@ -108,7 +108,7 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         
     if (notSaturated)
     {
-        fHitFinderTool->findHitCandidates(locWaveform, 0, fEventCount, hitCandidateVec);
+        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, fEventCount, hitCandidateVec);
         fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
     }
     else

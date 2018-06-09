@@ -8,7 +8,7 @@
 #include "art/Utilities/ToolMacros.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "lardata/Utilities/SignalShaping.h"

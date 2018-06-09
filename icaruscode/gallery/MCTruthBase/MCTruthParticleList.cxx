@@ -20,7 +20,7 @@
 #include "icaruscode/gallery/MCTruthBase/MCTruthParticleList.h"
 #include "icaruscode/gallery/MCTruthBase/MCTruthEveIdCalculator.h"
 
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include <TLorentzVector.h>

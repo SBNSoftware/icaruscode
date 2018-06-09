@@ -2,7 +2,6 @@ add_subdirectory(OpticalTools)
 
 art_make(
           BASENAME_ONLY
-#          EXCLUDE PMTcoordinates_module.cc 
           LIBRARY_NAME Light
           LIB_LIBRARIES 
             lardataobj_RawData
@@ -12,7 +11,7 @@ art_make(
 			${CETLIB}
 			${ROOT_BASIC_LIB_LIST}
 			${Boost_SYSTEM_LIBRARY}
-	  MODULE_LIBRARIES larcorealg_Geometry
+	      MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 	        lardata_Utilities
 			larevt_Filters
@@ -34,11 +33,12 @@ art_make(
 			canvas
 			${MF_MESSAGELOGGER}
 			${MF_UTILITIES}
-	                ${FHICLCPP}
+	        ${FHICLCPP}
 			${CETLIB}
-                        ${ROOT_GEOM}
-                        ${ROOT_XMLIO}
-                        ${ROOT_GDML}
+			cetlib_except
+            ${ROOT_GEOM}
+            ${ROOT_XMLIO}
+            ${ROOT_GDML}
 			${ROOT_FFTW}
 			${ROOT_BASIC_LIB_LIST}
 			${Boost_SYSTEM_LIBRARY}

@@ -25,6 +25,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            ${MF_UTILITIES}
                            ${FHICLCPP}
                            ${CETLIB}
+                           cetlib_except
                            ${CLHEP}
                            ${ROOT_GEOM}
                            ${ROOT_XMLIO}

@@ -9,7 +9,7 @@
 #include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"

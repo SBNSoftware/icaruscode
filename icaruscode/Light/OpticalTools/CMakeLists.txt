@@ -26,6 +26,7 @@ art_make( BASENAME_ONLY
 			              ${MF_UTILITIES}
 			              ${FHICLCPP}
 			              ${CETLIB}
+			              cetlib_except
 			              ${Boost_FILESYSTEM_LIBRARY}
 			              ${Boost_SYSTEM_LIBRARY}
                           ${CLHEP}

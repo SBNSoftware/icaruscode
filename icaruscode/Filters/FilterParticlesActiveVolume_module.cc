@@ -21,7 +21,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/PtrVector.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "canvas/Persistency/Common/FindOneP.h"
 

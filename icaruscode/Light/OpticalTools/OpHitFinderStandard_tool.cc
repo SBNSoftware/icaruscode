@@ -9,7 +9,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "TF1.h"
 #include "TGraph.h"
 #include "TMath.h"

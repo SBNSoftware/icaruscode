@@ -7,7 +7,7 @@
 #include "IGenNoise.h"
 #include "art/Utilities/ToolMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "cetlib/exception.h"
+#include "cetlib_except/exception.h"
 #include "lardata/Utilities/LArFFT.h"
 
 // art extensions
