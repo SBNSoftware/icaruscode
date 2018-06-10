@@ -468,7 +468,7 @@ size_t iWire=wid.Wire;
           
           if(tpc==0&&cryostat==0&&plane==2)
           std::cout << " findhitcandidates wire " << iwire << std::endl;
-          fHitFinderTool->findHitCandidates(holder, plane, 0, double(iwire),hitCandidateVec);
+          fHitFinderTool->findHitCandidates(holder, plane, double(iwire),hitCandidateVec);
           for(auto& hitCand : hitCandidateVec) {
               std::cout << " before expand start " << hitCand.startTick << " stop " << hitCand.stopTick << std::endl;
             expandHit(hitCand,holder,hitCandidateVec);
