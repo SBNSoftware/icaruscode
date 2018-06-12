@@ -29,11 +29,13 @@ public:
   CRTDetSim& operator = (CRTDetSim const &) = delete;
   CRTDetSim& operator = (CRTDetSim &&) = delete;
   void reconfigure(fhicl::ParameterSet const & p);
- 
+
   void produce(art::Event & e) override;
   std::string fG4ModuleLabel;
 
 private:
+  char GetAuxDetType(geo::AuxDetGeo const& adgeo);
+
   /**
    * Get the channel trigger time relative to the start of the MC event.
    *
@@ -44,7 +46,7 @@ private:
    * @param r Distance between the energy deposit and strip readout end [mm]
    * @return Trigger clock ticks at this true hit time
    */
-  uint32_t getChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
+  uint32_t GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
                                 detinfo::ElecClock& clock,
                                 float t0, float npeMean, float r);
 

@@ -3,7 +3,7 @@
 /// \brief Interface to algorithm class for sorting of AuxDetGeo objects
 ///
 /// Originally ported from AuxDetGeoObjectSorterLArIAT.h (Author: brebel@fnal.gov)
-/// and modified for SBND (Author: mastbaum@uchicago.edu)
+/// and modified for SBND (Author: mastbaum@uchicago.edu) then ICARUS
 ///
 /// \version $Id: 0.0 $
 /// \author chilge@rams.colostate.edu
@@ -18,21 +18,17 @@ namespace geo {
   //----------------------------------------------------------------------------
   // Define sort order for AuxDets in standard configuration
   static bool sortAuxDetICARUS(const AuxDetGeo* ad1, const AuxDetGeo* ad2) {
-    // Sort using the center of the detector - primary ordering by z,
-    // then y, and x
-    double c1[3] = {0, 0, 0};
-    double c2[3] = {0, 0, 0};
-    ad1->GetCenter(c1);
-    ad2->GetCenter(c2);
 
-    for (int i=2; i>0; i--) {
-      if (c1[i] != c2[i]){
-	return c1[i] < c2[i];
-      }
-    }
+    // sort based off of GDML name, module number
+    std::string ad1name = (ad1->TotalVolume())->GetName();
+    std::string ad2name = (ad2->TotalVolume())->GetName();
+    // assume volume name is "volAuxDet_Module_###_<region>"
+    std::string base = "volAuxDet_Module_";
 
-    return c1[0] < c2[0];
-
+    int ad1Num = atoi( ad1name.substr( base.size(), 3).c_str() );
+    int ad2Num = atoi( ad2name.substr( base.size(), 3).c_str() );
+    
+    return ad1Num < ad2Num;
   }
 
   //----------------------------------------------------------------------------
@@ -40,20 +36,23 @@ namespace geo {
   static bool sortAuxDetSensitiveICARUS(const AuxDetSensitiveGeo* ad1,
                                       const AuxDetSensitiveGeo* ad2)
   {
-    // Sort using the center of the detector - primary ordering by z,
-    // then y, and x
-    double c1[3] = {0, 0, 0};
-    double c2[3] = {0, 0, 0};
-    ad1->GetCenter(c1);
-    ad2->GetCenter(c2);
+    // sort based off of GDML name, assuming ordering is encoded
+    std::string ad1name = (ad1->TotalVolume())->GetName();
+    std::string ad2name = (ad2->TotalVolume())->GetName();
+    // assume volume name is "volAuxDetSensitive_Module_###_Strip_##"
+    std::string baseMod = "volAuxDetSensitive_Module_";
+    std::string baseStr = "volAuxDetSensitive_Module_###_Strip_";
 
-    for (int i=2; i>0; i--) {
-      if (c1[i] != c2[i]) {
-	return c1[i] < c2[i];
-      }
-    }
+    int ad1Num = atoi( ad1name.substr( baseMod.size(), 3).c_str() );
+    int ad2Num = atoi( ad2name.substr( baseMod.size(), 3).c_str() );
 
-    return c1[0] < c2[0];
+    if(ad1Num!=ad2Num) return ad1Num < ad2Num; 
+
+    ad1Num = atoi( ad1name.substr( baseStr.size(), 2).c_str() );
+    ad2Num = atoi( ad2name.substr( baseStr.size(), 2).c_str() );
+
+    return ad1Num < ad2Num;
+
   }
 
   //----------------------------------------------------------------------------
