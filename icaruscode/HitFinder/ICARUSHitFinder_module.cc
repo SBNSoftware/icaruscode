@@ -113,7 +113,7 @@ namespace hit {
                                   int&, int) const;
       void setWire(int i) {
           iWire=i;
-          std::cout << " setting iwire " << iWire << std::endl;
+       //   std::cout << " setting iwire " << iWire << std::endl;
       } ;
     private:
       unsigned int  fDataSize;                  //SIZE OF RAW DATA ON ONE WIRE.
@@ -239,12 +239,12 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       fHeightI1	= tfs->make<TH1F>("fHeightI1", "height(ADC#)", 100, 0, 100);
       fWidthI1	        = tfs->make<TH1F>("fWidthI1", "width(samples)", 100, 0, 100);
       fNoiseI1	        = tfs->make<TH1F>("fNoiseI1", "Noise Area(ADC#)", 100, 0, 100);
-      std::cout << " ICARUSHitfinder begin " << std::endl;
+   //   std::cout << " ICARUSHitfinder begin " << std::endl;
   }
 
   void ICARUSHitFinder::endJob()
   {
-      std::cout << " ICARUSHitFinder endjob " << std::endl;
+   //   std::cout << " ICARUSHitFinder endjob " << std::endl;
    
   }
 
@@ -254,7 +254,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       //return;
       std::ofstream output("areaFit.out");
 
-      std::cout << " ICARUSHitFinder produce " << std::endl;
+  //    std::cout << " ICARUSHitFinder produce " << std::endl;
       
     //GET THE GEOMETRY.
     art::ServiceHandle<geo::Geometry> geom;
@@ -270,25 +270,17 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
       //    if (fAllHitsInstanceName != "") filteredHitCol = &hcol;
       
-      std::cout << " before reading wirelist " << std::endl;
-      
       // ##########################################
       // ### Reading in the Wire List object(s) ###
       // ##########################################
       art::Handle< std::vector<recob::Wire> > wireVecHandle;
       evt.getByLabel(fCalDataModuleLabel,wireVecHandle);
       
-      std::cout << " after reading wirelist " << fCalDataModuleLabel << std::endl;
-
-      
       // #################################################################
       // ### Reading in the RawDigit associated with these wires, too  ###
       // #################################################################
       art::FindOneP<raw::RawDigit> RawDigits
       (wireVecHandle, evt, fCalDataModuleLabel);
-      
-      std::cout << " after reading rawdigits " << std::endl;
-
       
       // Channel Number
       raw::ChannelID_t channel = raw::InvalidChannelID;
@@ -466,13 +458,9 @@ size_t iWire=wid.Wire;
           
     std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           
-          if(tpc==0&&cryostat==0&&plane==2)
-          std::cout << " findhitcandidates wire " << iwire << std::endl;
           fHitFinderTool->findHitCandidates(holder, plane, double(iwire),hitCandidateVec);
           for(auto& hitCand : hitCandidateVec) {
-              std::cout << " before expand start " << hitCand.startTick << " stop " << hitCand.stopTick << std::endl;
             expandHit(hitCand,holder,hitCandidateVec);
-              std::cout << " after expand start " << hitCand.startTick << " stop " << hitCand.stopTick << std::endl;
           }
           
           
@@ -488,7 +476,6 @@ size_t iWire=wid.Wire;
         //     std::cout << "  Wire " << iwire << " numhits " << hitCandidateVec.size() <<" mergedhits " << mergedCandidateHitVec.size() << std::endl;
           for(auto& mergedCands : mergedCandidateHitVec)
       {
-          std::cout << " looping on merged cands " << std::endl;
           int startT= mergedCands.front().startTick;
           int endT  = mergedCands.back().stopTick;
           // ### Putting in a protection in case things went wrong ###
@@ -510,19 +497,13 @@ size_t iWire=wid.Wire;
           int                                   NDF(1);
           ICARUSPeakParamsVec peakParamsVec;
           
-         std::cout << " before fit  size " << mergedCands.size() << std::endl;
-          std::cout << " fMaxMultiHit " << fMaxMultiHit << std::endl;
           int islong=0;
           if (mergedCands.size() <= fMaxMultiHit)
           {
               //std::cout << "setting iwire " << iwire << std::endl;
              // fPeakFitterTool->setWire(iwire);
-              std::cout << " before multipeak " << std::endl;
         
         findMultiPeakParameters(signal, mergedCands, peakParamsVec, chi2PerNDF, NDF, iwire);
-          std::cout << " after fit " << std::endl;
-              std::cout << " after multi peakparamsvec size " <<peakParamsVec.size() << std::endl;
-              std::cout << " mergedcands size " <<mergedCands.size() << std::endl;
 
           if (!(chi2PerNDF < std::numeric_limits<double>::infinity()))
           {
@@ -532,7 +513,6 @@ size_t iWire=wid.Wire;
           fFirstChi2->Fill(chi2PerNDF);
             //  std::cout << " wire " << iwire << " first chi2NDF " << chi2PerNDF << std::endl;
           }
-          std::cout << " longpulsefit wire " << iwire << " chi2 " << chi2PerNDF << std::endl;
 
           //std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
           if (chi2PerNDF < fChi2NDF)
@@ -543,11 +523,8 @@ size_t iWire=wid.Wire;
           if (chi2PerNDF > fChi2NDF)
           {
               islong=1;
-              std::cout << " before longpeak " << std::endl;
               findLongPeakParameters(signal, mergedCands, peakParamsVec, chi2PerNDF, NDF, iwire);
-              std::cout << " after long peakparamsvec size " <<peakParamsVec.size() << std::endl;
-              std::cout << " mergedcands size " <<mergedCands.size() << std::endl;
-              std::cout << " wire " << iwire << " LONG chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
+
               fChi2->Fill(chi2PerNDF);
           }
         
@@ -592,7 +569,7 @@ size_t iWire=wid.Wire;
               Func.SetParameter(3+5*jf,peakRight);
               Func.SetParameter(4+5*jf,peakLeft);
               }
-              TF1 FuncLong("ICARUSfunc",fitlong,start,end,1+7*mergedCands.size());
+              TF1 FuncLong("ICARUSfuncLong",fitlong,start,end,1+7*mergedCands.size());
               for(unsigned int jf=0;jf<mergedCands.size();jf++) {
                   Func.SetParameter(0+7*jf,peakBaseline);
                   Func.SetParameter(1+7*jf,peakAmp);
@@ -608,19 +585,23 @@ size_t iWire=wid.Wire;
               try
               { fitCharge=Func.Integral(start,end);}
               catch(...)
-              {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";}
+              {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
+                  fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+              }
               }
               else {
                   try
                   { fitCharge=FuncLong.Integral(start,end);}
                   catch(...)
-                  {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";}
+                  {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
+                      fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+                  }
               }
+              if(isnan(fitCharge)&&!islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+              if(isnan(fitCharge)&&islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
               //Func.Integral(start,end);
               float totSig=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
          //     float fitChargeErr=0;
-              
-             std::cout << " wire " << iWire << " fitCharge " << fitCharge << " start " << start << " end " << end << std::endl;
              // std::cout << " totSig " << totSig << std::endl;
 
 //std::cout << " before hit creator " << std::endl;
@@ -642,12 +623,9 @@ size_t iWire=wid.Wire;
             chi2PerNDF,                                                                 //WIRE ID.
             NDF                                                               //DEGREES OF FREEDOM.
             );
-          
-         std::cout << " before emplace back " << std::endl;
-   //       filteredHitVec.push_back(hit.copy());
+             //       filteredHitVec.push_back(hit.copy());
           
         hcol.emplace_back(hit.move(), wire, rawdigits);
-              std::cout << " after emplace back " << std::endl;
             
               bool driftWindow=(peakMean)>=minDrift&&(peakMean)<=maxDrift;
               bool wireWindowC=iWire>=minWireC&&iWire<=maxWireC;
@@ -684,7 +662,6 @@ size_t iWire=wid.Wire;
               wCharge[iWire]+=fitCharge;
               wInt[iWire]+=totSig;
 
-              std::cout << " fitcharge " << fitCharge << " totsig " << totSig << std::endl;
           }
 
           if(plane==0) nhitsI1++;
@@ -699,12 +676,9 @@ size_t iWire=wid.Wire;
           if(plane==2&&tpc==0&&cryostat==0&&outWireWindowC) {
         nnhitsC++; fNoiseC->Fill(amplitude); }
         
-              std::cout << " end loop internal " << std::endl;
         ++hitIndex;
       } //end loop on found hits
-          std::cout << " end loop " << std::endl;
-          if(plane==2&&cryostat==0&&tpc==0&&wCharge[iwire]>0.)
-           std::cout << " filling wire  " << iwire << " area " << wCharge[iwire] << std::endl;
+        
           if(plane==2&&cryostat==0&&tpc==0)
            if(wCharge[iwire]>0)
            fAreaC->Fill(wCharge[iwire]);
@@ -723,7 +697,7 @@ size_t iWire=wid.Wire;
 
     } //end loop on channels
       
-            double PhysWC=maxWireC-minWireC+1;
+ /*           double PhysWC=maxWireC-minWireC+1;
              double NoiseWC=5119-480-(maxWireC-minWireC+1);
       double PhysWI2=maxWireI2-minWireI2+1;
       double NoiseWI2=5119-480-(maxWireI2-minWireI2+1);
@@ -736,7 +710,7 @@ size_t iWire=wid.Wire;
       std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
       std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
       std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
-
+*/
       for(unsigned int jw=minWireC;jw<maxWireC;jw++)
           fnhwC->Fill(nhWire[jw]);
       
@@ -940,7 +914,6 @@ size_t iWire=wid.Wire;
     {
         TH1F* fHistogram=new TH1F("","",roiSignalVec.size(),0.,roiSignalVec.size());;
         
-        std::cout << " peakfitter iwire " << iWire << std::endl;
         std::string wireName = "PeakFitterHitSignal_" + std::to_string(iWire);
         fHistogram->SetName(wireName.c_str());
         // The following is a translation of the original FitICARUSs function in the original
@@ -949,7 +922,6 @@ size_t iWire=wid.Wire;
         // *** NOTE: this algorithm assumes the reference time for input hit candidates is to
         //           the first tick of the input waveform (ie 0)
         //
-        std::cout << " within FindpeakParameters " << std::endl;
         if (hitCandidateVec.empty()) return;
         
         // in case of a fit failure, set the chi-square to infinity
@@ -998,9 +970,7 @@ size_t iWire=wid.Wire;
             double amplitude  = candidateHit.hitHeight;
             // double meanLowLim = std::max(peakMean - fPeakRange * peakWidth,              0.);
             // double meanHiLim  = std::min(peakMean + fPeakRange * peakWidth, double(roiSize));
-            std::cout << " amplitude " << amplitude << std::endl;
-            std::cout << " peakMean " << peakMean << std::endl;
-            std::cout << " peakWidth " << peakWidth << std::endl;
+
             Func.SetParameter(0,hitCandidateVec.size());
             Func.SetParLimits(0,hitCandidateVec.size(),hitCandidateVec.size());
             
@@ -1017,12 +987,9 @@ size_t iWire=wid.Wire;
             Func.SetParLimits(5+parIdx, std::max(fMinWidth, 0.01 * peakWidth), fMaxWidthMult * peakWidth);
         
             parIdx += 5;
-            std::cout << " peakWidth limits " << std::max(fMinWidth, 0.01 * peakWidth) <<" " <<  fMaxWidthMult * peakWidth << std::endl;
-            std::cout << " peakMean limits " << peakMean-peakWidth <<" " <<  peakMean+peakWidth << std::endl;
             
         }
         
-        std::cout << " before fit " << std::endl;
         int fitResult(-1);
         // if(hitCandidateVec.size()>2) return;
         try
@@ -1031,7 +998,6 @@ size_t iWire=wid.Wire;
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
-        std::cout << " after fit " << std::endl;
        // return;
         
         if(fitResult!=0)
@@ -1085,11 +1051,9 @@ size_t iWire=wid.Wire;
                                                   int&                                        NDF, int iWire) const
     {
         TH1F* fHistogram=new TH1F("","",roiSignalVec.size(),0.,roiSignalVec.size());;
-        std::cout << " peakfitter iwire " << iWire << std::endl;
         std::string wireName = "PeakFitterHitSignal_" + std::to_string(iWire);
         fHistogram->SetName(wireName.c_str());
         
-        std::cout << " within FindpeakParameters " << std::endl;
         if (hitCandidateVec.empty()) return;
         
         // in case of a fit failure, set the chi-square to infinity
@@ -1127,9 +1091,6 @@ size_t iWire=wid.Wire;
             double peakWidth  = candidateHit.hitSigma;
             double amplitude  = candidateHit.hitHeight;
             
-            std::cout << " amplitude " << amplitude << std::endl;
-            std::cout << " peakMean " << peakMean << std::endl;
-            std::cout << " peakWidth " << peakWidth << std::endl;
             Func.SetParameter(0,hitCandidateVec.size());
             Func.SetParLimits(0,hitCandidateVec.size(),hitCandidateVec.size());
             
@@ -1189,9 +1150,9 @@ size_t iWire=wid.Wire;
             peakParams.peakSlopeError        = Func.GetParError(7+parIdx);
             peakParams.peakBaseline        = Func.GetParameter(1+parIdx);
             peakParams.peakBaselineError        = Func.GetParError(1+parIdx);
-            std::cout << " before adding peakparams size  " << peakParamsVec.size() << std::endl;
+         //   std::cout << " before adding peakparams size  " << peakParamsVec.size() << std::endl;
             peakParamsVec.emplace_back(peakParams);
-            std::cout << " after adding peakparams size  " << peakParamsVec.size() << std::endl;
+           // std::cout << " after adding peakparams size  " << peakParamsVec.size() << std::endl;
             
             parIdx += 7;
             

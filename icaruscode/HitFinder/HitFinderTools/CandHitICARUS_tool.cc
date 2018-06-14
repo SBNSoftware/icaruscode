@@ -196,7 +196,7 @@ int iflag;
                 h.hitHeight=peakheight;
 //                h.iWire=iw;
                 h.hitCenter=i;
-                std::cout << " hitcenter " << i << std::endl;
+              //  std::cout << " hitcenter " << i << std::endl;
                 localbellow=0;
             }
             
@@ -205,7 +205,7 @@ int iflag;
             if(waveform[i]-(peakheight+lastcomputedmean)<-1) // we're in the slope down
             {
                 localbellow++;
-                std::cout << " i " << i << " localbellow " << localbellow << " abovecut " << abovecut << std::endl;
+             //   std::cout << " i " << i << " localbellow " << localbellow << " abovecut " << abovecut << std::endl;
             }
             if(localbellow>abovecut)
             { //4
@@ -221,7 +221,7 @@ int iflag;
                         else if(waveform[i+l+1]-waveform[i+l]<0) rising--;
                     }
                 }
-                std::cout << " rising " << rising << " abovecut " << abovecut << std::endl;
+            //    std::cout << " rising " << rising << " abovecut " << abovecut << std::endl;
                 // if after a slope down there's a slope up save the previous hit
                 if(rising>abovecut)
                 { //5
@@ -229,7 +229,7 @@ int iflag;
                     //              h.finDrift=i+iniSamp;
                     h.stopTick=localminidx;
 
-                    std::cout << "  saving previous hit " << begin << " fin " << localminidx << std::endl;
+                //std::cout << "  saving previous hit " << begin << " fin " << localminidx << std::endl;
                     
                     if((h.stopTick-h.hitCenter)>=fall && h.stopTick-h.startTick>width)
                     { //6
