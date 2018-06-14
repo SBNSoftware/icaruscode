@@ -6,8 +6,8 @@ icarus_crtsim:
   G4ModuleLabel: "largeant"
 
   // Global timing offset [ns]
-  // For Corsika cosmics, use 2.76e6 (see corsika_sbnd.fcl)
-  GlobalT0Offset: 0.0
+  // For Corsika cosmics, use 2.76e6 (see corsika_icarus.fcl)
+  GlobalT0Offset: -1.1e-3
 
   // Shape parameters for mean time delay vs. Npe
   TDelayNorm: 4125.74

@@ -3,7 +3,7 @@
 /// \brief Algorithm class for ICARUS auxiliary detector channel mapping
 ///
 /// Originally ported from AuxDetChannelMapLArIATAlg.cxx (Author: brebel@fnal.gov)
-/// and modified for SBND (Author: mastbaum@uchicago.edu)
+/// and modified for SBND (Author: mastbaum@uchicago.edu) then ICARUS
 /// \version $Id: 0.0 $
 /// \author chilge@rams.colostate.edu
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,6 +32,7 @@ namespace geo {
     std::vector<geo::AuxDetGeo*>& adgeo = geodata.auxDets;
 
     // Sort the AuxDetGeo objects and map them to names of the detectors
+    // (SBN workshop 19 March) seemed to cause some problems for SBND folks --comment out?
     fSorter.SortAuxDets(adgeo);
 
     // Map the AuxDetGeo names to their position in the sorted vector
@@ -62,6 +63,9 @@ namespace geo {
     // Bottom:             14 modules, 896 strips, 896 channels
     //
     // Total: 284 modules, 5808 strips, 7760 channels
+    //    CERN type:  122 modules, 122 FEBs, 3904 channels: 4052-7956 
+    //    MINOS type: 148 modules, 100 FEBs, 2960 channels: 0-3155 (2 channels/FEB not used)
+    //    DblCh type:  14 modules,  14 FEBs,  896 channels: 3156-4051
 
     fADGeoToName.clear();
     fADGeoToChannelAndSV.clear();
@@ -70,28 +74,38 @@ namespace geo {
     for (size_t a=0; a<adgeo.size(); a++){
       std::string volName(adgeo[a]->TotalVolume()->GetName());
 
-      //get number of strips in this modules
+      //get number of strips in this module
       size_t nsv = adgeo[a]->NSensitiveVolume();
       if (nsv != 20 && nsv !=16 && nsv != 64) {
         throw cet::exception("CRTChannelMap")
         << "Wrong number of sensitive volumes for CRT volume "
         << volName << " (got " << nsv << ", expected 20, 16 or 64)" << std::endl;
-      }
+      }//if strip number correct
 
       fADGeoToName[a] = volName;
       fNameToADGeo[volName] = a;
 
+      //if volName contains "Module" (search doesn't hit end)
       if (volName.find("_Module_") != std::string::npos) {
 	//loop over strips
         for (size_t svID=0; svID<nsv; svID++) {
-          if (nsv==16) for (size_t ich=0; ich<2; ich++) {
-            size_t chID = 2 * svID + ich;
+          size_t chID=UINT_MAX;
+          if (nsv==16){
+            chID = 32 * a + 2 * svID + 0 - 1132;
+            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            chID = 32 * a + 2 * svID + 1 - 1132;
             fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
           }
-	  else {
-	    size_t chID = svID;
+	  if (nsv==64){
+	    chID = 64 * a + svID - 6316;
 	    fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
 	  }
+          if (nsv==20){
+            chID = 32 * (a/3) + svID/2 + 10*(a % 3);
+            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            chID = 32 * (a/3) + svID/2 + 10*(a % 3) + 1578;
+            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+          }
         }//for strips
       } //if correct name
 
@@ -139,8 +153,9 @@ namespace geo {
       }
 
       // N.B. This is the ID on the nth channel, and the strip has n and n+1
-      if (auxDets[ad]->NSensitiveVolume()==16) channel = 2 * sv + 0;
-      else channel = sv;
+      auto pairItr = std::find_if((csvItr->second).begin(), (csvItr->second).end(),
+        [sv](const std::pair<uint32_t,size_t>& element){ return element.second == sv;} );
+      channel = pairItr->first;
     }
 
     /*if (channel == UINT_MAX) {
