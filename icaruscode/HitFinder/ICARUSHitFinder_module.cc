@@ -1063,7 +1063,7 @@ size_t iWire=wid.Wire;
         int endTime   = hitCandidateVec.back().stopTick;
         int roiSize   = endTime - startTime;
         
-        std::cout << " roisize " << roiSize << std::endl;
+        //std::cout << " roisize " << roiSize << std::endl;
         
         // Check to see if we need a bigger histogram for fitting
         if (roiSize > fHistogram->GetNbinsX())
