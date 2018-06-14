@@ -993,7 +993,7 @@ size_t iWire=wid.Wire;
         int fitResult(-1);
         // if(hitCandidateVec.size()>2) return;
         try
-        {  fitResult = fHistogram->Fit(&Func,"RWB","", 0., roiSize);
+        {  fitResult = fHistogram->Fit(&Func,"QRWB","", 0., roiSize);
         }
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
@@ -1116,7 +1116,7 @@ size_t iWire=wid.Wire;
         }
         int fitResult(-1);
         try
-        {  fitResult = fHistogram->Fit(&Func,"RWB","", 0., roiSize);
+        {  fitResult = fHistogram->Fit(&Func,"QRWB","", 0., roiSize);
         }
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
