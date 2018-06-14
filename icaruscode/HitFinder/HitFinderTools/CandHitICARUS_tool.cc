@@ -323,8 +323,8 @@ int iflag;
             // InsertHit(&h);
         }
     }
-    if(hits.size())
-     std::cout << " wire " << wire << " found hits " << hits.size() << std::endl;
+  //  if(hits.size())
+  //   std::cout << " wire " << wire << " found hits " << hits.size() << std::endl;
     
     
     

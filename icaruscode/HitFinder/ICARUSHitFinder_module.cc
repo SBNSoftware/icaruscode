@@ -517,8 +517,8 @@ size_t iWire=wid.Wire;
           //std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
           if (chi2PerNDF < fChi2NDF)
           fChi2->Fill(chi2PerNDF);
-          if(chi2PerNDF>10)
-          std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
+          if(chi2PerNDF>30)      // change from 10 to reduce output
+            std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
 
           if (chi2PerNDF > fChi2NDF)
           {
@@ -716,7 +716,7 @@ size_t iWire=wid.Wire;
       
       
     hcol.put_into(evt);
-      std::cout << " end ICARUSHitfinder " << std::endl;
+      //std::cout << " end ICARUSHitfinder " << std::endl;
      
       
   } //end produce
@@ -931,7 +931,7 @@ size_t iWire=wid.Wire;
         int endTime   = hitCandidateVec.back().stopTick;
         int roiSize   = endTime - startTime;
         
-        std::cout << " roisize " << roiSize << std::endl;
+        //std::cout << " roisize " << roiSize << std::endl;
         
         // Check to see if we need a bigger histogram for fitting
         if (roiSize > fHistogram->GetNbinsX())
