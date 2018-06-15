@@ -211,6 +211,7 @@ namespace simfilter {
               art::Ptr<simb::MCTruth> mct(mclistHandle, m);
               std::cout << mct->GetNeutrino().InteractionType() << " INTERACTION TYPE " << std::endl;
               int value_of_interaction=mct->GetNeutrino().InteractionType();
+              if(typetofilt<2)value_of_interaction=mct->GetNeutrino().CCNC();
               for(int ipart=0;ipart<mct->NParticles();ipart++){
                   int pdg=mct->GetParticle(ipart).PdgCode();
                   double xx=mct->GetParticle(ipart).Vx();
