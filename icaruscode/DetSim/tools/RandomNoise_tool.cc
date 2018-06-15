@@ -29,9 +29,9 @@ public:
     
     ~RandomNoise();
     
-    void configure(const fhicl::ParameterSet& pset)                          override;
+    void configure(const fhicl::ParameterSet& pset)                     override;
 
-    void GenerateNoise(std::vector<float> &noise, double noise_factor) const override;
+    void GenerateNoise(std::vector<float>&, double, unsigned int) const override;
     
 private:
     // Member variables from the fhicl file
@@ -60,7 +60,7 @@ void RandomNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void RandomNoise::GenerateNoise(std::vector<float> &noise, double noise_factor) const
+void RandomNoise::GenerateNoise(std::vector<float> &noise, double noise_factor, unsigned int) const
 {
     //ART random number service
     art::ServiceHandle<art::RandomNumberGenerator> rng;

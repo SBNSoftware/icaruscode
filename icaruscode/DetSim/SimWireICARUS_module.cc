@@ -380,7 +380,7 @@ void SimWireICARUS::produce(art::Event& evt)
         }
 
         // Use the desired noise tool to actually generate the noise on this wire
-        fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor);
+        fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor, channel);
         
         double gain=sss->GetASICGain(channel);
         

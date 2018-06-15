@@ -23,9 +23,9 @@ namespace icarus_tool
     public:
         virtual ~IGenNoise() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)                          = 0;
+        virtual void configure(const fhicl::ParameterSet& pset)                         = 0;
         
-        virtual void GenerateNoise(std::vector<float> &noise, double noise_factor) const = 0;
+        virtual void GenerateNoise(std::vector<float>&, double, unsigned int = 0) const = 0;
     };
 }
 
