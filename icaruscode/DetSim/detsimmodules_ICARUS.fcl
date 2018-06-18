@@ -9,7 +9,15 @@ NoiseFromHistTool:
   HistogramName:     "hnoiseI1"
   HistNormFactor:    0.45  # --> Histogram rms noise = 1
 }
+CorrelatedNoiseTool:
+{
+  tool_type:         CorrelatedNoise
+  NoiseRand:         0.
+  NoiseHistFileName: "T600noise_corr.root"
+  HistogramName:     "hnoiseI1"
+  HistNormFactor:    0.45  # --> Histogram rms noise = 1
 
+}
 WhiteNoiseTool:
 {
   tool_type:         RandomNoise
@@ -34,7 +42,8 @@ standard_simwire:
   TestCharge:         [ 0. ]
   Sample:             -1
   MakeNoiseDists:     "true"
-  NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
+#  NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
+  NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
   #NoiseGenToolVec:    [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
 }
 
