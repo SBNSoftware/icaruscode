@@ -119,7 +119,7 @@ void CorrelatedNoise::GenerateNoise(std::vector<float> &noise, double noise_fact
         GenerateUncorrelatedNoise(noise_unc,noise_factor,channel);
         GenerateCorrelatedNoise(noise_corr,noise_factor,channel);
         
-        for(int j=0;j<noise_corr.size();j++) {
+        for(size_t j=0;j<noise_corr.size();j++) {
             noise[j]=noise_corr[j]+noise_unc[j];
        //     if(j<10) std::cout << "channel " << channel << " j " << j << " noise_unc " << noise_unc[j] << std::endl;
        //     if(j<10) std::cout << "channel " << channel << " j " << j << " noise_corr " << noise_corr[j] << std::endl;
