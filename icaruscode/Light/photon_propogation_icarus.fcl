@@ -1,0 +1,10 @@
+
+BEGIN_PROLOG
+	
+photon_propogration_icarus:
+{	
+  module_type:               "PhotonPropogationICARUS"
+  SimPhotonsModuleLabel:     "SimPhotons"
+}
+
+END_PROLOG
