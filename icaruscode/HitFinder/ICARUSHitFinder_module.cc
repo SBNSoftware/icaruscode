@@ -368,10 +368,10 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
           geo::PlaneID::PlaneID_t plane = wid.Plane;
           size_t cryostat=wid.Cryostat;
           size_t tpc=wid.TPC;
-size_t iWire=wid.Wire;
+          size_t iWire=wid.Wire;
 
 
-      holder.clear();
+          holder.clear();
 
       //GET THE REFERENCE TO THE CURRENT raw::RawDigit.
       channel   = rawdigits->Channel();
@@ -456,9 +456,9 @@ size_t iWire=wid.Wire;
 
       reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
           
-    std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+      std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           
-          fHitFinderTool->findHitCandidates(holder, plane, double(iwire),hitCandidateVec);
+          fHitFinderTool->findHitCandidates(holder, 0, channel, 0, hitCandidateVec);
           for(auto& hitCand : hitCandidateVec) {
             expandHit(hitCand,holder,hitCandidateVec);
           }

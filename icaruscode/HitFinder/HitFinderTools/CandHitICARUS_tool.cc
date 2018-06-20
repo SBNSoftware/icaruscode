@@ -29,13 +29,8 @@ public:
     
     void findHitCandidates(const std::vector<float>&,
                            size_t,
-                           double,
-                           HitCandidateVec&) const override;
-    
-    void findHitCandidates(std::vector<float>::const_iterator,
-                           std::vector<float>::const_iterator,
                            size_t,
-                           double,
+                           size_t,
                            HitCandidateVec&) const override;
     
     void MergeHitCandidates(const Waveform&,
@@ -43,7 +38,14 @@ public:
                             MergeHitCandidateVec&) const override;
     
 private:
-      void expandHit(HitCandidate& h, std::vector<float> holder, HitCandidateVec how);
+    
+    void findHitCandidates(std::vector<float>::const_iterator,
+                           std::vector<float>::const_iterator,
+                           size_t,
+                           double,
+                           HitCandidateVec&) const;
+
+    void expandHit(HitCandidate& h, std::vector<float> holder, HitCandidateVec how);
     void prova() {return ;}
     
     int          fInd1Width;            //INITIAL WIDTH FOR INDUCTION HITFINDING.
@@ -100,14 +102,21 @@ void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
 }
     
 void CandHitICARUS::findHitCandidates(const std::vector<float>& waveform,
-                                        size_t plane, double wire,
+                                        size_t roiStart, size_t channel, size_t cnt,
                                         HitCandidateVec& hits) const
 {
+    // get the WireID for this hit
+    std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+    // for now, just take the first option returned from ChannelToWire
+    geo::WireID wid  = wids[0];
+    // We need to know the plane to look up parameters
+    geo::PlaneID::PlaneID_t plane = wid.Plane;
+
     if(plane!=2) return;
-   // if(wire>2639) return;
-//for( int j=0;j<4096;j++)
-  //  std::cout << " j " << " waveform " << waveform[j] << std::endl;
-int iflag;
+    // if(wire>2639) return;
+    //for( int j=0;j<4096;j++)
+    //  std::cout << " j " << " waveform " << waveform[j] << std::endl;
+    int iflag;
     int localbellow,rising;
     int begin;
     // int nSamp=digitVec->Samples();

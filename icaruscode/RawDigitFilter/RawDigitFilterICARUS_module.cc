@@ -366,7 +366,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                 
                 pedCorrectedVec.resize(rawadc.size(),0);
                 
-                std::transform(rawadc.begin(),rawadc.end(),pedCorrectedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorWireVec[wireIdx]));
+            std::transform(rawadc.begin(),rawadc.end(),pedCorrectedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorWireVec[wireIdx]));
                 
                 saveRawDigits(filteredRawDigit, channel, pedCorrectedVec, truncMeanWireVec[wireIdx], truncRmsWireVec[wireIdx]);
              
@@ -435,7 +435,7 @@ void RawDigitFilterICARUS::produce(art::Event & event)
                     caldata::RawDigitVector& rawDataVec = rawDataWireTimeVec[locWireIdx];
                     
                     fCharacterizationAlg.getTruncatedRMS(rawDataVec, deltaPed, rmsVal);
-                    
+
                     // The ultra high noise channels are simply zapped
                     if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))
                     {
