@@ -18,8 +18,6 @@ services:
   RandomNumberGenerator: {} #ART native random number generator
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_basic_services
-  AuxDetExptGeoHelperInterface: { service_provider: "icaruscode/CRT/CRTGeometryHelper" }
-  AuxDetGeometry: { @table::icarus_geo }
 }
 
 #source is now a root file
