@@ -280,8 +280,18 @@ void CRTDetSim::produce(art::Event & e) {
       // In the AuxDetChannelMapAlg methods, channels are identified by an
       // AuxDet name (retrievable given the hit AuxDet ID) which specifies a
       // module, and a channel number from 0 to 32.
-      uint32_t moduleID = adsc.AuxDetID();
-      uint32_t stripID = adsc.AuxDetSensitiveID();
+
+      std::string modBase = "volAuxDet_Module_";
+      std::string stripBase = "volAuxDetSensitive_Module_xxx_Strip_";
+
+      std::string adName = adGeo.TotalVolume()->GetName();
+      std::string adsName = adsGeo.TotalVolume()->GetName();
+
+      uint32_t moduleID = atoi(adName.substr( modBase.size(), 3).c_str());
+      uint32_t stripID = atoi(adsName.substr( stripBase.size(), 2).c_str());
+
+      //uint32_t moduleID = adsc.AuxDetID();
+      //uint32_t stripID = adsc.AuxDetSensitiveID();
       uint32_t channel0ID=0, channel1ID=0;
 
       switch (auxDetType){
