@@ -33,8 +33,8 @@
 #include "TNtuple.h"
 #include "TGeoManager.h"
 #include "TGeoNode.h"
-#include "CRTData.hh"
-#include "CRTDetSim.h"
+#include "icaruscode/CRT/CRTData.hh"
+#include "icaruscode/CRT/CRTDetSim.h"
 
 #include <cmath>
 #include <memory>
@@ -58,7 +58,7 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fTDelayRMSExpShift = p.get<double>("TDelayRMSExpShift");
   fTDelayRMSExpScale = p.get<double>("TDelayRMSExpScale");
   fPropDelay = p.get<double>("PropDelay");
-  fPropDelayError = p.get<double>("fPropDelayError");
+  fPropDelayError = p.get<double>("PropDelayError");
   fTResInterpolator = p.get<double>("TResInterpolator");
   fNpeScaleNorm = p.get<double>("NpeScaleNorm");
   fNpeScaleShift = p.get<double>("NpeScaleShift");
@@ -69,6 +69,7 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fQRMS = p.get<double>("QRMS");
   fQThreshold = p.get<double>("QThreshold");
   fStripCoincidenceWindow = p.get<double>("StripCoincidenceWindow");
+  fLayerCoincidenceWindow = p.get<double>("LayerCoincidenceWindow");
   fAbsLenEff = p.get<double>("AbsLenEff");
 }
 
@@ -82,6 +83,7 @@ CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) {
   produces<std::vector<icarus::crt::CRTData> >();
 }
 
+//function takes reference to AuxDetGeo object and gives parent subsystem
 char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 {
   std::string base = "volAuxDet_Module_010_";
@@ -103,7 +105,10 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 }
 
 
-//function for simulation time response
+//function for simulating time response
+//  takes true hit time, LY(PE) observed, and longitudinal distance from readout
+//  uses 12 FHiCL configurable parameters
+//  returns simulated time in units of clock ticks
 uint32_t CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
                                          detinfo::ElecClock& clock,
                                          float t0, float npeMean, float r) {
@@ -170,7 +175,8 @@ void CRTDetSim::produce(art::Event & e) {
     const geo::AuxDetGeo& adGeo = \
         geoService->AuxDet(adsc.AuxDetID());
 
-    if( adGeo.NSensitiveVolume() < adsc.AuxDetSensitiveID()+1){// || adsc.AuxDetSensitiveID()==0 ){
+    //check stripID is consistent with number of sensitive volumes
+    if( adGeo.NSensitiveVolume() < adsc.AuxDetSensitiveID()+1){
         std::cout << "adsID out of bounds! Skipping..." << "\n"
                   << "   " << adGeo.Name()  << " / modID "   << adsc.AuxDetID()
                   << " / stripID " << adsc.AuxDetSensitiveID() 
@@ -181,6 +187,7 @@ void CRTDetSim::produce(art::Event & e) {
     const geo::AuxDetSensitiveGeo& adsGeo = \
         adGeo.SensitiveVolume(adsc.AuxDetSensitiveID());
 
+    //parent subsystem of module (c,m,d), e if not found
     char auxDetType = GetAuxDetType(adGeo);
 
     // Simulate the CRT response for each hit
@@ -194,13 +201,15 @@ void CRTDetSim::produce(art::Event & e) {
       double world[3] = {x, y, z};
       double svHitPosLocal[3];
       double modHitPosLocal[3];
-      adsGeo.WorldToLocal(world, svHitPosLocal);
-      adGeo.WorldToLocal(world, modHitPosLocal);
+      adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame (origin at center)
+      adGeo.WorldToLocal(world, modHitPosLocal); //position in module fram (origin at center)
 
+      //for CERN and DC modules, check which layer of strips hit is in for dual layer coincidence
       unsigned layid = 0;
       if (auxDetType=='c'||auxDetType=='d') layid = (modHitPosLocal[1] > 0);
       //else layid = 0;
 
+      //longitudinal distance (cm) along the strip for fiber atten. calculation
       double distToReadout = abs( adsGeo.HalfLength() - svHitPosLocal[2]);
       double distToReadout2 = abs(-adsGeo.HalfHeight() - svHitPosLocal[2]);
 
@@ -219,7 +228,7 @@ void CRTDetSim::produce(art::Event & e) {
 
       switch(auxDetType){
           case 'c' : 
-              d0 = abs(-adsGeo.HalfWidth1() + 6 - svHitPosLocal[0]);  // L
+              d0 = abs(-adsGeo.HalfWidth1() + 6 - svHitPosLocal[0]);  // L (fibers 6cm from edge)
               d1 = abs(adsGeo.HalfWidth1() - 6  - svHitPosLocal[0]);  // R
               break;
           case 'm' : 
@@ -232,6 +241,7 @@ void CRTDetSim::produce(art::Event & e) {
               break;
       }
 
+      //FIX ME (ONLY DOES SOMETHING FOR C MODULES!
       double abs0 = exp(-d0 / fAbsLenEff);
       double abs1 = exp(-d1 / fAbsLenEff);
       double npeExp0 = npeExpected * abs0 / (abs0 + abs1);
