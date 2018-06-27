@@ -14,7 +14,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
-#include "larreco/HitFinder/HitFinderTools/IWaveformAlgs.h"
+#include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
 
 #include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
@@ -138,8 +138,7 @@ private:
     int                  fStructuringElement;  //< Window size for morphologcial filter
     
     // Member variables from the fhicl file
-    std::unique_ptr<reco_tool::IWaveformAlgs>   fWaveformAlgs;
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    std::unique_ptr<reco_tool::IWaveformTool> fWaveformTool;
 
     // Pointers to the histograms we'll create.
     std::vector<TH1D*>                  fTruncMeanHist;
@@ -199,16 +198,13 @@ void BasicWireAnalysis::configure(fhicl::ParameterSet const & pset)
     fMinHitHeight        = pset.get<            float  >("MinHitHeight",        2.0);
     fNumInterveningTicks = pset.get<            size_t >("NumInterveningTicks", 6 );
     fStructuringElement  = pset.get<            int    >("StructuringElement",  20);
-
-    // Recover the baseline tool
-    fWaveformAlgs = art::make_tool<reco_tool::IWaveformAlgs> (pset.get<fhicl::ParameterSet>("WaveformAlgs"));
     
     // Recover an instance of the waveform tool
     fhicl::ParameterSet waveformToolParams;
     
-    waveformToolParams.put<std::string>("tool_type","Waveform");
+    waveformToolParams.put<std::string>("tool_type","WaveformTools");
     
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    fWaveformTool = art::make_tool<reco_tool::IWaveformTool>(waveformToolParams);
 }
 
 //----------------------------------------------------------------------------
@@ -323,9 +319,11 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
 
             // In this case we want to find hit candidates based on the derivative of of the input waveform
             // We get this from our waveform algs too...
+            Waveform rawDerivativeVec;
             Waveform derivativeVec;
-        
-            fWaveformAlgs->getSmoothDerivativeVec(waveform, derivativeVec);
+
+            fWaveformTool->firstDerivative(waveform, rawDerivativeVec);
+            fWaveformTool->triangleSmooth(rawDerivativeVec,derivativeVec);
             
             // We keep track of the waveform and derivative:
             TProfile* waveHist =
@@ -368,22 +366,22 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
             Waveform openingVec;
             
             // Define histograms for this particular channel?
-            icarus_tool::HistogramMap histogramMap;
+            reco_tool::HistogramMap histogramMap;
             
-            histogramMap[icarus_tool::WAVEFORM] = waveHist;
-            histogramMap[icarus_tool::EROSION] =
+            histogramMap[reco_tool::WAVEFORM] = waveHist;
+            histogramMap[reco_tool::EROSION] =
               dir.make<TProfile>(Form("WEro_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Erosion", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::DILATION] =
+            histogramMap[reco_tool::DILATION] =
               dir.make<TProfile>(Form("WDil_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Dilation", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::AVERAGE] =
+            histogramMap[reco_tool::AVERAGE] =
               dir.make<TProfile>(Form("WAve_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Average", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::DIFFERENCE] =
+            histogramMap[reco_tool::DIFFERENCE] =
               dir.make<TProfile>(Form("WDif_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::CLOSING] =
+            histogramMap[reco_tool::CLOSING] =
               dir.make<TProfile>(Form("WClo_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Closing", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::OPENING] =
+            histogramMap[reco_tool::OPENING] =
               dir.make<TProfile>(Form("WOpe_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Opening", waveform.size(), 0, waveform.size(), -500., 500.);
-            histogramMap[icarus_tool::DOPENCLOSING] =
+            histogramMap[reco_tool::DOPENCLOSING] =
                 dir.make<TProfile>(Form("WDOC_%03zu_ctw%01zu-%01zu-%01zu-%05zu-%05zu",size_t(eventNum),cryo,tpc,plane,wireNum,size_t(roiStartTick)), "Difference", waveform.size(), 0, waveform.size(), -500., 500.);
 
             // Compute the morphological filter vectors
