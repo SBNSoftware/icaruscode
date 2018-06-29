@@ -118,23 +118,29 @@ icarus_reco_producers.rawdigitfilter.FFTNoise:                                  
 icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                            [1, 1, 1]
 
 icarus_reco_producers.recowire.DigitModuleLabel:                                 "rawdigitfilter"
-icarus_reco_producers.recowire.Threshold:                                        [0, 0, 0]
-icarus_reco_producers.recowire.NumSigma:                                         [3, 3, 3]
 
 icarus_reco_producers.recowireraw.DigitModuleLabel:                              "rawdigitfilter"
 
 icarus_reco_producers.gaushit.CalDataModuleLabel:                                "recowire"
-icarus_reco_producers.gaushit.MinSig:                                            [  5.,   5.,   5.  ]
-icarus_reco_producers.gaushit.MinWidth:                                          [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.AreaNorms:                                         [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushit.MaxMultiHit:                                       20
-icarus_reco_producers.gaushit.TryNplus1Fits:                                     false
-icarus_reco_producers.gaushit.Chi2NDF:                                           50.
-icarus_reco_producers.gaushit.CandidateHits:                                     @local::candhitfinder_derivative
-icarus_reco_producers.gaushit.CandidateHits.MinDeltaTicks:                       5
-icarus_reco_producers.gaushit.CandidateHits.MinDeltaPeaks:                       3
-icarus_reco_producers.gaushit.LongMaxHits:                                       [25, 25, 25]
-icarus_reco_producers.gaushit.LongPulseWidth:                                    [10, 10, 10]
+physics.producers.gaushit.AreaNorms:                                             [  1.0,  1.0,  1.0 ]
+physics.producers.gaushit.MaxMultiHit:                                           20
+physics.producers.gaushit.TryNplus1Fits:                                         false
+physics.producers.gaushit.Chi2NDF:                                               500.
+physics.producers.gaushit.PeakFitter.MinWidth:                                   1
+physics.producers.gaushit.LongMaxHits:                                           [25, 25, 25]
+physics.producers.gaushit.LongPulseWidth:                                        [10, 10, 10]
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0:                  @local::candhitfinder_morphological
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.Plane:            0
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:    4
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:    0.05
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1:                  @local::candhitfinder_morphological
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.Plane:            1
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:    4
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:    0.05
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2:                  @local::candhitfinder_morphological
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.Plane:            2
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:    4
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:    0.05
 
 icarus_reco_producers.icarushit.CalDataModuleLabel:                              "recowireraw"
 
