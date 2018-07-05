@@ -495,6 +495,7 @@ size_t iWire=wid.Wire;
           // ##################################################
           double                                chi2PerNDF(0.);
           int                                   NDF(1);
+          const int npk=mergedCands.size();
           ICARUSPeakParamsVec peakParamsVec;
           peakParamsVec.clear();
           int islong=0;
@@ -520,7 +521,7 @@ size_t iWire=wid.Wire;
           fChi2->Fill(chi2PerNDF);
           if(chi2PerNDF>30)      // change from 10 to reduce output
             std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
-/*
+
           if (chi2PerNDF > fChi2NDF)
           {
               islong=1;
@@ -528,7 +529,7 @@ size_t iWire=wid.Wire;
 
               fChi2->Fill(chi2PerNDF);
           }
-*/
+
           int jhit=0;
 
 
