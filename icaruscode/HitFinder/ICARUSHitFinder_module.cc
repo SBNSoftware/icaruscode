@@ -368,10 +368,10 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
           geo::PlaneID::PlaneID_t plane = wid.Plane;
           size_t cryostat=wid.Cryostat;
           size_t tpc=wid.TPC;
-          size_t iWire=wid.Wire;
+size_t iWire=wid.Wire;
 
 
-          holder.clear();
+      holder.clear();
 
       //GET THE REFERENCE TO THE CURRENT raw::RawDigit.
       channel   = rawdigits->Channel();
@@ -456,9 +456,9 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
       reco_tool::ICandidateHitFinder::MergeHitCandidateVec mergedCandidateHitVec;
           
-      std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+    std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           
-          fHitFinderTool->findHitCandidates(holder, 0, channel, 0, hitCandidateVec);
+          fHitFinderTool->findHitCandidates(holder, 0,channel,0,hitCandidateVec);
           for(auto& hitCand : hitCandidateVec) {
             expandHit(hitCand,holder,hitCandidateVec);
           }
@@ -496,13 +496,14 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
           double                                chi2PerNDF(0.);
           int                                   NDF(1);
           ICARUSPeakParamsVec peakParamsVec;
-          
+          peakParamsVec.clear();
           int islong=0;
           if (mergedCands.size() <= fMaxMultiHit)
           {
               //std::cout << "setting iwire " << iwire << std::endl;
              // fPeakFitterTool->setWire(iwire);
-        
+            //  std::cout << " fitting iwire " << iwire << std::endl;
+             // std::cout << " cryostat " << cryostat << " tpc " << tpc << " plane " << plane << " wire " << iwire << std::endl;
         findMultiPeakParameters(signal, mergedCands, peakParamsVec, chi2PerNDF, NDF, iwire);
 
           if (!(chi2PerNDF < std::numeric_limits<double>::infinity()))
@@ -519,7 +520,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
           fChi2->Fill(chi2PerNDF);
           if(chi2PerNDF>30)      // change from 10 to reduce output
             std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
-
+/*
           if (chi2PerNDF > fChi2NDF)
           {
               islong=1;
@@ -527,7 +528,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
               fChi2->Fill(chi2PerNDF);
           }
-        
+*/
           int jhit=0;
 
 
@@ -563,21 +564,21 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
               TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
               for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-              Func.SetParameter(0+5*jf,peakBaseline);
-              Func.SetParameter(1+5*jf,peakAmp);
-              Func.SetParameter(2+5*jf,peakMean);
-              Func.SetParameter(3+5*jf,peakRight);
-              Func.SetParameter(4+5*jf,peakLeft);
+              Func.SetParameter(1+5*jf,peakBaseline);
+              Func.SetParameter(2+5*jf,peakAmp);
+              Func.SetParameter(3+5*jf,peakMean);
+              Func.SetParameter(4+5*jf,peakRight);
+              Func.SetParameter(5+5*jf,peakLeft);
               }
               TF1 FuncLong("ICARUSfuncLong",fitlong,start,end,1+7*mergedCands.size());
               for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-                  Func.SetParameter(0+7*jf,peakBaseline);
-                  Func.SetParameter(1+7*jf,peakAmp);
-                  Func.SetParameter(2+7*jf,peakMean);
-                  Func.SetParameter(3+7*jf,peakRight);
-                  Func.SetParameter(4+7*jf,peakLeft);
-                  Func.SetParameter(5+7*jf,peakFitWidth);
-                  Func.SetParameter(6+7*jf,peakSlope);
+                  Func.SetParameter(1+7*jf,peakBaseline);
+                  Func.SetParameter(2+7*jf,peakAmp);
+                  Func.SetParameter(3+7*jf,peakMean);
+                  Func.SetParameter(4+7*jf,peakRight);
+                  Func.SetParameter(5+7*jf,peakLeft);
+                  Func.SetParameter(6+7*jf,peakFitWidth);
+                  Func.SetParameter(7+7*jf,peakSlope);
               }
 
               float fitCharge=0;
@@ -679,6 +680,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         ++hitIndex;
       } //end loop on found hits
         
+          
           if(plane==2&&cryostat==0&&tpc==0)
            if(wCharge[iwire]>0)
            fAreaC->Fill(wCharge[iwire]);
@@ -697,20 +699,9 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
     } //end loop on channels
       
- /*           double PhysWC=maxWireC-minWireC+1;
-             double NoiseWC=5119-480-(maxWireC-minWireC+1);
-      double PhysWI2=maxWireI2-minWireI2+1;
-      double NoiseWI2=5119-480-(maxWireI2-minWireI2+1);
-      double PhysWI1=1056;
-      double NoiseWI1=1056;
-    
-      std::cout << " Physical collection wires " << PhysWC << " single hit wires " << nw1hitC << " efficiency " << float(nw1hitC)/PhysWC << std::endl;
-      std::cout << " Average collection noise hits per wire " << nnhitsC << " " << NoiseWC << std::endl;
-      std::cout << " Physical ind2 wires " << PhysWI2 << " single hit wires " << nw1hitI2 << " noise " << nnhitsI2 << " efficiency " << float(nw1hitI2)/PhysWI2 << std::endl;
-      std::cout << " Average ind2 noise hits per wire " << nnhitsI2<< " " << NoiseWI2 << std::endl;
-      std::cout << " Physical ind1 wires " << PhysWI1 << " single hit wires " << nw1hitI1 << " efficiency " << float(nw1hitI1)/PhysWI1 << std::endl;
-      std::cout << " Average ind1 noise hits per wire " << nnhitsI1/NoiseWI1 << std::endl;
-*/
+      std::cout <<  " nhitsI1 " << nhitsI1 <<" nhitsI2 " << nhitsI2 <<" nhitsC " << nhitsC << std::endl;
+
+
       for(unsigned int jw=minWireC;jw<maxWireC;jw++)
           fnhwC->Fill(nhWire[jw]);
       
@@ -912,16 +903,12 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
                                                    double&                                     chi2PerNDF,
                                                    int&                                        NDF, int iWire) const
     {
+        ICARUSPeakParamsVec                              peakParamsVec0;
         TH1F* fHistogram=new TH1F("","",roiSignalVec.size(),0.,roiSignalVec.size());;
-        
+    
         std::string wireName = "PeakFitterHitSignal_" + std::to_string(iWire);
         fHistogram->SetName(wireName.c_str());
-        // The following is a translation of the original FitICARUSs function in the original
-        // GausHitFinder module originally authored by Jonathan Asaadi
-        //
-        // *** NOTE: this algorithm assumes the reference time for input hit candidates is to
-        //           the first tick of the input waveform (ie 0)
-        //
+        
         if (hitCandidateVec.empty()) return;
         
         // in case of a fit failure, set the chi-square to infinity
@@ -942,8 +929,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         }
         
         fHistogram->Reset();
-        for(int idx = 0; idx < roiSize; idx++) fHistogram->SetBinContent(idx+1,roiSignalVec.at(startTime+idx));
-        
+        for(int idx = 0; idx < roiSize; idx++)
+            fHistogram->SetBinContent(idx+1,roiSignalVec.at(startTime+idx));
         //for(int idx = 0; idx < roiSize; idx++)
         //   std::cout << " bin " << idx << " fHistogram " << fHistogram.GetBinContent(idx+1) << std::endl;
         
@@ -955,6 +942,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         // Now define the complete function to fit
         // Now define the complete function to fit
         TF1 Func("ICARUSfunc",fitf,0,roiSize,1+5*hitCandidateVec.size());
+        
         
         // ### Setting the parameters for the ICARUS Fit ###
         int parIdx(0);
@@ -998,10 +986,9 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
-       // return;
         
         if(fitResult!=0)
-            std::cout << " fit cannot converge " << std::endl;
+            std::cout << " icarus fit cannot converge " << iWire << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
@@ -1013,6 +1000,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         
         //      std::cout << " chi2ndf " << chi2PerNDF<< std::endl;
         parIdx = 0;
+        peakParamsVec0.clear();
+
         for(size_t idx = 0; idx < hitCandidateVec.size(); idx++)
         {
             ICARUSPeakFitParams_t peakParams;
@@ -1028,6 +1017,10 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
             peakParams.peakTauLeftError        = Func.GetParError(5+parIdx);
             peakParams.peakBaseline        = Func.GetParameter(1+parIdx);
             peakParams.peakBaselineError        = Func.GetParError(1+parIdx);
+            peakParams.peakFitWidth        =0;
+            peakParams.peakFitWidthError        = 0;
+            peakParams.peakSlope        = 0;
+            peakParams.peakSlopeError        = 0;
             peakParamsVec.emplace_back(peakParams);
             parIdx += 5;
             //std::cout << " first center " << Func.GetParameter(2) + float(startTime) << std::endl;
@@ -1035,12 +1028,16 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         }
         
         //Gaus.Delete();
-        Func.Delete();
-        TFile *f = new TFile("fitICARUS.root","UPDATE");
-        fHistogram->Write();
+        //Func.Delete();
+        bool writeWaveform=false;
+        if(writeWaveform) {
+       TFile *f = new TFile("fitICARUS.root","UPDATE");
+    fHistogram->Write();
         f->Close();
-        delete f;
-        delete fHistogram;
+        f->Delete();
+        }
+
+        fHistogram->Delete();
         return;
     }
 
@@ -1079,6 +1076,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         
         // Build the string to describe the fit formula
         std::string equation = "gaus(0)";
+        
+        
         
         // Now define the complete function to fit
         TF1 Func("ICARUSfunc",fitlong,0,roiSize,1+7*hitCandidateVec.size());
@@ -1122,7 +1121,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
         if(fitResult!=0)
-            std::cout << " fit cannot converge " << std::endl;
+            std::cout << " long fit cannot converge " << iWire << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
@@ -1158,12 +1157,16 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
             
         }
         
-        Func.Delete();
-        TFile *f = new TFile("fitICARUSlong.root","UPDATE");
-        fHistogram->Write();
-        f->Close();
-        delete f;
-        delete fHistogram;
+        //Func.Delete();
+        bool writeWaveform=false;
+        if(writeWaveform) {
+            TFile *f = new TFile("fitICARUS.root","UPDATE");
+            fHistogram->Write();
+            f->Close();
+            f->Delete();
+        }
+        
+        fHistogram->Delete();
         return;
     }
     
