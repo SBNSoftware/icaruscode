@@ -495,7 +495,7 @@ size_t iWire=wid.Wire;
           // ##################################################
           double                                chi2PerNDF(0.);
           int                                   NDF(1);
-          const int npk=mergedCands.size();
+          //const int npk=mergedCands.size();
           ICARUSPeakParamsVec peakParamsVec;
           peakParamsVec.clear();
           int islong=0;
