@@ -494,9 +494,11 @@ size_t iWire=wid.Wire;
           // ### Calling the function for fitting ICARUS ###
           // ##################################################
           double                                chi2PerNDF(0.);
+          double                                chi2Long(0.);
+
           int                                   NDF(1);
-          //const int npk=mergedCands.size();
-          ICARUSPeakParamsVec peakParamsVec;
+          const int npk=mergedCands.size();
+          ICARUSPeakParamsVec peakParamsVec(npk);
           peakParamsVec.clear();
           int islong=0;
           if (mergedCands.size() <= fMaxMultiHit)
@@ -518,21 +520,25 @@ size_t iWire=wid.Wire;
 
           //std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
           if (chi2PerNDF < fChi2NDF)
-          fChi2->Fill(chi2PerNDF);
+              fChi2->Fill(chi2PerNDF);
           if(chi2PerNDF>30)      // change from 10 to reduce output
-            std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
-
+              std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
+          ICARUSPeakParamsVec peakParamsLong(npk);
+          peakParamsLong.clear();
           if (chi2PerNDF > fChi2NDF)
           {
               islong=1;
-              findLongPeakParameters(signal, mergedCands, peakParamsVec, chi2PerNDF, NDF, iwire);
-
-              fChi2->Fill(chi2PerNDF);
+              findLongPeakParameters(signal, mergedCands, peakParamsLong, chi2Long, NDF, iwire);
+              if(chi2Long<chi2PerNDF) {
+                  fChi2->Fill(chi2Long);
+                  peakParamsVec=peakParamsLong;
+              }
+              else fChi2->Fill(chi2PerNDF);
           }
-
+          
           int jhit=0;
-
-
+          
+          
           for(const auto& peakParams : peakParamsVec)
           {
               // Extract values for this hit
@@ -988,6 +994,8 @@ size_t iWire=wid.Wire;
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
         
+       // if(fitResult==0)
+       //     std::cout << " icarus fit converges " << iWire << std::endl;
         if(fitResult!=0)
             std::cout << " icarus fit cannot converge " << iWire << std::endl;
         // ##################################################
@@ -996,7 +1004,7 @@ size_t iWire=wid.Wire;
         NDF        = roiSize-5*hitCandidateVec.size();
         chi2PerNDF = (Func.GetChisquare() / NDF);
         
-        //   std::cout << " chi2 " << Func.GetChisquare() << std::endl;
+         //  std::cout << " chi2ndf " << Func.GetChisquare() << std::endl;
         //  std::cout << " ndf " << NDF << std::endl;
         
         //      std::cout << " chi2ndf " << chi2PerNDF<< std::endl;
