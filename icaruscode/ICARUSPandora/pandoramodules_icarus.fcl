@@ -4,7 +4,7 @@ icarus_basicpandora:
 {
     module_type:                                 "StandardPandora"
     GeantModuleLabel:                            "largeant"
-    HitFinderModuleLabel:                        "linecluster"
+    HitFinderModuleLabel:                        "gaushit"
     EnableMCParticles:                           false
     EnableProduction:                            true
     EnableLineGaps:                              true
