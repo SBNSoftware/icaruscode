@@ -111,6 +111,10 @@ namespace hit {
                                   ICARUSPeakParamsVec&,
                                   double&,
                                   int&, int) const;
+      double ComputeChiSquare(TF1 func, TH1 *histo) const;
+      double ComputeNullChiSquare(std::vector<float>) const;
+
+
       void setWire(int i) {
           iWire=i;
        //   std::cout << " setting iwire " << iWire << std::endl;
@@ -137,6 +141,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       
       //histograms
       TH1F* fFirstChi2;
+      TH1F* fNullChi2;
+
       TH1F* fChi2;
       TH1F* fHeightC;
       TH1F* fWidthC;
@@ -213,6 +219,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       // ======================================
       // === Hit Information for Histograms ===
       fFirstChi2	= tfs->make<TH1F>("fFirstChi2", "#chi^{2}", 10000, 0, 1000);
+      fNullChi2    = tfs->make<TH1F>("fNullChi2", "#chi^{2}", 100, 0, 10);
+
       fChi2	        = tfs->make<TH1F>("fChi2", "#chi^{2}", 10000, 0, 1000);
       fHeightC	= tfs->make<TH1F>("fHeightC", "height(ADC#)", 100, 0, 100);
       fWidthC	        = tfs->make<TH1F>("fWidthC", "width(samples)", 200, 0, 200);
@@ -450,6 +458,10 @@ size_t iWire=wid.Wire;
      // double hrms(0);
       //double totSig;
      
+          double chi2null=ComputeNullChiSquare(holder);
+          std::cout << " wire " << iWire << " chi2null " << chi2null << std::endl;
+          fNullChi2->Fill(chi2null);
+
 
     
       reco_tool::ICandidateHitFinder::HitCandidateVec      hitCandidateVec;
@@ -519,21 +531,25 @@ size_t iWire=wid.Wire;
           }
 
           //std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
-          if (chi2PerNDF < fChi2NDF)
+          if (chi2PerNDF < 10.)
               fChi2->Fill(chi2PerNDF);
-          if(chi2PerNDF>30)      // change from 10 to reduce output
-              std::cout << " wire " << iwire << " LARGE chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
+       //   if(chi2PerNDF<0.1)      // change from 10 to reduce output
+         //     std::cout << " wire " << iwire << " SMALL chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
           ICARUSPeakParamsVec peakParamsLong(npk);
           peakParamsLong.clear();
           if (chi2PerNDF > fChi2NDF)
           {
               islong=1;
               findLongPeakParameters(signal, mergedCands, peakParamsLong, chi2Long, NDF, iwire);
-              if(chi2Long<chi2PerNDF) {
+          //    if(chi2Long<0.3) std::cout << " small chi2long " << chi2Long << std::endl;
+              if(chi2Long<chi2PerNDF&&chi2Long>0.1) {
                   fChi2->Fill(chi2Long);
                   peakParamsVec=peakParamsLong;
               }
-              else fChi2->Fill(chi2PerNDF);
+              else { fChi2->Fill(chi2PerNDF);
+          //    if(chi2PerNDF<0.1)      // change from 10 to reduce output
+           //       std::cout << " wire " << iwire << " SMALLSMALL chi2NDF " << chi2PerNDF << " thr chi2NDF " << fChi2NDF << std::endl;
+          }
           }
           
           int jhit=0;
@@ -932,14 +948,16 @@ size_t iWire=wid.Wire;
         {
             std::string histName = "PeakFitterHitSignal_" + std::to_string(iWire);
             fHistogram = new TH1F(histName.c_str(),"",roiSize,0.,roiSize);
-            fHistogram->Sumw2();
+            //fHistogram->Sumw2();
         }
         
         fHistogram->Reset();
         for(int idx = 0; idx < roiSize; idx++)
             fHistogram->SetBinContent(idx+1,roiSignalVec.at(startTime+idx));
-        //for(int idx = 0; idx < roiSize; idx++)
-        //   std::cout << " bin " << idx << " fHistogram " << fHistogram.GetBinContent(idx+1) << std::endl;
+        for(int idx = 0; idx < roiSize; idx++)
+            fHistogram->SetBinError(idx+1,2.4);
+      //  for(int idx = 0; idx < roiSize; idx++)
+        //   std::cout << " bin " << idx << " Error " << fHistogram->GetBinError(idx+1) << std::endl;
         
         
         // Build the string to describe the fit formula
@@ -1004,8 +1022,14 @@ size_t iWire=wid.Wire;
         NDF        = roiSize-5*hitCandidateVec.size();
         chi2PerNDF = (Func.GetChisquare() / NDF);
         
-         //  std::cout << " chi2ndf " << Func.GetChisquare() << std::endl;
-        //  std::cout << " ndf " << NDF << std::endl;
+        double chi2mio=ComputeChiSquare(Func,fHistogram);
+        std::cout << " chi2mio " << chi2mio << std::endl;
+        chi2PerNDF=chi2mio;
+        //  for(int idx = 0; idx < roiSize; idx++)
+        //   std::cout << " bin " << idx << " Error " << fHistogram->GetBinError(idx+1) << std::endl;
+        
+         std::cout << " chi2 " << Func.GetChisquare() << std::endl;
+         std::cout << " ndf " << NDF << std::endl;
         
         //      std::cout << " chi2ndf " << chi2PerNDF<< std::endl;
         parIdx = 0;
@@ -1199,6 +1223,49 @@ Double_t ICARUSHitFinder::fitlong(Double_t *x, Double_t *par)
         }
         return fitval;
     }
+    
+    double ICARUSHitFinder::ComputeChiSquare(TF1 func, TH1 *histo) const
+    {
+        double chi=0;
+        int nb=histo->GetNbinsX();
+        double wb=histo->GetBinWidth(0);
+        
+        int jp;
+        for( jp=1;jp<nb;jp++) {
+            if(histo->GetBinContent(jp)==0) break;
+            double xb=jp*wb;
+            double fv=(func)(xb);
+            double hv=histo->GetBinContent(jp);
+            double dv=hv-fv;
+            double cv=dv/(histo->GetBinError(jp));
+            chi+=cv*cv;
+            //std::cout << " chi " << chi << std::endl;
+            
+        }
+        std::cout << " chi2mio" << chi << std::endl;
+        //std::cout << " ndf " << ndf << std::endl;
+        return chi/(jp-5);
+    }
+    double ICARUSHitFinder::ComputeNullChiSquare(std::vector<float> holder) const
+    {
+        double chi=0;
+        int nb=33;
+        
+        int jp;
+        for( jp=1;jp<nb;jp++) {
+            
+            double hv=holder[jp];
+            double dv=hv;
+            double cv=dv/2.4;
+            chi+=cv*cv;
+           // std::cout << " chi " << chi << std::endl;
+            
+        }
+       // std::cout << " chi2null" << chi << std::endl;
+        //std::cout << " ndf " << ndf << std::endl;
+        return chi/(jp);
+    }
+    
   
   DEFINE_ART_MODULE(ICARUSHitFinder)
 
