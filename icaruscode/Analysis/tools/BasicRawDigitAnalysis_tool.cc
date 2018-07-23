@@ -570,6 +570,9 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
 // Useful for normalizing histograms
 void BasicRawDigitAnalysis::endJob(int numEvents)
 {
+    // Nothing to do if nothing was initialized
+    if (fAveFFTPowerVec.empty()) return;
+    
     // A task to complete is to fit the average power displays with aim to develop a "good" filter function and
     // get the signal to noise ratio
     for(size_t planeIdx = 0; planeIdx < fGeometry.Nplanes(); planeIdx++)
