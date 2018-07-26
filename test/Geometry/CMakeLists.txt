@@ -6,9 +6,8 @@
 # FCL files need to be copied to the test area (DATAFILES directive) since they
 # are not installed.
 cet_test(geometry_icarus HANDBUILT
-  DATAFILES test_geometry_icarus.fcl
   TEST_EXEC lar
-  TEST_ARGS --rethrow-all --config ./test_geometry_icarus.fcl
+  TEST_ARGS --rethrow-all --config test_geometry_icarus.fcl
 #  OPTIONAL_GROUPS Broken
 )
 
@@ -19,8 +18,7 @@ cet_test(geometry_icarus HANDBUILT
 # unit test (use the hard-coded channel mapping for ICARUS geometry)
 cet_test(geometry_icarus_test
   SOURCES geometry_icarus_test.cxx
-  DATAFILES test_geometry_icarus.fcl
-  TEST_ARGS ./test_geometry_icarus.fcl
+  TEST_ARGS test_geometry_icarus.fcl
   LIBRARIES icarus_Geometry
             larcorealg_Geometry
             GeometryTestLib
