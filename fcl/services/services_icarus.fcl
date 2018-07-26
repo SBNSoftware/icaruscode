@@ -156,8 +156,7 @@ icarus_basic_services:
 
     ExptGeoHelperInterface:              @local::icarus_geometry_helper
     Geometry:                            @local::icarus_geo
-    #LArSeedService:                     @local::random_seedservice #use provided seeed service
-    NuRandomService:                     @local::random_NuRandomService
+    NuRandomService:                     @local::per_event_NuRandomService
 
     DetectorPropertiesService:           @local::icarus_detproperties
     LArPropertiesService:                @local::standard_properties
