@@ -1,0 +1,54 @@
+#
+# File:    prod_empty_icarus.fcl
+# Purpose: Produce empty art events (no data product at all).
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    20180705
+# Version: 1.0
+# 
+# This job produces empty art events with no content. The event time stamp is
+# assigned from the system clock of the node running the job.
+# A typical usage overrides the output file name and the number of events:
+#     
+#     lar -c prod_empty_icarus.fcl -o EmptyEvents1000.root -n 1000
+#     
+# 
+# Note: this job is unrelated to the similarly named `prod_empty.fcl`,
+# which actually produces a single particle.
+#
+# Dependencies
+# -------------
+# 
+#  * GeneratedEventTimeStamp plugin
+#
+#
+# Changes
+# --------
+#
+# 20170705 (petrillo@slac.stanford.edu) [v1.0]
+#   original version
+#
+
+#include "emptyevent_icarus.fcl"
+
+process_name: Empty
+
+source: @local::emptyevent_icarus
+
+physics: {
+  
+  # end-paths:
+  output: [ artroot ]
+  
+  trigger_paths: []
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs: {
+  artroot: {
+    module_type: RootOutput
+    fileName:   "EmptyEvents.root"
+  }
+}
+

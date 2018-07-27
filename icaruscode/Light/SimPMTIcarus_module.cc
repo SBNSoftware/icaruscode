@@ -13,11 +13,10 @@
 #include "canvas/Utilities/InputTag.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Optional/RandomNumberGenerator.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -28,27 +27,25 @@
 #include <map>
 #include <unordered_map>
 #include <set>
-#include <sstream>
-#include <fstream>
-
-extern "C" {
-#include <sys/types.h>
-#include <sys/stat.h>
-}
 
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
 #include "larcore/Geometry/Geometry.h"
-#include "lardataobj/Simulation/sim.h"
-#include "lardataobj/Simulation/SimChannel.h"
-#include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "nutools/RandomUtils/NuRandomService.h"
 
-#include "TMath.h"
-#include "TH1D.h"
-#include "TRandom3.h"
-#include "TF1.h"
+#include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
+#include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandExponential.h"
+
+
+namespace {
+  template <typename T>
+  T sqr(T v) { return v*v; }
+} // local namespace
 
 namespace opdet{
   
@@ -73,7 +70,7 @@ namespace opdet{
     art::InputTag fInputModuleName;
     
     double fSampling;       //wave sampling frequency (GHz)
-    unsigned int fNsamples; //Samples per waveform
+    std::size_t fNsamples; //Samples per waveform
     double fQE;             //PMT quantum efficiency
     
     size_t fReadoutWindowSize;     ///ReadoutWindowSize in samples
@@ -99,6 +96,8 @@ namespace opdet{
     double fMeanAmplitude;  //in pC
     
     void AddSPE(size_t time_bin, std::vector<double>& wave); // add single pulse to auxiliary waveform
+    /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
+    void AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const;
     double Pulse1PE(double time) const;
     
     std::vector<double> wsp; //single photon pulse vector
@@ -116,14 +115,18 @@ namespace opdet{
     void AddDarkNoise(std::vector<double>& wave); //add noise to baseline
     void AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm);
     void CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector);
-    void CreateBeamGateTriggers(std::set<size_t>& trigger_locations);
-    void FindTriggers(std::vector<double> const& wvfm,
-		      std::set<size_t>& trigger_locations);
+    std::set<size_t> CreateBeamGateTriggers() const;
+    std::set<size_t> FindTriggers(std::vector<double> const& wvfm) const;
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
 			      std::vector<double> const& wvfm,
 			      std::vector<raw::OpDetWaveform>& output_opdets);
 
     std::unordered_map< raw::Channel_t,std::vector<double> > fFullWaveforms;
+    detinfo::DetectorClocks const* fTimeService = nullptr; ///< DetectorClocks service provider.
+    CLHEP::HepRandomEngine* fRandomEngine = nullptr; ///< Main random stream engine.
+    
+    /// Returns a random response whether a photon generates a photoelectron.
+    bool KicksPhotoelectron() const;
     
   };
   
@@ -135,10 +138,10 @@ namespace opdet{
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     
-    fInputModuleName = p.get< std::string >("InputModule" );
+    fInputModuleName = p.get< art::InputTag >("InputModule" );
     fTransitTime     = p.get< double >("TransitTime"  ); //ns
     fADC             = p.get< double >("ADC"          ); //voltage to ADC factor
-    fBaseline        = p.get<uint16_t>("Baseline"     ); //in ADC
+    fBaseline        = p.get< double >("Baseline"     ); //in ADC counts (may be fractional)
     fFallTime        = p.get< double >("FallTime"     ); //in ns
     fRiseTime        = p.get< double >("RiseTime"     ); //in ns
     fMeanAmplitude   = p.get< double >("MeanAmplitude"); //in pC
@@ -166,8 +169,8 @@ namespace opdet{
     auto const* LarProp = lar::providerFrom<detinfo::LArPropertiesService>();
     fQE = temp_fQE/(LarProp->ScintPreScale());
     
-    auto const* TimeService  = lar::providerFrom< detinfo::DetectorClocksService >();
-    fSampling = TimeService->OpticalClock().Frequency();
+    fTimeService = lar::providerFrom< detinfo::DetectorClocksService >();
+    fSampling = fTimeService->OpticalClock().Frequency();
     fNsamples = fReadoutEnablePeriod * fSampling ; //us * MHz cancels out
     
     mf::LogDebug("SimPMTICARUS") << "PMT corrected efficiency = " << fQE << std::endl;
@@ -183,10 +186,6 @@ namespace opdet{
     mf::LogDebug("SimPMTICARUS") << "Sampling = " << fSampling << " MHz." << std::endl;
 
 
-  //Random number engine initialization
-    int seed = time(NULL);
-    gRandom = new TRandom3(seed);
-    
     //shape of single pulse
     sigma1 = fRiseTime/1.687;
     sigma2 = fFallTime/1.687;
@@ -197,46 +196,72 @@ namespace opdet{
     for(int i=0; i<pulsesize; i++){
       wsp[i]=(Pulse1PE(static_cast< double >(i)*1.e3/fSampling));
     }
+    
+    // create a default random engine; obtain the random seed from NuRandomService,
+    // unless overridden in configuration with key "Seed";
+    // currently using only one stream, but it is recommended that one stream is used
+    // per task, so that a change in one task does not cascade on all others.
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed");
+    
   }
 
   void SimPMTIcarus::CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector){
 
     fFullWaveforms.clear();
-
+    
     for(auto const& photons : pmtVector){
 
-      fFullWaveforms[photons.OpChannel()].resize(fNsamples,fBaseline);
-      for(auto const& ph : photons)
-	AddPhoton(ph,fFullWaveforms[photons.OpChannel()]);
-      if(fAmpNoise>0.) AddNoise(fFullWaveforms[photons.OpChannel()]);
-      AddDarkNoise(fFullWaveforms[photons.OpChannel()]);
+      auto& waveform = fFullWaveforms[photons.OpChannel()];
+      waveform.resize(fNsamples,fBaseline);
+      // collect the amount of photoelectrons arriving at each tick
+      std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
+      for(auto const& ph : photons) {
+        if (!KicksPhotoelectron()) continue;
+        
+        double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
+        if ((mytime < 0.0) || (mytime >= fReadoutEnablePeriod)) continue;
 
-      for(size_t k=0; k<fNsamples; k++){ //Implementing saturation effects
-	if(fFullWaveforms[photons.OpChannel()][k]<(fBaseline+fSaturation*fADC*fMeanAmplitude))	
-	  fFullWaveforms[photons.OpChannel()][k]=fBaseline+fSaturation*fADC*fMeanAmplitude;
+        std::size_t const iSample = static_cast<std::size_t>(mytime * fSampling);
+        if (iSample >= fNsamples) continue;
+        ++PhotoelectronsPerSample[iSample];
+      } // for photons
+      
+      // add the collected photoelectrons to the waveform
+      for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
+        auto const nPE = PhotoelectronsPerSample[iSample];
+        if (nPE == 0) continue;
+        if (nPE == 1) AddSPE(iSample, waveform); // faster if n = 1
+        else AddPhotoelectrons(iSample, nPE, waveform);
+      }
+      if(fAmpNoise>0.) AddNoise(waveform);
+      AddDarkNoise(waveform);
+
+      // Implementing saturation effects;
+      // waveform is negative, and saturation is a minimum ADC count
+      auto const saturationLevel = fBaseline + fSaturation*fADC*fMeanAmplitude;
+      for (auto& sample: waveform) {
+	if (sample < saturationLevel) sample = saturationLevel;
       }
     }
 
   }//end CreateFullWaveforms
 
-  void SimPMTIcarus::CreateBeamGateTriggers(std::set<size_t>& trigger_locations)
+  std::set<size_t> SimPMTIcarus::CreateBeamGateTriggers() const
   {
     double trig_time;
-    auto const* TimeService  = lar::providerFrom< detinfo::DetectorClocksService >();
-    
+    std::set<size_t> trigger_locations;
     for(size_t i_trig=0; i_trig<fBeamGateTriggerNReps; ++i_trig){
-      trig_time = (TimeService->BeamGateTime()-TimeService->TriggerTime())+fBeamGateTriggerRepPeriod*i_trig-fTriggerOffsetPMT;
+      trig_time = (fTimeService->BeamGateTime()-fTimeService->TriggerTime())+fBeamGateTriggerRepPeriod*i_trig-fTriggerOffsetPMT;
       if(trig_time<0 || trig_time>fReadoutEnablePeriod) continue;
       trigger_locations.insert(size_t(trig_time*fSampling));
     }
-    
+    return trigger_locations;
   }
   
-  void SimPMTIcarus::FindTriggers(std::vector<double> const& wvfm,
-				  std::set<size_t>& trigger_locations)
+  std::set<size_t> SimPMTIcarus::FindTriggers(std::vector<double> const& wvfm) const
   {
-    trigger_locations.clear();
-    if(fCreateBeamGateTriggers) CreateBeamGateTriggers(trigger_locations);
+    std::set<size_t> trigger_locations;
+    if (fCreateBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
     
     short val;
     bool above_thresh=false;
@@ -255,15 +280,14 @@ namespace opdet{
       } 
       
     }//end loop over waveform   
-    
+    return trigger_locations;
   }
   
   void SimPMTIcarus::CreateOpDetWaveforms(raw::Channel_t const& opch,
 					  std::vector<double> const& wvfm,
 					  std::vector<raw::OpDetWaveform>& output_opdets)
   {
-    std::set<size_t> trigger_locations;
-    FindTriggers(wvfm,trigger_locations);
+    std::set<size_t> trigger_locations = FindTriggers(wvfm);
 
     bool in_pulse=false;
     size_t trig_start=0,trig_stop=wvfm.size();
@@ -298,29 +322,30 @@ namespace opdet{
     }//end loop over waveform
   }
   
+  bool SimPMTIcarus::KicksPhotoelectron() const
+    { return CLHEP::RandFlat::shoot(fRandomEngine) < fQE; } 
+
   void SimPMTIcarus::AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm){
-    auto const* TimeService  = lar::providerFrom< detinfo::DetectorClocksService >();
-    double mytime = TimeService->G4ToElecTime(ph.Time+fTransitTime)-TimeService->TriggerTime()-fTriggerOffsetPMT;
+    if(CLHEP::RandFlat::shoot(fRandomEngine) >= fQE) return; // hit&miss random selection 
+    
+    double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
 
     if(mytime<0 || mytime>fReadoutEnablePeriod)
       return;
-    if((gRandom->Uniform(1.0))<(fQE)) AddSPE(size_t(mytime*fSampling),wvfm);
+    AddSPE(size_t(mytime*fSampling),wvfm);
   }
   
   void SimPMTIcarus::produce(art::Event & e)
   {
-    mf::LogDebug("SimPMTICARUS") <<"Event: " << e.id().event() << std::endl;
+    mf::LogDebug("SimPMTICARUS") << e.id() << std::endl;
 
-    std::unique_ptr< std::vector< raw::OpDetWaveform > > pulseVecPtr(std::make_unique< std::vector< raw::OpDetWaveform > > ());
+    // update the pointer to the random engine (probably not necessary...)
+    fRandomEngine = &(art::ServiceHandle<art::RandomNumberGenerator>()->getEngine());
+    fTimeService  = lar::providerFrom< detinfo::DetectorClocksService >();
+
+    auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
     
-    art::Handle< std::vector<sim::SimPhotons> > pmtHandle;
-    e.getByLabel(fInputModuleName, pmtHandle);
-    
-    if(!pmtHandle.isValid()){
-      mf::LogError("SimPMTICARUS") << "Did not find any G4 photons from producer." << std::endl;
-    }
-    
-    auto const& pmtVector(*pmtHandle);
+    auto const& pmtVector = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
     CreateFullWaveforms(pmtVector);
     for(auto const& full_wvfm : fFullWaveforms)
@@ -334,49 +359,59 @@ namespace opdet{
 
   double SimPMTIcarus::Pulse1PE(double time) const//single pulse waveform
   {
-    if (time < fTransitTime) return (fADC*fMeanAmplitude*std::exp(-1.0*pow(time - fTransitTime,2.0)/(2.0*pow(sigma1,2.0))));
-    else return (fADC*fMeanAmplitude*std::exp(-1.0*pow(time - fTransitTime,2.0)/(2.0*pow(sigma2,2.0))));
-    
+    double const sigma = (time < fTransitTime)? sigma1: sigma2;
+    return (fADC*fMeanAmplitude*std::exp(-sqr(time - fTransitTime)/(2.0*sqr(sigma))));
   }
+
+  
+  void SimPMTIcarus::AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const {
+    
+    if (time_bin >= fNsamples) return;
+    
+    std::size_t const min = time_bin;
+    std::size_t const max = std::min(time_bin + pulsesize, fNsamples);
+
+    for (std::size_t i = min; i < max; ++i) {
+      wave[i] += n * wsp[i-min];
+    }
+      
+  } // SimPMTIcarus::AddPhotoelectrons()
   
   void SimPMTIcarus::AddSPE(size_t time_bin, std::vector<double>& wave){
+     
+    if (time_bin >= fNsamples) return;
     
-    size_t min=0;
-    size_t max=0;
-    
-    if(time_bin<fNsamples){
-      min=time_bin;
-      max=time_bin+pulsesize < fNsamples ? time_bin+pulsesize : fNsamples;
+    std::size_t const min = time_bin;
+    std::size_t const max = std::min(time_bin + pulsesize, fNsamples);
 
-      for(size_t i = min; i<= max; i++){
-	wave[i]+= wsp[i-min];
-      }
-      
+    for (std::size_t i = min; i < max; ++i) {
+      wave[i] += wsp[i-min];
     }
+    
   }
   
   void SimPMTIcarus::AddNoise(std::vector<double>& wave){
     
-    double noise = 0.0;
+    CLHEP::RandGauss random(*fRandomEngine, 0.0, fAmpNoise);
+    for(auto& sample: wave) {
+      double const noise = random.fire(); //gaussian noise
+      sample += noise;
+    } // for sample
     
-    for(size_t i = 0; i<wave.size(); i++){
-      noise = gRandom->Gaus(0,fAmpNoise); //gaussian noise
-      wave[i] += noise;
-    }
-    
-  }
+  } // SimPMTIcarus::AddNoise()
   
   void SimPMTIcarus::AddDarkNoise(std::vector< double >& wave)
   {
+    if (fDarkNoiseRate == 0.0) return; // no dark noise
     size_t timeBin=0;
-
+    CLHEP::RandExponential random(*fRandomEngine, (1.0/fDarkNoiseRate)*1e9);
     // Multiply by 10^9 since fDarkNoiseRate is in Hz (conversion from s to ns)
-    double darkNoiseTime = static_cast< double >(gRandom->Exp((1.0/fDarkNoiseRate)*1000000000.0));
+    double darkNoiseTime = random.fire();
     while (darkNoiseTime < wave.size()){
       timeBin = (darkNoiseTime);
       AddSPE(timeBin,wave);
       // Find next time to add dark noise
-      darkNoiseTime += static_cast< double >(gRandom->Exp((1.0/fDarkNoiseRate)*1000000000.0));
+      darkNoiseTime += random.fire();
     }
   }
   

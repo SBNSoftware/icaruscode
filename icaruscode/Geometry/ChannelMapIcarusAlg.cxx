@@ -437,6 +437,8 @@ std::vector<geo::TPCID> ChannelMapIcarusAlg::ROPtoTPCs
 readout::ROPID ChannelMapIcarusAlg::ChannelToROP
   (raw::ChannelID_t channel) const
 {
+    if (!raw::isValidChannelID(channel)) return {}; // invalid ROP returned
+    
     // which wires does the channel cover?
     std::vector<geo::WireID> wires = ChannelToWire(channel);
   
@@ -445,7 +447,7 @@ readout::ROPID ChannelMapIcarusAlg::ChannelToROP
   
     // - one: maps its plane ID into a ROP ID
     return WirePlaneToROP(wires[0]);
-} // ChannelMapIcarusAlg::ROPtoTPCs()
+} // ChannelMapIcarusAlg::ChannelToROP()
 
 
 //----------------------------------------------------------------------------
