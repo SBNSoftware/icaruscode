@@ -23,8 +23,12 @@ icarus_hitfinder:
 
 icarus_hitselector:
 {
-  module_type: "HitSelector"
-  HitProducerLabel: "gaushit"
+  module_type:           "HitSelector"
+  HitProducerLabel:      "gaushit"
+  MinPulseHeightMulti:   [12.,  12.,  12. ]
+  MinPulseWidthMulti:    [ 3.8,  3.8,  3.8]
+  MinPulseHeightSingle:  [10.,  10.,  10. ]
+  MinPulseWidthSingle:   [ 3.6,  3.6,  3.6]
 }
 
 END_PROLOG

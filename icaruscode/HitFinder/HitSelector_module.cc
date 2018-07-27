@@ -52,7 +52,11 @@ private:
     using HitPtrVector = std::vector<art::Ptr<recob::Hit>>;
     
     // Fcl parameters.
-    art::InputTag fHitProducerLabel;         ///< The full collection of hits
+    art::InputTag      fHitProducerLabel;         ///< The full collection of hits
+    std::vector<float> fMinPulseHeightMulti;      ///< Multi hit snippets, minimum pulse height per plane
+    std::vector<float> fMinPulseWidthMulti;       ///< Multi hit snippets, minimum pulse width per plane
+    std::vector<float> fMinPulseHeightSingle;     ///< Single hit snippets, minimum pulse height per plane
+    std::vector<float> fMinPulseWidthSingle;      ///< Single hit snippets, minimum pulse width per plane
     
     // Statistics.
     int           fNumEvent;        ///< Number of events seen.
@@ -95,7 +99,11 @@ HitSelector::~HitSelector()
 ///
 void HitSelector::reconfigure(fhicl::ParameterSet const & pset)
 {
-    fHitProducerLabel = pset.get<art::InputTag>("HitProducerLabel");
+    fHitProducerLabel      = pset.get<art::InputTag>("HitProducerLabel");
+    fMinPulseHeightMulti   = pset.get<std::vector<float>>("MinPulseHeightMulti");
+    fMinPulseWidthMulti    = pset.get<std::vector<float>>("MinPulseWidthMulti");
+    fMinPulseHeightSingle  = pset.get<std::vector<float>>("MinPulseHeightSingle");
+    fMinPulseWidthSingle   = pset.get<std::vector<float>>("MinPulseWidthSingle");
 }
 
 //----------------------------------------------------------------------------
@@ -157,6 +165,9 @@ void HitSelector::produce(art::Event & evt)
             // Have we collected all of the hits on the same snippet?
             if (!hitSnippetVec.empty() && lastHitIndex >= curHitPtr->LocalIndex())
             {
+                // Recover plane
+                int plane = hitSnippetVec.front()->WireID().Plane;
+
                 // Only worried about multi hit snippets
                 if (hitSnippetVec.size() > 1)
                 {
@@ -167,8 +178,6 @@ void HitSelector::produce(art::Event & evt)
                     
                     if (maxPulseHeight > 6.)
                     {
-//                        int maxHitIdx = std::distance(hitSnippetVec.begin(),maxPulseHeightItr);
-                        
                         for(size_t idx = 0; idx < hitSnippetVec.size(); idx++)
                         {
                             art::Ptr<recob::Hit> hitPtr = hitSnippetVec.at(idx);
@@ -177,7 +186,9 @@ void HitSelector::produce(art::Event & evt)
                             float pulseWid    = hitPtr->RMS();
                             int   numDOF      = hitPtr->DegreesOfFreedom();
                             
-                            if (numDOF == 1 || (pulseHeight > 12. && pulseWid > 3.8))
+                            // Watch for case of long pulse trains (numDOF == 1) and keep all of these no matter
+                            // Otherwise, select on minimum pulse height and width
+                            if (numDOF == 1 || (pulseHeight > fMinPulseHeightMulti.at(plane) && pulseWid > fMinPulseWidthMulti.at(plane)))
                             {
                                 art::Ptr<recob::Wire>   wire      = hitToWireAssns.at(hitPtr.key());
                                 art::Ptr<raw::RawDigit> rawdigits = hitToRawDigitAssns.at(hitPtr.key());
@@ -187,6 +198,7 @@ void HitSelector::produce(art::Event & evt)
                         }
                     }
                 }
+                // Here we handle the case of single hits 
                 else
                 {
                     art::Ptr<recob::Hit> hitPtr = hitSnippetVec.front();
@@ -194,7 +206,7 @@ void HitSelector::produce(art::Event & evt)
                     float  pulseHeight = hitPtr->PeakAmplitude();
                     float  pulseWid    = hitPtr->RMS();
                     
-                    if (pulseHeight > 10. && pulseWid > 3.6)
+                    if (pulseHeight > fMinPulseHeightSingle.at(plane) && pulseWid > fMinPulseWidthSingle.at(plane))
                     {
                         art::Ptr<recob::Wire>   wire      = hitToWireAssns.at(hitPtr.key());
                         art::Ptr<raw::RawDigit> rawdigits = hitToRawDigitAssns.at(hitPtr.key());
