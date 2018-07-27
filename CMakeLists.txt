@@ -16,8 +16,8 @@
 # ======================================================================
 
 
-# use cmake 2.8 or later
-cmake_minimum_required (VERSION 3.3)
+# use cmake 3.10 or later
+cmake_minimum_required (VERSION 3.10)
 
 project(icaruscode)
 
