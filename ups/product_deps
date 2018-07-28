@@ -44,6 +44,9 @@ end_product_list
 # Make a table by adding columns before "notes". 
 # e15  - with gcc 6.4.0 and -std=c++1y
 qualifier	larsoft		icarusutil  icarus_data genie_xsec notes
+e17:debug	e17:debug	e17:debug   -nq-        DefaultPlusMECWithNC
+e17:opt		e17:opt		e17:opt     -nq-        DefaultPlusMECWithNC
+e17:prof    e17:prof	e17:prof    -nq-        DefaultPlusMECWithNC
 e15:debug	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
 e15:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
 e15:prof    e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
