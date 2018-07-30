@@ -81,6 +81,26 @@ icarus_rawdigitfilter:
     FFTAlg:                    @local::FFT_algorithm
 }
 
+icarus_rawdigitsmoother:
+{
+  module_type:            "RawDigitSmoother"
+  DigitModuleLabel:       "daq"
+  StructuringElementSize: 5
+  CharacterizationAlg:
+  {
+    TruncMeanFraction:     0.15
+    RMSRejectionCutHi:     [25., 25., 25.]
+    RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+    RMSSelectionCut:       [1.40, 1.40, 1.40]
+    MinMaxSelectionCut:    [13, 13, 11]
+    TheChosenWire:         1200
+    MaxPedestalDiff:       10.
+    FFTHistsWireGroup:     [1, 33, 34]
+    NumWiresToGroup:       [48, 48, 96]
+    FillHistograms:        true
+  }
+}
+
 icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.Plane:                0
 icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterFunction:       "x<0.2 ? gaus(0) : 1."
 icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.2, 0.005]
