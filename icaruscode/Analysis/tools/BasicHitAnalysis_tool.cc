@@ -323,7 +323,7 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
         if (hitPH < 0.)
         {
             negCount++;
-            std::cout << "Hit Plane: " << plane << ", wire: " << wire << ", T: " << peakTime << ", PH: " << hitPH << ", charge: " << charge << ", sumADC: " << sumADC << std::endl;
+            //std::cout << "Hit Plane: " << plane << ", wire: " << wire << ", T: " << peakTime << ", PH: " << hitPH << ", charge: " << charge << ", sumADC: " << sumADC << std::endl;
         }
         
         nHitsPerView[plane]++;
