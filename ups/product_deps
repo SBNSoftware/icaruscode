@@ -36,7 +36,7 @@ icarusutil      v06_85_00
 icarus_data     v06_69_01
 genie_xsec      v2_12_10
 
-cetbuildtools	v7_03_03	-	only_for_build
+cetbuildtools	v7_04_00	-	only_for_build
 end_product_list
 
 
