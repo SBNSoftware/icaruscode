@@ -13,6 +13,8 @@
 #include "wvfana.fcl"
 #include "icaopthitfinder.fcl"
 
+#include "photon_propogation_icarus.fcl"
+
 #include "mcreco.fcl"
 
 
@@ -73,11 +75,12 @@ physics:
  producers:
  {
    generator: @local::icarus_singlep	  
-   largeant:  @local::icarus_largeant	  
-   daq:       @local::icarus_simwire  
+   largeant:  @local::icarus_largeant
+   photprop:  @local::photon_propogration_icarus	  
+   #daq:       @local::icarus_simwire  
    backtrack: @local::standard_backtrackerloader
-   opdaq:     @local::icarus_simpmt
-   ophit:     @local::icarus_opthitfinder 
+   #opdaq:     @local::icarus_simpmt
+   #ophit:     @local::icarus_opthitfinder 
    rns:       {module_type: "RandomNumberSaver"}
  }
 
@@ -85,14 +88,16 @@ physics:
  {
    largana:   @local::standard_largeantana
    pmtresponse: @local::standard_simphotoncounter
-   wvfanalyzer:    @local::wvf_ana_icarus
+   #wvfanalyzer:    @local::wvf_ana_icarus
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- #simulate: [ generator, largeant, daq, backtrack, opdaq, rns ]
- simulate: [ generator, largeant, daq, backtrack, opdaq, ophit, rns ] 
- analyzeIt:  [ largana, pmtresponse, wvfanalyzer]
+ simulate: [ generator, largeant, photprop, backtrack, rns ]
+ #simulate: [ generator, largeant, photprop, daq, backtrack, opdaq, ophit, rns ]
+ #simulate: [ generator, largeant, daq, backtrack, opdaq, ophit, rns ] 
+ analyzeIt:  [ largana, pmtresponse]
+ #analyzeIt:  [ largana, pmtresponse, wvfanalyzer]
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
 
@@ -140,12 +145,12 @@ services.LArG4Parameters.UseCustomPhysics: true
 # disable cerenkov light
 #services.DetectorPropertiesService.EnableCerenkovLight: false
 
-physics.producers.generator.PDG: [ 13 ]            # muon
+physics.producers.generator.PDG: [ 2212 ]            # muon
 
 physics.producers.generator.Y0: [ 0 ]
-physics.producers.generator.X0: [ -200 ]
+physics.producers.generator.X0: [ -100 ]
 physics.producers.generator.Z0: [ 0 ]
-physics.producers.generator.P0: [ 1 ]
+physics.producers.generator.P0: [ 0.2 ]
 
 physics.producers.generator.SigmaX: [ 0 ]      # x = (0, 256)
 physics.producers.generator.SigmaY: [ 0 ]      # y = (-116.5, 116.5)
@@ -161,6 +166,8 @@ physics.producers.generator.SigmaThetaYZ: [ 0. ]
 #services.PhotonVisibilityService.T0_max: 55
 
 #physics.producers.generator.FillTree: true
+
+physics.analyzers.pmtresponse.InputModule: photprop
 
 physics.analyzers.pmtresponse.MakeAllPhotonsTree: true
 physics.analyzers.pmtresponse.MakeDetectedPhotonsTree: true

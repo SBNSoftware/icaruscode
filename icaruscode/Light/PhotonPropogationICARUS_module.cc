@@ -16,25 +16,39 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-#include <cmath>
-#include <algorithm>
-#include <vector>
 
+// LArSoft libraries
+#include "larsim/PhotonPropagation/PhotonVisibilityService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "larcore/Geometry/Geometry.h"
+#include "larcorealg/Geometry/OpDetGeo.h"
+#include "larcorealg/Geometry/geo_vectors_utils.h" // geo::vect::toPoint()
+#include "lardataobj/Simulation/SimPhotons.h"
+#include "nutools/RandomUtils/NuRandomService.h"
+
+// framework libraries
+#include "art/Framework/Services/Optional/RandomNumberGenerator.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Utilities/make_tool.h"
-#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Utilities/InputTag.h"
+// #include "art/Utilities/make_tool.h"
+// #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/ParameterSet.h"
 
-#include "nutools/RandomUtils/NuRandomService.h"
+// CLHEP/ROOT libraries
+// #include "CLHEP/Random/RandFlat.h"
+// #include "CLHEP/Random/RandPoissonQ.h"
+#include "CLHEP/Random/RandLandau.h"
 
-#include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "larsim/PhotonPropagation/PhotonVisibilityService.h"
+// C++ libraries
+// #include <cmath>
+// #include <algorithm>
+#include <vector>
+#include <memory> // std::make_unique()
 
-#include "lardataobj/Simulation/SimPhotons.h"
 
 class PhotonPropogationICARUS : public art::EDProducer
 {
@@ -42,13 +56,12 @@ public:
 
     // Copnstructors, destructor.
     explicit PhotonPropogationICARUS(fhicl::ParameterSet const & pset);
-    virtual ~PhotonPropogationICARUS();
 
     // Overrides.
     virtual void configure(fhicl::ParameterSet const & pset);
-    virtual void produce(art::Event & e);
-    virtual void beginJob();
-    virtual void endJob();
+    virtual void produce(art::Event & e) override;
+    virtual void beginJob() override;
+    virtual void endJob() override;
 
 private:
 
@@ -56,12 +69,16 @@ private:
     art::InputTag fSimPhotonModuleLabel;      ///< The full collection of SimPhotons
 
     // Statistics.
-    int fNumEvent;        ///< Number of events seen.
+    unsigned int fNumEvent = 0;        ///< Number of events seen.
     
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const* fDetectorProperties;   ///< Detector properties service
-};
+    geo::GeometryCore const* fGeometry = nullptr; ///< Pointer to Geometry service.
+//    detinfo::DetectorProperties const* fDetectorProperties = nullptr; ///< Detector properties service.
+    
+    /// We don't keep more than this number of photons per `sim::SimPhoton`.
+    static constexpr unsigned int MaxPhotons = 10000000U;
+    
+}; // class PhotonPropagationICARUS
 
 DEFINE_ART_MODULE(PhotonPropogationICARUS)
 
@@ -72,28 +89,25 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 ///
 /// pset - Fcl parameters.
 ///
-PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset) :
-                      fNumEvent(0)
+PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
+  : fGeometry(lar::providerFrom<geo::Geometry>())
+//  , fDetectorProperties(lar::providerFrom<detinfo::DetectorPropertiesService>())
 {
-    
-    fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    
     configure(pset);
     
     produces<std::vector<sim::SimPhotons>>();
     
-    // Not sure if you need this?
-//    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton");
+    // declare we need a random stream (and engine);
+    // while `createEngine(*this, pset)` would probably suffice,
+    // bit we are preparing to the case where this code is moved
+    // into a different code which has other engines
+    // (and it is a good idea to keep them separate)
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton");
 
     // Report.
-    mf::LogInfo("PhotonPropogationICARUS") << "PhotonPropogationICARUS configured\n";
-}
-
-//----------------------------------------------------------------------------
-/// Destructor.
-PhotonPropogationICARUS::~PhotonPropogationICARUS()
-{}
+    mf::LogDebug("PhotonPropogationICARUS") << "PhotonPropogationICARUS configured";
+} // PhotonPropagationICARUS::PhotonPropagationICARUS()
 
 //----------------------------------------------------------------------------
 /// Reconfigure method.
@@ -113,7 +127,7 @@ void PhotonPropogationICARUS::beginJob()
 {
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
-    art::ServiceHandle<art::TFileService> tfs;
+//    art::ServiceHandle<art::TFileService> tfs;
     
 //    art::TFileDirectory dir = tfs->mkdir(Form("PhotonPropogation"));
 
@@ -133,35 +147,104 @@ void PhotonPropogationICARUS::produce(art::Event & event)
 {
     ++fNumEvent;
     
+    /*
+     * In LArSoft, detected photons are organised optical channel by channel,
+     * each channel with its own sim::SimPhotons.
+     * Each channel contains individual information for each of the photons
+     * it has detected.
+     * Here we go through all detected photons from all the channels,
+     * and for each we assign a delay to the start time, parametrized by the
+     * distance between its generation point and the PMT.
+     *
+     */
     // Agreed convention is to ALWAYS output to the event store so get a pointer to our collection
-    std::unique_ptr<std::vector<sim::SimPhotons>> simPhotonsVec(new std::vector<sim::SimPhotons>);
+    auto simPhotonVec = std::make_unique<std::vector<sim::SimPhotons>>();
     
     // Read in the digit List object(s).
-    art::Handle< std::vector<sim::SimPhotons> > simPhotonsVecHandle;
-    event.getByLabel(fSimPhotonModuleLabel, simPhotonsVecHandle);
-    
-    // Require a valid handle
-    if (simPhotonsVecHandle.isValid())
-    {
-        // Recover useful service...
-        art::ServiceHandle<phot::PhotonVisibilityService> pvs;
-        
-        // Loop through the input photons (this might need to be more complicated...)
-        for(const auto& simPhoton : *simPhotonsVecHandle)
-        {
-            // Make a copy?
-            sim::SimPhotons localPhoton = simPhoton;
-            
-            // Do something to it?
-            
-            // Add to new output collection?
-            simPhotonsVec->emplace_back(localPhoton);
-        }
+    auto const& srcSimPhotons
+      = *(event.getValidHandle< std::vector<sim::SimPhotons> >(fSimPhotonModuleLabel));
+       
+    if (srcSimPhotons.empty()) {
+        mf::LogWarning("PhotonPropagationICARUS") << "No photons! Nice event you have here.";
+        event.put(std::move(simPhotonVec));
+        return;
     }
+
+    // get hold of all needed services
+//    auto const& pvs = *(art::ServiceHandle<phot::PhotonVisibilityService>());
+    auto& engine
+      = art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("icarusphoton");
+    CLHEP::RandLandau landauGen(engine);
+
+    // Loop through the input photons (this might need to be more complicated...)
+    for(const auto& simPhoton : srcSimPhotons)
+    {
+        auto const channel = simPhoton.OpChannel();
+        if (simPhoton.empty()) continue;
+        
+        auto const& PMTcenter = fGeometry->OpDetGeoFromOpChannel(channel).GetCenter();
+       
+        // TODO restore the "LOG_TRACE" line for normal operations
+        // (LOG_TRACE will print only in debug mode, with debug qualifiers and proper messagefacility settings)
+      //  LOG_TRACE("LightPropagationICARUS")
+//        mf::LogVerbatim("LightPropagationICARUS")
+//          << "Processing photon channel #" << channel << ", detector center: " << PMTcenter;
+        // 
+        // fix the arrival time
+        //
+        sim::SimPhotons localPhoton = simPhoton; // modify a copy of the original photon
+        unsigned int photonNo = 0;
+        for (auto& onePhoton: localPhoton) 
+        {
+             //
+             // sanity check: if there are too many photons we are in trouble
+             // (like in: not enough computing resources)
+             //
+             if (photonNo++ >= MaxPhotons) {
+               mf::LogError("LightPropagationICARUS")
+                 << "Too many photons to handle! only " << (photonNo - 1) << " saved.";
+               break;
+             }
+               
+             geo::Point_t const position = geo::vect::toPoint(onePhoton.InitialPosition);
+             double const dis = (position - PMTcenter).R();
+
+             double mean  = 0.18*dis; // TODO
+             double sigma = 0.75*dis; // TODO
+             
+             //double time_plus = -1;
+
+	     //while (time_plus<dis/21.74){time_plus=mean + landauGen.fire() * sigma; }// TODO
+
+	    const double minPropTime = dis / 21.74; // d / (c/n) in [ns]
+	    //const double maxPropTime = 2000 / 21.74; // dimension / (c/n) in [ns]
+     	    double time_plus;
+            do {
+            time_plus = mean + landauGen.fire() * sigma; // TODO
+		//time_plus = landauGen.fire(mean,sigma); // TODO
+            } while (time_plus < minPropTime);
+             
+             // TODO restore the "LOG_TRACE" line for normal operations
+             LOG_TRACE("LightPropagationICARUS");
+//             mf::LogVerbatim("LightPropagationICARUS")
+//               << "Photon #" << photonNo
+//               << " (at " << position << ", " << dis << " cm far from PMT) given offset "
+//               << time_plus;
+             //double time_plus = dis/21.74; 
+             //TRandom r;
+		
+             onePhoton.Time += time_plus;
+		//onePhoton.Time = time_plus;
+             
+        } // for photons in simPhoton
+        // move the photon with the new arrival time into the new output collection
+        simPhotonVec->push_back(std::move(localPhoton));
+    } // for all simPhoton channels
     
     // Add tracks and associations to event.
-    event.put(std::move(simPhotonsVec));
-}
+    event.put(std::move(simPhotonVec));
+    
+} // LightPropagationICARUS::produce()
 
 //----------------------------------------------------------------------------
 /// End job method.

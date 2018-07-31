@@ -25,6 +25,22 @@ services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 
 services.SignalShapingServiceICARUS: @erase
 
+services.Geometry.GDML: "icarus_12jul.gdml"
+services.Geometry.ROOT: "icarus_12jul.gdml"
+#services.Geometry.GDML: "test_traspCathode_nocrt.gdml"
+#services.Geometry.ROOT: "test_traspCathode_nocrt.gdml"
+
+services.LArG4Parameters.ReflectiveSurfaceNames: [
+         "STEEL_STAINLESS_Fe7Cr2Ni"
+      ]
+services.LArG4Parameters.ReflectiveSurfaceReflectances: [
+         [
+            1.5e-8,
+            1.5e-8,
+            1.5e-8
+         ]
+      ]
+
 #Start each new event with an empty event.
 source:
 {
@@ -88,7 +104,7 @@ outputs:
 
 #physics.producers.generator.T0: 0
 #physics.producers.generator.SigmaT: 0.0
-physics.producers.generator.N: 400000
+physics.producers.generator.N: 100000
 #physics.producers.generator.FirstVoxel: 0
 #physics.producers.generator.LastVoxel: -1
 #physics.producers.generator.P: 9.7
@@ -99,8 +115,8 @@ physics.producers.generator.UseCustomRegion: true
 physics.producers.generator.XSteps: 1
 physics.producers.generator.YSteps: 1
 physics.producers.generator.ZSteps: 1
-physics.producers.generator.RegionMin: [ -232 , -15 , 0 ]
-physics.producers.generator.RegionMax: [ -233 , -16 , 1 ]
+physics.producers.generator.RegionMin: [ -160 , -16 , 0 ]
+physics.producers.generator.RegionMax: [ -159 , -15 , 1 ]
 
 
 # set quantum efficiency supressed scint yield to 0.03 * 24000 

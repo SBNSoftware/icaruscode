@@ -6,7 +6,7 @@
 // Generated at Mon Sep 25 15:10:31 2017 by Andrea Falcone using cetskelgen
 // from cetlib version v3_00_01.
 ////////////////////////////////////////////////////////////////////////
- 
+
 // ##########################
 // ### Framework includes ###
 // ##########################
@@ -70,7 +70,8 @@
 #include "TTimeStamp.h"
 
 ////////////////////////////////// Define some constant variable //////////////////////////////
-const int nPMTs      = 360;
+const int nPMTs = 360;
+//const int PMTs_per_TPC = 90;
 const int MaxPhotons = 10000;
 
 namespace icarus {
