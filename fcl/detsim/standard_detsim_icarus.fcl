@@ -56,7 +56,7 @@ physics:
 }
 
 # For testing MCC1 we are still temporarily reverting to white noise in the simulation
-physics.producers.daq.NoiseGenToolVec:  [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
+physics.producers.daq.NoiseGenToolVec:  [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
 physics.producers.daq.SuppressNoSignal: true
 
 #block to define where the output goes.  if you defined a filter in the physics
