@@ -337,7 +337,7 @@ namespace {
 
   char MacToType(uint32_t mac) {
 
-      if(mac>=0 && mac<=99) return 'm';
+      if(mac<=99) return 'm';
       if(mac>=148 && mac<=161) return 'd';
       if(mac>=162&&mac<=283) return 'c';
 
@@ -351,7 +351,7 @@ namespace {
       if(mac>=259 && mac<=271) return 56; //slope right
       if(mac>=272 && mac<=277) return 48; //slope front
       if(mac>=278 && mac<=283) return 46; //slope back
-      if(mac>=0   && mac<=17 ) return 50; //left
+      if(            mac<=17 ) return 50; //left
       if(mac>=50  && mac<=67 ) return 50; //left
       if(mac>=18  && mac<=35 ) return 54; //right
       if(mac>=68  && mac<=85 ) return 54; //right
@@ -369,7 +369,7 @@ namespace {
     if (type == 'e') return UINT16_MAX;
     if (type == 'c' || type == 'd') return mac;
     if (type == 'm') {
-      if (chan>=0  && chan<=9 ) return (mac/3)*3;
+      if (            chan<=9 ) return (mac/3)*3;
       if (chan>=10 && chan<=19) return (mac/3)*3 + 1;
       if (chan>=20 && chan<=29) return (mac/3)*3 + 2;
     }
