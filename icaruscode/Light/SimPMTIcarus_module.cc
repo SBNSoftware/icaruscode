@@ -27,6 +27,9 @@
 #include <map>
 #include <unordered_map>
 #include <set>
+#include <chrono>
+#include <algorithm>
+#include <functional>
 
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
@@ -65,6 +68,8 @@ namespace opdet{
     void produce(art::Event & e) override;
     
   private:
+    /// Type internally used for storing waveforms.
+    using Waveform_t = std::vector<float>;
     
     // Declare member data here.
     art::InputTag fInputModuleName;
@@ -95,12 +100,12 @@ namespace opdet{
     double sigma2;
     double fMeanAmplitude;  //in pC
     
-    void AddSPE(size_t time_bin, std::vector<double>& wave); // add single pulse to auxiliary waveform
+    void AddSPE(size_t time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
     /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-    void AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const;
+    void AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const;
     double Pulse1PE(double time) const;
     
-    std::vector<double> wsp; //single photon pulse vector
+    Waveform_t wsp; //single photon pulse vector
     
     int pulsesize; //size of 1PE waveform
     
@@ -111,20 +116,20 @@ namespace opdet{
     double fSaturation; //equivalent to the number of p.e. that saturates the electronic signal	
     
     
-    void AddNoise(std::vector<double>& wave); //add noise to baseline
-    void AddDarkNoise(std::vector<double>& wave); //add noise to baseline
-    void AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm);
+    void AddNoise(Waveform_t& wave); //add noise to baseline
+    void AddDarkNoise(Waveform_t& wave); //add noise to baseline
+    void AddPhoton(sim::OnePhoton const& ph, Waveform_t& wvfm);
     void CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector);
-    void CreateFullWaveform(std::vector<double>&,
+    void CreateFullWaveform(Waveform_t&,
 			    std::vector<unsigned int>&,
 			    sim::SimPhotons const&);
     std::set<size_t> CreateBeamGateTriggers() const;
-    std::set<size_t> FindTriggers(std::vector<double> const& wvfm) const;
+    std::set<size_t> FindTriggers(Waveform_t const& wvfm) const;
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
-			      std::vector<double> const& wvfm,
+			      Waveform_t const& wvfm,
 			      std::vector<raw::OpDetWaveform>& output_opdets);
 
-    std::unordered_map< raw::Channel_t,std::vector<double> > fFullWaveforms;
+    std::unordered_map< raw::Channel_t, Waveform_t > fFullWaveforms;
     detinfo::DetectorClocks const* fTimeService = nullptr; ///< DetectorClocks service provider.
     CLHEP::HepRandomEngine* fRandomEngine = nullptr; ///< Main random stream engine.
     
@@ -214,61 +219,75 @@ namespace opdet{
       CreateFullWaveform(fFullWaveforms[photons.OpChannel()],PhotoelectronsPerSample,photons);
   }
 
-  void SimPMTIcarus::CreateFullWaveform(std::vector<double> & waveform,
+  void SimPMTIcarus::CreateFullWaveform(Waveform_t & waveform,
 					std::vector<unsigned int> & PhotoelectronsPerSample,
 					sim::SimPhotons const& photons){
 
     //auto& waveform = fFullWaveforms[opch];
     waveform.resize(fNsamples,fBaseline);
     PhotoelectronsPerSample.resize(fNsamples,0U);
+    std::unordered_map<unsigned int,unsigned int> peMap;
     // collect the amount of photoelectrons arriving at each tick
     //std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
     
     //for(auto const& photons : pmtVector){
     //if(raw::Channel_t(photons.OpChannel())!=opch) continue;
-
-    std::cout << "Creating waveform " << photons.OpChannel() << std::endl;
-
-      //auto& waveform = fFullWaveforms[photons.OpChannel()];
-      //waveform.resize(fNsamples,fBaseline);
-
-      for(auto const& ph : photons) {
-        if (!KicksPhotoelectron()) continue;
-        
-        double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
-        if ((mytime < 0.0) || (mytime >= fReadoutEnablePeriod)) continue;
-
-        std::size_t const iSample = static_cast<std::size_t>(mytime * fSampling);
-        if (iSample >= fNsamples) continue;
-        ++PhotoelectronsPerSample[iSample];
-      } // for photons
+    
+    //std::cout << "Creating waveform " << photons.OpChannel() << " " << photons.size() << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
+    //auto& waveform = fFullWaveforms[photons.OpChannel()];
+    //waveform.resize(fNsamples,fBaseline);
+    
+    for(auto const& ph : photons) {
+      if (!KicksPhotoelectron()) continue;
       
-      std::cout << "\tcollected pes... " << photons.OpChannel() << std::endl;
+      double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
+      if ((mytime < 0.0) || (mytime >= fReadoutEnablePeriod)) continue;
+      
+      std::size_t const iSample = static_cast<std::size_t>(mytime * fSampling);
+      if (iSample >= fNsamples) continue;
+      //++PhotoelectronsPerSample[iSample];
+      ++peMap[iSample];
+    } // for photons
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end-start;
+    //std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
+    start=std::chrono::high_resolution_clock::now();
 
       // add the collected photoelectrons to the waveform
-      for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
-        auto const nPE = PhotoelectronsPerSample[iSample];
-        if (nPE == 0) continue;
-        if (nPE == 1) AddSPE(iSample, waveform); // faster if n = 1
-        else AddPhotoelectrons(iSample, nPE, waveform);
-      }
+      //for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
+    for(auto const& pe : peMap){
+      auto const nPE = pe.second;//PhotoelectronsPerSample[iSample];
+      if (nPE == 0) continue;
+      if (nPE == 1) AddSPE(pe.first,waveform);//AddSPE(iSample, waveform); // faster if n = 1
+      else AddPhotoelectrons(pe.first, nPE, waveform);//AddPhotoelectrons(iSample, nPE, waveform);
+    }
 
-      std::cout << "\tadded pes... " << photons.OpChannel() << std::endl;
+      end=std::chrono::high_resolution_clock::now(); diff = end-start;
+      //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
+      start=std::chrono::high_resolution_clock::now();
 
       if(fAmpNoise>0.) AddNoise(waveform);
       if(fDarkNoiseRate>0.) AddDarkNoise(waveform);
 
-      std::cout << "\tadded noise... " << photons.OpChannel() << std::endl;
+      end=std::chrono::high_resolution_clock::now(); diff = end-start;
+      //std::cout << "\tadded noise... " << photons.OpChannel() << " " << diff.count() << std::endl;
+      start=std::chrono::high_resolution_clock::now();
 
       // Implementing saturation effects;
       // waveform is negative, and saturation is a minimum ADC count
       auto const saturationLevel = fBaseline + fSaturation*fADC*fMeanAmplitude;
-      for (auto& sample: waveform) {
-	if (sample < saturationLevel) sample = saturationLevel;
-      }
+      std::replace_if(waveform.begin(),waveform.end(),
+		      [saturationLevel](float s) -> bool{return s < saturationLevel;},
+		      saturationLevel);
+      //for (auto& sample: waveform) {
+      //if (sample < saturationLevel) sample = saturationLevel;
+      //}
       //}
       
-      std::cout << "\tadded saturation... " << photons.OpChannel() << std::endl;
+      end=std::chrono::high_resolution_clock::now(); diff = end-start;
+      //std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
 
   }//end CreateFullWaveform
 
@@ -284,7 +303,7 @@ namespace opdet{
     return trigger_locations;
   }
   
-  std::set<size_t> SimPMTIcarus::FindTriggers(std::vector<double> const& wvfm) const
+  std::set<size_t> SimPMTIcarus::FindTriggers(Waveform_t const& wvfm) const
   {
     std::set<size_t> trigger_locations;
     if (fCreateBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
@@ -310,14 +329,14 @@ namespace opdet{
   }
   
   void SimPMTIcarus::CreateOpDetWaveforms(raw::Channel_t const& opch,
-					  std::vector<double> const& wvfm,
+					  Waveform_t const& wvfm,
 					  std::vector<raw::OpDetWaveform>& output_opdets)
   {
-    std::cout << "Finding triggers in " << opch << std::endl;
+    //std::cout << "Finding triggers in " << opch << std::endl;
 
     std::set<size_t> trigger_locations = FindTriggers(wvfm);
 
-    std::cout << "Creating opdet waveforms in " << opch << std::endl;
+    //std::cout << "Creating opdet waveforms in " << opch << std::endl;
 
     bool in_pulse=false;
     size_t trig_start=0,trig_stop=wvfm.size();
@@ -355,7 +374,7 @@ namespace opdet{
   bool SimPMTIcarus::KicksPhotoelectron() const
     { return CLHEP::RandFlat::shoot(fRandomEngine) < fQE; } 
 
-  void SimPMTIcarus::AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm){
+  void SimPMTIcarus::AddPhoton(sim::OnePhoton const& ph, Waveform_t& wvfm){
     if(CLHEP::RandFlat::shoot(fRandomEngine) >= fQE) return; // hit&miss random selection 
     
     double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
@@ -378,7 +397,7 @@ namespace opdet{
     auto const& pmtVector = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
     //CreateFullWaveforms(pmtVector);
-    std::vector<double> waveform;
+    Waveform_t waveform;
     std::vector<unsigned int> PhotoelectronsPerSample;
     for(auto const& photons : pmtVector){
       CreateFullWaveform(waveform,PhotoelectronsPerSample,photons);
@@ -396,35 +415,41 @@ namespace opdet{
     return (fADC*fMeanAmplitude*std::exp(-sqr(time - fTransitTime)/(2.0*sqr(sigma))));
   }
 
+  //template <unsigned int N> float addmultiple (const float& x, const float& y) {return x+N*y;}
   
-  void SimPMTIcarus::AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const {
+  void SimPMTIcarus::AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const {
     
     if (time_bin >= fNsamples) return;
     
     std::size_t const min = time_bin;
     std::size_t const max = std::min(time_bin + pulsesize, fNsamples);
 
-    for (std::size_t i = min; i < max; ++i) {
-      wave[i] += n * wsp[i-min];
-    }
+    std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,
+		   [n](float a, float b) -> float{return a+n*b;});
+		   //addmultiple<n>());
+
+    //for (std::size_t i = min; i < max; ++i) {
+    //wave[i] += n * wsp[i-min];
+    //}
       
   } // SimPMTIcarus::AddPhotoelectrons()
   
-  void SimPMTIcarus::AddSPE(size_t time_bin, std::vector<double>& wave){
+  void SimPMTIcarus::AddSPE(size_t time_bin, Waveform_t& wave){
      
     if (time_bin >= fNsamples) return;
     
     std::size_t const min = time_bin;
     std::size_t const max = std::min(time_bin + pulsesize, fNsamples);
 
-    for (std::size_t i = min; i < max; ++i) {
-      wave[i] += wsp[i-min];
-    }
+    std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,std::plus<float>());
+    //for (std::size_t i = min; i < max; ++i) {
+    //wave[i] += wsp[i-min];
+    //}
     
   }
   
-  void SimPMTIcarus::AddNoise(std::vector<double>& wave){
-    std::cout << "\t\there?" << std::endl;
+  void SimPMTIcarus::AddNoise(Waveform_t& wave){
+    
     CLHEP::RandGauss random(*fRandomEngine, 0.0, fAmpNoise);
     for(auto& sample: wave) {
       double const noise = random.fire(); //gaussian noise
@@ -433,9 +458,8 @@ namespace opdet{
     
   } // SimPMTIcarus::AddNoise()
   
-  void SimPMTIcarus::AddDarkNoise(std::vector< double >& wave)
+  void SimPMTIcarus::AddDarkNoise(Waveform_t& wave)
   {
-    std::cout << "\t\there?? " << fDarkNoiseRate << std::endl;
     if (fDarkNoiseRate <= 0.0) return; // no dark noise
     size_t timeBin=0;
     CLHEP::RandExponential random(*fRandomEngine, (1.0/fDarkNoiseRate)*1e9);
