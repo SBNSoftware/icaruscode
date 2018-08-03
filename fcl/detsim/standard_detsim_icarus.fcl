@@ -34,7 +34,8 @@ physics:
  producers:
  {
    crtdaq:         @local::icarus_crtsim
-   opdaq:          @local::icarus_simpmt
+   #opdaq:          @local::icarus_simpmt
+   opdaq:          @local::icarus_simpmt_nonoise #turn off the noise so it runs more quickly
    daq:            @local::icarus_simwire
    rns:            { module_type: "RandomNumberSaver" }
  }

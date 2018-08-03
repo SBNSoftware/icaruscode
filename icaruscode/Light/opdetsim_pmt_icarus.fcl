@@ -40,6 +40,10 @@ icarus_simpmt:
   Sampling:                  0.5            #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency
 }
 
+icarus_simpmt_nonoise: @local::icarus_simpmt
+icarus_simpmt_nonoise.AmpNoise: -1 #disable
+icarus_simpmt_nonoise.DarkNoiseRate: -1 #disable
+
 services.OpDetResponseInterface:                  @local::standard_opdetresponse
 services.PhotonVisibilityService.LibraryFile:     "14gen_nocat_small.root"
 services.PhotonVisibilityService.UseCryoBoundary: false
