@@ -16,6 +16,7 @@
 #include <memory>
 
 namespace icarus {
+namespace crt{
 
   //------------------------------------------------------------------------
   CRTGeometryHelper::CRTGeometryHelper(
@@ -32,6 +33,7 @@ namespace icarus {
     if (fChannelMap) {
       geom->ApplyChannelMap(fChannelMap);
     }
+    else std::cout << "AuxDetChannelMap not initilized properly!" << std::endl;
   }
 
   //------------------------------------------------------------------------
@@ -40,7 +42,8 @@ namespace icarus {
     return fChannelMap;
   }
 
+}  // namespace crt
 }  // namespace icarus
 
-DEFINE_ART_SERVICE_INTERFACE_IMPL(icarus::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface)
+DEFINE_ART_SERVICE_INTERFACE_IMPL(icarus::crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface)
 

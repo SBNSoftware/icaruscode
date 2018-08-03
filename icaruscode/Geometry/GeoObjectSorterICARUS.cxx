@@ -21,15 +21,15 @@ namespace geo{
   // Define sort order for cryostats in standard configuration
   static bool sortAuxDetStandard(const AuxDetGeo* ad1, const AuxDetGeo* ad2)
   {
-
-    // sort based off of GDML name, assuming ordering is encoded
+    // sort based off of GDML name, module number
     std::string ad1name = (ad1->TotalVolume())->GetName();
     std::string ad2name = (ad2->TotalVolume())->GetName();
+    // assume volume name is "volAuxDet_Module_###_<region>"
+    std::string base = "volAuxDet_Module_";
 
-    // assume volume name is "volAuxDet##"
-    int ad1Num = atoi( ad1name.substr( 9, ad1name.size()).c_str() );
-    int ad2Num = atoi( ad2name.substr( 9, ad2name.size()).c_str() );
-    
+    int ad1Num = atoi( ad1name.substr( base.size(), 3).c_str() );
+    int ad2Num = atoi( ad2name.substr( base.size(), 3).c_str() );  
+  
     return ad1Num < ad2Num;
    
   }
@@ -38,14 +38,21 @@ namespace geo{
   // Define sort order for cryostats in standard configuration
   static bool sortAuxDetSensitiveStandard(const AuxDetSensitiveGeo* ad1, const AuxDetSensitiveGeo* ad2)
   {
-
     // sort based off of GDML name, assuming ordering is encoded
     std::string ad1name = (ad1->TotalVolume())->GetName();
     std::string ad2name = (ad2->TotalVolume())->GetName();
+    // assume volume name is "volAuxDetSensitive_Module_###_Strip_##"
+    std::string baseMod = "volAuxDetSensitive_Module_";
+    std::string baseStr = "volAuxDetSensitive_Module_###_Strip_";
 
-    // assume volume name is "volAuxDetSensitive##"
-    int ad1Num = atoi( ad1name.substr( 9, ad1name.size()).c_str() );
-    int ad2Num = atoi( ad2name.substr( 9, ad2name.size()).c_str() );
+    int ad1Num = atoi( ad1name.substr( baseMod.size(), 3).c_str() );
+    int ad2Num = atoi( ad2name.substr( baseMod.size(), 3).c_str() );
+
+    if(ad1Num!=ad2Num) return ad1Num < ad2Num;
+
+    ad1Num = atoi( ad1name.substr( baseStr.size(), 2).c_str() );
+    ad2Num = atoi( ad2name.substr( baseStr.size(), 2).c_str() );
+
     
     return ad1Num < ad2Num;
    

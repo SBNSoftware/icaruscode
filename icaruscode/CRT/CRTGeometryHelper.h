@@ -21,6 +21,7 @@
 #include <memory>
 
 namespace icarus {
+namespace crt{
 
   class CRTGeometryHelper : public geo::AuxDetExptGeoHelperInterface {
   public:
@@ -41,9 +42,10 @@ namespace icarus {
 
   };
 
+}  //namespace crt
 }  // namespace icarus
 
-DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, LEGACY)
 
 #endif  // ICARUS_CRTExptGeoHelperInterface_h
 

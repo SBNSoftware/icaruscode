@@ -17,7 +17,10 @@
 #include "TVector3.h"
 #include <iostream>
 #include <ostream>
+#include <vector>
 
+//namespace icarus{
+//namespace crt {
 namespace geo {
 
   //---------------------------------------------------------------------------
@@ -30,10 +33,20 @@ namespace geo {
     Uninitialize();
 
     std::vector<geo::AuxDetGeo*>& adgeo = geodata.auxDets;
+    std::vector<geo::AuxDetGeo*> adgeo_copy;
+    for (size_t i=0; i<adgeo.size(); i++) adgeo_copy.push_back(adgeo[i]);
 
     // Sort the AuxDetGeo objects and map them to names of the detectors
     // (SBN workshop 19 March) seemed to cause some problems for SBND folks --comment out?
     fSorter.SortAuxDets(adgeo);
+
+    for (size_t i=0; i<adgeo.size(); i++) {
+      std::cout << "i: " << i 
+      << " | name1: " << adgeo[i]->TotalVolume()->GetName()
+      << " | name2: " << adgeo_copy[i]->TotalVolume()->GetName() << std::endl;
+    }
+
+    
 
     // Map the AuxDetGeo names to their position in the sorted vector
     //
@@ -86,25 +99,41 @@ namespace geo {
       fNameToADGeo[volName] = a;
 
       //if volName contains "Module" (search doesn't hit end)
-      if (volName.find("_Module_") != std::string::npos) {
+      if (volName.find("volAuxDet_Module_") != std::string::npos) {
 	//loop over strips
         for (size_t svID=0; svID<nsv; svID++) {
-          size_t chID=UINT_MAX;
+          //size_t chID=UINT_MAX;
           if (nsv==16){
-            chID = 32 * a + 2 * svID + 0 - 1132;
-            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
-            chID = 32 * a + 2 * svID + 1 - 1132;
-            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            //chID = 32 * a + 2 * svID + 0 - 1132;
+            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            //chID = 32 * a + 2 * svID + 1 - 1132;
+            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            for (size_t svID=0; svID<16; svID++) {
+              for (size_t ich=0; ich<2; ich++) {
+                size_t chID = 2 * svID + ich;
+                fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+              }
+            }
           }
 	  if (nsv==64){
-	    chID = 64 * a + svID - 6316;
-	    fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+	    //chID = 64 * a + svID - 6316;
+	    //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+	    for (size_t svID=0; svID<64; svID++) {
+                fADGeoToChannelAndSV[a].push_back(std::make_pair(svID, svID));
+            }
 	  }
           if (nsv==20){
-            chID = 32 * (a/3) + svID/2 + 10*(a % 3);
-            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
-            chID = 32 * (a/3) + svID/2 + 10*(a % 3) + 1578;
-            fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            //chID = 32 * (a/3) + svID/2 + 10*(a % 3);
+            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            //chID = 32 * (a/3) + svID/2 + 10*(a % 3) + 1578;
+            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+            for (size_t svID=0; svID<20; svID++) {
+              for (size_t ich=0; ich<2; ich++) {
+                size_t chID = 2 * svID + ich;
+                fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
+              }
+            }
+
           }
         }//for strips
       } //if correct name
@@ -218,5 +247,6 @@ namespace geo {
     return TVector3(x, y, z);
   }
 
-}  // namespace geo
+}  // namespace crt
+//} //namespace icarus
 

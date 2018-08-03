@@ -1,0 +1,20 @@
+<lcgdict>
+
+  <class name="icarus::crt::CRTChannelData"/>
+  <class name="art::Wrapper<icarus::crt::CRTChannelData>"/>
+
+  <class name="icarus::crt::CRTData"/>
+  <class name="art::Wrapper<icarus::crt::CRTData>"/>
+  <class name="std::vector<icarus::crt::CRTChannelData>"/>
+  <class name="art::Wrapper<std::vector<icarus::crt::CRTChannelData> >"/>
+  <!--<class name="std::pair<unsigned short,unsigned short>"/>
+  <class name="art::Wrapper<std::pair<unsigned short,unsigned short>>"/>-->
+  <class name="std::vector<icarus::crt::CRTData>"/>
+  <class name="art::Wrapper<std::vector<icarus::crt::CRTData> >"/>
+
+  <class name="icarus::crt::CRTHit"/>
+  <class name="std::vector<icarus::crt::CRTHit>"/>
+  <class name="art::Wrapper< icarus::crt::CRTHit>"/>
+  <class name="art::Wrapper< std::vector<icarus::crt::CRTHit> >"/>
+
+</lcgdict>

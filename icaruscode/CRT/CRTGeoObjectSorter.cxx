@@ -13,7 +13,9 @@
 #include "larcorealg/Geometry/AuxDetGeo.h"
 #include "larcorealg/Geometry/AuxDetSensitiveGeo.h"
 
-namespace geo {
+//namespace icarus{
+//namespace crt {
+namespace geo{
 
   //----------------------------------------------------------------------------
   // Define sort order for AuxDets in standard configuration
@@ -74,5 +76,6 @@ namespace geo {
     std::sort(adsgeo.begin(), adsgeo.end(), sortAuxDetSensitiveICARUS);
   }
 
-}  // namespace geo
+} //namespace crt
+//} //namespace icarus
 
