@@ -115,6 +115,9 @@ namespace opdet{
     void AddDarkNoise(std::vector<double>& wave); //add noise to baseline
     void AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm);
     void CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector);
+    void CreateFullWaveform(std::vector<double>&,
+			    std::vector<unsigned int>&,
+			    sim::SimPhotons const&);
     std::set<size_t> CreateBeamGateTriggers() const;
     std::set<size_t> FindTriggers(std::vector<double> const& wvfm) const;
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
@@ -206,15 +209,29 @@ namespace opdet{
   }
 
   void SimPMTIcarus::CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector){
+    std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
+    for(auto const& photons : pmtVector)
+      CreateFullWaveform(fFullWaveforms[photons.OpChannel()],PhotoelectronsPerSample,photons);
+  }
 
-    fFullWaveforms.clear();
+  void SimPMTIcarus::CreateFullWaveform(std::vector<double> & waveform,
+					std::vector<unsigned int> & PhotoelectronsPerSample,
+					sim::SimPhotons const& photons){
+
+    //auto& waveform = fFullWaveforms[opch];
+    waveform.resize(fNsamples,fBaseline);
+    PhotoelectronsPerSample.resize(fNsamples,0U);
+    // collect the amount of photoelectrons arriving at each tick
+    //std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
     
-    for(auto const& photons : pmtVector){
+    //for(auto const& photons : pmtVector){
+    //if(raw::Channel_t(photons.OpChannel())!=opch) continue;
 
-      auto& waveform = fFullWaveforms[photons.OpChannel()];
-      waveform.resize(fNsamples,fBaseline);
-      // collect the amount of photoelectrons arriving at each tick
-      std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
+    std::cout << "Creating waveform " << photons.OpChannel() << std::endl;
+
+      //auto& waveform = fFullWaveforms[photons.OpChannel()];
+      //waveform.resize(fNsamples,fBaseline);
+
       for(auto const& ph : photons) {
         if (!KicksPhotoelectron()) continue;
         
@@ -226,6 +243,8 @@ namespace opdet{
         ++PhotoelectronsPerSample[iSample];
       } // for photons
       
+      std::cout << "\tcollected pes... " << photons.OpChannel() << std::endl;
+
       // add the collected photoelectrons to the waveform
       for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
         auto const nPE = PhotoelectronsPerSample[iSample];
@@ -233,8 +252,13 @@ namespace opdet{
         if (nPE == 1) AddSPE(iSample, waveform); // faster if n = 1
         else AddPhotoelectrons(iSample, nPE, waveform);
       }
+
+      std::cout << "\tadded pes... " << photons.OpChannel() << std::endl;
+
       if(fAmpNoise>0.) AddNoise(waveform);
-      AddDarkNoise(waveform);
+      if(fDarkNoiseRate>0.) AddDarkNoise(waveform);
+
+      std::cout << "\tadded noise... " << photons.OpChannel() << std::endl;
 
       // Implementing saturation effects;
       // waveform is negative, and saturation is a minimum ADC count
@@ -242,9 +266,11 @@ namespace opdet{
       for (auto& sample: waveform) {
 	if (sample < saturationLevel) sample = saturationLevel;
       }
-    }
+      //}
+      
+      std::cout << "\tadded saturation... " << photons.OpChannel() << std::endl;
 
-  }//end CreateFullWaveforms
+  }//end CreateFullWaveform
 
   std::set<size_t> SimPMTIcarus::CreateBeamGateTriggers() const
   {
@@ -287,7 +313,11 @@ namespace opdet{
 					  std::vector<double> const& wvfm,
 					  std::vector<raw::OpDetWaveform>& output_opdets)
   {
+    std::cout << "Finding triggers in " << opch << std::endl;
+
     std::set<size_t> trigger_locations = FindTriggers(wvfm);
+
+    std::cout << "Creating opdet waveforms in " << opch << std::endl;
 
     bool in_pulse=false;
     size_t trig_start=0,trig_stop=wvfm.size();
@@ -347,10 +377,13 @@ namespace opdet{
     
     auto const& pmtVector = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
-    CreateFullWaveforms(pmtVector);
-    for(auto const& full_wvfm : fFullWaveforms)
-      CreateOpDetWaveforms(full_wvfm.first,full_wvfm.second,*pulseVecPtr);
-
+    //CreateFullWaveforms(pmtVector);
+    std::vector<double> waveform;
+    std::vector<unsigned int> PhotoelectronsPerSample;
+    for(auto const& photons : pmtVector){
+      CreateFullWaveform(waveform,PhotoelectronsPerSample,photons);
+      CreateOpDetWaveforms(photons.OpChannel(),waveform,*pulseVecPtr);
+    }
     e.put(std::move(pulseVecPtr));
     
   }
@@ -391,7 +424,7 @@ namespace opdet{
   }
   
   void SimPMTIcarus::AddNoise(std::vector<double>& wave){
-    
+    std::cout << "\t\there?" << std::endl;
     CLHEP::RandGauss random(*fRandomEngine, 0.0, fAmpNoise);
     for(auto& sample: wave) {
       double const noise = random.fire(); //gaussian noise
@@ -402,7 +435,8 @@ namespace opdet{
   
   void SimPMTIcarus::AddDarkNoise(std::vector< double >& wave)
   {
-    if (fDarkNoiseRate == 0.0) return; // no dark noise
+    std::cout << "\t\there?? " << fDarkNoiseRate << std::endl;
+    if (fDarkNoiseRate <= 0.0) return; // no dark noise
     size_t timeBin=0;
     CLHEP::RandExponential random(*fRandomEngine, (1.0/fDarkNoiseRate)*1e9);
     // Multiply by 10^9 since fDarkNoiseRate is in Hz (conversion from s to ns)
