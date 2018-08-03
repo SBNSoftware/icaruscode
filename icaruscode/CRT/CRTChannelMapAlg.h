@@ -17,7 +17,9 @@
 #include "TVector3.h"
 #include <vector>
 
-namespace geo {
+//namespace icarus{
+//namespace crt {
+namespace geo{
 
   class CRTChannelMapAlg : public AuxDetChannelMapAlg {
   public:
@@ -42,7 +44,8 @@ namespace geo {
     geo::CRTGeoObjectSorter fSorter; ///< Class to sort geo objects
   };
 
-}  // namespace geo
+}  // namespace crt
+//} //namespace icarus
 
 #endif  // ICARUS_CRTChannelMapAlg_h
 

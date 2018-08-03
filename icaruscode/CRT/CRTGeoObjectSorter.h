@@ -16,7 +16,9 @@
 
 #include "larcorealg/Geometry/AuxDetGeoObjectSorter.h"
 
-namespace geo {
+//namespace icarus {
+//namespace crt {
+namespace geo{
 
   class CRTGeoObjectSorter : public AuxDetGeoObjectSorter {
   public:
@@ -30,7 +32,8 @@ namespace geo {
 
   };
 
-}
+} //namespace crt
+//} //namespace icarus
 
 #endif  // ICARUS_CRTGeoObjectSorter_h
 

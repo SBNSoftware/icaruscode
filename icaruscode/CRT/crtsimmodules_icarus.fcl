@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 icarus_crtsim:
 {
-  module_type: "icaruscode/CRT/CRTDetSim"
+  module_type: "CRTDetSim"
   G4ModuleLabel: "largeant"
 
   // Global timing offset [ns]
@@ -36,22 +36,42 @@ icarus_crtsim:
 
   // Mean deposited charge for mips [GeV]
   UseEdep: false
-  Q0: 1.75e-3
+  Q0C: 3.125e-3
+  Q0M: 1.891e-3
 
   // ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
   QPed: 63.6
-  QSlope: 131.9
-  QRMS: 15.0
-  QThreshold: 100.0
+  QSlope: 70.0
+  QRMS: 10.0
+
+  //ADC threshold (not DAC value used for discriminator)
+  QThresholdC: 100.0
+  QThresholdM: 100.0
+  QThresholdD: 100.0
 
   // Coincidence window for two fibers on a strip [ns]
+  // only applies to CERN modules
   StripCoincidenceWindow: 30.0
 
+  // Whether or not to apply coincidence between hits in adjacent layers
+  ApplyCoincidenceC: true
+  ApplyCoincidenceM: true
+  ApplyCoincidenceD: true
+
   // Coincidence window for strips from different layers within a module [ns]
-  LayerCoincidenceWindow: 30.0
+  LayerCoincidenceWindowC: 30.0 //module self coincidence
+  LayerCoincidenceWindowM: 50.0 //inter layer coincidence
+  LayerCoincidenceWindowD: 30.0 //module self coincidence
 
   // Effective absorption length (for transverse response) [cm]
-  AbsLenEff: 8.5
+  AbsLenEffC: 8.5
+  AbsLenEffM: 4.5
+  AbsLenEffD: 4.5
+
+  // Dead Time inherent in the front end electronics [us]
+  DeadTimeCorrect: false
+  DeadTime: 22.0
+  BiasTime: 0.05
 }
 
 END_PROLOG
