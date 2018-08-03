@@ -65,6 +65,8 @@ namespace opdet{
     void produce(art::Event & e) override;
     
   private:
+    /// Type internally used for storing waveforms.
+    using Waveform_t = std::vector<float>;
     
     // Declare member data here.
     art::InputTag fInputModuleName;
@@ -95,12 +97,12 @@ namespace opdet{
     double sigma2;
     double fMeanAmplitude;  //in pC
     
-    void AddSPE(size_t time_bin, std::vector<double>& wave); // add single pulse to auxiliary waveform
+    void AddSPE(size_t time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
     /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-    void AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const;
+    void AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const;
     double Pulse1PE(double time) const;
     
-    std::vector<double> wsp; //single photon pulse vector
+    Waveform_t wsp; //single photon pulse vector
     
     int pulsesize; //size of 1PE waveform
     
@@ -111,17 +113,17 @@ namespace opdet{
     double fSaturation; //equivalent to the number of p.e. that saturates the electronic signal	
     
     
-    void AddNoise(std::vector<double>& wave); //add noise to baseline
-    void AddDarkNoise(std::vector<double>& wave); //add noise to baseline
-    void AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm);
+    void AddNoise(Waveform_t& wave); //add noise to baseline
+    void AddDarkNoise(Waveform_t& wave); //add noise to baseline
+    void AddPhoton(sim::OnePhoton const& ph, Waveform_t& wvfm);
     void CreateFullWaveforms(std::vector<sim::SimPhotons> const& pmtVector);
     std::set<size_t> CreateBeamGateTriggers() const;
-    std::set<size_t> FindTriggers(std::vector<double> const& wvfm) const;
+    std::set<size_t> FindTriggers(Waveform_t const& wvfm) const;
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
-			      std::vector<double> const& wvfm,
+			      Waveform_t const& wvfm,
 			      std::vector<raw::OpDetWaveform>& output_opdets);
 
-    std::unordered_map< raw::Channel_t,std::vector<double> > fFullWaveforms;
+    std::unordered_map< raw::Channel_t, Waveform_t > fFullWaveforms;
     detinfo::DetectorClocks const* fTimeService = nullptr; ///< DetectorClocks service provider.
     CLHEP::HepRandomEngine* fRandomEngine = nullptr; ///< Main random stream engine.
     
@@ -258,7 +260,7 @@ namespace opdet{
     return trigger_locations;
   }
   
-  std::set<size_t> SimPMTIcarus::FindTriggers(std::vector<double> const& wvfm) const
+  std::set<size_t> SimPMTIcarus::FindTriggers(Waveform_t const& wvfm) const
   {
     std::set<size_t> trigger_locations;
     if (fCreateBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
@@ -284,7 +286,7 @@ namespace opdet{
   }
   
   void SimPMTIcarus::CreateOpDetWaveforms(raw::Channel_t const& opch,
-					  std::vector<double> const& wvfm,
+					  Waveform_t const& wvfm,
 					  std::vector<raw::OpDetWaveform>& output_opdets)
   {
     std::set<size_t> trigger_locations = FindTriggers(wvfm);
@@ -325,7 +327,7 @@ namespace opdet{
   bool SimPMTIcarus::KicksPhotoelectron() const
     { return CLHEP::RandFlat::shoot(fRandomEngine) < fQE; } 
 
-  void SimPMTIcarus::AddPhoton(sim::OnePhoton const& ph, std::vector<double>& wvfm){
+  void SimPMTIcarus::AddPhoton(sim::OnePhoton const& ph, Waveform_t& wvfm){
     if(CLHEP::RandFlat::shoot(fRandomEngine) >= fQE) return; // hit&miss random selection 
     
     double const mytime = fTimeService->G4ToElecTime(ph.Time+fTransitTime)-fTimeService->TriggerTime()-fTriggerOffsetPMT;
@@ -364,7 +366,7 @@ namespace opdet{
   }
 
   
-  void SimPMTIcarus::AddPhotoelectrons(size_t time_bin, unsigned int n, std::vector<double>& wave) const {
+  void SimPMTIcarus::AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const {
     
     if (time_bin >= fNsamples) return;
     
@@ -377,7 +379,7 @@ namespace opdet{
       
   } // SimPMTIcarus::AddPhotoelectrons()
   
-  void SimPMTIcarus::AddSPE(size_t time_bin, std::vector<double>& wave){
+  void SimPMTIcarus::AddSPE(size_t time_bin, Waveform_t& wave){
      
     if (time_bin >= fNsamples) return;
     
@@ -390,7 +392,7 @@ namespace opdet{
     
   }
   
-  void SimPMTIcarus::AddNoise(std::vector<double>& wave){
+  void SimPMTIcarus::AddNoise(Waveform_t& wave){
     
     CLHEP::RandGauss random(*fRandomEngine, 0.0, fAmpNoise);
     for(auto& sample: wave) {
@@ -400,7 +402,7 @@ namespace opdet{
     
   } // SimPMTIcarus::AddNoise()
   
-  void SimPMTIcarus::AddDarkNoise(std::vector< double >& wave)
+  void SimPMTIcarus::AddDarkNoise(Waveform_t& wave)
   {
     if (fDarkNoiseRate == 0.0) return; // no dark noise
     size_t timeBin=0;
