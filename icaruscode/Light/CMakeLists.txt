@@ -1,5 +1,7 @@
 add_subdirectory(OpticalTools)
 
+cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
+
 art_make(
           BASENAME_ONLY
           LIBRARY_NAME Light
