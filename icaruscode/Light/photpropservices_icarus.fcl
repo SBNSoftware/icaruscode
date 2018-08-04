@@ -4,7 +4,7 @@ BEGIN_PROLOG
 
 icarus_photonvisibilityservice: @local::standard_photonvisibilityservice
 
-icarus_photonvisibilityservice.LibraryFile:     "14gen_nocat_small.root"
+icarus_photonvisibilityservice.LibraryFile:     "PhotonLibrary-20180801.root"
 icarus_photonvisibilityservice.UseCryoBoundary: false
 
 icarus_photonvisibilityservice.XMin: -366
