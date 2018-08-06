@@ -160,11 +160,11 @@ uint32_t CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
   // Get clock ticks
   clock.SetTime(t / 1e3);  // SetTime takes microseconds
 
-  mf::LogInfo("CRT")
+  /*mf::LogInfo("CRT")
     << "CRT TIMING: t0=" << t0
     << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
     << ", tDelay=" << tDelay << ", tDelay(interp)="
-    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n";
+    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n"; */
 
   return clock.Ticks();
 }
@@ -529,7 +529,7 @@ void CRTDetSim::produce(art::Event & e) {
               }
       }//if one strip above threshold at either end
 
-      mf::LogInfo("CRT")
+      /*mf::LogInfo("CRT")
         << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << " with " << adGeo.NSensitiveVolume() << " AuxDetSensitive volumes" << "\n"
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
@@ -541,7 +541,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT abs0: " << abs0 << " , abs1: " << abs1 << '\n'
         << "CRT npeExpected: " << npeExpected << " , npeExpected2: " << npeExpected2 << '\n'
         << "CRT npeExp0: " << npeExp0 << " , npeExp1: " << npeExp1 << " , npeExp0Dual: " << npeExp0Dual << '\n'
-        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n";
+        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n"; */
     }//for AuxDetIDEs 
   }//for AuxDetChannels
 
@@ -697,7 +697,7 @@ void CRTDetSim::produce(art::Event & e) {
     } //if intermodule coincidence or minos module
   } // for taggers
 
-  mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
+  /*mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
      << "CERN sim hits: " << nsim_c << '\n'
      << "DC sim hits: " << nsim_d << '\n'
      << "MINOS sim hits: " << nsim_m << '\n'
@@ -714,7 +714,7 @@ void CRTDetSim::produce(art::Event & e) {
      << "hits in MINOS system: " << nhit_m << '\n'
      << "events in CERN system: " << neve_c << '\n'
      << "events in DC system: " << neve_d << '\n'
-     << "events in MINOS system: " << neve_m << '\n';
+     << "events in MINOS system: " << neve_m << '\n';*/
 
   e.put(std::move(triggeredCRTHits));
 }
