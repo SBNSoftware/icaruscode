@@ -15,6 +15,8 @@
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 
+#include "crtsimhitproducer.fcl"
+
 BEGIN_PROLOG
 
 icarus_reco_services:
@@ -66,6 +68,9 @@ icarus_reco_producers:
   mchitfinder:                    @local::standard_mchitfinder
   mcassociationsGaus:             @local::standard_mctrutht0matching
   mcassociationsICARUS:           @local::standard_mctrutht0matching
+
+  ## crt producers
+  crtsimhit:                      @local::standard_crtsimhitproducer
 }
 
 icarus_reco_filters:
@@ -106,6 +111,8 @@ icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
 
 icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 
+icarus_reco_crt:                  [ crtsimhit ]
+
 # Define the full reconstruction sequence
 icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
                                @sequence::icarus_reco_pandoraGaus,
@@ -115,7 +122,8 @@ icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
                                @sequence::icarus_reco_trajclusterICARUS,
                                @sequence::icarus_reco_pmAlgTrackerICARUS,
                                @sequence::icarus_reco_mcrecoGaus,
-                               @sequence::icarus_reco_mcrecoICARUS]
+                               @sequence::icarus_reco_mcrecoICARUS
+                               @sequence::icarus_reco_crt]
 
 ### Below we include overrides for the modules above
 
