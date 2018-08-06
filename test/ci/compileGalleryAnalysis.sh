@@ -18,13 +18,13 @@ declare -r WorkDir="${CWD}/galleryTest"
 declare -r SourceDir="${WorkDir}/source"
 declare -r BuildDir="${WorkDir}/build"
 
-declare -r SBNDgalleryBaseDir="${SBNDCODE_DIR}/examples/gallery"
+declare -r ICARUSgalleryBaseDir="${ICARUSCODE_DIR}/examples/gallery"
 
 rm -Rf "$WorkDir"
 mkdir "$WorkDir"
 cd "$WorkDir"
 
-cp -a "${SBNDgalleryBaseDir}/galleryAnalysis" "$SourceDir"
+cp -a "${ICARUSgalleryBaseDir}/galleryAnalysis" "$SourceDir"
 
 rm -Rf "$BuildDir"
 mkdir "$BuildDir"
