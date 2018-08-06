@@ -1,1 +1,21 @@
 **/*~
+*~
+
+# this is OSX polluting everywhere
+.*Store
+
+# these are byproducts of ROOT macro compilation (macros ending with `.C`)
+*_C_ACLiC_dict_rdict.pcm
+*_C.d
+*_C.so
+
+# this is temporary vim files
+.*.swp
+
+# more stuff
+.depend
+*Dict.cxx
+*Dict.o
+*.bak
+*.log
+*.root
