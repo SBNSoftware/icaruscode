@@ -258,12 +258,12 @@ namespace crt {
 
 
           if (!hitFound) {
-              mf::LogInfo("CRT") << "COULD NOT BUILD HIT!!!" << '\n'
+             /* mf::LogInfo("CRT") << "COULD NOT BUILD HIT!!!" << '\n'
                   << "  AuxDetID: " << adid << '\n'
                   << "  AuxDetSID1 / AuxDetSID2 : " << adsid1 << " / " << adsid2 << '\n'
                   << "  expected from trigPair: " << trigpair.first << " , " << trigpair.second;
                   //<< "  mod" << '\n' ;
-              nHitMiss++;
+              nHitMiss++; */
               continue;
           }
           else {
@@ -292,13 +292,13 @@ namespace crt {
             }//for ChannelData
           }//if hitFound
 
-      mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
+      /*mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
                   << "   AuxDetID: " << adid << '\n'
                   << "   AuxDetSID1 / AuxDetSID2 : " << adsid1 << " / " << adsid2 << '\n'
                   << "   x: " << hitPoint[0] << " , y: " << hitPoint[1] << " , z: " << hitPoint[2] << '\n'
                   << "   xerr: " << hitPointErr[0] << " , yerr: " << hitPointErr[1] << " , zerr: " << hitPointErr[2] << '\n'
                   << "   t0: " << t0 << " , t0corr: " << t0corr << " , t1: " << t1 << " , t1corr: " << t1corr << '\n';
-
+*/
       CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
                          hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
                          t0, t0corr, t1, t1corr, macPair)); 
@@ -314,7 +314,7 @@ namespace crt {
 
     }//for FEBData
 
-    mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
+    //mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
               << nHitMiss << " CRT hits missed!" << '\n';
     
 

@@ -4,7 +4,7 @@ standard_crtsimhitproducer:
 {
     module_type:          "CRTSimHitProducer"
     CrtModuleLabel:       "crtdaq"
-    Verbose:              true
+    Verbose:              false
     QPed:                 60  # Pedestal offset [ADC]
     QSlope:               70 # Pedestal slope [ADC/photon]
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
