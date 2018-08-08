@@ -1,4 +1,4 @@
-#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 #include "detsimmodules_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
@@ -7,21 +7,14 @@ process_name: Detsim
 
 services:
 {
-  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
-  # Load the service that manages root files for histograms.
-  TFileService: { fileName: "detsim_hist.root" }
-  #TimeTracker:             @local::icarus_time_tracker
-  #MemoryTracker:           @local::icarus_memory_tracker
-  RandomNumberGenerator: {} #ART native random number generator
   #FileCatalogMetadata:  @local::art_file_catalog_mc
-  @table::icarus_basic_services
+  @table::icarus_detsim_services
 }
 
 #source is now a root file
 source:
 {
   module_type: RootInput
-  maxEvents:  10        # Number of events to create
   saveMemoryObjectThreshold: 0
 }
 
@@ -68,7 +61,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "%ifb_%tc_detsim.root"
+   fileName:    "%ifb_%tc-%p.root"
    dataTier:    "detector-simulated"
    saveMemoryObjectThreshold: 0
    compressionLevel: 1

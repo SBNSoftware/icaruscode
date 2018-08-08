@@ -1,0 +1,42 @@
+#
+# File:    photpropservices_icarus.fcl
+# Purpose: Configuration of services related to the optical detectors.
+#
+# Currently provides:
+# * `icarus_photonvisibilityservice`: configuration of `PhotonVisibilityService`
+#
+
+
+#include "photpropservices.fcl"
+
+BEGIN_PROLOG
+
+################################################################################
+#
+# PhotonVisibilityService configuration
+#
+# Use as:
+#     
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice
+#     
+#
+icarus_photonvisibilityservice: {
+    @table::standard_photonvisibilityservice
+
+    LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
+    UseCryoBoundary: false
+    
+    XMin: -391
+    XMax: -41
+    YMin: -210
+    YMax:  180
+    ZMin: -995
+    ZMax:  965
+    NX:     70
+    NY:     78
+    NZ:    392
+    
+} # icarus_photonvisibilityservice
+
+
+END_PROLOG

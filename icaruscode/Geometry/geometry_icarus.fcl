@@ -32,8 +32,8 @@ icarus_auxdetgeometry_helper:
 icarus_geometry_services: {
   Geometry:               @local::icarus_geo
   ExptGeoHelperInterface: @local::icarus_geometry_helper
-  AuxDetGeometry:                  @local::icarus_auxdetgeo
-  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
+#  AuxDetGeometry:                  @local::icarus_auxdetgeo
+#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
 }
 
 END_PROLOG

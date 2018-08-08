@@ -47,7 +47,7 @@ ResponseTool:
     Filter:              @local::FilterTool
 }
 
-signalshapingservice_icarus:
+icarus_signalshapingservice:
 {
     PlaneForNormalization:           2
     PrintResponses:                  "false"
@@ -64,28 +64,28 @@ signalshapingservice_icarus:
     }
 }
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Plane:                       0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.DeconvPol:                   -1
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.Plane:         0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.FieldResponse.SignalType:    0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:   0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.Plane:                0
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
-signalshapingservice_icarus.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Plane:                       0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.DeconvPol:                   -1
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.Plane:         0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.SignalType:    0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:   0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.Plane:                0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Plane:                       1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.Plane:         1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.Plane:                1
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
-signalshapingservice_icarus.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Plane:                       1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.Plane:         1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.Plane:                1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.002, 1., 0., 0.08]
 
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Plane:                       2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.Plane:         2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.FieldResponse.SignalType:    1
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:   2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.Plane:                2
-signalshapingservice_icarus.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.08]
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Plane:                       2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.Plane:         2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.SignalType:    1
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:   2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.Plane:                2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.08]
 
 END_PROLOG
