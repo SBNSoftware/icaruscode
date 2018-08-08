@@ -55,6 +55,7 @@ private:
                                 detinfo::ElecClock& clock,
                                 float t0, float npeMean, float r);
 
+  bool   fVerbose;
   double fGlobalT0Offset;  //!< Time delay fit: Gaussian normalization
   double fTDelayNorm;  //!< Time delay fit: Gaussian normalization
   double fTDelayShift;  //!< Time delay fit: Gaussian x shift

@@ -47,8 +47,8 @@ namespace icarus {
 namespace crt {
 
 void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
+  fVerbose = p.get<bool>("Verbose");
   fG4ModuleLabel = p.get<std::string>("G4ModuleLabel");
-
   fGlobalT0Offset = p.get<double>("GlobalT0Offset");
   fTDelayNorm = p.get<double>("TDelayNorm");
   fTDelayShift = p.get<double>("TDelayShift");
@@ -102,9 +102,15 @@ CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) {
 //function takes reference to AuxDetGeo object and gives parent subsystem
 char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 {
-  std::string base = "volAuxDet_Module_010_";
+  
+  
+  //std::string base = "volAuxDet_Module_010_";
   std::string volName(adgeo.TotalVolume()->GetName());
-  std::string reg  = volName.substr(base.size(),volName.size());
+  if (volName.find("MINOS") != std::string::npos) return 'm';
+  if (volName.find("CERN")  != std::string::npos) return 'c';
+  if (volName.find("DC")    != std::string::npos) return 'd';
+
+  /*std::string reg  = volName.substr(base.size(),volName.size());
 
   if(reg == "Top")        return 'c';
   if(reg == "SlopeLeft")  return 'c';
@@ -115,7 +121,7 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
   if(reg == "Right")      return 'm';
   if(reg == "Front")      return 'm';
   if(reg == "Back")       return 'm';
-  if(reg == "Bottom")     return 'd';
+  if(reg == "Bottom")     return 'd';*/
   std::cout << " Region not found for module " << volName << std::endl;
   return 'e';
 }
@@ -123,7 +129,14 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 //function takes reference to AuxDetGeo object and gives crt region
 std::string CRTDetSim::GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
 {
-  std::string base = "volAuxDet_Module_010_";
+  char type = CRTDetSim::GetAuxDetType(adgeo);
+  std::string base = "volAuxDet_";
+  switch ( type ) {
+    case 'c' : base+= "CERN"; break;
+    case 'd' : base+= "DC"; break;
+    case 'm' : base+= "MINOS"; break;
+  }
+  base+="_module_###_";
   std::string volName(adgeo.TotalVolume()->GetName());
   return volName.substr(base.size(),volName.size());
 }
@@ -176,10 +189,10 @@ bool TimeOrderCRTData(icarus::crt::CRTChannelData crtdat1, icarus::crt::CRTChann
 struct Tagger {
   char type;
   std::string reg;
-  uint16_t stackid;
-  std::set<uint16_t> layerid;
-  std::map<uint16_t,uint16_t> chanlayer;
-  std::pair<uint16_t,uint16_t> macPair;
+  uint32_t stackid;
+  std::set<uint32_t> layerid;
+  std::map<uint32_t,uint32_t> chanlayer;
+  std::pair<uint32_t,uint32_t> macPair;
   std::vector<icarus::crt::CRTChannelData> data;
 };
 
@@ -287,7 +300,9 @@ void CRTDetSim::produce(art::Event & e) {
         }
       }
 
-      if(layid==10) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n';
+      if(layid==10) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n'
+                                       << "   ADType: " << auxDetType << '\n'
+                                       << "   ADRegion: " << region << '\n';
     //------
 
 
@@ -462,7 +477,7 @@ void CRTDetSim::produce(art::Event & e) {
       // AuxDet name (retrievable given the hit AuxDet ID) which specifies a
       // module, and a channel number from 0 to 32.
 
-      uint16_t channel0ID=0, channel1ID=0;
+      uint32_t channel0ID=0, channel1ID=0;
 
       switch (auxDetType){
           case 'c' :
@@ -529,10 +544,11 @@ void CRTDetSim::produce(art::Event & e) {
               }
       }//if one strip above threshold at either end
 
-      /*mf::LogInfo("CRT")
+      if (fVerbose) mf::LogInfo("CRT")
         << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << " with " << adGeo.NSensitiveVolume() << " AuxDetSensitive volumes" << "\n"
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
+        << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
         << "CRT HIT POS " << x << " " << y << " " << z << "\n"
         << "CRT STRIP POS " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
         << "CRT MODULE POS " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
@@ -541,7 +557,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT abs0: " << abs0 << " , abs1: " << abs1 << '\n'
         << "CRT npeExpected: " << npeExpected << " , npeExpected2: " << npeExpected2 << '\n'
         << "CRT npeExp0: " << npeExp0 << " , npeExp1: " << npeExp1 << " , npeExp0Dual: " << npeExp0Dual << '\n'
-        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n"; */
+        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n"; 
     }//for AuxDetIDEs 
   }//for AuxDetChannels
 
@@ -549,14 +565,14 @@ void CRTDetSim::produce(art::Event & e) {
   std::unique_ptr<std::vector<icarus::crt::CRTData> > triggeredCRTHits(
       new std::vector<icarus::crt::CRTData>);
 
-  uint16_t nmiss_lock=0;
-  uint16_t nmiss_dead=0;
-  uint16_t nmiss_coin_c = 0;
-  uint16_t nmiss_coin_d = 0;
-  uint16_t nmiss_coin_m = 0;
-  uint16_t event = 0;
-  uint16_t nhit_m=0, nhit_c=0, nhit_d=0;
-  uint16_t neve_m=0, neve_c=0, neve_d=0;
+  uint32_t nmiss_lock=0;
+  uint32_t nmiss_dead=0;
+  uint32_t nmiss_coin_c = 0;
+  uint32_t nmiss_coin_d = 0;
+  uint32_t nmiss_coin_m = 0;
+  uint32_t event = 0;
+  uint32_t nhit_m=0, nhit_c=0, nhit_d=0;
+  uint32_t neve_m=0, neve_c=0, neve_d=0;
 
   // Loop over all FEBs with a hit and check coincidence requirement.
   // For each FEB, find channel providing trigger and determine if
@@ -569,9 +585,9 @@ void CRTDetSim::produce(art::Event & e) {
 
       event = 0;
       icarus::crt::CRTChannelData *chanTrigData, *chanTmpData;
-      std::set<uint16_t> trackNHold;
-      std::set<uint16_t> layerNHold;
-      std::pair<uint16_t,uint16_t> tpair;
+      std::set<uint32_t> trackNHold;
+      std::set<uint32_t> layerNHold;
+      std::pair<uint32_t,uint32_t> tpair;
       bool minosPairFound = false;
       std::vector<icarus::crt::CRTChannelData> passingData;
       double ttrig=0.0, ttmp=0.0;
@@ -697,7 +713,7 @@ void CRTDetSim::produce(art::Event & e) {
     } //if intermodule coincidence or minos module
   } // for taggers
 
-  /*mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
+     if (fVerbose) mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
      << "CERN sim hits: " << nsim_c << '\n'
      << "DC sim hits: " << nsim_d << '\n'
      << "MINOS sim hits: " << nsim_m << '\n'
@@ -714,7 +730,7 @@ void CRTDetSim::produce(art::Event & e) {
      << "hits in MINOS system: " << nhit_m << '\n'
      << "events in CERN system: " << neve_c << '\n'
      << "events in DC system: " << neve_d << '\n'
-     << "events in MINOS system: " << neve_m << '\n';*/
+     << "events in MINOS system: " << neve_m << '\n';
 
   e.put(std::move(triggeredCRTHits));
 }

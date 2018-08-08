@@ -3,6 +3,9 @@ BEGIN_PROLOG
 icarus_crtsim:
 {
   module_type: "CRTDetSim"
+
+  Verbose: true
+
   G4ModuleLabel: "largeant"
 
   // Global timing offset [ns]
