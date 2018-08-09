@@ -1,4 +1,5 @@
 #include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "june18_reco_icarus_driver_common.fcl"
@@ -8,6 +9,7 @@ process_name: McRecoAll
 services: {
   @table::icarus_basic_services
   @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
 }
 
 physics.reco: [@sequence::icarus_track_reconstruction]
