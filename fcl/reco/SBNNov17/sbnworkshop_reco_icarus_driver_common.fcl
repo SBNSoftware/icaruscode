@@ -16,7 +16,6 @@ services:
 
 process_name: McRecoICARUS
 
-services.DatabaseUtil.ShouldConnect: false
 
 #source is a root file
 source:

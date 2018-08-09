@@ -34,7 +34,7 @@ icarus_spacecharge: {
     InputFilename:          "SCEoffsets.root"
     
 } # icarus_spacecharge
-  
+
 
 #
 # LArFFT service configuration for ICARUS

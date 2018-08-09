@@ -36,6 +36,7 @@
 #include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "services_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
 #include "signalservices_icarus.fcl"
 
 BEGIN_PROLOG
@@ -76,15 +77,10 @@ icarus_g4_dark_services: {
 
 # Define icarus_detsim_dark_services ... (2)
 icarus_detsim_dark_services: {
-    
-    @table::icarus_basic_services
-    
-    LArFFT:                         @local::icarus_larfft # from `correctionservices_icarus.fcl`
-    SignalShapingServiceICARUS:     @local::icarus_signalshapingservice
-    
-    # DetPedestalService:             @local::icarus_detpedestalservice
-    # ChannelStatusService:           @local::icarus_channelstatus_service
-    # ElectronicsCalibService:        @local::icarus_electronicscalib_service
+  
+  # (it turns out they are the same ones needed for the inverse operation...)
+  @table::icarus_wirecalibration_services
+  
 } # icarus_detsim_dark_services
 
 

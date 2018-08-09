@@ -3,7 +3,7 @@
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
 
-process_name: Detsim
+process_name: DetSim
 
 services:
 {

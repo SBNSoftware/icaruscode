@@ -47,6 +47,9 @@
 #include "larproperties_icarus.fcl"
 #include "detectorproperties_icarus.fcl"
 #include "detectorclocks_icarus.fcl"
+#include "signalservices_icarus.fcl"
+#include "correctionservices_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
 
 
 BEGIN_PROLOG
@@ -56,7 +59,8 @@ BEGIN_PROLOG
 ###  icarus_basic_services
 ###
 #
-#
+# Standard ICARUS configuration of basic services, including message service,
+# art services, geometry and properties, but not calibration services.
 #
 icarus_basic_services:
 {
@@ -74,10 +78,7 @@ icarus_basic_services:
     NuRandomService:                     @local::per_event_NuRandomService
     #FileCatalogMetadata:                @local::art_file_catalog_mc
 
-#    ChannelStatus:                       @local::standard_channelstatus
-#    PedestalRetrieval:                   @local::standard_siov_detpedestal_service
-
-                                         @table::icarus_geometry_services 
+                                         @table::icarus_geometry_services
 
     DetectorPropertiesService:           @local::icarus_detproperties  # from `detectorproperties_icarus.fcl`
     LArPropertiesService:                @local::icarus_properties     # from `larproperties_icarus.fcl`
@@ -85,6 +86,27 @@ icarus_basic_services:
 
 } # icarus_basic_services
 
+
+################################################################################
+###  icarus_wirecalibration_services
+###
+#
+# Standard ICARUS configuration of services required for wire signal calibration
+# (usually the first step of reconstruction).
+#
+icarus_wirecalibration_services: {
+    
+    @table::icarus_basic_services
+    
+    LArFFT:                         @local::icarus_larfft # from `correctionservices_icarus.fcl`
+    SignalShapingServiceICARUS:     @local::icarus_signalshapingservice
+    
+    @table::icarus_calibration_services
+    
+} # icarus_wirecalibration_services
+
+
+################################################################################
 
 END_PROLOG
 
