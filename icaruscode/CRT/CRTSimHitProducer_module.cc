@@ -25,7 +25,7 @@
 #include "art/Framework/Principal/SubRun.h"
 #include "art/Framework/Services/Optional/TFileService.h" 
 #include "art/Framework/Services/Optional/TFileDirectory.h"
-
+#include "larcorealg/CoreUtils/NumericUtils.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -163,91 +163,86 @@ namespace crt {
     std::unique_ptr< std::vector<icarus::crt::CRTHit> > CRTHits ( new std::vector<icarus::crt::CRTHit>);
 
     uint16_t nHitMiss = 0, nHitC = 0, nHitD = 0, nHitM = 0;
+    if (fVerbose) mf::LogInfo("CRT") << "Found " << crtListHandle->size() << " FEB events" << '\n';
+
+    double origin[3] = {0,0,0}; 
+    std::map<uint32_t,uint32_t> regCounts;
+    std::set<uint32_t> regs;
 
     for (auto const &febdat : (*crtListHandle)) {
 
       uint32_t mac = febdat.Mac5();
       char type = MacToType(mac);
-      uint32_t reg = MacToRegion(mac);
-      reg++;
-      auto trigpair = febdat.TrigPair();
-      auto macPair = febdat.MacPair();
+      uint32_t region = MacToRegion(mac);
+      std::pair<uint32_t,uint32_t> trigpair = febdat.TrigPair();
+      std::pair<uint32_t,uint32_t> macPair = febdat.MacPair();
+
+      if ((regs.insert(region)).second) regCounts[region] = 1;
+      else regCounts[region]++;
+
+      uint32_t adid  = MacToAuxDetID(mac,trigpair.first); //module ID
+      auto const& adGeo = fGeometryService->AuxDet(adid); //module
+      uint32_t adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first); //trigger strip ID
+      auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1); //trigger strip
+
+      double stripPosWorld1[3], stripPosWorld2[3];
+      double modPos1[3], modPos2[3], hitLocal[3];
+
+      adsGeo1.LocalToWorld(origin,stripPosWorld1);
+      adGeo.WorldToLocal(stripPosWorld1,modPos1);
+
+      float length = adsGeo1.Length(); //strip length
+      float width = adsGeo1.HalfWidth1()*2; //strip width
 
       float t01=0, t02=0;//, t01corr=0, t02corr=0;
       float t11=0, t12=0;//, t11corr=0, t12corr=0;
       float t0=0, t0corr=0, t1=0, t1corr=0;
 
-      //geo::AuxDetGeo& adGeo;
-      //geo::AuxDetSensitiveGeo &adsGeo1, &adsGeo2;
-      double origin[3];
       double hitPoint[3];
       double hitPointErr[3];
 
-      bool hitFound = false;
-
       //CERN and DC modules have intermodule coincidence
       if ( type == 'c' || type == 'd' ) {
+          //time and charge information for each channel above threshold
           std::vector<icarus::crt::CRTChannelData> chandat = febdat.ChanData();
+          hitLocal[1] = 0.0;
 
-          //get AuxDet and AuxDetSensitive volumes
-          uint32_t adid  = MacToAuxDetID(mac,trigpair.first);
-          auto const& adGeo = fGeometryService->AuxDet(adid);
-          uint32_t  adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first);
+          //2nd strip within the module that provided the coincidence
           uint32_t  adsid2 = ChannelToAuxDetSensitiveID(mac,trigpair.second);
-          auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1);
           auto const& adsGeo2 = adGeo.SensitiveVolume(adsid2);
 
-          double stripPosWorld1[3], stripPosWorld2[3];
-          double modPos1[3], modPos2[3], hitLocal[3];
-          adsGeo1.LocalToWorld(origin,stripPosWorld1);
-          adsGeo2.LocalToWorld(origin,stripPosWorld2);
-          adGeo.WorldToLocal(stripPosWorld1,modPos1);
-          adGeo.WorldToLocal(stripPosWorld2,modPos2);
+          adsGeo2.LocalToWorld(origin,stripPosWorld2); //fetch origin of strip in global coords
+          adGeo.WorldToLocal(stripPosWorld2,modPos2); //coincidence strip pos in module coords
 
-          float length = adsGeo1.Length();
-          float width = adsGeo1.HalfWidth1()*2;
-
+          //CERN modules have X-Y configuration
           if ( type == 'c' ) {     
-              uint32_t npixel = length/width;
-
-              for (uint8_t i=0; i<npixel; i++) {
-                float testz, testx;
-                if (trigpair.first<8) {
-                  testz = modPos1[2]-length/2 + (width/2)*i;
-                  testx =  modPos2[0]-length/2 + (width/2)*i;
-                  if (abs(modPos2[2]-testz) < width/2) {
-                    hitLocal[0] = testx;
-                    hitLocal[1] = 0;
-                    hitLocal[2] = testz;
-                    adGeo.LocalToWorld(hitLocal,hitPoint);
-                    hitFound = true;
-                    break;
-                  }//if overlap found
-                }
-                else {
-                  testz = modPos2[2]-length/2 + (width/2)*i;
-                  testx = modPos1[0]-length/2 + (width/2)*i;
-                  if (abs(modPos1[2]-testz) < width/2) {
-                    hitLocal[0] = testx;
-                    hitLocal[1] = 0;
-                    hitLocal[2] = testz;
-                    adGeo.LocalToWorld(hitLocal,hitPoint);
-                    hitFound = true;
-                    break;
-                  }//if overlap found
-                }
-              }//loop over 'pixels'
-
-              if ( hitFound ) {
-                hitPointErr[0] = width/sqrt(12);
-                hitPointErr[1] = adGeo.HalfHeight();
-                hitPointErr[2] = width/sqrt(12);
-                nHitC++;
+   
+              if ((adsid1<8&&adsid2<8)||(adsid1>7&&adsid2>7))
+                  mf::LogInfo("CRT") << "incorrect CERN trig pair!!" << '\n';
+  
+              if (adsid1 < 8 ) {
+                  hitLocal[0] = modPos1[0];
+                  hitLocal[2] = modPos2[2];
               }
+              else {
+                  hitLocal[0] = modPos2[0];
+                  hitLocal[2] = modPos1[2];
+              }
+
+              adGeo.LocalToWorld(hitLocal,hitPoint); //tranform from module to world coords
+
+              hitPointErr[0] = width/sqrt(12);
+              hitPointErr[1] = adGeo.HalfHeight();
+              hitPointErr[2] = width/sqrt(12);
+              nHitC++;
 
           }//if c type
 
           if ( type == 'd' ) {
+
+             if ((adsid1<32&&adsid2<32)||(adsid1>31&&adsid2>31))
+                  mf::LogInfo("CRT") << "incorrect DC trig pair!!" << '\n';
+
              hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
              hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
              hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
@@ -259,41 +254,28 @@ namespace crt {
           } // if d type
 
 
-          if(fVerbose && !hitFound) {
-             mf::LogInfo("CRT") << "COULD NOT BUILD HIT!!!" << '\n'
-                  << "  AuxDetID: " << adid << '\n'
-                  << "  AuxDetSID1 / AuxDetSID2 : " << adsid1 << " / " << adsid2 << '\n'
-                  << "  expected from trigPair: " << trigpair.first << " , " << trigpair.second <<  '\n';
-                  //<< "  mod" << '\n' ;
-              nHitMiss++; 
-              continue;
-          }
-          //if hit not found skip to end of loop, else continue
-          else {
-
-            for(auto chan : chandat) {
+          for(auto chan : chandat) {
 
               if (chan.Channel() == trigpair.first) {
-                t01 = chan.T0();
-                t11 = chan.T1();
-                //t01corr = t01;
-                //t11corr = t11;
+                  t01 = chan.T0();
+                  t11 = chan.T1();
+                  //t01corr = t01;
+                  //t11corr = t11;
               }
               if (chan.Channel() == trigpair.second) {
-                t02 = chan.T0();
-                t12 = chan.T1();
-                //t02corr = t02;
-                //t12corr = t12;
+                  t02 = chan.T0();
+                  t12 = chan.T1();
+                  //t02corr = t02;
+                  //t12corr = t12;
               }
               if (t01!=0 && t02!=0) {
-                t0 = 0.5 * ( t01 + t02 );
-                t1 = 0.5 * ( t11 + t12 );
-                t0corr = t0;
-                t1corr = t1;
-                break;
+                  t0 = 0.5 * ( t01 + t02 );
+                  t1 = 0.5 * ( t11 + t12 );
+                  t0corr = t0;
+                  t1corr = t1;
+                  break;
               }
-            }//for ChannelData
-          }//if hitFound
+          }//for ChannelData
 
           if(fVerbose) mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
                   << "   AuxDetID: " << adid << '\n'
@@ -302,70 +284,107 @@ namespace crt {
                   << "   xerr: " << hitPointErr[0] << " , yerr: " << hitPointErr[1] << " , zerr: " << hitPointErr[2] << '\n'
                   << "   t0: " << t0 << " , t0corr: " << t0corr << " , t1: " << t1 << " , t1corr: " << t1corr << '\n';
 
-      CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
+          CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
                          hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
-                         t0, t0corr, t1, t1corr, macPair)); 
+                         t0, t0corr, t1, t1corr, macPair,region) ); 
       }//if c or d type
 
       if ( type == 'm' ) {
-          //get AuxDet and AuxDetSensitive volumes
-          uint32_t adid1  = MacToAuxDetID(mac,trigpair.first);
-          auto const& adGeo = fGeometryService->AuxDet(adid1);
-          uint32_t  adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first);
-          auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1);
 
-          double stripPosWorld1[3], stripPosWorld2[3];
-          //double modPos1[3], modPos2[3], hitLocal[3];
-          adsGeo1.LocalToWorld(origin,stripPosWorld1);
-          //adsGeo2.LocalToWorld(origin,stripPosWorld2);
-          //adGeo.WorldToLocal(stripPosWorld1,modPos1);
-          //adGeo.WorldToLocal(stripPosWorld2,modPos2);
-
-          float length = adsGeo1.Length();
-          //float width = adsGeo1.HalfWidth1()*2;
           double ttrig1 = febdat.TTrig();
+          bool coinModFound = false;
 
           for (auto const &febdat2 : (*crtListHandle)) {
+
               uint32_t mac2 = febdat2.Mac5();
+              if (febdat.MacPair().second != mac2) continue;
+              if (MacToRegion(mac2) != region) continue;
+
+              uint32_t adid2  = MacToAuxDetID(mac2,trigpair.first);
+              auto const& adGeo2 = fGeometryService->AuxDet(adid2);
+              uint32_t  adsid2 = ChannelToAuxDetSensitiveID(mac2,trigpair.first);
+              auto const& adsGeo2 = adGeo2.SensitiveVolume(adsid2);
+              adsGeo2.LocalToWorld(origin,stripPosWorld2);
+
               double ttrig2 = febdat2.TTrig();
-              if (febdat.MacPair().second==mac2&&abs(ttrig2-ttrig1)<50) {
-                    uint32_t adid2  = MacToAuxDetID(mac2,trigpair.first);
-                    auto const& adGeo2 = fGeometryService->AuxDet(adid2);
-                    uint32_t  adsid2 = ChannelToAuxDetSensitiveID(mac2,trigpair.first);
-                    auto const& adsGeo2 = adGeo2.SensitiveVolume(adsid2);
-                    adsGeo2.LocalToWorld(origin,stripPosWorld2);
-                    //adGeo2.WorldToLocal(stripPosWorld2,modPos2);
+              if (util::absDiff(ttrig2,ttrig1)<50) {
 
-                    hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
-                    hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
-                    hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
+                    //if left or right regions (X-X)
+                    if (region == 50 || region == 54) {
+                        hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
+                        hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
+                        hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
 
-                    hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
-                    hitPointErr[1] = abs(stripPosWorld1[1] - stripPosWorld2[1])/sqrt(12);
-                    hitPointErr[2] = length/sqrt(12);
+                        hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
+                        hitPointErr[1] = abs(stripPosWorld1[1] - stripPosWorld2[1])/sqrt(12);
+                        hitPointErr[2] = length/sqrt(12);
 
-                    t0 = 0.5*(ttrig1+ttrig2);
-                    t1 = t0;
-                    t0corr = t0;
-                    t1corr = t1;
+                        t0 = 0.5*(ttrig1+ttrig2);
+                        t1 = t0;
+                        t0corr = t0;
+                        t1corr = t1;
 
-                    nHitM++;
+                        coinModFound = true;
+                    }// if left or right
 
-                    CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
-                         hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
-                         t0, t0corr, t1, t1corr, febdat.MacPair()));
+                    //if front or back regions (X-Y)
+                    if (region == 44 || region == 42) {
+                        if ((adid>107&&adid<119&&adid2>107&&adid2<119)||
+                            (adid>118&&adid<128&&adid2>118&&adid2<128) )
+                            mf::LogInfo("CRT") << "incorrect MINOS mac pair!!" << '\n';
 
-                    break;
+                        if (adid>107&&adid<119) { //if X module
+                            hitPoint[1] = stripPosWorld1[1];
+                            hitPoint[0] = stripPosWorld2[0];
+                            hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
+                        }
+                        else {
+                            hitPoint[0] = stripPosWorld1[1];
+                            hitPoint[1] = stripPosWorld2[0];
+                            hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
+                        }
+
+                        hitPointErr[0] = width/sqrt(12);
+                        hitPointErr[1] = width/sqrt(12);
+                        hitPointErr[2] = 0.5*util::absDiff( stripPosWorld1[2],stripPosWorld2[2]);
+
+                        t0 = 0.5*(ttrig1+ttrig2);
+                        t1 = t0;
+                        t0corr = t0;
+                        t1corr = t1;
+
+                        coinModFound = true;
+                    }//if front or back
+
               }//if trigger pair module found
+
+              if (coinModFound) {
+                  nHitM++;
+                  CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
+                       hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
+                       t0, t0corr, t1, t1corr, febdat.MacPair(),region));
+                  break;
+              }
+
           }// for febdat         
+
+          if (!coinModFound) nHitMiss++;
+
       } //if m type
 
     }//for FEBData
 
-        if(fVerbose) mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
+    if(fVerbose) {
+          mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
               << "  nHitC: " << nHitC << " , nHitD: " << nHitD << " , nHitM: " << nHitM << '\n'
               << "    " << nHitMiss << " CRT hits missed!" << '\n';
-    
+          std::map<uint32_t,uint32_t>::iterator cts = regCounts.begin();
+          mf::LogInfo("CRT") << " CRT Hits by region" << '\n';
+          while (cts != regCounts.end()) {
+              mf::LogInfo("CRT") << "reg: " << (*cts).first << " , hits: " << (*cts).second << '\n';
+              cts++;
+          }
+    }//if Verbose
 
     event.put(std::move(CRTHits));
 
@@ -415,7 +434,7 @@ namespace {
 
   uint32_t MacToAuxDetID(uint32_t mac, uint32_t chan){
     char type = MacToType(mac);
-    if (type == 'e') return UINT16_MAX;
+    if (type == 'e') return UINT32_MAX;
     if (type == 'c' || type == 'd') return mac;
     if (type == 'm') {
       if (            chan<=9 ) return (mac/3)*3;
@@ -423,17 +442,16 @@ namespace {
       if (chan>=20 && chan<=29) return (mac/3)*3 + 2;
     }
 
-    return UINT16_MAX;
+    return UINT32_MAX;
   }
 
   uint32_t ChannelToAuxDetSensitiveID(uint32_t mac, uint32_t chan) {
     char type = MacToType(mac);
-    if (type=='e') return UINT8_MAX;
     if (type=='d') return chan;
     if (type=='c') return chan/2;
     if (type=='m') return (chan % 10)*2;
 
-      return UINT8_MAX;
+    return UINT32_MAX;
   }
 
 } //namespace local
