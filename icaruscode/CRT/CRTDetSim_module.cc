@@ -131,6 +131,21 @@ std::string CRTDetSim::GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
   return volName.substr(base.size(),volName.size());
 }
 
+uint32_t GetAuxDetRegionNum(std::string reg)
+{
+    if(reg == "Top")        return 38;
+    if(reg == "SlopeLeft")  return 52;
+    if(reg == "SlopeRight") return 56;
+    if(reg == "SlopeFront") return 48;
+    if(reg == "SlopeBack")  return 46;
+    if(reg == "Left")       return 50;
+    if(reg == "Right")      return 54;
+    if(reg == "Front")      return 44;
+    if(reg == "Back")       return 42;
+    if(reg == "Bottom")     return 58;
+    return UINT32_MAX;
+}
+
 //function for simulating time response
 //  takes true hit time, LY(PE) observed, and longitudinal distance from readout
 //  uses 12 FHiCL configurable parameters
@@ -208,6 +223,9 @@ void CRTDetSim::produce(art::Event & e) {
   uint32_t nchandat_m=0, nchandat_d=0, nchandat_c=0;
   uint32_t nmissthr_c = 0, nmissthr_d = 0, nmissthr_m = 0;
   uint32_t nmiss_strcoin_c = 0;
+
+  std::map<uint32_t,uint32_t> regCounts;
+  std::set<uint32_t> regions;
 
   // Loop through truth AD channels
   for (auto& adsc : *channels) {
@@ -506,7 +524,7 @@ void CRTDetSim::produce(art::Event & e) {
           if ( util::absDiff(t0,t1) >= fStripCoincidenceWindow ) nmiss_strcoin_c++;
       }
       if (auxDetType == 'd' && q0 < fQThresholdD) nmissthr_d++;
-      if (auxDetType == 'm' && ( q0 < fQThresholdM|| q0Dual < fQThresholdM)) nmissthr_d++;
+      if (auxDetType == 'm' && ( q0 < fQThresholdM || q0Dual < fQThresholdM)) nmissthr_m++;
 
       if (fVerbose&&
          ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
@@ -517,6 +535,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
         << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
+        << "CRT channel: " << channel0ID << " , mac5: " << mac5 << '\n'
         << "CRT HIT POS " << x << " " << y << " " << z << "\n"
         << "CRT STRIP POS " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
         << "CRT MODULE POS " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
@@ -614,7 +633,9 @@ void CRTDetSim::produce(art::Event & e) {
           if (trg.second.type=='m' && !minosPairFound && fApplyCoincidenceM) {
              for (auto trg2 : taggers) {
                if( trg2.second.type=='m' && 
-                   trg.second.stackid == trg2.second.stackid && 
+                   trg.first != trg2.first &&
+                   trg.second.stackid == trg2.second.stackid &&
+                   trg.second.reg == trg2.second.reg &&
                    ((trg2.second.layerid.find(1) != trg2.second.layerid.end() &&
                     trg.second.layerid.find(0) != trg.second.layerid.end()) ||
                    (trg2.second.layerid.find(0) != trg2.second.layerid.end() && 
@@ -624,7 +645,7 @@ void CRTDetSim::produce(art::Event & e) {
 
                     for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
                        double t2tmp = trigClock.Time((double)trg2.second.data[j].T0()); //in us
-		       if ( util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM*1e-3) {
+		       if ( trg.first != trg2.first && util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM*1e-3) {
                            minosPairFound = true;
                            trg.second.macPair = std::make_pair(trg.first,trg2.first);
                            break;
@@ -646,7 +667,7 @@ void CRTDetSim::produce(art::Event & e) {
                   continue;
               }
           }//if minos module and no pair yet found
-          else trg.second.macPair = std::make_pair(trg.first,trg.first);
+          if (trg.second.type != 'm') trg.second.macPair = std::make_pair(trg.first,trg.first);
 
           uint32_t adctmp = 0;
           //currently assuming bias time is same as track and hold window (FIX ME!)
@@ -679,6 +700,10 @@ void CRTDetSim::produce(art::Event & e) {
           }
           //"read out" data for this event, first hit after dead time as next trigger channel
           else if ( ttmp > ttrig + fDeadTime ) {
+            uint32_t regnum = GetAuxDetRegionNum(trg.second.reg);
+            if( (regions.insert(regnum)).second) regCounts[regnum] = 1;
+            else regCounts[regnum]++;
+
             triggeredCRTHits->push_back(
               icarus::crt::CRTData(trg.first,event,ttrig,chanTrigData->Channel(),tpair,trg.second.macPair,passingData));
             event++;
@@ -700,7 +725,8 @@ void CRTDetSim::produce(art::Event & e) {
     } //if intermodule coincidence or minos module
   } // for taggers
 
-  if (fVerbose) mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
+  if (fVerbose) { 
+    mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
      << "CERN sim hits: " << nsim_c << '\n'
      << "DC sim hits: " << nsim_d << '\n'
      << "MINOS sim hits: " << nsim_m << '\n'
@@ -728,6 +754,15 @@ void CRTDetSim::produce(art::Event & e) {
      << "events in CERN system: " << neve_c << '\n'
      << "events in DC system: " << neve_d << '\n'
      << "events in MINOS system: " << neve_m << '\n';
+     
+    std::map<uint32_t,uint32_t>::iterator it = regCounts.begin();
+    mf::LogInfo("CRT") << '\n' << "FEB events per CRT region: " << '\n';
+     
+    while ( it != regCounts.end() ) {
+        mf::LogInfo("CRT") << "reg: " << (*it).first << " , events: " << (*it).second << '\n';
+        it++;
+    }
+  } //if verbose
 
   e.put(std::move(triggeredCRTHits));
 }
