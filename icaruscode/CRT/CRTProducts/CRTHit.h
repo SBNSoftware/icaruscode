@@ -23,7 +23,7 @@ namespace crt {
      CRTHit(float x, float y, float z, \
             float xerr, float yerr, float zerr,  \
             float t0, float t0corr, float t1, float t1corr, \
-            std::pair<uint16_t,uint16_t> macpair);
+            std::pair<uint16_t,uint16_t> macpair, uint32_t reg);
      virtual ~CRTHit();
 
      std::pair<uint16_t, uint16_t> MacPair() const;
@@ -37,7 +37,8 @@ namespace crt {
      float T0Corr() const;
      float T1() const;
      float T1Corr() const;
-     
+     uint32_t Region() const;     
+
   private:
 
       float fX;
@@ -51,6 +52,7 @@ namespace crt {
       float fT1;
       float fT1Corr;
       std::pair<uint16_t,uint16_t> fMacPair;
+      uint32_t fReg;
 
   }; //class
 
