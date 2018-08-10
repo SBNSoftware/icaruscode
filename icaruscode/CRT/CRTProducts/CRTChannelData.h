@@ -16,6 +16,7 @@ namespace crt {
       uint32_t T0() const;
       uint32_t T1() const;
       uint32_t ADC() const;
+      void SetADC(uint32_t adc);
 
     private:
       uint32_t fChannel;

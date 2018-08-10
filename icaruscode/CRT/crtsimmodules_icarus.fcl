@@ -3,6 +3,9 @@ BEGIN_PROLOG
 icarus_crtsim:
 {
   module_type: "CRTDetSim"
+
+  Verbose: false
+
   G4ModuleLabel: "largeant"
 
   // Global timing offset [ns]
@@ -30,14 +33,9 @@ icarus_crtsim:
   // Interpolator time resolution [ns]
   TResInterpolator: 1.268
 
-  // Model parameters for Npe vs. distance along strip
-  NpeScaleNorm: 5.261e7
-  NpeScaleShift: -1085.0
-
   // Mean deposited charge for mips [GeV]
-  UseEdep: false
-  Q0C: 3.125e-3
-  Q0M: 1.891e-3
+  UseEdep: true
+  Q0: 1.891e-3
 
   // ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
   QPed: 63.6
@@ -64,14 +62,18 @@ icarus_crtsim:
   LayerCoincidenceWindowD: 30.0 //module self coincidence
 
   // Effective absorption length (for transverse response) [cm]
-  AbsLenEffC: 8.5
-  AbsLenEffM: 4.5
-  AbsLenEffD: 4.5
+  // not used for now, but may be useful later for other attenuation modeling
+  // AbsLenEffC: 8.5
+  // AbsLenEffM: 4.5
+  // AbsLenEffD: 4.5
 
   // Dead Time inherent in the front end electronics [us]
-  DeadTimeCorrect: false
   DeadTime: 22.0
+
+  // Time over which overlapping signals can influence each other [us]
+  // for now, adc signals are merged
   BiasTime: 0.05
+
 }
 
 END_PROLOG

@@ -162,7 +162,7 @@ namespace crt {
     // Create anab::T0 objects and make association with recob::Track
     std::unique_ptr< std::vector<icarus::crt::CRTHit> > CRTHits ( new std::vector<icarus::crt::CRTHit>);
 
-    uint32_t nHitMiss = 0;
+    uint16_t nHitMiss = 0, nHitC = 0, nHitD = 0, nHitM = 0;
 
     for (auto const &febdat : (*crtListHandle)) {
 
@@ -242,6 +242,7 @@ namespace crt {
                 hitPointErr[0] = width/sqrt(12);
                 hitPointErr[1] = adGeo.HalfHeight();
                 hitPointErr[2] = width/sqrt(12);
+                nHitC++;
               }
 
           }//if c type
@@ -254,18 +255,20 @@ namespace crt {
              hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
              hitPointErr[1] = adGeo.HalfHeight();
              hitPointErr[2] = length/sqrt(12);
+             nHitD++;
           } // if d type
 
 
-          if (!hitFound) {
-              mf::LogInfo("CRT") << "COULD NOT BUILD HIT!!!" << '\n'
+          if(fVerbose && !hitFound) {
+             mf::LogInfo("CRT") << "COULD NOT BUILD HIT!!!" << '\n'
                   << "  AuxDetID: " << adid << '\n'
                   << "  AuxDetSID1 / AuxDetSID2 : " << adsid1 << " / " << adsid2 << '\n'
-                  << "  expected from trigPair: " << trigpair.first << " , " << trigpair.second;
+                  << "  expected from trigPair: " << trigpair.first << " , " << trigpair.second <<  '\n';
                   //<< "  mod" << '\n' ;
-              nHitMiss++;
+              nHitMiss++; 
               continue;
           }
+          //if hit not found skip to end of loop, else continue
           else {
 
             for(auto chan : chandat) {
@@ -292,7 +295,7 @@ namespace crt {
             }//for ChannelData
           }//if hitFound
 
-      mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
+          if(fVerbose) mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
                   << "   AuxDetID: " << adid << '\n'
                   << "   AuxDetSID1 / AuxDetSID2 : " << adsid1 << " / " << adsid2 << '\n'
                   << "   x: " << hitPoint[0] << " , y: " << hitPoint[1] << " , z: " << hitPoint[2] << '\n'
@@ -302,20 +305,66 @@ namespace crt {
       CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
                          hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
                          t0, t0corr, t1, t1corr, macPair)); 
-      }
+      }//if c or d type
 
       if ( type == 'm' ) {
+          //get AuxDet and AuxDetSensitive volumes
+          uint32_t adid1  = MacToAuxDetID(mac,trigpair.first);
+          auto const& adGeo = fGeometryService->AuxDet(adid1);
+          uint32_t  adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first);
+          auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1);
+
+          double stripPosWorld1[3], stripPosWorld2[3];
+          //double modPos1[3], modPos2[3], hitLocal[3];
+          adsGeo1.LocalToWorld(origin,stripPosWorld1);
+          //adsGeo2.LocalToWorld(origin,stripPosWorld2);
+          //adGeo.WorldToLocal(stripPosWorld1,modPos1);
+          //adGeo.WorldToLocal(stripPosWorld2,modPos2);
+
+          float length = adsGeo1.Length();
+          //float width = adsGeo1.HalfWidth1()*2;
+          double ttrig1 = febdat.TTrig();
+
           for (auto const &febdat2 : (*crtListHandle)) {
-              if (febdat.MacPair().second==febdat2.Mac5()) {
-                  continue;
-              }
-          }         
-      }
+              uint32_t mac2 = febdat2.Mac5();
+              double ttrig2 = febdat2.TTrig();
+              if (febdat.MacPair().second==mac2&&abs(ttrig2-ttrig1)<50) {
+                    uint32_t adid2  = MacToAuxDetID(mac2,trigpair.first);
+                    auto const& adGeo2 = fGeometryService->AuxDet(adid2);
+                    uint32_t  adsid2 = ChannelToAuxDetSensitiveID(mac2,trigpair.first);
+                    auto const& adsGeo2 = adGeo2.SensitiveVolume(adsid2);
+                    adsGeo2.LocalToWorld(origin,stripPosWorld2);
+                    //adGeo2.WorldToLocal(stripPosWorld2,modPos2);
+
+                    hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
+                    hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
+                    hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
+
+                    hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
+                    hitPointErr[1] = abs(stripPosWorld1[1] - stripPosWorld2[1])/sqrt(12);
+                    hitPointErr[2] = length/sqrt(12);
+
+                    t0 = 0.5*(ttrig1+ttrig2);
+                    t1 = t0;
+                    t0corr = t0;
+                    t1corr = t1;
+
+                    nHitM++;
+
+                    CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
+                         hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
+                         t0, t0corr, t1, t1corr, febdat.MacPair()));
+
+                    break;
+              }//if trigger pair module found
+          }// for febdat         
+      } //if m type
 
     }//for FEBData
 
-    mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
-              << nHitMiss << " CRT hits missed!" << '\n';
+        if(fVerbose) mf::LogInfo("CRT") << CRTHits->size() << " CRT hits produced!" << '\n'
+              << "  nHitC: " << nHitC << " , nHitD: " << nHitD << " , nHitM: " << nHitM << '\n'
+              << "    " << nHitMiss << " CRT hits missed!" << '\n';
     
 
     event.put(std::move(CRTHits));

@@ -22,6 +22,9 @@ namespace icarus{
     uint32_t CRTChannelData::ADC() const {
       return fAdc;
     }
+    void CRTChannelData::SetADC(uint32_t adc)  {
+        this->fAdc = adc;
+    }
  }
 }
 

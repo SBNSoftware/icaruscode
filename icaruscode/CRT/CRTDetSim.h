@@ -55,6 +55,7 @@ private:
                                 detinfo::ElecClock& clock,
                                 float t0, float npeMean, float r);
 
+  bool   fVerbose;
   double fGlobalT0Offset;  //!< Time delay fit: Gaussian normalization
   double fTDelayNorm;  //!< Time delay fit: Gaussian normalization
   double fTDelayShift;  //!< Time delay fit: Gaussian x shift
@@ -66,10 +67,7 @@ private:
   double fTDelayRMSExpNorm;  //!< Time delay RMS fit: Exponential normalization
   double fTDelayRMSExpShift;  //!< Time delay RMS fit: Exponential x shift
   double fTDelayRMSExpScale;  //!< Time delay RMS fit: Exponential scale
-  double fNpeScaleNorm;  //!< Npe vs. distance: 1/r^2 scale
-  double fNpeScaleShift;  //!< Npe vs. distance: 1/r^2 x shift
-  double fQ0C;  //!< Average energy deposited for mips in CERN modules, for charge scaling [GeV]
-  double fQ0M;  //!< Average energy deposited for mips in MINOS/DC modules, for charge scaling [GeV]
+  double fQ0;  //!< Average energy deposited for mips in 1cm for charge scaling [GeV]
   double fQPed;  //!< ADC offset for the single-peak peak mean [ADC]
   double fQSlope;  //!< Slope in mean ADC / Npe [ADC]
   double fQRMS;  //!< ADC single-pe spectrum width [ADC]
@@ -86,11 +84,10 @@ private:
   double fLayerCoincidenceWindowC;  //!< Time window for two layer coincidence in a CERN module [ns]
   double fLayerCoincidenceWindowM;  //!< Time window for two layer coincidence between MINOS modules [ns]
   double fLayerCoincidenceWindowD;  //!< Time window for two layer coincidence in a DC module [ns]
-  double fAbsLenEffC;  //!< Effective abs. length for transverse Npe scaling in CERN scintillator [cm]
-  double fAbsLenEffM;  //!< Effective abs. length for transverse Npe scaling in MINOS scintillator [cm]
-  double fAbsLenEffD;  //!< Effective abs. length for transverse Npe scaling in DC scintillator [cm]
+  //double fAbsLenEffC;  //!< Effective abs. length for transverse Npe scaling in CERN scintillator [cm]
+  //double fAbsLenEffM;  //!< Effective abs. length for transverse Npe scaling in MINOS scintillator [cm]
+  //double fAbsLenEffD;  //!< Effective abs. length for transverse Npe scaling in DC scintillator [cm]
   bool fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
-  bool fDeadTimeCorrect; //!< Whether or not to apply dead time effect
   double fDeadTime; //!< Dead Time inherent in the front-end electronics
   double fBiasTime; //!< Hard cut off for follow-up hits after primary trigger to bias ADC level
 };
