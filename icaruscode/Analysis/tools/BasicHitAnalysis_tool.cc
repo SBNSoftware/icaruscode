@@ -96,6 +96,7 @@ private:
     TH1D*              fPulseHeight[3];
     TH1D*              fPulseHeightSingle[3];
     TH1D*              fPulseHeightMulti[3];
+    TH1D*              fPulseHeightMultiMax[3];
     TH1D*              fPulseHeightLong[3];
     TH1D*              fChi2DOF[3];
     TH1D*              fNumDegFree[3];
@@ -188,109 +189,112 @@ void BasicHitAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& tf
     fHitsByTime[1]            = dir.make<TH1D>("HitsByTime1", ";Tick",        1024, 0., 4096.);
     fHitsByTime[2]            = dir.make<TH1D>("HitsByTime2", ";Tick",        1024, 0., 4096.);
     
-    fPulseHeight[0]           = dir.make<TH1D>("PulseHeight0",  "PH (ADC)",    300,  0.,  150.);
-    fPulseHeight[1]           = dir.make<TH1D>("PulseHeight1",  "PH (ADC)",    300,  0.,  150.);
-    fPulseHeight[2]           = dir.make<TH1D>("PulseHeight2",  "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightSingle[0]     = dir.make<TH1D>("PulseHeightS0", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightSingle[1]     = dir.make<TH1D>("PulseHeightS1", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightSingle[2]     = dir.make<TH1D>("PulseHeightS2", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightMulti[0]      = dir.make<TH1D>("PulseHeightM0", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightMulti[1]      = dir.make<TH1D>("PulseHeightM1", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightMulti[2]      = dir.make<TH1D>("PulseHeightM2", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightLong[0]       = dir.make<TH1D>("PulseHeightL0", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightLong[1]       = dir.make<TH1D>("PulseHeightL1", "PH (ADC)",    300,  0.,  150.);
-    fPulseHeightLong[2]       = dir.make<TH1D>("PulseHeightL2", "PH (ADC)",    300,  0.,  150.);
-    fChi2DOF[0]               = dir.make<TH1D>("Chi2DOF0",      "Chi2DOF",     502, -1.,  250.);
-    fChi2DOF[1]               = dir.make<TH1D>("Chi2DOF1",      "Chi2DOF",     502, -1.,  250.);
-    fChi2DOF[2]               = dir.make<TH1D>("Chi2DOF2",      "Chi2DOF",     502, -1.,  250.);
-    fNumDegFree[0]            = dir.make<TH1D>("NumDegFree0",   "NDF",         200,  0.,  200.);
-    fNumDegFree[1]            = dir.make<TH1D>("NumDegFree1",   "NDF",         200,  0.,  200.);
-    fNumDegFree[2]            = dir.make<TH1D>("NumDegFree2",   "NDF",         200,  0.,  200.);
-    fChi2DOFSingle[0]         = dir.make<TH1D>("Chi2DOFS0",     "Chi2DOF",     502, -1.,  250.);
-    fChi2DOFSingle[1]         = dir.make<TH1D>("Chi2DOFS1",     "Chi2DOF",     502, -1.,  250.);
-    fChi2DOFSingle[2]         = dir.make<TH1D>("Chi2DOFS2",     "Chi2DOF",     502, -1.,  250.);
-    fHitMult[0]               = dir.make<TH1D>("HitMult0",      "# hits",       15,  0.,   15.);
-    fHitMult[1]               = dir.make<TH1D>("HitMult1",      "# hits",       15,  0.,   15.);
-    fHitMult[2]               = dir.make<TH1D>("HitMult2",      "# hits",       15,  0.,   15.);
-    fHitCharge[0]             = dir.make<TH1D>("HitCharge0",    "Charge",     1000,  0., 2000.);
-    fHitCharge[1]             = dir.make<TH1D>("HitCharge1",    "Charge",     1000,  0., 2000.);
-    fHitCharge[2]             = dir.make<TH1D>("HitCharge2",    "Charge",     1000,  0., 2000.);
-    fHitChargeSingle[0]       = dir.make<TH1D>("HitChargeS0",   "Charge",     1000,  0., 2000.);
-    fHitChargeSingle[1]       = dir.make<TH1D>("HitChargeS1",   "Charge",     1000,  0., 2000.);
-    fHitChargeSingle[2]       = dir.make<TH1D>("HitChargeS2",   "Charge",     1000,  0., 2000.);
-    fHitChargeMulti[0]        = dir.make<TH1D>("HitChargeM0",   "Charge",     1000,  0., 2000.);
-    fHitChargeMulti[1]        = dir.make<TH1D>("HitChargeM1",   "Charge",     1000,  0., 2000.);
-    fHitChargeMulti[2]        = dir.make<TH1D>("HitChargeM2",   "Charge",     1000,  0., 2000.);
-    fHitChargeLong[0]         = dir.make<TH1D>("HitChargeL0",   "Charge",     1000,  0., 2000.);
-    fHitChargeLong[1]         = dir.make<TH1D>("HitChargeL1",   "Charge",     1000,  0., 2000.);
-    fHitChargeLong[2]         = dir.make<TH1D>("HitChargeL2",   "Charge",     1000,  0., 2000.);
-    fFitWidth[0]              = dir.make<TH1D>("FitWidth0",     "Width",       100,  0.,   20.);
-    fFitWidth[1]              = dir.make<TH1D>("FitWidth1",     "Width",       100,  0.,   20.);
-    fFitWidth[2]              = dir.make<TH1D>("FitWidth2",     "Width",       100,  0.,   20.);
-    fFitWidthSingle[0]        = dir.make<TH1D>("FitWidthS0",    "Width",       100,  0.,   20.);
-    fFitWidthSingle[1]        = dir.make<TH1D>("FitWidthS1",    "Width",       100,  0.,   20.);
-    fFitWidthSingle[2]        = dir.make<TH1D>("FitWidthS2",    "Width",       100,  0.,   20.);
-    fFitWidthMulti[0]         = dir.make<TH1D>("FitWidthM0",    "Width",       100,  0.,   20.);
-    fFitWidthMulti[1]         = dir.make<TH1D>("FitWidthM1",    "Width",       100,  0.,   20.);
-    fFitWidthMulti[2]         = dir.make<TH1D>("FitWidthM2",    "Width",       100,  0.,   20.);
-    fFitWidthLong[0]          = dir.make<TH1D>("FitWidthL0",    "Width",       100,  0.,   20.);
-    fFitWidthLong[1]          = dir.make<TH1D>("FitWidthL1",    "Width",       100,  0.,   20.);
-    fFitWidthLong[2]          = dir.make<TH1D>("FitWidthL2",    "Width",       100,  0.,   20.);
-    fHitSumADC[0]             = dir.make<TH1D>("SumADC0",       "Sum ADC",    1000,  0., 2000.);
-    fHitSumADC[1]             = dir.make<TH1D>("SumADC1",       "Sum ADC",    1000,  0., 2000.);
-    fHitSumADC[2]             = dir.make<TH1D>("SumADC2",       "Sum ADC",    1000,  0., 2000.);
+    fPulseHeight[0]           = dir.make<TH1D>("PulseHeight0",   "PH (ADC)",    300,  0.,  150.);
+    fPulseHeight[1]           = dir.make<TH1D>("PulseHeight1",   "PH (ADC)",    300,  0.,  150.);
+    fPulseHeight[2]           = dir.make<TH1D>("PulseHeight2",   "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightSingle[0]     = dir.make<TH1D>("PulseHeightS0",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightSingle[1]     = dir.make<TH1D>("PulseHeightS1",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightSingle[2]     = dir.make<TH1D>("PulseHeightS2",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMultiMax[0]   = dir.make<TH1D>("PulseHeightMM0", "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMultiMax[1]   = dir.make<TH1D>("PulseHeightMM1", "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMultiMax[2]   = dir.make<TH1D>("PulseHeightMM2", "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMulti[0]      = dir.make<TH1D>("PulseHeightM0",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMulti[1]      = dir.make<TH1D>("PulseHeightM1",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightMulti[2]      = dir.make<TH1D>("PulseHeightM2",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightLong[0]       = dir.make<TH1D>("PulseHeightL0",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightLong[1]       = dir.make<TH1D>("PulseHeightL1",  "PH (ADC)",    300,  0.,  150.);
+    fPulseHeightLong[2]       = dir.make<TH1D>("PulseHeightL2",  "PH (ADC)",    300,  0.,  150.);
+    fChi2DOF[0]               = dir.make<TH1D>("Chi2DOF0",       "Chi2DOF",     502, -1.,  250.);
+    fChi2DOF[1]               = dir.make<TH1D>("Chi2DOF1",       "Chi2DOF",     502, -1.,  250.);
+    fChi2DOF[2]               = dir.make<TH1D>("Chi2DOF2",       "Chi2DOF",     502, -1.,  250.);
+    fNumDegFree[0]            = dir.make<TH1D>("NumDegFree0",    "NDF",         200,  0.,  200.);
+    fNumDegFree[1]            = dir.make<TH1D>("NumDegFree1",    "NDF",         200,  0.,  200.);
+    fNumDegFree[2]            = dir.make<TH1D>("NumDegFree2",    "NDF",         200,  0.,  200.);
+    fChi2DOFSingle[0]         = dir.make<TH1D>("Chi2DOFS0",      "Chi2DOF",     502, -1.,  250.);
+    fChi2DOFSingle[1]         = dir.make<TH1D>("Chi2DOFS1",      "Chi2DOF",     502, -1.,  250.);
+    fChi2DOFSingle[2]         = dir.make<TH1D>("Chi2DOFS2",      "Chi2DOF",     502, -1.,  250.);
+    fHitMult[0]               = dir.make<TH1D>("HitMult0",       "# hits",       15,  0.,   15.);
+    fHitMult[1]               = dir.make<TH1D>("HitMult1",       "# hits",       15,  0.,   15.);
+    fHitMult[2]               = dir.make<TH1D>("HitMult2",       "# hits",       15,  0.,   15.);
+    fHitCharge[0]             = dir.make<TH1D>("HitCharge0",     "Charge",     1000,  0., 2000.);
+    fHitCharge[1]             = dir.make<TH1D>("HitCharge1",     "Charge",     1000,  0., 2000.);
+    fHitCharge[2]             = dir.make<TH1D>("HitCharge2",     "Charge",     1000,  0., 2000.);
+    fHitChargeSingle[0]       = dir.make<TH1D>("HitChargeS0",    "Charge",     1000,  0., 2000.);
+    fHitChargeSingle[1]       = dir.make<TH1D>("HitChargeS1",    "Charge",     1000,  0., 2000.);
+    fHitChargeSingle[2]       = dir.make<TH1D>("HitChargeS2",    "Charge",     1000,  0., 2000.);
+    fHitChargeMulti[0]        = dir.make<TH1D>("HitChargeM0",    "Charge",     1000,  0., 2000.);
+    fHitChargeMulti[1]        = dir.make<TH1D>("HitChargeM1",    "Charge",     1000,  0., 2000.);
+    fHitChargeMulti[2]        = dir.make<TH1D>("HitChargeM2",    "Charge",     1000,  0., 2000.);
+    fHitChargeLong[0]         = dir.make<TH1D>("HitChargeL0",    "Charge",     1000,  0., 2000.);
+    fHitChargeLong[1]         = dir.make<TH1D>("HitChargeL1",    "Charge",     1000,  0., 2000.);
+    fHitChargeLong[2]         = dir.make<TH1D>("HitChargeL2",    "Charge",     1000,  0., 2000.);
+    fFitWidth[0]              = dir.make<TH1D>("FitWidth0",      "Width",       100,  0.,   20.);
+    fFitWidth[1]              = dir.make<TH1D>("FitWidth1",      "Width",       100,  0.,   20.);
+    fFitWidth[2]              = dir.make<TH1D>("FitWidth2",      "Width",       100,  0.,   20.);
+    fFitWidthSingle[0]        = dir.make<TH1D>("FitWidthS0",     "Width",       100,  0.,   20.);
+    fFitWidthSingle[1]        = dir.make<TH1D>("FitWidthS1",     "Width",       100,  0.,   20.);
+    fFitWidthSingle[2]        = dir.make<TH1D>("FitWidthS2",     "Width",       100,  0.,   20.);
+    fFitWidthMulti[0]         = dir.make<TH1D>("FitWidthM0",     "Width",       100,  0.,   20.);
+    fFitWidthMulti[1]         = dir.make<TH1D>("FitWidthM1",     "Width",       100,  0.,   20.);
+    fFitWidthMulti[2]         = dir.make<TH1D>("FitWidthM2",     "Width",       100,  0.,   20.);
+    fFitWidthLong[0]          = dir.make<TH1D>("FitWidthL0",     "Width",       100,  0.,   20.);
+    fFitWidthLong[1]          = dir.make<TH1D>("FitWidthL1",     "Width",       100,  0.,   20.);
+    fFitWidthLong[2]          = dir.make<TH1D>("FitWidthL2",     "Width",       100,  0.,   20.);
+    fHitSumADC[0]             = dir.make<TH1D>("SumADC0",        "Sum ADC",    1000,  0., 2000.);
+    fHitSumADC[1]             = dir.make<TH1D>("SumADC1",        "Sum ADC",    1000,  0., 2000.);
+    fHitSumADC[2]             = dir.make<TH1D>("SumADC2",        "Sum ADC",    1000,  0., 2000.);
     
-    fNDFVsChi2[0]             = dir.make<TH2D>("NDFVsChi20",    ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
-    fNDFVsChi2[1]             = dir.make<TH2D>("NDFVsChi21",    ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
-    fNDFVsChi2[2]             = dir.make<TH2D>("NDFVsChi22",    ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
+    fNDFVsChi2[0]             = dir.make<TH2D>("NDFVsChi20",     ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
+    fNDFVsChi2[1]             = dir.make<TH2D>("NDFVsChi21",     ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
+    fNDFVsChi2[2]             = dir.make<TH2D>("NDFVsChi22",     ";NDF;Chi2",  50,  0.,   50., 101, -1., 100.);
     
-    fPulseHVsWidth[0]         = dir.make<TH2D>("PHVsWidth0",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
-    fPulseHVsWidth[1]         = dir.make<TH2D>("PHVsWidth1",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
-    fPulseHVsWidth[2]         = dir.make<TH2D>("PHVsWidth2",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[0]         = dir.make<TH2D>("PHVsWidth0",     ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[1]         = dir.make<TH2D>("PHVsWidth1",     ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[2]         = dir.make<TH2D>("PHVsWidth2",     ";PH;Width", 100,  0.,  100., 100,  0., 20.);
     
-    fPulseHVsCharge[0]        = dir.make<TH2D>("PHVsChrg0",     ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
-    fPulseHVsCharge[1]        = dir.make<TH2D>("PHVsChrg1",     ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
-    fPulseHVsCharge[2]        = dir.make<TH2D>("PHVsChrg2",     ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
+    fPulseHVsCharge[0]        = dir.make<TH2D>("PHVsChrg0",      ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
+    fPulseHVsCharge[1]        = dir.make<TH2D>("PHVsChrg1",      ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
+    fPulseHVsCharge[2]        = dir.make<TH2D>("PHVsChrg2",      ";PH;Q",     100,  0.,  100., 100,  0., 2000.);
     
-    fPulseHVsHitNo[0]         = dir.make<TProfile>("PHVsNo0",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
-    fPulseHVsHitNo[1]         = dir.make<TProfile>("PHVsNo1",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
-    fPulseHVsHitNo[2]         = dir.make<TProfile>("PHVsNo2",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[0]         = dir.make<TProfile>("PHVsNo0",    ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[1]         = dir.make<TProfile>("PHVsNo1",    ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[2]         = dir.make<TProfile>("PHVsNo2",    ";Hit #;PH", 1000, 0., 1000., 0., 100.);
     
-    fChargeVsHitNo[0]         = dir.make<TProfile>("QVsNo0",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
-    fChargeVsHitNo[1]         = dir.make<TProfile>("QVsNo1",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
-    fChargeVsHitNo[2]         = dir.make<TProfile>("QVsNo2",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNo[0]         = dir.make<TProfile>("QVsNo0",     ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNo[1]         = dir.make<TProfile>("QVsNo1",     ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNo[2]         = dir.make<TProfile>("QVsNo2",     ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
     
-    fChargeVsHitNoS[0]        = dir.make<TProfile>("QVsNoS0",   ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
-    fChargeVsHitNoS[1]        = dir.make<TProfile>("QVsNoS1",   ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
-    fChargeVsHitNoS[2]        = dir.make<TProfile>("QVsNoS2",   ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNoS[0]        = dir.make<TProfile>("QVsNoS0",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNoS[1]        = dir.make<TProfile>("QVsNoS1",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
+    fChargeVsHitNoS[2]        = dir.make<TProfile>("QVsNoS2",    ";Hit No;Q", 1000, 0., 1000., 0., 2000.);
     
-    fBadWPulseHeight          = dir.make<TH1D>("BWPulseHeight", "PH (ADC)",  300,  0.,  150.);
-    fBadWPulseHVsWidth        = dir.make<TH2D>("BWPHVsWidth",   ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fBadWHitsByWire           = dir.make<TH1D>("BWHitsByWire",  ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
+    fBadWPulseHeight          = dir.make<TH1D>("BWPulseHeight",  "PH (ADC)",  300,  0.,  150.);
+    fBadWPulseHVsWidth        = dir.make<TH2D>("BWPHVsWidth",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fBadWHitsByWire           = dir.make<TH1D>("BWHitsByWire",   ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
     
-    fSPHvsIdx[0]              = dir.make<TH2D>("SPHVsIdx0",     ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
-    fSPHvsIdx[1]              = dir.make<TH2D>("SPHVsIdx1",     ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
-    fSPHvsIdx[2]              = dir.make<TH2D>("SPHVsIdx2",     ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
+    fSPHvsIdx[0]              = dir.make<TH2D>("SPHVsIdx0",      ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
+    fSPHvsIdx[1]              = dir.make<TH2D>("SPHVsIdx1",      ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
+    fSPHvsIdx[2]              = dir.make<TH2D>("SPHVsIdx2",      ";PH;Idx", 30,  0.,  30., 100,  0., 100.);
     
-    fSWidVsIdx[0]             = dir.make<TH2D>("SWidsIdx0",     ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
-    fSWidVsIdx[1]             = dir.make<TH2D>("SWidsIdx1",     ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
-    fSWidVsIdx[2]             = dir.make<TH2D>("SWidsIdx2",     ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
+    fSWidVsIdx[0]             = dir.make<TH2D>("SWidsIdx0",      ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
+    fSWidVsIdx[1]             = dir.make<TH2D>("SWidsIdx1",      ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
+    fSWidVsIdx[2]             = dir.make<TH2D>("SWidsIdx2",      ";Width;Idx", 30,  0.,  30., 100,  0., 10.);
     
-    f1PPHvsWid[0]             = dir.make<TH2D>("1PPHVsWid0",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    f1PPHvsWid[1]             = dir.make<TH2D>("1PPHVsWid1",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    f1PPHvsWid[2]             = dir.make<TH2D>("1PPHVsWid2",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    f1PPHvsWid[0]             = dir.make<TH2D>("1PPHVsWid0",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    f1PPHvsWid[1]             = dir.make<TH2D>("1PPHVsWid1",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    f1PPHvsWid[2]             = dir.make<TH2D>("1PPHVsWid2",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
     
-    fSPPHvsWid[0]             = dir.make<TH2D>("SPPHVsWid0",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fSPPHvsWid[1]             = dir.make<TH2D>("SPPHVsWid1",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fSPPHvsWid[2]             = dir.make<TH2D>("SPPHVsWid2",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSPPHvsWid[0]             = dir.make<TH2D>("SPPHVsWid0",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSPPHvsWid[1]             = dir.make<TH2D>("SPPHVsWid1",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSPPHvsWid[2]             = dir.make<TH2D>("SPPHVsWid2",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
     
-    fSOPHvsWid[0]             = dir.make<TH2D>("SOPHVsWid0",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fSOPHvsWid[1]             = dir.make<TH2D>("SOPHVsWid1",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
-    fSOPHvsWid[2]             = dir.make<TH2D>("SOPHVsWid2",    ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSOPHvsWid[0]             = dir.make<TH2D>("SOPHVsWid0",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSOPHvsWid[1]             = dir.make<TH2D>("SOPHVsWid1",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
+    fSOPHvsWid[2]             = dir.make<TH2D>("SOPHVsWid2",     ";PH;Width", 100,  0.,  100., 100,  0., 10.);
     
-    fPHRatVsIdx[0]            = dir.make<TH2D>("PHRatVsIdx0",   ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
-    fPHRatVsIdx[1]            = dir.make<TH2D>("PHRatVsIdx1",   ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
-    fPHRatVsIdx[2]            = dir.make<TH2D>("PHRatVsIdx2",   ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
+    fPHRatVsIdx[0]            = dir.make<TH2D>("PHRatVsIdx0",    ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
+    fPHRatVsIdx[1]            = dir.make<TH2D>("PHRatVsIdx1",    ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
+    fPHRatVsIdx[2]            = dir.make<TH2D>("PHRatVsIdx2",    ";PHRat;Idx", 30,  0.,  30., 51,  0., 1.02);
 
     return;
 }
@@ -330,7 +334,7 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
         
         fHitsByWire[plane]->Fill(wire,1.);
         fHitsByTime[plane]->Fill(peakTime, 1.);
-        fPulseHeight[plane]->Fill(hitPH, 1.);
+        fPulseHeight[plane]->Fill(std::min(float(149.5),hitPH), 1.);
         fChi2DOF[plane]->Fill(chi2DOF, 1.);
         fNumDegFree[plane]->Fill(numDOF, 1.);
         fHitMult[plane]->Fill(hitMult, 1.);
@@ -342,7 +346,7 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
         
         if (hitMult == 1)
         {
-            fPulseHeightSingle[plane]->Fill(hitPH, 1.);
+            fPulseHeightSingle[plane]->Fill(std::min(float(149.5),hitPH), 1.);
             fFitWidthSingle[plane]->Fill(std::min(float(19.99),hitSigma), 1.);
             fHitChargeSingle[plane]->Fill(charge, 1.);
             fChi2DOFSingle[plane]->Fill(chi2DOF, 1.);
@@ -353,7 +357,7 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
             {
                 std::cout << "++> Plane: " << plane << ", wire: " << wire << ", peakTime: " << peakTime << ", ph: " << hitPH << ", w: " << hitSigma << std::endl;
                 
-                fBadWPulseHeight->Fill(hitPH,1.);
+                fBadWPulseHeight->Fill(std::min(float(149.5),hitPH),1.);
                 fBadWPulseHVsWidth->Fill(std::min(float(99.9),hitPH), std::min(float(9.99),hitSigma), 1.);
                 fBadWHitsByWire->Fill(wire,1.);
             }
@@ -362,13 +366,13 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
         {
             if (numDOF > 1)
             {
-                fPulseHeightMulti[plane]->Fill(hitPH, 1.);
+                fPulseHeightMulti[plane]->Fill(std::min(float(149.5),hitPH), 1.);
                 fFitWidthMulti[plane]->Fill(std::min(float(19.99),hitSigma), 1.);
                 fHitChargeMulti[plane]->Fill(charge, 1.);
             }
             else
             {
-                fPulseHeightLong[plane]->Fill(hitPH, 1.);
+                fPulseHeightLong[plane]->Fill(std::min(float(149.5),hitPH), 1.);
                 fFitWidthLong[plane]->Fill(std::min(float(19.99),hitSigma), 1.);
                 fHitChargeLong[plane]->Fill(charge, 1.);
             }
@@ -385,6 +389,8 @@ void BasicHitAnalysis::fillHistograms(const HitPtrVec& hitPtrVec) const
                 
                 float maxPulseHeight = hitSnippetVec.front()->PeakAmplitude();
                 
+                fPulseHeightMultiMax[plane]->Fill(std::min(float(149.5),maxPulseHeight), 1.);
+
                 for(size_t idx = 0; idx < hitSnippetVec.size(); idx++)
                 {
                     float pulseHeight      = hitSnippetVec.at(idx)->PeakAmplitude();
