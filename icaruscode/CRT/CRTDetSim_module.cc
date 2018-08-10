@@ -3,10 +3,12 @@
 ///
 /// Based on LArIAT TOFSimDigits.cc (Author: Lucas Mendes Santos)
 /// with modifications for SBND (Author: mastbaum@uchicago.edu)
-//
-/// Author: chilge@rams.colostate.edu
+/// then modified for ICARUS
+///
+/// Author: Chris.Hilgenberg@colostate.edu
 ////////////////////////////////////////////////////////////////////////////////
 
+//art includes
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
@@ -15,6 +17,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "nutools/RandomUtils/NuRandomService.h"
 
+//larsoft includes
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataalg/DetectorInfo/ElecClock.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
@@ -24,24 +27,29 @@
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/CoreUtils/NumericUtils.h"
 
+//CLHEP includes
 #include "CLHEP/Random/RandomEngine.h"
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
 #include "CLHEP/Random/RandPoisson.h"
 
+//ROOT includes
 #include "TFile.h"
 #include "TNtuple.h"
 #include "TGeoManager.h"
 #include "TGeoNode.h"
-#include "icaruscode/CRT/CRTDetSim.h"
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
 
+//C++ includes
 #include <cmath>
 #include <memory>
 #include <string>
 #include <utility>
 #include <map> 
+
+//CRT includes
+#include "icaruscode/CRT/CRTDetSim.h"
+#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
+#include "icaruscode/CRT/CRTProducts/CRTData.hh"
 
 namespace icarus {
 namespace crt {
@@ -63,11 +71,8 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fPropDelay = p.get<double>("PropDelay");
   fPropDelayError = p.get<double>("PropDelayError");
   fTResInterpolator = p.get<double>("TResInterpolator");
-  fNpeScaleNorm = p.get<double>("NpeScaleNorm");
-  fNpeScaleShift = p.get<double>("NpeScaleShift");
   fUseEdep = p.get<bool>("UseEdep");
-  fQ0C = p.get<double>("Q0C");
-  fQ0M = p.get<double>("Q0M");
+  fQ0 = p.get<double>("Q0");
   fQPed = p.get<double>("QPed");
   fQSlope = p.get<double>("QSlope");
   fQRMS = p.get<double>("QRMS");
@@ -81,10 +86,9 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fLayerCoincidenceWindowC = p.get<double>("LayerCoincidenceWindowC");
   fLayerCoincidenceWindowM = p.get<double>("LayerCoincidenceWindowM");
   fLayerCoincidenceWindowD = p.get<double>("LayerCoincidenceWindowD");
-  fAbsLenEffC = p.get<double>("AbsLenEffC");
-  fAbsLenEffM = p.get<double>("AbsLenEffM");
-  fAbsLenEffD = p.get<double>("AbsLenEffD");
-  fDeadTimeCorrect = p.get<bool>("DeadTimeCorrect");
+  //fAbsLenEffC = p.get<double>("AbsLenEffC");
+  //fAbsLenEffM = p.get<double>("AbsLenEffM");
+  //fAbsLenEffD = p.get<double>("AbsLenEffD");
   fDeadTime = p.get<double>("DeadTime");
   fBiasTime = p.get<double>("BiasTime");
 }
@@ -102,27 +106,12 @@ CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) {
 //function takes reference to AuxDetGeo object and gives parent subsystem
 char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 {
-  
-  
-  //std::string base = "volAuxDet_Module_010_";
   std::string volName(adgeo.TotalVolume()->GetName());
   if (volName.find("MINOS") != std::string::npos) return 'm';
   if (volName.find("CERN")  != std::string::npos) return 'c';
   if (volName.find("DC")    != std::string::npos) return 'd';
 
-  /*std::string reg  = volName.substr(base.size(),volName.size());
-
-  if(reg == "Top")        return 'c';
-  if(reg == "SlopeLeft")  return 'c';
-  if(reg == "SlopeRight") return 'c';
-  if(reg == "SlopeFront") return 'c';
-  if(reg == "SlopeBack")  return 'c';
-  if(reg == "Left")       return 'm';
-  if(reg == "Right")      return 'm';
-  if(reg == "Front")      return 'm';
-  if(reg == "Back")       return 'm';
-  if(reg == "Bottom")     return 'd';*/
-  std::cout << " Region not found for module " << volName << std::endl;
+  mf::LogInfo("CRT") << "AuxDetType not found!" << '\n';
   return 'e';
 }
 
@@ -138,6 +127,7 @@ std::string CRTDetSim::GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
   }
   base+="_module_###_";
   std::string volName(adgeo.TotalVolume()->GetName());
+
   return volName.substr(base.size(),volName.size());
 }
 
@@ -173,11 +163,11 @@ uint32_t CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
   // Get clock ticks
   clock.SetTime(t / 1e3);  // SetTime takes microseconds
 
-  /*mf::LogInfo("CRT")
-    << "CRT TIMING: t0=" << t0
-    << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
-    << ", tDelay=" << tDelay << ", tDelay(interp)="
-    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n"; */
+  //if (fVerbose) mf::LogInfo("CRT")
+  //  << "CRT TIMING: t0=" << t0
+  //  << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
+  //  << ", tDelay=" << tDelay << ", tDelay(interp)="
+  //  << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n"; 
 
   return clock.Ticks();
 }
@@ -188,19 +178,19 @@ bool TimeOrderCRTData(icarus::crt::CRTChannelData crtdat1, icarus::crt::CRTChann
 
 struct Tagger {
   char type;
-  std::string reg;
-  uint32_t stackid;
-  std::set<uint32_t> layerid;
-  std::map<uint32_t,uint32_t> chanlayer;
-  std::pair<uint32_t,uint32_t> macPair;
-  std::vector<icarus::crt::CRTChannelData> data;
+  std::string reg; //crt region where FEB is located
+  uint32_t stackid; //which module stack (applies to left/right m modules only)
+  std::set<uint32_t> layerid; //keep track of layers hit accross whole event window
+  std::map<uint32_t,uint32_t> chanlayer; //map chan # to layer
+  std::pair<uint32_t,uint32_t> macPair; //which two FEBs provided coincidence (applies to m mods only)
+  std::vector<icarus::crt::CRTChannelData> data; //time and charge info for each channel > thresh
 };
 
 
 //module producer
 void CRTDetSim::produce(art::Event & e) {
   // A list of hit taggers, before any coincidence requirement
-  std::map<uint16_t, Tagger> taggers;
+  std::map<uint32_t, Tagger> taggers;
 
   // Services: Geometry, DetectorClocks, RandomNumberGenerator
   art::ServiceHandle<geo::Geometry> geoService;
@@ -214,16 +204,19 @@ void CRTDetSim::produce(art::Event & e) {
   art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
   e.getByLabel(fG4ModuleLabel, channels);
 
-  uint16_t nsim_m=0, nsim_d=0, nsim_c=0;
-  uint16_t nchandat_m=0, nchandat_d=0, nchandat_c=0;
+  uint32_t nsim_m=0, nsim_d=0, nsim_c=0;
+  uint32_t nchandat_m=0, nchandat_d=0, nchandat_c=0;
+  uint32_t nmissthr_c = 0, nmissthr_d = 0, nmissthr_m = 0;
+  uint32_t nmiss_strcoin_c = 0;
 
   // Loop through truth AD channels
   for (auto& adsc : *channels) {
 
-    uint16_t adid = adsc.AuxDetID();
-    uint16_t adsid = adsc.AuxDetSensitiveID();
-    const geo::AuxDetGeo& adGeo = \
-        geoService->AuxDet(adid);
+    uint32_t adid = adsc.AuxDetID(); //CRT module ID number (from gdml)
+    uint32_t adsid = adsc.AuxDetSensitiveID(); //CRT strip ID number (from gdml)
+    if (adsid == 0 ) continue; //skip AuxDetSensitiveID=0 (bug in AuxDetSimChannels)
+
+    const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
 
     //check stripID is consistent with number of sensitive volumes
     if( adGeo.NSensitiveVolume() < adsid){
@@ -234,82 +227,68 @@ void CRTDetSim::produce(art::Event & e) {
         continue;
     }
 
-    const geo::AuxDetSensitiveGeo& adsGeo = \
-        adGeo.SensitiveVolume(adsid);
-
-    //parent subsystem of module (c,m,d), e if not found
-    char auxDetType = GetAuxDetType(adGeo);
-    std::string region = GetAuxDetRegion(adGeo);
-    double modpos[3] ;
-    adGeo.GetCenter(modpos);
-
+    const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
+    char auxDetType = GetAuxDetType(adGeo); //CRT module type (c, d, or m)
     if (auxDetType=='e') mf::LogInfo("CRT") << "COULD NOT GET AD TYPE!" << '\n';
+    std::string region = GetAuxDetRegion(adGeo); //CRT region
 
-    uint16_t layid = 10;
-    uint16_t stackid = 10; //for left/right crt regions ordered from down to upstream (-z -> +z)
-    uint16_t mac5=0;
+    uint32_t layid = UINT32_MAX; //set to 0 or 1 if layerid determined
+    uint32_t stackid = UINT32_MAX; //for left/right crt regions ordered from down to upstream (-z -> +z)
+    uint32_t mac5=UINT32_MAX;
 
-    //--- for new crt geo
-      // Find the path to the strip geo node, to locate it in the hierarchy
-      std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
-      std::vector<std::vector<TGeoNode const*> > paths = \
-        geoService->FindAllVolumePaths(volNames);
+    // Find the path to the strip geo node, to locate it in the hierarchy
+    std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
+    std::vector<std::vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
 
-      std::string path = "";
-      for (size_t inode=0; inode<paths.at(0).size(); inode++) {
-        path += paths.at(0).at(inode)->GetName();
-        if (inode < paths.at(0).size() - 1) {
-          path += "/";
-        }
+    std::string path = "";
+    for (size_t inode=0; inode<paths.at(0).size(); inode++) {
+      path += paths.at(0).at(inode)->GetName();
+      if (inode < paths.at(0).size() - 1) {
+        path += "/";
       }
+    }
 
-      TGeoManager* manager = geoService->ROOTGeoManager();
-      manager->cd(path.c_str());
-      TGeoNode* nodeStrip = manager->GetCurrentNode();
-      //TGeoNode* nodeArray = manager->GetMother(1);
-      TGeoNode* nodeModule = manager->GetMother(2);
-      //TGeoNode* nodeRegion = manager->GetMother(3);
+    TGeoManager* manager = geoService->ROOTGeoManager();
+    manager->cd(path.c_str());
+    TGeoNode* nodeStrip = manager->GetCurrentNode();
+    TGeoNode* nodeInner = manager->GetMother(1);
+    TGeoNode* nodeModule = manager->GetMother(2);
+    double origin[3] = {0, 0, 0};
 
-      // Module position in parent (tagger) frame
-      double moduleOrigin[3] = {0, 0, 0};
-      double modulePosMother[3];
-      nodeModule->LocalToMaster(moduleOrigin, modulePosMother);
+    // Module position in parent (tagger) frame
+    double modulePosMother[3]; //position in CRT region volume
+    nodeModule->LocalToMaster(origin, modulePosMother);
 
-      // Module position in parent (tagger) frame
-      double stripOrigin[3] = {0, 0, 0};
-      double stripPosMother[3];
-      nodeStrip->LocalToMaster(stripOrigin, stripPosMother);
+    // strip position in module frame
+    double stripPosMother[3];
+    double stripPosModule[3];
+    nodeStrip->LocalToMaster(origin, stripPosMother);
+    nodeInner->LocalToMaster(stripPosMother,stripPosModule);
 
-      if (auxDetType == 'c' || auxDetType == 'd') {
-        layid = (stripPosMother[1] > 0);
-        stackid=20;
+    // Determine layid and stackid
+    if (auxDetType == 'c' || auxDetType == 'd') layid = (stripPosModule[1] > 0);
+       
+    if (auxDetType == 'm') {
+      if ( region=="Left" || region=="Right" ) {
+          if ( modulePosMother[2] < 0 ) stackid = 0;
+          if ( modulePosMother[2] == 0) stackid = 1;
+          if ( modulePosMother[2] > 0 ) stackid = 2;
+
+          //following 2 if's use hardcoded dimensions - UPDATE AFTER ALL GEO CHANGES!
+          if ( stackid == 0 || stackid == 2 ) layid = ( abs(modulePosMother[0]) < 49.482/2-1 );
+          if ( stackid == 1 ) layid = ( abs(modulePosMother[0]) > 49.482/2-1 );
       }
-      if (auxDetType == 'm') {
-        if ( region=="Left" || region=="Right" ) {
-            if ( modulePosMother[2] < 0 ) stackid = 0;
-            if ( modulePosMother[2] == 0) stackid = 1;
-            if ( modulePosMother[2] > 0 ) stackid = 2;
-
-            //following 2 if's use hardcoded dimensions - UPDATE AFTER ALL GEO CHANGES!
-            if ( stackid == 0 || stackid == 2 ) layid = ( abs(modulePosMother[0]) < 49.482/2-1 );
-            if ( stackid == 1 ) layid = ( abs(modulePosMother[0]) > 49.482/2-1 );
-        }
-        else stackid = 20;
-        if ( region=="Front" || region=="Back" ) {
-            layid = ( modulePosMother[2])> 0 ;
-        }
+      if ( region=="Front" || region=="Back" ) {
+          layid = ( modulePosMother[2]> 0 );
       }
+    }
 
-      if(layid==10) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n'
-                                       << "   ADType: " << auxDetType << '\n'
-                                       << "   ADRegion: " << region << '\n';
-    //------
-
+    if(layid==UINT32_MAX) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n'
+                               << "   ADType: " << auxDetType << '\n'
+                               << "   ADRegion: " << region << '\n';
 
     // Simulate the CRT response for each hit
     for (auto ide : adsc.AuxDetIDEs()) {
-
-      if (adsid==0) continue; //skip AuxDetSensitiveID=0 (bug in AuxDetSimChannels)
 
       if (auxDetType=='c') nsim_c++;
       if (auxDetType=='d') nsim_d++;
@@ -321,31 +300,31 @@ void CRTDetSim::produce(art::Event & e) {
       double y = (ide.entryY + ide.exitY) / 2;
       double z = (ide.entryZ + ide.exitZ) / 2;
       double world[3] = {x, y, z};
-      double svHitPosLocal[3] = {0,0,0};
+      double svHitPosLocal[3];
       double modHitPosLocal[3];
-      adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame (origin at center)
-      adGeo.WorldToLocal(world, modHitPosLocal); //position in module fram (origin at center)
+      adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame  (origin at center)
+      adGeo.WorldToLocal(world, modHitPosLocal); //position in module frame (origin at center)
 
-      if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1() || 
-           abs(svHitPosLocal[1])>adsGeo.HalfHeight() ||
-           abs(svHitPosLocal[2])>adsGeo.HalfLength()) 
+      if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 || 
+           abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
+           abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001) 
          mf::LogInfo("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
-                            << "  AD: " << adid << " , ADS: " << adsid;
-
-      //longitudinal distance (cm) along the strip for fiber atten. calculation
-      double distToReadout = abs( adsGeo.HalfLength() - svHitPosLocal[2])*0.01; //dist in m
-      double distToReadout2 = abs(-adsGeo.HalfLength() - svHitPosLocal[2])*0.01; //dist in m
+                            << "  AD: " << adid << " , ADS: " << adsid << '\n'
+                            << "  Local position (x,y,z): ( " << svHitPosLocal[0]
+                            << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )" << '\n';
 
       // The expected number of PE, using a quadratic model for the distance
       // dependence, and scaling linearly with deposited energy.
-      double scale = 1.0;
-      if (auxDetType=='c') scale = fQ0C;
-      if (auxDetType=='m'||auxDetType=='d') scale = fQ0M;
-      double qr = fUseEdep ? 1.0 * ide.energyDeposited / scale : 1.0;
+      double qr = fUseEdep ? ide.energyDeposited / fQ0 : 1.0;
+      if (auxDetType == 'c') qr *= 1.5; //c strips 50% thicker
+
+      //longitudinal distance (m) along the strip for fiber atten. calculation
+      double distToReadout = abs( adsGeo.HalfLength() - svHitPosLocal[2])*0.01; 
+      double distToReadout2 = abs(-adsGeo.HalfLength() - svHitPosLocal[2])*0.01; 
 
       //coefficients for quadratic fit to MINOS test data w/S14
       //obtained for normally incident cosmic muons
-      double p0_m = 36.5425;
+      double p0_m = 36.5425; //initial light yield (pe) before any attenuation in m scintillator
       double p1_m = -6.3895;
       double p2_m =  0.3742;
 
@@ -367,75 +346,51 @@ void CRTDetSim::produce(art::Event & e) {
       double at3_l = 0.0449169;
       double at4_l = 0.00127892;
 
+      //scale to LY from normally incident MIP muon  (PE)
       double npeExpected = \
-        (p2_m * pow(distToReadout,2)  + p1_m * distToReadout  + p0_m) * qr;
+        (p2_m * pow(distToReadout,2) + p1_m * distToReadout + p0_m) * qr;
       double npeExpected2 = \
         (p2_m * pow(distToReadout2,2) + p1_m * distToReadout2 + p0_m) * qr;
-      //double npeExpected = 
-      //  fNpeScaleNorm / pow(distToReadout - fNpeScaleShift, 2) * qr;
-      //double npeExpected2 = 
-      //  fNpeScaleNorm / pow(distToReadout2 - fNpeScaleShift, 2) * qr;
 
       // Put PE on channels weighted by transverse distance across the strip,
       // using an exponential model
-      //double d0=0., d1=0., absLenEff = 0.;
       double abs0=0.0, abs1=0.0, arg=0.0; 
 
       switch(auxDetType){
           case 'c' :
               //hit between both fibers 
               if ( abs(svHitPosLocal[0]) <= 5.5 ) {
-		//arg=-5.5-svHitPosLocal[0];
                 arg=svHitPosLocal[0];
                 abs0 = at5_c*pow(arg,5) + at4_c*pow(arg,4) + at3_c*pow(arg,3) \
 		  + at2_c*pow(arg,2) + at1_c*arg + at0_c;
-                //arg=5.5-svHitPosLocal[0];
                 abs1 = -1*at5_c*pow(arg,5) + at4_c*pow(arg,4) - at3_c*pow(arg,3) \
                   + at2_c*pow(arg,2) - at1_c*arg + at0_c;
                 break;
               }
               //hit to right of both fibers
 	      if ( svHitPosLocal[0] > 5.5 ) {
-		//arg=-5.5-svHitPosLocal[0];
                 arg=svHitPosLocal[0];
 		abs0 = at3_r*pow(arg,3) + at2_r*pow(arg,2) + at1_r*arg + at0_r;
-		//arg=5.5-svHitPosLocal[0];
 		abs1 = at4_l*pow(arg,4) - at3_l*pow(arg,3) \
                   + at2_l*pow(arg,2) - at1_l*arg + at0_l;
                 break;
 	      }
               //hit to left of both fibers
               if ( svHitPosLocal[0] < -5.5 ) {
-		//arg = -5.5-svHitPosLocal[0];
 		arg=svHitPosLocal[0];
 		abs0 = at4_l*pow(arg,4) + at3_l*pow(arg,3) \
                   + at2_l*pow(arg,2) + at1_l*arg + at0_l;
-                //arg=5.5-svHitPosLocal[0];
                 abs1 = -1*at3_r*pow(arg,3) + at2_r*pow(arg,2) - at1_r*arg + at0_r;
 	      }
-              //d0 = abs(-adsGeo.HalfWidth1() + 6.0 - svHitPosLocal[0]);  // L (fibers 6cm from edge)
-              //d1 = abs(adsGeo.HalfWidth1() - 6.0  - svHitPosLocal[0]);  // R
-              //absLenEff = fAbsLenEffC;
               break;
           case 'm' : 
-              //npeExpected  = (p2_m * pow(distToReadout,2)  + p1_m * distToReadout  + p0_m) * qr;
-              //npeExpected2 = (p2_m * pow(distToReadout2,2) + p1_m * distToReadout2 + p0_m) * qr;
-              //d0 = abs(svHitPosLocal[1]); //one fiber centered
-              //d1 = 0.;
-              //absLenEff = fAbsLenEffM;
               abs0 = 1.0; abs1 = 1.0;
               break;
           case 'd' : 
-              //d0 = abs(svHitPosLocal[0]); //one fiber centered
-              //d1 = 0.;
-              //absLenEff = fAbsLenEffD;
               abs0 = 1.0; abs1 = 1.0;
               break;
       }
 
-      //FIX ME (ONLY DOES SOMETHING FOR C MODULES!
-      //double abs0 = exp(-d0 / absLenEff);
-      //double abs1 = exp(-d1 / absLenEff);
       double npeExp0 = npeExpected * abs0;// / (abs0 + abs1);
       double npeExp1 = npeExpected * abs1;// / (abs0 + abs1);
       double npeExp0Dual = npeExpected2 * abs0;// / (abs0 + abs1);
@@ -487,7 +442,7 @@ void CRTDetSim::produce(art::Event & e) {
               break;
           case 'd' : 
               mac5 = adid;
-              channel0ID = adid;
+              channel0ID = adsid;
               break;
           case 'm' :
               mac5 = adid/3;
@@ -495,6 +450,8 @@ void CRTDetSim::produce(art::Event & e) {
               break;
 
       }
+
+      if (mac5==UINT32_MAX) mf::LogInfo("CRT") << "mac addrs not set!" << '\n';
 
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
       if (auxDetType=='c' && q0 > fQThresholdC && q1 > fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) {
@@ -544,7 +501,18 @@ void CRTDetSim::produce(art::Event & e) {
               }
       }//if one strip above threshold at either end
 
-      if (fVerbose) mf::LogInfo("CRT")
+      if (auxDetType == 'c') {
+          if (q0 < fQThresholdC || q1 < fQThresholdC) nmissthr_c++;
+          if ( util::absDiff(t0,t1) >= fStripCoincidenceWindow ) nmiss_strcoin_c++;
+      }
+      if (auxDetType == 'd' && q0 < fQThresholdD) nmissthr_d++;
+      if (auxDetType == 'm' && ( q0 < fQThresholdM|| q0Dual < fQThresholdM)) nmissthr_d++;
+
+      if (fVerbose&&
+         ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
+           (auxDetType=='d' && q0>fQThresholdD ) ||
+           (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
+        mf::LogInfo("CRT")
         << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << " with " << adGeo.NSensitiveVolume() << " AuxDetSensitive volumes" << "\n"
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
@@ -565,8 +533,9 @@ void CRTDetSim::produce(art::Event & e) {
   std::unique_ptr<std::vector<icarus::crt::CRTData> > triggeredCRTHits(
       new std::vector<icarus::crt::CRTData>);
 
-  uint32_t nmiss_lock=0;
-  uint32_t nmiss_dead=0;
+  uint32_t nmiss_lock_c=0, nmiss_lock_d=0, nmiss_lock_m=0;
+  uint32_t nmiss_dead_c=0, nmiss_dead_d=0, nmiss_dead_m=0;
+  uint32_t nmiss_opencoin_c = 0, nmiss_opencoin_d = 0;
   uint32_t nmiss_coin_c = 0;
   uint32_t nmiss_coin_d = 0;
   uint32_t nmiss_coin_m = 0;
@@ -585,12 +554,15 @@ void CRTDetSim::produce(art::Event & e) {
 
       event = 0;
       icarus::crt::CRTChannelData *chanTrigData, *chanTmpData;
-      std::set<uint32_t> trackNHold;
-      std::set<uint32_t> layerNHold;
+      std::set<uint32_t> trackNHold = {};
+      std::set<uint32_t> layerNHold = {};
       std::pair<uint32_t,uint32_t> tpair;
       bool minosPairFound = false;
       std::vector<icarus::crt::CRTChannelData> passingData;
       double ttrig=0.0, ttmp=0.0;
+
+      if (trg.second.type=='c' && fApplyCoincidenceC && trg.second.layerid.size()<2) nmiss_opencoin_c++;
+      if (trg.second.type=='d' && fApplyCoincidenceD && trg.second.layerid.size()<2) nmiss_opencoin_d++;
 
       //for C and D modules, check if coincidence possible, if enabled
       if (trg.second.type=='m' || 
@@ -651,7 +623,8 @@ void CRTDetSim::produce(art::Event & e) {
                     std::sort((trg2.second.data).begin(),(trg2.second.data).end(),TimeOrderCRTData);
 
                     for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
-                       if (abs(trg2.second.data[j].T0()-ttrig)<fLayerCoincidenceWindowM*1e-3) {
+                       double t2tmp = trigClock.Time((double)trg2.second.data[j].T0()); //in us
+		       if ( util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM*1e-3) {
                            minosPairFound = true;
                            trg.second.macPair = std::make_pair(trg.first,trg2.first);
                            break;
@@ -675,6 +648,7 @@ void CRTDetSim::produce(art::Event & e) {
           }//if minos module and no pair yet found
           else trg.second.macPair = std::make_pair(trg.first,trg.first);
 
+          uint32_t adctmp = 0;
           //currently assuming bias time is same as track and hold window (FIX ME!)
           if ( (trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC*1e-3) || 
                (trg.second.type=='d' && ttmp < ttrig + fLayerCoincidenceWindowD*1e-3) ||
@@ -684,10 +658,23 @@ void CRTDetSim::produce(art::Event & e) {
                  if (layerNHold.insert(trg.second.chanlayer[chanTmpData->Channel()]).second)
                    tpair=std::make_pair(chanTrigData->Channel(),chanTmpData->Channel());
                }
-               else nmiss_lock++;
+               else if (ttmp < ttrig + fBiasTime) {
+                 adctmp = (passingData.back()).ADC();
+                 adctmp += chanTmpData->ADC();
+                 (passingData.back()).SetADC(adctmp);
+               }
+               else switch (trg.second.type) {
+                   case 'c' : nmiss_lock_c++; break;
+                   case 'd' : nmiss_lock_d++; break;
+                   case 'm' : nmiss_lock_m++; break;
+               }
           }//if hits inside readout window
           else if ( ttmp <= ttrig + fDeadTime ) {
-              nmiss_dead++;
+              switch (trg.second.type) {
+                  case 'c' : nmiss_dead_c++; break;
+                  case 'd' : nmiss_dead_d++; break;
+                  case 'm' : nmiss_dead_m++; break;
+              }
               continue;
           }
           //"read out" data for this event, first hit after dead time as next trigger channel
@@ -713,21 +700,31 @@ void CRTDetSim::produce(art::Event & e) {
     } //if intermodule coincidence or minos module
   } // for taggers
 
-     if (fVerbose) mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
+  if (fVerbose) mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
      << "CERN sim hits: " << nsim_c << '\n'
      << "DC sim hits: " << nsim_d << '\n'
      << "MINOS sim hits: " << nsim_m << '\n'
      << "CERN hits > thresh: " << nchandat_c << '\n'
      << "DC hits > thresh: " << nchandat_d << '\n'
      << "MINOS hits > thresh: " << nchandat_m << '\n'
-     << "missed hits from trackNHold: " <<nmiss_lock << '\n' 
-     << "missed hits from deadTime: " << nmiss_dead << '\n'
-     << "missed CERN  hits from coincidence: " << nmiss_coin_c << '\n'
-     << "missed DC    hits from coincidence: " << nmiss_coin_d << '\n'
-     << "missed MINOS hits from coincidence: " << nmiss_coin_m << '\n'
-     << "hits in CERN system: " << nhit_c << '\n'
-     << "hits in DC system: " << nhit_d << '\n'
-     << "hits in MINOS system: " << nhit_m << '\n'
+     << "CERN hits lost from threshold: " << nmissthr_c << '\n'
+     << "CERN hits lost from fiber coincidence: " << nmiss_strcoin_c << '\n'
+     << "DC hits lost from threshold: " << nmissthr_d << '\n'
+     << "MINOS hits lost from threshold: " << nmissthr_m << '\n'
+     << "CERN hits lost from open coincidence: " << nmiss_opencoin_c << '\n'
+     << "DC hits lost from open coincidence: " << nmiss_opencoin_d << '\n'
+     << "CERN missed hits from trackNHold: " <<nmiss_lock_c << " (" << 100.0*nmiss_lock_c/nchandat_c << "%)" << '\n' 
+     << "DC missed hits from trackNHold: " <<nmiss_lock_d << " (" << 100.0*nmiss_lock_d/nchandat_d << "%)" <<'\n'
+     << "MINOS missed hits from trackNHold: " <<nmiss_lock_m << " (" << 100.0*nmiss_lock_m/nchandat_m << "%)" << '\n'
+     << "CERN missed hits from deadTime: " << nmiss_dead_c << " (" << 100.0*nmiss_dead_c/nchandat_c << "%)" << '\n'
+     << "DC missed hits from deadTime: " << nmiss_dead_d << " (" << 100.0*nmiss_dead_d/nchandat_d << "%)" << '\n'
+     << "MINOS missed hits from deadTime: " << nmiss_dead_m << " (" << 100.0*nmiss_dead_m/nchandat_m << "%)" << '\n'
+     << "missed CERN  hits from coincidence: " << nmiss_coin_c << " (" << 100.0*nmiss_coin_c/nchandat_c << "%)" << '\n'
+     << "missed DC    hits from coincidence: " << nmiss_coin_d << " (" << 100.0*nmiss_coin_d/nchandat_d << "%)" << '\n'
+     << "missed MINOS hits from coincidence: " << nmiss_coin_m << " (" << 100.0*nmiss_coin_m/nchandat_m << "%)" << '\n'
+     << "hits in CERN system: " << nhit_c << " (" << 100.0*nhit_c/nchandat_c << "%)" << '\n'
+     << "hits in DC system: " << nhit_d << " (" << 100.0*nhit_d/nchandat_d << "%)" << '\n'
+     << "hits in MINOS system: " << nhit_m << " (" << 100.0*nhit_m/nchandat_m << "%)" << '\n'
      << "events in CERN system: " << neve_c << '\n'
      << "events in DC system: " << neve_d << '\n'
      << "events in MINOS system: " << neve_m << '\n';
