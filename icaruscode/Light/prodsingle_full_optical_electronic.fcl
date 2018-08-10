@@ -37,19 +37,19 @@ services:
 
 services.PhotonVisibilityService: @local::sbnd_timeparametrization_photonvisibilityservice
 
-services.PhotonVisibilityService.LibraryFile: "14gen_nocat_small.root"
+services.PhotonVisibilityService.LibraryFile: "PhotonLibrary-20180801.root"
 
 
 services.PhotonVisibilityService.UseCryoBoundary: false
 //version test_final
-services.PhotonVisibilityService.XMin: -366	
-services.PhotonVisibilityService.XMax: -66	
+services.PhotonVisibilityService.XMin: -391
+services.PhotonVisibilityService.XMax: -41
 services.PhotonVisibilityService.YMin: -210 	 
 services.PhotonVisibilityService.YMax: 180	
 services.PhotonVisibilityService.ZMin: -995	
 services.PhotonVisibilityService.ZMax: 965	
 	
-services.PhotonVisibilityService.NX: 60	 
+services.PhotonVisibilityService.NX: 70
 services.PhotonVisibilityService.NY: 78	
 services.PhotonVisibilityService.NZ: 392
 
