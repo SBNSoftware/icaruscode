@@ -145,7 +145,7 @@ services.LArG4Parameters.UseCustomPhysics: true
 # disable cerenkov light
 #services.DetectorPropertiesService.EnableCerenkovLight: false
 
-physics.producers.generator.PDG: [ 2212 ]            # muon
+physics.producers.generator.PDG: [ 2212 ]            # proton
 
 physics.producers.generator.Y0: [ 0 ]
 physics.producers.generator.X0: [ -100 ]
