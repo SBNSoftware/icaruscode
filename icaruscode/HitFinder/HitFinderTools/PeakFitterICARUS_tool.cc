@@ -162,7 +162,7 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
     {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
     
    if(fitResult!=0)
-       std::cout << " fit cannot converge " << std::endl;
+//       std::cout << " fit cannot converge " << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
