@@ -162,7 +162,7 @@ icarus::PMTcoordinates::PMTcoordinates(fhicl::ParameterSet const & p)
   typoLabel  (p.get<art::InputTag>("tiponi", "generator"))
  // More initializers here.
 {
-
+    std::cout << " PMT coordinates constructor " << std::endl;
 }
 
 void icarus::PMTcoordinates::analyze(art::Event const & evt)
@@ -283,7 +283,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	noPMT[channel] = channel;	
 
 	photons_collected[channel]= photon_vec.size();
-
+    std::cout << " channel " << channel << " photons collected " << photons_collected[channel] << std::endl;
 //	double media = photons_collected[channel]*QE;
 
 //	QE_photons_collected[channel]= Ran.Poisson(media);
@@ -306,7 +306,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	reco_barycentre_y = reco_barycentre_y + PMTy[channel]*photons_collected[channel];
 	reco_barycentre_z = reco_barycentre_z + PMTz[channel]*photons_collected[channel];
 	total_coll_photons= total_coll_photons + photons_collected[channel];
-
+        std::cout << " channel " << channel << " total photons  " << total_coll_photons << std::endl;
 	firstphoton_time[channel] = 100000000;
 
 	if (photons_collected[channel]>0)
@@ -338,7 +338,7 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 
 //total_coll_photons = total_coll_photons;
 
-//std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
+std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
 
 reco_barycentre_y = reco_barycentre_y/total_coll_photons;
 reco_barycentre_z = reco_barycentre_z/total_coll_photons;
@@ -349,11 +349,13 @@ PMT_error_z = reco_barycentre_z-true_barycentre_z;
 PMT_total_error = sqrt((PMT_error_y*PMT_error_y)+(PMT_error_z*PMT_error_z));
 
 fTree->Fill();
+    std::cout << " after filling " << fTree << std::endl;
 }
 
 void icarus::PMTcoordinates::beginJob()
 {
-
+    std::cout << " PMTcoordinates beginjob " << std::endl;
+    
 art::ServiceHandle<art::TFileService> tfs;
 fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
@@ -369,7 +371,7 @@ fTree->Branch("PMTx",&PMTx,("PMTx[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTy",&PMTy,("PMTy[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("PMTz",&PMTz,("PMTz[" + std::to_string(nPMTs) + "]/D").c_str());
 fTree->Branch("turned_PMT",&turned_PMT,"turned_PMT/I");
-fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/I");
+fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/F");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("QE_photons_colleted",&QE_photons_collected,("QE_photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
