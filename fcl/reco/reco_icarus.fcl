@@ -118,16 +118,17 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_crt:                  [ crtsimhit ]
 
 # Define the full reconstruction sequence
-icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
-                               @sequence::icarus_reco_pandoraGaus,
-                               @sequence::icarus_reco_pandoraICARUS,
-                               @sequence::icarus_reco_trajclusterGaus,
-                               @sequence::icarus_reco_pmAlgTrackerGaus,
-                               @sequence::icarus_reco_trajclusterICARUS,
-                               @sequence::icarus_reco_pmAlgTrackerICARUS,
-                               @sequence::icarus_reco_mcrecoGaus,
-                               @sequence::icarus_reco_mcrecoICARUS,
-                               @sequence::icarus_reco_crt]
+icarus_track_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
+                                    @sequence::icarus_reco_pandoraGaus,
+                                    @sequence::icarus_reco_pandoraICARUS,
+                                    @sequence::icarus_reco_trajclusterGaus,
+                                    @sequence::icarus_reco_pmAlgTrackerGaus,
+                                    @sequence::icarus_reco_trajclusterICARUS,
+                                    @sequence::icarus_reco_pmAlgTrackerICARUS,
+                                    @sequence::icarus_reco_mcrecoGaus,
+                                    @sequence::icarus_reco_mcrecoICARUS,
+                                    @sequence::icarus_reco_crt
+                                  ]
 
 ### Below we include overrides for the modules above
 

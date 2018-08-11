@@ -21,7 +21,7 @@ icarus_basicpandora:
 }
 
 icarus_pandora:                                  @local::icarus_basicpandora
-icarus_pandora.ConfigFile:                       "PandoraSettings_Master_Standard.xml"
+icarus_pandora.ConfigFile:                       "PandoraSettings_Master_ICARUS.xml"
 icarus_pandora.ShouldRunAllHitsCosmicReco:       true
 icarus_pandora.ShouldRunStitching:               true
 icarus_pandora.ShouldRunCosmicHitRemoval:        true
