@@ -56,6 +56,10 @@ icarus_reco_producers:
   pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
   pandoraShowerICARUS:            @local::icarus_pandoraShowerCreation
 
+  ### PM algorithm for pandora
+  pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackICARUS:       @local::icarus_pandora_kalmantrack
+
   ### PM algorithm
   pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
   pmAlgTrackerICARUS:             @local::icarus_pmalgtrackmaker
@@ -122,7 +126,7 @@ icarus_track_reconstruction: [ @sequence::icarus_reco_signalprocessing,
                                @sequence::icarus_reco_trajclusterICARUS,
                                @sequence::icarus_reco_pmAlgTrackerICARUS,
                                @sequence::icarus_reco_mcrecoGaus,
-                               @sequence::icarus_reco_mcrecoICARUS
+                               @sequence::icarus_reco_mcrecoICARUS,
                                @sequence::icarus_reco_crt]
 
 ### Below we include overrides for the modules above
@@ -164,6 +168,7 @@ icarus_reco_producers.icarushit.CalDataModuleLabel:                             
 icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                              "gaushit"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                              "pandoraGaus"
 icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                             "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:            "pandoraGaus"
    
 icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                               "trajclusterGaus"
 icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                           "trajclusterGaus"
@@ -175,6 +180,7 @@ icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:    
 icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                            "icarushit"
 icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                            "pandoraICARUS"
 icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                           "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:          "pandoraICARUS"
    
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                             "trajclusterICARUS"
 icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                         "trajclusterICARUS"

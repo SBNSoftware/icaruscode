@@ -5,28 +5,37 @@
 BEGIN_PROLOG
 
 # Projection matching algorithm
-icarus_pmalgtrackmaker:                                  @local::standard_pmalgtrackmaker
-icarus_pmalgtrackmaker.HitModuleLabel:                   "trajcluster"
-icarus_pmalgtrackmaker.ClusterModuleLabel:               "trajcluster"
-icarus_pmalgtrackmaker.WireModuleLabel:                  "recowire"
-icarus_pmalgtrackmaker.PMAlgTracking.FlipToBeam:         true
-icarus_pmalgtrackmaker.PMAlgTracking.AutoFlip_dQdx:      false
-icarus_pmalgtrackmaker.PMAlgTracking.RunVertexing:       true
+icarus_pmalgtrackmaker:                                          @local::standard_pmalgtrackmaker
+icarus_pmalgtrackmaker.HitModuleLabel:                           "trajcluster"
+icarus_pmalgtrackmaker.ClusterModuleLabel:                       "trajcluster"
+icarus_pmalgtrackmaker.WireModuleLabel:                          "recowire"
+icarus_pmalgtrackmaker.PMAlgTracking.FlipToBeam:                 true
+icarus_pmalgtrackmaker.PMAlgTracking.AutoFlip_dQdx:              false
+icarus_pmalgtrackmaker.PMAlgTracking.RunVertexing:               true
+        
+# Projection matching algorithm trajectory fitter        
+icarus_pmalgtrajfitter:                                          @local::standard_pmalgtrajfitter
+icarus_pmalgtrajfitter.HitModuleLabel:                           "gaushit"
+icarus_pmalgtrajfitter.PfpModuleLabel:                           "pandora"
+icarus_pmalgtrajfitter.PMAlgFitting.RunVertexing:                false
+icarus_pmalgtrajfitter.PMAlgFitting.TrackingSkipPdg:             [11]
+        
+# kalman track fits        
+icarus_pmalgkalmantrack:                                         @local::kalmantrackfit
+icarus_pmalgkalmantrack.inputs.inputPFParticleLabel:             "pmAlgTracker"
+icarus_pmalgkalmantrack.inputs.inputTracksLabel:                 ""
+icarus_pmalgkalmantrack.inputs.inputShowersLabel:                ""
+icarus_pmalgkalmantrack.inputs.inputCaloLabel:                   ""
+icarus_pmalgkalmantrack.inputs.inputPidLabel:                    ""
+icarus_pmalgkalmantrack.options.trackFromPF:                     true
 
-# Projection matching algorithm trajectory fitter
-icarus_pmalgtrajfitter:                                  @local::standard_pmalgtrajfitter
-icarus_pmalgtrajfitter.HitModuleLabel:                   "gaushit"
-icarus_pmalgtrajfitter.PfpModuleLabel:                   "pandora"
-icarus_pmalgtrajfitter.PMAlgFitting.RunVertexing:        false
-icarus_pmalgtrajfitter.PMAlgFitting.TrackingSkipPdg:     [11]
-
-# kalman track fits
-icarus_pmalgkalmantrack:                                 @local::kalmantrackfit
-icarus_pmalgkalmantrack.inputs.inputPFParticleLabel:     "pmAlgTracker"
-icarus_pmalgkalmantrack.inputs.inputTracksLabel:         ""
-icarus_pmalgkalmantrack.inputs.inputShowersLabel:        ""
-icarus_pmalgkalmantrack.inputs.inputCaloLabel:           ""
-icarus_pmalgkalmantrack.inputs.inputPidLabel:            ""
-icarus_pmalgkalmantrack.options.trackFromPF:             true
+# kalman track fits for pandora
+icarus_pandora_kalmantrack:                                      @local::kalmantrackfit
+icarus_pandora_kalmantrack.inputs.inputPFParticleLabel:          "pandoraTrack"
+icarus_pandora_kalmantrack.inputs.inputTracksLabel:              ""
+icarus_pandora_kalmantrack.inputs.inputShowersLabel:             ""
+icarus_pandora_kalmantrack.inputs.inputCaloLabel:                ""
+icarus_pandora_kalmantrack.inputs.inputPidLabel:                 ""
+icarus_pandora_kalmantrack.options.trackFromPF:                  true
 
 END_PROLOG
