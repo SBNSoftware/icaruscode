@@ -28,7 +28,7 @@ icarus_reco_services:
 icarus_reco_producers:
 {
   ### random number saver
-  rns:                 { module_type: RandomNumberSaver }
+  rns:                            { module_type: RandomNumberSaver }
 
   ### noise filtering module
   rawdigitfilter:                 @local::icarus_rawdigitfilter
@@ -104,12 +104,12 @@ icarus_reco_pmAlgTrackerICARUS:   [ pmAlgTrackerICARUS,
 icarus_reco_pandoraGaus:          [ pandoraGaus,
                                     pandoraTrackGaus,
                                     pandoraShowerGaus,
-                                    pandoraKalmanTrackGaus]
+                                    pandoraKalmanTrackGaus ]
 
 icarus_reco_pandoraICARUS:        [ pandoraICARUS,
                                     pandoraTrackICARUS,
                                     pandoraShowerICARUS,
-                                    pandoraKalmanTrackICARUS]
+                                    pandoraKalmanTrackICARUS ]
 
 icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
 
