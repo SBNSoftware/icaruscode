@@ -170,6 +170,12 @@ icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                         
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                              "pandoraGaus"
 icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                             "pandoraGaus"
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:            "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                "pandoraTrackGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:               "pandoraShowerGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:                  ""
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                   ""
+icarus_reco_producers.pandoraKalmanTrackGaus.options.trackFromPF:                    false
+icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:                   false
    
 icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                               "trajclusterGaus"
 icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                           "trajclusterGaus"
@@ -182,6 +188,12 @@ icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                       
 icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                            "pandoraICARUS"
 icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                           "pandoraICARUS"
 icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:          "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:              "pandoraTrackICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:             "pandoraShowerICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputCaloLabel:                ""
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPidLabel:                 ""
+icarus_reco_producers.pandoraKalmanTrackICARUS.options.trackFromPF:                  false
+icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:                 false
    
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                             "trajclusterICARUS"
 icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                         "trajclusterICARUS"
