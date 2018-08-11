@@ -459,7 +459,7 @@ size_t iWire=wid.Wire;
       //double totSig;
      
           double chi2null=ComputeNullChiSquare(holder);
-          std::cout << " wire " << iWire << " chi2null " << chi2null << std::endl;
+//          std::cout << " wire " << iWire << " chi2null " << chi2null << std::endl;
           fNullChi2->Fill(chi2null);
 
 
@@ -722,7 +722,7 @@ size_t iWire=wid.Wire;
 
     } //end loop on channels
       
-      std::cout <<  " nhitsI1 " << nhitsI1 <<" nhitsI2 " << nhitsI2 <<" nhitsC " << nhitsC << std::endl;
+//      std::cout <<  " nhitsI1 " << nhitsI1 <<" nhitsI2 " << nhitsI2 <<" nhitsC " << nhitsC << std::endl;
 
 
       for(unsigned int jw=minWireC;jw<maxWireC;jw++)
@@ -1023,13 +1023,13 @@ size_t iWire=wid.Wire;
         chi2PerNDF = (Func.GetChisquare() / NDF);
         
         double chi2mio=ComputeChiSquare(Func,fHistogram);
-        std::cout << " chi2mio " << chi2mio << std::endl;
+//        std::cout << " chi2mio " << chi2mio << std::endl;
         chi2PerNDF=chi2mio;
         //  for(int idx = 0; idx < roiSize; idx++)
         //   std::cout << " bin " << idx << " Error " << fHistogram->GetBinError(idx+1) << std::endl;
         
-         std::cout << " chi2 " << Func.GetChisquare() << std::endl;
-         std::cout << " ndf " << NDF << std::endl;
+//         std::cout << " chi2 " << Func.GetChisquare() << std::endl;
+//         std::cout << " ndf " << NDF << std::endl;
         
         //      std::cout << " chi2ndf " << chi2PerNDF<< std::endl;
         parIdx = 0;
@@ -1153,8 +1153,8 @@ size_t iWire=wid.Wire;
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
-        if(fitResult!=0)
-            std::cout << " long fit cannot converge " << iWire << std::endl;
+//        if(fitResult!=0)
+//            std::cout << " long fit cannot converge " << iWire << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
@@ -1242,7 +1242,7 @@ Double_t ICARUSHitFinder::fitlong(Double_t *x, Double_t *par)
             //std::cout << " chi " << chi << std::endl;
             
         }
-        std::cout << " chi2mio" << chi << std::endl;
+//        std::cout << " chi2mio" << chi << std::endl;
         //std::cout << " ndf " << ndf << std::endl;
         return chi/(jp-5);
     }
