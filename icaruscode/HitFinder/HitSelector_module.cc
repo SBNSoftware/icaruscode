@@ -223,8 +223,6 @@ void HitSelector::produce(art::Event & evt)
         }
     }
     
-    std::cout << "*** Read " << hitHandle->size() << " hits, writing " << hcol.size() << " selected hits" << std::endl;
-    
     // put the hit collection and associations into the event
     hcol.put_into(evt);
     

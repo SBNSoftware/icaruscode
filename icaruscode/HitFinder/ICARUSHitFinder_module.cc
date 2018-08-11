@@ -1015,7 +1015,7 @@ size_t iWire=wid.Wire;
        // if(fitResult==0)
        //     std::cout << " icarus fit converges " << iWire << std::endl;
         if(fitResult!=0)
-            std::cout << " icarus fit cannot converge " << iWire << std::endl;
+//            std::cout << " icarus fit cannot converge " << iWire << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
