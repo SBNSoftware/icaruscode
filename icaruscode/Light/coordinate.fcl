@@ -88,7 +88,7 @@ outputs:
  {
    module_type: RootOutput
    #SelectEvents: {SelectEvents:[reco]}
-   fileName:    "testing_light.root"
+   fileName:    "prova_light.root"
    dataTier:    "detector-simulated"
    compressionLevel: 1
  }
