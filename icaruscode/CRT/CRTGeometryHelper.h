@@ -20,6 +20,11 @@
 #include "icaruscode/CRT/CRTChannelMapAlg.h"
 #include <memory>
 
+namespace geo
+{
+  class CRTChannelMapAlg;
+}
+
 namespace icarus {
 namespace crt{
 
@@ -31,14 +36,14 @@ namespace crt{
 
   private:
 
-    virtual void doConfigureAuxDetChannelMapAlg(
+    void doConfigureAuxDetChannelMapAlg(
         fhicl::ParameterSet const& sortingParameters,
         geo::AuxDetGeometryCore* geom) override;
 
-    virtual AuxDetChannelMapAlgPtr_t doGetAuxDetChannelMapAlg() const override;
+    AuxDetChannelMapAlgPtr_t doGetAuxDetChannelMapAlg() const override;
 
     fhicl::ParameterSet fPset; ///< Copy of configuration parameter set
-    std::shared_ptr<geo::CRTChannelMapAlg> fChannelMap; ///< Channel map
+    std::shared_ptr<geo::CRTChannelMapAlg> fCRTChannelMap; ///< Channel map
 
   };
 
