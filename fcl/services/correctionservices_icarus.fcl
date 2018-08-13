@@ -1,0 +1,51 @@
+#
+# File:    correctionservices_icarus.fcl
+# Purpose: configuration of services pertaining detector corrections.
+#
+# The services in here are usually used or simulation, and may be used
+# in the reverse direction for reconstruction.
+#
+# Available configurations:
+#
+# * `icarus_spacecharge`: `SpaceChargeService` configuration
+# * `icarus_larfft`: `LArFFT` configuration
+#
+#
+
+#include "larfft.fcl"
+#include "photpropservices_icarus.fcl"
+
+BEGIN_PROLOG
+
+#
+# SpaceCharge service configuration for ICARUS
+#
+# Use as:
+#     
+#     services.SpaceChargeService: @local::icarus_spacecharge
+#
+icarus_spacecharge: {
+    service_provider:       SpaceChargeServiceStandard
+    
+    EnableSimSpatialSCE:    false
+    EnableSimEfieldSCE:     false
+    EnableCorrSCE:          false
+    RepresentationType:     "Parametric"
+    InputFilename:          "SCEoffsets.root"
+    
+} # icarus_spacecharge
+
+
+#
+# LArFFT service configuration for ICARUS
+#
+# Use as:
+#     
+#     services.LArFFT: @local::icarus_larfft
+#
+icarus_larfft: @local::standard_larfft # from `larfft.fcl` (`lardata`)
+
+
+
+END_PROLOG
+

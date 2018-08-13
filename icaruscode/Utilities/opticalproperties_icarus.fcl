@@ -1,0 +1,52 @@
+#
+# File:    opticalproperties_icarus.fcl
+# Purpose: Collection of optical properties.
+#
+# Available configurations:
+#
+# * `icarus_opticalproperties`: standard LAr properties for LArProperties service
+#
+
+
+BEGIN_PROLOG
+
+#
+# Optical properties for LArProperties
+#
+# Use as:
+#    
+#     service.LArPropertiesService: {
+#         ...
+#         @table::icarus_opticalproperties
+#         ...
+#     }
+#
+#
+icarus_opticalproperties: {
+    
+    ScintYield:     24000  # 24000 ph/MeV assume 500 mV/cm
+    ScintPreScale:  0.07   # 24000 ph/MeV QE is 7%
+                           # MUST match between g4 and detsim
+    # ScintPreScale:  0.0093   # DocDB 4914, @MToups
+
+    ScintYieldRatio:         0.23
+    MuonScintYield:          24000
+    MuonScintYieldRatio:     0.23
+    ScintByParticleType:     true
+    PionScintYield:          24000
+    PionScintYieldRatio:     0.23
+    ElectronScintYield:      20000
+    ElectronScintYieldRatio: 0.27
+    KaonScintYield:          24000
+    KaonScintYieldRatio:     0.23
+    ProtonScintYield:        19200
+    ProtonScintYieldRatio:   0.29
+    AlphaScintYield:         16800
+    AlphaScintYieldRatio:    0.56
+    
+    EnableCerenkovLight: false # Cerenkov light OFF by default
+    
+} # icarus_opticalproperties
+
+END_PROLOG
+ 
