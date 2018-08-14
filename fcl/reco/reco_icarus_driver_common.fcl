@@ -2,21 +2,17 @@
 ##  Shared art job configuartions for ICARUS reco
 ##
 #include "services_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
 #include "reco_icarus.fcl"
 
 services:
 {
-  scheduler:               { defaultExceptions: false }    # Make all uncaught exceptions fatal.
-  # Load the service that manages root files for histograms.
-  TFileService:            { }
-  RandomNumberGenerator:   {} #ART native random number generator
-  message:                 @local::icarus_message_services_prod_debug
-                           @table::icarus_basic_services
+  @table::icarus_basic_services
+  @table::icarus_calibration_services
 }
 
 process_name: McRecoICARUS
 
-services.DatabaseUtil.ShouldConnect: false
 
 #source is a root file
 source:

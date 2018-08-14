@@ -1,0 +1,40 @@
+#
+# File:    larproperties_icarus.fcl
+# Purpose: Configuration for LArProperties service.
+#
+# Available configurations:
+#
+# * `icarus_properties`: standard ICARUS configuration
+#
+#
+
+#include "larproperties.fcl"
+
+#include "opticalproperties_icarus.fcl"
+
+
+BEGIN_PROLOG
+
+
+#
+# Standard ICARUS configuration
+#
+# Use as:
+#     
+#     services.LArPropertiesService: @local::icarus_properties
+#     
+icarus_properties: {
+
+    @table::standard_properties # from `larproperties.fcl` (`lardata`)
+
+    @table::icarus_opticalproperties # from `opticalproperties_icarus.fcl`
+    
+} # icarus_properties
+
+
+#
+#
+#
+
+END_PROLOG
+

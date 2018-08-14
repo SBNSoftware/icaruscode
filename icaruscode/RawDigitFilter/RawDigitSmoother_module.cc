@@ -103,10 +103,11 @@ RawDigitSmoother::RawDigitSmoother(fhicl::ParameterSet const & pset) :
     fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
     configure(pset);
-    produces<std::vector<raw::RawDigit> >("erosion");
-    produces<std::vector<raw::RawDigit> >("dilation");
-    produces<std::vector<raw::RawDigit> >("average");
-    produces<std::vector<raw::RawDigit> >("median");
+    produces<std::vector<raw::RawDigit>>("erosion");
+    produces<std::vector<raw::RawDigit>>("dilation");
+    produces<std::vector<raw::RawDigit>>("edge");
+    produces<std::vector<raw::RawDigit>>("average");
+    produces<std::vector<raw::RawDigit>>("median");
 
     // Report.
     mf::LogInfo("RawDigitSmoother") << "RawDigitSmoother configured\n";
@@ -166,11 +167,13 @@ void RawDigitSmoother::produce(art::Event & event)
     // Agreed convention is to ALWAYS output to the event store so get a pointer to our collection
     std::unique_ptr<std::vector<raw::RawDigit> > erosionRawDigit(new std::vector<raw::RawDigit>);
     std::unique_ptr<std::vector<raw::RawDigit> > dilationRawDigit(new std::vector<raw::RawDigit>);
+    std::unique_ptr<std::vector<raw::RawDigit> > edgeRawDigit(new std::vector<raw::RawDigit>);
     std::unique_ptr<std::vector<raw::RawDigit> > averageRawDigit(new std::vector<raw::RawDigit>);
     std::unique_ptr<std::vector<raw::RawDigit> > medianRawDigit(new std::vector<raw::RawDigit>);
 
     erosionRawDigit->clear();
     dilationRawDigit->clear();
+    edgeRawDigit->clear();
     averageRawDigit->clear();
     medianRawDigit->clear();
 
@@ -179,7 +182,7 @@ void RawDigitSmoother::produce(art::Event & event)
     event.getByLabel(fDigitModuleLabel, digitVecHandle);
     
     // Require a valid handle
-    if (digitVecHandle.isValid())
+    if (digitVecHandle.isValid() && digitVecHandle->size() > 0)
     {
         unsigned int maxChannels = fGeometry->Nchannels();
         
@@ -217,6 +220,7 @@ void RawDigitSmoother::produce(art::Event & event)
                 {
                     saveRawDigits(erosionRawDigit,  inputWaveformList.back());
                     saveRawDigits(dilationRawDigit, inputWaveformList.back());
+                    saveRawDigits(edgeRawDigit,     inputWaveformList.back());
                     saveRawDigits(averageRawDigit,  inputWaveformList.back());
                     saveRawDigits(medianRawDigit,   inputWaveformList.back());
 
@@ -276,15 +280,17 @@ void RawDigitSmoother::produce(art::Event & event)
                 // ok, make copies of this waveform for the erosion, dilation and avrerage
                 WireTuple erosionTuple  = *midChanItr;
                 WireTuple dilationTuple = *midChanItr;
+                WireTuple edgeTuple     = *midChanItr;
                 WireTuple averageTuple  = *midChanItr;
                 WireTuple medianTuple   = *midChanItr;
 
                 caldata::RawDigitVector& erosionVec  = std::get<3>(erosionTuple);
                 caldata::RawDigitVector& dilationVec = std::get<3>(dilationTuple);
+                caldata::RawDigitVector& edgeVec     = std::get<3>(edgeTuple);
                 caldata::RawDigitVector& averageVec  = std::get<3>(averageTuple);
                 caldata::RawDigitVector& medianVec   = std::get<3>(medianTuple);
                 
-//                caldata::RawDigitVector& currentVec  = std::get<3>(*midChanItr);
+                caldata::RawDigitVector& currentVec  = std::get<3>(*midChanItr);
 
                 // Ok, buckle up!
                 // Loop will run from half the structuring element to size less half the structuring element. Edges will simply be what they were
@@ -310,12 +316,14 @@ void RawDigitSmoother::produce(art::Event & event)
                     
                     erosionVec.at(adcBinIdx)  = adcBinValVec.front();
                     dilationVec.at(adcBinIdx) = adcBinValVec.back();
+                    edgeVec.at(adcBinIdx)     = dilationVec.at(adcBinIdx) - currentVec.at(adcBinIdx) + std::get<1>(edgeTuple);
                     averageVec.at(adcBinIdx)  = (erosionVec.at(adcBinIdx) + dilationVec.at(adcBinIdx)) / 2;
                     medianVec.at(adcBinIdx)   = adcBinValVec.at(adcBinValVec.size()/2);
                 }
                 
                 saveRawDigits(erosionRawDigit,  erosionTuple);
                 saveRawDigits(dilationRawDigit, dilationTuple);
+                saveRawDigits(edgeRawDigit,     edgeTuple);
                 saveRawDigits(averageRawDigit,  averageTuple);
                 saveRawDigits(medianRawDigit,   medianTuple);
             }
@@ -323,6 +331,7 @@ void RawDigitSmoother::produce(art::Event & event)
             {
                 saveRawDigits(erosionRawDigit,  inputWaveformList.back());
                 saveRawDigits(dilationRawDigit, inputWaveformList.back());
+                saveRawDigits(edgeRawDigit,     inputWaveformList.back());
                 saveRawDigits(averageRawDigit,  inputWaveformList.back());
                 saveRawDigits(medianRawDigit,   inputWaveformList.back());
             }
@@ -332,6 +341,7 @@ void RawDigitSmoother::produce(art::Event & event)
     // Add tracks and associations to event.
     event.put(std::move(erosionRawDigit), "erosion");
     event.put(std::move(dilationRawDigit),"dilation");
+    event.put(std::move(edgeRawDigit),    "edge");
     event.put(std::move(averageRawDigit), "average");
     event.put(std::move(medianRawDigit),  "median");
 }

@@ -1,5 +1,7 @@
 #include "evdservices_base.fcl"
 #include "services_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
+#include "correctionservices_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -36,10 +38,12 @@ icarus_disp:
    RawDrawingOptions:        @local::icarus_rawdrawingopt
    RecoDrawingOptions:       @local::icarus_recodrawingopt
    AnalysisDrawingOptions:   @local::icarus_analysisdrawingopt
-   EvdLayoutOptions:	     @local::icarus_evdlayoutopt
+   EvdLayoutOptions:         @local::icarus_evdlayoutopt
    InfoTransfer:             @local::icarus_infotransfer
    EventDisplay:             @local::icarus_evd
-                             @table::icarus_basic_services
+   SpaceChargeService:       @local::icarus_spacecharge
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
 }
 
 #######################################

@@ -21,17 +21,17 @@ namespace crt{
   //------------------------------------------------------------------------
   CRTGeometryHelper::CRTGeometryHelper(
       fhicl::ParameterSet const& pset, art::ActivityRegistry &)
-  : fPset(pset), fChannelMap() {}
+  : fPset(pset), fCRTChannelMap() {}
 
   //------------------------------------------------------------------------
   void CRTGeometryHelper::doConfigureAuxDetChannelMapAlg(
       fhicl::ParameterSet const& sortingParameters,
       geo::AuxDetGeometryCore* geom) {
-    fChannelMap = \
-      std::make_shared<geo::CRTChannelMapAlg>(sortingParameters);
 
-    if (fChannelMap) {
-      geom->ApplyChannelMap(fChannelMap);
+    fCRTChannelMap = std::make_shared<geo::CRTChannelMapAlg>(sortingParameters);
+
+    if (fCRTChannelMap) {
+      geom->ApplyChannelMap(fCRTChannelMap);
     }
     else std::cout << "AuxDetChannelMap not initilized properly!" << std::endl;
   }
@@ -39,7 +39,7 @@ namespace crt{
   //------------------------------------------------------------------------
   CRTGeometryHelper::AuxDetChannelMapAlgPtr_t
   CRTGeometryHelper::doGetAuxDetChannelMapAlg() const {
-    return fChannelMap;
+    return fCRTChannelMap;
   }
 
 }  // namespace crt

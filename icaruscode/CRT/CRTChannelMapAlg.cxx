@@ -99,15 +99,11 @@ namespace geo {
       fNameToADGeo[volName] = a;
 
       //if volName contains "Module" (search doesn't hit end)
-      if (volName.find("volAuxDet_Module_") != std::string::npos) {
+      if (volName.find("volAuxDet_") != std::string::npos) {
 	//loop over strips
         for (size_t svID=0; svID<nsv; svID++) {
-          //size_t chID=UINT_MAX;
+          //CERN modules
           if (nsv==16){
-            //chID = 32 * a + 2 * svID + 0 - 1132;
-            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
-            //chID = 32 * a + 2 * svID + 1 - 1132;
-            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
             for (size_t svID=0; svID<16; svID++) {
               for (size_t ich=0; ich<2; ich++) {
                 size_t chID = 2 * svID + ich;
@@ -115,18 +111,14 @@ namespace geo {
               }
             }
           }
+          //DC modules
 	  if (nsv==64){
-	    //chID = 64 * a + svID - 6316;
-	    //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
 	    for (size_t svID=0; svID<64; svID++) {
                 fADGeoToChannelAndSV[a].push_back(std::make_pair(svID, svID));
             }
 	  }
+          //MINOS modules
           if (nsv==20){
-            //chID = 32 * (a/3) + svID/2 + 10*(a % 3);
-            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
-            //chID = 32 * (a/3) + svID/2 + 10*(a % 3) + 1578;
-            //fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
             for (size_t svID=0; svID<20; svID++) {
               for (size_t ich=0; ich<2; ich++) {
                 size_t chID = 2 * svID + ich;
