@@ -111,11 +111,13 @@ void CandHitICARUS::findHitCandidates(const std::vector<float>& waveform,
     geo::WireID wid  = wids[0];
     // We need to know the plane to look up parameters
     geo::PlaneID::PlaneID_t plane = wid.Plane;
+    //int wire = wid.Wire;
 
-    if(plane!=2) return;
+   // if(plane==1) return;
     // if(wire>2639) return;
-    //for( int j=0;j<4096;j++)
-    //  std::cout << " j " << " waveform " << waveform[j] << std::endl;
+   // if(plane==0&&wire==528)
+    // for( int j=0;j<4096;j++)
+     // std::cout << " j " << j << " waveform " << waveform[j] << std::endl;
     int iflag;
     int localbellow,rising;
     int begin;
@@ -151,10 +153,7 @@ void CandHitICARUS::findHitCandidates(const std::vector<float>& waveform,
     //      if(lastcomputedmean<0) negpeakwidth++;
     localmin=9999;
     localminidx=-1;
-    //     if ( typ == BasicData::ISBASICPLANE_PMT && iw==1 ){
-    //cout << "window, mean " <<  window <<" "<<lastcomputedmean<<endl;
-    //cout << "wire, nsamp " <<  iw <<" "<<nSamp<<endl;
-    //}
+
     // loop on the selected samples
     
             //std::cout << "candhitfinderICARUS " << std::endl;

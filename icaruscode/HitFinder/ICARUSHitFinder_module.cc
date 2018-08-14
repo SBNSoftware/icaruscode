@@ -258,8 +258,11 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
 
   //-------------------------------------------------
   void ICARUSHitFinder::produce(art::Event& evt)
-  {      //0
+    {
+      
+      //0
       //return;
+      
       std::ofstream output("areaFit.out");
 
   //    std::cout << " ICARUSHitFinder produce " << std::endl;
@@ -337,14 +340,6 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       if(fThetaAngle==70) {minWireC=2539; maxWireC=2805;}
       if(fThetaAngle==80) {minWireC=2539; maxWireC=2740;}
       
-
-      //45 deg
-      /*int minWireC=2539; //empirical
-      int maxWireC=3142;
-      int minWireI2=2539; //empirical
-      int maxWireI2=3102;
-      int minWireI1=0; //empirical
-      int maxWireI1=497;*/
     
  
       unsigned int minWireI2=2539; //empirical
@@ -448,12 +443,8 @@ size_t iWire=wid.Wire;
 
       if(channelSwitch==false)
       { //1
+          
           // Hit finding parameters
-      int    hitIndex(0);                      //INDEX OF CURRENT HIT IN SEQUENCE.
-          double amplitude(0);       //FIT PARAMETERS.
-     // double start(0), end(0);
-     // double amplitudeErr(0), positionErr(0);  //FIT ERRORS.
-     // double goodnessOfFit(0),
          double  chargeErr(0);   //CHI2/NDF and error on charge.
      // double hrms(0);
       //double totSig;
@@ -484,12 +475,19 @@ size_t iWire=wid.Wire;
           int nghI2=0;
           int nghI1=0;
           
-      //  if(cryostat==0&&tpc==0&&plane==2)
-        //     std::cout << "  Wire " << iwire << " numhits " << hitCandidateVec.size() <<" mergedhits " << mergedCandidateHitVec.size() << std::endl;
+   //     if(plane==0)
+      //  std::cout << " plane " << plane << " Wire " << iwire << " numhits " << hitCandidateVec.size() <<" mergedhits " << mergedCandidateHitVec.size() << std::endl;
+          
+          
+     //FIT ONLY COLLECTION HITS
+    if(plane==2) {
+        //std::cout << " mergedcands size " << mergedCandidateHitVec.size() << std::endl;
+        
           for(auto& mergedCands : mergedCandidateHitVec)
-      {
-          int startT= mergedCands.front().startTick;
-          int endT  = mergedCands.back().stopTick;
+          {
+  
+         int startT= mergedCands.front().startTick;
+         int endT  = mergedCands.back().stopTick;
           // ### Putting in a protection in case things went wrong ###
           // ### In the end, this primarily catches the case where ###
           // ### a fake pulse is at the start of the ROI           ###
@@ -515,7 +513,8 @@ size_t iWire=wid.Wire;
           int islong=0;
           if (mergedCands.size() <= fMaxMultiHit)
           {
-              //std::cout << "setting iwire " << iwire << std::endl;
+              
+             // std::cout << "setting iwire " << iwire << std::endl;
              // fPeakFitterTool->setWire(iwire);
             //  std::cout << " fitting iwire " << iwire << std::endl;
              // std::cout << " cryostat " << cryostat << " tpc " << tpc << " plane " << plane << " wire " << iwire << std::endl;
@@ -530,7 +529,7 @@ size_t iWire=wid.Wire;
             //  std::cout << " wire " << iwire << " first chi2NDF " << chi2PerNDF << std::endl;
           }
 
-          //std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
+         // std::cout << " before longpulse chi2 " << chi2PerNDF << " threshold " << fChi2NDF << std::endl;
           if (chi2PerNDF < 10.)
               fChi2->Fill(chi2PerNDF);
        //   if(chi2PerNDF<0.1)      // change from 10 to reduce output
@@ -554,7 +553,7 @@ size_t iWire=wid.Wire;
           
           int jhit=0;
           
-          
+              //std::cout << " before peak loop" << std::endl;
           for(const auto& peakParams : peakParamsVec)
           {
               // Extract values for this hit
@@ -626,7 +625,7 @@ size_t iWire=wid.Wire;
               //Func.Integral(start,end);
               float totSig=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
          //     float fitChargeErr=0;
-             // std::cout << " totSig " << totSig << std::endl;
+           //   std::cout << " totSig " << totSig << std::endl;
 
 //std::cout << " before hit creator " << std::endl;
         recob::HitCreator hit(
@@ -634,7 +633,7 @@ size_t iWire=wid.Wire;
             wid,                                                                           //WIRE ID.
             start,                                                                         //START TICK.
             end,                                                                           //END TICK. 
-                (peakLeft+peakRight)/2.,                                                                          //RMS.
+            (peakLeft+peakRight)/2.,                                                                          //RMS.
             peakMean,                                                                      //PEAK_TIME.
             peakMeanErr,                                                                   //SIGMA_PEAK_TIME.
             peakAmp,                                                                     //PEAK_AMPLITUDE.
@@ -648,80 +647,115 @@ size_t iWire=wid.Wire;
             NDF                                                               //DEGREES OF FREEDOM.
             );
              //       filteredHitVec.push_back(hit.copy());
-          
-        hcol.emplace_back(hit.move(), wire, rawdigits);
-            
-              bool driftWindow=(peakMean)>=minDrift&&(peakMean)<=maxDrift;
-              bool wireWindowC=iWire>=minWireC&&iWire<=maxWireC;
-              bool wireWindowI2=iWire>=minWireI2&&iWire<=maxWireI2;
-              bool outDriftWindow=(peakMean)<=minDrift||(peakMean)>=maxDrift;
-              bool outWireWindowC=iWire<=minWireC||iWire>=maxWireC;
-              bool outWireWindowI2=iWire<=minWireI2||iWire>=maxWireI2;
-    
-       
-          if(plane==0&&driftWindow)  {
-           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
-              nghI1++;
-              if(nghI1==1) nw1hitI1++;
-      
-             //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
-              fHeightI1->Fill(amplitude);
-              fWidthI1->Fill(end-start);
-          }
-          if(plane==1&&wireWindowI2) {
-           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
-              nghI2++;
-              if(nghI2==1) nw1hitI2++;
-             // std::cout << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].hitCenter << " amplitude " << amplitude << std::endl;
-              fHeightI2->Fill(amplitude);
-              fWidthI2->Fill(end-start);
-          }
-          if(plane==2&&wireWindowC) {
-              nghC++;
-              if(nghC==1) nw1hitC++;
-              nhWire[iWire]++;
-              fHeightC->Fill(peakAmp);
-             // fWidthC->Fill(peakWidth);
-             // fAreaC->Fill(totSig);
-              wCharge[iWire]+=fitCharge;
-              wInt[iWire]+=totSig;
+              hcol.emplace_back(hit.move(), wire, rawdigits);
+           
+           bool wireWindowC=iWire>=minWireC&&iWire<=maxWireC;
+           bool outWireWindowC=iWire<=minWireC||iWire>=maxWireC;
 
-          }
+           if(wireWindowC) {
+           nghC++;
+           if(nghC==1) nw1hitC++;
+           nhWire[iWire]++;
+           fHeightC->Fill(peakAmp);
+           // fWidthC->Fill(peakWidth);
+           // fAreaC->Fill(totSig);
+           wCharge[iWire]+=fitCharge;
+           wInt[iWire]+=totSig;
+           }
+           
 
-          if(plane==0) nhitsI1++;
-          if(plane==1) nhitsI2++;
-          if(plane==2) nhitsC++;
-          
-          if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(amplitude); }
-          if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(amplitude);
-            //if(cryostat==0&&tpc==0)
-              //    std::cout << " noise hit Wire " << hits[i].iWire << " tick " << hits[i].hitCenter << std::endl;
-          }
-          if(plane==2&&tpc==0&&cryostat==0&&outWireWindowC) {
-        nnhitsC++; fNoiseC->Fill(amplitude); }
-        
-        ++hitIndex;
-      } //end loop on found hits
-        
-          
-          if(plane==2&&cryostat==0&&tpc==0)
+          nhitsC++;
+           
+
+           if(tpc==0&&cryostat==0&&outWireWindowC) {
+           nnhitsC++; fNoiseC->Fill(peakAmp); }
+           
+           
+           
+           if(cryostat==0&&tpc==0)
            if(wCharge[iwire]>0)
            fAreaC->Fill(wCharge[iwire]);
-          if(plane==2&&cryostat==0&&tpc==0)
-              if(wInt[iwire]>0)
-          fIntegralC->Fill(wInt[iwire]);
-          if(plane==2&&cryostat==0&&tpc==0)
-              if(wCharge[iwire]>0)
-                  output << iwire << " " <<wInt[iwire] << std::endl;
-          if(wInt[iwire]>0&&cryostat==0&&tpc==0)
-              fAreaInt->Fill(wCharge[iwire]/wInt[iwire]);
-          //if(wCharge[iwire]>0&&cryostat==0&&tpc==0&&wCharge[iwire]/wInt[iwire]<0.9)
-            //  std::cout << " wire " << iwire << " ratio " << wCharge[iwire]/wInt[iwire] << std::endl;
-      }
-    } //end channel condition
+           if(cryostat==0&&tpc==0)
+           if(wInt[iwire]>0)
+           fIntegralC->Fill(wInt[iwire]);
+           if(cryostat==0&&tpc==0)
+           if(wCharge[iwire]>0)
+           output << iwire << " " <<wInt[iwire] << std::endl;
+           if(wInt[iwire]>0&&cryostat==0&&tpc==0)
+           fAreaInt->Fill(wCharge[iwire]/wInt[iwire]);
+   
+          } // loop on peakparams vector
+           
+          } // loop on merged hits
+   
+       // std::cout << " after coll hit " << std::endl;
+      } //COLLECTION
+           
+         if(plane==0||plane==1) {
+              for(auto& mergedCands : mergedCandidateHitVec)
+              {
+              for(int jh=0;jh<mergedCands.size();jh++) {
+               //   std::cout << " plane " << plane << " wire " << iwire << " hit " <<mergedCands[jh].hitCenter << std::endl;
+              //FOR INDUCTION HITS STORE RAW INFORMATION
+              recob::HitCreator hit(
+                                    *wire,                                                                     //RAW DIGIT REFERENCE.
+                                    wid,                                                                           //WIRE ID.
+                                    mergedCands[jh].startTick,                                                                         //START TICK.
+                                    mergedCands[jh].stopTick,                                                                           //END TICK.
+                                    mergedCands[jh].hitSigma,                                                                          //RMS.
+                                    mergedCands[jh].hitCenter,                                                                      //PEAK_TIME.
+                                    0,                                                                   //SIGMA_PEAK_TIME.
+                                    mergedCands[jh].hitHeight,                                                                     //PEAK_AMPLITUDE.
+                                    0,                                                                  //SIGMA_PEAK_AMPLITUDE.
+                                    std::accumulate(holder.begin() + (int) mergedCands[jh].startTick, holder.begin() + (int) mergedCands[jh].stopTick, 0.),                                                                        //HIT_INTEGRAL.
+                                    0,                                                                     //HIT_SIGMA_INTEGRAL.
+                                    std::accumulate(holder.begin() + (int) mergedCands[jh].startTick, holder.begin() + (int) mergedCands[jh].stopTick, 0.), //SUMMED CHARGE.
+                                    1,                                                                             //MULTIPLICITY.
+                                    jh,                                                                            //LOCAL_INDEX.
+                                    0,                                                                 //WIRE ID.
+                                    int(mergedCands[jh].stopTick-mergedCands[jh].startTick+1)                                                               //DEGREES OF FREEDOM.
+                                    );
+              hcol.emplace_back(hit.move(), wire, rawdigits);
+           
+           bool driftWindow=(mergedCands[jh].hitCenter)>=minDrift&&(mergedCands[jh].hitCenter)<=maxDrift;
+           bool wireWindowI2=iWire>=minWireI2&&iWire<=maxWireI2;
+           bool outDriftWindow=(mergedCands[jh].hitCenter)<=minDrift||(mergedCands[jh].hitCenter)>=maxDrift;
+           bool outWireWindowI2=iWire<=minWireI2||iWire>=maxWireI2;
+           
+           
+           if(plane==0&&driftWindow)  {
+           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+           nghI1++;
+           if(nghI1==1) nw1hitI1++;
+           
+           //  std::cout << " wire " << hits[i].iWire << " nw1h " << nw1 << std::endl;
+           fHeightI1->Fill(mergedCands[jh].hitHeight);
+           fWidthI1->Fill(mergedCands[jh].hitSigma);
+           }
+           if(plane==1&&wireWindowI2) {
+           //   std::cout << " wire " << hits[i].iWire << " ngh " << ngh << std::endl;
+           nghI2++;
+           if(nghI2==1) nw1hitI2++;
+           // std::cout << " filling height histo wire" << hits[i].iWire << " drift " << hits[i].hitCenter << " amplitude " << amplitude << std::endl;
+           fHeightI2->Fill(mergedCands[jh].hitHeight);
+           fWidthI2->Fill(mergedCands[jh].hitSigma);
+           }
+
+           
+           if(plane==0) nhitsI1++;
+           if(plane==1) nhitsI2++;
+           
+           if(plane==0&&tpc==0&&cryostat==0&&outDriftWindow) {nnhitsI1++; fNoiseI1->Fill(mergedCands[jh].hitHeight); }
+           if(plane==1&&tpc==0&&cryostat==0&&outWireWindowI2) { nnhitsI2++; fNoiseI2->Fill(mergedCands[jh].hitHeight);           }
+           }} // merged loop
+          } //INDUCTION
+           
+
+     
+       }     //end channel condition
 
     } //end loop on channels
-      
+
 //      std::cout <<  " nhitsI1 " << nhitsI1 <<" nhitsI2 " << nhitsI2 <<" nhitsC " << nhitsC << std::endl;
 
 
@@ -731,12 +765,11 @@ size_t iWire=wid.Wire;
       
     hcol.put_into(evt);
       //std::cout << " end ICARUSHitfinder " << std::endl;
-     
+   
       
   } //end produce
 
-    
-    void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how)
+void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how)
     {
         // Given a hit or hit candidate <hit> expand its limits to the closest minima
         int nsamp=50;
