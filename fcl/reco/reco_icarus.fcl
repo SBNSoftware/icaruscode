@@ -132,84 +132,91 @@ icarus_track_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
 
 ### Below we include overrides for the modules above
 
-icarus_reco_producers.rawdigitfilter.ProcessNoise:                                   false
-icarus_reco_producers.rawdigitfilter.FFTNoise:                                       false
-icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                                [1, 1, 1]
+icarus_reco_producers.rawdigitfilter.ProcessNoise:                                         false
+icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                                      [1, 1, 1]
+icarus_reco_producers.rawdigitfilter.FFTNoise:                                             true
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.0, 0.002]
+icarus_reco_producers.rawdigitfilter.FFTAlg.FillHistograms:                                false
    
-icarus_reco_producers.recowire.DigitModuleLabel:                                     "rawdigitfilter"
-   
-icarus_reco_producers.recowireraw.DigitModuleLabel:                                  "rawdigitfilter"
+icarus_reco_producers.recowire.DigitModuleLabel:                                           "rawdigitfilter"
+         
+icarus_reco_producers.recowireraw.DigitModuleLabel:                                        "rawdigitfilter"
+      
+icarus_reco_producers.gaushitall.CalDataModuleLabel:                                       "recowire"
+icarus_reco_producers.gaushitall.AreaNorms:                                                [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushitall.MaxMultiHit:                                              20
+icarus_reco_producers.gaushitall.TryNplus1Fits:                                            false
+icarus_reco_producers.gaushitall.Chi2NDF:                                                  500.
+icarus_reco_producers.gaushitall.PeakFitter.MinWidth:                                      1
+icarus_reco_producers.gaushitall.PeakFitter.FloatBaseline:                                 true
+icarus_reco_producers.gaushitall.LongMaxHits:                                              [25, 25, 25]
+icarus_reco_producers.gaushitall.LongPulseWidth:                                           [10, 10, 10]
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_morphological
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:       4
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       0.05
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_morphological
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:       4
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       0.05
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_morphological
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:       4
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       0.05
 
-icarus_reco_producers.gaushitall.CalDataModuleLabel:                                 "recowire"
-icarus_reco_producers.gaushitall.AreaNorms:                                          [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushitall.MaxMultiHit:                                        20
-icarus_reco_producers.gaushitall.TryNplus1Fits:                                      false
-icarus_reco_producers.gaushitall.Chi2NDF:                                            500.
-icarus_reco_producers.gaushitall.PeakFitter.MinWidth:                                1
-icarus_reco_producers.gaushitall.PeakFitter.FloatBaseline:                           true
-icarus_reco_producers.gaushitall.LongMaxHits:                                        [25, 25, 25]
-icarus_reco_producers.gaushitall.LongPulseWidth:                                     [10, 10, 10]
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0:               @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.Plane:         0
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks: 4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks: 0.05
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1:               @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.Plane:         1
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks: 4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks: 0.05
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2:               @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.Plane:         2
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks: 4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks: 0.05
-
-icarus_reco_producers.gaushit.HitProducerLabel:                                      "gaushitall"
-icarus_reco_producers.gaushit.MinPulseHeightMulti:                                   [10.0, 10.0,  12.0 ]
-icarus_reco_producers.gaushit.MinPulseWidthMulti:                                    [ 2.4,  2.4,   3.0]
-icarus_reco_producers.gaushit.MinPulseHeightSingle:                                  [10.0, 10.0,  10.0 ]
-icarus_reco_producers.gaushit.MinPulseWidthSingle:                                   [ 3.0,  3.0,  3.6] 
-
-icarus_reco_producers.icarushit.CalDataModuleLabel:                                  "recowireraw"
-   
-icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                              "gaushit"
-icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                              "pandoraGaus"
-icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                             "pandoraGaus"
-icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:            "pandoraGaus"
-icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                "pandoraTrackGaus"
-icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:               "pandoraShowerGaus"
-icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:                  ""
-icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                   ""
-icarus_reco_producers.pandoraKalmanTrackGaus.options.trackFromPF:                    false
-icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:                   false
-   
-icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                               "trajclusterGaus"
-icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                           "trajclusterGaus"
-   
-icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:              "pmAlgTrackerGaus"
-   
-icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:         "icarushit"
-   
-icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                            "icarushit"
-icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                            "pandoraICARUS"
-icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                           "pandoraICARUS"
-icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:          "pandoraICARUS"
-icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:              "pandoraTrackICARUS"
-icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:             "pandoraShowerICARUS"
-icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputCaloLabel:                ""
-icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPidLabel:                 ""
-icarus_reco_producers.pandoraKalmanTrackICARUS.options.trackFromPF:                  false
-icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:                 false
-   
-icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                             "trajclusterICARUS"
-icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                         "trajclusterICARUS"
-   
-icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:            "pmAlgTrackerICARUS"
-   
-icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                           "pandoraTrackGaus"
-icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                             "gaushit"
-icarus_reco_producers.mcassociationsGaus.makeT0Assns:                                false
-   
-icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                         "pandoraTrackICARUS"
-icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                           "icarushit"
-icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                              false
+icarus_reco_producers.gaushit.HitProducerLabel:                                            "gaushitall"
+icarus_reco_producers.gaushit.MinPulseHeightMulti:                                         [10.0, 10.0,  12.0 ]
+icarus_reco_producers.gaushit.MinPulseWidthMulti:                                          [ 2.4,  2.4,   3.0]
+icarus_reco_producers.gaushit.MinPulseHeightSingle:                                        [10.0, 10.0,  10.0 ]
+icarus_reco_producers.gaushit.MinPulseWidthSingle:                                         [ 3.0,  3.0,  3.6] 
+      
+icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
+         
+icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                    "gaushit"
+icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                                    "pandoraGaus"
+icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                                   "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:                  "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                      "pandoraTrackGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:                     "pandoraShowerGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:                        ""
+icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                         ""
+icarus_reco_producers.pandoraKalmanTrackGaus.options.trackFromPF:                          false
+icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:                         false
+         
+icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                                     "trajclusterGaus"
+icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                                 "trajclusterGaus"
+         
+icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                    "pmAlgTrackerGaus"
+         
+icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:               "icarushit"
+         
+icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                                  "icarushit"
+icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                                  "pandoraICARUS"
+icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                                 "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:                "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:                    "pandoraTrackICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:                   "pandoraShowerICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputCaloLabel:                      ""
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPidLabel:                       ""
+icarus_reco_producers.pandoraKalmanTrackICARUS.options.trackFromPF:                        false
+icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:                       false
+         
+icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                   "trajclusterICARUS"
+icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                               "trajclusterICARUS"
+         
+icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                  "pmAlgTrackerICARUS"
+         
+icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                                 "pandoraTrackGaus"
+icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                                   "gaushit"
+icarus_reco_producers.mcassociationsGaus.makeT0Assns:                                      false
+         
+icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                               "pandoraTrackICARUS"
+icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                 "icarushit"
+icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                    false
 
 END_PROLOG
