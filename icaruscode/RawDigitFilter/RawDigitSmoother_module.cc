@@ -316,7 +316,7 @@ void RawDigitSmoother::produce(art::Event & event)
                     
                     erosionVec.at(adcBinIdx)  = adcBinValVec.front();
                     dilationVec.at(adcBinIdx) = adcBinValVec.back();
-                    edgeVec.at(adcBinIdx)     = dilationVec.at(adcBinIdx) - currentVec.at(adcBinIdx);
+                    edgeVec.at(adcBinIdx)     = dilationVec.at(adcBinIdx) - currentVec.at(adcBinIdx) + std::get<1>(edgeTuple);
                     averageVec.at(adcBinIdx)  = (erosionVec.at(adcBinIdx) + dilationVec.at(adcBinIdx)) / 2;
                     medianVec.at(adcBinIdx)   = adcBinValVec.at(adcBinValVec.size()/2);
                 }
