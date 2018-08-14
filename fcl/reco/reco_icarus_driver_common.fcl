@@ -1,13 +1,12 @@
 ## 
 ##  Shared art job configuartions for ICARUS reco
 ##
-#include "services_icarus.fcl"
-#include "calibrationservices_icarus.fcl"
 #include "reco_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
 
 services:
 {
-  @table::icarus_basic_services
+  @table::icarus_wirecalibration_services
   @table::icarus_calibration_services
 }
 
