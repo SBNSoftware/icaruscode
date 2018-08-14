@@ -40,7 +40,7 @@ public:
     void GenerateUncorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     void GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     
-    void ExtractCorrelatedAmplitude(double &) const;
+    void ExtractCorrelatedAmplitude(double &, int) const;
 
 
     void SelectContinuousSpectrum() ;
@@ -140,8 +140,8 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     }
     
     for(size_t histIdx = 0; histIdx < 200; histIdx++) {
-        corrAmpDist[histIdx] = histPtr->GetBinContent(histIdx+1);
-        //  std::cout << " histidx " << histIdx << " noisehist " << fNoiseHistVec[histIdx] << std::endl;
+        corrAmpDist[histIdx] = corrAmpHistPtr->GetBinContent(histIdx+1);
+    //    std::cout << " histidx " << histIdx << " corrampdist " << corrAmpDist[histIdx] << std::endl;
     }
     
     // Close the input file
@@ -158,8 +158,10 @@ void CorrelatedNoise::GenerateNoise(std::vector<float> &noise, double noise_fact
         std::vector<float> noise_unc  = noise;
         std::vector<float> noise_corr = noise;
         
+        //ExtractCorrelatedAmplitude(corr_factor);
+        int board=channel/32;
         GenerateUncorrelatedNoise(noise_unc,noise_factor,channel);
-        GenerateCorrelatedNoise(noise_corr,noise_factor,channel);
+        GenerateCorrelatedNoise(noise_corr,noise_factor,board);
         
         for(size_t j=0;j<noise_corr.size();j++) {
             noise[j]=noise_corr[j]+noise_unc[j];
@@ -223,18 +225,23 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
 
         return;
     }
-    void CorrelatedNoise::GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int channel) const
+    void CorrelatedNoise::GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int board) const
     {
-       // std::cout << " generate correlated noise " << std::endl;
         art::ServiceHandle<art::RandomNumberGenerator> rng;
         art::ServiceHandle<util::LArFFT>               fFFT;
         
-        int board = channel/32;
+        //std::cout << " generate correlated noise board" << board << std::endl;
+        
         CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
         engine_corr.setSeed(board,0);
-        CLHEP::RandGeneral amp_corr(corrAmpDist,200,1);
+        CLHEP::RandFlat flat_corr(engine_corr,-1,1);
         double rnd_corr[2]      = {0.};
         size_t nFFTTicks = fFFT->FFTSize();
+        
+        double cf=1;
+        ExtractCorrelatedAmplitude(cf,board);
+        
+       // std::cout << " noise size " << noise.size() << " ticks " << nFFTTicks << std::endl;
         
         if(noise.size() != nFFTTicks)
             throw cet::exception("SimWireICARUS")
@@ -244,20 +251,23 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
             << "\033[00m"
             << std::endl;
         
+       // std::cout << " after ticks check " << std::endl;
+        
         // noise in frequency space
         std::vector<TComplex> noiseFrequency(nFFTTicks/2+1, 0.);
         
         double pval        = 0.;
         double phase       = 0.;
-        double scaleFactor = (1. - fHistNormFactor) * noise_factor;
+        double scaleFactor = (1. - fHistNormFactor) * noise_factor*cf;
 
         for(size_t i=0; i< nFFTTicks/2 + 1; ++i)
         {
             if(!peaks[i]) continue;
         
         // exponential noise spectrum
-        amp_corr.fireArray(2,rnd_corr);
-        
+        flat_corr.fireArray(2,rnd_corr);
+          
+           // std::cout << " board " << board << " random corr" << rnd_corr[0] << std::endl;
         pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
         
         phase = rnd_corr[1] * 2. * TMath::Pi();
@@ -314,17 +324,24 @@ for(size_t histIdx = 1; histIdx < fNoiseHistVec.size(); histIdx++)
     
 }
     
-void CorrelatedNoise::ExtractCorrelatedAmplitude(double& corrFactor) const
+void CorrelatedNoise::ExtractCorrelatedAmplitude(double& corrFactor, int board) const
     {
         art::ServiceHandle<art::RandomNumberGenerator> rng;
-        CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
-        CLHEP::RandFlat flat_corr(engine_corr,0,1);
+        //CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
+        //CLHEP::RandFlat flat_corr(engine_corr,0,1);
+        CLHEP::RandGeneral amp_corr(corrAmpDist,200,0);
+        amp_corr.setTheSeed(board);
         double rnd_corr[1]      = {0.};
         
-        flat_corr.fireArray(1,rnd_corr,0,1);
+       amp_corr.fireArray(1,rnd_corr);
         
-        corrFactor=rnd_corr[0]*10;
-        //std::cout << " corr noise factor " << corrFactor << std::endl;
+        double cfmedio=0.2287;
+        corrFactor=rnd_corr[0]/cfmedio;
+        //corrFactor=10;
+      //  if(corrFactor>3)
+     //   std::cout << " corr noise factor " << corrFactor << std::endl;
+       
+       // corrFactor=1;
     }
     
 DEFINE_ART_CLASS_TOOL(CorrelatedNoise)
