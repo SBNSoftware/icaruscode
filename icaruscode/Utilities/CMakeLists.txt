@@ -36,8 +36,20 @@ set( icarus_util_lib_list
 
 simple_plugin( SignalShapingServiceICARUS  "service"
                ${icarus_util_lib_list}
-	       BASENAME_ONLY
+               BASENAME_ONLY
         )
+
+simple_plugin(SaveConfigurationIntoTFile "module"
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+              ${ART_FRAMEWORK_PRINCIPAL}
+              ${ART_FRAMEWORK_CORE}
+              canvas
+              ${MF_MESSAGELOGGER}
+              ${ROOT_CORE}
+)
+
 
 install_headers()
 install_source()
