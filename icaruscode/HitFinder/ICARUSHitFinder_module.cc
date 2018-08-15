@@ -694,7 +694,7 @@ size_t iWire=wid.Wire;
          if(plane==0||plane==1) {
               for(auto& mergedCands : mergedCandidateHitVec)
               {
-              for(int jh=0;jh<mergedCands.size();jh++) {
+              for(size_t jh=0;jh<mergedCands.size();jh++) {
                //   std::cout << " plane " << plane << " wire " << iwire << " hit " <<mergedCands[jh].hitCenter << std::endl;
               //FOR INDUCTION HITS STORE RAW INFORMATION
               recob::HitCreator hit(
@@ -1186,8 +1186,8 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
         
-//        if(fitResult!=0)
-//            std::cout << " long fit cannot converge " << iWire << std::endl;
+        if(fitResult < -1) 
+            std::cout << " long fit cannot converge " << iWire << std::endl;
         // ##################################################
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
