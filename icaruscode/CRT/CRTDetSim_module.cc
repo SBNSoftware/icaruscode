@@ -312,6 +312,8 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType=='d') nsim_d++;
       if (auxDetType=='m') nsim_m++;
 
+      uint32_t trkid = ide.trackID;
+
       // What is the distance from the hit (centroid of the entry
       // and exit points) to the readout end?
       double x = (ide.entryX + ide.exitX) / 2;
@@ -480,8 +482,8 @@ void CRTDetSim::produce(art::Event & e) {
               tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'c';
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel1ID,t1,ppsTicks,q1));
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel1ID,t1,ppsTicks,q1,trkid));
               nchandat_c++;
       }//if fiber-fiber coincidence
 
@@ -492,7 +494,7 @@ void CRTDetSim::produce(art::Event & e) {
               tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'd';
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
               nchandat_d++;
       }//if one strip above threshold
 
@@ -504,7 +506,7 @@ void CRTDetSim::produce(art::Event & e) {
                 tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
-                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
+                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
                 nchandat_m++;
               }
               if(q0Dual > fQThresholdM) { 
@@ -514,7 +516,7 @@ void CRTDetSim::produce(art::Event & e) {
                 tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
-                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual));
+                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual,trkid));
                 nchandat_m++;
               }
       }//if one strip above threshold at either end

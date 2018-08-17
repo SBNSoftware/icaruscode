@@ -5,20 +5,26 @@
 ///
 /// Based on LArIAT TOFSimDigits.cc (Author: Lucas Mendes Santos)
 /// with modifications for SBND (Author: mastbaum@uchicago.edu)
+/// and then modifications for ICARUS
 //
-/// Author: chilge@rams.colostate.edu
+/// Author: Chris.Hilgenberg@colostate.edu
 ///////////////////////////////////////////////////////////////////////////////
 
+//framework includes
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
 #include "fhiclcpp/ParameterSet.h"
 
+//LArSoft includes
 #include "lardataalg/DetectorInfo/ElecClock.h"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 
+//C++ includes
 #include <string>
 #include <utility>
+
+using std::string;
 
 namespace icarus {
 namespace crt {
@@ -34,11 +40,11 @@ public:
   void reconfigure(fhicl::ParameterSet const & p);
 
   void produce(art::Event & e) override;
-  std::string fG4ModuleLabel;
+  string fG4ModuleLabel;
 
 private:
   char GetAuxDetType(geo::AuxDetGeo const& adgeo);
-  std::string GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
+  string GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
   uint8_t GetStackNum(geo::AuxDetGeo const& adgeo);
   //bool TimeOrderCRTData(icarus::crt::CRTData::ChannelData crtdat1, icarus::crt::CRTData::ChannelData crtdat2);
   /**
