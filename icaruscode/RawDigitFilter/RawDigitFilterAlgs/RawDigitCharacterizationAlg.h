@@ -122,7 +122,8 @@ private:
     // Pointers to the histograms we'll create for monitoring what is happening
     TH1D*                fAdcCntHist[3];
     TH1D*                fAveValHist[3];
-    TH1D*                fRmsValHist[3];
+    TH1D*                fRmsTValHist[3];
+    TH1D*                fRmsFValHist[3];
     TH1D*                fPedValHist[3];
     TH1D*                fAverageHist[3];
     TProfile*            fRmsValProf[3];
