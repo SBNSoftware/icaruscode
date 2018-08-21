@@ -34,6 +34,9 @@ icarus_recowireroiicarus:
     FFTSize:                    128      # re-initialize FFT service to this size
     SaveWireWF:                 0
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
+    TruncRMSThreshold:          6.
+    TruncRMSMinFraction:        0.6
+    OutputHistograms:           false
     ROIFinderToolVec:
     {
         ROIFinderToolPlane0 : @local::icarus_morphologicalroifinder_0
