@@ -107,12 +107,12 @@ icarus_basic_services:
 #
 icarus_wirecalibration_services: {
     
-    @table::icarus_basic_services
+                                    @table::icarus_basic_services
     
     LArFFT:                         @local::icarus_larfft # from `correctionservices_icarus.fcl`
     SignalShapingServiceICARUS:     @local::icarus_signalshapingservice
     
-    @table::icarus_calibration_services
+                                    @table::icarus_calibration_services
     
 } # icarus_wirecalibration_services
 
