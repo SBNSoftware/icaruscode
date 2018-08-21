@@ -149,7 +149,7 @@ icarus_reco_producers.recowireraw.DigitModuleLabel:                             
       
 icarus_reco_producers.gaushitall.CalDataModuleLabel:                                       "recowire"
 icarus_reco_producers.gaushitall.AreaNorms:                                                [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushitall.MaxMultiHit:                                              20
+icarus_reco_producers.gaushitall.MaxMultiHit:                                              5
 icarus_reco_producers.gaushitall.TryNplus1Fits:                                            false
 icarus_reco_producers.gaushitall.Chi2NDF:                                                  500.
 icarus_reco_producers.gaushitall.PeakFitter.MinWidth:                                      1
