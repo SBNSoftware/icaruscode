@@ -63,3 +63,19 @@ outputs:
 # turn on the SimEnergyDeposit output
 services.LArG4Parameters.FillSimEnergyDeposits:       true
 
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}
