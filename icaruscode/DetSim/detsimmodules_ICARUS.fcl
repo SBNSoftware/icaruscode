@@ -11,15 +11,13 @@ NoiseFromHistTool:
 }
 CorrelatedNoiseTool:
 {
-  tool_type:         CorrelatedNoise
-  NoiseRand:         0.
-  NoiseHistFileName: "T600noise_corr.root"
-  HistogramName:     "hnoiseI1"
-  HistNormFactor:    0.45  # --> Histogram rms noise = 1
-CorrAmpHistFileName: "CorrAmplitude.root"
-CorrAmpHistogramName:     "hbrms"
-
-
+  tool_type:            CorrelatedNoise
+  NoiseRand:            0.
+  NoiseHistFileName:    "T600noise_corr.root"
+  HistogramName:        "hnoiseI1"
+  HistNormFactor:       0.33  # --> Histogram rms noise = 1, Note (TU): Setting to 0.33 as per Filippo 8/20/18
+  CorrAmpHistFileName:  "CorrAmplitude.root"
+  CorrAmpHistogramName: "hbrms"
 }
 WhiteNoiseTool:
 {
