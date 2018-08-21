@@ -61,18 +61,21 @@ void RawDigitCharacterizationAlg::initializeHists(art::ServiceHandle<art::TFileS
         // Define the histograms. Putting semi-colons around the title
         // causes it to be displayed as the x-axis label if the histogram
         // is drawn.
-        fAdcCntHist[0]    = tfs->make<TH1D>("CntUPlane", ";#adc",  200, 9000., 10000.);
-        fAdcCntHist[1]    = tfs->make<TH1D>("CntVPlane", ";#adc",  200, 9000., 10000.);
-        fAdcCntHist[2]    = tfs->make<TH1D>("CntWPlane", ";#adc",  200, 9000., 10000.);
-        fAveValHist[0]    = tfs->make<TH1D>("AveUPlane", ";Ave",   120,  -30.,    30.);
-        fAveValHist[1]    = tfs->make<TH1D>("AveVPlane", ";Ave",   120,  -30.,    30.);
-        fAveValHist[2]    = tfs->make<TH1D>("AveWPlane", ";Ave",   120,  -30.,    30.);
-        fRmsValHist[0]    = tfs->make<TH1D>("RmsUPlane", ";RMS",   200,    0.,    50.);
-        fRmsValHist[1]    = tfs->make<TH1D>("RmsVPlane", ";RMS",   200,    0.,    50.);
-        fRmsValHist[2]    = tfs->make<TH1D>("RmsWPlane", ";RMS",   200,    0.,    50.);
-        fPedValHist[0]    = tfs->make<TH1D>("PedUPlane", ";Ped",   200,  1950,  2150.);
-        fPedValHist[1]    = tfs->make<TH1D>("PedVPlane", ";Ped",   200,  1950,  2150.);
-        fPedValHist[2]    = tfs->make<TH1D>("PedWPlane", ";Ped",   200,   350,   550.);
+        fAdcCntHist[0]    = tfs->make<TH1D>("CntUPlane",  ";#adc",  200, 9000., 10000.);
+        fAdcCntHist[1]    = tfs->make<TH1D>("CntVPlane",  ";#adc",  200, 9000., 10000.);
+        fAdcCntHist[2]    = tfs->make<TH1D>("CntWPlane",  ";#adc",  200, 9000., 10000.);
+        fAveValHist[0]    = tfs->make<TH1D>("AveUPlane",  ";Ave",   120,  -30.,    30.);
+        fAveValHist[1]    = tfs->make<TH1D>("AveVPlane",  ";Ave",   120,  -30.,    30.);
+        fAveValHist[2]    = tfs->make<TH1D>("AveWPlane",  ";Ave",   120,  -30.,    30.);
+        fRmsTValHist[0]   = tfs->make<TH1D>("RmsTUPlane", ";RMS",    80,    0.,    20.);
+        fRmsTValHist[1]   = tfs->make<TH1D>("RmsTVPlane", ";RMS",    80,    0.,    20.);
+        fRmsTValHist[2]   = tfs->make<TH1D>("RmsTWPlane", ";RMS",    80,    0.,    20.);
+        fRmsFValHist[0]   = tfs->make<TH1D>("RmsFUPlane", ";RMS",    80,    0.,    20.);
+        fRmsFValHist[1]   = tfs->make<TH1D>("RmsFVPlane", ";RMS",    80,    0.,    20.);
+        fRmsFValHist[2]   = tfs->make<TH1D>("RmsFWPlane", ";RMS",    80,    0.,    20.);
+        fPedValHist[0]    = tfs->make<TH1D>("PedUPlane",  ";Ped",   200,  1950,  2150.);
+        fPedValHist[1]    = tfs->make<TH1D>("PedVPlane",  ";Ped",   200,  1950,  2150.);
+        fPedValHist[2]    = tfs->make<TH1D>("PedWPlane",  ";Ped",   200,   350,   550.);
     
         fRmsValProf[0]    = tfs->make<TProfile>("RmsPlane0Prof",    ";Wire #",  1200, 0., 1200., 0., 100.);
         fRmsValProf[1]    = tfs->make<TProfile>("RmsPlane1Prof",    ";Wire #",  5000, 0., 5000., 0., 100.);
@@ -255,7 +258,8 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
         
         fAdcCntHist[view]->Fill(curBinCnt, 1.);
         fAveValHist[view]->Fill(std::max(-29.9, std::min(29.9,double(truncMean - pedestal))), 1.);
-        fRmsValHist[view]->Fill(std::min(49.9, double(truncRms)), 1.);
+        fRmsTValHist[view]->Fill(std::min(19.9, double(truncRms)), 1.);
+        fRmsFValHist[view]->Fill(std::min(19.9, double(rms)), 1.);
         fRmsValProf[view]->Fill(wire, double(truncRms), 1.);
         fMinMaxValProf[view]->Fill(wire, double(minMax), 1.);
         fPedValProf[view]->Fill(wire, truncMean, 1.);
@@ -411,7 +415,7 @@ void RawDigitCharacterizationAlg::getMeanRmsAndPedCor(const RawDigitVector& rawW
         
         fAdcCntHist[view]->Fill(curBinCnt, 1.);
         fAveValHist[view]->Fill(std::max(-29.9, std::min(29.9,double(truncMean - pedestal))), 1.);
-        fRmsValHist[view]->Fill(std::min(49.9, double(rmsVal)), 1.);
+        fRmsFValHist[view]->Fill(std::min(19.9, double(rmsVal)), 1.);
         fRmsValProf[view]->Fill(wire, double(rmsVal), 1.);
         fMinMaxValProf[view]->Fill(wire, double(minMax), 1.);
         fPedValProf[view]->Fill(wire, truncMean, 1.);
