@@ -370,7 +370,7 @@ void ROIFinderMorphological::findROICandidatesDiff(const Waveform&  differenceVe
         
             int max2MinDiff = maxCandRoiTick - minCandRoiTick;
         
-            if (fOutputHistograms && !(startTick > 0 || stopTick < differenceVec.size()))
+            if (fOutputHistograms && !(startTick > 0 || stopTick < int(differenceVec.size())))
             {
                 fMaxDiffLength->Fill(std::min(deltaTicks,199), 1.);
                 fDeltaTicksHist->Fill(max2MinDiff, 1.);
