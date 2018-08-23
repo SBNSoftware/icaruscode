@@ -35,23 +35,31 @@ icarus_morphologicalroifinder:
 {
     tool_type:           ROIFinderMorphological
     Plane:               0
-    NumSigma:            5.0         # Number sigma for threshold
+    NumSigma:            4.5         # Number sigma for threshold
                                      # This is for white noise ~3.2 rms
-    NumBinsToAve:        10
-    Max2MinDistance:     4
+    NumBinsToAve:        5 #10
+    Max2MinDistance:     3
+    Max2MinHeight:       4 #12
+    MaxLengthCut:        0 #10
     StructuringElement:  20
-    roiLeadTrailPad:     [ 50, 50 ]  # number of bins to pad on the leading/trailing side
+    roiLeadTrailPad:     [ 25, 25 ]  # number of bins to pad on the leading/trailing side
     OutputHistograms:    false
+    OutputWaveforms:     false
 }
 
 icarus_morphologicalroifinder_0: @local::icarus_morphologicalroifinder
 icarus_morphologicalroifinder_1: @local::icarus_morphologicalroifinder
 icarus_morphologicalroifinder_2: @local::icarus_morphologicalroifinder
 
-icarus_morphologicalroifinder_0.Plane:    0
-icarus_morphologicalroifinder_1.Plane:    1
-icarus_morphologicalroifinder_2.Plane:    2
-icarus_morphologicalroifinder_2.NumSigma: 7.0  # this is for white noise ~3.2 rms
+icarus_morphologicalroifinder_0.Plane:           0
+icarus_morphologicalroifinder_1.Plane:           1
+icarus_morphologicalroifinder_2.Plane:           2
+
+icarus_morphologicalroifinder_0.Max2MinDistance: 10
+icarus_morphologicalroifinder_1.Max2MinDistance:  8
+icarus_morphologicalroifinder_2.Max2MinDistance: 12
+
+#icarus_morphologicalroifinder_2.NumSigma: 7.0  # this is for white noise ~3.2 rms
 
 icarus_baselinestandard:
 {

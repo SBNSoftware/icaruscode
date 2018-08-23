@@ -62,11 +62,14 @@ private:
     size_t                                      fPlane;
     float                                       fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
     int                                         fNumBinsToAve;               ///< Controls the smoothing
-    int                                         fMax2MinDistance;            ///< Maxmimum allow peak to peak distance
+    int                                         fMax2MinDistance;            ///< Minimum allow peak to peak distance
+    float                                       fMax2MinHeight;              ///< Minimum peak to peak height (box cut)
+    int                                         fMaxLengthCut;               ///< Minimum length of the maximum
     int                                         fStructuringElement;         ///< The window size
     unsigned short                              fPreROIPad;                  ///< ROI padding
     unsigned short                              fPostROIPad;                 ///< ROI padding
     bool                                        fOutputHistograms;           ///< Output histograms?
+    bool                                        fOutputWaveforms;            ///< Output waveforms?
 
     std::vector<float>                          fAveWeightVec;               ///< Weight vector for smoothing
     float                                       fWeightSum;                  ///< sum of weights for smoothing
@@ -76,12 +79,17 @@ private:
     // Global histograms
     TH1F*                                       fDiffMeanHist;
     TH1F*                                       fDiffRmsHist;
+    TH1F*                                       fDiffFullRmsHist;
+    TH1F*                                       fDTruncBinsHist;
     TH1F*                                       fDiffMaxHist;
     TH1F*                                       fNumSigmaHist;
+    TH1F*                                       fThresholdHist;
     TH1F*                                       fNumSigNextHist;
+    TH1F*                                       fMaxDiffLength;
     TH1F*                                       fDeltaTicksHist;
+    TH2F*                                       fDTixVDLenHist;
     TH2F*                                       fDTixVDiffHist;
-    
+
     std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
 
     // Services
@@ -108,9 +116,12 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
     fNumSigma              = pset.get< float>                      ("NumSigma"                  );
     fNumBinsToAve          = pset.get< int >                       ("NumBinsToAve"              );
     fMax2MinDistance       = pset.get< int >                       ("Max2MinDistance"           );
+    fMax2MinHeight         = pset.get< int >                       ("Max2MinHeight"             );
+    fMaxLengthCut          = pset.get< int >                       ("MaxLengthCut"              );
     fStructuringElement    = pset.get< int>                        ("StructuringElement"        );
     zin                    = pset.get< std::vector<unsigned short>>("roiLeadTrailPad"           );
     fOutputHistograms      = pset.get< bool  >                     ("OutputHistograms",    false);
+    fOutputWaveforms       = pset.get< bool >                      ("OutputWaveforms",     false);
     
     if(zin.size() != 2) {
         throw art::Exception(art::errors::Configuration)
@@ -141,14 +152,19 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
         // Make a directory for these histograms
         art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu",fPlane));
 
-        fDiffMeanHist   = dir.make<TH1F>("DiffMean", ";Diff Mean;", 100, -20.,  20.);
-        fDiffRmsHist    = dir.make<TH1F>("DiffRms",  ";Diff RMS;",  100,   0.,   5.);
-        fDiffMaxHist    = dir.make<TH1F>("DiffMax",  ";Diff Max;",  200,   0., 200.);
-        fNumSigmaHist   = dir.make<TH1F>("NSigma",   ";#sigma;",    200,   0.,  50.);
-        fNumSigNextHist = dir.make<TH1F>("NSigNext", ";#sigma;",    200,   0.,  50.);
-        fDeltaTicksHist = dir.make<TH1F>("DeltaTix", ";Delta t",    200,   0., 200.);
-        
-        fDTixVDiffHist  = dir.make<TH2F>("DTixVDiff", ";Delta t;Max Diff", 200, 0., 200., 200, 0., 200.);
+        fDiffMeanHist    = dir.make<TH1F>("DiffMean",  ";Diff Mean;",  100, -20.,   20.);
+        fDiffRmsHist     = dir.make<TH1F>("DiffRms",   ";Diff RMS;",   200,   0.,   10.);
+        fDiffFullRmsHist = dir.make<TH1F>("DiffFRms",  ";Diff RMS;",   200,   0.,   10.);
+        fDTruncBinsHist  = dir.make<TH1F>("DTruncBn",  "D trunc B",    500,   0., 1000.);
+        fDiffMaxHist     = dir.make<TH1F>("DiffMax",   ";Diff Max;",   200,   0.,  200.);
+        fNumSigmaHist    = dir.make<TH1F>("NSigma",    ";#sigma;",     100,   0.,   20.);
+        fThresholdHist   = dir.make<TH1F>("Threshold", ";Threshold;",  100,   0.,   20.);
+        fNumSigNextHist  = dir.make<TH1F>("NSigNext",  ";#sigma;",     200,   0.,   50.);
+        fMaxDiffLength   = dir.make<TH1F>("MaxLength", ";Delta t",     200,   0.,  200.);
+        fDeltaTicksHist  = dir.make<TH1F>("DeltaTix",  ";Delta t",     200,   0.,  200.);
+
+        fDTixVDLenHist  = dir.make<TH2F>("DTixVDLen", ";Delta t;DLength",  100, 0., 100., 100, 0., 100.);
+        fDTixVDiffHist  = dir.make<TH2F>("DTixVDiff", ";Delta t;Max Diff", 100, 0., 100., 100, 0., 100.);
     }
 
     // precalculate the weight vector to use in the smoothing
@@ -209,17 +225,24 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     
     fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, fullRMS, truncRMS, nTrunc);
     
+    // Calculate a threshold to use based on the truncated mand and rms...
+    float threshold = truncMean + fNumSigma * std::max(float(0.5),truncRMS);
+
     // If histogramming, do the global hists here
     if (fOutputHistograms)
     {
         Waveform::iterator maxItr = std::max_element(differenceVec.begin(),differenceVec.end());
-        float maxDiff = *maxItr;
-        float nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+        float maxDiff    = *maxItr;
+        float nSigma     = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+        int   dTruncBins = int(differenceVec.size()) - nTrunc;
         
         fDiffMeanHist->Fill(truncMean, 1.);
         fDiffRmsHist->Fill(truncRMS, 1.);
+        fDiffFullRmsHist->Fill(fullRMS, 1.);
+        fDTruncBinsHist->Fill(std::min(dTruncBins,999), 1.);
         fDiffMaxHist->Fill(maxDiff, 1.);
-        fNumSigmaHist->Fill(nSigma, 1.);
+        fNumSigmaHist->Fill(std::min(nSigma,float(19.9)), 1.);
+        fThresholdHist->Fill(std::min(threshold,float(19.9)), 1.);
         
         if (std::distance(differenceVec.begin(),maxItr) > 4 * fStructuringElement)
         {
@@ -237,8 +260,6 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
             fNumSigNextHist->Fill(nSigma, 1.);
         }
     }
-    
-    float threshold = truncMean + fNumSigma * std::max(float(0.5),truncRMS);
     
     findROICandidatesDiff(differenceVec, erosionVec, dilationVec, 0, averageVec.size(), threshold, roiVec);
     
@@ -310,6 +331,11 @@ void ROIFinderMorphological::findROICandidatesDiff(const Waveform&  differenceVe
         int   maxTick       = std::distance(differenceVec.begin(),maxItr);
         float maxDifference = *maxItr;
         
+        // move forward to find the length of the top
+        while(*maxItr == maxDifference) maxItr++;
+        
+        int deltaTicks = std::distance(differenceVec.begin(),maxItr) - maxTick;
+        
         // No point continuing if not over threshold
         if (maxDifference > threshold)
         {
@@ -344,14 +370,16 @@ void ROIFinderMorphological::findROICandidatesDiff(const Waveform&  differenceVe
         
             int max2MinDiff = maxCandRoiTick - minCandRoiTick;
         
-            if (fOutputHistograms && maxDifference > threshold)
+            if (fOutputHistograms && !(startTick > 0 || stopTick < differenceVec.size()))
             {
+                fMaxDiffLength->Fill(std::min(deltaTicks,199), 1.);
                 fDeltaTicksHist->Fill(max2MinDiff, 1.);
+                fDTixVDLenHist->Fill(max2MinDiff, deltaTicks, 1.);
                 fDTixVDiffHist->Fill(max2MinDiff, maxDifference, 1.);
             }
         
             // Make sure we have a legitimate candidate
-            if (max2MinDiff > fMax2MinDistance)
+            if ((max2MinDiff > fMax2MinDistance || maxDifference > fMax2MinHeight) && deltaTicks > fMaxLengthCut)
             {
                 // Before saving this ROI, look for candidates preceeding this one
                 // Note that preceeding snippet will reference to the current roiStartTick
@@ -376,26 +404,31 @@ void ROIFinderMorphological::smoothInputWaveform(const Waveform& inputWaveform, 
     
     outputWaveform.resize(inputWaveform.size());
     
-    // To facilitate handling the bins at the ends of the input waveform we embed in a slightly larger
-    // vector which has zeroes on the ends
-    Waveform tempWaveform(inputWaveform.size()+fNumBinsToAve);
-    
-    // Set the edge bins which can't be smoothed to zero
-    std::fill(tempWaveform.begin(),tempWaveform.begin()+halfBins,0.);
-    std::fill(tempWaveform.end()-halfBins,tempWaveform.end(),0.);
-    
-    // Copy in the input waveform
-    std::copy(inputWaveform.begin(),inputWaveform.end(),tempWaveform.begin()+halfBins);
-    
-    // Now do the smoothing
-    for(size_t idx = 0; idx < inputWaveform.size(); idx++)
+    // Make sure smoothing makes sense
+    if (halfBins > 2)
     {
-        float weightedSum(0.);
+        // To facilitate handling the bins at the ends of the input waveform we embed in a slightly larger
+        // vector which has zeroes on the ends
+        Waveform tempWaveform(inputWaveform.size()+fNumBinsToAve);
+    
+        // Set the edge bins which can't be smoothed to zero
+        std::fill(tempWaveform.begin(),tempWaveform.begin()+halfBins,0.);
+        std::fill(tempWaveform.end()-halfBins,tempWaveform.end(),0.);
+    
+        // Copy in the input waveform
+        std::copy(inputWaveform.begin(),inputWaveform.end(),tempWaveform.begin()+halfBins);
+    
+        // Now do the smoothing
+        for(size_t idx = 0; idx < inputWaveform.size(); idx++)
+        {
+            float weightedSum(0.);
         
-        for(int wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
+            for(int wIdx = 0; wIdx < fNumBinsToAve; wIdx++) weightedSum += fAveWeightVec.at(wIdx) * tempWaveform.at(idx + wIdx);
         
-        outputWaveform.at(idx) = weightedSum / fWeightSum;
+            outputWaveform.at(idx) = weightedSum / fWeightSum;
+        }
     }
+    else std::copy(inputWaveform.begin(),inputWaveform.end(),outputWaveform.begin());
     
     return;
 }
@@ -433,7 +466,7 @@ icarus_tool::HistogramMap ROIFinderMorphological::initializeHistograms(size_t ch
 {
     icarus_tool::HistogramMap histogramMap;
     
-    if (fOutputHistograms)
+    if (fOutputWaveforms)
     {
         // Try to limit to the wire number (since we are already segregated by plane)
         std::vector<geo::WireID> wids  = fGeometry->ChannelToWire(channel);

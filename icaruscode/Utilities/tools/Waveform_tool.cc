@@ -219,7 +219,7 @@ template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<
     
     for(const auto& val : waveform)
     {
-        int intVal = std::round(4.*val);
+        int intVal = std::round(val);
         
         frequencyMap[intVal]++;
         
@@ -239,14 +239,14 @@ template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<
     {
         std::map<int,int>::iterator neighborItr = frequencyMap.find(mpVal+idx);
         
-        if (neighborItr != frequencyMap.end() && 5 * neighborItr->second > mpCount)
+        if (neighborItr != frequencyMap.end() && 8 * neighborItr->second > mpCount)
         {
             meanSum += neighborItr->first * neighborItr->second;
             meanCnt += neighborItr->second;
         }
     }
     
-    mean = 0.25 * T(meanSum) / T(meanCnt);  // Note that bins were expanded by a factor of 4 above
+    mean = T(meanSum) / T(meanCnt);  // Note that bins were expanded by a factor of 4 above
     
     // do rms calculation - the old fashioned way and over all adc values
     typename std::vector<T> locWaveform = waveform;
