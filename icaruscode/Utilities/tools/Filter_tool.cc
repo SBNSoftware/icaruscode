@@ -99,6 +99,9 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     size_t paramIdx(0);
 
     for(const auto& parameter : fParameters) fFunction->SetParameter(paramIdx++, timeFactor * parameter);
+    
+    // Don't assume that the filter vec has not already been initialized...
+    fFilterVec.clear();
 
     // Now ready to set the response vector
     for(size_t bin = 0; bin <= numBins/2; bin++)
