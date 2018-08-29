@@ -1,5 +1,5 @@
 #include "evdservices_base.fcl"
-#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 
@@ -44,6 +44,7 @@ icarus_disp:
    SpaceChargeService:       @local::icarus_spacecharge
                              @table::icarus_calibration_services
                              @table::icarus_wirecalibration_services
+                             @table::icarus_simulation_services
 }
 
 #######################################
