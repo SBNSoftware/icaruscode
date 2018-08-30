@@ -70,7 +70,6 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
-        fFilterSizeMap.insert(std::pair<size_t,int>(planeIdx,0));
     }
 }
     
@@ -279,12 +278,12 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     
     // Not sure the better way to do this...
     for(size_t complexIdx = 0; complexIdx < halfFFTDataSize; complexIdx++) complexVals.emplace_back(realVals.at(complexIdx),imaginaryVals.at(complexIdx));
-    
-    // Make sure the filter has been correctly initialized
-    if (fFilterSizeMap.at(plane) != fftDataSize) fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
 
     // Recover the filter function we are using...
     const std::vector<TComplex>& filter = fFilterToolMap.at(plane)->getResponseVec();
+    
+    // Make sure the filter has been correctly initialized
+    if (filter.size() != halfFFTDataSize) fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
     
     // Convolve this with the FFT of the input waveform
     std::transform(complexVals.begin(), complexVals.end(), filter.begin(), complexVals.begin(), std::multiplies<TComplex>());

@@ -91,7 +91,7 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     double      freqRes      = maxFreq / double(numBins/2);     // frequency resolution in cycles/us
     
     // Set the range on the function
-    fFunction->SetRange(0, double(numBins));
+    fFunction->SetRange(0, double(numBins/2));
 
     // now to scale the filter function!
     // only scale params 1,2 &3
