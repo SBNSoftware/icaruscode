@@ -1300,13 +1300,19 @@ Double_t ICARUShitFitCache::fitf(Double_t const* x, Double_t const* par)
         }
 Double_t ICARUSlongHitFitCache::fitlong(Double_t const* x, Double_t const* par)
     {
-        int npeaks=(int)(par[0]);
-        Double_t fitval=0;
-        for(int jp=0;jp<npeaks;jp++) {
-            for (int js=0; js<floor(par[7*jp+6]); js++) {
-                fitval += (1.+js*par[7*jp+7])*(par[7*jp+1]+par[7*jp+2]*TMath::Exp(-(x[0]-par[7*jp+3])/par[7*jp+4])/(1+TMath::Exp(-(x[0]-par[7*jp+3])/par[7*jp+5])))/(par[7*jp+6]);
-            }
-        }
+        auto const nPeaks = static_cast<std::size_t>(par[0]);
+        Double_t fitval = 0.0;
+        for(std::size_t jp = 0; jp < nPeaks; ++jp) {
+            Double_t const* parj = par + (7 * jp);
+            int const smax = std::floor(parj[6]);
+            if (smax == 0) continue;
+            double const neg_dxj = -(x[0] - parj[3]);
+            fitval += (smax + parj[7] * (smax*(smax-1)/2))
+              * (
+                parj[1]+parj[2]*std::exp(neg_dxj/parj[4])
+                / (1.0 + std::exp(neg_dxj/parj[5]))
+              ) / (parj[6]);
+        } // for
         return fitval;
     }
     
