@@ -12,6 +12,7 @@
 #include <vector>
 #include <fstream>
 #include <set>
+#include <cassert>
 
 //Framework
 #include "fhiclcpp/ParameterSet.h" 
@@ -47,6 +48,7 @@
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 
+#include "larreco/RecoAlg/GausFitCache.h" // hit::GausFitCache
 #include "larreco/HitFinder/HitFinderTools/ICandidateHitFinder.h"
 //#include "icaruscode/HitFinder/PeakFitterICARUS.h"
 
@@ -62,13 +64,67 @@
 #include "TMath.h"
 
 namespace hit {
+  /// Customized function cache for ICARUS hit shape.
+  class ICARUShitFitCache: public hit::GausFitCache {
+      
+          public:
+      /// Constructor (see base class constructor).
+      ICARUShitFitCache(std::string const& new_name="ICARUShitFitCache")
+        : hit::GausFitCache(new_name)
+        {}
+      
+      /// ICARUS hit shape.
+      static Double_t fitf(Double_t const* x, Double_t const* par);
+      
+          protected:
+      
+      /// Creates and returns the function with specified number of peaks.
+      virtual TF1* CreateFunction(size_t nFunc) const
+          {
+               unsigned int const nPeaks = nFunc;
+               std::string const func_name = FunctionName(nFunc);
+               auto* pF = new TF1(func_name.c_str(), fitf, 0.0, 1.0, 1 + nFunc * 5);
+               pF->SetParName(0, "NPeaks");
+               pF->FixParameter(0, (double) nPeaks);
+               return pF;
+          } // CreateFunction()
+      
+  }; // ICARUShitFitCache
+  
+  /// Customized function cache for ICARUS long hit shape.
+  class ICARUSlongHitFitCache: public hit::GausFitCache {
+      
+          public:
+      /// Constructor (see base class constructor).
+      ICARUSlongHitFitCache(std::string const& new_name="ICARUSlongHitFitCache")
+        : hit::GausFitCache(new_name)
+        {}
+      
+      /// ICARUS hit shape.
+      static Double_t fitlong(Double_t const* x, Double_t const* par);
+      
+          protected:
+      
+      /// Creates and returns the function with specified number of peaks.
+      virtual TF1* CreateFunction(size_t nFunc) const
+          {
+               unsigned int const nPeaks = nFunc;
+               std::string const func_name = FunctionName(nFunc);
+               auto* pF = new TF1(func_name.c_str(), fitlong, 0.0, 1.0, 1 + nFunc * 7);
+               pF->SetParName(0, "NPeaks");
+               pF->FixParameter(0, (double) nPeaks);
+               return pF;
+          } // CreateFunction()
+      
+  }; // ICARUSlongHitFitCache
 
+ 
+  
   class ICARUSHitFinder : public art::EDProducer {
 
     public:
 
       explicit ICARUSHitFinder(fhicl::ParameterSet const& pset);
-      virtual ~ICARUSHitFinder();
 
       void produce(art::Event& evt); 
       void beginJob(); 
@@ -78,9 +134,6 @@ namespace hit {
       void expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how );
       void computeBestLocalMean(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how, float& localmean);
       
-      static Double_t fitf(Double_t *x, Double_t *par);
-      static Double_t fitlong(Double_t *x, Double_t *par);
-
       using ICARUSPeakFitParams_t = struct ICARUSPeakFitParams
       {
           float peakCenter;
@@ -167,6 +220,9 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       
       int iWire;
       
+      mutable ICARUShitFitCache fFitCache; ///< Cached functions for multi-peak fits.
+      mutable ICARUSlongHitFitCache fLongFitCache; ///< Cached functions for long hits.
+      
       const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>();
      
   }; // class ICARUSHitFinder
@@ -185,10 +241,6 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
   }
 
   //-------------------------------------------------
-  ICARUSHitFinder::~ICARUSHitFinder()
-  {
-  }
-
   void ICARUSHitFinder::reconfigure(fhicl::ParameterSet const& p)
   {
        fUncompressWithPed  = p.get< bool         >("UncompressWithPed", true);
@@ -584,35 +636,41 @@ size_t iWire=wid.Wire;
               int end=mergedCands[jhit].stopTick;
               jhit++;
 
-              TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
-              for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-              Func.SetParameter(1+5*jf,peakBaseline);
-              Func.SetParameter(2+5*jf,peakAmp);
-              Func.SetParameter(3+5*jf,peakMean);
-              Func.SetParameter(4+5*jf,peakRight);
-              Func.SetParameter(5+5*jf,peakLeft);
-              }
-              TF1 FuncLong("ICARUSfuncLong",fitlong,start,end,1+7*mergedCands.size());
-              for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-                  Func.SetParameter(1+7*jf,peakBaseline);
-                  Func.SetParameter(2+7*jf,peakAmp);
-                  Func.SetParameter(3+7*jf,peakMean);
-                  Func.SetParameter(4+7*jf,peakRight);
-                  Func.SetParameter(5+7*jf,peakLeft);
-                  Func.SetParameter(6+7*jf,peakFitWidth);
-                  Func.SetParameter(7+7*jf,peakSlope);
-              }
-
               float fitCharge=0;
               if(!islong) {
-              try
-              { fitCharge=Func.Integral(start,end);}
-              catch(...)
-              {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
+                // TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
+                TF1& Func = *(fFitCache.Get(mergedCands.size()));
+                assert(&Func);
+                Func.SetParameter(0, mergedCands.size());
+                for(unsigned int jf=0;jf<mergedCands.size();jf++) {
+                  Func.SetParameter(1+5*jf,peakBaseline);
+                  Func.SetParameter(2+5*jf,peakAmp);
+                  Func.SetParameter(3+5*jf,peakMean);
+                  Func.SetParameter(4+5*jf,peakRight);
+                  Func.SetParameter(5+5*jf,peakLeft);
+                }
+                try
+                  { fitCharge=Func.Integral(start,end);}
+                catch(...) {
+                  mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
                   fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
-              }
+                }
               }
               else {
+                  // TF1 FuncLong("ICARUSfuncLong",fitlong,start,end,1+7*mergedCands.size());
+                  TF1& FuncLong = *(fLongFitCache.Get(mergedCands.size()));
+                  assert(&Func);
+                  FuncLong.SetParameter(0, mergedCands.size());
+                  for(unsigned int jf=0;jf<mergedCands.size();jf++) {
+                      FuncLong.SetParameter(1+7*jf,peakBaseline);
+                      FuncLong.SetParameter(2+7*jf,peakAmp);
+                      FuncLong.SetParameter(3+7*jf,peakMean);
+                      FuncLong.SetParameter(4+7*jf,peakRight);
+                      FuncLong.SetParameter(5+7*jf,peakLeft);
+                      FuncLong.SetParameter(6+7*jf,peakFitWidth);
+                      FuncLong.SetParameter(7+7*jf,peakSlope);
+                  }
+
                   try
                   { fitCharge=FuncLong.Integral(start,end);}
                   catch(...)
@@ -993,32 +1051,26 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         //   std::cout << " bin " << idx << " Error " << fHistogram->GetBinError(idx+1) << std::endl;
         
         
-        // Build the string to describe the fit formula
-        std::string equation = "gaus(0)";
-        
-        
         // Now define the complete function to fit
-        // Now define the complete function to fit
-        TF1 Func("ICARUSfunc",fitf,0,roiSize,1+5*hitCandidateVec.size());
-        
+        // TF1 Func("ICARUSfunc",fitf,0,roiSize,1+5*hitCandidateVec.size());
+        TF1& Func = *(fFitCache.Get(hitCandidateVec.size()));
+        assert(&Func);
         
         // ### Setting the parameters for the ICARUS Fit ###
-        int parIdx(0);
-        
-        for(auto& candidateHit : hitCandidateVec)
+        Func.FixParameter(0, hitCandidateVec.size());
+
+        int parIdx{0};
+        for(auto const& candidateHit : hitCandidateVec)
         {
-            double peakMean   = candidateHit.hitCenter - float(startTime);
-            double peakWidth  = candidateHit.hitSigma;
+            double const peakMean   = candidateHit.hitCenter - float(startTime);
+            double const peakWidth  = candidateHit.hitSigma;
             // std::cout << " peakWidth " << peakWidth << std::endl;
             // std::cout << " hitcenter " << candidateHit.hitCenter << " starttime " << startTime <<std::endl;
             
             
-            double amplitude  = candidateHit.hitHeight;
+            double const amplitude  = candidateHit.hitHeight;
             // double meanLowLim = std::max(peakMean - fPeakRange * peakWidth,              0.);
             // double meanHiLim  = std::min(peakMean + fPeakRange * peakWidth, double(roiSize));
-
-            Func.SetParameter(0,hitCandidateVec.size());
-            Func.SetParLimits(0,hitCandidateVec.size(),hitCandidateVec.size());
             
             Func.SetParameter(1+parIdx,0);
             Func.SetParameter(2+parIdx, amplitude);
@@ -1039,7 +1091,7 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         int fitResult(-1);
         // if(hitCandidateVec.size()>2) return;
         try
-        {  fitResult = fHistogram->Fit(&Func,"QRWB","", 0., roiSize);
+        {  fitResult = fHistogram->Fit(&Func,"QNWB","", 0., roiSize);
         }
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
@@ -1146,18 +1198,19 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         
         
         // Now define the complete function to fit
-        TF1 Func("ICARUSfunc",fitlong,0,roiSize,1+7*hitCandidateVec.size());
+        // TF1 Func("ICARUSfunc",fitlong,0,roiSize,1+7*hitCandidateVec.size());
+        TF1& Func = *(fLongFitCache.Get(hitCandidateVec.size()));
+        assert(&Func);
         
         // ### Setting the parameters for the ICARUS Fit ###
-        int parIdx(0);
-        for(auto& candidateHit : hitCandidateVec)
-        {
-            double peakMean   = candidateHit.hitCenter - float(startTime);
-            double peakWidth  = candidateHit.hitSigma;
-            double amplitude  = candidateHit.hitHeight;
+        Func.FixParameter(0,hitCandidateVec.size());
             
-            Func.SetParameter(0,hitCandidateVec.size());
-            Func.SetParLimits(0,hitCandidateVec.size(),hitCandidateVec.size());
+        int parIdx { 0 };
+        for(auto const& candidateHit : hitCandidateVec)
+        {
+            double const peakMean   = candidateHit.hitCenter - float(startTime);
+            double const peakWidth  = candidateHit.hitSigma;
+            double const amplitude  = candidateHit.hitHeight;
             
             Func.SetParameter(1+parIdx,0);
             Func.SetParameter(2+parIdx, amplitude);
@@ -1179,9 +1232,9 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
             parIdx += 7;
             
         }
-        int fitResult(-1);
+        int fitResult { -1 };
         try
-        {  fitResult = fHistogram->Fit(&Func,"QRWB","", 0., roiSize);
+        {  fitResult = fHistogram->Fit(&Func,"QNWB","", 0., roiSize);
         }
         catch(...)
         {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
@@ -1237,15 +1290,15 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
     }
     
 
-Double_t ICARUSHitFinder::fitf(Double_t *x, Double_t *par)
+Double_t ICARUShitFitCache::fitf(Double_t const* x, Double_t const* par)
         {
-            int npeaks=(int)(par[0]);
+            int const npeaks=(int)(par[0]);
             Double_t fitval=0;
             for(int jp=0;jp<npeaks;jp++)
                 fitval += par[5*jp+1]+par[5*jp+2]*TMath::Exp(-(x[0]-par[5*jp+3])/par[5*jp+4])/(1+TMath::Exp(-(x[0]-par[5*jp+3])/par[5*jp+5]));
             return fitval;
         }
-Double_t ICARUSHitFinder::fitlong(Double_t *x, Double_t *par)
+Double_t ICARUSlongHitFitCache::fitlong(Double_t const* x, Double_t const* par)
     {
         int npeaks=(int)(par[0]);
         Double_t fitval=0;
