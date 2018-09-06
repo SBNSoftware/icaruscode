@@ -17,6 +17,7 @@ art_make( LIBRARY_NAME RecoWire
 			larevt_CalibrationDBI_Providers
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
+			larreco_RecoAlg
 			SignalShapingServiceICARUS_service
                         ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}

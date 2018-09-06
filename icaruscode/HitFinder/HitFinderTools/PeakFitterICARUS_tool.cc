@@ -25,8 +25,6 @@ class PeakFitterICARUS : IPeakFitter
 public:
     explicit PeakFitterICARUS(const fhicl::ParameterSet& pset);
     
-    ~PeakFitterICARUS();
-    
     void configure(const fhicl::ParameterSet& pset) override;
     
     void findPeakParameters(const std::vector<float>&,
@@ -45,6 +43,7 @@ private:
     double                   fAmpRange;     ///< set range limit for peak amplitude
     
     mutable TH1F             fHistogram;
+    mutable TF1              fFit;          ///< Cache of fit functions (one so far).
     
     const geo::GeometryCore* fGeometry = lar::providerFrom<geo::Geometry>();
 };
@@ -52,12 +51,9 @@ private:
 //----------------------------------------------------------------------
 // Constructor.
 PeakFitterICARUS::PeakFitterICARUS(const fhicl::ParameterSet& pset)
+  : fFit("ICARUSfunc", fitf, 0.0, 1.0, 5) // 5 parameters, fake range
 {
     configure(pset);
-}
-    
-PeakFitterICARUS::~PeakFitterICARUS()
-{
 }
     
 void PeakFitterICARUS::configure(const fhicl::ParameterSet& pset)
@@ -71,8 +67,6 @@ void PeakFitterICARUS::configure(const fhicl::ParameterSet& pset)
     fHistogram    = TH1F("PeakFitterHitSignal","",500,0.,500.);
     
     fHistogram.Sumw2();
-    
-    std::string function = "Gaus(0)";
     
     return;
 }
@@ -113,14 +107,6 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
      //   std::cout << " bin " << idx << " fHistogram " << fHistogram.GetBinContent(idx+1) << std::endl;
 
     
-    // Build the string to describe the fit formula
-    std::string equation = "gaus(0)";
-    
-
-    // Now define the complete function to fit
-    // Now define the complete function to fit
-    TF1 Func("ICARUSfunc",fitf,roiSize,0,roiSize);
-    
     // ### Setting the parameters for the ICARUS Fit ###
     //int parIdx(0);
     for(auto& candidateHit : hitCandidateVec)
@@ -137,17 +123,17 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
       //  std::cout << " amplitude " << amplitude << std::endl;
       //  std::cout << " peakMean " << peakMean << std::endl;
 
-        Func.SetParameter(0,0);
-        Func.SetParameter(1, amplitude);
-        Func.SetParameter(2, peakMean);
-        Func.SetParameter(3,peakWidth/2);
-        Func.SetParameter(4,peakWidth/2);
+        fFit.SetParameter(0,0);
+        fFit.SetParameter(1, amplitude);
+        fFit.SetParameter(2, peakMean);
+        fFit.SetParameter(3,peakWidth/2);
+        fFit.SetParameter(4,peakWidth/2);
         
-        Func.SetParLimits(0, -5, 5);
-        Func.SetParLimits(1, 0.1 * amplitude,  10. * amplitude);
-        Func.SetParLimits(2, meanLowLim,meanHiLim);
-        Func.SetParLimits(3, std::max(fMinWidth, 0.1 * peakWidth), fMaxWidthMult * peakWidth);
-        Func.SetParLimits(4, std::max(fMinWidth, 0.1 * peakWidth), fMaxWidthMult * peakWidth);
+        fFit.SetParLimits(0, -5, 5);
+        fFit.SetParLimits(1, 0.1 * amplitude,  10. * amplitude);
+        fFit.SetParLimits(2, meanLowLim,meanHiLim);
+        fFit.SetParLimits(3, std::max(fMinWidth, 0.1 * peakWidth), fMaxWidthMult * peakWidth);
+        fFit.SetParLimits(4, std::max(fMinWidth, 0.1 * peakWidth), fMaxWidthMult * peakWidth);
         
   //      std::cout << " peakWidth limits " << std::max(fMinWidth, 0.1 * peakWidth) <<" " <<  fMaxWidthMult * peakWidth << std::endl;
     //      std::cout << " peakMean limits " << meanLowLim <<" " <<  meanHiLim << std::endl;
@@ -156,8 +142,10 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
     
     int fitResult(-1);
     
+    // the range of the fit does not matter since we specify the fitting range
+    // explicitly (we do NOT use option "R")
     try
-    { fitResult = fHistogram.Fit(&Func,"QNRWB","", 0., roiSize);}
+    { fitResult = fHistogram.Fit(&fFit,"QNWB","", 0., roiSize);}
     catch(...)
     {mf::LogWarning("GausHitFinder") << "Fitter failed finding a hit";}
     
@@ -167,9 +155,9 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
         // ### Getting the fitted parameters from the fit ###
         // ##################################################
      NDF        = roiSize-5;
-        chi2PerNDF = (Func.GetChisquare() / NDF);
+        chi2PerNDF = (fFit.GetChisquare() / NDF);
     
- //   std::cout << " chi2 " << Func.GetChisquare() << std::endl;
+ //   std::cout << " chi2 " << fFit.GetChisquare() << std::endl;
   //  std::cout << " ndf " << NDF << std::endl;
 
     //      std::cout << " chi2ndf " << chi2PerNDF<< std::endl;
@@ -178,27 +166,25 @@ void PeakFitterICARUS::findPeakParameters(const std::vector<float>&             
         {
             PeakFitParams_t peakParams;
             
-            peakParams.peakAmplitude      = Func.GetParameter(1);
-            peakParams.peakAmplitudeError = Func.GetParError(1);
-            peakParams.peakCenter         = Func.GetParameter(2) + float(startTime);
-            peakParams.peakCenterError    = Func.GetParError(2);
-    //std::cout << " rising time " << Func.GetParameter(3) << " falling time " <<Func.GetParameter(4) << std::endl;
-            peakParams.peakTauLeft        = Func.GetParameter(3);
-            peakParams.peakTauLeftError   = Func.GetParError(3);
-            peakParams.peakTauRight       = Func.GetParameter(4);
-            peakParams.peakTauRightError  = Func.GetParError(4);
-            peakParams.peakBaseline       = Func.GetParameter(0);
-            peakParams.peakBaselineError  = Func.GetParError(0);
+            peakParams.peakAmplitude      = fFit.GetParameter(1);
+            peakParams.peakAmplitudeError = fFit.GetParError(1);
+            peakParams.peakCenter         = fFit.GetParameter(2) + float(startTime);
+            peakParams.peakCenterError    = fFit.GetParError(2);
+    //std::cout << " rising time " << fFit.GetParameter(3) << " falling time " <<fFit.GetParameter(4) << std::endl;
+            peakParams.peakTauLeft        = fFit.GetParameter(3);
+            peakParams.peakTauLeftError   = fFit.GetParError(3);
+            peakParams.peakTauRight       = fFit.GetParameter(4);
+            peakParams.peakTauRightError  = fFit.GetParError(4);
+            peakParams.peakBaseline       = fFit.GetParameter(0);
+            peakParams.peakBaselineError  = fFit.GetParError(0);
             
             peakParamsVec.emplace_back(peakParams);
             
     }
     
-    //Gaus.Delete();
-    Func.Delete();
-    return;
 }
-    Double_t PeakFitterICARUS::fitf(Double_t *x, Double_t *par)
+
+Double_t PeakFitterICARUS::fitf(Double_t *x, Double_t *par)
     {
         // Double_t arg = 0;
         
