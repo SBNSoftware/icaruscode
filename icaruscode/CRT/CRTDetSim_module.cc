@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 /// \file CRTDetSim_module.cc
 ///
 /// Based on LArIAT TOFSimDigits.cc (Author: Lucas Mendes Santos)
@@ -6,7 +6,55 @@
 /// then modified for ICARUS
 ///
 /// Author: Chris.Hilgenberg@colostate.edu
-////////////////////////////////////////////////////////////////////////////////
+///
+/// Extracts position, time, and energy deposited, along with
+///   trackID associated with deposit from AuxDetSimChannel objects
+///   produced by G4 stage. The trackID is used for truth matching.
+/// Simulated CRT data products are intended to match the known
+///   front-end electronics behavior and basic DAQ format anticipated.
+///   Each hit strip is assigned a channel and associated with 
+//      1) T0 - hit time relative to t0 (beam signal)
+//      2) T1 - hit time relative to PPS from GPS
+//      3) ADC from hit
+///   Effects included are
+///     * time 
+///         - light propegation delay in scintillator and WLS fiber
+///         - smearing in the arrival time at the SiPM due to scattering
+///         - amplitude dependant smearing due to the discriminator
+///     * position
+///         - AuxDetSimChannel provides true entry and exit point in scintillator strip
+///         - take arithmetic mean as true "hit" position
+///         - "hit" position defines transverse distance (hit to fiber) and
+///           longitudinal distance (length of WLS fiber between fiber entry and SiPM)
+///     * energy deposited
+///         - take true energy deposited in scintillator strip
+///         - convert true energy to photons yielded (taken from measurements on
+///               normally incident MIP muons
+///         - using known attenuation lengths for bulk scinillator and WLS fiber,
+///               apply attenuation correction using transverse and longitudinal
+///               propegation distances respectively and a simple exponential model
+///         - for the attenuated light arriving at the SiPM, correct for counting
+///               statistics sampling from Poisson
+///         - convert N photons seen by SiPM into ADCs using known pedestal and 
+///               gain values for each channel (assumed all the same for now) 
+///               ADC_i = gain_i * nphotons + ped_i
+///         - smear ADC using guasian with ADC_i as mean and 
+///               width = width_pedestal+sqrt(nphotons)
+///     * front-end electonics deadtime
+///         - sort vector of data products by time (T0)
+///         - for C and D type modules, intermodule coincidence is applied
+///            - one strip from each of 2 layers must be above threshold
+///         - for M modules, only one channel is required to be above threshold
+///         - the earliest channel that was part of the trigger provides the T0
+///            defining the readout window (set in FHiCL)
+///         - for each channel in the readout window with an entry above threshold,
+///            the data (charge and time) is added the "track and hold list"
+///         - channels in track and hold do not accept new data during the readout window
+///         - after the readout window has passed, no channels can receive data until the 
+///           (FHiCL congifurable) deadtime has passed. Channels are then reset and
+///           the front-end board is again able to trigger
+///
+/////////////////////////////////////////////////////////////////////////////////////////
 
 //art includes
 #include "art/Framework/Core/EDProducer.h"
@@ -54,6 +102,7 @@
 namespace icarus {
 namespace crt {
 
+//getting parameter values from FHiCL
 void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fVerbose = p.get<bool>("Verbose");
   fG4ModuleLabel = p.get<std::string>("G4ModuleLabel");
@@ -111,7 +160,7 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
   if (volName.find("CERN")  != std::string::npos) return 'c';
   if (volName.find("DC")    != std::string::npos) return 'd';
 
-  mf::LogInfo("CRT") << "AuxDetType not found!" << '\n';
+  mf::LogError("CRT") << "AuxDetType not found!" << '\n';
   return 'e';
 }
 
@@ -143,6 +192,7 @@ uint32_t GetAuxDetRegionNum(std::string reg)
     if(reg == "Front")      return 44;
     if(reg == "Back")       return 42;
     if(reg == "Bottom")     return 58;
+    mf::LogError("CRT") << "region not found!" << '\n';
     return UINT32_MAX;
 }
 
@@ -238,16 +288,15 @@ void CRTDetSim::produce(art::Event & e) {
 
     //check stripID is consistent with number of sensitive volumes
     if( adGeo.NSensitiveVolume() < adsid){
-        std::cout << "adsID out of bounds! Skipping..." << "\n"
+        mf::LogError("CRT") << "adsID out of bounds! Skipping..." << "\n"
                   << "   " << adGeo.Name()  << " / modID "   << adid
-                  << " / stripID " << adsid 
-        << std::endl;
+                  << " / stripID " << adsid << '\n';
         continue;
     }
 
     const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
     char auxDetType = GetAuxDetType(adGeo); //CRT module type (c, d, or m)
-    if (auxDetType=='e') mf::LogInfo("CRT") << "COULD NOT GET AD TYPE!" << '\n';
+    if (auxDetType=='e') mf::LogError("CRT") << "COULD NOT GET AD TYPE!" << '\n';
     std::string region = GetAuxDetRegion(adGeo); //CRT region
 
     uint32_t layid = UINT32_MAX; //set to 0 or 1 if layerid determined
@@ -301,7 +350,7 @@ void CRTDetSim::produce(art::Event & e) {
       }
     }
 
-    if(layid==UINT32_MAX) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n'
+    if(layid==UINT32_MAX) mf::LogError("CRT") << "layid NOT SET!!!" << '\n'
                                << "   ADType: " << auxDetType << '\n'
                                << "   ADRegion: " << region << '\n';
 
@@ -312,7 +361,7 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType=='d') nsim_d++;
       if (auxDetType=='m') nsim_m++;
 
-      uint32_t trkid = ide.trackID;
+      int trkid = ide.trackID;
 
       // What is the distance from the hit (centroid of the entry
       // and exit points) to the readout end?
@@ -328,7 +377,7 @@ void CRTDetSim::produce(art::Event & e) {
       if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 || 
            abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
            abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001) 
-         mf::LogInfo("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
+         mf::LogWarning("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
                             << "  AD: " << adid << " , ADS: " << adsid << '\n'
                             << "  Local position (x,y,z): ( " << svHitPosLocal[0]
                             << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )" << '\n';
@@ -415,7 +464,7 @@ void CRTDetSim::produce(art::Event & e) {
       double npeExp1 = npeExpected * abs1;// / (abs0 + abs1);
       double npeExp0Dual = npeExpected2 * abs0;// / (abs0 + abs1);
 
-      if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogInfo("CRT") << "NEGATIVE PE!!!!!" << '\n';
+      if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogError("CRT") << "NEGATIVE PE!!!!!" << '\n';
 
       // Observed PE (Poisson-fluctuated)
       long npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
@@ -425,11 +474,11 @@ void CRTDetSim::produce(art::Event & e) {
       // Time relative to trigger, accounting for propagation delay and 'walk'
       // for the fixed-threshold discriminator
       double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-      uint32_t t0 = \
+      int t0 = \
         GetChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
-      uint32_t t1 = \
+      int t1 = \
         GetChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
-      uint32_t t0Dual = \
+      int t0Dual = \
         GetChannelTriggerTicks(engine, trigClock, tTrue, npe0Dual, distToReadout2);
 
       // Time relative to PPS: Random for now! (FIXME)
@@ -444,7 +493,7 @@ void CRTDetSim::produce(art::Event & e) {
       short q0Dual = \
         CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
-      if (q0<0||q1<0||q0Dual<0) mf::LogInfo("CRT") << "NEGATIVE ADC!!!!!" << '\n';
+      if (q0<0||q1<0||q0Dual<0) mf::LogError("CRT") << "NEGATIVE ADC!!!!!" << '\n';
 
       // Adjacent channels on a strip are numbered sequentially.
       //
@@ -471,7 +520,7 @@ void CRTDetSim::produce(art::Event & e) {
 
       }
 
-      if (mac5==UINT32_MAX) mf::LogInfo("CRT") << "mac addrs not set!" << '\n';
+      if (mac5==UINT32_MAX) mf::LogError("CRT") << "mac addrs not set!" << '\n';
 
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
       if (auxDetType=='c' && q0 > fQThresholdC && q1 > fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) {
@@ -532,7 +581,7 @@ void CRTDetSim::produce(art::Event & e) {
          ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
            (auxDetType=='d' && q0>fQThresholdD ) ||
            (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
-        mf::LogInfo("CRT")
+        LOG_DEBUG("CRT")
         << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << " with " << adGeo.NSensitiveVolume() << " AuxDetSensitive volumes" << "\n"
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
@@ -609,7 +658,7 @@ void CRTDetSim::produce(art::Event & e) {
           ttmp = trigClock.Time((double)chanTmpData->T0()); //in us
 
           //check that time sorting works
-          if ( ttmp < ttrig ) mf::LogInfo("CRT") << "SORTING OF DATA PRODUCTS FAILED!!!"<< "\n";
+          if ( ttmp < ttrig ) mf::LogError("CRT") << "SORTING OF DATA PRODUCTS FAILED!!!"<< "\n";
 
           //for C and D modules only and coin. enabled, if assumed trigger channel has no coincidence
           // set trigger channel to tmp channel and try again
@@ -728,7 +777,7 @@ void CRTDetSim::produce(art::Event & e) {
   } // for taggers
 
   if (fVerbose) { 
-    mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
+    LOG_DEBUG("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
      << "CERN sim hits: " << nsim_c << '\n'
      << "DC sim hits: " << nsim_d << '\n'
      << "MINOS sim hits: " << nsim_m << '\n'
@@ -758,10 +807,10 @@ void CRTDetSim::produce(art::Event & e) {
      << "events in MINOS system: " << neve_m << '\n';
      
     std::map<uint32_t,uint32_t>::iterator it = regCounts.begin();
-    mf::LogInfo("CRT") << '\n' << "FEB events per CRT region: " << '\n';
+    LOG_DEBUG("CRT") << '\n' << "FEB events per CRT region: " << '\n';
      
     while ( it != regCounts.end() ) {
-        mf::LogInfo("CRT") << "reg: " << (*it).first << " , events: " << (*it).second << '\n';
+        LOG_DEBUG("CRT") << "reg: " << (*it).first << " , events: " << (*it).second << '\n';
         it++;
     }
   } //if verbose
