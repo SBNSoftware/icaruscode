@@ -10,6 +10,7 @@ art_make( BASENAME_ONLY
         CRTGeometryHelper_service.cc
         CRTDetSim_module.cc
         CRTSimHitProducer_module.cc
+        CRTAnalysis_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     LIB_LIBRARIES
@@ -102,6 +103,33 @@ simple_plugin( CRTSimHitProducer module
         ${CLHEP}
         ${CETLIB}
 )
+
+simple_plugin( CRTAnalysis module
+                        icaruscode_CRTData
+                        icaruscode_CRT
+                        icaruscode_CRTProducts
+                        larcore_Geometry_Geometry_service
+                        larcorealg_Geometry
+                        nusimdata_SimulationBase
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                        ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+                        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                        art_Persistency_Common
+                        art_Persistency_Provenance
+                        art_Utilities
+                        canvas
+                        ${MF_MESSAGELOGGER}
+                        ${MF_UTILITIES}
+                        cetlib cetlib_except
+                        ${ROOT_BASIC_LIB_LIST}
+                        ${ROOT_GEOM}
+                        ${ROOT_XMLIO}
+                        ${ROOT_GDML}              
+
+)
+
 
 install_headers()
 install_fhicl()
