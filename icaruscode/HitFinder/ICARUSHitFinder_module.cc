@@ -659,7 +659,7 @@ size_t iWire=wid.Wire;
               else {
                   // TF1 FuncLong("ICARUSfuncLong",fitlong,start,end,1+7*mergedCands.size());
                   TF1& FuncLong = *(fLongFitCache.Get(mergedCands.size()));
-                  assert(&Func);
+                  assert(&FuncLong);
                   FuncLong.SetParameter(0, mergedCands.size());
                   for(unsigned int jf=0;jf<mergedCands.size();jf++) {
                       FuncLong.SetParameter(1+7*jf,peakBaseline);
