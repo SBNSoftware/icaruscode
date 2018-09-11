@@ -47,6 +47,9 @@ icarus_reco_producers:
   ### trajcluster
   trajclusterGaus:                @local::icarus_trajcluster
   trajclusterICARUS:              @local::icarus_trajcluster
+   
+  ### Cluster3D
+  cluster3d:                      @local::icarus_cluster3d
 
   ### pandora
   pandoraGaus:                    @local::icarus_pandora
@@ -84,16 +87,24 @@ icarus_reco_filters:
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_reco_signalprocessing:     [ rawdigitfilter,
-                                    recowire,
+icarus_reco_filter:               [ rawdigitfilter ]
+
+icarus_reco_signalprocessinggaus: [ recowire,
                                     gaushitall,
-                                    gaushit,
-                                    recowireraw,
+                                    gaushit ]
+
+icarus_reco_signalprocessingraw:  [ recowireraw,
                                     icarushit]
+
+icarus_reco_signalprocessing:     [ @sequence::icarus_reco_filter,
+                                    @sequence::icarus_reco_signalprocessinggaus,
+                                    @sequence::icarus_reco_signalprocessingraw ]
 
 icarus_reco_trajclusterGaus:      [ trajclusterGaus]
 
 icarus_reco_trajclusterICARUS:    [ trajclusterICARUS]
+
+icarus_reco_cluster3d:            [ cluster3d ]
 
 icarus_reco_pmAlgTrackerGaus:     [ pmAlgTrackerGaus,
                                     pmAlgKalmanTrackGaus]
