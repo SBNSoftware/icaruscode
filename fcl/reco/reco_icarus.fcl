@@ -230,17 +230,17 @@ icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                    
 icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                 "icarushit"
 icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                    false
 
-icarus_reco_producers.ClusterAlg:                                                          @local::standard_cluster3ddbscanalg
-icarus_reco_producers.EnableMonitoring:                                                    true
-icarus_reco_producers.ClusterAlg.MinPairPts:                                               1
-icarus_reco_producers.ClusterAlg.kdTree.PairSigmaPeakTime:                                 3.0
-icarus_reco_producers.ClusterAlg.kdTree.RefLeafBestDist:                                   0.75
-icarus_reco_producers.ClusterMergeAlg.MinEigenToProcess:                                   50.
-icarus_reco_producers.ClusterPathAlg:                                                      @local::standard_convexhullPathAlg
-icarus_reco_producers.ClusterPathAlg.MinTinyClusterSize:                                   20 #30 #40 #200000
-icarus_reco_producers.ClusterPathAlg.MinEigen0To1Ratio:                                    12.
-icarus_reco_producers.ClusterPathAlg.ClusterAlg.MinPairPts:                                1
-icarus_reco_producers.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:                  3.0
-icarus_reco_producers.ClusterPathAlg.ClusterAlg.kdTree.RefLeafBestDist:                    0.75
+icarus_reco_producers.cluster3d.ClusterAlg:                                                @local::standard_cluster3ddbscanalg
+icarus_reco_producers.cluster3d.EnableMonitoring:                                          true
+icarus_reco_producers.cluster3d.ClusterAlg.MinPairPts:                                     1
+icarus_reco_producers.cluster3d.ClusterAlg.kdTree.PairSigmaPeakTime:                       3.0
+icarus_reco_producers.cluster3d.ClusterAlg.kdTree.RefLeafBestDist:                         0.75
+icarus_reco_producers.cluster3d.ClusterMergeAlg.MinEigenToProcess:                         50.
+icarus_reco_producers.cluster3d.ClusterPathAlg:                                            @local::standard_convexhullPathAlg
+icarus_reco_producers.cluster3d.ClusterPathAlg.MinTinyClusterSize:                         20 #30 #40 #200000
+icarus_reco_producers.cluster3d.ClusterPathAlg.MinEigen0To1Ratio:                          12.
+icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
+icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
+icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.kdTree.RefLeafBestDist:          0.75
 
 END_PROLOG
