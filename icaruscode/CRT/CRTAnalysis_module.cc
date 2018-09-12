@@ -3,7 +3,7 @@
  * @brief  Access CRT data and reco products and compare to MCTruth info 
  * @author Chris Hilgenberg (Chris.Hilgenberg@rams.colostate.edu)
  * 
- * The last revision of this code was done in August 2018 with LArSoft v06_85_00.
+ * The last revision of this code was done in August 2018 with LArSoft v07_01_00.
  */
 
 // LArSoft includes
@@ -57,7 +57,9 @@
 #include <cmath>
 #include <iostream>
 #include <utility>
+#include <array>
 
+// CRT data products
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.h"
@@ -181,15 +183,16 @@ namespace crt {
     vector<float> fMaxMomenta;
 
     // Pointers to the histograms we'll create. 
-    TH1D* fPDGCodeHist;     ///< PDG code of all particles
-    TH1D* fMomentumHist;    ///< momentum [GeV] of all selected particles
-    TH1D* fTrackLengthHist; ///< true length [cm] of all selected particles
+    //TH1D* fPDGCodeHist;     ///< PDG code of all particles
+    //TH1D* fMomentumHist;    ///< momentum [GeV] of all selected particles
+    //TH1D* fTrackLengthHist; ///< true length [cm] of all selected particles
 
     // The n-tuples we'll create.
     TTree* fSimulationNtuple;     ///< tuple with simulated data
     TTree* fDetSimNtuple;
     TTree* fSimHitNtuple;
-    TTree* fTruthMatchNtuple; 
+    TTree* fCRTTruthNtuple; 
+    TTree* fCRTTruthMatchNtuple;
 
     // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
@@ -199,79 +202,95 @@ namespace crt {
     int fSubRun;       ///< number of the sub-run being processed
     /// @}
 
-    static const int kMaxAD = 30;
+    static const int kMaxAD = 100; //for memory allocation 
 
     /// @name The variables that will go into the simulation n-tuple.
     /// @{
-    unsigned int fSimHits;
+    unsigned int fSimHits; ///< number of trajectory points for each MCParticle
+    float fTrackLength; ///< total track length for each MCParticle
     int fSimPDG;       ///< PDG ID of the particle being processed
-    int fSimProcess;
-    int fSimEndProcess;
+    int fSimProcess;   ///< process that created the particle (e.g. brehmstralung)
+    int fSimEndProcess; ///< process the killed the particle (e.g. annihilation)
     int fSimTrackID;   ///< GEANT ID of the particle being processed
-    int fNAuxDet;   ///< Number of strips hit
+    int fNAuxDet;   ///< Number of scintillator strips hit
     vector<uint32_t> fAuxDetID;  ///< Global CRT module ID
     vector<uint32_t> fAuxDetSensitiveID; ///< Strip ID in module
-    vector<float> fADEDep; ///< Energy deposited in CRT strip
-    vector<float> fADdEdx; 
-    vector<float> fADTrackLength; ///< Track length in strip
-    vector<uint32_t> fAuxDetReg; ///< CRT region
-    vector<uint32_t> fADMac;
+    vector<float> fADEDep; ///< Energy deposited in CRT strip (GeV)
+    vector<float> fADdEdx; ///< average dEdx for particle traversing CRT strip
+    vector<float> fADTrackLength; ///< Track length in CRT strip (cm)
+    vector<uint32_t> fAuxDetReg; ///< CRT region code
+    vector<uint32_t> fADMac; ///< Mac5 address of the CRT module
 
-    double fADEnterXYZT[kMaxAD][4];
-    double fADExitXYZT[kMaxAD][4];
-    //vector<std::array<double,4>> fADEnterXYZT;
-    //vector<std::array<double,4>> fADExitXYZT;
+    double fADEnterXYZT[kMaxAD][4]; ///< 4-position of entry into CRT strip
+    double fADExitXYZT[kMaxAD][4]; ///< 4-position of exit from CRT strip
 
     int fParentPDG;
     double fParentE;
 
     // Arrays for 4-vectors: (x,y,z,t) and (Px,Py,Pz,E).
-    double fStartXYZT[4];//[kMaxSeg][4]; ///< (x,y,z,t) of the true start of the particle
-    double fEndXYZT[4];   ///< (x,y,z,t) of the true end of the particle
-    double fStartPE[4];//[kMaxSeg][4];   ///< (Px,Py,Pz,E) at the true start of the particle
-    double fEndPE[4];     ///< (Px,Py,Pz,E) at the true end of the particle    
+    double fStartXYZT[4];///< (x,y,z,t) of the true start of the particle
+    double fEndXYZT[4];  ///< (x,y,z,t) of the true end of the particle
+    double fStartPE[4];  ///< (Px,Py,Pz,E) at the true start of the particle
+    double fEndPE[4];    ///< (Px,Py,Pz,E) at the true end of the particle    
 
-    int fSimNChan;
+    int fSimNChan; ///< number of CRT strips(channels) with energy deposited
 
-    int fProgenitor;
-    int fMother;
-    int fNDaught;    
+    int fProgenitor; ///< G4 track ID of the primary particle that ultimately led to this one
+    int fMother; ///< G4 track ID of mother that directly produced this MCParticle
+    int fNDaught; ///< number of daughters belonging to this MCParticle
 
     //CRT data product vars
-    vector<uint32_t> fChan;
-    vector<uint32_t> fT0;
-    vector<uint32_t> fT1;
-    vector<uint32_t> fADC;
-    vector<uint32_t> fTrackID;
-    uint32_t fNChan;
-    uint32_t fEntry;
-    uint32_t fTTrig;
-    uint32_t fChanTrig;
-    uint32_t fFEBReg;
-    uint32_t fMac5;
-    uint32_t fTriggerPair[2];
-    uint32_t fMacPair[2];
+    vector<uint32_t> fChan; ///< front-end board channel (0-31 or 0-63)
+    vector<int> fT0; ///< signal time w.r.t. global event time
+    vector<int> fT1; ///< signal time w.r.t. PPS
+    vector<uint32_t> fADC; ///< signal amplitude
+    vector<int> fTrackID; ///< track ID of particle that produced the signal
+    uint32_t fNChan; ///< number of channels above threshold for this front-end board readout
+    uint32_t fEntry; ///< front-end board entry number (reset for each event)
+    int fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
+    uint32_t fChanTrig; ///< channel which provided the trigger for this front-end board
+    uint32_t fFEBReg; ///< CRT region for this front-end board
+    uint32_t fMac5; ///< Mac5 address for this front-end board
+    uint32_t fTriggerPair[2]; ///< two channels which provided the coincidence (useful for C or D modules)
+    uint32_t fMacPair[2]; ///< two front-end boards with pairwise coincidence ( useful for M modules)
       
     //CRT hit product vars
-    vector<float> fXHit;
-    vector<float> fYHit;
-    vector<float> fZHit;
-    vector<float> fXErrHit;
-    vector<float> fYErrHit;
-    vector<float> fZErrHit;
-    vector<float> fT0Hit;
-    vector<float> fT1Hit;
-    vector<uint32_t> fHitReg;
-    uint32_t fNHit;
+    vector<float> fXHit; ///< reconstructed X position of CRT hit (cm)
+    vector<float> fYHit; ///< reconstructed Y position of CRT hit (cm)
+    vector<float> fZHit; ///< reconstructed Z position of CRT hit (cm)
+    vector<float> fXErrHit; ///< stat error of CRT hit reco X (cm)
+    vector<float> fYErrHit; ///< stat error of CRT hit reco Y (cm)
+    vector<float> fZErrHit; ///< stat error of CRT hit reco Z (cm)
+    vector<float> fT0Hit; ///< hit time w.r.t. global event time
+    vector<float> fT1Hit; ///< hit time w.r.t. PPS
+    vector<uint32_t> fHitReg; ///< region code of CRT hit
+    uint32_t fNHit; ///< number of CRT hits for this event
 
     //truth matching stats for CRTDetSim
     uint32_t fNmuTruth;    //true N primary muons entering CRT sensive volumes
-    TH1F* fStripMultHistC; //true N strips hit / C-module / muon track 
-    TH1F* fStripMultHistM; //true N strips hit / M-module / muon track
-    TH1F* fStripMultHistD; //true N strips hit / D-module / muon track
-    TH1F* fModMultHistC;   //true N C-modules hit / muon track
-    TH1F* fModMultHistM;   //true N M-modules hit / muon track
-    TH1F* fModMultHistD;   //true N D-modules hit / muon track
+    uint32_t fNmuTruthCRTTrig;
+    uint32_t fNmuTruthCRTTrigVec;
+    uint32_t fNmuTruthCRTTrigC;
+    uint32_t fNmuTruthCRTTrigM;
+    uint32_t fNmuTruthCRTTrigD;
+    uint32_t fNmuTruthMissCRT;
+    uint32_t fNmuTruthCRTTag;
+    uint32_t fNmuTruthCRTTagC;
+    uint32_t fNmuTruthCRTTagD;
+    uint32_t fNmuTruthCRTTagM;
+    uint32_t fNmuTruthCRTTagVec;
+    TH1F* fStripMultHistC; ///< true N strips hit / C-module / muon track 
+    TH1F* fStripMultHistM; ///< true N strips hit / M-module / muon track
+    TH1F* fStripMultHistD; ///< true N strips hit / D-module / muon track
+    TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
+    TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
+    TH1F* fModMultHistD;   ///< true N D-modules hit / muon track
+
+    uint32_t fNmuDetCRTTrig; 
+    uint32_t fNmuDetCRTTrigVec;
+    uint32_t fNmuDetCRTTrigC;
+    uint32_t fNmuDetCRTTrigM;
+    uint32_t fNmuDetCRTTrigD;
 
     uint32_t fNmuTagC;     //N muon tracks producing >0 CRT triggers in C-subsystem
     uint32_t fNmuTagM;     //N muon tracks producing >0 CRT triggers in M-subsystem
@@ -288,9 +307,6 @@ namespace crt {
     float fEffM;        //tagging efficiency of M-subsystem
     float fEffD;        //tagging efficiency of D-subsystem
     float fEffTot;      //tagging efficiency of D-subsystem
-
-
-    //TH1F* fFEBMultHistC;
 
     //truth matching histos for CRTHits
     /*TH1F* fXResHistC;
@@ -348,16 +364,18 @@ namespace crt {
   //-----------------------------------------------------------------------
   void CRTAnalysis::beginJob()
   {
-    LOG_DEBUG("CRT") << " starting analysis job" << '\n';
+    std::cout << " starting analysis job" << std::endl;
 
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us. 
     art::ServiceHandle<art::TFileService> tfs;
 
     // Define our n-tuples
-    fSimulationNtuple = tfs->make<TTree>("SimTree",        "MyCRTSimulation");
-    fDetSimNtuple     = tfs->make<TTree>("DetTree",        "MyCRTDetSim");
-    fSimHitNtuple     = tfs->make<TTree>("HitTree",        "MyCRTSimHit");
+    fSimulationNtuple    = tfs->make<TTree>("SimTree",          "MyCRTSimulation");
+    fDetSimNtuple        = tfs->make<TTree>("DetTree",          "MyCRTDetSim");
+    fSimHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTSimHit");
+    fCRTTruthNtuple      = tfs->make<TTree>("CRTTruthTree",     "CRT Truth values for muons");
+    fCRTTruthMatchNtuple = tfs->make<TTree>("CRTTruthMatchTree","same as CRTTruth but drom DetSim stage");
 
     // Construct truth matching histograms
     fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
@@ -398,48 +416,72 @@ namespace crt {
     fSimulationNtuple->Branch("TrackID",           &fSimTrackID,        "TrackID/I");
     fSimulationNtuple->Branch("PDG",               &fSimPDG,            "PDG/I");
     fSimulationNtuple->Branch("NHits",             &fSimHits,           "NHits/I");
+    fSimulationNtuple->Branch("TrackLength",       &fTrackLength,       "TrackLenth/I");
     fSimulationNtuple->Branch("Process",           &fSimProcess,        "Process/I");
     fSimulationNtuple->Branch("EndProcess",        &fSimEndProcess,     "EndProcess/I");
     fSimulationNtuple->Branch("ParentPDG",         &fParentPDG,         "ParentPDG/I");
     fSimulationNtuple->Branch("ParentE",           &fParentE,           "ParentE/D");
     fSimulationNtuple->Branch("Progenitor",        &fProgenitor,        "Progenitor/I");
     // CRT hits
-    fSimulationNtuple->Branch("AuxDetSensitiveID", &fAuxDetSensitiveID);//,  "AuxDetSensitiveID[30]/I");
-    fSimulationNtuple->Branch("AuxDetID",          &fAuxDetID);//,           "AuxDetID[30]/I");
-    fSimulationNtuple->Branch("AuxDetEDep",        &fADEDep);//,             "AuxDetEDep[30]/D");
-    fSimulationNtuple->Branch("AuxDetdEdx",        &fADdEdx);//,             "ADdEdx[30]/D");
-    fSimulationNtuple->Branch("AuxDetTrackLength", &fADTrackLength);//,      "AuxDetTrackLength[30]/D");
-    fSimulationNtuple->Branch("AuxDetEnterXYZT",   fADEnterXYZT,        "AuxDetEnterXYZT[30][4]/D");
-    fSimulationNtuple->Branch("AuxDetExitXYZT",    fADExitXYZT,         "AuxDetExitXYZT[30][4]/D");
-    fSimulationNtuple->Branch("AuxDetRegion",      &fAuxDetReg);//,          "AuxDetRegion[30]/I");
-    fSimulationNtuple->Branch("Mac5",      &fADMac);
+    fSimulationNtuple->Branch("AuxDetSensitiveID", &fAuxDetSensitiveID);
+    fSimulationNtuple->Branch("AuxDetID",          &fAuxDetID);
+    fSimulationNtuple->Branch("AuxDetEDep",        &fADEDep);
+    fSimulationNtuple->Branch("AuxDetdEdx",        &fADdEdx);
+    fSimulationNtuple->Branch("AuxDetTrackLength", &fADTrackLength);
+    fSimulationNtuple->Branch("AuxDetEnterXYZT",   fADEnterXYZT,       "AuxDetEnterXYZT[50][4]/D");
+    fSimulationNtuple->Branch("AuxDetExitXYZT",    fADExitXYZT,         "AuxDetExitXYZT[50][4]/D");
+    fSimulationNtuple->Branch("AuxDetRegion",      &fAuxDetReg);
+    fSimulationNtuple->Branch("Mac5",              &fADMac);
 
-    fSimulationNtuple->Branch("StartXYZT",   fStartXYZT,       "StartXYZT[4]/D");
-    fSimulationNtuple->Branch("EndXYZT",     fEndXYZT,         "EndXYZT[4]/D");
-    fSimulationNtuple->Branch("StartPE",     fStartPE,         "StartPE[4]/D");
-    fSimulationNtuple->Branch("EndPE",       fEndPE,           "EndPE[4]/D");
-    fSimulationNtuple->Branch("NChan",       &fSimNChan, "NChan/I");
+    fSimulationNtuple->Branch("StartXYZT",         fStartXYZT,          "StartXYZT[4]/D");
+    fSimulationNtuple->Branch("EndXYZT",           fEndXYZT,            "EndXYZT[4]/D");
+    fSimulationNtuple->Branch("StartPE",           fStartPE,            "StartPE[4]/D");
+    fSimulationNtuple->Branch("EndPE",             fEndPE,              "EndPE[4]/D");
+    fSimulationNtuple->Branch("NChan",             &fSimNChan,          "NChan/I");
     fSimulationNtuple->Branch("Mother",            &fMother,            "Mother/I");
     fSimulationNtuple->Branch("NDaught",           &fNDaught,           "NDaught/I");
 
+    fCRTTruthNtuple->Branch("Event",             &fEvent,             "Event/I");
+    fCRTTruthNtuple->Branch("NMu",               &fNmuTruth,          "NMu/I");
+    fCRTTruthNtuple->Branch("NMuCRTTag",         &fNmuTruthCRTTag,    "NMuCRT/I");
+    fCRTTruthNtuple->Branch("NMuCRTTagVec",      &fNmuTruthCRTTagVec, "NMuCRTVec/I");
+    fCRTTruthNtuple->Branch("NMuCRTMiss",        &fNmuTruthMissCRT,   "NMuCRTMiss/I");
+    fCRTTruthNtuple->Branch("NMuCRTTagC",        &fNmuTruthCRTTagC,   "NMuCRTTagC/I");
+    fCRTTruthNtuple->Branch("NMuCRTTagM",        &fNmuTruthCRTTagM,   "NMuCRTTagM/I");
+    fCRTTruthNtuple->Branch("NMuCRTTagD",        &fNmuTruthCRTTagD,   "NMuCRTTagD/I");
+    fCRTTruthNtuple->Branch("NMuCRTTrig",        &fNmuTruthCRTTrig,   "NMuCRTTrig/I");
+    fCRTTruthNtuple->Branch("NMuCRTTrigVec",     &fNmuTruthCRTTrigVec,"NMuCRTTrigVec/I");
+    fCRTTruthNtuple->Branch("NMuCRTTrigC",       &fNmuTruthCRTTrigC,  "NMuCRTTrigC/I");
+    fCRTTruthNtuple->Branch("NMuCRTTrigM",       &fNmuTruthCRTTrigM,  "NMuCRTTrigM/I");
+    fCRTTruthNtuple->Branch("NMuCRTTrigD",       &fNmuTruthCRTTrigD,  "NMuCRTTrigD/I");
+
+    fCRTTruthMatchNtuple->Branch("Event",             &fEvent,             "Event/I");
+    fCRTTruthMatchNtuple->Branch("NMuCRTTrig",        &fNmuDetCRTTrig,   "NMuCRTTrig/I");
+    fCRTTruthMatchNtuple->Branch("NMuCRTTrigVec",     &fNmuDetCRTTrigVec,"NMuCRTTrigVec/I");
+    fCRTTruthMatchNtuple->Branch("NMuCRTTrigC",       &fNmuDetCRTTrigC,  "NMuCRTTrigC/I");
+    fCRTTruthMatchNtuple->Branch("NMuCRTTrigM",       &fNmuDetCRTTrigM,  "NMuCRTTrigM/I");
+    fCRTTruthMatchNtuple->Branch("NMuCRTTrigD",       &fNmuDetCRTTrigD,  "NMuCRTTrigD/I");
+
     // Define the branches of our DetSim n-tuple 
-    fDetSimNtuple->Branch("NChan",       &fNChan,       "NChan/I");
-    fDetSimNtuple->Branch("Event",       &fEvent,       "Event/I");
-    fDetSimNtuple->Branch("Channel",     &fChan);
-    fDetSimNtuple->Branch("T0",          &fT0);
-    fDetSimNtuple->Branch("T1",          &fT1);
-    fDetSimNtuple->Branch("ADC",         &fADC);
-    fDetSimNtuple->Branch("TrackID",     &fTrackID);
-    fDetSimNtuple->Branch("Entry",       &fEntry,       "Entry/I");
-    fDetSimNtuple->Branch("Mac5",        &fMac5,        "Mac5/I");
-    fDetSimNtuple->Branch("Region",      &fFEBReg,      "Region/I");
-    fDetSimNtuple->Branch("TriggerPair", fTriggerPair,  "TriggerPair[2]/I");
-    fDetSimNtuple->Branch("MacPair", fMacPair,  "MacPair[2]/I");
-    fDetSimNtuple->Branch("ChanTrig",    &fChanTrig,    "ChanTrig/I");
-    fDetSimNtuple->Branch("TTrig",       &fTTrig,       "TTrig/I");
+    fDetSimNtuple->Branch("Event",             &fEvent,             "Event/I");
+    fDetSimNtuple->Branch("NChan",                 &fNChan,             "NChan/I");
+    fDetSimNtuple->Branch("Event",                 &fEvent,             "Event/I");
+    fDetSimNtuple->Branch("Channel",               &fChan);
+    fDetSimNtuple->Branch("T0",                    &fT0);
+    fDetSimNtuple->Branch("T1",                    &fT1);
+    fDetSimNtuple->Branch("ADC",                   &fADC);
+    fDetSimNtuple->Branch("TrackID",               &fTrackID);
+    fDetSimNtuple->Branch("Entry",                 &fEntry,             "Entry/I");
+    fDetSimNtuple->Branch("Mac5",                  &fMac5,              "Mac5/I");
+    fDetSimNtuple->Branch("Region",                &fFEBReg,            "Region/I");
+    fDetSimNtuple->Branch("TriggerPair",           fTriggerPair,        "TriggerPair[2]/I");
+    fDetSimNtuple->Branch("MacPair",               fMacPair,            "MacPair[2]/I");
+    fDetSimNtuple->Branch("ChanTrig",              &fChanTrig,          "ChanTrig/I");
+    fDetSimNtuple->Branch("TTrig",                 &fTTrig,             "TTrig/I");
 
 
     // Define the branches of our SimHit n-tuple
+    fSimHitNtuple->Branch("Event",             &fEvent,             "Event/I");
     fSimHitNtuple->Branch("NHit",        &fNHit,        "NHit/I");
     fSimHitNtuple->Branch("X",           &fXHit);
     fSimHitNtuple->Branch("Y",           &fYHit);
@@ -456,12 +498,14 @@ namespace crt {
   {
     //art::ServiceHandle<sim::LArG4Parameters> larParameters;
     //fElectronsToGeV = 1./larParameters->GeVToElectrons();
+    std::cout << "beginning run" << std::endl;
   }
 
   //-----------------------------------------------------------------------
   void CRTAnalysis::analyze(const art::Event& event) 
   {
-    LOG_DEBUG("CRT") << "beginning analyis" << '\n';
+    //std::cout << "Start analysis" << std::endl;
+    //LOG_DEBUG("CRT") << "beginning analyis" << '\n';
     if (fPDGs.size() != fMinMomenta.size() || fPDGs.size() != fMaxMomenta.size())
         throw cet::exception("CRTAnalysis")
           << " PDG/Momtenta values not set correctly in fhicl - lists have different sizes"
@@ -475,9 +519,30 @@ namespace crt {
     // Define a "handle" to point to a vector of the objects.
     art::Handle< vector<simb::MCParticle> > particleHandle;
     map< int, const simb::MCParticle*> particleMap; //particleMap.clear();
-    //map< int, vector< pair<uint32_t,uint32_t> > > muHitMap;
 
+    vector<int> muTrigTrkid;
+    vector<int> muTrigTrkidC;
+    vector<int> muTrigTrkidM;
+    vector<int> muTrigTrkidD;
+
+    fNmuTruthCRTTrig = 0;
+    fNmuTruthCRTTrigC = 0;
+    fNmuTruthCRTTrigM = 0;
+    fNmuTruthCRTTrigD = 0;
+    fNmuTruthCRTTrigVec = 0;
+    fNmuTruthMissCRT = 0;
     fNmuTruth = 0;
+    fNmuTruthCRTTag = 0;
+    fNmuTruthCRTTagC = 0;
+    fNmuTruthCRTTagM = 0;
+    fNmuTruthCRTTagD = 0;
+    fNmuTruthCRTTagVec = 0;
+
+    fNmuDetCRTTrig = 0;
+    fNmuDetCRTTrigC = 0;
+    fNmuDetCRTTrigM = 0;
+    fNmuDetCRTTrigD = 0;
+    fNmuDetCRTTrigVec = 0;
 
     // If there aren't any simb::MCParticle object art will 
     // display a "ProductNotFound" exception message and may skip
@@ -498,6 +563,7 @@ namespace crt {
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
     }
 
+    //required to access TPC SimChannels
     //auto simChannelHandle =
     //  event.getValidHandle<vector<sim::SimChannel>>(fSimulationProducerLabel);
 
@@ -511,18 +577,19 @@ namespace crt {
         // track ID as the key.
         particleMap.insert(std::make_pair(particle.TrackId(),&particle));
     }
-    //std::cout << "event " << fEvent << " particleMap filled with " << particleMap.size() << " particles" << std::endl;
 
-    LOG_DEBUG("CRT") << "about to loop over MC particles" << '\n';
     //loop over MCParticles
     for ( auto const& particle : (*particleHandle) )
     {
         fSimPDG = particle.PdgCode();
-        vector<int>::iterator it = fPDGs.begin();
-        const TLorentzVector& momentumStart = particle.Momentum(0);
+        vector<int>::iterator it = fPDGs.begin(); //iterator to list of interested PDGs from FHiCL
+        const TLorentzVector& momentumStart = particle.Momentum(0);//initial momentum
         const double p = (momentumStart.Vect()).Mag();
-        size_t index = 0;
+        size_t index = 0; //index in PDG list
+
         //if ( (particle.Process() != "primary"  && 
+        //find matching PDG code given current MCParticle PDG
+        // use for momentum cuts
         while (it!=fPDGs.end()) {
           if (*it==fSimPDG) {
               index = (size_t)(it - fPDGs.begin());
@@ -530,27 +597,24 @@ namespace crt {
           }
           it++;
         }
-          //if (fSimPDG!=13 && fSimPDG!=-13)// && fSimPDG!=22 && fSimPDG!=11 && fSimPDG!=-11)
-        //{  //std::cout << " Process: " <<  particle.Process() << " , PDG: " << fSimPDG << std::endl;
+        //if PDG not included in interest list, skip to next
         if (!(fPDGs.size()==1 && fPDGs[0]==0) && it == fPDGs.end()) continue;
+        //check momentum is within region of interest
         if ( fMinMomenta[index] != 0 && p < fMinMomenta[index]) continue;
         if ( fMaxMomenta[index] != 0 && p > fMaxMomenta[index]) continue;
-       // }
-        //if ( (fSimPDG==11 || fSimPDG==-11) && particle.Process()!="compt" && particle.Process()!="conv" )
+        //if ( abs(fSimPDG)==11 && particle.Process()!="compt" && particle.Process()!="conv" )
         //  continue;
 
+        //count total number of muons present in event
         if (abs(fSimPDG)==13){
             fNmuTruth++;
         }
 	fSimTrackID = particle.TrackId();
 
-        set<uint16_t> modidsC;
-        set<uint16_t> modidsM;
-        set<uint16_t> modidsD;
-        set<uint8_t>  stripidsC;
-        set<uint8_t>  stripidsM;
-        set<uint8_t>  stripidsD;
-
+        // the following bit attempts to establish the ancestry
+        //   of each MCParticle of interest
+        // this is useful for matching gammas produced by muons
+        //   for evaluation of removal algorithms
         fMother = particle.Mother();
         fNDaught = particle.NumberDaughters();
         fSimProcess = ProcessToICode(particle.Process());
@@ -593,6 +657,8 @@ namespace crt {
             fProgenitor=-10;
             fParentE=-1.0;
         }
+        //end of ancestry matching
+        //now get some other useful info about the trajectory
 
 	// A particle has a trajectory, consisting of a set of
 	// 4-positions and 4-mommenta.
@@ -614,7 +680,7 @@ namespace crt {
 
 	// Use a polar-coordinate view of the 4-vectors to
 	// get the track length.
-	//const double trackLength = ( positionEnd - positionStart ).Rho();
+	fTrackLength = ( positionEnd - positionStart ).Rho();
 
 	/*LOG_DEBUG("CRTAnalysis")
 	  << "track ID=" << fSimTrackID 
@@ -624,14 +690,19 @@ namespace crt {
 	  << fSimHits << " trajectory points";
 	   */ 
 
+        //map module IDs to strip IDs hit by muons
+        map< uint16_t,set<uint8_t>* > muHitMapC; //hits in C modules only
+        map< uint16_t,set<uint8_t>* > muHitMapM; //hits in M modules only
+        map< uint16_t,set<uint8_t>* > muHitMapD; //hits in D modules only
+        map< uint16_t,set<uint8_t>* > muHitMap; //all hits
+
+        //reinitialize ADChannel vars
 	fNAuxDet = 0;
         fADTrackLength.clear();
         fADEDep.clear();
         fADdEdx.clear();
         fAuxDetID.clear();
         fAuxDetSensitiveID.clear();
-        //fADEnterXYZT.clear();
-        //fADExitXYZT.clear();
         fAuxDetReg.clear();
         for (size_t i=0; i<kMaxAD; i++) {
             for (size_t j=0; j<4; j++) {
@@ -644,47 +715,36 @@ namespace crt {
 	// we loop over the AuxDetSimChannel objects in the event. 
 	// Note all volumes are included, not just ones with energy deps
 	for ( auto const& channel : (*auxDetSimChannelHandle) )
-	{
-            auto adGeo = fGeometryService->AuxDet(channel.AuxDetID());
+	{  
+            auto const& adGeo = fGeometryService->AuxDet(channel.AuxDetID());
             fADMac.push_back(ADToMac(ModToAuxDetType(adGeo),channel.AuxDetID()));
 
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
-	   
+
 	    // For every hit in this channel:
 	    for ( auto const& ide : auxDetIDEs )
 	    {
 		    // Check if the track that deposited the
-		    // energy matches the track of the particle.
+		    // energy matches the track of the MCParticle.
 		    if ( ide.trackID != fSimTrackID ) continue;
+		    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
+                    // Ignore strips w/ID=0 to get around bug (will be fixed soon)
+                    if ( channel.AuxDetSensitiveID() == 0 ) continue;
 
-                    LOG_DEBUG("CRTAnalysis")
-            	    << " auxdetsimchannel: " << channel.AuxDetID() << '\n'
-		    << " module name: " << (fGeometryService->AuxDet(channel.AuxDetID())).TotalVolume()->GetName() << '\n'
-                    << " strip name: " << (fGeometryService->AuxDet(channel.AuxDetID()).SensitiveVolume(channel.AuxDetSensitiveID())).TotalVolume()->GetName() << '\n'
-		    << " region " << GetAuxDetRegion(fGeometryService->AuxDet(channel.AuxDetID())) << '\n'
-            	    << " sensID: " << channel.AuxDetSensitiveID();
- 
-                    //std::array<double,4> arrenter, arrexit;
+
+                    //calculate track length in strip
 		    double dx = ide.entryX-ide.exitX;
 		    double dy = ide.entryY-ide.exitY;
 		    double dz = ide.entryZ-ide.exitZ;
+                    double adlength = TMath::Sqrt(dx*dx+dy*dy+dz*dz);
+                    if ( adlength < 0.0001)  continue;
 
 		    fADTrackLength.push_back(TMath::Sqrt(dx*dx+dy*dy+dz*dz));
 	            fADEDep.push_back(ide.energyDeposited);
 	            fADdEdx.push_back(ide.energyDeposited/fADTrackLength[fNAuxDet]);
 		    fAuxDetID.push_back(channel.AuxDetID());
 		    fAuxDetSensitiveID.push_back(channel.AuxDetSensitiveID());
-                    /*arrenter[0] = ide.entryX;
-                    arrenter[1] = ide.entryY;
-                    arrenter[2] = ide.entryZ;
-                    arrenter[3] = ide.entryT;
-                    arrexit[0] = ide.exitX;
-                    arrexit[1] = ide.exitY;
-                    arrexit[2] = ide.exitZ;
-         /           arrexit[3] = ide.exitT;
-                    //fADEnterXYZT.push_back(arrenter);
-                    //fADExitXYZT.push_back(arrexit);*/
 		    fADEnterXYZT[fNAuxDet][0] = ide.entryX;
 	            fADEnterXYZT[fNAuxDet][1] = ide.entryY;
 	            fADEnterXYZT[fNAuxDet][2] = ide.entryZ;
@@ -698,41 +758,114 @@ namespace crt {
 
                     if (abs(fSimPDG)==13) {
                         switch (ModToAuxDetType(adGeo)) {
+
                           case 'c' : 
-                            modidsC.insert(channel.AuxDetID());
-                            stripidsC.insert(channel.AuxDetSensitiveID());
+                            if( muHitMapC.find(channel.AuxDetID())==muHitMapC.end() )
+                              muHitMapC[channel.AuxDetID()] = new set<uint8_t>();
+                            muHitMapC[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
                             break;
+
                           case 'm' : 
-                            modidsM.insert(channel.AuxDetID());
-                            stripidsM.insert(channel.AuxDetSensitiveID());
+                            if( muHitMapM.find(channel.AuxDetID())==muHitMapM.end() )
+                              muHitMapM[channel.AuxDetID()] = new set<uint8_t>();
+                            muHitMapM[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
                             break;
+
                           case 'd' :
-                            modidsD.insert(channel.AuxDetID());
-                            stripidsD.insert(channel.AuxDetSensitiveID());
+                            if( muHitMapD.find(channel.AuxDetID())==muHitMapD.end() )
+                              muHitMapD[channel.AuxDetID()] = new set<uint8_t>();
+                            muHitMapD[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
                             break;
                         }//switch
-                    }//if muon
-	      } // For each IDE (strip hit by muon)
-              
-              if( abs(fSimPDG)==13 ) {
-                  fStripMultHistC->Fill(stripidsC.size());
-                  fStripMultHistM->Fill(stripidsM.size());
-                  fStripMultHistD->Fill(stripidsD.size());
-                  stripidsC.clear();
-                  stripidsM.clear();
-                  stripidsD.clear();
-              }//if muon
 
-	  } // For each SimChannel (module)
+                        if( muHitMap.find(channel.AuxDetID())==muHitMap.end() )
+                          muHitMap[channel.AuxDetID()] = new set<uint8_t>();
+                        muHitMap[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
+                    }//if muon
+	    } // For each IDE (strip hit by muon)
+              
+	} // For each SimChannel (module)
 
         // write values to tree for this event and particle
         fSimulationNtuple->Fill();
 
-        fModMultHistC->Fill(modidsC.size());
-        fModMultHistM->Fill(modidsM.size());
-        fModMultHistD->Fill(modidsD.size());
+        set<uint16_t> modsTrigPoss;
+        set<uint16_t> modsTrigPossC;
+        set<uint16_t> modsTrigPossM;
+        set<uint16_t> modsTrigPossD;
 
-      } // loop over all particles in the event. 
+        if( abs(fSimPDG)==13 ) {
+
+          if (muHitMapC.size()>0) {
+              fNmuTruthCRTTagC++;
+              fModMultHistC->Fill(muHitMapC.size());
+              for( auto const& strips : muHitMapC ) {
+                 fStripMultHistC->Fill(strips.second->size());
+                 if (strips.second->size()>1) {
+                   modsTrigPossC.insert(strips.first);
+                   modsTrigPoss.insert(strips.first);
+                 }//if more than 1 strip hit
+              }//for modules in muHitMap
+              if (modsTrigPossC.size()>0) {
+                fNmuTruthCRTTrigC++;
+                muTrigTrkidC.push_back(fSimTrackID);
+              }
+          } //if c hit
+
+          if (muHitMapM.size()>0) {
+              fNmuTruthCRTTagM++;
+              fModMultHistM->Fill(muHitMapM.size());
+              for( auto const& strips : muHitMapM ) {
+                 fStripMultHistM->Fill(strips.second->size());
+                 if (muHitMapM.size()>0) {
+                   modsTrigPossM.insert(strips.first);
+                   modsTrigPoss.insert(strips.first);
+                 }//if more than 1 module hit
+              }//for modules in muHitMap
+              if (modsTrigPossM.size()>1) {
+                fNmuTruthCRTTrigM++;
+                muTrigTrkidM.push_back(fSimTrackID);
+              }
+          } //if m hit
+
+          if (muHitMapD.size()>0) {
+              fNmuTruthCRTTagD++;
+              fModMultHistD->Fill(muHitMapD.size());
+              for( auto const& strips : muHitMapC ) {
+                 fStripMultHistD->Fill(strips.second->size());
+                 if (strips.second->size()>1) {
+                   modsTrigPossD.insert(strips.first);
+                   modsTrigPoss.insert(strips.first);
+                 }//if more than 1 strip hit
+              }//for modules in muHitMap
+              if (modsTrigPossD.size()>0) {
+                fNmuTruthCRTTrigD++;
+                muTrigTrkidD.push_back(fSimTrackID);
+              }
+          } //if d hit
+
+          if (muHitMap.size()>0) {
+            fNmuTruthCRTTag++;
+          }
+          else
+            fNmuTruthMissCRT++;
+
+          if (muHitMap.size()>1)
+            fNmuTruthCRTTagVec++;
+
+          //fix me! doesn't check coincidence condition!
+          if (modsTrigPoss.size()>0){
+            fNmuTruthCRTTrig++;
+            muTrigTrkid.push_back(fSimTrackID);
+          }
+          if (modsTrigPoss.size()>1)
+            fNmuTruthCRTTrigVec++;
+
+        }//if muon
+
+    } // loop over all particles in the event. 
+
+    fCRTTruthNtuple->Fill();
 
     art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
     bool isCRTDetSim = event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle);
@@ -745,13 +878,13 @@ namespace crt {
     set<uint8_t> taggedTrks;
 
     if (isCRTDetSim)  {
-     LOG_DEBUG("CRT") << "about to loop over detsim entries" << '\n';
+     std::cout << "about to loop over detsim entries" << std::endl;
      for ( auto const& febdat : (*crtDetSimHandle) ) {
         fMac5 = febdat.Mac5();
         fChanTrig = febdat.ChanTrig();
         fEntry = febdat.Entry();
         fTTrig = febdat.TTrig();
-        std::pair<uint32_t,uint32_t> tmpPair = febdat.TrigPair();
+        pair<uint32_t,uint32_t> tmpPair = febdat.TrigPair();
         fTriggerPair[0] = tmpPair.first;
         fTriggerPair[1] = tmpPair.second;
         tmpPair = febdat.MacPair();
@@ -765,6 +898,7 @@ namespace crt {
         set<uint8_t> chanidsM;
         set<uint8_t> chanidsD;
  
+        //std::cout << "loop over chandata" << std::endl;
         for ( auto const chandat : febdat.ChanData()) {
           //DetSim tree contains all entries (not neccessarily from muons)
           fNChan++;
@@ -774,9 +908,12 @@ namespace crt {
           fADC.push_back(chandat.ADC());
           fTrackID.push_back(chandat.TrackID()); 
 
+          //std::cout << "check if muon" << std::endl;
           //if channel hit came from muon loop over all associated hits
-          if( abs(particleMap[chandat.TrackID()]->PdgCode())==13 ) {
+          if( particleMap.find(chandat.TrackID())!=particleMap.end() &&
+              abs(particleMap[chandat.TrackID()]->PdgCode())==13 ) {
 
+              //std::cout << "found muon!" << std::endl;
               taggedTrks.insert(chandat.TrackID());
               for (auto const chandat2 : febdat.ChanData()) {
                   if( chandat.TrackID() != chandat2.TrackID() ) continue;
@@ -812,44 +949,82 @@ namespace crt {
                   chanidsD.clear();
                   break;
               }
-          }//if muon
+          }//if muon 
+  
+          //std::cout << "end of loop over chandat" << std::endl;
         }//outer chandat loop
 
+        //std::cout << "about to fill detsimtree" << std::endl;
         fDetSimNtuple->Fill();
 
      } //for CRT FEB events
 
+     for (auto id : muTrigTrkid) {
+        for (auto detrks : taggedTrks) {
+           if (id==detrks) {
+              fNmuDetCRTTrig++;
+              break;
+           }
+        }
+     }   
+
+     for (auto id : muTrigTrkidC) {
+        for (auto detrks : taggedTrksC) {
+           if (id==detrks) {
+              fNmuDetCRTTrigC++;
+              break;
+           }
+        }
+     }
+
+     for (auto id : muTrigTrkidM) {
+        for (auto detrks : taggedTrksM) {
+           if (id==detrks) {
+              fNmuDetCRTTrigM++;
+              break;
+           }
+        }
+     }
+
+     for (auto id : muTrigTrkidD) {
+        for (auto detrks : taggedTrksD) {
+           if (id==detrks) {
+              fNmuDetCRTTrigD++;
+              break;
+           }
+        }
+     }
+
+     fCRTTruthMatchNtuple->Fill();
+
      fFEBMultHistC->Fill(febidsC.size());
      fFEBMultHistM->Fill(febidsM.size());
      fFEBMultHistD->Fill(febidsD.size());
-     uint32_t nmissC=0, nmissM=0, nmissD=0, nmissTot=0;
 
-     for (auto pmit = particleMap.begin(); pmit!=particleMap.end(); pmit++) {
-       if ( abs((*pmit).second->PdgCode())==13 ) {
-         if (taggedTrksC.find((*pmit).first)==taggedTrksC.end()) nmissC++;
-         if (taggedTrksM.find((*pmit).first)==taggedTrksM.end()) nmissM++;
-         if (taggedTrksD.find((*pmit).first)==taggedTrksD.end()) nmissD++;
-         if (taggedTrks.find((*pmit).first) ==taggedTrks.end())  nmissTot++; 
-       }//if MC particle is muon, get trackID
-     }//for MC particles
-
-     fNmuTagC   = fNmuTruth - nmissC;
-     fNmuTagC   = fNmuTruth - nmissM;
-     fNmuTagC   = fNmuTruth - nmissD;
-     fNmuTagTot = fNmuTruth - nmissTot;
-     fEffC = 1.0*fNmuTagC/fNmuTruth;
-     fEffM = 1.0*fNmuTagM/fNmuTruth;
-     fEffD = 1.0*fNmuTagD/fNmuTruth;
-     fEffTot = 1.0*fNmuTagTot/fNmuTruth;
+     fEffTot = 1.0*fNmuDetCRTTrig/fNmuTruthCRTTrig;
+     fEffC = 1.0*fNmuDetCRTTrigC/fNmuTruthCRTTrigC;
+     fEffM = 1.0*fNmuDetCRTTrigM/fNmuTruthCRTTrigM;
+     fEffD = 1.0*fNmuDetCRTTrigD/fNmuTruthCRTTrigD;
 
      mf::LogInfo("CRT") << '\n'
-       << " Total muon tracks: " << fNmuTruth << '\n'
+       << " Total muon tracks entering ADS: " << fNmuTruthCRTTag << '\n'
+       << " Total muon tracks in C ADS: " << fNmuTruthCRTTagC << '\n'
+       << " Total muon tracks in M ADS: " << fNmuTruthCRTTagM << '\n'
+       << " Total muon tracks in D ADS: " << fNmuTruthCRTTagD << '\n'
+       << " Total muon tracks w/coinc.: " << fNmuTruthCRTTrig << " (" 
+          << 1.0*fNmuTruthCRTTrig/fNmuTruthCRTTag << ")" << '\n'
+       << " Total muon tracks in C w/coinc.: " << fNmuTruthCRTTrigC << " ("
+          << 1.0*fNmuTruthCRTTrigC/fNmuTruthCRTTagC << ")" << '\n'
+       << " Total muon tracks in M w/coinc.: " << fNmuTruthCRTTrigM << " ("
+          << 1.0*fNmuTruthCRTTrigM/fNmuTruthCRTTagM << ")" << '\n'
+       << " Total muon tracks in D w/coinc.: " << fNmuTruthCRTTrigD << " ("
+          << 1.0*fNmuTruthCRTTrigD/fNmuTruthCRTTagD << ")" << '\n'
        << " EffC: " << fEffC << '\n'
        << " EffM: " << fEffM << '\n'
        << " EffD: " << fEffD << '\n'
        << " EffTot: " << fEffTot << '\n';
 
-   }//if crtdetsim products present
+    }//if crtdetsim products present
 
     else std::cout << "CRTData products not found! (expected if gen/G4 step)" << std::endl;
 
@@ -1012,7 +1187,6 @@ namespace {
 
       return 'e';
   }
-
 
   //for C- and D-modules, mac address is same as AD ID
   //three M-modules / FEB, each modules readout at both ends
