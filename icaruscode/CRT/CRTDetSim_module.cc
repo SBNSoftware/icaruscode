@@ -277,6 +277,7 @@ void CRTDetSim::produce(art::Event & e) {
   std::map<uint32_t,uint32_t> regCounts;
   std::set<uint32_t> regions;
 
+  std::cout << "about to loop through AD Channels..." << std::endl;
   // Loop through truth AD channels
   for (auto& adsc : *channels) {
 
@@ -354,6 +355,7 @@ void CRTDetSim::produce(art::Event & e) {
                                << "   ADType: " << auxDetType << '\n'
                                << "   ADRegion: " << region << '\n';
 
+    std::cout << "about to loop pver AuxDetIDEs..." << std::endl;
     // Simulate the CRT response for each hit
     for (auto ide : adsc.AuxDetIDEs()) {
 
@@ -598,6 +600,8 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n"; 
     }//for AuxDetIDEs 
   }//for AuxDetChannels
+
+  std::cout << "outside of AD loop" << std::endl;
 
   // Apply coincidence trigger requirement
   std::unique_ptr<std::vector<icarus::crt::CRTData> > triggeredCRTHits(
