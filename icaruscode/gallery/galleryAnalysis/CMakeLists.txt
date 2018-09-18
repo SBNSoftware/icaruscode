@@ -55,7 +55,7 @@ set(ICARUSDETINFO_LIBS lardata_DetectorInfo)
 ###  EXECUTABLE DIRECTIVES
 ################################################################################
 add_executable(galleryAnalysis galleryAnalysis.cpp TrackAnalysis.cpp MCAssociations.cpp HitAnalysisAlg.cpp)
-set_property(TARGET galleryAnalysis PROPERTY CXX_STANDARD 14)
+set_property(TARGET galleryAnalysis PROPERTY CXX_STANDARD 17)
 target_link_libraries(galleryAnalysis
   ${ROOT_CORELIBS} ${GALLERY_LIBS} ${LARSOFTOBJ_LIBS}
   ${ICARUSGEOMETRY_LIBS} # if using geometry
