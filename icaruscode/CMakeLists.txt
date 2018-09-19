@@ -3,6 +3,7 @@ set( IFDH_ART_DIR $ENV{IFDH_ART_DIR} )
 
 add_subdirectory(Analysis)
 add_subdirectory(DetSim)
+add_subdirectory(Generators)
 add_subdirectory(Geometry)
 add_subdirectory(RawDigitFilter)
 add_subdirectory(RecoWire)
