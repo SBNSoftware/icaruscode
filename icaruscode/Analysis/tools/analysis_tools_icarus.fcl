@@ -9,6 +9,12 @@ BasicHitAnalysisTool:
   LocalDirName:      "BasicHists"
 }
 
+HitEfficiencyAnalysisTool:
+{
+  tool_type:         "HitEfficiencyAnalysis"
+  LocalDirName:      "EfficHists"
+}
+
 WireAnalysisTool:
 {
   tool_type:           "BasicWireAnalysis"

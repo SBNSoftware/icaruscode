@@ -27,4 +27,12 @@ icarus_RawDigitAnalysis:
   RawDigitHistogramToolList: [ @local::RawDigitAnalysisTool ]
 }
 
+icarus_HitEfficiencyAnalysis:
+{
+  module_type:         HitEfficiencyAna
+  HitModuleLabel:      "gaushit"
+  SimChannelLabel:     "largeant"
+  HitEfficiencyHistogramToolList: [ @local::HitEfficiencyAnalysisTool ]
+}
+
 END_PROLOG
