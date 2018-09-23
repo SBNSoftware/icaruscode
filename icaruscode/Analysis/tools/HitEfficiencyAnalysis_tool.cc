@@ -93,6 +93,7 @@ private:
     
     // Pointers to the histograms we'll create.
     std::vector<TH1F*>     fTotalElectronsVec;
+    std::vector<TH1F*>     fMaxElectronsVec;
     std::vector<TH1F*>     fHitElectronsVec;
     std::vector<TH1F*>     fHitSumADCVec;
     std::vector<TH1F*>     fHitPulseHeightVec;
@@ -102,6 +103,7 @@ private:
     std::vector<TH1F*>     fNMatchedHitVec;
     std::vector<TH1F*>     fDeltaMidTDCVec;
     std::vector<TProfile*> fHitEfficVec;
+    std::vector<TProfile*> fHitEfficPHVec;
     std::vector<TH2F*>     fHitVsSimChgVec;
     
     // Useful services, keep copies for now (we can update during begin run periods)
@@ -160,6 +162,12 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     fTotalElectronsVec[1] = dir.make<TH1F>("TotalElecs1", ";# electrons", 250, 0., 100000.);
     fTotalElectronsVec[2] = dir.make<TH1F>("TotalElecs2", ";# electrons", 250, 0., 100000.);
     
+    fMaxElectronsVec.resize(fGeometry->Nplanes());
+    
+    fMaxElectronsVec[0]   = dir.make<TH1F>("MaxElecs0", ";# electrons", 250, 0., 20000.);
+    fMaxElectronsVec[1]   = dir.make<TH1F>("MaxElecs1", ";# electrons", 250, 0., 20000.);
+    fMaxElectronsVec[2]   = dir.make<TH1F>("MaxElecs2", ";# electrons", 250, 0., 20000.);
+
     fHitElectronsVec.resize(fGeometry->Nplanes());
     
     fHitElectronsVec[0]   = dir.make<TH1F>("HitElecs0", ";# electrons", 250, 0., 100000.);
@@ -174,15 +182,15 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     
     fHitPulseHeightVec.resize(fGeometry->Nplanes());
     
-    fHitPulseHeightVec[0] = dir.make<TH1F>("PulseHeight0", "PH (ADC)", 300,  0.,  150.);
-    fHitPulseHeightVec[1] = dir.make<TH1F>("PulseHeight1", "PH (ADC)", 300,  0.,  150.);
-    fHitPulseHeightVec[2] = dir.make<TH1F>("PulseHeight2", "PH (ADC)", 300,  0.,  150.);
+    fHitPulseHeightVec[0] = dir.make<TH1F>("PulseHeight0", "PH (ADC)", 150,  0.,  150.);
+    fHitPulseHeightVec[1] = dir.make<TH1F>("PulseHeight1", "PH (ADC)", 150,  0.,  150.);
+    fHitPulseHeightVec[2] = dir.make<TH1F>("PulseHeight2", "PH (ADC)", 150,  0.,  150.);
 
     fHitPulseWidthVec.resize(fGeometry->Nplanes());
     
-    fHitPulseWidthVec[0]  = dir.make<TH1F>("PulseWidth0",  ";RMS",     100,  0.,  20.);
-    fHitPulseWidthVec[1]  = dir.make<TH1F>("PulseWidth1",  ";RMS",     100,  0.,  20.);
-    fHitPulseWidthVec[2]  = dir.make<TH1F>("PulseWidth2",  ";RMS",     100,  0.,  20.);
+    fHitPulseWidthVec[0]  = dir.make<TH1F>("PulseWidth0",  ";RMS",     40,  0.,  20.);
+    fHitPulseWidthVec[1]  = dir.make<TH1F>("PulseWidth1",  ";RMS",     40,  0.,  20.);
+    fHitPulseWidthVec[2]  = dir.make<TH1F>("PulseWidth2",  ";RMS",     40,  0.,  20.);
 
     fSimNumTDCVec.resize(fGeometry->Nplanes());
     
@@ -210,10 +218,16 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
 
     fHitEfficVec.resize(fGeometry->Nplanes());
     
-    fHitEfficVec[0]       = dir.make<TProfile>("HitEffic0", "Effic;# electrons", 200, 0., 100000., 0., 1.);
-    fHitEfficVec[1]       = dir.make<TProfile>("HitEffic1", "Effic;# electrons", 200, 0., 100000., 0., 1.);
-    fHitEfficVec[2]       = dir.make<TProfile>("HitEffic2", "Effic;# electrons", 200, 0., 100000., 0., 1.);
+    fHitEfficVec[0]       = dir.make<TProfile>("HitEffic0", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
+    fHitEfficVec[1]       = dir.make<TProfile>("HitEffic1", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
+    fHitEfficVec[2]       = dir.make<TProfile>("HitEffic2", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
+
+    fHitEfficPHVec.resize(fGeometry->Nplanes());
     
+    fHitEfficPHVec[0]     = dir.make<TProfile>("HitEfficPH0", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
+    fHitEfficPHVec[1]     = dir.make<TProfile>("HitEfficPH1", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
+    fHitEfficPHVec[2]     = dir.make<TProfile>("HitEfficPH2", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
+
     fHitVsSimChgVec.resize(fGeometry->Nplanes());
     
     fHitVsSimChgVec[0]    = dir.make<TH2F>("HitVSimQ0", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
@@ -270,6 +284,7 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
         ChanToHitVecMap::iterator hitIter     = channelToHitVec.find(chanToTDCToIDEMap.first);
         TDCToIDEMap               tdcToIDEMap = chanToTDCToIDEMap.second;
         float                     totalElectrons(0.);
+        float                     maxElectrons(0.);
         int                       nMatchedHits(0);
         
         // The below try-catch block may no longer be necessary
@@ -280,12 +295,18 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
         unsigned int plane = wids[0].Plane;
 //        unsigned int wire  = wids[0].Wire;
         
-        for(const auto& ideVal : tdcToIDEMap) totalElectrons += ideVal.second;
+        for(const auto& ideVal : tdcToIDEMap)
+        {
+            totalElectrons += ideVal.second;
+            
+            maxElectrons = std::max(maxElectrons,ideVal.second);
+        }
         
         totalElectrons = std::min(totalElectrons, float(99900.));
         
         fTotalElectronsVec.at(plane)->Fill(totalElectrons, 1.);
-        
+        fMaxElectronsVec.at(plane)->Fill(maxElectrons, 1.);
+
         if (hitIter != channelToHitVec.end())
         {
             unsigned short startTDC = tdcToIDEMap.begin()->first;
@@ -293,7 +314,20 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
             unsigned short midTDC   = (startTDC + stopTDC) / 2;
             
             fSimNumTDCVec.at(plane)->Fill(stopTDC - startTDC, 1.);
-            
+
+            // Set up to extract the "best" parameters in the event of more than one hit for this pulse train
+            float          nElectronsTotalBest(0.);
+            float          hitChargeBest(0.);
+            float          hitPulseHeightBest(0.);
+            float          hitWidthBest(0.);
+            unsigned short hitStopTDCBest(0);
+            unsigned short hitStartTDCBest(0);
+            unsigned short midHitTDCBest(0);
+
+            // Loop through the hits for this channel and look for matches
+            // In the event of more than one hit associated to the sim channel range, keep only
+            // the best match (assuming the nearby hits are "extra")
+            // Note that assumption breaks down for long pulse trains but worry about that later
             for(const auto& hit : hitIter->second)
             {
                 unsigned short hitStartTick = hit->PeakTime() - 1. * hit->RMS();
@@ -305,34 +339,46 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
                 // If hit is out of range then skip, it is not related to this particle
                 if (hitStartTDC > stopTDC || hitStopTDC < startTDC) continue;
                 
-                fHitNumTDCVec.at(plane)->Fill(hitStopTDC - hitStartTDC, 1.);
-                fDeltaMidTDCVec.at(plane)->Fill(midHitTDC - midTDC, 1.);
-                
-                float nElectronsTotal(0.);
-                float hitCharge = std::min(hit->SummedADC(),float(4999.));
                 float hitHeight = std::min(hit->PeakAmplitude(), float(149.5));
-                float hitWidth  = std::min(hit->RMS(), float(19.8));
                 
-                fHitSumADCVec.at(plane)->Fill(hitCharge, 1.);
-                fHitVsSimChgVec.at(plane)->Fill(hitCharge, totalElectrons, 1.);
-                fHitPulseHeightVec.at(plane)->Fill(hitHeight, 1.);
-                fHitPulseWidthVec.at(plane)->Fill(hitWidth, 1.);
+                // Use the hit with the largest pulse height as the "best"
+                if (hitHeight < hitPulseHeightBest) continue;
+
+                nElectronsTotalBest = 0.;
+                
+                hitPulseHeightBest = hitHeight;
+                hitChargeBest      = std::min(hit->SummedADC(),float(4999.));
+                hitWidthBest       = std::min(hit->RMS(), float(19.8));
+                hitStartTDCBest    = hitStartTDC;
+                hitStopTDCBest     = hitStopTDC;
+                midHitTDCBest      = midHitTDC;
                 
                 nMatchedHits++;
                 
+                // Get the number of electrons
                 for(unsigned short tick = hitStartTDC; tick <= hitStopTDC; tick++)
                 {
                     TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(tick);
                     
-                    if (ideIterator != tdcToIDEMap.end()) nElectronsTotal += ideIterator->second;
+                    if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second;
                 }
-                
-                fHitElectronsVec.at(plane)->Fill(nElectronsTotal, 1.);
+            }
+
+            if (nMatchedHits > 0)
+            {
+                fHitSumADCVec.at(plane)->Fill(hitChargeBest, 1.);
+                fHitVsSimChgVec.at(plane)->Fill(hitChargeBest, totalElectrons, 1.);
+                fHitPulseHeightVec.at(plane)->Fill(hitPulseHeightBest, 1.);
+                fHitPulseWidthVec.at(plane)->Fill(hitWidthBest, 1.);
+                fHitElectronsVec.at(plane)->Fill(nElectronsTotalBest, 1.);
+                fHitNumTDCVec.at(plane)->Fill(hitStopTDCBest - hitStartTDCBest, 1.);
+                fDeltaMidTDCVec.at(plane)->Fill(midHitTDCBest - midTDC, 1.);
             }
         }
         
         fNMatchedHitVec.at(plane)->Fill(nMatchedHits, 1.);
         fHitEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedHits,1),1.);
+        fHitEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedHits,1),1.);
     }
 
     return;
