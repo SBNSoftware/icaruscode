@@ -106,6 +106,10 @@ private:
     std::vector<TProfile*> fHitEfficPHVec;
     std::vector<TH2F*>     fHitVsSimChgVec;
     
+    std::vector<TH1F*>     fNSimChannelHitsVec;
+    std::vector<TH1F*>     fNRecobHitVec;
+    std::vector<TH1F*>     fHitEfficiencyVec;
+    
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
     const detinfo::DetectorProperties* fDetectorProperties;   ///< Detector properties service
@@ -233,6 +237,24 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     fHitVsSimChgVec[0]    = dir.make<TH2F>("HitVSimQ0", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
     fHitVsSimChgVec[1]    = dir.make<TH2F>("HitVSimQ1", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
     fHitVsSimChgVec[2]    = dir.make<TH2F>("HitVSimQ2", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
+    
+    fNSimChannelHitsVec.resize(fGeometry->Nplanes());
+    
+    fNSimChannelHitsVec[0] = dir.make<TH1F>("NSimChan0", ";# hits", 300, 0., 1200.);
+    fNSimChannelHitsVec[1] = dir.make<TH1F>("NSimChan1", ";# hits", 500, 0., 2000.);
+    fNSimChannelHitsVec[2] = dir.make<TH1F>("NSimChan2", ";# hits", 500, 0., 2000.);
+
+    fNRecobHitVec.resize(fGeometry->Nplanes());
+    
+    fNRecobHitVec[0] = dir.make<TH1F>("NRecobHit0", ";# hits", 300, 0., 1200.);
+    fNRecobHitVec[1] = dir.make<TH1F>("NRecobHit1", ";# hits", 500, 0., 2000.);
+    fNRecobHitVec[2] = dir.make<TH1F>("NRecobHit2", ";# hits", 500, 0., 2000.);
+
+    fHitEfficiencyVec.resize(fGeometry->Nplanes());
+    
+    fHitEfficiencyVec[0] = dir.make<TH1F>("PlnEffic0", ";# hits", 101, 0., 1.01);
+    fHitEfficiencyVec[1] = dir.make<TH1F>("PlnEffic1", ";# hits", 101, 0., 1.01);
+    fHitEfficiencyVec[2] = dir.make<TH1F>("PlnEffic2", ";# hits", 101, 0., 1.01);
 
     return;
 }
@@ -278,6 +300,9 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
         if (chanItr->second.size() > longestItr->second.size()) longestItr = chanItr;
     }
     
+    std::vector<int> nSimChannelHitVec = {0,0,0};
+    std::vector<int> nRecobHitVec      = {0,0,0};
+    
     // Go through the longest iterator and match to hits
     for(const auto& chanToTDCToIDEMap : longestItr->second)
     {
@@ -306,6 +331,8 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
         
         fTotalElectronsVec.at(plane)->Fill(totalElectrons, 1.);
         fMaxElectronsVec.at(plane)->Fill(maxElectrons, 1.);
+        
+        nSimChannelHitVec.at(plane)++;
 
         if (hitIter != channelToHitVec.end())
         {
@@ -373,12 +400,26 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
                 fHitElectronsVec.at(plane)->Fill(nElectronsTotalBest, 1.);
                 fHitNumTDCVec.at(plane)->Fill(hitStopTDCBest - hitStartTDCBest, 1.);
                 fDeltaMidTDCVec.at(plane)->Fill(midHitTDCBest - midTDC, 1.);
+                
+                nRecobHitVec.at(plane)++;
             }
         }
         
         fNMatchedHitVec.at(plane)->Fill(nMatchedHits, 1.);
         fHitEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedHits,1),1.);
         fHitEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedHits,1),1.);
+    }
+    
+    for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
+    {
+        if (nSimChannelHitVec.at(idx) > 10)
+        {
+            float hitEfficiency = float(nRecobHitVec.at(idx)) / float(nSimChannelHitVec.at(idx));
+            
+            fNSimChannelHitsVec.at(idx)->Fill(std::min(nSimChannelHitVec.at(idx),1999),1.);
+            fNRecobHitVec.at(idx)->Fill(std::min(nRecobHitVec.at(idx),1999), 1.);
+            fHitEfficiencyVec.at(idx)->Fill(hitEfficiency, 1.);
+        }
     }
 
     return;
