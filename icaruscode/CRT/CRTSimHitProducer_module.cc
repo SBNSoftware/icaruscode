@@ -200,11 +200,15 @@ namespace crt {
 
       double hitPoint[3];
       double hitPointErr[3];
+      std::vector<icarus::crt::CRTChannelData> chandat = febdat.ChanData();
+      int hitTrack = chandat[0].TrackID()[0];
+      int hitMod = adid;
+      int hitStrip = adsid1;
 
       //CERN and DC modules have intermodule coincidence
       if ( type == 'c' || type == 'd' ) {
           //time and charge information for each channel above threshold
-          std::vector<icarus::crt::CRTChannelData> chandat = febdat.ChanData();
+          //std::vector<icarus::crt::CRTChannelData> chandat = febdat.ChanData();
           hitLocal[1] = 0.0;
 
           //2nd strip within the module that provided the coincidence
@@ -286,7 +290,8 @@ namespace crt {
 
           CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
                          hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
-                         t0, t0corr, t1, t1corr, macPair,region) ); 
+                         t0, t0corr, t1, t1corr, macPair,region,   \
+                         hitTrack, hitMod, hitStrip) ); 
       }//if c or d type
 
       if ( type == 'm' ) {
@@ -305,6 +310,7 @@ namespace crt {
               uint32_t  adsid2 = ChannelToAuxDetSensitiveID(mac2,trigpair.first);
               auto const& adsGeo2 = adGeo2.SensitiveVolume(adsid2);
               adsGeo2.LocalToWorld(origin,stripPosWorld2);
+
 
               double ttrig2 = febdat2.TTrig();
               if (util::absDiff(ttrig2,ttrig1)<50) {
@@ -362,7 +368,8 @@ namespace crt {
                   nHitM++;
                   CRTHits->push_back(icarus::crt::CRTHit(hitPoint[0],hitPoint[1],hitPoint[2],  \
                        hitPointErr[0],hitPointErr[1],hitPointErr[2],  \
-                       t0, t0corr, t1, t1corr, febdat.MacPair(),region));
+                       t0, t0corr, t1, t1corr, febdat.MacPair(),region,  \
+                       hitTrack, hitMod, hitStrip));
                   break;
               }
 
