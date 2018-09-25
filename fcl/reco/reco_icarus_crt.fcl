@@ -1,0 +1,25 @@
+#include "services_icarus.fcl"
+#include "crtsimhitproducer.fcl"
+
+BEGIN_PROLOG
+
+icarus_reco_services:
+{
+   @table::icarus_basic_services
+}
+
+icarus_reco_producers:
+{
+  ### random number saver
+  rns:                             { module_type: RandomNumberSaver }
+
+  ## crt producers
+  crtsimhit:                      @local::standard_crtsimhitproducer
+}
+
+icarus_reco_crt:                  [ crtsimhit ]
+
+# Define the full reconstruction sequence
+icarus_track_reconstruction:      [ @sequence::icarus_reco_crt ]
+
+END_PROLOG
