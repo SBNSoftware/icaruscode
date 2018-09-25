@@ -35,6 +35,7 @@ icarus_morphologicalroifinder:
 {
     tool_type:           ROIFinderMorphological
     Plane:               0
+    UseDifference:       true
     NumSigma:            4.5         # Number sigma for threshold
                                      # This is for white noise ~3.2 rms
     NumBinsToAve:        5 #10

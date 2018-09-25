@@ -37,14 +37,23 @@ public:
     void FindROIs(const Waveform&, size_t, size_t, double, CandidateROIVec&) const override;
     
 private:
-    // The actual ROI finding algorithm
-    void findROICandidatesDiff(const Waveform&,
-                               const Waveform&,
-                               const Waveform&,
-                               int,
-                               int,
-                               float,
-                               CandidateROIVec&) const;
+    // The actual ROI finding algorithm based on the difference vec
+    void findROICandidatesDifference(const Waveform&,
+                                     const Waveform&,
+                                     const Waveform&,
+                                     int,
+                                     int,
+                                     float,
+                                     CandidateROIVec&) const;
+    
+    // The actual ROI finding algorithm based on the dilation vec
+    void findROICandidatesDilation(const Waveform&,
+                                   const Waveform&,
+                                   const Waveform&,
+                                   int,
+                                   int,
+                                   float,
+                                   CandidateROIVec&) const;
     
     // Average the input waveform
     void smoothInputWaveform(const Waveform&, Waveform&)  const;
@@ -59,7 +68,8 @@ private:
     icarus_tool::HistogramMap initializeHistograms(size_t, size_t, size_t) const;
 
     // Member variables from the fhicl file
-    size_t                                      fPlane;
+    size_t                                      fPlane;                      ///< Tool can be plane dependent
+    bool                                        fUseDifference;              ///< If true use differences, else dilation
     float                                       fNumSigma;                   ///< "# sigma" rms noise for ROI threshold
     int                                         fNumBinsToAve;               ///< Controls the smoothing
     int                                         fMax2MinDistance;            ///< Minimum allow peak to peak distance
@@ -112,16 +122,17 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
     // Start by recovering the parameters
     std::vector<unsigned short> zin;
     
-    fPlane                 = pset.get<size_t>                      ("Plane"                     );
-    fNumSigma              = pset.get< float>                      ("NumSigma"                  );
-    fNumBinsToAve          = pset.get< int >                       ("NumBinsToAve"              );
-    fMax2MinDistance       = pset.get< int >                       ("Max2MinDistance"           );
-    fMax2MinHeight         = pset.get< int >                       ("Max2MinHeight"             );
-    fMaxLengthCut          = pset.get< int >                       ("MaxLengthCut"              );
-    fStructuringElement    = pset.get< int>                        ("StructuringElement"        );
+    fPlane                 = pset.get< size_t                     >("Plane"                     );
+    fUseDifference         = pset.get< bool                       >("UseDifference",        true);
+    fNumSigma              = pset.get< float                      >("NumSigma"                  );
+    fNumBinsToAve          = pset.get< int                        >("NumBinsToAve"              );
+    fMax2MinDistance       = pset.get< int                        >("Max2MinDistance"           );
+    fMax2MinHeight         = pset.get< int                        >("Max2MinHeight"             );
+    fMaxLengthCut          = pset.get< int                        >("MaxLengthCut"              );
+    fStructuringElement    = pset.get< int                        >("StructuringElement"        );
     zin                    = pset.get< std::vector<unsigned short>>("roiLeadTrailPad"           );
-    fOutputHistograms      = pset.get< bool  >                     ("OutputHistograms",    false);
-    fOutputWaveforms       = pset.get< bool >                      ("OutputWaveforms",     false);
+    fOutputHistograms      = pset.get< bool                       >("OutputHistograms",    false);
+    fOutputWaveforms       = pset.get< bool                       >("OutputWaveforms",     false);
     
     if(zin.size() != 2) {
         throw art::Exception(art::errors::Configuration)
@@ -223,7 +234,8 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     float truncMean;
     int   nTrunc;
     
-    fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, fullRMS, truncRMS, nTrunc);
+    if (fUseDifference) fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, fullRMS, truncRMS, nTrunc);
+    else                fWaveformTool->getTruncatedMeanRMS(dilationVec,   truncMean, fullRMS, truncRMS, nTrunc);
     
     // Calculate a threshold to use based on the truncated mand and rms...
     float threshold = truncMean + fNumSigma * std::max(float(0.5),truncRMS);
@@ -261,7 +273,8 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
         }
     }
     
-    findROICandidatesDiff(differenceVec, erosionVec, dilationVec, 0, averageVec.size(), threshold, roiVec);
+    if (fUseDifference) findROICandidatesDifference(differenceVec, erosionVec, dilationVec, 0, averageVec.size(), threshold, roiVec);
+    else                findROICandidatesDilation(  differenceVec, erosionVec, dilationVec, 0, averageVec.size(), threshold, roiVec);
     
     if (roiVec.empty()) return;
     
@@ -311,13 +324,13 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     return;
 }
     
-void ROIFinderMorphological::findROICandidatesDiff(const Waveform&  differenceVec,
-                                                   const Waveform&  erosionVec,
-                                                   const Waveform&  dilationVec,
-                                                   int              startTick,
-                                                   int              stopTick,
-                                                   float            threshold,
-                                                   CandidateROIVec& roiCandidateVec) const
+void ROIFinderMorphological::findROICandidatesDifference(const Waveform&  differenceVec,
+                                                         const Waveform&  erosionVec,
+                                                         const Waveform&  dilationVec,
+                                                         int              startTick,
+                                                         int              stopTick,
+                                                         float            threshold,
+                                                         CandidateROIVec& roiCandidateVec) const
 {
     int roiLength = stopTick - startTick;
     
@@ -383,20 +396,107 @@ void ROIFinderMorphological::findROICandidatesDiff(const Waveform&  differenceVe
             {
                 // Before saving this ROI, look for candidates preceeding this one
                 // Note that preceeding snippet will reference to the current roiStartTick
-                findROICandidatesDiff(differenceVec, erosionVec, dilationVec, startTick, minCandRoiTick, threshold, roiCandidateVec);
+                findROICandidatesDifference(differenceVec, erosionVec, dilationVec, startTick, minCandRoiTick, threshold, roiCandidateVec);
             
                 // Save this ROI
                 roiCandidateVec.push_back(CandidateROI(minCandRoiTick, maxCandRoiTick));
             
                 // Now look for candidate ROI's downstream of this one
-                findROICandidatesDiff(differenceVec, erosionVec, dilationVec, maxCandRoiTick+1, stopTick, threshold, roiCandidateVec);
+                findROICandidatesDifference(differenceVec, erosionVec, dilationVec, maxCandRoiTick+1, stopTick, threshold, roiCandidateVec);
             }
         }
     }
     
     return;
 }
+
     
+void ROIFinderMorphological::findROICandidatesDilation(const Waveform&  differenceVec,
+                                                       const Waveform&  erosionVec,
+                                                       const Waveform&  dilationVec,
+                                                       int              startTick,
+                                                       int              stopTick,
+                                                       float            threshold,
+                                                       CandidateROIVec& roiCandidateVec) const
+{
+    int roiLength = stopTick - startTick;
+    
+    if (roiLength > 0)
+    {
+        // The idea here is to find the difference and use that as the seed for searching the
+        // erosion and dilation vectors for the end points
+        //Waveform::const_iterator maxItr = std::max_element(differenceVec.begin()+startTick,differenceVec.begin()+stopTick,[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
+        Waveform::const_iterator maxItr = std::max_element(dilationVec.begin()+startTick,dilationVec.begin()+stopTick);
+        
+        int   maxTick     = std::distance(dilationVec.begin(),maxItr);
+        float maxDilation = *maxItr;
+        
+        // move forward to find the length of the top
+        while(*maxItr == maxDilation) maxItr++;
+        
+        int deltaTicks = std::distance(dilationVec.begin(),maxItr) - maxTick;
+        
+        // No point continuing if not over threshold
+        if (maxDilation > threshold)
+        {
+            // Start by finding maximum range of the erosion vector at this extremum
+            int  maxCandRoiTick = std::distance(dilationVec.begin(),maxItr);
+            
+            // The test on the erosion vector takes care of special case of slowly rising pulses which are characteristic of
+            // tracks running into the wire plane
+            while(++maxCandRoiTick < stopTick)
+            {
+                float dilation = dilationVec.at(maxCandRoiTick);
+                float erosion  = erosionVec.at(maxCandRoiTick);
+                
+                if (dilation < threshold && erosion < 0.5 * threshold) break;
+            }
+            
+            maxCandRoiTick = std::min(maxCandRoiTick,stopTick);
+            
+            // Now do the dilation vector
+            int   minCandRoiTick = maxTick;
+            
+            while(--minCandRoiTick >= startTick)
+            {
+                float dilation = dilationVec.at(minCandRoiTick);
+                float erosion  = erosionVec.at(minCandRoiTick);
+                
+                if (dilation < threshold && erosion < 0.5 * threshold) break;
+            }
+            
+            // make sure we have not gone under
+            minCandRoiTick = std::max(minCandRoiTick, startTick);
+            
+            int max2MinDiff = maxCandRoiTick - minCandRoiTick;
+            
+            if (fOutputHistograms && !(startTick > 0 || stopTick < int(dilationVec.size())))
+            {
+                fMaxDiffLength->Fill(std::min(deltaTicks,199), 1.);
+                fDeltaTicksHist->Fill(max2MinDiff, 1.);
+                fDTixVDLenHist->Fill(max2MinDiff, deltaTicks, 1.);
+                fDTixVDiffHist->Fill(max2MinDiff, maxDilation, 1.);
+            }
+            
+            // Make sure we have a legitimate candidate
+            if ((max2MinDiff > fMax2MinDistance || maxDilation > fMax2MinHeight) && deltaTicks > fMaxLengthCut)
+            {
+                // Before saving this ROI, look for candidates preceeding this one
+                // Note that preceeding snippet will reference to the current roiStartTick
+                findROICandidatesDilation(differenceVec, erosionVec, dilationVec, startTick, minCandRoiTick, threshold, roiCandidateVec);
+                
+                // Save this ROI
+                roiCandidateVec.push_back(CandidateROI(minCandRoiTick, maxCandRoiTick));
+                
+                // Now look for candidate ROI's downstream of this one
+                findROICandidatesDilation(differenceVec, erosionVec, dilationVec, maxCandRoiTick+1, stopTick, threshold, roiCandidateVec);
+            }
+        }
+    }
+    
+    return;
+}
+
 void ROIFinderMorphological::smoothInputWaveform(const Waveform& inputWaveform, Waveform& outputWaveform) const
 {
     // Vector smoothing - take the 10 bin average
