@@ -243,7 +243,11 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     // If histogramming, do the global hists here
     if (fOutputHistograms)
     {
-        Waveform::iterator maxItr = std::max_element(differenceVec.begin(),differenceVec.end());
+        Waveform::iterator maxItr;
+        
+        if (fUseDifference) maxItr = std::max_element(differenceVec.begin(),differenceVec.end());
+        else                maxItr = std::max_element(dilationVec.begin(),dilationVec.end());
+        
         float maxDiff    = *maxItr;
         float nSigma     = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
         int   dTruncBins = int(differenceVec.size()) - nTrunc;
@@ -256,20 +260,41 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
         fNumSigmaHist->Fill(std::min(nSigma,float(19.9)), 1.);
         fThresholdHist->Fill(std::min(threshold,float(19.9)), 1.);
         
-        if (std::distance(differenceVec.begin(),maxItr) > 4 * fStructuringElement)
+        if (fUseDifference)
         {
-            maxDiff = *std::max_element(differenceVec.begin(),maxItr-4*fStructuringElement);
-            nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+            if (std::distance(differenceVec.begin(),maxItr) > 4 * fStructuringElement)
+            {
+                maxDiff = *std::max_element(differenceVec.begin(),maxItr-4*fStructuringElement);
+                nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
             
-            fNumSigNextHist->Fill(nSigma, 1.);
+                fNumSigNextHist->Fill(nSigma, 1.);
+            }
+            
+            if (std::distance(maxItr, differenceVec.end()) > 4 * fStructuringElement)
+            {
+                maxDiff = *std::max_element(maxItr+4*fStructuringElement,differenceVec.end());
+                nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+            
+                fNumSigNextHist->Fill(nSigma, 1.);
+            }
         }
-        
-        if (std::distance(maxItr, differenceVec.end()) > 4 * fStructuringElement)
+        else
         {
-            maxDiff = *std::max_element(maxItr+4*fStructuringElement,differenceVec.end());
-            nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+            if (std::distance(dilationVec.begin(),maxItr) > 4 * fStructuringElement)
+            {
+                maxDiff = *std::max_element(dilationVec.begin(),maxItr-4*fStructuringElement);
+                nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+                
+                fNumSigNextHist->Fill(nSigma, 1.);
+            }
             
-            fNumSigNextHist->Fill(nSigma, 1.);
+            if (std::distance(maxItr, dilationVec.end()) > 4 * fStructuringElement)
+            {
+                maxDiff = *std::max_element(maxItr+4*fStructuringElement,dilationVec.end());
+                nSigma  = (maxDiff - truncMean) / std::max(float(0.5),truncRMS);
+                
+                fNumSigNextHist->Fill(nSigma, 1.);
+            }
         }
     }
     
