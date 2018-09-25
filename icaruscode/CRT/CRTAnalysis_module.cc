@@ -320,10 +320,11 @@ namespace crt {
     uint32_t fNmuDetCRTTrigM;
     uint32_t fNmuDetCRTTrigD;
 
-    uint32_t fNmuTagC;     //N muon tracks producing >0 CRT triggers in C-subsystem
-    uint32_t fNmuTagM;     //N muon tracks producing >0 CRT triggers in M-subsystem
-    uint32_t fNmuTagD;     //N muon tracks producing >0 CRT triggers in D-subsystem
-    uint32_t fNmuTagTot;
+    // note that the following four variables are not used so are being commented out here
+    //uint32_t fNmuTagC;     //N muon tracks producing >0 CRT triggers in C-subsystem
+    //uint32_t fNmuTagM;     //N muon tracks producing >0 CRT triggers in M-subsystem
+    //uint32_t fNmuTagD;     //N muon tracks producing >0 CRT triggers in D-subsystem
+    //uint32_t fNmuTagTot;
     TH1F* fChanMultHistC;  //N FEB channels > threshold / muon track
     TH1F* fChanMultHistM;  
     TH1F* fChanMultHistD;
@@ -1448,7 +1449,7 @@ namespace {
       if(mac>=259 && mac<=271) return 56; //slope right
       if(mac>=272 && mac<=277) return 48; //slope front
       if(mac>=278 && mac<=283) return 46; //slope back
-      if(mac>=0   && mac<=17 ) return 50; //left
+      if(            mac<=17 ) return 50; //left  NB removed the test mac >= 0 since always true
       if(mac>=50  && mac<=67 ) return 50; //left
       if(mac>=18  && mac<=35 ) return 54; //right
       if(mac>=68  && mac<=85 ) return 54; //right
