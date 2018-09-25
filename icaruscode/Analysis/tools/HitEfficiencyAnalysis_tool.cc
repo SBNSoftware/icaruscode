@@ -161,100 +161,44 @@ void HitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
     
     fTotalElectronsVec.resize(fGeometry->Nplanes());
-    
-    fTotalElectronsVec[0] = dir.make<TH1F>("TotalElecs0", ";# electrons", 250, 0., 100000.);
-    fTotalElectronsVec[1] = dir.make<TH1F>("TotalElecs1", ";# electrons", 250, 0., 100000.);
-    fTotalElectronsVec[2] = dir.make<TH1F>("TotalElecs2", ";# electrons", 250, 0., 100000.);
-    
     fMaxElectronsVec.resize(fGeometry->Nplanes());
-    
-    fMaxElectronsVec[0]   = dir.make<TH1F>("MaxElecs0", ";# electrons", 250, 0., 20000.);
-    fMaxElectronsVec[1]   = dir.make<TH1F>("MaxElecs1", ";# electrons", 250, 0., 20000.);
-    fMaxElectronsVec[2]   = dir.make<TH1F>("MaxElecs2", ";# electrons", 250, 0., 20000.);
-
     fHitElectronsVec.resize(fGeometry->Nplanes());
-    
-    fHitElectronsVec[0]   = dir.make<TH1F>("HitElecs0", ";# electrons", 250, 0., 100000.);
-    fHitElectronsVec[1]   = dir.make<TH1F>("HitElecs1", ";# electrons", 250, 0., 100000.);
-    fHitElectronsVec[2]   = dir.make<TH1F>("HitElecs2", ";# electrons", 250, 0., 100000.);
-    
     fHitSumADCVec.resize(fGeometry->Nplanes());
-    
-    fHitSumADCVec[0]      = dir.make<TH1F>("SumADC0",   "Sum ADC",    500,  0., 5000.);
-    fHitSumADCVec[1]      = dir.make<TH1F>("SumADC1",   "Sum ADC",    500,  0., 5000.);
-    fHitSumADCVec[2]      = dir.make<TH1F>("SumADC2",   "Sum ADC",    500,  0., 5000.);
-    
     fHitPulseHeightVec.resize(fGeometry->Nplanes());
-    
-    fHitPulseHeightVec[0] = dir.make<TH1F>("PulseHeight0", "PH (ADC)", 150,  0.,  150.);
-    fHitPulseHeightVec[1] = dir.make<TH1F>("PulseHeight1", "PH (ADC)", 150,  0.,  150.);
-    fHitPulseHeightVec[2] = dir.make<TH1F>("PulseHeight2", "PH (ADC)", 150,  0.,  150.);
-
     fHitPulseWidthVec.resize(fGeometry->Nplanes());
-    
-    fHitPulseWidthVec[0]  = dir.make<TH1F>("PulseWidth0",  ";RMS",     40,  0.,  20.);
-    fHitPulseWidthVec[1]  = dir.make<TH1F>("PulseWidth1",  ";RMS",     40,  0.,  20.);
-    fHitPulseWidthVec[2]  = dir.make<TH1F>("PulseWidth2",  ";RMS",     40,  0.,  20.);
-
     fSimNumTDCVec.resize(fGeometry->Nplanes());
-    
-    fSimNumTDCVec[0]      = dir.make<TH1F>("SimNumTDC0", ";TDC ticks", 100, 0., 100.);
-    fSimNumTDCVec[1]      = dir.make<TH1F>("SimNumTDC1", ";TDC ticks", 100, 0., 100.);
-    fSimNumTDCVec[2]      = dir.make<TH1F>("SimNumTDC2", ";TDC ticks", 100, 0., 100.);
-
     fHitNumTDCVec.resize(fGeometry->Nplanes());
-    
-    fHitNumTDCVec[0]      = dir.make<TH1F>("HitNumTDC0", ";TDC ticks", 100, 0., 100.);
-    fHitNumTDCVec[1]      = dir.make<TH1F>("HitNumTDC1", ";TDC ticks", 100, 0., 100.);
-    fHitNumTDCVec[2]      = dir.make<TH1F>("HitNumTDC2", ";TDC ticks", 100, 0., 100.);
-    
     fNMatchedHitVec.resize(fGeometry->Nplanes());
-    
-    fNMatchedHitVec[0]    = dir.make<TH1F>("NMatched0", ";# hits", 20, 0., 20.);
-    fNMatchedHitVec[1]    = dir.make<TH1F>("NMatched1", ";# hits", 20, 0., 20.);
-    fNMatchedHitVec[2]    = dir.make<TH1F>("NMatched2", ";# hits", 20, 0., 20.);
-
     fDeltaMidTDCVec.resize(fGeometry->Nplanes());
-    
-    fDeltaMidTDCVec[0]    = dir.make<TH1F>("DeltaMid0", ";# hits", 50, -25., 25.);
-    fDeltaMidTDCVec[1]    = dir.make<TH1F>("DeltaMid1", ";# hits", 50, -25., 25.);
-    fDeltaMidTDCVec[2]    = dir.make<TH1F>("DeltaMid2", ";# hits", 50, -25., 25.);
+    fHitVsSimChgVec.resize(fGeometry->Nplanes());
+    fNSimChannelHitsVec.resize(fGeometry->Nplanes());
+    fNRecobHitVec.resize(fGeometry->Nplanes());
+    fHitEfficiencyVec.resize(fGeometry->Nplanes());
 
     fHitEfficVec.resize(fGeometry->Nplanes());
-    
-    fHitEfficVec[0]       = dir.make<TProfile>("HitEffic0", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
-    fHitEfficVec[1]       = dir.make<TProfile>("HitEffic1", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
-    fHitEfficVec[2]       = dir.make<TProfile>("HitEffic2", "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
-
     fHitEfficPHVec.resize(fGeometry->Nplanes());
-    
-    fHitEfficPHVec[0]     = dir.make<TProfile>("HitEfficPH0", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
-    fHitEfficPHVec[1]     = dir.make<TProfile>("HitEfficPH1", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
-    fHitEfficPHVec[2]     = dir.make<TProfile>("HitEfficPH2", "Hit Efficiency;# electrons", 200, 0., 20000., 0., 1.);
 
-    fHitVsSimChgVec.resize(fGeometry->Nplanes());
-    
-    fHitVsSimChgVec[0]    = dir.make<TH2F>("HitVSimQ0", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
-    fHitVsSimChgVec[1]    = dir.make<TH2F>("HitVSimQ1", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
-    fHitVsSimChgVec[2]    = dir.make<TH2F>("HitVSimQ2", "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
-    
-    fNSimChannelHitsVec.resize(fGeometry->Nplanes());
-    
-    fNSimChannelHitsVec[0] = dir.make<TH1F>("NSimChan0", ";# hits", 300, 0., 1200.);
-    fNSimChannelHitsVec[1] = dir.make<TH1F>("NSimChan1", ";# hits", 500, 0., 2000.);
-    fNSimChannelHitsVec[2] = dir.make<TH1F>("NSimChan2", ";# hits", 500, 0., 2000.);
+    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+    {
+        fTotalElectronsVec.at(plane)  = dir.make<TH1F>(("TotalElecs"  + std::to_string(plane)).c_str(), ";# electrons", 250,   0.,  100000.);
+        fMaxElectronsVec.at(plane)    = dir.make<TH1F>(("MaxElecs"    + std::to_string(plane)).c_str(), ";# electrons", 250,   0.,  20000.);
+        fHitElectronsVec.at(plane)    = dir.make<TH1F>(("HitElecs"    + std::to_string(plane)).c_str(), ";# electrons", 250,   0.,  100000.);
+        fHitSumADCVec.at(plane)       = dir.make<TH1F>(("SumADC"      + std::to_string(plane)).c_str(), "Sum ADC",      500,   0.,  5000.);
+        fHitPulseHeightVec.at(plane)  = dir.make<TH1F>(("PulseHeight" + std::to_string(plane)).c_str(), "PH (ADC)",     150,   0.,  150.);
+        fHitPulseWidthVec.at(plane)   = dir.make<TH1F>(("PulseWidth"  + std::to_string(plane)).c_str(), ";RMS",          40,   0.,  20.);
+        fSimNumTDCVec.at(plane)       = dir.make<TH1F>(("SimNumTDC"   + std::to_string(plane)).c_str(), ";TDC ticks",   100,   0.,  100.);
+        fHitNumTDCVec.at(plane)       = dir.make<TH1F>(("HitNumTDC"   + std::to_string(plane)).c_str(), ";TDC ticks",   100,   0.,  100.);
+        fNMatchedHitVec.at(plane)     = dir.make<TH1F>(("NMatched"    + std::to_string(plane)).c_str(), ";# hits",       20,   0.,  20.);
+        fDeltaMidTDCVec.at(plane)     = dir.make<TH1F>(("DeltaMid"    + std::to_string(plane)).c_str(), ";# hits",       50, -25.,  25.);
+        fNSimChannelHitsVec.at(plane) = dir.make<TH1F>(("NSimChan"    + std::to_string(plane)).c_str(), ";# hits",      300,   0.,  1200.);
+        fNRecobHitVec.at(plane)       = dir.make<TH1F>(("NRecobHit"   + std::to_string(plane)).c_str(), ";# hits",      300,   0.,  1200.);
+        fHitEfficiencyVec.at(plane)   = dir.make<TH1F>(("PlnEffic"    + std::to_string(plane)).c_str(), ";# hits",      101,   0.,  1.01);
 
-    fNRecobHitVec.resize(fGeometry->Nplanes());
-    
-    fNRecobHitVec[0] = dir.make<TH1F>("NRecobHit0", ";# hits", 300, 0., 1200.);
-    fNRecobHitVec[1] = dir.make<TH1F>("NRecobHit1", ";# hits", 500, 0., 2000.);
-    fNRecobHitVec[2] = dir.make<TH1F>("NRecobHit2", ";# hits", 500, 0., 2000.);
+        fHitVsSimChgVec.at(plane)     = dir.make<TH2F>(("HitVSimQ" + std::to_string(plane)).c_str(), "Sim;Hit", 250, 0., 5000., 250, 0., 100000.);
 
-    fHitEfficiencyVec.resize(fGeometry->Nplanes());
-    
-    fHitEfficiencyVec[0] = dir.make<TH1F>("PlnEffic0", ";# hits", 101, 0., 1.01);
-    fHitEfficiencyVec[1] = dir.make<TH1F>("PlnEffic1", ";# hits", 101, 0., 1.01);
-    fHitEfficiencyVec[2] = dir.make<TH1F>("PlnEffic2", ";# hits", 101, 0., 1.01);
+        fHitEfficVec.at(plane)        = dir.make<TProfile>(("HitEffic"   + std::to_string(plane)).c_str(), "Hit Efficiency;# electrons", 200, 0., 100000., 0., 1.);
+        fHitEfficPHVec.at(plane)      = dir.make<TProfile>(("HitEfficPH" + std::to_string(plane)).c_str(), "Hit Efficiency;# electrons", 200, 0.,  20000., 0., 1.);
+    }
 
     return;
 }
