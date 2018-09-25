@@ -14,10 +14,11 @@ namespace crt {
 
   public:
     CRTData();
-    CRTData(uint32_t mac5, uint32_t entry, uint32_t ttrig, uint32_t chantrig,
+    CRTData(uint32_t event, uint32_t mac5, uint32_t entry, uint32_t ttrig, uint32_t chantrig,
         std::pair<uint32_t,uint32_t> tpair, std::pair<uint32_t,uint32_t> macpair, std::vector<CRTChannelData> febdata);
     virtual ~CRTData();
 
+    uint32_t Event() const;
     uint32_t Entry() const;
     uint32_t Mac5() const;
     uint32_t TTrig() const;
@@ -27,6 +28,7 @@ namespace crt {
     std::vector<CRTChannelData> ChanData() const;
 
   private:
+    uint32_t fEvent;
     uint32_t fMac5;
     uint32_t fEntry;
     uint32_t fTTrig;

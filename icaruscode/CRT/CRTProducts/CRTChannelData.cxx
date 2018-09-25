@@ -3,8 +3,8 @@
 namespace icarus{
  namespace crt{
 
-    CRTChannelData::CRTChannelData() : fChannel(0), fT0(0), fT1(0), fAdc(0), fTrackID(0) {}
-    CRTChannelData::CRTChannelData(uint32_t chan, int time0, int time1, uint32_t q, int trackid):
+    CRTChannelData::CRTChannelData() : fChannel(0), fT0(0), fT1(0), fAdc(0), fTrackID{} {}
+    CRTChannelData::CRTChannelData(uint32_t chan, int time0, int time1, uint32_t q, std::vector<int> trackid):
       fChannel(chan),
       fT0(time0),
       fT1(time1),
@@ -23,7 +23,7 @@ namespace icarus{
     uint32_t CRTChannelData::ADC() const {
       return fAdc;
     }
-    int CRTChannelData::TrackID() const {
+    std::vector<int> CRTChannelData::TrackID() const {
       return fTrackID;
     }
     void CRTChannelData::SetADC(uint32_t adc)  {
