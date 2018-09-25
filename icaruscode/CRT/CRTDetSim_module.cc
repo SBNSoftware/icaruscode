@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////
 /// \file CRTDetSim_module.cc
 ///
 /// Based on LArIAT TOFSimDigits.cc (Author: Lucas Mendes Santos)
@@ -6,7 +6,55 @@
 /// then modified for ICARUS
 ///
 /// Author: Chris.Hilgenberg@colostate.edu
-////////////////////////////////////////////////////////////////////////////////
+///
+/// Extracts position, time, and energy deposited, along with
+///   trackID associated with deposit from AuxDetSimChannel objects
+///   produced by G4 stage. The trackID is used for truth matching.
+/// Simulated CRT data products are intended to match the known
+///   front-end electronics behavior and basic DAQ format anticipated.
+///   Each hit strip is assigned a channel and associated with 
+//      1) T0 - hit time relative to t0 (beam signal)
+//      2) T1 - hit time relative to PPS from GPS
+//      3) ADC from hit
+///   Effects included are
+///     * time 
+///         - light propegation delay in scintillator and WLS fiber
+///         - smearing in the arrival time at the SiPM due to scattering
+///         - amplitude dependant smearing due to the discriminator
+///     * position
+///         - AuxDetSimChannel provides true entry and exit point in scintillator strip
+///         - take arithmetic mean as true "hit" position
+///         - "hit" position defines transverse distance (hit to fiber) and
+///           longitudinal distance (length of WLS fiber between fiber entry and SiPM)
+///     * energy deposited
+///         - take true energy deposited in scintillator strip
+///         - convert true energy to photons yielded (taken from measurements on
+///               normally incident MIP muons
+///         - using known attenuation lengths for bulk scinillator and WLS fiber,
+///               apply attenuation correction using transverse and longitudinal
+///               propegation distances respectively and a simple exponential model
+///         - for the attenuated light arriving at the SiPM, correct for counting
+///               statistics sampling from Poisson
+///         - convert N photons seen by SiPM into ADCs using known pedestal and 
+///               gain values for each channel (assumed all the same for now) 
+///               ADC_i = gain_i * nphotons + ped_i
+///         - smear ADC using guasian with ADC_i as mean and 
+///               width = width_pedestal+sqrt(nphotons)
+///     * front-end electonics deadtime
+///         - sort vector of data products by time (T0)
+///         - for C and D type modules, intermodule coincidence is applied
+///            - one strip from each of 2 layers must be above threshold
+///         - for M modules, only one channel is required to be above threshold
+///         - the earliest channel that was part of the trigger provides the T0
+///            defining the readout window (set in FHiCL)
+///         - for each channel in the readout window with an entry above threshold,
+///            the data (charge and time) is added the "track and hold list"
+///         - channels in track and hold do not accept new data during the readout window
+///         - after the readout window has passed, no channels can receive data until the 
+///           (FHiCL congifurable) deadtime has passed. Channels are then reset and
+///           the front-end board is again able to trigger
+///
+/////////////////////////////////////////////////////////////////////////////////////////
 
 //art includes
 #include "art/Framework/Core/EDProducer.h"
@@ -45,6 +93,7 @@
 #include <string>
 #include <utility>
 #include <map> 
+#include <vector>
 
 //CRT includes
 #include "icaruscode/CRT/CRTDetSim.h"
@@ -54,6 +103,7 @@
 namespace icarus {
 namespace crt {
 
+//getting parameter values from FHiCL
 void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
   fVerbose = p.get<bool>("Verbose");
   fG4ModuleLabel = p.get<std::string>("G4ModuleLabel");
@@ -111,7 +161,7 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
   if (volName.find("CERN")  != std::string::npos) return 'c';
   if (volName.find("DC")    != std::string::npos) return 'd';
 
-  mf::LogInfo("CRT") << "AuxDetType not found!" << '\n';
+  mf::LogError("CRT") << "AuxDetType not found!" << '\n';
   return 'e';
 }
 
@@ -143,6 +193,7 @@ uint32_t GetAuxDetRegionNum(std::string reg)
     if(reg == "Front")      return 44;
     if(reg == "Back")       return 42;
     if(reg == "Bottom")     return 58;
+    mf::LogError("CRT") << "region not found!" << '\n';
     return UINT32_MAX;
 }
 
@@ -150,7 +201,7 @@ uint32_t GetAuxDetRegionNum(std::string reg)
 //  takes true hit time, LY(PE) observed, and longitudinal distance from readout
 //  uses 12 FHiCL configurable parameters
 //  returns simulated time in units of clock ticks
-uint32_t CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
+double CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
                                          detinfo::ElecClock& clock,
                                          float t0, float npeMean, float r) {
   // Hit timing, with smearing and NPE dependence
@@ -178,13 +229,13 @@ uint32_t CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
   // Get clock ticks
   clock.SetTime(t / 1e3);  // SetTime takes microseconds
 
-  //if (fVerbose) mf::LogInfo("CRT")
-  //  << "CRT TIMING: t0=" << t0
-  //  << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
-  //  << ", tDelay=" << tDelay << ", tDelay(interp)="
-  //  << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n"; 
-
-  return clock.Ticks();
+  /*if (fVerbose) mf::LogInfo("CRT")
+    << "CRT TIMING: t0=" << t0
+    << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
+    << ", tDelay=" << tDelay << ", tDelay(interp)="
+    << tDelay << ", tProp=" << tProp << ", t=" << t << ", ticks=" << clock.Ticks() << "\n"; 
+*/
+  return t;//clock.Ticks();
 }
 
 bool TimeOrderCRTData(icarus::crt::CRTChannelData crtdat1, icarus::crt::CRTChannelData crtdat2) {
@@ -219,6 +270,8 @@ void CRTDetSim::produce(art::Event & e) {
   art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
   e.getByLabel(fG4ModuleLabel, channels);
 
+  uint32_t eve = e.id().event();
+
   uint32_t nsim_m=0, nsim_d=0, nsim_c=0;
   uint32_t nchandat_m=0, nchandat_d=0, nchandat_c=0;
   uint32_t nmissthr_c = 0, nmissthr_d = 0, nmissthr_m = 0;
@@ -232,22 +285,21 @@ void CRTDetSim::produce(art::Event & e) {
 
     uint32_t adid = adsc.AuxDetID(); //CRT module ID number (from gdml)
     uint32_t adsid = adsc.AuxDetSensitiveID(); //CRT strip ID number (from gdml)
-    if (adsid == 0 ) continue; //skip AuxDetSensitiveID=0 (bug in AuxDetSimChannels)
+    //if (adsid == 0 ) continue; //skip AuxDetSensitiveID=0 (bug in AuxDetSimChannels)
 
     const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
 
     //check stripID is consistent with number of sensitive volumes
     if( adGeo.NSensitiveVolume() < adsid){
-        std::cout << "adsID out of bounds! Skipping..." << "\n"
+        mf::LogError("CRT") << "adsID out of bounds! Skipping..." << "\n"
                   << "   " << adGeo.Name()  << " / modID "   << adid
-                  << " / stripID " << adsid 
-        << std::endl;
+                  << " / stripID " << adsid << '\n';
         continue;
     }
 
     const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
     char auxDetType = GetAuxDetType(adGeo); //CRT module type (c, d, or m)
-    if (auxDetType=='e') mf::LogInfo("CRT") << "COULD NOT GET AD TYPE!" << '\n';
+    if (auxDetType=='e') mf::LogError("CRT") << "COULD NOT GET AD TYPE!" << '\n';
     std::string region = GetAuxDetRegion(adGeo); //CRT region
 
     uint32_t layid = UINT32_MAX; //set to 0 or 1 if layerid determined
@@ -301,7 +353,7 @@ void CRTDetSim::produce(art::Event & e) {
       }
     }
 
-    if(layid==UINT32_MAX) mf::LogInfo("CRT") << "layid NOT SET!!!" << '\n'
+    if(layid==UINT32_MAX) mf::LogError("CRT") << "layid NOT SET!!!" << '\n'
                                << "   ADType: " << auxDetType << '\n'
                                << "   ADRegion: " << region << '\n';
 
@@ -311,6 +363,10 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType=='c') nsim_c++;
       if (auxDetType=='d') nsim_d++;
       if (auxDetType=='m') nsim_m++;
+
+      //track ID of MC paritcle depositing energy for truth matching
+      std::vector<int> trkid;
+      trkid.push_back(ide.trackID);
 
       // What is the distance from the hit (centroid of the entry
       // and exit points) to the readout end?
@@ -326,7 +382,7 @@ void CRTDetSim::produce(art::Event & e) {
       if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 || 
            abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
            abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001) 
-         mf::LogInfo("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
+         mf::LogWarning("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
                             << "  AD: " << adid << " , ADS: " << adsid << '\n'
                             << "  Local position (x,y,z): ( " << svHitPosLocal[0]
                             << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )" << '\n';
@@ -413,7 +469,7 @@ void CRTDetSim::produce(art::Event & e) {
       double npeExp1 = npeExpected * abs1;// / (abs0 + abs1);
       double npeExp0Dual = npeExpected2 * abs0;// / (abs0 + abs1);
 
-      if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogInfo("CRT") << "NEGATIVE PE!!!!!" << '\n';
+      if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogError("CRT") << "NEGATIVE PE!!!!!" << '\n';
 
       // Observed PE (Poisson-fluctuated)
       long npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
@@ -423,12 +479,12 @@ void CRTDetSim::produce(art::Event & e) {
       // Time relative to trigger, accounting for propagation delay and 'walk'
       // for the fixed-threshold discriminator
       double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-      uint32_t t0 = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
-      uint32_t t1 = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
-      uint32_t t0Dual = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe0Dual, distToReadout2);
+      int t0 = \
+        (int)GetChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout);
+      int t1 = \
+        (int)GetChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout);
+      int t0Dual = \
+        (int)GetChannelTriggerTicks(engine, trigClock, tTrue, npe0Dual, distToReadout2);
 
       // Time relative to PPS: Random for now! (FIXME)
       uint32_t ppsTicks = \
@@ -442,7 +498,7 @@ void CRTDetSim::produce(art::Event & e) {
       short q0Dual = \
         CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
-      if (q0<0||q1<0||q0Dual<0) mf::LogInfo("CRT") << "NEGATIVE ADC!!!!!" << '\n';
+      if (q0<0||q1<0||q0Dual<0) mf::LogError("CRT") << "NEGATIVE ADC!!!!!" << '\n';
 
       // Adjacent channels on a strip are numbered sequentially.
       //
@@ -469,7 +525,7 @@ void CRTDetSim::produce(art::Event & e) {
 
       }
 
-      if (mac5==UINT32_MAX) mf::LogInfo("CRT") << "mac addrs not set!" << '\n';
+      if (mac5==UINT32_MAX) mf::LogError("CRT") << "mac addrs not set!" << '\n';
 
       // Apply ADC threshold and strip-level coincidence (both fibers fire)
       if (auxDetType=='c' && q0 > fQThresholdC && q1 > fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) {
@@ -480,9 +536,9 @@ void CRTDetSim::produce(art::Event & e) {
               tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'c';
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel1ID,t1,ppsTicks,q1));
-              nchandat_c++;
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel1ID,t1,ppsTicks,q1,trkid));
+              nchandat_c+=2;
       }//if fiber-fiber coincidence
 
       if (auxDetType=='d' && q0 > fQThresholdD) {
@@ -492,7 +548,7 @@ void CRTDetSim::produce(art::Event & e) {
               tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'd';
-              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
+              tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
               nchandat_d++;
       }//if one strip above threshold
 
@@ -504,7 +560,7 @@ void CRTDetSim::produce(art::Event & e) {
                 tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
-                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0));
+                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
                 nchandat_m++;
               }
               if(q0Dual > fQThresholdM) { 
@@ -514,11 +570,12 @@ void CRTDetSim::produce(art::Event & e) {
                 tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
-                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual));
+                tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual,trkid));
                 nchandat_m++;
               }
       }//if one strip above threshold at either end
 
+      //counting losses
       if (auxDetType == 'c') {
           if (q0 < fQThresholdC || q1 < fQThresholdC) nmissthr_c++;
           if ( util::absDiff(t0,t1) >= fStripCoincidenceWindow ) nmiss_strcoin_c++;
@@ -526,12 +583,13 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType == 'd' && q0 < fQThresholdD) nmissthr_d++;
       if (auxDetType == 'm' && ( q0 < fQThresholdM || q0Dual < fQThresholdM)) nmissthr_m++;
 
+      //print detsim info (if enabled)
       if (fVerbose&&
          ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
            (auxDetType=='d' && q0>fQThresholdD ) ||
            (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
-        mf::LogInfo("CRT")
-        << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << " with " << adGeo.NSensitiveVolume() << " AuxDetSensitive volumes" << "\n"
+        std::cout << '\n'
+        << "CRT HIT VOL " << (adGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
         << "CRT HIT AuxDetID " <<  adsc.AuxDetID() << " / AuxDetSensitiveID " << adsc.AuxDetSensitiveID() << "\n"
         << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
@@ -544,9 +602,12 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT abs0: " << abs0 << " , abs1: " << abs1 << '\n'
         << "CRT npeExpected: " << npeExpected << " , npeExpected2: " << npeExpected2 << '\n'
         << "CRT npeExp0: " << npeExp0 << " , npeExp1: " << npeExp1 << " , npeExp0Dual: " << npeExp0Dual << '\n'
-        << "CRT q0: " << q0 << ", q1: " << q1 << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << "\n"; 
+        << "CRT charge q0: " << q0 << ", q1: " << q1 << '\n'
+        << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << std::endl; 
     }//for AuxDetIDEs 
   }//for AuxDetChannels
+
+  if(fVerbose) std::cout << "outside of AD loop" << std::endl;
 
   // Apply coincidence trigger requirement
   std::unique_ptr<std::vector<icarus::crt::CRTData> > triggeredCRTHits(
@@ -562,13 +623,14 @@ void CRTDetSim::produce(art::Event & e) {
   uint32_t nhit_m=0, nhit_c=0, nhit_d=0;
   uint32_t neve_m=0, neve_c=0, neve_d=0;
 
-  // Loop over all FEBs with a hit and check coincidence requirement.
+  // Loop over all FEBs (key for taggers) with a hit and check coincidence requirement.
   // For each FEB, find channel providing trigger and determine if
   //  other hits are in concidence with the trigger (keep) 
   //  or if hits occur during R/O (dead time) (lost)
   //  or if hits are part of a different event (keep for now)
   // First apply dead time correction, biasing effect if configured to do so.
   // Front-end logic: For CERN or DC modules require at least one hit in each X-X layer.
+  if (fVerbose) std::cout << '\n' << "about to loop over taggers (size " << taggers.size() << " )" << std::endl;
   for (auto trg : taggers) {
 
       event = 0;
@@ -580,6 +642,7 @@ void CRTDetSim::produce(art::Event & e) {
       std::vector<icarus::crt::CRTChannelData> passingData;
       double ttrig=0.0, ttmp=0.0;
 
+      //check "open" coincidence (just check if coincdence possible w/hit in both layers) 
       if (trg.second.type=='c' && fApplyCoincidenceC && trg.second.layerid.size()<2) nmiss_opencoin_c++;
       if (trg.second.type=='d' && fApplyCoincidenceD && trg.second.layerid.size()<2) nmiss_opencoin_d++;
 
@@ -595,19 +658,19 @@ void CRTDetSim::produce(art::Event & e) {
  
         //get data for earliest entry
         chanTrigData = &(trg.second.data[0]);
-        ttrig = trigClock.Time((double)chanTrigData->T0()); //in us
+        ttrig = /*trigClock.Time((double)*/chanTrigData->T0()/1e3; //in us
         trackNHold.insert(chanTrigData->Channel());
         layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
         passingData.push_back(*chanTrigData);
 
-        //loop over all data products for this FEB
+        //outer (primary) loop over all data products for this FEB
         for ( size_t i=1; i< trg.second.data.size(); i++ ) {
 
           chanTmpData = &(trg.second.data[i]);
-          ttmp = trigClock.Time((double)chanTmpData->T0()); //in us
+          ttmp = /*trigClock.Time((double)*/chanTmpData->T0()/1e3; //in us
 
           //check that time sorting works
-          if ( ttmp < ttrig ) mf::LogInfo("CRT") << "SORTING OF DATA PRODUCTS FAILED!!!"<< "\n";
+          if ( ttmp < ttrig ) /*mf::LogError("CRT")*/std::cout << "SORTING OF DATA PRODUCTS FAILED!!!"<< std::endl;//"\n";
 
           //for C and D modules only and coin. enabled, if assumed trigger channel has no coincidence
           // set trigger channel to tmp channel and try again
@@ -632,28 +695,34 @@ void CRTDetSim::produce(art::Event & e) {
           //for m modules, need to check coincidence with other tagger objs
           if (trg.second.type=='m' && !minosPairFound && fApplyCoincidenceM) {
              for (auto trg2 : taggers) {
-               if( trg2.second.type=='m' && 
-                   trg.first != trg2.first &&
-                   trg.second.stackid == trg2.second.stackid &&
-                   trg.second.reg == trg2.second.reg &&
-                   ((trg2.second.layerid.find(1) != trg2.second.layerid.end() &&
+               if( trg2.second.type=='m' && //is other mod 'm' type
+                   trg.first != trg2.first && //other mod not same as this one
+                   trg.second.stackid == trg2.second.stackid && //other mod is in same stack
+                   trg.second.reg == trg2.second.reg && //other mod is in same region
+                   ((trg2.second.layerid.find(1) != trg2.second.layerid.end() && //modules are in adjacent layers
                     trg.second.layerid.find(0) != trg.second.layerid.end()) ||
                    (trg2.second.layerid.find(0) != trg2.second.layerid.end() && 
                     trg.second.layerid.find(1) != trg.second.layerid.end())) ) {
 
+                    //time sort all data for this FEB (all times for this event)
                     std::sort((trg2.second.data).begin(),(trg2.second.data).end(),TimeOrderCRTData);
 
+                    //find entry within coincidence window starting with this FEB's
+                    //triggering channel in coincidence candidate's FEB
                     for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
-                       double t2tmp = trigClock.Time((double)trg2.second.data[j].T0()); //in us
+                       double t2tmp = /*trigClock.Time((double)*/trg2.second.data[j].T0()/1e3; //in us
 		       if ( trg.first != trg2.first && util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM*1e-3) {
                            minosPairFound = true;
                            trg.second.macPair = std::make_pair(trg.first,trg2.first);
                            break;
                        }
                     }
+                    //we found a valid pair so move on to next step
                     if (minosPairFound) break;
                 }//if opposite layers in a stack
-              }//loop over febs
+              }//inner loop over febs (taggers)
+
+              //if no coincidence pairis found, reinitialize and move to next FEB
               if(!minosPairFound) {
                   chanTrigData = chanTmpData;
                   ttrig = ttmp;
@@ -667,45 +736,54 @@ void CRTDetSim::produce(art::Event & e) {
                   continue;
               }
           }//if minos module and no pair yet found
+
+          //for non-'m' modules, coincidence is within the module only
           if (trg.second.type != 'm') trg.second.macPair = std::make_pair(trg.first,trg.first);
 
           uint32_t adctmp = 0;
+          //std::vector<int> combined_trackids;
           //currently assuming bias time is same as track and hold window (FIX ME!)
           if ( (trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC*1e-3) || 
                (trg.second.type=='d' && ttmp < ttrig + fLayerCoincidenceWindowD*1e-3) ||
                (trg.second.type=='m' && ttmp < ttrig + fLayerCoincidenceWindowM*1e-3)) {
+
                if ((trackNHold.insert(chanTmpData->Channel())).second) {
                  passingData.push_back(*chanTmpData);
                  if (layerNHold.insert(trg.second.chanlayer[chanTmpData->Channel()]).second)
                    tpair=std::make_pair(chanTrigData->Channel(),chanTmpData->Channel());
-               }
+               } //channel not locked
+
                else if (ttmp < ttrig + fBiasTime) {
                  adctmp = (passingData.back()).ADC();
                  adctmp += chanTmpData->ADC();
                  (passingData.back()).SetADC(adctmp);
-               }
+               } //channel is locked but hit close in time to bias pulse height
+
                else switch (trg.second.type) {
                    case 'c' : nmiss_lock_c++; break;
                    case 'd' : nmiss_lock_d++; break;
                    case 'm' : nmiss_lock_m++; break;
-               }
+               } //data is discarded (not writeable)
+
           }//if hits inside readout window
+
           else if ( ttmp <= ttrig + fDeadTime ) {
               switch (trg.second.type) {
                   case 'c' : nmiss_dead_c++; break;
                   case 'd' : nmiss_dead_d++; break;
                   case 'm' : nmiss_dead_m++; break;
               }
-              continue;
-          }
+              //continue;
+          } // hits occuring during digitization lost (dead time)
+
           //"read out" data for this event, first hit after dead time as next trigger channel
-          else if ( ttmp > ttrig + fDeadTime ) {
+          else if ( ttmp > ttrig + fDeadTime || i==trg.second.data.size()-1) {
             uint32_t regnum = GetAuxDetRegionNum(trg.second.reg);
             if( (regions.insert(regnum)).second) regCounts[regnum] = 1;
             else regCounts[regnum]++;
 
             triggeredCRTHits->push_back(
-              icarus::crt::CRTData(trg.first,event,ttrig,chanTrigData->Channel(),tpair,trg.second.macPair,passingData));
+              icarus::crt::CRTData(eve, trg.first,event,ttrig,chanTrigData->Channel(),tpair,trg.second.macPair,passingData));
             event++;
             if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
             if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
@@ -721,45 +799,62 @@ void CRTDetSim::produce(art::Event & e) {
             minosPairFound = false;
           }
 
+          if (!(ttmp > ttrig + fDeadTime) && i==trg.second.data.size()-1) {
+            triggeredCRTHits->push_back(
+              icarus::crt::CRTData(eve,trg.first,event,ttrig,chanTrigData->Channel(),tpair,trg.second.macPair,passingData));
+            event++;
+            if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
+            if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
+            if (trg.second.type=='m') {neve_m++; nhit_m+=passingData.size(); }
+
+          }
         }//for data entries (hits)
     } //if intermodule coincidence or minos module
   } // for taggers
 
   if (fVerbose) { 
-    mf::LogInfo("CRT") << "CRT TRIGGERED HITS: " << triggeredCRTHits->size() << "\n"
-     << "CERN sim hits: " << nsim_c << '\n'
-     << "DC sim hits: " << nsim_d << '\n'
-     << "MINOS sim hits: " << nsim_m << '\n'
-     << "CERN hits > thresh: " << nchandat_c << '\n'
-     << "DC hits > thresh: " << nchandat_d << '\n'
-     << "MINOS hits > thresh: " << nchandat_m << '\n'
-     << "CERN hits lost from threshold: " << nmissthr_c << '\n'
-     << "CERN hits lost from fiber coincidence: " << nmiss_strcoin_c << '\n'
-     << "DC hits lost from threshold: " << nmissthr_d << '\n'
-     << "MINOS hits lost from threshold: " << nmissthr_m << '\n'
-     << "CERN hits lost from open coincidence: " << nmiss_opencoin_c << '\n'
-     << "DC hits lost from open coincidence: " << nmiss_opencoin_d << '\n'
-     << "CERN missed hits from trackNHold: " <<nmiss_lock_c << " (" << 100.0*nmiss_lock_c/nchandat_c << "%)" << '\n' 
-     << "DC missed hits from trackNHold: " <<nmiss_lock_d << " (" << 100.0*nmiss_lock_d/nchandat_d << "%)" <<'\n'
-     << "MINOS missed hits from trackNHold: " <<nmiss_lock_m << " (" << 100.0*nmiss_lock_m/nchandat_m << "%)" << '\n'
-     << "CERN missed hits from deadTime: " << nmiss_dead_c << " (" << 100.0*nmiss_dead_c/nchandat_c << "%)" << '\n'
-     << "DC missed hits from deadTime: " << nmiss_dead_d << " (" << 100.0*nmiss_dead_d/nchandat_d << "%)" << '\n'
-     << "MINOS missed hits from deadTime: " << nmiss_dead_m << " (" << 100.0*nmiss_dead_m/nchandat_m << "%)" << '\n'
-     << "missed CERN  hits from coincidence: " << nmiss_coin_c << " (" << 100.0*nmiss_coin_c/nchandat_c << "%)" << '\n'
-     << "missed DC    hits from coincidence: " << nmiss_coin_d << " (" << 100.0*nmiss_coin_d/nchandat_d << "%)" << '\n'
-     << "missed MINOS hits from coincidence: " << nmiss_coin_m << " (" << 100.0*nmiss_coin_m/nchandat_m << "%)" << '\n'
-     << "hits in CERN system: " << nhit_c << " (" << 100.0*nhit_c/nchandat_c << "%)" << '\n'
-     << "hits in DC system: " << nhit_d << " (" << 100.0*nhit_d/nchandat_d << "%)" << '\n'
-     << "hits in MINOS system: " << nhit_m << " (" << 100.0*nhit_m/nchandat_m << "%)" << '\n'
-     << "events in CERN system: " << neve_c << '\n'
-     << "events in DC system: " << neve_d << '\n'
-     << "events in MINOS system: " << neve_m << '\n';
+    std::cout << "|---------------------- CRTDetSim Summary ----------------------|" << '\n'
+     << " - - - EDeps from AuxDetIDE's - - -" << '\n'
+     << "  CERN  sim hits: " << nsim_c << '\n'
+     << "  MINOS sim hits: " << nsim_m << '\n'
+     << "  DC    sim hits: " << nsim_d << '\n' << '\n'
+     << " - - - Single Channel Threshold - - -" << '\n'
+     << " Pass:" << '\n'
+     << "   CERN hits  > thresh: " << nchandat_c << '\n'
+     << "   MINOS hits > thresh: " << nchandat_m << '\n'
+     << "   DC hits    > thresh: " << nchandat_d << '\n'
+     << " Lost:" << '\n'
+     << "   CERN hits  < thresh: " << nmissthr_c << '\n'
+     << "   MINOS hits < thresh: " << nmissthr_m << '\n'
+     << "   DC hits    < thresh: " << nmissthr_d << '\n' << '\n'
+     << " - - - System Specifc Coincidence Loss- - -" << '\n'
+     << "  CERN      fiber-fiber: " << nmiss_strcoin_c << '\n'
+     << "  CERN open layer-layer: " << nmiss_opencoin_c << '\n'
+     << "  DC   open layer-layer: " << nmiss_opencoin_d << '\n'
+     << "  CERN      layer-layer: " << nmiss_coin_c << " (" << 100.0*nmiss_coin_c/nchandat_c << "%)" << '\n'
+     << "  MINOS     layer-layer: " << nmiss_coin_m << " (" << 100.0*nmiss_coin_m/nchandat_m << "%)" << '\n'
+     << "  DC        layer-layer: " << nmiss_coin_d << " (" << 100.0*nmiss_coin_d/nchandat_d << "%)" << '\n' << '\n'
+     << " - - - Front-End Electronics Effects Losses - - -" << '\n'
+     << "  CERN  trackNHold: " << nmiss_lock_c << " (" << 100.0*nmiss_lock_c/nchandat_c << "%)" << '\n' 
+     << "  MINOS trackNHold: " << nmiss_lock_m << " (" << 100.0*nmiss_lock_m/nchandat_m << "%)" << '\n'
+     << "  DC    trackNHold: " << nmiss_lock_d << " (" << 100.0*nmiss_lock_d/nchandat_d << "%)" << '\n'
+     << "  CERN    deadTime: " << nmiss_dead_c << " (" << 100.0*nmiss_dead_c/nchandat_c << "%)" << '\n'
+     << "  MINOS   deadTime: " << nmiss_dead_m << " (" << 100.0*nmiss_dead_m/nchandat_m << "%)" << '\n'
+     << "  DC      deadTime: " << nmiss_dead_d << " (" << 100.0*nmiss_dead_d/nchandat_d << "%)" << '\n' << '\n'
+     << " - - - Passing Hits Pushed To Event - - -" << '\n'
+     << "  CERN    hits: " << nhit_c << " (" << 100.0*nhit_c/nchandat_c << "%)" << '\n'
+     << "  MINOS   hits: " << nhit_m << " (" << 100.0*nhit_m/nchandat_m << "%)" << '\n'
+     << "  DC      hits: " << nhit_d << " (" << 100.0*nhit_d/nchandat_d << "%)" << '\n'
+     << "  CERN  events: " << neve_c << '\n'
+     << "  MINOS events: " << neve_m << '\n'
+     << "  DC    events: " << neve_d << '\n' 
+     << "  Total pushes to event: " << triggeredCRTHits->size() << std::endl;
      
     std::map<uint32_t,uint32_t>::iterator it = regCounts.begin();
-    mf::LogInfo("CRT") << '\n' << "FEB events per CRT region: " << '\n';
+    std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
      
     while ( it != regCounts.end() ) {
-        mf::LogInfo("CRT") << "reg: " << (*it).first << " , events: " << (*it).second << '\n';
+        std::cout << "reg: " << (*it).first << " , events: " << (*it).second << '\n' << std::endl;
         it++;
     }
   } //if verbose
