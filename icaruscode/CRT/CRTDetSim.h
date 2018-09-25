@@ -57,7 +57,8 @@ private:
    * @param r Distance between the energy deposit and strip readout end [mm]
    * @return Trigger clock ticks at this true hit time
    */
-  uint32_t GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
+  //uint32_t 
+  double GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
                                 detinfo::ElecClock& clock,
                                 float t0, float npeMean, float r);
 
