@@ -147,7 +147,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     
     for(size_t roiIdx = 0; roiIdx < roiVec.size(); roiIdx++)
     {
-        const auto roi = roiVec[roiIdx];
+        const auto& roi = roiVec[roiIdx];
         
         // First up: copy out the relevent ADC bins into the ROI holder
         size_t roiLen = roi.second - roi.first;
