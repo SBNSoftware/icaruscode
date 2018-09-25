@@ -2,17 +2,17 @@
 
 BEGIN_PROLOG
 
-icarus_genie_simple:                        @local::standard_genie
-icarus_genie_simple.FluxType:               "dk2nu"
-icarus_genie_simple.GenFlavors:             [12, 14, -12, -14]
-icarus_genie_simple.BeamName:               "numi"
-icarus_genie_simple.DetectorLocation:       "icarus-numi"
-icarus_genie_simple.EventGeneratorList:     "Default+CCMEC+NCMEC"
-icarus_genie_simple.FluxSearchPaths:        "/icarus/data/users/betan009"
-icarus_genie_simple.FluxFiles:              ["g4numiv6_dk2nu_minervame*.root"]
-icarus_genie_simple.GHepPrintLevel:         13
-icarus_genie_simple.POTPerSpill:            5.e12
+icarus_genienumi_simple:                        @local::standard_genie
+icarus_genienumi_simple.FluxType:               "dk2nu"
+icarus_genienumi_simple.GenFlavors:             [12, 14, -12, -14]
+icarus_genienumi_simple.BeamName:               "numi"
+icarus_genienumi_simple.DetectorLocation:       "icarus-numi"
+icarus_genienumi_simple.EventGeneratorList:     "Default+CCMEC+NCMEC"
+icarus_genienumi_simple.FluxSearchPaths:        "/pnfs/icarus/persistent/numiflux_sample/neutrino_flux/"
+icarus_genienumi_simple.FluxFiles:              ["g4numiv6_dk2nu_minervame*.root"]
+icarus_genienumi_simple.GHepPrintLevel:         13
+icarus_genienumi_simple.POTPerSpill:            5.e12
 
-icarus_genie_simple.GlobalTimeOffset:       0.
-icarus_genie_simple.RandomTimeOffset:       1600.
+icarus_genienumi_simple.GlobalTimeOffset:       0.
+icarus_genienumi_simple.RandomTimeOffset:       9600.
 END_PROLOG
