@@ -1,0 +1,14 @@
+#include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+#include "reco_icarus_driver_crt.fcl"
+
+process_name: McRecoAll
+
+services: {
+  @table::icarus_basic_services
+}
+
+physics.reco: [@sequence::icarus_track_reconstruction]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
