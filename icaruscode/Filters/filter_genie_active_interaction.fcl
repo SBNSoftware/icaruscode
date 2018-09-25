@@ -71,7 +71,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_crygen_icarus.root"
+   fileName:    "%ifb_%tc-%p.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
