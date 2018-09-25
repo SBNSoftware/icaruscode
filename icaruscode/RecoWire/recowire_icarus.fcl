@@ -26,6 +26,26 @@ icarus_recowireroi:
     dQdxCalibFileName:                     "dQdxCalibrationPlanev1.txt"
 }
 
+icarus_decon1droi:
+{
+    module_type:                "Decon1DROI"
+    DigitModuleLabel:           "daq"
+    NoiseSource:                3
+    FFTSize:                    128      # re-initialize FFT service to this size
+    SaveWireWF:                 0
+    MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
+    TruncRMSThreshold:          6.
+    TruncRMSMinFraction:        0.6
+    OutputHistograms:           false
+    ROIFinderToolVec:
+    {
+        ROIFinderToolPlane0 : @local::icarus_morphologicalroifinder_0
+        ROIFinderToolPlane1 : @local::icarus_morphologicalroifinder_1
+        ROIFinderToolPlane2 : @local::icarus_morphologicalroifinder_2
+    }
+    Deconvolution:              @local::icarus_fullwiredeconvolution
+}
+
 icarus_recowireroiicarus:
 {
     module_type:                "RecoWireROIICARUS"
