@@ -16,7 +16,7 @@
 #include "lardata/Utilities/LArFFT.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icaruscode/RecoWire/DeconTools/IBaseline.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include "TH1D.h"
 
@@ -46,9 +46,9 @@ private:
     bool                                                 fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
     std::string                                          fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
     std::map<unsigned int, float>                        fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
-    
-    std::unique_ptr<icarus_tool::IBaseline>              fBaseline;
-    
+
+    std::unique_ptr<icarus_tool::IWaveformTool>          fWaveformTool;
+
     const geo::GeometryCore*                             fGeometry           = lar::providerFrom<geo::Geometry>();
     detinfo::DetectorProperties const*                   fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     art::ServiceHandle<util::LArFFT>                     fFFT;
@@ -101,9 +101,14 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
         }
     }
     
-    // Recover the baseline tool
-    fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
+    // Recover an instance of the waveform tool
+    // Here we just make a parameterset to pass to it...
+    fhicl::ParameterSet waveformToolParams;
     
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
     fFFT           = art::ServiceHandle<util::LArFFT>();
@@ -155,13 +160,18 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         holder.resize(roiLen);
         
         std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roi.second, holder.begin());
-        std::transform(holder.begin(),holder.end(),holder.begin(),[normFactor](float& deconVal){return deconVal * normFactor;});
+        std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::multiplies<float>(),std::placeholders::_1,normFactor));
+        
+        // Get the truncated mean and rms
+        float fullRMS;
+        float truncRMS;
+        float truncMean;
+        int   nTrunc;
+        
+        fWaveformTool->getTruncatedMeanRMS(holder, truncMean, fullRMS, truncRMS, nTrunc);
+        
+        std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
 
-        // Get the baseline from the tool
-        float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
-        
-        std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
-        
         // apply wire-by-wire calibration
         if (fDodQdxCalib){
             if(fdQdxCalib.find(channel) != fdQdxCalib.end()){
