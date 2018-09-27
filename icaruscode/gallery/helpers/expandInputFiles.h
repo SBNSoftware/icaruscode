@@ -13,10 +13,16 @@
 #define EXPANDINPUTFILES_H
 
 // C/C++ libraries
-#if __cplusplus >= 201703L // C++17
-// GCC 6.3 understands std::experimental::filesystem, ROOT Cling does not
+// <filesystem> is present from GCC 8 and CLANG 6, and as experimental from GCC 6;
+// but linking to these is still a mess, so until we get word from the compiler
+// that <filesystem> is available, we just don't use any (not even experimental)
+#if __cpp_lib_filesystem
+# define HAS_STD_FILESYSTEM 1
 # include <filesystem> // std::filesystem::path
+#else
+# define HAS_STD_FILESYSTEM 0
 #endif
+
 #include <fstream>
 #include <cctype> // std::isspace()
 #include <vector>
@@ -67,10 +73,10 @@ namespace details {
 } // namespace details
 
 /// Returns whether the specified path represents a file list.
-#if __cplusplus >= 201703L // C++17
+#if HAS_STD_FILESYSTEM
 inline bool isROOTfile(std::filesystem::path const& filePath)
   { return (filePath.extension() == ".root") && !filePath.stem().empty(); }
-#else // not C++17
+#else // no STL filesystem library:
 inline bool isROOTfile(std::string const& filePath) {
   if (filePath.length() < 6) return false; // too short (".root" is not good!)
   
@@ -84,7 +90,7 @@ inline bool isROOTfile(std::string const& filePath) {
   return filePath.substr(iExt) == ".root";
 } // isROOTfile()
 
-#endif // C++17?
+#endif // STL filesystem library?
 
 /// Expands the content of a file list into a vector of file paths (recursive).
 inline std::vector<std::string> expandFileList(std::string const& listPath) {
