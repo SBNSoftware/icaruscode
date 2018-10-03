@@ -44,12 +44,12 @@ set(ICARUSCODE_LIBDIRS $ENV{ICARUSCODE_LIB})
 
 link_directories(${GALLERY_LIBDIRS} ${LARSOFTOBJ_LIBDIRS} ${LARSOFT_LIBDIRS} ${ICARUSCODE_LIBDIRS})
 
-set(GALLERY_LIBS MF_MessageLogger MF_Utilities fhiclcpp canvas cetlib_except cetlib gallery)
+set(GALLERY_LIBS MF_MessageLogger fhiclcpp canvas cetlib_except cetlib gallery)
 set(ROOT_CORELIBS Core RIO Net Hist Graf Graf3d Gpad Tree Rint Postscript Matrix Physics MathCore Thread MultiProc pthread)
 set(LARSOFTOBJ_LIBS nusimdata_SimulationBase larcoreobj_SummaryData lardataobj_RawData lardataobj_OpticalDetectorData lardataobj_RecoBase lardataobj_AnalysisBase lardataobj_MCBase lardataobj_Simulation)
 
 set(ICARUSGEOMETRY_LIBS larcorealg_Geometry icarus_Geometry)
-set(ICARUSDETINFO_LIBS lardata_DetectorInfo)
+set(ICARUSDETINFO_LIBS lardataalg_DetectorInfo)
 
 ################################################################################
 ###  EXECUTABLE DIRECTIVES
