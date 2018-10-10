@@ -102,6 +102,9 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     
     // Don't assume that the filter vec has not already been initialized...
     fFilterVec.clear();
+    
+    // Keep track of the peak value
+    double peakValue(-100000.);
 
     // Now ready to set the response vector
     for(size_t bin = 0; bin <= numBins/2; bin++)
@@ -111,8 +114,13 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
 
         double f = fFunction->Eval(freq);
         
+        peakValue = std::max(peakValue, f);
+        
         fFilterVec.push_back(TComplex(f, 0.));
     }
+    
+    // "Normalize" to peak value
+    for(auto& filterValue : fFilterVec) filterValue = filterValue / peakValue;
     
     return;
 }
@@ -127,17 +135,17 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
     
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = 1.e-3 * detprop->SamplingRate();  // want in us
     double      numBins      = fFilterVec.size();
-    double      maxFreq      = 1. / (2. * samplingRate);
-    double      freqRes      = maxFreq / double(numBins);       // frequency resolution in cycles/us
+    double      samplingRate = detprop->SamplingRate(); // Sampling time in us
+    double      maxFreq      = 1.e6 / (2. * samplingRate);
+    double      minFreq      = maxFreq / numBins;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
     
-    TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, 0., maxFreq);
+    TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, minFreq, maxFreq);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        double freq = bin * freqRes;
+        double freq = bin * minFreq;
         
         hist->Fill(freq, fFilterVec.at(bin).Re(), 1.);
     }
