@@ -12,6 +12,9 @@ NoiseFromHistTool:
 CorrelatedNoiseTool:
 {
   tool_type:            CorrelatedNoise
+  Plane:                0
+  MedianNumBins:        25
+  StoreHistograms:      true
   NoiseRand:            0.
   NoiseHistFileName:    "T600noise_corr.root"
   HistogramName:        "hnoiseI1"
@@ -53,5 +56,9 @@ standard_simwire:
 #standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
 
 icarus_simwire:  @local::standard_simwire
+
+icarus_simwire.NoiseGenToolVec[0].Plane: 0
+icarus_simwire.NoiseGenToolVec[1].Plane: 1
+icarus_simwire.NoiseGenToolVec[2].Plane: 2
 
 END_PROLOG
