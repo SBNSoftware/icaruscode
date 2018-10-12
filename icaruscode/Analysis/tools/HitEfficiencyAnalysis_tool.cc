@@ -90,6 +90,7 @@ private:
     // Fcl parameters.
     std::string                 fLocalDirName;     ///< Fraction for truncated mean
     std::vector<unsigned short> fOffsetVec;        ///< Allow offsets for each plane
+    std::vector<float>          fSigmaVec;         ///< Window size for matching to SimChannels
     
     // Pointers to the histograms we'll create.
     std::vector<TH1F*>     fTotalElectronsVec;
@@ -151,6 +152,7 @@ void HitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
 {
     fLocalDirName = pset.get<std::string>("LocalDirName", std::string("wow"));
     fOffsetVec    = pset.get<std::vector<unsigned short>>("OffsetVec", std::vector<unsigned short>()={0,0,0});
+    fSigmaVec     = pset.get<std::vector<float>>("SigmaVec", std::vector<float>()={1.,1.,1.});
 }
 
 //----------------------------------------------------------------------------
@@ -311,8 +313,8 @@ void HitEfficiencyAnalysis::fillHistograms(const std::vector<recob::Hit>& hitVec
                 // Note that assumption breaks down for long pulse trains but worry about that later
                 for(const auto& hit : hitIter->second)
                 {
-                    unsigned short hitStartTick = hit->PeakTime() - 1. * hit->RMS();
-                    unsigned short hitStopTick  = hit->PeakTime() + 1. * hit->RMS();
+                    unsigned short hitStartTick = hit->PeakTime() - fSigmaVec.at(plane) * hit->RMS();
+                    unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec.at(plane) * hit->RMS();
                     unsigned short hitStartTDC  = fClockService->TPCTick2TDC(hitStartTick) - fOffsetVec.at(plane);
                     unsigned short hitStopTDC   = fClockService->TPCTick2TDC(hitStopTick)  - fOffsetVec.at(plane);
                     unsigned short midHitTDC    = (hitStopTDC + hitStartTDC) / 2;
