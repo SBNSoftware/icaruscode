@@ -69,6 +69,7 @@ icarus_basic_services:
     message:                             @local::icarus_message_services_interactive # from `messages_icarus.fcl`
 
     TimeTracker: {
+      printSummary: true
       dbOutput: {
         filename:  "TimingReport.db"
         overwrite: true
