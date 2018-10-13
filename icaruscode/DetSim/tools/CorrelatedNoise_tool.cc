@@ -207,11 +207,11 @@ void CorrelatedNoise::GenerateNoise(std::vector<float> &noise, double noise_fact
     
     GenerateUncorrelatedNoise(noise_unc,noise_factor,channel);
     
-//    int board=channel/32;
+    int board=channel/32;
     
     noise_corr.resize(noise.size(), 0.);
     
-//    GenerateCorrelatedNoise(noise_corr,noise_factor,board);
+    GenerateCorrelatedNoise(noise_corr,noise_factor,board);
     
     std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise.begin(),std::plus<float>());
     
