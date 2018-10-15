@@ -36,6 +36,8 @@
 # Available configurations:
 #
 # * `icarus_basic_services`: minimal set of art + LArSoft services
+# * `icarus_wirecalibration_services`: for signal processing and TPC wire signal
+#      calibration
 #
 #
 
