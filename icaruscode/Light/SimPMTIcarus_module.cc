@@ -132,6 +132,8 @@ namespace opdet{
     std::unordered_map< raw::Channel_t, Waveform_t > fFullWaveforms;
     detinfo::DetectorClocks const* fTimeService = nullptr; ///< DetectorClocks service provider.
     CLHEP::HepRandomEngine* fRandomEngine = nullptr; ///< Main random stream engine.
+    CLHEP::HepRandomEngine* fDarkNoiseRandomEngine = nullptr; ///< Dark noise random stream engine.
+    CLHEP::HepRandomEngine* fElecNoiseRandomEngine = nullptr; ///< Electronics noise random stream engine.
     
     /// Returns a random response whether a photon generates a photoelectron.
     bool KicksPhotoelectron() const;
@@ -205,11 +207,12 @@ namespace opdet{
       wsp[i]=(Pulse1PE(static_cast< double >(i)*1.e3/fSampling));
     }
     
-    // create a default random engine; obtain the random seed from NuRandomService,
+    // create three random engines for three independent tasks;
+    // obtain the random seed from NuRandomService,
     // unless overridden in configuration with key "Seed";
-    // currently using only one stream, but it is recommended that one stream is used
-    // per task, so that a change in one task does not cascade on all others.
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies", p, "Seed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
     
   }
 
@@ -390,7 +393,9 @@ namespace opdet{
     mf::LogDebug("SimPMTICARUS") << e.id() << std::endl;
 
     // update the pointer to the random engine (probably not necessary...)
-    fRandomEngine = &(art::ServiceHandle<art::RandomNumberGenerator>()->getEngine());
+    fRandomEngine = &(art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("Efficiencies"));
+    fDarkNoiseRandomEngine = &(art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("DarkNoise"));
+    fElecNoiseRandomEngine = &(art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("ElectronicsNoise"));
     fTimeService  = lar::providerFrom< detinfo::DetectorClocksService >();
 
     auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
@@ -451,7 +456,7 @@ namespace opdet{
   
   void SimPMTIcarus::AddNoise(Waveform_t& wave){
     
-    CLHEP::RandGauss random(*fRandomEngine, 0.0, fAmpNoise);
+    CLHEP::RandGauss random(*fElecNoiseRandomEngine, 0.0, fAmpNoise);
     for(auto& sample: wave) {
       double const noise = random.fire(); //gaussian noise
       sample += noise;
@@ -463,7 +468,7 @@ namespace opdet{
   {
     if (fDarkNoiseRate <= 0.0) return; // no dark noise
     size_t timeBin=0;
-    CLHEP::RandExponential random(*fRandomEngine, (1.0/fDarkNoiseRate)*1e9);
+    CLHEP::RandExponential random(*fDarkNoiseRandomEngine, (1.0/fDarkNoiseRate)*1e9);
     // Multiply by 10^9 since fDarkNoiseRate is in Hz (conversion from s to ns)
     double darkNoiseTime = random.fire();
     while (darkNoiseTime < wave.size()){
