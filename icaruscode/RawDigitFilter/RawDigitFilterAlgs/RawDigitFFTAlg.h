@@ -26,6 +26,9 @@
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include "TProfile.h"
 
 namespace icarus_tool
@@ -53,7 +56,7 @@ public:
     
     template <class T> void getFFTCorrection(std::vector<T>&, size_t) const;
     
-    void filterFFT(std::vector<short>&, size_t, size_t, float pedestal=0.) const;
+    void filterFFT(std::vector<short>&, size_t, size_t, float pedestal=0.);
     
 private:
     
@@ -62,6 +65,12 @@ private:
     std::string                                            fHistDirName;           ///< If writing histograms, the folder name
     std::vector<size_t>                                    fLoWireByPlane;         ///< Low wire for individual wire histograms
     std::vector<size_t>                                    fHiWireByPlane;         ///< Hi wire for individual wire histograms
+    
+    // Try to optimize the filter FFT function with static memory...
+    std::map<size_t,std::vector<std::complex<float>>>      fFilterVec;
+    std::vector<float>                                     fFFTInputVec;
+    std::vector<std::complex<float>>                       fFFTOutputVec;
+    std::vector<float>                                     fPowerVec;
 
     std::vector<std::vector<TProfile*>>                    fFFTPowerVec;
     std::vector<TProfile*>                                 fAveFFTPowerVec;
@@ -70,6 +79,8 @@ private:
 
     std::unique_ptr<icarus_tool::IWaveformTool>            fWaveformTool;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
+    
+    std::unique_ptr<Eigen::FFT<float>>                     fEigenFFT;
 
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
