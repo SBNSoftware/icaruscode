@@ -106,9 +106,9 @@ void RawDigitFilterAlg::FilterWaveform(RawDigitVector& dataVec, size_t channel, 
     // We need to start by collecting mean/rms
     float truncMean;
     float rmsVal;
-    float fracBins(2.*fTruncMeanFraction);
+    int   numBins;
     
-    fCharacterizationAlg.getMeanAndRms(dataVec, truncMean, rmsVal, fracBins);
+    fCharacterizationAlg.getMeanAndRms(dataVec, truncMean, rmsVal, numBins);
     
     // Declare erosion vector
     std::vector<float> meanVec;

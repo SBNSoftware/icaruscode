@@ -83,9 +83,10 @@ icarus_rawdigitfilter:
 
 icarus_rawdigitsmoother:
 {
-  module_type:            "RawDigitSmoother"
-  DigitModuleLabel:       "daq"
-  StructuringElementSize: 5
+  module_type:                "RawDigitSmoother"
+  DigitModuleLabel:           "daq"
+  StructuringElementWireSize: 3
+  StructuringElementTickSize: 5
   CharacterizationAlg:
   {
     TruncMeanFraction:     0.15

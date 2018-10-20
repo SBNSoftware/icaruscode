@@ -232,10 +232,11 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     float fullRMS;
     float truncRMS;
     float truncMean;
+    float nSig(2.5);
     int   nTrunc;
     
-    if (fUseDifference) fWaveformTool->getTruncatedMeanRMS(differenceVec, truncMean, fullRMS, truncRMS, nTrunc);
-    else                fWaveformTool->getTruncatedMeanRMS(dilationVec,   truncMean, fullRMS, truncRMS, nTrunc);
+    if (fUseDifference) fWaveformTool->getTruncatedMeanRMS(differenceVec, nSig, truncMean, fullRMS, truncRMS, nTrunc);
+    else                fWaveformTool->getTruncatedMeanRMS(dilationVec,   nSig, truncMean, fullRMS, truncRMS, nTrunc);
     
     // Calculate a threshold to use based on the truncated mand and rms...
     float threshold = truncMean + fNumSigma * std::max(float(0.5),truncRMS);
