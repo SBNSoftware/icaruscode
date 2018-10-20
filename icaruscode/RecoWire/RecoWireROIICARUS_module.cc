@@ -396,44 +396,17 @@ float RecoWireROIICARUS::getTruncatedRMS(const std::vector<float>& waveform) con
     
 float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform) const
 {
-    // do rms calculation - the old fashioned way and over all adc values
-    std::vector<float> locWaveform = waveform;
+    // Get the truncated mean and rms
+    float fullRMS;
+    float truncRMS;
+    float truncMean;
+    float nSig(2.0);  // make tight constraint
+    int   nTrunc;
     
-    // sort in ascending order so we can truncate the sume
-    std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
-    
-    // Get the mean of the waveform we're checking...
-    float sumWaveform  = std::accumulate(locWaveform.begin(),locWaveform.begin() + locWaveform.size()/2, 0.);
-    float meanWaveform = sumWaveform / float(locWaveform.size()/2);
-    
-    std::vector<float> locWaveformDiff(locWaveform.size()/2);
-    
-    std::transform(locWaveform.begin(),locWaveform.begin() + locWaveform.size()/2,locWaveformDiff.begin(), std::bind(std::minus<float>(),std::placeholders::_1,meanWaveform));
-    
-    float localRMS = std::inner_product(locWaveformDiff.begin(), locWaveformDiff.end(), locWaveformDiff.begin(), 0.);
-    
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(locWaveformDiff.size())));
-    
-    float threshold = 6. * localRMS;
-    
-    std::vector<float>::iterator threshItr = std::find_if(locWaveform.begin(),locWaveform.end(),[threshold](const auto& val){return std::fabs(val) > threshold;});
-    
-    int minNumBins = std::max(int(fTruncRMSMinFraction * locWaveform.size()),int(std::distance(locWaveform.begin(),threshItr)));
-    
-    // recalculate the mean
-    float aveSum      = std::accumulate(locWaveform.begin(), locWaveform.begin() + minNumBins, 0.);
-    float newPedestal = aveSum / minNumBins;
-    
-    // recalculate the rms
-    locWaveformDiff.resize(minNumBins);
-    
-    std::transform(locWaveform.begin(),locWaveform.begin() + minNumBins,locWaveformDiff.begin(), std::bind(std::minus<float>(),std::placeholders::_1,newPedestal));
-    
-    localRMS = std::inner_product(locWaveform.begin(), locWaveform.begin() + minNumBins, locWaveform.begin(), 0.);
-    localRMS = std::sqrt(std::max(float(0.),localRMS / float(minNumBins)));
+    fWaveformTool->getTruncatedMeanRMS(waveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
     
     // Set the waveform to the new baseline
-    std::transform(waveform.begin(), waveform.end(), fixedWaveform.begin(), [newPedestal](const auto& val){return val - newPedestal;});
+    std::transform(waveform.begin(), waveform.end(), fixedWaveform.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
     
     // Fill histograms
     if (fOutputHistograms)
@@ -443,20 +416,16 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
         // Recover plane and wire in the plane
         size_t plane = wids[0].Plane;
         size_t wire  = wids[0].Wire;
-        
-        float fullRMS = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
-        
-        fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(locWaveform.size())));
     
-        fPedestalOffsetVec[plane]->Fill(newPedestal,1.);
+        fPedestalOffsetVec[plane]->Fill(truncMean,1.);
         fFullRMSVec[plane]->Fill(fullRMS, 1.);
-        fTruncRMSVec[plane]->Fill(localRMS, 1.);
-        fNumTruncBinsVec[plane]->Fill(minNumBins, 1.);
-        fPedByChanVec[plane]->Fill(wire, newPedestal, 1.);
-        fTruncRMSByChanVec[plane]->Fill(wire, localRMS, 1.);
+        fTruncRMSVec[plane]->Fill(truncRMS, 1.);
+        fNumTruncBinsVec[plane]->Fill(nTrunc, 1.);
+        fPedByChanVec[plane]->Fill(wire, truncMean, 1.);
+        fTruncRMSByChanVec[plane]->Fill(wire, truncRMS, 1.);
     }
     
-    return localRMS;
+    return truncRMS;
 }
 
 } // end namespace caldata

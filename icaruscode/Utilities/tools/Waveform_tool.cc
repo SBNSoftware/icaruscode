@@ -17,7 +17,8 @@
 
 #include "art/Utilities/make_tool.h"
 
-#include "TVirtualFFT.h"
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
 
 #include <fstream>
 #include <iomanip>
@@ -41,8 +42,10 @@ public:
     void triangleSmooth(const std::vector<double>&, std::vector<double>&, size_t = 0)                           const override;
     void medianSmooth(  const std::vector<float>&,  std::vector<float>&,  size_t = 3)                           const override;
     void medianSmooth(  const std::vector<double>&, std::vector<double>&, size_t = 3)                           const override;
-    void getTruncatedMeanRMS(const std::vector<double>&, double&, double&, double&, int&)                       const override;
-    void getTruncatedMeanRMS(const std::vector<float>&, float&, float&, float&, int&)                           const override;
+    void getTruncatedMean(const std::vector<double>&, double&, int&)                                            const override;
+    void getTruncatedMean(const std::vector<float>&, float&, int&)                                              const override;
+    void getTruncatedMeanRMS(const std::vector<double>&, double, double&, double&, double&, int&)               const override;
+    void getTruncatedMeanRMS(const std::vector<float>&, float, float&, float&, float&, int&)                    const override;
     void firstDerivative(const std::vector<float>&,  std::vector<float>&)                                       const override;
     void firstDerivative(const std::vector<double>&, std::vector<double>&)                                      const override;
     void findPeaks(std::vector<float>::iterator,  std::vector<float>::iterator,  PeakTupleVec&, float, size_t)  const override;
@@ -79,7 +82,8 @@ public:
 private:
     template <typename T> void triangleSmooth(const std::vector<T>&, std::vector<T>&, size_t = 0)                                        const;
     template <typename T> void medianSmooth(  const std::vector<T>&, std::vector<T>&, size_t = 3)                                        const;
-    template <typename T> void getTruncatedMeanRMS(const std::vector<T>&, T&, T&, T&, int&)                                              const;
+    template <typename T> void getTruncatedMean(const std::vector<T>&, T&, int&)                                                         const;
+    template <typename T> void getTruncatedMeanRMS(const std::vector<T>&, T, T&, T&, T&, int&)                                           const;
     template <typename T> void firstDerivative(const std::vector<T>&,  std::vector<T>&)                                                  const;
     template <typename T> void findPeaks(typename std::vector<T>::iterator, typename std::vector<T>::iterator, PeakTupleVec&, T, size_t) const;
 
@@ -197,35 +201,40 @@ template <typename T> void WaveformTools::medianSmooth(const std::vector<T>& inp
     return;
 }
     
-void WaveformTools::getTruncatedMeanRMS(const std::vector<double>& waveform, double& mean, double& rmsFull, double& rmsTrunc, int& nTrunc) const
+void WaveformTools::getTruncatedMean(const std::vector<double>& waveform, double& mean, int& nTrunc) const
 {
-    getTruncatedMeanRMS<double>(waveform, mean, rmsFull, rmsTrunc, nTrunc);
-}
-    
-void WaveformTools::getTruncatedMeanRMS(const std::vector<float>& waveform, float& mean, float& rmsFull, float& rmsTrunc, int& nTrunc) const
-{
-    getTruncatedMeanRMS<float>(waveform, mean, rmsFull, rmsTrunc, nTrunc);
+    getTruncatedMean<double>(waveform, mean, nTrunc);
 }
 
-template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<T>& waveform, T& mean, T& rmsFull, T& rmsTrunc, int& nTrunc) const
+void WaveformTools::getTruncatedMean(const std::vector<float>& waveform, float& mean, int& nTrunc) const
+{
+    getTruncatedMean<float>(waveform, mean, nTrunc);
+}
+
+template <typename T> void WaveformTools::getTruncatedMean(const std::vector<T>& waveform, T& mean, int& nTrunc) const
 {
     // We need to get a reliable estimate of the mean and can't assume the input waveform will be ~zero mean...
     // Basic idea is to find the most probable value in the ROI presented to us
     // From that we can develop an average of the true baseline of the ROI.
-    // To do that we employ a map based scheme
-    std::map<int,int> frequencyMap;
-    int               mpCount(0);
-    int               mpVal(0);
+    std::pair<typename std::vector<T>::const_iterator,typename std::vector<T>::const_iterator> minMaxValItr = std::minmax_element(waveform.begin(),waveform.end());
+    
+    int minVal = std::floor(*minMaxValItr.first);
+    int maxVal = std::ceil(*minMaxValItr.second);
+    int range  = maxVal - minVal + 1;
+    
+    std::vector<int> frequencyVec(range, 0);
+    int              mpCount(0);
+    int              mpVal(0);
     
     for(const auto& val : waveform)
     {
-        int intVal = std::round(val);
+        int intVal = std::round(val) - minVal;
         
-        frequencyMap[intVal]++;
+        frequencyVec[intVal]++;
         
-        if (frequencyMap.at(intVal) > mpCount)
+        if (frequencyVec.at(intVal) > mpCount)
         {
-            mpCount = frequencyMap.at(intVal);
+            mpCount = frequencyVec[intVal];
             mpVal   = intVal;
         }
     }
@@ -233,38 +242,56 @@ template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<
     // take a weighted average of two neighbor bins
     int meanCnt  = 0;
     int meanSum  = 0;
-    int binRange = std::min(16, int(frequencyMap.size()/2 + 1));
+    int binRange = std::min(16, int(frequencyVec.size()/2 + 1));
     
-    for(int idx = -binRange; idx <= binRange; idx++)
+    for(int idx = mpVal-binRange; idx <= mpVal+binRange; idx++)
     {
-        std::map<int,int>::iterator neighborItr = frequencyMap.find(mpVal+idx);
+        if (idx < 0 || idx >= range) continue;
         
-        if (neighborItr != frequencyMap.end() && 8 * neighborItr->second > mpCount)
-        {
-            meanSum += neighborItr->first * neighborItr->second;
-            meanCnt += neighborItr->second;
-        }
+        meanSum += (idx + minVal) * frequencyVec[idx];
+        meanCnt += frequencyVec[idx];
     }
     
-    mean = T(meanSum) / T(meanCnt);  // Note that bins were expanded by a factor of 4 above
+    mean = T(meanSum) / T(meanCnt);
+    
+    return;
+}
+
+void WaveformTools::getTruncatedMeanRMS(const std::vector<double>& waveform, double nSig, double& mean, double& rmsFull, double& rmsTrunc, int& nTrunc) const
+{
+    getTruncatedMeanRMS<double>(waveform, nSig, mean, rmsFull, rmsTrunc, nTrunc);
+}
+    
+void WaveformTools::getTruncatedMeanRMS(const std::vector<float>& waveform, float nSig, float& mean, float& rmsFull, float& rmsTrunc, int& nTrunc) const
+{
+    getTruncatedMeanRMS<float>(waveform, nSig, mean, rmsFull, rmsTrunc, nTrunc);
+}
+
+template <typename T> void WaveformTools::getTruncatedMeanRMS(const std::vector<T>& waveform, T nSig, T& mean, T& rmsFull, T& rmsTrunc, int& nTrunc) const
+{
+    // We need to get a reliable estimate of the mean and can't assume the input waveform will be ~zero mean...
+    // Basic idea is to find the most probable value in the ROI presented to us
+    // From that we can develop an average of the true baseline of the ROI.
+    getTruncatedMean<T>(waveform, mean, nTrunc);
     
     // do rms calculation - the old fashioned way and over all adc values
-    typename std::vector<T> locWaveform = waveform;
+    typename std::vector<T> locWaveform(waveform.size());
     
-    std::transform(locWaveform.begin(), locWaveform.end(), locWaveform.begin(),std::bind(std::minus<T>(),std::placeholders::_1,mean));
-    
-    // sort in ascending order so we can truncate the sume
-    std::sort(locWaveform.begin(), locWaveform.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
+    std::transform(waveform.begin(), waveform.end(), locWaveform.begin(),std::bind(std::minus<T>(),std::placeholders::_1,mean));
 
     // recalculate the rms for truncation
     rmsFull = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
     rmsFull = std::sqrt(std::max(T(0.),rmsFull / T(locWaveform.size())));
-
-    // recalculate the rms for truncation
-    rmsTrunc = std::inner_product(locWaveform.begin(), locWaveform.begin() + meanCnt, locWaveform.begin(), 0.);
-    rmsTrunc = std::sqrt(std::max(T(0.),rmsTrunc / T(meanCnt)));
-    nTrunc   = meanCnt;
     
+    // Alternative to sorting is to remove elements outside of a cut range...
+    T rmsCut = nSig * rmsFull;
+    
+    typename std::vector<T>::iterator newEndItr = std::remove_if(locWaveform.begin(),locWaveform.end(),[mean,rmsCut](const auto& val){return std::abs(val-mean) > rmsCut;});
+
+    rmsTrunc = std::inner_product(locWaveform.begin(), newEndItr, locWaveform.begin(), 0.);
+    nTrunc   = std::distance(locWaveform.begin(),newEndItr);
+    rmsTrunc = std::sqrt(std::max(T(0.),rmsTrunc / T(nTrunc)));
+
     return;
 }
 
@@ -389,17 +416,21 @@ template <typename T> void WaveformTools::findPeaks(typename std::vector<T>::ite
     
 void WaveformTools::getFFTPower(const std::vector<float>& inputVec, std::vector<float>& outputPowerVec) const
 {
-    std::vector<double> inputDoubleVec(inputVec.size());
-    std::vector<double> outputDoubleVec(inputVec.size()/2);
+    // Get the FFT of the response
+    int fftDataSize = inputVec.size();
     
-    std::copy(inputVec.begin(),inputVec.end(),inputDoubleVec.begin());
+    Eigen::FFT<float> eigenFFT;
     
-    getFFTPower(inputDoubleVec, outputDoubleVec);
+    std::vector<std::complex<float>> fftOutputVec(inputVec.size());
     
-    if (outputDoubleVec.size() != outputPowerVec.size()) outputPowerVec.resize(outputDoubleVec.size());
+    eigenFFT.fwd(fftOutputVec, inputVec);
     
-    std::copy(outputDoubleVec.begin(),outputDoubleVec.end(),outputPowerVec.begin());
+    size_t halfFFTDataSize(fftDataSize/2);
     
+    if (outputPowerVec.size() != halfFFTDataSize) outputPowerVec.resize(halfFFTDataSize, 0.);
+    
+    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, outputPowerVec.begin(), [](const auto& val){return std::abs(val);});
+
     return;
 }
 
@@ -408,22 +439,17 @@ void WaveformTools::getFFTPower(const std::vector<double>& inputVec, std::vector
     // Get the FFT of the response
     int fftDataSize = inputVec.size();
     
-    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C");
+    Eigen::FFT<double> eigenFFT;
     
-    fftr2c->SetPoints(inputVec.data());
-    fftr2c->Transform();
+    std::vector<std::complex<double>> fftOutputVec(inputVec.size());
     
-    // Recover the results so we can compute the power spectrum
-    size_t halfFFTDataSize(fftDataSize/2 + 1);
+    eigenFFT.fwd(fftOutputVec, inputVec);
     
-    std::vector<double> realVals(halfFFTDataSize);
-    std::vector<double> imaginaryVals(halfFFTDataSize);
+    size_t halfFFTDataSize(fftDataSize/2);
     
-    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
+    if (outputPowerVec.size() != halfFFTDataSize) outputPowerVec.resize(halfFFTDataSize, 0.);
     
-    if (outputPowerVec.size() != halfFFTDataSize) outputPowerVec.resize(halfFFTDataSize,0.);
-    
-    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), outputPowerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
+    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, outputPowerVec.begin(), [](const auto& val){return std::abs(val);});
     
     return;
 }

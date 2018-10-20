@@ -38,6 +38,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 
+#include <Eigen/Core>
 
 class RawDigitSmoother : public art::EDProducer
 {
@@ -58,21 +59,28 @@ private:
     // Set up our container for the waveforms
     // We'll keep things in a tuple so we can also keep track of the pedestal and rms for output
     using WireTuple    = std::tuple<raw::ChannelID_t,float,float,caldata::RawDigitVector>;
-    using WaveformList = std::list<WireTuple>;
+    using WaveformVec  = std::vector<WireTuple>;
+    using WaveformList = std::list<WireTuple*>;
 
     void saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> >&, WireTuple&);
+    void saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> >&, raw::ChannelID_t&, float, float, caldata::RawDigitVector&);
     
     // Define the structuring element - currently just a vector of vectors
     using StructuringElement = std::vector<std::vector<short>>;
 
     // Fcl parameters.
     std::string                          fDigitModuleLabel;      ///< The full collection of hits
+    bool                                 fOutputHistograms;      ///< Output histograms?
+    bool                                 fOutputWaveforms;       ///< Output waveforms?
+
+    art::TFileDirectory*                 fHistDirectory;
 
     // Statistics.
     int fNumEvent;        ///< Number of events seen.
     
     // Once defined the structuring element will not change
-    size_t                               fStructuringElementSize;
+    size_t                               fStructuringElementWireSize;
+    size_t                               fStructuringElementTickSize;
     StructuringElement                   fStructuringElement;
     
     // Correction algorithms
@@ -128,13 +136,29 @@ RawDigitSmoother::~RawDigitSmoother()
 ///
 void RawDigitSmoother::configure(fhicl::ParameterSet const & pset)
 {
-    fDigitModuleLabel       = pset.get<std::string>("DigitModuleLabel",       "daq");
-    fStructuringElementSize = pset.get<size_t>     ("StructuringElementSize",     5);
+    fDigitModuleLabel           = pset.get<std::string>("DigitModuleLabel",           "daq");
+    fStructuringElementWireSize = pset.get<size_t>     ("StructuringElementWireSize",     5);
+    fStructuringElementTickSize = pset.get<size_t>     ("StructuringElementTickSize",     5);
+    fOutputHistograms           = pset.get< bool      >("OutputHistograms",           false);
+    fOutputWaveforms            = pset.get< bool      >("OutputWaveforms",            false);
+
+    fStructuringElement.resize(fStructuringElementWireSize);
     
-    fStructuringElement.resize(fStructuringElementSize);
+    // Create a rectangular structuring element to start with
+    for(auto& row : fStructuringElement) row.resize(fStructuringElementTickSize,1);
     
-    // Create a box structuring element to start with
-    for(auto& row : fStructuringElement) row.resize(fStructuringElementSize,1);
+    // If asked, define the global histograms
+    if (fOutputHistograms)
+    {
+        // Access ART's TFileService, which will handle creating and writing
+        // histograms and n-tuples for us.
+        art::ServiceHandle<art::TFileService> tfs;
+        
+        fHistDirectory = tfs.get();
+        
+        // Make a directory for these histograms
+ //       art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu",fPlane));
+    }
 }
 
 //----------------------------------------------------------------------------
@@ -199,8 +223,50 @@ void RawDigitSmoother::produce(art::Event & event)
         // Sort (use a lambda to sort by channel id)
         std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
         
-        // Get an instance of our input waveform list
+        // Get size of input data vectors
+        size_t rawDataSize = rawDigitVec.front()->Samples();
+
+        // Get an instance of our input waveform list and digit vect
         WaveformList inputWaveformList;
+        WaveformVec  wireTupleVec;
+        
+        // First we create vector which contains the data
+        for(size_t idx = 0; idx < fStructuringElementWireSize; idx++) wireTupleVec.push_back(WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize)));
+        
+        // Now set the address of each of these in the list
+        for(size_t idx = 0; idx < fStructuringElementWireSize; idx++) inputWaveformList.push_back(&wireTupleVec[idx]);
+
+        // ok, make containers for the various things we are going to calculate
+        WireTuple erosionTuple    = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        WireTuple dilationTuple   = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        WireTuple edgeTuple       = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        WireTuple differenceTuple = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        WireTuple averageTuple    = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        WireTuple medianTuple     = WireTuple(0,0.,0.,caldata::RawDigitVector(rawDataSize, 0));
+        
+        caldata::RawDigitVector& erosionVec    = std::get<3>(erosionTuple);
+        caldata::RawDigitVector& dilationVec   = std::get<3>(dilationTuple);
+        caldata::RawDigitVector& edgeVec       = std::get<3>(edgeTuple);
+        caldata::RawDigitVector& differenceVec = std::get<3>(edgeTuple);
+        caldata::RawDigitVector& averageVec    = std::get<3>(averageTuple);
+        caldata::RawDigitVector& medianVec     = std::get<3>(medianTuple);
+
+        // Use an index for the last valid waveform...
+        size_t validIndex = 0;
+        
+        // On the very inside loop we are going to keep track of ADC values in a vector... we can speed things up by pre determining some parameters
+        size_t maxAdcBinSize(0);
+        
+        for(const auto& rowVec : fStructuringElement)
+        {
+            for(const auto& structElemVal : rowVec)
+                if (structElemVal) maxAdcBinSize++;
+        }
+        
+        std::vector<short> adcBinValVec(maxAdcBinSize, 0);
+
+        // Avoid creating and destroying a vector each loop... make a single one here
+        caldata::RawDigitVector inputAdcVector(rawDataSize);
         
         geo::WireID lastWireID = fGeometry->ChannelToWire(rawDigitVec.front()->Channel())[0];
     
@@ -208,31 +274,32 @@ void RawDigitSmoother::produce(art::Event & event)
         for(const auto& rawDigit : rawDigitVec)
         {
             raw::ChannelID_t channel = rawDigit->Channel();
-        
-            // The below try-catch block may no longer be necessary
+            
+            if (channel >= maxChannels) continue;
+
             // Decode the channel and make sure we have a valid one
             std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
-        
-            if (channel >= maxChannels) continue;
             
             // Look to see if we have crossed to another plane
             if (lastWireID.asPlaneID().cmp(wids[0].asPlaneID()) != 0)
             {
-                // Dispose of the end set of RawDigits
-                for(size_t idx = 0; idx < fStructuringElementSize/2; idx++)
+                // Dispose of the end set of RawDigits (in order)
+                WaveformList::iterator inputWaveItr = inputWaveformList.begin();
+                
+                std::advance(inputWaveItr, fStructuringElementWireSize/2);
+                
+                while(++inputWaveItr != inputWaveformList.end())
                 {
-                    saveRawDigits(erosionRawDigit,    inputWaveformList.back());
-                    saveRawDigits(dilationRawDigit,   inputWaveformList.back());
-                    saveRawDigits(edgeRawDigit,       inputWaveformList.back());
-                    saveRawDigits(differenceRawDigit, inputWaveformList.back());
-                    saveRawDigits(averageRawDigit,    inputWaveformList.back());
-                    saveRawDigits(medianRawDigit,     inputWaveformList.back());
-
-                    inputWaveformList.pop_back();
+                    saveRawDigits(erosionRawDigit,    **inputWaveItr);
+                    saveRawDigits(dilationRawDigit,   **inputWaveItr);
+                    saveRawDigits(edgeRawDigit,       **inputWaveItr);
+                    saveRawDigits(differenceRawDigit, **inputWaveItr);
+                    saveRawDigits(averageRawDigit,    **inputWaveItr);
+                    saveRawDigits(medianRawDigit,     **inputWaveItr);
                 }
                 
-                // Clear the container to start over
-                inputWaveformList.clear();
+                // Reset the valid waveforms index
+                validIndex = 0;
             }
             
             // Update the last wire id before we forget...
@@ -248,105 +315,163 @@ void RawDigitSmoother::produce(art::Event & event)
                 continue;
             }
             
-            while(inputWaveformList.size() >= fStructuringElementSize) inputWaveformList.pop_front();
+            // If the buffer is "full" then we need to rotate the first to the end so we can reuse
+            if (validIndex == inputWaveformList.size())
+            {
+                inputWaveformList.push_back(inputWaveformList.front());
+                inputWaveformList.pop_front();
+            }
+            else validIndex++;
+            
+            // Find the right entry
+            WaveformList::iterator inputWaveItr = inputWaveformList.begin();
+            WaveformList::iterator midWaveItr   = inputWaveItr;
+            
+            std::advance(inputWaveItr, validIndex - 1);
+            std::advance(midWaveItr,   validIndex / 2);
 
-            inputWaveformList.emplace_back(channel,0.,0.,caldata::RawDigitVector(rawDigit->Samples()));
-
-            caldata::RawDigitVector& rawadc = std::get<3>(inputWaveformList.back());
+            caldata::RawDigitVector& rawadc = std::get<3>(**inputWaveItr);
             
             // And now uncompress
-            raw::Uncompress(rawDigit->ADCs(), rawadc, rawDigit->Compression());
+            raw::Uncompress(rawDigit->ADCs(), inputAdcVector, rawDigit->Compression());
             
             float truncMean;
             float rmsVal;
             float pedCorVal;
             
             // Recover the mean and rms for this waveform
-            fCharacterizationAlg.getMeanRmsAndPedCor(rawadc, channel, plane, wire, truncMean, rmsVal, pedCorVal);
+            fCharacterizationAlg.getMeanRmsAndPedCor(inputAdcVector, channel, plane, wire, truncMean, rmsVal, pedCorVal);
             
             // Recover the database version of the pedestal
             float pedestal = fPedestalRetrievalAlg.PedMean(channel);
 
-            std::transform(rawadc.begin(),rawadc.end(),rawadc.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorVal));
+            std::transform(inputAdcVector.begin(),inputAdcVector.end(),rawadc.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedCorVal));
             
-            std::get<1>(inputWaveformList.back()) = pedestal;
-            std::get<2>(inputWaveformList.back()) = rmsVal;
+            std::get<0>(**inputWaveItr) = channel;
+            std::get<1>(**inputWaveItr) = pedestal;
+            std::get<2>(**inputWaveItr) = rmsVal;
             
             // Finally, at this point we are prepared to do some work!
-            if (inputWaveformList.size() == fStructuringElementSize)
+            if (validIndex == inputWaveformList.size())
             {
-                size_t halfStructuringElementSize = fStructuringElementSize / 2;
                 
-                WaveformList::iterator midChanItr = inputWaveformList.begin();
+                raw::ChannelID_t midChannel                     = std::get<0>(**midWaveItr);
+                float            midPedestal                    = std::get<1>(**midWaveItr);
+                float            midRmsVal                      = std::get<2>(**midWaveItr);
+                size_t           halfStructuringElementTickSize = fStructuringElementTickSize / 2;
                 
-                std::advance(midChanItr, halfStructuringElementSize);
-
-                // ok, make copies of this waveform for the erosion, dilation and avrerage
-                WireTuple erosionTuple    = *midChanItr;
-                WireTuple dilationTuple   = *midChanItr;
-                WireTuple edgeTuple       = *midChanItr;
-                WireTuple differenceTuple = *midChanItr;
-                WireTuple averageTuple    = *midChanItr;
-                WireTuple medianTuple     = *midChanItr;
-
-                caldata::RawDigitVector& erosionVec    = std::get<3>(erosionTuple);
-                caldata::RawDigitVector& dilationVec   = std::get<3>(dilationTuple);
-                caldata::RawDigitVector& edgeVec       = std::get<3>(edgeTuple);
-                caldata::RawDigitVector& differenceVec = std::get<3>(edgeTuple);
-                caldata::RawDigitVector& averageVec    = std::get<3>(averageTuple);
-                caldata::RawDigitVector& medianVec     = std::get<3>(medianTuple);
+                caldata::RawDigitVector& currentVec = std::get<3>(**midWaveItr);
                 
-                caldata::RawDigitVector& currentVec    = std::get<3>(*midChanItr);
+                // Fill the edge bins with the pedestal value
+                for(size_t adcBinIdx = 0; adcBinIdx < halfStructuringElementTickSize; adcBinIdx++)
+                {
+                    size_t adcLastBinIdx = rawDataSize - adcBinIdx - 1;
+                    
+                    erosionVec[adcBinIdx]        = midPedestal;
+                    erosionVec[adcLastBinIdx]    = midPedestal;
+                    dilationVec[adcBinIdx]       = midPedestal;
+                    dilationVec[adcLastBinIdx]   = midPedestal;
+                    edgeVec[adcBinIdx]           = midPedestal;
+                    edgeVec[adcLastBinIdx]       = midPedestal;
+                    differenceVec[adcBinIdx]     = midPedestal;
+                    differenceVec[adcLastBinIdx] = midPedestal;
+                    averageVec[adcBinIdx]        = midPedestal;
+                    averageVec[adcLastBinIdx]    = midPedestal;
+                    medianVec[adcBinIdx]         = midPedestal;
+                    medianVec[adcLastBinIdx]     = midPedestal;
+                }
 
                 // Ok, buckle up!
                 // Loop will run from half the structuring element to size less half the structuring element. Edges will simply be what they were
-                for(size_t adcBinIdx = halfStructuringElementSize; adcBinIdx < erosionVec.size() - halfStructuringElementSize; adcBinIdx++)
+                for(size_t adcBinIdx = halfStructuringElementTickSize; adcBinIdx < erosionVec.size() - halfStructuringElementTickSize; adcBinIdx++)
                 {
-                    std::vector<short> adcBinValVec;
-                    size_t             rowIdx(0);
+                    size_t rowIdx(0);
+                    size_t adcBinVecIdx(0);
                     
-                    adcBinValVec.reserve(fStructuringElementSize*fStructuringElementSize);
+                    adcBinValVec.reserve(fStructuringElementWireSize*fStructuringElementTickSize);
                     
                     // Outside loop over vectors
                     for(const auto& curTuple : inputWaveformList)
                     {
-                        const caldata::RawDigitVector& curAdcVec = std::get<3>(curTuple);
+                        const caldata::RawDigitVector& curAdcVec = std::get<3>(*curTuple);
                         
-                        for(size_t colIdx = 0; colIdx < fStructuringElementSize; colIdx++)
+                        for(size_t colIdx = 0; colIdx < fStructuringElementTickSize; colIdx++)
                         {
-                            if (fStructuringElement[rowIdx][colIdx]) adcBinValVec.push_back(curAdcVec.at(colIdx + adcBinIdx - halfStructuringElementSize));
+                            if (fStructuringElement[rowIdx][colIdx]) adcBinValVec[adcBinVecIdx++] = curAdcVec[colIdx + adcBinIdx - halfStructuringElementTickSize];
                         }
+                        
+                        rowIdx++;
                     }
                     
                     std::sort(adcBinValVec.begin(),adcBinValVec.end());
                     
-                    erosionVec.at(adcBinIdx)    = adcBinValVec.front();
-                    dilationVec.at(adcBinIdx)   = adcBinValVec.back();
-                    edgeVec.at(adcBinIdx)       = dilationVec.at(adcBinIdx) - currentVec.at(adcBinIdx) + std::get<1>(edgeTuple);
-                    differenceVec.at(adcBinIdx) = dilationVec.at(adcBinIdx) - erosionVec.at(adcBinIdx) + std::get<1>(edgeTuple);
-                    averageVec.at(adcBinIdx)    = (erosionVec.at(adcBinIdx) + dilationVec.at(adcBinIdx)) / 2;
-                    medianVec.at(adcBinIdx)     = adcBinValVec.at(adcBinValVec.size()/2);
+                    erosionVec[adcBinIdx]    = adcBinValVec.front();
+                    dilationVec[adcBinIdx]   = adcBinValVec.back();
+                    edgeVec[adcBinIdx]       = dilationVec[adcBinIdx] - currentVec[adcBinIdx] + midPedestal;
+                    differenceVec[adcBinIdx] = dilationVec[adcBinIdx] - erosionVec[adcBinIdx] + midPedestal;
+                    averageVec[adcBinIdx]    = (erosionVec[adcBinIdx] + dilationVec[adcBinIdx]) / 2;
+                    medianVec[adcBinIdx]     = adcBinValVec[adcBinValVec.size()/2];
                 }
-                
-                saveRawDigits(erosionRawDigit,    erosionTuple);
-                saveRawDigits(dilationRawDigit,   dilationTuple);
-                saveRawDigits(edgeRawDigit,       edgeTuple);
-                saveRawDigits(differenceRawDigit, differenceTuple);
-                saveRawDigits(averageRawDigit,    averageTuple);
-                saveRawDigits(medianRawDigit,     medianTuple);
+
+                saveRawDigits(erosionRawDigit,    midChannel, midPedestal, midRmsVal, std::get<3>(erosionTuple));
+                saveRawDigits(dilationRawDigit,   midChannel, midPedestal, midRmsVal, std::get<3>(dilationTuple));
+                saveRawDigits(edgeRawDigit,       midChannel, midPedestal, midRmsVal, std::get<3>(edgeTuple));
+                saveRawDigits(differenceRawDigit, midChannel, midPedestal, midRmsVal, std::get<3>(differenceTuple));
+                saveRawDigits(averageRawDigit,    midChannel, midPedestal, midRmsVal, std::get<3>(averageTuple));
+                saveRawDigits(medianRawDigit,     midChannel, midPedestal, midRmsVal, std::get<3>(medianTuple));
             }
-            else if (inputWaveformList.size() <= fStructuringElementSize / 2)
+            else if (validIndex <= fStructuringElementWireSize / 2)
             {
-                saveRawDigits(erosionRawDigit,    inputWaveformList.back());
-                saveRawDigits(dilationRawDigit,   inputWaveformList.back());
-                saveRawDigits(edgeRawDigit,       inputWaveformList.back());
-                saveRawDigits(differenceRawDigit, inputWaveformList.back());
-                saveRawDigits(averageRawDigit,    inputWaveformList.back());
-                saveRawDigits(medianRawDigit,     inputWaveformList.back());
+                saveRawDigits(erosionRawDigit,    **inputWaveItr);
+                saveRawDigits(dilationRawDigit,   **inputWaveItr);
+                saveRawDigits(edgeRawDigit,       **inputWaveItr);
+                saveRawDigits(differenceRawDigit, **inputWaveItr);
+                saveRawDigits(averageRawDigit,    **inputWaveItr);
+                saveRawDigits(medianRawDigit,     **inputWaveItr);
             }
         }
     }
-    
+/*
+    if (fOutputWaveforms)
+    {
+        // Try to limit to the wire number (since we are already segregated by plane)
+        std::vector<geo::WireID> wids  = fGeometry->ChannelToWire(channel);
+        size_t                   cryo  = wids[0].Cryostat;
+        size_t                   tpc   = wids[0].TPC;
+        size_t                   plane = wids[0].Plane;
+        size_t                   wire  = wids[0].Wire;
+        
+        // Make a directory for these histograms
+        art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu/c%1zu/c%1zut%1zuwire_%05zu",fPlane,cnt,cryo,tpc,wire));
+        
+        // We keep track of four histograms:
+        try
+        {
+            //            origWaveHist   = dir.make<TProfile>(Form("Inp_%03zu_ctw%01zu/%01zu/%05zu",cnt,cryo,tpc,wire), "Waveform", waveform.size(),      0, waveform.size(),      -500., 500.);
+            histogramMap[icarus_tool::WAVEFORM] =
+            dir.make<TProfile>(Form("Wfm_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform", waveformSize, 0, waveformSize, -500., 500.);
+            histogramMap[icarus_tool::EROSION] =
+            dir.make<TProfile>(Form("Ero_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Erosion",  waveformSize, 0, waveformSize, -500., 500.);
+            histogramMap[icarus_tool::DILATION] =
+            dir.make<TProfile>(Form("Dil_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Dilation", waveformSize, 0, waveformSize, -500., 500.);
+            histogramMap[icarus_tool::AVERAGE] =
+            dir.make<TProfile>(Form("Ave_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Average",  waveformSize, 0, waveformSize, -500., 500.);
+            histogramMap[icarus_tool::DIFFERENCE] =
+            dir.make<TProfile>(Form("Dif_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Average",  waveformSize, 0, waveformSize, -500., 500.);
+            
+            // This is a kludge so that the ROI histogram ends up in the same diretory as the waveforms
+            histogramMap[ROIHISTOGRAM] =
+            dir.make<TProfile>(Form("ROI_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "ROI",      waveformSize, 0, waveformSize, -500., 500.);
+            
+            // Also, if smoothing then we would like to keep track of the original waveform too
+            histogramMap[WAVEFORMHIST] =
+            dir.make<TProfile>(Form("Inp_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform", waveformSize, 0, waveformSize, -500., 500.);
+        } catch(...)
+        {
+            std::cout << "Caught exception trying to make new hists, tpc,plane,cnt,wire: " << tpc << ", " << fPlane << ", " << cnt << ", " << wire << std::endl;
+        }
+    }
+*/
     // Add tracks and associations to event.
     event.put(std::move(erosionRawDigit),    "erosion");
     event.put(std::move(dilationRawDigit),   "dilation");
@@ -354,6 +479,8 @@ void RawDigitSmoother::produce(art::Event & event)
     event.put(std::move(differenceRawDigit), "difference");
     event.put(std::move(averageRawDigit),    "average");
     event.put(std::move(medianRawDigit),     "median");
+    
+    return;
 }
 
 void RawDigitSmoother::saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> >& filteredRawDigit,
@@ -364,6 +491,18 @@ void RawDigitSmoother::saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> 
     float                    rms         = std::get<2>(wireTuple);
     caldata::RawDigitVector& rawDigitVec = std::get<3>(wireTuple);
     
+    filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
+    filteredRawDigit->back().SetPedestal(pedestal,rms);
+    
+    return;
+}
+
+void RawDigitSmoother::RawDigitSmoother::saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> >& filteredRawDigit,
+                                                       raw::ChannelID_t&                             channel,
+                                                       float                                         pedestal,
+                                                       float                                         rms,
+                                                       caldata::RawDigitVector&                      rawDigitVec)
+{
     filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
     filteredRawDigit->back().SetPedestal(pedestal,rms);
     

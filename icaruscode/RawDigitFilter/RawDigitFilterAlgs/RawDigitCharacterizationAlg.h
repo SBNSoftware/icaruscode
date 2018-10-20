@@ -58,8 +58,15 @@ public:
     void getMeanAndRms(const RawDigitVector& rawWaveform,
                        float&                aveVal,
                        float&                rmsVal,
-                       float                 fracBins) const;
+                       int&                  numBins) const;
     
+    // Basic waveform mean and rms plus trunated rms
+    void getMeanAndTruncRms(const RawDigitVector& rawWaveform,
+                            float&                aveVal,
+                            float&                rmsVal,
+                            float&                rmsTrunc,
+                            int&                  numBins) const;
+
     // Truncated rms calculation
     void getTruncatedRMS(const RawDigitVector& rawWaveform,
                          float&                pedestal,
@@ -133,8 +140,6 @@ private:
     std::vector<TProfile*>              fMinMaxProfiles;
     std::vector<TProfile*>              fSkewnessProfiles;
     std::vector<TProfile*>              fModeRatioProfiles;
-    
-    bool                                fFirstEvent;
 
     caldata::ChannelGroups              fChannelGroups;
     

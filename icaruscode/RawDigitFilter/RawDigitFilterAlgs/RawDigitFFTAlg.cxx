@@ -13,10 +13,13 @@
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "icaruscode/Utilities/tools/IFilter.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include <cmath>
 #include <algorithm>
+#include <complex>
 
-#include "TVirtualFFT.h"
 #include "TComplex.h"
 
 namespace caldata
@@ -134,54 +137,29 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     // than the threshold input above.
     int fftDataSize = corValVec.size();
     
-    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C");
+    Eigen::FFT<T> eigenFFT;
     
-    // In the first step we copy the input array into a container of doubles to pass to the FFT
-    std::vector<double> fftInputVec(fftDataSize);
+    std::vector<std::complex<T>> fftOutputVec(corValVec.size());
     
-    std::copy(corValVec.begin(),corValVec.end(),fftInputVec.begin());
-    
-    fftr2c->SetPoints(fftInputVec.data());
-    fftr2c->Transform();
-    
-    // In the second step we recover the power spectrum
-    std::vector<double> realVals(fftDataSize);
-    std::vector<double> imaginaryVals(fftDataSize);
-    
-    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
+    eigenFFT.fwd(fftOutputVec, corValVec);
     
     size_t halfFFTDataSize(fftDataSize/2);
     
     std::vector<double> powerVec(halfFFTDataSize);
     
-    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
+    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
     
     // Third step is to zap those bins under threshold
     for(size_t idx = 0; idx < halfFFTDataSize; idx++)
     {
         if (powerVec[idx] < minPowerThreshold)
         {
-            realVals[idx]                  = 0.;
-            realVals[fftDataSize-idx]      = 0.;
-            imaginaryVals[idx]             = 0.;
-            imaginaryVals[fftDataSize-idx] = 0.;
+            fftOutputVec.at(idx)                   = std::complex<T>(0.,0.);
+            fftOutputVec.at(fftDataSize - idx - 1) = std::complex<T>(0.,0.);
         }
     }
     
-    // Finally, we invert the resulting time domain values to recover the new waveform
-    TVirtualFFT* fftc2r = TVirtualFFT::FFT(1, &fftDataSize, "C2R M K");
-    
-    fftc2r->SetPointsComplex(realVals.data(),imaginaryVals.data());
-    fftc2r->Transform();
-    
-    double* fftOutputArray = fftc2r->GetPointsReal();
-    
-    double normFctr = 1. / double(fftDataSize);
-    
-    std::transform(fftOutputArray, fftOutputArray + fftDataSize, corValVec.begin(), [normFctr](const double& real){return real * normFctr;});
-    
-    delete fftc2r;
-    delete fftr2c;
+    eigenFFT.inv(corValVec, fftOutputVec);
     
     return;
 }
@@ -194,47 +172,19 @@ template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVe
     // cutoff frequency defined by maxBin passed in above
     int fftDataSize = corValVec.size();
     
-    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C");
+    Eigen::FFT<T> eigenFFT;
     
-    // In the first step we copy the input array into a container of doubles to pass to the FFT
-    std::vector<double> fftInputVec(fftDataSize);
+    std::vector<std::complex<T>> fftOutputVec(corValVec.size());
     
-    std::copy(corValVec.begin(),corValVec.end(),fftInputVec.begin());
-    
-    fftr2c->SetPoints(fftInputVec.data());
-    fftr2c->Transform();
-    
-    // In the second step we recover the power spectrum
-    std::vector<double> realVals(fftDataSize);
-    std::vector<double> imaginaryVals(fftDataSize);
-    
-    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
+    eigenFFT.fwd(fftOutputVec, corValVec);
     
     size_t halfFFTDataSize(fftDataSize/2);
-    
-    std::vector<double> powerVec(halfFFTDataSize);
-    
-    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
-    
-    // Zero all bins above selected frequency
-    std::fill(realVals.begin()      + maxBin, realVals.begin()      + fftDataSize - maxBin, 0.);
-    std::fill(imaginaryVals.begin() + maxBin, imaginaryVals.begin() + fftDataSize - maxBin, 0.);
-    
-    // Finally, we invert the resulting time domain values to recover the new waveform
-    TVirtualFFT* fftc2r = TVirtualFFT::FFT(1, &fftDataSize, "C2R M K");
-    
-    fftc2r->SetPointsComplex(realVals.data(),imaginaryVals.data());
-    fftc2r->Transform();
-    
-    double* fftOutputArray = fftc2r->GetPointsReal();
-    
-    double normFctr = 1. / double(fftDataSize);
-    
-    std::transform(fftOutputArray, fftOutputArray + fftDataSize, corValVec.begin(), [normFctr](const double& real){return real * normFctr;});
-    
-    delete fftc2r;
-    delete fftr2c;
-    
+
+    std::fill(fftOutputVec.begin() + maxBin,     fftOutputVec.begin() + halfFFTDataSize, std::complex<T>(0.,0.));
+    std::fill(fftOutputVec.end()   - maxBin - 1, fftOutputVec.end(),                     std::complex<T>(0.,0.));
+
+    eigenFFT.inv(corValVec, fftOutputVec);
+
     return;
 }
     
@@ -247,37 +197,27 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     int    fftDataSize = rawadc.size();
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
-
-    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C M");
     
-    std::vector<double> fftInputVec;
+    std::vector<float> fftInputVec;
     
     fftInputVec.resize(fftDataSize, 0.);
     
-    std::transform(rawadc.begin(),rawadc.end(),fftInputVec.begin(),[pedestal](const auto& val){return double(float(val) - pedestal);});
+    std::transform(rawadc.begin(),rawadc.end(),fftInputVec.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
+
+    std::vector<std::complex<float>> fftOutputVec;
     
-    fftr2c->SetPoints(fftInputVec.data());
-    fftr2c->Transform();
+    fftOutputVec.resize(fftInputVec.size());
     
-    // Now we set up and recover the FFT power spectrum
-    std::vector<double>   realVals;
-    std::vector<double>   imaginaryVals;
-    std::vector<TComplex> complexVals;
+    Eigen::FFT<float> eigenFFT;
+
+    eigenFFT.fwd(fftOutputVec,fftInputVec);
     
     size_t halfFFTDataSize(fftDataSize/2 + 1);
-    
-    realVals.resize(halfFFTDataSize,0.);
-    imaginaryVals.resize(halfFFTDataSize,0.);
-    
-    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
-    
-    std::vector<double> powerVec;
+
+    std::vector<float> powerVec;
     powerVec.resize(halfFFTDataSize, 0.);
     
-    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
-    
-    // Not sure the better way to do this...
-    for(size_t complexIdx = 0; complexIdx < halfFFTDataSize; complexIdx++) complexVals.emplace_back(realVals.at(complexIdx),imaginaryVals.at(complexIdx));
+    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& complex){return std::abs(complex);});
 
     // Recover the filter function we are using...
     const std::vector<TComplex>& filter = fFilterToolMap.at(plane)->getResponseVec();
@@ -285,10 +225,17 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     // Make sure the filter has been correctly initialized
     if (filter.size() != halfFFTDataSize) fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
     
-    // Convolve this with the FFT of the input waveform
-    std::transform(complexVals.begin(), complexVals.end(), filter.begin(), complexVals.begin(), std::multiplies<TComplex>());
-    std::transform(complexVals.begin(), complexVals.end(), realVals.begin(),      [](const auto& val){return val.Re();});
-    std::transform(complexVals.begin(), complexVals.end(), imaginaryVals.begin(), [](const auto& val){return val.Im();});
+    // Filter the FFT output
+    // Ok, this is a pain...
+    std::vector<std::complex<float>> filterVec;
+    filterVec.reserve(filterVec.size());
+    for(auto& rootComplex : filter) filterVec.emplace_back(rootComplex.Re(),rootComplex.Im());
+    
+    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + fftOutputVec.size()/2, filterVec.begin(), fftOutputVec.begin(), std::multiplies<std::complex<float>>());
+    
+    for(size_t idx = 0; idx < fftOutputVec.size()/2; idx++) fftOutputVec.at(fftOutputVec.size() - idx - 1) = fftOutputVec.at(idx);
+
+    eigenFFT.inv(fftInputVec, fftOutputVec);
 
     // Fill hists
     if (fFillHistograms)
@@ -299,107 +246,33 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
             // Fill the power spectrum histogram
             for(size_t idx = 0; idx < halfFFTDataSize; idx++)
             {
-                double freq = 1.e6 * double(idx + 1)/ (sampleRate * readOutSize);
-                fFFTPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, std::min(powerVec[idx],999.), 1.);
+                float freq = 1.e6 * float(idx + 1)/ (sampleRate * readOutSize);
+                fFFTPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
             }
         }
         
         for(size_t idx = 0; idx < halfFFTDataSize; idx++)
         {
-            double freq = 1.e6 * double(idx + 1)/ (sampleRate * readOutSize);
-            fAveFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],999.), 1.);
+            float freq = 1.e6 * float(idx + 1)/ (sampleRate * readOutSize);
+            fAveFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
         }
         
         // Get the filter power vec
-        std::transform(complexVals.begin(), complexVals.end(), powerVec.begin(), [](const auto& val){return val.Rho();});
+        std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
 
         for(size_t idx = 0; idx < halfFFTDataSize; idx++)
         {
-            double freq = 1.e6 * double(idx)/ (sampleRate * readOutSize);
-            fConvFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],999.), 1.);
+            float freq = 1.e6 * float(idx)/ (sampleRate * readOutSize);
+            fConvFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
             fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
         }
     }
     
     // Finally, we invert the resulting time domain values to recover the new waveform
-    TVirtualFFT* fftc2r = TVirtualFFT::FFT(1, &fftDataSize, "C2R M");
-    
-    fftc2r->SetPointsComplex(realVals.data(),imaginaryVals.data());
-    fftc2r->Transform();
-    
-    double* fftOutputArray = fftc2r->GetPointsReal();
-    
-    double normFctr = 1. / double(fftDataSize);
-    
-    std::transform(fftOutputArray, fftOutputArray + fftDataSize, rawadc.begin(), [normFctr,pedestal](const double& real){return std::round(real * normFctr + pedestal);});
-    
+    std::transform(fftInputVec.begin(), fftInputVec.end(), rawadc.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
+
     return;
 }
 
 template void RawDigitFFTAlg::getFFTCorrection<float>(std::vector<float>& corValVec, size_t maxBin) const;
-/*
-void RawDigitFFTAlg::triangleSmooth(std::vector<double>& smoothVec, size_t lowestBin) const
-{
-    std::vector<double>::iterator curItr  = smoothVec.begin() + 2 + lowestBin;
-    std::vector<double>::iterator stopItr = smoothVec.end()   - 2;
-    
-    while(curItr != stopItr)
-    {
-        double newVal = (*(curItr - 2) + 2. * *(curItr - 1) + 3. * *curItr + 2. * *(curItr + 1) + *(curItr + 2)) / 9.;
-        
-        *curItr++ = newVal;
-    }
-    return;
-}
-    
-void RawDigitFFTAlg::firstDerivative(std::vector<double>& inputVec, std::vector<double>& derivVec) const
-{
-    derivVec.resize(inputVec.size(), 0.);
-    
-    for(size_t idx = 1; idx < derivVec.size() - 1; idx++)
-        derivVec.at(idx) = 0.5 * (inputVec.at(idx + 1) - inputVec.at(idx - 1));
-    
-    return;
-}
-    
-void RawDigitFFTAlg::findPeaks(std::vector<double>& derivVec, PeakTupleVec& peakTupleVec, double threshold, size_t startBin) const
-{
-    peakTupleVec.clear();
-    
-    for(size_t currentBin = startBin; currentBin < derivVec.size(); currentBin++)
-    {
-        // Look for bin over threshold
-        if (derivVec.at(currentBin) > threshold)
-        {
-            // search backward to find zero point
-            size_t startBin = currentBin;
-            
-            while(startBin--)
-                if (derivVec.at(startBin) < 0.) break;
-            
-            // Find the peak bin
-            size_t negThreshBin = currentBin;
-            
-            while(++negThreshBin < derivVec.size())
-                if (derivVec.at(negThreshBin) < -threshold) break;
-            
-            if (negThreshBin >= derivVec.size()) negThreshBin--;
-            
-            size_t peakBin = currentBin + (negThreshBin - currentBin) / 2;
-            
-            currentBin = negThreshBin;
-            
-            // Now find the end of the candidate peak
-            while(++currentBin < derivVec.size())
-                if (derivVec.at(currentBin) > 0.) break;
-            
-            if (currentBin >= derivVec.size()) currentBin--;
-            
-            peakTupleVec.push_back(PeakTuple(startBin,peakBin,currentBin));
-        }
-    }
-    
-    return;
-}
-*/    
 }

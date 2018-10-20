@@ -70,7 +70,7 @@ private:
 
     std::unique_ptr<icarus_tool::IWaveformTool>            fWaveformTool;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
-    
+
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
