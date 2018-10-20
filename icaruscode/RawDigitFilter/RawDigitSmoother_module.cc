@@ -247,7 +247,7 @@ void RawDigitSmoother::produce(art::Event & event)
         caldata::RawDigitVector& erosionVec    = std::get<3>(erosionTuple);
         caldata::RawDigitVector& dilationVec   = std::get<3>(dilationTuple);
         caldata::RawDigitVector& edgeVec       = std::get<3>(edgeTuple);
-        caldata::RawDigitVector& differenceVec = std::get<3>(edgeTuple);
+        caldata::RawDigitVector& differenceVec = std::get<3>(differenceTuple);
         caldata::RawDigitVector& averageVec    = std::get<3>(averageTuple);
         caldata::RawDigitVector& medianVec     = std::get<3>(medianTuple);
 
