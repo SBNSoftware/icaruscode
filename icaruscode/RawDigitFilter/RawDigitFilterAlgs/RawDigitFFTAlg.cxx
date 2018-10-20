@@ -73,7 +73,10 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+        fFilterVec[planeIdx] = std::vector<std::complex<float>>();
     }
+    
+    fEigenFFT = std::make_unique<Eigen::FFT<float>>();
 }
     
 //----------------------------------------------------------------------------
@@ -188,7 +191,7 @@ template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVe
     return;
 }
     
-void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) const
+void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) 
 {
     // Check there is something to do
     if (!fTransformViewVec.at(plane)) return;
@@ -198,44 +201,39 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
     
-    std::vector<float> fftInputVec;
+    if (fFFTInputVec.size() != fftDataSize) fFFTInputVec.resize(fftDataSize, 0.);
     
-    fftInputVec.resize(fftDataSize, 0.);
+    std::transform(rawadc.begin(),rawadc.end(),fFFTInputVec.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
     
-    std::transform(rawadc.begin(),rawadc.end(),fftInputVec.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
+    if (fFFTOutputVec.size() != fftDataSize) fFFTOutputVec.resize(fftDataSize);
 
-    std::vector<std::complex<float>> fftOutputVec;
-    
-    fftOutputVec.resize(fftInputVec.size());
-    
-    Eigen::FFT<float> eigenFFT;
-
-    eigenFFT.fwd(fftOutputVec,fftInputVec);
+    fEigenFFT->fwd(fFFTOutputVec,fFFTInputVec);
     
     size_t halfFFTDataSize(fftDataSize/2 + 1);
 
-    std::vector<float> powerVec;
-    powerVec.resize(halfFFTDataSize, 0.);
+    if (fPowerVec.size() != halfFFTDataSize + 1) fPowerVec.resize(halfFFTDataSize + 1, 0.);
     
-    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& complex){return std::abs(complex);});
+    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, fPowerVec.begin(), [](const auto& complex){return std::abs(complex);});
 
     // Recover the filter function we are using...
-    const std::vector<TComplex>& filter = fFilterToolMap.at(plane)->getResponseVec();
-    
-    // Make sure the filter has been correctly initialized
-    if (filter.size() != halfFFTDataSize) fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
-    
-    // Filter the FFT output
-    // Ok, this is a pain...
-    std::vector<std::complex<float>> filterVec;
-    filterVec.reserve(filterVec.size());
-    for(auto& rootComplex : filter) filterVec.emplace_back(rootComplex.Re(),rootComplex.Im());
-    
-    std::transform(fftOutputVec.begin(), fftOutputVec.begin() + fftOutputVec.size()/2, filterVec.begin(), fftOutputVec.begin(), std::multiplies<std::complex<float>>());
-    
-    for(size_t idx = 0; idx < fftOutputVec.size()/2; idx++) fftOutputVec.at(fftOutputVec.size() - idx - 1) = fftOutputVec.at(idx);
+    const std::vector<TComplex>&            filter    = fFilterToolMap.at(plane)->getResponseVec();
+    const std::vector<std::complex<float>>& filterVec = fFilterVec.at(plane);;
 
-    eigenFFT.inv(fftInputVec, fftOutputVec);
+    // Make sure the filter has been correctly initialized
+    if (filter.size() != halfFFTDataSize)
+    {
+        fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
+        
+        // Set up the internal FFT vector
+        fFilterVec.at(plane).reserve(halfFFTDataSize);
+        for(auto& rootComplex : filter) fFilterVec.at(plane).emplace_back(rootComplex.Re(),rootComplex.Im());
+    }
+    
+    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
+    
+    for(size_t idx = 0; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx - 1] = fFFTOutputVec[idx];
+
+    fEigenFFT->inv(fFFTInputVec, fFFTOutputVec);
 
     // Fill hists
     if (fFillHistograms)
@@ -247,29 +245,29 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
             for(size_t idx = 0; idx < halfFFTDataSize; idx++)
             {
                 float freq = 1.e6 * float(idx + 1)/ (sampleRate * readOutSize);
-                fFFTPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
+                fFFTPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, std::min(fPowerVec[idx],float(999.)), 1.);
             }
         }
         
         for(size_t idx = 0; idx < halfFFTDataSize; idx++)
         {
             float freq = 1.e6 * float(idx + 1)/ (sampleRate * readOutSize);
-            fAveFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
+            fAveFFTPowerVec[plane]->Fill(freq, std::min(fPowerVec[idx],float(999.)), 1.);
         }
         
         // Get the filter power vec
-        std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
+        std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, fPowerVec.begin(), [](const auto& val){return std::abs(val);});
 
         for(size_t idx = 0; idx < halfFFTDataSize; idx++)
         {
             float freq = 1.e6 * float(idx)/ (sampleRate * readOutSize);
-            fConvFFTPowerVec[plane]->Fill(freq, std::min(powerVec[idx],float(999.)), 1.);
+            fConvFFTPowerVec[plane]->Fill(freq, std::min(fPowerVec[idx],float(999.)), 1.);
             fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
         }
     }
     
     // Finally, we invert the resulting time domain values to recover the new waveform
-    std::transform(fftInputVec.begin(), fftInputVec.end(), rawadc.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
+    std::transform(fFFTInputVec.begin(), fFFTInputVec.end(), rawadc.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
 
     return;
 }
