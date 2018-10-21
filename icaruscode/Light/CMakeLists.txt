@@ -1,4 +1,5 @@
 add_subdirectory(OpticalTools)
+add_subdirectory(Algorithms)
 
 # Removing AVX instructions because assuming the grid nodes
 # being less than 6 year old proved to be pretentious.
@@ -17,6 +18,7 @@ art_make(
 			${ROOT_BASIC_LIB_LIST}
 			${Boost_SYSTEM_LIBRARY}
 	      MODULE_LIBRARIES larcorealg_Geometry
+			icaruscode_Light_Algorithms
 	  		larcore_Geometry_Geometry_service
 	        lardata_Utilities
 			larevt_Filters
