@@ -224,6 +224,7 @@ namespace opdet{
 					sim::SimPhotons const& photons){
 
     //auto& waveform = fFullWaveforms[opch];
+    waveform.clear();
     waveform.resize(fNsamples,fBaseline);
     PhotoelectronsPerSample.resize(fNsamples,0U);
     std::unordered_map<unsigned int,unsigned int> peMap;
