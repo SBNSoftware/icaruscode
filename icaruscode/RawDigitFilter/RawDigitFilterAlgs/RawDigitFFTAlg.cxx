@@ -138,7 +138,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
 {
     // This version will take FFT of input waveform and then remove bins in the time domain with a power less
     // than the threshold input above.
-    int fftDataSize = corValVec.size();
+    size_t const fftDataSize = corValVec.size();
     
     Eigen::FFT<T> eigenFFT;
     
@@ -173,7 +173,7 @@ template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVe
 {
     // This version will take FFT of input waveform and then remove bins in the time domain above the
     // cutoff frequency defined by maxBin passed in above
-    int fftDataSize = corValVec.size();
+    size_t const fftDataSize = corValVec.size();
     
     Eigen::FFT<T> eigenFFT;
     
@@ -197,7 +197,7 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     if (!fTransformViewVec.at(plane)) return;
     
     // Step one is to setup and then get the FFT transform of the input waveform
-    int    fftDataSize = rawadc.size();
+    size_t const fftDataSize = rawadc.size();
     double sampleRate  = fDetectorProperties->SamplingRate();
     double readOutSize = fDetectorProperties->ReadOutWindowSize();
     
