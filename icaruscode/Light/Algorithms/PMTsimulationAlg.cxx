@@ -32,10 +32,8 @@ template <typename T>
 std::vector<T> icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape
   (PulseFunction_t const& pulseShape, double samplingFreq, double rightSigmas)
 {
-  std::size_t const pulseSize
-    = (pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma()) * samplingFreq
-    * 1e6 // as in original code... bug?
-    ;
+  std::size_t const pulseSize = samplingFreq
+    * (pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma());
   std::vector<T> samples(pulseSize);
   for (std::size_t i = 0; i < pulseSize; ++i)
     samples[i] = pulseShape(static_cast<double>(i)/samplingFreq);
