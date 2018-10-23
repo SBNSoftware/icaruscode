@@ -198,7 +198,7 @@ namespace opdet{
     sigma1 = fRiseTime/1.687;
     sigma2 = fFallTime/1.687;
     
-    pulsesize=(int)((6*sigma2+fTransitTime)*1.e3*fSampling);
+    pulsesize=(int)((6*sigma2+fTransitTime)/1.e3*fSampling);
     wsp.resize(pulsesize);
     
     for(int i=0; i<pulsesize; i++){
