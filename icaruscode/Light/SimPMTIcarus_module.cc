@@ -111,13 +111,13 @@ namespace opdet{
 //    std::unordered_map< raw::Channel_t, Waveform_t > fFullWaveforms;
     
     /// The actual simulation algorithm.
-    std::unique_ptr<icarus::opdet::PMTsimulationAlg> PMTsimulator;
+    icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
     
   };
   
   
   SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
-    : PMTsimulator(std::make_unique<icarus::opdet::PMTsimulationAlg>(p))
+    : makePMTsimulator(p)
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
@@ -151,7 +151,7 @@ namespace opdet{
     //
     // prepare the algorithm
     //
-    PMTsimulator->setup(
+    auto PMTsimulator = makePMTsimulator(
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       *(lar::providerFrom<detinfo::DetectorClocksService>()),
       art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("Efficiencies"),
