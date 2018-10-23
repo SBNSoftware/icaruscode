@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <set>
 #include <algorithm> // std::transform()
+#include <utility> // std::forward()
 #include <functional> // std::plus
 #include <cstdlib> // std::size_t
 
@@ -127,6 +128,23 @@ namespace icarus {
       /// Alias of `evaluateAt()`.
       double operator() (double time) const { return evaluateAt(time); }
       
+      // @{
+      /**
+       * @brief Prints on stream the parameters of this shape.
+       * @tparam Stream type of stream to write into
+       * @param out the stream to write into
+       * @param indent indentation string, prepended to all lines except first
+       * @param indentFirst indentation string prepended to the first line
+       */
+      template <typename Stream>
+      void dump(Stream&& out,
+        std::string const& indent, std::string const& firstIndent
+        ) const;
+      template <typename Stream>
+      void dump(Stream&& out, std::string const& indent = "") const
+        { dump(std::forward<Stream>(out), indent, indent); }
+      // @}
+      
       /// Returns the value of normal distribution at specified point.
       static double Gaussian(double x, double mean, double sigma, double amplitude)
         { return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); }
@@ -142,7 +160,7 @@ namespace icarus {
       
     }; // class PhotoelectronPulseWaveform
  
-
+    
     // -------------------------------------------------------------------------
     /**
      * @brief Precomputed digitised shape of a given function.
@@ -195,6 +213,34 @@ namespace icarus {
       /// Returns the function which was sampled.
       PulseFunction_t const& shape() const { return fShape; }
       
+      /// Returns the sampling frequency (same units as entered).
+      double samplingFrequency() const { return fSamplingFreq; }
+      
+      /// Returns the sampling period (inverse of frequency).
+      double samplingPeriod() const { return 1.0 / samplingFrequency(); }
+      
+      /// Returns the duration of the waveform in time units.
+      /// @see `pulseLength()`
+      double duration() const { return pulseLength() / samplingFrequency(); }
+
+      // @{
+      /**
+       * @brief Prints on stream the parameters of this shape.
+       * @tparam Stream type of stream to write into
+       * @param out the stream to write into
+       * @param indent indentation string, prepended to all lines except first
+       * @param indentFirst indentation string prepended to the first line
+       */
+      template <typename Stream>
+      void dump(Stream&& out,
+        std::string const& indent, std::string const& firstIndent
+        ) const;
+      template <typename Stream>
+      void dump(Stream&& out, std::string const& indent = "") const
+        { dump(std::forward<Stream>(out), indent, indent); }
+      // @}
+      
+      
         private:
       PulseFunction_t fShape; ///< Analytical shape of the pules.
       double fSamplingFreq;   ///< Sampling frequency.
@@ -209,6 +255,7 @@ namespace icarus {
       
     }; // class DiscretePhotoelectronPulse<>
     
+
     // -------------------------------------------------------------------------
 
     /** ************************************************************************
@@ -386,6 +433,39 @@ namespace icarus {
 
 
 //-----------------------------------------------------------------------------
+//--- template implementation
+//-----------------------------------------------------------------------------
+template <typename Stream>
+void icarus::opdet::PhotoelectronPulseWaveform::dump(Stream&& out,
+  std::string const& indent, std::string const& firstIndent
+  ) const
+{
+  out
+       << firstIndent << "Pulse shape: asymmetric Gaussian with peak at "
+          << peakTime() << " and amplitude " << amplitude() << ":"
+    << "\n" << indent << "  (t <  " << peakTime() << "): sigma " << leftSigma()
+    << "\n" << indent << "  (t >= " << peakTime() << "): sigma " << rightSigma()
+    << std::endl;
+} // icarus::opdet::PhotoelectronPulseWaveform::dump()
+
+
+//-----------------------------------------------------------------------------
+template <typename T>
+template <typename Stream>
+void icarus::opdet::DiscretePhotoelectronPulse<T>::dump(Stream&& out,
+  std::string const& indent, std::string const& firstIndent
+  ) const
+{
+  out << firstIndent << "Sampled pulse waveform " << pulseLength()
+    << " samples long (" << duration()
+    << " time units long, sampled at " << samplingFrequency()
+    << "); pulse shape:"
+    << "\n" << indent;
+  shape().dump(std::forward<Stream>(out), indent + "  ", "");
+} // icarus::opdet::DiscretePhotoelectronPulse<T>::dump()
+
+
+//-----------------------------------------------------------------------------
 template <typename Stream>
 void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
@@ -406,8 +486,11 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
   
-  
   out << '\n' << indent << "... and more.";
+  
+  out << '\n' << indent << "Template photoelectron waveform settings:"
+    << '\n';
+  wsp.dump(std::forward<Stream>(out), indent + "  ");
   out << '\n';
 } // icarus::opdet::PMTsimulationAlg::printConfiguration()
 
