@@ -132,7 +132,7 @@ namespace hit {
       void reconfigure(fhicl::ParameterSet const& p);
      
       void expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how );
-      void computeBestLocalMean(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how, float& localmean);
+      void computeBestLocalMean(std::vector<reco_tool::ICandidateHitFinder::HitCandidate> h, std::vector<float> holder, reco_tool::ICandidateHitFinder::MergeHitCandidateVec how, float& localmean);
       
       using ICARUSPeakFitParams_t = struct ICARUSPeakFitParams
       {
@@ -173,6 +173,7 @@ namespace hit {
        //   std::cout << " setting iwire " << iWire << std::endl;
       } ;
     private:
+      std::vector<double> localmeans;
       unsigned int  fDataSize;                  //SIZE OF RAW DATA ON ONE WIRE.
       art::InputTag fDigitModuleLabel;          //MODULE THAT MADE DIGITS.
       std::string   fSpillName;                 //NOMINAL SPILL IS AN EMPTY STRING.
@@ -427,6 +428,7 @@ size_t iWire=wid.Wire;
 
 
       holder.clear();
+          localmeans.clear();
 
       //GET THE REFERENCE TO THE CURRENT raw::RawDigit.
       channel   = rawdigits->Channel();
@@ -455,13 +457,15 @@ size_t iWire=wid.Wire;
 
       lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
         = channelStatus.BadChannels();
-
+          std::cout << " pedestal " <<rawdigits->GetPedestal() << std::endl;
       for(unsigned int bin = 0; bin < fDataSize; ++bin){ 
         //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
           holder[bin]=signal[bin];
+          
+          //std::cout << " bin " << bin << " rawadc " << rawadc[bin]-rawdigits->GetPedestal() << " signal " << signal[bin] << std::endl;
           if(plane == 0) holder[bin]=-holder[bin];
           //if(plane == 1) holder[bin]=-holder[bin];
-         // if(plane==2&&iwire==2600&&abs(holder[bin])>0.1) std::cout << " wire 2600 bin " << bin << " signal " << holder[bin] << std::endl;
+        // if(plane==2&&iwire==2600) std::cout << " wire 2600 bin " << bin << " signal " << holder[bin] << std::endl;
       }
 
         if(plane==0&&iwire<lwI1) lwI1=iwire;
@@ -514,14 +518,16 @@ size_t iWire=wid.Wire;
     std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           
           fHitFinderTool->findHitCandidates(holder, 0,channel,0,hitCandidateVec);
+          //int jc=0;
           for(auto& hitCand : hitCandidateVec) {
             expandHit(hitCand,holder,hitCandidateVec);
+        
           }
           
           
-          //hitCand->localmean=computeBestLocalMean(hitCand,holder,hitCandidateVec);
-          fHitFinderTool->MergeHitCandidates(holder, hitCandidateVec, mergedCandidateHitVec);          
           
+          fHitFinderTool->MergeHitCandidates(holder, hitCandidateVec, mergedCandidateHitVec);          
+
       //numHits = hits.size();
           int nghC=0;
           int nghI2=0;
@@ -537,9 +543,15 @@ size_t iWire=wid.Wire;
         
           for(auto& mergedCands : mergedCandidateHitVec)
           {
-  
+       
+
          int startT= mergedCands.front().startTick;
          int endT  = mergedCands.back().stopTick;
+              
+              float mean;
+              computeBestLocalMean(mergedCands,holder,mergedCandidateHitVec,mean);
+              localmeans.push_back(mean);
+              std::cout << " adding localmean " << mean << std::endl;
           // ### Putting in a protection in case things went wrong ###
           // ### In the end, this primarily catches the case where ###
           // ### a fake pulse is at the start of the ROI           ###
@@ -635,6 +647,7 @@ size_t iWire=wid.Wire;
               int start=mergedCands[jhit].startTick;
               int end=mergedCands[jhit].stopTick;
               jhit++;
+              std::cout << " start " << start << " end " << end << std::endl;
 
               float fitCharge=0;
               if(!islong) {
@@ -650,10 +663,12 @@ size_t iWire=wid.Wire;
                   Func.SetParameter(5+5*jf,peakLeft);
                 }
                 try
-                  { fitCharge=Func.Integral(start,end);}
+                  { fitCharge=Func.Integral(start,end)-(end-start)*localmeans[jhit-1];
+                     // fitCharge=Func.Integral(start-20,end+20);
+                  }
                 catch(...) {
                   mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
-                  fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+                  fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.)-(end-start)*localmeans[jhit-1];
                 }
               }
               else {
@@ -672,18 +687,28 @@ size_t iWire=wid.Wire;
                   }
 
                   try
-                  { fitCharge=FuncLong.Integral(start,end);}
+                  { fitCharge=FuncLong.Integral(start,end)-(end-start)*localmeans[jhit-1];
+                      //fitCharge=FuncLong.Integral(start-20,end+20);
+                  }
                   catch(...)
                   {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
-                      fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+                      fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.)-(end-start)*localmeans[jhit-1];
                   }
               }
               if(isnan(fitCharge)&&!islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
               if(isnan(fitCharge)&&islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
               //Func.Integral(start,end);
-              float totSig=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+              
+              float totSig20=std::accumulate(holder.begin() + (int) start-20, holder.begin() + (int) end+20, 0.);
+              std::cout << " wire " << iwire <<" jhit " << jhit << " localmean " << localmeans[jhit-1] << std::endl;
+              float totSig=std::accumulate(holder.begin()+ (int) start, holder.begin()+ (int) end, 0.)-(end-start)*localmeans[jhit-1];
          //     float fitChargeErr=0;
-           //   std::cout << " totSig " << totSig << std::endl;
+              if(plane==2)
+                  std::cout << " totSig " << totSig << " fitCharge " << fitCharge << std::endl;
+              if(plane==2&&totSig20<totSig)
+                  std::cout << " cryo" << cryostat << " tpc " << tpc << " negative wire " << iWire << std::endl;
+              else
+                  std::cout << " positive wire " << iWire << std::endl;
 
 //std::cout << " before hit creator " << std::endl;
         recob::HitCreator hit(
@@ -704,6 +729,10 @@ size_t iWire=wid.Wire;
             chi2PerNDF,                                                                 //WIRE ID.
             NDF                                                               //DEGREES OF FREEDOM.
             );
+              
+              std::cout << " fitcharge " << fitCharge << " totSig " << totSig << std::endl;
+              //std::cout << " summedADC " << hit.summedADC() << " integral " << hit.Integral() << std::endl;
+              
              //       filteredHitVec.push_back(hit.copy());
               hcol.emplace_back(hit.move(), wire, rawdigits);
            
@@ -915,7 +944,7 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         h.startTick=first;
         h.stopTick=last;
     }
-    void ICARUSHitFinder::computeBestLocalMean(reco_tool::ICandidateHitFinder::HitCandidate& h, std::vector<float> holder, std::vector<reco_tool::ICandidateHitFinder::HitCandidate> how, float& localmean)
+    void ICARUSHitFinder::computeBestLocalMean(std::vector<reco_tool::ICandidateHitFinder::HitCandidate> h, std::vector<float> holder, reco_tool::ICandidateHitFinder::MergeHitCandidateVec how, float& localmean)
     {
         const int bigw=130;   //size of the window where to look for the minimum localmean value
         const int meanw=70;   //size of the window where the mean is calculated
@@ -924,13 +953,13 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         float samples1[bigw];   //list to contain samples bellow the startTick
         float samples2[bigw];   //list to contain samples above the stopTick
         
-        std::vector<reco_tool::ICandidateHitFinder::HitCandidate>::iterator hiter;
-        std::vector<reco_tool::ICandidateHitFinder::HitCandidate> hlist;
+        reco_tool::ICandidateHitFinder::MergeHitCandidateVec::iterator hiter;
+        reco_tool::ICandidateHitFinder::MergeHitCandidateVec hlist;
 
         float min1;
         float min2;
-        int startTick=h.startTick;
-        int stopTick=h.stopTick;
+        int startTick=h.front().startTick;
+        int stopTick=h.back().stopTick;
         float count1=0;
         float count2=0;
         unsigned int shift1=0;
@@ -941,8 +970,8 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         // fill list of existing hits on this wire
         for(unsigned int j=0;j<how.size();j++)
         {
-            reco_tool::ICandidateHitFinder::HitCandidate h2=how[j];
-            if(h2.hitCenter!=h.hitCenter)
+            std::vector<reco_tool::ICandidateHitFinder::HitCandidate> h2=how[j];
+            if(h2.front().startTick!=h.front().startTick)
             hlist.push_back(h2);
         }
         
@@ -950,23 +979,23 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         for(unsigned int i=0;i<bigw;i++)
         {
             // remove samples from other hits in the wire
-            for(hiter=hlist.begin();hiter!=hlist.end();hiter++)
+                for(unsigned int j=0;j<hlist.size();j++)
             {
-                reco_tool::ICandidateHitFinder::HitCandidate h2=*hiter;
-                if(startTick-i-shift1 >= h2.startTick && startTick-i-shift1 <= h2.stopTick)
-                shift1+=h2.stopTick-h2.startTick+1;
-                else if(stopTick+i+shift2 >= h2.startTick && stopTick+i+shift2 <= h2.stopTick)
-                shift2+=h2.stopTick-h2.startTick+1;
+                std::vector<reco_tool::ICandidateHitFinder::HitCandidate> h2=hlist[j];
+                if(startTick-i-shift1 >= h2.front().startTick && startTick-i-shift1 <= h2.back().stopTick)
+                shift1+=h2.back().stopTick-h2.front().startTick+1;
+                else if(stopTick+i+shift2 >= h2.front().startTick && stopTick+i+shift2 <= h2.back().stopTick)
+                shift2+=h2.back().stopTick-h2.front().startTick+1;
             }
             
             // fill the lists
             //if(startTick-i-shift1>=0)
-            samples1[i]=holder[h.startTick-i-shift1];
+            samples1[i]=holder[h.front().startTick-i-shift1];
             //else
             //samples1[i]=outofbounds;
             
             if(stopTick+i+shift2<=4095)
-            samples2[i]=holder[h.stopTick+i+shift2];
+            samples2[i]=holder[h.back().stopTick+i+shift2];
             else
             samples2[i]=outofbounds;
         }
