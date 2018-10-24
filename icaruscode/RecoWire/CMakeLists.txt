@@ -1,5 +1,6 @@
 # Add the subfolder containing the deconvolution tools
 add_subdirectory(DeconTools)
+add_subdirectory(SimTestPulse)
 
 art_make( LIBRARY_NAME RecoWire
           LIB_LIBRARIES 
