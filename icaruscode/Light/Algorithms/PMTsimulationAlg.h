@@ -13,8 +13,8 @@
 #define ICARUSCODE_LIGHT_ALGORITHMS_PMTSIMULATIONALG_H
 
 
-#include <vector> // FIXME remove with larsoft v07_07_02/v07_08_00 (bug in DetectorClocks.h)
-#include <string> // FIXME remove with larsoft v07_07_02/v07_08_00 (bug in DetectorClocks.h)
+#include <vector> // FIXME remove with larsoft v07_07_02 (bug in DetectorClocks.h)
+#include <string> // FIXME remove with larsoft v07_07_02 (bug in DetectorClocks.h)
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

@@ -6,9 +6,28 @@ add_subdirectory(Algorithms)
 # AVX is not so relevant after the last commit anyway
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
+simple_plugin(SimPMTIcarus "module"
+  icaruscode_Light_Algorithms
+  lardataobj_RawData
+  lardataobj_Simulation
+  nutools_RandomUtils_NuRandomService_service
+  ${ART_FRAMEWORK_CORE}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+  ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB}
+  cetlib_except
+  ${ROOT_BASIC_LIB_LIST}
+  ${Boost_SYSTEM_LIBRARY}
+  )
+
+
 art_make(
-          BASENAME_ONLY
-          LIBRARY_NAME Light
+  EXCLUDE "SimPMTIcarus_module.cc"
           LIB_LIBRARIES 
             lardataobj_RawData
             lardataobj_RecoBase
