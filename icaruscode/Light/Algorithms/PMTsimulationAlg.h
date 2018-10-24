@@ -435,6 +435,8 @@ namespace icarus {
 //-----------------------------------------------------------------------------
 //--- template implementation
 //-----------------------------------------------------------------------------
+// --- icarus::opdet::PhotoelectronPulseWaveform
+// -----------------------------------------------------------------------------
 template <typename Stream>
 void icarus::opdet::PhotoelectronPulseWaveform::dump(Stream&& out,
   std::string const& indent, std::string const& firstIndent
@@ -443,10 +445,36 @@ void icarus::opdet::PhotoelectronPulseWaveform::dump(Stream&& out,
   out
        << firstIndent << "Pulse shape: asymmetric Gaussian with peak at "
           << peakTime() << " and amplitude " << amplitude() << ":"
-    << "\n" << indent << "  (t <  " << peakTime() << "): sigma " << leftSigma()
-    << "\n" << indent << "  (t >= " << peakTime() << "): sigma " << rightSigma()
-    << std::endl;
+    << '\n' << indent << "  (t <  " << peakTime() << "): sigma " << leftSigma()
+    << '\n' << indent << "  (t >= " << peakTime() << "): sigma " << rightSigma()
+    << '\n';
 } // icarus::opdet::PhotoelectronPulseWaveform::dump()
+
+
+// -----------------------------------------------------------------------------
+// --- icarus::opdet::DiscretePhotoelectronPulse
+// -----------------------------------------------------------------------------
+template <typename T>
+icarus::opdet::DiscretePhotoelectronPulse<T>::DiscretePhotoelectronPulse
+  (PulseFunction_t&& pulseShape, double samplingFreq, double rightSigmas)
+  : fShape(std::move(pulseShape))
+  , fSamplingFreq(samplingFreq)
+  , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas))
+  {}
+
+
+// -----------------------------------------------------------------------------
+template <typename T>
+std::vector<T> icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape
+  (PulseFunction_t const& pulseShape, double samplingFreq, double rightSigmas)
+{
+  std::size_t const pulseSize = samplingFreq
+    * (pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma());
+  std::vector<T> samples(pulseSize);
+  for (std::size_t i = 0; i < pulseSize; ++i)
+    samples[i] = pulseShape(static_cast<double>(i)/samplingFreq);
+  return samples;
+} // icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape()
 
 
 //-----------------------------------------------------------------------------
@@ -465,6 +493,8 @@ void icarus::opdet::DiscretePhotoelectronPulse<T>::dump(Stream&& out,
 } // icarus::opdet::DiscretePhotoelectronPulse<T>::dump()
 
 
+//-----------------------------------------------------------------------------
+//--- icarus::opdet::PMTsimulationAlg
 //-----------------------------------------------------------------------------
 template <typename Stream>
 void icarus::opdet::PMTsimulationAlg::printConfiguration

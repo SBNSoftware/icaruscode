@@ -19,33 +19,6 @@
 #include <utility> // std::move()
 
 
-// -----------------------------------------------------------------------------
-// --- icarus::opdet::DiscretePhotoelectronPulse
-// -----------------------------------------------------------------------------
-template <typename T>
-icarus::opdet::DiscretePhotoelectronPulse<T>::DiscretePhotoelectronPulse
-  (PulseFunction_t&& pulseShape, double samplingFreq, double rightSigmas)
-  : fShape(std::move(pulseShape))
-  , fSamplingFreq(samplingFreq)
-  , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas))
-  {}
-
-
-// -----------------------------------------------------------------------------
-template <typename T>
-std::vector<T> icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape
-  (PulseFunction_t const& pulseShape, double samplingFreq, double rightSigmas)
-{
-  std::size_t const pulseSize = samplingFreq
-    * (pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma());
-  std::vector<T> samples(pulseSize);
-  for (std::size_t i = 0; i < pulseSize; ++i)
-    samples[i] = pulseShape(static_cast<double>(i)/samplingFreq);
-  return samples;
-} // icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape()
-
-
-
 // -----------------------------------------------------------------------------   
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------   
