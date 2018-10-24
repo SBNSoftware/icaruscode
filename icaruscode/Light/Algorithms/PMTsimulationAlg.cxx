@@ -10,6 +10,10 @@
 // this library header
 #include "icaruscode/Light/Algorithms/PMTsimulationAlg.h"
 
+// CLHEP libraries
+#include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandExponential.h"
 
 // C++ standard libaries
 #include <utility> // std::move()

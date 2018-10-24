@@ -29,18 +29,18 @@
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
-#include "CLHEP/Random/RandFlat.h"
-#include "CLHEP/Random/RandGauss.h"
-#include "CLHEP/Random/RandExponential.h"
 
 // C++ standard library
 #include <chrono> // std::chrono::high_resolution_clock
 #include <vector>
+#include <string>
 #include <unordered_map>
 #include <set>
 #include <algorithm> // std::transform()
 #include <utility> // std::forward()
+#include <memory> // std::unique_ptr()
 #include <functional> // std::plus
+#include <cmath> // std::abs(), std::exp()
 #include <cstdlib> // std::size_t
 
 
