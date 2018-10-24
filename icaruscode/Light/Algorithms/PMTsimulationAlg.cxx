@@ -343,6 +343,40 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
 } // icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker()
 
 
+// -----------------------------------------------------------------------------   
+icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
+  (Config const& config)
+{
+  fBaseConfig.darkNoiseRate     = config.DarkNoiseRate();
+  fBaseConfig.readoutWindowSize = config.ReadoutWindowSize();
+  fBaseConfig.readoutEnablePeriod = config.ReadoutEnablePeriod();
+  
+#if 0
+  fBaseConfig.transitTime     = p.get< double >("TransitTime"  ); //ns
+  fBaseConfig.ADC             = p.get< double >("ADC"          ); //voltage to ADC factor
+  fBaseConfig.baseline        = p.get< double >("Baseline"     ); //in ADC counts (may be fractional)
+  fBaseConfig.fallTime        = p.get< double >("FallTime"     ); //in ns
+  fBaseConfig.riseTime        = p.get< double >("RiseTime"     ); //in ns
+  fBaseConfig.meanAmplitude   = p.get< double >("MeanAmplitude"); //in pC
+  fBaseConfig.ampNoise        = p.get< double >("AmpNoise"     ); //in ADC
+  fBaseConfig.darkNoiseRate   = p.get< double >("DarkNoiseRate"); //in Hz
+  
+  fBaseConfig.pretrigFraction     = p.get<float>("PreTrigFraction");    ///Fraction of window size to be before "trigger"
+  fBaseConfig.thresholdADC        = p.get<float>("ThresholdADC");       ///ADC Threshold for self-triggered readout
+  fBaseConfig.pulsePolarity       = p.get<int>("PulsePolarity");        ///Pulse polarity (=1 for positive, =-1 for negative)
+// is this given by DetectorClocks? should it?
+  fBaseConfig.triggerOffsetPMT    = p.get<double>("TriggerOffsetPMT");   ///Time (us) relative to trigger that readout begins
+
+  fBaseConfig.createBeamGateTriggers = p.get<bool>("CreateBeamGateTriggers"); ///Option to create unbiased readout around beam spill
+  fBaseConfig.beamGateTriggerRepPeriod = p.get<double>("BeamGateTriggerRepPeriod"); ///Repetition Period (us) for BeamGateTriggers
+  fBaseConfig.beamGateTriggerNReps = p.get<size_t>("BeamGateTriggerNReps"); ///Number of beamgate trigger reps to produce
+  
+  fBaseConfig.saturation      = p.get< double >("Saturation"   ); //in number of p.e.
+  fBaseConfig.QEbase         = p.get< double >("QE"           ); //PMT quantum efficiency
+#endif // 0
+} // icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker()
+
+
 //-----------------------------------------------------------------------------
 std::unique_ptr<icarus::opdet::PMTsimulationAlg>
 icarus::opdet::PMTsimulationAlgMaker::operator()(
