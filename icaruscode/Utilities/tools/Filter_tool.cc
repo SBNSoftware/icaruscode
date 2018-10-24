@@ -104,7 +104,7 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     fFilterVec.clear();
     
     // Keep track of the peak value
-    double peakValue(-100000.);
+    double peakVal(std::numeric_limits<double>::min());
 
     // Now ready to set the response vector
     for(size_t bin = 0; bin <= numBins/2; bin++)
@@ -114,14 +114,14 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
 
         double f = fFunction->Eval(freq);
         
-        peakValue = std::max(peakValue, f);
+        peakVal = std::max(peakVal, f);
         
         fFilterVec.push_back(TComplex(f, 0.));
     }
     
     // "Normalize" to peak value
-    for(auto& filterValue : fFilterVec) filterValue = filterValue / peakValue;
-    
+    for(auto& filterValue : fFilterVec) filterValue = filterValue / peakVal;
+
     return;
 }
     

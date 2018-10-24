@@ -169,7 +169,7 @@ void Response::setResponse(double weight)
             double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
             double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
             
-            samplingTimeVec.at(sampleIdx) = response;
+            samplingTimeVec[sampleIdx] = response;
         }
     }
 
@@ -177,12 +177,42 @@ void Response::setResponse(double weight)
 
     // Set up the filter
     fFilter->setResponse(fftSize, f3DCorrection, fTimeScaleFactor);
-
+    
     // Finalize the Signal Shaping
     fSignalShaping.AddFilterFunction(fFilter->getResponseVec());
-    fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );
+    fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );         // Note that this is only important if set_normflag above has been set to true
     fSignalShaping.CalculateDeconvKernel();
     
+    // The following can be uncommented to do some consistency checks if desired
+//    // Do some consistency/cross checks here
+//    // Check area of convolution function
+//    const std::vector<TComplex>& convKernel = fSignalShaping.ConvKernel();
+//
+//    double normFactor = std::accumulate(convKernel.begin(),convKernel.end(),0.,[](const auto& val, double sum){return sum + std::abs(val);});
+//
+//    std::cout << "Response for plane: " << fThisPlane << ", convKernel integral: " << normFactor << std::endl;
+//
+//    const std::vector<TComplex>& deconvKernel = fSignalShaping.DeconvKernel();
+//    std::vector<TComplex>  combKernel(deconvKernel.size());
+//
+//    std::transform(convKernel.begin(),convKernel.end(),deconvKernel.begin(),combKernel.begin(),std::multiplies<TComplex>());
+//
+//    const std::vector<TComplex>& filterKernel = fSignalShaping.Filter();
+//
+//    int    diffCount(0);
+//    double maxRhoDiff(0.);
+//
+//    for(size_t idx = 0; idx < filterKernel.size(); idx++)
+//    {
+//        double rhoDiff = filterKernel[idx].Rho() - combKernel[idx].Rho();
+//
+//        if (std::abs(rhoDiff) > 0.001) diffCount++;
+//
+//        if (std::abs(rhoDiff) > std::abs(maxRhoDiff)) maxRhoDiff = rhoDiff;
+//    }
+//
+//    std::cout << "Checking recovery of the filter, # differences: " << diffCount << ", max diff seen: " << maxRhoDiff << std::endl;
+
     return;
 }
     
