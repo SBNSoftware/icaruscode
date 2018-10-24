@@ -206,7 +206,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
       // add the collected photoelectrons to the waveform
       //for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
-    unsigned int nTotalPE = 0U;
+    unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
     for(auto const& pe : peMap){
       auto const nPE = pe.second;//PhotoelectronsPerSample[iSample];
       nTotalPE += nPE;
@@ -214,7 +214,9 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       if (nPE == 1) AddSPE(pe.first,waveform);//AddSPE(iSample, waveform); // faster if n = 1
       else AddPhotoelectrons(pe.first, nPE, waveform);//AddPhotoelectrons(iSample, nPE, waveform);
     }
-    std::cout << nTotalPE << " photoelectrons at " << peMap.size() << " times in channel " << photons.OpChannel() << std::endl;
+    LOG_TRACE("PMTsimulationAlg") 
+      << nTotalPE << " photoelectrons at " << peMap.size()
+      << " times in channel " << photons.OpChannel();
 
       end=std::chrono::high_resolution_clock::now(); diff = end-start;
       //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
@@ -296,7 +298,8 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
     auto const pretrigSize = fParams.pretrigSize();
     auto const posttrigSize = fParams.posttrigSize();
-    std::cout << "Channel #" << opch << ": " << trigger_locations.size() << " triggers" << std::endl;
+    LOG_TRACE("PMTsimulationAlg")
+      << "Channel #" << opch << ": " << trigger_locations.size() << " triggers";
     for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
 
       //if we are at a trigger point, open the window
