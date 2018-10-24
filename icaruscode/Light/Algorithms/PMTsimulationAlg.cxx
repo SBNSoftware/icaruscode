@@ -62,6 +62,9 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   }
   
   printConfiguration(mf::LogDebug("PMTsimulationAlg") << "PMT simulation configuration:\n");
+  // check that the sampled waveform has a sufficiently large range, so that
+  // tails are below 10^-3 ADC counts (absolute value)
+  wsp.checkRange(1e-3, "PMTsimulationAlg");
    
 } // icarus::opdet::PMTsimulationAlg::setup()
 

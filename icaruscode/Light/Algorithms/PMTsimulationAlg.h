@@ -240,6 +240,18 @@ namespace icarus {
         { dump(std::forward<Stream>(out), indent, indent); }
       // @}
       
+      /**
+       * @brief Chceks that the waveform tails not sampled are negligible.
+       * @param limit threshold below which the waveform is considered negligible
+       * @param outputCat _(default: empty)_ message facility output category
+       *        to use for messages
+       * @return whether the two tails are negligible
+       *
+       * If `outputCat` is empty (default) no message is printed.
+       * Otherwise, in case of failure a message is sent to message facility
+       * (under category `outputCat`) describing the failure(s).
+       */
+      bool checkRange(T limit, std::string const& outputCat) const;
       
         private:
       PulseFunction_t fShape; ///< Analytical shape of the pules.
@@ -475,6 +487,40 @@ std::vector<T> icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape
     samples[i] = pulseShape(static_cast<double>(i)/samplingFreq);
   return samples;
 } // icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape()
+
+
+// -----------------------------------------------------------------------------
+template <typename T>
+bool icarus::opdet::DiscretePhotoelectronPulse<T>::checkRange
+  (T limit, std::string const& outputCat /* = "" */) const
+{
+  assert(pulseLength() > 0);
+  bool const bLowOk = (std::abs(fSampledShape.front()) < limit);
+  bool const bHighOk = (std::abs(fSampledShape.back()) < limit);
+  if (bLowOk && bHighOk) return true;
+  if (!outputCat.empty()) {
+    mf::LogWarning log(outputCat);
+    log << "Check on sampled photoelectron waveform template failed!";
+    if (!bLowOk) {
+      log
+        << "\n => low tail after " << (shape().peakTime() / shape().leftSigma())
+          << " standard deviations is still at " << fSampledShape.front()
+          << " ADC counts"
+        ;
+    }
+    if (!bHighOk) {
+      log
+        << "\n => high tail after "
+          << ((duration() - shape().peakTime()) / shape().rightSigma())
+          << " standard deviations is still at " << fSampledShape.back()
+          << " ADC counts"
+        ;
+    }
+    log << "\nShape parameters:";
+    shape().dump(log, "  ", "");
+  } // if writing a message on failure
+  return false;
+} // icarus::opdet::DiscretePhotoelectronPulse<T>::checkRange()
 
 
 //-----------------------------------------------------------------------------
