@@ -86,7 +86,7 @@ icarus_basic_services:
  
 
     # Load the service that manages root files for histograms.
-    TFileService:                        { fileName: "%ifb_%tc-%p_appendix.root" }
+    TFileService:                        { fileName: "Supplemental-%ifb_%tc-%p.root" }
 
     RandomNumberGenerator:               {}
     NuRandomService:                     @local::per_event_NuRandomService
