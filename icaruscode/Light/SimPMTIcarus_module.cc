@@ -66,49 +66,9 @@ namespace opdet{
     void produce(art::Event & e) override;
     
   private:
-//    using Waveform_t = std::vector<float>;
     
     // Declare member data here.
     art::InputTag fInputModuleName;
-    
-//    double fSampling;       //wave sampling frequency (GHz)
-//    std::size_t fNsamples; //Samples per waveform
-//    double fQE;             //PMT quantum efficiency
-//    
-//    size_t fReadoutWindowSize;     ///ReadoutWindowSize in samples
-//    float  fPretrigFraction;       ///Fraction of window size to be before "trigger"
-//    float  fThresholdADC;          ///ADC Threshold for self-triggered readout
-//    int    fPulsePolarity;         ///Pulse polarity (=1 for positive, =-1 for negative)
-//    double  fTriggerOffsetPMT;      ///Time (us) relative to trigger when pmt readout starts
-//    double  fReadoutEnablePeriod;  ///Time (us) for which pmt readout is enabled
-//
-//    size_t fPretrigSize;
-//    size_t fPosttrigSize;
-//
-//    bool fCreateBeamGateTriggers; ///Option to create unbiased readout around beam spill
-//    double fBeamGateTriggerRepPeriod; ///Repetition Period (us) for BeamGateTriggers
-//    size_t fBeamGateTriggerNReps; ///Number of beamgate trigger reps to produce
-//
-//    //Single PE parameters
-//    double fFallTime;       //fall time of 1PE in ns
-//    double fRiseTime;      //rise time in ns
-//    double fTransitTime;   //to be added to pulse minimum time
-//    double sigma1;
-//    double sigma2;
-//    double fMeanAmplitude;  //in pC
-    
-//     Waveform_t wsp; //single photon pulse vector
-//     
-//     int pulsesize; //size of 1PE waveform
-//     
-//     double fADC;      //charge to ADC convertion scale
-//     double fBaseline; //waveform baseline
-//     double fAmpNoise; //amplitude of gaussian noise
-//     double fDarkNoiseRate; //in Hz
-//     double fSaturation; //equivalent to the number of p.e. that saturates the electronic signal	
-    
-    
-//    std::unordered_map< raw::Channel_t, Waveform_t > fFullWaveforms;
     
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
@@ -122,8 +82,7 @@ namespace opdet{
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     
-//    icarus::opdet::PMTsimulationAlg::Config config;
-//    PMTsimulator = std::make_unique<icarus::opdet::PMTsimulationAlg>(config);
+    fInputModuleName = p.get< art::InputTag >("InputModule" );
     
     // create three random engines for three independent tasks;
     // obtain the random seed from NuRandomService,
