@@ -12,40 +12,34 @@
 // ICARUS libraries
 #include "icaruscode/Light/Algorithms/PMTsimulationAlg.h"
 
-#include "canvas/Utilities/Exception.h"
-#include "canvas/Utilities/InputTag.h"
+// LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/Simulation/SimPhotons.h"
+#include "nutools/RandomUtils/NuRandomService.h"
+
+// framework libraries
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/TableFragment.h"
 
-#include <memory>
-#include <vector>
-#include <cmath>
-#include <string>
-#include <map>
-#include <unordered_map>
-#include <set>
-#include <chrono>
-#include <algorithm>
-#include <functional>
-
-#include "lardataobj/RawData/OpDetWaveform.h"
-#include "lardataobj/Simulation/SimPhotons.h"
-#include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
-#include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/LArPropertiesService.h"
-#include "nutools/RandomUtils/NuRandomService.h"
-
+// CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
-#include "CLHEP/Random/RandFlat.h"
-#include "CLHEP/Random/RandGauss.h"
-#include "CLHEP/Random/RandExponential.h"
+
+// C/C++ standard library
+#include <vector>
+#include <iterator> // std::back_inserter()
+#include <memory> // std::make_unique()
+#include <utility> // std::move()
 
 
 namespace opdet{
@@ -73,29 +67,58 @@ namespace opdet{
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
     
-  };
+  }; // class SimPMTIcarus
   
   
-  SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
-    : makePMTsimulator(p)
+  // ---------------------------------------------------------------------------
+  // --- SimPMTIcarus implementation
+  // ---------------------------------------------------------------------------
+#if 0
+  SimPMTIcarus::SimPMTIcarus(Parameters const& config)
+    : fInputModuleName(config().inputModule())
+    , makePMTsimulator(config().algoConfig())
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     
-    fInputModuleName = p.get< art::InputTag >("InputModule" );
+    // create three random engines for three independent tasks;
+    // obtain the random seed from NuRandomService,
+    // unless overridden in configuration with key "Seed";
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "Efficiencies", p, "Seed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
+    
+  } // SimPMTIcarus::SimPMTIcarus()
+  
+#endif // 0
+  // ---------------------------------------------------------------------------
+  SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
+    : fInputModuleName(p.get< art::InputTag >("InputModule"))
+    , makePMTsimulator(p)
+  {
+    // Call appropriate produces<>() functions here.
+    produces<std::vector<raw::OpDetWaveform>>();
     
     // create three random engines for three independent tasks;
     // obtain the random seed from NuRandomService,
     // unless overridden in configuration with key "Seed";
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies", p, "Seed");
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "Efficiencies", p, "Seed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
+    art::ServiceHandle<rndm::NuRandomService>()->createEngine
+      (*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
     
-  }
-
+  } // SimPMTIcarus::SimPMTIcarus()
+  
+  
+  // ---------------------------------------------------------------------------
   void SimPMTIcarus::produce(art::Event & e)
   {
-    mf::LogDebug("SimPMTICARUS") << e.id() << std::endl;
+    mf::LogDebug("SimPMTIcarus") << e.id();
     
     //
     // fetch the input
@@ -105,7 +128,8 @@ namespace opdet{
     //
     // prepare the output
     //
-    auto const& pmtVector = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
+    auto const& pmtVector
+      = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
     //
     // prepare the algorithm
@@ -123,7 +147,10 @@ namespace opdet{
     //
     for(auto const& photons : pmtVector) {
       auto const& channelWaveforms = PMTsimulator->simulate(photons);
-      std::move(channelWaveforms.cbegin(), channelWaveforms.cend(), std::back_inserter(*pulseVecPtr));
+      std::move(
+        channelWaveforms.cbegin(), channelWaveforms.cend(),
+        std::back_inserter(*pulseVecPtr)
+        );
     } // for
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
@@ -138,5 +165,5 @@ namespace opdet{
   
   DEFINE_ART_MODULE(SimPMTIcarus)
 
-}
+} // namespace icarus
 
