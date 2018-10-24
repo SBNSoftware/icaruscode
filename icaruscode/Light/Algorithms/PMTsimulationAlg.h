@@ -405,7 +405,20 @@ namespace icarus {
           Comment("Time for which PMT readout is enabled [us]")
           };
         
+        fhicl::Atom<double> ReadoutWindowSize {
+          Name("ReadoutWindowSize"),
+          Comment
+            ("Duration of a single PMT readout acquisition window [samples]")
+          };
+        
+        fhicl::Atom<double> DarkNoiseRate {
+          Name("DarkNoiseRate"),
+          Comment("Frequency of \"spontaneous\" emission of a dark noise photoelectron [Hz]")
+          // mandatory
+          };
+        
       }; // struct Config
+      
       
       /// Constructor.
       PMTsimulationAlgMaker(Config const& config); 

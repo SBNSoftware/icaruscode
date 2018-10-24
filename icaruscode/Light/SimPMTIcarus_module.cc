@@ -46,9 +46,27 @@ namespace opdet{
   
   class SimPMTIcarus : public art::EDProducer {
   public:
+    
+    struct Config {
+      
+      using Comment = fhicl::Comment;
+      using Name = fhicl::Name;
+      
+      fhicl::Atom<art::InputTag> inputModule {
+        Name("InputModule"),
+        Comment("simulated photons to be digitised (sim::SimPhotons)")
+        };
+      
+      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config>
+        algoConfig;
+      
+    }; // struct Config
+    
+    using Parameters = art::EDProducer::Table<Config>;
+    
     explicit SimPMTIcarus(fhicl::ParameterSet const & p);
-    // The compiler-generated destructor is fine for non-base
-    // classes without bare pointers or other resource use.
+  //  explicit SimPMTIcarus(Parameters const& config);
+    
     
     // Plugins should not be copied or assigned.
     SimPMTIcarus(SimPMTIcarus const &) = delete;
