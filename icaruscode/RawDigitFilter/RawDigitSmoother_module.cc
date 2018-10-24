@@ -211,6 +211,13 @@ void RawDigitSmoother::produce(art::Event & event)
     // Require a valid handle
     if (digitVecHandle.isValid() && digitVecHandle->size() > 0)
     {
+        erosionRawDigit->reserve(digitVecHandle->size());
+        dilationRawDigit->reserve(digitVecHandle->size());
+        edgeRawDigit->reserve(digitVecHandle->size());
+        differenceRawDigit->reserve(digitVecHandle->size());
+        averageRawDigit->reserve(digitVecHandle->size());
+        medianRawDigit->reserve(digitVecHandle->size());
+        
         unsigned int maxChannels = fGeometry->Nchannels();
         
         // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
@@ -388,8 +395,6 @@ void RawDigitSmoother::produce(art::Event & event)
                     size_t rowIdx(0);
                     size_t adcBinVecIdx(0);
                     
-                    adcBinValVec.reserve(fStructuringElementWireSize*fStructuringElementTickSize);
-                    
                     // Outside loop over vectors
                     for(const auto& curTuple : inputWaveformList)
                     {
@@ -405,12 +410,12 @@ void RawDigitSmoother::produce(art::Event & event)
                     
                     std::sort(adcBinValVec.begin(),adcBinValVec.end());
                     
-                    erosionVec[adcBinIdx]    = adcBinValVec.front();
-                    dilationVec[adcBinIdx]   = adcBinValVec.back();
-                    edgeVec[adcBinIdx]       = dilationVec[adcBinIdx] - currentVec[adcBinIdx] + midPedestal;
-                    differenceVec[adcBinIdx] = dilationVec[adcBinIdx] - erosionVec[adcBinIdx] + midPedestal;
-                    averageVec[adcBinIdx]    = (erosionVec[adcBinIdx] + dilationVec[adcBinIdx]) / 2;
-                    medianVec[adcBinIdx]     = adcBinValVec[adcBinValVec.size()/2];
+                    erosionVec[adcBinIdx]    =  adcBinValVec.front();
+                    dilationVec[adcBinIdx]   =  adcBinValVec.back();
+                    edgeVec[adcBinIdx]       = (dilationVec[adcBinIdx] - currentVec[adcBinIdx]) + midPedestal;
+                    differenceVec[adcBinIdx] = (dilationVec[adcBinIdx] - erosionVec[adcBinIdx]) + midPedestal;
+                    averageVec[adcBinIdx]    = (dilationVec[adcBinIdx] + erosionVec[adcBinIdx]) / 2;
+                    medianVec[adcBinIdx]     =  adcBinValVec[adcBinValVec.size()/2];
                 }
 
                 saveRawDigits(erosionRawDigit,    midChannel, midPedestal, midRmsVal, std::get<3>(erosionTuple));
@@ -491,7 +496,7 @@ void RawDigitSmoother::saveRawDigits(std::unique_ptr<std::vector<raw::RawDigit> 
     float                    rms         = std::get<2>(wireTuple);
     caldata::RawDigitVector& rawDigitVec = std::get<3>(wireTuple);
     
-    filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
+    filteredRawDigit->emplace_back(channel, rawDigitVec.size(), rawDigitVec, raw::kNone);
     filteredRawDigit->back().SetPedestal(pedestal,rms);
     
     return;
@@ -503,7 +508,7 @@ void RawDigitSmoother::RawDigitSmoother::saveRawDigits(std::unique_ptr<std::vect
                                                        float                                         rms,
                                                        caldata::RawDigitVector&                      rawDigitVec)
 {
-    filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
+    filteredRawDigit->emplace_back(channel, rawDigitVec.size(), rawDigitVec, raw::kNone);
     filteredRawDigit->back().SetPedestal(pedestal,rms);
     
     return;
