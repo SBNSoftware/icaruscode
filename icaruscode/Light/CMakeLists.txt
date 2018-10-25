@@ -37,7 +37,6 @@ art_make(
 			${ROOT_BASIC_LIB_LIST}
 			${Boost_SYSTEM_LIBRARY}
 	      MODULE_LIBRARIES larcorealg_Geometry
-			icaruscode_Light_Algorithms
 	  		larcore_Geometry_Geometry_service
 	        lardata_Utilities
 			larevt_Filters

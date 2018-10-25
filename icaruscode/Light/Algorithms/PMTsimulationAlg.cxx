@@ -10,6 +10,9 @@
 // this library header
 #include "icaruscode/Light/Algorithms/PMTsimulationAlg.h"
 
+// framework libraries
+#include "cetlib_except/exception.h"
+
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGauss.h"
@@ -50,15 +53,20 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   // shape of single pulse
  
   // Correction due to scalling factor applied during simulation if any
-  mf::LogDebug("SimPMTICARUS") << "PMT corrected efficiency = " << fQE;
+  mf::LogDebug("PMTsimulationAlg") << "PMT corrected efficiency = " << fQE;
     
   if (fQE >= 1.0001) {
-    mf::LogWarning("SimPMTICARUS") << "WARNING: Quantum efficiency set in fhicl file "
-				   << fParams.QEbase
-				   << " seems to be too large! Final QE must be equal"
-				   << " or smaller than the scintillation pre scale applied"
-				   << " at simulation time. Please check this number (ScintPreScale): "
-				   << fParams.larProp->ScintPreScale();
+    mf::LogWarning("PMTsimulationAlg")
+      << "WARNING: Quantum efficiency set in the configuration (QE="
+        << fParams.QEbase << ") seems to be too large!"
+      "\nThe photon visibility library is assumed to already include a"
+        " quantum efficiency of " << fParams.larProp->ScintPreScale() <<
+        " (`ScintPreScale` setting of `LArProperties` service)"
+        " and here we are requesting a higher one."
+      "\nThis configuration is not supported by `PMTsimulationAlg`,"
+        " and this simulation will effectively apply a quantum efficiency of "
+        << fParams.larProp->ScintPreScale();
+      ;
   }
   
   printConfiguration(mf::LogDebug("PMTsimulationAlg") << "PMT simulation configuration:\n");

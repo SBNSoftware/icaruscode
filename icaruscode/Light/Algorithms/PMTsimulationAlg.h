@@ -313,7 +313,7 @@ namespace icarus {
         
         /// @{
         /// @name Setup parameters
-
+        
         
         detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
         detinfo::DetectorClocks const* timeService = nullptr; ///< DetectorClocks service provider.
@@ -321,7 +321,7 @@ namespace icarus {
         CLHEP::HepRandomEngine* darkNoiseRandomEngine = nullptr; ///< Dark noise random stream engine.
         CLHEP::HepRandomEngine* elecNoiseRandomEngine = nullptr; ///< Electronics noise random stream engine.
         /// @}
-
+        
         /// @{
         /// @name Derivative configuration parameters.
         std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
@@ -463,7 +463,6 @@ namespace icarus {
     
     // -------------------------------------------------------------------------
     
-  
   } // namespace opdet
 } // namespace icarus
 
