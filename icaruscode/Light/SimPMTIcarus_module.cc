@@ -105,8 +105,8 @@ namespace opdet{
     
     using Parameters = art::EDProducer::Table<Config>;
     
-    explicit SimPMTIcarus(fhicl::ParameterSet const & p);
-  //  explicit SimPMTIcarus(Parameters const& config);
+  //  explicit SimPMTIcarus(fhicl::ParameterSet const & p);
+    explicit SimPMTIcarus(Parameters const& config);
     
     
     // Plugins should not be copied or assigned.
@@ -132,7 +132,7 @@ namespace opdet{
   // ---------------------------------------------------------------------------
   // --- SimPMTIcarus implementation
   // ---------------------------------------------------------------------------
-#if 0
+#if 1
   SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : fInputModuleName(config().inputModule())
     , makePMTsimulator(config().algoConfig())
@@ -144,15 +144,15 @@ namespace opdet{
     // obtain the random seed from NuRandomService,
     // unless overridden in configuration with key "Seed";
     art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "Efficiencies", p, "Seed");
+      (*this, "HepJamesRandom", "Efficiencies" /*, config().Seed */);
     art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
+      (*this, "HepJamesRandom", "DarkNoise" /*, config().DarkNoiseSeed */);
     art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
+      (*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */);
     
   } // SimPMTIcarus::SimPMTIcarus()
   
-#endif // 0
+#else // 0
   // ---------------------------------------------------------------------------
   SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
     : fInputModuleName(p.get< art::InputTag >("InputModule"))
@@ -172,6 +172,7 @@ namespace opdet{
       (*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
     
   } // SimPMTIcarus::SimPMTIcarus()
+#endif // 0
   
   
   // ---------------------------------------------------------------------------
