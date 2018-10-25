@@ -1,13 +1,10 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       SimPMTIcarus
-// Plugin Type: producer (art v2_09_06)
-// File:        SimPMTIcarus_module.cc
-//
-// Generated at Wed Feb  7 15:06:56 2018 by Andrea Falcone using cetskelgen
-// from cetlib version v3_01_03.
+/**
+ * @file   icaruscode/Light/SimPMTIcarus_module.cc
+ * @see    `icarus::opdet::PMTsimulationAlg`
+ * 
+ * Based on `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.
+ */
 
-//Based on SimPMTSBND_module.cc by L. Paulucci and F. Marinho
-////////////////////////////////////////////////////////////////////////
 
 // ICARUS libraries
 #include "icaruscode/Light/Algorithms/PMTsimulationAlg.h"
@@ -44,6 +41,50 @@
 
 namespace opdet{
   
+  /**
+   * @brief Simulates the digitization of ICARUS PMT response and trigger.
+   * 
+   * The module is a simple interface to the simulation algorithm,
+   * `icarus::opdet::PMTsimulationAlg`.
+   * 
+   * 
+   * Configuration
+   * ==============
+   * 
+   * Apart from the input collection of propagated photons, all the
+   * configuration parameters are passed directly to the
+   * `icarus::opdet::PMTsimulationAlg` algorithm.
+   * 
+   * The module also utilizes three random number engines.
+   * Currently, no configuration interface is provided to directly control their
+   * seeds, which is delegated to `rndm::NuRandomService` service.
+   * 
+   * 
+   * Input
+   * ======
+   * 
+   * The module utilizes as input a collection of `sim::SimPhotons`, each
+   * containing the photons propagated to a single optical detector channel.
+   * 
+   * 
+   * Output
+   * =======
+   * 
+   * A collection of optical detector waveforms
+   * (`std::vector<raw::OpDetWaveform>`) is produced.
+   * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
+   * 
+   * 
+   * Requirements
+   * =============
+   * 
+   * This module currently requires LArSoft services:
+   * * `DetectorClocksService` for timing conversions and settings
+   * * `LArPropertiesService` for the scintillation yield(s)
+   * 
+   * Three random streams are also used.
+   * 
+   */
   class SimPMTIcarus : public art::EDProducer {
   public:
     
