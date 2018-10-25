@@ -23,7 +23,6 @@
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
 
 // framework libraries
-#include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -622,7 +621,6 @@ namespace icarus {
       
       /// Constructor.
       PMTsimulationAlgMaker(Config const& config); 
-      PMTsimulationAlgMaker(fhicl::ParameterSet const& pset); 
       
       /**
        * @brief Creates and returns a new algorithm instance.
