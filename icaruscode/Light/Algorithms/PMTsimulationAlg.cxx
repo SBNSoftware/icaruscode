@@ -37,8 +37,8 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     { // PhotoelectronPulseWaveform
       fParams.ADC * fParams.meanAmplitude, // amplitude
       fParams.transitTime,                 // peak time
-      fParams.riseTime / 1.687,            // sigma left
-      fParams.fallTime / 1.687             // sigma right
+      riseTimeToRMS(fParams.riseTime),     // sigma left
+      riseTimeToRMS(fParams.fallTime)      // sigma right
     },
     fSampling / 1.0e3, // convert frequency into GHz
     6.0                // 6 sdt. dev. of tail should suffice
