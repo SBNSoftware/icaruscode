@@ -25,7 +25,6 @@
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/TableFragment.h"
 
@@ -105,7 +104,6 @@ namespace opdet{
     
     using Parameters = art::EDProducer::Table<Config>;
     
-  //  explicit SimPMTIcarus(fhicl::ParameterSet const & p);
     explicit SimPMTIcarus(Parameters const& config);
     
     
@@ -132,7 +130,6 @@ namespace opdet{
   // ---------------------------------------------------------------------------
   // --- SimPMTIcarus implementation
   // ---------------------------------------------------------------------------
-#if 1
   SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : fInputModuleName(config().inputModule())
     , makePMTsimulator(config().algoConfig())
@@ -151,28 +148,6 @@ namespace opdet{
       (*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */);
     
   } // SimPMTIcarus::SimPMTIcarus()
-  
-#else // 0
-  // ---------------------------------------------------------------------------
-  SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const & p)
-    : fInputModuleName(p.get< art::InputTag >("InputModule"))
-    , makePMTsimulator(p)
-  {
-    // Call appropriate produces<>() functions here.
-    produces<std::vector<raw::OpDetWaveform>>();
-    
-    // create three random engines for three independent tasks;
-    // obtain the random seed from NuRandomService,
-    // unless overridden in configuration with key "Seed";
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "Efficiencies", p, "Seed");
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "DarkNoise", p, "DarkNoiseSeed");
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "ElectronicsNoise", p, "ElectronicsNoiseSeed");
-    
-  } // SimPMTIcarus::SimPMTIcarus()
-#endif // 0
   
   
   // ---------------------------------------------------------------------------
