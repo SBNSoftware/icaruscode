@@ -2,7 +2,7 @@
  * @file    icaruscode/Light/Algorithms/PMTsimulationAlg.h
  * @brief   Algorithms for the simulation of ICARUS PMT channels.
  * @date    October 16, 2018
- * @see     icaruscode/Light/Algorithms/PMTsimulationAlg.cxx
+ * @see     `icaruscode/Light/Algorithms/PMTsimulationAlg.cxx`
  *
  * These algoritms were originally extracted from the module
  * `SimPMTICARUS_module.cc`, which was in turnb based on 
@@ -273,7 +273,91 @@ namespace icarus {
     /** ************************************************************************
      * @brief Algorithm class for the full simulation of PMT channels.
      *
-     *
+     * The algorithm creates simulated PMT waveforms as read out by ICARUS,
+     * including the generation of trigger primitives.
+     * Contributions to the waveforms include:
+     *  * physical photons
+     *  * dark noise
+     *  * electronics noise
+     * 
+     * The algorithm processes an optical channel at a time, independently
+     * and uncorrelated from the other channels.
+     * For each channel, multiple waveforms may be generated according to the
+     * readout parameters.
+     * 
+     * 
+     * Activity sources
+     * =================
+     * 
+     * Physical photons
+     * -----------------
+     * 
+     * Photons are read from `sim::SimPhotons` data objects, each one pertaining
+     * a single optical detector channel.
+     * Each photon on the channel is assumed to have successfully reached the
+     * external surface of the photocathode, with the wavelength shifter.
+     * Depending on the upstream simulation, and in particular on the photon
+     * visibility library settings, the photon might have also already passed
+     * the wavelength shifting and even triggered the conversion to a detectable
+     * photoelectron.
+     * 
+     * Quantum efficiency is simulated to determine if each photon converts into
+     * a photoelectron on the internal side of the photocathode. The target
+     * quantum efficiency is specified via the `QE` configuration parameter.
+     * It is assumed that some level of quantum efficiency has already been
+     * simulated upstream: more precisely, that the quantum efficiency already
+     * applied is in the amount returned by
+     * `detinfo::LArProperties::ScintPreScale()`. Therefore:
+     * 
+     * 1. the quantum efficiency applied here is only the residual one to go
+     *    from `detinfo::LArProperties::ScintPreScale()` to the value in `QE`
+     * 2. there is no implement here to _increase_ quantum efficiency, i.e.
+     *    `QE` must not exceed `detinfo::LArProperties::ScintPreScale()`
+     * 3. if the configuration specifies a target quantum efficiency `QE` larger
+     *    than the one applied upstream
+     *    (`detinfo::LArProperties::ScintPreScale()`), a warning message is
+     *    printed, and no change to quantum efficiency is performed
+     * 
+     * Note that if the upstream code has not applied any quantum efficiency,
+     * the configuration should give a `detinfo::LArProperties::ScintPreScale()`
+     * of 1.0.
+     * 
+     * @note If the photon visibility library already includes the probability
+     *       of the photon converting to a photoelectron, the quantum efficiency
+     *       check here should be skipped by setting the efficiency to 1.
+     * 
+     * For each converting photon, a photoelectron is added to the channel by
+     * placing a template waveform shape into the channel waveform.
+     * 
+     * 
+     * @todo Document at which time this waveform is added.
+     * 
+     * 
+     * Dark noise
+     * -----------
+     * 
+     * Dark noise, i.e. the noise originating by "spontaneous" emission of a
+     * photoelectron in the photocathode without any external stimulation, is
+     * simulated by randomly extracting the time such emission happens.
+     * Each emission causes a photoelectron template waveform to be added at the
+     * extracted time.
+     * The rate of dark noise emission is set by configuration with
+     * `DarkNoiseRate` parameter.
+     * 
+     * 
+     * Electronics noise
+     * ------------------
+     * 
+     * Electronics noise is described by Gaussian fluctuations of a given
+     * standard deviation, controlled by the configuration parameter `AmpNoise`.
+     * No noise correlation is simulated neither in time nor in space.
+     * 
+     * 
+     * Structure of the algorithm
+     * ===========================
+     * 
+     * 
+     * 
      */
     class PMTsimulationAlg {
       
