@@ -1,0 +1,83 @@
+#
+# File:    pmtsimulation_icarus.fcl
+# Purpose: Presets for configuration of ICARUS PMT channel digitization.
+# 
+# Configurations offered:
+# 
+# * `PMTsimulationAlg` algorithm:
+#     * `icarus_pmtsimulationalg_standard`: main configuration, expected to be
+#       used in production and by the general user
+#     * `icarus_pmtsimulationalg_nonoise`: as `icarus_pmtsimulationalg_standard`
+#       but with dark and electronics noise disabled
+# 
+# Usage:
+# 
+# * `PMTsimulationAlg` algorithm configuration needs to be included verbatim
+#     into the configuration of `SimPMTIcarus` module
+#    
+#
+# Changes:
+# 20181024 (petrillo@slac.stanford.edu)
+#   detached from `opdetsim_pmt_icarus.fcl`
+#
+#
+
+BEGIN_PROLOG
+
+################################################################################
+###  Configurations for `PMTsimulationAlg`
+################################################################################
+###
+### Standard configuration: `icarus_pmtsimulationalg_standard`
+###
+###
+icarus_pmtsimulationalg_standard: {
+
+  TransitTime:               55.1           #ns
+  ADC:                       -11.1927       #charge to adc factor
+  Baseline:                  8000.0         #in ADC
+  FallTime:                  13.7           #ns
+  RiseTime:                  3.8            #ns
+  MeanAmplitude:             0.9            #in pC
+  AmpNoise:                  1.0            #in ADC
+  DarkNoiseRate:             1000.0         #in Hz
+
+  ##This is the readout window size for each "trigger" on the electronics
+  ReadoutWindowSize:         2000           #ticks (if 2ns each --> 4us)
+
+  ##fraction of readout window size that should come before the "trigger" on the electronics
+  PreTrigFraction:           0.25           # fraction
+
+  ##Threshold in ADC counts for a PMT self-trigger.
+  ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
+  ThresholdADC:              10             #ADC counts
+
+  PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
+  TriggerOffsetPMT:          -1150          #Time (us) relative to trigger that readout begins
+  ReadoutEnablePeriod:       3450           #Time (us) for which pmt readout is enabled
+  CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
+  BeamGateTriggerRepPeriod:  2.0            #Repetition Period (us) for BeamGateTriggers
+  BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce
+  Saturation:                300            #in number of p.e. to see saturation effects in the signal
+  QE:                        0.07           #TPB coated PMT quantum efficiency
+  Sampling:                  0.5            #Give the desired value in GHz or use -1 for extracting from DetectorClocksService->OpticalClock().Frequency
+
+} # icarus_pmtsimulationalg_standard
+
+
+###
+### No-noise configuration: `icarus_pmtsimulationalg_nonoise`
+###
+###
+icarus_pmtsimulationalg_nonoise: {
+  
+  @table::icarus_pmtsimulationalg_standard
+  
+  AmpNoise:      0.0  # RMS in ADC counts
+  DarkNoiseRate: 0.0  # Hz
+  
+  
+} # icarus_pmtsimulationalg_nonoise
+
+
+END_PROLOG
