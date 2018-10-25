@@ -495,22 +495,127 @@ namespace icarus {
         using Name = fhicl::Name;
         using Comment = fhicl::Comment;
         
+        //
+        // readout settings
+        //
         fhicl::Atom<double> ReadoutEnablePeriod {
           Name("ReadoutEnablePeriod"),
           Comment("Time for which PMT readout is enabled [us]")
+          // mandatory
           };
-        
         fhicl::Atom<double> ReadoutWindowSize {
           Name("ReadoutWindowSize"),
           Comment
             ("Duration of a single PMT readout acquisition window [samples]")
+          // mandatory
+          };
+        fhicl::Atom<double> Baseline {
+          Name("Baseline"),
+          Comment("Waveform baseline (may be fractional) [ADC]")
+          // mandatory
+          };
+        fhicl::Atom<double> ADC {
+          Name("ADC"),
+          Comment("Voltage to ADC conversion factor")
+          // mandatory
+          };
+        fhicl::Atom<int> PulsePolarity {
+          Name("PulsePolarity"),
+          Comment("Pulse polarity: 1 for positive, -1 for negative")
+          // mandatory
+          };
+        fhicl::Atom<double> PreTrigFraction {
+          Name("PreTrigFraction"),
+          Comment("fraction of the readout window located earlier than the readout trigger")
+          // mandatory
           };
         
+        
+        //
+        // PMT settings
+        //
+        fhicl::Atom<double> Saturation {
+          Name("Saturation"),
+          Comment("photomultiplier saturation (as number of photoelectrons)")
+          // mandatory
+          };
+        fhicl::Atom<double> QE {
+          Name("QE"),
+          Comment("total photoelectron quantum efficiency")
+          // mandatory
+          };
+        
+        //
+        // single photoelectron response
+        //
+        fhicl::Atom<double> TransitTime {
+          Name("TransitTime"),
+          Comment("Single photoelectron: peak time from the beginning of the waveform [ns]")
+          // mandatory
+          };
+        fhicl::Atom<double> MeanAmplitude {
+          Name("MeanAmplitude"),
+          Comment("Single photoelectron: signal amplitude at peak [V]")
+          // mandatory
+          };
+        fhicl::Atom<double> RiseTime {
+          Name("RiseTime"),
+          Comment("Single photoelectron: rise time (10% to 90%, sigma * ~1.687) [ns]")
+          // mandatory
+          };
+        fhicl::Atom<double> FallTime {
+          Name("FallTime"),
+          Comment("Single photoelectron: fall time (90% to 10%, sigma * ~1.687) [ns]")
+          // mandatory
+          };
+        
+        //
+        // dark noise
+        //
         fhicl::Atom<double> DarkNoiseRate {
           Name("DarkNoiseRate"),
           Comment("Frequency of \"spontaneous\" emission of a dark noise photoelectron [Hz]")
           // mandatory
           };
+        
+        //
+        // electronics noise
+        //
+        fhicl::Atom<double> AmpNoise {
+          Name("AmpNoise"),
+          Comment("RMS of the electronics noise fluctuations [ADC counts]")
+          // mandatory
+          };
+        
+        //
+        // trigger
+        //
+        fhicl::Atom<double> ThresholdADC {
+          Name("ThresholdADC"),
+          Comment("Threshold for self-triggered readout [ADC counts]")
+          // mandatory
+          };
+        fhicl::Atom<bool> CreateBeamGateTriggers {
+          Name("CreateBeamGateTriggers"),
+          Comment("Whether to create unbiased readout trigger at beam spill")
+          // mandatory
+          };
+        fhicl::Atom<double> BeamGateTriggerRepPeriod {
+          Name("BeamGateTriggerRepPeriod"),
+          Comment("Repetition period for beam gate generated readout triggers [us]")
+          // mandatory
+          };
+        fhicl::Atom<std::size_t> BeamGateTriggerNReps {
+          Name("BeamGateTriggerNReps"),
+          Comment("Number of beam gate readout triggers to generate")
+          // mandatory
+          };
+        fhicl::Atom<double> TriggerOffsetPMT {
+          Name("TriggerOffsetPMT"),
+          Comment("Time  when readout begins, relative to readout trigger [us]")
+          // mandatory
+          };
+        
         
       }; // struct Config
       

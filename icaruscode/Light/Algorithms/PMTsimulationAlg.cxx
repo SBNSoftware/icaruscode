@@ -25,11 +25,6 @@
 // -----------------------------------------------------------------------------   
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------   
-// icarus::opdet::PMTsimulationAlg::PMTsimulationAlg(Config const& config)
-//   : fReadoutEnablePeriod(config.ReadoutEnablePeriod())
-//   {}
-
-// -----------------------------------------------------------------------------   
 icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   (ConfigurationParameters_t const& config)
   : fParams(config)
@@ -355,33 +350,59 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
 icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   (Config const& config)
 {
-  fBaseConfig.darkNoiseRate     = config.DarkNoiseRate();
-  fBaseConfig.readoutWindowSize = config.ReadoutWindowSize();
-  fBaseConfig.readoutEnablePeriod = config.ReadoutEnablePeriod();
+  //
+  // readout settings
+  //
+  fBaseConfig.readoutEnablePeriod      = config.ReadoutEnablePeriod();
+  fBaseConfig.readoutWindowSize        = config.ReadoutWindowSize();
+  fBaseConfig.ADC                      = config.ADC();
+  fBaseConfig.baseline                 = config.Baseline();
+  fBaseConfig.pulsePolarity            = config.PulsePolarity();
+  fBaseConfig.pretrigFraction          = config.PreTrigFraction();
+  fBaseConfig.triggerOffsetPMT         = config.TriggerOffsetPMT();
   
-#if 0
-  fBaseConfig.transitTime     = p.get< double >("TransitTime"  ); //ns
-  fBaseConfig.ADC             = p.get< double >("ADC"          ); //voltage to ADC factor
-  fBaseConfig.baseline        = p.get< double >("Baseline"     ); //in ADC counts (may be fractional)
-  fBaseConfig.fallTime        = p.get< double >("FallTime"     ); //in ns
-  fBaseConfig.riseTime        = p.get< double >("RiseTime"     ); //in ns
-  fBaseConfig.meanAmplitude   = p.get< double >("MeanAmplitude"); //in pC
-  fBaseConfig.ampNoise        = p.get< double >("AmpNoise"     ); //in ADC
-  fBaseConfig.darkNoiseRate   = p.get< double >("DarkNoiseRate"); //in Hz
+  //
+  // PMT settings
+  //
+  fBaseConfig.saturation               = config.Saturation();
+  fBaseConfig.QEbase                   = config.QE();
   
-  fBaseConfig.pretrigFraction     = p.get<float>("PreTrigFraction");    ///Fraction of window size to be before "trigger"
-  fBaseConfig.thresholdADC        = p.get<float>("ThresholdADC");       ///ADC Threshold for self-triggered readout
-  fBaseConfig.pulsePolarity       = p.get<int>("PulsePolarity");        ///Pulse polarity (=1 for positive, =-1 for negative)
-// is this given by DetectorClocks? should it?
-  fBaseConfig.triggerOffsetPMT    = p.get<double>("TriggerOffsetPMT");   ///Time (us) relative to trigger that readout begins
-
-  fBaseConfig.createBeamGateTriggers = p.get<bool>("CreateBeamGateTriggers"); ///Option to create unbiased readout around beam spill
-  fBaseConfig.beamGateTriggerRepPeriod = p.get<double>("BeamGateTriggerRepPeriod"); ///Repetition Period (us) for BeamGateTriggers
-  fBaseConfig.beamGateTriggerNReps = p.get<size_t>("BeamGateTriggerNReps"); ///Number of beamgate trigger reps to produce
+  //
+  // single photoelectron response
+  //
+  fBaseConfig.transitTime              = config.TransitTime();
+  fBaseConfig.riseTime                 = config.RiseTime();
+  fBaseConfig.fallTime                 = config.FallTime();
+  fBaseConfig.meanAmplitude            = config.MeanAmplitude();
   
-  fBaseConfig.saturation      = p.get< double >("Saturation"   ); //in number of p.e.
-  fBaseConfig.QEbase         = p.get< double >("QE"           ); //PMT quantum efficiency
-#endif // 0
+  //
+  // dark noise
+  //
+  fBaseConfig.darkNoiseRate            = config.DarkNoiseRate();
+  
+  //
+  // electronics noise
+  //
+  fBaseConfig.ampNoise                 = config.AmpNoise();
+  
+  //
+  // trigger
+  //
+  fBaseConfig.thresholdADC             = config.ThresholdADC();
+  fBaseConfig.createBeamGateTriggers   = config.CreateBeamGateTriggers();
+  fBaseConfig.beamGateTriggerRepPeriod = config.BeamGateTriggerRepPeriod();
+  fBaseConfig.beamGateTriggerNReps     = config.BeamGateTriggerNReps();
+  
+  //
+  // parameter checks
+  //
+  if (std::abs(fBaseConfig.pulsePolarity) != 1.0) {
+    throw cet::exception("PMTsimulationAlg")
+      << "Pulse polarity settings can be only +1.0 or -1.0 (got: "
+      << fBaseConfig.pulsePolarity << ")\n"
+      ;
+  } // check pulse polarity
+  
 } // icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker()
 
 
