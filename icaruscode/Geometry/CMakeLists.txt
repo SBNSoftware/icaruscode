@@ -1,6 +1,5 @@
 
-art_make( BASENAME_ONLY
-	  LIBRARY_NAME icarus_Geometry
+art_make(
 	  MODULE_LIBRARIES
 			larcorealg_Geometry
 	                ${ART_FRAMEWORK_CORE}
