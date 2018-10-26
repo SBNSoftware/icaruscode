@@ -155,7 +155,7 @@ namespace icarus {
       double fSigmaR; ///< RMS parameter of the shape after transition.
       
       template <typename T>
-      static constexpr T sqr(T value) { return value * value; }
+      static T sqr(T value) { return value * value; }
       
     }; // class PhotoelectronPulseWaveform
  
@@ -437,7 +437,7 @@ namespace icarus {
       
       
       /// Converts rise time (10% to 90%) into a RMS under Gaussian hypothesis.
-      static constexpr double riseTimeToRMS(double riseTime)
+      static double riseTimeToRMS(double riseTime)
         {
           return riseTime / (
             std::sqrt(2.0)
