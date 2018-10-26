@@ -145,7 +145,8 @@ namespace icarus {
       // @}
       
       /// Returns the value of normal distribution at specified point.
-      static double Gaussian(double x, double mean, double sigma, double amplitude);
+      static double Gaussian(double x, double mean, double sigma, double amplitude)
+        { return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); }
       
         private: 
       double fAmplitude; ///< Amplitude of the Gaussian shapes at peak (transition).
@@ -154,7 +155,7 @@ namespace icarus {
       double fSigmaR; ///< RMS parameter of the shape after transition.
       
       template <typename T>
-      static constexpr T sqr(const T value) { return value * value; }
+      static constexpr T sqr(T value) { return value * value; }
       
     }; // class PhotoelectronPulseWaveform
  
@@ -438,7 +439,7 @@ namespace icarus {
       /// Converts rise time (10% to 90%) into a RMS under Gaussian hypothesis.
       double riseTimeToRMS(double riseTime)
         {
-          static const double factor = 1. / (std::sqrt(2.0) * (std::sqrt(-std::log(0.1)) - std::sqrt(-std::log(0.9))));
+          static constexpr double factor = 1. / (std::sqrt(2.0) * (std::sqrt(-std::log(0.1)) - std::sqrt(-std::log(0.9))));
           return riseTime * factor;
         }
       
@@ -650,10 +651,6 @@ namespace icarus {
   } // namespace opdet
 } // namespace icarus
 
-static double icarus::opdet::PhotoelectronPulseWaveform::Gaussian(double x, double mean, double sigma, double amplitude)
-{ 
-    return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); 
-}
 
 //-----------------------------------------------------------------------------
 //--- template implementation
