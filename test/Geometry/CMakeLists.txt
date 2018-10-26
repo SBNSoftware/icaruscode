@@ -19,7 +19,7 @@ cet_test(geometry_icarus HANDBUILT
 cet_test(geometry_icarus_test
   SOURCES geometry_icarus_test.cxx
   TEST_ARGS test_geometry_icarus.fcl
-  LIBRARIES icarus_Geometry
+  LIBRARIES icaruscode_Geometry
             larcorealg_Geometry
             GeometryTestLib
             ${MF_MESSAGELOGGER}
@@ -37,7 +37,7 @@ cet_test(geometry_iterator_icarus_test
   SOURCES geometry_iterator_icarus_test.cxx
   DATAFILES ./test_geometry_iterators_icarus.fcl
   TEST_ARGS ./test_geometry_iterators_icarus.fcl
-  LIBRARIES icarus_Geometry
+  LIBRARIES icaruscode_Geometry
             larcorealg_Geometry
             GeometryTestLib
             ${MF_MESSAGELOGGER}
@@ -54,7 +54,7 @@ cet_test(geometry_iterator_loop_icarus_test
   SOURCES geometry_iterator_loop_icarus_test.cxx
   DATAFILES ./test_geometry_iterators_icarus.fcl
   TEST_ARGS ./test_geometry_iterators_icarus.fcl
-  LIBRARIES icarus_Geometry
+  LIBRARIES icaruscode_Geometry
             larcorealg_Geometry
             GeometryTestLib
             ${MF_MESSAGELOGGER}
