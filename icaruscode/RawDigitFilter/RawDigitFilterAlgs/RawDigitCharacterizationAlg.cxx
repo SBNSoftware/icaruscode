@@ -431,7 +431,7 @@ void RawDigitCharacterizationAlg::getMeanAndTruncRms(const RawDigitVector& rawWa
     rmsVal  = std::sqrt(std::max(float(0.),rmsVal / float(adcLessPedVec.size())));
     
     // Drop the "large" rms values and recompute
-    std::vector<float>::iterator newEndItr = std::remove_if(adcLessPedVec.begin(),adcLessPedVec.end(),[aveVal,rmsVal](const auto& val){return std::abs(val-aveVal) > 2.5*rmsVal;});
+    std::vector<float>::iterator newEndItr = std::remove_if(adcLessPedVec.begin(),adcLessPedVec.end(),[rmsVal](const auto& val){return std::abs(val) > 2.5*rmsVal;});
     
     rmsTrunc = std::inner_product(adcLessPedVec.begin(), newEndItr, adcLessPedVec.begin(), 0.);
     numBins  = std::distance(adcLessPedVec.begin(),newEndItr);
