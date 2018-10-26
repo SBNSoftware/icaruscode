@@ -18,8 +18,8 @@ art_make(
                         ${FHICLCPP}
                         ${ROOT_GEOM}
                         ${ROOT_BASIC_LIB_LIST}
-	  SERVICE_LIBRARIES icarus_Geometry
-	  		icarus_Geometry
+	  SERVICE_LIBRARIES icaruscode_Geometry
+	  		icaruscode_Geometry
 			${MF_UTILITIES}
 	                ${FHICLCPP}
 			${CETLIB}
