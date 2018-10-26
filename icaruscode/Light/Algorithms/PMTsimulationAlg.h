@@ -437,12 +437,10 @@ namespace icarus {
       
       
       /// Converts rise time (10% to 90%) into a RMS under Gaussian hypothesis.
-      static constexpr double riseTimeToRMS(double riseTime)
+      double riseTimeToRMS(double riseTime)
         {
-          return riseTime / (
-            std::sqrt(2.0)
-            * (std::sqrt(-std::log(0.1)) - std::sqrt(-std::log(0.9)))
-            );
+          static constexpr factor = 1. / (std::sqrt(2.0) * (std::sqrt(-std::log(0.1)) - std::sqrt(-std::log(0.9))))
+          return riseTime * factor;
         }
       
       
