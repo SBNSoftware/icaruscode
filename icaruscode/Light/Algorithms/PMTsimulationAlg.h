@@ -650,7 +650,7 @@ namespace icarus {
   } // namespace opdet
 } // namespace icarus
 
-static double icarus::opdet::PhotoelectronPulseWaveform::Gaussian(double x, double mean, double sigma, double amplitude)
+double icarus::opdet::PhotoelectronPulseWaveform::Gaussian(double x, double mean, double sigma, double amplitude)
 { 
     return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); 
 }
