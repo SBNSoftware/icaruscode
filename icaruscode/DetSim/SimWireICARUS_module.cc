@@ -93,7 +93,7 @@ private:
     
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
-    bool                         fMakeNoiseDists;
+    bool                         fMakeHistograms;
     bool                         fTest; // for forcing a test case
     std::vector<sim::SimChannel> fTestSimChannel_v;
     size_t                       fTestWire;
@@ -151,7 +151,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel");
     fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
     fSuppressNoSignal = p.get< bool                >("SuppressNoSignal");
-    fMakeNoiseDists   = p.get< bool                >("MakeNoiseDists", false);
+    fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
     fSample           = p.get< int                 >("Sample");
     fSmearPedestals   = p.get< bool                >("SmearPedestals", true);
     fTest             = p.get< bool                >("Test");
@@ -181,6 +181,8 @@ void SimWireICARUS::beginJob()
 {
     // get access to the TFile service
     art::ServiceHandle<art::TFileService> tfs;
+    
+    // If in test mode create a test data set
     if(fTest)
     {
         if(fGeometry.Nchannels()<=fTestWire)
@@ -270,13 +272,10 @@ void SimWireICARUS::produce(art::Event& evt)
     {
         std::vector<const sim::SimChannel*> chanHandle;
         evt.getView(fDriftEModuleLabel,chanHandle);
-        for(size_t c = 0; c < chanHandle.size(); ++c)
-        {
-            channels.at(chanHandle.at(c)->Channel()) = chanHandle.at(c);
-        }
+        
+        for(const auto& simChannel : chanHandle) channels.at(simChannel->Channel()) = simChannel;
     }else{
-        for(size_t c = 0; c<fTestSimChannel_v.size(); ++c)
-            channels.at(fTestSimChannel_v[c].Channel()) = &(fTestSimChannel_v[c]);
+        for(const auto& testChannel : fTestSimChannel_v) channels.at(testChannel.Channel()) = &testChannel;
     }
     
     // make a unique_ptr of sim::SimDigits that allows ownership of the produced
@@ -303,10 +302,9 @@ void SimWireICARUS::produce(art::Event& evt)
     //   this is needed because hits generate responses on adjacent wires!
     for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
     {
-        double area=0;
         // get the sim::SimChannel for this channel
         // Look up first so we can suppress before doing any work if no signal
-        const sim::SimChannel* sc = channels.at(channel);
+        const sim::SimChannel* sc = channels[channel];
         
         if (fSuppressNoSignal && !sc) continue;
         
@@ -366,8 +364,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 
                 double charge = sc->Charge(tdc);
                 
-                if(charge==0) continue;
-                chargeWork.at(tick) += charge/gain;
+                chargeWork[tick] += charge/gain;
             } // loop over tdcs
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
@@ -388,10 +385,9 @@ void SimWireICARUS::produce(art::Event& evt)
         // and used on the next loop.
         raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
         
-        if(plane==2)
+        if(fMakeHistograms && plane==2)
         {
-            for(int js=0;js<4096;js++)
-                area+=(adcvec[js]-400);
+            short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
             
             if(area>0)
             {
@@ -415,13 +411,10 @@ void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> co
     for(unsigned int i = 0; i < fNTimeSamples; ++i)
     {
         float adcval = noisevec[i] + chargevec[i] + ped_mean;
-        //std::cout << " chargevec " << chargevec[i] << std::endl;
-        //allow for ADC saturation
-        if ( adcval > adcsaturation ) adcval = adcsaturation;
-        
-        //don't allow for "negative" saturation
-        if ( adcval < 0 ) adcval = 0;
-        adcvec[i] = (unsigned short)TMath::Nint(adcval);
+
+        adcval = std::max(float(0.), std::min(adcval, adcsaturation));
+
+        adcvec[i] = std::round(adcval);
     }// end loop over signal size
     // compress the adc vector using the desired compression scheme,
     // if raw::kNone is selected nothing happens to adcvec
