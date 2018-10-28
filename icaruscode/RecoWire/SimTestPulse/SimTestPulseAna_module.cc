@@ -19,6 +19,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardataobj/RecoBase/Hit.h"
 
 #include "ParamHolder.h"
 #include <TFile.h>
@@ -49,12 +50,15 @@ public:
                         int& argmin, int& argmax);
     
     TTree* CreateTree(std::string name);
+    TTree* CreateHitTree(std::string name);
 
 private:
     TFile* _file;
+    TTree* _hit_tree;
     TTree* _wire_tree;
     TTree* _raw_digit_tree;
     TTree* _filtered_digit_tree;
+    std::string _hit_producer;
     std::string _wire_producer;
     std::string _raw_digit_producer;
     std::string _filtered_digit_producer;
@@ -74,6 +78,14 @@ private:
     float _std_dev;
     float _max;
     float _min;
+    // Following are specific to hits
+    float _peakTime;
+    float _peakAmplitude;
+    float _rms;
+    float _summedADC;
+    float _integral;
+    float _chisquare;
+    float _baseline;
 };
 
 void SimTestPulseAna::compute_params(const std::vector<float>& wf,
@@ -105,6 +117,7 @@ SimTestPulseAna::SimTestPulseAna(fhicl::ParameterSet const & p)
   , _filtered_digit_tree(nullptr)
 {
       _verbose                 = p.get<bool>       ("Verbose",false);
+      _hit_producer            = p.get<std::string>("HitProducer","");
       _wire_producer           = p.get<std::string>("WireProducer","");
       _raw_digit_producer      = p.get<std::string>("RawDigitProducer","");
       _filtered_digit_producer = p.get<std::string>("FilteredDigitProducer","");
@@ -140,9 +153,31 @@ TTree* SimTestPulseAna::CreateTree(std::string name)
     return tree;
 }
 
+TTree* SimTestPulseAna::CreateHitTree(std::string name)
+{
+    auto tree = new TTree(name.c_str(),"");
+    tree->Branch("run",&_run,"run/I");
+    tree->Branch("subrun",&_subrun,"subrun/I");
+    tree->Branch("event",&_event,"event/I");
+    tree->Branch("ch",&_ch,"ch/I");
+    tree->Branch("wire",&_wire,"wire/I");
+    tree->Branch("plane",&_plane,"plane/I");
+    tree->Branch("signal_id",&_signal_id,"signal_id/I");
+    tree->Branch("peakTime",&_peakTime,"peakTime/F");
+    tree->Branch("peakAmplitude",&_peakAmplitude,"peakAmplitude/F");
+    tree->Branch("rms",&_rms,"rms/F");
+    tree->Branch("summedADC",&_summedADC,"summedADC/F");
+    tree->Branch("integral",&_integral,"integral/F");
+    tree->Branch("chisquare",&_chisquare,"chisquare/F");
+    tree->Branch("baseline",&_baseline,"baseline/F");
+
+    return tree;
+}
+
 void SimTestPulseAna::beginJob()
 {
     _file = TFile::Open("potus.root","RECREATE");
+    _hit_tree = ( _hit_producer.empty() ? nullptr : this->CreateHitTree(_hit_producer));
     _wire_tree = ( _wire_producer.empty() ? nullptr : this->CreateTree(_wire_producer) );
     _raw_digit_tree = ( _raw_digit_producer.empty() ? nullptr : this->CreateTree(_raw_digit_producer) );
     _filtered_digit_tree = ( _filtered_digit_producer.empty() ? nullptr : this->CreateTree(_filtered_digit_producer) );
@@ -152,6 +187,7 @@ void SimTestPulseAna::endJob()
 {
     if(_file) {
         _file->cd();
+        if(_hit_tree) _hit_tree->Write();
         if(_wire_tree) _wire_tree->Write();
         if(_raw_digit_tree) _raw_digit_tree->Write();
         if(_filtered_digit_tree) _filtered_digit_tree->Write();
@@ -172,7 +208,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
     {
         if(hit.tick < _reco_tick_offset) {
             if(_verbose)
-                std::cout << "[BUFFOON!] Skipping truth charge deposition ID " << hit.signal_id << " @ tick " << hit.tick << std::endl;
+                std::cout << "[IMBECILE!] Skipping truth charge deposition ID " << hit.signal_id << " @ tick " << hit.tick << std::endl;
             continue;
         }
 
@@ -186,7 +222,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             _tick_offset = 0;
             art::Handle<std::vector<raw::RawDigit> > digit_h;
             e.getByLabel(_raw_digit_producer,digit_h);
-            if(!digit_h.isValid()) std::cerr << "[BUFFOON!] Failed to fetch RawDigit with label " << _raw_digit_producer << std::endl;
+            if(!digit_h.isValid()) std::cerr << "[IMBECILE!] Failed to fetch RawDigit with label " << _raw_digit_producer << std::endl;
             
             for(auto const& ch : hit.channel_list) {
                 _ch = ch;
@@ -206,7 +242,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     this->compute_params(_wf, _mean, _std_dev, _min, _max, _argmin, _argmax);
                     
                     if(_verbose)
-                        std::cout << "[BUFFOON!] Storing " << _raw_digit_producer << " raw::RawDigit ... ch=" << _ch
+                        std::cout << "[IMBECILE!] Storing " << _raw_digit_producer << " raw::RawDigit ... ch=" << _ch
                         << " plane=" << _plane
                         << " wire=" << _wire
                         << " ... " << adcs.size() << " ADC samples start @ tick=" << _start_tick
@@ -220,7 +256,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     found=true;
                     break;
                 }
-                if(!found) std::cout << "[BUFFOON!] Could not find target channel " << _ch
+                if(!found) std::cout << "[IMBECILE!] Could not find target channel " << _ch
                     << " or wire " << _wire
                     << " for producer " << _raw_digit_producer << std::endl;
             }
@@ -236,7 +272,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             
             art::Handle<std::vector<raw::RawDigit> > digit_h;
             e.getByLabel(_filtered_digit_producer,digit_h);
-            if(!digit_h.isValid()) std::cerr << "[BUFFOON!] Failed to fetch RawDigit with label " << _filtered_digit_producer << std::endl;
+            if(!digit_h.isValid()) std::cerr << "[IMBECILE!] Failed to fetch RawDigit with label " << _filtered_digit_producer << std::endl;
             
             for(auto const& ch : hit.channel_list) {
                 _ch = ch;
@@ -256,7 +292,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     this->compute_params(_wf, _mean, _std_dev, _min, _max, _argmin, _argmax);
                     
                     if(_verbose)
-                        std::cout << "[BUFFOON!] Storing " << _filtered_digit_producer << " raw::RawDigit ... ch=" << _ch
+                        std::cout << "[IMBECILE!] Storing " << _filtered_digit_producer << " raw::RawDigit ... ch=" << _ch
                         << " plane=" << _plane
                         << " wire=" << _wire
                         << " ... " << adcs.size() << " ADC samples start @ tick=" << _start_tick
@@ -270,7 +306,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     found=true;
                     break;
                 }
-                if(!found) std::cout << "[BUFFOON!] Could not find target channel " << _ch
+                if(!found) std::cout << "[IMBECILE!] Could not find target channel " << _ch
                     << " or wire " << _wire
                     << " for producer " << _filtered_digit_producer << std::endl;
             }
@@ -286,7 +322,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
             
             art::Handle<std::vector<recob::Wire> > wire_h;
             e.getByLabel(_wire_producer,wire_h);
-            if(!wire_h.isValid()) std::cerr << "[BUFFOON!] Failed to fetch Wire with label " << _wire_producer << std::endl;
+            if(!wire_h.isValid()) std::cerr << "[IMBECILE!] Failed to fetch Wire with label " << _wire_producer << std::endl;
             
             for(auto const& ch : hit.channel_list)
             {
@@ -314,7 +350,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                         this->compute_params(_wf, _mean, _std_dev, _min, _max, _argmin, _argmax);
                         
                         if(_verbose)
-                            std::cout << "[BUFFOON!] Storing " << _wire_producer << " recob::Wire ... ch=" << _ch
+                            std::cout << "[IMBECILE!] Storing " << _wire_producer << " recob::Wire ... ch=" << _ch
                             << " plane=" << _plane
                             << " wire=" << _wire
                             << " ... " << range.data().size() << " ADC samples start @ tick=" << _start_tick
@@ -330,9 +366,54 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     }
                     break;
                 }
-                if(!found) std::cout << "[BUFFOON!] Could not find target channel " << _ch
+                if(!found) std::cout << "[IMBECILE!] Could not find target channel " << _ch
                     << " or wire " << _wire
                     << " for producer " << _wire_producer << std::endl;
+            }
+        }
+        
+        // Recover hits
+        if(!_hit_producer.empty())
+        {
+            _tick_offset = _reco_tick_offset;
+            int signal_tick = hit.tick - _tick_offset;
+            
+            art::Handle<std::vector<recob::Hit> > hit_h;
+            e.getByLabel(_hit_producer,hit_h);
+            if(!hit_h.isValid()) std::cerr << "[IMBECILE!] Failed to fetch Wire with label " << _hit_producer << std::endl;
+            
+            for(auto const& ch : hit.channel_list)
+            {
+                _ch = ch;
+                auto const wid = geo->ChannelToWire(ch).front();
+                _wire = wid.Wire;
+                _plane = wid.Plane;
+                bool found=false;
+                
+                for(auto const& hit : *hit_h)
+                {
+                    // Look for hit to match channel
+                    if((int)(hit.Channel()) != ch) continue;
+                    
+                    // Look for hit range to match tick range
+                    if(signal_tick < (int)(hit.PeakTime() - 3.*hit.RMS()) || signal_tick > (int)(hit.PeakTime() + 3.*hit.RMS())) continue;
+                    
+                    found = true;
+                    
+                    _peakTime      = hit.PeakTime();
+                    _peakAmplitude = hit.PeakAmplitude();
+                    _rms           = hit.RMS();
+                    _summedADC     = hit.SummedADC();
+                    _integral      = hit.Integral();
+                    _chisquare     = hit.GoodnessOfFit();
+                    _baseline      = _wf[hit.StartTick()-_start_tick];
+
+                    _hit_tree->Fill();
+                }
+                
+                if(!found) std::cout << "[IMBECILE!] Could not find target channel " << _ch
+                                     << " or wire " << _wire
+                                     << " for producer " << _hit_producer << std::endl;
             }
         }
     }
