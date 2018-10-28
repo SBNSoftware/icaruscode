@@ -94,10 +94,8 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     {
        double funcArg = double(timeIdx) * fBinWidth / fASICShapingTime;
         
-        fElectronicsResponseVec.at(timeIdx) = funcArg * exp(-funcArg);
+        fElectronicsResponseVec[timeIdx] = funcArg * exp(-funcArg);
     }
-    
-//    double maxValue = *std::max_element(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end());
     
     // normalize fElectResponse[i], before the convolution
     // Put in overall normalization in a pedantic way:
@@ -112,12 +110,13 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // Field response is normalized to 1 electron. Shaping function written as (t/tau)*exp(-t/tau) is normalized to 1
     // From test pulse measurement with FLIC@CERN we have 0.027 fC/(ADC*us)
     // Therefore 0.027*6242 electrons/(ADC*us)
-    
-    for (auto& element : fElectronicsResponseVec) element /= fFCperADCMicroS;
+
+    // The below scales the response by 1./FCperADCMicroS... but this gets taken out in the normalization
+    std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,fFCperADCMicroS));
 
     double respIntegral = fBinWidth * std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
-    
-    std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),[respIntegral](auto& elem){return elem/respIntegral;});
+
+    std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
     return;
 }
