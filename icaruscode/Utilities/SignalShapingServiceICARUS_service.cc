@@ -213,7 +213,7 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int    temp;
     
-    if (std::abs(shaping_time - 0.5)<1e-6){
+    if (std::abs(shaping_time - 0.6)<1e-6){
         temp = 0;
     }else if (std::abs(shaping_time - 1.5)<1e-6){
         temp = 1;
@@ -240,7 +240,7 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     double shaping_time = fPlaneToResponseMap.at(planeIdx).front()->getElectronicsResponse()->getASICShapingTime();
     int temp;
     
-    if (std::abs(shaping_time - 0.5)<1e-6){
+    if (std::abs(shaping_time - 0.6)<1e-6){
         temp = 0;
     }else if (std::abs(shaping_time - 1.5)<1e-6){
         temp = 1;
