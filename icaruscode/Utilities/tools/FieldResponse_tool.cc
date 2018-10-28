@@ -154,7 +154,7 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
     {
         double xVal = x0 + deltaX * (bin-1) / timeFactor;
         
-        fFieldResponseVec.at(bin-1) = interpolate(xVal) * fFieldResponseAmplitude * weight;
+        fFieldResponseVec[bin-1] = interpolate(xVal) * fFieldResponseAmplitude * weight;
     }
     
     return;
