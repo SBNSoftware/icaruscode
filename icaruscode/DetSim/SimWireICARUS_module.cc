@@ -168,7 +168,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
         fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
-    fShapingTimeOrder = { {0.5, 0}, {1.5, 1}, {1, 2}, {3.0, 3} };
+    fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.5, 2}, {3.0, 3} };
     //detector properties information
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
@@ -339,7 +339,7 @@ void SimWireICARUS::produce(art::Event& evt)
             << "\033[93m"
             << "Shaping Time received from signalservices_microboone.fcl is not one of allowed values"
             << std::endl
-            << "Allowed values: 0.5, 1.0, 2.0, 3.0 usec"
+            << "Allowed values: 0.6, 1.0, 1.5, 3.0 usec"
             << "\033[00m"
             << std::endl;
         }
