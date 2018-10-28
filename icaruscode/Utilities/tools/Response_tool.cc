@@ -165,15 +165,33 @@ void Response::setResponse(double weight)
             
             if (responseHiIdx >= curResponseVec.size()) break;
             
-            // Now interpolate between the two bins to get the sampling response for this bin
-            double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
-            double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
+            std::vector<double>::const_iterator curResponseItr = curResponseVec.begin();
             
-            samplingTimeVec[sampleIdx] = response;
+            std::advance(curResponseItr,responseLowIdx);
+            
+            int nBins = responseHiIdx - responseLowIdx;
+            
+            double aveResponse = std::accumulate(curResponseItr,curResponseItr+nBins,0.)/double(nBins);
+            
+            // Now interpolate between the two bins to get the sampling response for this bin
+//            double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
+//            double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
+            
+            samplingTimeVec[sampleIdx] = aveResponse;
         }
     }
+    
+    const std::vector<TComplex>& origConvKernel = fSignalShaping.ConvKernel();
+    
+    double origConvPower = std::accumulate(origConvKernel.begin(),origConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
 
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
+    
+    const std::vector<TComplex>& newConvKernel = fSignalShaping.ConvKernel();
+    
+    double newConvPower = std::accumulate(newConvKernel.begin(),newConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
+
+    std::cout << "Plane " << fThisPlane << ", origConvPower: " << origConvPower << ", newConvPower: " << newConvPower << std::endl;
 
     // Set up the filter
     fFilter->setResponse(fftSize, f3DCorrection, fTimeScaleFactor);
