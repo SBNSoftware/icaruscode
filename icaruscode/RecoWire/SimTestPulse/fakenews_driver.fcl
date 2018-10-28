@@ -30,6 +30,7 @@ physics:
     analyzers:
     {
         fakeana: { module_type: "SimTestPulseAna"
+                   HitProducer: "gaushit"
                    WireProducer: "recowire"
                    RawDigitProducer: "daq"
                    FilteredDigitProducer: "rawdigitfilter"
@@ -44,7 +45,7 @@ physics:
         triggersim:{  module_type: "SimTestPulse"
                       TriggerTime_us:  1050
                       SimTimeArray_us: [ 1500 ] #[1050, 1200, 1350, 1500, 1650, 1800 ]
-                      NumElectronsArray: [ 30000 ] #[10000, 15000, 20000, 25000, 30000, 50000]
+                      NumElectronsArray: [ 10000 ] #[10000, 15000, 20000, 25000, 30000, 50000]
                       YArray_cm: [ 0 ] #[-50, -25, 0, 25, 50, 75 ]
                       ZArray_cm: [ 500 ] #[500, 500, 500, 500, 500, 500 ]
                       Verbose: false
@@ -86,8 +87,11 @@ outputs:
     }
 }
 
-services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.539
-services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 2.618
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.539
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 2.618
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.3
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 1.3
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseAmplitude: 1.3
 
 #services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.Filter.FilterFunction:       "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
 #services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.Filter.FilterParametersVec:  [1., 0., 0.004,  1., 0., 0.09]
@@ -116,6 +120,10 @@ services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.Filter.FilterPa
 #services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.Filter.FilterParametersVec:  [1., 0., 0.1]
 #services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.Filter.FilterFunction:       "(x>0.) ? gaus(0) : 0.0"
 #services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [1., 0., 0.1]
+
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.ElectronicsResponse.ASICShapingTime: 0.6
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.ElectronicsResponse.ASICShapingTime: 0.6
+#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.ElectronicsResponse.ASICShapingTime: 0.6
 
 physics.producers.daq.NoiseGenToolVec:  [@local::NoNoiseTool, @local::NoNoiseTool, @local::NoNoiseTool]
 #physics.producers.daq.NoiseGenToolVec:   [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
