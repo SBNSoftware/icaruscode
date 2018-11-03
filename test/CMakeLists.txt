@@ -6,6 +6,7 @@ cet_enable_asserts()
 
 # test directories
 add_subdirectory(Geometry)
+add_subdirectory(Utilities)
 
 # Continuous Integration tests
 add_subdirectory(ci)
