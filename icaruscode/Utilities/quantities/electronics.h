@@ -102,6 +102,9 @@ namespace util::quantities {
   /// Number of ADC counts, represented by `signed short int`.
   using counts = counts_as<>;
   
+  /// Number of ADC counts, represented by `float`.
+  using counts_f = counts_as<float>;
+  
   // -- END ADC counts ---------------------------------------------------------
   
   
@@ -137,6 +140,14 @@ namespace util::quantities {
       { return counts{ static_cast<signed short int>(v) }; }
     constexpr counts operator""_ADC (unsigned long long int v)
       { return counts{ static_cast<signed short int>(v) }; }
+    // @}
+    
+    // @{
+    /// Literal ADC count value (single precision floating points).
+    constexpr counts_f operator""_ADCf (long double v)
+      { return counts_f{ static_cast<float>(v) }; }
+    constexpr counts_f operator""_ADCf (unsigned long long int v)
+      { return counts_f{ static_cast<float>(v) }; }
     // @}
     
     

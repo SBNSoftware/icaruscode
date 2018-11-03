@@ -53,13 +53,20 @@ void test_quantities_conversions() {
   util::quantities::seconds t_s { 7.0 };
   
   util::quantities::microseconds t_us(t_s);
-  BOOST_CHECK_EQUAL(t_us, 7000000.0);
+  BOOST_CHECK_EQUAL(t_us, 7'000'000.0);
   
   t_us = t_s;
-  BOOST_CHECK_EQUAL(t_us, 7000000.0);
+  BOOST_CHECK_EQUAL(t_us, 7'000'000.0);
   
   util::quantities::seconds t(t_us);
   BOOST_CHECK_EQUAL(t, 7.0);
+  
+  static_assert(std::is_same<
+    decltype(t.convertInto<util::quantities::microseconds>()),
+    util::quantities::microseconds
+    >());
+  BOOST_CHECK_EQUAL
+    (t.convertInto<util::quantities::microseconds>(), 7'000'000.0);
   
 } // test_quantities_conversions()
 

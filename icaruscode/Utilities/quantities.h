@@ -656,6 +656,11 @@ namespace util::quantities {
       /// @}
       // -- END Access to the scaled unit --------------------------------------
       
+      /// Convert this quantity into the specified one.
+      template <typename OQ>
+      OQ convertInto() { return OQ(*this); }
+      
+      
         private:
       value_t fValue; ///< Stored value.
       

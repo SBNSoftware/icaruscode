@@ -13,8 +13,11 @@
 #define ICARUSCODE_LIGHT_ALGORITHMS_PMTSIMULATIONALG_H
 
 
-#include <vector> // FIXME remove with larsoft v07_07_02 (bug in DetectorClocks.h)
-#include <string> // FIXME remove with larsoft v07_07_02 (bug in DetectorClocks.h)
+// ICARUS libraries
+#include "icaruscode/Utilities/quantities/spacetime.h" // microsecond, ...
+#include "icaruscode/Utilities/quantities/frequency.h" // hertz, gigahertz
+#include "icaruscode/Utilities/quantities/electronics.h" // tick, counts_f
+#include "icaruscode/Utilities/quantities/electromagnetism.h" // picocoulomb
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -47,32 +50,23 @@ namespace icarus {
   namespace opdet {
     
     // -------------------------------------------------------------------------
-    /// Utility class to make a number become a unique type.
-    template <typename T>
-    struct Value {
-      using Datum_t = T;
-      
-      constexpr Value(Datum_t v): fValue(v) {}
-      
-      operator Datum_t() const { return fValue; }
-      
-        private:
-      Datum_t fValue;
-    }; // class Value<>
-    
-    
-    // -------------------------------------------------------------------------
     /**
      * @brief Describes the waveform from a single photoelectron.
+     * @tparam Time type of time unit to be used
      * 
      * This functor (class behaving like a function) describes the shape of the response
      * to a single photoelectron.
      *
      * It is currently implemented as an asymmetric Gaussian shape.
      */
+    template <typename T>
     class PhotoelectronPulseWaveform {
       
         public:
+     /// Type for ADC counts (floating point).
+     using ADCcount = util::quantities::counts_f;
+     
+     using Time = T; ///< Type of time being used.
      
       /**
        * @brief Constructor: assigns the parameters of the shape.
@@ -87,10 +81,10 @@ namespace icarus {
        *
        */
       PhotoelectronPulseWaveform(
-        double amplitude,
-        double peakTime,
-        double sigmaLeft,
-        double sigmaRight
+        ADCcount amplitude,
+        Time peakTime,
+        Time sigmaLeft,
+        Time sigmaRight
         )
         : fAmplitude(amplitude)
         , fTransitTime(peakTime)
@@ -101,10 +95,10 @@ namespace icarus {
       // @{
       // @name Parameter accessors.
 
-      double peakTime() const { return fTransitTime; }
-      double leftSigma() const { return fSigmaL; }
-      double rightSigma() const { return fSigmaR; }
-      double amplitude() const { return fAmplitude; }
+      Time peakTime() const { return fTransitTime; }
+      Time leftSigma() const { return fSigmaL; }
+      Time rightSigma() const { return fSigmaR; }
+      ADCcount amplitude() const { return fAmplitude; }
       
       /// @}
        
@@ -116,7 +110,7 @@ namespace icarus {
        * The unit and scale of the time are defined by the transition time passed
        * at construction.
        */
-      double evaluateAt(double time) const
+      ADCcount evaluateAt(Time time) const
         {
           return Gaussian(time,
             peakTime(), ((time < peakTime())? leftSigma(): rightSigma()),
@@ -125,7 +119,7 @@ namespace icarus {
         } // evaluateAt()
       
       /// Alias of `evaluateAt()`.
-      double operator() (double time) const { return evaluateAt(time); }
+      ADCcount operator() (Time time) const { return evaluateAt(time); }
       
       // @{
       /**
@@ -145,59 +139,65 @@ namespace icarus {
       // @}
       
       /// Returns the value of normal distribution at specified point.
-      static double Gaussian(double x, double mean, double sigma, double amplitude)
+      static ADCcount Gaussian(Time x, Time mean, Time sigma, ADCcount amplitude)
         { return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); }
       
         private: 
-      double fAmplitude; ///< Amplitude of the Gaussian shapes at peak (transition).
-      double fTransitTime; ///< Time of transition between the two forms of shape.
-      double fSigmaL; ///< RMS parameter of the shape before transition.
-      double fSigmaR; ///< RMS parameter of the shape after transition.
+      ADCcount fAmplitude; ///< Amplitude of the Gaussian shapes at peak (transition).
+      Time fTransitTime; ///< Time of transition between the two forms of shape.
+      Time fSigmaL; ///< RMS parameter of the shape before transition.
+      Time fSigmaR; ///< RMS parameter of the shape after transition.
       
-      template <typename T>
-      static T sqr(T value) { return value * value; }
+      template <typename V>
+      static V sqr(V value) { return value * value; }
       
-    }; // class PhotoelectronPulseWaveform
+    }; // class PhotoelectronPulseWaveform<>
  
     
     // -------------------------------------------------------------------------
     /**
      * @brief Precomputed digitised shape of a given function.
-     * @tparam T type of the samples being stored
      *
      * The sampling happens internally in double precision.
      */
-    template <typename T>
     class DiscretePhotoelectronPulse {
         public:
-      using PulseFunction_t = PhotoelectronPulseWaveform; ///< Type of shape.
+      using gigahertz = util::quantities::gigahertz;
+      using nanosecond = util::quantities::nanosecond;
       
-      struct Time_t: public Value<double> {};
-      struct Tick_t: public Value<std::size_t> {};
+      /// Type of shape (times are in nanoseconds).
+      using PulseFunction_t = PhotoelectronPulseWaveform<nanosecond>;
+      using ADCcount = PulseFunction_t::ADCcount;
+      
+      using Time_t = nanosecond;
+      using Tick_t = util::quantities::tick;
+      
+      static_assert(!std::is_same<Time_t, Tick_t>(),
+        "Time and tick must be different types!");
       
       /**
        * @brief Constructor: samples the pulse.
-       * @param pulseShape the shape to be pulsed
-       * @param samplingFreq frequency of samples
-       *                     [inverse of time unit in `pulseSape`]
+       * @param pulseShape the shape to be pulsed; times in nanoseconds
+       * @param samplingFreq frequency of samples [gigahertz]
        * @param rightSigmas sample until this standard deviations after peak
        *
        * Samples start from time 0 (as defined by the pulse shape).
        */
       DiscretePhotoelectronPulse
-        (PulseFunction_t&& pulseShape, double samplingFreq, double rightSigmas);
+        (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas);
       
       /// Returns the length of the sampled pulse in ticks.
       std::size_t pulseLength() const { return fSampledShape.size(); }
       
       /// Returns the value sampled for the specified `tick` (the first is `0`).
-      T operator[] (std::size_t tick) const { return fSampledShape[tick]; }
+      ADCcount operator[] (std::size_t tick) const
+        { return fSampledShape[tick]; }
       
       /// Returns the value sampled for the specified `tick` (the first is `0`).
-      T operator() (Tick_t tick) const { return this->operator[](tick); }
+      ADCcount operator() (Tick_t tick) const { return this->operator[](tick); }
       
       /// Evaluates the shape at the specified time.
-      T operator() (Time_t time) const { return fShape(time); }
+      ADCcount operator() (Time_t time) const { return fShape(time); }
       
       /// @{
       /// @name Iterator interface.
@@ -213,14 +213,14 @@ namespace icarus {
       PulseFunction_t const& shape() const { return fShape; }
       
       /// Returns the sampling frequency (same units as entered).
-      double samplingFrequency() const { return fSamplingFreq; }
+      gigahertz samplingFrequency() const { return fSamplingFreq; }
       
       /// Returns the sampling period (inverse of frequency).
-      double samplingPeriod() const { return 1.0 / samplingFrequency(); }
+      nanosecond samplingPeriod() const { return 1.0 / samplingFrequency(); }
       
       /// Returns the duration of the waveform in time units.
       /// @see `pulseLength()`
-      double duration() const { return pulseLength() / samplingFrequency(); }
+      nanosecond duration() const { return pulseLength() * samplingPeriod(); }
 
       // @{
       /**
@@ -250,18 +250,18 @@ namespace icarus {
        * Otherwise, in case of failure a message is sent to message facility
        * (under category `outputCat`) describing the failure(s).
        */
-      bool checkRange(T limit, std::string const& outputCat) const;
+      bool checkRange(ADCcount limit, std::string const& outputCat) const;
       
         private:
-      PulseFunction_t fShape; ///< Analytical shape of the pules.
-      double fSamplingFreq;   ///< Sampling frequency.
+      PulseFunction_t fShape;  ///< Analytical shape of the pules.
+      gigahertz fSamplingFreq; ///< Sampling frequency.
       
-      std::vector<T> const fSampledShape; ///< Pulse shape, discretised.
+      std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretised.
       
       /// Builds the sampling cache.
-      static std::vector<T> sampleShape(
+      static std::vector<ADCcount> sampleShape(
         PulseFunction_t const& pulseShape,
-        double samplingFreq, double rightSigmas
+        gigahertz samplingFreq, double rightSigmas
         );
       
     }; // class DiscretePhotoelectronPulse<>
@@ -361,37 +361,44 @@ namespace icarus {
     class PMTsimulationAlg {
       
         public:
+      using microsecond = util::quantities::microsecond;
+      using nanosecond = util::quantities::nanosecond;
+      using hertz = util::quantities::hertz;
+      using megahertz = util::quantities::megahertz;
+      using picocoulomb = util::quantities::picocoulomb;
+      using ADCcount = DiscretePhotoelectronPulse::ADCcount;
     
       /// Type holding all configuration parameters for this algorithm.
       struct ConfigurationParameters_t {    
+        
         
         /// @{
         /// @name High level configuration parameters.
     
         double QEbase;         ///< Uncorrected PMT quantum efficiency.
         
-        size_t readoutWindowSize;     ///ReadoutWindowSize in samples
-        float  pretrigFraction;       ///Fraction of window size to be before "trigger"
-        float  thresholdADC;          ///ADC Threshold for self-triggered readout
-        int    pulsePolarity;         ///Pulse polarity (=1 for positive, =-1 for negative)
-        double triggerOffsetPMT;      ///Time (us) relative to trigger when pmt readout starts
+        size_t readoutWindowSize;     ///< ReadoutWindowSize in samples
+        float  pretrigFraction;       ///< Fraction of window size to be before "trigger"
+        ADCcount thresholdADC; ///< ADC Threshold for self-triggered readout
+        int    pulsePolarity;         ///< Pulse polarity (=1 for positive, =-1 for negative)
+        microsecond triggerOffsetPMT; ///< Time (us) relative to trigger when pmt readout starts
             
-        double  readoutEnablePeriod;  ///Time (us) for which pmt readout is enabled
+        microsecond readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
     
-        bool createBeamGateTriggers; ///Option to create unbiased readout around beam spill
-        double beamGateTriggerRepPeriod; ///Repetition Period (us) for BeamGateTriggers
-        size_t beamGateTriggerNReps; ///Number of beamgate trigger reps to produce
+        bool createBeamGateTriggers; ///< Option to create unbiased readout around beam spill
+        microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers
+        size_t beamGateTriggerNReps; ///< Number of beamgate trigger reps to produce
     
-        double ADC;      //charge to ADC convertion scale
-        double transitTime;   //to be added to pulse minimum time
-        double meanAmplitude;  //in pC
-        double fallTime; //in ns
-        double riseTime; //in ns
+        float ADC;      ///< charge to ADC conversion scale
+        nanosecond transitTime; ///< to be added to pulse minimum time
+        picocoulomb meanAmplitude;
+        nanosecond fallTime;
+        nanosecond riseTime;
     
-        double baseline; //waveform baseline    double fAmpNoise; //amplitude of gaussian noise
-        double ampNoise; //amplitude of gaussian noise
-        double darkNoiseRate; //in Hz
-        double saturation; //equivalent to the number of p.e. that saturates the electronic signal	
+        ADCcount baseline; //waveform baseline
+        ADCcount ampNoise; //amplitude of gaussian noise
+        hertz darkNoiseRate;
+        float saturation; //equivalent to the number of p.e. that saturates the electronic signal	
         /// @}
         
         /// @{
@@ -437,7 +444,8 @@ namespace icarus {
       
       
       /// Converts rise time (10% to 90%) into a RMS under Gaussian hypothesis.
-      static double riseTimeToRMS(double riseTime)
+      template <typename T>
+      static T riseTimeToRMS(T riseTime)
         {
           return riseTime / (
             std::sqrt(2.0)
@@ -448,15 +456,15 @@ namespace icarus {
       
         private:
       /// Type internally used for storing waveforms.
-      using Waveform_t = std::vector<float>;
+      using Waveform_t = std::vector<ADCcount>;
       
       ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
     
       double fQE;            ///< PMT quantum efficiency.
-      double fSampling;      ///< Wave sampling frequency [MHz].
+      megahertz fSampling;   ///< Wave sampling frequency [MHz].
       std::size_t fNsamples; ///< Samples per waveform.
 
-      DiscretePhotoelectronPulse<float> wsp; /// Single photon pulse (sampled).
+      DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
     
     void CreateFullWaveform
       (Waveform_t&, std::vector<unsigned int>&, sim::SimPhotons const&);
@@ -469,7 +477,6 @@ namespace icarus {
     void AddSPE(size_t time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
     /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
     void AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const;
-
     
     
     void AddNoise(Waveform_t& wave); //add noise to baseline
@@ -477,7 +484,6 @@ namespace icarus {
     
     std::set<size_t> CreateBeamGateTriggers() const;
     std::set<size_t> FindTriggers(Waveform_t const& wvfm) const;
-
     
       /// Returns a random response whether a photon generates a photoelectron.
       bool KicksPhotoelectron() const;
@@ -508,12 +514,12 @@ namespace icarus {
             ("Duration of a single PMT readout acquisition window [samples]")
           // mandatory
           };
-        fhicl::Atom<double> Baseline {
+        fhicl::Atom<float> Baseline {
           Name("Baseline"),
           Comment("Waveform baseline (may be fractional) [ADC]")
           // mandatory
           };
-        fhicl::Atom<double> ADC {
+        fhicl::Atom<float> ADC {
           Name("ADC"),
           Comment("Voltage to ADC conversion factor")
           // mandatory
@@ -529,11 +535,10 @@ namespace icarus {
           // mandatory
           };
         
-        
         //
         // PMT settings
         //
-        fhicl::Atom<double> Saturation {
+        fhicl::Atom<float> Saturation {
           Name("Saturation"),
           Comment("photomultiplier saturation (as number of photoelectrons)")
           // mandatory
@@ -552,7 +557,7 @@ namespace icarus {
           Comment("Single photoelectron: peak time from the beginning of the waveform [ns]")
           // mandatory
           };
-        fhicl::Atom<double> MeanAmplitude {
+        fhicl::Atom<float> MeanAmplitude {
           Name("MeanAmplitude"),
           Comment("Single photoelectron: signal amplitude at peak [V]")
           // mandatory
@@ -589,7 +594,7 @@ namespace icarus {
         //
         // trigger
         //
-        fhicl::Atom<double> ThresholdADC {
+        fhicl::Atom<float> ThresholdADC {
           Name("ThresholdADC"),
           Comment("Threshold for self-triggered readout [ADC counts]")
           // mandatory
@@ -659,8 +664,9 @@ namespace icarus {
 //-----------------------------------------------------------------------------
 // --- icarus::opdet::PhotoelectronPulseWaveform
 // -----------------------------------------------------------------------------
+template <typename T>
 template <typename Stream>
-void icarus::opdet::PhotoelectronPulseWaveform::dump(Stream&& out,
+void icarus::opdet::PhotoelectronPulseWaveform<T>::dump(Stream&& out,
   std::string const& indent, std::string const& firstIndent
   ) const
 {
@@ -676,67 +682,17 @@ void icarus::opdet::PhotoelectronPulseWaveform::dump(Stream&& out,
 // -----------------------------------------------------------------------------
 // --- icarus::opdet::DiscretePhotoelectronPulse
 // -----------------------------------------------------------------------------
-template <typename T>
-icarus::opdet::DiscretePhotoelectronPulse<T>::DiscretePhotoelectronPulse
-  (PulseFunction_t&& pulseShape, double samplingFreq, double rightSigmas)
+inline icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse
+  (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas)
   : fShape(std::move(pulseShape))
   , fSamplingFreq(samplingFreq)
   , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas))
   {}
 
 
-// -----------------------------------------------------------------------------
-template <typename T>
-std::vector<T> icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape
-  (PulseFunction_t const& pulseShape, double samplingFreq, double rightSigmas)
-{
-  std::size_t const pulseSize = samplingFreq
-    * (pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma());
-  std::vector<T> samples(pulseSize);
-  for (std::size_t i = 0; i < pulseSize; ++i)
-    samples[i] = pulseShape(static_cast<double>(i)/samplingFreq);
-  return samples;
-} // icarus::opdet::DiscretePhotoelectronPulse<T>::sampleShape()
-
-
-// -----------------------------------------------------------------------------
-template <typename T>
-bool icarus::opdet::DiscretePhotoelectronPulse<T>::checkRange
-  (T limit, std::string const& outputCat /* = "" */) const
-{
-  assert(pulseLength() > 0);
-  bool const bLowOk = (std::abs(fSampledShape.front()) < limit);
-  bool const bHighOk = (std::abs(fSampledShape.back()) < limit);
-  if (bLowOk && bHighOk) return true;
-  if (!outputCat.empty()) {
-    mf::LogWarning log(outputCat);
-    log << "Check on sampled photoelectron waveform template failed!";
-    if (!bLowOk) {
-      log
-        << "\n => low tail after " << (shape().peakTime() / shape().leftSigma())
-          << " standard deviations is still at " << fSampledShape.front()
-          << " ADC counts"
-        ;
-    }
-    if (!bHighOk) {
-      log
-        << "\n => high tail after "
-          << ((duration() - shape().peakTime()) / shape().rightSigma())
-          << " standard deviations is still at " << fSampledShape.back()
-          << " ADC counts"
-        ;
-    }
-    log << "\nShape parameters:";
-    shape().dump(log, "  ", "");
-  } // if writing a message on failure
-  return false;
-} // icarus::opdet::DiscretePhotoelectronPulse<T>::checkRange()
-
-
 //-----------------------------------------------------------------------------
-template <typename T>
 template <typename Stream>
-void icarus::opdet::DiscretePhotoelectronPulse<T>::dump(Stream&& out,
+void icarus::opdet::DiscretePhotoelectronPulse::dump(Stream&& out,
   std::string const& indent, std::string const& firstIndent
   ) const
 {
@@ -746,7 +702,7 @@ void icarus::opdet::DiscretePhotoelectronPulse<T>::dump(Stream&& out,
     << "); pulse shape:"
     << "\n" << indent;
   shape().dump(std::forward<Stream>(out), indent + "  ", "");
-} // icarus::opdet::DiscretePhotoelectronPulse<T>::dump()
+} // icarus::opdet::DiscretePhotoelectronPulse::dump()
 
 
 //-----------------------------------------------------------------------------
@@ -757,18 +713,18 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
 {
   out
-            << indent << "Baseline:          " << fParams.baseline << " ADC"
+            << indent << "Baseline:          " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize: " << fParams.readoutWindowSize << " ticks"
     << '\n' << indent << "PreTrigFraction:   " << fParams.pretrigFraction
-    << '\n' << indent << "ThresholdADC:      " << fParams.thresholdADC << " ADC"
-    << '\n' << indent << "Saturation:        " << fParams.saturation << " ADC"
+    << '\n' << indent << "ThresholdADC:      " << fParams.thresholdADC
+    << '\n' << indent << "Saturation:        " << fParams.saturation << " p.e."
     << '\n' << indent << "PulsePolarity:     " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
-    << '\n' << indent << "Sampling:          " << fSampling << " MHz"
+    << '\n' << indent << "Sampling:          " << fSampling
     << '\n' << indent << "Samples/waveform:  " << fNsamples << " ticks"
     ;
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
-      << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << " us.";
+      << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
   
