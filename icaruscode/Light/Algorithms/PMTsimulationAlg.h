@@ -240,7 +240,7 @@ namespace icarus {
       // @}
       
       /**
-       * @brief Chceks that the waveform tails not sampled are negligible.
+       * @brief Checks that the waveform tails not sampled are negligible.
        * @param limit threshold below which the waveform is considered negligible
        * @param outputCat _(default: empty)_ message facility output category
        *        to use for messages
@@ -256,7 +256,7 @@ namespace icarus {
       PulseFunction_t fShape;  ///< Analytical shape of the pules.
       gigahertz fSamplingFreq; ///< Sampling frequency.
       
-      std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretised.
+      std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretized.
       
       /// Builds the sampling cache.
       static std::vector<ADCcount> sampleShape(
@@ -467,7 +467,7 @@ namespace icarus {
       DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
     
     void CreateFullWaveform
-      (Waveform_t&, std::vector<unsigned int>&, sim::SimPhotons const&);
+      (Waveform_t&, sim::SimPhotons const&);
     
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
 			      Waveform_t const& wvfm,

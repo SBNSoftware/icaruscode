@@ -132,8 +132,7 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
   std::vector<raw::OpDetWaveform> waveforms; // storage of the results
   
   Waveform_t waveform;
-  std::vector<unsigned int> PhotoelectronsPerSample;
-  CreateFullWaveform(waveform, PhotoelectronsPerSample, photons);
+  CreateFullWaveform(waveform, photons);
   CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
   return waveforms;
   
@@ -142,25 +141,16 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 
 //------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
-					std::vector<unsigned int> & PhotoelectronsPerSample,
 					sim::SimPhotons const& photons){
     using util::quantities::tick;
     using namespace util::quantities::time_literals;
     
-    //auto& waveform = fFullWaveforms[opch];
     waveform.resize(fNsamples,fParams.baseline);
-    PhotoelectronsPerSample.resize(fNsamples,0U);
-    std::unordered_map<tick,unsigned int> peMap;
+    
     // collect the amount of photoelectrons arriving at each tick
-    //std::vector<unsigned int> PhotoelectronsPerSample(fNsamples, 0U);
+    std::unordered_map<tick,unsigned int> peMap;
     
-    //for(auto const& photons : pmtVector){
-    //if(raw::Channel_t(photons.OpChannel())!=opch) continue;
-    
-    //std::cout << "Creating waveform " << photons.OpChannel() << " " << photons.size() << std::endl;
     auto start = std::chrono::high_resolution_clock::now();
-    //auto& waveform = fFullWaveforms[photons.OpChannel()];
-    //waveform.resize(fNsamples,fBaseline);
     
     for(auto const& ph : photons) {
       if (!KicksPhotoelectron()) continue;
@@ -175,7 +165,6 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       
       tick const iSample { static_cast<std::size_t>(mytime * fSampling) };
       if (iSample >= fNsamples) continue;
-      //++PhotoelectronsPerSample[iSample];
       ++peMap[iSample];
     } // for photons
     
@@ -185,14 +174,13 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     start=std::chrono::high_resolution_clock::now();
 
       // add the collected photoelectrons to the waveform
-      //for (std::size_t iSample = 0; iSample < fNsamples; ++iSample) {
     unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
     for(auto const& pe : peMap){
-      auto const nPE = pe.second;//PhotoelectronsPerSample[iSample];
+      auto const nPE = pe.second;
       nTotalPE += nPE;
       if (nPE == 0) continue;
-      if (nPE == 1) AddSPE(pe.first,waveform);//AddSPE(iSample, waveform); // faster if n = 1
-      else AddPhotoelectrons(pe.first, nPE, waveform);//AddPhotoelectrons(iSample, nPE, waveform);
+      if (nPE == 1) AddSPE(pe.first,waveform); // faster if n = 1
+      else AddPhotoelectrons(pe.first, nPE, waveform);
     }
     LOG_TRACE("PMTsimulationAlg") 
       << nTotalPE << " photoelectrons at " << peMap.size()
@@ -216,10 +204,6 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       std::replace_if(waveform.begin(),waveform.end(),
 		      [saturationLevel](auto s) -> bool{return s < saturationLevel;},
 		      saturationLevel);
-      //for (auto& sample: waveform) {
-      //if (sample < saturationLevel) sample = saturationLevel;
-      //}
-      //}
       
       end=std::chrono::high_resolution_clock::now(); diff = end-start;
       //std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
@@ -333,10 +317,6 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 		   [n](auto a, auto b) { return a+n*b; });
 		   //addmultiple<n>());
 
-    //for (std::size_t i = min; i < max; ++i) {
-    //wave[i] += n * wsp[i-min];
-    //}
-      
   } // PMTsimulationAlg::AddPhotoelectrons()
   
   void icarus::opdet::PMTsimulationAlg::AddSPE(size_t time_bin, Waveform_t& wave){
@@ -347,9 +327,6 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     std::size_t const max = std::min(time_bin + wsp.pulseLength(), fNsamples);
 
     std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,std::plus<ADCcount>());
-    //for (std::size_t i = min; i < max; ++i) {
-    //wave[i] += wsp[i-min];
-    //}
     
   }
   
