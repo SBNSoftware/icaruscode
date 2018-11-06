@@ -20,6 +20,8 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
+class TTree;
+
 class IHitEfficiencyHistogramTool
 {
 public:
@@ -42,6 +44,13 @@ public:
      *  @param string         subdirectory to store the hists in
      */
     virtual void initializeHists(art::ServiceHandle<art::TFileService>&, const std::string&) = 0;
+
+    /**
+     *  @brief Interface for initializing the tuple variables
+     *
+     *  @param TTree          pointer to a TTree object to which to add variables
+     */
+    virtual void initializeTuple(TTree*) = 0;
 
     /**
      *  @brief Interface for method to executve at the end of run processing
