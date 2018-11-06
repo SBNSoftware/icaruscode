@@ -51,6 +51,8 @@
 
 #include "icaruscode/Analysis/tools/IHitEfficiencyHistogramTool.h"
 
+#include "TTree.h"
+
 // C++ Includes
 #include <map>
 #include <vector>
@@ -111,6 +113,9 @@ private:
     
     // Keep track of the hit histogramming tools here
     std::vector<std::unique_ptr<IHitEfficiencyHistogramTool>> fHitHistogramToolVec;
+    
+    // And our tuple
+    mutable TTree* fTree;
 
     // Other variables that will be shared between different methods.
     const geo::GeometryCore*           fGeometry;       // pointer to Geometry service
@@ -152,11 +157,22 @@ void HitEfficiencyAna::beginJob()
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
     art::ServiceHandle<art::TFileService> tfs;
+    
+    // First task is to create a TTree..
+    fTree = tfs->makeAndRegister<TTree>("HitEffic_t","Hit Efficiency Tuple");
+
+    fTree->Branch("Run",      &fRun,       "Run/I");
+    fTree->Branch("SubRun",   &fSubRun,    "SubRun/I");
+    fTree->Branch("Event",    &fEvent,     "Event/I");
 
     // The arguments to 'make<whatever>' are the same as those passed
     // to the 'whatever' constructor, provided 'whatever' is a ROOT
     // class that TFileService recognizes.
-    for (auto& hitHistTool : fHitHistogramToolVec) hitHistTool->initializeHists(tfs, "HitEffic");
+    for (auto& hitHistTool : fHitHistogramToolVec)
+    {
+        hitHistTool->initializeHists(tfs, "HitEffic");
+        hitHistTool->initializeTuple(fTree);
+    }
 
     // zero out the event counter
     fNumEvents = 0;
@@ -212,8 +228,11 @@ void HitEfficiencyAna::analyze(const art::Event& event)
 
     if (hitHandle.isValid() && simChannelHandle.isValid() && mcParticleHandle.isValid())
     {
+        std::cout << "-- Run: " << fRun << ", SubRun: " << fSubRun << ", Event: " << fEvent << " -------" << std::endl;
         for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(*hitHandle, *mcParticleHandle, *simChannelHandle);
     }
+    
+    fTree->Fill();
 
     return;
 }
