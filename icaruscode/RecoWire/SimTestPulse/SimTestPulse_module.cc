@@ -112,8 +112,8 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
 
 void SimTestPulse::beginJob()
 {
-    fOutFile = TFile::Open("impeach.root","RECREATE");
-    fOutTree = new TTree("impeach","Tree by SimTestPulse_module");
+    fOutFile = TFile::Open("simTestPulse.root","RECREATE");
+    fOutTree = new TTree("simTestPulse","Tree by SimTestPulse_module");
     fOutTree->Branch("run",&_run,"run/I");
     fOutTree->Branch("subrun",&_subrun,"subrun/I");
     fOutTree->Branch("event",&_event,"event/I");
