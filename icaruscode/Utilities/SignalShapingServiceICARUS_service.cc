@@ -215,7 +215,7 @@ double util::SignalShapingServiceICARUS::GetRawNoise(unsigned int const channel)
     
     if (std::abs(shaping_time - 0.6)<1e-6){
         temp = 0;
-    }else if (std::abs(shaping_time - 1.5)<1e-6){
+    }else if (std::abs(shaping_time - 1.3)<1e-6){
         temp = 1;
     }else if (std::abs(shaping_time - 2.0)<1e-6){
         temp = 2;
@@ -242,7 +242,7 @@ double util::SignalShapingServiceICARUS::GetDeconNoise(unsigned int const channe
     
     if (std::abs(shaping_time - 0.6)<1e-6){
         temp = 0;
-    }else if (std::abs(shaping_time - 1.5)<1e-6){
+    }else if (std::abs(shaping_time - 1.3)<1e-6){
         temp = 1;
     }else if (std::abs(shaping_time - 2.0)<1.e-6){
         temp = 2;
