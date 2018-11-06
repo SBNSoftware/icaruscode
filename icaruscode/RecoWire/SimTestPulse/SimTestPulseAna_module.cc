@@ -176,7 +176,7 @@ TTree* SimTestPulseAna::CreateHitTree(std::string name)
 
 void SimTestPulseAna::beginJob()
 {
-    _file = TFile::Open("potus.root","RECREATE");
+    _file = TFile::Open("simTestPulseAna.root","RECREATE");
     _hit_tree = ( _hit_producer.empty() ? nullptr : this->CreateHitTree(_hit_producer));
     _wire_tree = ( _wire_producer.empty() ? nullptr : this->CreateTree(_wire_producer) );
     _raw_digit_tree = ( _raw_digit_producer.empty() ? nullptr : this->CreateTree(_raw_digit_producer) );
