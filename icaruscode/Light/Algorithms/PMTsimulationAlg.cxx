@@ -424,6 +424,16 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
       ;
   } // check pulse polarity
   
+  if (fBaseConfig.pulsePolarity != fBaseConfig.expectedPulsePolarity())
+  {
+    throw cet::exception("PMTsimulationAlg")
+      << "Inconsistent settings: pulse polarity (" << fBaseConfig.pulsePolarity
+      << "), photoelectron waveform amplitude (" << fBaseConfig.meanAmplitude
+      << ") and ADC-per-charge calibration factor (" << fBaseConfig.ADC
+      << ")\n"
+      ;
+  } // check polarity consistency
+  
 } // icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker()
 
 

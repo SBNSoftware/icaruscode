@@ -416,7 +416,8 @@ namespace icarus {
         /// @name Derivative configuration parameters.
         std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
         std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
-        
+        int expectedPulsePolarity() const
+          { return ((ADC * meanAmplitude) < 0.0)? -1: +1; }
         /// @}
         
       }; // ConfigurationParameters_t
