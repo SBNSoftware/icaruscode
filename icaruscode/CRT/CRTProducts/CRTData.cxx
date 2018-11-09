@@ -3,11 +3,11 @@
 namespace icarus{
 namespace crt{
 
-  CRTData::CRTData(): fEvent(0), fMac5(0), fEntry(0), fTTrig(0), fChanTrig(0), fTrigPair(std::pair<uint32_t,uint32_t>()), 
-          fMacPair(std::pair<uint32_t,uint32_t>()), fFEBData(std::vector<CRTChannelData>()){
+  CRTData::CRTData(): fEvent(0), fMac5(0), fEntry(0), fTTrig(0.0), fChanTrig(0), fTrigPair(std::pair<int,int>()), 
+          fMacPair(std::pair<int,int>()), fFEBData(std::vector<CRTChannelData>()){
   }
-  CRTData::CRTData(uint32_t event, uint32_t mac5, uint32_t entry, uint32_t ttrig, uint32_t chantrig,
-      std::pair<uint32_t,uint32_t> trigpair, std::pair<uint32_t,uint32_t> macpair, std::vector<CRTChannelData> febdata):
+  CRTData::CRTData(int event, int mac5, int entry, double ttrig, int chantrig,
+      std::pair<int,int> trigpair, std::pair<int,int> macpair, std::vector<CRTChannelData> febdata):
     fEvent(event),
     fMac5(mac5),
     fEntry(entry),
@@ -17,25 +17,25 @@ namespace crt{
     fMacPair(macpair),
     fFEBData(febdata) {}
   CRTData::~CRTData(){}
-  uint32_t CRTData::Event() const {
+  int CRTData::Event() const {
     return fEvent;
   }
-  uint32_t CRTData::Mac5() const {
+  int CRTData::Mac5() const {
     return fMac5;
   }
-  uint32_t CRTData::Entry() const {
+  int CRTData::Entry() const {
     return fEntry;
   }
-  uint32_t CRTData::TTrig() const {
+  double CRTData::TTrig() const {
     return fTTrig;
   }
-  uint32_t CRTData::ChanTrig() const {
+  int CRTData::ChanTrig() const {
     return fChanTrig;
   }
-  std::pair<uint32_t,uint32_t> CRTData::TrigPair() const {
+  std::pair<int,int> CRTData::TrigPair() const {
     return fTrigPair;
   }
-  std::pair<uint32_t,uint32_t> CRTData::MacPair() const {
+  std::pair<int,int> CRTData::MacPair() const {
     return fMacPair;
   }
 

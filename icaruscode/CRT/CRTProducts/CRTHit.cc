@@ -4,17 +4,19 @@ namespace icarus {
 namespace crt {
 
   CRTHit::CRTHit():  \
+    fEvent(0),       \
     fX(0), fY(0), fZ(0),    \
     fXErr(0), fYErr(0), fZErr(0),    \
     fT0(0), fT0Corr(0), fT1(0), fT1Corr(0),  \
     fMacPair(std::make_pair(0,0)), fReg(0),  \
-    fTrackID(0), fStrip(0), fModule(0) {}
+    fTrackID{}, fStrip(0), fModule(0) {}
 
-  CRTHit::CRTHit(float x, float y, float z,    \
-                float xerr, float yerr, float zerr,   \
-                float t0, float t0corr, float t1, float t1corr,   \
-                std::pair<uint16_t,uint16_t> macpair, uint32_t reg, \
-                int trackID, uint32_t strip, uint32_t mod):   \
+  CRTHit::CRTHit(int event, double x, double y, double z,    \
+                double xerr, double yerr, double zerr,   \
+                double t0, double t0corr, double t1, double t1corr,   \
+                std::pair<int,int> macpair, int reg, \
+                std::set<int> trackID, int strip, int mod):   \
+    fEvent(event),         \
     fX(x), fY(y), fZ(z),   \
     fXErr(xerr), fYErr(yerr), fZErr(zerr),   \
     fT0(t0), fT0Corr(t0corr), fT1(t1), fT1Corr(t1corr),   \
@@ -23,53 +25,56 @@ namespace crt {
 
   CRTHit::~CRTHit() {}
 
-  std::pair<uint16_t,uint16_t> CRTHit::MacPair() const {
+  std::pair<int,int> CRTHit::MacPair() const {
     return fMacPair;
   }
-  float CRTHit::X() const {
+  int    CRTHit::Event() const {
+    return fEvent;
+  }
+  double CRTHit::X() const {
     return fX;
   }
-  float CRTHit::Y() const {
+  double CRTHit::Y() const {
     return fY;
   }
-  float CRTHit::Z() const {
+  double CRTHit::Z() const {
     return fZ;
   }
-  float CRTHit::XErr() const {
+  double CRTHit::XErr() const {
     return fXErr;
   }
-  float CRTHit::YErr() const {
+  double CRTHit::YErr() const {
     return fYErr;
   }
-  float CRTHit::ZErr() const {
+  double CRTHit::ZErr() const {
     return fZErr;
   }
-  float CRTHit::T0() const {
+  double CRTHit::T0() const {
     return fT0;
   }
-  float CRTHit::T0Corr() const {
+  double CRTHit::T0Corr() const {
     return fT0Corr;
   }
-  float CRTHit::T1() const {
+  double CRTHit::T1() const {
     return fT1;
   }
-  float CRTHit::T1Corr() const {
+  double CRTHit::T1Corr() const {
     return fT1Corr;
   }
 
-  uint32_t CRTHit::Region() const {
+  int CRTHit::Region() const {
     return fReg;
   }
 
-  int CRTHit::TrackID() const {
+  std::set<int> CRTHit::TrackID() const {
     return fTrackID;
   }
 
-  uint32_t CRTHit::Strip() const {
+  int CRTHit::Strip() const {
     return fStrip;
   }
 
-  uint32_t CRTHit::Module() const {
+  int CRTHit::Module() const {
     return fModule;
   }
 }

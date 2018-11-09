@@ -11,20 +11,21 @@ namespace crt {
 
     public:
       CRTChannelData();
-      CRTChannelData(uint32_t chan, int time0, int time1, uint32_t q, std::vector<int> trackid);
+      CRTChannelData(int chan, double time0, double time1, int q, std::vector<int> trackid);
       virtual ~CRTChannelData();
-      uint32_t Channel() const;
-      int T0() const;
-      int T1() const;
-      uint32_t ADC() const;
+      int Channel() const;
+      double T0() const;
+      double T1() const;
+      int ADC() const;
       std::vector<int> TrackID() const;
-      void SetADC(uint32_t adc);
+      void SetADC(int adc);
+      void SetTrackID(std::vector<int> vec);
 
     private:
-      uint32_t fChannel;
-      int fT0;
-      int fT1;
-      uint32_t fAdc;
+      int fChannel;
+      double fT0;
+      double fT1;
+      int fAdc;
       std::vector<int> fTrackID;
   };
 
