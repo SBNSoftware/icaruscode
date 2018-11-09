@@ -210,8 +210,6 @@ namespace crt {
     int        fNCD;
     int        fCDRegions[kMaxSeg];
     int        fCDpdg;
-    int        fjmohep[kMaxSeg][2];
-    int        fjdahep[kMaxSeg][2];
     double     fCDSlopes[kMaxSeg][3]; //direction cosines
     double     fCDpe[kMaxSeg][4];   //4-momentum
     double     fCDxyzt[kMaxSeg][4];   //4-position
@@ -344,8 +342,6 @@ namespace crt {
     int       fTrueHitModID[2]; // one for c or d type, 2 entries for m type
 
 
-    TH1F* fStripMultHistM; ///< true N strips hit / M-module / muon track
-    TH1F* fStripMultHistD; ///< true N strips hit / D-module / muon track
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
     TH1F* fModMultHistD;   ///< true N D-modules hit / muon track
@@ -361,11 +357,6 @@ namespace crt {
     TH1F* fFEBMultHistC;   //N FEBs w/trigger / muon track
     TH1F* fFEBMultHistM;
     TH1F* fFEBMultHistD;
-
-    float fEffC;        //tagging efficiency of C-subsystem
-    float fEffM;        //tagging efficiency of M-subsystem
-    float fEffD;        //tagging efficiency of D-subsystem
-    float fEffTot;      //tagging efficiency of D-subsystem
 
     /// @}
     
