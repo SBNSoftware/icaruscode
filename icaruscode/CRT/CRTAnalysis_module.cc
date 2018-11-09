@@ -1,9 +1,9 @@
 /**
  * @file   CRTAnalysis_module.cc
  * @brief  Access CRT data and reco products and compare to MCTruth info 
- * @author Chris Hilgenberg (Chris.Hilgenberg@rams.colostate.edu)
+ * @author Chris Hilgenberg (Chris.Hilgenberg@colostate.edu)
  * 
- * The last revision of this code was done in August 2018 with LArSoft v07_01_00.
+ * The last revision of this code was done in October 2018 with LArSoft v07_06_01.
  */
 
 // LArSoft includes
@@ -38,9 +38,7 @@
 #include "fhiclcpp/types/Atom.h"
 #include "cetlib/pow.h" // cet::sum_of_squares()
 
-// ROOT includes. Note: To look up the properties of the ROOT classes,
-// use the ROOT web site; e.g.,
-// <https://root.cern.ch/doc/master/annotated.html>
+// ROOT includes
 #include "TH1.h"
 #include "TH2.h"
 #include "TTree.h"
@@ -69,6 +67,9 @@ using std::vector;
 using std::map;
 using std::set;
 using std::pair;
+
+//using cmath::pow;
+//using cmath::sqrt;
 
 namespace {
 
@@ -183,18 +184,14 @@ namespace crt {
     vector<float> fMinMomenta;
     vector<float> fMaxMomenta;
 
-    // Pointers to the histograms we'll create. 
-    //TH1D* fPDGCodeHist;     ///< PDG code of all particles
-    //TH1D* fMomentumHist;    ///< momentum [GeV] of all selected particles
-    //TH1D* fTrackLengthHist; ///< true length [cm] of all selected particles
-
     // The n-tuples we'll create.
+    TTree* fCosmicDisplayNtuple;  ///< for ROOT based event display
+    TTree* fGenNtuple;
     TTree* fSimulationNtuple;     ///< tuple with simulated data
     TTree* fRegionsNtuple;
     TTree* fDetSimNtuple;
     TTree* fSimHitNtuple;
-    TTree* fCRTTruthNtuple; 
-    TTree* fCRTTruthMatchNtuple;
+    TTree* fTrueCRTHitNtuple;
 
     // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
@@ -204,10 +201,37 @@ namespace crt {
     int fSubRun;       ///< number of the sub-run being processed
     /// @}
 
-    static const int kMaxAD = 100; //for memory allocation 
-
-    /// @name The variables that will go into the simulation n-tuple.
+    /// @name The variables that will go into the CosmicDisplay n-tuple.
     /// @{
+    static const int LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
+    static const int kMaxSeg = 4000;
+    int        fCDEvent;
+    int        fCDTrackID;
+    int        fNCD;
+    int        fCDRegions[kMaxSeg];
+    int        fCDpdg;
+    int        fjmohep[kMaxSeg][2];
+    int        fjdahep[kMaxSeg][2];
+    double     fCDSlopes[kMaxSeg][3]; //direction cosines
+    double     fCDpe[kMaxSeg][4];   //4-momentum
+    double     fCDxyzt[kMaxSeg][4];   //4-position
+    /// @}
+
+    /// @name The variables that will go into the Gen n-tuple.
+    /// @{
+    static const int kMaxGen = 500;
+    int      fNGen;
+    int      fGenTrack[kMaxGen];
+    int      fGenPDG[kMaxGen];
+    double   fGenStartXYZT[kMaxGen][4];
+    double   fGenEndXYZT[kMaxGen][4];
+    double   fGenStartPE[kMaxGen][4];
+    double   fGenEndPE[kMaxGen][4];
+    /// @}
+
+    /// @name The variables that will go into the Simulation n-tuple.
+    /// @{
+    static const int kMaxAD = 100; //for memory allocation
     uint32_t fSimHits; ///< number of trajectory points for each MCParticle
     float    fTrackLength; ///< total track length for each MCParticle
     int      fSimPDG;       ///< PDG ID of the particle being processed
@@ -241,84 +265,90 @@ namespace crt {
     int fNDaught; ///< number of daughters belonging to this MCParticle
 
     //Regions tree vars
-    static const size_t kMaxReg = 50;
-    uint32_t fRegEvent;
-    uint32_t fNReg;
-    uint32_t fRegFid;
-    uint32_t fRegActive;
-    uint32_t fRegInactive;
-    uint32_t fRegCryo;
-    uint32_t fRegCRTs;
+    static const size_t kMaxReg = 500;
+    int      fRegEvent;
+    int      fNReg;
+    int      fRegFid;
+    int      fRegActive;
+    int      fRegInactive;
+    int      fRegCRTs;
+    int      fRegTrkID;
+    int      fRegPDG;
     int      fRegRegions[kMaxReg];
-    int      fRegPDG[kMaxReg];
-    int      fRegTrkID[kMaxReg];
-    float    fRegEDep[kMaxReg];
-    float    fRegdL[kMaxReg];
-    float    fRegEntryPE[kMaxReg][4];
-    float    fRegExitPE[kMaxReg][4];
-    float    fRegEntryXYZT[kMaxReg][4];
-    float    fRegExitXYZT[kMaxReg][4];
-    float    fRegEntrySlope[kMaxReg][3];
-    float    fRegExitSlope[kMaxReg][3];
+    double   fRegEDep[kMaxReg];
+    double   fRegdL[kMaxReg];
+    double   fRegEntryPE[kMaxReg][4];
+    double   fRegExitPE[kMaxReg][4];
+    double   fRegEntryXYZT[kMaxReg][4];
+    double   fRegExitXYZT[kMaxReg][4];
+    double   fRegEntrySlope[kMaxReg][3];
+    double   fRegExitSlope[kMaxReg][3];
+    double   fRegDistToOpDet[kMaxReg];
+    double   fRegOpDetXYZT[kMaxReg][4];
+    int      fRegOpDetID[kMaxReg];
 
     //CRT data product vars
     static const int kDetMax = 64;
-    uint32_t fDetEvent;
-    uint32_t fChan[kDetMax]; ///< front-end board channel (0-31 or 0-63)
-    int      fT0[kDetMax]; ///< signal time w.r.t. global event time
-    int      fT1[kDetMax]; ///< signal time w.r.t. PPS
-    uint32_t fADC[kDetMax]; ///< signal amplitude
+    int      fDetEvent;
+    int      fChan[kDetMax]; ///< front-end board channel (0-31 or 0-63)
+    double      fT0[kDetMax]; ///< signal time w.r.t. global event time
+    double      fT1[kDetMax]; ///< signal time w.r.t. PPS
+    int      fADC[kDetMax]; ///< signal amplitude
     int      fTrackID[kDetMax]; ///< track ID of particle that produced the signal
     int      fDetPDG[kDetMax];
-    uint32_t fNChan; ///< number of channels above threshold for this front-end board readout
-    uint32_t fEntry; ///< front-end board entry number (reset for each event)
-    int      fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
-    uint32_t fChanTrig; ///< channel which provided the trigger for this front-end board
-    uint32_t fFEBReg; ///< CRT region for this front-end board
-    uint32_t fMac5; ///< Mac5 address for this front-end board
-    uint32_t fTriggerPair[2]; ///< two channels which provided the coincidence (useful for C or D modules)
-    uint32_t fMacPair[2]; ///< two front-end boards with pairwise coincidence ( useful for M modules)
-    uint32_t  fDetSubSys;
+    int      fNChan; ///< number of channels above threshold for this front-end board readout
+    int      fEntry; ///< front-end board entry number (reset for each event)
+    double      fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
+    int      fChanTrig; ///< channel which provided the trigger for this front-end board
+    int      fFEBReg; ///< CRT region for this front-end board
+    int      fMac5; ///< Mac5 address for this front-end board
+    int      fTriggerPair[2]; ///< two channels which provided the coincidence (useful for C or D modules)
+    int      fMacPair[2]; ///< two front-end boards with pairwise coincidence ( useful for M modules)
+    int      fDetSubSys;
       
     //CRT hit product vars
-    float    fHitEvent;
-    float    fXHit; ///< reconstructed X position of CRT hit (cm)
-    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    float    fXErrHit; ///< stat error of CRT hit reco X (cm)
-    float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
-    float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    float    fT0Hit; ///< hit time w.r.t. global event time
-    float    fT1Hit; ///< hit time w.r.t. PPS
-    uint32_t fHitReg; ///< region code of CRT hit
-    uint32_t fNHit; ///< number of CRT hits for this event
-    int      fHitTrk;
+    int       fHitEvent;
+    double    fXHit; ///< reconstructed X position of CRT hit (cm)
+    double    fYHit; ///< reconstructed Y position of CRT hit (cm)
+    double    fZHit; ///< reconstructed Z position of CRT hit (cm)
+    double    fXErrHit; ///< stat error of CRT hit reco X (cm)
+    double    fYErrHit; ///< stat error of CRT hit reco Y (cm)
+    double    fZErrHit; ///< stat error of CRT hit reco Z (cm)
+    double    fT0Hit; ///< hit time w.r.t. global event time
+    double    fT1Hit; ///< hit time w.r.t. PPS
+    double    fT0CorrHit;
+    double    fT1CorrHit;
+    int       fHitReg; ///< region code of CRT hit
+    int       fHitSubSys;
+    int       fNHit; ///< number of CRT hits for this event
+    int       fHitTrk[64];
+    int       fHitPDG[64];
+    int       fHitStrip;
+    int       fHitMod;
 
-    //truth matching stats for CRTDetSim
-    uint32_t fNmuTruth;    //true N primary muons entering CRT sensive volumes
-    uint32_t fNmuTruthCRTTrig;
-    uint32_t fNmuTruthCRTTrigVec;
-    uint32_t fNmuTruthCRTTrigC;
-    uint32_t fNmuTruthCRTTrigM;
-    uint32_t fNmuTruthCRTTrigD;
-    uint32_t fNmuTruthMissCRT;
-    uint32_t fNmuTruthCRTTag;
-    uint32_t fNmuTruthCRTTagC;
-    uint32_t fNmuTruthCRTTagD;
-    uint32_t fNmuTruthCRTTagM;
-    uint32_t fNmuTruthCRTTagVec;
-    TH1F* fStripMultHistC; ///< true N strips hit / C-module / muon track 
+    // truth CRT hit vars
+    int       fTrueHitEvent;
+    double    fTrueXHit; ///< reconstructed X position of CRT hit (cm)
+    double    fTrueYHit; ///< reconstructed Y position of CRT hit (cm)
+    double    fTrueZHit; ///< reconstructed Z position of CRT hit (cm)
+    double    fTrueXHitErr; ///< stat error of CRT hit reco X (cm)
+    double    fTrueYHitErr; ///< stat error of CRT hit reco Y (cm)
+    double    fTrueZHitErr; ///< stat error of CRT hit reco Z (cm)
+    double    fTrueTHit; ///< hit time w.r.t. global event time
+    double    fTrueTHitErr; ///< hit time w.r.t. PPS
+    int       fTrueHitReg; ///< region code of CRT hit
+    int       fTrueHitSubSys;
+    //uint32_t fTrueNHit; ///< number of CRT hits for this event
+    int       fTrueHitTrk;
+    int       fTrueHitPDG;
+    int       fTrueHitModID[2]; // one for c or d type, 2 entries for m type
+
+
     TH1F* fStripMultHistM; ///< true N strips hit / M-module / muon track
     TH1F* fStripMultHistD; ///< true N strips hit / D-module / muon track
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
     TH1F* fModMultHistD;   ///< true N D-modules hit / muon track
-
-    uint32_t fNmuDetCRTTrig; 
-    uint32_t fNmuDetCRTTrigVec;
-    uint32_t fNmuDetCRTTrigC;
-    uint32_t fNmuDetCRTTrigM;
-    uint32_t fNmuDetCRTTrigD;
 
     // note that the following four variables are not used so are being commented out here
     //uint32_t fNmuTagC;     //N muon tracks producing >0 CRT triggers in C-subsystem
@@ -337,20 +367,6 @@ namespace crt {
     float fEffD;        //tagging efficiency of D-subsystem
     float fEffTot;      //tagging efficiency of D-subsystem
 
-    //truth matching histos for CRTHits
-    /*TH1F* fXResHistC;
-    TH1F* fYResHistC;
-    TH1F* fZResHistC;
-    TH1F* fTResHistC;
-    TH1F* fXResHistM;
-    TH1F* fYResHistM;
-    TH1F* fZResHistM;
-    TH1F* fTResHistM;
-    TH1F* fXResHistD;
-    TH1F* fYResHistD;
-    TH1F* fZResHistD;
-    TH1F* fTResHistD;
-*/
     /// @}
     
     // Other variables that will be shared between different methods.
@@ -400,17 +416,18 @@ namespace crt {
     art::ServiceHandle<art::TFileService> tfs;
 
     // Define our n-tuples
+    fCosmicDisplayNtuple = tfs->make<TTree>("DisplayTree",      "track information for ROOT event display");
+    fGenNtuple           = tfs->make<TTree>("GenTree",          "truth information from the generator");
     fSimulationNtuple    = tfs->make<TTree>("SimTree",          "MyCRTSimulation");
     fRegionsNtuple       = tfs->make<TTree>("RegTree",          "Info about particles crossing boundaries");
     fDetSimNtuple        = tfs->make<TTree>("DetTree",          "MyCRTDetSim");
     fSimHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTSimHit");
-    fCRTTruthNtuple      = tfs->make<TTree>("CRTTruthTree",     "CRT Truth values for muons");
-    fCRTTruthMatchNtuple = tfs->make<TTree>("CRTTruthMatchTree","same as CRTTruth but drom DetSim stage");
+    fTrueCRTHitNtuple    = tfs->make<TTree>("TrueCRTHitTree",   "CRT hits from truth info");
 
     // Construct truth matching histograms
-    fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
-    fStripMultHistM   = tfs->make<TH1F>("StripMultM",";no. strips hit / module / #mu;",64,0,64);
-    fStripMultHistD   = tfs->make<TH1F>("StripMultD",";no. strips hit / module / #mu;",64,0,64);
+    //fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
+    //fStripMultHistM   = tfs->make<TH1F>("StripMultM",";no. strips hit / module / #mu;",64,0,64);
+    //fStripMultHistD   = tfs->make<TH1F>("StripMultD",";no. strips hit / module / #mu;",64,0,64);
     fModMultHistC     = tfs->make<TH1F>("ModMultC",";no. modules hit / #mu;",10,0,10);
     fModMultHistM     = tfs->make<TH1F>("ModMultM",";no. modules hit / #mu;",10,0,10);
     fModMultHistD     = tfs->make<TH1F>("ModMultD",";no. modules hit / #mu;",10,0,10);
@@ -422,22 +439,26 @@ namespace crt {
     fFEBMultHistM     =tfs->make<TH1F>("FEBMultD",";no. FEB triggers / #mu;",64,0,64);
     fFEBMultHistD     =tfs->make<TH1F>("FEBMultM",";no. FEB triggers / #mu;",64,0,64);
 
+    // Define the branches of our event display n-tuple
+    fCosmicDisplayNtuple->Branch("event",             &fCDEvent,             "event/I");
+    fCosmicDisplayNtuple->Branch("trackID",           &fCDTrackID,           "trackID/I");
+    fCosmicDisplayNtuple->Branch("nSeg",              &fNCD,                 "nSeg/I");
+    fCosmicDisplayNtuple->Branch("regions",           fCDRegions,            "regions[4000]/I");
+    fCosmicDisplayNtuple->Branch("pdg",               &fCDpdg,               "pdg/I");
+    fCosmicDisplayNtuple->Branch("slopes",            fCDSlopes,             "slopes[4000][3]/D");
+    fCosmicDisplayNtuple->Branch("pe",                fCDpe,                 "pe[4000][4]/D");
+    fCosmicDisplayNtuple->Branch("xyzt",              fCDxyzt,               "xyzt[4000][4]/D");
 
-    /*fXResHistC        = tfs->make<TH1F>("XResC",";X#_{true}-X#_{reco} (cm);",200-10000,10000); //C
-    fYResHistC        = tfs->make<TH1F>("YResC",";Y#_{true}-Y#_{reco} (cm);",200-10000,10000);
-    fZResHistC        = tfs->make<TH1F>("ZResC",";Z#_{true}-Z#_{reco} (cm);",200-10000,10000);
-    fTResHistC        = tfs->make<TH1F>("TResC",";T#_{true}-T#_{reco} (ns);",200-10000,10000);
+    // Define the branches of our Gen n-tuple
+    fGenNtuple->Branch("event",        &fEvent,         "event/I");
+    fGenNtuple->Branch("nGen",         &fNGen,          "nGen/I");
+    fGenNtuple->Branch("trackID",      fGenTrack,       "trackID[500]/I");
+    fGenNtuple->Branch("pdg",          fGenPDG,         "pdg[500]/I");
+    fGenNtuple->Branch("startXYZT",    fGenStartXYZT,   "startXYZT[500][4]/D");
+    fGenNtuple->Branch("endXYZT",      fGenEndXYZT,     "endXYZT[500][4]/D");
+    fGenNtuple->Branch("startPE",      fGenStartPE,     "startPE[500][4]/D");
+    fGenNtuple->Branch("endPE",        fGenEndPE,       "endPE[500][4]/D");
 
-    fXResHistM        = tfs->make<TH1F>("XResM",";X#_{true}-X#_{reco} (cm);",200-10000,10000); //M
-    fYResHistM        = tfs->make<TH1F>("YResM",";Y#_{true}-Y#_{reco} (cm);",200-10000,10000);
-    fZResHistM        = tfs->make<TH1F>("ZResM",";Z#_{true}-Z#_{reco} (cm);",200-10000,10000);
-    fTResHistM        = tfs->make<TH1F>("TResM",";T#_{true}-T#_{reco} (ns);",200-10000,10000);
-
-    fXResHistD        = tfs->make<TH1F>("XResD",";X#_{true}-X#_{reco} (cm);",200-10000,10000); //D
-    fYResHistD        = tfs->make<TH1F>("YResD",";Y#_{true}-Y#_{reco} (cm);",200-10000,10000);
-    fZResHistD        = tfs->make<TH1F>("ZResD",";Z#_{true}-Z#_{reco} (cm);",200-10000,10000);
-    fTResHistD        = tfs->make<TH1F>("TResD",";T#_{true}-T#_{reco} (ns);",200-10000,10000);
-*/
     // Define the branches of our simulation n-tuple
     fSimulationNtuple->Branch("event",             &fEvent,             "event/I");
     fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
@@ -475,50 +496,31 @@ namespace crt {
     //regions tree
     fRegionsNtuple->Branch("event",                &fRegEvent,           "event/I");
     fRegionsNtuple->Branch("nReg",                 &fNReg,               "nReg/I");
-    fRegionsNtuple->Branch("fid",                  &fRegFid,             "fid/I");
+    fRegionsNtuple->Branch("fiducial",             &fRegFid,             "fiducial/I");
     fRegionsNtuple->Branch("active",               &fRegActive,          "active/I");
     fRegionsNtuple->Branch("inactive",             &fRegInactive,        "inactive/I");
-    fRegionsNtuple->Branch("cryo",                 &fRegCryo,            "cryo/I");
     fRegionsNtuple->Branch("crts",                 &fRegCRTs,            "crts/I");
-    fRegionsNtuple->Branch("regions",              fRegRegions,          "regions[50]/I");
-    fRegionsNtuple->Branch("pdgs",                 fRegPDG,              "pdgs[50]/I");
-    fRegionsNtuple->Branch("trackIDs",             fRegTrkID,            "trackIDs[50]/I");
-    fRegionsNtuple->Branch("eDep",                 fRegEDep,             "eDep[50]/F");
-    fRegionsNtuple->Branch("dL",                   fRegdL,               "dL[50]/F");
-    fRegionsNtuple->Branch("entryPE",              fRegEntryPE,          "entryPE[50][4]/F");
-    fRegionsNtuple->Branch("entryPE",              fRegExitPE,           "exitPE[50][4]/F");
-    fRegionsNtuple->Branch("entryXYZT",            fRegEntryXYZT,        "entryXYZT[50][4]/F");
-    fRegionsNtuple->Branch("exitXYZT",             fRegExitXYZT,         "exitXYZT[50][4]/F");
-    fRegionsNtuple->Branch("entrySlope",           fRegEntrySlope,       "entrySlope[50][3]/F");
-    fRegionsNtuple->Branch("exitSlope",            fRegExitSlope,        "exitSlope[50][3]/F");
-
-    fCRTTruthNtuple->Branch("Event",             &fEvent,             "Event/I");
-    fCRTTruthNtuple->Branch("NMu",               &fNmuTruth,          "NMu/I");
-    fCRTTruthNtuple->Branch("NMuCRTTag",         &fNmuTruthCRTTag,    "NMuCRT/I");
-    fCRTTruthNtuple->Branch("NMuCRTTagVec",      &fNmuTruthCRTTagVec, "NMuCRTVec/I");
-    fCRTTruthNtuple->Branch("NMuCRTMiss",        &fNmuTruthMissCRT,   "NMuCRTMiss/I");
-    fCRTTruthNtuple->Branch("NMuCRTTagC",        &fNmuTruthCRTTagC,   "NMuCRTTagC/I");
-    fCRTTruthNtuple->Branch("NMuCRTTagM",        &fNmuTruthCRTTagM,   "NMuCRTTagM/I");
-    fCRTTruthNtuple->Branch("NMuCRTTagD",        &fNmuTruthCRTTagD,   "NMuCRTTagD/I");
-    fCRTTruthNtuple->Branch("NMuCRTTrig",        &fNmuTruthCRTTrig,   "NMuCRTTrig/I");
-    fCRTTruthNtuple->Branch("NMuCRTTrigVec",     &fNmuTruthCRTTrigVec,"NMuCRTTrigVec/I");
-    fCRTTruthNtuple->Branch("NMuCRTTrigC",       &fNmuTruthCRTTrigC,  "NMuCRTTrigC/I");
-    fCRTTruthNtuple->Branch("NMuCRTTrigM",       &fNmuTruthCRTTrigM,  "NMuCRTTrigM/I");
-    fCRTTruthNtuple->Branch("NMuCRTTrigD",       &fNmuTruthCRTTrigD,  "NMuCRTTrigD/I");
-
-    fCRTTruthMatchNtuple->Branch("Event",             &fEvent,             "Event/I");
-    fCRTTruthMatchNtuple->Branch("NMuCRTTrig",        &fNmuDetCRTTrig,   "NMuCRTTrig/I");
-    fCRTTruthMatchNtuple->Branch("NMuCRTTrigVec",     &fNmuDetCRTTrigVec,"NMuCRTTrigVec/I");
-    fCRTTruthMatchNtuple->Branch("NMuCRTTrigC",       &fNmuDetCRTTrigC,  "NMuCRTTrigC/I");
-    fCRTTruthMatchNtuple->Branch("NMuCRTTrigM",       &fNmuDetCRTTrigM,  "NMuCRTTrigM/I");
-    fCRTTruthMatchNtuple->Branch("NMuCRTTrigD",       &fNmuDetCRTTrigD,  "NMuCRTTrigD/I");
+    fRegionsNtuple->Branch("regions",              fRegRegions,          "regions[500]/I");
+    fRegionsNtuple->Branch("pdg",                  &fRegPDG,             "pdg/I");
+    fRegionsNtuple->Branch("trackID",              &fRegTrkID,           "trackID/I");
+    fRegionsNtuple->Branch("eDep",                 fRegEDep,             "eDep[500]/D");
+    fRegionsNtuple->Branch("dL",                   fRegdL,               "dL[500]/D");
+    fRegionsNtuple->Branch("opDetID",              fRegOpDetID,          "opDetID[500]/I");
+    fRegionsNtuple->Branch("distToOpDet",          fRegDistToOpDet,      "distToOpDet[500]/D");
+    fRegionsNtuple->Branch("opDetXYZT",            fRegOpDetXYZT,        "opDetXYZT[500][4]/D");
+    fRegionsNtuple->Branch("entryPE",              fRegEntryPE,          "entryPE[500][4]/D");
+    fRegionsNtuple->Branch("exitPE",               fRegExitPE,           "exitPE[500][4]/D");
+    fRegionsNtuple->Branch("entryXYZT",            fRegEntryXYZT,        "entryXYZT[500][4]/D");
+    fRegionsNtuple->Branch("exitXYZT",             fRegExitXYZT,         "exitXYZT[500][4]/D");
+    fRegionsNtuple->Branch("entrySlope",           fRegEntrySlope,       "entrySlope[500][3]/D");
+    fRegionsNtuple->Branch("exitSlope",            fRegExitSlope,        "exitSlope[500][3]/D");
 
     // Define the branches of our DetSim n-tuple 
     fDetSimNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
     fDetSimNtuple->Branch("channel",               fChan,               "channel[64]/I");
-    fDetSimNtuple->Branch("t0",                    fT0,                 "t0[64]/I");
-    fDetSimNtuple->Branch("t1",                    fT1,                 "t1[64]/I");
+    fDetSimNtuple->Branch("t0",                    fT0,                 "t0[64]/D");
+    fDetSimNtuple->Branch("t1",                    fT1,                 "t1[64]/D");
     fDetSimNtuple->Branch("adc",                   fADC,                "adc[64]/I");
     fDetSimNtuple->Branch("trackID",               fTrackID,            "trackID[64]/I");
     fDetSimNtuple->Branch("detPDG",                fDetPDG,             "detPDG[64]/I");
@@ -528,22 +530,46 @@ namespace crt {
     fDetSimNtuple->Branch("triggerPair",           fTriggerPair,        "triggerPair[2]/I");
     fDetSimNtuple->Branch("macPair",               fMacPair,            "macPair[2]/I");
     fDetSimNtuple->Branch("chanTrig",              &fChanTrig,          "chanTrig/I");
-    fDetSimNtuple->Branch("tTrig",                 &fTTrig,             "tTrig/I");
+    fDetSimNtuple->Branch("tTrig",                 &fTTrig,             "tTrig/D");
     fDetSimNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
 
     // Define the branches of our SimHit n-tuple
     fSimHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
-    fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
-    fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
-    fSimHitNtuple->Branch("z",           &fZHit,        "z/F");
-    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
-    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
-    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/F");
-    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/F");
+    fSimHitNtuple->Branch("x",           &fXHit,        "x/D");
+    fSimHitNtuple->Branch("y",           &fYHit,        "y/D");
+    fSimHitNtuple->Branch("z",           &fZHit,        "z/D");
+    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/D");
+    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/D");
+    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/D");
+    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/D");
+    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/D");
+    fSimHitNtuple->Branch("t0Corr",      &fT0CorrHit,   "t0/D");
+    fSimHitNtuple->Branch("t1Corr",      &fT1CorrHit,   "t1/D");
     fSimHitNtuple->Branch("region",      &fHitReg,      "region/I");  
-    fSimHitNtuple->Branch("trackID",     &fHitTrk,      "trackID/I");
+    fSimHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
+    fSimHitNtuple->Branch("trackID",     &fHitTrk,      "trackID[64]/I");
+    fSimHitNtuple->Branch("pdg",         &fHitPDG,      "pdg[64]/I");
+    fSimHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
+    fSimHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
+
+    // Define the branches of our SimTrueHit n-tuple
+    fTrueCRTHitNtuple->Branch("event",       &fTrueHitEvent,    "event/I");
+    //fSimHitNtuple->Branch("nHit",        &fTrueNHit,        "nHit/I");
+    fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/D");
+    fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/D");
+    fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/D");
+    fTrueCRTHitNtuple->Branch("xErr",        &fTrueXHitErr,     "xErr/D");
+    fTrueCRTHitNtuple->Branch("yErr",        &fTrueYHitErr,     "yErr/D");
+    fTrueCRTHitNtuple->Branch("zErr",        &fTrueZHitErr,     "zErr/D");
+    fTrueCRTHitNtuple->Branch("t",           &fTrueTHit,        "t/D");
+    fTrueCRTHitNtuple->Branch("tErr",        &fTrueTHitErr,     "tErr/D");
+    fTrueCRTHitNtuple->Branch("region",      &fTrueHitReg,      "region/I");
+    fTrueCRTHitNtuple->Branch("subSys",      &fTrueHitSubSys,   "subSys/I");
+    fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk,      "trackID/I");
+    fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG,      "pdg/I");
+    fTrueCRTHitNtuple->Branch("modID",       fTrueHitModID,     "modID[2]/I");
+
 }
    
   void CRTAnalysis::beginRun(const art::Run& /*run*/)
@@ -556,8 +582,9 @@ namespace crt {
   //-----------------------------------------------------------------------
   void CRTAnalysis::analyze(const art::Event& event) 
   {
-    //std::cout << "Start analysis" << std::endl;
-    //LOG_DEBUG("CRT") << "beginning analyis" << '\n';
+    LOG_DEBUG("CRT") << "beginning analyis" << '\n';
+
+    // Check that lists for momenta limits is same size as last of PDGs from FHiCL
     if (fPDGs.size() != fMinMomenta.size() || fPDGs.size() != fMaxMomenta.size())
         throw cet::exception("CRTAnalysis")
           << " PDG/Momtenta values not set correctly in fhicl - lists have different sizes"
@@ -568,33 +595,16 @@ namespace crt {
     fRun    = event.run();
     fSubRun = event.subRun();
 
-    // Define a "handle" to point to a vector of the objects.
+    // Define "handle" to Generator level MCTruth objects
+    art::Handle< vector<simb::MCTruth>> genHandle;
+
+    // Define a "handle" to point to a vector of MCParticle objects.
     art::Handle< vector<simb::MCParticle> > particleHandle;
-    map< int, const simb::MCParticle*> particleMap; //particleMap.clear();
+    map< int, const simb::MCParticle*> particleMap;
 
-    vector<int> muTrigTrkid;
-    vector<int> muTrigTrkidC;
-    vector<int> muTrigTrkidM;
-    vector<int> muTrigTrkidD;
-
-    fNmuTruthCRTTrig = 0;
-    fNmuTruthCRTTrigC = 0;
-    fNmuTruthCRTTrigM = 0;
-    fNmuTruthCRTTrigD = 0;
-    fNmuTruthCRTTrigVec = 0;
-    fNmuTruthMissCRT = 0;
-    fNmuTruth = 0;
-    fNmuTruthCRTTag = 0;
-    fNmuTruthCRTTagC = 0;
-    fNmuTruthCRTTagM = 0;
-    fNmuTruthCRTTagD = 0;
-    fNmuTruthCRTTagVec = 0;
-
-    fNmuDetCRTTrig = 0;
-    fNmuDetCRTTrigC = 0;
-    fNmuDetCRTTrigM = 0;
-    fNmuDetCRTTrigD = 0;
-    fNmuDetCRTTrigVec = 0;
+    if (!event.getByLabel("generator", genHandle)) {
+        std::cout << "could not get handle to gen objects!!!" << std::endl;
+    }
 
     // If there aren't any simb::MCParticle object art will 
     // display a "ProductNotFound" exception message and may skip
@@ -608,6 +618,7 @@ namespace crt {
 	  << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
       }
 
+    // Handle to AuxDetSimChannel (CRT module) objects generated by LArG4
     art::Handle<vector<sim::AuxDetSimChannel> > auxDetSimChannelHandle;
     if (!event.getByLabel(fSimulationProducerLabel, auxDetSimChannelHandle)) {
         throw cet::exception("CRTAnalysis")
@@ -615,9 +626,44 @@ namespace crt {
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
     }
 
-    //required to access TPC SimChannels
-    //auto simChannelHandle =
-    //  event.getValidHandle<vector<sim::SimChannel>>(fSimulationProducerLabel);
+    for ( auto const& truth : (*genHandle) )
+    {
+        fNGen = 0;
+        for ( int i=0; i< kMaxGen; i++ ) {
+            fGenTrack[i] = -0.5*INT_MAX;
+            fGenPDG[i] = -0.5*INT_MAX;
+            for (int j=0; j<4; j++) {
+                fGenStartXYZT[i][j] = -0.5*DBL_MAX;
+                fGenEndXYZT[i][j] = -0.5*DBL_MAX;
+                fGenStartPE[i][j] = -0.5*DBL_MAX;
+                fGenEndPE[i][j] = -0.5*DBL_MAX;
+            }
+        }
+        fNGen = truth.NParticles();
+        //std::cout << "loop over truth for event : " << fEvent << " with " << fNGen << " particles" << std::endl;
+        for ( int i=0; i<fNGen; i++ )
+        {
+            if (fNGen==kMaxGen) {break; std::cout << "max out gen!" << std::endl;}
+
+            auto const& part = truth.GetParticle(i); //simb::MCParticle
+            fGenTrack[i] = part.TrackId();
+            fGenPDG[i] = part.PdgCode();
+
+            //std::cout <<" i: " << i << ", trackID: " << part.TrackId() << ", pdg: " << part.PdgCode() << std::endl;
+
+            const TLorentzVector startPos = part.Position(0);
+            const TLorentzVector endPos = part.EndPosition();
+            startPos.GetXYZT(fGenStartXYZT[i]);
+            endPos.GetXYZT(fGenEndXYZT[i]);
+
+            const TLorentzVector startMom = part.Momentum(0);
+            const TLorentzVector endMom = part.EndMomentum();
+            startMom.GetXYZT(fGenStartPE[i]);
+            endMom.GetXYZT(fGenEndPE[i]);
+        }
+
+        fGenNtuple->Fill();
+    }
 
     // The MCParticle objects are not necessarily in any particular
     // order. Since we may have to search the list of particles, let's
@@ -630,6 +676,8 @@ namespace crt {
         particleMap.insert(std::make_pair(particle.TrackId(),&particle));
     }
 
+    std::cout << "event " << fEvent << " with " << particleMap.size() << " MCParticles" << std::endl;
+
     //get TPC objects
     geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
     geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
@@ -638,7 +686,6 @@ namespace crt {
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);
     geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-
 
     //loop over MCParticles
     for ( auto const& particle : (*particleHandle) )
@@ -670,9 +717,9 @@ namespace crt {
         //  continue;
 
         //count total number of muons present in event
-        if (abs(fSimPDG)==13){
-            fNmuTruth++;
-        }
+        //if (abs(fSimPDG)==13){
+        //    fNmuTruth++;
+       // }
 	fSimTrackID = particle.TrackId();
 
         // the following bit attempts to establish the ancestry
@@ -743,205 +790,210 @@ namespace crt {
 	momentumEnd.GetXYZT( fEndPE );
         fTrackLength = ( positionEnd - positionStart ).Rho();
 
+        fCDEvent = fEvent;
+        fNCD = 0;
+        fCDpdg = fSimPDG;
+        fCDTrackID = fSimTrackID;
+
         fRegEvent = fEvent;
         fNReg = 0;
         fRegFid = 0;
         fRegActive = 0;
         fRegInactive = 0;
-        fRegCryo = 0;
         fRegCRTs = 0;
+        fRegPDG = fSimPDG;;
+        fRegTrkID = fSimTrackID;
         //std::cout << "initializing region arrays" << std::endl;
 
+        for (size_t i=0; i<kMaxSeg; i++){
+            fCDRegions[i] = -0.5*INT_MAX;
+            for (int j=0; j<4; j++) {
+                if (j<3) fCDSlopes[i][j] = -0.5*DBL_MAX;
+                fCDpe[i][j] = -0.5*DBL_MAX;
+                fCDxyzt[i][j] = -0.5*DBL_MAX;
+            }
+        }
+
         //initialize arrays
-        for (int i=0; i<(int)kMaxReg; i++){
-                fRegRegions[i] = -INT_MAX;
-                fRegPDG[i] = -INT_MAX;
-                fRegTrkID[i] = -INT_MAX;
-                fRegEDep[i] = -FLT_MAX;
+        for (size_t i=0; i<kMaxReg; i++){
+                fRegRegions[i] = -0.5*INT_MAX;
+                fRegEDep[i] = -0.5*DBL_MAX;
+                fRegDistToOpDet[i] = -0.5*DBL_MAX;
+                fRegOpDetID[i] = -0.5*INT_MAX;
                 for (int j=0; j<4; j++){
-                        fRegEntryXYZT[i][j] = -INT_MAX;
-                        fRegExitXYZT[i][j] = -INT_MAX;
-                        fRegEntryPE[i][j] = -INT_MAX;
-                        fRegExitPE[i][j] = -INT_MAX;
+                        fRegEntryXYZT[i][j] = -0.5*DBL_MAX;
+                        fRegExitXYZT[i][j] = -0.5*DBL_MAX;
+                        fRegEntryPE[i][j] = -0.5*DBL_MAX;
+                        fRegExitPE[i][j] = -0.5*DBL_MAX;
+                        fRegOpDetXYZT[i][j] = -0.5*DBL_MAX;
                         if (j<3) {
-                            fRegEntrySlope[i][j] = -INT_MAX;
-                            fRegExitSlope[i][j] = -INT_MAX;
+                            fRegEntrySlope[i][j] = -0.5*DBL_MAX;
+                            fRegExitSlope[i][j] = -0.5*DBL_MAX;
                         }
                 }
         }
 
-        int oldreg = -1, oldcryo = -1;
-        double tmp4_cryo[4] = {}, tmp4_active[4] = {};
-        double tmp4pe_cryo[4] = {}, tmp4pe_active[4] = {};
+        int oldreg = -1;
 
-        //std::cout << "about to loop over trajectory points" << std::endl;
-        //loop over trajectory points and extract first and last points in TPC
+        LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
+
+        //loop over trajectory points
         for (unsigned int i=0; i<fSimHits; i++){
-                const TLorentzVector& pos = particle.Position(i);
-                const TLorentzVector& posnext = particle.Position(i+1);
-                const TLorentzVector& mom = particle.Momentum(i);
-                const double point[3] = {pos(0),pos(1),pos(2)};
-                const double pointnext[3] = {posnext(0),posnext(1),posnext(2)};
-                //double pointlocal[3] = {0.,0.,0.};
+                const TLorentzVector& pos = particle.Position(i); // 4-position in World coordinates
+                const TLorentzVector& posnext = particle.Position(i+1); // problem for last point???
+                const TLorentzVector& mom = particle.Momentum(i); // 4-momentum
+                const double point[3] = {pos.X(),pos.Y(),pos.Z()};
+                const double pointnext[3] = {posnext.X(),posnext.Y(),posnext.Z()};
+                double opDetPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+                double entryPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+                double entryT = -FLT_MAX;
+                bool active0 = false, active1 = false, activenext0 = false, activenext1 = false;
+
+                // CosmicDisplay info
+                pos.GetXYZT(fCDxyzt[fNCD]); // 4-position
+                mom.GetXYZT(fCDpe[fNCD]); // 4-momentum
+                fCDSlopes[fNCD][0] = mom.Px()/mom.P(); // direction cosines
+                fCDSlopes[fNCD][1] = mom.Py()/mom.P(); 
+                fCDSlopes[fNCD][2] = mom.Pz()/mom.P();
+                fNCD++;
 
                 if(fNReg==kMaxReg) std::cout << "about to seg fault..need more NReg!" << std::endl;
 
+                // Regions info
+                // Check if trajectory points are in cryostats (active + inactve LAr ) 
                 if(cryo0.ContainsPosition(point)) {
-                        if (oldcryo!=10) {
-                            pos.GetXYZT(tmp4_cryo);
-                            mom.GetXYZT(tmp4pe_cryo);
-                            oldcryo = 10;
-                        }
-                        if (oldreg!=5&&oldreg!=6&&oldreg!=10) oldreg=10;
-                        if (!cryo0.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_cryo[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_cryo[j];
-                                }
-                                pos.GetXYZT(fRegExitXYZT[fNReg]);
-                                mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 10;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
-                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegInactive++;
-                        }
-                }
-                if(cryo1.ContainsPosition(point)) {
-                        if (oldcryo!=12){
-                            pos.GetXYZT(tmp4_cryo);
-                            mom.GetXYZT(tmp4pe_cryo);
-                            oldcryo = 12;
-                        }
-                        if (oldreg!=7&&oldreg!=8&&oldreg!=12) oldreg=12;
-                        if (!cryo1.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_cryo[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_cryo[j];
-                                }
-                                pos.GetXYZT(fRegExitXYZT[fNReg]);
-                                mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 12;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
-                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegInactive++;
-                        }
-                }
 
-                if(tpc00.ContainsPosition(point)) {
-                        if (oldreg!=5) {
-                            pos.GetXYZT(tmp4_active);
-                            mom.GetXYZT(tmp4pe_active);
-                            oldreg = 5;
+                        active0 = tpc00.ContainsPosition(point);
+                        active1 = tpc01.ContainsPosition(point);
+                        activenext0 = tpc00.ContainsPosition(pointnext);
+                        activenext1 = tpc01.ContainsPosition(pointnext);
+
+                        // if last point was not in this cryostat or is now entering AV
+                        if ( (oldreg!=10&&!active0&&!active1) || (active0&&oldreg!=5) || (active1&&oldreg!=6)) {
+                            pos.GetXYZT(fRegEntryXYZT[fNReg]);
+                            mom.GetXYZT(fRegEntryPE[fNReg]);
+                            oldreg = 10;
+                            if (active0) oldreg = 5;
+                            if (active1) oldreg = 6;
                         }
-                        if(tpc00.InFiducialX(point[0],25,0)&&tpc00.InFiducialY(point[1],25,25)
-                              &&tpc00.InFiducialZ(point[2],30,50)) fRegFid++;
-                        if (!tpc00.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_active[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_active[j];
-                                }
+
+                        // if next point is outside of this volume or is last traj. point
+                        if (!cryo0.ContainsPosition(pointnext) || (oldreg==10&&(activenext0||activenext1))
+                            || i==fSimHits-1
+                            || (active0 && !activenext0) || (active1&&!activenext1) ){
+
                                 pos.GetXYZT(fRegExitXYZT[fNReg]);
                                 mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 5;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
-                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegActive++;
-                         }
-                }
-                if(tpc01.ContainsPosition(point)) {
-                        if (oldreg!=6){
-                            pos.GetXYZT(tmp4_active);
-                            mom.GetXYZT(tmp4pe_active);
-                            oldreg = 6;
-                        }
-                        if(tpc01.InFiducialX(point[0],0,25)&&tpc01.InFiducialY(point[1],25,25)
-                              &&tpc01.InFiducialZ(point[2],30,50)) fRegFid++;
-                        if (!tpc01.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_active[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_active[j];
+                                if (active0) {
+                                    fRegRegions[fNReg] = 5;
+                                    fRegActive++;
+                                    if(tpc00.InFiducialX(point[0],25,0) && tpc00.InFiducialY(point[1],25,25)
+                                      && tpc00.InFiducialZ(point[2],30,50)) 
+                                        fRegFid++;
+
                                 }
+                                else if (active1) {
+                                    fRegRegions[fNReg] = 6;
+                                    fRegActive++;
+                                    if(tpc01.InFiducialX(point[0],25,0) && tpc01.InFiducialY(point[1],25,25)
+                                      && tpc01.InFiducialZ(point[2],30,50))  
+                                        fRegFid++;
+                                }
+                                else {
+                                    fRegRegions[fNReg] = 10;
+                                    fRegInactive++;
+                                }
+                                fRegdL[fNReg] = sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
+                                                    +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
+                                                    +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
+                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
+                                for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
+                                entryT = fRegEntryXYZT[fNReg][3];
+                                fRegOpDetID[fNReg] = cryo0.GetClosestOpDet(entryPos);
+                                geo::OpDetGeo const& opDet0 = cryo0.OpDet(fRegOpDetID[fNReg]);
+                                opDet0.GetCenter(opDetPos);
+                                fRegDistToOpDet[fNReg] = sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                            + pow(opDetPos[1]-entryPos[1],2)
+                                                            + pow(opDetPos[2]-entryPos[2],2));
+                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg][index] = opDetPos[index];
+                                fRegOpDetXYZT[fNReg][3] = entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY;
+                                fNReg++;
+                        }
+                } //if cryo0
+
+                // if this point in the other cryostat
+                if(cryo1.ContainsPosition(point)) {
+ 
+                        //check if this or next points are in active volumes
+                        active0 = tpc10.ContainsPosition(point);
+                        active1 = tpc11.ContainsPosition(point);
+                        activenext0 = tpc10.ContainsPosition(pointnext);
+                        activenext1 = tpc11.ContainsPosition(pointnext);
+
+                        // if last point was not in this cryostat or is now entering AV
+                        if ( (oldreg!=12&&!active0&&!active1) || (active0&&oldreg!=7) || (active1&&oldreg!=8)) {
+                            pos.GetXYZT(fRegEntryXYZT[fNReg]);
+                            mom.GetXYZT(fRegEntryPE[fNReg]);
+                            oldreg = 12;
+                            if (active0) oldreg = 7;
+                            if (active1) oldreg = 8;
+                        }
+
+                        if (!cryo1.ContainsPosition(pointnext) || (oldreg==12&&(activenext0||activenext1))
+                            || i==fSimHits-1
+                            || (active0 && !activenext0) || (active1&&!activenext1) ){
+
                                 pos.GetXYZT(fRegExitXYZT[fNReg]);
                                 mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 6;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
-                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegActive++;
-                         }
-                }
-                if(tpc10.ContainsPosition(point)) {
-                        if (oldreg!=7){
-                            pos.GetXYZT(tmp4_active);
-                            mom.GetXYZT(tmp4pe_active);
-                            oldreg = 7;
-                        }
-                        if(tpc10.InFiducialX(point[0],25,0)&&tpc10.InFiducialY(point[1],25,25)
-                              &&tpc10.InFiducialZ(point[2],30,50)) fRegFid++;
-                        if (!tpc10.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_active[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_active[j];
+                                if (active0) {
+                                    fRegRegions[fNReg] = 5;
+                                    fRegActive++;
+                                    if(tpc00.InFiducialX(point[0],25,0) && tpc00.InFiducialY(point[1],25,25)
+                                      && tpc00.InFiducialZ(point[2],30,50))
+                                        fRegFid++;
+
                                 }
-                                pos.GetXYZT(fRegExitXYZT[fNReg]);
-                                mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 7;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
-                                fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegActive++;
-                         }
-                }
-                if(tpc11.ContainsPosition(point)) {
-                        if (oldreg!=8){
-                            pos.GetXYZT(tmp4_active);
-                            mom.GetXYZT(tmp4pe_active);
-                            oldreg = 8;
-                        }
-                        if(tpc11.InFiducialX(point[0],0,25)&&tpc11.InFiducialY(point[1],25,25)
-                              &&tpc11.InFiducialZ(point[2],30,50)) fRegFid++;
-                        if (!tpc11.ContainsPosition(pointnext)||i==fSimHits-1){
-                                for (int j=0; j<4; j++){
-                                    fRegEntryXYZT[fNReg][j] = tmp4_active[j];
-                                    fRegEntryPE[fNReg][j]   = tmp4pe_active[j];
+                                else if (active1) {
+                                    fRegRegions[fNReg] = 6;
+                                    fRegActive++;
+                                    if(tpc01.InFiducialX(point[0],25,0) && tpc01.InFiducialY(point[1],25,25)
+                                      && tpc01.InFiducialZ(point[2],30,50))
+                                        fRegFid++;
                                 }
-                                pos.GetXYZT(fRegExitXYZT[fNReg]);
-                                mom.GetXYZT(fRegExitPE[fNReg]);
-                                fRegRegions[fNReg] = 8;
-                                fRegdL[fNReg] = TMath::Sqrt(TMath::Power(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                               +TMath::Power(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
+                                else {
+                                    fRegRegions[fNReg] = 10;
+                                    fRegInactive++;
+                                }
+                                fRegdL[fNReg] = sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
+                                                    +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
+                                                    +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
                                 fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
-                                fNReg++; fRegActive++;
-                         }
-                }
+                                for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
+                                entryT = fRegEntryXYZT[fNReg][3];
+                                fRegOpDetID[fNReg] = cryo0.GetClosestOpDet(entryPos);
+                                geo::OpDetGeo const& opDet0 = cryo0.OpDet(fRegOpDetID[fNReg]);
+                                opDet0.GetCenter(opDetPos);
+                                fRegDistToOpDet[fNReg] = sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                            + pow(opDetPos[1]-entryPos[1],2)
+                                                            + pow(opDetPos[2]-entryPos[2],2));
+                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg][index] = opDetPos[index];
+                                fRegOpDetXYZT[fNReg][3] = entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY;
+                                fNReg++;
+                        } // if exiting from volume
+                } //if cryo1
+
         }//for trajectory points
 
-        fRegionsNtuple->Fill();
-
-        //std::cout << "out of point loop" << std::endl;
-
-	/*LOG_DEBUG("CRTAnalysis")
-	  << "track ID=" << fSimTrackID 
-	  << " (PDG ID: " << fSimPDG << ") "
-	  << trackLength << " cm long, momentum " 
-	  << momentumStart.P() << " GeV/c, has " 
-	  << fSimHits << " trajectory points";
-	   */ 
+        fCosmicDisplayNtuple->Fill();
+        //fRegionsNtuple->Fill();
 
         //map module IDs to strip IDs hit by muons
-        map< uint16_t,set<uint8_t>* > muHitMapC; //hits in C modules only
-        map< uint16_t,set<uint8_t>* > muHitMapM; //hits in M modules only
-        map< uint16_t,set<uint8_t>* > muHitMapD; //hits in D modules only
-        map< uint16_t,set<uint8_t>* > muHitMap; //all hits
+        //map< uint16_t,set<uint8_t>* > muHitMapC; //hits in C modules only
+        //map< uint16_t,set<uint8_t>* > muHitMapM; //hits in M modules only
+        //map< uint16_t,set<uint8_t>* > muHitMapD; //hits in D modules only
+        //map< uint16_t,set<uint8_t>* > muHitMap; //all hits
+
+        map< int, vector<double> > regCRTEnter, regCRTExit;
 
         //reinitialize ADChannel vars
 	fNAuxDet = 0;
@@ -960,13 +1012,23 @@ namespace crt {
             }
         }
 
+        struct tagger {
+            char type;
+            int region;
+            int stackID;
+            std::set<int> layerID;
+            std::map<int,int> stripLayer;
+            std::pair<int,int> modPair;
+            std::map<int,std::vector<double>> xyzt;
+        };
+           
+        std::map<int,tagger> taggers;    
+
 	// To look at the energy deposited by this particle's track,
 	// we loop over the AuxDetSimChannel objects in the event. 
 	// Note all volumes are included, not just ones with energy deps
 	for ( auto const& channel : (*auxDetSimChannelHandle) )
 	{  
-            auto const& adGeo = fGeometryService->AuxDet(channel.AuxDetID());
-
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
 
@@ -977,18 +1039,105 @@ namespace crt {
 		    // energy matches the track of the MCParticle.
 		    if ( ide.trackID != fSimTrackID ) continue;
 		    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
-                    // Ignore strips w/ID=0 to get around bug (will be fixed soon)
-                    if ( channel.AuxDetSensitiveID() == 0 ) continue;
 
+                    tagger& tag = taggers[channel.AuxDetID()];
+                    auto const& adGeo = fGeometryService->AuxDet(channel.AuxDetID());
+                    tag.type = ModToAuxDetType(adGeo);
+                    tag.region = GetAuxDetRegion(adGeo);
+                    auto const& adsGeo = adGeo.SensitiveVolume(channel.AuxDetSensitiveID());
+
+                    std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
+                    std::vector<std::vector<TGeoNode const*> > paths = fGeometryService->FindAllVolumePaths(volNames);
+
+                    std::string path = "";
+                    for (size_t inode=0; inode<paths.at(0).size(); inode++) {
+                        path += paths.at(0).at(inode)->GetName();
+                        if (inode < paths.at(0).size() - 1) {
+                            path += "/";
+                        }
+                    }
+                    TGeoManager* manager = fGeometryService->ROOTGeoManager();
+                    manager->cd(path.c_str());
+                    TGeoNode* nodeStrip = manager->GetCurrentNode();
+                    TGeoNode* nodeInner = manager->GetMother(1);
+                    TGeoNode* nodeModule = manager->GetMother(2);
+                    double origin[3] = {0, 0, 0};
+                    int layid = 0.5*INT_MAX; //set to 0 or 1 if layerid determined
+                    int stackid = 0.5*INT_MAX; //for left/right crt regions ordered down to upstream (-z->+z)
+                    //int mac5=LONG_MAX;
+                    // Module position in parent (tagger) frame
+                    double modulePosMother[3]; //position in CRT region volume
+                    nodeModule->LocalToMaster(origin, modulePosMother);
+
+                    // strip position in module frame
+                    double stripPosMother[3];
+                    double stripPosModule[3];
+                    nodeStrip->LocalToMaster(origin, stripPosMother);
+                    nodeInner->LocalToMaster(stripPosMother,stripPosModule);
+
+                    fADType[fNAuxDet] = ModToTypeCode(adGeo);
+                    fAuxDetReg[fNAuxDet] = GetAuxDetRegion(adGeo);
+
+                    if ( fADType[fNAuxDet] == 0 || fADType[fNAuxDet] == 2 )
+                        layid = (stripPosModule[1] > 0);
+
+                    // if 'm' type
+                    if ( fADType[fNAuxDet] == 1 ) {
+                        // if left or right
+                        if ( fAuxDetReg[fNAuxDet] == 50 || fAuxDetReg[fNAuxDet] == 54 ) {
+                            if ( modulePosMother[2] < 0 ) stackid = 0;
+                            if ( modulePosMother[2] == 0) stackid = 1;
+                            if ( modulePosMother[2] > 0 ) stackid = 2;
+
+                            //following 2 if's use hardcoded dimensions - UPDATE AFTER ALL GEO CHANGES!
+                            if ( stackid == 0 || stackid == 2 ) layid = ( abs(modulePosMother[0]) < 49.482/2-1 );
+                            if ( stackid == 1 ) layid = ( abs(modulePosMother[0]) > 49.482/2-1 );
+                        }
+                        // if front or back
+                        if ( fAuxDetReg[fNAuxDet] == 42 || fAuxDetReg[fNAuxDet] == 44) {
+                            layid = ( modulePosMother[2]> 0 );
+                        }
+                    }
+
+                    // What is the distance from the hit (centroid of the entry
+                    // and exit points) to the readout end?
+                    double trueX = (ide.entryX + ide.exitX) / 2.0;
+                    double trueY = (ide.entryY + ide.exitY) / 2.0;
+                    double trueZ = (ide.entryZ + ide.exitZ) / 2.0;
+                    double trueT = (ide.entryT + ide.exitT) / 2.0;
+                    double world[3] = {trueX, trueY, trueZ};
+                    double svHitPosLocal[3];
+                    double modHitPosLocal[3];
+                    adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame  (origin at center)
+                    adGeo.WorldToLocal(world, modHitPosLocal); //position in module frame (origin at center)
+
+                    if (trueX==0) {
+                              std::cout << "hit in " << tag.type << "-module " << channel.AuxDetID() << ", strip "
+                              << channel.AuxDetSensitiveID() << ", in layer " << layid << '\n'
+                              << "  x: " << trueX << ", y: " << trueY << ", z: " << trueZ 
+                              << ", t: " << trueT << std::endl;
+                    }
+
+                    tag.stackID = stackid;
+                    tag.layerID.insert(layid);
+                    tag.stripLayer[channel.AuxDetSensitiveID()] = layid;
+                    std::vector<double>& truePos = tag.xyzt[channel.AuxDetSensitiveID()];
+                    truePos.push_back(trueX);
+                    truePos.push_back(trueY);
+                    truePos.push_back(trueZ);
+                    truePos.push_back(trueT);
+                    //tag.modPair = std::make_pair(channel.AuxDetID(),channel.AuxDetID());
+
+                    //std::cout << " tagger xyzt length: " << truePos.size() << std::endl;
 
                     //calculate track length in strip
 		    double dx = ide.entryX-ide.exitX;
 		    double dy = ide.entryY-ide.exitY;
 		    double dz = ide.entryZ-ide.exitZ;
-                    double adlength = TMath::Sqrt(dx*dx+dy*dy+dz*dz);
+                    double adlength = sqrt(dx*dx+dy*dy+dz*dz);
                     if ( adlength < 0.0001)  continue;
 
-		    fADTrackLength[fNAuxDet] = TMath::Sqrt(dx*dx+dy*dy+dz*dz);
+		    fADTrackLength[fNAuxDet] = sqrt(dx*dx+dy*dy+dz*dz);
 	            fADEDep[fNAuxDet] = ide.energyDeposited;
 	            fADdEdx[fNAuxDet] = ide.energyDeposited/fADTrackLength[fNAuxDet];
 		    fAuxDetID[fNAuxDet] = channel.AuxDetID();
@@ -1003,36 +1152,27 @@ namespace crt {
                     fADExitXYZT[fNAuxDet][3] = ide.exitT;
                     fAuxDetReg[fNAuxDet] = GetAuxDetRegion(fGeometryService->AuxDet(channel.AuxDetID()));
                     fADMac[fNAuxDet] = ADToMac(ModToAuxDetType(adGeo),channel.AuxDetID());
-                    //fADType[fNAuxDet] = ModToAuxDetType(adGeo);
                     fADType[fNAuxDet] = ModToTypeCode(adGeo);
-		    fNAuxDet++;
+		    //fNAuxDet++;
 
-                    if (abs(fSimPDG)==13) {
-                        switch (ModToAuxDetType(adGeo)) {
+                    vector<double> vtmp = {ide.entryX,ide.entryY,ide.entryZ,ide.entryT};
+                    if (regCRTEnter.find(fAuxDetReg[fNAuxDet])!=regCRTEnter.end()) {
+                        if (regCRTEnter[fAuxDetReg[fNAuxDet]][3] > ide.entryT) {
+                            //regCRTEnter[fAuxDetReg[fNAuxDet]].clear();
+                            regCRTEnter[fAuxDetReg[fNAuxDet]] = vtmp;
+                        }
+                    }
+                    else regCRTEnter[fAuxDetReg[fNAuxDet]] = vtmp;
 
-                          case 'c' : 
-                            if( muHitMapC.find(channel.AuxDetID())==muHitMapC.end() )
-                              muHitMapC[channel.AuxDetID()] = new set<uint8_t>();
-                            muHitMapC[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
-                            break;
+                    vtmp = {ide.exitX,ide.exitY,ide.exitZ,ide.exitT};
+                    if (regCRTExit.find(fAuxDetReg[fNAuxDet])!=regCRTExit.end()) {
+                        if (regCRTExit[fAuxDetReg[fNAuxDet]][3] < ide.exitT)
+                            regCRTExit[fAuxDetReg[fNAuxDet]] = vtmp;
+                    }
+                    else regCRTExit[fAuxDetReg[fNAuxDet]] = vtmp;
 
-                          case 'm' : 
-                            if( muHitMapM.find(channel.AuxDetID())==muHitMapM.end() )
-                              muHitMapM[channel.AuxDetID()] = new set<uint8_t>();
-                            muHitMapM[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
-                            break;
+                    fNAuxDet++;
 
-                          case 'd' :
-                            if( muHitMapD.find(channel.AuxDetID())==muHitMapD.end() )
-                              muHitMapD[channel.AuxDetID()] = new set<uint8_t>();
-                            muHitMapD[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
-                            break;
-                        }//switch
-
-                        if( muHitMap.find(channel.AuxDetID())==muHitMap.end() )
-                          muHitMap[channel.AuxDetID()] = new set<uint8_t>();
-                        muHitMap[channel.AuxDetID()]->insert(channel.AuxDetSensitiveID());
-                    }//if muon
 	    } // For each IDE (strip hit by muon)
               
 	} // For each SimChannel (module)
@@ -1040,93 +1180,264 @@ namespace crt {
         // write values to tree for this event and particle
         fSimulationNtuple->Fill();
 
-        set<uint16_t> modsTrigPoss;
-        set<uint16_t> modsTrigPossC;
-        set<uint16_t> modsTrigPossM;
-        set<uint16_t> modsTrigPossD;
+        fTrueHitEvent = fEvent;
+        fTrueHitTrk = fSimTrackID;
+        fTrueHitPDG = fSimPDG;
+        map <int,tagger> mTaggers;
 
-        if( abs(fSimPDG)==13 ) {
+        // loop over taggers: modID->strip hit info
+        for (auto const& tag : taggers) {
 
-          if (muHitMapC.size()>0) {
-              fNmuTruthCRTTagC++;
-              fModMultHistC->Fill(muHitMapC.size());
-              for( auto const& strips : muHitMapC ) {
-                 fStripMultHistC->Fill(strips.second->size());
-                 if (strips.second->size()>1) {
-                   modsTrigPossC.insert(strips.first);
-                   modsTrigPoss.insert(strips.first);
-                 }//if more than 1 strip hit
-              }//for modules in muHitMap
-              if (modsTrigPossC.size()>0) {
-                fNmuTruthCRTTrigC++;
-                muTrigTrkidC.push_back(fSimTrackID);
-              }
-          } //if c hit
+            fTrueXHit = 0;
+            fTrueYHit = 0;
+            fTrueZHit = 0;
+            fTrueTHit = 0;
+            fTrueXHitErr = 0;
+            fTrueYHitErr = 0;
+            fTrueZHitErr = 0;
+            fTrueTHitErr = 0;
+            fTrueHitModID[0] = tag.first;
+            fTrueHitModID[1] = tag.first;
+            fTrueHitReg = tag.second.region;
+            if (tag.second.type == 'c') fTrueHitSubSys = 0;
+            if (tag.second.type == 'd') fTrueHitSubSys = 2;
+            std::vector<double> xhits, yhits, zhits, thits;
 
-          if (muHitMapM.size()>0) {
-              fNmuTruthCRTTagM++;
-              fModMultHistM->Fill(muHitMapM.size());
-              for( auto const& strips : muHitMapM ) {
-                 fStripMultHistM->Fill(strips.second->size());
-                 if (muHitMapM.size()>0) {
-                   modsTrigPossM.insert(strips.first);
-                   modsTrigPoss.insert(strips.first);
-                 }//if more than 1 module hit
-              }//for modules in muHitMap
-              if (modsTrigPossM.size()>1) {
-                fNmuTruthCRTTrigM++;
-                muTrigTrkidM.push_back(fSimTrackID);
-              }
-          } //if m hit
+            // if c or d type module
+            if (tag.second.type=='c' || tag.second.type=='d') {
+                // if "X-Y" coincidence
+                if (tag.second.layerID.size()>1) {
+                    // loop over module strips map: stripID->pos 4-vec
+                    for (auto const& strip : tag.second.xyzt) {
+                        if (strip.second[0] == 0
+                         && strip.second[1] == 0
+                         && strip.second[2] == 0)
+                           continue;
 
-          if (muHitMapD.size()>0) {
-              fNmuTruthCRTTagD++;
-              fModMultHistD->Fill(muHitMapD.size());
-              for( auto const& strips : muHitMapC ) {
-                 fStripMultHistD->Fill(strips.second->size());
-                 if (strips.second->size()>1) {
-                   modsTrigPossD.insert(strips.first);
-                   modsTrigPoss.insert(strips.first);
-                 }//if more than 1 strip hit
-              }//for modules in muHitMap
-              if (modsTrigPossD.size()>0) {
-                fNmuTruthCRTTrigD++;
-                muTrigTrkidD.push_back(fSimTrackID);
-              }
-          } //if d hit
+                        xhits.push_back(strip.second[0]);
+                        yhits.push_back(strip.second[1]);
+                        zhits.push_back(strip.second[2]);
+                        thits.push_back(strip.second[3]);
+                    }
+                    if (xhits.size()==0) continue;
 
-          if (muHitMap.size()>0) {
-            fNmuTruthCRTTag++;
-          }
-          else
-            fNmuTruthMissCRT++;
+                    for ( size_t i=0; i<xhits.size(); i++) {
+                        fTrueXHit+=xhits[i];
+                        fTrueYHit+=yhits[i];
+                        fTrueZHit+=zhits[i];
+                        fTrueTHit+=thits[i];
+                    }
+                    
+                    fTrueXHit *= 1.0/tag.second.xyzt.size();
+                    fTrueYHit *= 1.0/tag.second.xyzt.size();
+                    fTrueZHit *= 1.0/tag.second.xyzt.size();
+                    fTrueTHit *= 1.0/tag.second.xyzt.size();
+                      
+                    for ( size_t i=0; i<xhits.size(); i++) {
+                        fTrueXHitErr += pow(xhits[i]-fTrueXHit,2);
+                        fTrueYHitErr += pow(yhits[i]-fTrueYHit,2);
+                        fTrueZHitErr += pow(zhits[i]-fTrueZHit,2);
+                        fTrueTHitErr += pow(thits[i]-fTrueTHit,2);
+                    }
 
-          if (muHitMap.size()>1)
-            fNmuTruthCRTTagVec++;
+                    fTrueXHitErr = sqrt(fTrueXHitErr/(xhits.size()-1));
+                    fTrueYHitErr = sqrt(fTrueYHitErr/(yhits.size()-1));
+                    fTrueZHitErr = sqrt(fTrueZHitErr/(zhits.size()-1));
+                    fTrueTHitErr = sqrt(fTrueTHitErr/(thits.size()-1));
+           
+                } //if coincidence
+                else continue;
 
-          //fix me! doesn't check coincidence condition!
-          if (modsTrigPoss.size()>0){
-            fNmuTruthCRTTrig++;
-            muTrigTrkid.push_back(fSimTrackID);
-          }
-          if (modsTrigPoss.size()>1)
-            fNmuTruthCRTTrigVec++;
+                fTrueCRTHitNtuple->Fill();
 
-        }//if muon
+            }//if c or d type
+
+            if ( tag.second.type=='m' ) {
+                mTaggers[tag.first] = tag.second;
+            }
+
+        } //loop over taggers
+
+        set <int> mPairs;
+        int nmisspair = 0;
+        for (auto const& tag : mTaggers) {
+
+            fTrueXHit = 0;
+            fTrueYHit = 0;
+            fTrueZHit = 0;
+            fTrueTHit = 0;
+            fTrueXHitErr = 0;
+            fTrueYHitErr = 0;
+            fTrueZHitErr = 0;
+            fTrueTHitErr = 0;
+            fTrueHitModID[0] = tag.first;
+            fTrueHitModID[1] = tag.first;
+            fTrueHitReg = tag.second.region;
+            fTrueHitSubSys = 1;
+            std::vector<double> xhits, yhits, zhits, thits;
+            bool pairFound = false;
+
+            if (mPairs.find(tag.first) != mPairs.end()) continue;
+            for (auto const& tag2 : mTaggers) {
+                if (tag.first != tag2.first &&
+                  mPairs.find(tag2.first) == mPairs.end() &&
+                  tag.second.region == tag2.second.region &&
+                  tag.second.stackID == tag2.second.stackID &&
+                  tag.second.layerID != tag2.second.layerID ) {
+
+                    mPairs.insert(tag.first);
+                    mPairs.insert(tag2.first);
+                    fTrueHitModID[0] = tag.first;
+                    fTrueHitModID[1] = tag2.first;
+
+                    // loop over module strips map: stripID->pos 4-vec
+                    for (auto const& strip : tag.second.xyzt) {
+                        if (strip.second[0] == 0
+                         && strip.second[1] == 0
+                         && strip.second[2] == 0)
+                           continue;
+
+                        xhits.push_back(strip.second[0]);
+                        yhits.push_back(strip.second[1]);
+                        zhits.push_back(strip.second[2]);
+                        thits.push_back(strip.second[3]);
+                    }// for xyzt in first tagger (module)
+
+                    for (auto const& strip : tag2.second.xyzt) {
+                        if (strip.second[0] == 0
+                         && strip.second[1] == 0
+                         && strip.second[2] == 0)
+                           continue;
+
+                        xhits.push_back(strip.second[0]);
+                        yhits.push_back(strip.second[1]);
+                        zhits.push_back(strip.second[2]);
+                        thits.push_back(strip.second[3]);
+                    }// for xyzt in second tagger (module)
+
+
+                    for ( size_t i=0; i<xhits.size(); i++) {
+                        fTrueXHit+=xhits[i];
+                        fTrueYHit+=yhits[i];
+                        fTrueZHit+=zhits[i];
+                        fTrueTHit+=thits[i];
+                    } // sum together x,y,z,t values repectively
+
+                    //get the centroid
+                    fTrueXHit *= 1.0/xhits.size();
+                    fTrueYHit *= 1.0/yhits.size();
+                    fTrueZHit *= 1.0/zhits.size();
+                    fTrueTHit *= 1.0/thits.size();
+
+                    // calculate rms of hit distrubution
+                    for ( size_t i=0; i<xhits.size(); i++) {
+                        fTrueXHitErr += pow(xhits[i]-fTrueXHit,2);
+                        fTrueYHitErr += pow(yhits[i]-fTrueYHit,2);
+                        fTrueZHitErr += pow(zhits[i]-fTrueZHit,2);
+                        fTrueTHitErr += pow(thits[i]-fTrueTHit,2);
+                    }
+
+                    fTrueXHitErr = sqrt(fTrueXHitErr/(xhits.size()-1));
+                    fTrueYHitErr = sqrt(fTrueYHitErr/(yhits.size()-1));
+                    fTrueZHitErr = sqrt(fTrueZHitErr/(zhits.size()-1));
+                    fTrueTHitErr = sqrt(fTrueTHitErr/(thits.size()-1));
+ 
+                    pairFound = true;             
+                    break; // first tagger is matched so break from loop
+                }//if match found
+            }//inner loop over taggers
+
+            if (pairFound) fTrueCRTHitNtuple->Fill();
+            else nmisspair++;
+
+        } // outer loop over taggers
+
+        if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
+
+        //auto tmpNReg = fNReg;
+        for( auto it=regCRTEnter.begin(); it!=regCRTEnter.end(); it++) {
+            //std::cout << "found CRT region " << it->first << std::endl;
+            fRegRegions[fNReg] = it->first;
+            fRegEntryXYZT[fNReg][0] = (it->second)[0];
+            fRegEntryXYZT[fNReg][1] = (it->second)[1];
+            fRegEntryXYZT[fNReg][2] = (it->second)[2];
+            fRegEntryXYZT[fNReg][3] = (it->second)[3];
+            fRegExitXYZT[fNReg][0] = regCRTExit[it->first][0];
+            fRegExitXYZT[fNReg][1] = regCRTExit[it->first][1];
+            fRegExitXYZT[fNReg][2] = regCRTExit[it->first][2];
+            fRegExitXYZT[fNReg][3] = regCRTExit[it->first][3];
+            fRegdL[fNReg] = sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
+                                       +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
+                                       +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2));
+            fRegEDep[fNReg] = fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3];
+            fNReg++; fRegCRTs++;
+        }
+        //std::cout << "added " << fNReg-tmpNReg << " CRT regions to RegTree" << std::endl;
+
+        //sort region tree entries by entry time
+        int flag = 1;    // set flag to 1 to start first pass
+        int      tempInt;
+        double   tempDoub;
+        
+        for(int i = 1; (i <= (int)fNReg) && flag; i++)
+        {
+            flag = 0;
+            for (int j=0; j < ((int)fNReg -1); j++)
+            {
+                if (fRegEntryXYZT[j+1][3] < fRegEntryXYZT[j][3]) 
+                { 
+                    tempInt = fRegRegions[j];             // swap regions
+                    fRegRegions[j] = fRegRegions[j+1];
+                    fRegRegions[j+1] = tempInt;
+                    tempDoub = fRegEDep[j];             // swap EDep
+                    fRegEDep[j] = fRegEDep[j+1];
+                    fRegEDep[j+1] = tempDoub;
+                    tempDoub = fRegdL[j];             // swap dL
+                    fRegdL[j] = fRegdL[j+1];
+                    fRegdL[j+1] = tempDoub;
+                    tempDoub = fRegDistToOpDet[j];    //swap distToOpDet
+                    fRegDistToOpDet[j] = fRegDistToOpDet[j+1];
+                    fRegDistToOpDet[j+1] = tempDoub;
+                    tempInt = fRegOpDetID[j];          //swap opDetID
+                    fRegOpDetID[j] = fRegOpDetID[j+1];
+                    fRegOpDetID[j+1] = tempInt;
+                    for (int k=0; k<4; k++) {
+                        tempDoub = fRegEntryPE[j][k];   //swap entryPE
+                        fRegEntryPE[j][k] = fRegEntryPE[j+1][k];
+                        fRegEntryPE[j+1][k] = tempDoub;
+                        tempDoub  = fRegExitPE[j][k]; //swap exitPE
+                        fRegExitPE[j][k] = fRegExitPE[j+1][k];
+                        fRegExitPE[j+1][k] = tempDoub;
+                        tempDoub = fRegEntryXYZT[j][k]; //swap entryXYZT
+                        fRegEntryXYZT[j][k] = fRegEntryXYZT[j+1][k];
+                        fRegEntryXYZT[j+1][k] = tempDoub;
+                        tempDoub = fRegExitXYZT[j][k]; //swap exitXYZT
+                        fRegExitXYZT[j][k] = fRegExitXYZT[j+1][k];
+                        fRegExitXYZT[j+1][k] = tempDoub;
+                        tempDoub = fRegOpDetXYZT[j][k];  //swap opDetXYZT
+                        fRegOpDetXYZT[j][k] = fRegOpDetXYZT[j+1][k];
+                        fRegOpDetXYZT[j+1][k] = tempDoub;
+                        if(k<3) {
+                            tempDoub = fRegEntrySlope[j][k];
+                            fRegEntrySlope[j][k] = fRegEntrySlope[j+1][k];
+                            fRegEntrySlope[j+1][k] = tempDoub;
+                            tempDoub = fRegExitSlope[j][k];
+                            fRegExitSlope[j][k] = fRegExitSlope[j+1][k];
+                            fRegExitSlope[j+1][k] = tempDoub;
+                        }
+                    }
+                    flag = 1;               // indicates that a swap occurred.
+                }
+            }
+        }
+
+        fRegionsNtuple->Fill();
 
     } // loop over all particles in the event. 
 
-    fCRTTruthNtuple->Fill();
 
     art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
     bool isCRTDetSim = event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle);
-    set<uint8_t> febidsC;
-    set<uint8_t> febidsM;
-    set<uint8_t> febidsD;
-    set<uint8_t> taggedTrksC;
-    set<uint8_t> taggedTrksM;
-    set<uint8_t> taggedTrksD;
-    set<uint8_t> taggedTrks;
 
     if (isCRTDetSim)  {
      std::cout << "about to loop over detsim entries" << std::endl;
@@ -1148,18 +1459,16 @@ namespace crt {
         fDetSubSys = MacToTypeCode(fMac5);
 
         for (int i=0; i<kDetMax; i++) {
-          fChan[i] = INT_MAX;
-          fT0[i]   = INT_MAX;
-          fT1[i]   = INT_MAX;
-          fADC[i]  = INT_MAX;
-          fTrackID[i] = INT_MAX;
-          fDetPDG[i] = INT_MAX;
+          fChan[i] = -0.8*INT_MAX;
+          fT0[i]   = -0.8*INT_MAX;
+          fT1[i]   = -0.8*INT_MAX;
+          fADC[i]  = -0.8*INT_MAX;
+          fTrackID[i] = -0.8*INT_MAX;
+          fDetPDG[i] = -0.8*INT_MAX;
         }
 
-        set<uint8_t> chanidsC;
-        set<uint8_t> chanidsM;
-        set<uint8_t> chanidsD;
  
+        vector<int> missedIDs;
         //std::cout << "loop over chandata" << std::endl;
         for ( auto const chandat : febdat.ChanData()) {
           //DetSim tree contains all entries (not neccessarily from muons)
@@ -1168,142 +1477,27 @@ namespace crt {
           fT1[fNChan]      = chandat.T1();
           fADC[fNChan]     = chandat.ADC();
           fTrackID[fNChan] = chandat.TrackID()[0]; 
-          //fNChan++;
+          if (particleMap.find(fTrackID[fNChan]) != particleMap.end() )
+              fDetPDG[fNChan]  = particleMap[fTrackID[fNChan]]->PdgCode();
+          else {
+              fDetPDG[fNChan] *= -1;
+              missedIDs.push_back(fTrackID[fNChan]);
+          }
 
-          //std::cout << "check if muon" << std::endl;
-          //if channel hit came from muon loop over all associated hits
-          if( particleMap.find(chandat.TrackID()[0])!=particleMap.end()) {
-              fDetPDG[fNChan]  = particleMap[chandat.TrackID()[0]]->PdgCode();
-
-              if (abs(particleMap[chandat.TrackID()[0]]->PdgCode())==13 ) {
-
-              std::cout << "found muon!" << std::endl;
-              taggedTrks.insert(chandat.TrackID()[0]);
-              for (auto const chandat2 : febdat.ChanData()) {
-                  if( chandat.TrackID()[0] != chandat2.TrackID()[0] ) continue;
-                  switch( fDetSubSys ){
-                    case 'c' :
-                      febidsC.insert(fMac5);
-                      chanidsC.insert(chandat2.Channel());
-                      taggedTrksC.insert(chandat.TrackID()[0]);
-                      break;
-                    case 'm' :
-                      febidsM.insert(fMac5);
-                      chanidsM.insert(chandat2.Channel());
-                      taggedTrksM.insert(chandat.TrackID()[0]);
-                      break;
-                    case 'd' :
-                      febidsD.insert(fMac5);
-                      chanidsD.insert(chandat2.Channel());
-                      taggedTrksD.insert(chandat.TrackID()[0]);
-                      break;
-                  }//switch
-              }//inner chandat loop
-              switch (fDetSubSys) {
-                case 'c' :
-                  fChanMultHistC->Fill(chanidsC.size());
-                  chanidsC.clear();
-                  break;
-                case 'm' :
-                  fChanMultHistM->Fill(chanidsM.size());
-                  chanidsM.clear();
-                  break;
-                case 'd' :
-                  fChanMultHistD->Fill(chanidsD.size());
-                  chanidsD.clear();
-                  break;
-              }
-            }//if muon 
-         }
-         else {
-             std::cout << "trackID from DetSim not found in ParticleMap!" << std::endl; 
-             fDetPDG[fNChan] = INT_MAX;
-         }
          fNChan++;
-          //std::cout << "end of loop over chandat" << std::endl;
         }//outer chandat loop
 
-        //std::cout << "about to fill detsimtree" << std::endl;
+
+        if ( missedIDs.size() > 0 ) {
+            std::cout 
+                << " couldn't match " << missedIDs.size() << " trackIDs from DetSim to MCParticle:" 
+            << std::endl;
+            for (auto const& id : missedIDs) std::cout << "  - " << id << std::endl;
+        }
+
         fDetSimNtuple->Fill();
 
      } //for CRT FEB events
-
-     std::cout << '\n'
-        << "muTrigTrkid size: " << muTrigTrkid.size() << '\n'
-        << "muTrigTrkidC size: " << muTrigTrkidC.size() << '\n'
-        << "muTrigTrkidM size: " << muTrigTrkidM.size() << '\n'
-        << "muTrigTrkidD size: " << muTrigTrkidD.size() << '\n'
-        << '\n'
-        << "taggedTrks size: " << taggedTrks.size() << '\n'
-        << "taggedTrksC size: " << taggedTrksC.size() << '\n'
-        << "taggedTrksM size: " << taggedTrksM.size() << '\n'
-        << "taggedTrksD size: " << taggedTrksD.size() << '\n'
-     << std::endl;
-
-     for (auto id : muTrigTrkid) {
-        for (auto detrks : taggedTrks) {
-           if (id==detrks) {
-              fNmuDetCRTTrig++;
-              break;
-           }
-        }
-     }   
-
-     for (auto id : muTrigTrkidC) {
-        for (auto detrks : taggedTrksC) {
-           if (id==detrks) {
-              fNmuDetCRTTrigC++;
-              break;
-           }
-        }
-     }
-
-     for (auto id : muTrigTrkidM) {
-        for (auto detrks : taggedTrksM) {
-           if (id==detrks) {
-              fNmuDetCRTTrigM++;
-              break;
-           }
-        }
-     }
-
-     for (auto id : muTrigTrkidD) {
-        for (auto detrks : taggedTrksD) {
-           if (id==detrks) {
-              fNmuDetCRTTrigD++;
-              break;
-           }
-        }
-     }
-
-     fCRTTruthMatchNtuple->Fill();
-
-     fFEBMultHistC->Fill(febidsC.size());
-     fFEBMultHistM->Fill(febidsM.size());
-     fFEBMultHistD->Fill(febidsD.size());
-
-     fEffTot = 1.0*fNmuDetCRTTrig/fNmuTruthCRTTrig;
-     fEffC = 1.0*fNmuDetCRTTrigC/fNmuTruthCRTTrigC;
-     fEffM = 1.0*fNmuDetCRTTrigM/fNmuTruthCRTTrigM;
-     fEffD = 1.0*fNmuDetCRTTrigD/fNmuTruthCRTTrigD;
-
-     mf::LogInfo("CRT") << '\n'
-       << " Total muon tracks entering ADS: " << fNmuTruthCRTTag << '\n'
-       << " Total muon tracks in C ADS: " << fNmuTruthCRTTagC << '\n'
-       << " Total muon tracks in M ADS: " << fNmuTruthCRTTagM << '\n'
-       << " Total muon tracks in D ADS: " << fNmuTruthCRTTagD << '\n'
-       << " Total muon tracks w/coinc.: " << fNmuTruthCRTTrig << " (" 
-          << 1.0*fNmuTruthCRTTrig/fNmuTruthCRTTag << ")" << '\n'
-       << " Total muon tracks in C w/coinc.: " << fNmuTruthCRTTrigC << " ("
-          << 1.0*fNmuTruthCRTTrigC/fNmuTruthCRTTagC << ")" << '\n'
-       << " Total muon tracks in M w/coinc.: " << fNmuTruthCRTTrigM << " ("
-          << 1.0*fNmuTruthCRTTrigM/fNmuTruthCRTTagM << ")" << '\n'
-       << " Total muon tracks in D w/coinc.: " << fNmuTruthCRTTrigD << " ("
-          << 1.0*fNmuTruthCRTTrigD/fNmuTruthCRTTagD << ")" << '\n'
-       << " EffC: " << fEffC << '\n'
-       << " EffM: " << fEffM << '\n'
-       << " EffD: " << fEffD << '\n'
-       << " EffTot: " << fEffTot << '\n';
 
     }//if crtdetsim products present
 
@@ -1319,6 +1513,7 @@ namespace crt {
         for ( auto const& hit : (*crtSimHitHandle) )
         {
             fNHit++;
+            fHitEvent = hit.Event();
             fXHit    = hit.X();
             fYHit    = hit.Y();
             fZHit    = hit.Z();
@@ -1327,8 +1522,31 @@ namespace crt {
             fZErrHit = hit.ZErr();
             fT0Hit   = hit.T0();
             fT1Hit   = hit.T1();
+            fT0CorrHit = hit.T0Corr();
+            fT1CorrHit = hit.T1Corr();
             fHitReg  = hit.Region();
-            fHitTrk  = hit.TrackID();
+            fHitSubSys = -0.8*INT_MAX;
+            if (fHitReg==38||fHitReg==52||fHitReg==56||fHitReg==48||fHitReg==46)
+                fHitSubSys = 0;
+            if (fHitReg==50||fHitReg==54||fHitReg==42||fHitReg==44)
+                fHitSubSys = 1;
+            if (fHitReg==58)
+                fHitSubSys = 2;
+            for (int i=0; i<64; i++) {
+                fHitTrk[i]  = -0.8*INT_MAX;
+                fHitPDG[i]  = -0.8*INT_MAX;
+            }
+            auto const& trks = hit.TrackID();
+            size_t index = 0;
+            for ( auto i=trks.begin(); i!=trks.end(); i++ ) {
+               
+                fHitTrk[index]  = *i;
+                if ( particleMap.find(fHitTrk[index]) != particleMap.end())
+                    fHitPDG[index] = particleMap[fHitTrk[index]]->PdgCode();
+                index++;
+            }
+            fHitMod  = hit.Module();
+            fHitStrip = hit.Strip();
 
             fSimHitNtuple->Fill();
         }//for CRT Hits

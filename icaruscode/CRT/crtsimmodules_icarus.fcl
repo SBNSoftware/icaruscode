@@ -4,7 +4,7 @@ icarus_crtsim:
 {
   module_type: "CRTDetSim"
 
-  Verbose: false
+  Verbose: true
 
   G4ModuleLabel: "largeant"
 
@@ -27,7 +27,8 @@ icarus_crtsim:
   TDelayRMSExpScale: 79.3543
 
   // Propagation delay [ns/cm]
-  PropDelay: 0.0061
+  // index of refraction in polystyrene = 1.57
+  PropDelay: 0.0523// 0.0061
   PropDelayError: 0.007
 
   // Interpolator time resolution [ns]
@@ -43,13 +44,13 @@ icarus_crtsim:
   QRMS: 10.0
 
   //ADC threshold (not DAC value used for discriminator)
-  QThresholdC: 100.0
-  QThresholdM: 100.0
-  QThresholdD: 100.0
+  QThresholdC: 169 #1.5 p.e.
+  QThresholdM: 169
+  QThresholdD: 169
 
   // Coincidence window for two fibers on a strip [ns]
   // only applies to CERN modules
-  StripCoincidenceWindow: 30.0
+  StripCoincidenceWindow: 10.0
 
   // Whether or not to apply coincidence between hits in adjacent layers
   ApplyCoincidenceC: true
@@ -67,12 +68,12 @@ icarus_crtsim:
   // AbsLenEffM: 4.5
   // AbsLenEffD: 4.5
 
-  // Dead Time inherent in the front end electronics [us]
-  DeadTime: 22.0
+  // Dead Time inherent in the front end electronics [ns]
+  DeadTime: 22000.0
 
-  // Time over which overlapping signals can influence each other [us]
+  // Time over which overlapping signals can influence each other [ns]
   // for now, adc signals are merged
-  BiasTime: 0.05
+  BiasTime: 50.0
 
 }
 

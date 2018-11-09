@@ -1,17 +1,19 @@
 /**
- * \class CRTData
+ * \class CRTHit
  *
  * \ingroup crt
  *
  * \brief CRT Hit Info
  *
- * \author $Author: David Lorca $
+ * \original author $Author: David Lorca $
+ * \ported to icaruscode and modified by Chris.Hilgenberg@colostate.edu
  *
  */
 #ifndef CRTHit_hh_
 #define CRTHit_hh_
 #include <cstdint>
 #include <utility> //needed for pair
+#include <set>
 
 namespace icarus{
 namespace crt {
@@ -20,46 +22,50 @@ namespace crt {
 
   public:
      CRTHit();
-     CRTHit(float x, float y, float z, \
-            float xerr, float yerr, float zerr,  \
-            float t0, float t0corr, float t1, float t1corr, \
-            std::pair<uint16_t,uint16_t> macpair, uint32_t reg,  \
-            int trackID, uint32_t stripID, uint32_t modID);
+     CRTHit(int event, double x, double y, double z, \
+            double xerr, double yerr, double zerr,  \
+            double t0, double t0corr, double t1, double t1corr, \
+            std::pair<int,int> macpair, int reg,  \
+            std::set<int> trackID, int stripID, int modID);
      virtual ~CRTHit();
 
-     std::pair<uint16_t, uint16_t> MacPair() const;
-     float X() const;
-     float XErr() const;
-     float Y() const;
-     float YErr() const;
-     float Z() const;
-     float ZErr() const;
-     float T0() const;
-     float T0Corr() const;
-     float T1() const;
-     float T1Corr() const;
-     uint32_t Region() const;     
-     int TrackID() const;
-     uint32_t Strip() const;
-     uint32_t Module() const;
+     std::pair<int, int> MacPair() const;
+     int Event() const;
+     double X() const;
+     double XErr() const;
+     double Y() const;
+     double YErr() const;
+     double Z() const;
+     double ZErr() const;
+     double T0() const;
+     double T0Corr() const;
+     double T1() const;
+     double T1Corr() const;
+     int Region() const;     
+     //int TrackID() const;
+     std::set<int> TrackID() const;
+     int Strip() const;
+     int Module() const;
 
   private:
 
-      float fX;
-      float fY;
-      float fZ;
-      float fXErr;
-      float fYErr;
-      float fZErr;
-      float fT0;
-      float fT0Corr;
-      float fT1;
-      float fT1Corr;
-      std::pair<uint16_t,uint16_t> fMacPair;
-      uint32_t fReg;
-      int fTrackID;
-      uint32_t fStrip;
-      uint32_t fModule;
+      int    fEvent;
+      double fX;
+      double fY;
+      double fZ;
+      double fXErr;
+      double fYErr;
+      double fZErr;
+      double fT0;
+      double fT0Corr;
+      double fT1;
+      double fT1Corr;
+      std::pair<int,int> fMacPair;
+      int fReg;
+      //int fTrackID;
+      std::set<int> fTrackID;
+      int fStrip;
+      int fModule;
 
   }; //class
 

@@ -1,7 +1,7 @@
 #ifndef CRTData_hh_
 #define CRTData_hh_
 
-#include <stdint.h> //uint32_t
+#include <stdint.h> //int
 #include <map>
 #include <utility>
 #include <vector>
@@ -14,27 +14,27 @@ namespace crt {
 
   public:
     CRTData();
-    CRTData(uint32_t event, uint32_t mac5, uint32_t entry, uint32_t ttrig, uint32_t chantrig,
-        std::pair<uint32_t,uint32_t> tpair, std::pair<uint32_t,uint32_t> macpair, std::vector<CRTChannelData> febdata);
+    CRTData(int event, int mac5, int entry, double ttrig, int chantrig,
+        std::pair<int,int> tpair, std::pair<int,int> macpair, std::vector<CRTChannelData> febdata);
     virtual ~CRTData();
 
-    uint32_t Event() const;
-    uint32_t Entry() const;
-    uint32_t Mac5() const;
-    uint32_t TTrig() const;
-    uint32_t ChanTrig() const;
-    std::pair<uint32_t,uint32_t> TrigPair() const;
-    std::pair<uint32_t,uint32_t> MacPair() const;
+    int Event() const;
+    int Entry() const;
+    int Mac5() const;
+    double TTrig() const;
+    int ChanTrig() const;
+    std::pair<int,int> TrigPair() const;
+    std::pair<int,int> MacPair() const;
     std::vector<CRTChannelData> ChanData() const;
 
   private:
-    uint32_t fEvent;
-    uint32_t fMac5;
-    uint32_t fEntry;
-    uint32_t fTTrig;
-    uint32_t  fChanTrig;
-    std::pair<uint32_t,uint32_t> fTrigPair;
-    std::pair<uint32_t,uint32_t> fMacPair;
+    int fEvent;
+    int fMac5;
+    int fEntry;
+    double fTTrig;
+    int  fChanTrig;
+    std::pair<int,int> fTrigPair;
+    std::pair<int,int> fMacPair;
     std::vector<CRTChannelData> fFEBData;
   };
 
