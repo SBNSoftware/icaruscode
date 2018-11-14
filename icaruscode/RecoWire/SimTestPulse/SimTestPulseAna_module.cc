@@ -390,27 +390,32 @@ void SimTestPulseAna::analyze(art::Event const & e)
                 _plane = wid.Plane;
                 bool found=false;
                 
-                for(auto const& hit : *hit_h)
+                float maxPeak(-100.);
+                
+                for(auto const& recoHit : *hit_h)
                 {
                     // Look for hit to match channel
-                    if((int)(hit.Channel()) != ch) continue;
+                    if((int)(recoHit.Channel()) != ch) continue;
                     
                     // Look for hit range to match tick range
-                    if(signal_tick < (int)(hit.PeakTime() - 3.*hit.RMS()) || signal_tick > (int)(hit.PeakTime() + 3.*hit.RMS())) continue;
+                    if(signal_tick < (int)(recoHit.PeakTime() - 3.*recoHit.RMS()) || signal_tick > (int)(recoHit.PeakTime() + 3.*recoHit.RMS())) continue;
                     
-                    found = true;
-                    
-                    _peakTime      = hit.PeakTime();
-                    _peakAmplitude = hit.PeakAmplitude();
-                    _rms           = hit.RMS();
-                    _summedADC     = hit.SummedADC();
-                    _integral      = hit.Integral();
-                    _chisquare     = hit.GoodnessOfFit();
-                    _baseline      = _wf[hit.StartTick()-_start_tick];
-
-                    _hit_tree->Fill();
+                    if (recoHit.PeakAmplitude() > maxPeak)
+                    {
+                        found = true;
+                       
+                        _peakTime      = recoHit.PeakTime();
+                        _peakAmplitude = recoHit.PeakAmplitude();
+                        _rms           = recoHit.RMS();
+                        _summedADC     = recoHit.SummedADC();
+                        _integral      = recoHit.Integral();
+                        _chisquare     = recoHit.GoodnessOfFit();
+                        _baseline      = _wf[recoHit.StartTick()-_start_tick];
+                    }
                 }
-                
+
+                if (found) _hit_tree->Fill();
+
                 if(!found) std::cout << "[IMBECILE!] Could not find target channel " << _ch
                                      << " or wire " << _wire
                                      << " for producer " << _hit_producer << std::endl;
