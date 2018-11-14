@@ -34,6 +34,7 @@ icarus_reco_producers:
   rawdigitfilter:                 @local::icarus_rawdigitfilter
 
   ### calwire producers
+  decon1droi:                     @local::icarus_decon1droi
   recowireraw:                    @local::icarus_recowireraw
   recowire:                       @local::icarus_recowireroiicarus
 
@@ -89,7 +90,7 @@ icarus_reco_filters:
 
 icarus_reco_filter:               [ rawdigitfilter ]
 
-icarus_reco_signalprocessinggaus: [ recowire,
+icarus_reco_signalprocessinggaus: [ decon1droi,
                                     gaushitall,
                                     gaushit ]
 
@@ -154,11 +155,11 @@ icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterFunct
 icarus_reco_producers.rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.0, 0.002]
 icarus_reco_producers.rawdigitfilter.FFTAlg.FillHistograms:                                false
    
-icarus_reco_producers.recowire.DigitModuleLabel:                                           "rawdigitfilter"
+icarus_reco_producers.decon1droi.DigitModuleLabel:                                         "rawdigitfilter"
          
 icarus_reco_producers.recowireraw.DigitModuleLabel:                                        "rawdigitfilter"
       
-icarus_reco_producers.gaushitall.CalDataModuleLabel:                                       "recowire"
+icarus_reco_producers.gaushitall.CalDataModuleLabel:                                       "decon1droi"
 icarus_reco_producers.gaushitall.AreaNorms:                                                [  1.0,  1.0,  1.0 ]
 icarus_reco_producers.gaushitall.MaxMultiHit:                                              5
 icarus_reco_producers.gaushitall.TryNplus1Fits:                                            false
@@ -170,21 +171,21 @@ icarus_reco_producers.gaushitall.LongPulseWidth:                                
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_morphological
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       0.05
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       1.5
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_morphological
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       0.05
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       1.5
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_morphological
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       0.05
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       1.5
 
 icarus_reco_producers.gaushit.HitProducerLabel:                                            "gaushitall"
-icarus_reco_producers.gaushit.MinPulseHeightMulti:                                         [10.0, 10.0,  12.0 ]
+icarus_reco_producers.gaushit.MinPulseHeightMulti:                                         [1.0, 1.0,  1.0 ]
 icarus_reco_producers.gaushit.MinPulseWidthMulti:                                          [ 2.4,  2.4,   3.0]
-icarus_reco_producers.gaushit.MinPulseHeightSingle:                                        [10.0, 10.0,  10.0 ]
-icarus_reco_producers.gaushit.MinPulseWidthSingle:                                         [ 3.0,  3.0,  3.6] 
+icarus_reco_producers.gaushit.MinPulseHeightSingle:                                        [1.0, 1.0,  1.0 ]
+icarus_reco_producers.gaushit.MinPulseWidthSingle:                                         [ 1.0,  1.0,  1.0]
       
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
          
