@@ -138,9 +138,10 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     rawAdcLessPedVec.resize(transformSize,0.);
     
     size_t binOffset    = transformSize > dataSize ? (transformSize - dataSize) / 2 : 0;
-    float  samplingRate = fDetectorProperties->SamplingRate()/1000.; // want this in us
-    float  deconNorm    = fSignalShaping->GetDeconNorm();
-    float  normFactor   = 1. / (samplingRate * deconNorm);
+//    float  samplingRate = fDetectorProperties->SamplingRate()/1000.; // want this in us
+    float  deconNorm       = fSignalShaping->GetDeconNorm();
+    float  normFactor      = 1. / deconNorm; // This is what we had previously: (samplingRate * deconNorm);
+    bool   applyNormFactor = std::abs(normFactor - 1.) > std::numeric_limits<float>::epsilon() ? true : false;
     
     // Copy the input (assumed pedestal subtracted) waveforms into our zero padded deconvolution buffer
     std::copy(waveform.begin(),waveform.end(),rawAdcLessPedVec.begin()+binOffset);
@@ -160,7 +161,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         holder.resize(roiLen);
         
         std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roi.second, holder.begin());
-        std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::multiplies<float>(),std::placeholders::_1,normFactor));
+        if (applyNormFactor) std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::multiplies<float>(),std::placeholders::_1,normFactor));
         
         // Get the truncated mean and rms
         float truncMean;
