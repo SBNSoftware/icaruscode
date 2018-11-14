@@ -32,7 +32,7 @@ icarus_HitEfficiencyAnalysis:
   module_type:         HitEfficiencyAna
   HitModuleLabel:      "gaushit"
   SimChannelLabel:     "largeant"
-  HitEfficiencyHistogramToolList: [ @local::HitEfficiencyAnalysisTool ]
+  HitEfficiencyHistogramToolList: [ @local::TrackHitEfficiencyAnalysisTool ]
 }
 
 END_PROLOG
