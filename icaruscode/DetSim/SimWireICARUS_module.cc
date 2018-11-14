@@ -298,6 +298,9 @@ void SimWireICARUS::produce(art::Event& evt)
     // make sure chargeWork is correct size
     if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
     
+    //detector properties information
+    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
     // loop over the collected responses
     //   this is needed because hits generate responses on adjacent wires!
     for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
@@ -347,7 +350,7 @@ void SimWireICARUS::produce(art::Event& evt)
         // Use the desired noise tool to actually generate the noise on this wire
         fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor, channel);
         
-        double gain=sss->GetASICGain(channel);
+        double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain return is electrons/us, this converts to electrons/tick
         
         // If there is something on this wire, and it is not dead, then add the signal to the wire
         if(sc && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
@@ -362,9 +365,9 @@ void SimWireICARUS::produce(art::Event& evt)
                 // continue if tdc < 0
                 if( tdc < 0 ) continue;
                 
-                double charge = sc->Charge(tdc);
+                double charge = sc->Charge(tdc);  // Charge returned in number of electrons
                 
-                chargeWork[tick] += charge/gain;
+                chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
             } // loop over tdcs
             // now we have the tempWork for the adjacent wire of interest
             // convolve it with the appropriate response function
