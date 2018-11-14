@@ -2,11 +2,13 @@ cet_enable_asserts()
 add_subdirectory(MCTruth)
 
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
+                         lardataobj_Simulation
                          RawDigitFilterAlgs
                          larcorealg_Geometry
                          larcore_Geometry_Geometry_service
                          lardata_RecoObjects
                          lardata_Utilities
+                         nusimdata_SimulationBase
                          ${ART_FRAMEWORK_CORE}
                          ${ART_FRAMEWORK_PRINCIPAL}
                          ${ART_FRAMEWORK_SERVICES_REGISTRY}

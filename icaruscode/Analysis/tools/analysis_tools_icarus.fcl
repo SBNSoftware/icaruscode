@@ -9,10 +9,13 @@ BasicHitAnalysisTool:
   LocalDirName:      "BasicHists"
 }
 
-HitEfficiencyAnalysisTool:
+TrackHitEfficiencyAnalysisTool:
 {
-  tool_type:         "HitEfficiencyAnalysis"
-  LocalDirName:      "EfficHists"
+  tool_type:               "TrackHitEfficiencyAnalysis"
+  LocalDirName:            "EfficHists"
+  OffsetVec:               [0,0,0]
+  SigmaVec:                [1.,1.,1.]
+  MinAllowedChannelStatus: 1
 }
 
 WireAnalysisTool:
