@@ -206,7 +206,7 @@ void HitSelector::produce(art::Event & evt)
                     float  pulseHeight = hitPtr->PeakAmplitude();
                     float  pulseWid    = hitPtr->RMS();
                     
-                    if (pulseHeight > fMinPulseHeightSingle.at(plane) && pulseWid > fMinPulseWidthSingle.at(plane))
+                    if (pulseHeight > fMinPulseHeightSingle[plane] && pulseWid > fMinPulseWidthSingle[plane])
                     {
                         art::Ptr<recob::Wire>   wire      = hitToWireAssns.at(hitPtr.key());
                         art::Ptr<raw::RawDigit> rawdigits = hitToRawDigitAssns.at(hitPtr.key());
