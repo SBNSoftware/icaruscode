@@ -53,6 +53,7 @@ private:
     
     // Fcl parameters.
     art::InputTag      fHitProducerLabel;         ///< The full collection of hits
+    std::vector<float> fMinMaxPulseHeighMulti;    ///< Max pulse height of a pulse train must be this large
     std::vector<float> fMinPulseHeightMulti;      ///< Multi hit snippets, minimum pulse height per plane
     std::vector<float> fMinPulseWidthMulti;       ///< Multi hit snippets, minimum pulse width per plane
     std::vector<float> fMinPulseHeightSingle;     ///< Single hit snippets, minimum pulse height per plane
@@ -100,6 +101,7 @@ HitSelector::~HitSelector()
 void HitSelector::reconfigure(fhicl::ParameterSet const & pset)
 {
     fHitProducerLabel      = pset.get<art::InputTag>("HitProducerLabel");
+    fMinMaxPulseHeighMulti = pset.get<std::vector<float>>("MinMaxPulseHeightMulti");
     fMinPulseHeightMulti   = pset.get<std::vector<float>>("MinPulseHeightMulti");
     fMinPulseWidthMulti    = pset.get<std::vector<float>>("MinPulseWidthMulti");
     fMinPulseHeightSingle  = pset.get<std::vector<float>>("MinPulseHeightSingle");
@@ -172,23 +174,26 @@ void HitSelector::produce(art::Event & evt)
                 if (hitSnippetVec.size() > 1)
                 {
                     // Sort in order of largest to smallest pulse height
-                    HitPtrVector::iterator maxPulseHeightItr = std::max_element(hitSnippetVec.begin(),hitSnippetVec.end(),[](const auto& left, const auto& right){return left->PeakAmplitude() < right->PeakAmplitude();});
+                    std::sort(hitSnippetVec.begin(),hitSnippetVec.end(),[](const auto& left, const auto& right){return left->PeakAmplitude() > right->PeakAmplitude();});
                     
-                    float maxPulseHeight = (*maxPulseHeightItr)->PeakAmplitude();
+                    float maxPulseHeight = hitSnippetVec.front()->PeakAmplitude();
                     
-                    if (maxPulseHeight > 6.)
+                    // Require the largest pulse in the train to be above threshold
+                    if (maxPulseHeight > fMinMaxPulseHeighMulti[plane])
                     {
+                        // Loop over all hits...
                         for(size_t idx = 0; idx < hitSnippetVec.size(); idx++)
                         {
-                            art::Ptr<recob::Hit> hitPtr = hitSnippetVec.at(idx);
+                            art::Ptr<recob::Hit> hitPtr = hitSnippetVec[idx];
                             
                             float pulseHeight = hitPtr->PeakAmplitude();
                             float pulseWid    = hitPtr->RMS();
                             int   numDOF      = hitPtr->DegreesOfFreedom();
                             
                             // Watch for case of long pulse trains (numDOF == 1) and keep all of these no matter
+                            // Also always keep the largest (first) pulse
                             // Otherwise, select on minimum pulse height and width
-                            if (numDOF == 1 || (pulseHeight > fMinPulseHeightMulti.at(plane) && pulseWid > fMinPulseWidthMulti.at(plane)))
+                            if (idx == 0 || numDOF == 1 || (pulseHeight > fMinPulseHeightMulti[plane] && pulseWid > fMinPulseWidthMulti[plane]))
                             {
                                 art::Ptr<recob::Wire>   wire      = hitToWireAssns.at(hitPtr.key());
                                 art::Ptr<raw::RawDigit> rawdigits = hitToRawDigitAssns.at(hitPtr.key());
