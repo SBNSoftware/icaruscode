@@ -350,7 +350,7 @@ void SimWireICARUS::produce(art::Event& evt)
         // Use the desired noise tool to actually generate the noise on this wire
         fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor, channel);
         
-        double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain return is electrons/us, this converts to electrons/tick
+        double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
         
         // If there is something on this wire, and it is not dead, then add the signal to the wire
         if(sc && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))

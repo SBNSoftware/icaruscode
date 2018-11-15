@@ -119,10 +119,6 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
 
     std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
-    respIntegral = std::accumulate(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),0.);
-    
-    std::cout << "===>> Electronics response integral: " << respIntegral << ", fBinWidth: " << fBinWidth << ", bin*integral: " << fBinWidth * respIntegral << ", for " << numBins << " bins" << std::endl;
-    
     return;
 }
     

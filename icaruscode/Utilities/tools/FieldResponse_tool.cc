@@ -157,10 +157,6 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
         fFieldResponseVec[bin-1] = interpolate(xVal) * fFieldResponseAmplitude * weight;
     }
     
-    double respIntegral = std::accumulate(fFieldResponseVec.begin(),fFieldResponseVec.end(),0.);
-    
-    std::cout << "+++>> Field response, numBins: " << numBins << ", timeFactor: " << timeFactor << ", respIntegral: " << respIntegral << ", binsize: " << deltaX << std::endl;
-    
     return;
 }
     

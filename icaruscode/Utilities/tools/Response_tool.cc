@@ -163,6 +163,7 @@ void Response::setResponse(double weight)
             
             int nBins = responseHiIdx - responseLowIdx;
             
+            // Obtain the average of these bins
             double aveResponse = std::accumulate(curResponseItr,curResponseItr+nBins,0.)/double(nBins);
             
             // Now interpolate between the two bins to get the sampling response for this bin
@@ -176,21 +177,7 @@ void Response::setResponse(double weight)
     // We need to scale by the binScaleFactor to preserve normalization
     std::transform(samplingTimeVec.begin(),samplingTimeVec.end(),samplingTimeVec.begin(),std::bind(std::multiplies<double>(),std::placeholders::_1,binScaleFactor));
 
-    const std::vector<TComplex>& origConvKernel = fSignalShaping.ConvKernel();
-    
-    double origConvPower = std::accumulate(origConvKernel.begin(),origConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
-
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
-    
-    const std::vector<TComplex>& newConvKernel = fSignalShaping.ConvKernel();
-    
-    double newConvPower = std::accumulate(newConvKernel.begin(),newConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
-    
-    responseIntegral = std::accumulate(fSignalShaping.Response().begin(),fSignalShaping.Response().end(),0.);
-    
-    std::cout << "      New response integral: " << responseIntegral << std::endl;
-
-    std::cout << "Plane " << fThisPlane << ", origConvPower: " << origConvPower << ", newConvPower: " << newConvPower << std::endl;
 
     // Set up the filter
     fFilter->setResponse(fftSize, f3DCorrection, fTimeScaleFactor);
