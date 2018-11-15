@@ -105,22 +105,8 @@ void Response::setResponse(double weight)
     // First of all set the field response
     fFieldResponse->setResponse(weight, f3DCorrection, fTimeScaleFactor);
 
-    // Make sure the FFT can handle this
-    size_t fftSize    = fastFourierTransform->FFTSize();
-    size_t nFieldBins = fFieldResponse->getResponseVec().size();
-    
-    // Reset the FFT if it is not big enough to handle current size
-    if (nFieldBins * 4 > fftSize)
-    {
-        fftSize = 4 * nFieldBins;
-        
-        fastFourierTransform->ReinitializeFFT( fftSize, fastFourierTransform->FFTOptions(), fastFourierTransform->FFTFitBins());
-        
-        fftSize = fastFourierTransform->FFTSize();
-    }
-
     // handle the electronics response for this plane
-    fElectronicsResponse->setResponse(4 * nFieldBins, fFieldResponse->getBinWidth());
+    fElectronicsResponse->setResponse(fFieldResponse->getResponseVec().size(), fFieldResponse->getBinWidth());
     
     // Add these elements to the SignalShaping class
     fSignalShaping.Reset();
@@ -133,10 +119,16 @@ void Response::setResponse(double weight)
     // We have to remember that the bin size for determining the field response probably
     // does not match that for the detector readout so we'll need to "convert"
     // from one to the other.
+    size_t fftSize = fastFourierTransform->FFTSize();
+    
     std::vector<double> samplingTimeVec( fftSize, 0. );
     
     // Recover the combined response from above
     const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
+    
+    double responseIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
+    
+    std::cout << "***>> Initial response integral: " << responseIntegral << std::endl;
     
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
     double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
@@ -176,11 +168,14 @@ void Response::setResponse(double weight)
             // Now interpolate between the two bins to get the sampling response for this bin
 //            double responseSlope = (curResponseVec.at(responseHiIdx) - curResponseVec.at(responseLowIdx)) / (responseHiIdx - responseLowIdx);
 //            double response      = curResponseVec.at(responseLowIdx) + 0.5 * responseSlope * (responseHiIdx - responseLowIdx);
-            
+
             samplingTimeVec[sampleIdx] = aveResponse;
         }
     }
     
+    // We need to scale by the binScaleFactor to preserve normalization
+    std::transform(samplingTimeVec.begin(),samplingTimeVec.end(),samplingTimeVec.begin(),std::bind(std::multiplies<double>(),std::placeholders::_1,binScaleFactor));
+
     const std::vector<TComplex>& origConvKernel = fSignalShaping.ConvKernel();
     
     double origConvPower = std::accumulate(origConvKernel.begin(),origConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
@@ -190,6 +185,10 @@ void Response::setResponse(double weight)
     const std::vector<TComplex>& newConvKernel = fSignalShaping.ConvKernel();
     
     double newConvPower = std::accumulate(newConvKernel.begin(),newConvKernel.end(),0.,[](const auto& sum, const auto& val){return sum + val.Rho();});
+    
+    responseIntegral = std::accumulate(fSignalShaping.Response().begin(),fSignalShaping.Response().end(),0.);
+    
+    std::cout << "      New response integral: " << responseIntegral << std::endl;
 
     std::cout << "Plane " << fThisPlane << ", origConvPower: " << origConvPower << ", newConvPower: " << newConvPower << std::endl;
 
