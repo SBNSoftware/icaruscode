@@ -182,10 +182,6 @@ icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTi
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       1.5
 
 icarus_reco_producers.gaushit.HitProducerLabel:                                            "gaushitall"
-icarus_reco_producers.gaushit.MinPulseHeightMulti:                                         [1.0, 1.0,  1.0 ]
-icarus_reco_producers.gaushit.MinPulseWidthMulti:                                          [ 2.4,  2.4,   3.0]
-icarus_reco_producers.gaushit.MinPulseHeightSingle:                                        [1.0, 1.0,  1.0 ]
-icarus_reco_producers.gaushit.MinPulseWidthSingle:                                         [ 1.0,  1.0,  1.0]
       
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
          
