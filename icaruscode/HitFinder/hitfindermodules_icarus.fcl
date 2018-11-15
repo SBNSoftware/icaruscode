@@ -23,12 +23,13 @@ icarus_hitfinder:
 
 icarus_hitselector:
 {
-  module_type:           "HitSelector"
-  HitProducerLabel:      "gaushit"
-  MinPulseHeightMulti:   [12.,  12.,  12. ]
-  MinPulseWidthMulti:    [ 3.8,  3.8,  3.8]
-  MinPulseHeightSingle:  [10.,  10.,  10. ]
-  MinPulseWidthSingle:   [ 3.6,  3.6,  3.6]
+  module_type:             "HitSelector"
+  HitProducerLabel:        "gaushit"
+  MinMaxPulseHeightMulti:  [  6.0,   6.0,   6.0 ]
+  MinPulseHeightMulti:     [ 12.0,  12.0,  12.0 ]
+  MinPulseWidthMulti:      [  3.8,   3.8,   3.8 ]
+  MinPulseHeightSingle:    [ 10.0,  10.0,  10.0 ]
+  MinPulseWidthSingle:     [  3.0,   3.0,   3.0 ]
 }
 
 END_PROLOG
