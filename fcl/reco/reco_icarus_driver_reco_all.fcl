@@ -6,12 +6,6 @@
 
 process_name: McRecoAll
 
-services: {
-  @table::icarus_basic_services
-  @table::icarus_wirecalibration_services
-  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
-}
-
 physics.reco: [@sequence::icarus_track_reconstruction]
 physics.trigger_paths: [ reco ]
 outputs.out1.fileName: "%ifb_%tc-%p.root"

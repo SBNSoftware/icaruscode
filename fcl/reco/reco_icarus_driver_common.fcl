@@ -4,14 +4,23 @@
 #include "reco_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 
-services:
-{
-  @table::icarus_wirecalibration_services
-  @table::icarus_calibration_services
-}
-
 process_name: McRecoICARUS
 
+services:
+{
+  @table::icarus_basic_services
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+}
+
+services: {
+}
+#
+# We apply this scaling in an ad hoc fashion for MCC1.1 - work in progress to resolve this...
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.6
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 1.6
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseAmplitude: 1.6
+#
 
 #source is a root file
 source:

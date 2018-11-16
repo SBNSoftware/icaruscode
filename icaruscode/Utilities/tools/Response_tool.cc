@@ -126,6 +126,11 @@ void Response::setResponse(double weight)
     // Recover the combined response from above
     const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
     
+    double respIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
+    
+    std::cout << "***** Response for plane: " << fThisPlane << " ******" << std::endl;
+    std::cout << "      initial response integral: " << respIntegral << std::endl;
+    
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
     double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
     double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
@@ -172,6 +177,10 @@ void Response::setResponse(double weight)
     
     // We need to scale by the binScaleFactor to preserve normalization
     std::transform(samplingTimeVec.begin(),samplingTimeVec.end(),samplingTimeVec.begin(),std::bind(std::multiplies<double>(),std::placeholders::_1,binScaleFactor));
+    
+    respIntegral = std::accumulate(samplingTimeVec.begin(),samplingTimeVec.end(),0.);
+    
+    std::cout << "      final response integral: " << respIntegral << std::endl;
 
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
 
