@@ -122,7 +122,7 @@ void ElectronicsResponseWOffset::setResponse(size_t numBins, double binWidth)
     // The below scales the response by 1./FCperADCMicroS... but this gets taken out in the normalization
     std::transform(fElectronicsResponseWOffsetVec.begin(),fElectronicsResponseWOffsetVec.end(),fElectronicsResponseWOffsetVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,fFCperADCMicroS));
 
-    double respIntegral = fBinWidth * std::accumulate(fElectronicsResponseWOffsetVec.begin(),fElectronicsResponseWOffsetVec.end(),0.);
+    double respIntegral = std::accumulate(fElectronicsResponseWOffsetVec.begin(),fElectronicsResponseWOffsetVec.end(),0.);
 
     std::transform(fElectronicsResponseWOffsetVec.begin(),fElectronicsResponseWOffsetVec.end(),fElectronicsResponseWOffsetVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
