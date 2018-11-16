@@ -1,7 +1,3 @@
-#include "services_icarus.fcl"
-#include "simulationservices_icarus.fcl"
-#include "correctionservices_icarus.fcl"
-#include "calibrationservices_icarus.fcl"
 #include "reco_icarus_driver_common.fcl"
 
 process_name: McRecoAll
