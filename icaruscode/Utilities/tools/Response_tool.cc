@@ -126,10 +126,6 @@ void Response::setResponse(double weight)
     // Recover the combined response from above
     const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
     
-    double responseIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
-    
-    std::cout << "***>> Initial response integral: " << responseIntegral << std::endl;
-    
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
     double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
     double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
