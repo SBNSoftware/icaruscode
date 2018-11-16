@@ -3,6 +3,7 @@
 ##
 #include "services_icarus.fcl"
 #include "reco_icarusraw.fcl"
+process_name: McRecoICARUS
 
 services:
 {
@@ -13,9 +14,12 @@ services:
   message:                 @local::icarus_message_services_prod_debug
                            @table::icarus_basic_services
 }
-
-process_name: McRecoICARUS
-
+#
+# We apply this scaling in an ad hoc fashion for MCC1.1 - work in progress to resolve this...
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.6
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 1.6
+services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseAmplitude: 1.6
+#
 
 #source is a root file
 source:
