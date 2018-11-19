@@ -457,7 +457,7 @@ size_t iWire=wid.Wire;
 
       lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
         = channelStatus.BadChannels();
-          std::cout << " pedestal " <<rawdigits->GetPedestal() << std::endl;
+          mf::LogDebug("ICARUSHitFinder")  << " pedestal " <<rawdigits->GetPedestal() << std::endl;
       for(unsigned int bin = 0; bin < fDataSize; ++bin){ 
         //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
           holder[bin]=signal[bin];
@@ -551,7 +551,7 @@ size_t iWire=wid.Wire;
               float mean;
               computeBestLocalMean(mergedCands,holder,mergedCandidateHitVec,mean);
               localmeans.push_back(mean);
-              std::cout << " adding localmean " << mean << std::endl;
+              mf::LogDebug("ICARUSHitFinder") << " adding localmean " << mean << std::endl;
           // ### Putting in a protection in case things went wrong ###
           // ### In the end, this primarily catches the case where ###
           // ### a fake pulse is at the start of the ROI           ###
@@ -647,7 +647,7 @@ size_t iWire=wid.Wire;
               int start=mergedCands[jhit].startTick;
               int end=mergedCands[jhit].stopTick;
               jhit++;
-              std::cout << " start " << start << " end " << end << std::endl;
+              mf::LogDebug("ICARUSHitFinder") << " start " << start << " end " << end << std::endl;
 
               float fitCharge=0;
               if(!islong) {
@@ -700,15 +700,15 @@ size_t iWire=wid.Wire;
               //Func.Integral(start,end);
               
               float totSig20=std::accumulate(holder.begin() + (int) start-20, holder.begin() + (int) end+20, 0.);
-              std::cout << " wire " << iwire <<" jhit " << jhit << " localmean " << localmeans[jhit-1] << std::endl;
+              mf::LogDebug("ICARUSHitFinder") << " wire " << iwire <<" jhit " << jhit << " localmean " << localmeans[jhit-1] << std::endl;
               float totSig=std::accumulate(holder.begin()+ (int) start, holder.begin()+ (int) end, 0.)-(end-start)*localmeans[jhit-1];
          //     float fitChargeErr=0;
               if(plane==2)
-                  std::cout << " totSig " << totSig << " fitCharge " << fitCharge << std::endl;
+                  mf::LogDebug("ICARUSHitFinder") << " totSig " << totSig << " fitCharge " << fitCharge << std::endl;
               if(plane==2&&totSig20<totSig)
-                  std::cout << " cryo" << cryostat << " tpc " << tpc << " negative wire " << iWire << std::endl;
+                  mf::LogDebug("ICARUSHitFinder") << " cryo" << cryostat << " tpc " << tpc << " negative wire " << iWire << std::endl;
               else
-                  std::cout << " positive wire " << iWire << std::endl;
+                  mf::LogDebug("ICARUSHitFinder") << " positive wire " << iWire << std::endl;
 
 //std::cout << " before hit creator " << std::endl;
         recob::HitCreator hit(
@@ -730,7 +730,7 @@ size_t iWire=wid.Wire;
             NDF                                                               //DEGREES OF FREEDOM.
             );
               
-              std::cout << " fitcharge " << fitCharge << " totSig " << totSig << std::endl;
+              mf::LogDebug("ICARUSHitFinder") << " fitcharge " << fitCharge << " totSig " << totSig << std::endl;
               //std::cout << " summedADC " << hit.summedADC() << " integral " << hit.Integral() << std::endl;
               
              //       filteredHitVec.push_back(hit.copy());
