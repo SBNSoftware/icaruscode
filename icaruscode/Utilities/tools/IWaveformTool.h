@@ -21,6 +21,7 @@ namespace icarus_tool
     enum HistogramType : int
     {
         WAVEFORM,
+        WAVELESSAVE,
         EROSION,
         DILATION,
         AVERAGE,

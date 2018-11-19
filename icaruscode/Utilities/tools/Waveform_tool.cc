@@ -553,11 +553,12 @@ template <typename T> void WaveformTools::getErosionDilationAverageDifference(co
         {
             int curBin = std::distance(inputWaveform.begin(),inputItr);
             
-            histogramMap.at(WAVEFORM)->Fill(   curBin, *inputItr);
-            histogramMap.at(EROSION)->Fill(    curBin, *minElementItr);
-            histogramMap.at(DILATION)->Fill(   curBin, *maxElementItr);
-            histogramMap.at(AVERAGE)->Fill(    curBin, 0.5*(*maxElementItr + *minElementItr));
-            histogramMap.at(DIFFERENCE)->Fill( curBin,      *maxElementItr - *minElementItr);
+            histogramMap.at(WAVEFORM)->Fill(    curBin, *inputItr);
+            histogramMap.at(WAVELESSAVE)->Fill( curBin, *inputItr - 0.5*(*maxElementItr + *minElementItr));
+            histogramMap.at(EROSION)->Fill(     curBin, *minElementItr);
+            histogramMap.at(DILATION)->Fill(    curBin, *maxElementItr);
+            histogramMap.at(AVERAGE)->Fill(     curBin, 0.5*(*maxElementItr + *minElementItr));
+            histogramMap.at(DIFFERENCE)->Fill(  curBin,      *maxElementItr - *minElementItr);
         }
 
     }
