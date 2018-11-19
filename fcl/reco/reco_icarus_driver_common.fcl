@@ -68,6 +68,7 @@ outputs:
 }
 
 ### Here we try to suppress known and pointless messages
+### See https://cdcvs.fnal.gov/redmine/projects/messagefacility/wiki for details
 services.message.destinations :
 {
   STDCOUT: 
