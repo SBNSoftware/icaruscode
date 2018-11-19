@@ -168,8 +168,8 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
         fDiffFullRmsHist = dir.make<TH1F>("DiffFRms",  ";Diff RMS;",   200,   0.,   10.);
         fDTruncBinsHist  = dir.make<TH1F>("DTruncBn",  "D trunc B",    500,   0., 1000.);
         fDiffMaxHist     = dir.make<TH1F>("DiffMax",   ";Diff Max;",   200,   0.,  200.);
-        fNumSigmaHist    = dir.make<TH1F>("NSigma",    ";#sigma;",     100,   0.,   20.);
-        fThresholdHist   = dir.make<TH1F>("Threshold", ";Threshold;",  100,   0.,   20.);
+        fNumSigmaHist    = dir.make<TH1F>("NSigma",    ";#sigma;",     200,   0.,   40.);
+        fThresholdHist   = dir.make<TH1F>("Threshold", ";Threshold;",  200,   0.,   40.);
         fNumSigNextHist  = dir.make<TH1F>("NSigNext",  ";#sigma;",     200,   0.,   50.);
         fMaxDiffLength   = dir.make<TH1F>("MaxLength", ";Delta t",     200,   0.,  200.);
         fDeltaTicksHist  = dir.make<TH1F>("DeltaTix",  ";Delta t",     200,   0.,  200.);
@@ -258,8 +258,8 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
         fDiffFullRmsHist->Fill(fullRMS, 1.);
         fDTruncBinsHist->Fill(std::min(dTruncBins,999), 1.);
         fDiffMaxHist->Fill(maxDiff, 1.);
-        fNumSigmaHist->Fill(std::min(nSigma,float(19.9)), 1.);
-        fThresholdHist->Fill(std::min(threshold,float(19.9)), 1.);
+        fNumSigmaHist->Fill(std::min(nSigma,float(39.9)), 1.);
+        fThresholdHist->Fill(std::min(threshold,float(39.9)), 1.);
         
         if (fUseDifference)
         {
@@ -610,6 +610,8 @@ icarus_tool::HistogramMap ROIFinderMorphological::initializeHistograms(size_t ch
             //            origWaveHist   = dir.make<TProfile>(Form("Inp_%03zu_ctw%01zu/%01zu/%05zu",cnt,cryo,tpc,wire), "Waveform", waveform.size(),      0, waveform.size(),      -500., 500.);
             histogramMap[icarus_tool::WAVEFORM] =
                     dir.make<TProfile>(Form("Wfm_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform", waveformSize, 0, waveformSize, -500., 500.);
+            histogramMap[icarus_tool::WAVELESSAVE] =
+                    dir.make<TProfile>(Form("WLA_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform", waveformSize, 0, waveformSize, -500., 500.);
             histogramMap[icarus_tool::EROSION] =
                     dir.make<TProfile>(Form("Ero_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Erosion",  waveformSize, 0, waveformSize, -500., 500.);
             histogramMap[icarus_tool::DILATION] =
