@@ -128,8 +128,8 @@ void Response::setResponse(double weight)
     
     double respIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
     
-    std::cout << "***** Response for plane: " << fThisPlane << " ******" << std::endl;
-    std::cout << "      initial response integral: " << respIntegral << std::endl;
+    mf::LogInfo("Response_tool") << "***** Response for plane: " << fThisPlane << " ******" << "\n"
+                                 << "      initial response integral: " << respIntegral << std::endl;
     
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
     double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
@@ -180,7 +180,7 @@ void Response::setResponse(double weight)
     
     respIntegral = std::accumulate(samplingTimeVec.begin(),samplingTimeVec.end(),0.);
     
-    std::cout << "      final response integral: " << respIntegral << std::endl;
+    mf::LogInfo("Response_tool")  << "      final response integral: " << respIntegral << std::endl;
 
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
 
@@ -199,7 +199,7 @@ void Response::setResponse(double weight)
 //
 //    double normFactor = std::accumulate(convKernel.begin(),convKernel.end(),0.,[](const auto& val, double sum){return sum + std::abs(val);});
 //
-//    std::cout << "Response for plane: " << fThisPlane << ", convKernel integral: " << normFactor << std::endl;
+//    mf::LogInfo("Response_tool")  << "Response for plane: " << fThisPlane << ", convKernel integral: " << normFactor << std::endl;
 //
 //    const std::vector<TComplex>& deconvKernel = fSignalShaping.DeconvKernel();
 //    std::vector<TComplex>  combKernel(deconvKernel.size());
@@ -220,7 +220,7 @@ void Response::setResponse(double weight)
 //        if (std::abs(rhoDiff) > std::abs(maxRhoDiff)) maxRhoDiff = rhoDiff;
 //    }
 //
-//    std::cout << "Checking recovery of the filter, # differences: " << diffCount << ", max diff seen: " << maxRhoDiff << std::endl;
+//    mf::LogInfo("Response_tool") << "Checking recovery of the filter, # differences: " << diffCount << ", max diff seen: " << maxRhoDiff << std::endl;
 
     return;
 }
