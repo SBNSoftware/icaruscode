@@ -99,6 +99,7 @@ private:
     TH1F*                                       fDeltaTicksHist;
     TH2F*                                       fDTixVDLenHist;
     TH2F*                                       fDTixVDiffHist;
+    TH2F*                                       fDiffVDilHist;
 
     std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
 
@@ -174,8 +175,9 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
         fMaxDiffLength   = dir.make<TH1F>("MaxLength", ";Delta t",     200,   0.,  200.);
         fDeltaTicksHist  = dir.make<TH1F>("DeltaTix",  ";Delta t",     200,   0.,  200.);
 
-        fDTixVDLenHist  = dir.make<TH2F>("DTixVDLen", ";Delta t;DLength",  100, 0., 100., 100, 0., 100.);
-        fDTixVDiffHist  = dir.make<TH2F>("DTixVDiff", ";Delta t;Max Diff", 100, 0., 100., 100, 0., 100.);
+        fDTixVDLenHist  = dir.make<TH2F>("DTixVDLen", ";Delta t;DLength",       100, 0., 100., 100, 0., 100.);
+        fDTixVDiffHist  = dir.make<TH2F>("DTixVDiff", ";Delta t;Max Diff",      100, 0., 100., 100, 0., 100.);
+        fDiffVDilHist   = dir.make<TH2F>("DiffVDil",  ";Max Diff;Max Dilation", 100, 0., 200., 100, 0., 200.);
     }
 
     // precalculate the weight vector to use in the smoothing
@@ -411,10 +413,13 @@ void ROIFinderMorphological::findROICandidatesDifference(const Waveform&  differ
         
             if (fOutputHistograms && !(startTick > 0 || stopTick < int(differenceVec.size())))
             {
+                float maxDilation = *std::max_element(dilationVec.begin() + minCandRoiTick, dilationVec.begin() + maxCandRoiTick);
+                
                 fMaxDiffLength->Fill(std::min(deltaTicks,199), 1.);
                 fDeltaTicksHist->Fill(max2MinDiff, 1.);
                 fDTixVDLenHist->Fill(max2MinDiff, deltaTicks, 1.);
                 fDTixVDiffHist->Fill(max2MinDiff, maxDifference, 1.);
+                fDiffVDilHist->Fill(maxDifference, maxDilation, 1.);
             }
         
             // Make sure we have a legitimate candidate
@@ -498,10 +503,13 @@ void ROIFinderMorphological::findROICandidatesDilation(const Waveform&  differen
             
             if (fOutputHistograms && !(startTick > 0 || stopTick < int(dilationVec.size())))
             {
+                float maxDifference = *std::max_element(differenceVec.begin() + minCandRoiTick, differenceVec.begin() + maxCandRoiTick);
+                
                 fMaxDiffLength->Fill(std::min(deltaTicks,199), 1.);
                 fDeltaTicksHist->Fill(max2MinDiff, 1.);
                 fDTixVDLenHist->Fill(max2MinDiff, deltaTicks, 1.);
                 fDTixVDiffHist->Fill(max2MinDiff, maxDilation, 1.);
+                fDiffVDilHist->Fill(maxDifference, maxDilation, 1.);
             }
             
             // Make sure we have a legitimate candidate
