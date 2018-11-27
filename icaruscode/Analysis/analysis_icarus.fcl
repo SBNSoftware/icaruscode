@@ -30,8 +30,6 @@ icarus_RawDigitAnalysis:
 icarus_HitEfficiencyAnalysis:
 {
   module_type:         HitEfficiencyAna
-  HitModuleLabel:      "gaushit"
-  SimChannelLabel:     "largeant"
   HitEfficiencyHistogramToolList: [ @local::TrackHitEfficiencyAnalysisTool ]
 }
 
