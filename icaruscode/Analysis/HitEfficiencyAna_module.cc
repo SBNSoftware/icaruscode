@@ -100,16 +100,15 @@ public:
 
 private:
 
-    // The parameters we'll read from the .fcl file.
-    art::InputTag fHitProducerLabel;
-    art::InputTag fMCParticleProducerLabel;
-    art::InputTag fSimChannelProducerLabel;
-
     // The variables that will go into the n-tuple.
     int fEvent;
     int fRun;
     int fSubRun;
     int fNumEvents;
+    
+    // Introduce a temporary event counter to handle the current issue where all input
+    // files start with the same run/subrun/event sequence
+    int fNumCalls;
     
     // Keep track of the hit histogramming tools here
     std::vector<std::unique_ptr<IHitEfficiencyHistogramTool>> fHitHistogramToolVec;
@@ -132,6 +131,7 @@ private:
 // Constructor
 HitEfficiencyAna::HitEfficiencyAna(fhicl::ParameterSet const& parameterSet)
     : EDAnalyzer(parameterSet),
+      fNumCalls(0),
       fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 
 {
@@ -193,10 +193,6 @@ void HitEfficiencyAna::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fHitProducerLabel        = p.get< std::string >("HitModuleLabel",  "gauss");
-    fMCParticleProducerLabel = p.get< std::string >("MCParticleLabel", "largeant");
-    fSimChannelProducerLabel = p.get< std::string >("SimChannelLabel", "largeant");
-    
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& hitHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("HitEfficiencyHistogramToolList");
     
@@ -211,26 +207,14 @@ void HitEfficiencyAna::analyze(const art::Event& event)
 {
     // Start by fetching some basic event information for our n-tuple.
     fEvent  = event.id().event();
-    fRun    = event.run();
+    fRun    = ++fNumCalls; //event.run();
     fSubRun = event.subRun();
 
     fNumEvents++;
     
     // Make a pass through all hits to make contrasting plots
-    art::Handle< std::vector<recob::Hit> > hitHandle;
-    event.getByLabel(fHitProducerLabel, hitHandle);
-    
-    art::Handle< std::vector<simb::MCParticle>> mcParticleHandle;
-    event.getByLabel(fMCParticleProducerLabel, mcParticleHandle);
-    
-    art::Handle< std::vector<sim::SimChannel>> simChannelHandle;
-    event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
-
-    if (hitHandle.isValid() && simChannelHandle.isValid() && mcParticleHandle.isValid())
-    {
-        std::cout << "-- Run: " << fRun << ", SubRun: " << fSubRun << ", Event: " << fEvent << " -------" << std::endl;
-        for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(*hitHandle, *mcParticleHandle, *simChannelHandle);
-    }
+    std::cout << "-- Run: " << fRun << ", SubRun: " << fSubRun << ", Event: " << fEvent << " -------" << std::endl;
+    for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(event);
     
     fTree->Fill();
 

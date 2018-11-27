@@ -12,6 +12,10 @@ BasicHitAnalysisTool:
 TrackHitEfficiencyAnalysisTool:
 {
   tool_type:               "TrackHitEfficiencyAnalysis"
+  WireModuleLabel:         "decon1droi"
+  HitModuleLabel:          "gaushit"
+  MCParticleLabel:         "largeant"
+  SimChannelLabel:         "largeant"
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
   SigmaVec:                [1.,1.,1.]

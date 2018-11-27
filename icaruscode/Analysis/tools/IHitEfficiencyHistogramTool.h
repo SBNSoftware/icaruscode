@@ -16,9 +16,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
-#include "lardataobj/RecoBase/Hit.h"
-#include "lardataobj/Simulation/SimChannel.h"
-#include "nusimdata/SimulationBase/MCParticle.h"
+#include "art/Framework/Principal/Event.h"
 
 class TTree;
 
@@ -62,7 +60,7 @@ public:
     /**
      *  @brief Interface for filling histograms
      */
-    virtual void fillHistograms(const std::vector<recob::Hit>&, const std::vector<simb::MCParticle>&, const std::vector<sim::SimChannel>&)  const = 0;
+    virtual void fillHistograms(const art::Event&)  const = 0;
 };
 
 #endif
