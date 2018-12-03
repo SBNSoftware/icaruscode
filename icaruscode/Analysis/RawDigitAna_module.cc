@@ -167,7 +167,7 @@ void RawDigitAna::reconfigure(fhicl::ParameterSet const& p)
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
     fRawDigitProducerLabel   = p.get< std::string >("RawDigitModuleLabel",   "rawdigitfilter");
-    fSimChannelProducerLabel = p.get< std::string >("SimChannelModuleLabel", "daq"           );
+    fSimChannelProducerLabel = p.get< std::string >("SimChannelModuleLabel", "largeant"      );
 
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& rawDigitHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("RawDigitHistogramToolList");
