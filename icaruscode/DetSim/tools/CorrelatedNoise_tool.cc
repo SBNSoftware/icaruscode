@@ -59,6 +59,8 @@ private:
     size_t              fPlane;
     int                 fMedianNumBins;
     double              fNoiseRand;
+    long                fCorrelatedSeed;
+    long                fUncorrelatedSeed;
     bool                fStoreHistograms;
     std::string         fInputNoiseHistFileName;
     std::string         fHistogramName;
@@ -83,6 +85,9 @@ private:
     TProfile*           fMedianNoiseHist;
     TProfile*           fPeakNoiseHist;
 
+    // Local random generators
+    std::unique_ptr<CLHEP::RandFlat> fCorrelatedGen;
+    std::unique_ptr<CLHEP::RandFlat> fUncorrelatedGen;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
@@ -97,6 +102,16 @@ CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
 //    FindPeaks();
     SelectContinuousSpectrum();
     makeHistograms();
+    
+    // Set seeds for the two random engines
+    art::ServiceHandle<art::RandomNumberGenerator> rng;
+    CLHEP::HepRandomEngine &engine_unc = rng->getEngine("noise");
+    engine_unc.setSeed(fUncorrelatedSeed,0);
+    fUncorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_unc,-1,1);
+    
+    CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
+    engine_corr.setSeed(fCorrelatedSeed,0);
+    fCorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_corr,-1,1);
 }
     
 CorrelatedNoise::~CorrelatedNoise()
@@ -108,8 +123,10 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     // Recover the histogram used for noise generation
     fPlane                  = pset.get<size_t>("Plane");
     fMedianNumBins          = pset.get<int>("MedianNumBins");
-    fStoreHistograms        = pset.get<bool>("StoreHistograms");
     fNoiseRand              = pset.get< double>("NoiseRand");
+    fCorrelatedSeed         = pset.get< long >("CorrelatedSeed",1000);
+    fUncorrelatedSeed       = pset.get< long >("UncorrelatedSeed",5000);
+    fStoreHistograms        = pset.get<bool>("StoreHistograms");
     fInputNoiseHistFileName = pset.get<std::string>("NoiseHistFileName");
     fHistogramName          = pset.get<std::string>("HistogramName");
     fHistNormFactor         = pset.get<double>("HistNormFactor");
@@ -191,7 +208,7 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     waveformToolParams.put<std::string>("tool_type","Waveform");
     
     fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
-
+    
     return;
 }
 
@@ -222,13 +239,7 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
 {
     //std::cout << " generating uncorrelated noise " << std::endl;
 
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    art::ServiceHandle<util::LArFFT>               fFFT;
-
-    CLHEP::HepRandomEngine &engine_unc = rng->getEngine("noise");
-        engine_unc.setSeed(channel,0);
-
-    CLHEP::RandFlat flat_unc(engine_unc,-1,1);
+    art::ServiceHandle<util::LArFFT> fFFT;
  
     size_t nFFTTicks = fFFT->FFTSize();
         //std::cout << " ticks " <<nFFTTicks << std::endl;
@@ -247,7 +258,7 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
     
     double pval       = 0.;
     double phase      = 0.;
-    double rnd_unc[2] = {0.};
+    double rnd_unc[2] = {0.,0.};
 
     double scaleFactor = fHistNormFactor * noise_factor;
     
@@ -256,7 +267,7 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
     for(size_t i=0; i< nFFTTicks/2 + 1; ++i)
     {
         // exponential noise spectrum
-        flat_unc.fireArray(2,rnd_unc,0,1);
+        fUncorrelatedGen->fireArray(2,rnd_unc,0,1);
       //  if(i<10) std::cout << " channel " << channel << " uncorrelated bin " << i << " rnd0 " << rnd_unc[0] << std::endl;
         pval = fNoiseContVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_unc[0]) * scaleFactor;
 
@@ -277,16 +288,10 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, doubl
     
 void CorrelatedNoise::GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int board) const
 {
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    art::ServiceHandle<util::LArFFT>               fFFT;
+    art::ServiceHandle<util::LArFFT> fFFT;
     
-    //std::cout << " generate correlated noise board" << board << std::endl;
-    
-    CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
-    engine_corr.setSeed(board,0);
-    CLHEP::RandFlat flat_corr(engine_corr,-1,1);
-    double rnd_corr[2]      = {0.};
-    size_t nFFTTicks = fFFT->FFTSize();
+    double rnd_corr[2] = {0.,0.};
+    size_t nFFTTicks   = fFFT->FFTSize();
     
     double cf=1;
     ExtractCorrelatedAmplitude(cf,board);
@@ -315,7 +320,7 @@ void CorrelatedNoise::GenerateCorrelatedNoise(std::vector<float> &noise, double 
         if(!fPeakVec[i]) continue;
         
         // exponential noise spectrum
-        flat_corr.fireArray(2,rnd_corr);
+        fCorrelatedGen->fireArray(2,rnd_corr);
           
            // std::cout << " board " << board << " random corr" << rnd_corr[0] << std::endl;
 //        pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;

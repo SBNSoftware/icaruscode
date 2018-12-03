@@ -129,6 +129,13 @@ DEFINE_ART_MODULE(SimWireICARUS)
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
 : fGeometry(*lar::providerFrom<geo::Geometry>())
 {
+    // create a default random engine; obtain the random seed from NuRandomService,
+    // unless overridden in configuration with key "Seed" and "SeedPedestal"
+    art::ServiceHandle<rndm::NuRandomService> Seeds;
+    Seeds->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed");
+    Seeds->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed");
+    Seeds->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal");
+    
     this->reconfigure(pset);
     
     produces< std::vector<raw::RawDigit>   >();
@@ -136,12 +143,7 @@ SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
     TString compression(pset.get< std::string >("CompressionType"));
     if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
     
-    // create a default random engine; obtain the random seed from NuRandomService,
-    // unless overridden in configuration with key "Seed" and "SeedPedestal"
-    art::ServiceHandle<rndm::NuRandomService> Seeds;
-    Seeds->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed");
-    Seeds->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed");
-    Seeds->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal");
+    return;
 }
 //-------------------------------------------------
 SimWireICARUS::~SimWireICARUS() {}
