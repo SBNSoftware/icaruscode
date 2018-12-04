@@ -625,7 +625,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             float          hitSnippetLenBest(0.);
             unsigned short hitStopTickBest(0);
             unsigned short hitStartTickBest(0);
-            unsigned short midHitTickBest(0);
+//            unsigned short midHitTickBest(0);
             
             // Start by recovering the Wire associated to this channel
             ChanToWireMap::const_iterator wireItr = channelToWireMap.find(chanToTDCToIDEMap.first);
@@ -677,7 +677,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                         {
                             unsigned short hitStartTick = hit->PeakTime() - fSigmaVec[plane] * hit->RMS();
                             unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec[plane] * hit->RMS();
-                            unsigned short midHitTick   = (hitStopTick + hitStartTick) / 2;
+//                            unsigned short midHitTick   = (hitStopTick + hitStartTick) / 2;
                         
                             // If hit is out of range then skip, it is not related to this particle
                             if (hitStartTick > stopTick || hitStopTick < startTick)
@@ -695,7 +695,7 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                             bestHit          = hit;
                             hitStartTickBest = hitStartTick;
                             hitStopTickBest  = hitStopTick;
-                            midHitTickBest   = midHitTick;
+//                            midHitTickBest   = midHitTick;
                         }
                         
                         // Find a match?
