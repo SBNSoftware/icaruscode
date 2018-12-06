@@ -684,7 +684,7 @@ namespace icarus {
     void   HitsPurity(std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe);
     double length(const recob::Track& track);
     double length(const simb::MCParticle& part, TVector3& start, TVector3& end);
-    double bdist(const TVector3& pos);
+    double bdist(const recob::tracking::Point_t& pos);
 
     TTree* fTree;
 
@@ -2056,7 +2056,9 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
         art::Ptr<recob::Track> ptrack(trackListHandle[iTracker], iTrk);
         const recob::Track& track = *ptrack;
       
-        TVector3 pos, dir_start, dir_end, end;        
+        //TVector3 pos, dir_start, dir_end, end; 
+        recob::tracking::Point_t  pos,end;
+        recob::tracking::Vector_t dir_start,dir_end;       
 
         double tlen = 0.; //mom = 0.;
         int TrackID = -1;
@@ -2732,7 +2734,7 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
 }
 
 // Calculate distance to boundary.
-double icarus::AnalysisTree::bdist(const TVector3& pos)
+double icarus::AnalysisTree::bdist(const recob::tracking::Point_t& pos)
 {
   // Get geometry.
   art::ServiceHandle<geo::Geometry> geom;
@@ -2793,17 +2795,7 @@ double icarus::AnalysisTree::bdist(const TVector3& pos)
 // Length of reconstructed track, trajectory by trajectory.
 double icarus::AnalysisTree::length(const recob::Track& track)
 {
-  double result = 0.;
-  TVector3 disp = track.LocationAtPoint(0);
-  int n = track.NumberTrajectoryPoints();
-
-  for(int i = 1; i < n; ++i) {
-    const TVector3& pos = track.LocationAtPoint(i);
-    disp -= pos;
-    result += disp.Mag();
-    disp = pos;
-  }
-  return result;
+  return track.Length();
 }
 
 // Length of MC particle, trajectory by trajectory.

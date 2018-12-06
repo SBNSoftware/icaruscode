@@ -550,27 +550,14 @@ std::set<int> MCTruthAssociations::GetSetOfTrackIDs(std::vector< art::Ptr<recob:
 //----------------------------------------------------------------------------
 double MCTruthAssociations::length(const recob::Track* track) const
 {
-    double   result(0.);
-    TVector3 disp(track->LocationAtPoint(0));
-    int      n(track->NumberTrajectoryPoints());
-    
-    for(int i = 1; i < n; ++i)
-    {
-        const TVector3& pos = track->LocationAtPoint(i);
-        
-        disp   -= pos;
-        result += disp.Mag();
-        disp    = pos;
-    }
-    
-    return result;
+    return track->Length();
 }
 
 // Length of MC particle.
 //----------------------------------------------------------------------------
 double MCTruthAssociations::length(const simb::MCParticle& part, double dx,
-                              TVector3& start, TVector3& end, TVector3& startmom, TVector3& endmom,
-                              unsigned int tpc, unsigned int cstat) const
+                                   TVector3& start, TVector3& end, TVector3& startmom, TVector3& endmom,
+                                   unsigned int tpc, unsigned int cstat) const
 {
     // Get fiducial volume boundary.
     double xmin = -0.1;
