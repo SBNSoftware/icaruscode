@@ -18,7 +18,6 @@ icarus_recowireroi:
     zPlaneROIPad:                          [ 75, 75 ] # number of bins to pad both ends of the ROIs
     DoBaselineSub:                         true # subtract baseline after deconvolution?
     uPlaneRamp:                            true # Set true if U plane response includes a pre-ROI ramp
-    FFTSize:                               256      # re-initialize FFT service to this size
     SaveWireWF:                            0
     MinAllowedChannelStatus:               3 # All channels greater than or equal to this status level are considered
     DoBaselineSub_WaveformPropertiesAlg:   false # subtract baseline after deconvolution?
@@ -31,7 +30,6 @@ icarus_decon1droi:
     module_type:                "Decon1DROI"
     DigitModuleLabel:           "daq"
     NoiseSource:                3
-    FFTSize:                    128      # re-initialize FFT service to this size
     SaveWireWF:                 0
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
     TruncRMSThreshold:          6.
@@ -51,7 +49,6 @@ icarus_recowireroiicarus:
     module_type:                "RecoWireROIICARUS"
     DigitModuleLabel:           "daq"
     NoiseSource:                3
-    FFTSize:                    128      # re-initialize FFT service to this size
     SaveWireWF:                 0
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
     TruncRMSThreshold:          6.

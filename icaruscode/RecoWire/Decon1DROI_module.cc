@@ -71,8 +71,6 @@ class Decon1DROI : public art::EDProducer
     void endJob();                 
     void reconfigure(fhicl::ParameterSet const& p);
     
-    void reconfFFT(int temp_fftsize);
-    
   private:
     // It seems there are pedestal shifts that need correcting
     float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&) const;
@@ -84,7 +82,6 @@ class Decon1DROI : public art::EDProducer
                                                                                          ///< it is set by the DigitModuleLabel
                                                                                          ///< ex.:  "daq:preSpill" for prespill data
     unsigned short                                          fNoiseSource;                ///< Used to determine ROI threshold
-    size_t                                                  fFFTSize;                    ///< FFT size for ROI deconvolution
     int                                                     fSaveWireWF;                 ///< Save recob::wire object waveforms
     size_t                                                  fEventCount;                 ///< count of event processed
     int                                                     fMinAllowedChanStatus;       ///< Don't consider channels with lower status
@@ -158,7 +155,6 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 
     fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
     fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);
-    fFFTSize                    = pset.get< size_t >        ("FFTSize"                );
     fSaveWireWF                 = pset.get< int >           ("SaveWireWF"             );
     fMinAllowedChanStatus       = pset.get< int >           ("MinAllowedChannelStatus");
     fTruncRMSThreshold          = pset.get< float >         ("TruncRMSThreshold",    6.);
@@ -205,16 +201,6 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
     return;
 }
 
-
-void Decon1DROI::reconfFFT(int temp_fftsize)
-{
-    if(fFFT->FFTSize() >= temp_fftsize) return;
-
-    std::string options = fFFT->FFTOptions();
-    int fitbins = fFFT->FFTFitBins();
-    fFFT->ReinitializeFFT(temp_fftsize, options, fitbins);
-}
-
 //-------------------------------------------------
 void Decon1DROI::beginJob()
 {
@@ -232,9 +218,6 @@ void Decon1DROI::produce(art::Event& evt)
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
 
-    // get the FFT service to have access to the FFT size
-    reconfFFT(fFFTSize);
-    
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
     // ... and an association set

@@ -130,7 +130,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         
         while(1)
         {
-            if (roiLen > deconSize) deconSize *= 2;
+            if (roiLen > deconSize  ) deconSize *= 2;
             else break;
         }
         

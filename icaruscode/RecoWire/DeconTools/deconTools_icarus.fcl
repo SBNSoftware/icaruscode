@@ -76,7 +76,7 @@ icarus_nobaseline:
 icarus_roideconvolution:
 {
     tool_type:                  ROIDeconvolution
-    FFTSize:                    1024     # re-initialize FFT service to this size
+    FFTSize:                    512    # re-initialize FFT service to this size
     SaveWireWF:                 0
     DodQdxCalib:                false  # apply wire-by-wire calibration?
     dQdxCalibFileName:          "dQdxCalibrationPlanev1.txt"

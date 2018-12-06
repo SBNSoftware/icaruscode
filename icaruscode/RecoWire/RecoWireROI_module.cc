@@ -69,8 +69,6 @@ public:
     void endJob();                 
     void reconfigure(fhicl::ParameterSet const& p);
     
-    void reconfFFT(int temp_fftsize);
-    
 private:
     
     std::string                 fDigitModuleLabel;     ///< module that made digits
@@ -81,7 +79,6 @@ private:
     unsigned short              fNumBinsHalf;          ///< Determines # bins in ROI running sum
     std::vector<unsigned short> fThreshold;            ///< abs(threshold) ADC counts for ROI
     std::vector<int>            fNumSigma;             ///< "# sigma" rms noise for ROI threshold
-    int                         fFFTSize;              ///< FFT size for ROI deconvolution
     std::vector<unsigned short> fPreROIPad;            ///< ROI padding
     std::vector<unsigned short> fPostROIPad;           ///< ROI padding
     bool                        fDoBaselineSub;        ///< Do baseline subtraction after deconvolution?
@@ -151,7 +148,6 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
     zin                   = p.get< std::vector<unsigned short> >   ("zPlaneROIPad"           );
     fDoBaselineSub        = p.get< bool >                          ("DoBaselineSub"          );
     fuPlaneRamp           = p.get< bool >                          ("uPlaneRamp"             );
-    fFFTSize              = p.get< int  >                          ("FFTSize"                );
     fSaveWireWF           = p.get< int >                           ("SaveWireWF"             );
     fMinAllowedChanStatus = p.get< int >                           ("MinAllowedChannelStatus");
     fMinROIAverageTickThreshold = p.get<float>("MinROIAverageTickThreshold",-0.5);
@@ -217,19 +213,6 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
 	
 }
 
-
-void RecoWireROI::reconfFFT(int temp_fftsize)
-{
-    // re-initialize the FFT service for the request size
-    art::ServiceHandle<util::LArFFT> fFFT;
-
-    if(fFFT->FFTSize() >= temp_fftsize) return;
-
-    std::string options = fFFT->FFTOptions();
-    int fitbins = fFFT->FFTFitBins();
-    fFFT->ReinitializeFFT(temp_fftsize, options, fitbins);
-}
-
 //-------------------------------------------------
 void RecoWireROI::beginJob()
 {
@@ -249,7 +232,6 @@ void RecoWireROI::produce(art::Event& evt)
 
     // get the FFT service to have access to the FFT size
     art::ServiceHandle<util::LArFFT> fFFT;
-    reconfFFT(fFFTSize);
     
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
