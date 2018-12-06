@@ -31,11 +31,12 @@ public:
     void setResponse(size_t numBins, double binWidth)       override;
     void outputHistograms(art::TFileDirectory&)       const override;
     
-    size_t                     getPlane()           const override {return fPlane;}
-    double                     getFCperADCMicroS()  const override {return fFCperADCMicroS;}
-    double                     getASICShapingTime() const override {return fASICShapingTime;}
-    const std::vector<double>& getResponseVec()     const override {return fElectronicsResponseWOffsetVec;}
-    
+    size_t                     getPlane()                        const override {return fPlane;}
+    double                     getFCperADCMicroS()               const override {return fFCperADCMicroS;}
+    double                     getASICShapingTime()              const override {return fASICShapingTime;}
+    const std::vector<double>& getResponseVec()                  const override {return fElectronicsResponseWOffsetVec;}
+    const std::vector<std::complex<double>>& getResponseFFTVec() const override {return fElectronicsResponseFFTVec;}
+
 private:
     // Member variables from the fhicl file
     size_t              fPlane;
@@ -49,6 +50,9 @@ private:
     
     // Container for the electronics response "function"
     std::vector<double> fElectronicsResponseWOffsetVec;
+    
+    // And a container for the FFT of the above
+    std::vector<std::complex<double>> fElectronicsResponseFFTVec;
 };
     
 //----------------------------------------------------------------------

@@ -17,6 +17,9 @@
 #include "TFile.h"
 #include "TProfile.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include <fstream>
 #include <iomanip>
 
@@ -34,19 +37,20 @@ public:
     void setResponse(double, double, double)          override;
     void outputHistograms(art::TFileDirectory&) const override;
     
-    size_t                     getPlane()             const override;
-    size_t                     getNumBins()           const override;
-    double                     getBinCenter(int bin)  const override;
-    double                     getBinContent(int bin) const override;
-    double                     getLowEdge()           const override;
-    double                     getHighEdge()          const override;
-    double                     getBinWidth()          const override;
-    double                     getTOffset()           const override;
-    double                     getIntegral()          const override;
-    double                     interpolate(double x)  const override;
+    size_t                                   getPlane()             const override;
+    size_t                                   getNumBins()           const override;
+    double                                   getBinCenter(int bin)  const override;
+    double                                   getBinContent(int bin) const override;
+    double                                   getLowEdge()           const override;
+    double                                   getHighEdge()          const override;
+    double                                   getBinWidth()          const override;
+    double                                   getTOffset()           const override;
+    double                                   getIntegral()          const override;
+    double                                   interpolate(double x)  const override;
     
-    const std::vector<double>& getResponseVec()       const override {return fFieldResponseVec;}
-    
+    const std::vector<double>&               getResponseVec()       const override {return fFieldResponseVec;}
+    const std::vector<std::complex<double>>& getResponseFFTVec()    const override {return fFieldResponseFFTVec;}
+
 private:
     // Utility routine for converting numbers to strings
     std::string         numberToString(int number);    
@@ -68,6 +72,9 @@ private:
     
     // Container for the field response "function"
     std::vector<double> fFieldResponseVec;
+    
+    // And a container for the FFT of the above
+    std::vector<std::complex<double>> fFieldResponseFFTVec;
     
     // Derived variables
     double              fT0Offset;
@@ -157,6 +164,21 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
         fFieldResponseVec[bin-1] = interpolate(xVal) * fFieldResponseAmplitude * weight;
     }
     
+    // Find the next power of 2 that is larger than the vector we have
+    size_t newVecSize(64);
+    
+    while(fFieldResponseVec.size() > newVecSize) newVecSize *= 2;
+    
+    // Resize and pad with zeroes
+    fFieldResponseVec.resize(newVecSize,0.);
+
+    // Now we take the FFT...
+    Eigen::FFT<double> eigenFFT;
+    
+    fFieldResponseFFTVec.resize(newVecSize);
+    
+    eigenFFT.fwd(fFieldResponseFFTVec, fFieldResponseVec);
+    
     return;
 }
     
@@ -208,9 +230,11 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     }
     
     // Get the FFT of the response
-    std::vector<double> powerVec;
+    size_t halfFFTDataSize(fFieldResponseFFTVec.size()/2);
+
+    std::vector<double> powerVec(halfFFTDataSize);
     
-    waveformTool->getFFTPower(histResponseVec, powerVec);
+    std::transform(fFieldResponseFFTVec.begin(), fFieldResponseFFTVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
     
     // Now we can plot this...
     double maxFreq   = 0.5 / binWidth;   // binWidth will be in us, maxFreq will be units of MHz

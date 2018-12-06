@@ -69,6 +69,7 @@ icarus_signalshapingservice:
     PlaneForNormalization:           2
     PrintResponses:                  "false"
     DeconNorm:                       1.
+    InitialFFTSize:                  4096
     NoiseFactVec:                    [ [ 3.3, 3.3, 3.3, 3.3 ], [ 3.3, 3.3, 3.3, 3.3 ], [ 3.3, 3.3, 3.3, 3.3 ] ]
     StoreHistograms:                 true
 

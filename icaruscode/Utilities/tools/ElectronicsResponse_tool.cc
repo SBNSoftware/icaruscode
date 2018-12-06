@@ -15,6 +15,9 @@
 
 #include "TProfile.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include <fstream>
 
 namespace icarus_tool
@@ -31,10 +34,11 @@ public:
     void setResponse(size_t numBins, double binWidth)       override;
     void outputHistograms(art::TFileDirectory&)       const override;
     
-    size_t                     getPlane()           const override {return fPlane;}
-    double                     getFCperADCMicroS()  const override {return fFCperADCMicroS;}
-    double                     getASICShapingTime() const override {return fASICShapingTime;}
-    const std::vector<double>& getResponseVec()     const override {return fElectronicsResponseVec;}
+    size_t                                   getPlane()           const override {return fPlane;}
+    double                                   getFCperADCMicroS()  const override {return fFCperADCMicroS;}
+    double                                   getASICShapingTime() const override {return fASICShapingTime;}
+    const std::vector<double>&               getResponseVec()     const override {return fElectronicsResponseVec;}
+    const std::vector<std::complex<double>>& getResponseFFTVec()  const override {return fElectronicsResponseFFTVec;}
     
 private:
     // Member variables from the fhicl file
@@ -48,8 +52,11 @@ private:
     
     // Container for the electronics response "function"
     std::vector<double> fElectronicsResponseVec;
-};
     
+    // And a container for the FFT of the above
+    std::vector<std::complex<double>> fElectronicsResponseFFTVec;
+};
+
 //----------------------------------------------------------------------
 // Constructor.
 ElectronicsResponse::ElectronicsResponse(const fhicl::ParameterSet& pset) :
@@ -119,6 +126,14 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
 
     std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
+    // Resize and pad with zeroes
+    fElectronicsResponseFFTVec.resize(fElectronicsResponseVec.size(),0.);
+    
+    // Now we take the FFT...
+    Eigen::FFT<double> eigenFFT;
+    
+    eigenFFT.fwd(fElectronicsResponseFFTVec, fElectronicsResponseVec);
+
     return;
 }
     

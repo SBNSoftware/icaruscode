@@ -70,6 +70,7 @@ void util::SignalShapingServiceICARUS::reconfigure(const fhicl::ParameterSet& ps
     fPlaneForNormalization  = pset.get<size_t>(    "PlaneForNormalization");
     fPrintResponses         = pset.get<bool>(      "PrintResponses"       );
     fDeconNorm              = pset.get<double>(    "DeconNorm"            );
+    fInitialFFTSize         = pset.get<size_t>(    "InitialFFTSize"       );
     fNoiseFactVec           = pset.get<DoubleVec2>("NoiseFactVec"         );
     fStoreHistograms        = pset.get<bool>(      "StoreHistograms"      );
     
@@ -105,18 +106,27 @@ void util::SignalShapingServiceICARUS::init()
     {
         fInit = true;
         
-        art::ServiceHandle<geo::Geometry> geo;
+        // re-initialize the FFT service for the request size
+        art::ServiceHandle<util::LArFFT> fFFT;
+        
+        std::string options = fFFT->FFTOptions();
+        size_t      FFTSize = fFFT->FFTSize();
+        
+        if (fInitialFFTSize / FFTSize >= 2 || FFTSize / fInitialFFTSize >= 2)
+        {
+            int    fitbins    = fFFT->FFTFitBins();
+            size_t newFFTSize = 64;
+            
+            while(newFFTSize < fInitialFFTSize) newFFTSize *= 2;
+            
+            fFFT->ReinitializeFFT(newFFTSize, options, fitbins);
+        }
         
         // Do ICARUS-specific configuration of SignalShaping by providing
         // ICARUS response and filter functions.
         
-        // re-initialize the FFT service for the request size
-        art::ServiceHandle<util::LArFFT> fFFT;
-        std::string options = fFFT->FFTOptions();
+        art::ServiceHandle<geo::Geometry> geo;
 
-        // Calculate field and electronics response functions.
-        std::string kset[2] = { "Convolution ", "Deconvolution "};
-        
         // Get the normalization from the field response for the collection plane
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
         double weight   = 1. / integral;

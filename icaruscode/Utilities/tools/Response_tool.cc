@@ -24,6 +24,9 @@
 
 #include "TProfile.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include <fstream>
 #include <iomanip>
 
@@ -108,12 +111,29 @@ void Response::setResponse(double weight)
     // handle the electronics response for this plane
     fElectronicsResponse->setResponse(fFieldResponse->getResponseVec().size(), fFieldResponse->getBinWidth());
     
+    // Next we perform the convolution of the field and electronics responses and then invert to get the
+    // interim response function which will be set up in the time binning/range of the field response
+    const std::vector<std::complex<double>>& fieldResponseFFTVec       = fFieldResponse->getResponseFFTVec();
+    const std::vector<std::complex<double>>& electronicsResponseFFTVec = fElectronicsResponse->getResponseFFTVec();
+    
+    std::vector<std::complex<double>> curResponseFFTVec(fieldResponseFFTVec.size());
+    
+    std::transform(fieldResponseFFTVec.begin(), fieldResponseFFTVec.begin() + fieldResponseFFTVec.size()/2, electronicsResponseFFTVec.begin(), curResponseFFTVec.begin(), std::multiplies<std::complex<double>>());
+    
+    // And now we recover the current response vector which is the convolution of the two above
+    // (and still in the units of the original field response)
+    std::vector<double> curResponseVec(fieldResponseFFTVec.size());
+    
+    Eigen::FFT<double> eigenFFT;
+
+    eigenFFT.inv(curResponseVec, curResponseFFTVec);
+
     // Add these elements to the SignalShaping class
-    fSignalShaping.Reset();
-    fSignalShaping.AddResponseFunction(fFieldResponse->getResponseVec());
-    fSignalShaping.AddResponseFunction(fElectronicsResponse->getResponseVec());
-    fSignalShaping.save_response();
-    fSignalShaping.set_normflag(false);
+//    fSignalShaping.Reset();
+//    fSignalShaping.AddResponseFunction(fFieldResponse->getResponseVec());
+//    fSignalShaping.AddResponseFunction(fElectronicsResponse->getResponseVec());
+//    fSignalShaping.save_response();
+//    fSignalShaping.set_normflag(false);
     
     // Now set to the task of determing the actual sampling response
     // We have to remember that the bin size for determining the field response probably
@@ -124,7 +144,7 @@ void Response::setResponse(double weight)
     std::vector<double> samplingTimeVec( fftSize, 0. );
     
     // Recover the combined response from above
-    const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
+//    const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
     
     double respIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
     
@@ -132,9 +152,9 @@ void Response::setResponse(double weight)
                                  << "      initial response integral: " << respIntegral << std::endl;
     
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
-    double samplingRate = detprop->SamplingRate() * 1.e-3;       // We want this in us/bin
-    double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
-    double rateRatio    = samplingRate / responseRate;
+    double samplingRate = detprop->SamplingRate() * 1.e-3;                // We want this in us/bin
+    double responseRate = fFieldResponse->getBinWidth() * 1.e-3;          // We want this in us/bin
+    double rateRatio    = samplingRate / responseRate;                    // This gives the ratio of time bins for full readout to response bins
     
     // The idea is to step through each bin of the sampling response vector and then to
     // look up the corresponding bins in the current response vector. Since the two sample
@@ -182,6 +202,7 @@ void Response::setResponse(double weight)
     
     mf::LogInfo("Response_tool")  << "      final response integral: " << respIntegral << std::endl;
 
+    fSignalShaping.Reset();
     fSignalShaping.AddResponseFunction( samplingTimeVec, true);
 
     // Set up the filter
@@ -190,6 +211,7 @@ void Response::setResponse(double weight)
     // Finalize the Signal Shaping
     fSignalShaping.AddFilterFunction(fFilter->getResponseVec());
     fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );         // Note that this is only important if set_normflag above has been set to true
+    fSignalShaping.set_normflag(false);                           // WE are handling the normalization
     fSignalShaping.CalculateDeconvKernel();
     
     // The following can be uncommented to do some consistency checks if desired
@@ -243,16 +265,16 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
     const std::vector<double>& responseVec  = this->getSignalShaping().Response();
     auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double                     numBins      = responseVec.size();
-    double                     samplingRate = detprop->SamplingRate(); // Sampling time in us
+    int                        numBins      = responseVec.size();
+    double                     samplingRate = detprop->SamplingRate(); // **Sampling time in ns**
     double                     maxFreq      = 1.e6 / (2. * samplingRate);
-    double                     minFreq      = 1.e6 / (2. * samplingRate * numBins);
+    double                     minFreq      = 1.e6 / (2. * samplingRate * double(numBins));
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
-    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., samplingRate);
+    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * samplingRate * 1.e-3);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        hist->Fill(bin * samplingRate, responseVec.at(bin), 1.);
+        hist->Fill((double(bin) + 0.5) * samplingRate * 1.e-3, responseVec.at(bin), 1.);
     }
 
     // Get the FFT, need the waveform tool for consistency

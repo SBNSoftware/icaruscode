@@ -146,9 +146,10 @@ namespace util {
         bool fInit;                                                 ///< Initialization flag
         
         // Fcl parameters.
-        size_t                              fPlaneForNormalization;
-        double                              fDeconNorm;
+        size_t                              fPlaneForNormalization; ///< Normalize responses to this plane
+        double                              fDeconNorm;             ///< Final normalization to apply
         DoubleVec2                          fNoiseFactVec;          ///< RMS noise in ADCs for lowest gain setting
+        size_t                              fInitialFFTSize;        ///< Size we initially initalize the responses
         bool                                fPrintResponses;
         bool                                fStoreHistograms;
         

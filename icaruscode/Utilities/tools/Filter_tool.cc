@@ -89,7 +89,7 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Note sampling rate is in ns, convert to us
     double      maxFreq      = 1. / (2. * samplingRate);        // highest frequency in cycles/us
     double      freqRes      = maxFreq / double(numBins/2);     // frequency resolution in cycles/us
-    
+
     // Set the range on the function
     fFunction->SetRange(0, double(numBins/2));
 
@@ -107,7 +107,7 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     double peakVal(std::numeric_limits<double>::min());
 
     // Now ready to set the response vector
-    for(size_t bin = 0; bin <= numBins/2; bin++)
+    for(size_t bin = 0; bin <= numBins/2 + 1; bin++)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = bin * freqRes;

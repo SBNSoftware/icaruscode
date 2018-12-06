@@ -30,10 +30,11 @@ namespace icarus_tool
         virtual void setResponse(size_t numBins, double binWidth) = 0;
         virtual void outputHistograms(art::TFileDirectory&) const = 0;
         
-        virtual size_t                     getPlane()           const = 0;
-        virtual double                     getFCperADCMicroS()  const = 0;
-        virtual double                     getASICShapingTime() const = 0;
-        virtual const std::vector<double>& getResponseVec()     const = 0;
+        virtual size_t                                   getPlane()           const = 0;
+        virtual double                                   getFCperADCMicroS()  const = 0;
+        virtual double                                   getASICShapingTime() const = 0;
+        virtual const std::vector<double>&               getResponseVec()     const = 0;
+        virtual const std::vector<std::complex<double>>& getResponseFFTVec()  const = 0;
     };
 }
 
