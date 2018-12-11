@@ -172,9 +172,9 @@ namespace opdet{
     auto PMTsimulator = makePMTsimulator(
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       *(lar::providerFrom<detinfo::DetectorClocksService>()),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("Efficiencies"),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("DarkNoise"),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("ElectronicsNoise")
+      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"Efficiencies"),
+      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"DarkNoise"),
+      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"ElectronicsNoise")
       );
     
     //

@@ -173,7 +173,7 @@ void PhotonPropogationICARUS::produce(art::Event & event)
     // get hold of all needed services
 //    auto const& pvs = *(art::ServiceHandle<phot::PhotonVisibilityService>());
     auto& engine
-      = art::ServiceHandle<art::RandomNumberGenerator>()->getEngine("icarusphoton");
+      = art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"icarusphoton");
     CLHEP::RandLandau landauGen(engine);
 
     // Loop through the input photons (this might need to be more complicated...)

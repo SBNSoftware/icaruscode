@@ -104,7 +104,7 @@ MultiPartVertex::~MultiPartVertex()
 { delete fFlatRandom; }
 
 MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
-// :
+ : EDProducer(p)
 // Initialize member data here.
 {
 
@@ -115,7 +115,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
   // unless overridden in configuration with key "Seed"
   art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed");
   art::ServiceHandle<art::RandomNumberGenerator> rng;
-  CLHEP::HepRandomEngine &engine = rng->getEngine();
+  CLHEP::HepRandomEngine &engine = rng->getEngine(art::ScheduleID::first(),p.get<std::string>("module_label"));
   fFlatRandom = new CLHEP::RandFlat(engine);
 
   produces< std::vector<simb::MCTruth>   >();

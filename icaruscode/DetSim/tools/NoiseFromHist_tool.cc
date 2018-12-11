@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include "IGenNoise.h"
+#include "art/Persistency/Provenance/ModuleContext.h"
 #include "art/Utilities/ToolMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
@@ -100,7 +101,7 @@ void NoiseFromHist::GenerateNoise(std::vector<float> &noise, double noise_factor
     art::ServiceHandle<art::RandomNumberGenerator> rng;
     art::ServiceHandle<util::LArFFT>               fFFT;
     
-    CLHEP::HepRandomEngine &engine = rng->getEngine("noise");
+    CLHEP::HepRandomEngine &engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"noise");
     
     CLHEP::RandFlat flat(engine,-1,1);
     

@@ -228,7 +228,7 @@ void SimWireICARUS::produce(art::Event& evt)
     
     //get rng for pedestals
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine &engine = rng->getEngine("pedestal");
+    CLHEP::HepRandomEngine &engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"pedestal");
     
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
@@ -248,7 +248,8 @@ void SimWireICARUS::produce(art::Event& evt)
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
     
     // In case trigger simulation is run in the same job...
-    tss->preProcessEvent(evt);
+    // FIXME:  You should not be calling preProcessEvent
+    tss->preProcessEvent(evt,art::ScheduleContext::invalid());
     auto const* ts = tss->provider();
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings

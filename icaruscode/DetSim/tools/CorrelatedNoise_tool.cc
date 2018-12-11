@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include "IGenNoise.h"
+#include "art/Framework/Core/EDProducer.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -105,11 +106,11 @@ CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
     
     // Set seeds for the two random engines
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine &engine_unc = rng->getEngine("noise");
+    CLHEP::HepRandomEngine &engine_unc = rng->getEngine(art::ScheduleID::first(),pset.get<std::string>("module_label"),"noise");
     engine_unc.setSeed(fUncorrelatedSeed,0);
     fUncorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_unc,-1,1);
     
-    CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
+    CLHEP::HepRandomEngine &engine_corr = rng->getEngine(art::ScheduleID::first(),pset.get<std::string>("module_label"),"cornoise");
     engine_corr.setSeed(fCorrelatedSeed,0);
     fCorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_corr,-1,1);
 }
