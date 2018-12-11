@@ -32,7 +32,7 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-larsoft         v07_13_00
+larsoft         v08_00_00_rc2
 icarusutil      v07_13_00
 icarus_data     v07_00_01
 genie_xsec      v2_12_10
