@@ -43,7 +43,11 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                          override;
 
-    void GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float> &noise, double noise_factor, unsigned int wire) const override;
+    void GenerateNoise(CLHEP::HepRandomEngine& noise_engine,
+                       CLHEP::HepRandomEngine& cornoise_engine,
+                       std::vector<float>& noise,
+                       double noise_factor,
+                       unsigned int wire) const override;
     void GenerateUncorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     void GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     
@@ -55,6 +59,8 @@ public:
     
 private:
     void makeHistograms();
+    void maybeCacheDistributions(CLHEP::HepRandomEngine& engine_unc,
+                                 CLHEP::HepRandomEngine& engine_corr) const;
     
     // Member variables from the fhicl file
     size_t              fPlane;
@@ -86,9 +92,10 @@ private:
     TProfile*           fMedianNoiseHist;
     TProfile*           fPeakNoiseHist;
 
-    // Local random generators
-    std::unique_ptr<CLHEP::RandFlat> fCorrelatedGen;
-    std::unique_ptr<CLHEP::RandFlat> fUncorrelatedGen;
+    // Local random generators (mutables...ick)
+    mutable bool fDistributionsReady{false};
+    mutable std::unique_ptr<CLHEP::RandFlat> fCorrelatedGen;
+    mutable std::unique_ptr<CLHEP::RandFlat> fUncorrelatedGen;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
@@ -103,25 +110,6 @@ CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
 //    FindPeaks();
     SelectContinuousSpectrum();
     makeHistograms();
-    
-    // Set seeds for the two random engines
-
-    // FIXME: When art 3.02 is released, the 'getEngine' call will be
-    // deprecated.  One of the reasons for this is that it can be
-    // difficult to determine which module is active whenever
-    // 'getEngine' is called.  To solve this, the random-number
-    // engines should be passed in to the 'CorrelatedNoise'
-    // constructor from the modules that creates the engines.
-    // Interface will be added to nutools so that the 'getEngine'
-    // function never needs to be called.
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine &engine_unc = rng->getEngine(art::ScheduleID::first(),pset.get<std::string>("module_label"),"noise");
-    engine_unc.setSeed(fUncorrelatedSeed,0);
-    fUncorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_unc,-1,1);
-    
-    CLHEP::HepRandomEngine &engine_corr = rng->getEngine(art::ScheduleID::first(),pset.get<std::string>("module_label"),"cornoise");
-    engine_corr.setSeed(fCorrelatedSeed,0);
-    fCorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_corr,-1,1);
 }
     
 CorrelatedNoise::~CorrelatedNoise()
@@ -222,8 +210,30 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float> &noise, double noise_factor, unsigned int channel) const
+void CorrelatedNoise::maybeCacheDistributions(CLHEP::HepRandomEngine& engine_unc,
+                                              CLHEP::HepRandomEngine& engine_corr) const
 {
+  if (fDistributionsReady) {
+    return;
+  }
+  // Set seeds for the two random engines
+  engine_unc.setSeed(fUncorrelatedSeed,0);
+  engine_corr.setSeed(fCorrelatedSeed,0);
+
+  fUncorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_unc,-1,1);
+  fCorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_corr,-1,1);
+
+  fDistributionsReady = true;
+}
+
+void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine& engine_unc,
+                                    CLHEP::HepRandomEngine& engine_corr,
+                                    std::vector<float>& noise,
+                                    double noise_factor,
+                                    unsigned int channel) const
+{
+    maybeCacheDistributions(engine_unc, engine_corr);
+
     //std::cout << " generating noise " << std::endl;
     std::vector<float> noise_unc;
     std::vector<float> noise_corr;
@@ -414,8 +424,6 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     
 void CorrelatedNoise::ExtractCorrelatedAmplitude(double& corrFactor, int board) const
 {
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    //CLHEP::HepRandomEngine &engine_corr = rng->getEngine("cornoise");
     //CLHEP::RandFlat flat_corr(engine_corr,0,1);
     CLHEP::RandGeneral amp_corr(fCorrAmpDistVec.data(),fCorrAmpDistVec.size(),0);
     amp_corr.setTheSeed(board);

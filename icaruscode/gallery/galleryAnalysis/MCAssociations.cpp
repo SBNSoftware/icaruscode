@@ -355,12 +355,12 @@ void MCAssociations::finish()
 double MCAssociations::length(const recob::Track* track) const
 {
     double   result(0.);
-    TVector3 disp(track->LocationAtPoint(0));
+    auto disp = track->LocationAtPoint<TVector3>(0);
     int      n(track->NumberTrajectoryPoints());
     
     for(int i = 1; i < n; ++i)
     {
-        const TVector3& pos = track->LocationAtPoint(i);
+        const auto& pos = track->LocationAtPoint<TVector3>(i);
         
         disp   -= pos;
         result += disp.Mag();
@@ -462,4 +462,3 @@ double MCAssociations::length(const simb::MCParticle& part, double dx,
     
     return result;
 }
-

@@ -127,7 +127,8 @@ DEFINE_ART_MODULE(SimWireICARUS)
     
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
-: fGeometry(*lar::providerFrom<geo::Geometry>())
+: EDProducer{pset}
+, fGeometry(*lar::providerFrom<geo::Geometry>())
 {
     // create a default random engine; obtain the random seed from NuRandomService,
     // unless overridden in configuration with key "Seed" and "SeedPedestal"
@@ -166,8 +167,9 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     
     std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
     
-    for(auto& noiseToolParams : noiseToolParamSetVec)
+    for(auto& noiseToolParams : noiseToolParamSetVec) {
         fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
+    }
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
@@ -228,7 +230,7 @@ void SimWireICARUS::produce(art::Event& evt)
     
     //get rng for pedestals
     art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine &engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"pedestal");
+    auto& pedestal_engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"pedestal");
     
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
@@ -265,6 +267,9 @@ void SimWireICARUS::produce(art::Event& evt)
     auto& noise_engine = rng->getEngine(art::ScheduleID::first(),
                                         moduleDescription().moduleLabel(),
                                         "noise");
+    auto& cornoise_engine = rng->getEngine(art::ScheduleID::first(),
+                                           moduleDescription().moduleLabel(),
+                                           "cornoise");
 
     //--------------------------------------------------------------------
     //
@@ -332,7 +337,7 @@ void SimWireICARUS::produce(art::Event& evt)
         
         if (fSmearPedestals )
         {
-            CLHEP::RandGaussQ rGaussPed(engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+            CLHEP::RandGaussQ rGaussPed(pedestal_engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
             ped_mean += rGaussPed.fire();
         }
         
@@ -356,7 +361,11 @@ void SimWireICARUS::produce(art::Event& evt)
         }
         
         // Use the desired noise tool to actually generate the noise on this wire
-        fNoiseToolVec[plane]->GenerateNoise(noise_engine, noisetmp, noise_factor, channel);
+        fNoiseToolVec[plane]->GenerateNoise(noise_engine,
+                                            cornoise_engine,
+                                            noisetmp,
+                                            noise_factor,
+                                            channel);
         
         double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
         

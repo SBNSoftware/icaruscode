@@ -131,7 +131,8 @@ namespace opdet{
   // --- SimPMTIcarus implementation
   // ---------------------------------------------------------------------------
   SimPMTIcarus::SimPMTIcarus(Parameters const& config)
-    : fInputModuleName(config().inputModule())
+    : EDProducer{config}
+    , fInputModuleName(config().inputModule())
     , makePMTsimulator(config().algoConfig())
   {
     // Call appropriate produces<>() functions here.
@@ -206,4 +207,3 @@ namespace opdet{
   // ---------------------------------------------------------------------------
 
 } // namespace icarus
-

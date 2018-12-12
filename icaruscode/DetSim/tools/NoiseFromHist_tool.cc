@@ -39,7 +39,9 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                     override;
 
-    void GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int) const override;
+    void GenerateNoise(CLHEP::HepRandomEngine&,
+                       CLHEP::HepRandomEngine&,
+                       std::vector<float>&, double, unsigned int) const override;
     
 private:
     // Member variables from the fhicl file
@@ -99,6 +101,7 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
 }
 
 void NoiseFromHist::GenerateNoise(CLHEP::HepRandomEngine& engine,
+                                  CLHEP::HepRandomEngine&,
                                   std::vector<float>& noise,
                                   double noise_factor,
                                   unsigned int channel) const
