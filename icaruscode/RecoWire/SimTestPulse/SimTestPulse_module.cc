@@ -166,7 +166,7 @@ void SimTestPulse::produce(art::Event & e)
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
     
     // In case trigger simulation is run in the same job...
-    tss->preProcessEvent(e,art::ScheduleContext);
+    tss->preProcessEvent(e,art::ScheduleContext::invalid());
     
     auto const* ts = tss->provider();
     art::ServiceHandle<geo::Geometry> geo;
