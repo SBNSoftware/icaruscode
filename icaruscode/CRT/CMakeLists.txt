@@ -69,6 +69,7 @@ simple_plugin( CRTDetSim module
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
         ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Provenance
         canvas
         cetlib_except
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
@@ -91,6 +92,7 @@ simple_plugin( CRTSimHitProducer module
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
         ${ART_FRAMEWORK_PRINCIPAL}
+        art_Persistency_Provenance
         canvas
         cetlib_except
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service

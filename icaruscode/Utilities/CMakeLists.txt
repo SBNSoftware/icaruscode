@@ -47,6 +47,9 @@ simple_plugin(SaveConfigurationIntoTFile "module"
               ${ART_FRAMEWORK_CORE}
               canvas
               ${MF_MESSAGELOGGER}
+              hep_concurrency
+              ${FHICLCPP}
+              ${CETLIB}
               ${ROOT_CORE}
 )
 
