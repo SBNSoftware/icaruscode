@@ -261,6 +261,11 @@ void SimWireICARUS::produce(art::Event& evt)
     // or data driven field responses
     art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
     
+    // Get random-number engine for use in tools
+    auto& noise_engine = rng->getEngine(art::ScheduleID::first(),
+                                        moduleDescription().moduleLabel(),
+                                        "noise");
+
     //--------------------------------------------------------------------
     //
     // Get the SimChannels, which we will use to produce RawDigits
@@ -351,7 +356,7 @@ void SimWireICARUS::produce(art::Event& evt)
         }
         
         // Use the desired noise tool to actually generate the noise on this wire
-        fNoiseToolVec[plane]->GenerateNoise(noisetmp, noise_factor, channel);
+        fNoiseToolVec[plane]->GenerateNoise(noise_engine, noisetmp, noise_factor, channel);
         
         double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
         

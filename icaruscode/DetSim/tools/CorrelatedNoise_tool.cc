@@ -43,7 +43,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                          override;
 
-    void GenerateNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const override;
+    void GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float> &noise, double noise_factor, unsigned int wire) const override;
     void GenerateUncorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     void GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
     
@@ -105,6 +105,15 @@ CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
     makeHistograms();
     
     // Set seeds for the two random engines
+
+    // FIXME: When art 3.02 is released, the 'getEngine' call will be
+    // deprecated.  One of the reasons for this is that it can be
+    // difficult to determine which module is active whenever
+    // 'getEngine' is called.  To solve this, the random-number
+    // engines should be passed in to the 'CorrelatedNoise'
+    // constructor from the modules that creates the engines.
+    // Interface will be added to nutools so that the 'getEngine'
+    // function never needs to be called.
     art::ServiceHandle<art::RandomNumberGenerator> rng;
     CLHEP::HepRandomEngine &engine_unc = rng->getEngine(art::ScheduleID::first(),pset.get<std::string>("module_label"),"noise");
     engine_unc.setSeed(fUncorrelatedSeed,0);
@@ -213,7 +222,7 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void CorrelatedNoise::GenerateNoise(std::vector<float> &noise, double noise_factor, unsigned int channel) const
+void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float> &noise, double noise_factor, unsigned int channel) const
 {
     //std::cout << " generating noise " << std::endl;
     std::vector<float> noise_unc;

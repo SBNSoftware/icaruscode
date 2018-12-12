@@ -31,7 +31,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                     override;
 
-    void GenerateNoise(std::vector<float>&, double, unsigned int) const override;
+    void GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int) const override;
     
 private:
     // Member variables from the fhicl file
@@ -60,11 +60,8 @@ void RandomNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void RandomNoise::GenerateNoise(std::vector<float> &noise, double noise_factor, unsigned int) const
+void RandomNoise::GenerateNoise(CLHEP::HepRandomEngine& engine, std::vector<float> &noise, double noise_factor, unsigned int) const
 {
-    //ART random number service
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    CLHEP::HepRandomEngine&                        engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"noise");
     CLHEP::RandGaussQ                              rGauss(engine, 0.0, noise_factor);
     
     //In this case noise_factor is a value in ADC counts

@@ -21,7 +21,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset)                     override;
 
-    void GenerateNoise(std::vector<float>&, double, unsigned int) const override;
+    void GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int) const override;
     
 private:
 
@@ -44,7 +44,7 @@ void NoNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void NoNoise::GenerateNoise(std::vector<float> &noise, double noise_factor, unsigned int channel) const
+void NoNoise::GenerateNoise(CLHEP::HepRandomEngine&, std::vector<float> &noise, double noise_factor, unsigned int channel) const
 {
     // Set all values to 0
     std::fill(noise.begin(), noise.end(), 0.);
