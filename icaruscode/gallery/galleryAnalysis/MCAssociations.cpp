@@ -354,20 +354,7 @@ void MCAssociations::finish()
 //----------------------------------------------------------------------------
 double MCAssociations::length(const recob::Track* track) const
 {
-    double   result(0.);
-    auto disp = track->LocationAtPoint<TVector3>(0);
-    int      n(track->NumberTrajectoryPoints());
-    
-    for(int i = 1; i < n; ++i)
-    {
-        const auto& pos = track->LocationAtPoint<TVector3>(i);
-        
-        disp   -= pos;
-        result += disp.Mag();
-        disp    = pos;
-    }
-    
-    return result;
+    return track->Length();
 }
 
 // Length of MC particle.
