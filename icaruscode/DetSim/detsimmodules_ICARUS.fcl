@@ -18,7 +18,7 @@ CorrelatedNoiseTool:
   NoiseRand:            0.
   NoiseHistFileName:    "T600noise_corr.root"
   HistogramName:        "hnoiseI1"
-  HistNormFactor:       0.38  # --> Histogram rms noise = 1, Note (TU): Setting to 0.38 as per Filippo 8/20/18
+  HistNormFactor:       0.33  # --> Histogram rms noise = 1, Note (TU): Setting to 0.38 as per Filippo 12/11/18
   CorrAmpHistFileName:  "CorrAmplitude.root"
   CorrAmpHistogramName: "hbrms"
 }

@@ -105,7 +105,6 @@ private:
 // Constructor.
 CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
 {
-    std::cout << " Correlated Noise " << std::endl;
     configure(pset);
 //    FindPeaks();
     SelectContinuousSpectrum();
