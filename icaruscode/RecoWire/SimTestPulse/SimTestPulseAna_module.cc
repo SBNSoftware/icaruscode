@@ -390,7 +390,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                 _plane = wid.Plane;
                 bool found=false;
                 
-                float maxPeak(-100.);
+                float diffPeakTime(1000.);
                 
                 for(auto const& recoHit : *hit_h)
                 {
@@ -400,7 +400,7 @@ void SimTestPulseAna::analyze(art::Event const & e)
                     // Look for hit range to match tick range
                     if(signal_tick < (int)(recoHit.PeakTime() - 3.*recoHit.RMS()) || signal_tick > (int)(recoHit.PeakTime() + 3.*recoHit.RMS())) continue;
                     
-                    if (recoHit.PeakAmplitude() > maxPeak)
+                    if (std::abs(recoHit.PeakTime() - signal_tick) < diffPeakTime)
                     {
                         found = true;
                        
@@ -411,6 +411,8 @@ void SimTestPulseAna::analyze(art::Event const & e)
                         _integral      = recoHit.Integral();
                         _chisquare     = recoHit.GoodnessOfFit();
                         _baseline      = _wf[recoHit.StartTick()-_start_tick];
+                        
+                        diffPeakTime   = std::abs(_peakTime - signal_tick);
                     }
                 }
 
