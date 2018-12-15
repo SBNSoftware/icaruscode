@@ -41,24 +41,20 @@ private:
     std::string           fFunctionString;
     double                fFilterWidthCorrectionFactor;
     
-    // The root version of the function
-    TF1*                  fFunction;
-    
     // Container for the field response "function"
     std::vector<TComplex> fFilterVec;
 };
     
 //----------------------------------------------------------------------
 // Constructor.
-Filter::Filter(const fhicl::ParameterSet& pset) :
-    fFunction(0)
+Filter::Filter(const fhicl::ParameterSet& pset)
 {
     configure(pset);
 }
     
 Filter::~Filter()
 {
-    if (fFunction) delete fFunction;
+    return;
 }
     
 void Filter::configure(const fhicl::ParameterSet& pset)
@@ -68,16 +64,6 @@ void Filter::configure(const fhicl::ParameterSet& pset)
     fParameters                  = pset.get<std::vector<double>>("FilterParametersVec");
     fFunctionString              = pset.get<std::string>("FilterFunction");
     fFilterWidthCorrectionFactor = pset.get<double>("FilterWidthCorrectionFactor");
-
-    std::string functionName = "Filter_plane" + std::to_string(fPlane) + "wr00";
-    
-    // Get rid of any existing function
-    if (fFunction) delete fFunction;
-    
-    fFunction = new TF1(functionName.c_str(), fFunctionString.c_str());
-    
-    size_t idx(0);
-    for(const auto& parameter : fParameters) fFunction->SetParameter(idx++, parameter);
     
     return;
 }
@@ -87,18 +73,21 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     // Note that here we are working in frequency space, not in the time domain...
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Note sampling rate is in ns, convert to us
-    double      maxFreq      = 1. / (2. * samplingRate);        // highest frequency in cycles/us
+    double      maxFreq      = 1.e3 / (2. * samplingRate);      // highest frequency in cycles/us (MHz)
     double      freqRes      = maxFreq / double(numBins/2);     // frequency resolution in cycles/us
+    
+    std::string funcName = "tempFilter";
+    TF1 function(funcName.c_str(),fFunctionString.c_str());
 
-    // Set the range on the function
-    fFunction->SetRange(0, double(numBins/2));
+    // Set the range on the function, probably not really necessary
+    function.SetRange(0, maxFreq);
 
     // now to scale the filter function!
     // only scale params 1,2 &3
     double timeFactor = 1. / (timeScaleFctr * correct3D * fFilterWidthCorrectionFactor);
     size_t paramIdx(0);
 
-    for(const auto& parameter : fParameters) fFunction->SetParameter(paramIdx++, timeFactor * parameter);
+    for(const auto& parameter : fParameters) function.SetParameter(paramIdx++, timeFactor * parameter);
     
     // Don't assume that the filter vec has not already been initialized...
     fFilterVec.clear();
@@ -112,8 +101,8 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = bin * freqRes;
 
-        double f = fFunction->Eval(freq);
-        
+        double f = function.Eval(freq);
+
         peakVal = std::max(peakVal, f);
         
         fFilterVec.push_back(TComplex(f, 0.));
@@ -136,11 +125,10 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      numBins      = fFilterVec.size();
-    double      samplingRate = detprop->SamplingRate(); // Sampling time in us
-    double      maxFreq      = 1.e6 / (2. * samplingRate);
+    double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
+    double      maxFreq      = 1.e3 / (2. * samplingRate);      // Max frequency in MHz
     double      minFreq      = maxFreq / numBins;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
-    
     TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, minFreq, maxFreq);
     
     for(int bin = 0; bin < numBins; bin++)
