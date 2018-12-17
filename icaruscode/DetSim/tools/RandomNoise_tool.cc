@@ -29,13 +29,13 @@ public:
     
     ~RandomNoise();
     
-    void configure(const fhicl::ParameterSet& pset)                     override;
+    void configure(const fhicl::ParameterSet& pset) override;
 
     void GenerateNoise(CLHEP::HepRandomEngine& engine,
                        CLHEP::HepRandomEngine&,
                        std::vector<float>&,
                        double,
-                       unsigned int) const override;
+                       unsigned int) override;
     
 private:
     // Member variables from the fhicl file
@@ -68,7 +68,7 @@ void RandomNoise::GenerateNoise(CLHEP::HepRandomEngine& engine,
                                 CLHEP::HepRandomEngine&,
                                 std::vector<float>& noise,
                                 double noise_factor,
-                                unsigned int) const
+                                unsigned int)
 {
     CLHEP::RandGaussQ                              rGauss(engine, 0.0, noise_factor);
     

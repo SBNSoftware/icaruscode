@@ -24,11 +24,11 @@ namespace icarus_tool
     public:
         virtual ~IGenNoise() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)                         = 0;
+        virtual void configure(const fhicl::ParameterSet& pset)                   = 0;
         
         virtual void GenerateNoise(CLHEP::HepRandomEngine& noise_engine,
                                    CLHEP::HepRandomEngine& cornoise_engine,
-                                   std::vector<float>&, double, unsigned int = 0) const = 0;
+                                   std::vector<float>&, double, unsigned int = 0) = 0;
     };
 }
 
