@@ -290,7 +290,7 @@ void CorrelatedNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, st
         std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
         
         // Make the fraction the value that would happen if the quadrature sum of the two contributions equaled the input value
-        float fraction    = std::sqrt(fCoherentNoiseFrac * (2. - fCoherentNoiseFrac));
+        float fraction    = std::sqrt(1. - fCoherentNoiseFrac * fCoherentNoiseFrac);
         float scaleFactor = fraction * cf * noise_factor / fCoherentNoiseRMS;
         
         GenNoise(randGenFunc, fCoherentNoiseVec, noise, scaleFactor);
