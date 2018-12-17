@@ -106,7 +106,7 @@ private:
     
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
-    const float adcsaturation = 4095;
+    const float                  adcsaturation = 4095;
     
     // little helper class to hold the params of each charge dep
     class ResponseParams {
