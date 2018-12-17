@@ -10,7 +10,6 @@
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 
@@ -29,6 +28,9 @@
 #include "TFile.h"
 #include "TComplex.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 #include <fstream>
 
 namespace icarus_tool
@@ -41,61 +43,62 @@ public:
     
     ~CorrelatedNoise();
     
-    void configure(const fhicl::ParameterSet& pset)                          override;
+    void configure(const fhicl::ParameterSet& pset) override;
 
     void GenerateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
                        std::vector<float>& noise,
                        double noise_factor,
-                       unsigned int wire) const override;
-    void GenerateUncorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
-    void GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int wire) const ;
-    
-    void ExtractCorrelatedAmplitude(double &, int) const;
-
-
-    void SelectContinuousSpectrum() ;
-    void FindPeaks() ;
+                       unsigned int wire) override;
     
 private:
+    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int);
+    void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int);
+    void GenNoise(std::function<void (double[])>&, const std::vector<float>&, std::vector<float>&, float);
+    void ExtractCorrelatedAmplitude(float&, int) const;
+    void SelectContinuousSpectrum() ;
+    void FindPeaks() ;
     void makeHistograms();
-    void maybeCacheDistributions(CLHEP::HepRandomEngine& engine_unc,
-                                 CLHEP::HepRandomEngine& engine_corr) const;
     
     // Member variables from the fhicl file
-    size_t              fPlane;
-    int                 fMedianNumBins;
-    double              fNoiseRand;
-    long                fCorrelatedSeed;
-    long                fUncorrelatedSeed;
-    bool                fStoreHistograms;
-    std::string         fInputNoiseHistFileName;
-    std::string         fHistogramName;
-    std::string         fCorrAmpHistFileName;
-    std::string         fCorrAmpHistogramName;
-    
-    double              fHistNormFactor;
-
-    std::vector<int>    fPeakVec;
+    size_t                                      fPlane;
+    int                                         fMedianNumBins;
+    float                                       fNoiseRand;
+    long                                        fCorrelatedSeed;
+    long                                        fUncorrelatedSeed;
+    float                                       fCoherentNoiseFrac;
+    bool                                        fStoreHistograms;
+    std::string                                 fInputNoiseHistFileName;
+    std::string                                 fHistogramName;
+    std::string                                 fCorrAmpHistFileName;
+    std::string                                 fCorrAmpHistogramName;
 
     std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
 
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
-    std::vector<double> fNoiseHistVec;
-    std::vector<double> fNoiseContVec;
+    std::vector<float>                          fNoiseHistVec;       //< Input full noise frequency distribution
+    std::vector<float>                          fCoherentNoiseVec;   //< Peak distribution for coherent noise
+    std::vector<float>                          fIncoherentNoiseVec; //< Incoherent frequency distribution
+    std::vector<double>                         fCorrAmpDistVec;     //< Keep track of motherboard contributions
     
-    std::vector<double> fCorrAmpDistVec;
+    float                                       fIncoherentNoiseRMS; //< RMS of full noise waveform
+    float                                       fCoherentNoiseRMS;   //< RMS of full noise waveform
+
+    // Container for doing the work
+    std::vector<std::complex<float>>            fNoiseFrequencyVec;
+    
+    // Keep track of seed initialization for uncorrelated noise
+    bool                                        fNeedFirstSeed=true;
     
     // Histograms
-    TProfile*           fInputNoiseHist;
-    TProfile*           fMedianNoiseHist;
-    TProfile*           fPeakNoiseHist;
-
-    // Local random generators (mutables...ick)
-    mutable bool fDistributionsReady{false};
-    mutable std::unique_ptr<CLHEP::RandFlat> fCorrelatedGen;
-    mutable std::unique_ptr<CLHEP::RandFlat> fUncorrelatedGen;
+    TProfile*                                   fInputNoiseHist;
+    TProfile*                                   fMedianNoiseHist;
+    TProfile*                                   fPeakNoiseHist;
+    TProfile*                                   fCorAmpDistHist;
+    
+    // Keep instance of the eigen FFT
+    Eigen::FFT<float>                           fEigenFFT;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
@@ -105,9 +108,13 @@ private:
 // Constructor.
 CorrelatedNoise::CorrelatedNoise(const fhicl::ParameterSet& pset)
 {
+    // Recover the configuration of the tool from the input fhicl file and set up
     configure(pset);
-//    FindPeaks();
+    
+    // Now break out the coherent from the incoherent using the input overall spectrum
     SelectContinuousSpectrum();
+    
+    // Output some histograms to catalogue what's been done
     makeHistograms();
 }
     
@@ -118,18 +125,22 @@ CorrelatedNoise::~CorrelatedNoise()
 void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
 {
     // Recover the histogram used for noise generation
-    fPlane                  = pset.get<size_t>("Plane");
-    fMedianNumBins          = pset.get<int>("MedianNumBins");
-    fNoiseRand              = pset.get< double>("NoiseRand");
-    fCorrelatedSeed         = pset.get< long >("CorrelatedSeed",1000);
-    fUncorrelatedSeed       = pset.get< long >("UncorrelatedSeed",5000);
-    fStoreHistograms        = pset.get<bool>("StoreHistograms");
-    fInputNoiseHistFileName = pset.get<std::string>("NoiseHistFileName");
-    fHistogramName          = pset.get<std::string>("HistogramName");
-    fHistNormFactor         = pset.get<double>("HistNormFactor");
-    fCorrAmpHistFileName    = pset.get<std::string>("CorrAmpHistFileName");
-    fCorrAmpHistogramName   = pset.get<std::string>("CorrAmpHistogramName");
+    fPlane                  = pset.get< size_t      >("Plane");
+    fMedianNumBins          = pset.get< int         >("MedianNumBins");
+    fNoiseRand              = pset.get< float       >("NoiseRand");
+    fCorrelatedSeed         = pset.get< long        >("CorrelatedSeed",1000);
+    fUncorrelatedSeed       = pset.get< long        >("UncorrelatedSeed",5000);
+    fCoherentNoiseFrac      = pset.get< float       >("CoherentNoiseFraction",0.5);
+    fStoreHistograms        = pset.get< bool        >("StoreHistograms");
+    fInputNoiseHistFileName = pset.get< std::string >("NoiseHistFileName");
+    fHistogramName          = pset.get< std::string >("HistogramName");
+    fCorrAmpHistFileName    = pset.get< std::string >("CorrAmpHistFileName");
+    fCorrAmpHistogramName   = pset.get< std::string >("CorrAmpHistogramName");
     
+    // Initialize the work vector
+    fNoiseFrequencyVec.resize(fDetectorProperties->NumberTimeSamples(),std::complex<float>(0.,0.));
+
+    // Set up to input the histogram with the overall noise spectrum
     std::string fullFileName;
     std::string corrAmpFileName;
 
@@ -149,6 +160,7 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     // Close the input file
     inputFile.Close();
     
+    // Now grab the histogram givng the observed "strenght" of the coherent noise
     searchPath.find_file(fCorrAmpHistFileName, corrAmpFileName);
     
     TFile corrAmpInputFile(corrAmpFileName.c_str(), "READ");
@@ -161,20 +173,18 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     if (!corrAmpHistPtr)
         throw cet::exception("CorrelatedNoise::configure") << "Unable to recover desired histogram: " << fCorrAmpHistogramName << std::endl;
     
+    // Close the input file
+    corrAmpInputFile.Close();
+
     fNoiseHistVec.resize(histPtr->GetNbinsX(), 0.);
     fCorrAmpDistVec.resize(corrAmpHistPtr->GetNbinsX(),0.);
     
-    
-    for(size_t histIdx = 0; histIdx < size_t(histPtr->GetNbinsX()); histIdx++) {
+    // Recover the bin contents into local vectors
+    for(size_t histIdx = 0; histIdx < size_t(histPtr->GetNbinsX()); histIdx++)
         fNoiseHistVec[histIdx] = histPtr->GetBinContent(histIdx+1);
-    }
     
-    for(size_t histIdx = 0; histIdx < 200; histIdx++) {
+    for(size_t histIdx = 0; histIdx < size_t(corrAmpHistPtr->GetNbinsX()); histIdx++)  // was 200
         fCorrAmpDistVec[histIdx] = corrAmpHistPtr->GetBinContent(histIdx+1);
-    }
-    
-    // Close the input file
-    inputFile.Close();
     
     // Should we store hists?
     if (fStoreHistograms)
@@ -187,15 +197,17 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
         // Make a directory for these histograms
         art::TFileDirectory dir = histDirectory->mkdir(Form("CorNoisePlane%1zu",fPlane));
         
-        double sampleRate  = fDetectorProperties->SamplingRate();
-        double readOutSize = fDetectorProperties->ReadOutWindowSize();
-        double maxFreq     = 1.e6 / (2. * sampleRate);
-        double minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
-        int    numSamples  = readOutSize / 2;
+        float sampleRate  = fDetectorProperties->SamplingRate();
+        float readOutSize = fDetectorProperties->ReadOutWindowSize();
+        float maxFreq     = 1.e6 / (2. * sampleRate);
+        float minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
+        int   numSamples  = readOutSize / 2;
         
         fInputNoiseHist   = dir.make<TProfile>("InNoise",   ";freq(kHz)", numSamples, minFreq, maxFreq);
         fMedianNoiseHist  = dir.make<TProfile>("MedNoise",  ";freq(kHz)", numSamples, minFreq, maxFreq);;
         fPeakNoiseHist    = dir.make<TProfile>("PeakNoise", ";freq(kHz)", numSamples, minFreq, maxFreq);;
+        
+        fCorAmpDistHist   = dir.make<TProfile>("CorAmp",    ";Motherboard", fCorrAmpDistVec.size(),0.,fCorrAmpDistVec.size());
     }
 
     // Recover an instance of the waveform tool
@@ -209,153 +221,104 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void CorrelatedNoise::maybeCacheDistributions(CLHEP::HepRandomEngine& engine_unc,
-                                              CLHEP::HepRandomEngine& engine_corr) const
-{
-  if (fDistributionsReady) {
-    return;
-  }
-  // Set seeds for the two random engines
-  engine_unc.setSeed(fUncorrelatedSeed,0);
-  engine_corr.setSeed(fCorrelatedSeed,0);
-
-  fUncorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_unc,-1,1);
-  fCorrelatedGen = std::make_unique<CLHEP::RandFlat>(engine_corr,-1,1);
-
-  fDistributionsReady = true;
-}
-
 void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
-                                    std::vector<float>& noise,
-                                    double noise_factor,
-                                    unsigned int channel) const
+                                    std::vector<float>&     noise,
+                                    double                  noise_factor,
+                                    unsigned int            channel)
 {
-    maybeCacheDistributions(engine_unc, engine_corr);
-
-    //std::cout << " generating noise " << std::endl;
-    std::vector<float> noise_unc;
-    std::vector<float> noise_corr;
+    // Define a couple of vectors to hold intermediate work
+    std::vector<float> noise_unc(noise.size(),0.);
+    std::vector<float> noise_corr(noise.size(),0.);
     
-    //ExtractCorrelatedAmplitude(corr_factor);
+    // Make sure the work vector is size right with the output
+    if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
     
-    noise_unc.resize(noise.size(),0.);
-    
-    GenerateUncorrelatedNoise(noise_unc,noise_factor,channel);
+    // If applying incoherent noise call the generator
+    if (fCoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
     
     int board=channel/32;
     
-    noise_corr.resize(noise.size(), 0.);
+    // If applying coherent noise call the generator
+    if (fCoherentNoiseFrac < 1.) GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
     
-    GenerateCorrelatedNoise(noise_corr,noise_factor,board);
-    
+    // Take the noise as the simple sum of the two contributions
     std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise.begin(),std::plus<float>());
     
     return;
 }
     
-void CorrelatedNoise::GenerateUncorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int channel) const
+void CorrelatedNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, std::vector<float> &noise, double noise_factor, unsigned int channel)
 {
-    //std::cout << " generating uncorrelated noise " << std::endl;
-
-    art::ServiceHandle<util::LArFFT> fFFT;
- 
-    size_t nFFTTicks = fFFT->FFTSize();
-        //std::cout << " ticks " <<nFFTTicks << std::endl;
-       // std::cout << " noise size " <<nFFTTicks << std::endl;
-
-    if(noise.size() != nFFTTicks)
-        throw cet::exception("SimWireICARUS")
-        << "\033[93m"
-        << "Frequency noise vector length must match FFT Ticks (FFT size)"
-        << " ... " << noise.size() << " != " << nFFTTicks
-        << "\033[00m"
-        << std::endl;
-    
-    // noise in frequency space
-    std::vector<TComplex> noiseFrequency(nFFTTicks/2+1, 0.);
-    
-    double pval       = 0.;
-    double phase      = 0.;
-    double rnd_unc[2] = {0.,0.};
-
-    double scaleFactor = fHistNormFactor * noise_factor;
-    
-    // uncorrelated, smooth frequency spectrum
-     // std::cout << " before loop " <<nFFTTicks << std::endl;
-    for(size_t i=0; i< nFFTTicks/2 + 1; ++i)
+    // Here we aim to produce a waveform consisting of incoherent noise
+    // Note that this is expected to be the dominate noise contribution
+    // Check for seed initialization
+    if (fNeedFirstSeed)
     {
-        // exponential noise spectrum
-        fUncorrelatedGen->fireArray(2,rnd_unc,0,1);
-      //  if(i<10) std::cout << " channel " << channel << " uncorrelated bin " << i << " rnd0 " << rnd_unc[0] << std::endl;
-        pval = fNoiseContVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_unc[0]) * scaleFactor;
-
-        phase = rnd_unc[1] * 2. * TMath::Pi();
-
-        TComplex tc(pval*cos(phase),pval*sin(phase));
-
-        noiseFrequency.at(i) += tc;
+        engine.setSeed(fUncorrelatedSeed,0);
+        fNeedFirstSeed = false;
     }
     
-    // inverse FFT MCSignal
-    fFFT->DoInvFFT(noiseFrequency, noise);
+    // Get the generator
+    CLHEP::RandFlat noiseGen(engine,0,1);
     
-    noiseFrequency.clear();
+    std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
+
+    float  scaleFactor = fCoherentNoiseFrac * noise_factor / fIncoherentNoiseRMS;
+    
+    GenNoise(randGenFunc, fIncoherentNoiseVec, noise, scaleFactor);
 
     return;
 }
     
-void CorrelatedNoise::GenerateCorrelatedNoise(std::vector<float> &noise, double noise_factor, unsigned int board) const
+void CorrelatedNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, std::vector<float> &noise, double noise_factor, unsigned int board)
 {
-    art::ServiceHandle<util::LArFFT> fFFT;
+    // The goal here is to produce a waveform with a coherent noise component
+    // First check the extra scaling for a given motherboard
+    float cf=1.;
     
-    double rnd_corr[2] = {0.,0.};
-    size_t nFFTTicks   = fFFT->FFTSize();
-    
-    double cf=1;
     ExtractCorrelatedAmplitude(cf,board);
     
-   // std::cout << " noise size " << noise.size() << " ticks " << nFFTTicks << std::endl;
-    
-    if(noise.size() != nFFTTicks)
-        throw cet::exception("SimWireICARUS")
-        << "\033[93m"
-        << "Frequency noise vector length must match FFT Ticks (FFT size)"
-        << " ... " << noise.size() << " != " << nFFTTicks
-        << "\033[00m"
-        << std::endl;
-    
-   // std::cout << " after ticks check " << std::endl;
-    
-    // noise in frequency space
-    std::vector<TComplex> noiseFrequency(nFFTTicks/2+1, 0.);
-    
-    double pval        = 0.;
-    double phase       = 0.;
-    double scaleFactor = (1. - fHistNormFactor) * noise_factor*cf;
-
-    for(size_t i=0; i< nFFTTicks/2 + 1; ++i)
+    // Only proceed if necessary
+    if (cf > 0.)
     {
-        if(!fPeakVec[i]) continue;
+        // Set the engine seed to the board being considered
+        engine.setSeed(board,0);
         
+        CLHEP::RandFlat noiseGen(engine,0,1);
+        
+        std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
+        
+        // Make the fraction the value that would happen if the quadrature sum of the two contributions equaled the input value
+        float fraction    = std::sqrt(fCoherentNoiseFrac * (2. - fCoherentNoiseFrac));
+        float scaleFactor = fraction * cf * noise_factor / fCoherentNoiseRMS;
+        
+        GenNoise(randGenFunc, fCoherentNoiseVec, noise, scaleFactor);
+    }
+    
+    return;
+}
+    
+void CorrelatedNoise::GenNoise(std::function<void (double[])>& gen,const std::vector<float>& freqDist, std::vector<float>& noise, float scaleFactor)
+{
+    double rnd_corr[2] = {0.,0.};
+    
+    // Build out the frequency vector
+    for(size_t i=0; i< noise.size()/2; ++i)
+    {
         // exponential noise spectrum
-        fCorrelatedGen->fireArray(2,rnd_corr);
-          
-           // std::cout << " board " << board << " random corr" << rnd_corr[0] << std::endl;
-//        pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
-        pval = fPeakVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
-
-        phase = rnd_corr[1] * 2. * TMath::Pi();
+        gen(rnd_corr);
         
-        TComplex tc(pval*cos(phase),pval*sin(phase));
+        float pval  = freqDist[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
+        float phase = rnd_corr[1] * 2. * TMath::Pi();
         
-        noiseFrequency.at(i) += tc;
+        std::complex<float> tc(pval*cos(phase),pval*sin(phase));
+        
+        fNoiseFrequencyVec[i] = tc;
     }
     
     // inverse FFT MCSignal
-    fFFT->DoInvFFT(noiseFrequency, noise);
-    
-    noiseFrequency.clear();
+    fEigenFFT.inv(noise, fNoiseFrequencyVec, fNoiseFrequencyVec.size());
     
     return;
 }
@@ -365,11 +328,11 @@ void CorrelatedNoise::FindPeaks()
     //std::cout << " FindPeaks " << std::endl;
 
     float dThr=50;
-    std::vector<double> dHeight;
+    std::vector<float> dHeight;
     dHeight.resize(fNoiseHistVec.size(), 0.);
 
     dHeight[0]=0;
-    fPeakVec.resize(fNoiseHistVec.size(),0);
+    fCoherentNoiseVec.resize(fNoiseHistVec.size(),0);
     
     //std::cout << " before loop " << fNoiseHistVec.size() << std::endl;
     
@@ -379,58 +342,92 @@ void CorrelatedNoise::FindPeaks()
     }
     
     for(size_t histIdx = 1; histIdx < fNoiseHistVec.size(); histIdx++)
-        if(dHeight[histIdx]>dThr&&dHeight[histIdx+1]<dThr&&histIdx>5) fPeakVec[histIdx]=1;
+        if(dHeight[histIdx]>dThr&&dHeight[histIdx+1]<dThr&&histIdx>5) fCoherentNoiseVec[histIdx]=1;
     
     return;
 }
 
 void CorrelatedNoise::SelectContinuousSpectrum()
 {
-    fNoiseContVec.resize(fNoiseHistVec.size(), 0.);
+    // In the below we take the overall noise spectrum and perform a long bin smoothing to get its
+    // general shape. We can then subtract this from the input spectrum to return a spectrum containing
+    // the "spikes" which are associated to the coherent noise.
+    // Generally, the inchorent noise model is then that with the spikes subtracted,
+    // the coherent model is derived from the spikes...
+    fIncoherentNoiseVec.resize(fNoiseHistVec.size(), 0.);
     
-    fWaveformTool->medianSmooth(fNoiseHistVec, fNoiseContVec, fMedianNumBins);
+    // This does a median smoothing based on the number of bins we input
+    fWaveformTool->medianSmooth(fNoiseHistVec, fIncoherentNoiseVec, fMedianNumBins);
     
-    std::vector<double> peakVec;
+    std::vector<float> peakVec(fNoiseHistVec.size());
     
-    peakVec.resize(fNoiseHistVec.size());
+    // Subtract the smoothed from the input to get the peaks
+    std::transform(fNoiseHistVec.begin(),fNoiseHistVec.end(),fIncoherentNoiseVec.begin(),peakVec.begin(),std::minus<float>());
     
-    std::transform(fNoiseHistVec.begin(),fNoiseHistVec.end(),fNoiseContVec.begin(),peakVec.begin(),std::minus<double>());
+    // Try to clean up the "peak" vector a bit
+    std::vector<float>::iterator maxItr = std::max_element(peakVec.begin(),peakVec.end());
     
-    std::vector<double>::iterator maxItr = std::max_element(peakVec.begin(),peakVec.end());
-    
-    double maxPeak   = *maxItr;
-    double threshold = std::min(0.1 * maxPeak, 20.);
-    
-    fPeakVec.clear();
-    fPeakVec.resize(peakVec.size(),0.);
+    float maxPeak   = *maxItr;
+    float threshold = std::min(0.1 * maxPeak, 20.);
+
+    fCoherentNoiseVec.clear();
+    fCoherentNoiseVec.resize(peakVec.size(),0.);
     
     for(size_t idx = 0; idx < peakVec.size(); idx++)
     {
-        if (peakVec[idx] > threshold) fPeakVec[idx] = peakVec[idx];
+        if (peakVec[idx] > threshold) fCoherentNoiseVec[idx] = peakVec[idx];
         
         if (fStoreHistograms)
         {
-            double freq = 1.e6 * double(idx)/ (2. * fDetectorProperties->SamplingRate() * fPeakVec.size());
+            float freq = 1.e6 * float(idx)/ (2. * fDetectorProperties->SamplingRate() * fCoherentNoiseVec.size());
             
             fInputNoiseHist->Fill(freq,fNoiseHistVec.at(idx),1.);
-            fMedianNoiseHist->Fill(freq,fNoiseContVec.at(idx),1.);
+            fMedianNoiseHist->Fill(freq,fIncoherentNoiseVec.at(idx),1.);
             fPeakNoiseHist->Fill(freq,peakVec.at(idx),1.);
         }
     }
     
+    // Let's get the rms we expect from the incoherent noise contribution to the waveform
+    // A couple of ways to do this, let's basically invert the frequency spectrum to
+    // produce a waveform and then get the rms from that
+    std::function<void (double[])> randGenFunc = [](double randArray[]){randArray[0]=0.5; randArray[1]=0.5;};
+    
+    std::vector<float> waveNoise(fIncoherentNoiseVec.size());
+    float              scaleFactor = 1.;
+    
+    GenNoise(randGenFunc, fIncoherentNoiseVec, waveNoise, scaleFactor);
+    
+    // Now get the details...
+    float nSig(3.);
+    float mean,rmsTrunc;
+    int   nTrunc;
+    
+    // Use the waveform tool to recover the full rms
+    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
+    
+    // Do the same for the coherent term
+    GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
+    
+    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
+
+    if (fStoreHistograms)
+    {
+        for(size_t idx = 0; idx < fCorrAmpDistVec.size(); idx++)
+            fCorAmpDistHist->Fill(idx, fCorrAmpDistVec[idx], 1.);
+    }
+
     return;
 }
     
-void CorrelatedNoise::ExtractCorrelatedAmplitude(double& corrFactor, int board) const
+void CorrelatedNoise::ExtractCorrelatedAmplitude(float& corrFactor, int board) const
 {
-    //CLHEP::RandFlat flat_corr(engine_corr,0,1);
     CLHEP::RandGeneral amp_corr(fCorrAmpDistVec.data(),fCorrAmpDistVec.size(),0);
     amp_corr.setTheSeed(board);
-    double rnd_corr[1]      = {0.};
+    double rnd_corr[1] = {0.};
     
     amp_corr.fireArray(1,rnd_corr);
     
-    double cfmedio=0.2287;
+    float cfmedio=0.2287;
     corrFactor=rnd_corr[0]/cfmedio;
     //corrFactor=10;
     //  if(corrFactor>3)

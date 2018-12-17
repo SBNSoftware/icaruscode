@@ -11,16 +11,19 @@ NoiseFromHistTool:
 }
 CorrelatedNoiseTool:
 {
-  tool_type:            CorrelatedNoise
-  Plane:                0
-  MedianNumBins:        25
-  StoreHistograms:      true
-  NoiseRand:            0.
-  NoiseHistFileName:    "T600noise_corr.root"
-  HistogramName:        "hnoiseI1"
-  HistNormFactor:       0.33  # --> Histogram rms noise = 1, Note (TU): Setting to 0.38 as per Filippo 12/11/18
-  CorrAmpHistFileName:  "CorrAmplitude.root"
-  CorrAmpHistogramName: "hbrms"
+  tool_type:              CorrelatedNoise
+  Plane:                  0
+  MedianNumBins:          25
+  NoiseRand:              0.
+  CorrelatedSeed:         1000
+  UncorrelatedSeed:       5000
+  CoherentNoiseFraction:  0.7
+  StoreHistograms:        true
+  NoiseHistFileName:      "T600noise_corr.root"
+  HistogramName:          "hnoiseI1"
+  CorrAmpHistFileName:    "CorrAmplitude.root"
+  CorrAmpHistogramName:   "hbrms"
+  StoreHistograms:        true
 }
 WhiteNoiseTool:
 {
