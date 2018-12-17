@@ -144,7 +144,7 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
 }
 
 // constructor
-CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) {
+CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer(p) {
   art::ServiceHandle<rndm::NuRandomService> seeds;
   seeds->createEngine(*this, "HepJamesRandom", "crt", p, "Seed");
 
