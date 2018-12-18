@@ -264,12 +264,8 @@ void SimWireICARUS::produce(art::Event& evt)
     art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
     
     // Get random-number engine for use in tools
-    auto& noise_engine = rng->getEngine(art::ScheduleID::first(),
-                                        moduleDescription().moduleLabel(),
-                                        "noise");
-    auto& cornoise_engine = rng->getEngine(art::ScheduleID::first(),
-                                           moduleDescription().moduleLabel(),
-                                           "cornoise");
+    auto& noise_engine    = rng->getEngine(art::ScheduleID::first(), moduleDescription().moduleLabel(), "noise");
+    auto& cornoise_engine = rng->getEngine(art::ScheduleID::first(), moduleDescription().moduleLabel(), "cornoise");
 
     //--------------------------------------------------------------------
     //
@@ -313,6 +309,9 @@ void SimWireICARUS::produce(art::Event& evt)
     
     //detector properties information
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    
+    // Let the tools know to update to the next event
+    for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
 
     // loop over the collected responses
     //   this is needed because hits generate responses on adjacent wires!
@@ -361,7 +360,7 @@ void SimWireICARUS::produce(art::Event& evt)
         }
         
         // Use the desired noise tool to actually generate the noise on this wire
-        fNoiseToolVec[plane]->GenerateNoise(noise_engine,
+        fNoiseToolVec[plane]->generateNoise(noise_engine,
                                             cornoise_engine,
                                             noisetmp,
                                             noise_factor,

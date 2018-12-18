@@ -26,7 +26,9 @@ namespace icarus_tool
         
         virtual void configure(const fhicl::ParameterSet& pset)                   = 0;
         
-        virtual void GenerateNoise(CLHEP::HepRandomEngine& noise_engine,
+        virtual void nextEvent()                                                  = 0;
+        
+        virtual void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                                    CLHEP::HepRandomEngine& cornoise_engine,
                                    std::vector<float>&, double, unsigned int = 0) = 0;
     };

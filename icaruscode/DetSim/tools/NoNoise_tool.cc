@@ -20,8 +20,10 @@ public:
     ~NoNoise();
     
     void configure(const fhicl::ParameterSet& pset)               override;
+    
+    void nextEvent() override  {return;};
 
-    void GenerateNoise(CLHEP::HepRandomEngine&,
+    void generateNoise(CLHEP::HepRandomEngine&,
                        CLHEP::HepRandomEngine&,
                        std::vector<float>&, double, unsigned int) override;
     
@@ -46,7 +48,7 @@ void NoNoise::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void NoNoise::GenerateNoise(CLHEP::HepRandomEngine&,
+void NoNoise::generateNoise(CLHEP::HepRandomEngine&,
                             CLHEP::HepRandomEngine&,
                             std::vector<float> &noise,
                             double noise_factor,

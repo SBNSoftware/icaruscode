@@ -44,8 +44,10 @@ public:
     ~CorrelatedNoise();
     
     void configure(const fhicl::ParameterSet& pset) override;
+    
+    void nextEvent() override;
 
-    void GenerateNoise(CLHEP::HepRandomEngine& noise_engine,
+    void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
                        std::vector<float>& noise,
                        double noise_factor,
@@ -220,8 +222,16 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     
     return;
 }
+    
+void CorrelatedNoise::nextEvent()
+{
+    // We update the correlated seed because we want to see different noise event-by-event
+    fCorrelatedSeed   = (333 * fCorrelatedSeed) % 900000000;
+    
+    return;
+}
 
-void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine& engine_unc,
+void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
                                     std::vector<float>&     noise,
                                     double                  noise_factor,
@@ -238,7 +248,7 @@ void CorrelatedNoise::GenerateNoise(CLHEP::HepRandomEngine& engine_unc,
     if (fCoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
     
     int board=channel/32;
-    
+
     // If applying coherent noise call the generator
     if (fCoherentNoiseFrac < 1.) GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
     
@@ -283,7 +293,7 @@ void CorrelatedNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, st
     if (cf > 0.)
     {
         // Set the engine seed to the board being considered
-        engine.setSeed(board,0);
+        engine.setSeed(fCorrelatedSeed+board,0);
         
         CLHEP::RandFlat noiseGen(engine,0,1);
         
