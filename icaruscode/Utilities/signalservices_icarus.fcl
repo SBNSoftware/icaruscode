@@ -22,14 +22,14 @@ ElectronicsResponseTool:
     ADCPerPCAtLowestASICGain: 5500.
 }
 
-ElectronicsResponseWOffsetTool:
+ElectronicsResponseBesselApproxTool:
 {
-    tool_type:                ElectronicsResponseWOffset
+    tool_type:                ElectronicsResponseBesselApprox
     Plane:                    0
     FCperADCMicroS:           0.027
     ASICShapingTime:          1.3
     ADCPerPCAtLowestASICGain: 5500.
-    CutoffTimeLow:            1.5
+    TimeOffset:               1.6
 }
 
 FilterTool:
