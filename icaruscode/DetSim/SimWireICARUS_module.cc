@@ -89,7 +89,8 @@ private:
     
     bool                         fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
     bool                         fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
-    bool                         fSmearPedestals;    ///< If True then we smear the pedees
+    bool                         fSmearPedestals;    ///< If True then we smear the pedestals
+    int                          fNumChanPerMB;      ///< Number of channels per motherboard
     
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
@@ -157,6 +158,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
     fSample           = p.get< int                 >("Sample");
     fSmearPedestals   = p.get< bool                >("SmearPedestals", true);
+    fNumChanPerMB     = p.get< int                 >("NumChanPerMB", 32);
     fTest             = p.get< bool                >("Test");
     fTestWire         = p.get< size_t              >("TestWire");
     fTestIndex        = p.get< std::vector<size_t> >("TestIndex");
@@ -255,7 +257,7 @@ void SimWireICARUS::produce(art::Event& evt)
     auto const* ts = tss->provider();
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
-    const size_t N_CHANNELS = fGeometry.Nchannels();
+    const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
     
     //Get N_RESPONSES from SignalShapingService, on the fly
     // flag added to use nominal one response per plane or multiple responses
@@ -276,21 +278,21 @@ void SimWireICARUS::produce(art::Event& evt)
     // of entries as the number of channels in the detector
     // and set the entries for the channels that have signal on them
     // using the chanHandle
-    std::vector<const sim::SimChannel*> channels(N_CHANNELS,nullptr);
+    std::vector<const sim::SimChannel*> channels(maxChannel,nullptr);
     if(!fTest)
     {
         std::vector<const sim::SimChannel*> chanHandle;
         evt.getView(fDriftEModuleLabel,chanHandle);
         
         for(const auto& simChannel : chanHandle) channels.at(simChannel->Channel()) = simChannel;
-    }else{
-        for(const auto& testChannel : fTestSimChannel_v) channels.at(testChannel.Channel()) = &testChannel;
     }
+    else
+        for(const auto& testChannel : fTestSimChannel_v) channels.at(testChannel.Channel()) = &testChannel;
     
     // make a unique_ptr of sim::SimDigits that allows ownership of the produced
     // digits to be transferred to the art::Event after the put statement below
     std::unique_ptr< std::vector<raw::RawDigit>> digcol(new std::vector<raw::RawDigit>);
-    digcol->reserve(N_CHANNELS);
+    digcol->reserve(maxChannel);
     //--------------------------------------------------------------------
     //
     // Loop over channels a second time and produce the RawDigits by adding together
@@ -313,111 +315,140 @@ void SimWireICARUS::produce(art::Event& evt)
     // Let the tools know to update to the next event
     for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
 
-    // loop over the collected responses
-    //   this is needed because hits generate responses on adjacent wires!
-    for(unsigned int channel = 0; channel < N_CHANNELS; channel++)
+    // The original implementation would allow the option to skip channels for which there was no MC signal
+    // present. We want to update this so that if there is an MC signal on any wire in a common group (a
+    // motherboard) then we keep all of those wires. This so we can implment noise mitigation techniques
+    // with the simulation
+    //
+    // So... first step is to build a map of motherboard and true information
+    using MBWithSignalSet = std::set<raw::ChannelID_t>;
+    
+    MBWithSignalSet mbWithSignalSet;
+    
+    // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
+    if (!fSuppressNoSignal) for(raw::ChannelID_t mbIdx = 0; mbIdx < maxChannel/32; mbIdx++) mbWithSignalSet.insert(mbIdx);
+    else
     {
-        // get the sim::SimChannel for this channel
-        // Look up first so we can suppress before doing any work if no signal
-        const sim::SimChannel* sc = channels[channel];
-        
-        if (fSuppressNoSignal && !sc) continue;
-        
-        //clean up working vectors from previous iteration of loop
-        adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
-        noisetmp.resize(fNTicks, 0.);     //just in case
-        
-        //use channel number to set some useful numbers
-        std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-        size_t                   plane  = widVec[0].Plane;
-        
-        //Get pedestal with random gaussian variation
-        float ped_mean = pedestalRetrievalAlg.PedMean(channel);
-        
-        if (fSmearPedestals )
+        for(const auto& simChan : channels)
         {
-            CLHEP::RandGaussQ rGaussPed(pedestal_engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
-            ped_mean += rGaussPed.fire();
-        }
-        
-        //Generate Noise
-        double noise_factor(0.);
-        auto   tempNoiseVec = sss->GetNoiseFactVec();
-        double shapingTime  = sss->GetShapingTime(0);
-        
-        if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
-            noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
-        //Throw exception...
-        else
-        {
-            throw cet::exception("SimWireICARUS")
-            << "\033[93m"
-            << "Shaping Time received from signalservices_microboone.fcl is not one of allowed values"
-            << std::endl
-            << "Allowed values: 0.6, 1.0, 1.3, 3.0 usec"
-            << "\033[00m"
-            << std::endl;
-        }
-        
-        // Use the desired noise tool to actually generate the noise on this wire
-        fNoiseToolVec[plane]->generateNoise(noise_engine,
-                                            cornoise_engine,
-                                            noisetmp,
-                                            noise_factor,
-                                            channel);
-        
-        double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-        
-        // If there is something on this wire, and it is not dead, then add the signal to the wire
-        if(sc && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
-        {
-            std::fill(chargeWork.begin(), chargeWork.end(), 0.);
-            
-            // loop over the tdcs and grab the number of electrons for each
-            for(int tick = 0; tick < (int)fNTicks; tick++)
+            if (simChan)
             {
-                int tdc = ts->TPCTick2TDC(tick);
-                
-                // continue if tdc < 0
-                if( tdc < 0 ) continue;
-                
-                double charge = sc->Charge(tdc);  // Charge returned in number of electrons
-                
-                chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
-            } // loop over tdcs
-            // now we have the tempWork for the adjacent wire of interest
-            // convolve it with the appropriate response function
-            sss->Convolute(channel, chargeWork);
+                raw::ChannelID_t channel = simChan->Channel();
+                int              mbIdx   = channel / fNumChanPerMB;
             
-            // "Make" the ADC vector
-            MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
-        }
-        // "Make" an ADC vector with zero charge added
-        else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
-        
-        // add this digit to the collection;
-        // adcvec is copied, not moved: in case of compression, adcvec will show
-        // less data: e.g. if the uncompressed adcvec has 9600 items, after
-        // compression it will have maybe 5000, but the memory of the other 4600
-        // is still there, although unused; a copy of adcvec will instead have
-        // only 5000 items. All 9600 items of adcvec will be recovered for free
-        // and used on the next loop.
-        raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
-        
-        if(fMakeHistograms && plane==2)
-        {
-            short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
-            
-            if(area>0)
-            {
-                fSimCharge->Fill(area);
-                fSimChargeWire->Fill(widVec[0].Wire,area);
+                mbWithSignalSet.insert(mbIdx);
             }
         }
+    }
+    
+    // Ok, now we can simply loop over MB's...
+    for(const auto& mb : mbWithSignalSet)
+    {
+        raw::ChannelID_t baseChannel = fNumChanPerMB * mb;
         
-        rd.SetPedestal(ped_mean);
-        digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
-    }// end of 2nd loop over channels
+        // And for a given MB we can loop over the channels it contains
+        for(raw::ChannelID_t channel = baseChannel; channel < baseChannel + fNumChanPerMB; channel++)
+        {
+            //clean up working vectors from previous iteration of loop
+            adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
+            noisetmp.resize(fNTicks, 0.);     //just in case
+            
+            //use channel number to set some useful numbers
+            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+            size_t                   plane  = widVec[0].Plane;
+            
+            //Get pedestal with random gaussian variation
+            float ped_mean = pedestalRetrievalAlg.PedMean(channel);
+            
+            if (fSmearPedestals )
+            {
+                CLHEP::RandGaussQ rGaussPed(pedestal_engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+                ped_mean += rGaussPed.fire();
+            }
+            
+            //Generate Noise
+            double noise_factor(0.);
+            auto   tempNoiseVec = sss->GetNoiseFactVec();
+            double shapingTime  = sss->GetShapingTime(0);
+            
+            if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
+                noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
+            //Throw exception...
+            else
+            {
+                throw cet::exception("SimWireICARUS")
+                << "\033[93m"
+                << "Shaping Time received from signalservices_microboone.fcl is not one of allowed values"
+                << std::endl
+                << "Allowed values: 0.6, 1.0, 1.3, 3.0 usec"
+                << "\033[00m"
+                << std::endl;
+            }
+            
+            // Use the desired noise tool to actually generate the noise on this wire
+            fNoiseToolVec[plane]->generateNoise(noise_engine,
+                                                cornoise_engine,
+                                                noisetmp,
+                                                noise_factor,
+                                                channel);
+            
+            // Recover the SimChannel (if one) for this channel
+            const sim::SimChannel* simChan = channels[channel];
+            
+            // If there is something on this wire, and it is not dead, then add the signal to the wire
+            if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
+            {
+                double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+                
+                std::fill(chargeWork.begin(), chargeWork.end(), 0.);
+                
+                // loop over the tdcs and grab the number of electrons for each
+                for(int tick = 0; tick < (int)fNTicks; tick++)
+                {
+                    int tdc = ts->TPCTick2TDC(tick);
+                    
+                    // continue if tdc < 0
+                    if( tdc < 0 ) continue;
+                    
+                    double charge = simChan->Charge(tdc);  // Charge returned in number of electrons
+                    
+                    chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
+                } // loop over tdcs
+                // now we have the tempWork for the adjacent wire of interest
+                // convolve it with the appropriate response function
+                sss->Convolute(channel, chargeWork);
+                
+                // "Make" the ADC vector
+                MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
+            }
+            // "Make" an ADC vector with zero charge added
+            else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
+            
+            // add this digit to the collection;
+            // adcvec is copied, not moved: in case of compression, adcvec will show
+            // less data: e.g. if the uncompressed adcvec has 9600 items, after
+            // compression it will have maybe 5000, but the memory of the other 4600
+            // is still there, although unused; a copy of adcvec will instead have
+            // only 5000 items. All 9600 items of adcvec will be recovered for free
+            // and used on the next loop.
+            raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
+            
+            if(fMakeHistograms && plane==2)
+            {
+                short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
+                
+                if(area>0)
+                {
+                    fSimCharge->Fill(area);
+                    fSimChargeWire->Fill(widVec[0].Wire,area);
+                }
+            }
+            
+            rd.SetPedestal(ped_mean);
+            digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
+
+        }
+    }
     
     evt.put(std::move(digcol));
     
