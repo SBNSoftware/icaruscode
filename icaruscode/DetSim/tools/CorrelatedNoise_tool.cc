@@ -68,7 +68,7 @@ private:
     float                                       fNoiseRand;
     long                                        fCorrelatedSeed;
     long                                        fUncorrelatedSeed;
-    float                                       fCoherentNoiseFrac;
+    float                                       fIncoherentNoiseFrac;
     bool                                        fStoreHistograms;
     std::string                                 fInputNoiseHistFileName;
     std::string                                 fHistogramName;
@@ -132,7 +132,7 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     fNoiseRand              = pset.get< float       >("NoiseRand");
     fCorrelatedSeed         = pset.get< long        >("CorrelatedSeed",1000);
     fUncorrelatedSeed       = pset.get< long        >("UncorrelatedSeed",5000);
-    fCoherentNoiseFrac      = pset.get< float       >("CoherentNoiseFraction",0.5);
+    fIncoherentNoiseFrac    = pset.get< float       >("IncoherentNoiseFraction",0.5);
     fStoreHistograms        = pset.get< bool        >("StoreHistograms");
     fInputNoiseHistFileName = pset.get< std::string >("NoiseHistFileName");
     fHistogramName          = pset.get< std::string >("HistogramName");
@@ -245,12 +245,12 @@ void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
     
     // If applying incoherent noise call the generator
-    if (fCoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
+    if (fIncoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
     
     int board=channel/32;
 
     // If applying coherent noise call the generator
-    if (fCoherentNoiseFrac < 1.) GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
+    if (fIncoherentNoiseFrac < 1.) GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
     
     // Take the noise as the simple sum of the two contributions
     std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise.begin(),std::plus<float>());
@@ -274,7 +274,7 @@ void CorrelatedNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, 
     
     std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
 
-    float  scaleFactor = fCoherentNoiseFrac * noise_factor / fIncoherentNoiseRMS;
+    float  scaleFactor = fIncoherentNoiseFrac * noise_factor / fIncoherentNoiseRMS;
     
     GenNoise(randGenFunc, fIncoherentNoiseVec, noise, scaleFactor);
 
@@ -300,7 +300,7 @@ void CorrelatedNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, st
         std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
         
         // Make the fraction the value that would happen if the quadrature sum of the two contributions equaled the input value
-        float fraction    = std::sqrt(1. - fCoherentNoiseFrac * fCoherentNoiseFrac);
+        float fraction    = std::sqrt(1. - fIncoherentNoiseFrac * fIncoherentNoiseFrac);
         float scaleFactor = fraction * cf * noise_factor / fCoherentNoiseRMS;
         
         GenNoise(randGenFunc, fCoherentNoiseVec, noise, scaleFactor);
