@@ -11,19 +11,19 @@ NoiseFromHistTool:
 }
 CorrelatedNoiseTool:
 {
-  tool_type:              CorrelatedNoise
-  Plane:                  0
-  MedianNumBins:          25
-  NoiseRand:              0.
-  CorrelatedSeed:         1000
-  UncorrelatedSeed:       5000
-  CoherentNoiseFraction:  0.7
-  StoreHistograms:        true
-  NoiseHistFileName:      "T600noise_corr.root"
-  HistogramName:          "hnoiseI1"
-  CorrAmpHistFileName:    "CorrAmplitude.root"
-  CorrAmpHistogramName:   "hbrms"
-  StoreHistograms:        true
+  tool_type:                CorrelatedNoise
+  Plane:                    0
+  MedianNumBins:            25
+  NoiseRand:                0.
+  CorrelatedSeed:           1000
+  UncorrelatedSeed:         5000
+  IncoherentNoiseFraction:  0.7
+  StoreHistograms:          true
+  NoiseHistFileName:        "T600noise_corr.root"
+  HistogramName:            "hnoiseI1"
+  CorrAmpHistFileName:      "CorrAmplitude.root"
+  CorrAmpHistogramName:     "hbrms"
+  StoreHistograms:          true
 }
 WhiteNoiseTool:
 {
@@ -49,9 +49,7 @@ standard_simwire:
   TestCharge:         [ 0. ]
   Sample:             -1
   MakeHistograms:     "true"
-#  NoiseGenToolVec:    [@local::NoiseFromHistTool, @local::NoiseFromHistTool, @local::NoiseFromHistTool]
   NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-  #NoiseGenToolVec:    [@local::WhiteNoiseTool, @local::WhiteNoiseTool, @local::WhiteNoiseTool]
 }
 
 #standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
