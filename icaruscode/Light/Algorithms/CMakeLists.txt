@@ -1,4 +1,5 @@
-cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
+# Leave this out for the time being. One day the grid will be updated enough...
+# cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
 art_make(
   BASENAME_ONLY
