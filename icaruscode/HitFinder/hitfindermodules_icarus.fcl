@@ -19,6 +19,8 @@ icarus_hitfinder:
   LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
   MinWidth:      1.
   MaxWidthMult:  3.
+  FittingRange:  35
+  IntegratingRange: 10
 }
 
 icarus_hitselector:

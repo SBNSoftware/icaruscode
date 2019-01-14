@@ -205,6 +205,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       TH1F* fnhwC;
       TH1F* fIntegralC;
       TH1F* fAreaInt;
+      TH1F* fBaselineC;
 
       TH1F* fWire2771;
 
@@ -218,7 +219,10 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       // Member variables from the fhicl file
       double                   fMinWidth;     ///< minimum initial width for ICARUS fit
       double                   fMaxWidthMult; ///< multiplier for max width for ICARUS fit
-      
+      int                      fFittingRange; ///< semi-width of interval where to fit hit      
+      int                      fIntegratingRange; ///< semi-width of interval where to integrate fitting function      
+
+
       int iWire;
       
       mutable ICARUShitFitCache fFitCache; ///< Cached functions for multi-peak fits.
@@ -254,6 +258,8 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       fThetaAngle=p.get< double  >("ThetaAngle");
       fMinWidth=p.get< double  >("MinWidth");
       fMaxWidthMult=p.get< double  >("MaxWidthMult");
+      fFittingRange=p.get< int >("FittingRange");
+      fIntegratingRange=p.get< int >("IntegratingRange");
 
       
       fHitFinderTool  = art::make_tool<reco_tool::ICandidateHitFinder>(p.get<fhicl::ParameterSet>("CandidateHits"));
@@ -289,6 +295,9 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       fIntegralC            = tfs->make<TH1F>("fIntegralC", "", 500, 0, 3000);
       fIntegralC->GetXaxis()->SetTitle("Area(ADC#*ticks)");
       fIntegralC->GetYaxis()->SetTitle("events");
+  fBaselineC            = tfs->make<TH1F>("fBaselineC", "", 500, -10., 10.);
+      fBaselineC->GetXaxis()->SetTitle("Area(ADC#*ticks)");
+      fBaselineC->GetYaxis()->SetTitle("events");  
       fAreaInt = tfs->make<TH1F>("fAreaInt", "Area/Int", 100,0.,2.);
 
       fnhwC            = tfs->make<TH1F>("fnhwC", "", 10, 0, 10);
@@ -545,8 +554,9 @@ size_t iWire=wid.Wire;
           {
        
 
-         int startT= mergedCands.front().startTick;
-         int endT  = mergedCands.back().stopTick;
+         int startT= mergedCands.front().startTick-fFittingRange;
+         int endT  = mergedCands.back().stopTick+fFittingRange;
+         std::cout << " fitting range " << fFittingRange << std::endl;
               
               float mean;
               computeBestLocalMean(mergedCands,holder,mergedCandidateHitVec,mean);
@@ -615,20 +625,42 @@ size_t iWire=wid.Wire;
           }
           }
           
-          int jhit=0;
+         // unsigned int jhit=0;
           
               //std::cout << " before peak loop" << std::endl;
-          for(const auto& peakParams : peakParamsVec)
-          {
-              // Extract values for this hit
-              float peakAmp   = peakParams.peakAmplitude;
-              float peakMean  = peakParams.peakCenter;
+         // for(const auto& peakParams : peakParamsVec)
+for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++) 
+         {
+              //float fitCharge=chargeFunc(peakMean, peakAmp, peakWidth, fAreaNormsVec[plane],startT,endT);
+              //float fitChargeErr = std::sqrt(TMath::Pi()) * (peakAmpErr*peakWidthErr + peakWidthErr*peakAmpErr);
+              unsigned int startInt=mergedCands[jhit].startTick-fIntegratingRange;
+              unsigned int endInt=mergedCands[jhit].stopTick+fIntegratingRange;
+ 
+              if(jhit>=1&&startInt<mergedCands[jhit-1].stopTick) startInt=mergedCands[jhit-1].stopTick;
+              if(jhit<mergedCands.size()-1&&endInt>mergedCands[jhit+1].startTick) endInt=mergedCands[jhit+1].startTick;
+
+              float fitCharge=0;
+              float peakAmp, peakMean, peakLeft, peakRight, peakBaseline, peakSlope, peakFitWidth;
+              float peakMeanErr, peakAmpErr;
+              if(!islong) {
+                // TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
+                TF1& Func = *(fFitCache.Get(mergedCands.size()));
+                assert(&Func);
+                Func.SetParameter(0, mergedCands.size());
+                
+                float intBaseline=0;
+
+              ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
+
+              // Extract values for this FITTED peak
+               peakAmp   = peakParams.peakAmplitude;
+               peakMean  = peakParams.peakCenter;
               //float peakWidth = peakParams.peakSigma;
-              float peakLeft   = peakParams.peakTauLeft;
-              float peakRight  = peakParams.peakTauRight;
-              float peakBaseline = peakParams.peakBaseline;
-              float peakSlope=0;
-              float peakFitWidth=0;
+               peakLeft   = peakParams.peakTauLeft;
+               peakRight  = peakParams.peakTauRight;
+               peakBaseline = peakParams.peakBaseline;
+               peakSlope=0;
+               peakFitWidth=0;
               
               // Place one bit of protection here
               if (std::isnan(peakAmp))
@@ -638,37 +670,25 @@ size_t iWire=wid.Wire;
               }
               
               // Extract errors
-              float peakAmpErr   = peakParams.peakAmplitudeError;
-             float peakMeanErr  = peakParams.peakCenterError;
+               peakAmpErr   = peakParams.peakAmplitudeError;
+              peakMeanErr  = peakParams.peakCenterError;
             //  float peakWidthErr = peakParams.peakSigmaError;
-          
-              //float fitCharge=chargeFunc(peakMean, peakAmp, peakWidth, fAreaNormsVec[plane],startT,endT);
-              //float fitChargeErr = std::sqrt(TMath::Pi()) * (peakAmpErr*peakWidthErr + peakWidthErr*peakAmpErr);
-              int start=mergedCands[jhit].startTick;
-              int end=mergedCands[jhit].stopTick;
-              jhit++;
-              mf::LogDebug("ICARUSHitFinder") << " start " << start << " end " << end << std::endl;
+                  Func.SetParameter(1+5*jhit,peakBaseline);
+                  Func.SetParameter(2+5*jhit,peakAmp);
+                  Func.SetParameter(3+5*jhit,peakMean);
+                  Func.SetParameter(4+5*jhit,peakRight);
+                  Func.SetParameter(5+5*jhit,peakLeft);
 
-              float fitCharge=0;
-              if(!islong) {
-                // TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
-                TF1& Func = *(fFitCache.Get(mergedCands.size()));
-                assert(&Func);
-                Func.SetParameter(0, mergedCands.size());
-                for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-                  Func.SetParameter(1+5*jf,peakBaseline);
-                  Func.SetParameter(2+5*jf,peakAmp);
-                  Func.SetParameter(3+5*jf,peakMean);
-                  Func.SetParameter(4+5*jf,peakRight);
-                  Func.SetParameter(5+5*jf,peakLeft);
-                }
+                  intBaseline+=(endInt-startInt)*peakBaseline;
+                
                 try
-                  { fitCharge=Func.Integral(start,end)-(end-start)*localmeans[jhit-1];
-                     // fitCharge=Func.Integral(start-20,end+20);
+                  {
+                   fitCharge=Func.Integral(startInt,endInt)-(endInt-startInt)*localmeans[jhit];
+          
                   }
                 catch(...) {
                   mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
-                  fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.)-(end-start)*localmeans[jhit-1];
+                  fitCharge=std::accumulate(holder.begin() + (int) startInt, holder.begin() + (int) endInt, 0.)-(endInt-startInt)*localmeans[jhit];
                 }
               }
               else {
@@ -676,46 +696,60 @@ size_t iWire=wid.Wire;
                   TF1& FuncLong = *(fLongFitCache.Get(mergedCands.size()));
                   assert(&FuncLong);
                   FuncLong.SetParameter(0, mergedCands.size());
-                  for(unsigned int jf=0;jf<mergedCands.size();jf++) {
-                      FuncLong.SetParameter(1+7*jf,peakBaseline);
-                      FuncLong.SetParameter(2+7*jf,peakAmp);
-                      FuncLong.SetParameter(3+7*jf,peakMean);
-                      FuncLong.SetParameter(4+7*jf,peakRight);
-                      FuncLong.SetParameter(5+7*jf,peakLeft);
-                      FuncLong.SetParameter(6+7*jf,peakFitWidth);
-                      FuncLong.SetParameter(7+7*jf,peakSlope);
-                  }
+
+                
+                float intBaseline=0;
+
+              ICARUSPeakFitParams_t peakParams=peakParamsVec[jhit];
+
+              // Extract values for this FITTED peak
+               peakAmp   = peakParams.peakAmplitude;
+               peakMean  = peakParams.peakCenter;
+              //float peakWidth = peakParams.peakSigma;
+               peakLeft   = peakParams.peakTauLeft;
+               peakRight  = peakParams.peakTauRight;
+               peakBaseline = peakParams.peakBaseline;
+ intBaseline+=(endInt-startInt)*peakBaseline;
+ peakAmpErr   = peakParams.peakAmplitudeError;
+              peakMeanErr  = peakParams.peakCenterError;
+               
+                      FuncLong.SetParameter(1+7*jhit,peakBaseline);
+                      FuncLong.SetParameter(2+7*jhit,peakAmp);
+                      FuncLong.SetParameter(3+7*jhit,peakMean);
+                      FuncLong.SetParameter(4+7*jhit,peakRight);
+                      FuncLong.SetParameter(5+7*jhit,peakLeft);
+                      FuncLong.SetParameter(6+7*jhit,peakFitWidth);
+                      FuncLong.SetParameter(7+7*jhit,peakSlope);
+             
 
                   try
-                  { fitCharge=FuncLong.Integral(start,end)-(end-start)*localmeans[jhit-1];
-                      //fitCharge=FuncLong.Integral(start-20,end+20);
+                  { fitCharge=FuncLong.Integral(startInt,endInt)-(endInt-startInt)*localmeans[jhit];
+                      //fitCharge=FuncLong.Integral(start-35,end+35);
                   }
                   catch(...)
                   {mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
-                      fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.)-(end-start)*localmeans[jhit-1];
+                      fitCharge=std::accumulate(holder.begin() + (int) startInt, holder.begin() + (int) endInt, 0.)-(endInt-startInt)*localmeans[jhit];
                   }
               }
-              if(isnan(fitCharge)&&!islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
-              if(isnan(fitCharge)&&islong) fitCharge=std::accumulate(holder.begin() + (int) start, holder.begin() + (int) end, 0.);
+              if(isnan(fitCharge)&&!islong) fitCharge=std::accumulate(holder.begin() + (int) startInt, holder.begin() + (int) endInt, 0.);
+              if(isnan(fitCharge)&&islong) fitCharge=std::accumulate(holder.begin() + (int) startInt, holder.begin() + (int) endInt, 0.);
               //Func.Integral(start,end);
               
-              float totSig20=std::accumulate(holder.begin() + (int) start-20, holder.begin() + (int) end+20, 0.);
-              mf::LogDebug("ICARUSHitFinder") << " wire " << iwire <<" jhit " << jhit << " localmean " << localmeans[jhit-1] << std::endl;
-              float totSig=std::accumulate(holder.begin()+ (int) start, holder.begin()+ (int) end, 0.)-(end-start)*localmeans[jhit-1];
+             // float totSig20=std::accumulate(holder.begin() + (int) start-35, holder.begin() + (int) end+35, 0.);
+
+              float totSig=std::accumulate(holder.begin()+ (int) startInt, holder.begin()+ (int) endInt, 0.)-(endInt-startInt)*localmeans[jhit];
+              fBaselineC->Fill(localmeans[jhit]);
          //     float fitChargeErr=0;
-              if(plane==2)
-                  mf::LogDebug("ICARUSHitFinder") << " totSig " << totSig << " fitCharge " << fitCharge << std::endl;
-              if(plane==2&&totSig20<totSig)
-                  mf::LogDebug("ICARUSHitFinder") << " cryo" << cryostat << " tpc " << tpc << " negative wire " << iWire << std::endl;
-              else
-                  mf::LogDebug("ICARUSHitFinder") << " positive wire " << iWire << std::endl;
+            //  if(plane==2&&iWire==2842)
+
+             
 
 //std::cout << " before hit creator " << std::endl;
         recob::HitCreator hit(
             *wire,                                                                     //RAW DIGIT REFERENCE.
             wid,                                                                           //WIRE ID.
-            start,                                                                         //START TICK.
-            end,                                                                           //END TICK. 
+            startInt,                                                                         //START TICK.
+            endInt,                                                                           //END TICK. 
             (peakLeft+peakRight)/2.,                                                                          //RMS.
             peakMean,                                                                      //PEAK_TIME.
             peakMeanErr,                                                                   //SIGMA_PEAK_TIME.
@@ -1046,6 +1080,7 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
                                                    double&                                     chi2PerNDF,
                                                    int&                                        NDF, int iWire) const
     {
+
         ICARUSPeakParamsVec                              peakParamsVec0;
         TH1F* fHistogram=new TH1F("","",roiSignalVec.size(),0.,roiSignalVec.size());;
     
@@ -1057,8 +1092,8 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         // in case of a fit failure, set the chi-square to infinity
         chi2PerNDF = std::numeric_limits<double>::infinity();
         
-        int startTime = hitCandidateVec.front().startTick;
-        int endTime   = hitCandidateVec.back().stopTick;
+        int startTime = hitCandidateVec.front().startTick-fFittingRange;
+        int endTime   = hitCandidateVec.back().stopTick+fFittingRange;
         int roiSize   = endTime - startTime;
         
         //std::cout << " roisize " << roiSize << std::endl;
@@ -1203,8 +1238,8 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         // in case of a fit failure, set the chi-square to infinity
         chi2PerNDF = std::numeric_limits<double>::infinity();
         
-        int startTime = hitCandidateVec.front().startTick;
-        int endTime   = hitCandidateVec.back().stopTick;
+        int startTime = hitCandidateVec.front().startTick-35;
+        int endTime   = hitCandidateVec.back().stopTick+35;
         int roiSize   = endTime - startTime;
         
         //std::cout << " roisize " << roiSize << std::endl;
@@ -1342,7 +1377,7 @@ Double_t ICARUSlongHitFitCache::fitlong(Double_t const* x, Double_t const* par)
                 / (1.0 + std::exp(neg_dxj/parj[5]))
               ) / (parj[6]);
         } // for
-        return fitval;
+  return fitval;
     }
     
     double ICARUSHitFinder::ComputeChiSquare(TF1 func, TH1 *histo) const
