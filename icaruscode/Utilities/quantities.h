@@ -40,7 +40,6 @@
 #include <ratio>
 #include <functional> // std::hash<>
 #include <type_traits> // std::is_same<>, std::enable_if_t<>, ...
-#include <cmath> // std::abs()
 
 
 /**
@@ -209,6 +208,15 @@
  * 
  */
 namespace util::quantities {
+  
+  namespace details {
+    
+    template <typename T>
+    constexpr T abs(T value) { return (value <= -T(0))? (-value): value; }
+    
+  } // namespace details
+  
+  
   
   /**
    * @brief Infrastructure for the quantities library.
@@ -591,7 +599,7 @@ namespace util::quantities {
       constexpr quantity_t operator-() const { return quantity_t(-value()); }
       
       /// Returns a quantity with the absolute value of this one.
-      constexpr quantity_t abs() const { return quantity_t(std::abs(value())); }
+      constexpr quantity_t abs() const { return quantity_t(util::quantities::details::abs(value())); }
       
       /// @}
       // -- END Asymmetric arithmetic operations -------------------------------
