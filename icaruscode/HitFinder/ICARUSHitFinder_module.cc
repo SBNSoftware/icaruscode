@@ -640,7 +640,8 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
               if(jhit<mergedCands.size()-1&&endInt>mergedCands[jhit+1].startTick) endInt=mergedCands[jhit+1].startTick;
 
               float fitCharge=0;
-              float peakAmp, peakMean, peakLeft, peakRight, peakBaseline, peakSlope, peakFitWidth;
+              float peakAmp, peakMean, peakLeft, peakRight, peakBaseline;
+              float peakSlope=0, peakFitWidth=0;
               float peakMeanErr, peakAmpErr;
               if(!islong) {
                 // TF1 Func("ICARUSfunc",fitf,start,end,1+5*mergedCands.size());
@@ -659,8 +660,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
                peakLeft   = peakParams.peakTauLeft;
                peakRight  = peakParams.peakTauRight;
                peakBaseline = peakParams.peakBaseline;
-               peakSlope=0;
-               peakFitWidth=0;
+
               
               // Place one bit of protection here
               if (std::isnan(peakAmp))
@@ -687,7 +687,7 @@ for(unsigned int jhit=0;jhit<mergedCands.size(); jhit++)
           
                   }
                 catch(...) {
-                  mf::LogWarning("ICARUSHitFinder") << "Icarus numerical integration failed";
+                  mf::LogWarning("ICARUSHitFinder") << "Icarus numerical 32 failed";
                   fitCharge=std::accumulate(holder.begin() + (int) startInt, holder.begin() + (int) endInt, 0.)-(endInt-startInt)*localmeans[jhit];
                 }
               }
