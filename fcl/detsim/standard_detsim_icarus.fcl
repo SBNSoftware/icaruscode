@@ -50,11 +50,6 @@ physics:
 }
 
 #
-# We apply this scaling in an ad hoc fashion for MCC1.1 - work in progress to resolve this...
-#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane0.FieldResponse.FieldResponseAmplitude: 1.6
-#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane1.FieldResponse.FieldResponseAmplitude: 1.6
-#services.SignalShapingServiceICARUS.ResponseTools.ResponsePlane2.FieldResponse.FieldResponseAmplitude: 1.6
-#
 # For MCC1.1 we are using the correlated noise model
 physics.producers.daq.NoiseGenToolVec:  [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
 physics.producers.daq.NoiseGenToolVec[0].Plane:          0
