@@ -556,7 +556,7 @@ size_t iWire=wid.Wire;
 
          int startT= mergedCands.front().startTick-fFittingRange;
          int endT  = mergedCands.back().stopTick+fFittingRange;
-         std::cout << " fitting range " << fFittingRange << std::endl;
+         //std::cout << " fitting range " << fFittingRange << std::endl;
               
               float mean;
               computeBestLocalMean(mergedCands,holder,mergedCandidateHitVec,mean);
