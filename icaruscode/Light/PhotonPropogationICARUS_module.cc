@@ -184,9 +184,9 @@ void PhotonPropogationICARUS::produce(art::Event & event)
         
         auto const& PMTcenter = fGeometry->OpDetGeoFromOpChannel(channel).GetCenter();
        
-        // TODO restore the "LOG_TRACE" line for normal operations
-        // (LOG_TRACE will print only in debug mode, with debug qualifiers and proper messagefacility settings)
-      //  LOG_TRACE("LightPropagationICARUS")
+        // TODO restore the "MF_LOG_TRACE" line for normal operations
+        // (MF_LOG_TRACE will print only in debug mode, with debug qualifiers and proper messagefacility settings)
+      //  MF_LOG_TRACE("LightPropagationICARUS")
 //        mf::LogVerbatim("LightPropagationICARUS")
 //          << "Processing photon channel #" << channel << ", detector center: " << PMTcenter;
         // 
@@ -224,8 +224,8 @@ void PhotonPropogationICARUS::produce(art::Event & event)
 		//time_plus = landauGen.fire(mean,sigma); // TODO
             } while (time_plus < minPropTime);
              
-             // TODO restore the "LOG_TRACE" line for normal operations
-             LOG_TRACE("LightPropagationICARUS");
+             // TODO restore the "MF_LOG_TRACE" line for normal operations
+             MF_LOG_TRACE("LightPropagationICARUS");
 //             mf::LogVerbatim("LightPropagationICARUS")
 //               << "Photon #" << photonNo
 //               << " (at " << position << ", " << dis << " cm far from PMT) given offset "

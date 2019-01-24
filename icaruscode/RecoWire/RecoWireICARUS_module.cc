@@ -113,7 +113,7 @@ namespace recowire{
   void RecoWireICARUS::beginJob()
   {  
     
-    LOG_DEBUG("RecoWireICARUS") << "RecoWireICARUS_plugin: Opening  Electronics Response File: " 
+    MF_LOG_DEBUG("RecoWireICARUS") << "RecoWireICARUS_plugin: Opening  Electronics Response File: " 
 			 << fResponseFile.c_str();
     
     TFile f(fResponseFile.c_str());

@@ -242,7 +242,7 @@ void SimWireICARUS::produce(art::Event& evt)
     fFFT->ReinitializeFFT(fNTimeSamples,fFFT->FFTOptions(),fFFT->FFTFitBins());
     fNTicks = fFFT->FFTSize();
     if ( fNTicks%2 != 0 )
-        LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << fNTicks << " not a power of 2. "
+        MF_LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << fNTicks << " not a power of 2. "
         << "May cause issues in (de)convolution.\n";
     if ( fNTimeSamples > fNTicks )
         mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
