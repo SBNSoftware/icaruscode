@@ -17,7 +17,7 @@ CorrelatedNoiseTool:
   NoiseRand:                0.
   CorrelatedSeed:           1000
   UncorrelatedSeed:         5000
-  IncoherentNoiseFraction:  0.7
+  IncoherentNoiseFraction:  0.95
   StoreHistograms:          true
   NoiseHistFileName:        "T600noise_corr.root"
   HistogramName:            "hnoiseI1"
