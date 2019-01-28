@@ -15,6 +15,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 //#include "art/Utilities/InputTag.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
@@ -82,8 +83,7 @@ private:
     
     int _run, _subrun, _event;
     
-    TFile*              fOutFile;          ///< output analysis file
-    TTree*              fOutTree;          ///< output analysis tree
+    TTree*              fTupleTree;        ///< output analysis tree
 };
 
 SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
@@ -112,33 +112,30 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
 
 void SimTestPulse::beginJob()
 {
-    fOutFile = TFile::Open("simTestPulse.root","RECREATE");
-    fOutTree = new TTree("simTestPulse","Tree by SimTestPulse_module");
-    fOutTree->Branch("run",&_run,"run/I");
-    fOutTree->Branch("subrun",&_subrun,"subrun/I");
-    fOutTree->Branch("event",&_event,"event/I");
-    fOutTree->Branch("trigger_time",&fTriggerTime,"trigger_time/D");
-    fOutTree->Branch("charge_time_v","std::vector<double>",&fSimTime_v);
-    fOutTree->Branch("tick_v","std::vector<int>",&fTick_v);
-    fOutTree->Branch("y_v","std::vector<double>",&fY_v);
-    fOutTree->Branch("z_v","std::vector<double>",&fZ_v);
-    fOutTree->Branch("e_v","std::vector<double>",&fNumElectrons_v);
+    art::ServiceHandle<art::TFileService> tfs;
 
-    fOutTree->Branch("ch_plane0","std::vector<int>",&fPlane0Channel_v);
-    fOutTree->Branch("ch_plane1","std::vector<int>",&fPlane1Channel_v);
-    fOutTree->Branch("ch_plane2","std::vector<int>",&fPlane2Channel_v);
-
-    fOutTree->Branch("wire_plane0","std::vector<int>",&fPlane0Wire_v);
-    fOutTree->Branch("wire_plane1","std::vector<int>",&fPlane1Wire_v);
-    fOutTree->Branch("wire_plane2","std::vector<int>",&fPlane2Wire_v);
+    fTupleTree = tfs->make<TTree>("simTestPulse", "Tree by SimTestPulse_module");
+    fTupleTree->Branch("run",&_run,"run/I");
+    fTupleTree->Branch("subrun",&_subrun,"subrun/I");
+    fTupleTree->Branch("event",&_event,"event/I");
+    fTupleTree->Branch("trigger_time",&fTriggerTime,"trigger_time/D");
+    fTupleTree->Branch("charge_time_v","std::vector<double>",&fSimTime_v);
+    fTupleTree->Branch("tick_v","std::vector<int>",&fTick_v);
+    fTupleTree->Branch("y_v","std::vector<double>",&fY_v);
+    fTupleTree->Branch("z_v","std::vector<double>",&fZ_v);
+    fTupleTree->Branch("e_v","std::vector<double>",&fNumElectrons_v);
+    
+    fTupleTree->Branch("ch_plane0","std::vector<int>",&fPlane0Channel_v);
+    fTupleTree->Branch("ch_plane1","std::vector<int>",&fPlane1Channel_v);
+    fTupleTree->Branch("ch_plane2","std::vector<int>",&fPlane2Channel_v);
+    
+    fTupleTree->Branch("wire_plane0","std::vector<int>",&fPlane0Wire_v);
+    fTupleTree->Branch("wire_plane1","std::vector<int>",&fPlane1Wire_v);
+    fTupleTree->Branch("wire_plane2","std::vector<int>",&fPlane2Wire_v);
 }
 
 void SimTestPulse::endJob()
 {
-    fOutFile->cd();
-    fOutTree->Write();
-    fOutFile->Close();
-    
     alternative::ParamHolder::destroy();
 }
 
@@ -234,7 +231,7 @@ void SimTestPulse::produce(art::Event & e)
     _subrun = e.id().subRun();
     _event = e.id().event();
     
-    fOutTree->Fill();
+    fTupleTree->Fill();
     e.put(std::move(simch_v));
     e.put(std::move(trigger_v));
     

@@ -13,6 +13,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "art/Framework/Services/Optional/TFileService.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "larcore/Geometry/Geometry.h"
@@ -53,7 +54,6 @@ public:
     TTree* CreateHitTree(std::string name);
 
 private:
-    TFile* _file;
     TTree* _hit_tree;
     TTree* _wire_tree;
     TTree* _raw_digit_tree;
@@ -111,7 +111,6 @@ void SimTestPulseAna::compute_params(const std::vector<float>& wf,
 
 SimTestPulseAna::SimTestPulseAna(fhicl::ParameterSet const & p)
   : EDAnalyzer(p)
-  , _file(nullptr)
   , _wire_tree(nullptr)
   , _raw_digit_tree(nullptr)
   , _filtered_digit_tree(nullptr)
@@ -133,7 +132,10 @@ SimTestPulseAna::SimTestPulseAna(fhicl::ParameterSet const & p)
 
 TTree* SimTestPulseAna::CreateTree(std::string name)
 {
-    auto tree = new TTree(name.c_str(),"");
+    art::ServiceHandle<art::TFileService> tfs;
+    
+    TTree* tree = tfs->make<TTree>(name.c_str(),"");
+
     tree->Branch("run",&_run,"run/I");
     tree->Branch("subrun",&_subrun,"subrun/I");
     tree->Branch("event",&_event,"event/I");
@@ -155,7 +157,10 @@ TTree* SimTestPulseAna::CreateTree(std::string name)
 
 TTree* SimTestPulseAna::CreateHitTree(std::string name)
 {
-    auto tree = new TTree(name.c_str(),"");
+    art::ServiceHandle<art::TFileService> tfs;
+    
+    TTree* tree = tfs->make<TTree>(name.c_str(),"");
+
     tree->Branch("run",&_run,"run/I");
     tree->Branch("subrun",&_subrun,"subrun/I");
     tree->Branch("event",&_event,"event/I");
@@ -176,7 +181,6 @@ TTree* SimTestPulseAna::CreateHitTree(std::string name)
 
 void SimTestPulseAna::beginJob()
 {
-    _file = TFile::Open("simTestPulseAna.root","RECREATE");
     _hit_tree = ( _hit_producer.empty() ? nullptr : this->CreateHitTree(_hit_producer));
     _wire_tree = ( _wire_producer.empty() ? nullptr : this->CreateTree(_wire_producer) );
     _raw_digit_tree = ( _raw_digit_producer.empty() ? nullptr : this->CreateTree(_raw_digit_producer) );
@@ -185,14 +189,6 @@ void SimTestPulseAna::beginJob()
 
 void SimTestPulseAna::endJob()
 {
-    if(_file) {
-        _file->cd();
-        if(_hit_tree) _hit_tree->Write();
-        if(_wire_tree) _wire_tree->Write();
-        if(_raw_digit_tree) _raw_digit_tree->Write();
-        if(_filtered_digit_tree) _filtered_digit_tree->Write();
-        _file->Close();
-    }
 }
 
 void SimTestPulseAna::analyze(art::Event const & e)
