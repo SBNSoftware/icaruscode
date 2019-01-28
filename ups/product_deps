@@ -25,6 +25,7 @@ fwdir   product_dir scripts
 table_fragment_begin
     pathPrepend(FW_SEARCH_PATH, ${ICARUSCODE_DIR}/gdml)
     pathPrepend(FHICL_FILE_PATH, .:./job)
+    pathPrepend(PYTHONPATH, ${UPS_PROD_DIR}/python)
 table_fragment_end
 
 # With "product  version" table below, we now define depdendencies

@@ -19,6 +19,11 @@
 # use cmake 3.10 or later
 cmake_minimum_required (VERSION 3.10)
 
+message(STATUS
+  "\n-- ============================================================================="
+  "\n-- === *** Start of configuration of icaruscode ***"
+  "\n-- ===")
+
 project(icaruscode)
 
 # cetbuildtools contains our cmake modules
@@ -81,3 +86,11 @@ add_subdirectory(ups)
 
 # packaging utility
 include(UseCPack)
+
+message(STATUS
+  "\n-- ==="
+  "\n-- === *** End of configuration of icaruscode ***"
+  "\n-- ============================================================================="
+  "\n-- "
+  )
+
