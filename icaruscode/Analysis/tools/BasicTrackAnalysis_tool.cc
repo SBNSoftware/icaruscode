@@ -145,17 +145,17 @@ void BasicTrackAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& 
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
 
-    fHitsByWire[0]            = dir.make<TH1D>("HitsByWire0", ";Wire #", fGeometry->Nwires(0), 0., fGeometry->Nwires(0));
-    fHitsByWire[1]            = dir.make<TH1D>("HitsByWire1", ";Wire #", fGeometry->Nwires(1), 0., fGeometry->Nwires(1));
-    fHitsByWire[2]            = dir.make<TH1D>("HitsByWire2", ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
+    fHitsByWire[0]    = dir.make<TH1D>("HitsByWire0", ";Wire #", fGeometry->Nwires(0), 0., fGeometry->Nwires(0));
+    fHitsByWire[1]    = dir.make<TH1D>("HitsByWire1", ";Wire #", fGeometry->Nwires(1), 0., fGeometry->Nwires(1));
+    fHitsByWire[2]    = dir.make<TH1D>("HitsByWire2", ";Wire #", fGeometry->Nwires(2), 0., fGeometry->Nwires(2));
     
-    fPulseHVsWidth[0]         = dir.make<TH2D>("PHVsWidth0",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
-    fPulseHVsWidth[1]         = dir.make<TH2D>("PHVsWidth1",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
-    fPulseHVsWidth[2]         = dir.make<TH2D>("PHVsWidth2",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[0] = dir.make<TH2D>("PHVsWidth0",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[1] = dir.make<TH2D>("PHVsWidth1",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
+    fPulseHVsWidth[2] = dir.make<TH2D>("PHVsWidth2",    ";PH;Width", 100,  0.,  100., 100,  0., 20.);
     
-    fPulseHVsHitNo[0]         = dir.make<TProfile>("PHVsNo0",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
-    fPulseHVsHitNo[1]         = dir.make<TProfile>("PHVsNo1",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
-    fPulseHVsHitNo[2]         = dir.make<TProfile>("PHVsNo2",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[0] = dir.make<TProfile>("PHVsNo0",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[1] = dir.make<TProfile>("PHVsNo1",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
+    fPulseHVsHitNo[2] = dir.make<TProfile>("PHVsNo2",   ";Hit #;PH", 1000, 0., 1000., 0., 100.);
 
     return;
 }
