@@ -218,17 +218,19 @@ template <typename T> void WaveformTools::getTruncatedMean(const std::vector<T>&
     // From that we can develop an average of the true baseline of the ROI.
     std::pair<typename std::vector<T>::const_iterator,typename std::vector<T>::const_iterator> minMaxValItr = std::minmax_element(waveform.begin(),waveform.end());
     
-    int minVal = std::floor(*minMaxValItr.first);
-    int maxVal = std::ceil(*minMaxValItr.second);
-    int range  = maxVal - minVal + 1;
+    T   minVal    = *minMaxValItr.first;
+    int minValInt = std::floor(minVal);
+    T   maxVal    = *minMaxValItr.second;
+    int maxValInt = std::ceil(maxVal);
+    int range     = maxValInt - minValInt + 1;
     
-    std::vector<int> frequencyVec(range, 0);
-    int              mpCount(0);
-    int              mpVal(0);
+    std::vector<T> frequencyVec(range, 0);
+    int            mpCount(0);
+    int            mpVal(0);
     
     for(const auto& val : waveform)
     {
-        int intVal = std::round(val) - minVal;
+        int intVal = std::round(val - minVal);
         
         frequencyVec[intVal]++;
         
@@ -243,16 +245,16 @@ template <typename T> void WaveformTools::getTruncatedMean(const std::vector<T>&
     int meanCnt  = 0;
     int meanSum  = 0;
     int binRange = std::min(16, int(frequencyVec.size()/2 + 1));
+    int startVal = std::max(0,mpVal-binRange);
+    int stopVal  = std::min(range-1,mpVal+binRange);
     
-    for(int idx = mpVal-binRange; idx <= mpVal+binRange; idx++)
+    for(int idx = startVal; idx <= stopVal; idx++)
     {
-        if (idx < 0 || idx >= range) continue;
-        
-        meanSum += (idx + minVal) * frequencyVec[idx];
+        meanSum += idx * frequencyVec[idx];
         meanCnt += frequencyVec[idx];
     }
     
-    mean = T(meanSum) / T(meanCnt);
+    mean = T(meanSum) / T(meanCnt) + T(minValInt);
     
     return;
 }
