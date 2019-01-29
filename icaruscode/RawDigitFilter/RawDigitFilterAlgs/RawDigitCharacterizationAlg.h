@@ -33,7 +33,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "ChannelGroups.h"
+#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/ChannelGroups.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -112,41 +112,41 @@ public:
 private:
 
     // Fcl parameters.
-    float                fTruncMeanFraction;     ///< Fraction for truncated mean
-    std::vector<float>   fRmsRejectionCutHi;     ///< Maximum rms for input channels, reject if larger
-    std::vector<float>   fRmsRejectionCutLow;    ///< Minimum rms to consider channel "alive"
-    std::vector<float>   fRmsSelectionCut;       ///< Don't use/apply correction to wires below this
-    std::vector<short>   fMinMaxSelectionCut;    ///< Plane by plane cuts for spread cut
-    unsigned int         fTheChosenWire;         ///< For example hist
-    double               fMaxPedestalDiff;       ///< Max pedestal diff to db to warn
-    std::vector<size_t>  fHistsWireGroup;        ///< Wire Group to pick on
-    std::vector<size_t>  fNumWiresToGroup;       ///< If smoothing, the number of wires to look at
-    bool                 fFillHistograms;        ///< if true then will fill diagnostic hists
+    float                              fTruncMeanFraction;     ///< Fraction for truncated mean
+    std::vector<float>                 fRmsRejectionCutHi;     ///< Maximum rms for input channels, reject if larger
+    std::vector<float>                 fRmsRejectionCutLow;    ///< Minimum rms to consider channel "alive"
+    std::vector<float>                 fRmsSelectionCut;       ///< Don't use/apply correction to wires below this
+    std::vector<short>                 fMinMaxSelectionCut;    ///< Plane by plane cuts for spread cut
+    unsigned int                       fTheChosenWire;         ///< For example hist
+    double                             fMaxPedestalDiff;       ///< Max pedestal diff to db to warn
+    std::vector<size_t>                fHistsWireGroup;        ///< Wire Group to pick on
+    std::vector<size_t>                fNumWiresToGroup;       ///< If smoothing, the number of wires to look at
+    bool                               fFillHistograms;        ///< if true then will fill diagnostic hists
     
     // Make sure hists for this instance are initialized
-    bool                 fHistsInitialized;
+    bool                               fHistsInitialized;
     
     // Pointers to the histograms we'll create for monitoring what is happening
-    TH1D*                fAdcCntHist[3];
-    TH1D*                fAveValHist[3];
-    TH1D*                fRmsTValHist[3];
-    TH1D*                fRmsFValHist[3];
-    TH1D*                fPedValHist[3];
-    TH1D*                fAverageHist[3];
-    TProfile*            fRmsValProf[3];
-    TProfile*            fMinMaxValProf[3];
-    TProfile*            fPedValProf[3];
+    TH1D*                              fAdcCntHist[3];
+    TH1D*                              fAveValHist[3];
+    TH1D*                              fRmsTValHist[3];
+    TH1D*                              fRmsFValHist[3];
+    TH1D*                              fPedValHist[3];
+    TH1D*                              fAverageHist[3];
+    TProfile*                          fRmsValProf[3];
+    TProfile*                          fMinMaxValProf[3];
+    TProfile*                          fPedValProf[3];
     
-    std::vector<TProfile*>              fMinMaxProfiles;
-    std::vector<TProfile*>              fSkewnessProfiles;
-    std::vector<TProfile*>              fModeRatioProfiles;
-
-    caldata::ChannelGroups              fChannelGroups;
+    std::vector<TProfile*>             fMinMaxProfiles;
+    std::vector<TProfile*>             fSkewnessProfiles;
+    std::vector<TProfile*>             fModeRatioProfiles;
+    
+    caldata::ChannelGroups             fChannelGroups;
     
     // Useful services, keep copies for now (we can update during begin run periods)
-    art::ServiceHandle<geo::Geometry>            fGeometry;             ///< pointer to Geometry service
+    art::ServiceHandle<geo::Geometry>  fGeometry;             ///< pointer to Geometry service
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
-    const lariov::DetPedestalProvider&          fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
+    const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
 
 } // end of namespace caldata
