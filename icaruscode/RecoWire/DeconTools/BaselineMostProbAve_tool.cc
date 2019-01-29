@@ -6,11 +6,13 @@
 #include <cmath>
 #include "icaruscode/RecoWire/DeconTools/IBaseline.h"
 #include "art/Utilities/ToolMacros.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Optional/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()
@@ -36,6 +38,7 @@ private:
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
     art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    std::unique_ptr<icarus_tool::IWaveformTool>          fWaveformTool;
 };
     
 //----------------------------------------------------------------------
@@ -56,7 +59,14 @@ void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
     
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
+
+    // Let's apply some smoothing as an experiment... first let's get the tool we need
+    fhicl::ParameterSet waveformToolParams;
     
+    waveformToolParams.put<std::string>("tool_type","Waveform");
+    
+    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
     return;
 }
 
@@ -72,14 +82,14 @@ float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
     {
         // Recover the expected electronics noise on this channel
         float  deconNoise = 1.26491 * fSignalShaping->GetDeconNoise(channel);
-        int    binRange   = std::max(1, int(deconNoise));
+        int    binRange   = std::max(1, int(std::round(deconNoise)));
         size_t halfLen    = std::min(fMaxROILength,roiLen/2);
         size_t roiStop    = roiStart + roiLen;
         
         std::pair<float,int> baseFront = GetBaseline(holder, binRange, roiStart,          roiStart + halfLen);
         std::pair<float,int> baseBack  = GetBaseline(holder, binRange, roiStop - halfLen, roiStop           );
         
-        if (std::fabs(baseFront.first - baseBack.first) > deconNoise)
+        if (std::fabs(baseFront.first - baseBack.first) > 3. * deconNoise)
         {
             if      (baseFront.second > 3 * baseBack.second  / 2) base = baseFront.first;
             else if (baseBack.second  > 3 * baseFront.second / 2) base = baseBack.first;
@@ -101,50 +111,12 @@ std::pair<float,int> BaselineMostProbAve::GetBaseline(const std::vector<float>& 
     
     if (roiStop > roiStart)
     {
-        // Basic idea is to find the most probable value in the ROI presented to us
-        // From that we can develop an average of the true baseline of the ROI.
-        // To do that we employ a map based scheme
-        std::map<int,int> frequencyMap;
-        int               mpCount(0);
-        int               mpVal(0);
+        // Get the truncated mean and rms
+        std::vector<float> temp(roiStop - roiStart + 1,0.);
         
-        for(size_t idx = roiStart; idx < roiStop; idx++)
-        {
-            int intVal = std::round(2.*holder.at(idx));
-            
-            int binCount = ++frequencyMap[intVal];
-            
-            if (binCount > mpCount)
-            {
-                mpCount = binCount;
-                mpVal   = intVal;
-            }
-        }
+        std::copy(holder.begin() + roiStart,holder.begin() + roiStop,temp.begin());
         
-        // Safety check...
-        if (mpCount > 0)
-        {
-            // take a weighted average of two neighbor bins
-            int meanCnt  = 0;
-            int meanSum  = 0;
-        
-            for(int idx = -binRange; idx <= binRange; idx++)
-            {
-                std::map<int,int>::iterator neighborItr = frequencyMap.find(mpVal+idx);
-            
-                if (neighborItr != frequencyMap.end() && 5 * neighborItr->second > mpCount)
-                {
-                    meanSum += neighborItr->first * neighborItr->second;
-                    meanCnt += neighborItr->second;
-                }
-            }
-
-            if (meanCnt > 0)
-            {
-                base.first  = 0.5 * float(meanSum) / float(meanCnt);
-                base.second = meanCnt;
-            }
-        }
+        fWaveformTool->getTruncatedMean(temp, base.first, base.second);
     }
     
     return base;
