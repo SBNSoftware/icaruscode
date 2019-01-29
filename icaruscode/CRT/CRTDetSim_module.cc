@@ -1,4 +1,6 @@
-//////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/// Class: CRTDetSim
+/// Module Type: producer
 /// \file CRTDetSim_module.cc
 ///
 /// Based on LArIAT TOFSimDigits.cc (Author: Lucas Mendes Santos)
@@ -96,12 +98,84 @@
 #include <vector>
 
 //CRT includes
-#include "icaruscode/CRT/CRTDetSim.h"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 
+using std::string;
+
 namespace icarus {
-namespace crt {
+    namespace crt {
+        
+class CRTDetSim : public art::EDProducer {
+public:
+    explicit CRTDetSim(fhicl::ParameterSet const & p);
+    
+    CRTDetSim(CRTDetSim const &) = delete;
+    CRTDetSim(CRTDetSim &&) = delete;
+    CRTDetSim& operator = (CRTDetSim const &) = delete;
+    CRTDetSim& operator = (CRTDetSim &&) = delete;
+    void reconfigure(fhicl::ParameterSet const & p);
+    
+    void produce(art::Event & e) override;
+    string fG4ModuleLabel;
+    
+private:
+    char GetAuxDetType(geo::AuxDetGeo const& adgeo);
+    string GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
+    uint8_t GetStackNum(geo::AuxDetGeo const& adgeo);
+    //bool TimeOrderCRTData(icarus::crt::CRTData::ChannelData crtdat1, icarus::crt::CRTData::ChannelData crtdat2);
+    /**
+     * Get the channel trigger time relative to the start of the MC event.
+     *
+     * @param engine The random number generator engine
+     * @param clock The clock to count ticks on
+     * @param t0 The starting time (which delay is added to)
+     * @param npe Number of observed photoelectrons
+     * @param r Distance between the energy deposit and strip readout end [mm]
+     * @return Trigger clock ticks at this true hit time
+     */
+    //uint32_t
+    double GetChannelTriggerTicks(detinfo::ElecClock& clock,
+                                  float t0, float npeMean, float r);
+    
+    bool   fVerbose;
+    double fGlobalT0Offset;  //!< Time delay fit: Gaussian normalization
+    double fTDelayNorm;  //!< Time delay fit: Gaussian normalization
+    double fTDelayShift;  //!< Time delay fit: Gaussian x shift
+    double fTDelaySigma;  //!< Time delay fit: Gaussian width
+    double fTDelayOffset;  //!< Time delay fit: Gaussian baseline offset
+    double fTDelayRMSGausNorm;  //!< Time delay RMS fit: Gaussian normalization
+    double fTDelayRMSGausShift;  //!< Time delay RMS fit: Gaussian x shift
+    double fTDelayRMSGausSigma;  //!< Time delay RMS fit: Gaussian width
+    double fTDelayRMSExpNorm;  //!< Time delay RMS fit: Exponential normalization
+    double fTDelayRMSExpShift;  //!< Time delay RMS fit: Exponential x shift
+    double fTDelayRMSExpScale;  //!< Time delay RMS fit: Exponential scale
+    double fQ0;  //!< Average energy deposited for mips in 1cm for charge scaling [GeV]
+    double fQPed;  //!< ADC offset for the single-peak peak mean [ADC]
+    double fQSlope;  //!< Slope in mean ADC / Npe [ADC]
+    double fQRMS;  //!< ADC single-pe spectrum width [ADC]
+    double fQThresholdC;  //!< ADC charge threshold for CERN system [ADC]
+    double fQThresholdM;  //!< ADC charge threshold for MINOS system [ADC]
+    double fQThresholdD;  //!< ADC charge threshold for DC system [ADC]
+    double fTResInterpolator;  //!< Interpolator time resolution [ns]
+    double fPropDelay;  //!< Delay in pulse arrival time [ns/m]
+    double fPropDelayError;  //!< Delay in pulse arrival time, uncertainty [ns/m]
+    double fStripCoincidenceWindow;  //!< Time window for two-fiber coincidence [ns]
+    bool fApplyCoincidenceC; //!< Whether or not to apply coincidence between hits in adjacent layers
+    bool fApplyCoincidenceM; //!< Whether or not to apply coincidence between hits in adjacent layers
+    bool fApplyCoincidenceD; //!< Whether or not to apply coincidence between hits in adjacent layers
+    double fLayerCoincidenceWindowC;  //!< Time window for two layer coincidence in a CERN module [ns]
+    double fLayerCoincidenceWindowM;  //!< Time window for two layer coincidence between MINOS modules [ns]
+    double fLayerCoincidenceWindowD;  //!< Time window for two layer coincidence in a DC module [ns]
+    //double fAbsLenEffC;  //!< Effective abs. length for transverse Npe scaling in CERN scintillator [cm]
+    //double fAbsLenEffM;  //!< Effective abs. length for transverse Npe scaling in MINOS scintillator [cm]
+    //double fAbsLenEffD;  //!< Effective abs. length for transverse Npe scaling in DC scintillator [cm]
+    bool fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
+    double fDeadTime; //!< Dead Time inherent in the front-end electronics
+    double fBiasTime; //!< Hard cut off for follow-up hits after primary trigger to bias ADC level
+    
+    CLHEP::HepRandomEngine& fRandEngine;
+};
 
 //getting parameter values from FHiCL
 void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
@@ -144,10 +218,9 @@ void CRTDetSim::reconfigure(fhicl::ParameterSet const & p) {
 }
 
 // constructor
-CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer(p) {
-  art::ServiceHandle<rndm::NuRandomService> seeds;
-  seeds->createEngine(*this, "HepJamesRandom", "crt", p, "Seed");
-
+CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer(p),
+        fRandEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "crt", p, "Seed"))
+{
   this->reconfigure(p);
 
   produces<std::vector<icarus::crt::CRTData> >();
@@ -201,8 +274,7 @@ int GetAuxDetRegionNum(std::string reg)
 //  takes true hit time, LY(PE) observed, and intitudinal distance from readout
 //  uses 12 FHiCL configurable parameters
 //  returns simulated time in units of clock ticks
-double CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
-                                         detinfo::ElecClock& clock,
+double CRTDetSim::GetChannelTriggerTicks(detinfo::ElecClock& clock,
                                          float t0, float npeMean, float r) {
   // Hit timing, with smearing and NPE dependence
   double tDelayMean = \
@@ -216,10 +288,10 @@ double CRTDetSim::GetChannelTriggerTicks(CLHEP::HepRandomEngine* engine,
     fTDelayRMSExpNorm *
       exp(-(npeMean - fTDelayRMSExpShift) / fTDelayRMSExpScale);
 
-  double tDelay = CLHEP::RandGauss::shoot(engine, tDelayMean, tDelayRMS);
+  double tDelay = CLHEP::RandGauss::shoot(&fRandEngine, tDelayMean, tDelayRMS);
 
   // Time resolution of the interpolator
-  tDelay += CLHEP::RandGauss::shoot(engine, 0, fTResInterpolator);
+  tDelay += CLHEP::RandGauss::shoot(&fRandEngine, 0, fTResInterpolator);
 
   // Propagation time
   double tProp = CLHEP::RandGauss::shoot(fPropDelay, fPropDelayError) * r;
@@ -262,9 +334,6 @@ void CRTDetSim::produce(art::Event & e) {
   art::ServiceHandle<geo::Geometry> geoService;
   art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
   detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
-
-  art::ServiceHandle<art::RandomNumberGenerator> rng;
-  CLHEP::HepRandomEngine* engine = &rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"crt");
 
   // Handle for (truth) AuxDetSimChannels
   art::Handle<std::vector<sim::AuxDetSimChannel> > channels;
@@ -478,31 +547,31 @@ void CRTDetSim::produce(art::Event & e) {
       if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogError("CRT") << "NEGATIVE PE!!!!!" << '\n';
 
       // Observed PE (Poisson-fluctuated)
-      int npe0 = CLHEP::RandPoisson::shoot(engine, npeExp0);
-      int npe1 = CLHEP::RandPoisson::shoot(engine, npeExp1);
-      int npe0Dual = CLHEP::RandPoisson::shoot(engine, npeExp0Dual);
+      int npe0 = CLHEP::RandPoisson::shoot(&fRandEngine, npeExp0);
+      int npe1 = CLHEP::RandPoisson::shoot(&fRandEngine, npeExp1);
+      int npe0Dual = CLHEP::RandPoisson::shoot(&fRandEngine, npeExp0Dual);
 
       // Time relative to trigger [ns], accounting for propagation delay and 'walk'
       // for the fixed-threshold discriminator
       double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
       double t0 = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe0, distToReadout*100);
+        GetChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout*100);
       double t1 = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe1, distToReadout*100);
+        GetChannelTriggerTicks(trigClock, tTrue, npe1, distToReadout*100);
       double t0Dual = \
-        GetChannelTriggerTicks(engine, trigClock, tTrue, npe0Dual, distToReadout2*100);
+        GetChannelTriggerTicks(trigClock, tTrue, npe0Dual, distToReadout2*100);
 
       // Time relative to PPS: Random for now! (FIXME)
       int ppsTicks = \
-        CLHEP::RandFlat::shootInt(engine, trigClock.Frequency() * 1e6);
+        CLHEP::RandFlat::shootInt(&fRandEngine, trigClock.Frequency() * 1e6);
 
       // SiPM and ADC response: Npe to ADC counts
       int q0 = \
-        CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
+        CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
       int q1 = \
-        CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
+        CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
       int q0Dual = \
-        CLHEP::RandGauss::shoot(engine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
+        CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
       if (q0<0||q1<0||q0Dual<0) mf::LogError("CRT") << "NEGATIVE ADC!!!!!" << '\n';
 

@@ -20,6 +20,7 @@
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGaussQ.h"
+#include "CLHEP/Random/JamesRandom.h"
 // ROOT libraries
 #include "TMath.h"
 #include "TComplex.h"
@@ -105,6 +106,11 @@ private:
     TH1F*                        fSimCharge;
     TH2F*                        fSimChargeWire;
     
+    // Random engines
+    CLHEP::HepRandomEngine&      fPedestalEngine;
+    CLHEP::HepRandomEngine&      fUncNoiseEngine;
+    CLHEP::HepRandomEngine&      fCorNoiseEngine;
+
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
     const float                  adcsaturation = 4095;
@@ -128,16 +134,12 @@ DEFINE_ART_MODULE(SimWireICARUS)
     
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
-: EDProducer{pset}
-, fGeometry(*lar::providerFrom<geo::Geometry>())
+    : EDProducer{pset}
+    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
+    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
+    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
+    , fGeometry(*lar::providerFrom<geo::Geometry>())
 {
-    // create a default random engine; obtain the random seed from NuRandomService,
-    // unless overridden in configuration with key "Seed" and "SeedPedestal"
-    art::ServiceHandle<rndm::NuRandomService> Seeds;
-    Seeds->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed");
-    Seeds->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed");
-    Seeds->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal");
-    
     this->reconfigure(pset);
     
     produces< std::vector<raw::RawDigit>   >();
@@ -230,10 +232,6 @@ void SimWireICARUS::produce(art::Event& evt)
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
     
-    //get rng for pedestals
-    art::ServiceHandle<art::RandomNumberGenerator> rng;
-    auto& pedestal_engine = rng->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"pedestal");
-    
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
@@ -264,10 +262,6 @@ void SimWireICARUS::produce(art::Event& evt)
     // per plane and scaling for YZ dependent responses
     // or data driven field responses
     art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
-    
-    // Get random-number engine for use in tools
-    auto& noise_engine    = rng->getEngine(art::ScheduleID::first(), moduleDescription().moduleLabel(), "noise");
-    auto& cornoise_engine = rng->getEngine(art::ScheduleID::first(), moduleDescription().moduleLabel(), "cornoise");
 
     //--------------------------------------------------------------------
     //
@@ -362,7 +356,7 @@ void SimWireICARUS::produce(art::Event& evt)
             
             if (fSmearPedestals )
             {
-                CLHEP::RandGaussQ rGaussPed(pedestal_engine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+                CLHEP::RandGaussQ rGaussPed(fPedestalEngine, 0.0, pedestalRetrievalAlg.PedRms(channel));
                 ped_mean += rGaussPed.fire();
             }
             
@@ -386,8 +380,8 @@ void SimWireICARUS::produce(art::Event& evt)
             }
             
             // Use the desired noise tool to actually generate the noise on this wire
-            fNoiseToolVec[plane]->generateNoise(noise_engine,
-                                                cornoise_engine,
+            fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
+                                                fCorNoiseEngine,
                                                 noisetmp,
                                                 noise_factor,
                                                 channel);
