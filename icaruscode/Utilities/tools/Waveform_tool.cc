@@ -242,19 +242,20 @@ template <typename T> void WaveformTools::getTruncatedMean(const std::vector<T>&
     }
     
     // take a weighted average of two neighbor bins
-    int meanCnt  = 0;
     int meanSum  = 0;
     int binRange = std::min(16, int(frequencyVec.size()/2 + 1));
     int startVal = std::max(0,mpVal-binRange);
     int stopVal  = std::min(range-1,mpVal+binRange);
     
+    nTrunc = 0;
+    
     for(int idx = startVal; idx <= stopVal; idx++)
     {
         meanSum += idx * frequencyVec[idx];
-        meanCnt += frequencyVec[idx];
+        nTrunc  += frequencyVec[idx];
     }
     
-    mean = T(meanSum) / T(meanCnt) + T(minValInt);
+    mean = T(meanSum) / T(nTrunc) + T(minValInt);
     
     return;
 }
