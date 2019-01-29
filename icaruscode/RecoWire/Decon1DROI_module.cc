@@ -93,7 +93,8 @@ class Decon1DROI : public art::EDProducer
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
     std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
-    
+    std::unique_ptr<icarus_tool::IBaseline>                 fBaseline;
+
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
     art::ServiceHandle<util::LArFFT>                        fFFT;
     art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
@@ -146,6 +147,9 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 
     fDeconvolution = art::make_tool<icarus_tool::IDeconvolution>(pset.get<fhicl::ParameterSet>("Deconvolution"));
     
+    // Recover the baseline tool
+    fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
+
     // Let's apply some smoothing as an experiment... first let's get the tool we need
     fhicl::ParameterSet waveformToolParams;
     
@@ -323,6 +327,12 @@ void Decon1DROI::produce(art::Event& evt)
                 
                 std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
                 
+                // Now we do the baseline determination and correct the ROI
+                //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
+                float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
+                
+                std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
+
                 // add the range into ROIVec
                 ROIVec.add_range(candROI.first, std::move(holder));
             }

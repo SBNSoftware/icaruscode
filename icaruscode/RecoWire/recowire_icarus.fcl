@@ -42,6 +42,7 @@ icarus_decon1droi:
         ROIFinderToolPlane2 : @local::icarus_morphologicalroifinder_2
     }
     Deconvolution:              @local::icarus_fullwiredeconvolution
+    Baseline:                   @local::icarus_baselinemostprobave
 }
 
 icarus_recowireroiicarus:
