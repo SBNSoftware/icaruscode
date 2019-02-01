@@ -335,8 +335,6 @@ void CorrelatedNoise::GenNoise(std::function<void (double[])>& gen,const std::ve
 
 void CorrelatedNoise::FindPeaks()
 {
-    //std::cout << " FindPeaks " << std::endl;
-
     float dThr=50;
     std::vector<float> dHeight;
     dHeight.resize(fNoiseHistVec.size(), 0.);
@@ -344,11 +342,8 @@ void CorrelatedNoise::FindPeaks()
     dHeight[0]=0;
     fCoherentNoiseVec.resize(fNoiseHistVec.size(),0);
     
-    //std::cout << " before loop " << fNoiseHistVec.size() << std::endl;
-    
     for(size_t histIdx = 1; histIdx < fNoiseHistVec.size(); histIdx++) {
         dHeight[histIdx]=fNoiseHistVec[histIdx]-fNoiseHistVec[histIdx-1];
-    //    std::cout << " histidx " << histIdx << " dheight " << dHeight[histIdx] << std::endl;
     }
     
     for(size_t histIdx = 1; histIdx < fNoiseHistVec.size(); histIdx++)
@@ -439,11 +434,6 @@ void CorrelatedNoise::ExtractCorrelatedAmplitude(float& corrFactor, int board) c
     
     float cfmedio=0.2287;
     corrFactor=rnd_corr[0]/cfmedio;
-    //corrFactor=10;
-    //  if(corrFactor>3)
-    //   std::cout << " corr noise factor " << corrFactor << std::endl;
-   
-    // corrFactor=1;
 }
     
 void CorrelatedNoise::makeHistograms()
