@@ -50,7 +50,7 @@ FilterTool:
     # The filter function is a mating of two gaussians to provide both low and high frequency filtering
     # Note that as of release v08_00_00 the parameters are in units of MHz
     FilterFunction:              "(x>0.0) ? ((1. - gaus(0)) * gaus(3)) : 0.0"
-    FilterParametersVec:         [1., 0., 4.0,   1., 0., 150.]
+    FilterParametersVec:         [1., 0., 4.0,   1., 0., 100.]
     FilterWidthCorrectionFactor: 1.0
 }
 
@@ -83,24 +83,25 @@ icarus_signalshapingservice:
     }
 }
 
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.Plane:                              0
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.DeconvPol:                          -1
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.Plane:                0
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.SignalType:           0
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:          0
-icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.Plane:                       0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Plane:                       0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.DeconvPol:                   -1
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.Plane:         0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.FieldResponse.SignalType:    0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.ElectronicsResponse.Plane:   0
+icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.Plane:                0
 
-icarus_signalshapingservice.ResponseTools.ResponsePlane1.Plane:                              1
-icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.Plane:                1
-icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.SignalType:           0
-icarus_signalshapingservice.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:          1
-icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.Plane:                       1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Plane:                       1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.Plane:         1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.Plane:                1
 
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.Plane:                              2
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.Plane:                2
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.SignalType:           1
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:          2
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.Plane:                       2
-icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.Filter.FilterParametersVec:  [ 1., 0.0, 0.001, 1., 0.0, 150. ]
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Plane:                       2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.Plane:         2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.SignalType:    1
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:   2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.Plane:                2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.FilterFunction:       "(x>0.0) ? gaus(0) : 0.0"
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.FilterParametersVec:  [ 1., 0.0, 100. ]
 
 END_PROLOG
