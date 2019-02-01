@@ -203,7 +203,7 @@ void RawDigitAna::analyze(const art::Event& event)
     
     if (simChannelHandle.isValid())
     {
-        for(const auto& simChannel : *simChannelHandle) channelMap.at(simChannel.Channel()) = &simChannel;
+        for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
     }
 
     if (rawDigitHandle.isValid())
