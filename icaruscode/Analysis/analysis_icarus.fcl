@@ -29,7 +29,7 @@ icarus_RawDigitAnalysis:
 
 icarus_HitEfficiencyAnalysis:
 {
-  module_type:         HitEfficiencyAna
+  module_type:                    HitEfficiencyAna
   HitEfficiencyHistogramToolList: [ @local::TrackHitEfficiencyAnalysisTool ]
 }
 
