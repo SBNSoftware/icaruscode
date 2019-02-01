@@ -223,7 +223,7 @@ TrackHitEfficiencyAnalysis::~TrackHitEfficiencyAnalysis()
 ///
 void TrackHitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fRawDigitProducerLabel   = pset.get< art::InputTag             >("RawDigitLabel",   "butcher");
+    fRawDigitProducerLabel   = pset.get< art::InputTag             >("RawDigitLabel",   "rawdigitfilter");
     fWireProducerLabel       = pset.get< art::InputTag             >("WireModuleLabel", "decon1droi");
     fHitProducerLabel        = pset.get< art::InputTag             >("HitModuleLabel",  "gauss");
     fMCParticleProducerLabel = pset.get< art::InputTag             >("MCParticleLabel", "largeant");

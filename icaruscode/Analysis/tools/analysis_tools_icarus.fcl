@@ -12,6 +12,7 @@ BasicHitAnalysisTool:
 TrackHitEfficiencyAnalysisTool:
 {
   tool_type:               "TrackHitEfficiencyAnalysis"
+  RawDigitLabel:           "rawdigitfilter"
   WireModuleLabel:         "decon1droi"
   HitModuleLabel:          "gaushit"
   MCParticleLabel:         "largeant"
