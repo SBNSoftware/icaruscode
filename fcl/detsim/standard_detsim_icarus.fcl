@@ -50,12 +50,8 @@ physics:
 }
 
 #
-# For MCC1.1 we are using the correlated noise model
-physics.producers.daq.NoiseGenToolVec:  [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-physics.producers.daq.NoiseGenToolVec[0].Plane:          0
-physics.producers.daq.NoiseGenToolVec[1].Plane:          1
-physics.producers.daq.NoiseGenToolVec[2].Plane:          2
-physics.producers.daq.SuppressNoSignal:                  true
+# For MCC1.1 we are still suppressing channels with no signal in the TPC
+physics.producers.daq.SuppressNoSignal: true
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
