@@ -573,7 +573,7 @@ namespace crt {
   //-----------------------------------------------------------------------
   void CRTAnalysis::analyze(const art::Event& event) 
   {
-    MF_LOG_DEBUG("CRT") << "beginning analyis" << '\n';
+    LOG_DEBUG("CRT") << "beginning analyis" << '\n';
 
     // Check that lists for momenta limits is same size as last of PDGs from FHiCL
     if (fPDGs.size() != fMinMomenta.size() || fPDGs.size() != fMaxMomenta.size())
@@ -826,7 +826,7 @@ namespace crt {
 
         int oldreg = -1;
 
-        MF_LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
+        LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
 
         //loop over trajectory points
         for (unsigned int i=0; i<fSimHits; i++){

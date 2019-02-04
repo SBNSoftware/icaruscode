@@ -182,7 +182,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       if (nPE == 1) AddSPE(pe.first,waveform); // faster if n = 1
       else AddPhotoelectrons(pe.first, nPE, waveform);
     }
-    MF_LOG_TRACE("PMTsimulationAlg") 
+    LOG_TRACE("PMTsimulationAlg") 
       << nTotalPE << " photoelectrons at " << peMap.size()
       << " times in channel " << photons.OpChannel();
 
@@ -270,7 +270,7 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
     auto const pretrigSize = fParams.pretrigSize();
     auto const posttrigSize = fParams.posttrigSize();
-    MF_LOG_TRACE("PMTsimulationAlg")
+    LOG_TRACE("PMTsimulationAlg")
       << "Channel #" << opch << ": " << trigger_locations.size() << " triggers";
     for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
 
