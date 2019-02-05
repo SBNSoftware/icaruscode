@@ -77,6 +77,7 @@ private:
     
     /// We don't keep more than this number of photons per `sim::SimPhoton`.
     static constexpr unsigned int MaxPhotons = 10000000U;
+    CLHEP::HepRandomEngine& fEngine;
     
 }; // class PhotonPropagationICARUS
 
@@ -92,6 +93,8 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
   : fGeometry(lar::providerFrom<geo::Geometry>())
 //  , fDetectorProperties(lar::providerFrom<detinfo::DetectorPropertiesService>())
+  , fEngine{art::ServiceHandle<rndm::NuRandomService>()
+    ->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton")}
 {
     configure(pset);
     
@@ -102,8 +105,6 @@ PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pse
     // bit we are preparing to the case where this code is moved
     // into a different code which has other engines
     // (and it is a good idea to keep them separate)
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton");
 
     // Report.
     mf::LogDebug("PhotonPropogationICARUS") << "PhotonPropogationICARUS configured";
@@ -172,9 +173,7 @@ void PhotonPropogationICARUS::produce(art::Event & event)
 
     // get hold of all needed services
 //    auto const& pvs = *(art::ServiceHandle<phot::PhotonVisibilityService>());
-    auto& engine
-      = art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"icarusphoton");
-    CLHEP::RandLandau landauGen(engine);
+    CLHEP::RandLandau landauGen(fEngine);
 
     // Loop through the input photons (this might need to be more complicated...)
     for(const auto& simPhoton : srcSimPhotons)

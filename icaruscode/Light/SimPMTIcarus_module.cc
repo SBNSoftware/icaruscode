@@ -124,6 +124,9 @@ namespace opdet{
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
     
+    CLHEP::HepRandomEngine& fEffEngine;
+    CLHEP::HepRandomEngine& fDarkNoiseEngine;
+    CLHEP::HepRandomEngine& fElecNoiseEngine;
   }; // class SimPMTIcarus
   
   
@@ -134,19 +137,19 @@ namespace opdet{
     : EDProducer{config}
     , fInputModuleName(config().inputModule())
     , makePMTsimulator(config().algoConfig())
+    // create three random engines for three independent tasks;
+    // obtain the random seed from NuRandomService,
+    // unless overridden in configuration with key "Seed";
+    , fEffEngine{art::ServiceHandle<rndm::NuRandomService>()
+                 ->createEngine(*this, "HepJamesRandom", "Efficiencies" /*, config().Seed */)}
+    , fDarkNoiseEngine{art::ServiceHandle<rndm::NuRandomService>()
+                       ->createEngine(*this, "HepJamesRandom", "DarkNoise" /*, config().DarkNoiseSeed */)}
+    , fElecNoiseEngine{art::ServiceHandle<rndm::NuRandomService>()
+                       ->createEngine(*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */)}
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     
-    // create three random engines for three independent tasks;
-    // obtain the random seed from NuRandomService,
-    // unless overridden in configuration with key "Seed";
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "Efficiencies" /*, config().Seed */);
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "DarkNoise" /*, config().DarkNoiseSeed */);
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */);
     
   } // SimPMTIcarus::SimPMTIcarus()
   
@@ -170,14 +173,11 @@ namespace opdet{
     //
     // prepare the algorithm
     //
-    auto PMTsimulator = makePMTsimulator(
-      *(lar::providerFrom<detinfo::LArPropertiesService>()),
+    auto PMTsimulator = makePMTsimulator(*(lar::providerFrom<detinfo::LArPropertiesService>()),
       *(lar::providerFrom<detinfo::DetectorClocksService>()),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"Efficiencies"),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"DarkNoise"),
-      art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"ElectronicsNoise")
-      );
-    
+                                         fEffEngine,
+                                         fDarkNoiseEngine,
+                                         fElecNoiseEngine);
     //
     // run the algorithm
     //
