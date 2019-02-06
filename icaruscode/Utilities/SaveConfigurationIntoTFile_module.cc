@@ -159,7 +159,7 @@ void SaveConfigurationIntoTFile::beginJob() {
   //
   fhicl::ParameterSet pset = currentProcessConfiguration(procName);
   
-  MF_LOG_DEBUG("SaveConfigurationIntoTFile")
+  LOG_DEBUG("SaveConfigurationIntoTFile")
     << "This process: '" << procName << "':\n"
     << std::string(80, '=') << '\n'
     << pset.to_indented_string()

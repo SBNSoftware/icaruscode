@@ -142,7 +142,7 @@ void ChannelMapIcarusAlg::Initialize( GeometryData_t const& geodata )
     // calculate the total number of channels in the detector
     fNchannels = fTopChannel;
 
-    MF_LOG_DEBUG("ChannelMapStandard") << "# of channels is " << fNchannels;
+    LOG_DEBUG("ChannelMapStandard") << "# of channels is " << fNchannels;
 
     return;
 }
