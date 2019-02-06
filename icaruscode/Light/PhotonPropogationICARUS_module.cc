@@ -225,7 +225,7 @@ void PhotonPropogationICARUS::produce(art::Event & event)
             } while (time_plus < minPropTime);
              
              // TODO restore the "MF_LOG_TRACE" line for normal operations
-             LOG_TRACE("LightPropagationICARUS");
+             MF_LOG_TRACE("LightPropagationICARUS");
 //             mf::LogVerbatim("LightPropagationICARUS")
 //               << "Photon #" << photonNo
 //               << " (at " << position << ", " << dis << " cm far from PMT) given offset "
