@@ -93,8 +93,8 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
   : fGeometry(lar::providerFrom<geo::Geometry>())
 //  , fDetectorProperties(lar::providerFrom<detinfo::DetectorPropertiesService>())
-  , fEngine{art::ServiceHandle<rndm::NuRandomService>()
-    ->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton")}
+  , fEngine(art::ServiceHandle<rndm::NuRandomService>()
+            ->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton"))
 {
     configure(pset);
     

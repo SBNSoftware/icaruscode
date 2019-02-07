@@ -99,7 +99,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
  : EDProducer(p)
   // create a default random engine; obtain the random seed from NuRandomService,
   // unless overridden in configuration with key "Seed"
- , fFlatRandom{art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed")}
+ , fFlatRandom(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed"))
 {
   produces< std::vector<simb::MCTruth>   >();
   produces< sumdata::RunData, art::InRun >();

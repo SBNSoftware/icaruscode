@@ -140,12 +140,12 @@ namespace opdet{
     // create three random engines for three independent tasks;
     // obtain the random seed from NuRandomService,
     // unless overridden in configuration with key "Seed";
-    , fEffEngine{art::ServiceHandle<rndm::NuRandomService>()
-                 ->createEngine(*this, "HepJamesRandom", "Efficiencies" /*, config().Seed */)}
-    , fDarkNoiseEngine{art::ServiceHandle<rndm::NuRandomService>()
-                       ->createEngine(*this, "HepJamesRandom", "DarkNoise" /*, config().DarkNoiseSeed */)}
-    , fElecNoiseEngine{art::ServiceHandle<rndm::NuRandomService>()
-                       ->createEngine(*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */)}
+    , fEffEngine(art::ServiceHandle<rndm::NuRandomService>()
+                 ->createEngine(*this, "HepJamesRandom", "Efficiencies" /*, config().Seed */))
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()
+                       ->createEngine(*this, "HepJamesRandom", "DarkNoise" /*, config().DarkNoiseSeed */))
+    , fElecNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()
+                       ->createEngine(*this, "HepJamesRandom", "ElectronicsNoise" /*, config().ElectronicsNoiseSeed */))
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
