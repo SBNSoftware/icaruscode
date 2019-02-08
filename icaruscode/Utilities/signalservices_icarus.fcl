@@ -56,12 +56,21 @@ FilterTool:
 
 ResponseTool:
 {
-    tool_type: Response
+    tool_type:           Response
     Plane:               0
     Correction3D:        1.
     TimeScaleFactor:     1.
     DeconvPol:           1
     FieldResponse:       @local::FieldResponseTool
+    ElectronicsResponse: @local::ElectronicsResponseBesselApproxTool
+    Filter:              @local::FilterTool
+}
+
+Response2DTool:
+{
+    tool_type:           Response2D
+    Plane:               0
+    DeconvPol:           1
     ElectronicsResponse: @local::ElectronicsResponseBesselApproxTool
     Filter:              @local::FilterTool
 }
