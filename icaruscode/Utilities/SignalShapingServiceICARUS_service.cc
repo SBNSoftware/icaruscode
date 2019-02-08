@@ -128,7 +128,12 @@ void util::SignalShapingServiceICARUS::init()
         art::ServiceHandle<geo::Geometry> geo;
 
         // Get the normalization from the field response for the collection plane
-        double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
+        double integral = 1.;
+        
+        const icarus_tool::IFieldResponse* fieldResponse = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse();
+        
+        if (fieldResponse) integral = fieldResponse->getIntegral();
+        
         double weight   = 1. / integral;
         
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
@@ -271,21 +276,29 @@ int util::SignalShapingServiceICARUS::FieldResponseTOffset(unsigned int const ch
 {
     art::ServiceHandle<geo::Geometry> geom;
     
-    size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double time_offset(0.);
-    
+    size_t                             planeIdx = geom->ChannelToWire(channel)[0].Plane;
+    int                                fieldResponseTimeOffset(0);
+    const icarus_tool::IFieldResponse* fieldResponse(nullptr);
+
     try
     {
-        time_offset = fPlaneToResponseMap.at(planeIdx).front()->getFieldResponse()->getTOffset();
+        fieldResponse = fPlaneToResponseMap.at(planeIdx).front()->getFieldResponse();
     }
     catch (...)
     {
         throw cet::exception(__FUNCTION__) << "Invalid plane ... " << planeIdx << std::endl;
     }
-
-    auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
     
-    return tpc_clock.Ticks(time_offset / 1.e3);
+    if (fieldResponse)
+    {
+        double time_offset = fieldResponse->getTOffset();
+
+        auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
+        
+        fieldResponseTimeOffset = tpc_clock.Ticks(time_offset / 1.e3);
+    }
+    
+    return fieldResponseTimeOffset;
 }
 
 namespace util {
