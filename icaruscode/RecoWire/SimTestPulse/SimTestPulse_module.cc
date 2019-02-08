@@ -24,6 +24,7 @@
 #include <memory>
 
 #include "lardataobj/Simulation/SimChannel.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "lardataobj/RawData/TriggerData.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -91,6 +92,7 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
 // Initialize member data here.
 {
     produces< std::vector<sim::SimChannel> >();
+    produces< std::vector<sim::SimEnergyDeposit> >("TPCActive");
     produces< std::vector<raw::Trigger> >();
     produces< sumdata::RunData, art::InRun >();
     
@@ -157,7 +159,8 @@ void SimTestPulse::produce(art::Event & e)
     trigger_v->push_back(raw::Trigger(0,fTriggerTime,fTriggerTime,1));
     
     std::unique_ptr<std::vector<sim::SimChannel> > simch_v(new std::vector<sim::SimChannel> );
-    
+    std::unique_ptr< std::vector<sim::SimEnergyDeposit> > edepCol_TPCActive (new std::vector<sim::SimEnergyDeposit>);
+
     double xyz[3] = {0., 0., 0.};
 
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
@@ -233,6 +236,7 @@ void SimTestPulse::produce(art::Event & e)
     
     fTupleTree->Fill();
     e.put(std::move(simch_v));
+    e.put(std::move(edepCol_TPCActive),"TPCActive");
     e.put(std::move(trigger_v));
     
     return;
