@@ -52,9 +52,28 @@ standard_simwire:
   NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
 }
 
-#standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
-#standard_simwire.NoiseGenToolVec[1].HistogramName: "hnoiseI2"
-#standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
+standard_simwaveform:
+{
+  module_type:        "SimWaveformICARUS"
+  DriftEModuleLabel:  "drift"
+  CompressionType:    "none"
+  SimDeadChannels:    false
+  SuppressNoSignal:   false
+  SmearPedestals:     true
+  Test:               false
+  TestWire:           0
+  TestIndex:          [ 0. ]
+  TestCharge:         [ 0. ]
+  Sample:             -1
+  MakeHistograms:     "true"
+  NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+}
+
+icarus_simwaveform:  @local::standard_simwaveform
+
+icarus_simwaveform.NoiseGenToolVec[0].Plane: 0
+icarus_simwaveform.NoiseGenToolVec[1].Plane: 1
+icarus_simwaveform.NoiseGenToolVec[2].Plane: 2
 
 icarus_simwire:  @local::standard_simwire
 
