@@ -202,7 +202,7 @@ void SimWaveformICARUS::beginJob()
         for(auto const& plane_id : fGeometry.IteratePlaneIDs())
             channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
         
-        double xyz[3] = { std::numeric_limits<double>::max() };
+//        double xyz[3] = { std::numeric_limits<double>::max() };
         
         //TODO: add the test case back in
         
@@ -218,7 +218,7 @@ void SimWaveformICARUS::beginJob()
 //                                                              xyz,
 //                                                              std::numeric_limits<double>::max());
 //            }
-        }
+//        }
     }
     
     fSimCharge     = tfs->make<TH1F>("fSimCharge", "simulated charge", 150, 0, 1500);
@@ -261,7 +261,7 @@ void SimWaveformICARUS::produce(art::Event& evt)
     // FIXME:  You should not be calling preProcessEvent
     tss->preProcessEvent(evt,art::ScheduleContext::invalid());
     auto const* ts = tss->provider();
-    
+
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
     
@@ -414,19 +414,29 @@ void SimWaveformICARUS::produce(art::Event& evt)
                     const std::vector<float>& simSignal = range.data();
                     
                     // ROI start time
-                    raw::TDCtick_t firstBinTick = range.begin_index();
+                    raw::TDCtick_t rangeTDC       = range.begin_index();
+                    raw::TDCtick_t rangeNTicks    = simSignal.size();
+                    int            rangeFirstTick = 0;
                     
-                    for(size_t tick = 0; tick < simSignal.size(); tick++)
+                    // Convert the above ticks which span the full G4 time range into valid TPC tdc ticks
+                    int firstTick = ts->TPCTDC2Tick(rangeTDC);
+                    
+                    // If start is not in range then check the end just in case...
+                    if (firstTick < 0)
                     {
-                        int tdc = ts->TPCTick2TDC(firstBinTick + tick);
+                        int tickLast = ts->TPCTDC2Tick(rangeTDC + rangeNTicks);
                         
-                        if      (tdc < 0)        continue;
-                        else if (tdc >= fNTicks) break;
+                        // If the last is still not in range then skip to next
+                        if (tickLast < 0) continue;
                         
-                        double charge = simSignal[tick];
-                        
-                        chareWork[tdc] += charge / gain;
+                        // Reset the the start to 0...
+                        rangeFirstTick -= firstTick;
+                        firstTick       = 0;
                     }
+                    
+                    if (firstTick + rangeNTicks > chargeWork.size()) rangeNTicks = chargeWork.size() - firstTick;
+                    
+                    for(size_t tick = rangeFirstTick; tick < rangeNTicks; tick++) chargeWork[firstTick + tick] += simSignal[tick] / gain;
                 }
 
                 // now we have the tempWork for the adjacent wire of interest
