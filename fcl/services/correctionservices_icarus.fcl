@@ -30,6 +30,8 @@ icarus_spacecharge: {
     EnableSimSpatialSCE:    false
     EnableSimEfieldSCE:     false
     EnableCorrSCE:          false
+    EnableCalSpatialSCE:    false
+    EnableCalEfieldSCE:     false
     RepresentationType:     "Parametric"
     InputFilename:          "SCEoffsets.root"
     
