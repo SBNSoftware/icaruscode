@@ -69,7 +69,8 @@ public:
 
 private:
 
-  CLHEP::RandFlat *fFlatRandom;
+  CLHEP::HepRandomEngine& fFlatEngine;
+  CLHEP::RandFlat*        fFlatRandom;
 
   // exception thrower
   void abort(const std::string msg) const;
@@ -104,7 +105,9 @@ MultiPartVertex::~MultiPartVertex()
 { delete fFlatRandom; }
 
 MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
- : EDProducer(p)
+ : EDProducer(p),
+   fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
+
 // Initialize member data here.
 {
 
@@ -113,10 +116,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
   //
   // create a default random engine; obtain the random seed from NuRandomService,
   // unless overridden in configuration with key "Seed"
-  art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, p, "Seed");
-  art::ServiceHandle<art::RandomNumberGenerator> rng;
-  CLHEP::HepRandomEngine &engine = rng->getEngine(art::ScheduleID::first(),p.get<std::string>("module_label"));
-  fFlatRandom = new CLHEP::RandFlat(engine);
+  fFlatRandom = new CLHEP::RandFlat(fFlatEngine,0,1);
 
   produces< std::vector<simb::MCTruth>   >();
   produces< sumdata::RunData, art::InRun >();

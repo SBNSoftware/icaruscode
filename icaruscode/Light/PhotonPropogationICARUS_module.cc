@@ -74,6 +74,7 @@ private:
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const* fGeometry = nullptr; ///< Pointer to Geometry service.
 //    detinfo::DetectorProperties const* fDetectorProperties = nullptr; ///< Detector properties service.
+    CLHEP::HepRandomEngine&  fPhotonEngine;
     
     /// We don't keep more than this number of photons per `sim::SimPhoton`.
     static constexpr unsigned int MaxPhotons = 10000000U;
@@ -91,19 +92,12 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 ///
 PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
   : fGeometry(lar::providerFrom<geo::Geometry>())
+  , fPhotonEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton"))
 //  , fDetectorProperties(lar::providerFrom<detinfo::DetectorPropertiesService>())
 {
     configure(pset);
     
     produces<std::vector<sim::SimPhotons>>();
-    
-    // declare we need a random stream (and engine);
-    // while `createEngine(*this, pset)` would probably suffice,
-    // bit we are preparing to the case where this code is moved
-    // into a different code which has other engines
-    // (and it is a good idea to keep them separate)
-    art::ServiceHandle<rndm::NuRandomService>()->createEngine
-      (*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton");
 
     // Report.
     mf::LogDebug("PhotonPropogationICARUS") << "PhotonPropogationICARUS configured";
@@ -172,9 +166,7 @@ void PhotonPropogationICARUS::produce(art::Event & event)
 
     // get hold of all needed services
 //    auto const& pvs = *(art::ServiceHandle<phot::PhotonVisibilityService>());
-    auto& engine
-      = art::ServiceHandle<art::RandomNumberGenerator>()->getEngine(art::ScheduleID::first(),moduleDescription().moduleLabel(),"icarusphoton");
-    CLHEP::RandLandau landauGen(engine);
+    CLHEP::RandLandau landauGen(fPhotonEngine);
 
     // Loop through the input photons (this might need to be more complicated...)
     for(const auto& simPhoton : srcSimPhotons)
