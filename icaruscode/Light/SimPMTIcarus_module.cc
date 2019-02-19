@@ -87,24 +87,7 @@ namespace opdet{
   class SimPMTIcarus : public art::EDProducer {
   public:
     
-    struct Config {
-      
-      using Comment = fhicl::Comment;
-      using Name = fhicl::Name;
-      
-      fhicl::Atom<art::InputTag> inputModule {
-        Name("InputModule"),
-        Comment("simulated photons to be digitised (sim::SimPhotons)")
-        };
-      
-      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config>
-        algoConfig;
-      
-    }; // struct Config
-    
-    using Parameters = art::EDProducer::Table<Config>;
-    
-    explicit SimPMTIcarus(Parameters const& config);
+    explicit SimPMTIcarus(fhicl::ParameterSet const& config);
     
     
     // Plugins should not be copied or assigned.
@@ -134,10 +117,10 @@ namespace opdet{
   // ---------------------------------------------------------------------------
   // --- SimPMTIcarus implementation
   // ---------------------------------------------------------------------------
-  SimPMTIcarus::SimPMTIcarus(Parameters const& config)
+  SimPMTIcarus::SimPMTIcarus(fhicl::ParameterSet const& config)
     : EDProducer{config}
-    , fInputModuleName(config().inputModule())
-    , makePMTsimulator(config().algoConfig())
+    , fInputModuleName(config.get<art::InputTag>("InputModuleLabel"))
+    , makePMTsimulator(config.get<icarus::opdet::PMTsimulationAlgMaker::Config>("PMTsimulationAlg"))
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies", config, "SeedEfficinecy"))
     , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise", config, "SeedDarkNoise"))
     , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise", config, "SeedElectronicsNoise"))

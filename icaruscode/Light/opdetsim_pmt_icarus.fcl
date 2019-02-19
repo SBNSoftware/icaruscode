@@ -9,8 +9,7 @@ icarus_simpmt:
 {
   module_type:               "SimPMTIcarus"
   InputModule:               "largeant"
-  
-  @table::icarus_pmtsimulationalg_standard
+  PMTSimulationAlg:          @table::icarus_pmtsimulationalg_standard
 }
 
 
