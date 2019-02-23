@@ -172,14 +172,17 @@ icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0:          
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:       4
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       1.5
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:   8
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_morphological
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:       4
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       1.5
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:   8
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_morphological
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:       4
 icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       1.5
+icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:   8
 
 icarus_reco_producers.gaushit.HitProducerLabel:                                            "gaushitall"
       
