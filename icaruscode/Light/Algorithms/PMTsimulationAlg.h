@@ -14,10 +14,10 @@
 
 
 // ICARUS libraries
-#include "icaruscode/Utilities/quantities/spacetime.h" // microsecond, ...
-#include "icaruscode/Utilities/quantities/frequency.h" // hertz, gigahertz
-#include "icaruscode/Utilities/quantities/electronics.h" // tick, counts_f
-#include "icaruscode/Utilities/quantities/electromagnetism.h" // picocoulomb
+#include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
+#include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
+#include "lardataalg/Utilities/quantities/electronics.h" // tick, counts_f
+#include "lardataalg/Utilities/quantities/electromagnetism.h" // picocoulomb
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

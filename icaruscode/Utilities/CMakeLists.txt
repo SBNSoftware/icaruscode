@@ -1,5 +1,4 @@
 cet_enable_asserts()
-add_subdirectory(quantities)
 add_subdirectory(tools)
 
 set( icarus_util_lib_list
