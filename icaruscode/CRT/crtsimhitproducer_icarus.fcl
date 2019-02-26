@@ -1,6 +1,5 @@
 # A script to run the producer module: CRTSimHitProducer
 
-
 #include "services_icarus_simulation.fcl"
 #include "crtsimhitproducer.fcl"
 
@@ -14,6 +13,7 @@ services:
   message:                 @local::icarus_message_services_prod_debug
                            @table::icarus_basic_services
 } # services
+
 # The 'source' section tells the script to expect an input file with art::Event records.
 source:
 {
@@ -22,6 +22,7 @@ source:
   # file. You can override this value with the "-n" option on the command line. 
   maxEvents:  -1 
 }
+
 # This is empty, because we're not writing an output file with art::Event objects.
 outputs:
 {
@@ -35,6 +36,7 @@ outputs:
     fastCloning: false
   }
 }
+
 # The 'physics' section defines and configures some modules to do work on each event.
 physics:
 {
