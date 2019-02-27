@@ -60,7 +60,8 @@
 // CRT data products
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTHit.h"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTUtils/CRTTruthMatchUtils.h"
 
 using std::string;
 using std::vector;
@@ -78,10 +79,12 @@ namespace {
   int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
   int ProcessToICode(string const& p);
   uint32_t MacToADReg(uint32_t mac);
-  //char MacToType(uint32_t mac);
+  char MacToType(uint32_t mac);
   uint32_t MacToTypeCode(uint32_t mac);
   uint32_t ADToMac(char type, uint32_t adid);
   //uint32_t ADSToFEBChannel(char type, uint32_t adid, uint32_t adsid);
+  int MacToAuxDetID(int mac, int chan);
+  int ChannelToAuxDetSensitiveID(int mac, int chan);
 
 } // local namespace
 
@@ -306,16 +309,16 @@ namespace crt {
       
     //CRT hit product vars
     int       fHitEvent;
-    double    fXHit; ///< reconstructed X position of CRT hit (cm)
-    double    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    double    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    double    fXErrHit; ///< stat error of CRT hit reco X (cm)
-    double    fYErrHit; ///< stat error of CRT hit reco Y (cm)
-    double    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    double    fT0Hit; ///< hit time w.r.t. global event time
-    double    fT1Hit; ///< hit time w.r.t. PPS
-    double    fT0CorrHit;
-    double    fT1CorrHit;
+    float    fXHit; ///< reconstructed X position of CRT hit (cm)
+    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
+    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
+    float    fXErrHit; ///< stat error of CRT hit reco X (cm)
+    float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
+    float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
+    int32_t    fT0Hit; ///< hit time w.r.t. global event time
+    int32_t    fT1Hit; ///< hit time w.r.t. PPS
+    //double    fT0CorrHit;
+    //double    fT1CorrHit;
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
@@ -527,16 +530,16 @@ namespace crt {
     // Define the branches of our SimHit n-tuple
     fSimHitNtuple->Branch("event",       &fHitEvent,    "event/I");
     fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
-    fSimHitNtuple->Branch("x",           &fXHit,        "x/D");
-    fSimHitNtuple->Branch("y",           &fYHit,        "y/D");
-    fSimHitNtuple->Branch("z",           &fZHit,        "z/D");
-    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/D");
-    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/D");
-    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/D");
-    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/D");
-    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/D");
-    fSimHitNtuple->Branch("t0Corr",      &fT0CorrHit,   "t0/D");
-    fSimHitNtuple->Branch("t1Corr",      &fT1CorrHit,   "t1/D");
+    fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
+    fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
+    fSimHitNtuple->Branch("z",           &fZHit,        "z/F");
+    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
+    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
+    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
+    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
+    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
+    //fSimHitNtuple->Branch("t0Corr",      &fT0CorrHit,   "t0/D");
+    //fSimHitNtuple->Branch("t1Corr",      &fT1CorrHit,   "t1/D");
     fSimHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     fSimHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
     fSimHitNtuple->Branch("trackID",     &fHitTrk,      "trackID[64]/I");
@@ -1494,28 +1497,54 @@ namespace crt {
 
     else std::cout << "CRTData products not found! (expected if gen/G4 step)" << std::endl;
 
-    art::Handle<vector<icarus::crt::CRTHit>> crtSimHitHandle;
+    art::Handle<std::vector<icarus::crt::CRTHit>> crtSimHitHandle;
+    //std::vector<art::Ptr<icarus::crt::CRTHit>> crtSimHits;
+    
     bool isCRTSimHit = event.getByLabel(fCRTSimHitProducerLabel, crtSimHitHandle);
-    if (isCRTSimHit) std::cout << "Found " << crtSimHitHandle->size() << " CRT Hits" << std::endl;
+    std::vector<int> ids;
+    if (isCRTSimHit) {
+
+        std::cout << "Found " << crtSimHitHandle->size() << " CRT Hits" << std::endl;
+        //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
+        art::FindManyP<icarus::crt::CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitProducerLabel);
+        std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
+
+        for(auto const& dat : data){
+          for(auto const& chan : dat->ChanData()){
+            for(auto const& trkid : chan.TrackID()){
+              ids.push_back(trkid);
+            }
+          }
+        }
+
+        std::sort(ids.begin(), ids.end());
+        ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+
+        //auto trks = icarus::CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,0);
+    }
 
     fNHit = 0;
 
     if (isCRTSimHit) {
-        for ( auto const& hit : (*crtSimHitHandle) )
+        for ( auto const& hit : *crtSimHitHandle )
         {
             fNHit++;
-            fHitEvent = hit.Event();
-            fXHit    = hit.X();
-            fYHit    = hit.Y();
-            fZHit    = hit.Z();
-            fXErrHit = hit.XErr();
-            fYErrHit = hit.YErr();
-            fZErrHit = hit.ZErr();
-            fT0Hit   = hit.T0();
-            fT1Hit   = hit.T1();
-            fT0CorrHit = hit.T0Corr();
-            fT1CorrHit = hit.T1Corr();
-            fHitReg  = hit.Region();
+            fHitEvent = fEvent;
+            fXHit    = hit.x_pos; //X();
+            fYHit    = hit.y_pos;//Y();
+            fZHit    = hit.z_pos;//Z();
+            fXErrHit = hit.x_err;//XErr();
+            fYErrHit = hit.y_err;//YErr();
+            fZErrHit = hit.z_err;//ZErr();
+            fT0Hit   = hit.ts0_ns;//T0();
+            fT1Hit   = hit.ts1_ns;//T1();
+            //fT0CorrHit = hit.T0Corr();
+            //fT1CorrHit = hit.T1Corr();
+            
+            int mactmp = hit.feb_id[0];
+            auto ittmp = hit.pesmap.find(mactmp);
+            int chantmp = (*ittmp).second[0].first;
+            fHitReg  = MacToADReg(mactmp);
             fHitSubSys = -0.8*INT_MAX;
             if (fHitReg==38||fHitReg==52||fHitReg==56||fHitReg==48||fHitReg==46)
                 fHitSubSys = 0;
@@ -1527,17 +1556,17 @@ namespace crt {
                 fHitTrk[i]  = -0.8*INT_MAX;
                 fHitPDG[i]  = -0.8*INT_MAX;
             }
-            auto const& trks = hit.TrackID();
+            //auto trks = CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,fNHit-1);//hit.TrackID();
             size_t index = 0;
-            for ( auto i=trks.begin(); i!=trks.end(); i++ ) {
-               
+            //for ( auto i=trks.begin(); i!=trks.end(); i++ ) {
+            for ( auto i=ids.begin(); i!=ids.end(); i++ ) {   
                 fHitTrk[index]  = *i;
                 if ( particleMap.find(fHitTrk[index]) != particleMap.end())
                     fHitPDG[index] = particleMap[fHitTrk[index]]->PdgCode();
                 index++;
             }
-            fHitMod  = hit.Module();
-            fHitStrip = hit.Strip();
+            fHitMod  = MacToAuxDetID(mactmp, chantmp);//hit.Module();
+            fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);//hit.Strip();
 
             fSimHitNtuple->Fill();
         }//for CRT Hits
@@ -1671,7 +1700,7 @@ namespace {
       return 0;
   }
 
-  /*char MacToType(uint32_t mac) {
+  char MacToType(uint32_t mac) {
 
       uint32_t reg = MacToADReg(mac);
 
@@ -1683,7 +1712,7 @@ namespace {
         return 'd';
 
       return 'e';
-  }*/
+  }
 
   uint32_t MacToTypeCode(uint32_t mac) {
 
@@ -1719,6 +1748,43 @@ namespace {
       }
       return UINT32_MAX;
   }
+
+  int MacToAuxDetID(int mac, int chan){
+    char type = MacToType(mac);
+    if (type == 'e') return INT_MAX;
+    if (type == 'c' || type == 'd') return mac;
+    if (type == 'm') {
+      if (mac>49) mac+=-50;
+      if (mac<40) {
+          if (            chan<=9 ) return mac*3;
+          if (chan>=10 && chan<=19) return mac*3 + 1;
+          if (chan>=20 && chan<=29) return mac*3 + 2;
+      }
+      else if (mac<47) {
+          if (            chan<=9 ) return mac*3 - 1;
+          if (chan>=10 && chan<=19) return mac*3;
+          if (chan>=20 && chan<=29) return mac*3 + 1;
+      }
+      else {
+          if (            chan<=9 ) return mac*3 - 2;
+          if (chan>=10 && chan<=19) return mac*3 - 1;
+          if (chan>=20 && chan<=29) return mac*3;
+      }
+
+    }
+
+    return INT_MAX;
+  }
+
+  int ChannelToAuxDetSensitiveID(int mac, int chan) {
+    int type = MacToTypeCode(mac);
+    if (type==2) return chan; //d
+    if (type==0) return chan/2; //c
+    if (type==1) return (chan % 10)*2; //m
+
+    return INT_MAX;
+  }
+
 
   // for C-modules, 2 channels per strip, return lowest val chan
   // for M-modules, 2 strips per channel, readout at both ends

@@ -3,6 +3,7 @@ include_directories( $ENV{NUTOOLS_INC} )
 include_directories( $ENV{IFDHX_FQ_DIR}/inc )
 
 add_subdirectory(CRTProducts)
+add_subdirectory(CRTUtils)
 
 art_make( BASENAME_ONLY
     EXCLUDE
@@ -89,6 +90,7 @@ simple_plugin( CRTSimHitProducer module
         icaruscode_CRT
         icaruscode_CRTData
         icaruscode_CRTProducts
+        icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
         ${ART_FRAMEWORK_PRINCIPAL}
