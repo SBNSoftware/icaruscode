@@ -9,7 +9,8 @@ icarus_simpmt:
 {
   module_type:               "SimPMTIcarus"
   InputModule:               "largeant"
-  PMTSimulationAlg:          @local::icarus_pmtsimulationalg_standard
+  
+  @table::icarus_pmtsimulationalg_standard
 }
 
 
@@ -17,7 +18,6 @@ icarus_simpmt_nonoise: {
   @table::icarus_simpmt
   @table::icarus_pmtsimulationalg_nonoise
 }
-
 
 ###
 ### FIXME (petrillo@slac.stanford.edu) remove this stuyff from here: it makes
