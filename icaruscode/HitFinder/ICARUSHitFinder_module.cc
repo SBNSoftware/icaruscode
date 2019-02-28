@@ -1094,11 +1094,13 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         
         int startTime = hitCandidateVec.front().startTick-fFittingRange;
         int endTime   = hitCandidateVec.back().stopTick+fFittingRange;
+        if(startTime<0) startTime=0;
+        if(endTime>4095) endTime=4095;
         int roiSize   = endTime - startTime;
         
         //std::cout << " roisize " << roiSize << std::endl;
         
-        // Check to see if we need a bigger histogram for fitting
+        // Check to see if we need a bigger hianchstogram for fitting
         if (roiSize > fHistogram->GetNbinsX())
         {
             std::string histName = "PeakFitterHitSignal_" + std::to_string(iWire);
