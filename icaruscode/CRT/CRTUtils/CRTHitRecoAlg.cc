@@ -39,7 +39,7 @@ namespace icarus {
 
     std::vector<std::pair<crt::CRTHit, std::vector<int>>> returnHits;
     std::vector<int> dataIds;
-    float pes;
+    float pes = 0.;
     std::vector<uint8_t> tfeb_id;// = {0};
     std::map<uint8_t, std::vector<std::pair<int,float>>> tpesmap; //maps febID->vector<pair<channel,pes>>
     //tpesmap[0] = {std::make_pair(0,0)};
@@ -248,8 +248,8 @@ namespace icarus {
 
               double ttrig2 = crtList[febdat_j]->TTrig();
               std::vector<crt::CRTChannelData> chandat2 = crtList[febdat_j]->ChanData();
-              double pes1, pes2;
-              int chan1, chan2;
+              double pes1=0., pes2=0.;
+              int chan1=0, chan2=0;
               if (util::absDiff(ttrig2,ttrig1)<50) {
 
                   for(auto chan : chandat) {
