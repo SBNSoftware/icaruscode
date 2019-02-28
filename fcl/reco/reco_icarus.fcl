@@ -130,16 +130,17 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_crt:                  [ crtsimhit ]
 
 # Define the full reconstruction sequence
-icarus_track_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
-                                    @sequence::icarus_reco_pandoraGaus,
-                                    @sequence::icarus_reco_pandoraICARUS,
+icarus_full_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
+                                   @sequence::icarus_reco_pandoraGaus,
+                                   @sequence::icarus_reco_pandoraICARUS,
 #                                    @sequence::icarus_reco_trajclusterGaus,
 #                                    @sequence::icarus_reco_pmAlgTrackerGaus,
 #                                    @sequence::icarus_reco_trajclusterICARUS,
 #                                    @sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoGaus,
-                                    @sequence::icarus_reco_mcrecoICARUS,
-                                    @sequence::icarus_reco_crt
+                                   @sequence::icarus_reco_cluster3d,
+                                   @sequence::icarus_reco_mcrecoGaus,
+                                   @sequence::icarus_reco_mcrecoICARUS,
+                                   @sequence::icarus_reco_crt
                                   ]
 
 ### Below we include overrides for the modules above
@@ -230,6 +231,12 @@ icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                    
 icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                 "icarushit"
 icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                    false
 
+## Standard 3D hit building
+icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTag:                              "gaushitall"
+icarus_reco_producers.cluster3d.Hit3DBuilderAlg.NumSigmaPeakTime:                          3.0
+icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitWidthScaleFactor:                       3.0
+icarus_reco_producers.cluster3d.Hit3DBuilderAlg.DeltaPeakTimeSig:                          1.75
+
 icarus_reco_producers.cluster3d.ClusterAlg:                                                @local::standard_cluster3ddbscanalg
 icarus_reco_producers.cluster3d.EnableMonitoring:                                          true
 icarus_reco_producers.cluster3d.ClusterAlg.MinPairPts:                                     1
@@ -237,7 +244,7 @@ icarus_reco_producers.cluster3d.ClusterAlg.kdTree.PairSigmaPeakTime:            
 icarus_reco_producers.cluster3d.ClusterAlg.kdTree.RefLeafBestDist:                         0.75
 icarus_reco_producers.cluster3d.ClusterMergeAlg.MinEigenToProcess:                         50.
 icarus_reco_producers.cluster3d.ClusterPathAlg:                                            @local::standard_convexhullPathAlg
-icarus_reco_producers.cluster3d.ClusterPathAlg.MinTinyClusterSize:                         20 #30 #40 #200000
+icarus_reco_producers.cluster3d.ClusterPathAlg.MinTinyClusterSize:                         200000  # effectively turn off for now
 icarus_reco_producers.cluster3d.ClusterPathAlg.MinEigen0To1Ratio:                          12.
 icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
 icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
