@@ -1,0 +1,28 @@
+#include "icarus_flashalgo.fcl"
+#include "icarus_flashcalib.fcl"
+
+BEGIN_PROLOG
+
+ICARUSSimpleFlash:
+{
+  module_type     : "ICARUSFlashFinder"
+  FlashFinderAlgo : "SimpleFlashAlgo"
+  AlgoConfig      : @local::SimpleFlashStandard
+  OpHitProducer   : "ophit"
+  OpFlashProducer : "opflash"
+  PECalib         : @local::NoCalib
+}
+
+ICARUSSimpleFlashTPC0: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashTPC0.AlgoConfig: @local::SimpleFlashTPC0
+
+ICARUSSimpleFlashTPC1: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashTPC1.AlgoConfig: @local::SimpleFlashTPC1
+
+ICARUSSimpleFlashTPC2: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashTPC2.AlgoConfig: @local::SimpleFlashTPC2
+
+ICARUSSimpleFlashTPC3: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashTPC3.AlgoConfig: @local::SimpleFlashTPC3
+
+END_PROLOG
