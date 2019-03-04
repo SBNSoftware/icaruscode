@@ -3,6 +3,8 @@
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTzero.hh"
 #include <vector>
 #include <map>
 #include <utility>
@@ -32,6 +34,22 @@ namespace {
     art::Assns<icarus::crt::CRTHit,icarus::crt::CRTData,void> ahd;
     art::Wrapper<art::Assns<icarus::crt::CRTData,icarus::crt::CRTHit,void> > wadh;
     art::Wrapper<art::Assns<icarus::crt::CRTHit,icarus::crt::CRTData,void> > wahd;
+
+    art::Wrapper<icarus::crt::CRTTrack> wt;
+    std::vector<icarus::crt::CRTTrack> vt;
+    art::Wrapper<std::vector<icarus::crt::CRTTrack>> wvt;
+    art::Assns<icarus::crt::CRTTrack, icarus::crt::CRTHit, void> ath;
+    art::Wrapper<art::Assns<icarus::crt::CRTTrack, icarus::crt::CRTHit, void>> wath;
+    art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTrack, void> aht;
+    art::Wrapper<art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTrack, void>> waht;
+
+
+    std::vector<icarus::crt::CRTTzero> vz;
+    art::Wrapper< std::vector<icarus::crt::CRTTzero> > wvz;
+    art::Assns<icarus::crt::CRTTzero, icarus::crt::CRTHit, void> azh;
+    art::Wrapper<art::Assns<icarus::crt::CRTTzero, icarus::crt::CRTHit, void> > wazh;
+    art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTzero, void> ahz;
+    art::Wrapper<art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTzero, void> > wahz;
 
 
   };
