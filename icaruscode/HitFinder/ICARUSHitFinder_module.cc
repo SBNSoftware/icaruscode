@@ -1240,8 +1240,11 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         // in case of a fit failure, set the chi-square to infinity
         chi2PerNDF = std::numeric_limits<double>::infinity();
         
-        int startTime = hitCandidateVec.front().startTick-35;
-        int endTime   = hitCandidateVec.back().stopTick+35;
+        int startTime = hitCandidateVec.front().startTick-fFittingRange;
+        int endTime   = hitCandidateVec.back().stopTick+fFittingRange;
+        if(startTime<0) startTime=0;
+        if(endTime>4095) endTime=4095;
+
         int roiSize   = endTime - startTime;
         
         //std::cout << " roisize " << roiSize << std::endl;
