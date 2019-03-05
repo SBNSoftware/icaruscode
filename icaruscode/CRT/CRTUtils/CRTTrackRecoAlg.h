@@ -115,9 +115,9 @@ namespace icarus{
   private:
 
     geo::GeometryCore const* fGeometryService;
-    art::ServiceHandle<geo::AuxDetGeometry> fAuxDetGeoService;
-    const geo::AuxDetGeometry* fAuxDetGeo;
-    const geo::AuxDetGeometryCore* fAuxDetGeoCore;
+    //art::ServiceHandle<geo::AuxDetGeometry> fAuxDetGeoService;
+    //const geo::AuxDetGeometry* fAuxDetGeo;
+    //const geo::AuxDetGeometryCore* fAuxDetGeoCore;
 
     double fTimeLimit;
     double fAverageHitDistance;

@@ -41,6 +41,7 @@
 #include <utility>
 #include <cmath> 
 #include <memory>
+
 namespace icarus{
 
 class CRTTzeroProducer : public art::EDProducer {
@@ -89,15 +90,16 @@ CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
   // Call appropriate produces<>() functions here.
   if(store_tzero_ == 1)  {
     produces< std::vector<crt::CRTTzero>   >();
-    produces<art::Assns<crt::CRTTzero, crt::CRTHit> >();
+    //produces<art::Assns<crt::CRTTzero, crt::CRTHit> >();
   }
 
 }
 
 void CRTTzeroProducer::produce(art::Event & evt)
 {
-  // Implementation of required member function here.
-  
+  std::cout << "getting handle to CRTHits..." << std::endl;
+
+  // Implementation of required member function here.  
   art::Handle< std::vector<crt::CRTHit> > rawHandle;
   evt.getByLabel(data_label_, rawHandle);   
   //check to make sure the data we asked for is valid                                                                       
@@ -116,7 +118,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
   std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
   
   // Output collections  
-  std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
+  //std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   
   //  auto outputHits    = std::make_unique<art::Assns<crt::CRTTzero, crt::CRTHit>>();
   art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawHandle.id());
@@ -125,6 +127,8 @@ void CRTTzeroProducer::produce(art::Event & evt)
   int N_CRTHits = CRTHitCollection.size();
   //int iflag[1000] = {};
   std::vector<int> iflag;
+
+  std::cout << "found " << N_CRTHits << " CRTHits" << std::endl;
 
   for(int i = 0; i < N_CRTHits; i++) iflag.push_back(0);
 
@@ -187,15 +191,20 @@ void CRTTzeroProducer::produce(art::Event & evt)
       nTzero++;
       //associate hits to this Tzero
       art::Ptr<crt::CRTTzero> aptz = tzeroPtrMaker(CRTTzeroCol->size()-1);
-      util::CreateAssn(*this,evt,aptz,CRTHitCol,*outputHits);
+      std::cout << "produced " << CRTTzeroCol->size() << " CRTTzero objects" << std::endl;
+      std::cout << "pointer to CRTTzero = " << aptz << std::endl;
+      //util::CreateAssn(*this,evt,aptz,CRTHitCol,*outputHits);
      
     }//B
     
   }//A
   //store tzero collection into event
+  
+  std::cout << "about to move CRTTzero and art::Assns to file..." << std::endl;
+
   if(store_tzero_ == 1) {
     evt.put(std::move(CRTTzeroCol));
-    evt.put(std::move(outputHits));
+    //evt.put(std::move(outputHits));
   }
 }
 

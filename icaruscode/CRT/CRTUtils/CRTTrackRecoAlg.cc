@@ -8,8 +8,8 @@ CRTTrackRecoAlg::CRTTrackRecoAlg(const Config& config)
   this->reconfigure(config);
   
   fGeometryService = lar::providerFrom<geo::Geometry>();
-  fAuxDetGeo = &(*fAuxDetGeoService);
-  fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
+  //fAuxDetGeo = &(*fAuxDetGeoService);
+  //fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
 
 }
 
@@ -19,8 +19,8 @@ CRTTrackRecoAlg::CRTTrackRecoAlg(double aveHitDist, double distLim)
   fAverageHitDistance = aveHitDist;
   fDistanceLimit = distLim;
   fGeometryService = lar::providerFrom<geo::Geometry>();
-  fAuxDetGeo = &(*fAuxDetGeoService);
-  fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
+  //fAuxDetGeo = &(*fAuxDetGeoService);
+  //fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
 
 }
 
@@ -207,7 +207,7 @@ crt::CRTHit CRTTrackRecoAlg::DoAverage(std::vector<art::Ptr<crt::CRTHit>> hits)
   double xmax = -99999; double xmin = 99999;
   double ymax = -99999; double ymin = 99999;
   double zmax = -99999; double zmin = 99999;
-  double ts1_ns = 0.;
+  double ts0_ns = 0., ts1_ns = 0.;
   int nhits = 0;
   // Loop over hits
   for( auto& hit : hits ){
@@ -215,6 +215,7 @@ crt::CRTHit CRTTrackRecoAlg::DoAverage(std::vector<art::Ptr<crt::CRTHit>> hits)
     xpos += hit->x_pos;
     ypos += hit->y_pos;
     zpos += hit->z_pos;
+    ts0_ns += (double)(int)hit->ts0_ns;
     ts1_ns += (double)(int)hit->ts1_ns;
     // For the errors get the maximum limits
     if(hit->x_pos + hit->x_err > xmax) xmax = hit->x_pos + hit->x_err;
@@ -228,7 +229,7 @@ crt::CRTHit CRTTrackRecoAlg::DoAverage(std::vector<art::Ptr<crt::CRTHit>> hits)
   }
   // Create a hit
   crt::CRTHit crtHit = hitAlg.FillCrtHit(hits[0]->feb_id, hits[0]->pesmap, hits[0]->peshit, 
-                                  (ts1_ns/nhits)*1e-3, 0, xpos/nhits, (xmax-xmin)/2,
+                                  (ts0_ns/nhits)*1e-3, (ts1_ns/nhits)*1e-3, 0, xpos/nhits, (xmax-xmin)/2,
                                   ypos/nhits, (ymax-ymin)/2., zpos/nhits, (zmax-zmin)/2., tagger);
   return crtHit;
 } // CRTTrackRecoAlg::DoAverage()

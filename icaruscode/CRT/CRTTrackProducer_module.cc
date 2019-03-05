@@ -211,8 +211,10 @@ void CRTTrackProducer::produce(art::Event & evt)
       }
     }
 
+  }//end if sbnd option
+
   //Older track reconstruction methods from MicroBooNE
-  }else{
+  else{
     //Get list of tzeros             
     //  std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle);
     art::Handle< std::vector<crt::CRTTzero> > rawHandletzero;
