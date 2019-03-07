@@ -16,6 +16,8 @@
 #include "mctrutht0matching.fcl"
 
 #include "crtsimhitproducer.fcl"
+#####include /"/crttzeroproducer_icarus.fcl"
+#include "crttrackproducer_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -79,6 +81,8 @@ icarus_reco_producers:
 
   ## crt producers
   crtsimhit:                      @local::standard_crtsimhitproducer
+  #crttzero:                       @local::standard_crttzeroproducer
+  crttrack:                       @local::standard_crttrackproducer
 }
 
 icarus_reco_filters:
@@ -127,18 +131,20 @@ icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
 
 icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 
-icarus_reco_crt:                  [ crtsimhit ]
+icarus_reco_crt:                  [ crtsimhit,
+                                    #crttzero ]
+                                    crttrack ]
 
 # Define the full reconstruction sequence
-icarus_track_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
-                                    @sequence::icarus_reco_pandoraGaus,
-                                    @sequence::icarus_reco_pandoraICARUS,
+icarus_track_reconstruction:      [ #@sequence::icarus_reco_signalprocessing,
+                                    #@sequence::icarus_reco_pandoraGaus,
+                                    #@sequence::icarus_reco_pandoraICARUS,
 #                                    @sequence::icarus_reco_trajclusterGaus,
 #                                    @sequence::icarus_reco_pmAlgTrackerGaus,
 #                                    @sequence::icarus_reco_trajclusterICARUS,
 #                                    @sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoGaus,
-                                    @sequence::icarus_reco_mcrecoICARUS,
+                                    #@sequence::icarus_reco_mcrecoGaus,
+                                    #@sequence::icarus_reco_mcrecoICARUS,
                                     @sequence::icarus_reco_crt
                                   ]
 
