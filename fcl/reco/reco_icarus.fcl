@@ -131,13 +131,13 @@ icarus_reco_crt:                  [ crtsimhit ]
 
 # Define the full reconstruction sequence
 icarus_full_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
+                                   @sequence::icarus_reco_cluster3d,
                                    @sequence::icarus_reco_pandoraGaus,
                                    @sequence::icarus_reco_pandoraICARUS,
-#                                    @sequence::icarus_reco_trajclusterGaus,
-#                                    @sequence::icarus_reco_pmAlgTrackerGaus,
-#                                    @sequence::icarus_reco_trajclusterICARUS,
-#                                    @sequence::icarus_reco_pmAlgTrackerICARUS,
-                                   @sequence::icarus_reco_cluster3d,
+                                   @sequence::icarus_reco_trajclusterGaus,
+                                   @sequence::icarus_reco_pmAlgTrackerGaus,
+                                   @sequence::icarus_reco_trajclusterICARUS,
+                                   @sequence::icarus_reco_pmAlgTrackerICARUS,
                                    @sequence::icarus_reco_mcrecoGaus,
                                    @sequence::icarus_reco_mcrecoICARUS,
                                    @sequence::icarus_reco_crt
@@ -189,7 +189,7 @@ icarus_reco_producers.gaushit.HitProducerLabel:                                 
       
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
          
-icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                    "gaushit"
+icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                    "cluster3d" #"""gaushit"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                                    "pandoraGaus"
 icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                                   "pandoraGaus"
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:                  "pandoraGaus"
@@ -201,6 +201,7 @@ icarus_reco_producers.pandoraKalmanTrackGaus.options.trackFromPF:               
 icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:                         false
          
 icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                                     "trajclusterGaus"
+icarus_reco_producers.pmAlgTrackerGaus.WireModuleLabel:                                    "decon1droi"
 icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                                 "trajclusterGaus"
          
 icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                    "pmAlgTrackerGaus"
@@ -219,6 +220,7 @@ icarus_reco_producers.pandoraKalmanTrackICARUS.options.trackFromPF:             
 icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:                       false
          
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                   "trajclusterICARUS"
+icarus_reco_producers.pmAlgTrackerICARUS.WireModuleLabel:                                  "recowireraw"
 icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                               "trajclusterICARUS"
          
 icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                  "pmAlgTrackerICARUS"
@@ -244,7 +246,7 @@ icarus_reco_producers.cluster3d.ClusterAlg.kdTree.PairSigmaPeakTime:            
 icarus_reco_producers.cluster3d.ClusterAlg.kdTree.RefLeafBestDist:                         0.75
 icarus_reco_producers.cluster3d.ClusterMergeAlg.MinEigenToProcess:                         50.
 icarus_reco_producers.cluster3d.ClusterPathAlg:                                            @local::standard_convexhullPathAlg
-icarus_reco_producers.cluster3d.ClusterPathAlg.MinTinyClusterSize:                         200000  # effectively turn off for now
+icarus_reco_producers.cluster3d.ClusterPathAlg.MinTinyClusterSize:                         2000000  # effectively turn off for now
 icarus_reco_producers.cluster3d.ClusterPathAlg.MinEigen0To1Ratio:                          12.
 icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
 icarus_reco_producers.cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
