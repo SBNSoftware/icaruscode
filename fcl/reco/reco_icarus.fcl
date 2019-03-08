@@ -61,11 +61,11 @@ icarus_reco_producers:
   recowire:                       @local::icarus_recowireroiicarus
 
   ### hit-finder producers
-  gaushitall:                     @local::gaus_hitfinder
+  gaushit:                        @local::gaus_hitfinder
   icarushit:                      @local::icarus_hitfinder
 
   ### hit selector
-  gaushit:                        @local::icarus_hitselector
+  gaushitsel:                     @local::icarus_hitselector
 
   ### trajcluster
   trajclusterGaus:                @local::icarus_trajcluster
@@ -133,8 +133,8 @@ icarus_reco_wmc_optical:          [ @sequence::icarus_reco_ophit,
 icarus_reco_filter:               [ rawdigitfilter ]
 
 icarus_reco_signalprocessinggaus: [ decon1droi,
-                                    gaushitall,
-                                    gaushit ]
+                                    gaushit,
+                                    gaushitsel ]
 
 icarus_reco_signalprocessingraw:  [ recowireraw,
                                     icarushit]
@@ -202,35 +202,37 @@ icarus_reco_producers.decon1droi.DigitModuleLabel:                              
          
 icarus_reco_producers.recowireraw.DigitModuleLabel:                                        "rawdigitfilter"
       
-icarus_reco_producers.gaushitall.CalDataModuleLabel:                                       "decon1droi"
-icarus_reco_producers.gaushitall.AreaNorms:                                                [  1.0,  1.0,  1.0 ]
-icarus_reco_producers.gaushitall.MaxMultiHit:                                              5
-icarus_reco_producers.gaushitall.TryNplus1Fits:                                            false
-icarus_reco_producers.gaushitall.Chi2NDF:                                                  500.
-icarus_reco_producers.gaushitall.PeakFitter.MinWidth:                                      1
-icarus_reco_producers.gaushitall.PeakFitter.FloatBaseline:                                 false
-icarus_reco_producers.gaushitall.LongMaxHits:                                              [25, 25, 25]
-icarus_reco_producers.gaushitall.LongPulseWidth:                                           [10, 10, 10]
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       1.5
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:   8
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       1.5
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:   8
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_morphological
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:       4
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       1.5
-icarus_reco_producers.gaushitall.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:   8
+icarus_reco_producers.gaushit.CalDataModuleLabel:                                          "decon1droi"
+icarus_reco_producers.gaushit.AreaNorms:                                                   [  1.0,  1.0,  1.0 ]
+icarus_reco_producers.gaushit.MaxMultiHit:                                                 5
+icarus_reco_producers.gaushit.TryNplus1Fits:                                               false
+icarus_reco_producers.gaushit.Chi2NDF:                                                     500.
+icarus_reco_producers.gaushit.PeakFitter.MinWidth:                                         1
+icarus_reco_producers.gaushit.PeakFitter.FloatBaseline:                                    false
+icarus_reco_producers.gaushit.LongMaxHits:                                                 [25, 25, 25]
+icarus_reco_producers.gaushit.LongPulseWidth:                                              [10, 10, 10]
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          1.5
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          1.5
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          1.5
+icarus_reco_producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
-icarus_reco_producers.gaushit.HitProducerLabel:                                            "gaushitall"
+icarus_reco_producers.gaushitsel.HitProducerLabel:                                         "gaushit"
       
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
-         
+
+icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                 "cluster3d"
+
 icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                    "cluster3d" #"""gaushit"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                                    "pandoraGaus"
 icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                                   "pandoraGaus"
@@ -276,7 +278,7 @@ icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                      
 icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                    false
 
 ## Standard 3D hit building
-icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTag:                              "gaushitall"
+icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTag:                              "gaushit"
 icarus_reco_producers.cluster3d.Hit3DBuilderAlg.NumSigmaPeakTime:                          3.0
 icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitWidthScaleFactor:                       3.0
 icarus_reco_producers.cluster3d.Hit3DBuilderAlg.DeltaPeakTimeSig:                          1.75
