@@ -292,7 +292,8 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
       //ok, now, if we are in a pulse but have reached its end, store the waveform
       if(in_pulse && i_t==trig_stop-1){
-	output_opdets.emplace_back( raw::TimeStamp_t((trig_start/fSampling + fParams.triggerOffsetPMT)),
+	// time should be absolute
+	output_opdets.emplace_back( raw::TimeStamp_t((trig_start/fSampling + microsecond(fParams.timeService->TriggerTime())+ fParams.triggerOffsetPMT)),
 				    opch,
 				    trig_stop-trig_start );
 	output_opdets.back().Waveform().assign(wvfm.begin()+trig_start,wvfm.begin()+trig_stop);
