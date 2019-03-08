@@ -17,8 +17,9 @@ ICARUSMCOpHit: {
 
 ICARUSMCOpFlash: {
     module_type: "ICARUSMCOpFlash"
+    StoreEmptyFlash: false
     MCTruthProducer: "generator"
-    OpHitProducer:   "ophit"
+    OpHitProducer:   "mcophit"
     MergePeriod: 8
     OpChannelRange: [0,359]
 }
@@ -32,12 +33,31 @@ ICARUSMCOpFlashTPC2.OpChannelRange: [180,269]
 ICARUSMCOpFlashTPC3: @local::ICARUSMCOpFlash
 ICARUSMCOpFlashTPC3.OpChannelRange: [270,359]
 
+ICARUSCheatOpFlash: {
+    module_type: "ICARUSMCOpFlash"
+    StoreEmptyFlash: false
+    MCTruthProducer: "generator"
+    OpHitProducer:   "ophit"
+    MergePeriod: 8
+    OpChannelRange: [0,359]
+}
+
+ICARUSCheatOpFlashTPC0: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashTPC0.OpChannelRange: [0,89]
+ICARUSCheatOpFlashTPC1: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashTPC1.OpChannelRange: [90,179]
+ICARUSCheatOpFlashTPC2: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashTPC2.OpChannelRange: [180,269]
+ICARUSCheatOpFlashTPC3: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashTPC3.OpChannelRange: [270,359]
+
 ICARUSOpRecoAna: {
     module_type:    "ICARUSOpRecoAna"
     OutputFileName: "oprecoana.root"
     OpHitProducerList: ["ophit"]
-    OpFlashProducerList: ["opflash"]
+    OpFlashProducerList: ["opflashTPC0"]
     OpDetWaveformProducerList: ["opdaq"]
+    SimEnergyDepositProducer: "largeant:TPCActive"
 }
 
 END_PROLOG

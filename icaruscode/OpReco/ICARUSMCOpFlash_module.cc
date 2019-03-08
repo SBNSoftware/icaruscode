@@ -54,6 +54,7 @@ private:
 
   // Declare member data here.
   double _merge_period;
+  bool   _store_empty_flash;
   std::string _hit_label;
   std::string _mct_label;
   std::vector<bool> _enabled_opch_v;
@@ -64,6 +65,7 @@ ICARUSMCOpFlash::ICARUSMCOpFlash(fhicl::ParameterSet const& p)
   : EDProducer{p}  // ,
   // More initializers here.
 {
+  _store_empty_flash = p.get<bool>("StoreEmptyFlash",false);
   _mct_label = p.get<std::string>("MCTruthProducer");
   _hit_label = p.get<std::string>("OpHitProducer");
   _merge_period = p.get<double>("MergePeriod");
@@ -112,24 +114,34 @@ void ICARUSMCOpFlash::produce(art::Event& e)
     throw std::exception();
   }
 
-  std::vector<double> flash_time_v;
+  std::set<double> flash_time_s;
   for(auto const& mct : *mct_h) {
     for(int i=0; i<mct.NParticles(); ++i) {
       auto const& part = mct.GetParticle(i);
       if( (int)(part.StatusCode()) != 1 ) continue;
       double flash_time = ts->G4ToElecTime(part.T()) - ts->TriggerTime();
-      flash_time_v.push_back(flash_time);
+      flash_time_s.insert(flash_time);
     }
+  }
+  std::vector<double> flash_time_v;
+  flash_time_v.reserve(flash_time_s.size());
+  double last_time = -1.1e20;
+  for(auto const& time : flash_time_s) {
+    if(time > (last_time + _merge_period)) flash_time_v.push_back(time);
+    last_time = time;
   }
 
   for(auto const& flash_time : flash_time_v) {
     std::vector<double> pe_v(geop->NOpChannels(),0.);
+    double pe_total=-1.;
     for(auto const& oph : *oph_h) {
       auto opch = oph.OpChannel();
       if((int)(_enabled_opch_v.size()) <= opch || !_enabled_opch_v[opch]) continue;
       if(oph.PeakTime() < flash_time || oph.PeakTime() > (flash_time + _merge_period)) continue;
       pe_v[opch] += oph.PE();
+      pe_total = (pe_total < 0. ? oph.PE() : pe_total + oph.PE());
     }
+    if(pe_total < 0. && !_store_empty_flash) continue;
     double y,z,ywidth,zwidth;
     GetFlashLocation(pe_v,y,z,ywidth,zwidth);
     recob::OpFlash f(flash_time, _merge_period, flash_time + ts->TriggerTime(), 0,

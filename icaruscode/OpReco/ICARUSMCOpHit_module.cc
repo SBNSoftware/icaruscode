@@ -88,7 +88,6 @@ void ICARUSMCOpHit::produce(art::Event& e)
     for(auto const& oneph : simph) {
 
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-
       if(this_time > (oph_time + _merge_period)) {
 	if(in_window) {
 	  recob::OpHit oph(opch, 
