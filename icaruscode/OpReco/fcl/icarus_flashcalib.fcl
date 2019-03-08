@@ -1,0 +1,8 @@
+
+BEGIN_PROLOG
+
+NoCalib: {
+  SPEAreaGain: 62.0
+}
+
+END_PROLOG

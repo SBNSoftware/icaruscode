@@ -1,0 +1,85 @@
+
+#include "services_icarus_simulation.fcl"
+#include "singles_icarus.fcl"
+#include "services_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: G4
+
+services:
+{
+  @table::icarus_wirecalibration_services
+  LArG4Parameters:                       @local::icarus_largeantparameters
+  LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
+  SpaceChargeService:                    @local::icarus_spacecharge
+  MagneticField:                         @local::no_mag_larsoft
+  PhotonVisibilityService:         @local::icarus_photonvisibilityservice
+}
+
+services.LArPropertiesService.ScintPreScale: 1
+
+source:
+{
+  module_type: EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:   10
+  firstRun:    1
+  firstEvent:  1
+}
+
+physics:
+{
+
+ producers:
+ {
+   generator: @local::FakePhotoS
+   opdaq:    @local::icarus_simpmt_nonoise
+   rns:      { module_type: "RandomNumberSaver" }
+ }
+ analyzers: {}
+
+ produce: [ rns, generator, opdaq ]
+ analyze: []
+ store:   [ out1 ]
+ trigger_paths: [produce]
+ end_paths: [store]
+}
+
+physics.producers.opdaq.QE: 1.0
+physics.producers.opdaq.InputModule: "generator"
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "larsoft.root"
+   dataTier:    "simulated"
+   saveMemoryObjectThreshold: 0
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+services.TFileService.fileName: "ana.root"
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}

@@ -1,0 +1,90 @@
+
+#include "services_icarus_simulation.fcl"
+#include "services_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: OpReco
+
+services:
+{
+  @table::icarus_wirecalibration_services
+  LArG4Parameters:                       @local::icarus_largeantparameters
+  LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
+  SpaceChargeService:                    @local::icarus_spacecharge
+  MagneticField:                         @local::no_mag_larsoft
+  PhotonVisibilityService:         @local::icarus_photonvisibilityservice
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+physics:
+{
+
+ producers:
+ {
+   ophit:  @local::icarus_ophit
+   opflashTPC0: @local::ICARUSSimpleFlashTPC0
+   opflashTPC1: @local::ICARUSSimpleFlashTPC1
+   opflashTPC2: @local::ICARUSSimpleFlashTPC2
+   opflashTPC3: @local::ICARUSSimpleFlashTPC3
+   
+   mcophit: @local::ICARUSMCOpHit
+   mcopflashTPC0: @local::ICARUSMCOpFlashTPC0
+   mcopflashTPC1: @local::ICARUSMCOpFlashTPC1
+   mcopflashTPC2: @local::ICARUSMCOpFlashTPC2
+   mcopflashTPC3: @local::ICARUSMCOpFlashTPC3
+
+   cheatopflashTPC0: @local::ICARUSCheatOpFlashTPC0
+   cheatopflashTPC1: @local::ICARUSCheatOpFlashTPC1
+   cheatopflashTPC2: @local::ICARUSCheatOpFlashTPC2
+   cheatopflashTPC3: @local::ICARUSCheatOpFlashTPC3
+
+ }
+ analyzers: { opana: @local::ICARUSOpRecoAna }
+ produce: [ ophit, opflashTPC0, opflashTPC1, opflashTPC2, opflashTPC3, mcophit, mcopflashTPC0, mcopflashTPC1, mcopflashTPC2, mcopflashTPC3, cheatopflashTPC0, cheatopflashTPC1, cheatopflashTPC2, cheatopflashTPC3 ]
+ analyze: [ opana ]
+ store:   [ out1 ]
+ trigger_paths: [ produce ]
+ end_paths:     [ store, analyze ]
+}
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "reconstructed.root"
+   dataTier:    "reco"
+   saveMemoryObjectThreshold: 0
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+services.TFileService.fileName: "ana.root"
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+
+physics.analyzers.opana.OpHitProducerList:["ophit","mcophit"]
+physics.analyzers.opana.OpFlashProducerList:["opflashTPC0","opflashTPC1","opflashTPC2","opflashTPC3","mcopflashTPC0","mcopflashTPC1","mcopflashTPC2","mcopflashTPC3","cheatopflashTPC0","cheatopflashTPC1","cheatopflashTPC2","cheatopflashTPC3"]
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}
