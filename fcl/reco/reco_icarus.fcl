@@ -117,18 +117,18 @@ icarus_reco_flash:                [opflashTPC0,
                                    opflashTPC2,
                                    opflashTPC3 ]
 
-icarus_mc_reco_op:                [mcophit,
+icarus_mc_reco_opt:               [mcophit,
                                    mcopflashTPC0,
                                    mcopflashTPC1,
                                    mcopflashTPC2,
                                    mcopflashTPC3 ]
 
 icarus_reco_optical:              [ @sequence::icarus_reco_ophit,
-                                    @sequence:icarus_reco_flash ]
+                                    @sequence::icarus_reco_flash ]
 
 icarus_reco_wmc_optical:          [ @sequence::icarus_reco_ophit,
                                     @sequence::icarus_reco_flash,
-                                    @sequence::icarus_reco_wmc_optical]
+                                    @sequence::icarus_mc_reco_opt ]
 
 icarus_reco_filter:               [ rawdigitfilter ]
 
