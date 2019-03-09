@@ -725,7 +725,8 @@ void CRTDetSim::produce(art::Event & e) {
   for (auto trg : taggers) {
 
       event = 0;
-      icarus::crt::CRTChannelData *chanTrigData, *chanTmpData;
+      icarus::crt::CRTChannelData *chanTrigData(nullptr);
+      icarus::crt::CRTChannelData *chanTmpData(nullptr);
       std::set<int> trackNHold = {};
       std::set<int> layerNHold = {};
       std::pair<int,int> macPair = std::make_pair(trg.first,trg.first); //FEB-FEB validation pair
