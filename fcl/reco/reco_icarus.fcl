@@ -182,6 +182,7 @@ icarus_full_reconstruction:      [ @sequence::icarus_reco_signalprocessing,
                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                    @sequence::icarus_reco_mcrecoGaus,
                                    @sequence::icarus_reco_mcrecoICARUS,
+                                   @seequence::icarus_reco_wmc_optical,
                                    @sequence::icarus_reco_crt
                                   ]
 
