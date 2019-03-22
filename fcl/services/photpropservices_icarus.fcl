@@ -26,10 +26,10 @@ icarus_photonvisibilityservice: {
     LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
     UseCryoBoundary: false
     
-    XMin: -391
-    XMax: -41
-    YMin: -210
-    YMax:  180
+    XMin: -395      # Was -391 in old geometry
+    XMax: -45       # Was -41  in old geometry
+    YMin: -215.2    # Was -210 in old geometry
+    YMax:  174.8    # Was -180 in old geometry
     ZMin: -995
     ZMax:  965
     NX:     70
