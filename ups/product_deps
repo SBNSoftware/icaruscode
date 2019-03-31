@@ -42,21 +42,36 @@ genie_xsec      v2_12_10
 cetbuildtools	v7_11_00	-	only_for_build
 end_product_list
 
+# Restore this temporarily...
+# We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
+# Make a table by adding columns before "notes". 
+# e15  - with gcc 6.4.0 and -std=c++1y
+qualifier	larsoft		icarusutil  icarus_data genie_xsec notes
+e17:debug	e17:debug	e17:debug   -nq-        DefaultPlusMECWithNC
+e17:opt		e17:opt		e17:opt     -nq-        DefaultPlusMECWithNC
+e17:prof    e17:prof	e17:prof    -nq-        DefaultPlusMECWithNC
+e15:debug	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
+e15:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
+e15:prof    e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
+c2:debug    c2:debug    c2:debug    -nq-        DefaultPlusMECWithNC
+c2:opt      c2:opt      c2:opt      -nq-        DefaultPlusMECWithNC
+c2:prof     c2:prof     c2:prof     -nq-        DefaultPlusMECWithNC
+end_qualifier_list
 
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier	larcv2 larsoft		icarusutil  icarus_data genie_xsec notes
-e17:debug e17:prof	e17:debug	e17:debug   -nq-        DefaultPlusMECWithNC
-e17:opt e17:prof		e17:opt		e17:opt     -nq-        DefaultPlusMECWithNC
-e17:prof e17:prof    e17:prof	e17:prof    -nq-        DefaultPlusMECWithNC
-e15:debug e17:prof	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
-e15:opt  e17:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
-e15:prof e17:prof    e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
-c2:debug e17:prof    c2:debug    c2:debug    -nq-        DefaultPlusMECWithNC
-c2:opt e17:prof      c2:opt      c2:opt      -nq-        DefaultPlusMECWithNC
-c2:prof e17:prof     c2:prof     c2:prof     -nq-        DefaultPlusMECWithNC
-end_qualifier_list
+#qualifier	larcv2 larsoft		icarusutil  icarus_data genie_xsec notes
+#e17:debug e17:prof	e17:debug	e17:debug   -nq-        DefaultPlusMECWithNC
+#e17:opt e17:prof		e17:opt		e17:opt     -nq-        DefaultPlusMECWithNC
+#e17:prof e17:prof    e17:prof	e17:prof    -nq-        DefaultPlusMECWithNC
+#e15:debug e17:prof	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
+#e15:opt  e17:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
+#e15:prof e17:prof    e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
+#c2:debug e17:prof    c2:debug    c2:debug    -nq-        DefaultPlusMECWithNC
+#c2:opt e17:prof      c2:opt      c2:opt      -nq-        DefaultPlusMECWithNC
+#c2:prof e17:prof     c2:prof     c2:prof     -nq-        DefaultPlusMECWithNC
+#end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:
 
