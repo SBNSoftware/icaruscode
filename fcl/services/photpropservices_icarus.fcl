@@ -36,6 +36,10 @@ icarus_photonvisibilityservice: {
     NY:     78
     NZ:    392
     
+    Mapping: {
+      tool_type: ICARUSPhotonMappingTransformations
+    }
+    
 } # icarus_photonvisibilityservice
 
 

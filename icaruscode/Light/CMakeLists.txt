@@ -1,5 +1,6 @@
 add_subdirectory(OpticalTools)
 add_subdirectory(Algorithms)
+add_subdirectory(LibraryMappingTools)
 
 # Removing AVX instructions because assuming the grid nodes
 # being less than 6 year old proved to be pretentious.
