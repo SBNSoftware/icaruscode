@@ -9,6 +9,7 @@ art_make_library(
     ${CANVAS}
     ${CETLIB_EXCEPT}
     ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
     ${ROOT_GENVECTOR}
     ${ROOT_BASIC_LIB_LIST}
     ${Boost_SYSTEM_LIBRARY}

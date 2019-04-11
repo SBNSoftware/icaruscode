@@ -19,6 +19,7 @@
 
 // framework libraries
 #include "art/Utilities/ToolConfigTable.h"
+#include "fhiclcpp/types/Atom.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -60,10 +61,15 @@ namespace phot {
       public:
     struct Config {
       
-    //   using Name = fhicl::Name;
-    //   using Comment = fhicl::Comment;
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
       
       // no configuration required
+      fhicl::Atom<bool> DumpMapping{
+        Name("DumpMapping"),
+        Comment("dump the mapping into console"),
+        false // default
+        };
       
     }; // struct Config
     
@@ -71,8 +77,9 @@ namespace phot {
     
     
     /// Constructor: ignores the configuration.
-    ICARUSPhotonMappingTransformations(Config const&)
-      : fGeom(lar::providerFrom<geo::Geometry>())
+    ICARUSPhotonMappingTransformations(Config const& config)
+      : fDumpMapping(config.DumpMapping())
+      , fGeom(lar::providerFrom<geo::Geometry>())
       , fNOpDetChannels(fGeom? fGeom->NOpDets(): 0)
       { prepareMappings(); }
     
@@ -211,9 +218,18 @@ namespace phot {
     
     
       protected:
+    //
+    // configuration parameters
+    //
+    bool fDumpMapping = false; ///< Whether to dump mapping on initialization.
+    
+    //
+    // tool setup
+    //
     
     /// Detector geometry service provider. Not really used.
     geo::GeometryCore const* fGeom = nullptr;
+    
     
     //
     // for geometry transformation

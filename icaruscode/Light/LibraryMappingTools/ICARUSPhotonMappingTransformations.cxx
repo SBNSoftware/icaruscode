@@ -251,7 +251,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareMappings() {
   prepareLibraryMappings();
   
   // debug:
-  dumpMapping();
+  if (fDumpMapping) dumpMapping();
   
 } // phot::ICARUSPhotonMappingTransformations::prepareMappings()
 
