@@ -6,7 +6,7 @@
 #include <cmath>
 #include "icaruscode/RecoWire/DeconTools/IROIFinder.h"
 #include "art/Utilities/ToolMacros.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/Utilities/SignalShapingServiceICARUS.h"

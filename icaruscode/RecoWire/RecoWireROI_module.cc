@@ -30,7 +30,7 @@
 #include "canvas/Persistency/Common/Ptr.h" 
 #include "canvas/Persistency/Common/PtrVector.h" 
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Services/Optional/TFileService.h" 
+#include "art_root_io/TFileService.h" 
 #include "canvas/Utilities/Exception.h"
 
 #include "art/Framework/Services/Registry/ServiceMacros.h"
@@ -116,7 +116,7 @@ private:
 DEFINE_ART_MODULE(RecoWireROI)
   
 //-------------------------------------------------
-RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) :
+RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) : EDProducer{pset},
     fGeometry(*lar::providerFrom<geo::Geometry>()),
     fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
     fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())

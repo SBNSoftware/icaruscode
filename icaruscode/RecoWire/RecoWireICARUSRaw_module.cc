@@ -28,7 +28,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Core/EDProducer.h" // include the proper bit of the framework
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 
 
 // LArSoft includes
@@ -76,7 +76,7 @@ namespace recowireraw {
 namespace recowireraw{
 
   //-------------------------------------------------
-  RecoWireICARUSRaw::RecoWireICARUSRaw(fhicl::ParameterSet const& pset)
+  RecoWireICARUSRaw::RecoWireICARUSRaw(fhicl::ParameterSet const& pset) : EDProducer{pset}
   {
     this->reconfigure(pset);
     

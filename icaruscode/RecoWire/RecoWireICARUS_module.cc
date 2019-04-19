@@ -85,7 +85,7 @@ namespace recowire {
 namespace recowire{
 
   //-------------------------------------------------
-  RecoWireICARUS::RecoWireICARUS(fhicl::ParameterSet const& pset)
+  RecoWireICARUS::RecoWireICARUS(fhicl::ParameterSet const& pset) : EDProducer{pset}
   {
     this->reconfigure(pset);
     

@@ -90,7 +90,7 @@ private:
     std::unique_ptr<light::IOpHitFinder> fOpHitFinder;
 };
 
-OpHitFinderICARUS::OpHitFinderICARUS(fhicl::ParameterSet const & p)
+OpHitFinderICARUS::OpHitFinderICARUS(fhicl::ParameterSet const & p) : EDProducer{p}
 {
     produces<std::vector<recob::OpHit>>();
 
