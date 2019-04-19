@@ -224,7 +224,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
         + i_trig * fParams.beamGateTriggerRepPeriod
         - fParams.triggerOffsetPMT
         ;
-      if (trig_time < 0_us || trig_time > fParams.readoutEnablePeriod) continue;
+      if (trig_time < 0_us) continue;
+      if (trig_time > fParams.readoutEnablePeriod) break;
       trigger_locations.insert(size_t(trig_time*fSampling));
     }
     return trigger_locations;
@@ -293,7 +294,12 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
       //ok, now, if we are in a pulse but have reached its end, store the waveform
       if(in_pulse && i_t==trig_stop-1){
 	// time should be absolute
-	output_opdets.emplace_back( raw::TimeStamp_t((trig_start/fSampling + microsecond(fParams.timeService->TriggerTime())+ fParams.triggerOffsetPMT)),
+	output_opdets.emplace_back(
+	  raw::TimeStamp_t(
+	    microsecond(fParams.timeService->TriggerTime()) // absolute time is from the service
+	    + fParams.triggerOffsetPMT // when optical readout starts relative to electronics clock
+	    + trig_start/fSampling // start of the waveform (tick #0) in the full optical reading
+	  ),
 				    opch,
 				    trig_stop-trig_start );
 	output_opdets.back().Waveform().assign(wvfm.begin()+trig_start,wvfm.begin()+trig_stop);

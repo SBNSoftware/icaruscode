@@ -54,8 +54,8 @@ namespace icarus {
      * @brief Describes the waveform from a single photoelectron.
      * @tparam Time type of time unit to be used
      * 
-     * This functor (class behaving like a function) describes the shape of the response
-     * to a single photoelectron.
+     * This functor (class behaving like a function) describes the shape of the
+     * response to a single photoelectron.
      *
      * It is currently implemented as an asymmetric Gaussian shape.
      */
@@ -328,8 +328,26 @@ namespace icarus {
      * For each converting photon, a photoelectron is added to the channel by
      * placing a template waveform shape into the channel waveform.
      * 
+     * The timestamp of each waveform is based on the same scale as the trigger
+     * time, as defined by `detinfo::DetectorClocks::TriggerTime()`.
+     * On that scale, the timestamp pins down the time of the first sample of
+     * the waveform. Note that this is typically earlier than when the actual
+     * signal starts. More precisely, the signal is defined to start at an
+     * interest point (see `FindTriggers()` for their definition), and the
+     * waveform starts (at tick #0) earlier than that by a fraction
+     * `PreTrigFraction` of the readout window size `ReadoutWindowSize`
+     * (both are configuration parameters of the algorithm), allowing for that
+     * amount of pre-trigger data.
      * 
-     * @todo Document at which time this waveform is added.
+     * The configuration parameter `TriggerOffsetPMT` describes how much earlier
+     * than the trigger time the optical readout has started. Note that if
+     * an interest point (see above) happens early after optical readout has
+     * started, there might be not enough data to fill the pre-trigger data.
+     * In such case, the interest point will just be located earlier than usual
+     * within the final waveform. This situation may be caused for example by
+     * asynchronous physics events like scintillation light from cosmic rays
+     * or radioactive decay of the detector materials, or from a fluctuation
+     * of the noise.
      * 
      * 
      * Dark noise
@@ -483,8 +501,45 @@ namespace icarus {
     void AddNoise(Waveform_t& wave); //add noise to baseline
     void AddDarkNoise(Waveform_t& wave); //add noise to baseline
     
-    std::set<size_t> CreateBeamGateTriggers() const;
+    /**
+     * @brief Ticks in the specified waveform where some signal activity starts.
+     * @return a collection of ticks with interesting activity
+     * @see `CreateBeamGateTriggers()`
+     * 
+     * We define an "interest point" a time when some activity in the
+     * waveform is considered interesting enough to be recorded.
+     * This method returns a list of interest points, in the form of the
+     * index they are located at in the waveform `wvfm`.
+     * 
+     * In general (but with the exception noted below), a time becomes an
+     * interest point if the sample recorded at that time is above the threshold
+     * set by the configuration parameter `ThresholdADC`.
+     * 
+     * These interest points are local readout triggers that drive zero
+     * suppression on the optical readout channel and that are not necessarily
+     * causing any level of event trigger.
+     * 
+     * This method also adds the mandatory beam gate interest points as
+     * explained in `CreateBeamGateTriggers()` documentation. These are
+     * additional interest points that are added independently of whether there
+     * is actual interesting activity in there.
+     */
     std::set<size_t> FindTriggers(Waveform_t const& wvfm) const;
+    
+    /**
+     * @brief Generate periodic interest points regardless the actual activity.
+     * @return a collection of ticks where we pretend interesting activity to be
+     * @see `FindTriggers()`
+     * 
+     * This methods emits a list of interest points according to the algorithm
+     * configuration. More precisely, if `CreateBeamGateTriggers` is configured
+     * `true`, `BeamGateTriggerNReps` interest points are generated at
+     * `BeamGateTriggerRepPeriod` intervals, starting from the beam gate time
+     * as defined by `detinfo::DetectorClocks::BeamGateTime()`.
+     * 
+     * See `FindTriggers()` for the meaning of "interest point".
+     */
+    std::set<size_t> CreateBeamGateTriggers() const;
     
       /// Returns a random response whether a photon generates a photoelectron.
       bool KicksPhotoelectron() const;

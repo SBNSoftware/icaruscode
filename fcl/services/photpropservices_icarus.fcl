@@ -26,6 +26,9 @@ icarus_photonvisibilityservice: {
     LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
     UseCryoBoundary: false
     
+    # Note: the geometry was changed after the generation of library `PhotonLibrary-20180801.root`
+    #       by translating the detector. For that reason, the coordinates stored within that library,
+    #       which are just informative, are now outdated and not matching the following values:
     XMin: -395      # Was -391 in old geometry
     XMax: -45       # Was -41  in old geometry
     YMin: -215.2    # Was -210 in old geometry
@@ -35,6 +38,10 @@ icarus_photonvisibilityservice: {
     NX:     70
     NY:     78
     NZ:    392
+    
+    Mapping: {
+      tool_type: ICARUSPhotonMappingTransformations
+    }
     
 } # icarus_photonvisibilityservice
 
