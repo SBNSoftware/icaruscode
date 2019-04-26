@@ -116,7 +116,11 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     
     std::string histName = fFieldResponseHistName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
     
-    fFieldResponseHist = (TH1D*)inputFile.Get(histName.c_str());
+    fFieldResponseHist = (TH1D*)((TH1D*)inputFile.Get(histName.c_str()))->Clone();
+    
+    fFieldResponseHist->SetDirectory(nullptr);
+    
+    inputFile.Close();
     
     // Calculation of the T0 offset depends on the signal type
     int binOfInterest = fFieldResponseHist->GetMinimumBin();
@@ -141,6 +145,10 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fT0Offset = -(fFieldResponseHist->GetXaxis()->GetBinCenter(binOfInterest) - fFieldResponseHist->GetXaxis()->GetBinCenter(1)) * fTimeCorrectionFactor;
     
     fIsValid = true;
+    
+    double integral = getIntegral();
+    
+    std::cout << "--> Plane: " << fThisPlane << ", integral: " << integral << std::endl;
     
     return;
 }
@@ -333,7 +341,9 @@ double FieldResponse::interpolate(double x) const
     if (!fIsValid)
         throw cet::exception("FieldResponse::getPlane") << "Attempting to access plane info when tool is invalid state" << std::endl;
     
-    return fFieldResponseHist->Interpolate(x);
+    Double_t intVal = fFieldResponseHist->Interpolate(x);
+    
+    return intVal; //fFieldResponseHist->Interpolate(x);
 }
 
 std::string FieldResponse::numberToString(int number)
