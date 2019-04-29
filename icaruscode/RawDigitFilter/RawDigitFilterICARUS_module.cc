@@ -40,7 +40,7 @@
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Persistency/Common/Ptr.h"
@@ -121,7 +121,7 @@ DEFINE_ART_MODULE(RawDigitFilterICARUS)
 ///
 /// pset - Fcl parameters.
 ///
-RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset) :
+RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset) : EDProducer{pset},
                       fNumEvent(0),
                       fBinAverageAlg(pset),
                       fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),

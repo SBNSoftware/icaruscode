@@ -72,7 +72,7 @@ DEFINE_ART_MODULE(HitSelector)
 ///
 /// pset - Fcl parameters.
 ///
-HitSelector::HitSelector(fhicl::ParameterSet const & pset) :
+HitSelector::HitSelector(fhicl::ParameterSet const & pset) : EDProducer{pset},
 fNumEvent(0)
 {
     reconfigure(pset);

@@ -30,7 +30,7 @@
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "canvas/Utilities/InputTag.h"
 // #include "art/Utilities/make_tool.h"
@@ -91,7 +91,7 @@ DEFINE_ART_MODULE(PhotonPropogationICARUS)
 /// pset - Fcl parameters.
 ///
 PhotonPropogationICARUS::PhotonPropogationICARUS(fhicl::ParameterSet const & pset)
-  : fGeometry(lar::providerFrom<geo::Geometry>())
+  : EDProducer{pset}, fGeometry(lar::providerFrom<geo::Geometry>())
   , fPhotonEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "icarusphoton", pset, "SeedPhoton"))
 //  , fDetectorProperties(lar::providerFrom<detinfo::DetectorPropertiesService>())
 {
