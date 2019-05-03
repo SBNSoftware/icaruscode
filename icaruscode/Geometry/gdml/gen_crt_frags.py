@@ -146,7 +146,9 @@ def strip(style="m", modnum=0, stripnum=0):
     zz = str(z) 
 
     sname = 'AuxDetSensitive_' + name + '_strip'
-    vname = 'volAuxDetSensitive_module_'
+    vname = 'volAuxDetSensitive_'
+    vname += name
+    vname += '_module_'
 
     if modnum < 10:
         vname += '00'
@@ -220,9 +222,8 @@ def module(style="m", reg='tt'):
     modnum = get_mod_id(style)
     stripnum = 0
 
-    sname = 'AuxDet_module_'
-    vname = 'vol'+sname
-    sname += name
+    sname = 'AuxDet_' + name + '_module'
+    vname = 'vol' + sname + '_'
 
     if modnum < 10:
         vname += '00'
