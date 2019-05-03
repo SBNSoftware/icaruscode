@@ -427,7 +427,7 @@ void CorrelatedNoise::SelectContinuousSpectrum()
 void CorrelatedNoise::ExtractCorrelatedAmplitude(float& corrFactor, int board) const
 {
     CLHEP::RandGeneral amp_corr(fCorrAmpDistVec.data(),fCorrAmpDistVec.size(),0);
-    amp_corr.setTheSeed(board);
+    amp_corr.setTheSeed(board+1);
     double rnd_corr[1] = {0.};
     
     amp_corr.fireArray(1,rnd_corr);
