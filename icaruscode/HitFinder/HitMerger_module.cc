@@ -78,8 +78,7 @@ DEFINE_ART_MODULE(HitMerger)
 ///
 /// pset - Fcl parameters.
 ///
-HitMerger::HitMerger(fhicl::ParameterSet const & pset) : EDProducer{pset},
-fNumEvent(0)
+HitMerger::HitMerger(fhicl::ParameterSet const & pset) : EDProducer{pset}
 {
     reconfigure(pset);
     
@@ -141,6 +140,9 @@ void HitMerger::produce(art::Event & evt)
     std::vector<recob::Hit> hitPtrVec;
     RecobHitToPtrMap        recobHitToPtrMap;
     
+    // Use this handy art utility to make art::Ptr objects to the new recob::Hits for use in the output phase
+    art::PtrMaker<recob::Hit> ptrMaker(evt);
+    
     // Outside loop over the input hit producers
     for(const auto& inputTag : fHitProducerLabels)
     {
@@ -150,8 +152,12 @@ void HitMerger::produce(art::Event & evt)
         
         for(size_t hitIdx = 0; hitIdx < hitHandle->size(); hitIdx++)
         {
+            art::Ptr<recob::Hit> hitPtr(hitHandle,hitIdx);
+            
+            const recob::Hit* hit2D = hitPtr.get();
+            
             // Create and save the new recob::Hit with the correct WireID
-            hitPtrVec.emplace_back(recob::HitCreator(*hit2D->getHit(), hit3D.getWireIDs()[idx]).copy());
+            hitPtrVec.emplace_back(recob::HitCreator(*hit2D, hit2D->WireID()).copy());
             
             // Recover a pointer to it...
             recob::Hit* newHit = &hitPtrVec.back();
@@ -170,9 +176,6 @@ void HitMerger::produce(art::Event & evt)
     evt.put(std::move(outputHitPtrVec));
     evt.put(std::move(wireAssns));
     evt.put(std::move(rawDigitAssns));
-        
-    // put the hit collection and associations into the event
-    hcol.put_into(evt);
     
     return;
 }
@@ -187,7 +190,7 @@ void HitMerger::makeWireAssns(const art::Event& evt, art::Assns<recob::Wire, rec
     std::unordered_map<raw::ChannelID_t, art::Ptr<recob::Wire>> channelToWireMap;
     
     // Go through the list of input sources and fill out the map
-    for(const auto& inputTag : m_hitFinderTagVec)
+    for(const auto& inputTag : fHitProducerLabels)
     {
         art::ValidHandle<std::vector<recob::Hit>> hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(inputTag);
         
@@ -233,7 +236,7 @@ void HitMerger::makeRawDigitAssns(const art::Event& evt, art::Assns<raw::RawDigi
     std::unordered_map<raw::ChannelID_t, art::Ptr<raw::RawDigit>> channelToRawDigitMap;
     
     // Go through the list of input sources and fill out the map
-    for(const auto& inputTag : m_hitFinderTagVec)
+    for(const auto& inputTag : fHitProducerLabels)
     {
         art::ValidHandle<std::vector<recob::Hit>> hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(inputTag);
         
@@ -273,7 +276,5 @@ void HitMerger::makeRawDigitAssns(const art::Event& evt, art::Assns<raw::RawDigi
 /// End job method.
 void HitMerger::endJob()
 {
-    mf::LogInfo("HitMerger")
-    << "HitMerger statistics:\n"
-    << "  Number of events = " << fNumEvent;
+    return;
 }
