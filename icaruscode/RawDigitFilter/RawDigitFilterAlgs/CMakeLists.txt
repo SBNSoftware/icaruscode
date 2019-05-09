@@ -14,7 +14,7 @@ art_make( LIBRARY_NAME RawDigitFilterAlgs
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
                           lardataobj_RecoBase
-                          SignalShapingServiceICARUS_service
+                          icaruscode_Utilities_SignalShapingServiceICARUS_service
                           ${ART_FRAMEWORK_CORE}
                           ${ART_FRAMEWORK_PRINCIPAL}
                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -42,7 +42,7 @@ art_make( LIBRARY_NAME RawDigitFilterAlgs
                           larcore_Geometry_Geometry_service
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
-                          SignalShapingServiceICARUS_service
+                          icaruscode_Utilities_SignalShapingServiceICARUS_service
                           ${ART_FRAMEWORK_CORE}
                           ${ART_FRAMEWORK_PRINCIPAL}
                           ${ART_FRAMEWORK_SERVICES_REGISTRY}

@@ -1,5 +1,5 @@
 # Add the subfolder containing the deconvolution tools
-art_make( BASENAME_ONLY
+art_make( 
           MODULE_LIBRARIES larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities
@@ -17,7 +17,7 @@ art_make( BASENAME_ONLY
             nusimdata_SimulationBase
             nutools_RandomUtils_NuRandomService_service
             lardataobj_MCBase
-            SignalShapingServiceICARUS_service
+            icaruscode_Utilities_SignalShapingServiceICARUS_service
             ${ART_FRAMEWORK_CORE}
             ${ART_FRAMEWORK_PRINCIPAL}
             ${ART_FRAMEWORK_SERVICES_REGISTRY}
