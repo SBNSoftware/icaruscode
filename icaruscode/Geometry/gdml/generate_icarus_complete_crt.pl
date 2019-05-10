@@ -62,7 +62,7 @@ if (defined $crt)
 
 else { $crt_on = 1;} # 1=on, 0=off
 
-#set thickness of the concrete overburden. Remeber: the dafaul value is 300 cm and 0 means no everburden
+#set thickness of the concrete overburden. Remmeber: the dafaul value is 300 cm and 0 means no everburden
 if (defined $thickness_over)
 {
 	$concrete_on = $thickness_over; 
@@ -123,8 +123,10 @@ $MaxDrift              =     148.2; #drift length in LAr at cryogenic temperatur
 #Cryostat space with LAr outside of entire fiducial volume
 $SpaceWirePlToWall     =     31.8; 
 $SpaceWirePlToWirePl   =     85; # edge to edge, like all of these (it was in the original perl script)
-$SpaceTPCToFloor       =     37; # from the article
-$SpaceTPCToTopLAr      =     30.5;  
+#$SpaceTPCToFloor       =     37; # from the article
+#$SpaceTPCToTopLAr      =     30.5;  
+$SpaceTPCToFloor       =     36; # from the article
+$SpaceTPCToTopLAr      =     29.5; 
 $UpstreamLArPadding    =     82.50; # from the article
 $DownstreamLArPadding  =     82.50; # from the article
 
@@ -156,7 +158,7 @@ $TPCActive_z    =     $CommonWireLength * $CosUAngle + (4640 - 1) * $UWire_zpitc
 # TPCWirePlane dimensions
 $TPCWirePlane_x     =       2*$TPCWireThickness; #ATTENTION: tentative to not overlap planes: is this correct?Should be the right thickness of the planes!
 $TPCWirePlane_y     =       $TPCActive_y; 
-$TPCWirePlane_z     =       1795.5;
+$TPCWirePlane_z     =       $TPCActive_z;
 
 #print("TPCWirePlane_x: $TPCWirePlane_x, TPCWirePlane_y: $TPCWirePlane_y, TPCWirePlane_z: $TPCWirePlane_z \n");
 
@@ -164,8 +166,6 @@ $TPCWirePlane_z     =       1795.5;
 #Dimension of the TPC (active+passive volume)
 $TPC_x    =     $MaxDrift+ 6*$TPCWireThickness + 3*$WirePlaneSpacing + $CPA_x;
 #$TPC_x    =     150.0;
-$TPC_y    =     390.0;
-$TPC_z    =     1960.0;
 
 $DeltaLUCorner = $UWirePitch/($SinUAngle*$CosUAngle); #this is the Delta L for the corner wire length
 $DeltaLVCorner = $VWirePitch/($SinVAngle*$CosVAngle);
@@ -175,27 +175,34 @@ $DeltaLVCorner = $VWirePitch/($SinVAngle*$CosVAngle);
 
 $LAr_x    =     $CPA_x 
               + 2*($TPC_x + $SpaceWirePlToWall);
-$LAr_y    =     $TPC_y 
+$LAr_y    =     $TPCActive_y 
               + $SpaceTPCToFloor 
               + $SpaceTPCToTopLAr;
-$LAr_z    =     $TPC_z
+$LAr_z    =     $TPCActive_z
               + $UpstreamLArPadding 
               + $DownstreamLArPadding;
 
-$SteelThickness		=	15;    #ATTENTION!!! MAYBE this variable is NOT CORRECT
+#$TPC_y    =     388.0; #From official drawings
+#$TPC_z    =     1969.9; #From official drawings
+$TPC_y    =     $LAr_y;
+$TPC_z    =     $LAr_z;
+    
+$AlumThickness		=	19;    
 $GaseousAr_y            =       6.5;
 $CryoDist 		=	20;
-$WarmVesselThickness 	= 	27.4 ;
 
-$Cryostat_x = $LAr_x + 2*$SteelThickness ; 
-$Cryostat_y = $LAr_y + 2*$SteelThickness + $GaseousAr_y ;
-$Cryostat_z = $LAr_z + 2*$SteelThickness ;
+$Cryostat_x = $LAr_x + 2*$AlumThickness ; 
+#$Cryostat_y = $LAr_y + 2*$AlumThickness + $GaseousAr_y ;
+#$Cryostat_z = $LAr_z + 2*$AlumThickness ;
+#$Cryostat_y = $TPC_y + 2*$AlumThickness ;
+$Cryostat_y = $TPC_y + $GaseousAr_y + 2*$AlumThickness ;
+$Cryostat_z = $TPC_z + 2*$AlumThickness ;
 
 #$LAr_x_orig =   4*($TPC_x) + 2*($CPA_x + $SpaceWirePlToWall) + $SpaceWirePlToWirePl;
 
-$LAr_x_orig = 2*$LAr_x + 2*$SteelThickness + $CryoDist ;	    #for total positioning
+$LAr_x_orig = 2*$LAr_x + 2*$AlumThickness + $CryoDist ;	    #for total positioning
 
-$Cryostat_x_orig = $LAr_x_orig + 2*$SteelThickness ;               #for total positioning
+$Cryostat_x_orig = $LAr_x_orig + 2*$AlumThickness ;               #for total positioning
 
 
 $TPCinCryo_x[0]     =      - $TPC_x/2 - $CPA_x/2;
@@ -208,13 +215,27 @@ $posCat_x      =      0;
 #$posRightCat_x      =      - $Cryostat_x/2 + 1.0*($TPC_x) + $SpaceWirePlToWall + $CPA_x/2 ;
 #$posLeftCat_x       =        $Cryostat_x/2 - 1.0*($TPC_x) - $SpaceWirePlToWall - $CPA_x/2 ;
 
-$TPCinCryo_y        =      - $Cryostat_y/2 + $TPC_y/2 + $SpaceTPCToFloor;  
-$TPCinCryo_z        =      - $Cryostat_z/2 + $TPC_z/2 + $UpstreamLArPadding;  
+#$TPCinCryo_y        =      - $Cryostat_y/2 + $TPC_y/2 + $SpaceTPCToFloor;  
+#$TPCinCryo_z        =      - $Cryostat_z/2 + $TPC_z/2 + $UpstreamLArPadding;  
+#$TPCinCryo_y        =      0.;    
+$TPCinCryo_y        =      -$GaseousAr_y/2;
+$TPCinCryo_z        =      0.; 
 
 $posTPCActive_x     = 0.570000000000007;
 $posTPCActive_y     = 0;
 $posTPCActive_z     = 0;
 
+##################################################################
+#am ##########  Steel Mechanical Structure Parameters ############
+##################################################################
+
+  $struct_width = 10.;     # width of the structure box segment;
+  $ext_struct_x = $struct_width;   # external width of structure segment;
+  $ext_struct_y = 341.8;   # external heigh of structure segment;
+  $ext_struct_z = 199.532; # external length of structure segment;
+  $int_struct_x = $ext_struct_x;  # internal width of structure segment;
+  $int_struct_y = $ext_struct_y - 2*$struct_width;   # internal heigh of structure segment;
+  $int_struct_z = $ext_struct_z - 2*$struct_width;   # internal length of structure segment;
 
 ##################################################################
 ############## PMTs relevant parameters  #########################
@@ -225,56 +246,72 @@ $PMTradius = 4*$inch;
 $PMTradiusOuter = 4*$inch; #10.16 cm
 $PMTradiusInner = $PMTradiusOuter - $PMTthickness;
 $PMTGrid_offset = 2; # from GLR communication
-
-$PMTPlane_x = $PMTradius+$PMTGrid_offset ;
-#$PMTPlane_x = 13.0; #ATTENTION: not correct value!!!take from z in definition of one PMT volume.
-$PMTPlane_y = $TPCActive_y ; 
-$PMTPlane_z = $TPCActive_z ; 
+$PMTx = 0.557*$PMTradiusOuter; # x semi-axis of PMT
+#$PMTtube_x = 10.3; #length of the glass tube
+$PMTtubeRmax = 4.225; #outer radius of PMT glass tube;
+$PMTtubeRmin = 3.725; #inner radius of PMT glass tube;$PMTtube_x = 2*$PMTtubeRmax;
+$PMTtube_x = 2*$PMTtubeRmax ;
+#$PMTxCut = ($PMTx*$PMTx - $PMTtubeRmax*$PMTtubeRmax)^0.5;
+$PMTPlane_x = 2*$PMTradius+$PMTGrid_offset+$PMTtube_x;
+#$PMTPlane_y = $TPCActive_y ; 
+$PMTPlane_y = $ext_struct_y + 6.;
+#$PMTPlane_z = $TPCActive_z ; 
+$PMTPlane_z = 9*$ext_struct_z + 2*struct_width + 6.;
 $PMTWiresOffset = 0.5 ; # space between PMTs and wire planes 
 
 ##################################################################
 ######################### CRT parameters  ########################
 
-
+#defined in seperate python script "gen_crt_frags.py"
+#N.B. warm vessel origin, size currently hardcoded - changes
+# in these values here need to be copied over (will fix eventually..)
 
 ##################################################################
 ############## DetEnc and World relevant parameters  #############
 
-#The padding is the thermal insulation, which is one volume for both T300 modules
-#$ConcretePadding        =	50; #found in original perl script, but from the drawings it seems not correct
-#$FoamPadding            =       80; ##found in original perl script, but from the drawings it seems not correct
-#$TotalPadding	        =	$ConcretePadding+$FoamPadding;
+#Foam thickness and Warm vessel thickness
+$FoamPadding            =       60; 
+$WarmVesselThickness    =       27.4;
+$WarmVesselThickness_x  =       21.8;
+$SpaceTop               =       22.4; #Space between cryostat and top thermal insulation
+$SpaceUpstream          =       65.55; #Space between cryostat and upstream thermal insulation
+$SpaceDownstream        =       15.55; #Space between cryostat and downstream thermal insulation
+$SpaceBottom            =       18.0; #Space between cryostat and bottom thermal insulation 
 
-$TotalPadding	        =	60; #found in drawings
+#Thermal insulation surrounding the two cryostats
+$ThermIns_x             =       2*$Cryostat_x+2*$FoamPadding + 3*$CryoDist;
+$ThermIns_y	        =	$Cryostat_y+2*$FoamPadding+$SpaceTop+$SpaceBottom; 
+$ThermIns_z             =       $Cryostat_z+2*$FoamPadding+$SpaceUpstream+$SpaceDownstream;
 
-#Warm Vessel that contains the two cryostats
-#$WarmVessel_x	        =	$Cryostat_x_orig+2*$TotalPadding;
-$WarmVessel_x	        =	2*$Cryostat_x+2*$TotalPadding + 3*$CryoDist;
-$WarmVessel_y	        =	$Cryostat_y+2*$TotalPadding; 
-$WarmVessel_z           =       $Cryostat_z+2*$TotalPadding;
+#$InDetEncl_y            =       -154.995; #0; #-$WarmVessel_y/6; #-($WarmVessel_y + $CRT_tot_y)/6; original value
+#$InDetEncl_y            =       -154.995; #0; #-$WarmVessel_y/6; #-($WarmVessel_y + $CRT_tot_y)/6; +15cm
+
+$ThermInsInDetEncl_x    =       0;
+#$ThermInsInDetEncl_y    =       $InDetEncl_y;
+$ThermInsInDetEncl_z    =	0;
+
+#Warm Vessel surrounding the thermal insulation
+#$WarmVessel_x	        =	$ThermIns_x+2*$WarmVesselThickness;
+$WarmVessel_x	        =	$ThermIns_x+2*$WarmVesselThickness_x;
+$WarmVessel_y	        =	$ThermIns_y+2*$WarmVesselThickness; 
+$WarmVessel_z           =       $ThermIns_z+2*$WarmVesselThickness;
 
 $WarmVesselInDetEncl_x  =	0;
-$WarmVesselInDetEncl_y  =       -154.995;	#0; #-$WarmVessel_y/6; #-($WarmVessel_y + $CRT_tot_y)/6;
+#$WarmVesselInDetEncl_y  =       $InDetEncl_y;
 $WarmVesselInDetEncl_z  =	0;
 
-#In the original way of defining the DetEncl
-#$DetEnc_x	        =	$Cryostat_x_orig+2*$TotalPadding;
-#$DetEnc_y	        =	$Cryostat_y+2*$ConcretePadding; 
-                                    # no foam on bottom or top, no concrete on top
-#$DetEnc_z               =       $Cryostat_z+2*$TotalPadding;
-
-
+#$MoreDetEnc_y = 60.0; # More space in height to cope with few extrusions
 #Big detector Enclosure to contain detector + CRT.
-$DetEnc_x = 1235.96;#$WarmVessel_x + $CRT_tot_x; 
-$DetEnc_y = 965.37;#$WarmVessel_y + $CRT_tot_y; 
-$DetEnc_z = 2709.56;#$WarmVessel_z + $CRT_tot_z; 
+#$DetEnc_x = 1235.96;#$WarmVessel_x + $CRT_tot_x; 
+#$DetEnc_y = 963.37 + $MoreDetEnc_y;#$WarmVessel_y + $CRT_tot_y; 
+#$DetEnc_z = 2709.56;#$WarmVessel_z + $CRT_tot_z; 
 
 
 #Cryostat respect to the warm vessel
 $Cryo1InWarmVessel_x     =     -$Cryostat_x/2 - $CryoDist ;  #-$Cryostat_x/2 - $CryoDist/2 ;
 $Cryo2InWarmVessel_x     =      $Cryostat_x/2 + $CryoDist;  #$Cryostat_x/2 + $CryoDist/2 ;
 #$CryoInWarmVessel_y     =       -$WarmVessel_y/2 + $ConcretePadding + $Cryostat_y/2; #in original way
-$CryoInWarmVessel_y     =       -$WarmVessel_y/2 + $TotalPadding + $Cryostat_y/2 -154.995; #(-$WarmVessel_y/2 + $TotalPadding + $Cryostat_y/2)- ($WarmVessel_y)/6 ;
+#$CryoInWarmVessel_y     =       -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2 -154.995; #(-$WarmVessel_y/2 + $TotalPadding + $Cryostat_y/2)- ($WarmVessel_y)/6 ;
 $CryoInWarmVessel_z     =       0;
 
 #Original Origin point found in the Larsoft perl script
@@ -297,7 +334,7 @@ $OriginZSet = 0;
 
 #Experimental hall
 $Building_y = 1040.0 ; #part of the building outside
-$ExpHall_y = 1170.0;  #building underground
+$ExpHall_y = 1170.0 + 80;  #building underground
 
 $Hall_x = 1890.0;
 $Hall_y = $Building_y + $ExpHall_y ;
@@ -322,6 +359,18 @@ $posOverburden_x 	= 	$OriginXSet ;
 #$posOverburden_y 	=       $WarmVessel_y/2 + $Overburden_yDefault/2 + (820 - $WarmVessel_y/2) ; #warm vessel_y + overburden_y + distance between overburden and warm vessel 820 (taken from the drawings)
 $posOverburden_z 	=	$OriginZSet;
 
+#DetectorEnclosure (centered between expHall walls, between expHall floor and bottom of overburden)
+$ExpHall_VertSpace = $ExpHall_y - $HallWallThicnekss - $Overburden_y/3;
+$DetEnc_pad = 0.1;
+$DetEnc_x = 1245;
+$DetEnc_y = $ExpHall_VertSpace - 2*$DetEnc_pad;
+$DetEnc_z = 2712.56;
+$WarmVessel_FootHeight = 6.0; # heigth of support feet from bottom of support structure
+$WarmVessel_FloorSpace = 10.16; # space between WV feet and concrete floor due to concrete islands, grout, padding
+$WarmVessel_CenterToFloor = $WarmVessel_FootHeight + $WarmVessel_FloorSpace + $WarmVessel_y/2;
+#$DetEncl_yOffset = $ExpHall_VertSpace/2 - $WarmVessel_CenterToFloor;
+#$ThermInsInDetEncl_y = -1*$DetEncl_yOffset;
+#$WarmVesselInDetEncl_y = $ThermInsInDetEncl_y;
 #World
 $World_x            =       1e4;	#Originally was 2*$DetEnc_x;
 $World_y            =       1e4;	#Originally was 2*$DetEnc_y;
@@ -331,8 +380,12 @@ $World_z            =       1e4;	#Originally was 2*$DetEnc_z;
 #Ground Level
 #$Ground_y = -$World_y/4+$ExpHall_y/2-$Overburden_y/6 + 0.5*($World_y/2 + $ExpHall_y - $Overburden_y/3);
 #$Ground_y = $ExpHall_y - $Overburden_y/3 ;
-$Ground_y = 780.0; #from detector building drawing: distance between beamline ad ground level
-
+$Ground_y = 780.0;# - 40.0; #from detector building drawing: distance between beamline and ground level
+$DetEncl_yOffset = $Ground_y - $Overburden_y/3 - $ExpHall_VertSpace/2 -$DetEnc_pad;
+$ThermInsInDetEncl_y = -1*$DetEncl_yOffset;
+$WarmVesselInDetEncl_y = $ThermInsInDetEncl_y;
+$CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2;
+#$CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2 + $GaseousAr_y/2;
 #+++++++++++++++++++++++++ End defining variables ++++++++++++++++++++++++++
 
 # run the sub routines that generate the fragments
@@ -348,9 +401,11 @@ gen_TPC();	 # generates wires, wire planes, and puts them in volTPC
 
 gen_PMT();	 #generates PMTs
 
+gen_Mech_Structure(); # generates the geometry of the TPC mechanical structure
+
 gen_Cryostat();	 # places  volTPC,
 		 # half rotated 180 about Y
-gen_CRT();	 # places CRT: CERN modules top, eves; MINOS modules sides, DC bottom
+if ($crt_on==1) {gen_CRT();}	 # places CRT: CERN modules top, eves; MINOS modules sides, DC bottom
 gen_Enclosure(); # places two cryostats and warm vessel
 
 gen_World();	 # places the enclosure in the experimental hall
@@ -401,25 +456,26 @@ print DEF <<EOF;
 
 <!--
 -->
-
+   <position name="PMTtube" unit="cm" x="0" y="0" z="@{[1.5*$PMTtube_x]}"/>
    <position name="posActiveInTPC"   unit="cm" x="$posTPCActive_x" y="$posTPCActive_y" z="$posTPCActive_z"/>
    <position name="posTPC0inCryo"    unit="cm" x="$TPCinCryo_x[0]" y="$TPCinCryo_y"    z="$TPCinCryo_z" />
    <position name="posCathode"  unit="cm" x="$posCat_x"  y="$TPCinCryo_y"    z="$TPCinCryo_z" />
    <position name="posTPC1inCryo"    unit="cm" x="$TPCinCryo_x[1]" y="$TPCinCryo_y"    z="$TPCinCryo_z" />
    <position name="posCryo1InWarmVessel"  unit="cm" x="$Cryo1InWarmVessel_x" y="$CryoInWarmVessel_y" z="$CryoInWarmVessel_z" />
    <position name="posCryo2InWarmVessel"  unit="cm" x="$Cryo2InWarmVessel_x" y="$CryoInWarmVessel_y" z="$CryoInWarmVessel_z" />
-   <position name="posDetEncInWorld" unit="cm" x="$OriginXSet"     y="154.995"     z="$OriginZSet"/>
+   <position name="posDetEncInWorld" unit="cm" x="$OriginXSet"     y="$DetEncl_yOffset"     z="$OriginZSet"/>
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
+   <position name="posThermInsInDetEncl" unit="cm" x="$ThermInsInDetEncl_x" y="$ThermInsInDetEncl_y" z="$ThermInsInDetEncl_z"/>
    <position name="posWarmVesselInDetEncl" unit="cm" x="$WarmVesselInDetEncl_x" y="$WarmVesselInDetEncl_y" z="$WarmVesselInDetEncl_z"/>
-
+   <position name="posCRTShellInDetEncl" unit="cm" x="0" y="0" z="0"/>
    <position name="posBuildingInWorld" unit="cm" x="0" y="@{[$Ground_y + $Building_y/2]}" z="0"/>
-   <position name="posExpHallUnderground" unit="cm" x="0" y="@{[ $World_y/4 + $Ground_y/2 - $ExpHall_y /2 ]}" z="0"/>
    <position name="posExpHallInWorld" unit="cm" x="0" y="@{[$Ground_y - $ExpHall_y/2 ]}" z="0"/>
-
    <rotation name="rPlus90AboutZPlus90AboutY"  unit="deg" x="0" y="90" z="90"/>
    <rotation name="rPlus90AboutX"       unit="deg" x="90" y="0" z="0"/>
+   <rotation name="rMinus90AboutX"      unit="deg" x="-90" y="0" z="0"/>
    <rotation name="rPlus90AboutY"	unit="deg" x="0" y="90"   z="0"/>
    <rotation name="rPlus90AboutZ"	unit="deg" x="0" y="0"   z="90"/>
+   <rotation name="rMinus90AboutZ"	unit="deg" x="0" y="0"   z="-90"/>
    <rotation name="rMinus90AboutY"      unit="deg" x="0" y="270" z="0"/>
    <rotation name="rMinus90AboutYMinus90AboutX"       unit="deg" x="270" y="270" z="0"/>
    <rotation name="rPlus90VAngleAboutX"	unit="deg" x="@{[90-$VAngle]}" y="0"   z="0"/>  
@@ -480,6 +536,11 @@ sub gen_Materials()
 
   <material name="ALUMINUM_Al" formula="ALUMINUM_Al">
    <D value="2.6990" unit="g/cm3"/>
+   <fraction n="1.0000" ref="aluminum"/>
+  </material>
+
+  <material name="ALUMINUM_CRYO" formula="ALUMINUM_CRYO">
+   <D value="0.5991" unit="g/cm3"/>
    <fraction n="1.0000" ref="aluminum"/>
   </material>
 
@@ -596,6 +657,15 @@ sub gen_Materials()
    <fraction n="0.0900" ref="nickel"/>
   </material>
 
+  <material name="STEEL_STAINLESS_Fe7Cr2Ni_WV" formula="STEEL_STAINLESS_Fe7Cr2Ni_WV">
+   #<D value="0.3844" unit="g/cm3"/>
+   <D value="0.38897" unit="g/cm3"/>
+   <fraction n="0.0010" ref="carbon"/>
+   <fraction n="0.1792" ref="chromium"/>
+   <fraction n="0.7298" ref="iron"/>
+   <fraction n="0.0900" ref="nickel"/>
+  </material>
+
   <material name="LAr" formula="LAr">
    <D value="1.40" unit="g/cm3"/>
    <fraction n="1.0000" ref="argon"/>
@@ -699,6 +769,14 @@ sub gen_Materials()
    <D unit="g/cm3" value="1.06"/>
    <fraction n="0.077418" ref="hydrogen"/>
    <fraction n="0.922582" ref="carbon"/>
+  </material>
+
+  <material name="Polyurethane" formula="C27H36N2O10" >
+   <D value="0.9" unit="g/cm3"/>
+   <composite n="27" ref="carbon"/>
+   <composite n="36" ref="hydrogen"/>
+   <composite n="2" ref="nitrogen"/>
+   <composite n="10" ref="oxygen"/>
   </material>
 
 </materials>
@@ -1199,7 +1277,7 @@ EOF
 print TPC <<EOF;
       <physvol>
         <volumeref ref="volTPCWireV$i"/>
-        <position name="posTPCWireV$i" unit="cm" x="0" y="$ypos " z="$zpos"/>
+        *<position name="posTPCWireV$i" unit="cm" x="0" y="$ypos " z="$zpos"/>
         <rotationref ref="rMinusVAngleAboutX"/>
       </physvol>
 EOF
@@ -1272,7 +1350,7 @@ print TPC <<EOF;
      </physvol>
      <physvol>
        <volumeref ref="volTPCActive"/>
-       <positionref ref="posActiveInTPC"/>
+       *<positionref ref="posActiveInTPC"/>
      </physvol>
      <physvol> 
        <volumeref ref="volRaceTrackTVolume"/>
@@ -1433,14 +1511,15 @@ print RACETRACK <<EOF;
 <!--+++++++++++++++++ RACETRACK Logical Volumes ++++++++++++++++++++-->
 
     <volume name="volRaceTrackTTubeVolume"> 
-      <materialref ref="ALUMINUM_Al"/>  
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
       <solidref ref="RaceTrackTTubeVolume"/>
     </volume>
     <volume name="volRaceTrackBTubeVolume"> 
-      <materialref ref="ALUMINUM_Al"/>  
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
       <solidref ref="RaceTrackBTubeVolume"/>
     </volume>
-    <volume name="volRaceTrackUTubeVolume"> <materialref ref="ALUMINUM_Al"/>  
+    <volume name="volRaceTrackUTubeVolume"> 
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
       <solidref ref="RaceTrackUTubeVolume"/>
     </volume>
 EOF
@@ -1574,6 +1653,9 @@ print PMT <<EOF;
 <!--+++++++++++++++++++ PMT Solids ++++++++++++++++++++++-->
 
 EOF
+#<position name="PMTtube" unit="cm" x="30" y="0" z="0"/>
+#was after print PMT <<EOF; line
+#moved here to comment out for moving to position defs
 
 print PMT <<EOF;
 <solids> 
@@ -1584,9 +1666,28 @@ print PMT <<EOF;
   deltatheta="90"
   aunit="deg"
   lunit="cm"/>
-  </solids>    
+ <sphere name="PMTPassSphere"
+  rmin="$PMTradiusInner"
+  rmax="$PMTradiusOuter"
+  deltaphi="360"
+  deltatheta="90"
+  aunit="deg"
+  lunit="cm"/>
+ <tube name="PMTPassTube"
+  rmax="$PMTtubeRmax"
+  rmin="$PMTtubeRmin"
+  z="$PMTtube_x" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+ <union name="PMTPassVolume">
+  <first ref="PMTPassSphere"/>
+  <second ref="PMTPassTube"/>
+  <positionref ref="PMTtube"/>
+  <rotationref ref="rMinus90AboutZ"/>
+ </union>
+</solids>   
 EOF
-
 
 #For some reasons, the Optical Sensitive Volume for PMT has to be LAr ... I found this info both in SBND and MicroBoone geometries
 print PMT <<EOF;
@@ -1598,6 +1699,11 @@ print PMT <<EOF;
       <materialref ref="LAr"/>  
       <solidref ref="PMTVolume"/>
     </volume>
+    <volume name="volNotOpDetSensitive"> 
+      <materialref ref="Glass"/>  
+      <solidref ref="PMTPassVolume"/>
+    </volume>
+
 </structure>
 EOF
 
@@ -1609,6 +1715,77 @@ EOF
 } 
 #ends gen PMTs
 
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+#am+++++++++++++++++++++++ gen_structure +++++++++++++++++++++++++
+#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+sub gen_Mech_Structure{
+
+    $MECH = "icarus_Mech_Structure" . $suffix . ".gdml";
+    push (@gdmlFiles, $MECH); # Add file to list of GDML fragments
+    $MECH = ">" . $MECH;
+    open(MECH) or die("Could not open file $MECH for writing");
+
+# The standard XML prefix and starting the gdml
+    print MECH <<EOF;
+<?xml version='1.0'?>
+<gdml>
+EOF
+
+#All the steel structure solids
+print MECH <<EOF;
+
+<!--+++++++++++++++++++ Structure Solids ++++++++++++++++++++++-->
+
+EOF
+print MECH <<EOF;
+<solids> 
+  <box name="LatExtMechBox"
+  x="$ext_struct_x"
+  y="$ext_struct_y"
+  z="$ext_struct_z" 
+  lunit="cm" />
+  <box name="LatIntMechBox"
+  x="@{[0.1+$int_struct_x]}"
+  y="$int_struct_y"
+  z="$int_struct_z" 
+  lunit="cm" />
+  <box name="Pillar"
+  x="$int_struct_x"
+  y="$int_struct_y"
+  z="$int_struct_x" 
+  lunit="cm" />
+  <subtraction name="LatIntMechShell">
+    <first ref="LatIntMechBox"/>
+    <second ref="Pillar"/>
+  </subtraction>
+  <subtraction name="LatMechShell">
+   <first ref="LatExtMechBox"/>
+   <second ref="LatIntMechShell"/>
+ </subtraction>
+</solids>   
+EOF
+
+print MECH <<EOF;
+<structure>
+
+<!--+++++++++++++++++ Structure Logical Volumes ++++++++++++++++++++-->
+
+<volume name="volLatMech"> 
+  <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
+  <solidref ref="LatMechShell"/>
+</volume>
+
+</structure>
+EOF
+
+#Close standard XML file
+print MECH <<EOF;
+</gdml>
+EOF
+
+} 
+#ends gen mechanical structure
 
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 #++++++++++++++++++++++++++++++++++++++ gen_Cryostat +++++++++++++++++++++++++++++++++++++
@@ -1643,13 +1820,13 @@ print CRYO <<EOF;
       z="$Cryostat_z"/>
     <box name="ArgonInterior" lunit="cm" 
       x="$LAr_x"
-      y="$LAr_y"
-      z="$LAr_z"/>
+      y="@{[$LAr_y + $GaseousAr_y]}"
+      z="$TPC_z"/>
     <box name="GaseousArgon" lunit="cm" 
       x="$LAr_x"
       y="$GaseousAr_y"
       z="$LAr_z"/>
-    <subtraction name="SteelShell">
+    <subtraction name="AlumShell">
       <first ref="Cryostat"/>
       <second ref="ArgonInterior"/>
     </subtraction>
@@ -1677,9 +1854,9 @@ EOF
 
 print CRYO <<EOF;
 <structure>
-    <volume name="volSteelShell">
-      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni" />
-      <solidref ref="SteelShell" />
+    <volume name="volAlumShell">
+      <materialref ref="ALUMINUM_CRYO" />
+      <solidref ref="AlumShell" />
     </volume>
     <volume name="volGaseousArgon">
       <materialref ref="ArGas"/>
@@ -1723,8 +1900,10 @@ EOF
 #Positioning PMTs: positions from a file
 
 #$PMT_x0 = 0; 
-$PMT_x0 = $PMTradiusOuter /2 - $PMTGrid_offset/2 ; 
+$PMT_x0 = $PMTradiusOuter/2 - $PMTGrid_offset/2 - $PMTtube_x ; 
+$PMT_x1 = $PMT_x0 ;
 @pmt_pos0 = read_pmt_pos("dispositionPMT.txt", $PMT_x0);
+@pmt_pos1 = read_pmt_pos("dispositionPMT.txt", $PMT_x1);
 $Num_PMTs0 = @pmt_pos0;
 
     for ( $i=0; $i<$Num_PMTs0; ++$i ){
@@ -1734,8 +1913,32 @@ $Num_PMTs0 = @pmt_pos0;
    <position name="posPMT0$i" unit="cm" @pmt_pos0[$i]/>
    <rotationref ref="rPlus90AboutY"/>
   </physvol>
+  <physvol>
+   <volumeref ref="volNotOpDetSensitive"/>
+   <position name="posPMT1$i" unit="cm" @pmt_pos1[$i]/>
+   <rotationref ref="rMinus90AboutY"/>
+  </physvol>
 EOF
     }
+
+############################################################################################
+#Positioning Mechanical Structure elements:
+
+#$TPCActive_z
+
+$zMpos = -$TPCActive_z/2 + $ext_struct_z/2 ;
+$mech_number = 9.; 
+for ($im = 0; $im < $mech_number; $im++) 
+{
+  print CRYO <<EOF;
+      <physvol>
+        <volumeref ref="volLatMech"/>
+        <position name="posLatMech$im" unit="cm" x="0" y="0" z="$zMpos" />
+#        <rotationref ref="rIdentity" />
+      </physvol>
+EOF
+  $zMpos+= $ext_struct_z ;
+}
 print CRYO <<EOF;
     </volume>
 EOF
@@ -1747,11 +1950,11 @@ print CRYO <<EOF;
       <solidref ref="Cryostat" />
       <physvol>
         <volumeref ref="volGaseousArgon"/>
-        <position name="posGaseousArgon" unit="cm" x="0" y="@{[$LAr_y/2-$GaseousAr_y/2]}" z="0"/>
+    <position name="posGaseousArgon" unit="cm" x="0" y="@{[$LAr_y/2]}" z="0" />
       </physvol>
       <physvol>
-        <volumeref ref="volSteelShell"/>
-        <position name="posSteelShell" unit="cm" x="0" y="0" z="0"/>
+        <volumeref ref="volAlumShell"/>
+      <position name="posAlumShell" unit="cm" x="0" y="0" z="0"/>
       </physvol>
 
      <physvol>
@@ -1761,8 +1964,8 @@ print CRYO <<EOF;
      </physvol>
 
       <physvol>
-        <volumeref ref="volTPC"/>
-        <positionref ref="posTPC0inCryo"/>
+    <volumeref ref="volTPC"/>
+    <positionref ref="posTPC0inCryo"/>
 	<rotationref ref="rIdentity"/>
       </physvol>
       <physvol>
@@ -1771,7 +1974,7 @@ print CRYO <<EOF;
       </physvol>
       <physvol>
         <volumeref ref="volTPC"/>
-        <positionref ref="posTPC1inCryo"/>
+    <positionref ref="posTPC1inCryo"/>
 	<rotationref ref="rPlus180AboutY"/>
       </physvol>
 
@@ -1781,48 +1984,6 @@ print CRYO <<EOF;
      </physvol>
 
 EOF
-#OLD FUNCTION FOR PMT
-############################################################################################
-#Positioning PMTs: positions from a file
-
-##$PMT_x = (-$TPC_x/2)+3*$WirePlaneSpacing;
-
-#$PMT_x0 = - $TPCActive_x - 10; 
-#@pmt_pos0 = read_pmt_pos("dispositionPMT.txt", $PMT_x0);
-#$Num_PMTs0 = @pmt_pos0;
-
-#$PMT_x1 =   $TPCActive_x + 10;
-#@pmt_pos1 = read_pmt_pos("dispositionPMT.txt", $PMT_x1);
-#$Num_PMTs1 = @pmt_pos1;
-
-#    for ( $i=0; $i<$Num_PMTs0; ++$i ){
-#      print CRYO <<EOF;
-#  <physvol>
-#   <volumeref ref="volOpDetSensitive"/>
-#   <position name="posPMT0$i" unit="cm" @pmt_pos0[$i]/>
-#   <rotationref ref="rPlus90AboutY"/>
-#  </physvol>
-#EOF
-#    }
-#    for ( $i=0; $i<$Num_PMTs1; ++$i ){
-#      print CRYO <<EOF;
-#  <physvol>
-#   <volumeref ref="volOpDetSensitive"/>
-#   <position name="posPMT1$i" unit="cm" @pmt_pos1[$i]/>
-#   <rotationref ref="rPlus90AboutY"/>
-#  </physvol>
-#EOF
-#    }
-
-#Positioning:****6**7****
-#            *2********3*
-#            ****0**1****
-#            *4********5*
-#            ****8**9****
- 
-############################################################################################
-
-
 
 print CRYO <<EOF;
     </volume>
@@ -1857,7 +2018,7 @@ sub gen_CRT()
     my $ret=`python $CRTPYTHON `;
     
 
-    $CRT = "icarus_crt_test" . $suffix . ".gdml";
+    $CRT = "icarus_crt" . $suffix . ".gdml";
     push (@gdmlFiles, $CRT);
 # expecting the python script to generate a file "icarus_crt_test.gdml"
 #    $CRT = ">" . $CRT;
@@ -1911,16 +2072,31 @@ print ENCL <<EOF;
       x="$DetEnc_x"
       y="$DetEnc_y"
       z="$DetEnc_z"/>
+     
+    <box name="ThermIns" lunit="cm" 
+      x="$ThermIns_x"
+      y="$ThermIns_y"
+      z="$ThermIns_z"/>
 
     <box name="WarmVessel" lunit="cm" 
       x="$WarmVessel_x"
       y="$WarmVessel_y"
       z="$WarmVessel_z"/>
 
+    <box name="ThermInsInterior" lunit="cm" 
+      x="@{[$ThermIns_x - 2*$FoamPadding]}"
+      y="@{[$ThermIns_y - 2*$FoamPadding]}"
+      z="@{[$ThermIns_z - 2*$FoamPadding]}"/>
+
     <box name="WarmVesselInterior" lunit="cm" 
-      x="@{[$WarmVessel_x - $WarmVesselThickness]}"
-      y="@{[$WarmVessel_y - $WarmVesselThickness]}"
-      z="@{[$WarmVessel_z - $WarmVesselThickness]}"/>
+      x="@{[$WarmVessel_x - 2*$WarmVesselThickness_x]}"
+      y="@{[$WarmVessel_y - 2*$WarmVesselThickness]}"
+      z="@{[$WarmVessel_z - 2*$WarmVesselThickness]}"/>
+
+    <subtraction name="ThermInsShell">
+      <first ref="ThermIns"/>
+      <second ref="ThermInsInterior"/>
+    </subtraction>
 
     <subtraction name="WarmVesselShell">
       <first ref="WarmVessel"/>
@@ -1935,8 +2111,13 @@ EOF
     print ENCL <<EOF;
 <structure>
 
+    <volume name="volThermIns">
+      <materialref ref="Polyurethane"/> 
+      <solidref ref="ThermInsShell"/>
+    </volume>
+
     <volume name="volWarmVessel">
-      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni_WV"/>
       <solidref ref="WarmVesselShell"/>
     </volume>
 
@@ -1945,9 +2126,14 @@ EOF
       <solidref ref="DetEnclosure"/>
 
     <physvol>
-      <volumeref ref="volCRT_Shell"/>
+      <volumeref ref="volThermIns"/>
+      <positionref ref="posThermInsInDetEncl"/>
     </physvol>
 
+    <physvol>
+      <volumeref ref="volCRT_Shell"/>
+      <positionref ref="posCRTShellInDetEncl"/>
+    </physvol>
 
     <physvol>
       <volumeref ref="volWarmVessel"/>
@@ -2135,7 +2321,7 @@ print WORLD <<EOF;
 
     <volume name="volWallBuilding" >
       <materialref ref="Concrete"/>
-      <solidref ref="WallBuilding"/>
+      *<solidref ref="WallBuilding"/>
 
 EOF
 
