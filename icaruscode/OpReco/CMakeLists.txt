@@ -1,5 +1,5 @@
 
-art_make( LIBRARY_NAME OpReco
+art_make( 
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 			lardataobj_RecoBase

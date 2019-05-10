@@ -1,18 +1,10 @@
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
-set( ROOTLIB -L$ENV{ROOTSYS}/lib -lCore -lRIO -lNet -lHist -lGraf -lGraf3d -lGpad -lTree -lRint -lPostscript -lMatrix -lPhysics -lMathCore -lThread -pthread -lm -ldl)
-
-link_libraries( ${LIB_NAME} -L$ENV{BOOST_LIB} -lboost_system ${ROOTLIB} )
-
 art_make( 
-	  LIBRARY_NAME  icarus_FlashFinder
 	  LIB_LIBRARIES
-	  	   #larcore_Geometry
 		   icaruscode_Geometry
 		   larcore_Geometry_Geometry_service
-                   #UBOpReadoutMap_service
 		   lardataobj_RecoBase
-		   #${UBOONECODE_LIB}
 		   ${LARDATA_LIB}
 		   canvas
 		   cetlib
@@ -36,12 +28,10 @@ art_make(
 		   ${ROOT_GDML}
 		   ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
-		   icarus_FlashFinder
-	  	   #larcore_Geometry
+		   icaruscode_OpReco_FlashFinder
 		   icaruscode_Geometry
 		   larcore_Geometry_Geometry_service
 		   lardataobj_RecoBase
-		   #${UBOONECODE_LIB}
 		   ${LARDATA_LIB}
 		   canvas
 		   cetlib

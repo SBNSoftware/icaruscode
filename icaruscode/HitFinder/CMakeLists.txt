@@ -1,6 +1,6 @@
 add_subdirectory(HitFinderTools)
 
-art_make( LIBRARY_NAME RecoWire
+art_make( 
           LIB_LIBRARIES 
 			lardataobj_RawData
                         lardataobj_RecoBase

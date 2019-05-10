@@ -1,4 +1,4 @@
-art_make( LIBRARY_NAME RawDigitFilterAlgs
+art_make( 
           LIB_LIBRARIES 
                           lardataobj_RawData
                           lardataobj_RecoBase
@@ -32,7 +32,7 @@ art_make( LIBRARY_NAME RawDigitFilterAlgs
                           ${ROOT_GDML}
                           ${ROOT_FFTW}
                           ${ROOT_BASIC_LIB_LIST}
-          TOOL_LIBRARIES  RawDigitFilterAlgs
+          TOOL_LIBRARIES  icaruscode_RawDigitFilters_RawDigitFilterAlgs
                           lardataobj_RawData
                           lardataobj_RecoBase
                           lardata_Utilities
