@@ -12,7 +12,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/IRawDigitFilter.h"
+#include "icaruscode/RawDigitFilter/Algorithms/IRawDigitFilter.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include "TH1F.h"

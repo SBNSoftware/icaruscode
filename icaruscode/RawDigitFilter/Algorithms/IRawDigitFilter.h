@@ -13,7 +13,7 @@
 #define IRawDigitFilter_H
 
 #include "fhiclcpp/ParameterSet.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitNoiseFilterDefs.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitNoiseFilterDefs.h"
 
 namespace art
 {

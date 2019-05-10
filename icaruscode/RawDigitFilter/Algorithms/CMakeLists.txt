@@ -32,7 +32,7 @@ art_make(
                           ${ROOT_GDML}
                           ${ROOT_FFTW}
                           ${ROOT_BASIC_LIB_LIST}
-          TOOL_LIBRARIES  icaruscode_RawDigitFilters_RawDigitFilterAlgs
+          TOOL_LIBRARIES  icaruscode_RawDigitFilter_Algorithms
                           lardataobj_RawData
                           lardataobj_RecoBase
                           lardata_Utilities

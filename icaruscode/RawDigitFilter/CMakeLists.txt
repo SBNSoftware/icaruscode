@@ -1,4 +1,4 @@
-add_subdirectory(RawDigitFilterAlgs)
+add_subdirectory(Algorithms)
 
 art_make(
           LIB_LIBRARIES 
@@ -10,7 +10,7 @@ art_make(
                         ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
                         larcorealg_Geometry
-                        icaruscode_RawDigitFilters_RawDigitFilterAlgs
+                        icaruscode_RawDigitFilter_Algorithms
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
                         larevt_Filters
