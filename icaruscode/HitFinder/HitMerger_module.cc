@@ -66,7 +66,7 @@ private:
     using HitPtrVector = std::vector<art::Ptr<recob::Hit>>;
     
     // Fcl parameters.
-    std::vector<art::InputTag>  fHitProducerLabels;         ///< The full collection of hits
+    std::vector<art::InputTag>  HitMergerfHitProducerLabelVec;         ///< The full collection of hits
 };
 
 DEFINE_ART_MODULE(HitMerger)
@@ -104,7 +104,7 @@ HitMerger::~HitMerger()
 ///
 void HitMerger::reconfigure(fhicl::ParameterSet const & pset)
 {
-    fHitProducerLabels = pset.get<std::vector<art::InputTag>>("HitProducerLabels");
+    HitMergerfHitProducerLabelVec = pset.get<std::vector<art::InputTag>>("HitProducerLabelVec");
 }
 
 //----------------------------------------------------------------------------
@@ -144,7 +144,7 @@ void HitMerger::produce(art::Event & evt)
     art::PtrMaker<recob::Hit> ptrMaker(evt);
     
     // Outside loop over the input hit producers
-    for(const auto& inputTag : fHitProducerLabels)
+    for(const auto& inputTag : HitMergerfHitProducerLabelVec)
     {
         // Start by looking up the original hits
         art::Handle< std::vector<recob::Hit> > hitHandle;
@@ -190,7 +190,7 @@ void HitMerger::makeWireAssns(const art::Event& evt, art::Assns<recob::Wire, rec
     std::unordered_map<raw::ChannelID_t, art::Ptr<recob::Wire>> channelToWireMap;
     
     // Go through the list of input sources and fill out the map
-    for(const auto& inputTag : fHitProducerLabels)
+    for(const auto& inputTag : HitMergerfHitProducerLabelVec)
     {
         art::ValidHandle<std::vector<recob::Hit>> hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(inputTag);
         
@@ -236,7 +236,7 @@ void HitMerger::makeRawDigitAssns(const art::Event& evt, art::Assns<raw::RawDigi
     std::unordered_map<raw::ChannelID_t, art::Ptr<raw::RawDigit>> channelToRawDigitMap;
     
     // Go through the list of input sources and fill out the map
-    for(const auto& inputTag : fHitProducerLabels)
+    for(const auto& inputTag : HitMergerfHitProducerLabelVec)
     {
         art::ValidHandle<std::vector<recob::Hit>> hitHandle = evt.getValidHandle<std::vector<recob::Hit>>(inputTag);
         

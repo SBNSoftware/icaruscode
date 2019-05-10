@@ -34,6 +34,12 @@ icarus_hitselector:
   MinPulseWidthSingle:     [  3.0,   3.0,   3.0 ]
 }
 
+icarus_hitmerger:
+{
+  module_type:             "HitMerger"
+  HitProducerLabelVec:     ["gaushit"]
+}
+
 # Define icarus version of gaushit finder
 gaus_hitfinder_icarus: @local::gaus_hitfinder
 
