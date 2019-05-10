@@ -88,6 +88,10 @@ icarus_reco_producers:
   ### hit selector
   gaushitsel:                     @local::icarus_hitselector
 
+  ### hit merger for raw hit finding
+  hitMergerCryo0:                 @local::icarus_hitmerger
+  hitMergerCryo1:                 @local::icarus_hitmerger
+
   ### trajcluster
   trajclusterGaus:                @local::icarus_trajcluster
   trajclusterICARUS:              @local::icarus_trajcluster
@@ -126,8 +130,8 @@ icarus_reco_producers:
 
   pandoraKalmanTrackICARUS:       @local::icarus_pandora_kalmantrack
 
-  pandoraKalmanTrackICARUSCyro0:  @local::icarus_pandora_kalmantrack
-  pandoraKalmanTrackICARUSCyro1:  @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackICARUSCryo0:  @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
 
   ### PM algorithm
   pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
@@ -144,7 +148,7 @@ icarus_reco_producers:
   mcassociationsGausCryo1:        @local::standard_mcparticlehitmatching
   mcassociationsICARUS:           @local::standard_mcparticlehitmatching
   mcassociationsICARUSCryo0:      @local::standard_mcparticlehitmatching
-  mcassociationsICARUSCyro1:      @local::standard_mcparticlehitmatching
+  mcassociationsICARUSCryo1:      @local::standard_mcparticlehitmatching
 
   ## crt producers
   crtsimhit:                      @local::standard_crtsimhitproducer
@@ -264,8 +268,8 @@ icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
 
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
-                                    @sequence::icarus_reco_cluster3D_Cryo0,
-                                    @sequence::icarus_reco_pandoraGaus_Cryo0 ]
+                                    @sequence::icarus_reco_cluster3DCryo0,
+                                    @sequence::icarus_reco_pandoraGausCryo0 ]
 
 icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
                                     @sequence::icarus_reco_SigProcTPC3Gauss,
@@ -274,8 +278,13 @@ icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
 
 icarus_reco_raw_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Raw,
                                     @sequence::icarus_reco_SigProcTPC1Raw,
-                                    @sequence::icarus_reco_pandoraICARUSCryo0
-                                    ]
+                                    hitMergerCryo0,
+                                    @sequence::icarus_reco_pandoraICARUSCryo0 ]
+
+icarus_reco_raw_Cryo1:            [ @sequence::icarus_reco_SigProcTPC2Raw,
+                                    @sequence::icarus_reco_SigProcTPC3Raw,
+                                    hitMergerCryo1,
+                                    @sequence::icarus_reco_pandoraICARUSCryo1 ]
 
 icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
 icarus_reco_mcrecoGausMulti:      [ mcassociationsGausCryo0,
@@ -304,7 +313,6 @@ icarus_gauss_MultiTPCRecon:       [ @sequence::icarus_reco_Gauss_Cryo0,
                                     @sequence::icarus_reco_mcrecoGausMulti,
                                     @sequence::icarus_reco_wmc_optical
                                   ]
-
 
 # Define what would be the second pass reconstructon (the "ICARUS" recon)
 # Note this stage needs to follow the gauss stage since it uses the rawdigitfilter output
@@ -387,6 +395,10 @@ icarus_reco_producers.gaushitTPC3.CalDataModuleLabel:                           
 
 icarus_reco_producers.gaushitsel.HitProducerLabel:                                         "gaushit"
 
+### Need to define hitmerger for the raw hit finding when done by TPC
+icarus_reco_producers.hitMergerCryo0.hitProducerLabelVec:                                   ["icarusHitTPC0","icarusHitTPC1"]
+icarus_reco_producers.hitMergerCryo1.hitProducerLabelVec:                                   ["icarusHitTPC2","icarusHitTPC3"]
+
 ## Standard 3D hit building
 icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                           ["gaushit"]
 
@@ -400,6 +412,10 @@ icarus_reco_producers.icarusHitTPC0.CalDataModuleLabel:                         
 icarus_reco_producers.icarusHitTPC1.CalDataModuleLabel:                                    "recoWireRawTPC1"
 icarus_reco_producers.icarusHitTPC2.CalDataModuleLabel:                                    "recoWireRawTPC2"
 icarus_reco_producers.icarusHitTPC3.CalDataModuleLabel:                                    "recoWireRawTPC3"
+
+### Need to define hitmerger for the raw hit finding when done by TPC
+icarus_reco_producers.hitMergerCryo0.hitProducerLabelVec:                                  ["icarusHitTPC0","icarusHitTPC1"]
+icarus_reco_producers.hitMergerCryo1.hitProducerLabelVec:                                  ["icarusHitTPC2","icarusHitTPC3"]
 
 icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                 "cluster3d"
 
@@ -462,7 +478,7 @@ icarus_reco_producers.pandoraKalmanTrackICARUS.options.trackFromPF:             
 icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:                       false
 
 ### Definitions for a pandora by cryostat
-icarus_reco_producers.pandoraICARUSCryo0.HitFinderModuleLabel:                            "icarushit"
+icarus_reco_producers.pandoraICARUSCryo0.HitFinderModuleLabel:                            "hitMergerCryo0"
 icarus_reco_producers.pandoraTrackICARUSCryo0.PFParticleLabel:                            "pandoraICARUSCryo0"
 icarus_reco_producers.pandoraShowerICARUSCryo0.PFParticleLabel:                           "pandoraICARUSCryo0"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPFParticleLabel:          "pandoraICARUSCryo0"
@@ -473,7 +489,7 @@ icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPidLabel:       
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.options.trackFromPF:                  false
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.options.showerFromPF:                 false
 
-icarus_reco_producers.pandoraICARUSCryo1.HitFinderModuleLabel:                            "icarushit"
+icarus_reco_producers.pandoraICARUSCryo1.HitFinderModuleLabel:                            "hitMergerCryo1"
 icarus_reco_producers.pandoraTrackICARUSCryo1.PFParticleLabel:                            "pandoraICARUSCryo1"
 icarus_reco_producers.pandoraShowerICARUSCryo1.PFParticleLabel:                           "pandoraICARUSCryo1"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.inputs.inputPFParticleLabel:          "pandoraICARUSCryo1"
