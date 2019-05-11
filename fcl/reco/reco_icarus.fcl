@@ -414,8 +414,8 @@ icarus_reco_producers.icarusHitTPC2.CalDataModuleLabel:                         
 icarus_reco_producers.icarusHitTPC3.CalDataModuleLabel:                                    "recoWireRawTPC3"
 
 ### Need to define hitmerger for the raw hit finding when done by TPC
-icarus_reco_producers.hitMergerCryo0.hitProducerLabelVec:                                  ["icarusHitTPC0","icarusHitTPC1"]
-icarus_reco_producers.hitMergerCryo1.hitProducerLabelVec:                                  ["icarusHitTPC2","icarusHitTPC3"]
+icarus_reco_producers.hitMergerCryo0.HitProducerLabelVec:                                  ["icarusHitTPC0","icarusHitTPC1"]
+icarus_reco_producers.hitMergerCryo1.HitProducerLabelVec:                                  ["icarusHitTPC2","icarusHitTPC3"]
 
 icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                 "cluster3d"
 
@@ -501,24 +501,30 @@ icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.options.trackFromPF:        
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.options.showerFromPF:                 false
 
 ### Definitions for single instance of PM algorithm
-icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                   "trajclusterICARUS"
-icarus_reco_producers.pmAlgTrackerICARUS.WireModuleLabel:                                  "recowireraw"
-icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                               "trajclusterICARUS"
+icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                  "trajclusterICARUS"
+icarus_reco_producers.pmAlgTrackerICARUS.WireModuleLabel:                                 "recowireraw"
+icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                              "trajclusterICARUS"
          
-icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                  "pmAlgTrackerICARUS"
+icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                 "pmAlgTrackerICARUS"
          
-icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                                 "pandoraTrackGaus"
-icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                                   ["gaushit"]
-icarus_reco_producers.mcassociationsGaus.makeT0Assns:                                      false
-icarus_reco_producers.mcassociationsGausCryo0.TrackModuleLabel:                            "pandoraTrackGausCryo0"
-icarus_reco_producers.mcassociationsGausCryo0.HitModuleLabel:                              ["gaushitTPC0","gaushitTPC1"]
-icarus_reco_producers.mcassociationsGausCryo0.makeT0Assns:                                 false
-icarus_reco_producers.mcassociationsGausCryo1.TrackModuleLabel:                            "pandoraTrackGausCryo1"
-icarus_reco_producers.mcassociationsGausCryo1.HitModuleLabel:                              ["gaushitTPC2","gaushitTPC3"]
-icarus_reco_producers.mcassociationsGausCryo1.makeT0Assns:                                 false
+icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                                "pandoraTrackGaus"
+icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                                  ["gaushit"]
+icarus_reco_producers.mcassociationsGaus.makeT0Assns:                                     false
+icarus_reco_producers.mcassociationsGausCryo0.TrackModuleLabel:                           "pandoraTrackGausCryo0"
+icarus_reco_producers.mcassociationsGausCryo0.HitModuleLabel:                             ["cluster3DCryo0"]
+icarus_reco_producers.mcassociationsGausCryo0.makeT0Assns:                                false
+icarus_reco_producers.mcassociationsGausCryo1.TrackModuleLabel:                           "pandoraTrackGausCryo1"
+icarus_reco_producers.mcassociationsGausCryo1.HitModuleLabel:                             ["cluster3DCryo1"]
+icarus_reco_producers.mcassociationsGausCryo1.makeT0Assns:                                false
 
-icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                               "pandoraTrackICARUS"
-icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                 ["icarushit"]
-icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                    false
+icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                              "pandoraTrackICARUS"
+icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                ["icarushit"]
+icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                   false
+icarus_reco_producers.mcassociationsGausICARUSCryo0.TrackModuleLabel:                     "pandoraTrackICARUSCryo0"
+icarus_reco_producers.mcassociationsGausICARUSCryo0.HitModuleLabel:                       ["hitMergerCryo0"]
+icarus_reco_producers.mcassociationsGausICARUSCryo0.makeT0Assns:                          false
+icarus_reco_producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:                     "pandoraTrackICARUSCryo1"
+icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                       ["hitMergerCryo1"]
+icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                          false
 
 END_PROLOG
