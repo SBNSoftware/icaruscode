@@ -137,8 +137,7 @@ void HitMerger::produce(art::Event & evt)
     /// Associations with raw digits.
     std::unique_ptr<art::Assns<raw::RawDigit, recob::Hit>> rawDigitAssns(new art::Assns<raw::RawDigit, recob::Hit>);
 
-    std::vector<recob::Hit> hitPtrVec;
-    RecobHitToPtrMap        recobHitToPtrMap;
+    RecobHitToPtrMap recobHitToPtrMap;
     
     // Use this handy art utility to make art::Ptr objects to the new recob::Hits for use in the output phase
     art::PtrMaker<recob::Hit> ptrMaker(evt);
@@ -157,13 +156,13 @@ void HitMerger::produce(art::Event & evt)
             const recob::Hit* hit2D = hitPtr.get();
             
             // Create and save the new recob::Hit with the correct WireID
-            hitPtrVec.emplace_back(recob::HitCreator(*hit2D, hit2D->WireID()).copy());
+            outputHitPtrVec->emplace_back(recob::HitCreator(*hit2D, hit2D->WireID()).copy());
             
             // Recover a pointer to it...
-            recob::Hit* newHit = &hitPtrVec.back();
+            recob::Hit* newHit = &outputHitPtrVec->back();
             
             // Create a mapping from this hit to an art Ptr representing it
-            recobHitToPtrMap[newHit] = ptrMaker(hitPtrVec.size()-1);
+            recobHitToPtrMap[newHit] = ptrMaker(outputHitPtrVec->size()-1);
         }
     }
     
@@ -214,11 +213,7 @@ void HitMerger::makeWireAssns(const art::Event& evt, art::Assns<recob::Wire, rec
         
         std::unordered_map<raw::ChannelID_t, art::Ptr<recob::Wire>>::iterator chanWireItr = channelToWireMap.find(channel);
         
-        if (!(chanWireItr != channelToWireMap.end()))
-        {
-            std::cout << "******>> Did not find channel to wire match! Skipping..." << std::endl;
-            continue;
-        }
+        if (!(chanWireItr != channelToWireMap.end())) continue;
         
         wireAssns.addSingle(chanWireItr->second, hitPtrPair.second);
     }
@@ -260,11 +255,7 @@ void HitMerger::makeRawDigitAssns(const art::Event& evt, art::Assns<raw::RawDigi
         
         std::unordered_map<raw::ChannelID_t, art::Ptr<raw::RawDigit>>::iterator chanRawDigitItr = channelToRawDigitMap.find(channel);
         
-        if (!(chanRawDigitItr != channelToRawDigitMap.end()))
-        {
-            std::cout << "******>> Did not find channel to RawDigit match! Skipping..." << std::endl;
-            continue;
-        }
+        if (!(chanRawDigitItr != channelToRawDigitMap.end())) continue;
         
         rawDigitAssns.addSingle(chanRawDigitItr->second, hitPtrPair.second);
     }
