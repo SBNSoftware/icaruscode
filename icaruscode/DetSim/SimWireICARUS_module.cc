@@ -83,8 +83,10 @@ private:
                     std::vector<double> const& charge, float ped_mean) const;
     
     std::string                  fDriftEModuleLabel; ///< module making the ionization electrons
+    bool                         fProcessAllTPCs;    ///< If true we process all TPCs
+    unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
+    unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
     raw::Compress_t              fCompression;       ///< compression type to use
-    size_t                       fNTicks;                ///< number of ticks of the clock
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
     
@@ -154,17 +156,20 @@ SimWireICARUS::~SimWireICARUS() {}
 //-------------------------------------------------
 void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
-    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel");
-    fSimDeadChannels  = p.get< bool                >("SimDeadChannels");
-    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal");
+    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel"    );
+    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs", false);
+    fCryostat         = p.get< unsigned int        >("Cryostat",           0);
+    fTPC              = p.get< unsigned int        >("TPC",                0);
+    fSimDeadChannels  = p.get< bool                >("SimDeadChannels"      );
+    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal"     );
     fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
-    fSample           = p.get< int                 >("Sample");
-    fSmearPedestals   = p.get< bool                >("SmearPedestals", true);
-    fNumChanPerMB     = p.get< int                 >("NumChanPerMB", 32);
-    fTest             = p.get< bool                >("Test");
-    fTestWire         = p.get< size_t              >("TestWire");
-    fTestIndex        = p.get< std::vector<size_t> >("TestIndex");
-    fTestCharge       = p.get< std::vector<double> >("TestCharge");
+    fSample           = p.get< int                 >("Sample"               );
+    fSmearPedestals   = p.get< bool                >("SmearPedestals",  true);
+    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",      32);
+    fTest             = p.get< bool                >("Test"                 );
+    fTestWire         = p.get< size_t              >("TestWire"             );
+    fTestIndex        = p.get< std::vector<size_t> >("TestIndex"            );
+    fTestCharge       = p.get< std::vector<double> >("TestCharge"           );
     
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
@@ -238,13 +243,13 @@ void SimWireICARUS::produce(art::Event& evt)
     //get the FFT
     art::ServiceHandle<util::LArFFT> fFFT;
     fFFT->ReinitializeFFT(fNTimeSamples,fFFT->FFTOptions(),fFFT->FFTFitBins());
-    fNTicks = fFFT->FFTSize();
-    if ( fNTicks%2 != 0 )
-        MF_LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << fNTicks << " not a power of 2. "
+    size_t nTicks = fFFT->FFTSize();
+    if ( nTicks%2 != 0 )
+        MF_LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << nTicks << " not a power of 2. "
         << "May cause issues in (de)convolution.\n";
-    if ( fNTimeSamples > fNTicks )
+    if ( fNTimeSamples > nTicks )
         mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
-        << fNTimeSamples << " greater than FFTSize " << fNTicks << "!";
+        << fNTimeSamples << " greater than FFTSize " << nTicks << "!";
     
     //TimeService
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
@@ -296,9 +301,9 @@ void SimWireICARUS::produce(art::Event& evt)
     
     // vectors for working in the following for loop
     std::vector<short>  adcvec(fNTimeSamples, 0);
-    std::vector<double> chargeWork(fNTicks,0.);
-    std::vector<double> zeroCharge(fNTicks,0.);
-    std::vector<float>  noisetmp(fNTicks,0.);
+    std::vector<double> chargeWork(nTicks,0.);
+    std::vector<double> zeroCharge(nTicks,0.);
+    std::vector<float>  noisetmp(nTicks,0.);
     
     // make sure chargeWork is correct size
     if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
@@ -319,8 +324,35 @@ void SimWireICARUS::produce(art::Event& evt)
     
     MBWithSignalSet mbWithSignalSet;
     
+    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
+    raw::ChannelID_t firstChannel(0);
+    raw::ChannelID_t endChannel(maxChannel);
+    
+    if (!fProcessAllTPCs)
+    {
+        firstChannel = maxChannel;
+        endChannel   = 0;
+        
+        for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
+        {
+            raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
+            
+            if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
+            
+            raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
+            
+            if (planeEndChannel > endChannel) endChannel = planeEndChannel;
+        }
+    }
+    
     // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
-    if (!fSuppressNoSignal) for(raw::ChannelID_t mbIdx = 0; mbIdx < maxChannel/32; mbIdx++) mbWithSignalSet.insert(mbIdx);
+    if (!fSuppressNoSignal)
+    {
+        raw::ChannelID_t firstMBIdx(firstChannel / fNumChanPerMB);
+        raw::ChannelID_t endMBIdx(endChannel / fNumChanPerMB);
+        
+        for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
+    }
     else
     {
         for(const auto& simChan : channels)
@@ -328,9 +360,8 @@ void SimWireICARUS::produce(art::Event& evt)
             if (simChan)
             {
                 raw::ChannelID_t channel = simChan->Channel();
-                int              mbIdx   = channel / fNumChanPerMB;
-            
-                mbWithSignalSet.insert(mbIdx);
+                
+                if (channel >= firstChannel && channel < endChannel) mbWithSignalSet.insert(channel/fNumChanPerMB);
             }
         }
     }
@@ -345,7 +376,7 @@ void SimWireICARUS::produce(art::Event& evt)
         {
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
-            noisetmp.resize(fNTicks, 0.);     //just in case
+            noisetmp.resize(nTicks, 0.);     //just in case
             
             //use channel number to set some useful numbers
             std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
@@ -397,7 +428,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 std::fill(chargeWork.begin(), chargeWork.end(), 0.);
                 
                 // loop over the tdcs and grab the number of electrons for each
-                for(int tick = 0; tick < (int)fNTicks; tick++)
+                for(int tick = 0; tick < (int)nTicks; tick++)
                 {
                     int tdc = ts->TPCTick2TDC(tick);
                     

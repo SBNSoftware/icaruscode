@@ -4,54 +4,72 @@
 
 BEGIN_PROLOG
 
-icarus_trajclusteralg:                      @local::standard_trajclusteralg
-icarus_trajclusteralg.MaxWireSkipNoSignal:  15 # increase a bit to allow for low gain wires
-icarus_trajclusteralg.CaloAlg:              @local::icarus_calorimetryalgmc
-icarus_trajcluster:                         @local::standard_trajcluster
-icarus_trajcluster.TrajClusterAlg:          @local::icarus_trajclusteralg
+icarus_trajclusteralg:                                                      @local::standard_trajclusteralg
+icarus_trajclusteralg.MaxWireSkipNoSignal:                                  15 # increase a bit to allow for low gain wires
+icarus_trajclusteralg.CaloAlg:                                              @local::icarus_calorimetryalgmc
+icarus_trajcluster:                                                         @local::standard_trajcluster
+icarus_trajcluster.TrajClusterAlg:                                          @local::icarus_trajclusteralg
 
-icarus_clustercrawleralg:                   @local::standard_clustercrawleralg
-icarus_cchitfinderalg:                      @local::standard_cchitfinderalg
+icarus_clustercrawleralg:                                                   @local::standard_clustercrawleralg
+icarus_cchitfinderalg:                                                      @local::standard_cchitfinderalg
 
-icarus_clustercrawler:                      @local::standard_clustercrawler
-icarus_clustercrawler.ClusterCrawlerAlg:    @local::icarus_clustercrawleralg
-icarus_clustercrawleralg.AllowNoHitWire:    3
-icarus_clustercrawleralg.MaxWirSkip:        [12, 8, 2]                        
-icarus_clustercrawleralg.MinWirAfterSkip:   [1, 1, 1]                         
-icarus_clustercrawleralg.ChiCut:            [2., 2., 2.]                      
-icarus_clustercrawleralg.ChgCut:            [2., 2., 2.]                      
-icarus_clustercrawleralg.HitErrFac:         0.6                               
-icarus_clustercrawler.CCHitFinderAlg:       @local::icarus_cchitfinderalg
-icarus_cchitfinderalg.MinPeak:              [8, 5, 5]
-icarus_cchitfinderalg.MinRMSInd:            5.                                
-icarus_cchitfinderalg.MinRMSCol:            10.                               
-icarus_cchitfinderalg.ChiNorms:             [0.5, 2.7]                        
-icarus_cchitfinderalg.ChgNorms:             [1.0, 1.0]
+icarus_clustercrawler:                                                      @local::standard_clustercrawler
+icarus_clustercrawler.ClusterCrawlerAlg:                                    @local::icarus_clustercrawleralg
+icarus_clustercrawleralg.AllowNoHitWire:                                    3
+icarus_clustercrawleralg.MaxWirSkip:                                        [12, 8, 2]
+icarus_clustercrawleralg.MinWirAfterSkip:                                   [1, 1, 1]
+icarus_clustercrawleralg.ChiCut:                                            [2., 2., 2.]
+icarus_clustercrawleralg.ChgCut:                                            [2., 2., 2.]
+icarus_clustercrawleralg.HitErrFac:                                         0.6
+icarus_clustercrawler.CCHitFinderAlg:                                       @local::icarus_cchitfinderalg
+icarus_cchitfinderalg.MinPeak:                                              [8, 5, 5]
+icarus_cchitfinderalg.MinRMSInd:                                            5.
+icarus_cchitfinderalg.MinRMSCol:                                            10.
+icarus_cchitfinderalg.ChiNorms:                                             [0.5, 2.7]
+icarus_cchitfinderalg.ChgNorms:                                             [1.0, 1.0]
 
-icarus_linecluster:                         @local::standard_linecluster
-icarus_linecluster.ClusterCrawlerAlg:       @local::icarus_clustercrawleralg
+icarus_linecluster:                                                         @local::standard_linecluster
+icarus_linecluster.ClusterCrawlerAlg:                                       @local::icarus_clustercrawleralg
 
-# 3D clustering definitions 
-icarus_standardhit3dbuilder:                @local::standard_standardhit3dbuilder
-icarus_spacepointhit3dbuilder:              @local::standard_spacepointhit3dbuilder
-icarus_cluster3dMergeAlg:                   @local::standard_cluster3dMergeAlg
-icarus_cluster3dPathAlg:                    @local::standard_cluster3dPathAlg
-icarus_cluster3ddbscanalg:                  @local::standard_cluster3ddbscanalg
-icarus_cluster3dminSpanTreeAlg:             @local::standard_cluster3dminSpanTreeAlg
-icarus_cluster3dprincipalcomponentsalg:     @local::standard_cluster3dprincipalcomponentsalg
-icarus_cluster3dskeletonalg:                @local::standard_cluster3dskeletonalg
-icarus_cluster3dhoughseedfinderalg:         @local::standard_cluster3dhoughseedfinderalg
-icarus_cluster3dpcaseedfinderalg:           @local::standard_cluster3dpcaseedfinderalg
-icarus_cluster3dparallelhitsseedfinderalg:  @local::standard_cluster3dparallelhitsseedfinderalg
-icarus_cluster3dkdtree:                     @local::standard_cluster3dkdTree
+# 3D clustering definitions
+icarus_standardhit3dbuilder:                                                @local::standard_standardhit3dbuilder
+icarus_spacepointhit3dbuilder:                                              @local::standard_spacepointhit3dbuilder
+icarus_cluster3dMergeAlg:                                                   @local::standard_cluster3dMergeAlg
+icarus_cluster3dPathAlg:                                                    @local::standard_cluster3dPathAlg
+icarus_cluster3ddbscanalg:                                                  @local::standard_cluster3ddbscanalg
+icarus_cluster3dminSpanTreeAlg:                                             @local::standard_cluster3dminSpanTreeAlg
+icarus_cluster3dprincipalcomponentsalg:                                     @local::standard_cluster3dprincipalcomponentsalg
+icarus_cluster3dskeletonalg:                                                @local::standard_cluster3dskeletonalg
+icarus_cluster3dhoughseedfinderalg:                                         @local::standard_cluster3dhoughseedfinderalg
+icarus_cluster3dpcaseedfinderalg:                                           @local::standard_cluster3dpcaseedfinderalg
+icarus_cluster3dparallelhitsseedfinderalg:                                  @local::standard_cluster3dparallelhitsseedfinderalg
+icarus_cluster3dkdtree:                                                     @local::standard_cluster3dkdTree
 
-icarus_cluster3d:                           @local::standard_cluster3d
-icarus_cluster3d.Hit3DBuilderAlg:           @local::icarus_standardhit3dbuilder
-icarus_cluster3d.ClusterAlg:                @local::icarus_cluster3ddbscanalg
-icarus_cluster3d.PrincipalComponentsAlg:    @local::icarus_cluster3dprincipalcomponentsalg
-icarus_cluster3d.SkeletonAlg:               @local::icarus_cluster3dskeletonalg
-icarus_cluster3d.SeedFinderAlg:             @local::icarus_cluster3dhoughseedfinderalg
-icarus_cluster3d.PCASeedFinderAlg:          @local::icarus_cluster3dpcaseedfinderalg
-icarus_cluster3d.ParallelHitsAlg:           @local::icarus_cluster3dparallelhitsseedfinderalg
+icarus_cluster3d:                                                           @local::standard_cluster3d
+icarus_cluster3d.Hit3DBuilderAlg:                                           @local::icarus_standardhit3dbuilder
+icarus_cluster3d.ClusterAlg:                                                @local::icarus_cluster3ddbscanalg
+icarus_cluster3d.PrincipalComponentsAlg:                                    @local::icarus_cluster3dprincipalcomponentsalg
+icarus_cluster3d.SkeletonAlg:                                               @local::icarus_cluster3dskeletonalg
+icarus_cluster3d.SeedFinderAlg:                                             @local::icarus_cluster3dhoughseedfinderalg
+icarus_cluster3d.PCASeedFinderAlg:                                          @local::icarus_cluster3dpcaseedfinderalg
+icarus_cluster3d.ParallelHitsAlg:                                           @local::icarus_cluster3dparallelhitsseedfinderalg
+
+icarus_cluster3d.Hit3DBuilderAlg.NumSigmaPeakTime:                          3.0
+icarus_cluster3d.Hit3DBuilderAlg.HitWidthScaleFactor:                       3.0
+icarus_cluster3d.Hit3DBuilderAlg.DeltaPeakTimeSig:                          1.75
+
+icarus_cluster3d.ClusterAlg:                                                @local::standard_cluster3ddbscanalg
+icarus_cluster3d.EnableMonitoring:                                          true
+icarus_cluster3d.ClusterAlg.MinPairPts:                                     1
+icarus_cluster3d.ClusterAlg.kdTree.PairSigmaPeakTime:                       3.0
+icarus_cluster3d.ClusterAlg.kdTree.RefLeafBestDist:                         0.75
+icarus_cluster3d.ClusterMergeAlg.MinEigenToProcess:                         50.
+icarus_cluster3d.ClusterPathAlg:                                            @local::standard_convexhullPathAlg
+icarus_cluster3d.ClusterPathAlg.MinTinyClusterSize:                         2000000  # effectively turn off for now
+icarus_cluster3d.ClusterPathAlg.MinEigen0To1Ratio:                          12.
+icarus_cluster3d.ClusterPathAlg.ClusterAlg.MinPairPts:                      1
+icarus_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.PairSigmaPeakTime:        3.0
+icarus_cluster3d.ClusterPathAlg.ClusterAlg.kdTree.RefLeafBestDist:          0.75
+
 
 END_PROLOG

@@ -338,7 +338,6 @@ void RawDigitFilterICARUS::produce(art::Event & event)
 
             if (fDoFFTCorrection) fFFTAlg.filterFFT(rawadc, plane, wire, pedestal);
 //            if (fDoFFTCorrection) fRawDigitFilterTool->FilterWaveform(rawadc, channel, size_t(fNumEvent), pedestal);
-
             
             // Get the kitchen sink
             fCharacterizationAlg.getWaveformParams(rawadc,

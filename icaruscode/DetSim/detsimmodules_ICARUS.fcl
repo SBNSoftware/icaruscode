@@ -39,6 +39,9 @@ standard_simwire:
 {
   module_type:        "SimWireICARUS"
   DriftEModuleLabel:  "largeant"
+  ProcessAllTPCs:     false
+  Cryostat:           0
+  TPC:                0
   CompressionType:    "none"
   SimDeadChannels:    false
   SuppressNoSignal:   false
