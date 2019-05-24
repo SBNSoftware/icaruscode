@@ -1,0 +1,63 @@
+
+art_make( LIBRARY_NAME Calorimetry
+          LIB_LIBRARIES
+	    larcorealg_Geometry
+            larcore_Geometry_Geometry_service 
+            lardataobj_RawData
+            lardataobj_RecoBase
+            lardataobj_AnalysisBase
+            lardata_Utilities
+            larreco_Calorimetry
+            ${FHICLCPP}
+ 	    ${BOOST_LIB}
+	    ${Boost_SYSTEM_LIBRARY}
+            ${CETLIB}
+            ${CETLIB_EXCEPT}
+            ${ROOT_BASIC_LIB_LIST}
+            ${ART_FRAMEWORK_CORE}
+	    ${ART_FRAMEWORK_PRINCIPAL}
+	    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+            ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+            ${ART_FRAMEWORK_SERVICES_BASIC}
+            ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+	    art_Persistency_Common
+	    art_Utilities
+            art_Persistency_Provenance
+            canvas
+          MODULE_LIBRARIES larcorealg_Geometry
+            Calorimetry
+	    larcore_Geometry_Geometry_service
+            lardata_Utilities
+            larevt_Filters
+            lardataobj_RawData
+            larevt_CalibrationDBI_IOVData
+            larevt_CalibrationDBI_Providers
+            lardataobj_RecoBase
+            lardataobj_AnalysisBase
+            lardata_ArtDataHelper
+            SignalShapingServiceICARUS_service
+            ${ART_FRAMEWORK_CORE}
+            ${ART_FRAMEWORK_PRINCIPAL}
+            ${ART_FRAMEWORK_SERVICES_REGISTRY}
+            ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+            ${ART_FRAMEWORK_SERVICES_BASIC}
+            ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+            art_Persistency_Common
+            art_Persistency_Provenance
+            art_Utilities
+            canvas
+            ${MF_MESSAGELOGGER}
+            ${MF_UTILITIES}
+            ${FHICLCPP}
+            ${CETLIB}
+            ${CETLIB_EXCEPT}
+            ${ROOT_FFTW}
+	    ${BOOST_LIB}
+	    ${Boost_SYSTEM_LIBRARY}
+            ${ROOT_BASIC_LIB_LIST}
+        )
+
+install_headers()
+install_fhicl()
+install_source()
+
