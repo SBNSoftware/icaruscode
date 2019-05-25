@@ -1,4 +1,4 @@
-#include "standard_g4_icarus.fcl"
+#include "standard_g4_icarus_extphotonlibrary.fcl"
 
 process_name: G4
 
