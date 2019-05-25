@@ -350,6 +350,9 @@ void Decon1DROI::produce(art::Event& evt)
                     fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
             }
         } // end if not a bad channel
+        
+        // Don't save empty wires
+        if (ROIVec.empty()) continue;
 
         // create the new wire directly in wirecol
         wirecol->push_back(recob::WireCreator(std::move(ROIVec),*digitVec).move());
