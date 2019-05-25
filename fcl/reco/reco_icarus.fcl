@@ -326,7 +326,6 @@ icarus_raw_reconstruction:        [ @sequence::icarus_reco_signalprocessingraw,
 
 icarus_raw_MultiTPCRecon:         [ @sequence::icarus_reco_raw_Cryo0,
                                     @sequence::icarus_reco_raw_Cryo1,
-                                    @sequence::icarus_reco_pandoraICARUSCryo0,
                                     #@sequence::icarus_reco_trajclusterICARUS,
                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                     @sequence::icarus_reco_mcrecoICARUSMulti,
