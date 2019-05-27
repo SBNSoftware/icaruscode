@@ -1,6 +1,6 @@
 add_subdirectory(HitFinderTools)
 
-art_make( LIBRARY_NAME RecoWire
+art_make( 
           LIB_LIBRARIES 
 			lardataobj_RawData
                         lardataobj_RecoBase
@@ -18,7 +18,7 @@ art_make( LIBRARY_NAME RecoWire
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
 			larreco_RecoAlg
-			SignalShapingServiceICARUS_service
+			icaruscode_Utilities_SignalShapingServiceICARUS_service
                         ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}

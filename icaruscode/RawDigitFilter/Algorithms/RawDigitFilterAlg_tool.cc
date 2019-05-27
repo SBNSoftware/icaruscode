@@ -8,9 +8,9 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/IRawDigitFilter.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitBinAverageAlg.h"
+#include "icaruscode/RawDigitFilter/Algorithms/IRawDigitFilter.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitBinAverageAlg.h"
 
 #include <cmath>
 #include <algorithm>

@@ -2,7 +2,7 @@
 add_subdirectory(DeconTools)
 add_subdirectory(SimTestPulse)
 
-art_make( LIBRARY_NAME RecoWire
+art_make( 
           LIB_LIBRARIES 
             lardataobj_RawData
             lardataobj_RecoBase
@@ -19,7 +19,7 @@ art_make( LIBRARY_NAME RecoWire
             larevt_CalibrationDBI_Providers
             lardataobj_RecoBase
             lardata_ArtDataHelper
-            SignalShapingServiceICARUS_service
+            icaruscode_Utilities_SignalShapingServiceICARUS_service
             ${ART_FRAMEWORK_CORE}
             ${ART_FRAMEWORK_PRINCIPAL}
             ${ART_FRAMEWORK_SERVICES_REGISTRY}

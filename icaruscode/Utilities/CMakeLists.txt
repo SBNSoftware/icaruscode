@@ -35,7 +35,6 @@ set( icarus_util_lib_list
 
 simple_plugin( SignalShapingServiceICARUS  "service"
                ${icarus_util_lib_list}
-               BASENAME_ONLY
         )
 
 simple_plugin(SaveConfigurationIntoTFile "module"

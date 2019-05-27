@@ -33,7 +33,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/ChannelGroups.h"
+#include "icaruscode/RawDigitFilter/Algorithms/ChannelGroups.h"
 
 #include "TH1.h"
 #include "TH2.h"

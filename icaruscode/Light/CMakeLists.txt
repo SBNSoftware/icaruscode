@@ -47,7 +47,7 @@ art_make(
 			larevt_CalibrationDBI_Providers
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
-			SignalShapingServiceICARUS_service
+			icaruscode_Utilities_SignalShapingServiceICARUS_service
 			nusimdata_SimulationBase
             ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}

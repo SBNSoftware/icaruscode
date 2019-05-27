@@ -1,6 +1,6 @@
-add_subdirectory(RawDigitFilterAlgs)
+add_subdirectory(Algorithms)
 
-art_make( LIBRARY_NAME RawDigitFilter
+art_make(
           LIB_LIBRARIES 
                         lardataobj_RawData
                         lardataobj_RecoBase
@@ -10,7 +10,7 @@ art_make( LIBRARY_NAME RawDigitFilter
                         ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
                         larcorealg_Geometry
-                        RawDigitFilterAlgs
+                        icaruscode_RawDigitFilter_Algorithms
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
                         larevt_Filters
@@ -19,7 +19,7 @@ art_make( LIBRARY_NAME RawDigitFilter
                         larevt_CalibrationDBI_Providers
                         lardataobj_RecoBase
                         lardata_ArtDataHelper
-                        SignalShapingServiceICARUS_service
+                        icaruscode_Utilities_SignalShapingServiceICARUS_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}

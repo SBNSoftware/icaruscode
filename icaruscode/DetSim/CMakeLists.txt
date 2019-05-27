@@ -1,7 +1,7 @@
 add_subdirectory(tools)
 
 
-art_make( BASENAME_ONLY
+art_make( 
           EXCLUDE SimWireICARUS_module.cc 
           MODULE_LIBRARIES larcorealg_Geometry
                         larcore_Geometry_Geometry_service
@@ -9,7 +9,7 @@ art_make( BASENAME_ONLY
                         lardata_Utilities
                         larevt_Filters
                         lardataobj_RawData
-                        SignalShapingServiceICARUS_service
+                        icaruscode_Utilities_SignalShapingServiceICARUS_service
 			            larevt_CalibrationDBI_Providers
                         nutools_RandomUtils_NuRandomService_service
                         ${ART_FRAMEWORK_CORE}
@@ -34,7 +34,6 @@ art_make( BASENAME_ONLY
         )
 
 simple_plugin(SimWireICARUS "module"
-          BASENAME_ONLY
               larcorealg_Geometry
               larcore_Geometry_Geometry_service
               larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
@@ -42,7 +41,7 @@ simple_plugin(SimWireICARUS "module"
               larevt_Filters
               lardataobj_RawData
               lardata_DetectorInfoServices_DetectorClocksServiceStandard_service # BUG note that we link to a specific service implementation
-              SignalShapingServiceICARUS_service
+              icaruscode_Utilities_SignalShapingServiceICARUS_service
               larevt_CalibrationDBI_Providers
               nutools_RandomUtils_NuRandomService_service
               ${ART_FRAMEWORK_CORE}

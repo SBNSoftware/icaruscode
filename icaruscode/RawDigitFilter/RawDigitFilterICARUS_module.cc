@@ -51,11 +51,11 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitNoiseFilterDefs.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitBinAverageAlg.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCorrelatedCorrectionAlg.h"
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/IRawDigitFilter.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitNoiseFilterDefs.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitBinAverageAlg.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
+#include "icaruscode/RawDigitFilter/Algorithms/RawDigitCorrelatedCorrectionAlg.h"
+#include "icaruscode/RawDigitFilter/Algorithms/IRawDigitFilter.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"

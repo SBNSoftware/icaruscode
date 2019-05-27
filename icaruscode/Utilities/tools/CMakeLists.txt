@@ -1,6 +1,6 @@
 cet_enable_asserts()
 
-art_make(   BASENAME_ONLY
+art_make(   
             TOOL_LIBRARIES  
             lardata_Utilities_LArFFT_service
             larcorealg_Geometry

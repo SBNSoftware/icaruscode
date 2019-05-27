@@ -2,7 +2,6 @@
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
 art_make(
-  BASENAME_ONLY
   LIB_LIBRARIES 
     lardataobj_RawData
 #    lardataobj_RecoBase

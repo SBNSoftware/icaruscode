@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
-art_make( BASENAME_ONLY
-          TOOL_LIBRARIES  SignalShapingServiceICARUS_service
+art_make( 
+          TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingServiceICARUS_service
                           lardata_Utilities_LArFFT_service
                           larcorealg_Geometry
                           larevt_CalibrationDBI_IOVData
