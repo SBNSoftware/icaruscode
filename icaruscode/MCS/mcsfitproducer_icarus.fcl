@@ -1,6 +1,6 @@
 BEGIN_PROLOG
-#mcsfitproducericarus_raw: {
-mcsfitproducericarus: {
+mcsfitproducericarus_raw: {
+#mcsfitproducericarus: {
   module_type:  MCSFitProducerICARUS
   inputs: {
         inputLabel: "pandoraTrackICARUS"

@@ -253,28 +253,30 @@ icarus_reco_pmAlgTrackerICARUS:   [ pmAlgTrackerICARUS,
 icarus_reco_pandoraGaus:          [ pandoraGaus,
                                     pandoraTrackGaus,
                                     pandoraShowerGaus,
-                                    pandoraKalmanTrackGaus,
-                                    mcsICARUSGaus ]
+                                    pandoraKalmanTrackGaus
+   #                               ,  mcsICARUSGaus 
+]
 
 icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
                                     pandoraTrackGausCryo0,
                                     pandoraShowerGausCryo0,
                                     pandoraKalmanTrackGausCryo0
-#,                                    mcsICARUSGausCryo0 
+,                                    mcsICARUSGausCryo0 
 ]
 
 icarus_reco_pandoraGausCryo1:     [ pandoraGausCryo1,
                                     pandoraTrackGausCryo1,
                                     pandoraShowerGausCryo1,
                                     pandoraKalmanTrackGausCryo1
-#,                                    mcsICARUSGausCryo1
+,                                    mcsICARUSGausCryo1
  ]
 
 icarus_reco_pandoraICARUS:        [ pandoraICARUS,
                                     pandoraTrackICARUS,
                                     pandoraShowerICARUS,
-                                    pandoraKalmanTrackICARUS,
-                                    mcsICARUSRaw ]
+                                    pandoraKalmanTrackICARUS
+                 #                   ,mcsICARUSRaw 
+]
 
 icarus_reco_pandoraICARUSCryo0:   [ pandoraICARUSCryo0,
                                     pandoraTrackICARUSCryo0,
@@ -361,7 +363,7 @@ icarus_raw_MultiTPCRecon:         [ @sequence::icarus_reco_raw_Cryo0,
                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                     @sequence::icarus_reco_mcrecoICARUSMulti,
                                     @sequence::icarus_reco_crt
-#, @sequence::icarus_reco_mcsIcarusRaw 
+, @sequence::icarus_reco_mcsIcarusRaw 
                                   ]
 
 # Define the full reconstruction sequence
@@ -558,4 +560,9 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:           
 icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                       ["hitMergerCryo1"]
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                          false
 
+### Definitions for MCS modules for cryostat-level reconstruction:
+icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                                      "pandoraTrackICARUSCryo0"
+icarus_reco_producers.mcsICARUSRawCryo1.inputs.inputLabel:                                      "pandoraTrackICARUSCryo1"
+icarus_reco_producers.mcsICARUSGausCryo0.inputs.inputLabel:                                      "pandoraTrackGausCryo0"
+icarus_reco_producers.mcsICARUSGausCryo1.inputs.inputLabel:                                      "pandoraTrackGausCryo1"
 END_PROLOG
