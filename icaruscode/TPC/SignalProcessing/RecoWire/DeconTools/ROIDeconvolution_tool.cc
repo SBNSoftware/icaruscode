@@ -15,7 +15,7 @@
 #include "lardata/Utilities/LArFFT.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icaruscode/RecoWire/DeconTools/IBaseline.h"
+#include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
 
 #include "TH1D.h"
 

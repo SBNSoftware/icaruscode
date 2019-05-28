@@ -16,7 +16,7 @@ art_make_library(
   )
 
 simple_plugin(ICARUSPhotonMappingTransformations "tool"
-  icaruscode_Light_LibraryMappingTools
+  icaruscode_PMT_LibraryMappingTools
   larsim_PhotonPropagation_LibraryMappingTools
   )
 

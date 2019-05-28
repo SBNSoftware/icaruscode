@@ -18,7 +18,7 @@
 #include "lardataobj/RecoBase/Cluster.h"
 
 //#include "larreco/RecoAlg/TrajectoryMCSFitter.h"
-#include "icaruscode/TPC/SignalProcessing/MCS/TrajectoryMCSFitterICARUS.h"
+#include "icaruscode/TPC/Tracking/MCS/TrajectoryMCSFitterICARUS.h"
 #include "lardata/RecoBaseProxy/Track.h" //needed only if you do use the proxies
 #include <memory>
 
