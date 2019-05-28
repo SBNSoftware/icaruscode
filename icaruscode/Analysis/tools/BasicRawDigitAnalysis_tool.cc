@@ -16,7 +16,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "icaruscode/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
+#include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include "TH1.h"
