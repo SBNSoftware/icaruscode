@@ -107,8 +107,13 @@ for (const auto& element : inputVec) {
     std::vector<recob::Hit> hits2d=projectHitsOnPlane(e,element,2);
     mcsfitter.set2DHits(hits2d);
     mcsfitter.ComputeD3P();
+    try{
     recob::MCSFitResult result = mcsfitter.fitMcs(element);
     output->emplace_back(std::move(result));
+    } catch(...)
+    {
+        continue;
+    }
   }
 
   e.put(std::move(output));
