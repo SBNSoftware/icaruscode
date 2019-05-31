@@ -1,6 +1,6 @@
 ## 
 ##  ICARUS reconstruction
-##  modeled on uboone version
+##  modeled on standard version
 ##
 
 #include "services_icarus.fcl"
@@ -11,6 +11,7 @@
 #include "cluster_icarus.fcl"
 #include "trackfindermodules_icarus.fcl"
 #include "mcsfitproducer_icarus.fcl"
+#include "mcsfitproducer_standard.fcl"
 
 #include "calorimetry_icarus.fcl"
 
@@ -143,6 +144,12 @@ icarus_reco_producers:
   mcsICARUSGausCryo0:             @local::mcsfitproducericarus_gaus
   mcsICARUSRawCryo1:              @local::mcsfitproducericarus_raw
   mcsICARUSGausCryo1:             @local::mcsfitproducericarus_gaus
+  mcsstandardRaw:                   @local::mcsfitproducerstandard_raw
+  mcsstandardGaus:                  @local::mcsfitproducerstandard_gaus
+  mcsstandardRawCryo0:              @local::mcsfitproducerstandard_raw
+  mcsstandardGausCryo0:             @local::mcsfitproducerstandard_gaus
+  mcsstandardRawCryo1:              @local::mcsfitproducerstandard_raw
+  mcsstandardGausCryo1:             @local::mcsfitproducerstandard_gaus
 
   ### PM algorithm
   pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
@@ -251,37 +258,45 @@ icarus_reco_pandoraGaus:          [ pandoraGaus,
                                     pandoraTrackGaus,
                                     pandoraShowerGaus,
                                     pandoraKalmanTrackGaus,
-                                    mcsICARUSGaus ]
+                                    mcsICARUSGaus,
+                                    mcsstandardGaus ]
 
 icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
                                     pandoraTrackGausCryo0,
                                     pandoraShowerGausCryo0,
                                     pandoraKalmanTrackGausCryo0,
-                                    mcsICARUSGausCryo0  ]
+                                    mcsICARUSGausCryo0
+                                    ,mcsstandardGausCryo0  
+]
 
 icarus_reco_pandoraGausCryo1:     [ pandoraGausCryo1,
                                     pandoraTrackGausCryo1,
                                     pandoraShowerGausCryo1,
                                     pandoraKalmanTrackGausCryo1,
-                                    mcsICARUSGausCryo1  ]
+                                    mcsICARUSGausCryo1
+                                    ,mcsstandardGausCryo1  
+]
 
 icarus_reco_pandoraICARUS:        [ pandoraICARUS,
                                     pandoraTrackICARUS,
                                     pandoraShowerICARUS,
                                     pandoraKalmanTrackICARUS,
-                                    mcsICARUSRaw  ]
+                                    mcsICARUSRaw,
+                                    mcsstandardRaw  ]
 
 icarus_reco_pandoraICARUSCryo0:   [ pandoraICARUSCryo0,
                                     pandoraTrackICARUSCryo0,
                                     pandoraShowerICARUSCryo0,
                                     pandoraKalmanTrackICARUSCryo0,
-                                    mcsICARUSRawCryo0  ]
+                                    mcsICARUSRawCryo0,  
+                                    mcsstandardRawCryo0  ]
 
 icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
                                     pandoraTrackICARUSCryo1,
                                     pandoraShowerICARUSCryo1,
                                     pandoraKalmanTrackICARUSCryo1,
-                                    mcsICARUSRawCryo1  ]
+                                    mcsICARUSRawCryo1,  
+                                    mcsstandardRawCryo1  ]
 
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
@@ -521,6 +536,10 @@ icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                      
 icarus_reco_producers.mcsICARUSRawCryo1.inputs.inputLabel:                                "pandoraTrackICARUSCryo1"
 icarus_reco_producers.mcsICARUSGausCryo0.inputs.inputLabel:                               "pandoraTrackGausCryo0"
 icarus_reco_producers.mcsICARUSGausCryo1.inputs.inputLabel:                               "pandoraTrackGausCryo1"
+icarus_reco_producers.mcsstandardRawCryo0.inputs.inputLabel:                                "pandoraTrackICARUSCryo0"
+icarus_reco_producers.mcsstandardRawCryo1.inputs.inputLabel:                                "pandoraTrackICARUSCryo1"
+icarus_reco_producers.mcsstandardGausCryo0.inputs.inputLabel:                               "pandoraTrackGausCryo0"
+icarus_reco_producers.mcsstandardGausCryo1.inputs.inputLabel:                               "pandoraTrackGausCryo1"
 
 ### Definitions for single instance of PM algorithm
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                  "trajclusterICARUS"
