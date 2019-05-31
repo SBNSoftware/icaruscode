@@ -294,7 +294,7 @@ double TrajectoryMCSFitterICARUS::mcsLikelihood(double p, double theta0x, std::v
     }
     //
     if ( Eij2 <= m2 ) {
-      //result = std::numeric_limits<double>::max();
+      result = std::numeric_limits<double>::max();
       
       break;
     }
