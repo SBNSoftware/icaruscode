@@ -5,17 +5,17 @@ BEGIN_PROLOG
 icarus_BasicHitAnalysis:
 {
   module_type:             "TrackHitAna"
-  HitModuleLabel:          "gaushit"
-  PFParticleProducerLabel: "cluster3d"
-  TrackProducerLabel:      "trackkalmanhit"
-  WireProducerLabel:       "caldata"
+  HitModuleLabel:          ["gaushit"]
+  PFParticleProducerLabel: ["cluster3d"]
+  TrackProducerLabel:      ["trackkalmanhit"]
+  WireProducerLabel:       ["caldata"]
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
 }
 
 icarus_WireAnalysis:
 {
   module_type:           "WireAna"
-  WireModuleLabel:       "recowireicarus"
+  WireModuleLabel:       ["recowireicarus"]
   SimChannelModuleLabel: "largeant"
   WireHistogramToolList: [ @local::WireAnalysisTool ]
 }
@@ -23,7 +23,7 @@ icarus_WireAnalysis:
 icarus_RawDigitAnalysis:
 {
   module_type:               "RawDigitAna"
-  RawDigitModuleLabel:       "rawdigitfilter"
+  RawDigitModuleLabel:       ["rawdigitfilter"]
   RawDigitHistogramToolList: [ @local::RawDigitAnalysisTool ]
 }
 
@@ -34,3 +34,4 @@ icarus_HitEfficiencyAnalysis:
 }
 
 END_PROLOG
+
