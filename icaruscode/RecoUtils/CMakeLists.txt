@@ -35,7 +35,7 @@ install_fhicl()
 install_source()
 
 
-#art_make( LIBRARY_NAME RecoUtils
+#art_make(
 #	  LIB_LIBRARIES larcorealg_Geometry
 #	  	        larcore_Geometry_Geometry_service
 #		        larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation

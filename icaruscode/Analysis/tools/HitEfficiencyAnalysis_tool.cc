@@ -103,8 +103,8 @@ private:
     void clear() const;
     
     // The parameters we'll read from the .fcl file.
-    art::InputTag               fWireProducerLabel;
-    art::InputTag               fHitProducerLabel;
+    std::vector<art::InputTag>  fWireProducerLabelVec;
+    std::vector<art::InputTag>  fHitProducerLabelVec;
     art::InputTag               fMCParticleProducerLabel;
     art::InputTag               fSimChannelProducerLabel;
     std::string                 fLocalDirName;            ///< Fraction for truncated mean
@@ -195,13 +195,13 @@ HitEfficiencyAnalysis::~HitEfficiencyAnalysis()
 ///
 void HitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fWireProducerLabel       = pset.get< std::string                 >("WireModuleLabel", "decon1droi");
-    fHitProducerLabel        = pset.get< std::string                 >("HitModuleLabel",  "gaushit");
-    fMCParticleProducerLabel = pset.get< std::string                 >("MCParticleLabel", "largeant");
-    fSimChannelProducerLabel = pset.get< std::string                 >("SimChannelLabel", "largeant");
-    fLocalDirName            = pset.get< std::string                 >("LocalDirName",    std::string("wow"));
-    fOffsetVec               = pset.get< std::vector<unsigned short> >("OffsetVec",       std::vector<unsigned short>()={0,0,0});
-    fSigmaVec                = pset.get< std::vector<float>          >("SigmaVec",        std::vector<float>()={1.,1.,1.});
+    fWireProducerLabelVec    = pset.get< std::vector<art::InputTag>  >("WireModuleLabelVec", std::vector<art::InputTag>() = {"decon1droi"});
+    fHitProducerLabelVec     = pset.get< std::vector<art::InputTag>  >("HitModuleLabelVec",  std::vector<art::InputTag>() = {"gaushit"});
+    fMCParticleProducerLabel = pset.get< std::string                 >("MCParticleLabel",    "largeant");
+    fSimChannelProducerLabel = pset.get< std::string                 >("SimChannelLabel",    "largeant");
+    fLocalDirName            = pset.get< std::string                 >("LocalDirName",       std::string("wow"));
+    fOffsetVec               = pset.get< std::vector<unsigned short> >("OffsetVec",          std::vector<unsigned short>()={0,0,0});
+    fSigmaVec                = pset.get< std::vector<float>          >("SigmaVec",           std::vector<float>()={1.,1.,1.});
 }
 
 //----------------------------------------------------------------------------
@@ -317,57 +317,20 @@ void HitEfficiencyAnalysis::clear() const
     
 void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
 {
+    // Basic assumption is that the list of input Wire producers and Hit producers are the same length
+    // and the entries match. Here we check the length
+    if (fWireProducerLabelVec.size() != fHitProducerLabelVec.size()) return;
+    
+    // Recover SimChannel info
     art::Handle< std::vector<sim::SimChannel>> simChannelHandle;
     event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
     
     // If there is no sim channel informaton then exit
     if (!simChannelHandle.isValid() || simChannelHandle->empty()) return;
     
-    art::Handle< std::vector<recob::Wire> > wireHandle;
-    event.getByLabel(fWireProducerLabel, wireHandle);
-    
-    art::Handle< std::vector<recob::Hit> > hitHandle;
-    event.getByLabel(fHitProducerLabel, hitHandle);
-    
-    art::Handle< std::vector<simb::MCParticle>> mcParticleHandle;
-    event.getByLabel(fMCParticleProducerLabel, mcParticleHandle);
-    
-    if (!wireHandle.isValid() || !hitHandle.isValid() || !mcParticleHandle.isValid()) return;
-    
-    // Find the associations between wire data and hits
-    // What we want to be able to do is look up hits that have been associated to Wire data
-    // So we ask for the list of hits, given a handle to the Wire data and remember that the
-    // associations are made in the hit finder
-    //art::FindManyP<recob::Hit> wireHitAssns(wireHandle,event,fHitProducerLabel);
-
-    // what needs to be done?
-    // First we should build out a straightforward channel to Wire map so we can look up a given
-    // channel's Wire data as we loop over SimChannels.
-    using ChanToWireMap = std::map<raw::ChannelID_t,const recob::Wire*>;
-    
-    ChanToWireMap channelToWireMap;
-    
-    for(const auto& wire : *wireHandle) channelToWireMap[wire.Channel()] = &wire;
-    
-    // First we should map out all hits by channel so we can easily look up from sim channels
-    // Then go through the sim channels and match hits
-    using ChanToHitVecMap = std::map<raw::ChannelID_t,std::vector<const recob::Hit*>>;
-    ChanToHitVecMap channelToHitVec;
-    
-    for(const auto& hit : *hitHandle) channelToHitVec[hit.Channel()].push_back(&hit);
-
-    // It is useful to create a mapping between trackID and MCParticle
-    using TrackIDToMCParticleMap = std::map<int, const simb::MCParticle*>;
-
-    TrackIDToMCParticleMap trackIDToMCParticleMap;
-
-    for(const auto& mcParticle : *mcParticleHandle) trackIDToMCParticleMap[mcParticle.TrackId()] = &mcParticle;
-    
-    // Now go through the sim channels
     // There are several things going on here... for each channel we have particles (track id's) depositing energy in a range to ticks
     // So... for each channel we want to build a structure that relates particles to tdc ranges and deposited energy (or electrons)
     // Here is a complicated structure:
-    
     using TDCToIDEMap             = std::map<unsigned short, float>;
     using ChanToTDCToIDEMap       = std::map<raw::ChannelID_t, TDCToIDEMap>;
     using PartToChanToTDCToIDEMap = std::map<int, ChanToTDCToIDEMap>;
@@ -382,237 +345,281 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             for(const auto& ide : tdcide.second) partToChanToTDCToIDEMap[ide.trackID][simChannel.Channel()][tdcide.first] = ide.numElectrons;
         }
     }
-    
-    std::vector<int> nSimChannelHitVec = {0,0,0};
-    std::vector<int> nRecobHitVec      = {0,0,0};
 
-    for(const auto& partToChanInfo : partToChanToTDCToIDEMap)
+    // Loop over entries in the two producer vectors
+    for(size_t tpcID = 0; tpcID < fWireProducerLabelVec.size(); tpcID++)
     {
-        TrackIDToMCParticleMap::const_iterator trackIDToMCPartItr = trackIDToMCParticleMap.find(partToChanInfo.first);
-
-        if (trackIDToMCPartItr == trackIDToMCParticleMap.end()) continue;
-
-        int         trackPDGCode = trackIDToMCPartItr->second->PdgCode();
-        std::string processName  = trackIDToMCPartItr->second->Process();
-
-        // Looking for primary muons (e.g. CR Tracks)
-        if (fabs(trackPDGCode) != 13 || processName != "primary") continue;
-
-        for(const auto& chanToTDCToIDEMap : partToChanInfo.second)
-        {
-            TDCToIDEMap tdcToIDEMap = chanToTDCToIDEMap.second;
-            float       totalElectrons(0.);
-            float       maxElectrons(0.);
-            int         nMatchedWires(0);
-            int         nMatchedHits(0);
-            
-            // The below try-catch block may no longer be necessary
-            // Decode the channel and make sure we have a valid one
-            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(chanToTDCToIDEMap.first);
-            
-            // Recover plane and wire in the plane
-            unsigned int plane = wids[0].Plane;
-//            unsigned int wire  = wids[0].Wire;
-            
-            for(const auto& ideVal : tdcToIDEMap)
-            {
-                totalElectrons += ideVal.second;
-                
-                maxElectrons = std::max(maxElectrons,ideVal.second);
-            }
-            
-            totalElectrons = std::min(totalElectrons, float(99900.));
-            
-            fTotalElectronsHistVec.at(plane)->Fill(totalElectrons, 1.);
-            fMaxElectronsHistVec.at(plane)->Fill(maxElectrons, 1.);
-            
-            nSimChannelHitVec.at(plane)++;
-
-            unsigned short startTDC = tdcToIDEMap.begin()->first;
-            unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
-            
-            // Convert to ticks to get in same units as hits
-            unsigned short startTick = fClockService->TPCTDC2Tick(startTDC) + fOffsetVec.at(plane);
-            unsigned short stopTick  = fClockService->TPCTDC2Tick(stopTDC)  + fOffsetVec.at(plane);
-            unsigned short midTick   = (startTick + stopTick) / 2;
-
-            fSimNumTDCVec.at(plane)->Fill(stopTick - startTick, 1.);
+        art::Handle< std::vector<recob::Wire> > wireHandle;
+        event.getByLabel(fWireProducerLabelVec[tpcID], wireHandle);
+        
+        art::Handle< std::vector<recob::Hit> > hitHandle;
+        event.getByLabel(fHitProducerLabelVec[tpcID], hitHandle);
+        
+        art::Handle< std::vector<simb::MCParticle>> mcParticleHandle;
+        event.getByLabel(fMCParticleProducerLabel, mcParticleHandle);
+        
+        if (!wireHandle.isValid() || !hitHandle.isValid() || !mcParticleHandle.isValid()) return;
     
-            // Set up to extract the "best" parameters in the event of more than one hit for this pulse train
-            float          nElectronsTotalBest(0.);
-            float          hitSummedADCBest(0.);
-            float          hitIntegralBest(0.);
-            float          hitPeakTimeBest(0.);
-            float          hitPeakAmpBest(-100.);
-            float          hitRMSBest(0.);
-            float          hitBaselineBest(0.);
-            unsigned short hitStopTickBest(0);
-            unsigned short hitStartTickBest(0);
-            unsigned short midHitTickBest(0);
-            
-            // Start by recovering the Wire associated to this channel
-            ChanToWireMap::const_iterator wireItr = channelToWireMap.find(chanToTDCToIDEMap.first);
-            
-            if (wireItr != channelToWireMap.end())
-            {
-                const recob::Wire::RegionsOfInterest_t&       signalROI = wireItr->second->SignalROI();
-                const lar::sparse_vector<float>::datarange_t* wireRangePtr(NULL);
-                
-                // Here we need to match the range of the ROI's on the given Wire with the tick range from the SimChannel
-                for(const auto& range : signalROI.get_ranges())
-                {
-                    // #################################################
-                    // ### Getting a vector of signals for this wire ###
-                    // #################################################
-                    //std::vector<float> signal(wire->Signal());
-                    
-                    const std::vector<float>& signal          = range.data();
-                    raw::TDCtick_t            roiFirstBinTick = range.begin_index();
-                    raw::TDCtick_t            roiLastBinTick  = roiFirstBinTick + signal.size();
-                    
-                    // If no overlap then go to next
-                    if (roiFirstBinTick > stopTick || roiLastBinTick < startTick) continue;
-                    
-                    wireRangePtr = &range;
-                    break;
-                }
-                
-                // Check that we have found the wire range
-                if (wireRangePtr)
-                {
-                    const recob::Hit* rejectedHit = 0;
-                    const recob::Hit* bestHit     = 0;
-                    
-                    nMatchedWires++;
+        // Find the associations between wire data and hits
+        // What we want to be able to do is look up hits that have been associated to Wire data
+        // So we ask for the list of hits, given a handle to the Wire data and remember that the
+        // associations are made in the hit finder
+        //art::FindManyP<recob::Hit> wireHitAssns(wireHandle,event,fHitProducerLabel);
+        
+        // what needs to be done?
+        // First we should build out a straightforward channel to Wire map so we can look up a given
+        // channel's Wire data as we loop over SimChannels.
+        using ChanToWireMap = std::map<raw::ChannelID_t,const recob::Wire*>;
+        
+        ChanToWireMap channelToWireMap;
+        
+        for(const auto& wire : *wireHandle) channelToWireMap[wire.Channel()] = &wire;
+        
+        // First we should map out all hits by channel so we can easily look up from sim channels
+        // Then go through the sim channels and match hits
+        using ChanToHitVecMap = std::map<raw::ChannelID_t,std::vector<const recob::Hit*>>;
+        ChanToHitVecMap channelToHitVec;
+        
+        for(const auto& hit : *hitHandle) channelToHitVec[hit.Channel()].push_back(&hit);
+        
+        // It is useful to create a mapping between trackID and MCParticle
+        using TrackIDToMCParticleMap = std::map<int, const simb::MCParticle*>;
+        
+        TrackIDToMCParticleMap trackIDToMCParticleMap;
+        
+        for(const auto& mcParticle : *mcParticleHandle) trackIDToMCParticleMap[mcParticle.TrackId()] = &mcParticle;
+        
+        std::vector<int> nSimChannelHitVec = {0,0,0};
+        std::vector<int> nRecobHitVec      = {0,0,0};
 
-                    // The next mission is to recover the hits associated to this Wire
-                    // The easiest way to do this is to simply look up all the hits on this channel and then match
-                    ChanToHitVecMap::iterator hitIter = channelToHitVec.find(chanToTDCToIDEMap.first);
+        for(const auto& partToChanInfo : partToChanToTDCToIDEMap)
+        {
+            TrackIDToMCParticleMap::const_iterator trackIDToMCPartItr = trackIDToMCParticleMap.find(partToChanInfo.first);
+
+            if (trackIDToMCPartItr == trackIDToMCParticleMap.end()) continue;
+
+            int         trackPDGCode = trackIDToMCPartItr->second->PdgCode();
+            std::string processName  = trackIDToMCPartItr->second->Process();
+
+            // Looking for primary muons (e.g. CR Tracks)
+            if (fabs(trackPDGCode) != 13 || processName != "primary") continue;
+    
+            for(const auto& chanToTDCToIDEMap : partToChanInfo.second)
+            {
+                TDCToIDEMap tdcToIDEMap = chanToTDCToIDEMap.second;
+                float       totalElectrons(0.);
+                float       maxElectrons(0.);
+                int         nMatchedWires(0);
+                int         nMatchedHits(0);
         
-                    if (hitIter != channelToHitVec.end())
+                // The below try-catch block may no longer be necessary
+                // Decode the channel and make sure we have a valid one
+                std::vector<geo::WireID> wids = fGeometry->ChannelToWire(chanToTDCToIDEMap.first);
+        
+                // Recover plane and wire in the plane
+                unsigned int plane = wids[0].Plane;
+//                unsigned int wire  = wids[0].Wire;
+        
+                for(const auto& ideVal : tdcToIDEMap)
+                {
+                    totalElectrons += ideVal.second;
+        
+                    maxElectrons = std::max(maxElectrons,ideVal.second);
+                }
+        
+                totalElectrons = std::min(totalElectrons, float(99900.));
+        
+                fTotalElectronsHistVec.at(plane)->Fill(totalElectrons, 1.);
+                fMaxElectronsHistVec.at(plane)->Fill(maxElectrons, 1.);
+        
+                nSimChannelHitVec.at(plane)++;
+    
+                unsigned short startTDC = tdcToIDEMap.begin()->first;
+                unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
+        
+                // Convert to ticks to get in same units as hits
+                unsigned short startTick = fClockService->TPCTDC2Tick(startTDC) + fOffsetVec.at(plane);
+                unsigned short stopTick  = fClockService->TPCTDC2Tick(stopTDC)  + fOffsetVec.at(plane);
+                unsigned short midTick   = (startTick + stopTick) / 2;
+    
+                fSimNumTDCVec.at(plane)->Fill(stopTick - startTick, 1.);
+        
+                // Set up to extract the "best" parameters in the event of more than one hit for this pulse train
+                float          nElectronsTotalBest(0.);
+                float          hitSummedADCBest(0.);
+                float          hitIntegralBest(0.);
+                float          hitPeakTimeBest(0.);
+                float          hitPeakAmpBest(-100.);
+                float          hitRMSBest(0.);
+                float          hitBaselineBest(0.);
+                unsigned short hitStopTickBest(0);
+                unsigned short hitStartTickBest(0);
+                unsigned short midHitTickBest(0);
+        
+                // Start by recovering the Wire associated to this channel
+                ChanToWireMap::const_iterator wireItr = channelToWireMap.find(chanToTDCToIDEMap.first);
+        
+                if (wireItr != channelToWireMap.end())
+                {
+                    const recob::Wire::RegionsOfInterest_t&       signalROI = wireItr->second->SignalROI();
+                    const lar::sparse_vector<float>::datarange_t* wireRangePtr(NULL);
+        
+                    // Here we need to match the range of the ROI's on the given Wire with the tick range from the SimChannel
+                    for(const auto& range : signalROI.get_ranges())
                     {
+                        // #################################################
+                        // ### Getting a vector of signals for this wire ###
+                        // #################################################
+                        //std::vector<float> signal(wire->Signal());
         
-                        // Loop through the hits for this channel and look for matches
-                        // In the event of more than one hit associated to the sim channel range, keep only
-                        // the best match (assuming the nearby hits are "extra")
-                        // Note that assumption breaks down for long pulse trains but worry about that later
-                        for(const auto& hit : hitIter->second)
+                        const std::vector<float>& signal          = range.data();
+                        raw::TDCtick_t            roiFirstBinTick = range.begin_index();
+                        raw::TDCtick_t            roiLastBinTick  = roiFirstBinTick + signal.size();
+        
+                        // If no overlap then go to next
+                        if (roiFirstBinTick > stopTick || roiLastBinTick < startTick) continue;
+        
+                        wireRangePtr = &range;
+                        break;
+                    }
+        
+                    // Check that we have found the wire range
+                    if (wireRangePtr)
+                    {
+                        const recob::Hit* rejectedHit = 0;
+                        const recob::Hit* bestHit     = 0;
+        
+                        nMatchedWires++;
+    
+                        // The next mission is to recover the hits associated to this Wire
+                        // The easiest way to do this is to simply look up all the hits on this channel and then match
+                        ChanToHitVecMap::iterator hitIter = channelToHitVec.find(chanToTDCToIDEMap.first);
+        
+                        if (hitIter != channelToHitVec.end())
                         {
-                            unsigned short hitStartTick = hit->PeakTime() - fSigmaVec.at(plane) * hit->RMS();
-                            unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec.at(plane) * hit->RMS();
-                            unsigned short midHitTick   = (hitStopTick + hitStartTick) / 2;
-                    
-                            // If hit is out of range then skip, it is not related to this particle
-                            if (hitStartTick > stopTick || hitStopTick < startTick)
+        
+                            // Loop through the hits for this channel and look for matches
+                            // In the event of more than one hit associated to the sim channel range, keep only
+                            // the best match (assuming the nearby hits are "extra")
+                            // Note that assumption breaks down for long pulse trains but worry about that later
+                            for(const auto& hit : hitIter->second)
                             {
-                                if (plane == 1) rejectedHit = hit;
-                                continue;
+                                unsigned short hitStartTick = hit->PeakTime() - fSigmaVec.at(plane) * hit->RMS();
+                                unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec.at(plane) * hit->RMS();
+                                unsigned short midHitTick   = (hitStopTick + hitStartTick) / 2;
+        
+                                // If hit is out of range then skip, it is not related to this particle
+                                if (hitStartTick > stopTick || hitStopTick < startTick)
+                                {
+                                    if (plane == 1) rejectedHit = hit;
+                                    continue;
+                                }
+        
+                                float hitHeight = hit->PeakAmplitude();
+        
+                                // Use the hit with the largest pulse height as the "best"
+                                if (hitHeight < hitPeakAmpBest) continue;
+        
+                                hitPeakAmpBest   = hitHeight;
+                                bestHit          = hit;
+                                hitStartTickBest = hitStartTick;
+                                hitStopTickBest  = hitStopTick;
+                                midHitTickBest   = midHitTick;
                             }
-                    
-                            float hitHeight = hit->PeakAmplitude();
-                    
-                            // Use the hit with the largest pulse height as the "best"
-                            if (hitHeight < hitPeakAmpBest) continue;
-                    
-                            hitPeakAmpBest   = hitHeight;
-                            bestHit          = hit;
-                            hitStartTickBest = hitStartTick;
-                            hitStopTickBest  = hitStopTick;
-                            midHitTickBest   = midHitTick;
-                        }
-                    
-                        // Find a match?
-                        if (bestHit)
-                        {
-                            nElectronsTotalBest = 0.;
-                            hitPeakTimeBest     = bestHit->PeakTime();
-                            hitIntegralBest     = bestHit->Integral();
-                            hitSummedADCBest    = bestHit->SummedADC();
-                            hitRMSBest          = bestHit->RMS();
-                            hitBaselineBest     = 0.;  // To do...
-                    
-                            nMatchedHits++;
-                    
-                            // Get the number of electrons
-                            for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
+        
+                            // Find a match?
+                            if (bestHit)
                             {
-                                unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec.at(plane));
-                    
-                                TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
-                    
-                                if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second;
+                                nElectronsTotalBest = 0.;
+                                hitPeakTimeBest     = bestHit->PeakTime();
+                                hitIntegralBest     = bestHit->Integral();
+                                hitSummedADCBest    = bestHit->SummedADC();
+                                hitRMSBest          = bestHit->RMS();
+                                hitBaselineBest     = 0.;  // To do...
+        
+                                nMatchedHits++;
+        
+                                // Get the number of electrons
+                                for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
+                                {
+                                    unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec.at(plane));
+        
+                                    TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
+        
+                                    if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second;
+                                }
                             }
-                        }
         
-                        if (nMatchedHits > 0)
-                        {
-                            fHitSumADCVec.at(plane)->Fill(hitSummedADCBest, 1.);
-                            fHitVsSimChgVec.at(plane)->Fill(std::min(hitSummedADCBest,float(4999.)), totalElectrons, 1.);
-                            fHitPulseHeightVec.at(plane)->Fill(std::min(hitPeakAmpBest,float(149.5)), 1.);
-                            fHitPulseWidthVec.at(plane)->Fill(std::min(hitRMSBest,float(19.8)), 1.);
-                            fHitElectronsVec.at(plane)->Fill(nElectronsTotalBest, 1.);
-                            fHitNumTDCVec.at(plane)->Fill(hitStopTickBest - hitStartTickBest, 1.);
-                            fDeltaMidTDCVec.at(plane)->Fill(midHitTickBest - midTick, 1.);
-                    
-                            nRecobHitVec.at(plane)++;
-                        }
-                        else if (rejectedHit)
-                        {
-                            unsigned short hitStartTick = rejectedHit->PeakTime() - fSigmaVec.at(plane) * rejectedHit->RMS();
-                            unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec.at(plane) * rejectedHit->RMS();
+                            if (nMatchedHits > 0)
+                            {
+                                fHitSumADCVec.at(plane)->Fill(hitSummedADCBest, 1.);
+                                fHitVsSimChgVec.at(plane)->Fill(std::min(hitSummedADCBest,float(4999.)), totalElectrons, 1.);
+                                fHitPulseHeightVec.at(plane)->Fill(std::min(hitPeakAmpBest,float(149.5)), 1.);
+                                fHitPulseWidthVec.at(plane)->Fill(std::min(hitRMSBest,float(19.8)), 1.);
+                                fHitElectronsVec.at(plane)->Fill(nElectronsTotalBest, 1.);
+                                fHitNumTDCVec.at(plane)->Fill(hitStopTickBest - hitStartTickBest, 1.);
+                                fDeltaMidTDCVec.at(plane)->Fill(midHitTickBest - midTick, 1.);
         
-                            std::cout << "**> TPC: " << rejectedHit->WireID().TPC << ", Plane " << rejectedHit->WireID().Plane << ", wire: " << rejectedHit->WireID().Wire << ", hit start/ stop     tick: " << hitStartTick << "/" << hitStopTick << ", start/stop ticks: " << startTick << "/" << stopTick << std::endl;
-                            std::cout << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire << ", Track # hits: " << partToChanInfo.second.size() << ", # hits: "     <<  hitIter->second.size() << ", # electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()  << ", " << rejectedHit->SummedADC() << std::endl;
-                        }
-                        else
-                        {
-                            std::cout << "==> No match, TPC/Plane/Wire: " << "/" << wids[0].TPC << "/" << wids[0].Plane << "/" << wids[0].Wire << ", # electrons: " << totalElectrons << ",         startTick: " << startTick << ", stopTick: " << stopTick << std::endl;
+                                nRecobHitVec.at(plane)++;
+                            }
+                            else if (rejectedHit)
+                            {
+                                unsigned short hitStartTick = rejectedHit->PeakTime() - fSigmaVec.at(plane) * rejectedHit->RMS();
+                                unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec.at(plane) * rejectedHit->RMS();
+        
+                                std::cout << "**> TPC: " << rejectedHit->WireID().TPC << ", Plane " << rejectedHit->WireID().Plane << ", wire: " << rejectedHit->WireID().Wire << ", hit start/ stop     tick: " << hitStartTick <<     "/" << hitStopTick << ", start/stop ticks: " << startTick << "/" << stopTick << std::endl;
+                                std::cout << "    TPC/Plane/Wire: " << wids[0].TPC << "/" << plane << "/" << wids[0].Wire << ", Track # hits: " << partToChanInfo.second.size() << ", # hits: "     <<  hitIter->second.size() << ", #  electrons: " << totalElectrons << ", pulse Height: " << rejectedHit->PeakAmplitude() << ", charge: " << rejectedHit->Integral()  << ", " << rejectedHit->SummedADC() << std::endl;
+                            }
+                            else
+                            {
+                                std::cout << "==> No match, TPC/Plane/Wire: " << "/" << wids[0].TPC << "/" << wids[0].Plane << "/" << wids[0].Wire << ", # electrons: " << totalElectrons << ",         startTick: " << startTick <<    ", stopTick: " << stopTick << std::endl;
+                            }
                         }
                     }
                 }
+            
+                fWireEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedWires,1), 1.);
+                fWireEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedWires,1), 1.);
+                
+                fNMatchedHitVec.at(plane)->Fill(nMatchedHits, 1.);
+                fHitEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedHits,1), 1.);
+                fHitEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedHits,1), 1.);
+                
+                // Store tuple variables
+                fTPCVec.push_back(wids[0].TPC);
+                fCryoVec.push_back(wids[0].Cryostat);
+                fPlaneVec.push_back(wids[0].Plane);
+                fWireVec.push_back(wids[0].Wire);
+                
+                fTotalElectronsVec.push_back(totalElectrons);
+                fMaxElectronsVec.push_back(maxElectrons);
+                fStartTickVec.push_back(startTick);
+                fStopTickVec.push_back(stopTick);
+                fNMatchedHits = nMatchedHits;
+                fNMatchedWires = nMatchedWires;
+                
+                fHitPeakTimeVec.push_back(hitPeakTimeBest);
+                fHitPeakAmpVec.push_back(hitPeakAmpBest);
+                fHitPeakRMSVec.push_back(hitRMSBest);
+                fHitBaselinevec.push_back(hitBaselineBest);
+                fHitSummedADCVec.push_back(hitSummedADCBest);
+                fHitIntegralVec.push_back(hitIntegralBest);
+                fHitStartTickVec.push_back(hitStartTickBest);
+                fHitStopTickVec.push_back(hitStopTickBest);
+                
             }
-            
-            fWireEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedWires,1), 1.);
-            fWireEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedWires,1), 1.);
-
-            fNMatchedHitVec.at(plane)->Fill(nMatchedHits, 1.);
-            fHitEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedHits,1), 1.);
-            fHitEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedHits,1), 1.);
-            
-            // Store tuple variables
-            fTPCVec.push_back(wids[0].TPC);
-            fCryoVec.push_back(wids[0].Cryostat);
-            fPlaneVec.push_back(wids[0].Plane);
-            fWireVec.push_back(wids[0].Wire);
-            
-            fTotalElectronsVec.push_back(totalElectrons);
-            fMaxElectronsVec.push_back(maxElectrons);
-            fStartTickVec.push_back(startTick);
-            fStopTickVec.push_back(stopTick);
-            fNMatchedHits = nMatchedHits;
-            fNMatchedWires = nMatchedWires;
-
-            fHitPeakTimeVec.push_back(hitPeakTimeBest);
-            fHitPeakAmpVec.push_back(hitPeakAmpBest);
-            fHitPeakRMSVec.push_back(hitRMSBest);
-            fHitBaselinevec.push_back(hitBaselineBest);
-            fHitSummedADCVec.push_back(hitSummedADCBest);
-            fHitIntegralVec.push_back(hitIntegralBest);
-            fHitStartTickVec.push_back(hitStartTickBest);
-            fHitStopTickVec.push_back(hitStopTickBest);
-
         }
-    }
     
-    for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
-    {
-        if (nSimChannelHitVec.at(idx) > 10)
+        for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
         {
-            float hitEfficiency = float(nRecobHitVec.at(idx)) / float(nSimChannelHitVec.at(idx));
-            
-            fNSimChannelHitsVec.at(idx)->Fill(std::min(nSimChannelHitVec.at(idx),1999),1.);
-            fNRecobHitVec.at(idx)->Fill(std::min(nRecobHitVec.at(idx),1999), 1.);
-            fHitEfficiencyVec.at(idx)->Fill(hitEfficiency, 1.);
+            if (nSimChannelHitVec.at(idx) > 10)
+            {
+                float hitEfficiency = float(nRecobHitVec.at(idx)) / float(nSimChannelHitVec.at(idx));
+                
+                fNSimChannelHitsVec.at(idx)->Fill(std::min(nSimChannelHitVec.at(idx),1999),1.);
+                fNRecobHitVec.at(idx)->Fill(std::min(nRecobHitVec.at(idx),1999), 1.);
+                fHitEfficiencyVec.at(idx)->Fill(hitEfficiency, 1.);
+            }
         }
     }
 

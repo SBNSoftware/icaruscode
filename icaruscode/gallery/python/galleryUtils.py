@@ -25,6 +25,7 @@ __all__ = [
 import sys, os
 import ROOT
 import cppUtils
+import warnings
 
 
 ################################################################################
@@ -274,15 +275,54 @@ class ConfigurationHelper:
 # class ConfigurationHelper
 
 
-def loadConfiguration(configPath):
+class TemporaryFile:
+  def __init__(self, data = None):
+    with warnings.catch_warnings():
+      # os.tempnam() is a potential security risk: ACK
+      warnings.filterwarnings("ignore", ".*tempnam .*", RuntimeWarning)
+      self._file = open(os.tempnam(), "w+")
+    self.name = self._file.name
+    if data is not None:
+      self._file.write(str(data))
+      self._file.flush() # we are not going to close this file...
+    # 
+  # __init__()
+  def __del__(self):
+    if not self._file: return
+    del self._file
+    os.remove(self.name)
+  # __del__()
+  def file_(self): return self._file
+  def __str__(self): return self.name
+# class TemporaryFile
+
+
+def loadConfiguration(configSpec):
   # this utility actually relies on generic utilities that while not LArSoft
   # specific, are nevertheless distributed with LArSoft (`larcorealg`).
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
+  
+  if isinstance(configSpec, ConfigurationString):
+    configFile = TemporaryFile(configSpec)
+    configPath = configFile.name
+  else:
+    configFile = None
+    configPath = configSpec
+  # if
+  
   fullPath = findFHiCL(configPath)
   if not fullPath:
     raise RuntimeError("Couldn't find configuration file '%s'" % configPath)
   return ROOT.lar.standalone.ParseConfiguration(fullPath)
 # loadConfiguration()
+
+
+class ConfigurationString:
+  """Wrapper to a string that should be considered configuration text."""
+  def __init__(self, config): self.config = config
+  def __str__(self): return self.config
+# class ConfigurationString
+
 
 class ConfigurationClass:
   def __init__(self, configPath):
@@ -297,7 +337,7 @@ class ConfigurationClass:
 
 
 ################################################################################
-class ServiceRegistry:
+class ServiceRegistryClass:
   def __init__(self, config):
     self.fullConfig = config if isinstance(config, ConfigurationClass) else ConfigurationClass(config)
     self.services = {}
@@ -311,8 +351,12 @@ class ServiceRegistry:
     self.services[serviceName] = service
     return service
   
+  def registeredServiceNames(self): return self.services.keys()
+  
+  def registry(self): return self # behave like a manager (LArSoftUtils concept)
+  
   def get(self, serviceName): return self.services[serviceName]
-  def __call__(self, serviceName): return self.get(service)
+  def __call__(self, serviceName): return self.get(serviceName)
   
   def create(self, serviceName, serviceClass, *otherServiceConstructorArgs):
     serviceConfig = self.config(serviceName)
@@ -324,7 +368,7 @@ class ServiceRegistry:
     return self.register(serviceName, service)
   # create()
   
-# class ServiceRegistry
+# class ServiceRegistryClass
 
 
 ################################################################################

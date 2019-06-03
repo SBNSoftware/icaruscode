@@ -12,9 +12,9 @@ BasicHitAnalysisTool:
 TrackHitEfficiencyAnalysisTool:
 {
   tool_type:               "TrackHitEfficiencyAnalysis"
-  RawDigitLabel:           "rawdigitfilter"
-  WireModuleLabel:         "decon1droi"
-  HitModuleLabel:          "gaushit"
+  RawDigitLabelVec:        ["rawdigitfilter"]
+  WireModuleLabelVec:      ["decon1droi"]
+  HitModuleLabelVec:       ["gaushit"]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
   LocalDirName:            "EfficHists"

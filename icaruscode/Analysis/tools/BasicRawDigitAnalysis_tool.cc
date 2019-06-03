@@ -16,7 +16,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
-#include "icaruscode/RawDigitFilter/RawDigitFilterAlgs/RawDigitCharacterizationAlg.h"
+#include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include "TH1.h"
@@ -90,10 +90,10 @@ private:
     void filterFFT(std::vector<short>&, raw::ChannelID_t, size_t, size_t, float, bool) const;
 
     // Fcl parameters.
-    std::vector<size_t>              fLoWireByPlane;    ///< Low wire for individual wire histograms
-    std::vector<size_t>              fHiWireByPlane;    ///< Hi wire for individual wire histograms
-    std::vector<std::string>         fFFTFitFuncVec;    ///< Function definitions for fitting the average FFT power spectra
-    std::vector<std::vector<double>> fParameterVec;     ///< Initial parameters for fit function
+    std::vector<size_t>                 fLoWireByPlane;    ///< Low wire for individual wire histograms
+    std::vector<size_t>                 fHiWireByPlane;    ///< Hi wire for individual wire histograms
+    std::vector<std::string>            fFFTFitFuncVec;    ///< Function definitions for fitting the average FFT power spectra
+    std::vector<std::vector<double>>    fParameterVec;     ///< Initial parameters for fit function
 
     // Pointers to the histograms we'll create.
     std::vector<TH1D*>                  fTruncMeanHist;

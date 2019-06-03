@@ -87,8 +87,8 @@ public:
 private:
 
     // The parameters we'll read from the .fcl file.
-    art::InputTag fRawDigitProducerLabel;
-    art::InputTag fSimChannelProducerLabel;
+    std::vector<art::InputTag> fRawDigitProducerLabelVec;
+    art::InputTag              fSimChannelProducerLabel;
 
     // The variables that will go into the n-tuple.
     int fEvent;
@@ -166,8 +166,8 @@ void RawDigitAna::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fRawDigitProducerLabel   = p.get< std::string >("RawDigitModuleLabel",   "rawdigitfilter");
-    fSimChannelProducerLabel = p.get< std::string >("SimChannelModuleLabel", "largeant"      );
+    fRawDigitProducerLabelVec = p.get< std::vector<art::InputTag> >("RawDigitModuleLabel",   std::vector<art::InputTag>() = {"rawdigitfilter"});
+    fSimChannelProducerLabel  = p.get< std::string                >("SimChannelModuleLabel", "largeant"      );
 
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& rawDigitHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("RawDigitHistogramToolList");
@@ -188,30 +188,34 @@ void RawDigitAna::analyze(const art::Event& event)
 
     fNumEvents++;
     
-    // Make a pass through all hits to make contrasting plots
-    art::Handle< std::vector<raw::RawDigit> > rawDigitHandle;
-    event.getByLabel(fRawDigitProducerLabel, rawDigitHandle);
-    
-    // Recover sim channels (if they exist) so we know when a
-    // channel has signal (or not)
-    art::Handle<std::vector<sim::SimChannel>>  simChannelHandle;
-    event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
-    
-    // Recover list of simChannels mapped by channel to make
-    // look up easier below
-    IRawDigitHistogramTool::SimChannelMap channelMap;
-    
-    if (simChannelHandle.isValid())
+    // Loop over RawDigits
+    for(const auto& rawDigitLabel : fRawDigitProducerLabelVec)
     {
-        for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
-    }
-
-    if (rawDigitHandle.isValid())
-    {
-        IRawDigitHistogramTool::RawDigitPtrVec allRawDigitVec;
-        art::fill_ptr_vector(allRawDigitVec, rawDigitHandle);
-
-        for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(allRawDigitVec,channelMap);
+        // Make a pass through all hits to make contrasting plots
+        art::Handle< std::vector<raw::RawDigit> > rawDigitHandle;
+        event.getByLabel(rawDigitLabel, rawDigitHandle);
+        
+        // Recover sim channels (if they exist) so we know when a
+        // channel has signal (or not)
+        art::Handle<std::vector<sim::SimChannel>>  simChannelHandle;
+        event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
+        
+        // Recover list of simChannels mapped by channel to make
+        // look up easier below
+        IRawDigitHistogramTool::SimChannelMap channelMap;
+        
+        if (simChannelHandle.isValid())
+        {
+            for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
+        }
+        
+        if (rawDigitHandle.isValid())
+        {
+            IRawDigitHistogramTool::RawDigitPtrVec allRawDigitVec;
+            art::fill_ptr_vector(allRawDigitVec, rawDigitHandle);
+            
+            for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(allRawDigitVec,channelMap);
+        }
     }
 
     return;

@@ -3,7 +3,7 @@ add_subdirectory(MCTruth)
 
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
                          lardataobj_Simulation
-                         RawDigitFilterAlgs
+                         icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
                          larcorealg_Geometry
                          larcore_Geometry_Geometry_service
                          lardata_RecoObjects

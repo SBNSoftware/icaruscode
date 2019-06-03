@@ -8,7 +8,7 @@ Unsurprisingly, this module requires ROOT.
 """
 
 __all__ = [
-  "splitROOTpath", "createROOTpath",
+  "splitROOTpath", "createROOTpath", "getROOTclass",
   ]
 
 import ROOT
@@ -126,12 +126,16 @@ class DirectoryChanger:
   def __init__(self, newDir = None, saveDir = None):
     if saveDir: self.saveDir(saveDir)
     else:       self.saveCurrentDir()
-    if newDir: newDir.cd()
+    self.newDir = newDir
+    self.changeDir()
   # __init__()
   
   def saveCurrentDir(self): self.saveDir(ROOT.gDirectory)
   
   def saveDir(self, ROOTdir): self.oldDir = ROOTdir
+  
+  def changeDir(self):
+    if self.newDir: self.newDir.cd()
   
   def restoreDir(self):
     if self.oldDir: self.oldDir.cd()
@@ -139,10 +143,11 @@ class DirectoryChanger:
   def forget(self): self.oldDir = None
   
   def __del__(self):
-    if self.oldDir: self.oldDir.cd()
+    self.restoreDir()
   
   def __enter__(self):
-    
+    self.changeDir()
+  
   def __exit__(self, exc_type, exc_value, traceback):
     self.restoreDir()
     self.forget()
@@ -163,6 +168,22 @@ def activateDirectory(ROOTdir):
         
   """
   return DirectoryChanger(ROOTdir)
+
+
+################################################################################
+def getROOTclass(classPath):
+  """Returns the object specified by `classPath` within ROOT module.
+  
+  Throws `AttributeError` if any object in the path is not available.
+  
+  Example: `getROOTclass('geo::GeometryCore')` returns `ROOT.geo.GeometryCore`.
+  """
+  classPath = classPath.replace('::', '.').lstrip('.')
+  base = ROOT
+  for objName in classPath.split('.'):
+    base = getattr(base, objName)
+  return base
+# getROOTclass()
 
 
 ################################################################################
