@@ -8,7 +8,7 @@ art_make(
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
-                              lardata_RecoObjects larreco_Deprecated
+                              lardata_RecoObjects
                               lardataobj_AnalysisBase
                               larreco_Calorimetry
                               lardata_Utilities
@@ -53,7 +53,7 @@ art_make(
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
-                              lardata_RecoObjects larreco_Deprecated
+                              lardata_RecoObjects
                               lardataobj_AnalysisBase
                               larreco_Calorimetry
                               lardata_Utilities
