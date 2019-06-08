@@ -91,7 +91,7 @@ trkf::MCSFitProducerICARUS::~MCSFitProducerICARUS() {}
 
 void trkf::MCSFitProducerICARUS::produce(art::Event & e)
 {
-  std::cout << " MCSFitProducerICARUS produce " << std::endl;
+  //std::cout << " MCSFitProducerICARUS produce " << std::endl;
   //
   auto output  = std::make_unique<std::vector<recob::MCSFitResult> >();
   //
@@ -100,7 +100,7 @@ void trkf::MCSFitProducerICARUS::produce(art::Event & e)
   if (!ok) throw cet::exception("MCSFitProducerICARUS") << "Cannot find input art::Handle with inputTag " << inputTag;
   const auto& inputVec = *(inputH.product());
 
-std::cout << " inputh size " << inputVec.size() << std::endl;
+//std::cout << " inputh size " << inputVec.size() << std::endl;
 
 for (const auto& element : inputVec) {
     //fit
@@ -124,15 +124,15 @@ std::vector<recob::Hit> trkf::MCSFitProducerICARUS::projectHitsOnPlane(art::Even
 std::vector<recob::Hit> v;
   // Get track collection proxy and parallel mcs fit data (associated hits loaded by default)
   // Note: if tracks were produced from a TrackTrajectory collection you could access the original trajectories adding ',proxy::withOriginalTrajectory()' to the list of arguments
-std::cout << " before calling proxy " << std::endl;
+//std::cout << " before calling proxy " << std::endl;
 auto const& tracks   = proxy::getCollection<proxy::Tracks>(e,inputTag);
-std::cout << " after calling proxy " << std::endl;
+//std::cout << " after calling proxy " << std::endl;
 const auto& track = tracks[0];
-std::cout << " proxy nhits " << track.nHits() << std::endl;
+//std::cout << " proxy nhits " << track.nHits() << std::endl;
  
         for (const art::Ptr<recob::Hit>& h : track.hits())
          if(h->WireID().Plane == p) {
-          std::cout << "collection hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
+          //std::cout << "collection hit wire=" << h->WireID() << " peak time=" << h->PeakTime() << std::endl;
           v.emplace_back(*h);
         }
 return v;

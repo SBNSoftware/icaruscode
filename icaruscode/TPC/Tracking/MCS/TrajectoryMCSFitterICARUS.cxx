@@ -15,10 +15,10 @@ using namespace recob::tracking;
 recob::MCSFitResult TrajectoryMCSFitterICARUS::fitMcs(const recob::TrackTrajectory& traj, int pid, bool momDepConst) const {
 
    //std::cout << " traj nhits " << traj.NHits() << std::endl;
-   std::cout << " traj lenght " << traj.Length() << std::endl;
+   //std::cout << " traj lenght " << traj.Length() << std::endl;
    GetOptimalSegLen(1000,traj.NPoints(),2,traj.Length());
 
-std::cout << " D3p " << d3p << std::endl;
+  //std::cout << " D3p " << d3p << std::endl;
   //
   // Break the trajectory in segments of length approximately equal to segLen_
   //
@@ -27,7 +27,7 @@ std::cout << " D3p " << d3p << std::endl;
   vector<float> cumseglens;
   breakTrajInSegments(traj, breakpoints, segradlengths, cumseglens);
 
-std::cout << " n segments " << segradlengths.size() << std::endl;
+  //std::cout << " n segments " << segradlengths.size() << std::endl;
   //
   // Fit segment directions, and get 3D angles between them
   //resi
@@ -46,7 +46,7 @@ std::cout << " n segments " << segradlengths.size() << std::endl;
 	//units are mrad
 	double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
 	dtheta.push_back(dt);
-std::cout << " linearfit angle " << dt << std::endl;    
+    //std::cout << " linearfit angle " << dt << std::endl;
   }
     }
     pcdir0 = pcdir1;
@@ -66,18 +66,18 @@ for (unsigned int p = 2; p<segradlengths.size(); p++) {
         Vector_t dbcp=barycenters[p]-barycenters[p-1];
         float norm=sqrt(dbcp.X()*dbcp.X()+dbcp.Y()*dbcp.Y()+dbcp.Z()*dbcp.Z());
         dbcp/=norm;
-        std::cout << " dbcp " << dbcp << std::endl;
+        //std::cout << " dbcp " << dbcp << std::endl;
         Vector_t dbcm=barycenters[p-1]-barycenters[p-2];
          norm=sqrt(dbcm.X()*dbcm.X()+dbcm.Y()*dbcm.Y()+dbcm.Z()*dbcm.Z());
 dbcm/=norm;
-        std::cout << " dbcm " << dbcm << std::endl;
+        //std::cout << " dbcm " << dbcm << std::endl;
 	const double cosval = dbcp.X()*dbcm.X()+dbcp.Y()*dbcm.Y()+dbcp.Z()*dbcm.Z();
 	//assert(std::abs(cosval)<=1);
 	//units are mrad
-       std::cout << " cosval " << cosval << std::endl;	
+       //std::cout << " cosval " << cosval << std::endl;
        double dt = 1000.*acos(cosval);//should we try to use expansion for small angles?
 	dthetaPoly.push_back(dt);
-std::cout << " polygonal angle " << dt << std::endl;    
+    //std::cout << " polygonal angle " << dt << std::endl;
 
       }
   }
@@ -90,19 +90,19 @@ std::cout << " polygonal angle " << dt << std::endl;
   vector<float> cumLenFwd;
   vector<float> cumLenBwd;
   for (unsigned int i = 0; i<cumseglens.size()-2; i++) {
-    std::cout << " seglen " << cumseglens[i] << std::endl;
+    //std::cout << " seglen " << cumseglens[i] << std::endl;
     cumLenFwd.push_back(cumseglens[i]);
     cumLenBwd.push_back(cumseglens.back()-cumseglens[i+2]);
   }
   const ScanResult fwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenFwd, true,  momDepConst, pid);
   const ScanResult bwdResult = doLikelihoodScan(dtheta, segradlengths, cumLenBwd, false, momDepConst, pid);
-  std::cout << " fwdResult " << fwdResult.p << " bwdResult " << bwdResult.p << std::endl;  
-  const ScanResult fwdResultPoly = doLikelihoodScan(dthetaPoly, segradlengths, cumLenFwd, true,  momDepConst, pid);
-  const ScanResult bwdResultPoly = doLikelihoodScan(dthetaPoly, segradlengths, cumLenBwd, false, momDepConst, pid);
-  std::cout << " fwdResultPoly " << fwdResultPoly.p << " bwdResultPoly " << bwdResultPoly.p << std::endl;  
+  //std::cout << " fwdResult " << fwdResult.p << " bwdResult " << bwdResult.p << std::endl;
+  //const ScanResult fwdResultPoly = doLikelihoodScan(dthetaPoly, segradlengths, cumLenFwd, true,  momDepConst, pid);
+  //const ScanResult bwdResultPoly = doLikelihoodScan(dthetaPoly, segradlengths, cumLenBwd, false, momDepConst, pid);
+  //std::cout << " fwdResultPoly " << fwdResultPoly.p << " bwdResultPoly " << bwdResultPoly.p << std::endl;
 //
-for(unsigned int j=0;j<segradlengths.size();j++)
- std::cout << " dtheta " << dtheta.at(j) << std::endl;
+//for(unsigned int j=0;j<segradlengths.size();j++)
+  //std::cout << " dtheta " << dtheta.at(j) << std::endl;
   return recob::MCSFitResult(pid,
 			     fwdResult.p,fwdResult.pUnc,fwdResult.logL,
 			     bwdResult.p,bwdResult.pUnc,bwdResult.logL,
@@ -204,7 +204,7 @@ void TrajectoryMCSFitterICARUS::findSegmentBarycenter(const recob::TrackTrajecto
   }
   const auto avgpos = middlePointCalc.middlePoint();
   bary=avgpos;
-  std::cout << " avgpos " << avgpos << std::endl;
+  //std::cout << " avgpos " << avgpos << std::endl;
 }
 
 void TrajectoryMCSFitterICARUS::linearRegression(const recob::TrackTrajectory& traj, const size_t firstPoint, const size_t lastPoint, Vector_t& pcdir) const {
@@ -305,12 +305,12 @@ double TrajectoryMCSFitterICARUS::mcsLikelihood(double p, double theta0x, std::v
     const double tH0 = ( (momDepConst ? MomentumDependentConstant(pij) : tuned_HL_term1) / (pij*beta) ) * ( 1.0 + HL_term2 * std::log( seg_nradl[i] ) ) * sqrt( seg_nradl[i] );
     const double rms = sqrt( 2.0*( tH0 * tH0 + theta0x * theta0x ) );
     if (rms==0.0) {
-      std::cout << " Error : RMS cannot be zero ! " << std::endl;
+      //std::cout << " Error : RMS cannot be zero ! " << std::endl;
       return std::numeric_limits<double>::max();
     } 
     const double arg = dthetaij[i]/rms;
     result += ( std::log( rms ) + 0.5 * arg * arg + fixedterm);
-    if (print && fwd==true) cout << "TrajectoryMCSFitterICARUS pij=" << pij << " dthetaij[i]=" << dthetaij[i] << " tH0=" << tH0 << " rms=" << rms << " prob=" << ( std::log( rms ) + 0.5 * arg * arg + fixedterm) << " const=" << (momDepConst ? MomentumDependentConstant(pij) : tuned_HL_term1) << " beta=" << beta << " red_length=" << seg_nradl[i] <<  " result " << result << endl;
+//    if (print && fwd==true) cout << "TrajectoryMCSFitterICARUS pij=" << pij << " dthetaij[i]=" << dthetaij[i] << " tH0=" << tH0 << " rms=" << rms << " prob=" << ( std::log( rms ) + 0.5 * arg * arg + fixedterm) << " const=" << (momDepConst ? MomentumDependentConstant(pij) : tuned_HL_term1) << " beta=" << beta << " red_length=" << seg_nradl[i] <<  " result " << result << endl;
   }
   //std::cout << " momentum " << p <<" likelihood " << result << std::endl; 
   return result;
@@ -428,7 +428,7 @@ void TrajectoryMCSFitterICARUS::ComputeD3P()  {
             
             double a;
             res=computeResidual(j,a);
-            cout << " point "  << j << " residual " <<res << endl;
+            //cout << " point "  << j << " residual " <<res << endl;
             //! for each triplet of consecutive hits, save absolute value of residuale
             if(abs(res)<5) { //mm
                 h0.push_back(res);
@@ -468,7 +468,7 @@ recob::Hit h0=hits2d.at(i);
 recob::Hit h1=hits2d.at(i+1);
 recob::Hit h2=hits2d.at(i+2);
 
-std::cout << " PeakTime " << h0.PeakTime() << std::endl;
+//std::cout << " PeakTime " << h0.PeakTime() << std::endl;
 
 float x0=h0.WireID().Wire*3; auto y0=h0.PeakTime()*0.622;
 float x1=h1.WireID().Wire*3; auto y1=h1.PeakTime()*0.622;
