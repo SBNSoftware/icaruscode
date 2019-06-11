@@ -12,7 +12,7 @@ simple_plugin(SimPMTIcarus "module"
   icaruscode_PMT_Algorithms
   lardataobj_RawData
   lardataobj_Simulation
-  nutools_RandomUtils_NuRandomService_service
+  nurandom_RandomUtils_NuRandomService_service
   ${ART_FRAMEWORK_CORE}
   ${ART_FRAMEWORK_PRINCIPAL}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}

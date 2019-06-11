@@ -15,7 +15,7 @@ art_make(
             lardataobj_MCBase
             larcoreobj_SummaryData
             nusimdata_SimulationBase
-            nutools_RandomUtils_NuRandomService_service
+            nurandom_RandomUtils_NuRandomService_service
             lardataobj_MCBase
             icaruscode_Utilities_SignalShapingServiceICARUS_service
             ${ART_FRAMEWORK_CORE}

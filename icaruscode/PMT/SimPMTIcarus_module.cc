@@ -14,7 +14,7 @@
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 
 // framework libraries
 #include "art/Framework/Core/EDProducer.h"
