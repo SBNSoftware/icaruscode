@@ -5,7 +5,7 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nurandom_ParticleNavigation lardataobj_Simulation
+                              nutools_ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
@@ -51,7 +51,7 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nurandom_ParticleNavigation lardataobj_Simulation
+                              nutools_ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
