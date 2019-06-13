@@ -10,7 +10,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            larsim_MCCheater_ParticleInventoryService_service
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
-                           nutools_RandomUtils_NuRandomService_service
+                           nurandom_RandomUtils_NuRandomService_service
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}

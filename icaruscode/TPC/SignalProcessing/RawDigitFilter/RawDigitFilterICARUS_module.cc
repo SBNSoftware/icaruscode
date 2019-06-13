@@ -462,7 +462,8 @@ void RawDigitFilterICARUS::saveRawDigits(std::unique_ptr<std::vector<raw::RawDig
                                          float                                         pedestal,
                                          float                                         rms)
 {
-    filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
+    //filteredRawDigit->emplace_back(raw::RawDigit(channel, rawDigitVec.size(), rawDigitVec, raw::kNone));
+    filteredRawDigit->emplace_back(channel, rawDigitVec.size(), rawDigitVec, raw::kNone);
     filteredRawDigit->back().SetPedestal(pedestal,rms);
     
     return;

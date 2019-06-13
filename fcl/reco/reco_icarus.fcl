@@ -257,46 +257,50 @@ icarus_reco_pmAlgTrackerICARUS:   [ pmAlgTrackerICARUS,
 icarus_reco_pandoraGaus:          [ pandoraGaus,
                                     pandoraTrackGaus,
                                     pandoraShowerGaus,
-                                    pandoraKalmanTrackGaus,
-                                    mcsICARUSGaus,
-                                    mcsstandardGaus ]
+                                    pandoraKalmanTrackGaus
+#,                                    mcsICARUSGaus,
+#                                    mcsstandardGaus 
+]
 
 icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
                                     pandoraTrackGausCryo0,
                                     pandoraShowerGausCryo0,
-                                    pandoraKalmanTrackGausCryo0,
-                                    mcsICARUSGausCryo0
-                                    ,mcsstandardGausCryo0  
+                                    pandoraKalmanTrackGausCryo0
+#,                                    mcsICARUSGausCryo0
+#                                    ,mcsstandardGausCryo0  
 ]
 
 icarus_reco_pandoraGausCryo1:     [ pandoraGausCryo1,
                                     pandoraTrackGausCryo1,
                                     pandoraShowerGausCryo1,
-                                    pandoraKalmanTrackGausCryo1,
-                                    mcsICARUSGausCryo1
-                                    ,mcsstandardGausCryo1  
+                                    pandoraKalmanTrackGausCryo1
+#,                                    mcsICARUSGausCryo1
+#                                    ,mcsstandardGausCryo1  
 ]
 
 icarus_reco_pandoraICARUS:        [ pandoraICARUS,
                                     pandoraTrackICARUS,
                                     pandoraShowerICARUS,
-                                    pandoraKalmanTrackICARUS,
-                                    mcsICARUSRaw,
-                                    mcsstandardRaw  ]
+                                    pandoraKalmanTrackICARUS
+#,                                  mcsICARUSRaw,
+#                                    mcsstandardRaw  
+]
 
 icarus_reco_pandoraICARUSCryo0:   [ pandoraICARUSCryo0,
                                     pandoraTrackICARUSCryo0,
                                     pandoraShowerICARUSCryo0,
-                                    pandoraKalmanTrackICARUSCryo0,
-                                    mcsICARUSRawCryo0,  
-                                    mcsstandardRawCryo0  ]
+                                    pandoraKalmanTrackICARUSCryo0
+#,                                    mcsICARUSRawCryo0,  
+#                                    mcsstandardRawCryo0  
+]
 
 icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
                                     pandoraTrackICARUSCryo1,
                                     pandoraShowerICARUSCryo1,
-                                    pandoraKalmanTrackICARUSCryo1,
-                                    mcsICARUSRawCryo1,  
-                                    mcsstandardRawCryo1  ]
+                                    pandoraKalmanTrackICARUSCryo1
+#,                                    mcsICARUSRawCryo1,  
+#                                    mcsstandardRawCryo1  
+]
 
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,

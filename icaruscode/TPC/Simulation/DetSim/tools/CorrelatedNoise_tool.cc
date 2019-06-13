@@ -14,7 +14,7 @@
 #include "art_root_io/TFileService.h"
 
 // art extensions
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 

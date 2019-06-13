@@ -9,7 +9,7 @@ set( icarus_util_lib_list
                         lardataobj_RecoBase
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
-                        nutools_RandomUtils_NuRandomService_service
+                        nurandom_RandomUtils_NuRandomService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}

@@ -23,7 +23,7 @@ art_make(   LIB_LIBRARIES
                 larcorealg_Geometry
                 larcore_Geometry_Geometry_service
                 lardata_Utilities
-                nutools_RandomUtils_NuRandomService_service
+                nurandom_RandomUtils_NuRandomService_service
                 lardata_Utilities
                 lardataobj_RawData
                 larevt_CalibrationDBI_IOVData

@@ -33,7 +33,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            icaruscode_CRTProducts
                            icaruscode_CRTData
                            lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-                           nutools_RandomUtils_NuRandomService_service
+                           nurandom_RandomUtils_NuRandomService_service
         )
 install_headers()
 install_source()

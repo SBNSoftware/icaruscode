@@ -24,7 +24,7 @@
 #include "larcorealg/Geometry/OpDetGeo.h"
 #include "larcorealg/Geometry/geo_vectors_utils.h" // geo::vect::toPoint()
 #include "lardataobj/Simulation/SimPhotons.h"
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 
 // framework libraries
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"

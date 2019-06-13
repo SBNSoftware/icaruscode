@@ -22,7 +22,7 @@
 
 #include "CLHEP/Random/RandFlat.h"
 #include "TRandom.h"
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcoreobj/SummaryData/RunData.h"
 

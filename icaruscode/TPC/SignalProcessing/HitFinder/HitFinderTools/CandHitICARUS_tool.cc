@@ -63,6 +63,8 @@ private:
     int              fInd1Fall;
     int              fInd2Fall;
     int              fColFall;
+    float                fMinHitHeight;         //< Drop candidate hits with height less than this
+    size_t               fNumInterveningTicks;  //< Number ticks between candidate hits to merge
     
     const geo::GeometryCore*  fGeometry = lar::providerFrom<geo::Geometry>();
 };
@@ -97,6 +99,8 @@ void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
     fInd1Fall = pset.get< int  >("Ind1Fall");
     fInd2Fall = pset.get< int  >("Ind2Fall");
     fColFall = pset.get< int  >("ColFall");
+    fMinHitHeight        = pset.get< float  >("MinHitHeight",        1.0);
+    fNumInterveningTicks = pset.get< size_t >("NumInterveningTicks", 6);
     
     return;
 }
@@ -412,14 +416,48 @@ void CandHitICARUS::findHitCandidates(std::vector<float>::const_iterator startIt
     
     return;
 }
-    void CandHitICARUS::MergeHitCandidates(const Waveform&        signalVec,
-                                               const HitCandidateVec& hitCandidateVec,
-                                               MergeHitCandidateVec&  mergedHitsVec) const
+  
+void CandHitICARUS::MergeHitCandidates(const Waveform&        signalVec,
+                                           const HitCandidateVec& hitCandidateVec,
+                                           MergeHitCandidateVec&  mergedHitsVec) const
+{
+    // If nothing on the input end then nothing to do
+    if (hitCandidateVec.empty()) return;
+    
+    // The idea is to group hits that "touch" so they can be part of common fit, those that
+    // don't "touch" are fit independently. So here we build the output vector to achieve that
+    // Get a container for the hits...
+    HitCandidateVec groupedHitVec;
+    
+    // Initialize the end of the last hit which we'll set to the first input hit's stop
+    size_t lastStopTick = hitCandidateVec.front().stopTick;
+    
+    // Step through the input hit candidates and group them by proximity
+    for(const auto& hitCandidate : hitCandidateVec)
     {
-        if(hitCandidateVec.size())
-        mergedHitsVec.push_back(hitCandidateVec);
-      //  std::cout << " mergedhitsvec size" << mergedHitsVec.size() << std::endl;
+        // Small pulse height hits should not be considered?
+        if (hitCandidate.hitHeight > fMinHitHeight)
+        {
+            // Check condition that we have a new grouping
+            if (hitCandidate.startTick > lastStopTick + fNumInterveningTicks && !groupedHitVec.empty())
+            {
+                mergedHitsVec.emplace_back(groupedHitVec);
+            
+                groupedHitVec.clear();
+            }
+
+            // Add the current hit to the current group
+            groupedHitVec.emplace_back(hitCandidate);
+        
+            lastStopTick = hitCandidate.stopTick;
+        }
     }
+    
+    // Check end condition
+    if (!groupedHitVec.empty()) mergedHitsVec.emplace_back(groupedHitVec);
+    
+    return;
+}
     
     void CandHitICARUS::expandHit(HitCandidate& h, std::vector<float> holder, HitCandidateVec how)
     {
