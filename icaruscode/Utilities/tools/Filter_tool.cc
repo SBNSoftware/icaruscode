@@ -96,7 +96,7 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     double peakVal(std::numeric_limits<double>::min());
 
     // Now ready to set the response vector
-    for(size_t bin = 0; bin <= numBins/2 + 1; bin++)
+    for(size_t bin = 0; bin < numBins/2 + 1; bin++)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = bin * freqRes;
