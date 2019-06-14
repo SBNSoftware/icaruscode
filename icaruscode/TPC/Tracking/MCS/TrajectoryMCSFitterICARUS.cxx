@@ -265,9 +265,9 @@ double TrajectoryMCSFitterICARUS::mcsLikelihood(double p, double theta0x, std::v
   const int end  = (fwd ? dthetaij.size() : -1);
   const int incr = (fwd ? +1 : -1);
   //
-  bool print;
-  if(p>1.29&&p<1.32)  print = true;//(p>1.999 && p<2.001);
-  else print=false;
+//  bool print;
+//  if(p>1.29&&p<1.32)  print = true;//(p>1.999 && p<2.001);
+//  else print=false;
   //
   const double m = mass(pid);
   const double m2 = m*m;
