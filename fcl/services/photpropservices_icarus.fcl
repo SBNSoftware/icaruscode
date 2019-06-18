@@ -41,4 +41,21 @@ icarus_photonvisibilityservice: {
 } # icarus_photonvisibilityservice
 
 
+###
+###  Configuration for first cryostat library and mapping to the other one
+###
+icarus_photonvisibilityservice_mapped: {
+  @table::icarus_photonvisibilityservice
+  
+  Mapping: {
+    tool_type: ICARUSPhotonMappingTransformations
+  }
+
+} # icarus_photonvisibilityservice_mapped
+
+
+
+###############################################################################
+
+
 END_PROLOG
