@@ -1,0 +1,23 @@
+#
+# File:     dump_opdetwaveforms_icarus.fcl
+# Purpose:  Dump on screen raw optical detector waveforms, ICARUS settings
+# Author:   Gianluca Petrillo (petrillo@fnal.gov)
+# Date:     May 10, 2019
+# Version:  1.0
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20190510 (petrillo@slac.stanford.edu) [v1.0]
+#   first version, from lardata/ArtDataHelpers/Dumpets/dump_opdetwaveforms.fcl
+#
+
+#include "detectorclocks_icarus.fcl"
+#include "dump_opdetwaveforms.fcl"
+
+services.DetectorClocksService: @local::icarus_detectorclocks # from `detectorclocks_icarus.fcl`
+  
+physics.analyzers.dumpopdetwaveforms.OpDetWaveformsTag: "opdaq"
+physics.analyzers.dumpopdetwaveforms.Pedestal:          8000
+# physics.analyzers.dumpopdetwaveforms.TickLabel:         tick
