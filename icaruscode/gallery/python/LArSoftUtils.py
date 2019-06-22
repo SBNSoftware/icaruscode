@@ -74,6 +74,25 @@ def loadGeometry(config=None, registry=None, mapping=None):
   SourceCode.loadLibrary("larcorealg_Geometry")
   service = ROOT.lar.standalone.SetupGeometry(mapping)(geometryConfig)
   if registry: registry.register(serviceName, service)
+  
+  # make it easy to print points and vectors in python
+  for varName in ( 'Point_t', 'Vector_t', ):
+    try: klass = getattr(ROOT.geo, varName) 
+    except AttributeError: continue
+    klass.__str__ = ROOTutils.TVector3ToString
+  # ... and IDs...
+  for varName in ( 'CryostatID', 'TPCID', 'PlaneID', 'WireID', ):
+    try: klass = getattr(ROOT.geo, varName) 
+    except AttributeError: continue
+    klass.__str__ = klass.toString
+  # for ID
+  # ... and geometry objects
+  for varName in ( 'CryostatGeo', 'TPCGeo', 'PlaneGeo', 'WireGeo', 'OpDetGeo', 'AuxDetGeo', ):
+    try: klass = getattr(ROOT.geo, varName) 
+    except AttributeError: continue
+    klass.__str__ = getattr(klass, varName[:-3] + "Info")
+  # for geo object
+  
   return service
 # loadGeometry()
 
