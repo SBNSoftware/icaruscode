@@ -8,8 +8,8 @@ This module requires ROOT.
 """
 
 __all__ = [
-  'readHeader',
-  'SourceCode',
+  'readHeader', # imported from `cppUtils`
+  'SourceCode', # imported from `cppUtils`
   'make_getValidHandle',
   'makeFileList',
   'forEach',
@@ -191,7 +191,8 @@ def eventLoop(inputFiles,
 
 def findFHiCL(configRelPath, extraDirs = []):
   
-  if os.path.isfile(configRelPath): return os.path.join(os.getcwd(), configRelPath)
+  if os.path.isfile(configRelPath):
+    return os.path.join(os.getcwd(), configRelPath)
   for path in extraDirs + os.environ.get('FHICL_FILE_PATH', "").split(':'):
     candidate = os.path.join(path, configRelPath)
     if os.path.isfile(candidate): return candidate
