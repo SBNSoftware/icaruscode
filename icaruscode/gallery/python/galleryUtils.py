@@ -50,7 +50,13 @@ class HandleMaker:
   
   def __call__(self, klass):
     if klass in HandleMaker.AlreadyMade: return
-    HandleMaker.make(klass)
+    res = HandleMaker.make(klass)
+    if res != ROOT.TInterpreter.kNoError:
+      raise RuntimeError(
+       "Could not create `ROOT.gallery.Event.getValidHandle` for '%s' (code: %d)"
+       % (klass, res)
+       )
+    # if
     HandleMaker.AlreadyMade.add(klass)
   # __call__()
   
