@@ -139,6 +139,20 @@ def eventLoop(inputFiles,
  options = {},
  ):
   """
+  Applies the `process` function to each and every event from the specified
+  input files, in sequence.
+  
+  The `inputFiles` list may be a single file, or a list (or any iterable object)
+  of files, or a `std::vector<std::string>` object.
+  
+  The `process` callable is executed with two arguments: the number of argument
+  in the loop, and the event itself. No information on which file the event is
+  taken from is provided. If a call returns exactly `False`, it is considered
+  to have failed and an error counter is incremented. Exceptions raised in
+  `process` are not handled.
+  
+  The error counter is returned at the end of the execution.
+  
   Options:
   - 'nEvents': number of events to be processed (does not include skipped ones)
   - 'nSkip': number of events from the beginning of the sample to be skipped
@@ -147,6 +161,12 @@ def eventLoop(inputFiles,
   # option reading
   nSkip = options.get('nSkip', 0)
   nEvents = options.get('nEvents', None)
+  
+  # make sure the input file list is in the right format
+  if not isinstance(inputFiles, ROOT.vector(ROOT.string)):
+    if isinstance(inputFiles, str): inputFiles = [ inputFiles, ]
+    inputFiles = makeFileList(*inputFiles)
+  # if
   
   event = ROOT.gallery.Event(inputFiles)
   
