@@ -73,6 +73,16 @@ class SourceCentral:
     return self.findLibrary(relPath, extraPaths=extraPaths) if self.isLibrary(relPath) else self.findHeader(relPath, extraPaths=extraPaths)
   # find()
   
+  def findLibrary(self, libName, extraPaths = []):
+    expLibName = SourceCentral.expandLibraryName(libName)
+    for path in reversed(
+     SourceCentral.LibraryPaths() + map(os.path.expandvars, extraPaths)
+     ):
+      candidate = os.path.join(path, expLibName)
+      if os.path.exists(candidate): return candidate
+    else: return None
+  # findLibrary()
+  
   def findHeader(self, relPath, extraPaths = []):
     for path in reversed(self.includePaths + map(os.path.expandvars, extraPaths)):
       candidate = os.path.join(path, relPath)
@@ -146,6 +156,11 @@ class SourceCentral:
   def packageVarNameFromHeaderPath(varSuffix, headerPath):
     return SourceCentral.packageNameFromHeaderPath(headerPath).upper() + '_' + varSuffix
   
+  @staticmethod
+  def LibraryPaths():
+    return os.getenv(SourceCentral.PlatformInfo['LibEnvPath']) \
+     .split(SourceCentral.PlatformInfo.get('LibEnvPathSep', ':'))
+  # LibraryPaths()
   
 # class SourceCentral
 

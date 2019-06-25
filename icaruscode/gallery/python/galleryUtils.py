@@ -18,7 +18,7 @@ __all__ = [
   'loadConfiguration',
   'ConfigurationClass',
   'startMessageFacility',
-  'ServiceRegistry',
+  'ServiceRegistryClass',
   'ConfigurationHelper',
   ]
 
