@@ -26,8 +26,8 @@ __all__ = [
   ]
 
 import sys, os
-import ROOT
 import ROOTutils
+from ROOTutils import ROOT
 import galleryUtils
 from galleryUtils import (
   make_getValidHandle, makeFileList, forEach, eventLoop,

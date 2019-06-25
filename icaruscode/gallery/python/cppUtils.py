@@ -13,7 +13,7 @@ __all__ = [
   ]
 
 import sys, os
-import ROOT
+from ROOTutils import ROOT
 
 
 ################################################################################

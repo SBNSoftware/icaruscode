@@ -13,7 +13,7 @@ __all__ = [
 ]
 
 import LArSoftUtils
-import ROOT
+from ROOTutils import ROOT
 
 
 ################################################################################
