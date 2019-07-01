@@ -10,6 +10,9 @@
 // this library header
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
 
+// LArSoft libraries
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
+
 // framework libraries
 #include "cetlib_except/exception.h"
 
@@ -142,10 +145,17 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 //------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 					sim::SimPhotons const& photons){
-    using util::quantities::tick;
+    
     using namespace util::quantities::time_literals;
+    using namespace util::quantities::frequency_literals;
+    using namespace util::quantities::electronics_literals;
+    using namespace detinfo::timescales;
+    
+    detinfo::DetectorTimings const& timings
+      = detinfo::makeDetectorTimings(fParams.timeService);
     
     waveform.resize(fNsamples,fParams.baseline);
+    tick const endSample = tick::castFrom(fNsamples);
     
     // collect the amount of photoelectrons arriving at each tick
     std::unordered_map<tick,unsigned int> peMap;
@@ -155,16 +165,17 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     for(auto const& ph : photons) {
       if (!KicksPhotoelectron()) continue;
       
-      auto const mytime = microsecond(
-        fParams.timeService->G4ToElecTime(nanosecond(ph.Time)+fParams.transitTime)
-        - fParams.timeService->TriggerTime()
-        )
+      simulation_time const photonTime { ph.Time };
+      
+      trigger_time const mytime
+        = timings.toTriggerTime(photonTime)
+        + fParams.transitTime
         - fParams.triggerOffsetPMT
         ;
       if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
       
-      tick const iSample { static_cast<std::size_t>(mytime * fSampling) };
-      if (iSample >= fNsamples) continue;
+      tick const iSample = tick::castFrom(mytime.quantity() * fSampling);
+      if (iSample >= endSample) continue;
       ++peMap[iSample];
     } // for photons
     
@@ -179,7 +190,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       auto const nPE = pe.second;
       nTotalPE += nPE;
       if (nPE == 0) continue;
-      if (nPE == 1) AddSPE(pe.first,waveform); // faster if n = 1
+      if (nPE == 1) AddSPE(pe.first, waveform); // faster if n = 1
       else AddPhotoelectrons(pe.first, nPE, waveform);
     }
     MF_LOG_TRACE("PMTsimulationAlg") 
@@ -190,8 +201,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
       start=std::chrono::high_resolution_clock::now();
 
-      if(fParams.ampNoise>0.) AddNoise(waveform);
-      if(fParams.darkNoiseRate>0.) AddDarkNoise(waveform);
+      if(fParams.ampNoise > 0.0_ADCf) AddNoise(waveform);
+      if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform);
 
       end=std::chrono::high_resolution_clock::now(); diff = end-start;
       //std::cout << "\tadded noise... " << photons.OpChannel() << " " << diff.count() << std::endl;
@@ -210,30 +221,36 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
   } // CreateFullWaveform()
 
-  std::set<size_t> icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
+  auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
+    -> std::set<optical_tick>
   {
     using namespace util::quantities::time_literals;
+    using detinfo::timescales::trigger_time;
     
-    std::set<size_t> trigger_locations;
-    microsecond const deltaBeamTime
-      { fParams.timeService->BeamGateTime() - fParams.timeService->TriggerTime() };
+    detinfo::DetectorTimings const& timings
+      = detinfo::makeDetectorTimings(fParams.timeService);
+    
+    std::set<optical_tick> trigger_locations;
+    trigger_time const beamTime = timings.toTriggerTime(timings.BeamGateTime());
 
     for(unsigned int i_trig=0; i_trig<fParams.beamGateTriggerNReps; ++i_trig) {
-      microsecond const trig_time
-        = deltaBeamTime
+      trigger_time const trig_time
+        = beamTime
         + i_trig * fParams.beamGateTriggerRepPeriod
         - fParams.triggerOffsetPMT
         ;
       if (trig_time < 0_us) continue;
       if (trig_time > fParams.readoutEnablePeriod) break;
-      trigger_locations.insert(size_t(trig_time*fSampling));
+      trigger_locations.insert
+        (optical_tick::castFrom(trig_time.quantity()*fSampling));
     }
     return trigger_locations;
   }
 
-  std::set<size_t> icarus::opdet::PMTsimulationAlg::FindTriggers(Waveform_t const& wvfm) const
+  auto icarus::opdet::PMTsimulationAlg::FindTriggers(Waveform_t const& wvfm) const
+    -> std::set<optical_tick>
   {
-    std::set<size_t> trigger_locations;
+    std::set<optical_tick> trigger_locations;
     if (fParams.createBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
     
     bool above_thresh=false;
@@ -245,7 +262,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
       if(!above_thresh && val>=fParams.thresholdADC){
 	above_thresh=true;
-	trigger_locations.insert(i_t);
+	trigger_locations.insert(optical_tick::castFrom(i_t));
       }
       else if(above_thresh && val<fParams.thresholdADC){
 	above_thresh=false;
@@ -262,7 +279,16 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
   {
     //std::cout << "Finding triggers in " << opch << std::endl;
 
-    std::set<size_t> trigger_locations = FindTriggers(wvfm);
+    using namespace detinfo::timescales; // electronics_time, time_interval
+    
+    detinfo::DetectorTimings const& timings
+      = detinfo::makeDetectorTimings(fParams.timeService);
+    
+    electronics_time const PMTstartTime
+      = timings.TriggerTime() + time_interval{ fParams.triggerOffsetPMT };
+
+    
+    std::set<optical_tick> trigger_locations = FindTriggers(wvfm);
 
     //std::cout << "Creating opdet waveforms in " << opch << std::endl;
 
@@ -276,7 +302,7 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
 
       //if we are at a trigger point, open the window
-      if(trigger_locations.count(i_t)==1){
+      if(trigger_locations.count(optical_tick::castFrom(i_t))==1){
 
 	//if not already in a pulse
 	if(!in_pulse){
@@ -293,16 +319,18 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
       //ok, now, if we are in a pulse but have reached its end, store the waveform
       if(in_pulse && i_t==trig_stop-1){
-	// time should be absolute
+	// time should be absolute (on electronics time scale)
 	output_opdets.emplace_back(
-	  raw::TimeStamp_t(
-	    microsecond(fParams.timeService->TriggerTime()) // absolute time is from the service
-	    + fParams.triggerOffsetPMT // when optical readout starts relative to electronics clock
-	    + trig_start/fSampling // start of the waveform (tick #0) in the full optical reading
-	  ),
+	     // start of the waveform (tick #0) in the full optical reading
+	  raw::TimeStamp_t{ PMTstartTime + trig_start/fSampling },
 				    opch,
 				    trig_stop-trig_start );
-	output_opdets.back().Waveform().assign(wvfm.begin()+trig_start,wvfm.begin()+trig_stop);
+	auto& outputWaveform = output_opdets.back().Waveform();
+	outputWaveform.reserve(trig_stop - trig_start);
+	std::transform(wvfm.begin()+trig_start,wvfm.begin()+trig_stop,
+	  std::back_inserter(outputWaveform),
+	  [](auto ADC){ return ADC.value(); }
+	  );
 	in_pulse=false;
       }
       
@@ -313,12 +341,12 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; } 
 
   
-  void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const {
+  void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(tick time_bin, unsigned int n, Waveform_t& wave) const {
     
-    if (time_bin >= fNsamples) return;
     
-    std::size_t const min = time_bin;
-    std::size_t const max = std::min(time_bin + wsp.pulseLength(), fNsamples);
+    std::size_t const min = time_bin.value();
+    std::size_t const max = std::min(min + wsp.pulseLength(), fNsamples);
+    if (min >= max) return;
 
     std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,
 		   [n](auto a, auto b) { return a+n*b; });
@@ -326,12 +354,11 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
   } // PMTsimulationAlg::AddPhotoelectrons()
   
-  void icarus::opdet::PMTsimulationAlg::AddSPE(size_t time_bin, Waveform_t& wave){
-     
-    if (time_bin >= fNsamples) return;
+  void icarus::opdet::PMTsimulationAlg::AddSPE(tick time_bin, Waveform_t& wave){
     
-    std::size_t const min = time_bin;
-    std::size_t const max = std::min(time_bin + wsp.pulseLength(), fNsamples);
+    std::size_t const min = time_bin.value();
+    std::size_t const max = std::min(min + wsp.pulseLength(), fNsamples);
+    if (min >= max) return;
 
     std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,std::plus<ADCcount>());
     
@@ -339,7 +366,7 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
   
   void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave){
     
-    CLHEP::RandGauss random(*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise);
+    CLHEP::RandGauss random(*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise.value());
     for(auto& sample: wave) {
       ADCcount const noise { static_cast<float>(random.fire()) }; //gaussian noise
       sample += noise;
@@ -349,14 +376,14 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
   
   void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave)
   {
+    using namespace util::quantities::frequency_literals;
     using util::quantities::nanosecond;
-    if (fParams.darkNoiseRate <= 0.0) return; // no dark noise
-    size_t timeBin=0;
+    if (fParams.darkNoiseRate <= 0.0_Hz) return; // no dark noise
     CLHEP::RandExponential random(*(fParams.darkNoiseRandomEngine),
-      (1.0/fParams.darkNoiseRate).convertInto<nanosecond>());
+      (1.0/fParams.darkNoiseRate).convertInto<nanosecond>().value());
     double darkNoiseTime = random.fire();
     while (darkNoiseTime < wave.size()){
-      timeBin = (darkNoiseTime);
+      tick const timeBin = tick::castFrom(darkNoiseTime);
       AddSPE(timeBin,wave);
       // Find next time to add dark noise
       darkNoiseTime += random.fire();
