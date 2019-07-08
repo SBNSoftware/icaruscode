@@ -44,6 +44,11 @@ icarus_photonvisibilityservice: {
 ###
 ###  Configuration for first cryostat library and mapping to the other one
 ###
+#
+# Use as:
+#     
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped
+#     
 icarus_photonvisibilityservice_mapped: {
   @table::icarus_photonvisibilityservice
   
