@@ -1,2 +1,2 @@
-
-cet_test(WaveformOperations_test USE_BOOST_UNIT)
+add_subdirectory(Data)
+add_subdirectory(Algorithms)

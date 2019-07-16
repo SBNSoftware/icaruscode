@@ -12,7 +12,7 @@
 #include <boost/test/test_tools.hpp> // BOOST_CHECK(), BOOST_CHECK_EQUAL()
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/WaveformOperations.h"
+#include "icaruscode/PMT/Trigger/Algorithms/WaveformOperations.h"
 
 
 //------------------------------------------------------------------------------

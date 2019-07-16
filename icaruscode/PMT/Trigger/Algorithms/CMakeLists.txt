@@ -1,9 +1,5 @@
-add_subdirectory(Data)
-add_subdirectory(Algorithms)
-
-art_make(
-  TOOL_LIBRARIES
-    icaruscode_PMT_Trigger_Algorithms
+cet_make(
+  LIBRARIES
     icaruscode_PMT_Trigger_Data
     lardataalg_DetectorInfo
     lardataobj_RawData

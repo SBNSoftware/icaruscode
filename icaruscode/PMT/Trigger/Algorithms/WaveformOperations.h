@@ -1,12 +1,12 @@
 /**
- * @file   WaveformOperations.h
+ * @file   icaruscode/PMT/Trigger/Algorithms/WaveformOperations.h
  * @brief  Operations on waveform samples.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   June 27, 2019
  */
 
-#ifndef ICARUSCODE_PMT_TRIGGER_WAVEFORMOPERATIONS_H
-#define ICARUSCODE_PMT_TRIGGER_WAVEFORMOPERATIONS_H
+#ifndef ICARUSCODE_PMT_TRIGGER_ALGORITHMS_WAVEFORMOPERATIONS_H
+#define ICARUSCODE_PMT_TRIGGER_ALGORITHMS_WAVEFORMOPERATIONS_H
 
 /**
  * @brief Functions to manipulate waveform sample values.
@@ -175,4 +175,4 @@ namespace icarus::waveform_operations {
 } // namespace icarus::waveform_operations
 
 
-#endif // ICARUSCODE_PMT_TRIGGER_WAVEFORMOPERATIONS_H
+#endif // ICARUSCODE_PMT_TRIGGER_ALGORITHMS_WAVEFORMOPERATIONS_H
