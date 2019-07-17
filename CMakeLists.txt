@@ -56,6 +56,7 @@ find_ups_product( larpandora v1_00_00 )
 find_ups_product( larana v1_00_00 )
 find_ups_product( larpandora v1_00_00 )
 find_ups_product( nutools v1_00_00 )
+find_ups_product( nurandom )
 find_ups_product( art v1_09_00 )
 find_ups_product(art_root_io)
 find_ups_product( cetbuildtools v3_10_00 )
@@ -65,6 +66,9 @@ find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
 
 cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
+cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE 
+                  NAMES nurandom_RandomUtils_NuRandomService_service
+		  PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)
