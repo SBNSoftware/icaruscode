@@ -3,7 +3,13 @@
 # Purpose: Configuration of services related to the optical detectors.
 #
 # Currently provides:
-# * `icarus_photonvisibilityservice`: configuration of `PhotonVisibilityService`
+# * `icarus_photonvisibilityservice_direct`: configuration of
+#     `PhotonVisibilityService` using a photon visibility library and no mapping
+# * `icarus_photonvisibilityservice_mapped`: configuration of
+#     `PhotonVisibilityService` using a single cryostat photon visibility
+#     library and a mapping
+# * `icarus_photonvisibilityservice`: default configuration of
+#     `PhotonVisibilityService` used in higher level standard scripts
 #
 
 
@@ -17,10 +23,10 @@ BEGIN_PROLOG
 #
 # Use as:
 #     
-#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_direct
 #     
 #
-icarus_photonvisibilityservice: {
+icarus_photonvisibilityservice_direct: {
     @table::standard_library_vuv_prop_timing_photonvisibilityservice
 
     LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
@@ -38,7 +44,42 @@ icarus_photonvisibilityservice: {
 
     IncludePropTime: true
     
-} # icarus_photonvisibilityservice
+} # icarus_photonvisibilityservice_direct
+
+
+###
+###  Configuration for first cryostat library and mapping to the other one
+###
+#
+# Use as:
+#     
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped
+#     
+icarus_photonvisibilityservice_mapped: {
+  @table::icarus_photonvisibilityservice_direct
+  
+  Mapping: {
+    tool_type: ICARUSPhotonMappingTransformations
+  }
+
+} # icarus_photonvisibilityservice_mapped
+
+
+###############################################################################
+###
+### Default configuration
+###
+#
+# This is the configuration used by the "standard" ICARUS job configurations.
+# Use as:
+#     
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice
+#     
+#
+icarus_photonvisibilityservice: @local::icarus_photonvisibilityservice_mapped
+
+
+###############################################################################
 
 
 END_PROLOG
