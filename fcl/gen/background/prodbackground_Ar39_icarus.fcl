@@ -1,0 +1,54 @@
+#
+# File:    prodbackground_Ar39_icarus.fcl
+# Purpose: Simulation of activity of Argon 39 in the detector.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 22, 2019
+# Version: 1.0
+#
+# This job generates events with only radioactivity from argon 39 in the
+# detector.
+# 
+# Changes:
+# 20190722 [v1.0] (petrillo@slac.stanford.edu)
+#   first version
+#
+
+#include "services_icarus.fcl"
+#include "radiological_model_icarus.fcl"
+
+process_name: BackgroundGen
+
+services: {
+  
+  @table::icarus_basic_services # from services_icarus.fcl
+  
+} # services
+
+
+source: {
+  module_type: EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+}
+
+
+physics: {
+  
+  producers: {
+    generator: @local::radiogen_Ar39_icarus # from radiological_model_icarus.fcl
+  }
+  
+  simulate:      [ generator ]
+  
+  stream1:       [ rootoutput ]
+ 
+  trigger_paths: [ simulate ] 
+  end_paths:     [ stream1 ]
+}
+
+
+outputs: {
+  rootoutput: {
+    module_type:  RootOutput
+    fileName:    "prodbackground_Ar39_icarus_%p-%tc.root"
+  } # rootoutput
+} # outputs
