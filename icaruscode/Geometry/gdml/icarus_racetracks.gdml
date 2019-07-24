@@ -1,0 +1,534 @@
+<?xml version='1.0'?>
+<gdml>
+<define>
+
+   <position name="posRaceTrackTInTPC" unit="cm" x="0.268550000000005" y="160.11005" z="0"/>
+   <position name="posRaceTrackBInTPC" unit="cm" x="0.268550000000005" y="-160.10985" z="0"/>
+   <position name="posRaceTrackUInTPC" unit="cm" x="0.268550000000005" y="0"  z="-903.30005"/>
+   <position name="posRaceTrackDInTPC" unit="cm" x="0.268550000000005" y="0"  z="903.30005"/>
+
+</define>   
+<!--+++++++++++++++++++ RACETRACK Solids +++++++++++++++++++-->
+
+
+
+<solids>
+ <box name="RaceTrackTVolume"
+  x="143.8429"
+  y="3.4002"
+  z="1810.0001" 
+  lunit="cm" />
+ <box name="RaceTrackBVolume"
+  x="143.8429"
+  y="3.4002"
+  z="1810.0001" 
+  lunit="cm"/>
+ <box name="RaceTrackUVolume"
+  x="143.8429"
+  y="3.4002"
+  z="316.8201" 
+  lunit="cm"/>
+ <tube name="RaceTrackTTubeVolume"
+  rmax="1.7"
+  rmin="1.62"
+  z="1810" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+ <tube name="RaceTrackBTubeVolume"
+  rmax="1.7"
+  rmin="1.62"
+  z="1810" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+ <tube name="RaceTrackUTubeVolume"
+  rmax="1.7"
+  rmin="1.62"
+  z="316.82" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+
+</solids>
+<structure>
+
+<!--+++++++++++++++++ RACETRACK Logical Volumes ++++++++++++++++++++-->
+
+    <volume name="volRaceTrackTTubeVolume"> 
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
+      <solidref ref="RaceTrackTTubeVolume"/>
+    </volume>
+    <volume name="volRaceTrackBTubeVolume"> 
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
+      <solidref ref="RaceTrackBTubeVolume"/>
+    </volume>
+    <volume name="volRaceTrackUTubeVolume"> 
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
+      <solidref ref="RaceTrackUTubeVolume"/>
+    </volume>
+
+<!--+++++++++++++++++ RACETRACK Top Volume   ++++++++++++++++++++-->
+
+    <volume name="volRaceTrackTVolume"> 
+      <materialref ref="LAr"/>  
+      <solidref ref="RaceTrackTVolume"/>
+
+
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube0" unit="cm" x="-69.4414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube1" unit="cm" x="-64.4814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube2" unit="cm" x="-59.5214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube3" unit="cm" x="-54.5614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube4" unit="cm" x="-49.6014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube5" unit="cm" x="-44.6414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube6" unit="cm" x="-39.6814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube7" unit="cm" x="-34.7214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube8" unit="cm" x="-29.7614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube9" unit="cm" x="-24.8014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube10" unit="cm" x="-19.8414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube11" unit="cm" x="-14.8814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube12" unit="cm" x="-9.92139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube13" unit="cm" x="-4.96139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube14" unit="cm" x="-0.0013999999999843" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube15" unit="cm" x="4.95860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube16" unit="cm" x="9.91860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube17" unit="cm" x="14.8786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube18" unit="cm" x="19.8386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube19" unit="cm" x="24.7986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube20" unit="cm" x="29.7586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube21" unit="cm" x="34.7186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube22" unit="cm" x="39.6786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube23" unit="cm" x="44.6386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube24" unit="cm" x="49.5986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube25" unit="cm" x="54.5586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube26" unit="cm" x="59.5186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube27" unit="cm" x="64.4786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackTTubeVolume"/>
+        <position name="posRTkTTube28" unit="cm" x="69.4386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+
+    </volume>
+
+<!--+++++++++++++++++ RACETRACK Bottom Volume ++++++++++++++++++++-->
+
+    <volume name="volRaceTrackBVolume"> 
+      <materialref ref="LAr"/>  
+      <solidref ref="RaceTrackBVolume"/>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube0" unit="cm" x="-69.4414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube1" unit="cm" x="-64.4814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube2" unit="cm" x="-59.5214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube3" unit="cm" x="-54.5614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube4" unit="cm" x="-49.6014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube5" unit="cm" x="-44.6414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube6" unit="cm" x="-39.6814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube7" unit="cm" x="-34.7214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube8" unit="cm" x="-29.7614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube9" unit="cm" x="-24.8014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube10" unit="cm" x="-19.8414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube11" unit="cm" x="-14.8814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube12" unit="cm" x="-9.92139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube13" unit="cm" x="-4.96139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube14" unit="cm" x="-0.0013999999999843" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube15" unit="cm" x="4.95860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube16" unit="cm" x="9.91860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube17" unit="cm" x="14.8786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube18" unit="cm" x="19.8386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube19" unit="cm" x="24.7986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube20" unit="cm" x="29.7586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube21" unit="cm" x="34.7186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube22" unit="cm" x="39.6786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube23" unit="cm" x="44.6386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube24" unit="cm" x="49.5986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube25" unit="cm" x="54.5586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube26" unit="cm" x="59.5186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube27" unit="cm" x="64.4786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackBTubeVolume"/>
+        <position name="posRTkBTube28" unit="cm" x="69.4386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+
+    </volume>
+
+<!--+++++++++++++++++ RACETRACK Upstream Volume ++++++++++++++++++++-->
+
+    <volume name="volRaceTrackUVolume"> 
+      <materialref ref="LAr"/>  
+      <solidref ref="RaceTrackUVolume"/>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube0" unit="cm" x="-69.4414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube1" unit="cm" x="-64.4814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube2" unit="cm" x="-59.5214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube3" unit="cm" x="-54.5614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube4" unit="cm" x="-49.6014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube5" unit="cm" x="-44.6414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube6" unit="cm" x="-39.6814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube7" unit="cm" x="-34.7214" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube8" unit="cm" x="-29.7614" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube9" unit="cm" x="-24.8014" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube10" unit="cm" x="-19.8414" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube11" unit="cm" x="-14.8814" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube12" unit="cm" x="-9.92139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube13" unit="cm" x="-4.96139999999998" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube14" unit="cm" x="-0.0013999999999843" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube15" unit="cm" x="4.95860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube16" unit="cm" x="9.91860000000002" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube17" unit="cm" x="14.8786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube18" unit="cm" x="19.8386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube19" unit="cm" x="24.7986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube20" unit="cm" x="29.7586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube21" unit="cm" x="34.7186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube22" unit="cm" x="39.6786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube23" unit="cm" x="44.6386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube24" unit="cm" x="49.5986" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube25" unit="cm" x="54.5586" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube26" unit="cm" x="59.5186" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube27" unit="cm" x="64.4786" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+      <physvol>
+        <volumeref ref="volRaceTrackUTubeVolume"/>
+        <position name="posRTkUTube28" unit="cm" x="69.4386" y="0" z="0" />
+        <rotationref ref="rIdentity" />
+      </physvol>
+
+    </volume>
+
+<!--+++++++++++++++++ RACETRACK end structure +++++++++++++++++++-->
+</structure>
+</gdml>
