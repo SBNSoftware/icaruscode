@@ -23,20 +23,52 @@ import xml.etree.cElementTree as ET
 from xml.dom import minidom
 
 #################### Parameters #####################
-#warm vessel (cm)
-WVWIDTH  = 972.0 
-WVHEIGHT = 614.0
-WVLENGTH = 2209.0
-ISLANDWIDTH = 118.0
+#warm vessel (cm), increased as of 7/19/2019 to 
+#reflect full extent of WV profile in detector hall
+WVWIDTH  = 1031.8  #previously 972.0  
+WVHEIGHT = 627.4   #previously 614.0, current value includes support feet, foot height is 30.0cm 
+WVLENGTH = 2268.8  #previously 2209.0
+WVFOOTELEVATION = 10.16 #height of bottom of WV foot w.r.t. pit floor
+ISLANDWIDTH = 118.0 #width of ~square WV support feet islands
 
-#strip width, length, thickness
+IVLENGTH = 1996.0 #length of interior of cold vessel, the inactive + active LAr volume
+
+#OVEROPENZ = 2758.5 - 30.48
+TOPLEDGERISERTOFLOOR = 991.9 #pit floor to top of ledge riser upon which the overburden blocks sit
+LEDGERISERHEIGTH = 46.99 #wide flange type, W18 x 71
+TOPCRTBEAMTOFLOOR = 970.8
+CRTBEAMSPACING = 92.71 #horizontal center to center spacing between top CRT support beams
+
+BOTTOMCRTROLLERHEIGHT = 3.02 #distance between bottom CRT module and pit floor
+SIDECRTWVOFFSET = 4.13 #set by fiberglass Unistrut standoffs (given as ~4cm, but it's Unitstrut so I assume it was rounded
+SIDECRTPOSTWIDTH = 4.13 #Unistruit vertical support posts, dimension normal to side CRT plane
+SIDECRTPOSTSPACING = 4.13 #set by Unistruit bracket shelf
+SIDECRTSTACKDEPTH = 3*SIDECRTPOSTWIDTH + 2*SIDECRTPOSTSPACING
+SIDECRTSHELFTHICK = 0.56 #to be verified, could also be 0.64 depending on steel type
+
+#dimensions of top CRT support beams, wide flange W10 x 49
+#true area is larger than that calculated assuming perfect I shape
+#91.54 cm^2 vs 92.9 cm^2 
+#bottom of CRT beam offset vertically + 0.635cm from bottom of ledge riser
+CRTBEAMHEIGHT = 25.3
+CRTBEAMWIDTH  = 25.4
+CRTBEAMFLANGETHICK = 14.22
+CRTBEAMWEBTHICK = 0.86
+CRTBEAMMASSDENS = 73 #kg/m, density 7849 kg/m^3
+
+#strip width, length, thickness (cm)
 YM = 4.1   #MINOS
 ZM = 800.0
 XM = 1.0
+MINOSSTRAIGHTSNOUT = 37.5
+MINOSBENDSNOUT = 26.5
+MINOSSNOUTLENGTH = 0.5*(MINOSSTRAIGHTSNOUT+MINOSBENDSNOUT) #guess, to be verified of length along module that snout, where fiber routing occurs, no scintillator, extends
+
 
 XC = 23.0   #CERN
 ZC = 184.0
-YC = 1.5
+YCTOP = 1.0
+YCBOT = 1.5
 
 XD = 5.0    #Double Chooz
 ZD = 322.5
@@ -55,11 +87,21 @@ PADModule = 0.1
 PADStrip = 0.01
 PADTagger = 0.001
 
+mModL = ZM+2*PADM+2*PADStrip
+mModW = YM*NXM+2*PADM+(NXM+1)*PADStrip
+mModH = XM+2*PADM+2*PADStrip
+cModW = XC*NXC+2*PADC+(NXC+1)*PADStrip #same as length
+cModH = YCTOP+YCBOT+2*PADC+3*PADStrip
+dModH = YD*2+2*PADD+3*PADStrip
+
 #MINOS mounting
-LAYERSPACE = 10.0 #MINOS edge-to-edge distance between adjacent layers (cm)
+LAYERSPACE = 8.27 #MINOS edge-to-edge distance between adjacent layers (cm), prevously 10cm
 NMODSTACK = 9 #number of lateral MINOS modules in a single layer, single stack
-SLIDERSPACE = 25.0 #MINOS edge-to-edge distance between fixed and sliding stacks (cm)
+SLIDERSPACE = 18.5+mModH #MINOS center-to-center distance between fixed and sliding stacks' nearest modules (cm), previously 25.0cm
 STACKOVERLAP = 50.0 #MINOS stack horizontal overlap (cm)
+SIDECRTROLLOFFSET = 44.29 #offset from outmost extend of WV to center fo rolling stack (E/W sides)
+SIDECRTNORTHWALLTOFLOOR = 152.2
+SIDECRTSOUTHWALLLATOFFSET = 1.1*MINOSSNOUTLENGTH
 
 #DC mounting
 DCSPACER=32.6 #foam spacer between DC modules in rows of 5 (strip normal to drift direction) (cm)
@@ -67,28 +109,57 @@ LONGOFF5=(3*ISLANDWIDTH+481.8)*0.5+181.8
 LONGOFF2= (ISLANDWIDTH+181.8)*0.5
 
 #CERN mounting
+CERNMODSPACE = 0.2
 NTOPX=6
 NTOPZ=14
-NSLOPELAT=13
+NSLOPELAT=14
 NSLOPEFRONT=6
-SLOPEINCLINATION=60.0 #degrees w.r.t. vertical
+SLOPEINCLINATION=90.0 #degrees w.r.t. vertical, previously 60 deg
+CERNROOFL = NTOPZ*cModW+(NTOPZ-1)*CERNMODSPACE
 
+#CRT shell
+SHELLY = 1.1*cModH+TOPCRTBEAMTOFLOOR-BOTTOMCRTROLLERHEIGHT*0.9
 #MINOS sections positions
-posMINOSSide1InDetEncl = (-537.13, -81.735, 0)
-posMINOSSide2InDetEncl = (537.13, -81.735, 0)
-posMINOSFrontInDetEncl = (0,-51.1349999999999, -1173.6)
-posMINOSBackInDetEncl= (0,-51.1349999999999, 1173.6)
+MINOSSOUTHY = -0.5*SHELLY+0.5*(NMODSTACK*mModW+(NMODSTACK-1)*SIDECRTSHELFTHICK+2*PADTagger)+WVFOOTELEVATION+5
+MINOSLATFIXY = MINOSSOUTHY
+MINOSLATROLLY = MINOSLATFIXY-0.5*mModW+10
+MINOSLATSOUTHACTIVEOVERHANG = 2*MINOSSNOUTLENGTH
+MINOSLATSOUTHZ = -0.5*WVLENGTH + 0.5*mModL - 0.5*MINOSLATSOUTHACTIVEOVERHANG
+MINOSLATNORTHZ = 0.5*WVLENGTH - 0.5*mModL
+MINOSLATCENTZ = 0.5*(-0.5*MINOSLATSOUTHACTIVEOVERHANG+MINOSLATSOUTHZ+MINOSLATNORTHZ)
 
 #DC section positions
 posDCInDetEncl = (0,-480.135, 0)
 
 #CERN sections positions
+CERNRIMSWVOFFSET = 34.0
+CERNTOPY = SHELLY*0.5 - 0.6*cModH
+CERNRIMSY = CERNTOPY - 0.5*cModH - CRTBEAMHEIGHT - 2.54 - 0.5*cModW
+CERNRIMSZ = -0.5*WVLENGTH - CERNRIMSWVOFFSET
+CERNRIMNY = CERNRIMSY + 29.0
+CERNRIMNZ = CERNROOFL + CERNRIMSZ + 0.6*cModH
+CERNTOPZ = CERNRIMSZ + 0.5*CERNROOFL  #roof center assuming south edge of roof aligned with south rim center in z
+CERNRIMLATX = 0.5*WVWIDTH + 0.5*cModH + 38.0
+CERNRIMLATY = CERNRIMSY
+CERNRIMLATZ = CERNTOPZ
 posCERNTopInDetEncl = (0, 479.565, 0)
 posCERNFrontInDetEncl = (0, 397.0, -1306.84)
 posCERNBackInDetEncl = (0, 397.0, 1306.84)
 posCERNLeftInDetEncl = (570.04, 397.0, 0)
 posCERNRightInDetEncl = (-570.04, 397.0, 0)
 
+
+SHELLZ = 1.01*(0.5*cModH+CERNRIMNZ-min(CERNRIMSZ+0.5*cModH,MINOSLATSOUTHZ-(mModL+MINOSLATSOUTHACTIVEOVERHANG+SIDECRTSOUTHWALLLATOFFSET)*0.5)) #2*(CERNROOFL - 0.5*IVLENGTH - cModW)
+SHELLWVOFFSET = SHELLZ*0.5/1.01 - WVLENGTH*0.5
+if CERNRIMSZ+0.5*cModH < MINOSLATSOUTHZ-(mModL+MINOSLATSOUTHACTIVEOVERHANG+SIDECRTSOUTHWALLLATOFFSET)*0.5:
+    SHELLWVOFFSET-= CERNRIMSWVOFFSET
+else :
+    SHELLWVOFFSET-= MINOSLATSOUTHACTIVEOVERHANG
+print('SHELL-WV OFFSET: '+str(SHELLWVOFFSET))
+
+#cut MINOS module lengths including snout, index is row number starting from the bottom
+minosCutModLengthNorth = (256.54, 309.9, 309.9, 508.19, 508.19, 508.19) #6 rows
+MINOSNORTHY = -0.5*SHELLY+0.5*(len(minosCutModLengthNorth)*mModW+(len(minosCutModLengthNorth)-1)*SIDECRTSHELFTHICK+2*PADTagger)-PADTagger+SIDECRTNORTHWALLTOFLOOR-BOTTOMCRTROLLERHEIGHT*0.9
 
 ########################################################
 
@@ -122,19 +193,25 @@ def get_mod_id_num():
     global mod_id
     return str(mod_id)
 
-def strip(style="m", modnum=0, stripnum=0):
+def strip(style="m", modnum=0, stripnum=0, length=0):
     '''Build one scintillator strip.'''
 
     if style=="m":
         x=XM
         y=YM
-        z=ZM
+        if length==0:
+            z=ZM
+        else:
+            z=length
         name = 'MINOS'
     if style=="c":
-        x=XC
-        y=YC
-        z=ZC
         name = 'CERN'
+        x=XC
+        if stripnum < NXC:
+            y=YCTOP
+        else:
+            y=YCBOT
+        z=ZC
     if style=="d":
         x=XD
         y=YD
@@ -145,17 +222,28 @@ def strip(style="m", modnum=0, stripnum=0):
     yy = str(y)
     zz = str(z) 
 
-    sname = 'AuxDetSensitive_' + name + '_strip'
-    vname = 'volAuxDetSensitive_'
-    vname += name
-    vname += '_module_'
+    sname = 'AuxDetSensitive_' + name + '_strip_'
+    vname = 'volAuxDetSensitive_' + name + '_module_'
 
     if modnum < 10:
         vname += '00'
     elif modnum < 100: 
         vname += '0'
 
-    vname += str(modnum) + '_strip_'
+    vname += str(modnum)+'_'
+    if style=='m' and length!=0:
+        sname+='cut'+str(int(length))+'_'
+        vname+='cut'+str(int(length))
+    vname+='_strip_'
+
+    if style=='c':
+        if stripnum < NXC:
+            sname += 'top'
+            vname += 'top'
+        else:
+            sname += 'bot'
+            vname += 'bot'
+
 
     if stripnum < 10: 
         vname += '0'
@@ -177,34 +265,40 @@ def strip(style="m", modnum=0, stripnum=0):
 
     return s, v #return solid, logical volumes
 
-def module(style="m", reg='tt'):
+def module(style="c", reg='tt', length=0):
     '''Build an edge-to-edge array of scintillator strips.'''
 
     if style=="m":
+        ny=NXM
         x=XM
         y=YM
-        z=ZM
-        ny=NXM
-        xx = str(x+2*PADM+2*PADStrip)
-        yy = str(y*ny+2*PADM+(ny+1)*PADStrip)
-        zz = str(z+2*PADM+2*PADStrip)
-        xxsub = str(x+2*PADStrip)
-        yysub = str(y*ny+(ny+1)*PADStrip)
-        zzsub = str(z+2*PADStrip)
-	name = "MINOS"
+        if length==0:
+            z=ZM
+            zz = str(mModL)
+            zzsub = str(mModL-2*PADM)
+        else:
+            if length>ZM:
+                print('WARNING: LENGTH SPECIFIED FOR CUT MINOS MODULE EXCEEDES FULL LENGTH!')
+            z  = length
+            zz = str(mModL-ZM+length)
+            zzsub = str(mModL-2*PADM-ZM+length)
+        xx = str(mModH) 
+        yy = str(mModW) 
+        xxsub = str(mModH-2*PADM) 
+        yysub = str(mModW-2*PADM) 
+        name = "MINOS"
 
     if style=="c":
         x=XC
-        y=YC
         z=ZC
         ny=NXC
-        xx = str(x*ny+2*PADC+(ny+1)*PADStrip)
-        yy = str(y*2+2*PADC+3*PADStrip)
+        xx = str(cModW) 
+        yy = str(cModH) 
         zz = xx
-        xxsub = str(x*ny+(ny+1)*PADStrip)
-        yysub = str(y*2+3*PADStrip)
+        xxsub = str(cModW - 2*PADC) 
+        yysub = str(cModH-2*PADC)
         zzsub = xxsub
-	name = "CERN"
+        name = "CERN"
 
     if style=="d":
         x=XD
@@ -212,35 +306,42 @@ def module(style="m", reg='tt'):
         z=ZD
         ny=NXD
         xx = str(x*(ny+0.5)+2*PADD+(ny+2)*PADStrip)
-        yy = str(y*2+2*PADD+3*PADStrip)
+        yy = str(dModH) 
         zz = str(z+2*PADD+2*PADStrip)
         xxsub = str(x*(ny+0.5)+(ny+2)*PADStrip)
-        yysub = str(y*2+3*PADStrip)
+        yysub = str(dModH-2*PADM) 
         zzsub = str(z+2*PADStrip)
-	name = "DC"
+        name = "DC"
 
     modnum = get_mod_id(style)
     stripnum = 0
 
-    sname = 'AuxDet_' + name + '_module'
-    vname = 'vol' + sname + '_'
+    sname = 'AuxDet_' + name + '_module_'
+    vname = 'vol' + sname
 
     if modnum < 10:
         vname += '00'
     elif modnum < 100:
         vname += '0'
-    vname += str(modnum)
-    vname +='_'
+    vname += str(modnum)+'_'
+
+    if style=='m' and length!=0:
+        sname += 'cut'+str(int(length))
+        vname += 'cut'+str(int(length))+'_'
 
     if reg=='tt': vname += 'Top'
-    if reg=='sf': vname += 'SlopeFront'        
-    if reg=='sb': vname += 'SlopeBack'
-    if reg=='sl': vname += 'SlopeLeft'
-    if reg=='sr': vname += 'SlopeRight'        
-    if reg=='ff': vname += 'Front'
-    if reg=='bb': vname += 'Back'
-    if reg=='ll': vname += 'Left'        
-    if reg=='rr': vname += 'Right'
+    if reg=='rn': vname += 'RimNorth' 
+    if reg=='rs': vname += 'RimSouth' 
+    if reg=='rw': vname += 'RimWest' 
+    if reg=='re': vname += 'RimEast' 
+    if reg=='ss': vname += 'South' 
+    if reg=='nn': vname += 'North' 
+    if reg=='ws': vname += 'WestSouth' 
+    if reg=='wc': vname += 'WestCenter'
+    if reg=='wn': vname += 'WestNorth'        
+    if reg=='es': vname += 'EastSouth' 
+    if reg=='ec': vname += 'EastCenter'
+    if reg=='en': vname += 'EastNorth'
     if reg=='bt': vname += 'Bottom'
 
     snamein  = sname+'_inner'
@@ -260,10 +361,15 @@ def module(style="m", reg='tt'):
     strips  = []
     strips2 = []
 
+    #generate strips, top layer for c or d type
     for i in range(ny):
-        strips.append(strip(style, modnum, stripnum))
+        if style=='m' and length>0:
+            strips.append(strip(style, modnum, stripnum,length))
+        else:
+            strips.append(strip(style, modnum, stripnum,0))
         stripnum += 1
 
+    #generate bottom layer strips
     if style=='d' or style=='c':    
         for i in range(ny):
             strips2.append(strip(style, modnum, stripnum))
@@ -274,6 +380,8 @@ def module(style="m", reg='tt'):
     ET.SubElement(vin, 'materialref', ref='Air')
     ET.SubElement(vin, 'solidref', ref=snamein)
 
+    #place first layer of strips (only layer for m modules)
+    #top layer for c or d modules
     for i, (es, ev) in enumerate(strips):
         pv = ET.SubElement(vin, 'physvol')
         ET.SubElement(pv, 'volumeref', ref=ev.attrib['name'])
@@ -283,7 +391,7 @@ def module(style="m", reg='tt'):
             dx=0
         if style=='c':
             dx = (2*i - ny + 1)* 0.5 * (x+PADStrip)
-            dy=0.5*(y+PADStrip)
+            dy=0.5*(YCBOT+PADStrip)
 
         if style=='d':
             dy= 0.5*(y+PADStrip)
@@ -292,12 +400,13 @@ def module(style="m", reg='tt'):
         posname = 'pos' + ev.attrib['name']
         ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(dx), y=str(dy), z='0')
 
+    #place bottom layers
     if style=='c':
         for i, (es, ev) in enumerate(strips2):
             pv = ET.SubElement(vin, 'physvol')
             ET.SubElement(pv, 'volumeref', ref=ev.attrib['name'])
 
-            dy= -0.5*(y+PADStrip)
+            dy= -0.5*(YCTOP+PADStrip)
             dz=(2*i - ny + 1)* 0.5 * (x+PADStrip)
 
             posname = 'pos' + ev.attrib['name']
@@ -330,50 +439,103 @@ def module(style="m", reg='tt'):
 
     return s, v
 
-def minosSideTagger(side='L', x0=0, y0=0, z0=0):
-    ''' Build a side tagger (3 stacks)
+#build one stack of MINOS modules for east or west side CRT walls
+#pos specifies one of 3 stacks on either side: 's, 'c', 'n'
+def minosSideTagger(side='e', pos='n'): 
+    ''' Build a side tagger (1 stacks)
     '''
+    if side!='e' and side !='w':
+        print('bad value passed to function, minosSideTagger: side='+side)
+    if pos!='n' and pos!='c' and pos != 's':
+        print('bad value passed to function, minosSideTagger: pos='+pos)
+
     coords = []
     modules = []
+    nstack=NMODSTACK
 
-    xx = str(SLIDERSPACE+2*LAYERSPACE+4*(XM+2*(PADM+PADStrip))+2*PADTagger)
-    yy = str(NMODSTACK * (YM*NXM+2*PADM+(NXM+1)*PADStrip) + (NMODSTACK+1)*PADModule + 2*PADTagger)
-    zz = str(3 * (ZM + 2*(PADM+PADStrip)) - 2*STACKOVERLAP + 2*PADTagger)
+    if(pos=='c'):
+        nstack-=1
 
-	#loop over stacks
-    for layer in range (6):
-        if (layer==0 or layer==1):
-            dz=-1*(ZM + 2*(PADM+PADStrip) - STACKOVERLAP)
-            dx=-1*((SLIDERSPACE+LAYERSPACE)*0.5 + XM + 2*(PADM+PADStrip))
-        if (layer==2 or layer==3):
-            dz=0
-            dx=(SLIDERSPACE+LAYERSPACE)*0.5 + XM + 2*(PADM+PADStrip)
-        if (layer==4 or layer==5):
-            dz=ZM + 2*(PADM+PADStrip) - STACKOVERLAP
-            dx=-1*((SLIDERSPACE+LAYERSPACE)*0.5 + XM + 2*(PADM+PADStrip))
-        if (side=='L'): dx *= -1
+    z = mModL+2*PADTagger
+    if(pos=='s'):
+        z+=MINOSLATSOUTHACTIVEOVERHANG
 
-        dx+=((-1)**layer)*(LAYERSPACE+XM+2*(PADM+PADStrip))/2.0
+    xx = str(SIDECRTSTACKDEPTH)
+    yy = str(nstack*mModW+(nstack-1)*SIDECRTSHELFTHICK+2*PADTagger)
+    zz = str(z)
 
+    if pos=='s':
+        xxsub = str(SIDECRTSTACKDEPTH)
+        yysub = str(mModW+PADTagger)
+        zzsub = str(MINOSLATSOUTHACTIVEOVERHANG+PADTagger)
+        xpsub = '0'
+        ypsub = str(0.5*((nstack-1)*(mModW+SIDECRTSHELFTHICK)+PADTagger))
+        zpsub = str(-0.5*(z-MINOSLATSOUTHACTIVEOVERHANG))
+
+    #loop over stacks
+    for layer in range (2): #6):
+        
+        dx = ((-1)**layer)*0.5*LAYERSPACE
+        if side=='w': dx*= -1
+        dz=0
         #loop over modules in stack
-        for i in range(NMODSTACK):
+        for i in range(nstack):
+            dy = 0.5*(2*i+1-nstack)*(mModW+SIDECRTSHELFTHICK)
+            #if pos=='c':
+            #    dy-=0.5*mModW
+            if pos=='s' and i==nstack-1 : dz = 0.5*MINOSLATSOUTHACTIVEOVERHANG
+            elif pos=='s': dz = -0.5*MINOSLATSOUTHACTIVEOVERHANG
+            coords.append((dx,dy,dz))
 
-            dy = (YM*NXM + 2*PADM+(NXM+1)*PADStrip+PADModule) * (0.5 * (1-NMODSTACK) + i )
+    sname = 'tagger_SideLat_'
+    if pos=='c': sname+='Center'
+    if pos=='s': 
+        sname+='South'
+        snameint = sname + '_internal'
+        snameext = sname + '_external'
+    if pos=='n': sname+='North'
 
-            coords.append((x0+dx,y0+dy,z0+dz))
+    if not sname in solids_store:
+        if pos != 's': s = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
+        if pos=='s':
+            sext = ET.SubElement(solids, 'box', name=snameext, lunit="cm", x=xx, y=yy, z=zz)
+            sint = ET.SubElement(solids, 'box', name=snameint, lunit="cm", x=xxsub, y=yysub, z=zzsub)
+            s = ET.SubElement(solids, 'subtraction', name=sname)
+            ET.SubElement(s, 'first', ref=snameext)
+            ET.SubElement(s, 'second', ref=snameint)
+            ET.SubElement(s, 'position', name='crtsouthtaggersubpos', unit='cm', x=xpsub,y=ypsub,z=zpsub)
+            solids_store[snameext] = sext
+            solids_store[snameint] = sint
+        solids_store[sname] = s
+    else:
+        if pos=='s':
+            sext = solids_store[snameext]
+            sint = solids_store[snameint]
+        s = solids_store[sname]
+
+    vname = 'vol_'+ sname+'_'
 
     for i in range(len(coords)):
-        if side=='L':
-            modules.append(module('m','ll'))
-        if side=='R':
-            modules.append(module('m','rr'))
-
-    sname = 'tagger_'
-    if side == 'L':
-        sname += 'left'
-    if side == 'R':
-        sname += 'Right'
-    vname = 'vol_'+ sname
+        if side=='w':
+            if pos=='s':
+                modules.append(module('m','ws'))
+                if i==0: vname+='WestSouth'
+            if pos=='c':
+                modules.append(module('m','wc'))
+                if i==0: vname+='WestCenter'
+            if pos=='n':
+                modules.append(module('m','wn'))
+                if i==0: vname+='WestNorth'
+        if side=='e':
+            if pos=='s':
+                modules.append(module('m','es'))
+                if i==0: vname+='EastSouth'
+            if pos=='c':
+                modules.append(module('m','ec'))
+                if i==0: vname+='EastCenter'
+            if pos=='n':
+                modules.append(module('m','en'))
+                if i==0: vname+='EastNorth'
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
     vtagger = ET.SubElement(structure, 'volume', name=vname)
@@ -392,45 +554,111 @@ def minosSideTagger(side='L', x0=0, y0=0, z0=0):
 
     return stagger, vtagger
 
-def minosFrontTagger(side='U', x0=0, y0=0, z0=0):
+def minosNorthTagger():
+    ''' Build north MINOS tagger (2 layers cut modules in X-X) on upstream face
+    '''
+
+    coords = []
+    modules = []
+    ny = len(minosCutModLengthNorth)
+    print('building north wall with '+str(ny)+' rows...')
+
+    x  = 2*(mModL-ZM+max(minosCutModLengthNorth))+PADM+2*PADTagger
+    y  = ny*mModW+(ny-1)*SIDECRTSHELFTHICK+2*PADTagger
+    xx = str(x)
+    yy = str(y)
+    zz = str(SIDECRTSTACKDEPTH)
+
+    #loop over rows starting from bottom going up
+    for row in range(ny):
+        print('  building row '+str(row)+'...')
+        zin   = 0.5*LAYERSPACE
+        xleft = 0.5*x - PADTagger - 0.5*(mModL-ZM+minosCutModLengthNorth[row])
+        yrow  = -0.5*y + PADTagger + (row+0.5)*mModW + row*SIDECRTSHELFTHICK
+        print('  xleft: '+str(xleft)+', yrow: '+str(yrow))
+        rowcoords = ( (xleft,yrow,zin),(-xleft,yrow,zin),(xleft,yrow,-zin),(-xleft,yrow,-zin) )
+        coords.append(rowcoords)
+        rowmodules = []
+        for i in range(4):
+            rowmodules.append(module('m','nn',minosCutModLengthNorth[row]))
+        modules.append(rowmodules)
+
+    sname = 'tagger_SideNorth'
+    vname = 'vol_'+ sname
+
+    stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
+    vtagger = ET.SubElement(structure, 'volume', name=vname)
+    ET.SubElement(vtagger, 'materialref', ref='Air')
+    ET.SubElement(vtagger, 'solidref', ref=sname)
+
+    #place left side module phy. vol.s
+    for row in range(len(coords)):
+        for mod, (xc,yc,zc) in enumerate(coords[row]):
+
+            print('row '+str(row)+': mod coords x,y,z = '+str(xc)+', '+str(yc)+', '+str(zc))
+    
+            (s,v)=modules[row][mod]
+            pv = ET.SubElement(vtagger, 'physvol')
+            ET.SubElement(pv, 'volumeref', ref=v.attrib['name'])
+
+            posname = 'pos' + v.attrib['name']
+            ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
+
+            if xc>0: 
+                posname = 'rotplus' + v.attrib['name']
+                ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='90', z='0')
+            else:
+                posname = 'rotneg' + v.attrib['name'] 
+                ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='-90', z='0')
+
+    return stagger, vtagger
+
+def minosSouthTagger(): 
     ''' Build front MINOS tagger (2 layers in X-Y) on upstream face
     '''
-    nmody = 11
+    nmody = 9
     coords = []
     modules = []
 
-    xx = str( max ( nmody*(YM*NXM+2*PADM+(NXM+1)*PADStrip)+(nmody+1)*PADModule, ZM+2*(PADM+PADStrip)) + 2*PADTagger)
-    yy = str( max ( NMODSTACK*(YM*NXM+2*PADM+(NXM+1)*PADStrip)+(NMODSTACK-1)*PADModule, ZM+2*(PADM+PADStrip))+2*PADTagger)
-    zz = str( 2*(XM+2*(PADM+PADStrip)) + LAYERSPACE + 2*PADTagger )
+    x = mModL+SIDECRTSOUTHWALLLATOFFSET+2*PADTagger
+    y = 9*mModW+8*SIDECRTSHELFTHICK+2*PADTagger
+    z = SIDECRTSTACKDEPTH+mModH+PADTagger
 
-    dz = (LAYERSPACE + XM + 2*(PADM+PADStrip))*0.5
-    if side=='D' : dz*=-1
+    xx = str(x)
+    yy = str(y)
+    zz = str(z)
 
-    for i in range(nmody):
+    for i in range(2*nmody):
 
-        dx = (YM*NXM + 2*PADM + (NXM+1)*PADStrip + PADModule ) * (0.5 * (1-11) + i )
+        if i < nmody: #bottom row
+            dx = 0.5*x-PADTagger-SIDECRTSOUTHWALLLATOFFSET-(i+0.5)*mModW-i*PADModule
+            dy = -0.5*y + PADTagger + 0.5*(mModL-0.5*ZM)
+            dz = -0.5*z + PADTagger + 0.5*mModH
+        else: #top row
+            dx = 0.5*x-PADTagger-SIDECRTSOUTHWALLLATOFFSET-(i+0.5-nmody)*mModW-(i-nmody)*PADModule
+            dy = 0.5*y - PADTagger - 0.5*(mModL - 0.5*ZM)
+            dz = -0.5*z +PADTagger + mModH + 1.5*SIDECRTPOSTWIDTH
 
-        coords.append((dx+x0,y0,dz+z0,1)) #x,y,z,vert=true
+        coords.append((dx,dy,dz,1)) #x,y,z,vert=true
 
-    dz*=-1
 
     for i in range(NMODSTACK):
 
-        dy = (YM*NXM + 2*PADM + (NXM+1)*PADStrip + PADModule ) * (0.5 * (1-NMODSTACK) + i )
-    
-        coords.append((x0,dy+y0,dz+z0,0)) #x,y,z,vert=false
+        dx = 0.5*x-PADTagger-0.5*mModL
+        dy = -0.5*y+PADTagger+(i+0.5)*mModW + i*SIDECRTSHELFTHICK
+        if i > NMODSTACK-3:
+            dx -= SIDECRTSOUTHWALLLATOFFSET 
+        dz = 0.5*z - 1.5*SIDECRTPOSTWIDTH
+
+        coords.append((dx,dy,dz,0)) #x,y,z,vert=false
 
     for i in range(len(coords)):
-        if side=='U':
-            modules.append(module('m','ff'))
-        if side=='D':
-            modules.append(module('m','bb'))
+        if i<2*nmody:
+            modules.append(module('m','ss',0.5*ZM))
+        else:
+            modules.append(module('m','ss',0))
 
-    sname = 'tagger_'
-    if side == 'U':
-        sname += 'Front'
-    if side == 'D':
-        sname += 'Back'
+    sname = 'tagger_SideSouth'
     vname = 'vol_'+ sname
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
@@ -521,7 +749,8 @@ def cernTopTagger(x0=0, y0=0, z0=0):
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(NTOPX*modwidth+2*PADTagger+(NTOPX-1)*PADModule)
-    yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(NTOPZ*modwidth + 2*PADTagger + (NTOPZ-1)*PADModule)
 
     coords = []
@@ -567,7 +796,8 @@ def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(modwidth+2*PADTagger)
-    yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(NSLOPELAT*modwidth + 2*PADTagger + (NSLOPELAT-1)*PADModule)
 
     coords = []
@@ -583,15 +813,15 @@ def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
     
     for i in range(len(coords)):
         if side == 'L':
-            modules.append(module('c','sl'))
+            modules.append(module('c','re'))
         if side == 'R':
-            modules.append(module('c','sr'))
+            modules.append(module('c','rw'))
 
     sname = 'tagger_'
     if side == 'L':
-        sname += 'SlopeLeft'
+        sname += 'RimEast' #'SlopeLeft'
     if side == 'R':
-        sname += 'SlopeRight'
+        sname += 'RimWest' #'SlopeRight'
     vname = 'vol_'+ sname
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
@@ -617,7 +847,8 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(NSLOPEFRONT*modwidth+2*PADTagger+(NSLOPEFRONT-1)*PADModule)
-    yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
+    yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(modwidth + 2*PADTagger)
 
     coords = []
@@ -628,20 +859,19 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
     for i in range(NSLOPEFRONT):
 
         coords.append((dx+x0,y0,z0))
-
         dx+= modwidth+PADModule
     
     for i in range(len(coords)):
         if side == 'U':
-            modules.append(module('c','sf'))
+            modules.append(module('c','rs'))
         if side == 'D':
-            modules.append(module('c','sb'))
+            modules.append(module('c','rn'))
 
     sname = 'tagger_'
     if side == 'U':
-        sname += 'SlopeFront'
+        sname += 'RimSouth' #'SlopeFront'
     if side == 'D':
-        sname += 'SlopeBack'
+        sname += 'RimNorth' #'SlopeBack'
     vname = 'vol_'+ sname
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
@@ -662,22 +892,32 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
     return stagger, vtagger
 
 def detectorEnclosure():
-    xx='1235.96'
-    yy='963.37'
-    zz='2709.56'
 
-    xxint = '1024.578'
-    yyint = '955.698'
-    zzint = '2334.758'
+    WVPADY = 25
+    xxint = str(WVWIDTH + 2*SIDECRTWVOFFSET) #'1024.578'
+    yyint = str(WVHEIGHT+1.0+WVPADY) #str(TOPCRTBEAMTOFLOOR-0.1-BOTTOMCRTROLLERHEIGHT-1.1*dModH) #'955.698'
+    zzint = str(WVLENGTH+2*SIDECRTWVOFFSET) #'2334.758'
 
-    xxext = '1235.225'
-    yyext = '962.602'
-    zzext = '2708.825'
+    xxext = str(WVWIDTH + 2*SIDECRTROLLOFFSET + 1.1*SIDECRTSTACKDEPTH)  #'1235.225'
+    yyext = str(SHELLY) #1.1*cModH+TOPCRTBEAMTOFLOOR-BOTTOMCRTROLLERHEIGHT*0.9) #'962.602'
+    zzext = str(SHELLZ) #'2708.825'
 
-    (s,vll) = minosSideTagger('L',0,0,0) #MINOS Left
-    (s,vrr) = minosSideTagger('R',0,0,0) #MINOS Right
-    (s,vff) = minosFrontTagger('U',0,0,0) #MINOS Front
-    (s,vbb) = minosFrontTagger('D',0,0,0) #MINOS Back
+    print('auto calcultated encloser dimensions:')
+    print('  xxext= '+str(xxext)+', prev val 1235.225')
+    print('  yyext= '+str(yyext)+', prev val 962.602')
+    print('  zzext= '+str(zzext)+', prev val 2708.825')
+    print('  xxint= '+str(xxint)+', prev val 1024.578')
+    print('  yyint= '+str(yyint)+', prev val 955.698')
+    print('  zzint= '+str(zzint)+', prev val 2334.758')
+
+    (s,vws) = minosSideTagger('w','s') #MINOS west wall, south stack
+    (s,vwc) = minosSideTagger('w','c') #MINOS west wall, center stack
+    (s,vwn) = minosSideTagger('w','n') #MINOS west wall, north stack
+    (s,ves) = minosSideTagger('e','s') #MINOS east wall, south stack
+    (s,vec) = minosSideTagger('e','c') #MINOS east wall, center stack
+    (s,ven) = minosSideTagger('e','n') #MINOS east wall, north stack
+    (s,vss) = minosSouthTagger()#'U',0,0,0) #MINOS south
+    (s,vnn) = minosNorthTagger() #MINOS north
     (s,vbt) = DCTagger(0,0,0) #DC Bottom
     (s,vtt) = cernTopTagger(0,0,0) #CERN top
     (s,vsl) = cernSlopeSideTagger('L',0,0,0) #CERN SlopeLeft
@@ -686,7 +926,6 @@ def detectorEnclosure():
     (s,vsb) = cernSlopeFrontTagger('D',0,0,0) #CERN SlopeBack
 
     #DetectorEnclosure
-    #sname = 'DetEnclosure'
     sname = 'CRT_Shell'
     snameext = sname+'_external'
     snameint = sname+'_internal'
@@ -695,54 +934,99 @@ def detectorEnclosure():
     sshell = ET.SubElement(solids, 'subtraction', name=sname)
     ET.SubElement(sshell, 'first', ref=snameext)
     ET.SubElement(sshell, 'second', ref=snameint)
+    ET.SubElement(sshell, 'position', name='crtshellsubpos', unit='cm', x='0',y=str(-0.5*SHELLY+WVFOOTELEVATION+0.5*WVHEIGHT+0.5*WVPADY),z=str(-SHELLWVOFFSET))
 
     vname = 'vol'+sname
     vshell = ET.SubElement(structure, 'volume', name=vname)
     ET.SubElement(vshell, 'materialref', ref='Air')
     ET.SubElement(vshell, 'solidref', ref=sname)
 
-    #position MINOS Left
+    #position MINOS west, south
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vll.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vws.attrib['name'])
 
-    xc = posMINOSSide1InDetEncl[0]
-    yc = posMINOSSide1InDetEncl[1]
-    zc = posMINOSSide1InDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH #posMINOSSide1InDetEncl[0]
+    yc = MINOSLATFIXY #posMINOSSide1InDetEncl[1]
+    zc = MINOSLATSOUTHZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
 
-    posname = 'pos' + vll.attrib['name']
+    posname = 'pos' + vws.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
-    #Position MINOS Right
+    #position MINOS west, center
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vrr.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vwc.attrib['name'])
 
-    xc = posMINOSSide2InDetEncl[0]
-    yc = posMINOSSide2InDetEncl[1]
-    zc = posMINOSSide2InDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTROLLOFFSET #posMINOSSide1InDetEncl[0]
+    yc = MINOSLATROLLY #posMINOSSide1InDetEncl[1] - 0.5*mModW
+    zc = MINOSLATCENTZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
 
-    posname = 'pos' + vrr.attrib['name']
+    posname = 'pos' + vwc.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
-    #position MINOS Front
+    #position MINOS west, north
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vff.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vwn.attrib['name'])
 
-    xc = posMINOSFrontInDetEncl[0]
-    yc = posMINOSFrontInDetEncl[1]
-    zc = posMINOSFrontInDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH #posMINOSSide1InDetEncl[0]
+    yc = MINOSLATFIXY #posMINOSSide1InDetEncl[1]
+    zc = MINOSLATNORTHZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
 
-    posname = 'pos' + vff.attrib['name']
+    posname = 'pos' + vws.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
-    #position MINOS Back 
+    #Position MINOS east, south
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vbb.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=ves.attrib['name'])
 
-    xc = posMINOSBackInDetEncl[0]
-    yc = posMINOSBackInDetEncl[1]
-    zc = posMINOSBackInDetEncl[2]
+    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH #posMINOSSide2InDetEncl[0]
+    yc = MINOSLATFIXY #posMINOSSide2InDetEncl[1]
+    zc = MINOSLATSOUTHZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
 
-    posname = 'pos' + vbb.attrib['name']
+    posname = 'pos' + ves.attrib['name']
+    ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
+
+    #Position MINOS east, center
+    pv = ET.SubElement(vshell, 'physvol')
+    ET.SubElement(pv, 'volumeref', ref=vec.attrib['name'])
+
+    xc = -0.5* WVWIDTH - SIDECRTROLLOFFSET #posMINOSSide2InDetEncl[0]
+    yc = MINOSLATROLLY #posMINOSSide2InDetEncl[1] - 0.5*mModW
+    zc = MINOSLATCENTZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
+
+    posname = 'pos' + vec.attrib['name']
+    ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
+
+    #Position MINOS east, north
+    pv = ET.SubElement(vshell, 'physvol')
+    ET.SubElement(pv, 'volumeref', ref=ven.attrib['name'])
+
+    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH #posMINOSSide2InDetEncl[0]
+    yc = MINOSLATFIXY #posMINOSSide2InDetEncl[1]
+    zc = MINOSLATNORTHZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
+
+    posname = 'pos' + ven.attrib['name']
+    ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
+
+    #position MINOS north (downstream)
+    pv = ET.SubElement(vshell, 'physvol')
+    ET.SubElement(pv, 'volumeref', ref=vnn.attrib['name'])
+
+    xc = 0.0 #posMINOSFrontInDetEncl[0]
+    yc = MINOSNORTHY #posMINOSFrontInDetEncl[1]
+    zc = 0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH - SHELLWVOFFSET #posMINOSFrontInDetEncl[2]
+
+    posname = 'pos' + vnn.attrib['name']
+    ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
+
+    #position MINOS south (upstream)
+    pv = ET.SubElement(vshell, 'physvol')
+    ET.SubElement(pv, 'volumeref', ref=vss.attrib['name'])
+
+    xc = 0.0 #posMINOSBackInDetEncl[0]
+    yc = MINOSSOUTHY #posMINOSBackInDetEncl[1]
+    zc = -1*(0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*(SIDECRTSTACKDEPTH+PADTagger+mModH)) - SHELLWVOFFSET #posMINOSBackInDetEncl[2]
+
+    posname = 'pos' + vss.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
     #position DC Bottom
@@ -751,7 +1035,7 @@ def detectorEnclosure():
 
     xc = posDCInDetEncl[0]
     yc = posDCInDetEncl[1]
-    zc = posDCInDetEncl[2]
+    zc = posDCInDetEncl[2] - SHELLWVOFFSET
 
     posname = 'pos' + vbt.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))  
@@ -761,19 +1045,19 @@ def detectorEnclosure():
     ET.SubElement(pv, 'volumeref', ref=vtt.attrib['name'])
 
     xc = posCERNTopInDetEncl[0]
-    yc = posCERNTopInDetEncl[1]
-    zc = posCERNTopInDetEncl[2]
+    yc = CERNTOPY #posCERNTopInDetEncl[1]
+    zc = CERNTOPZ - SHELLWVOFFSET #posCERNTopInDetEncl[2]
 
     posname = 'pos' + vtt.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc)) 
    
-    #position CERN SlopeLeft
+    #position CERN west rim
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsl.attrib['name'])
 
-    xc = posCERNLeftInDetEncl[0]
-    yc = posCERNLeftInDetEncl[1]
-    zc = posCERNLeftInDetEncl[2]
+    xc = CERNRIMLATX #posCERNLeftInDetEncl[0]
+    yc = CERNRIMLATY #posCERNLeftInDetEncl[1]
+    zc = CERNRIMLATZ - SHELLWVOFFSET #posCERNLeftInDetEncl[2]
 
     posname = 'pos' + vsl.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc)) 
@@ -781,13 +1065,13 @@ def detectorEnclosure():
     posname = 'rot' + vsl.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='0', z=str(SLOPEINCLINATION))
  
-    #position CERN SlopeRight
+    #position CERN east rim
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsr.attrib['name'])
 
-    xc = posCERNRightInDetEncl[0]
-    yc = posCERNRightInDetEncl[1]
-    zc = posCERNRightInDetEncl[2]
+    xc = -1*CERNRIMLATX #posCERNRightInDetEncl[0]
+    yc = CERNRIMLATY #posCERNRightInDetEncl[1]
+    zc = CERNRIMLATZ - SHELLWVOFFSET #posCERNRightInDetEncl[2]
 
     posname = 'pos' + vsr.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -795,13 +1079,13 @@ def detectorEnclosure():
     posname = 'rot' + vsr.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='0', z=str(-1*SLOPEINCLINATION))
 
-    #position CERN SlopeFront
+    #position CERN south rim
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsf.attrib['name'])
 
-    xc = posCERNFrontInDetEncl[0]
-    yc = posCERNFrontInDetEncl[1]
-    zc = posCERNFrontInDetEncl[2]
+    xc = 0.0 #posCERNFrontInDetEncl[0]
+    yc = CERNRIMSY #posCERNFrontInDetEncl[1]
+    zc = CERNRIMSZ - SHELLWVOFFSET #posCERNFrontInDetEncl[2]
 
     posname = 'pos' + vsf.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -809,13 +1093,13 @@ def detectorEnclosure():
     posname = 'rot' + vsf.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x=str(SLOPEINCLINATION), y='0', z='0')
 
-    #position CERN SlopeBack
+    #position CERN north rim
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsb.attrib['name'])
 
-    xc = posCERNBackInDetEncl[0]
-    yc = posCERNBackInDetEncl[1]
-    zc = posCERNBackInDetEncl[2]
+    xc = 0.0 #posCERNBackInDetEncl[0]
+    yc = CERNRIMNY #posCERNBackInDetEncl[1]
+    zc = CERNRIMNZ - SHELLWVOFFSET #posCERNBackInDetEncl[2]
 
     posname = 'pos' + vsb.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -827,77 +1111,64 @@ def detectorEnclosure():
 
 #######################################################################
 
-#m = ET.SubElement(materials, 'element', name='aluminum', formula='Al', Z='13')
-#ET.SubElement(m, 'atom', value='26.9815')
+testmode=False #True
 
-#m = ET.SubElement(materials, 'element', name='nitrogen', formula='N', Z='7')
-#ET.SubElement(m, 'atom', value='14.0067')
+if testmode:
+   m = ET.SubElement(materials, 'element', name='aluminum', formula='Al', Z='13')
+   ET.SubElement(m, 'atom', value='26.9815')
 
-#m = ET.SubElement(materials, 'element', name='oxygen', formula='O', Z='8')
-#ET.SubElement(m, 'atom', value='15.999')
+   m = ET.SubElement(materials, 'element', name='nitrogen', formula='N', Z='7')
+   ET.SubElement(m, 'atom', value='14.0067')
 
-#m = ET.SubElement(materials, 'element', name='argon', formula='Ar', Z='18')
-#ET.SubElement(m, 'atom', value='39.9480')
+   m = ET.SubElement(materials, 'element', name='oxygen', formula='O', Z='8')
+   ET.SubElement(m, 'atom', value='15.999')
 
-#m = ET.SubElement(materials, 'element', name='hydrogen', formula='H', Z='1')
-#ET.SubElement(m, 'atom', value='1.0079')
+   m = ET.SubElement(materials, 'element', name='argon', formula='Ar', Z='18')
+   ET.SubElement(m, 'atom', value='39.9480')
 
-#m = ET.SubElement(materials, 'element', name='carbon', formula='C', Z='6')
-#ET.SubElement(m, 'atom', value='12.0107')
+   m = ET.SubElement(materials, 'element', name='hydrogen', formula='H', Z='1')
+   ET.SubElement(m, 'atom', value='1.0079')
 
-#m = ET.SubElement(materials, 'material', name='ALUMINUM_Al', formula='ALUMINUM_Al')
-#ET.SubElement(m, 'D', value='2.6990', unit='g/cm3')
-#ET.SubElement(m, 'fraction', n='1.000', ref='aluminum')
+   m = ET.SubElement(materials, 'element', name='carbon', formula='C', Z='6')
+   ET.SubElement(m, 'atom', value='12.0107')
 
-#m = ET.SubElement(materials, 'material', name='Air')
-#ET.SubElement(m, 'D', value='0.001205', unit='g/cm3')
-#ET.SubElement(m, 'fraction', n='0.781154', ref='nitrogen')
-#ET.SubElement(m, 'fraction', n='0.209476', ref='oxygen')
-#ET.SubElement(m, 'fraction', n='0.00934', ref='argon') 
+   m = ET.SubElement(materials, 'material', name='ALUMINUM_Al', formula='ALUMINUM_Al')
+   ET.SubElement(m, 'D', value='2.6990', unit='g/cm3')
+   ET.SubElement(m, 'fraction', n='1.000', ref='aluminum')
 
-#m = ET.SubElement(materials, 'material', name='Polystyrene')
-#ET.SubElement(m, 'D', value='1.19', unit='g/cm3')
-#ET.SubElement(m, 'fraction', n='0.077418', ref='hydrogen')
-#ET.SubElement(m, 'fraction', n='0.922582', ref='carbon')
+   m = ET.SubElement(materials, 'material', name='Air')
+   ET.SubElement(m, 'D', value='0.001205', unit='g/cm3')
+   ET.SubElement(m, 'fraction', n='0.781154', ref='nitrogen')
+   ET.SubElement(m, 'fraction', n='0.209476', ref='oxygen')
+   ET.SubElement(m, 'fraction', n='0.00934', ref='argon') 
 
-#ws = ET.SubElement(solids, 'box', name='World', lunit="cm", x='10000', y='10000', z='10000')
-#w = ET.SubElement(structure, 'volume', name='volWorld')
-#ET.SubElement(w, 'materialref', ref='Air')
-#ET.SubElement(w, 'solidref', ref='World')
+   m  = ET.SubElement(materials, 'material', name='Polystyrene')
+   ET.SubElement(m, 'D', value='1.19', unit='g/cm3')
+   ET.SubElement(m, 'fraction', n='0.077418', ref='hydrogen')
+   ET.SubElement(m, 'fraction', n='0.922582', ref='carbon')
 
+#crt shell volume
 (s,v) = detectorEnclosure()
-#(s,v) = DCTagger(0,0,0)
-#(s,v) = module('d','bb')
-#(s,v) = strip('m')
-#ws = ET.SubElement(solids, 'box', name='World', lunit="cm", x='3000', y='3000', z='3000')
-#w = ET.SubElement(structure, 'volume', name='volWorld')
-#ET.SubElement(w, 'materialref', ref='Air')
-#ET.SubElement(w, 'solidref', ref='World')
+#(s,v) = module()
 
+if testmode:
+   ws = ET.SubElement(solids, 'box', name='World', lunit="cm", x='1500', y='1500', z='3000')
+   w = ET.SubElement(structure, 'volume', name='volWorld')
+   ET.SubElement(w, 'materialref', ref='Air')
+   ET.SubElement(w, 'solidref', ref='World')
+   pv = ET.SubElement(w, 'physvol')
+   ET.SubElement(pv, 'volumeref', ref=v.attrib['name'])
+   posname = 'pos' + v.attrib['name']
+   ET.SubElement(pv, 'position', name=posname, unit="cm", x='0', y='0', z='0')
+   setup = ET.SubElement(gdml, 'setup', name='Default', version='1.0')
+   ET.SubElement(setup, 'world', ref='volWorld')
 
-#pv = ET.SubElement(w, 'physvol')
-#ET.SubElement(pv, 'volumeref', ref=v.attrib['name'])
-
-#posname = 'pos' + v.attrib['name']
-#ET.SubElement(pv, 'position', name=posname, unit="cm", x='0', y='0', z='0')
-
+#no. modules generated for each subsystem
 print('MINOS modules generated: '+str(nModM))
 print('CERN  modules generated: '+str(nModC))
 print('DblCh modules generated: '+str(nModD))
 
-# Generate GDML for the world volume, for testing
-#ws = ET.SubElement(solids, 'box', name='World', lunit="cm", x='10000', y='10000', z='10000')
-#w = ET.SubElement(structure, 'volume', name='volWorld')
-#ET.SubElement(w, 'materialref', ref='Air')
-#ET.SubElement(w, 'solidref', ref='World')
-#pv = ET.SubElement(w, 'physvol')
-#ET.SubElement(pv, 'volumeref', ref=tffv.attrib['name'])
-#ET.SubElement(pv, 'position', name='posA', unit="cm", x='0', y='0', z='0')
-#setup = ET.SubElement(gdml, 'setup', name='Default', version='1.0')
-#ET.SubElement(setup, 'world', ref='volWorld')
-#mats = ET.parse('mats.gdml')
-#gdml.insert(0, mats.getroot())
-
+#write to file
 with open('icarus_crt.gdml', 'w') as f:
     f.write(minidom.parseString(ET.tostring(gdml)).toprettyxml(indent='\t'))
 
