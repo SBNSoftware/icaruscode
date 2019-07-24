@@ -364,7 +364,7 @@ $ExpHall_VertSpace = $ExpHall_y - $HallWallThicnekss - $Overburden_y/3;
 $DetEnc_pad = 0.1;
 $DetEnc_x = 1245;
 $DetEnc_y = $ExpHall_VertSpace - 2*$DetEnc_pad;
-$DetEnc_z = 2712.56;
+$DetEnc_z = 3000;
 $WarmVessel_FootHeight = 6.0; # heigth of support feet from bottom of support structure
 $WarmVessel_FloorSpace = 10.16; # space between WV feet and concrete floor due to concrete islands, grout, padding
 $WarmVessel_CenterToFloor = $WarmVessel_FootHeight + $WarmVessel_FloorSpace + $WarmVessel_y/2;
@@ -385,6 +385,9 @@ $DetEncl_yOffset = $Ground_y - $Overburden_y/3 - $ExpHall_VertSpace/2 -$DetEnc_p
 $ThermInsInDetEncl_y = -1*$DetEncl_yOffset;
 $WarmVesselInDetEncl_y = $ThermInsInDetEncl_y;
 $CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2;
+
+$CRTSHELL_WV_OFFSET_Y = 15;
+$CRTSHELL_WV_OFFSET_Z = 118.2315;
 #$CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2 + $GaseousAr_y/2;
 #+++++++++++++++++++++++++ End defining variables ++++++++++++++++++++++++++
 
@@ -467,7 +470,7 @@ print DEF <<EOF;
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
    <position name="posThermInsInDetEncl" unit="cm" x="$ThermInsInDetEncl_x" y="$ThermInsInDetEncl_y" z="$ThermInsInDetEncl_z"/>
    <position name="posWarmVesselInDetEncl" unit="cm" x="$WarmVesselInDetEncl_x" y="$WarmVesselInDetEncl_y" z="$WarmVesselInDetEncl_z"/>
-   <position name="posCRTShellInDetEncl" unit="cm" x="0" y="0" z="0"/>
+   <position name="posCRTShellInDetEncl" unit="cm" x="0" y="$CRTSHELL_WV_OFFSET_Y" z="$CRTSHELL_WV_OFFSET_Z"/>
    <position name="posBuildingInWorld" unit="cm" x="0" y="@{[$Ground_y + $Building_y/2]}" z="0"/>
    <position name="posExpHallInWorld" unit="cm" x="0" y="@{[$Ground_y - $ExpHall_y/2 ]}" z="0"/>
    <rotation name="rPlus90AboutZPlus90AboutY"  unit="deg" x="0" y="90" z="90"/>
