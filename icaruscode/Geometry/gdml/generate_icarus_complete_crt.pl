@@ -1353,7 +1353,7 @@ print TPC <<EOF;
      </physvol>
      <physvol>
        <volumeref ref="volTPCActive"/>
-       *<positionref ref="posActiveInTPC"/>
+       <positionref ref="posActiveInTPC"/>
      </physvol>
      <physvol> 
        <volumeref ref="volRaceTrackTVolume"/>
