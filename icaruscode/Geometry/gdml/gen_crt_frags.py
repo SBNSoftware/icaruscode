@@ -22,6 +22,9 @@ import math
 import xml.etree.cElementTree as ET
 from xml.dom import minidom
 
+#set true to generate standalone CRT shell, false for normal production
+testmode=False
+
 #################### Parameters #####################
 #warm vessel (cm), increased as of 7/19/2019 to 
 #reflect full extent of WV profile in detector hall
@@ -142,12 +145,6 @@ CERNTOPZ = CERNRIMSZ + 0.5*CERNROOFL  #roof center assuming south edge of roof a
 CERNRIMLATX = 0.5*WVWIDTH + 0.5*cModH + 38.0
 CERNRIMLATY = CERNRIMSY
 CERNRIMLATZ = CERNTOPZ
-posCERNTopInDetEncl = (0, 479.565, 0)
-posCERNFrontInDetEncl = (0, 397.0, -1306.84)
-posCERNBackInDetEncl = (0, 397.0, 1306.84)
-posCERNLeftInDetEncl = (570.04, 397.0, 0)
-posCERNRightInDetEncl = (-570.04, 397.0, 0)
-
 
 SHELLZ = 1.01*(0.5*cModH+CERNRIMNZ-min(CERNRIMSZ+0.5*cModH,MINOSLATSOUTHZ-(mModL+MINOSLATSOUTHACTIVEOVERHANG+SIDECRTSOUTHWALLLATOFFSET)*0.5)) #2*(CERNROOFL - 0.5*IVLENGTH - cModW)
 SHELLWVOFFSET = SHELLZ*0.5/1.01 - WVLENGTH*0.5
@@ -222,7 +219,7 @@ def strip(style="m", modnum=0, stripnum=0, length=0):
     yy = str(y)
     zz = str(z) 
 
-    sname = 'AuxDetSensitive_' + name + '_strip_'
+    sname = 'AuxDetSensitive_' + name
     vname = 'volAuxDetSensitive_' + name + '_module_'
 
     if modnum < 10:
@@ -232,19 +229,18 @@ def strip(style="m", modnum=0, stripnum=0, length=0):
 
     vname += str(modnum)+'_'
     if style=='m' and length!=0:
-        sname+='cut'+str(int(length))+'_'
-        vname+='cut'+str(int(length))
-    vname+='_strip_'
+        sname+='_cut'+str(int(length))+'_'
+        vname+='cut'+str(int(length))+'_'
 
     if style=='c':
         if stripnum < NXC:
-            sname += 'top'
-            vname += 'top'
+            sname += '_top_'
+            vname += 'top_'
         else:
-            sname += 'bot'
-            vname += 'bot'
+            sname += '_bot_'
+            vname += 'bot_'
 
-
+    vname+='strip_'
     if stripnum < 10: 
         vname += '0'
     vname += str(stripnum)
@@ -893,23 +889,17 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
 
 def detectorEnclosure():
 
+    #shell outer and void dimensions
     WVPADY = 25
-    xxint = str(WVWIDTH + 2*SIDECRTWVOFFSET) #'1024.578'
-    yyint = str(WVHEIGHT+1.0+WVPADY) #str(TOPCRTBEAMTOFLOOR-0.1-BOTTOMCRTROLLERHEIGHT-1.1*dModH) #'955.698'
-    zzint = str(WVLENGTH+2*SIDECRTWVOFFSET) #'2334.758'
+    xxint = str(WVWIDTH + 2*SIDECRTWVOFFSET)
+    yyint = str(WVHEIGHT+1.0+WVPADY) 
+    zzint = str(WVLENGTH+2*SIDECRTWVOFFSET) 
 
-    xxext = str(WVWIDTH + 2*SIDECRTROLLOFFSET + 1.1*SIDECRTSTACKDEPTH)  #'1235.225'
-    yyext = str(SHELLY) #1.1*cModH+TOPCRTBEAMTOFLOOR-BOTTOMCRTROLLERHEIGHT*0.9) #'962.602'
-    zzext = str(SHELLZ) #'2708.825'
+    xxext = str(WVWIDTH + 2*SIDECRTROLLOFFSET + 1.1*SIDECRTSTACKDEPTH) 
+    yyext = str(SHELLY) 
+    zzext = str(SHELLZ) 
 
-    print('auto calcultated encloser dimensions:')
-    print('  xxext= '+str(xxext)+', prev val 1235.225')
-    print('  yyext= '+str(yyext)+', prev val 962.602')
-    print('  zzext= '+str(zzext)+', prev val 2708.825')
-    print('  xxint= '+str(xxint)+', prev val 1024.578')
-    print('  yyint= '+str(yyint)+', prev val 955.698')
-    print('  zzint= '+str(zzint)+', prev val 2334.758')
-
+    #generate all of the tagger volumes, CRT modules, and strips
     (s,vws) = minosSideTagger('w','s') #MINOS west wall, south stack
     (s,vwc) = minosSideTagger('w','c') #MINOS west wall, center stack
     (s,vwn) = minosSideTagger('w','n') #MINOS west wall, north stack
@@ -925,7 +915,7 @@ def detectorEnclosure():
     (s,vsf) = cernSlopeFrontTagger('U',0,0,0) #CERN SlopeFront
     (s,vsb) = cernSlopeFrontTagger('D',0,0,0) #CERN SlopeBack
 
-    #DetectorEnclosure
+    #CRT Shell containing all of the tagger volumes and a void to cointain the warm vessel
     sname = 'CRT_Shell'
     snameext = sname+'_external'
     snameint = sname+'_internal'
@@ -945,9 +935,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vws.attrib['name'])
 
-    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH #posMINOSSide1InDetEncl[0]
-    yc = MINOSLATFIXY #posMINOSSide1InDetEncl[1]
-    zc = MINOSLATSOUTHZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH 
+    yc = MINOSLATFIXY 
+    zc = MINOSLATSOUTHZ - SHELLWVOFFSET 
 
     posname = 'pos' + vws.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -956,9 +946,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vwc.attrib['name'])
 
-    xc = 0.5* WVWIDTH + SIDECRTROLLOFFSET #posMINOSSide1InDetEncl[0]
-    yc = MINOSLATROLLY #posMINOSSide1InDetEncl[1] - 0.5*mModW
-    zc = MINOSLATCENTZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTROLLOFFSET 
+    yc = MINOSLATROLLY 
+    zc = MINOSLATCENTZ - SHELLWVOFFSET 
 
     posname = 'pos' + vwc.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -967,9 +957,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vwn.attrib['name'])
 
-    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH #posMINOSSide1InDetEncl[0]
-    yc = MINOSLATFIXY #posMINOSSide1InDetEncl[1]
-    zc = MINOSLATNORTHZ - SHELLWVOFFSET #posMINOSSide1InDetEncl[2]
+    xc = 0.5* WVWIDTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH 
+    yc = MINOSLATFIXY 
+    zc = MINOSLATNORTHZ - SHELLWVOFFSET 
 
     posname = 'pos' + vws.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -978,9 +968,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=ves.attrib['name'])
 
-    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH #posMINOSSide2InDetEncl[0]
-    yc = MINOSLATFIXY #posMINOSSide2InDetEncl[1]
-    zc = MINOSLATSOUTHZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
+    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH 
+    yc = MINOSLATFIXY 
+    zc = MINOSLATSOUTHZ - SHELLWVOFFSET 
 
     posname = 'pos' + ves.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -989,9 +979,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vec.attrib['name'])
 
-    xc = -0.5* WVWIDTH - SIDECRTROLLOFFSET #posMINOSSide2InDetEncl[0]
-    yc = MINOSLATROLLY #posMINOSSide2InDetEncl[1] - 0.5*mModW
-    zc = MINOSLATCENTZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
+    xc = -0.5* WVWIDTH - SIDECRTROLLOFFSET 
+    yc = MINOSLATROLLY 
+    zc = MINOSLATCENTZ - SHELLWVOFFSET 
 
     posname = 'pos' + vec.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1000,9 +990,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=ven.attrib['name'])
 
-    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH #posMINOSSide2InDetEncl[0]
-    yc = MINOSLATFIXY #posMINOSSide2InDetEncl[1]
-    zc = MINOSLATNORTHZ - SHELLWVOFFSET #posMINOSSide2InDetEncl[2]
+    xc = -0.5* WVWIDTH - SIDECRTWVOFFSET - 0.5*SIDECRTSTACKDEPTH 
+    yc = MINOSLATFIXY 
+    zc = MINOSLATNORTHZ - SHELLWVOFFSET 
 
     posname = 'pos' + ven.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1011,9 +1001,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vnn.attrib['name'])
 
-    xc = 0.0 #posMINOSFrontInDetEncl[0]
-    yc = MINOSNORTHY #posMINOSFrontInDetEncl[1]
-    zc = 0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH - SHELLWVOFFSET #posMINOSFrontInDetEncl[2]
+    xc = 0.0 
+    yc = MINOSNORTHY 
+    zc = 0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*SIDECRTSTACKDEPTH - SHELLWVOFFSET 
 
     posname = 'pos' + vnn.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1022,9 +1012,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vss.attrib['name'])
 
-    xc = 0.0 #posMINOSBackInDetEncl[0]
-    yc = MINOSSOUTHY #posMINOSBackInDetEncl[1]
-    zc = -1*(0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*(SIDECRTSTACKDEPTH+PADTagger+mModH)) - SHELLWVOFFSET #posMINOSBackInDetEncl[2]
+    xc = 0.0 
+    yc = MINOSSOUTHY 
+    zc = -1*(0.5* WVLENGTH + SIDECRTWVOFFSET + 0.5*(SIDECRTSTACKDEPTH+PADTagger+mModH)) - SHELLWVOFFSET 
 
     posname = 'pos' + vss.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1044,9 +1034,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vtt.attrib['name'])
 
-    xc = posCERNTopInDetEncl[0]
-    yc = CERNTOPY #posCERNTopInDetEncl[1]
-    zc = CERNTOPZ - SHELLWVOFFSET #posCERNTopInDetEncl[2]
+    xc = 0.0
+    yc = CERNTOPY
+    zc = CERNTOPZ - SHELLWVOFFSET 
 
     posname = 'pos' + vtt.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc)) 
@@ -1055,9 +1045,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsl.attrib['name'])
 
-    xc = CERNRIMLATX #posCERNLeftInDetEncl[0]
-    yc = CERNRIMLATY #posCERNLeftInDetEncl[1]
-    zc = CERNRIMLATZ - SHELLWVOFFSET #posCERNLeftInDetEncl[2]
+    xc = CERNRIMLATX 
+    yc = CERNRIMLATY 
+    zc = CERNRIMLATZ - SHELLWVOFFSET 
 
     posname = 'pos' + vsl.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc)) 
@@ -1069,9 +1059,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsr.attrib['name'])
 
-    xc = -1*CERNRIMLATX #posCERNRightInDetEncl[0]
-    yc = CERNRIMLATY #posCERNRightInDetEncl[1]
-    zc = CERNRIMLATZ - SHELLWVOFFSET #posCERNRightInDetEncl[2]
+    xc = -1*CERNRIMLATX 
+    yc = CERNRIMLATY 
+    zc = CERNRIMLATZ - SHELLWVOFFSET 
 
     posname = 'pos' + vsr.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1083,9 +1073,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsf.attrib['name'])
 
-    xc = 0.0 #posCERNFrontInDetEncl[0]
-    yc = CERNRIMSY #posCERNFrontInDetEncl[1]
-    zc = CERNRIMSZ - SHELLWVOFFSET #posCERNFrontInDetEncl[2]
+    xc = 0.0 
+    yc = CERNRIMSY 
+    zc = CERNRIMSZ - SHELLWVOFFSET 
 
     posname = 'pos' + vsf.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1097,9 +1087,9 @@ def detectorEnclosure():
     pv = ET.SubElement(vshell, 'physvol')
     ET.SubElement(pv, 'volumeref', ref=vsb.attrib['name'])
 
-    xc = 0.0 #posCERNBackInDetEncl[0]
-    yc = CERNRIMNY #posCERNBackInDetEncl[1]
-    zc = CERNRIMNZ - SHELLWVOFFSET #posCERNBackInDetEncl[2]
+    xc = 0.0 
+    yc = CERNRIMNY 
+    zc = CERNRIMNZ - SHELLWVOFFSET 
 
     posname = 'pos' + vsb.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
@@ -1110,8 +1100,8 @@ def detectorEnclosure():
     return sshell,vshell
 
 #######################################################################
-
-testmode=False #True
+# now if test mode generate materials, CRT shell, world, gdml header
+# else just generate CRT shell for use with master geometry generator script
 
 if testmode:
    m = ET.SubElement(materials, 'element', name='aluminum', formula='Al', Z='13')
