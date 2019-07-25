@@ -1962,7 +1962,7 @@ print CRYO <<EOF;
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="@{[-$TPC_x - $PMTPlane_x/2 - $PMTWiresOffset ]}" y="$TPCinCryo_y" z="0" />
+       <position name="posPMTPlane1" unit="cm" x="@{[-$TPC_x - $PMTPlane_x/2 - $PMTWiresOffset ]}" y="$TPCinCryo_y" z="0" />
        <rotationref ref="rPlus180AboutY"/>
      </physvol>
 
@@ -1983,7 +1983,7 @@ print CRYO <<EOF;
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="@{[$TPC_x + $PMTPlane_x/2 + $PMTWiresOffset ]}" y="$TPCinCryo_y" z="0" />
+       <position name="posPMTPlane2" unit="cm" x="@{[$TPC_x + $PMTPlane_x/2 + $PMTWiresOffset ]}" y="$TPCinCryo_y" z="0" />
      </physvol>
 
 EOF
