@@ -49,7 +49,7 @@ namespace geo{
     if(ad1Num!=ad2Num) return ad1Num < ad2Num; 
 
     ad1Num = atoi( ad1name.substr(ad1name.find(stripPrefix)+stripPrefix.length(), 2).c_str() );
-    ad2Num = atoi( ad2name.substr((ad2name.find(stripPrefix)+stripPrefix.length(), 2).c_str() );
+    ad2Num = atoi( ad2name.substr(ad2name.find(stripPrefix)+stripPrefix.length(), 2).c_str() );
 
     return ad1Num < ad2Num;
 
