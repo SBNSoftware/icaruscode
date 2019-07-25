@@ -679,7 +679,7 @@ def minosSouthTagger():
     return stagger, vtagger
 
 
-def DCTagger(x0=0, y0=0, z0=0):
+def DCTagger():
     ''' Build bottom tagger
     '''
     modwidth = XD*(NXD+0.5)+2*PADD+(NXD+2)*PADStrip
@@ -710,7 +710,7 @@ def DCTagger(x0=0, y0=0, z0=0):
         else :
             rot = 0
 
-        coords.append((dx+x0,y0,dz+z0,rot))
+        coords.append((dx,0,dz,rot))
 
     for i in range(len(coords)):
         modules.append(module('d','bt'))
@@ -740,12 +740,11 @@ def DCTagger(x0=0, y0=0, z0=0):
     return stagger, vtagger
 
 
-def cernTopTagger(x0=0, y0=0, z0=0):
-    ''' Build front MINOS tagger (2 layers in X-Y) on upstream face
+def cernTopTagger():
+    ''' Build top CERN tagger (1 layer of modules) 
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(NTOPX*modwidth+2*PADTagger+(NTOPX-1)*PADModule)
-    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
     yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(NTOPZ*modwidth + 2*PADTagger + (NTOPZ-1)*PADModule)
 
@@ -757,7 +756,7 @@ def cernTopTagger(x0=0, y0=0, z0=0):
 
     for i in range(NTOPX*NTOPZ):
 
-        coords.append((dx+x0,y0,dz+z0))
+        coords.append((dx,0,dz))
 
         if (i+1)%NTOPZ == 0:
             dx+= modwidth + PADModule
@@ -787,12 +786,11 @@ def cernTopTagger(x0=0, y0=0, z0=0):
 
     return stagger, vtagger
 
-def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
-    ''' Build sloped CERN tagger
+def cernLatRimTagger(side='L'):
+    ''' Build east(side='R') or west(side='L') CERN rim tagger
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(modwidth+2*PADTagger)
-    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
     yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(NSLOPELAT*modwidth + 2*PADTagger + (NSLOPELAT-1)*PADModule)
 
@@ -803,7 +801,7 @@ def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
 
     for i in range(NSLOPELAT):
 
-        coords.append((x0,y0,dz+z0))
+        coords.append((0,0,dz))
 
         dz+= modwidth+PADModule
     
@@ -815,9 +813,9 @@ def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
 
     sname = 'tagger_'
     if side == 'L':
-        sname += 'RimEast' #'SlopeLeft'
+        sname += 'RimWest'
     if side == 'R':
-        sname += 'RimWest' #'SlopeRight'
+        sname += 'RimEast'
     vname = 'vol_'+ sname
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
@@ -838,12 +836,11 @@ def cernSlopeSideTagger(side='L',x0=0, y0=0, z0=0):
     return stagger, vtagger
 
 
-def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
-    ''' Build sloped CERN tagger
+def cernLongRimTagger(side='U'):
+    ''' Build  north(side='D') or south(side='U') CERN rim tagger
     '''
     modwidth = ZC + 2*PADC + (NXC+1)*PADStrip
     xx = str(NSLOPEFRONT*modwidth+2*PADTagger+(NSLOPEFRONT-1)*PADModule)
-    #yy = str(2*YC+3*PADStrip+2*PADC+2*PADTagger)
     yy = str(YCTOP+YCBOT+3*PADStrip+2*PADC+2*PADTagger)
     zz = str(modwidth + 2*PADTagger)
 
@@ -854,7 +851,7 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
 
     for i in range(NSLOPEFRONT):
 
-        coords.append((dx+x0,y0,z0))
+        coords.append((dx,0,0))
         dx+= modwidth+PADModule
     
     for i in range(len(coords)):
@@ -865,9 +862,9 @@ def cernSlopeFrontTagger(side='U',x0=0, y0=0, z0=0):
 
     sname = 'tagger_'
     if side == 'U':
-        sname += 'RimSouth' #'SlopeFront'
+        sname += 'RimSouth'
     if side == 'D':
-        sname += 'RimNorth' #'SlopeBack'
+        sname += 'RimNorth'
     vname = 'vol_'+ sname
 
     stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
@@ -908,12 +905,12 @@ def detectorEnclosure():
     (s,ven) = minosSideTagger('e','n') #MINOS east wall, north stack
     (s,vss) = minosSouthTagger()#'U',0,0,0) #MINOS south
     (s,vnn) = minosNorthTagger() #MINOS north
-    (s,vbt) = DCTagger(0,0,0) #DC Bottom
-    (s,vtt) = cernTopTagger(0,0,0) #CERN top
-    (s,vsl) = cernSlopeSideTagger('L',0,0,0) #CERN SlopeLeft
-    (s,vsr) = cernSlopeSideTagger('R',0,0,0) #CERN SlopeRight
-    (s,vsf) = cernSlopeFrontTagger('U',0,0,0) #CERN SlopeFront
-    (s,vsb) = cernSlopeFrontTagger('D',0,0,0) #CERN SlopeBack
+    (s,vbt) = DCTagger() #DC Bottom
+    (s,vtt) = cernTopTagger() #CERN top
+    (s,vrw) = cernLatRimTagger('L') #CERN RimWest
+    (s,vre) = cernLatRimTagger('R') #CERN RimEast
+    (s,vrs) = cernLongRimTagger('U') #CERN RimSouth
+    (s,vrn) = cernLongRimTagger('D') #CERN RimNorth
 
     #CRT Shell containing all of the tagger volumes and a void to cointain the warm vessel
     sname = 'CRT_Shell'
@@ -1043,58 +1040,58 @@ def detectorEnclosure():
    
     #position CERN west rim
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vsl.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vrw.attrib['name'])
 
     xc = CERNRIMLATX 
     yc = CERNRIMLATY 
     zc = CERNRIMLATZ - SHELLWVOFFSET 
 
-    posname = 'pos' + vsl.attrib['name']
+    posname = 'pos' + vrw.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc)) 
 
-    posname = 'rot' + vsl.attrib['name']
+    posname = 'rot' + vrw.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='0', z=str(SLOPEINCLINATION))
  
     #position CERN east rim
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vsr.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vre.attrib['name'])
 
     xc = -1*CERNRIMLATX 
     yc = CERNRIMLATY 
     zc = CERNRIMLATZ - SHELLWVOFFSET 
 
-    posname = 'pos' + vsr.attrib['name']
+    posname = 'pos' + vre.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
-    posname = 'rot' + vsr.attrib['name']
+    posname = 'rot' + vre.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='0', z=str(-1*SLOPEINCLINATION))
 
     #position CERN south rim
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vsf.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vrs.attrib['name'])
 
     xc = 0.0 
     yc = CERNRIMSY 
     zc = CERNRIMSZ - SHELLWVOFFSET 
 
-    posname = 'pos' + vsf.attrib['name']
+    posname = 'pos' + vrs.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
     
-    posname = 'rot' + vsf.attrib['name']
+    posname = 'rot' + vrs.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x=str(SLOPEINCLINATION), y='0', z='0')
 
     #position CERN north rim
     pv = ET.SubElement(vshell, 'physvol')
-    ET.SubElement(pv, 'volumeref', ref=vsb.attrib['name'])
+    ET.SubElement(pv, 'volumeref', ref=vrn.attrib['name'])
 
     xc = 0.0 
     yc = CERNRIMNY 
     zc = CERNRIMNZ - SHELLWVOFFSET 
 
-    posname = 'pos' + vsb.attrib['name']
+    posname = 'pos' + vrn.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
    
-    posname = 'rot' + vsb.attrib['name']
+    posname = 'rot' + vrn.attrib['name']
     ET.SubElement(pv, 'rotation', name=posname, unit="deg", x=str(-1*SLOPEINCLINATION), y='0', z='0')
 
     return sshell,vshell
