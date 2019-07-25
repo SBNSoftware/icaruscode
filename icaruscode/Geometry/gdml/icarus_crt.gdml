@@ -42,8 +42,8 @@
 		<box lunit="cm" name="AuxDetSensitive_CERN_top_" x="23.0" y="1.0" z="184.0"/>
 		<box lunit="cm" name="AuxDetSensitive_CERN_bot_" x="23.0" y="1.5" z="184.0"/>
 		<box lunit="cm" name="tagger_Top" x="1106.242" y="2.732" z="2581.362"/>
-		<box lunit="cm" name="tagger_RimEast" x="184.292" y="2.732" z="2581.362"/>
 		<box lunit="cm" name="tagger_RimWest" x="184.292" y="2.732" z="2581.362"/>
+		<box lunit="cm" name="tagger_RimEast" x="184.292" y="2.732" z="2581.362"/>
 		<box lunit="cm" name="tagger_RimSouth" x="1106.242" y="2.732" z="184.292"/>
 		<box lunit="cm" name="tagger_RimNorth" x="1106.242" y="2.732" z="184.292"/>
 		<box lunit="cm" name="CRT_Shell_external" x="1143.095" y="971.085" z="2659.59563"/>
@@ -49395,9 +49395,9 @@
 				<volumeref ref="volAuxDet_CERN_module_266_RimEast_inner"/>
 			</physvol>
 		</volume>
-		<volume name="vol_tagger_RimEast">
+		<volume name="vol_tagger_RimWest">
 			<materialref ref="Air"/>
-			<solidref ref="tagger_RimEast"/>
+			<solidref ref="tagger_RimWest"/>
 			<physvol>
 				<volumeref ref="volAuxDet_CERN_module_253_RimEast"/>
 				<position name="posvolAuxDet_CERN_module_253_RimEast" unit="cm" x="0" y="0" z="-1198.535"/>
@@ -51513,9 +51513,9 @@
 				<volumeref ref="volAuxDet_CERN_module_280_RimWest_inner"/>
 			</physvol>
 		</volume>
-		<volume name="vol_tagger_RimWest">
+		<volume name="vol_tagger_RimEast">
 			<materialref ref="Air"/>
-			<solidref ref="tagger_RimWest"/>
+			<solidref ref="tagger_RimEast"/>
 			<physvol>
 				<volumeref ref="volAuxDet_CERN_module_267_RimWest"/>
 				<position name="posvolAuxDet_CERN_module_267_RimWest" unit="cm" x="0" y="0" z="-1198.535"/>
@@ -53437,14 +53437,14 @@
 				<position name="posvol_tagger_Top" unit="cm" x="0.0" y="483.9045" z="4.6985"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="vol_tagger_RimEast"/>
-				<position name="posvol_tagger_RimEast" unit="cm" x="555.265" y="362.5545" z="4.6985"/>
-				<rotation name="rotvol_tagger_RimEast" unit="deg" x="0" y="0" z="90.0"/>
+				<volumeref ref="vol_tagger_RimWest"/>
+				<position name="posvol_tagger_RimWest" unit="cm" x="555.265" y="362.5545" z="4.6985"/>
+				<rotation name="rotvol_tagger_RimWest" unit="deg" x="0" y="0" z="90.0"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="vol_tagger_RimWest"/>
-				<position name="posvol_tagger_RimWest" unit="cm" x="-555.265" y="362.5545" z="4.6985"/>
-				<rotation name="rotvol_tagger_RimWest" unit="deg" x="0" y="0" z="-90.0"/>
+				<volumeref ref="vol_tagger_RimEast"/>
+				<position name="posvol_tagger_RimEast" unit="cm" x="-555.265" y="362.5545" z="4.6985"/>
+				<rotation name="rotvol_tagger_RimEast" unit="deg" x="0" y="0" z="-90.0"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_RimSouth"/>
