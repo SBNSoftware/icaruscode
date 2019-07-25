@@ -492,22 +492,22 @@ def minosSideTagger(side='e', pos='n'):
     if pos=='n': sname+='North'
 
     if not sname in solids_store:
-        if pos != 's': s = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
+        if pos != 's': stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
         if pos=='s':
             sext = ET.SubElement(solids, 'box', name=snameext, lunit="cm", x=xx, y=yy, z=zz)
             sint = ET.SubElement(solids, 'box', name=snameint, lunit="cm", x=xxsub, y=yysub, z=zzsub)
-            s = ET.SubElement(solids, 'subtraction', name=sname)
-            ET.SubElement(s, 'first', ref=snameext)
-            ET.SubElement(s, 'second', ref=snameint)
-            ET.SubElement(s, 'position', name='crtsouthtaggersubpos', unit='cm', x=xpsub,y=ypsub,z=zpsub)
+            stagger = ET.SubElement(solids, 'subtraction', name=sname)
+            ET.SubElement(stagger, 'first', ref=snameext)
+            ET.SubElement(stagger, 'second', ref=snameint)
+            ET.SubElement(stagger, 'position', name='crtsouthtaggersubpos', unit='cm', x=xpsub,y=ypsub,z=zpsub)
             solids_store[snameext] = sext
             solids_store[snameint] = sint
-        solids_store[sname] = s
+        solids_store[sname] = stagger
     else:
         if pos=='s':
             sext = solids_store[snameext]
             sint = solids_store[snameint]
-        s = solids_store[sname]
+        stagger = solids_store[sname]
 
     vname = 'vol_'+ sname+'_'
 
@@ -533,7 +533,6 @@ def minosSideTagger(side='e', pos='n'):
                 modules.append(module('m','en'))
                 if i==0: vname+='EastNorth'
 
-    stagger = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=zz)
     vtagger = ET.SubElement(structure, 'volume', name=vname)
     ET.SubElement(vtagger, 'materialref', ref='Air')
     ET.SubElement(vtagger, 'solidref', ref=sname)
@@ -958,7 +957,7 @@ def detectorEnclosure():
     yc = MINOSLATFIXY 
     zc = MINOSLATNORTHZ - SHELLWVOFFSET 
 
-    posname = 'pos' + vws.attrib['name']
+    posname = 'pos' + vwn.attrib['name']
     ET.SubElement(pv, 'position', name=posname, unit="cm", x=str(xc), y=str(yc), z=str(zc))
 
     #Position MINOS east, south
