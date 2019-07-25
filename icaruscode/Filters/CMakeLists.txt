@@ -2,7 +2,7 @@ art_make(
           MODULE_LIBRARIES larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         larsim_Simulation 
-                        nutools_ParticleNavigation lardataobj_Simulation
+                        nug4_ParticleNavigation lardataobj_Simulation
                         lardata_Utilities
                         larevt_Filters
                         lardataobj_RawData
