@@ -192,7 +192,7 @@
   </material>
 
   <material name="STEEL_STAINLESS_Fe7Cr2Ni_WV" formula="STEEL_STAINLESS_Fe7Cr2Ni_WV">
-   #<D value="0.3844" unit="g/cm3"/>
+   <!-- #<D value="0.3844" unit="g/cm3"/> -->
    <D value="0.38897" unit="g/cm3"/>
    <fraction n="0.0010" ref="carbon"/>
    <fraction n="0.1792" ref="chromium"/>
@@ -484,12 +484,6 @@
 		<box lunit="cm" name="AuxDet_MINOS_module_" x="1.12" y="82.31" z="800.12"/>
 		<box lunit="cm" name="AuxDet_MINOS_module__inner" x="1.02" y="82.21" z="800.02"/>
 		<box lunit="cm" name="AuxDetSensitive_MINOS" x="1.0" y="4.1" z="800.0"/>
-		<box lunit="cm" name="tagger_SideLat_South" x="20.65" y="745.272" z="864.122"/>
-		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_South" x="20.65" y="745.272" z="864.122"/>
 		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
 		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
 		<box lunit="cm" name="AuxDet_MINOS_module_cut400" x="1.12" y="82.31" z="400.12"/>
@@ -1168,7 +1162,7 @@
      </physvol>
      <physvol>
        <volumeref ref="volTPCActive"/>
-       *<positionref ref="posActiveInTPC"/>
+       <positionref ref="posActiveInTPC"/>
      </physvol>
      <physvol> 
        <volumeref ref="volRaceTrackTVolume"/>
@@ -2393,47 +2387,47 @@
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech0" unit="cm" x="0" y="0" z="-795.184652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech1" unit="cm" x="0" y="0" z="-595.652652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech2" unit="cm" x="0" y="0" z="-396.120652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech3" unit="cm" x="0" y="0" z="-196.588652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech4" unit="cm" x="0" y="0" z="2.94334772916108" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech5" unit="cm" x="0" y="0" z="202.475347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech6" unit="cm" x="0" y="0" z="402.007347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech7" unit="cm" x="0" y="0" z="601.539347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech8" unit="cm" x="0" y="0" z="801.071347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
     </volume>
     <volume name="volCryostat">
@@ -2450,7 +2444,7 @@
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="-165.225" y="-3.25" z="0" />
+       <position name="posPMTPlane1" unit="cm" x="-165.225" y="-3.25" z="0" />
        <rotationref ref="rPlus180AboutY"/>
      </physvol>
 
@@ -2471,7 +2465,7 @@
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="165.225" y="-3.25" z="0" />
+       <position name="posPMTPlane2" unit="cm" x="165.225" y="-3.25" z="0" />
      </physvol>
 
     </volume>
@@ -55827,7 +55821,7 @@
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_North_WestNorth"/>
-				<position name="posvol_tagger_SideLat_South_WestSouth" unit="cm" x="530.355" y="-97.7465" z="616.1085"/>
+				<position name="posvol_tagger_SideLat_North_WestNorth" unit="cm" x="530.355" y="-97.7465" z="616.1085"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_South_EastSouth"/>
@@ -55935,7 +55929,7 @@
 
     <volume name="volWallBuilding" >
       <materialref ref="Concrete"/>
-      *<solidref ref="WallBuilding"/>
+      <solidref ref="WallBuilding"/>
 
 </volume>
     <volume name="volExpHall" >

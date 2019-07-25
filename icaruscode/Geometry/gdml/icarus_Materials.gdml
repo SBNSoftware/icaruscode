@@ -148,7 +148,7 @@
   </material>
 
   <material name="STEEL_STAINLESS_Fe7Cr2Ni_WV" formula="STEEL_STAINLESS_Fe7Cr2Ni_WV">
-   #<D value="0.3844" unit="g/cm3"/>
+   <!-- #<D value="0.3844" unit="g/cm3"/> -->
    <D value="0.38897" unit="g/cm3"/>
    <fraction n="0.0010" ref="carbon"/>
    <fraction n="0.1792" ref="chromium"/>

@@ -1214,47 +1214,47 @@
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech0" unit="cm" x="0" y="0" z="-795.184652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech1" unit="cm" x="0" y="0" z="-595.652652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech2" unit="cm" x="0" y="0" z="-396.120652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech3" unit="cm" x="0" y="0" z="-196.588652270839" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech4" unit="cm" x="0" y="0" z="2.94334772916108" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech5" unit="cm" x="0" y="0" z="202.475347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech6" unit="cm" x="0" y="0" z="402.007347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech7" unit="cm" x="0" y="0" z="601.539347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech8" unit="cm" x="0" y="0" z="801.071347729161" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
     </volume>
     <volume name="volCryostat">
@@ -1271,7 +1271,7 @@
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="-165.225" y="-3.25" z="0" />
+       <position name="posPMTPlane1" unit="cm" x="-165.225" y="-3.25" z="0" />
        <rotationref ref="rPlus180AboutY"/>
      </physvol>
 
@@ -1292,7 +1292,7 @@
 
      <physvol>
        <volumeref ref="volPMTPlane" />
-       <position name="posPMTPlane" unit="cm" x="165.225" y="-3.25" z="0" />
+       <position name="posPMTPlane2" unit="cm" x="165.225" y="-3.25" z="0" />
      </physvol>
 
     </volume>

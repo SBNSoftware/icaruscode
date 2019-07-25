@@ -11,12 +11,6 @@
 		<box lunit="cm" name="AuxDet_MINOS_module_" x="1.12" y="82.31" z="800.12"/>
 		<box lunit="cm" name="AuxDet_MINOS_module__inner" x="1.02" y="82.21" z="800.02"/>
 		<box lunit="cm" name="AuxDetSensitive_MINOS" x="1.0" y="4.1" z="800.0"/>
-		<box lunit="cm" name="tagger_SideLat_South" x="20.65" y="745.272" z="864.122"/>
-		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
-		<box lunit="cm" name="tagger_SideLat_South" x="20.65" y="745.272" z="864.122"/>
 		<box lunit="cm" name="tagger_SideLat_Center" x="20.65" y="662.402" z="800.122"/>
 		<box lunit="cm" name="tagger_SideLat_North" x="20.65" y="745.272" z="800.122"/>
 		<box lunit="cm" name="AuxDet_MINOS_module_cut400" x="1.12" y="82.31" z="400.12"/>
@@ -53406,7 +53400,7 @@
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_North_WestNorth"/>
-				<position name="posvol_tagger_SideLat_South_WestSouth" unit="cm" x="530.355" y="-97.7465" z="616.1085"/>
+				<position name="posvol_tagger_SideLat_North_WestNorth" unit="cm" x="530.355" y="-97.7465" z="616.1085"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_South_EastSouth"/>
