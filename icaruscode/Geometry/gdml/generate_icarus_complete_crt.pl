@@ -661,7 +661,7 @@ sub gen_Materials()
   </material>
 
   <material name="STEEL_STAINLESS_Fe7Cr2Ni_WV" formula="STEEL_STAINLESS_Fe7Cr2Ni_WV">
-   #<D value="0.3844" unit="g/cm3"/>
+   <!-- #<D value="0.3844" unit="g/cm3"/> -->
    <D value="0.38897" unit="g/cm3"/>
    <fraction n="0.0010" ref="carbon"/>
    <fraction n="0.1792" ref="chromium"/>
@@ -1937,7 +1937,7 @@ for ($im = 0; $im < $mech_number; $im++)
       <physvol>
         <volumeref ref="volLatMech"/>
         <position name="posLatMech$im" unit="cm" x="0" y="0" z="$zMpos" />
-#        <rotationref ref="rIdentity" />
+      <!--  <rotationref ref="rIdentity" /> -->
       </physvol>
 EOF
   $zMpos+= $ext_struct_z ;
