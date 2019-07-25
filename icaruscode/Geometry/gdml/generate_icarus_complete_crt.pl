@@ -2324,7 +2324,7 @@ print WORLD <<EOF;
 
     <volume name="volWallBuilding" >
       <materialref ref="Concrete"/>
-      *<solidref ref="WallBuilding"/>
+      <solidref ref="WallBuilding"/>
 
 EOF
 
