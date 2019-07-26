@@ -77,17 +77,17 @@ class icarus::trigger::FixedTriggerGateBuilder
       void aboveThresholdAt(optical_tick tick)
         {
           using namespace util::quantities::electronics_literals;
-          MF_LOG_TRACE(TriggerGateDebugLog)
+          MF_LOG_TRACE(details::TriggerGateDebugLog)
             << "Declared above threshold at: " << tick;
           if (tick < openUntil) {
-            MF_LOG_TRACE(TriggerGateDebugLog)
+            MF_LOG_TRACE(details::TriggerGateDebugLog)
               << "  we are in dead time until " << openUntil
               << ", come back later.";
             return; // open only if not in "dead time"
           }
           gate().openFor(tick, gateDuration); // open the gate for this long
           openUntil = tick + gateDuration; // set some dead time
-          MF_LOG_TRACE(TriggerGateDebugLog) << "  gate (re)opened ("
+          MF_LOG_TRACE(details::TriggerGateDebugLog) << "  gate (re)opened ("
             << gate().openingCount(tick - 1_tick)
             << " => " << gate().openingCount(tick)
             << ") for " << gateDuration << " until " << openUntil

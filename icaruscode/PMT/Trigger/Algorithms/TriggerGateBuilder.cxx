@@ -96,14 +96,14 @@ icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
   auto iGate = std::lower_bound
     (fGates.begin(), fGates.end(), waveform, ::ChannelComparison<>());
   if (iGate != fGates.end()) { // found, it's there already
-    MF_LOG_TRACE(TriggerGateDebugLog)
+    MF_LOG_TRACE(details::TriggerGateDebugLog)
       << "Appending waveform to trigger gate (thr=" << threshold()
       << ") of channel " << waveform.ChannelNumber();
     iGate->add(waveform);
     return *iGate; 
   }
   // add the new gate in channel order
-  MF_LOG_TRACE(TriggerGateDebugLog)
+  MF_LOG_TRACE(details::TriggerGateDebugLog)
     << "Creating a new trigger gate (thr=" << threshold()
     << ") for channel " << waveform.ChannelNumber();
   iGate = fGates.emplace(iGate, waveform);
