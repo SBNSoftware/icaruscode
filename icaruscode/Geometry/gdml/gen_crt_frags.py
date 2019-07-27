@@ -14,16 +14,18 @@ The output of this code is a file "crt.gdml" which contains the GDML snippets
 to paste into the full SBND geometry.
 
 Created by A. Mastbaum <mastbaum@uchicago.edu>, 2016/10/27
-Downloaded by C. Hilgenberg <chilge@rams.colostate.edu> 2017/10/25
+Downloaded by C. Hilgenberg <Chris.Hilgenberg@colostate.edu> 2017/10/25
 Modified by C. Hilgenberg 2017/10/26
 '''
 
+import csv
 import math
 import xml.etree.cElementTree as ET
 from xml.dom import minidom
 
 #set true to generate standalone CRT shell, false for normal production
-testmode=False
+testmode = False
+printModIds = False
 
 #################### Parameters #####################
 #warm vessel (cm), increased as of 7/19/2019 to 
@@ -161,11 +163,12 @@ MINOSNORTHY = -0.5*SHELLY+0.5*(len(minosCutModLengthNorth)*mModW+(len(minosCutMo
 ########################################################
 
 gdml = ET.Element('gdml')
-#materials = ET.SubElement(gdml, 'materials')
+if testmode: materials = ET.SubElement(gdml, 'materials')
 solids = ET.SubElement(gdml, 'solids')
 structure = ET.SubElement(gdml, 'structure')
 solids_store = {}
-
+modToFeb = dict()
+feb_id = 0
 mod_id = -1
 nModM = 0
 nModC = 0
@@ -511,6 +514,13 @@ def minosSideTagger(side='e', pos='n'):
 
     vname = 'vol_'+ sname+'_'
 
+    global feb_id
+    global printModIds
+    fmod = 0
+
+    if printModIds: print('MINOS tagger, '+side+', pos '+pos+' first module: '+str(mod_id+1)+', first FEB: '+str(feb_id+1))
+    feb_id+=2
+
     for i in range(len(coords)):
         if side=='w':
             if pos=='s':
@@ -532,6 +542,16 @@ def minosSideTagger(side='e', pos='n'):
             if pos=='n':
                 modules.append(module('m','en'))
                 if i==0: vname+='EastNorth'
+        fmod+=1
+        modToFeb[mod_id] = ((feb_id-1,fmod),(feb_id,fmod))
+        if fmod==3:
+            fmod=0
+            if i != len(coords)-1: feb_id+=2
+
+    if printModIds: print('   last module: '+str(mod_id)+', last FEB: '+str(feb_id))
+    #print('dictionary generated:')
+    #for k in modToFeb.keys():
+    #    print('module '+str(k)+': '+str(modToFeb[k]))
 
     vtagger = ET.SubElement(structure, 'volume', name=vname)
     ET.SubElement(vtagger, 'materialref', ref='Air')
@@ -556,7 +576,6 @@ def minosNorthTagger():
     coords = []
     modules = []
     ny = len(minosCutModLengthNorth)
-    print('building north wall with '+str(ny)+' rows...')
 
     x  = 2*(mModL-ZM+max(minosCutModLengthNorth))+PADM+2*PADTagger
     y  = ny*mModW+(ny-1)*SIDECRTSHELFTHICK+2*PADTagger
@@ -564,19 +583,30 @@ def minosNorthTagger():
     yy = str(y)
     zz = str(SIDECRTSTACKDEPTH)
 
+    global feb_id
+    global printModIds
+    if printModIds: print('MINOS tagger North, first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
+    fmod = 0
+    feb_id+=4
+
     #loop over rows starting from bottom going up
     for row in range(ny):
-        print('  building row '+str(row)+'...')
         zin   = 0.5*LAYERSPACE
         xleft = 0.5*x - PADTagger - 0.5*(mModL-ZM+minosCutModLengthNorth[row])
         yrow  = -0.5*y + PADTagger + (row+0.5)*mModW + row*SIDECRTSHELFTHICK
-        print('  xleft: '+str(xleft)+', yrow: '+str(yrow))
         rowcoords = ( (xleft,yrow,zin),(-xleft,yrow,zin),(xleft,yrow,-zin),(-xleft,yrow,-zin) )
         coords.append(rowcoords)
         rowmodules = []
+        fmod+=4
         for i in range(4):
             rowmodules.append(module('m','nn',minosCutModLengthNorth[row]))
+            modToFeb[mod_id] = (feb_id-3+i,fmod/4)
         modules.append(rowmodules)
+        if fmod==12:
+            fmod=0
+            if row != ny-1: feb_id+=4
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_SideNorth'
     vname = 'vol_'+ sname
@@ -590,8 +620,6 @@ def minosNorthTagger():
     for row in range(len(coords)):
         for mod, (xc,yc,zc) in enumerate(coords[row]):
 
-            print('row '+str(row)+': mod coords x,y,z = '+str(xc)+', '+str(yc)+', '+str(zc))
-    
             (s,v)=modules[row][mod]
             pv = ET.SubElement(vtagger, 'physvol')
             ET.SubElement(pv, 'volumeref', ref=v.attrib['name'])
@@ -647,11 +675,30 @@ def minosSouthTagger():
 
         coords.append((dx,dy,dz,0)) #x,y,z,vert=false
 
+    global feb_id
+    global printModIds
+    if printModIds: print('MINOS tagger South, first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
+    fmod = 0
+    feb_id+=1
+
     for i in range(len(coords)):
         if i<2*nmody:
             modules.append(module('m','ss',0.5*ZM))
+            fmod+=1
+            modToFeb[mod_id] = (feb_id,fmod)
+            if fmod==3:
+                fmod=0
+                if i!=2*nmody-1: feb_id+=1
+                else: feb_id+=2
         else:
             modules.append(module('m','ss',0))
+            fmod+=1
+            modToFeb[mod_id] = ((feb_id-1,fmod),(feb_id,fmod))
+            if fmod==3:
+                fmod=0
+                if i!= len(coords)-1: feb_id+=2
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_SideSouth'
     vname = 'vol_'+ sname
@@ -711,8 +758,16 @@ def DCTagger():
 
         coords.append((dx,0,dz,rot))
 
+    global feb_id
+    global printModIds
+    if printModIds: print('DC tagger, first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
+
     for i in range(len(coords)):
         modules.append(module('d','bt'))
+        feb_id+=1
+        modToFeb[mod_id] = (feb_id,1)
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_Bottom'
     vname = 'vol_'+ sname
@@ -761,9 +816,17 @@ def cernTopTagger():
             dx+= modwidth + PADModule
             dz = 0.5*(modwidth+PADModule)*(1 - NTOPZ)
         else: dz+= modwidth + PADModule
-    
+
+    global feb_id
+    global printModIds
+    if printModIds: print('CERN tagger Top, first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
+
     for i in range(len(coords)):
         modules.append(module('c','tt'))
+        feb_id+=1
+        modToFeb[mod_id] = (feb_id,1)
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_Top'
     vname = 'vol_'+ sname
@@ -803,12 +866,20 @@ def cernLatRimTagger(side='L'):
         coords.append((0,0,dz))
 
         dz+= modwidth+PADModule
+
+    global feb_id
+    global printModIds
+    if printModIds: print('CERN tagger Lat, side '+side+' first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
     
     for i in range(len(coords)):
         if side == 'L':
-            modules.append(module('c','re'))
-        if side == 'R':
             modules.append(module('c','rw'))
+        if side == 'R':
+            modules.append(module('c','re'))
+        feb_id+=1
+        modToFeb[mod_id] = (feb_id,1)
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_'
     if side == 'L':
@@ -852,12 +923,20 @@ def cernLongRimTagger(side='U'):
 
         coords.append((dx,0,0))
         dx+= modwidth+PADModule
-    
+
+    global feb_id
+    global printModIds
+    if printModIds: print('CERN tagger Long, side '+side+' first module: '+str(mod_id+1)+', FEB: '+str(feb_id+1))
+
     for i in range(len(coords)):
         if side == 'U':
             modules.append(module('c','rs'))
         if side == 'D':
             modules.append(module('c','rn'))
+        feb_id+=1
+        modToFeb[mod_id] = (feb_id,1)
+
+    if printModIds: print('   last module: '+str(mod_id)+', FEB: '+str(feb_id))
 
     sname = 'tagger_'
     if side == 'U':
@@ -1158,3 +1237,12 @@ print('DblCh modules generated: '+str(nModD))
 with open('icarus_crt.gdml', 'w') as f:
     f.write(minidom.parseString(ET.tostring(gdml)).toprettyxml(indent='\t'))
 
+print('Writing dictionary to file...')
+with open('feb_map.txt','w') as f:
+    writer = csv.writer(f,delimiter=',',quotechar='"',quoting=csv.QUOTE_MINIMAL)
+    for mod in modToFeb.keys():
+        tmp = modToFeb[mod]
+        if type(tmp[0])==int:
+            writer.writerow([str(mod),str(tmp[0]),str(tmp[1])])
+        else:
+             writer.writerow([str(mod),str(tmp[0][0]),str(tmp[0][1]),str(tmp[1][0]),str(tmp[1][1])])
