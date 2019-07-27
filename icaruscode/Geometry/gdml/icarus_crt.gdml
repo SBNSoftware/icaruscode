@@ -47395,7 +47395,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_253_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_253_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -47471,11 +47471,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_253_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_253_RimEast">
+		<volume name="volAuxDet_CERN_module_253_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_253_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_253_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_254_top_strip_00">
@@ -47542,7 +47542,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_254_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_254_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -47618,11 +47618,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_254_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_254_RimEast">
+		<volume name="volAuxDet_CERN_module_254_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_254_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_254_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_255_top_strip_00">
@@ -47689,7 +47689,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_255_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_255_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -47765,11 +47765,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_255_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_255_RimEast">
+		<volume name="volAuxDet_CERN_module_255_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_255_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_255_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_256_top_strip_00">
@@ -47836,7 +47836,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_256_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_256_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -47912,11 +47912,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_256_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_256_RimEast">
+		<volume name="volAuxDet_CERN_module_256_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_256_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_256_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_257_top_strip_00">
@@ -47983,7 +47983,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_257_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_257_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48059,11 +48059,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_257_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_257_RimEast">
+		<volume name="volAuxDet_CERN_module_257_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_257_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_257_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_258_top_strip_00">
@@ -48130,7 +48130,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_258_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_258_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48206,11 +48206,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_258_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_258_RimEast">
+		<volume name="volAuxDet_CERN_module_258_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_258_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_258_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_259_top_strip_00">
@@ -48277,7 +48277,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_259_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_259_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48353,11 +48353,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_259_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_259_RimEast">
+		<volume name="volAuxDet_CERN_module_259_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_259_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_259_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_260_top_strip_00">
@@ -48424,7 +48424,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_260_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_260_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48500,11 +48500,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_260_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_260_RimEast">
+		<volume name="volAuxDet_CERN_module_260_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_260_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_260_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_261_top_strip_00">
@@ -48571,7 +48571,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_261_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_261_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48647,11 +48647,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_261_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_261_RimEast">
+		<volume name="volAuxDet_CERN_module_261_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_261_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_261_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_262_top_strip_00">
@@ -48718,7 +48718,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_262_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_262_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48794,11 +48794,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_262_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_262_RimEast">
+		<volume name="volAuxDet_CERN_module_262_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_262_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_262_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_263_top_strip_00">
@@ -48865,7 +48865,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_263_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_263_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -48941,11 +48941,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_263_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_263_RimEast">
+		<volume name="volAuxDet_CERN_module_263_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_263_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_263_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_264_top_strip_00">
@@ -49012,7 +49012,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_264_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_264_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49088,11 +49088,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_264_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_264_RimEast">
+		<volume name="volAuxDet_CERN_module_264_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_264_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_264_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_265_top_strip_00">
@@ -49159,7 +49159,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_265_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_265_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49235,11 +49235,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_265_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_265_RimEast">
+		<volume name="volAuxDet_CERN_module_265_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_265_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_265_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_266_top_strip_00">
@@ -49306,7 +49306,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_266_RimEast_inner">
+		<volume name="volAuxDet_CERN_module_266_RimWest_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49382,71 +49382,71 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_266_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_266_RimEast">
+		<volume name="volAuxDet_CERN_module_266_RimWest">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_266_RimEast_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_266_RimWest_inner"/>
 			</physvol>
 		</volume>
 		<volume name="vol_tagger_RimWest">
 			<materialref ref="Air"/>
 			<solidref ref="tagger_RimWest"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_253_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_253_RimEast" unit="cm" x="0" y="0" z="-1198.535"/>
+				<volumeref ref="volAuxDet_CERN_module_253_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_253_RimWest" unit="cm" x="0" y="0" z="-1198.535"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_254_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_254_RimEast" unit="cm" x="0" y="0" z="-1014.145"/>
+				<volumeref ref="volAuxDet_CERN_module_254_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_254_RimWest" unit="cm" x="0" y="0" z="-1014.145"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_255_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_255_RimEast" unit="cm" x="0" y="0" z="-829.755"/>
+				<volumeref ref="volAuxDet_CERN_module_255_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_255_RimWest" unit="cm" x="0" y="0" z="-829.755"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_256_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_256_RimEast" unit="cm" x="0" y="0" z="-645.365"/>
+				<volumeref ref="volAuxDet_CERN_module_256_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_256_RimWest" unit="cm" x="0" y="0" z="-645.365"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_257_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_257_RimEast" unit="cm" x="0" y="0" z="-460.975"/>
+				<volumeref ref="volAuxDet_CERN_module_257_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_257_RimWest" unit="cm" x="0" y="0" z="-460.975"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_258_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_258_RimEast" unit="cm" x="0" y="0" z="-276.585"/>
+				<volumeref ref="volAuxDet_CERN_module_258_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_258_RimWest" unit="cm" x="0" y="0" z="-276.585"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_259_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_259_RimEast" unit="cm" x="0" y="0" z="-92.195"/>
+				<volumeref ref="volAuxDet_CERN_module_259_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_259_RimWest" unit="cm" x="0" y="0" z="-92.195"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_260_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_260_RimEast" unit="cm" x="0" y="0" z="92.195"/>
+				<volumeref ref="volAuxDet_CERN_module_260_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_260_RimWest" unit="cm" x="0" y="0" z="92.195"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_261_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_261_RimEast" unit="cm" x="0" y="0" z="276.585"/>
+				<volumeref ref="volAuxDet_CERN_module_261_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_261_RimWest" unit="cm" x="0" y="0" z="276.585"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_262_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_262_RimEast" unit="cm" x="0" y="0" z="460.975"/>
+				<volumeref ref="volAuxDet_CERN_module_262_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_262_RimWest" unit="cm" x="0" y="0" z="460.975"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_263_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_263_RimEast" unit="cm" x="0" y="0" z="645.365"/>
+				<volumeref ref="volAuxDet_CERN_module_263_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_263_RimWest" unit="cm" x="0" y="0" z="645.365"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_264_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_264_RimEast" unit="cm" x="0" y="0" z="829.755"/>
+				<volumeref ref="volAuxDet_CERN_module_264_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_264_RimWest" unit="cm" x="0" y="0" z="829.755"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_265_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_265_RimEast" unit="cm" x="0" y="0" z="1014.145"/>
+				<volumeref ref="volAuxDet_CERN_module_265_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_265_RimWest" unit="cm" x="0" y="0" z="1014.145"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_266_RimEast"/>
-				<position name="posvolAuxDet_CERN_module_266_RimEast" unit="cm" x="0" y="0" z="1198.535"/>
+				<volumeref ref="volAuxDet_CERN_module_266_RimWest"/>
+				<position name="posvolAuxDet_CERN_module_266_RimWest" unit="cm" x="0" y="0" z="1198.535"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_267_top_strip_00">
@@ -49513,7 +49513,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_267_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_267_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49589,11 +49589,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_267_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_267_RimWest">
+		<volume name="volAuxDet_CERN_module_267_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_267_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_267_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_268_top_strip_00">
@@ -49660,7 +49660,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_268_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_268_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49736,11 +49736,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_268_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_268_RimWest">
+		<volume name="volAuxDet_CERN_module_268_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_268_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_268_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_269_top_strip_00">
@@ -49807,7 +49807,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_269_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_269_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -49883,11 +49883,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_269_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_269_RimWest">
+		<volume name="volAuxDet_CERN_module_269_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_269_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_269_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_270_top_strip_00">
@@ -49954,7 +49954,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_270_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_270_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50030,11 +50030,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_270_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_270_RimWest">
+		<volume name="volAuxDet_CERN_module_270_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_270_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_270_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_271_top_strip_00">
@@ -50101,7 +50101,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_271_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_271_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50177,11 +50177,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_271_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_271_RimWest">
+		<volume name="volAuxDet_CERN_module_271_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_271_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_271_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_272_top_strip_00">
@@ -50248,7 +50248,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_272_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_272_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50324,11 +50324,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_272_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_272_RimWest">
+		<volume name="volAuxDet_CERN_module_272_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_272_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_272_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_273_top_strip_00">
@@ -50395,7 +50395,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_273_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_273_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50471,11 +50471,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_273_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_273_RimWest">
+		<volume name="volAuxDet_CERN_module_273_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_273_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_273_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_274_top_strip_00">
@@ -50542,7 +50542,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_274_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_274_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50618,11 +50618,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_274_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_274_RimWest">
+		<volume name="volAuxDet_CERN_module_274_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_274_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_274_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_275_top_strip_00">
@@ -50689,7 +50689,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_275_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_275_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50765,11 +50765,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_275_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_275_RimWest">
+		<volume name="volAuxDet_CERN_module_275_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_275_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_275_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_276_top_strip_00">
@@ -50836,7 +50836,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_276_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_276_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -50912,11 +50912,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_276_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_276_RimWest">
+		<volume name="volAuxDet_CERN_module_276_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_276_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_276_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_277_top_strip_00">
@@ -50983,7 +50983,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_277_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_277_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -51059,11 +51059,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_277_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_277_RimWest">
+		<volume name="volAuxDet_CERN_module_277_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_277_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_277_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_278_top_strip_00">
@@ -51130,7 +51130,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_278_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_278_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -51206,11 +51206,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_278_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_278_RimWest">
+		<volume name="volAuxDet_CERN_module_278_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_278_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_278_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_279_top_strip_00">
@@ -51277,7 +51277,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_279_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_279_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -51353,11 +51353,11 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_279_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_279_RimWest">
+		<volume name="volAuxDet_CERN_module_279_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_279_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_279_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_280_top_strip_00">
@@ -51424,7 +51424,7 @@
 			<materialref ref="Polystyrene"/>
 			<solidref ref="AuxDetSensitive_CERN_bot_"/>
 		</volume>
-		<volume name="volAuxDet_CERN_module_280_RimWest_inner">
+		<volume name="volAuxDet_CERN_module_280_RimEast_inner">
 			<materialref ref="Air"/>
 			<solidref ref="AuxDet_CERN_module__inner"/>
 			<physvol>
@@ -51500,71 +51500,71 @@
 				<rotation name="rotvolAuxDetSensitive_CERN_module_280_bot_strip_15" unit="deg" x="0" y="90" z="0"/>
 			</physvol>
 		</volume>
-		<volume name="volAuxDet_CERN_module_280_RimWest">
+		<volume name="volAuxDet_CERN_module_280_RimEast">
 			<materialref ref="ALUMINUM_Al"/>
 			<solidref ref="AuxDet_CERN_module_"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_280_RimWest_inner"/>
+				<volumeref ref="volAuxDet_CERN_module_280_RimEast_inner"/>
 			</physvol>
 		</volume>
 		<volume name="vol_tagger_RimEast">
 			<materialref ref="Air"/>
 			<solidref ref="tagger_RimEast"/>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_267_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_267_RimWest" unit="cm" x="0" y="0" z="-1198.535"/>
+				<volumeref ref="volAuxDet_CERN_module_267_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_267_RimEast" unit="cm" x="0" y="0" z="-1198.535"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_268_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_268_RimWest" unit="cm" x="0" y="0" z="-1014.145"/>
+				<volumeref ref="volAuxDet_CERN_module_268_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_268_RimEast" unit="cm" x="0" y="0" z="-1014.145"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_269_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_269_RimWest" unit="cm" x="0" y="0" z="-829.755"/>
+				<volumeref ref="volAuxDet_CERN_module_269_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_269_RimEast" unit="cm" x="0" y="0" z="-829.755"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_270_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_270_RimWest" unit="cm" x="0" y="0" z="-645.365"/>
+				<volumeref ref="volAuxDet_CERN_module_270_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_270_RimEast" unit="cm" x="0" y="0" z="-645.365"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_271_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_271_RimWest" unit="cm" x="0" y="0" z="-460.975"/>
+				<volumeref ref="volAuxDet_CERN_module_271_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_271_RimEast" unit="cm" x="0" y="0" z="-460.975"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_272_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_272_RimWest" unit="cm" x="0" y="0" z="-276.585"/>
+				<volumeref ref="volAuxDet_CERN_module_272_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_272_RimEast" unit="cm" x="0" y="0" z="-276.585"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_273_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_273_RimWest" unit="cm" x="0" y="0" z="-92.195"/>
+				<volumeref ref="volAuxDet_CERN_module_273_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_273_RimEast" unit="cm" x="0" y="0" z="-92.195"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_274_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_274_RimWest" unit="cm" x="0" y="0" z="92.195"/>
+				<volumeref ref="volAuxDet_CERN_module_274_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_274_RimEast" unit="cm" x="0" y="0" z="92.195"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_275_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_275_RimWest" unit="cm" x="0" y="0" z="276.585"/>
+				<volumeref ref="volAuxDet_CERN_module_275_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_275_RimEast" unit="cm" x="0" y="0" z="276.585"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_276_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_276_RimWest" unit="cm" x="0" y="0" z="460.975"/>
+				<volumeref ref="volAuxDet_CERN_module_276_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_276_RimEast" unit="cm" x="0" y="0" z="460.975"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_277_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_277_RimWest" unit="cm" x="0" y="0" z="645.365"/>
+				<volumeref ref="volAuxDet_CERN_module_277_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_277_RimEast" unit="cm" x="0" y="0" z="645.365"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_278_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_278_RimWest" unit="cm" x="0" y="0" z="829.755"/>
+				<volumeref ref="volAuxDet_CERN_module_278_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_278_RimEast" unit="cm" x="0" y="0" z="829.755"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_279_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_279_RimWest" unit="cm" x="0" y="0" z="1014.145"/>
+				<volumeref ref="volAuxDet_CERN_module_279_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_279_RimEast" unit="cm" x="0" y="0" z="1014.145"/>
 			</physvol>
 			<physvol>
-				<volumeref ref="volAuxDet_CERN_module_280_RimWest"/>
-				<position name="posvolAuxDet_CERN_module_280_RimWest" unit="cm" x="0" y="0" z="1198.535"/>
+				<volumeref ref="volAuxDet_CERN_module_280_RimEast"/>
+				<position name="posvolAuxDet_CERN_module_280_RimEast" unit="cm" x="0" y="0" z="1198.535"/>
 			</physvol>
 		</volume>
 		<volume name="volAuxDetSensitive_CERN_module_281_top_strip_00">
