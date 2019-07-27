@@ -96,6 +96,8 @@
 #include <utility>
 #include <map> 
 #include <vector>
+#include <fstream>
+#include <iostream>
 
 //CRT includes
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
@@ -123,6 +125,7 @@ private:
     char GetAuxDetType(geo::AuxDetGeo const& adgeo);
     string GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
     uint8_t GetStackNum(geo::AuxDetGeo const& adgeo);
+    void FillFebMap(std::map< int,std::vector< std::pair<int,int> > >& m);
     //bool TimeOrderCRTData(icarus::crt::CRTData::ChannelData crtdat1, icarus::crt::CRTData::ChannelData crtdat2);
     /**
      * Get the channel trigger time relative to the start of the MC event.
@@ -226,6 +229,32 @@ CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer(p),
   produces<std::vector<icarus::crt::CRTData> >();
 }
 
+//read from file and fill map modID->FEB(s), FEB channel subset(s). can be 2 if MINOS module (not cut)
+void CRTDetSim::FillFebMap(std::map< int,std::vector< std::pair<int,int> > >& m){
+
+    std::string geodir="/icarus/app/users/chilgenb/dev_areas/v08_22_00_prof/srcs/icaruscode/icaruscode/Geometry/gdml";
+    std::ifstream fin;
+    fin.open(geodir+"feb_map.txt",std::ios::in);
+    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
+    else std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
+    std::vector<std::string> row;
+    std::string line, word;
+    while(getline(fin,line)) {
+        row.clear();
+        std::stringstream s(line);
+        int mod;
+        while (std::getline(s, word, ',')) {
+            row.push_back(word);
+        }
+        mod = std::stoi(row[0]);
+        m[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
+        if(row.size()>3)
+            m[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
+    }
+    std::cout << "filled febMap with " << m.size() << " entries" << std::endl;
+    fin.close();
+}
+
 //function takes reference to AuxDetGeo object and gives parent subsystem
 char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 {
@@ -242,7 +271,7 @@ char CRTDetSim::GetAuxDetType(geo::AuxDetGeo const& adgeo)
 std::string CRTDetSim::GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
 {
   char type = CRTDetSim::GetAuxDetType(adgeo);
-  std::string base = "volAuxDet_";
+  std::string base = "volAuxDet_", region="";
   switch ( type ) {
     case 'c' : base+= "CERN"; break;
     case 'd' : base+= "DC"; break;
@@ -251,21 +280,34 @@ std::string CRTDetSim::GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
   base+="_module_###_";
   std::string volName(adgeo.TotalVolume()->GetName());
 
-  return volName.substr(base.size(),volName.size());
+  //module name has 2 possible formats
+  //  volAuxDet_<subsystem>_module_###_<region>
+  //  volAuxDet_<subsystem>_module_###_cut###_<region>
+
+  region = volName.substr(base.length(),volName.length());
+  if( region.find("_")==string::npos)
+    return region;
+
+  else
+	return region.substr(region.find("_")+1,region.length());
 }
 
 int GetAuxDetRegionNum(std::string reg)
 {
-    if(reg == "Top")        return 38;
-    if(reg == "SlopeLeft")  return 52;
-    if(reg == "SlopeRight") return 56;
-    if(reg == "SlopeFront") return 48;
-    if(reg == "SlopeBack")  return 46;
-    if(reg == "Left")       return 50;
-    if(reg == "Right")      return 54;
-    if(reg == "Front")      return 44;
-    if(reg == "Back")       return 42;
-    if(reg == "Bottom")     return 58;
+    if(reg == "Top")        return 30;
+    if(reg == "RimWest")    return 31;
+    if(reg == "RimEast")    return 32;
+    if(reg == "RimSouth")   return 33;
+    if(reg == "RimNorth")   return 34;
+    if(reg == "WestSouth")  return 40;
+    if(reg == "WestCenter") return 41;
+    if(reg == "WestNorth")  return 42;
+    if(reg == "EastSouth")  return 43;
+    if(reg == "EastCenter") return 44;
+    if(reg == "EastNorth")  return 45;
+    if(reg == "South")      return 46;
+    if(reg == "North")      return 47;
+    if(reg == "Bottom")     return 50;
     mf::LogError("CRT") << "region not found!" << '\n';
     return INT_MAX;
 }
@@ -317,7 +359,6 @@ bool TimeOrderCRTData(icarus::crt::CRTChannelData crtdat1, icarus::crt::CRTChann
 struct Tagger {
   char type;
   std::string reg; //crt region where FEB is located
-  int stackid; //which module stack (applies to left/right m modules only)
   std::set<int> layerid; //keep track of layers hit accross whole event window
   std::map<int,int> chanlayer; //map chan # to layer
   //std::pair<int,int> macPair; //which two FEBs provided coincidence (applies to m mods only)
@@ -329,6 +370,8 @@ struct Tagger {
 void CRTDetSim::produce(art::Event & e) {
   // A list of hit taggers, before any coincidence requirement
   std::map<int, Tagger> taggers;
+  std::map< int,std::vector< std::pair<int,int> > > febMap;
+  FillFebMap(febMap);
 
   // Services: Geometry, DetectorClocks, RandomNumberGenerator
   art::ServiceHandle<geo::Geometry> geoService;
@@ -375,8 +418,7 @@ void CRTDetSim::produce(art::Event & e) {
     const std::string region = GetAuxDetRegion(adGeo); //CRT region
 
     int layid = INT_MAX; //set to 0 or 1 if layerid determined
-    int stackid = INT_MAX; //for left/right crt regions ordered from down to upstream (-z -> +z)
-    int mac5=INT_MAX;
+    int mac5=INT_MAX, mac5dual=INT_MAX;
 
     // Find the path to the strip geo node, to locate it in the hierarchy
     std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
@@ -407,20 +449,19 @@ void CRTDetSim::produce(art::Event & e) {
     nodeStrip->LocalToMaster(origin, stripPosMother);
     nodeInner->LocalToMaster(stripPosMother,stripPosModule);
 
-    // Determine layid and stackid
-    if (auxDetType == 'c' || auxDetType == 'd') layid = (stripPosModule[1] > 0);
+    // Determine layid
+    //  for C modules, two diff. lay thick
+    //    1cm for top (y>0) and 1.5cm for bottom (y<0)
+    if (auxDetType == 'c' || auxDetType == 'd') 
+        layid = (stripPosModule[1] > 0);
        
     if (auxDetType == 'm') {
-      if ( region=="Left" || region=="Right" ) {
-          if ( modulePosMother[2] < 0 ) stackid = 0;
-          if ( modulePosMother[2] == 0) stackid = 1;
-          if ( modulePosMother[2] > 0 ) stackid = 2;
-
-          //following 2 if's use hardcoded dimensions - UPDATE AFTER ALL GEO CHANGES!
-          if ( stackid == 0 || stackid == 2 ) layid = ( abs(modulePosMother[0]) < 49.482/2-1 );
-          if ( stackid == 1 ) layid = ( abs(modulePosMother[0]) > 49.482/2-1 );
+      //lateral stacks (6 total, 3 per side)
+      if ( region.find("West")!=std::string::npos || region.find("East")!=std::string::npos ) {
+          layid = ( abs(modulePosMother[0]>0) );
       }
-      if ( region=="Front" || region=="Back" ) {
+      //longitudinal walls
+      if ( region=="South" || region=="North" ) {
           layid = ( modulePosMother[2]> 0 );
       }
     }
@@ -464,7 +505,7 @@ void CRTDetSim::produce(art::Event & e) {
       // The expected number of PE, using a quadratic model for the distance
       // dependence, and scaling linearly with deposited energy.
       double qr = fUseEdep ? ide.energyDeposited / fQ0 : 1.0;
-      if (auxDetType == 'c') qr *= 1.5; //c strips 50% thicker
+      if (auxDetType == 'c'&& layid==0) qr *= 1.5; //c bottom layer strips 50% thicker
 
       //longitudinal distance (m) along the strip for fiber atten. calculation
       //assuming SiPM is on +z end (also -z for m modules)
@@ -588,27 +629,19 @@ void CRTDetSim::produce(art::Event & e) {
 
       switch (auxDetType){
           case 'c' :
-              mac5 = adid;
+              mac5 = febMap[adid][0].first;
               channel0ID = 2 * adsid + 0;
               channel1ID = 2 * adsid + 1;
               break;
           case 'd' : 
-              mac5 = adid;
+              mac5 = febMap[adid][0].first;
               channel0ID = adsid;
               break;
           case 'm' :
-              if (adid<119) {
-                  mac5 = adid/3;
-                  channel0ID = adsid/2 + 10*(adid % 3);
-              }
-              else if (adid<139) {
-                  mac5 = (adid+1)/3;
-                  channel0ID = adsid/2 + 10*((adid-2) % 3);
-              }
-              else {
-                  mac5 = (adid+2)/3;
-                  channel0ID = adsid/2 + 10*((adid-1) % 3);
-              }
+              mac5 = febMap[adid][0].first;
+              channel0ID = adsid/2 + 10*(febMap[adid][0].second-1);
+              if (febMap[adid].size()==2) 
+                  mac5dual = febMap[adid][1].first;
               break;
 
       }
@@ -621,7 +654,6 @@ void CRTDetSim::produce(art::Event & e) {
               tagger.layerid.insert(layid);
               tagger.chanlayer[channel0ID] = layid;
               tagger.chanlayer[channel1ID] = layid;
-              tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'c';
               tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
@@ -633,7 +665,6 @@ void CRTDetSim::produce(art::Event & e) {
               Tagger& tagger = taggers[mac5];
               tagger.layerid.insert(layid);
               tagger.chanlayer[channel0ID] = layid;
-              tagger.stackid = stackid;
               tagger.reg = region;
               tagger.type = 'd';
               tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
@@ -645,17 +676,15 @@ void CRTDetSim::produce(art::Event & e) {
                 Tagger& tagger = taggers[mac5];
                 tagger.layerid.insert(layid);
                 tagger.chanlayer[channel0ID] = layid;
-                tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
                 tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid));
                 nchandat_m++;
               }
               if(q0Dual > fQThresholdM) { 
-                Tagger& tagger = taggers[mac5+50];
+                Tagger& tagger = taggers[mac5dual];
                 tagger.layerid.insert(layid);
                 tagger.chanlayer[channel0ID] = layid;
-                tagger.stackid = stackid;
                 tagger.reg = region;
                 tagger.type = 'm';
                 tagger.data.push_back(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual,trkid));
@@ -672,7 +701,7 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType == 'm' && ( q0 < fQThresholdM || q0Dual < fQThresholdM)) nmissthr_m++;
 
       //print detsim info (if enabled)
-      /*if (fVerbose&&
+      if (fVerbose&&
          ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
            (auxDetType=='d' && q0>fQThresholdD ) ||
            (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
@@ -685,7 +714,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT HIT POS " << x << " " << y << " " << z << "\n"
         << "CRT STRIP POS " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
         << "CRT MODULE POS " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
-        << "CRT layer ID: " << layid << ",  stack ID: " << stackid << "\n"
+        << "CRT layer ID: " << layid << "\n"
         << "CRT distToReadout: " << distToReadout << ", distToReadout2: " << distToReadout2 << '\n'
         << "CRT abs0: " << abs0 << " , abs1: " << abs1 << '\n'
         << "CRT npeExpected: " << npeExpected << " , npeExpected2: " << npeExpected2 << '\n'
@@ -693,7 +722,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT charge q0: " << q0 << ", q1: " << q1 << '\n'
         << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << '\n'
         << " recoT-trueT = " << t0-tTrue << std::endl; 
-*/
+       
     }//for AuxDetIDEs 
   }//for AuxDetChannels
 
@@ -752,7 +781,6 @@ void CRTDetSim::produce(art::Event & e) {
       if (fVerbose) std::cout << "processing data for FEB " << trg.first << " with "
                               << trg.second.data.size() << " entries..." << '\n'
                               << "    type: " <<  trg.second.type << '\n'
-                              << "    stackID: " << trg.second.stackid << '\n'
                               << "    region: " <<  trg.second.reg << '\n'
                               << "    layerID: " << *trg.second.layerid.begin() << '\n' << std::endl;
  
@@ -808,7 +836,6 @@ void CRTDetSim::produce(art::Event & e) {
 
                 if( trg2.second.type!='m' || //is other mod 'm' type
                   trg.first == trg2.first || //other mod not same as this one
-                  trg.second.stackid != trg2.second.stackid || //other mod is in same stack
                   trg.second.reg != trg2.second.reg || //other mod is in same region
                   *trg2.second.layerid.begin() == *trg.second.layerid.begin()) //modules are in adjacent layers
                     continue;

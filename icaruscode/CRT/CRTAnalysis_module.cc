@@ -73,7 +73,7 @@ using std::pair;
 //using cmath::sqrt;
 
 namespace {
-
+  void FillFebMap(map<int,vector<pair<int,int>>>& m);
   uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo); 
   char ModToAuxDetType(geo::AuxDetGeo const& adgeo);
   int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
@@ -81,9 +81,9 @@ namespace {
   uint32_t MacToADReg(uint32_t mac);
   char MacToType(uint32_t mac);
   uint32_t MacToTypeCode(uint32_t mac);
-  uint32_t ADToMac(char type, uint32_t adid);
+  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid);
   //uint32_t ADSToFEBChannel(char type, uint32_t adid, uint32_t adsid);
-  int MacToAuxDetID(int mac, int chan);
+  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan);
   int ChannelToAuxDetSensitiveID(int mac, int chan);
 
 } // local namespace
@@ -584,6 +584,7 @@ namespace crt {
           << " PDG/Momtenta values not set correctly in fhicl - lists have different sizes"
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
 
+
     // Start by fetching some basic event information for our n-tuple.
     fEvent  = event.id().event(); 
     fRun    = event.run();
@@ -619,6 +620,10 @@ namespace crt {
           << " No sim::AuxDetSimChannel objects in this event - "
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
     }
+
+    map<int,vector<pair<int,int>>> febMap;
+    FillFebMap(febMap);
+    std::cout << "in analyze: filled febMap with " << febMap.size() << " modules!" << std::endl;
 
     for ( auto const& truth : (*genHandle) )
     {
@@ -1009,7 +1014,6 @@ namespace crt {
         struct tagger {
             char type;
             int region;
-            int stackID;
             std::set<int> layerID;
             std::map<int,int> stripLayer;
             std::pair<int,int> modPair;
@@ -1057,7 +1061,6 @@ namespace crt {
                     TGeoNode* nodeModule = manager->GetMother(2);
                     double origin[3] = {0, 0, 0};
                     int layid = 0.5*INT_MAX; //set to 0 or 1 if layerid determined
-                    int stackid = 0.5*INT_MAX; //for left/right crt regions ordered down to upstream (-z->+z)
                     //int mac5=LONG_MAX;
                     // Module position in parent (tagger) frame
                     double modulePosMother[3]; //position in CRT region volume
@@ -1077,18 +1080,12 @@ namespace crt {
 
                     // if 'm' type
                     if ( fADType[fNAuxDet] == 1 ) {
-                        // if left or right
-                        if ( fAuxDetReg[fNAuxDet] == 50 || fAuxDetReg[fNAuxDet] == 54 ) {
-                            if ( modulePosMother[2] < 0 ) stackid = 0;
-                            if ( modulePosMother[2] == 0) stackid = 1;
-                            if ( modulePosMother[2] > 0 ) stackid = 2;
-
-                            //following 2 if's use hardcoded dimensions - UPDATE AFTER ALL GEO CHANGES!
-                            if ( stackid == 0 || stackid == 2 ) layid = ( abs(modulePosMother[0]) < 49.482/2-1 );
-                            if ( stackid == 1 ) layid = ( abs(modulePosMother[0]) > 49.482/2-1 );
+                        // if east or west stacks (6 in total)
+                        if ( fAuxDetReg[fNAuxDet] >=40 && fAuxDetReg[fNAuxDet] <=45 ) {
+                            layid = ( abs(modulePosMother[0]>0) );
                         }
                         // if front or back
-                        if ( fAuxDetReg[fNAuxDet] == 42 || fAuxDetReg[fNAuxDet] == 44) {
+                        if ( fAuxDetReg[fNAuxDet] == 46 || fAuxDetReg[fNAuxDet] == 47) {
                             layid = ( modulePosMother[2]> 0 );
                         }
                     }
@@ -1112,7 +1109,6 @@ namespace crt {
                               << ", t: " << trueT << std::endl;
                     }
 
-                    tag.stackID = stackid;
                     tag.layerID.insert(layid);
                     tag.stripLayer[channel.AuxDetSensitiveID()] = layid;
                     std::vector<double>& truePos = tag.xyzt[channel.AuxDetSensitiveID()];
@@ -1145,7 +1141,7 @@ namespace crt {
                     fADExitXYZT[fNAuxDet][2] = ide.exitZ;
                     fADExitXYZT[fNAuxDet][3] = ide.exitT;
                     fAuxDetReg[fNAuxDet] = GetAuxDetRegion(fGeometryService->AuxDet(channel.AuxDetID()));
-                    fADMac[fNAuxDet] = ADToMac(ModToAuxDetType(adGeo),channel.AuxDetID());
+                    fADMac[fNAuxDet] = (ADToMac(febMap,channel.AuxDetID())).first;
                     fADType[fNAuxDet] = ModToTypeCode(adGeo);
 		    //fNAuxDet++;
 
@@ -1276,7 +1272,6 @@ namespace crt {
                 if (tag.first != tag2.first &&
                   mPairs.find(tag2.first) == mPairs.end() &&
                   tag.second.region == tag2.second.region &&
-                  tag.second.stackID == tag2.second.stackID &&
                   tag.second.layerID != tag2.second.layerID ) {
 
                     mPairs.insert(tag.first);
@@ -1565,7 +1560,7 @@ namespace crt {
                     fHitPDG[index] = particleMap[fHitTrk[index]]->PdgCode();
                 index++;
             }
-            fHitMod  = MacToAuxDetID(mactmp, chantmp);//hit.Module();
+            fHitMod  = MacToAuxDetID(febMap, mactmp, chantmp);//hit.Module();
             fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);//hit.Strip();
 
             fSimHitNtuple->Fill();
@@ -1587,6 +1582,30 @@ namespace crt {
 // Back to our local namespace.
 namespace {
 
+  void FillFebMap(map<int,vector<pair<int,int>>>& m) {
+    std::string dir = "/icarus/app/users/chilgenb/dev_areas/v08_22_00_prof/srcs/icaruscode/icaruscode/Geometry/gdml";
+    std::ifstream fin;
+    fin.open(dir+"feb_map.txt",std::ios::in);
+    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
+    else std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
+    std::vector<std::string> row;
+    std::string line, word;
+    while(getline(fin,line)) {
+        row.clear();
+        std::stringstream s(line);
+        int mod;
+        while (std::getline(s, word, ',')) {
+            row.push_back(word);
+        }
+        mod = std::stoi(row[0]);
+        m[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
+        if(row.size()>3)
+            m[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
+    }
+    std::cout << "filled febMap with " << m.size() << " entries" << std::endl;
+    fin.close();
+  }
+
   char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
     size_t nstrips = adgeo.NSensitiveVolume();
     if (nstrips==16) return 'c'; 
@@ -1603,42 +1622,45 @@ namespace {
     return UINT32_MAX;
   }
 
-  /*size_t ModToAuxDetRegion(size_t mod)
-  {
-    if ( mod >= 0  && mod < 54  ) return 50; //left
-    if ( mod > 53  && mod < 108 ) return 54; //right
-    if ( mod > 107 && mod < 128 ) return 44; //front
-    if ( mod > 127 && mod < 148 ) return 42; //back
-    if ( mod > 147 && mod < 162 ) return 58; //bottom
-    if ( mod > 161 && mod < 246 ) return 38; //top
-    if ( mod > 277 && mod < 284 ) return 46; //slope back
-    return UINT_MAX;
-  }*/
-
   int GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
   {
     char type = ModToAuxDetType(adgeo);
-    string base = "volAuxDet_";//module_xxx_";
-    string base2 = "_module_xxx_";
-    string volName(adgeo.TotalVolume()->GetName());
+    std::string base = "volAuxDet_";
+    switch ( type ) {
+      case 'c' : base+= "CERN"; break;
+      case 'd' : base+= "DC"; break;
+      case 'm' : base+= "MINOS"; break;
+      case 'e' :
+          std::cout << "error in GetAuxDetRegion: type error" << std::endl;
+          return INT_MAX;
+    }
+    base+="_module_###_";
+    std::string volName(adgeo.TotalVolume()->GetName());
 
-    if (type == 'm') base += "MINOS" + base2;
-    if (type == 'd') return 58;
-    if (type == 'c') base += "CERN" + base2;
+    //module name has 2 possible formats
+    //  volAuxDet_<subsystem>_module_###_<region>
+    //  volAuxDet_<subsystem>_module_###_cut###_<region>
 
-    string reg  = volName.substr(base.size());
+    std::string reg = volName.substr(base.length(),volName.length());
+    if( reg.find("_")!=std::string::npos)
+        reg = reg.substr(reg.find("_")+1,reg.length());
 
-    if(reg == "Top")        return 38;
-    if(reg == "SlopeLeft")  return 52;
-    if(reg == "SlopeRight") return 56;
-    if(reg == "SlopeFront") return 48;
-    if(reg == "SlopeBack")  return 46;
-    if(reg == "Left")       return 50;
-    if(reg == "Right")      return 54;
-    if(reg == "Front")      return 44;
-    if(reg == "Back")       return 42;
-    if(reg == "Bottom")     return 58;
-    return -1;
+    if(reg == "Top")        return 30;
+    if(reg == "RimWest")    return 31;
+    if(reg == "RimEast")    return 32;
+    if(reg == "RimSouth")   return 33;
+    if(reg == "RimNorth")   return 34;
+    if(reg == "WestSouth")  return 40;
+    if(reg == "WestCenter") return 41;
+    if(reg == "WestNorth")  return 42;
+    if(reg == "EastSouth")  return 43;
+    if(reg == "EastCenter") return 44;
+    if(reg == "EastNorth")  return 45;
+    if(reg == "South")      return 46;
+    if(reg == "North")      return 47;
+    if(reg == "Bottom")     return 50;
+
+    return INT_MAX;
   }
 
 
@@ -1682,20 +1704,20 @@ namespace {
 
   uint32_t MacToADReg(uint32_t mac) {
 
-      if(mac>=162 && mac<=245) return 38; //top
-      if(mac>=246 && mac<=258) return 52; //slope left
-      if(mac>=259 && mac<=271) return 56; //slope right
-      if(mac>=272 && mac<=277) return 48; //slope front
-      if(mac>=278 && mac<=283) return 46; //slope back
-      if(            mac<=17 ) return 50; //left  NB removed the test mac >= 0 since always true
-      if(mac>=50  && mac<=67 ) return 50; //left
-      if(mac>=18  && mac<=35 ) return 54; //right
-      if(mac>=68  && mac<=85 ) return 54; //right
-      if(mac>=36  && mac<=42 ) return 44; //front
-      if(mac>=86  && mac<=92 ) return 44; //front
-      if(mac>=43  && mac<=49 ) return 42; //back
-      if(mac>=93  && mac<=99 ) return 42; //back
-      if(mac>=148 && mac<=161) return 58; //bottom
+      if(mac>=107 && mac<=190) return 30; //top
+      if(mac>=191 && mac<=204) return 31; //rim west
+      if(mac>=205 && mac<=218) return 32; //rim east
+      if(mac>=219 && mac<=224) return 33; //rim south
+      if(mac>=225 && mac<=230) return 34; //rim north
+      if(            mac<=12 ) return 40; //west side, south stack
+      if(mac>=13  && mac<=24 ) return 41; //west side, center stack
+      if(mac>=25  && mac<=36 ) return 42; //west side, north stack
+      if(mac>=37  && mac<=48 ) return 43; //east side, south stack
+      if(mac>=49  && mac<=60 ) return 44; //east side, center stack
+      if(mac>=60  && mac<=61 ) return 45; //east side, north stack
+      if(mac>=73  && mac<=84 ) return 46; //south
+      if(mac>=85  && mac<=92 ) return 47; //north
+      if(mac>=93 && mac<=106) return 50; //bottom
 
       return 0;
   }
@@ -1704,11 +1726,11 @@ namespace {
 
       uint32_t reg = MacToADReg(mac);
 
-      if( reg==38 || reg==52 || reg==56 || reg==48 || reg==46 )
+      if( reg>29 && reg<40 )
         return 'c';
-      if( reg==50 || reg==54 || reg==44 || reg==42 )
+      if( reg>39 && reg<50 )
         return 'm';
-      if( reg==58)
+      if( reg==50 )
         return 'd';
 
       return 'e';
@@ -1716,13 +1738,13 @@ namespace {
 
   uint32_t MacToTypeCode(uint32_t mac) {
 
-      uint32_t reg = MacToADReg(mac);
+      char reg = MacToType(mac);
 
-      if( reg==38 || reg==52 || reg==56 || reg==48 || reg==46 )
+      if(reg=='c')
         return 0; //'c';
-      if( reg==50 || reg==54 || reg==44 || reg==42 )
+      if(reg=='m')
         return 1; //'m';
-      if( reg==58)
+      if(reg=='d')
         return 2; //'d';
 
       return UINT32_MAX;//'e';
@@ -1733,45 +1755,31 @@ namespace {
   //  numbering convention is module from FEB i 
   //  is readout on the opposite end by FEB i+50
   //  return FEB i
-  uint32_t ADToMac(char type, uint32_t adid) {
-
-      switch (type){
-          case 'c' :
-              return adid;
-              //break;
-          case 'd' :
-              return adid;
-              //break;
-          case 'm' :
-              return adid/3;
-              //break;
+  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid) {
+      for(auto const& p : febMap) {
+          if((uint32_t)p.first!=adid)
+              continue;
+          if(p.second.size()==2)
+              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[1].first);
+          else
+              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[0].first);
       }
-      return UINT32_MAX;
+      return std::make_pair(UINT32_MAX,UINT32_MAX);
   }
 
-  int MacToAuxDetID(int mac, int chan){
-    char type = MacToType(mac);
-    if (type == 'e') return INT_MAX;
-    if (type == 'c' || type == 'd') return mac;
-    if (type == 'm') {
-      if (mac>49) mac+=-50;
-      if (mac<40) {
-          if (            chan<=9 ) return mac*3;
-          if (chan>=10 && chan<=19) return mac*3 + 1;
-          if (chan>=20 && chan<=29) return mac*3 + 2;
-      }
-      else if (mac<47) {
-          if (            chan<=9 ) return mac*3 - 1;
-          if (chan>=10 && chan<=19) return mac*3;
-          if (chan>=20 && chan<=29) return mac*3 + 1;
-      }
-      else {
-          if (            chan<=9 ) return mac*3 - 2;
-          if (chan>=10 && chan<=19) return mac*3 - 1;
-          if (chan>=20 && chan<=29) return mac*3;
-      }
+  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan){
+      char type = MacToType(mac);
+      int pos=1;
+      if(type=='m')
+          pos = chan/10 + 1;
 
-    }
+      for(auto const& p : febMap) {
+          if(p.second[0].first == mac&&p.second[1].second==pos)
+              return (uint32_t)p.first;
+          if(p.second.size()==2)
+              if(p.second[1].first==mac&&p.second[1].second==pos)
+                  return (uint32_t)p.first;
+      }
 
     return INT_MAX;
   }
