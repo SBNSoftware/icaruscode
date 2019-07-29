@@ -4,7 +4,7 @@ icarus_crtsim:
 {
   module_type: "icaruscode/CRT/CRTDetSim"
 
-  Verbose: true
+  Verbose: false
 
   G4ModuleLabel: "largeant"
 

@@ -701,7 +701,7 @@ void CRTDetSim::produce(art::Event & e) {
       if (auxDetType == 'm' && ( q0 < fQThresholdM || q0Dual < fQThresholdM)) nmissthr_m++;
 
       //print detsim info (if enabled)
-      if (fVerbose&&
+   /*   if (fVerbose&&
          ( (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
            (auxDetType=='d' && q0>fQThresholdD ) ||
            (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
@@ -722,7 +722,7 @@ void CRTDetSim::produce(art::Event & e) {
         << "CRT charge q0: " << q0 << ", q1: " << q1 << '\n'
         << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << '\n'
         << " recoT-trueT = " << t0-tTrue << std::endl; 
-       
+  */     
     }//for AuxDetIDEs 
   }//for AuxDetChannels
 
