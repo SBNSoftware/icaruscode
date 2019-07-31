@@ -5,20 +5,21 @@ icarus_crtsim:
   module_type: "icaruscode/CRT/CRTDetSim"
 
   Verbose: false
+  UltraVerbose: false
 
   G4ModuleLabel: "largeant"
 
-  // Global timing offset [ns]
-  // For Corsika cosmics, use -1.1ms (see corsika_icarus.fcl)
+  # Global timing offset [ns]
+  # For Corsika cosmics, use -1.1ms (see corsika_icarus.fcl)
   GlobalT0Offset: -1.1e6 
 
-  // Shape parameters for mean time delay vs. Npe
+  # Shape parameters for mean time delay vs. Npe
   TDelayNorm: 4125.74
   TDelayShift: -300.31
   TDelaySigma: 90.392
   TDelayOffset: -1.525
 
-  // Shape parameters for time delay RMS vs. Npe  
+  # Shape parameters for time delay RMS vs. Npe  
   TDelayRMSGausNorm: 2.09138
   TDelayRMSGausShift: 7.23993
   TDelayRMSGausSigma: 170.027
@@ -26,53 +27,54 @@ icarus_crtsim:
   TDelayRMSExpShift: 75.6183
   TDelayRMSExpScale: 79.3543
 
-  // Propagation delay [ns/cm]
-  // index of refraction in polystyrene = 1.57
-  PropDelay: 0.0523// 0.0061
+  # Propagation delay [ns/cm]
+  # index of refraction in polystyrene = 1.57
+  PropDelay: 0.0523# 0.0061
   PropDelayError: 0.007
 
-  // Interpolator time resolution [ns]
+  # Interpolator time resolution [ns]
   TResInterpolator: 1.268
 
-  // Mean deposited charge for mips [GeV]
+  # Mean deposited charge for mips [GeV]
   UseEdep: true
   Q0: 1.891e-3
 
-  // ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
+  # ADC model: Pedestal offset [ADC], slope [ADC/photon], RMS [ADC]
   QPed: 63.6
   QSlope: 70.0
   QRMS: 10.0
 
-  //ADC threshold (not DAC value used for discriminator)
+  #ADC threshold (not DAC value used for discriminator)
   QThresholdC: 169 #1.5 p.e.
-  QThresholdM: 169
-  QThresholdD: 169
+  QThresholdM: 379 #4.5 p.e.
+  QThresholdD: 169 #1.5 p.e.
 
-  // Coincidence window for two fibers on a strip [ns]
-  // only applies to CERN modules
-  StripCoincidenceWindow: 10.0
+  # Coincidence window for two fibers on a strip [ns]
+  # only applies to CERN modules
+  StripCoincidenceWindow: 50.0
+  ApplyStripCoincidenceC: true #enable or disable fiber-fiber coincidence in a CERN strip
 
-  // Whether or not to apply coincidence between hits in adjacent layers
+  # Whether or not to apply coincidence between hits in adjacent layers
   ApplyCoincidenceC: true
   ApplyCoincidenceM: true
   ApplyCoincidenceD: true
 
-  // Coincidence window for strips from different layers within a module [ns]
-  LayerCoincidenceWindowC: 30.0 //module self coincidence
-  LayerCoincidenceWindowM: 50.0 //inter layer coincidence
-  LayerCoincidenceWindowD: 30.0 //module self coincidence
+  # Coincidence window for strips from different layers within a module [ns]
+  LayerCoincidenceWindowC: 30.0 #module self coincidence
+  LayerCoincidenceWindowM: 50.0 #inter layer coincidence
+  LayerCoincidenceWindowD: 30.0 #module self coincidence
 
-  // Effective absorption length (for transverse response) [cm]
-  // not used for now, but may be useful later for other attenuation modeling
-  // AbsLenEffC: 8.5
-  // AbsLenEffM: 4.5
-  // AbsLenEffD: 4.5
+  # Effective absorption length (for transverse response) [cm]
+  # not used for now, but may be useful later for other attenuation modeling
+  # AbsLenEffC: 8.5
+  # AbsLenEffM: 4.5
+  # AbsLenEffD: 4.5
 
-  // Dead Time inherent in the front end electronics [ns]
+  # Dead Time inherent in the front end electronics [ns]
   DeadTime: 22000.0
 
-  // Time over which overlapping signals can influence each other [ns]
-  // for now, adc signals are merged
+  # Time over which overlapping signals can influence each other [ns]
+  # for now, adc signals are merged
   BiasTime: 50.0
 
 }
