@@ -20,8 +20,8 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 
-#include "nutools/ParticleNavigation/ParticleList.h"
-#include "nutools/ParticleNavigation/EmEveIdCalculator.h"
+#include "nug4/ParticleNavigation/ParticleList.h"
+#include "nug4/ParticleNavigation/EmEveIdCalculator.h"
 
 #include <cmath>
 #include <algorithm>

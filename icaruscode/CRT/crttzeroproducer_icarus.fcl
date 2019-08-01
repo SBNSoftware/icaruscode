@@ -1,0 +1,12 @@
+BEGIN_PROLOG
+
+standard_crttzeroproducer:
+{
+    module_type:         "icaruscode/CRT/CRTTzeroProducer"
+    data_label:          "crtsimhit"
+    max_time_difference: 150.
+    store_tzero:         1
+    verbose:             1
+}
+
+END_PROLOG

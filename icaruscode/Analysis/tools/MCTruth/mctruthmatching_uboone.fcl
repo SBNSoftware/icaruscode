@@ -10,7 +10,7 @@ BackTrackerTruthTool:
 
 AssociationsTruthTool:
 {
-  tool_type:           "AssociationsTruth"
+  tool_type:           "icaruscode/Analysis/tools/MCTruth/AssociationsTruth"
   AssnsProducerLabels: ["gaushitTruthMatch", "pandoraCosmicHitRemoval"]
   G4ProducerLabel:     "largeant"
   MCTruthAssociations: @local::MCTruthAssociations

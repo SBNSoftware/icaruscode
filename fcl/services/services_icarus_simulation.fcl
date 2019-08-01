@@ -38,6 +38,7 @@
 #include "services_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "signalservices_icarus.fcl"
+#include "photpropservices_icarus.fcl"
 
 BEGIN_PROLOG
 

@@ -1,0 +1,55 @@
+#
+# File:    radiological_model_icarus.fcl
+# Purpose: Settings for generators of radionuclide activity.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 22, 2019
+# Version: 1.0
+#
+# This file collects parameters for event generators simulating the
+# radioactivity of detector materials.
+#
+# RadioGen module
+# ================
+# 
+# `RadioGen` is the module performing the simulation.
+# 
+# Currently, `RadioGen` generates radiologicals within rectangular prisms
+# with sides parallel to the x, y and z axes, and within a specified time range.
+# The parameters Nuclide through T1 are arrays,
+# so many volumes can be specified to be radioactive with different nuclides.
+# 
+# 
+# Dependencies
+# -------------
+# 
+# `RadioGen` requires the following services:
+# * `NuRandomService`
+# * `Geometry`
+# * `DetectorClocks` (optional)
+# 
+# 
+# Changes:
+# 20190722 [v1.0] (petrillo@slac.stanford.edu)
+#   first version, a shameless rip of `dune_radiological_model.fcl` from
+#   `dunetpc` `v08_25_00`
+#
+
+
+BEGIN_PROLOG
+
+################################################################################
+radiogen_Ar39_icarus: {
+  module_type:           "RadioGen"
+  Nuclide:               [ "39Ar" ]
+  Material:              [ "LAr" ]
+  BqPercc:               [ 0.00141 ]   # activity [becquerel/cm^3]; 0.00141 assumes 1.01 Bq/kg (typical for 39Ar) and a density of 1.396 g/cc for LAr
+  Volumes:               [ 'volCryostat' ]
+  
+  # we pick the timing automatically from the TPC readout window
+  
+} # radiogen_Ar39_icarus
+
+
+################################################################################
+
+END_PROLOG

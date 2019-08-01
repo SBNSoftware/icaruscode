@@ -6,12 +6,12 @@ art_make(
           MODULE_LIBRARIES larcorealg_Geometry
                            larcore_Geometry_Geometry_service
                            larsim_Simulation 
-                           nutools_ParticleNavigation lardataobj_Simulation
+                           nug4_ParticleNavigation lardataobj_Simulation
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData
                            icaruscode_Utilities_SignalShapingServiceICARUS_service
-			                     larevt_CalibrationDBI_Providers
+			                  larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
@@ -22,7 +22,7 @@ art_make(
                            art_Persistency_Common
                            art_Persistency_Provenance
                            art_Utilities
-			                     canvas
+			                  canvas
                            ${MF_MESSAGELOGGER}
                            ${MF_UTILITIES}
                            ${FHICLCPP}
@@ -38,7 +38,7 @@ simple_plugin(SimWireICARUS "module"
                            larcorealg_Geometry
                            larcore_Geometry_Geometry_service
                            larsim_Simulation 
-                           nutools_ParticleNavigation lardataobj_Simulation
+                           nug4_ParticleNavigation lardataobj_Simulation
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData

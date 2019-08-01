@@ -9,7 +9,7 @@ art_make(
             larevt_CalibrationDBI_Providers
             lardataobj_RecoBase
             lardata_ArtDataHelper
-            larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
+            larsim_Simulation nug4_ParticleNavigation lardataobj_Simulation
             nusimdata_SimulationBase
             lardata_Utilities
             lardataobj_MCBase

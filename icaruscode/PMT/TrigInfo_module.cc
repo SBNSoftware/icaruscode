@@ -55,7 +55,7 @@
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCNeutrino.h"
 
-#include "nutools/ParticleNavigation/ParticleList.h"
+#include "nug4/ParticleNavigation/ParticleList.h"
 
 #include "lardataobj/Simulation/sim.h"
 #include "lardataobj/RecoBase/OpHit.h"
