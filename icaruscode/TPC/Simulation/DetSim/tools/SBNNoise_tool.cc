@@ -84,7 +84,6 @@ private:
 
     std::vector<double>                         fCorrAmpDistVec;     //< Keep track of motherboard contributions
     
-    float                                       fIncoherentNoiseFraction; //< RMS of full noise waveform
  float                                       fIncoherentNoiseRMS; //< RMS of full noise waveform
     float                                       fCoherentNoiseRMS;   //< RMS of full noise waveform
 
@@ -132,19 +131,19 @@ SBNNoise::~SBNNoise()
 void SBNNoise::configure(const fhicl::ParameterSet& pset)
 {
     // Recover the histogram used for noise generation
-    fPlane                  = pset.get< size_t      >("Plane");
-    fMedianNumBins          = pset.get< int         >("MedianNumBins");
-    fNoiseRand              = pset.get< float       >("NoiseRand");
-    fCorrelatedSeed         = pset.get< long        >("CorrelatedSeed",1000);
-    fUncorrelatedSeed       = pset.get< long        >("UncorrelatedSeed",5000);
-    fIncoherentNoiseFrac    = pset.get< float       >("IncoherentNoiseFraction",0.5);
-    fStoreHistograms        = pset.get< bool        >("StoreHistograms");
-    fInputNoiseHistFileName = pset.get< std::string >("NoiseHistFileName");
-    fCorrelatedHistogramName          = pset.get< std::string >("CorrelatedHistogramName");
-    fUncorrelatedHistogramName          = pset.get< std::string >("UncorrelatedHistogramName");
-    fCorrelatedRMSHistoName          = pset.get< std::string >("CorrelatedRMSHistoName");
-    fUncorrelatedRMSHistoName          = pset.get< std::string >("UncorrelatedRMSHistoName");
-    fTotalRMSHistoName          = pset.get< std::string >("TotalRMSHistoName");
+    fPlane                     = pset.get< size_t      >("Plane");
+    fMedianNumBins             = pset.get< int         >("MedianNumBins");
+    fNoiseRand                 = pset.get< float       >("NoiseRand");
+    fCorrelatedSeed            = pset.get< long        >("CorrelatedSeed",1000);
+    fUncorrelatedSeed          = pset.get< long        >("UncorrelatedSeed",5000);
+    fIncoherentNoiseFrac       = pset.get< float       >("IncoherentNoiseFraction",0.5);
+    fStoreHistograms           = pset.get< bool        >("StoreHistograms");
+    fInputNoiseHistFileName    = pset.get< std::string >("NoiseHistFileName");
+    fCorrelatedHistogramName   = pset.get< std::string >("CorrelatedHistogramName");
+    fUncorrelatedHistogramName = pset.get< std::string >("UncorrelatedHistogramName");
+    fCorrelatedRMSHistoName    = pset.get< std::string >("CorrelatedRMSHistoName");
+    fUncorrelatedRMSHistoName  = pset.get< std::string >("UncorrelatedRMSHistoName");
+    fTotalRMSHistoName         = pset.get< std::string >("TotalRMSHistoName");
     // Initialize the work vector
     fNoiseFrequencyVec.resize(fDetectorProperties->NumberTimeSamples(),std::complex<float>(0.,0.));
 
