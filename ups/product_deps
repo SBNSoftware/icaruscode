@@ -35,7 +35,7 @@ table_fragment_end
 product          version
 larsoft         v08_27_00
 icarusutil      v08_27_00
-icarus_data     v08_15_01
+icarus_data     v08_27_00
 genie_xsec      v2_12_10
 
 cetbuildtools	v7_13_02	-	only_for_build
