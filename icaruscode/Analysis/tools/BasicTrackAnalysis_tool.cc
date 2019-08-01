@@ -4,9 +4,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Services/Optional/TFileDirectory.h"
+#include "art_root_io/TFileDirectory.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Persistency/Common/FindManyP.h"
@@ -89,8 +89,8 @@ public:
 private:
     
     // Fcl parameters.
-    art::InputTag fTrackProducerLabel; ///< tag for finding the tracks
-    std::string   fLocalDirName;       ///< Directory name for histograms
+    std::vector<art::InputTag> fTrackProducerLabelVec; ///< tag for finding the tracks
+    std::string                fLocalDirName;          ///< Directory name for histograms
     
     // Pointers to the histograms we'll create.
     TH1D*     fHitsByWire[3];
@@ -134,8 +134,8 @@ BasicTrackAnalysis::~BasicTrackAnalysis()
 ///
 void BasicTrackAnalysis::configure(fhicl::ParameterSet const & pset)
 {
-    fTrackProducerLabel = pset.get<art::InputTag>("TrackProducerLabel",                 "");
-    fLocalDirName       = pset.get<std::string>(  "LocalDirName",       std::string("wow"));
+    fTrackProducerLabelVec = pset.get<std::vector<art::InputTag>>("TrackProducerLabel",   std::vector<art::InputTag>()={""});
+    fLocalDirName          = pset.get<std::string               >(  "LocalDirName",       std::string("wow"));
 }
 
 //----------------------------------------------------------------------------
@@ -164,18 +164,21 @@ void BasicTrackAnalysis::fillHistograms(const art::Event& event) const
 {
     // The game plan for this module is to look at recob::Tracks and objects associated to tracks
     // To do this we need a valid track collection for those we are hoping to look at
-    art::Handle<std::vector<recob::Track> > trackHandle;
-    event.getByLabel(fTrackProducerLabel, trackHandle);
-    
-    if (trackHandle.isValid())
+    for(const auto& trackLabel : fTrackProducerLabelVec)
     {
-        // Recover the collection of associations between tracks and hits
-        art::FindManyP<recob::Hit> trackHitAssns(trackHandle, event, fTrackProducerLabel);
+        art::Handle<std::vector<recob::Track> > trackHandle;
+        event.getByLabel(trackLabel, trackHandle);
         
-        for(size_t trackIdx = 0; trackIdx < trackHandle->size(); trackIdx++)
+        if (trackHandle.isValid())
         {
-            art::Ptr<recob::Track> track(trackHandle,trackIdx);
+            // Recover the collection of associations between tracks and hits
+            art::FindManyP<recob::Hit> trackHitAssns(trackHandle, event, trackLabel);
             
+            for(size_t trackIdx = 0; trackIdx < trackHandle->size(); trackIdx++)
+            {
+                art::Ptr<recob::Track> track(trackHandle,trackIdx);
+                
+            }
         }
     }
 

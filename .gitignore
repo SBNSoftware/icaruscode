@@ -12,6 +12,9 @@
 # this is temporary vim files
 .*.swp
 
+# python compiled code
+*.pyc
+
 # more stuff
 .depend
 *Dict.cxx
@@ -19,3 +22,4 @@
 *.bak
 *.log
 *.root
+*.db

@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 icarus_crtsim:
 {
-  module_type: "CRTDetSim"
+  module_type: "icaruscode/CRT/CRTDetSim"
 
   Verbose: true
 

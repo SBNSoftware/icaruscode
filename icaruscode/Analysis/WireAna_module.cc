@@ -28,7 +28,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/View.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
@@ -87,8 +87,8 @@ public:
 private:
 
     // The parameters we'll read from the .fcl file.
-    art::InputTag fWireProducerLabel;
-    art::InputTag fSimChannelProducerLabel;
+    std::vector<art::InputTag> fWireProducerLabelVec;
+    art::InputTag              fSimChannelProducerLabel;
 
     // The variables that will go into the n-tuple.
     int fEvent;
@@ -166,8 +166,8 @@ void WireAna::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fWireProducerLabel       = p.get< std::string >("WireModuleLabel",       "recowire");
-    fSimChannelProducerLabel = p.get< std::string >("SimChannelModuleLabel", "daq"     );
+    fWireProducerLabelVec    = p.get< std::vector<art::InputTag> >("WireModuleLabel",       std::vector<art::InputTag>() = {"recowire"});
+    fSimChannelProducerLabel = p.get< std::string                >("SimChannelModuleLabel", "daq"     );
 
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& wireHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("WireHistogramToolList");
@@ -188,36 +188,40 @@ void WireAna::analyze(const art::Event& event)
 
     fNumEvents++;
     
-    // Make a pass through all hits to make contrasting plots
-    art::Handle< std::vector<recob::Wire> >  wireHandle;
-    event.getByLabel(fWireProducerLabel, wireHandle);
-    
-    // Recover sim channels (if they exist) so we know when a
-    // channel has signal (or not)
-    art::Handle<std::vector<sim::SimChannel>>  simChannelHandle;
-    event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
-    
-    // Recover list of simChannels mapped by channel to make
-    // look up easier below
-    IWireHistogramTool::SimChannelMap channelMap;
-    
-    if (simChannelHandle.isValid())
+    // Loop over input list of wire producers
+    for(const auto& wireLabel : fWireProducerLabelVec)
     {
-        for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
-//        {
-//            raw::ChannelID_t       channel       = simChannel.Channel();
-//            const sim::SimChannel* simChannelPtr = &simChannel;
+        // Make a pass through all hits to make contrasting plots
+        art::Handle< std::vector<recob::Wire> >  wireHandle;
+        event.getByLabel(wireLabel, wireHandle);
+        
+        // Recover sim channels (if they exist) so we know when a
+        // channel has signal (or not)
+        art::Handle<std::vector<sim::SimChannel>>  simChannelHandle;
+        event.getByLabel(fSimChannelProducerLabel, simChannelHandle);
+        
+        // Recover list of simChannels mapped by channel to make
+        // look up easier below
+        IWireHistogramTool::SimChannelMap channelMap;
+        
+        if (simChannelHandle.isValid())
+        {
+            for(const auto& simChannel : *simChannelHandle) channelMap[simChannel.Channel()] = &simChannel;
+//            {
+//                raw::ChannelID_t       channel       = simChannel.Channel();
+//                const sim::SimChannel* simChannelPtr = &simChannel;
 //
-//            channelMap.at(channel) = simChannelPtr;
-//        }
-    }
-
-    if (wireHandle.isValid())
-    {
-        IWireHistogramTool::WirePtrVec wireVec;
-        art::fill_ptr_vector(wireVec, wireHandle);
-
-        for(auto& wireHistTool : fWireHistogramToolVec) wireHistTool->fillHistograms(wireVec,channelMap,fNumEvents);
+//                channelMap.at(channel) = simChannelPtr;
+//            }
+        }
+    
+        if (wireHandle.isValid())
+        {
+            IWireHistogramTool::WirePtrVec wireVec;
+            art::fill_ptr_vector(wireVec, wireHandle);
+    
+            for(auto& wireHistTool : fWireHistogramToolVec) wireHistTool->fillHistograms(wireVec,channelMap,fNumEvents);
+        }
     }
 
     return;

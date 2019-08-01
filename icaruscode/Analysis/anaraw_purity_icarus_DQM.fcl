@@ -1,0 +1,55 @@
+#include "seedservice.fcl"
+#include "singles.fcl"
+#include "larproperties.fcl"
+#include "magfield_larsoft.fcl"
+#include "hitalgorithms.fcl"
+#include "clustermodules.fcl"
+#include "largeantmodules.fcl"
+#include "mcreco.fcl"
+#include "services_icarus.fcl"
+#include "reco_icarus.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+process_name: IcaPurity
+
+#Start each new event with an empty event.
+source:
+{
+  module_type:     RootInput
+  maxEvents:       10          # Number of events to create
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ analyzers:
+ {
+   purityana:  @local::standard_clusterana
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+ ana: [ purityana ]
+ end_paths:     [ana]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "out_purityDQM_icarus.root"
+   dataTier:    "reco-simulated"
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+physics.analyzers.purityana.RawModuleLabel:    "daq"
+physics.analyzers.purityana.module_type:    "ICARUSPurityDQM"
+physics.analyzers.purityana.ValoreTauFCL:  600000.

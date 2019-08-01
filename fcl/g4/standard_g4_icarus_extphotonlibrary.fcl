@@ -1,0 +1,7 @@
+#include "standard_g4_icarus.fcl"
+
+// Overrides to use the extended photon library
+services.PhotonVisibilityService.XMin: -395
+services.PhotonVisibilityService.XMax: 395
+services.PhotonVisibilityService.NX: 158
+services.PhotonVisibilityService.LibraryFile: "PhotonLibrary/Modif_PhotonLibrary-20180801.root"

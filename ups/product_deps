@@ -1,15 +1,15 @@
-# This @product_deps@ file defines dependencies for this package. 
+# This @product_deps@ file defines dependencies for this package.
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v08_10_01
+parent icaruscode v08_24_00
 defaultqual e17
 
 # These optional lines define where headers, libraries, and executables go and should
 # be used only if your product does not conform to the defaults.
 # Format: directory_type directory_path directory_name
 #   where directory_type is one of incdir, libdir, or bindir
-#   where directory_path is one of product_dir, fq_dir and - 
+#   where directory_path is one of product_dir, fq_dir and -
 # Defaults:
 # incdir  product_dir  include
 # fcldir  product_dir  fcl
@@ -20,7 +20,7 @@ fcldir  product_dir job
 gdmldir product_dir gdml
 fwdir   product_dir scripts
 
-# table fragment to set FW_SEARCH_PATH needed 
+# table fragment to set FW_SEARCH_PATH needed
 # to find gdml files:
 table_fragment_begin
     pathPrepend(FW_SEARCH_PATH, ${ICARUSCODE_DIR}/gdml)
@@ -33,15 +33,15 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-larsoft         v08_10_01
-icarusutil      v08_10_01
-icarus_data     v07_00_01
+larsoft         v08_24_00
+icarusutil      v08_24_00
+icarus_data     v08_15_01
 genie_xsec      v2_12_10
 
-cetbuildtools	v7_11_00	-	only_for_build
+cetbuildtools	v7_13_02	-	only_for_build
 end_product_list
 
-
+# Restore this temporarily...
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
 # e15  - with gcc 6.4.0 and -std=c++1y

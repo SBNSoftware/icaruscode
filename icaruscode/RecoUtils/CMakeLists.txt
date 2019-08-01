@@ -8,15 +8,15 @@ art_make(
                            larevt_Filters
                            lardataobj_RawData
                            lardataobj_RecoBase
-                           lardata_RecoObjects larreco_Deprecated  
+                           lardata_RecoObjects
                            larpandora_LArPandoraInterface
                            nusimdata_SimulationBase
                            cetlib cetlib_except
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                            art_Persistency_Common canvas
                            art_Persistency_Provenance canvas
                            art_Utilities canvas
@@ -35,16 +35,16 @@ install_fhicl()
 install_source()
 
 
-#art_make( LIBRARY_NAME RecoUtils
+#art_make(
 #	  LIB_LIBRARIES larcorealg_Geometry
 #	  	        larcore_Geometry_Geometry_service
-#		        larsim_Simulation nutools_ParticleNavigation lardataobj_Simulation
+#		        larsim_Simulation nurandom_ParticleNavigation lardataobj_Simulation
 # 	  	        larsim_MCCheater_BackTracker_service
 #	  	        lardata_Utilities
 #larevt_Filters
 #	  	        lardataobj_RawData
 #	  	        lardataobj_RecoBase
-#	  	        lardata_RecoObjects larreco_Deprecated
+#	  	        lardata_RecoObjects
 #larreco_RecoAlg
 #larreco_Calorimetry
 #larpandora_LArPandoraInterface
@@ -63,8 +63,8 @@ install_source()
 #          	           ${ART_FRAMEWORK_CORE}
 #	  	           ${ART_FRAMEWORK_PRINCIPAL}
 #		       	   ${ART_FRAMEWORK_SERVICES_REGISTRY}
-#	  	       	   ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-#			   ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+#	  	       	   ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+#			   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
 #	  	           art_Persistency_Common canvas
 #	  	           art_Persistency_Provenance canvas
 #	  	           art_Utilities canvas

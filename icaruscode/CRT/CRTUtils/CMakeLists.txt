@@ -16,8 +16,8 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                            art_Persistency_Common canvas
                            art_Persistency_Provenance canvas
                            art_Utilities canvas
@@ -33,7 +33,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            icaruscode_CRTProducts
                            icaruscode_CRTData
                            lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-                           nutools_RandomUtils_NuRandomService_service
+                           nurandom_RandomUtils_NuRandomService_service
         )
 install_headers()
 install_source()

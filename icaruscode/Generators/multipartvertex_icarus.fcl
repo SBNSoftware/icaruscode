@@ -5,6 +5,7 @@ MultiPartVertex : {
     DebugMode    : 0
     G4Time       : 3925.0
     G4TimeJitter : 800
+    TPCRange     : [0,1,2,3]
     XRange       : [10]
     YRange       : [10]
     ZRange       : [10]
@@ -24,6 +25,7 @@ MultiPartRain : {
     DebugMode    : 0
     G4Time       : 3925.0
     G4TimeJitter : 800
+    TPCRange     : [0,1,2,3]
     XRange       : [10]
     YRange       : [10]
     ZRange       : [10]

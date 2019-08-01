@@ -1,11 +1,11 @@
 include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-include_directories( $ENV{NUTOOLS_INC} )
+include_directories( $ENV{NURANDOM_INC} )
 include_directories( $ENV{IFDHX_FQ_DIR}/inc )
 
 add_subdirectory(CRTProducts)
 add_subdirectory(CRTUtils)
 
-art_make( BASENAME_ONLY
+art_make(
     EXCLUDE
         CRTChannelMapAlg.cxx
         CRTGeometryHelper_service.cc
@@ -61,7 +61,6 @@ simple_plugin( CRTGeometryHelper service
         ${MF_UTILITIES}
         ${ROOT_BASIC_LIB_LIST}
         ${CETLIB}
-    BASENAME_ONLY
 )
 
 simple_plugin( CRTDetSim module
@@ -76,7 +75,7 @@ simple_plugin( CRTDetSim module
         canvas
         cetlib_except
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
         ${MF_MESSAGELOGGER}
@@ -84,7 +83,6 @@ simple_plugin( CRTDetSim module
         ${ROOT_BASIC_LIB_LIST}
         ${CLHEP}
         ${CETLIB}
-    BASENAME_ONLY
 )
 
 simple_plugin( CRTSimHitProducer module
@@ -100,7 +98,7 @@ simple_plugin( CRTSimHitProducer module
         canvas
         cetlib_except
         lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
-        nutools_RandomUtils_NuRandomService_service
+        nurandom_RandomUtils_NuRandomService_service
         ${ART_FRAMEWORK_SERVICES_REGISTRY}
         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
         ${MF_MESSAGELOGGER}
@@ -166,8 +164,8 @@ simple_plugin( CRTAnalysis module
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                         art_Persistency_Common
                         art_Persistency_Provenance
                         art_Utilities

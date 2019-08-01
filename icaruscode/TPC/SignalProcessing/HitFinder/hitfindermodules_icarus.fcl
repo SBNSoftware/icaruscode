@@ -1,0 +1,73 @@
+// from larreco/RecoAlg:
+#include "hitalgorithms.fcl"
+#include "HitFinderTools_ICARUS.fcl"
+#include "hitfindermodules.fcl"
+
+BEGIN_PROLOG
+
+icarus_hitfinder:
+{
+  module_type:         "ICARUSHitFinder"
+  CalDataModuleLabel:  "caldata"
+
+  ThetaAngle:         0
+  #PeakFitter:           @local::peakfitter_ICARUS
+  CandidateHits:        @local::candhitfinder_ICARUS
+  MaxMultiHit:          3                # maximum hits for multi fit
+  Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
+  LongPulseWidth:       [ 16, 16, 16]      # max widths for hits in long pulse trains
+  LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
+  MinWidth:      1.
+  MaxWidthMult:  3.
+  FittingRange:  35
+  IntegratingRange: 10
+}
+
+icarus_hitselector:
+{
+  module_type:             "HitSelector"
+  HitProducerLabel:        "gaushit"
+  MinMaxPulseHeightMulti:  [  6.0,   6.0,   6.0 ]
+  MinPulseHeightMulti:     [ 12.0,  12.0,  12.0 ]
+  MinPulseWidthMulti:      [  3.8,   3.8,   3.8 ]
+  MinPulseHeightSingle:    [ 10.0,  10.0,  10.0 ]
+  MinPulseWidthSingle:     [  3.0,   3.0,   3.0 ]
+}
+
+icarus_hitmerger:
+{
+  module_type:             "HitMerger"
+  HitProducerLabelVec:     ["gaushit"]
+}
+
+# Define icarus version of gaushit finder
+gaus_hitfinder_icarus: @local::gaus_hitfinder
+
+
+gaus_hitfinder_icarus.CalDataModuleLabel:                                          "decon1droi"
+gaus_hitfinder_icarus.AreaNorms:                                                   [  1.0,  1.0,  1.0 ]
+gaus_hitfinder_icarus.MaxMultiHit:                                                 5
+gaus_hitfinder_icarus.TryNplus1Fits:                                               false
+gaus_hitfinder_icarus.Chi2NDF:                                                     500.
+gaus_hitfinder_icarus.PeakFitter.MinWidth:                                         1
+gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                    false
+gaus_hitfinder_icarus.LongMaxHits:                                                 [25, 25, 25]
+gaus_hitfinder_icarus.LongPulseWidth:                                              [10, 10, 10]
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
+
+
+END_PROLOG

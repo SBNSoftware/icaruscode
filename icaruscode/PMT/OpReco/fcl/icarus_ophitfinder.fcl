@@ -1,0 +1,79 @@
+#include "opticaldetectormodules.fcl"
+
+BEGIN_PROLOG
+icarus_opreco_pedestal_edges: @local::standard_algo_pedestal_edges
+icarus_opreco_pedestal_edges.NumSampleFront:  3
+icarus_opreco_pedestal_edges.NumSampleTail:   3
+icarus_opreco_pedestal_edges.NumSampleMethod: 2
+
+icarus_opreco_pedestal_rollingmean: @local::standard_algo_pedestal_rollingmean
+icarus_opreco_pedestal_rollingmean.
+icarus_opreco_pedestal_rollingmean.SampleSize:  2
+icarus_opreco_pedestal_rollingmean.MaxSigma:    0.5
+icarus_opreco_pedestal_rollingmean.PedRangeMax: 2150
+icarus_opreco_pedestal_rollingmean.PedRangeMin: 100
+
+icarus_opreco_pedestal_rmsslider: @local::standard_algo_pedestal_rmsslider
+icarus_opreco_pedestal_rmsslider.SampleSize:       7
+icarus_opreco_pedestal_rmsslider.Threshold:        0.6
+icarus_opreco_pedestal_rmsslider.Verbose:          false
+icarus_opreco_pedestal_rmsslider.NWaveformsToFile: 0
+icarus_opreco_pedestal_rmsslider.MaxSigma:         0.5
+icarus_opreco_pedestal_rmsslider.PedRangeMax:      2150
+icarus_opreco_pedestal_rmsslider.PedRangeMin:      100
+
+icarus_opreco_pedestal_ub: @local::standard_algo_pedestal_ub
+icarus_opreco_pedestal_ub.BeamGateSamples:   1
+icarus_opreco_pedestal_ub.SampleSize:        7
+icarus_opreco_pedestal_ub.Threshold:         0.6
+icarus_opreco_pedestal_ub.Verbose:           false
+icarus_opreco_pedestal_ub.NWaveformsToFile:  0
+icarus_opreco_pedestal_ub.MaxSigma:          0.5
+icarus_opreco_pedestal_ub.PedRangeMax:       8005
+icarus_opreco_pedestal_ub.PedRangeMin:       0
+
+#
+# Hit Algorithms
+#
+icarus_opreco_hit_threshold: @local::standard_algo_threshold
+icarus_opreco_hit_threshold.StartADCThreshold    : 3
+icarus_opreco_hit_threshold.EndADCThreshold      : 2
+icarus_opreco_hit_threshold.NSigmaThresholdStart : 5
+icarus_opreco_hit_threshold.NSigmaThresholdEnd   : 3
+
+icarus_opreco_hit_fixedwindow: @local::standard_algo_fixedwindow
+icarus_opreco_hit_fixedwindow.StartIndex: 0
+icarus_opreco_hit_fixedwindow.EndIndex:   20
+
+icarus_opreco_hit_slidingwindow: @local::standard_algo_slidingwindow
+icarus_opreco_hit_slidingwindow.PositivePolarity:   false
+icarus_opreco_hit_slidingwindow.NumPreSample:       4
+icarus_opreco_hit_slidingwindow.ADCThreshold:       3
+icarus_opreco_hit_slidingwindow.NSigmaThreshold:    3
+icarus_opreco_hit_slidingwindow.EndADCThreshold:    1
+icarus_opreco_hit_slidingwindow.EndNSigmaThreshold: 1
+icarus_opreco_hit_slidingwindow.Verbosity:          false
+
+icarus_opreco_hit_cfd: @local::standard_algo_cfd
+icarus_opreco_hit_cfd.Fraction:    0.9
+icarus_opreco_hit_cfd.Delay:       2
+icarus_opreco_hit_cfd.PeakThresh:  7.5
+icarus_opreco_hit_cfd.StartThresh: 5.0
+icarus_opreco_hit_cfd.EndThresh:   1.5
+
+icarus_ophit:
+{
+   module_type:    "OpHitFinder"
+   GenModule:      "generator"
+   InputModule:    "opdaq"
+   InputLabels:    [ "" ]
+   ChannelMasks:   []
+   HitThreshold:   0.2   # PE
+   AreaToPE:       true # Use area to calculate number of PEs
+   SPEArea:        62.0 # If AreaToPE is true, this number is
+                        # used as single PE area (in ADC counts)
+   reco_man:       @local::standard_preco_manager
+   HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
+   PedAlgoPset:    @local::icarus_opreco_pedestal_ub
+}
+END_PROLOG

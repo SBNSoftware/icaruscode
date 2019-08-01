@@ -65,7 +65,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "nutools/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 
 //larsoft includes
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -432,6 +432,8 @@ void CRTDetSim::produce(art::Event & e) {
     // Simulate the CRT response for each hit in this strip
     for (auto ide : adsc.AuxDetIDEs()) {
 
+      //if(ide.trackID!=1) continue;
+
       if (auxDetType=='c') nsim_c++;
       if (auxDetType=='d') nsim_d++;
       if (auxDetType=='m') nsim_m++;
@@ -471,6 +473,7 @@ void CRTDetSim::produce(art::Event & e) {
 
       //coefficients for quadratic fit to MINOS test data w/S14
       //obtained for normally incident cosmic muons
+      //p2_m * x^2 + p1_m * x + p0_m, x is distance from readout [m]
       double p0_m = 36.5425; //initial light yield (pe) before any attenuation in m scintillator
       double p1_m = -6.3895;
       double p2_m =  0.3742;
@@ -722,7 +725,8 @@ void CRTDetSim::produce(art::Event & e) {
   for (auto trg : taggers) {
 
       event = 0;
-      icarus::crt::CRTChannelData *chanTrigData, *chanTmpData;
+      icarus::crt::CRTChannelData *chanTrigData(nullptr);
+      icarus::crt::CRTChannelData *chanTmpData(nullptr);
       std::set<int> trackNHold = {};
       std::set<int> layerNHold = {};
       std::pair<int,int> macPair = std::make_pair(trg.first,trg.first); //FEB-FEB validation pair
@@ -744,19 +748,32 @@ void CRTDetSim::produce(art::Event & e) {
 
       //time order ChannalData objects in this FEB by T0
       std::sort((trg.second.data).begin(),(trg.second.data).end(),TimeOrderCRTData);
+
+      if (fVerbose) std::cout << "processing data for FEB " << trg.first << " with "
+                              << trg.second.data.size() << " entries..." << '\n'
+                              << "    type: " <<  trg.second.type << '\n'
+                              << "    stackID: " << trg.second.stackid << '\n'
+                              << "    region: " <<  trg.second.reg << '\n'
+                              << "    layerID: " << *trg.second.layerid.begin() << '\n' << std::endl;
  
-      //get data for earliest entry
-      chanTrigData = &(trg.second.data[0]);
-      ttrig = chanTrigData->T0(); //time stamp [ns]
-      trackNHold.insert(chanTrigData->Channel());
-      layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
-      passingData.push_back(*chanTrigData);
-
+      //FIX ME! DOESN'T WORK IF ONLY ONE DATA ENTRY!!!!!!
       //outer (primary) loop over all data products for this FEB
-      for ( size_t i=1; i< trg.second.data.size(); i++ ) {
+      for ( size_t i=0; i< trg.second.data.size(); i++ ) {
 
-        chanTmpData = &(trg.second.data[i]);
-        ttmp = chanTmpData->T0(); 
+        //get data for earliest entry
+        if(i==0) {
+          chanTrigData = &(trg.second.data[0]);
+          ttrig = chanTrigData->T0(); //time stamp [ns]
+          trackNHold.insert(chanTrigData->Channel());
+          layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
+          passingData.push_back(*chanTrigData);
+          ttmp = ttrig;
+        }
+
+        else {
+          chanTmpData = &(trg.second.data[i]);
+          ttmp = chanTmpData->T0(); 
+        }
 
         //check that time sorting works
         if ( ttmp < ttrig ) mf::LogError("CRT") << "SORTING OF DATA PRODUCTS FAILED!!!"<< "\n";
@@ -764,8 +781,8 @@ void CRTDetSim::produce(art::Event & e) {
         //for C and D modules only and coin. enabled, if assumed trigger channel has no coincidence
         // set trigger channel to tmp channel and try again
         if ( layerNHold.size()==1 &&
-             ( (trg.second.type=='c' && fApplyCoincidenceC && ttmp - ttrig > fLayerCoincidenceWindowC) ||
-               (trg.second.type=='d' && fApplyCoincidenceD && ttmp - ttrig > fLayerCoincidenceWindowD)) ) {
+             ( (trg.second.type=='c' && fApplyCoincidenceC && (ttmp-ttrig>fLayerCoincidenceWindowC || trg.second.data.size()==1 )) ||
+               (trg.second.type=='d' && fApplyCoincidenceD && (ttmp-ttrig>fLayerCoincidenceWindowD || trg.second.data.size()==1 )) ) ) {
              trigIndex++;
              chanTrigData = &(trg.second.data[trigIndex]);
              i = trigIndex+1;
@@ -786,6 +803,8 @@ void CRTDetSim::produce(art::Event & e) {
         //for m modules, need to check coincidence with other tagger objs
         if (trg.second.type=='m' && !minosPairFound && fApplyCoincidenceM) {
             for (auto trg2 : taggers) {
+
+                if(fVerbose) std::cout << "checking coincidence with FEB " << trg2.first << std::endl;
 
                 if( trg2.second.type!='m' || //is other mod 'm' type
                   trg.first == trg2.first || //other mod not same as this one
@@ -812,11 +831,17 @@ void CRTDetSim::produce(art::Event & e) {
                     }
                 }
                 //we found a valid pair so move on to next step
-                if (minosPairFound) break;
+                if (minosPairFound) {
+                    if(fVerbose) std::cout << "MINOS pair found! (" << macPair.first 
+                                           << "," << macPair.second << ")" << std::endl;
+                    break;
+                }
             }//inner loop over febs (taggers)
 
             //if no coincidence pairs found, reinitialize and move to next FEB
             if(!minosPairFound) {
+                if(fVerbose) std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
+                if(trg.second.data.size()==1) continue;
                 trigIndex++;
                 chanTrigData = &(trg.second.data[trigIndex]);
                 i = trigIndex+1;
@@ -832,14 +857,17 @@ void CRTDetSim::produce(art::Event & e) {
             }
         }//if minos module and no pair yet found
 
+        if(fVerbose) std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
+
         int adctmp = 0;
         std::vector<int> combined_trackids;
         //currently assuming bias time is same as track and hold window (FIX ME!)
-        if ((trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC) || 
+        if (i>0 && ((trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC) || 
             (trg.second.type=='d' && ttmp < ttrig + fLayerCoincidenceWindowD) ||
-            (trg.second.type=='m' && ttmp < ttrig + fLayerCoincidenceWindowM)) 
+            (trg.second.type=='m' && ttmp < ttrig + fLayerCoincidenceWindowM)) )
         {
 
+            //if channel not locked
             if ((trackNHold.insert(chanTmpData->Channel())).second) {
 
                 passingData.push_back(*chanTmpData);
@@ -854,7 +882,7 @@ void CRTDetSim::produce(art::Event & e) {
                         mf::LogError("CRT")<< "incorrect CERN trigger pair!!!" << '\n'
                                            << "  " << tpair.first << ", " << tpair.second << "\n";
                 }
-            } //channel not locked
+            } //end if channel not locked
 
             else if (ttmp < ttrig + fBiasTime) {
                 adctmp = (passingData.back()).ADC();
@@ -875,7 +903,7 @@ void CRTDetSim::produce(art::Event & e) {
 
         }//if hits inside readout window
 
-        else if ( ttmp <= ttrig + fDeadTime ) {
+        else if ( i>0 && ttmp <= ttrig + fDeadTime ) {
             switch (trg.second.type) {
                 case 'c' : nmiss_dead_c++; break;
                 case 'd' : nmiss_dead_d++; break;
@@ -885,14 +913,15 @@ void CRTDetSim::produce(art::Event & e) {
         } // hits occuring during digitization lost (dead time)
 
         //"read out" data for this event, first hit after dead time as next trigger channel
-        else if ( ttmp > ttrig + fDeadTime || i==trg.second.data.size()-1) {
+        else if ( ttmp > ttrig + fDeadTime) {// || i==trg.second.data.size()-1) {
 
             int regnum = GetAuxDetRegionNum(trg.second.reg);
             if( (regions.insert(regnum)).second) regCounts[regnum] = 1;
             else regCounts[regnum]++;
-
+            if (fVerbose) std::cout << "creating CRTData product just after deadtime" << std::endl;
             triggeredCRTHits->push_back(
               icarus::crt::CRTData(eve, trg.first,event,ttrig,chanTrigData->Channel(),tpair,macPair,passingData));
+            if (fVerbose) std::cout << " ...success!" << std::endl;
             event++;
             if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
             if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
@@ -909,8 +938,10 @@ void CRTDetSim::produce(art::Event & e) {
         }
 
         if (!(ttmp > ttrig + fDeadTime) && i==trg.second.data.size()-1) {
+            if (fVerbose) std::cout << "creating CRTData product at end of FEB events..." << std::endl;
             triggeredCRTHits->push_back(
               icarus::crt::CRTData(eve,trg.first,event,ttrig,chanTrigData->Channel(),tpair,macPair,passingData));
+            if (fVerbose) std::cout << " ...success!" << std::endl;
             event++;
             if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
             if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
@@ -918,6 +949,9 @@ void CRTDetSim::produce(art::Event & e) {
 
         } 
       }//for data entries (hits)
+
+      if(fVerbose) std::cout << " outside loop over FEB data entries...moving on to next FEB..." << std::endl;
+
   } // for taggers
 
   if (fVerbose) { 

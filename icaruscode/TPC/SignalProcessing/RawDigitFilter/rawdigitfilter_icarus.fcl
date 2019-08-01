@@ -1,0 +1,115 @@
+#include "signalservices_icarus.fcl"
+#include "waveformtools_icarus.fcl"
+
+BEGIN_PROLOG
+
+FFT_algorithm:
+{
+    TransformViewVec:      [true, true, true]
+    FillHistograms:        true
+    HistDirName:           "FFTAlg"
+    WaveformTool:          @local::Waveform_Tool
+    FilterTools:
+    {
+        FilterPlane0: @local::FilterTool
+        FilterPlane1: @local::FilterTool
+        FilterPlane2: @local::FilterTool
+    }
+}
+
+icarus_RawDigitFilterTool:
+{
+    tool_type:             RawDigitFilterAlg
+    TruncMeanFraction:     0.15
+    StructuringElement:    30
+    FillHistograms:        false
+}
+
+icarus_MorphologicalFilterTool:
+{
+    tool_type:             MorphologicalFilter
+    Plane:                 0
+    NumBinsToAve:          5
+    StructuringElement:    80
+    OutputHistograms:      false
+}
+
+icarus_rawdigitfilter:
+{
+    module_type:           "RawDigitFilterICARUS"
+    DigitModuleLabel:      "daq"
+    ProcessNoise:          false
+    FFTNoise:              false
+    ApplyBinAverage:       true
+    ApplyTopHatFilter:     true
+    SmoothCorrelatedNoise: true
+    NumWiresToGroup:       [ 1, 1, 1] #[48, 48, 96]  # these correspond to observed groupings
+    TruncateTicks:         false
+    TruncateChannels:      false
+    WindowSize:            6400
+    NumTicksToDropFront:   2400   # these values will put 70 kV drift time in "middle"
+    CharacterizationAlg:
+    {
+        TruncMeanFraction:     0.15
+        RMSRejectionCutHi:     [25., 25., 25.]
+        RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+        RMSSelectionCut:       [1.40, 1.40, 1.40]
+        MinMaxSelectionCut:    [13, 13, 11]
+        TheChosenWire:         1200
+        MaxPedestalDiff:       10.
+        FFTHistsWireGroup:     [1, 33, 34]
+        NumWiresToGroup:       [48, 48, 96]
+        FillHistograms:        true
+    }
+    CorrelatedCorrectionAlg:
+    {
+        TruncMeanFraction:     0.15
+        ApplyCorSmoothing:     true
+        ApplyFFTCorrection:    true
+        FillFFTHistograms:     false
+        FFTHistsWireGroup:     [1, 33, 34]
+        FFTNumWaveHistograms:  [10,48,48]
+        FFTWaveHistsStartTick: [96., 96., 7670.]
+        FFTPowerThreshold:     [100., 75., 500.]
+        NumWiresToGroup:       [48, 48, 96]
+        FillHistograms:        false
+        RunFFTCorrectedWires:  false
+        NumRmsToSmooth:        [6., 6., 6.]
+        FFTAlg:                @local::FFT_algorithm
+    }
+    RawDigitFilterTool:        @local::icarus_RawDigitFilterTool
+    FFTAlg:                    @local::FFT_algorithm
+}
+
+icarus_rawdigitsmoother:
+{
+  module_type:                "RawDigitSmoother"
+  DigitModuleLabel:           "daq"
+  StructuringElementWireSize: 3
+  StructuringElementTickSize: 5
+  CharacterizationAlg:
+  {
+    TruncMeanFraction:     0.15
+    RMSRejectionCutHi:     [25., 25., 25.]
+    RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+    RMSSelectionCut:       [1.40, 1.40, 1.40]
+    MinMaxSelectionCut:    [13, 13, 11]
+    TheChosenWire:         1200
+    MaxPedestalDiff:       10.
+    FFTHistsWireGroup:     [1, 33, 34]
+    NumWiresToGroup:       [48, 48, 96]
+    FillHistograms:        true
+  }
+}
+
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.Plane:                0
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.Plane:                1
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane1.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.Plane:                2
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
+icarus_rawdigitfilter.FFTAlg.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.0, 0.002]
+
+END_PROLOG

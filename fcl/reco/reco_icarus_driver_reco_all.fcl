@@ -2,7 +2,7 @@
 
 process_name: McRecoAll
 
-physics.reco: [@sequence::icarus_track_reconstruction]
+physics.reco: [@sequence::icarus_full_reconstruction]
 physics.trigger_paths: [ reco ]
 outputs.out1.fileName: "%ifb_%tc-%p.root"
 outputs.out1.dataTier: "reconstructed"

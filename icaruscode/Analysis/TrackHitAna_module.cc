@@ -44,7 +44,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/View.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
@@ -116,10 +116,10 @@ private:
     double projectedLength(const recob::Track* track);
 
     // The parameters we'll read from the .fcl file.
-    art::InputTag fHitProducerLabel;
-    art::InputTag fPFParticleProducerLabel;
-    art::InputTag fTrackProducerLabel;
-    art::InputTag fWireProducerLabel;
+    std::vector<art::InputTag> fHitProducerLabelVec;
+    std::vector<art::InputTag> fWireProducerLabelVec;
+    std::vector<art::InputTag> fPFParticleProducerLabelVec;
+    std::vector<art::InputTag> fTrackProducerLabelVec;
 
     // The variables that will go into the n-tuple.
     int fEvent;
@@ -197,10 +197,10 @@ void TrackHitAna::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fHitProducerLabel        = p.get< std::string >("HitModuleLabel",          "gauss");
-    fPFParticleProducerLabel = p.get< std::string >("PFParticleProducerLabel", "cluster3d");
-    fTrackProducerLabel      = p.get< std::string >("TrackProducerLabel",      "trackkalmanhit");
-    fWireProducerLabel       = p.get< std::string >("WireProducerLabel",       "caldata");
+    fHitProducerLabelVec        = p.get< std::vector<art::InputTag> >("HitModuleLabel",          std::vector<art::InputTag>() = {"gauss"});
+    fPFParticleProducerLabelVec = p.get< std::vector<art::InputTag> >("PFParticleProducerLabel", std::vector<art::InputTag>() = {"cluster3d"});
+    fTrackProducerLabelVec      = p.get< std::vector<art::InputTag> >("TrackProducerLabel",      std::vector<art::InputTag>() = {"trackkalmanhit"});
+    fWireProducerLabelVec       = p.get< std::vector<art::InputTag> >("WireProducerLabel",       std::vector<art::InputTag>() = {"caldata"});
     
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& hitHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("HitHistogramToolList");
@@ -221,16 +221,19 @@ void TrackHitAna::analyze(const art::Event& event)
 
     fNumEvents++;
     
-    // Make a pass through all hits to make contrasting plots
-    art::Handle< std::vector<recob::Hit> > hitHandle;
-    event.getByLabel(fHitProducerLabel, hitHandle);
-
-    if (hitHandle.isValid())
+    for(const auto& hitLabel : fHitProducerLabelVec)
     {
-        IHitHistogramTool::HitPtrVec allHitVec;
-        art::fill_ptr_vector(allHitVec, hitHandle);
-
-        for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(allHitVec);
+        // Make a pass through all hits to make contrasting plots
+        art::Handle< std::vector<recob::Hit> > hitHandle;
+        event.getByLabel(hitLabel, hitHandle);
+        
+        if (hitHandle.isValid())
+        {
+            IHitHistogramTool::HitPtrVec allHitVec;
+            art::fill_ptr_vector(allHitVec, hitHandle);
+            
+            for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(allHitVec);
+        }
     }
 
     return;

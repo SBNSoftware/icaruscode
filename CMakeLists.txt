@@ -1,5 +1,5 @@
 # ======================================================================
-#  larsoft main build file
+#  icaruscode main build file
 #
 #  cd .../path/to/build/directory
 #  source .../path/to/larsoft/ups/setup_for_development <-d|-p>
@@ -10,9 +10,6 @@
 #  make test
 #  make install
 #  make package (builds distribution tarfile)
-# ======================================================================
-# LarSoft is an empty product
-# It sets up all of the larsoft ups products (lardata, larsim, larreco, etc.)
 # ======================================================================
 
 
@@ -59,13 +56,19 @@ find_ups_product( larpandora v1_00_00 )
 find_ups_product( larana v1_00_00 )
 find_ups_product( larpandora v1_00_00 )
 find_ups_product( nutools v1_00_00 )
+find_ups_product( nurandom )
 find_ups_product( art v1_09_00 )
+find_ups_product(art_root_io)
 find_ups_product( cetbuildtools v3_10_00 )
 find_ups_product( postgresql v9_1_5 )
+find_ups_product( eigen )
 find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
 
 cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
+cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE 
+                  NAMES nurandom_RandomUtils_NuRandomService_service
+		  PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
 
 # macros for dictionary and simple_plugin
 include(ArtDictionary)

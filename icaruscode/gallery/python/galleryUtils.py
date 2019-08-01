@@ -8,8 +8,8 @@ This module requires ROOT.
 """
 
 __all__ = [
-  'readHeader',
-  'SourceCode',
+  'readHeader', # imported from `cppUtils`
+  'SourceCode', # imported from `cppUtils`
   'make_getValidHandle',
   'makeFileList',
   'forEach',
@@ -18,13 +18,14 @@ __all__ = [
   'loadConfiguration',
   'ConfigurationClass',
   'startMessageFacility',
-  'ServiceRegistry',
+  'ServiceRegistryClass',
   'ConfigurationHelper',
   ]
 
 import sys, os
-import ROOT
+from ROOTutils import ROOT
 import cppUtils
+import warnings
 
 
 ################################################################################
@@ -49,7 +50,13 @@ class HandleMaker:
   
   def __call__(self, klass):
     if klass in HandleMaker.AlreadyMade: return
-    HandleMaker.make(klass)
+    res = HandleMaker.make(klass)
+    if res != ROOT.TInterpreter.kNoError:
+      raise RuntimeError(
+       "Could not create `ROOT.gallery.Event.getValidHandle` for '%s' (code: %d)"
+       % (klass, res)
+       )
+    # if
     HandleMaker.AlreadyMade.add(klass)
   # __call__()
   
@@ -132,6 +139,20 @@ def eventLoop(inputFiles,
  options = {},
  ):
   """
+  Applies the `process` function to each and every event from the specified
+  input files, in sequence.
+  
+  The `inputFiles` list may be a single file, or a list (or any iterable object)
+  of files, or a `std::vector<std::string>` object.
+  
+  The `process` callable is executed with two arguments: the number of argument
+  in the loop, and the event itself. No information on which file the event is
+  taken from is provided. If a call returns exactly `False`, it is considered
+  to have failed and an error counter is incremented. Exceptions raised in
+  `process` are not handled.
+  
+  The error counter is returned at the end of the execution.
+  
   Options:
   - 'nEvents': number of events to be processed (does not include skipped ones)
   - 'nSkip': number of events from the beginning of the sample to be skipped
@@ -140,6 +161,12 @@ def eventLoop(inputFiles,
   # option reading
   nSkip = options.get('nSkip', 0)
   nEvents = options.get('nEvents', None)
+  
+  # make sure the input file list is in the right format
+  if not isinstance(inputFiles, ROOT.vector(ROOT.string)):
+    if isinstance(inputFiles, str): inputFiles = [ inputFiles, ]
+    inputFiles = makeFileList(*inputFiles)
+  # if
   
   event = ROOT.gallery.Event(inputFiles)
   
@@ -190,7 +217,8 @@ def eventLoop(inputFiles,
 
 def findFHiCL(configRelPath, extraDirs = []):
   
-  if os.path.isfile(configRelPath): return os.path.join(os.getcwd(), configRelPath)
+  if os.path.isfile(configRelPath):
+    return os.path.join(os.getcwd(), configRelPath)
   for path in extraDirs + os.environ.get('FHICL_FILE_PATH', "").split(':'):
     candidate = os.path.join(path, configRelPath)
     if os.path.isfile(candidate): return candidate
@@ -274,15 +302,54 @@ class ConfigurationHelper:
 # class ConfigurationHelper
 
 
-def loadConfiguration(configPath):
+class TemporaryFile:
+  def __init__(self, data = None):
+    with warnings.catch_warnings():
+      # os.tempnam() is a potential security risk: ACK
+      warnings.filterwarnings("ignore", ".*tempnam .*", RuntimeWarning)
+      self._file = open(os.tempnam(), "w+")
+    self.name = self._file.name
+    if data is not None:
+      self._file.write(str(data))
+      self._file.flush() # we are not going to close this file...
+    # 
+  # __init__()
+  def __del__(self):
+    if not self._file: return
+    del self._file
+    os.remove(self.name)
+  # __del__()
+  def file_(self): return self._file
+  def __str__(self): return self.name
+# class TemporaryFile
+
+
+def loadConfiguration(configSpec):
   # this utility actually relies on generic utilities that while not LArSoft
   # specific, are nevertheless distributed with LArSoft (`larcorealg`).
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
+  
+  if isinstance(configSpec, ConfigurationString):
+    configFile = TemporaryFile(configSpec)
+    configPath = configFile.name
+  else:
+    configFile = None
+    configPath = configSpec
+  # if
+  
   fullPath = findFHiCL(configPath)
   if not fullPath:
     raise RuntimeError("Couldn't find configuration file '%s'" % configPath)
   return ROOT.lar.standalone.ParseConfiguration(fullPath)
 # loadConfiguration()
+
+
+class ConfigurationString:
+  """Wrapper to a string that should be considered configuration text."""
+  def __init__(self, config): self.config = config
+  def __str__(self): return self.config
+# class ConfigurationString
+
 
 class ConfigurationClass:
   def __init__(self, configPath):
@@ -297,7 +364,7 @@ class ConfigurationClass:
 
 
 ################################################################################
-class ServiceRegistry:
+class ServiceRegistryClass:
   def __init__(self, config):
     self.fullConfig = config if isinstance(config, ConfigurationClass) else ConfigurationClass(config)
     self.services = {}
@@ -311,8 +378,12 @@ class ServiceRegistry:
     self.services[serviceName] = service
     return service
   
+  def registeredServiceNames(self): return self.services.keys()
+  
+  def registry(self): return self # behave like a manager (LArSoftUtils concept)
+  
   def get(self, serviceName): return self.services[serviceName]
-  def __call__(self, serviceName): return self.get(service)
+  def __call__(self, serviceName): return self.get(serviceName)
   
   def create(self, serviceName, serviceClass, *otherServiceConstructorArgs):
     serviceConfig = self.config(serviceName)
@@ -324,7 +395,7 @@ class ServiceRegistry:
     return self.register(serviceName, service)
   # create()
   
-# class ServiceRegistry
+# class ServiceRegistryClass
 
 
 ################################################################################

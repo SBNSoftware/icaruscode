@@ -9,16 +9,16 @@ set( icarus_util_lib_list
                         lardataobj_RecoBase
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
-                        nutools_RandomUtils_NuRandomService_service
+                        nurandom_RandomUtils_NuRandomService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
                         art_Persistency_Common
                         art_Persistency_Provenance
                         ${ART_FRAMEWORK_SERVICES_BASIC}
-                        ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
                         ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                        ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                         ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
                         art_Utilities
                         canvas
@@ -35,12 +35,11 @@ set( icarus_util_lib_list
 
 simple_plugin( SignalShapingServiceICARUS  "service"
                ${icarus_util_lib_list}
-               BASENAME_ONLY
         )
 
 simple_plugin(SaveConfigurationIntoTFile "module"
-              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-              ${ART_FRAMEWORK_SERVICES_OPTIONAL}
+              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+              ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
               ${ART_FRAMEWORK_SERVICES_REGISTRY}
               ${ART_FRAMEWORK_PRINCIPAL}
               ${ART_FRAMEWORK_CORE}
