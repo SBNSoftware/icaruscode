@@ -2,7 +2,7 @@ BEGIN_PROLOG
 
 standard_crtsimhitrecoalg:
 {
-    Verbose:              true
+    Verbose:              false
     QPed:                 60  # Pedestal offset [ADC]
     QSlope:               70 # Pedestal slope [ADC/photon]
     UseReadoutWindow:     false  # Only reconstruct hits within readout window

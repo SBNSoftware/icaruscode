@@ -103,6 +103,7 @@ namespace icarus {
 
     void reconfigure(const Config& config);
 
+    void FillFEBMap(); //std::map<int,std::vector<std::pair<int,int>>> &m)
     char MacToType(int mac);
     int MacToRegion(int mac);
     std::string MacToRegionName(int mac);
@@ -124,6 +125,8 @@ namespace icarus {
     //art::ServiceHandle<geo::AuxDetGeometry> fAuxDetGeoService;
     //const geo::AuxDetGeometry* fAuxDetGeo;
     //const geo::AuxDetGeometryCore* fAuxDetGeoCore;
+
+    static std::map<int,std::vector<std::pair<int,int>>> fFebMap;
 
     //Params from fcl file
     bool fVerbose;          ///< print info
