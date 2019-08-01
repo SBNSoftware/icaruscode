@@ -24,6 +24,8 @@
 #include "mctrutht0matching.fcl"
 
 #include "crtsimhitproducer.fcl"
+#####include /"/crttzeroproducer_icarus.fcl"
+#include "crttrackproducer_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -170,6 +172,8 @@ icarus_reco_producers:
 
   ## crt producers
   crtsimhit:                      @local::standard_crtsimhitproducer
+  #crttzero:                       @local::standard_crttzeroproducer
+  crttrack:                       @local::standard_crttrackproducer
 }
 
 icarus_reco_filters:
@@ -330,33 +334,20 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crtsimhit ]
+icarus_reco_crt:                  [ crtsimhit,
+                                    #crttzero ]
+                                    crttrack ]
 
-# Define what would be the first pass reconstructon (the "gauss" recon)
-icarus_gauss_reconstruction:      [ @sequence::icarus_reco_signalprocessinggaus,
-                                    @sequence::icarus_reco_cluster3d,
-                                    @sequence::icarus_reco_pandoraGaus,
-                                    #@sequence::icarus_reco_trajclusterGaus,
-                                    #@sequence::icarus_reco_pmAlgTrackerGaus,
-                                    @sequence::icarus_reco_mcrecoGaus,
-                                    @sequence::icarus_reco_wmc_optical
-                                  ]
-
-icarus_gauss_MultiTPCRecon:       [ @sequence::icarus_reco_Gauss_Cryo0,
-                                    @sequence::icarus_reco_Gauss_Cryo1,
-                                    #@sequence::icarus_reco_trajclusterGaus,
-                                    #@sequence::icarus_reco_pmAlgTrackerGaus,
-                                    @sequence::icarus_reco_mcrecoGausMulti,
-                                    @sequence::icarus_reco_wmc_optical
-                                  ]
-
-# Define what would be the second pass reconstructon (the "ICARUS" recon)
-# Note this stage needs to follow the gauss stage since it uses the rawdigitfilter output
-icarus_raw_reconstruction:        [ @sequence::icarus_reco_signalprocessingraw,
-                                    @sequence::icarus_reco_pandoraICARUS,
-                                    #@sequence::icarus_reco_trajclusterICARUS,
-                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoICARUS,
+# Define the full reconstruction sequence
+icarus_track_reconstruction:      [ #@sequence::icarus_reco_signalprocessing,
+                                    #@sequence::icarus_reco_pandoraGaus,
+                                    #@sequence::icarus_reco_pandoraICARUS,
+#                                    @sequence::icarus_reco_trajclusterGaus,
+#                                    @sequence::icarus_reco_pmAlgTrackerGaus,
+#                                    @sequence::icarus_reco_trajclusterICARUS,
+#                                    @sequence::icarus_reco_pmAlgTrackerICARUS,
+                                    #@sequence::icarus_reco_mcrecoGaus,
+                                    #@sequence::icarus_reco_mcrecoICARUS,
                                     @sequence::icarus_reco_crt
                                   ]
 
