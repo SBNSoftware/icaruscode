@@ -51,14 +51,14 @@ icarus_rawdigitfilter:
     CharacterizationAlg:
     {
         TruncMeanFraction:     0.15
-        RMSRejectionCutHi:     [25., 25., 25.]
+        RMSRejectionCutHi:     [100., 100., 100.]
         RMSRejectionCutLow:    [0.70, 0.70, 0.70]
         RMSSelectionCut:       [1.40, 1.40, 1.40]
-        MinMaxSelectionCut:    [13, 13, 11]
+        MinMaxSelectionCut:    [2, 2, 1]
         TheChosenWire:         1200
         MaxPedestalDiff:       10.
         FFTHistsWireGroup:     [1, 33, 34]
-        NumWiresToGroup:       [48, 48, 96]
+        NumWiresToGroup:       [32, 32, 32]
         FillHistograms:        true
     }
     CorrelatedCorrectionAlg:
@@ -67,11 +67,11 @@ icarus_rawdigitfilter:
         ApplyCorSmoothing:     true
         ApplyFFTCorrection:    true
         FillFFTHistograms:     false
-        FFTHistsWireGroup:     [1, 33, 34]
-        FFTNumWaveHistograms:  [10,48,48]
-        FFTWaveHistsStartTick: [96., 96., 7670.]
-        FFTPowerThreshold:     [100., 75., 500.]
-        NumWiresToGroup:       [48, 48, 96]
+        FFTHistsWireGroup:     [256, 4000, 3840]
+        FFTNumWaveHistograms:  [32,32,32]
+        FFTWaveHistsStartTick: [96., 96., 96.]
+        FFTPowerThreshold:     [50., 50., 50.]
+        NumWiresToGroup:       [32, 32, 32]
         FillHistograms:        false
         RunFFTCorrectedWires:  false
         NumRmsToSmooth:        [6., 6., 6.]

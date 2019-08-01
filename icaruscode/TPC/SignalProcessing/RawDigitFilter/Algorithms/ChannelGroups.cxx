@@ -16,6 +16,11 @@ ChannelGroups::ChannelGroups(fhicl::ParameterSet const & pset)
     // Identify some bad wires... this needs to be moved...
     fGroupByViewAndWireMap.resize(3);
     
+    fGroupByViewAndWireMap[0][100000] = 0;
+    fGroupByViewAndWireMap[1][100000] = 0;
+    fGroupByViewAndWireMap[2][100000] = 0;
+
+    /*
     // Start with the U plane
     fGroupByViewAndWireMap[0][560]  = 1;
     fGroupByViewAndWireMap[0][593]  = 1;
@@ -112,6 +117,7 @@ ChannelGroups::ChannelGroups(fhicl::ParameterSet const & pset)
     {
         if (wire != 2415) fGroupByViewAndWireMap[2][wire] = 1;
     }
+    */
 
     // Report.
     mf::LogInfo("ChannelGroups") << "ChannelGroups configured\n";

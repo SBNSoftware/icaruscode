@@ -199,7 +199,7 @@ void RawDigitCorrelatedCorrectionAlg::smoothCorrectionVec(std::vector<float>& co
 }
 
 void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& digitIdxPair,
-                                                            unsigned int        viewIdx,
+                                                            unsigned int        planeIdx,
                                                             std::vector<float>& truncMeanWireVec,
                                                             std::vector<float>& truncRmsWireVec,
                                                             std::vector<short>& minMaxWireVec,
@@ -215,23 +215,19 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
     WireToAdcIdxMap&      wireToAdcIdxMap      = digitIdxPair.second;
     
     size_t maxTimeSamples(wireToRawDigitVecMap.begin()->second.size());
-    size_t baseWireIdx(wireToRawDigitVecMap.begin()->first - wireToRawDigitVecMap.begin()->first % fNumWiresToGroup[viewIdx]);
+    size_t baseWireIdx(wireToRawDigitVecMap.begin()->first - wireToRawDigitVecMap.begin()->first % fNumWiresToGroup[planeIdx]);
     
     // Should we turn on our diagnostics blocks?
-    bool doFFTCorrection(fFillFFTHistograms && baseWireIdx / fNumWiresToGroup[viewIdx] == fFFTHistsWireGroup[viewIdx]);
+    bool doFillFFTHists(fFillFFTHistograms && baseWireIdx == fFFTHistsWireGroup[planeIdx]);
     
-    // Keep track of the "waveform" for the correction
-    std::vector<float> origCorValVec;
+    std::vector<float> corValVec(maxTimeSamples);
 
+    // First step is to get the correction values to apply to this set of input waveforms
     // Don't try to do correction if too few wires unless they have gaps
     if (wireToAdcIdxMap.size() > 2) // || largestGapSize > 2)
     {
-        // What is the average min/max of this group?
-//        short aveMinMax = std::round(float(std::accumulate(minMaxByWireVec.begin(),minMaxByWireVec.end(),0)) / float(minMaxByWireVec.size()));
-        
-        std::vector<float> corValVec;
-        
-        corValVec.resize(maxTimeSamples, 0.);
+        // Zero? This is probably not necessary
+        std::fill(corValVec.begin(),corValVec.end(),0.);
         
         // Build the vector of corrections for each time bin
         for(size_t sampleIdx = 0; sampleIdx < maxTimeSamples; sampleIdx++)
@@ -241,10 +237,10 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
             size_t histIdx(0);
 
             // Diagnostics
-            if (doFFTCorrection)
+            if (doFillFFTHists)
             {
-                fillHists = sampleIdx >= fFFTHistsStartTick[viewIdx] && sampleIdx < fFFTHistsStartTick[viewIdx] + fFFTNumHists[viewIdx];
-                histIdx   = sampleIdx - fFFTHistsStartTick[viewIdx];
+                fillHists = sampleIdx >= fFFTHistsStartTick[planeIdx] && sampleIdx < fFFTHistsStartTick[planeIdx] + fFFTNumHists[planeIdx];
+                histIdx   = sampleIdx - fFFTHistsStartTick[planeIdx];
             }
             
             // Define a vector for accumulating values...
@@ -264,10 +260,7 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
                 adcValuesVec.push_back(float(wireToRawDigitVecMap.at(wireAdcItr.first)[sampleIdx]) - truncMeanWireVec[wireIdx]);
                 
                 // Make hists if requested
-                if (fillHists)
-                {
-                    fWaveCorHists[viewIdx][histIdx]->Fill(wireIdx, adcValuesVec.back());
-                }
+                if (fillHists) fWaveCorHists[planeIdx][histIdx]->Fill(wireIdx, adcValuesVec.back());
             }
             
             float medianValue = getMedian(adcValuesVec, float(-10000.));
@@ -276,33 +269,10 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
         }
         
         // Try to eliminate any real outliers
-        if (fApplyCorSmoothing) smoothCorrectionVec(corValVec, viewIdx);
-        
-        // Diagnostics block
-        if (doFFTCorrection)
-        {
-            origCorValVec = corValVec;
-            
-            for(size_t tick = 0; tick < maxTimeSamples; tick++)
-            {
-                double corVal = origCorValVec[tick];
-                
-                for(const auto& wireAdcItr : wireToRawDigitVecMap)
-                {
-                    short  inputWaveformVal = wireAdcItr.second[tick];
-                    size_t wireIdx          = wireAdcItr.first % fNumWiresToGroup[viewIdx];
-                    double inputVal         = inputWaveformVal - truncMeanWireVec[wireIdx];
-                    double outputVal        = std::round(inputVal - corVal);
-                    
-                    fInputWaveHists[viewIdx][wireIdx]->Fill(tick, inputVal, 1.);
-                    fStdCorWaveHists[viewIdx][wireIdx]->Fill(tick, outputVal, 1.);
-                    fWaveformProfHists[viewIdx][wireIdx]->Fill(std::round(inputVal) + 0.5, 1.);
-                }
-            }
-        }
+        if (fApplyCorSmoothing) smoothCorrectionVec(corValVec, planeIdx);
         
         // Get the FFT correction
-        if (fApplyFFTCorrection) fFFTAlg.getFFTCorrection(corValVec,fFFTMinPowerThreshold[viewIdx]);
+        if (fApplyFFTCorrection) fFFTAlg.getFFTCorrection(corValVec,fFFTMinPowerThreshold[planeIdx]);
         
         // Now go through and apply the correction
         for(size_t sampleIdx = 0; sampleIdx < maxTimeSamples; sampleIdx++)
@@ -311,7 +281,7 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
             for (const auto& wireAdcItr : wireToAdcIdxMap)
             {
                 float corVal(corValVec[sampleIdx]);
-                int   wireIdx(wireAdcItr.first);
+                int   wireIdx(wireAdcItr.first - baseWireIdx);
                 
                 // If the "start" bin is after the "stop" bin then we are meant to skip this wire in the averaging process
                 // Or if the sample index is in a chirping section then no correction is applied.
@@ -320,31 +290,41 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
                     corVal = 0.;
                 
                 //RawDigitVector& rawDataTimeVec = wireToRawDigitVecMap.at(wireIdx);
-                short& rawDataTimeVal = wireToRawDigitVecMap.at(wireIdx).at(sampleIdx);
+                short& rawDataTimeVal = wireToRawDigitVecMap.at(wireAdcItr.first)[sampleIdx];
+                
+                // Keep track?
+                if (doFillFFTHists)
+                {
+                    double inputVal = double(rawDataTimeVal - truncMeanWireVec[wireIdx]);
+                    
+                    fInputWaveHists[planeIdx][wireIdx]->Fill(sampleIdx, inputVal, 1.);
+                    fWaveformProfHists[planeIdx][wireIdx]->Fill(std::round(inputVal) + 0.5, 1.);
+                }
                 
                 // Probably doesn't matter, but try to get slightly more accuracy by doing float math and rounding
-                float newAdcValueFloat = float(rawDataTimeVal) - corVal - pedCorWireVec[wireIdx - baseWireIdx];
+                float newAdcValueFloat = float(rawDataTimeVal) - corVal - pedCorWireVec[wireIdx];
                 
                 rawDataTimeVal = std::round(newAdcValueFloat);
                 
-                if (doFFTCorrection)
+                if (doFillFFTHists)
                 {
-                    float stdCorWaveVal = std::round(newAdcValueFloat + pedCorWireVec[wireIdx - baseWireIdx] - truncMeanWireVec[wireIdx - baseWireIdx]);
+                    float stdCorWaveVal = double(rawDataTimeVal - truncMeanWireVec[wireIdx]);
                     
-                    fOutputWaveHists[viewIdx][wireIdx - baseWireIdx]->Fill(sampleIdx, stdCorWaveVal, 1.);
+                    fStdCorWaveHists[planeIdx][wireIdx]->Fill(sampleIdx, corVal, 1.);
+                    fOutputWaveHists[planeIdx][wireIdx]->Fill(sampleIdx, stdCorWaveVal, 1.);
                     
-                    fFFTCorHist[viewIdx]->Fill(sampleIdx,corVal);
+                    fFFTCorHist[planeIdx]->Fill(sampleIdx,corVal);
                 }
             }
         }
     }
     
     // Final diagnostics block
-    if (doFFTCorrection && !origCorValVec.empty())
+    if (doFillFFTHists && !corValVec.empty())
     {
         double sampleFreq  = 1000000. / fDetectorProperties->SamplingRate();
         double readOutSize = fDetectorProperties->ReadOutWindowSize();
-        int    fftDataSize = origCorValVec.size();
+        int    fftDataSize = corValVec.size();
         
         TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C");
         
@@ -352,9 +332,9 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
         
         for(size_t tick = 0; tick < size_t(fftDataSize); tick++)
         {
-            fftInputArray[tick] = origCorValVec[tick];
+            fftInputArray[tick] = corValVec[tick];
             
-            fCorValHist[viewIdx]->Fill(tick,origCorValVec[tick]);
+            fCorValHist[planeIdx]->Fill(tick,corValVec[tick]);
         }
         
         fftr2c->SetPoints(fftInputArray.data());
@@ -376,7 +356,7 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
             double bin   = (idx * sampleFreq) / readOutSize;
             double power = std::sqrt(realPart*realPart + imaginaryPart*imaginaryPart);
             
-            fFFTCorValHist[viewIdx]->Fill(bin, power, 1.);
+            fFFTCorValHist[planeIdx]->Fill(bin, power, 1.);
         }
     }
     
@@ -418,7 +398,7 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
             
                 if (power > 0.) power = std::sqrt(power);
             
-                fFFTHistCor[viewIdx]->Fill(bin, power, 1.);
+                fFFTHistCor[planeIdx]->Fill(bin, power, 1.);
             }
         }
     }

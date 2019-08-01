@@ -148,21 +148,47 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     
     size_t halfFFTDataSize(fftDataSize/2);
     
-    std::vector<double> powerVec(halfFFTDataSize);
+    std::vector<T> powerVec(halfFFTDataSize);
     
     std::transform(fftOutputVec.begin(), fftOutputVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
     
-    // Third step is to zap those bins under threshold
-    for(size_t idx = 0; idx < halfFFTDataSize; idx++)
-    {
-        if (powerVec[idx] < minPowerThreshold)
-        {
-            fftOutputVec.at(idx)                   = std::complex<T>(0.,0.);
-            fftOutputVec.at(fftDataSize - idx - 1) = std::complex<T>(0.,0.);
-        }
-    }
+    // Want the first derivative
+    std::vector<T> firstDerivVec(powerVec.size());
     
-    eigenFFT.inv(corValVec, fftOutputVec);
+    fWaveformTool->firstDerivative(powerVec, firstDerivVec);
+    
+    // Find the peaks
+    icarus_tool::IWaveformTool::PeakTupleVec peakTupleVec;
+    
+    fWaveformTool->findPeaks(firstDerivVec.begin(),firstDerivVec.end(),peakTupleVec,minPowerThreshold,0);
+    
+    if (!peakTupleVec.empty())
+    {
+        for(const auto& peakTuple : peakTupleVec)
+        {
+            size_t startTick = std::get<0>(peakTuple);
+            size_t stopTick  = std::get<2>(peakTuple);
+            
+            if (stopTick > startTick)
+            {
+                std::complex<T> slope = (fftOutputVec[stopTick] - fftOutputVec[startTick]) / T(stopTick - startTick);
+                
+                for(size_t tick = startTick; tick < stopTick; tick++)
+                {
+                    std::complex<T> interpVal = fftOutputVec[startTick] + T(tick - startTick) * slope;
+                    
+                    fftOutputVec[tick]                   = interpVal;
+                    fftOutputVec[fftDataSize - tick - 1] = interpVal;
+                }
+            }
+        }
+        
+        std::vector<T> tmpVec(corValVec.size());
+        
+        eigenFFT.inv(tmpVec, fftOutputVec);
+        
+        std::transform(corValVec.begin(),corValVec.end(),tmpVec.begin(),corValVec.begin(),std::minus<T>());
+    }
     
     return;
 }
