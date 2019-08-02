@@ -26,7 +26,7 @@
 #include "canvas/Persistency/Common/FindOneP.h"
 
 // LArSoft Includes
-#include "nutools/ParticleNavigation/ParticleList.h"
+#include "nug4/ParticleNavigation/ParticleList.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "lardataobj/Simulation/sim.h"
 #include "larcore/Geometry/Geometry.h"

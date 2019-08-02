@@ -2,6 +2,8 @@
 
 namespace icarus {
 
+  std::map<int,std::vector<std::pair<int,int>>> CRTHitRecoAlg::fFebMap;
+
   CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
   
@@ -37,6 +39,7 @@ namespace icarus {
 
   std::vector<std::pair<crt::CRTHit, std::vector<int>>> CRTHitRecoAlg::CreateCRTHits(std::vector<art::Ptr<crt::CRTData>> crtList) {
 
+    //std::cout << "inside CreateCRTHits" << std::endl;
     std::vector<std::pair<crt::CRTHit, std::vector<int>>> returnHits;
     std::vector<int> dataIds;
     float pes =0.0;
@@ -73,8 +76,10 @@ namespace icarus {
       else regCounts[region]++;
 
       int adid  = MacToAuxDetID(mac,trigpair.first); //module ID
+      //std::cout << "auxDetID: " << adid << std::endl;
       auto const& adGeo = fGeometryService->AuxDet(adid); //module
       int adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first); //trigger strip ID
+      //std::cout << "auxDetSensitiveID: " << adsid1 << std::endl;
       auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1); //trigger strip
 
       double stripPosWorld1[3], stripPosWorld2[3], stripPosWorld3[3], stripPosWorld4[3];
@@ -196,7 +201,8 @@ namespace icarus {
              tCor2 = tCor1;
           } // if d type
 
-
+          bool cdp1=false, cdp2=false;
+          //std::cout << "looping over chandat" << std::endl;
           for(auto chan : chandat) {
 
               //for ( auto const& trk : chan.TrackID() )
@@ -209,6 +215,7 @@ namespace icarus {
                   t11corr = t11-tCor1;
                   pes+=0.5*chan.ADC();
                   tpesmap[mac].push_back(std::make_pair(chan.Channel(),chan.ADC()));
+                  cdp1=true;
               }
               if (chan.Channel() == trigpair.second) {
                   t02 = chan.T0();
@@ -217,6 +224,7 @@ namespace icarus {
                   t12corr = t12-tCor2;
                   pes+=0.5*chan.ADC();
                   tpesmap[mac].push_back(std::make_pair(chan.Channel(),chan.ADC()));
+                  cdp2=true;
               }
               if (t01!=0 && t02!=0) {
                   t0 = 0.5 * ( t01 + t02 );
@@ -226,6 +234,9 @@ namespace icarus {
                   break;
               }
           }//for ChannelData
+          if(!cdp1||!cdp2)
+              std::cout << "c or d trig pair data not found!" << '\n'
+                        << "  trigPair: (" << trigpair.first << ", " << trigpair.second << ")" << std::endl;
 
 
           if(fVerbose) mf::LogInfo("CRT") << " CRT HIT PRODUCED!" << '\n'
@@ -297,12 +308,9 @@ namespace icarus {
                       }
                   }
 
-                    //if left or right regions (X-X)
-                    if (region == 50 || region == 54) {
-                        //hitPoint[0] = 0.5*(stripPosWorld1[0]+stripPosWorld2[0]);
-                        //hitPoint[1] = 0.5*(stripPosWorld1[1]+stripPosWorld2[1]);
-                        //hitPoint[2] = 0.5*(stripPosWorld1[2]+stripPosWorld2[2]);
-
+                    //if east, west, or north regions (X-X)
+                    if ((region >=40&&region<=45) || region==47) {
+                        //average over 2 channels (4strips)
                         hitPoint[0] = 0.25*(stripPosWorld1[0]+stripPosWorld2[0]+stripPosWorld3[0]+stripPosWorld4[0]);
                         hitPoint[1] = 0.25*(stripPosWorld1[1]+stripPosWorld2[1]+stripPosWorld3[1]+stripPosWorld4[1]);
                         hitPoint[2] = 0.25*(stripPosWorld1[2]+stripPosWorld2[2]+stripPosWorld3[2]+stripPosWorld4[2]);
@@ -319,17 +327,12 @@ namespace icarus {
                         coinModFound = true;
                     }// if left or right
 
-                    //if front or back regions (X-Y)
-                    if (region == 44 || region == 42) {
-                        if  ((adid>107&&adid<119&&adid2>107&&adid2<119)||
-                             (adid>118&&adid<128&&adid2>118&&adid2<128)||
-                             (adid>127&&adid<139&&adid2>127&&adid2<139)||
-                             (adid>138&&adid<148&&adid2>138&&adid2<148) )
-                            mf::LogInfo("CRT") << "incorrect MINOS mac pair!!!" << '\n'
-                                               << " mac 1/2: " << mac << ", " << mac2 << "\n"
-                                               << " auxDetID 1/2: " << adid << ", " << adid2 << "\n";
+                    //if south region (X-Y)
+                    if (region == 46 ) {
+                        if  (adid<104 || adid>130)
+                            mf::LogInfo("CRT") << "WARNING: unexpected MINOS mod ID for south wall" << '\n';
 
-                        if (adid>107&&adid<119) { //if X module
+                        if (adid>=122&&adid<=130) { //if X module
                             hitPoint[0] = stripPosWorld1[1];
                             hitPoint[1] = stripPosWorld2[0];
                             hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
@@ -424,53 +427,90 @@ namespace icarus {
 
   } // CRTHitRecoAlg::FillCrtHit()
 
-  char CRTHitRecoAlg::MacToType(int mac) {
+  void CRTHitRecoAlg::FillFEBMap() 
+  {
+    if(!(this->fFebMap).empty())
+        return;
 
-      if(mac<=99) return 'm';
-      if(mac>=148 && mac<=161) return 'd';
-      if(mac>=162&&mac<=283) return 'c';
+    std::string dir = "/icarus/app/users/chilgenb/dev_areas/v08_22_00_prof/srcs/icaruscode/icaruscode/Geometry/gdml/";
+    std::ifstream fin;
+    fin.open(dir+"feb_map.txt",std::ios::in);
 
-      return 'e';
+    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
+    else std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
+
+    std::vector<std::string> row;
+    std::string line, word;
+    while(getline(fin,line)) {
+
+        row.clear();
+        std::stringstream s(line);
+        int mod;
+        while (std::getline(s, word, ',')) {
+            row.push_back(word);
+        }
+
+        mod = std::stoi(row[0]);
+        (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
+        if(row.size()>3){
+            (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
+        }             
+    }
+    std::cout << "filled febMap with " << (this->fFebMap).size() << " entries" << std::endl;
+    fin.close();
   }
 
   int CRTHitRecoAlg::MacToRegion(int mac){
 
-      if(mac>=162 && mac<=245) return 38; //top
-      if(mac>=246 && mac<=258) return 52; //slope left
-      if(mac>=259 && mac<=271) return 56; //slope right
-      if(mac>=272 && mac<=277) return 48; //slope front
-      if(mac>=278 && mac<=283) return 46; //slope back
-      if(            mac<=17 ) return 50; //left
-      if(mac>=50  && mac<=67 ) return 50; //left
-      if(mac>=18  && mac<=35 ) return 54; //right
-      if(mac>=68  && mac<=85 ) return 54; //right
-      if(mac>=36  && mac<=42 ) return 44; //front
-      if(mac>=86  && mac<=92 ) return 44; //front
-      if(mac>=43  && mac<=49 ) return 42; //back
-      if(mac>=93  && mac<=99 ) return 42; //back
-      if(mac>=148 && mac<=161) return 58; //bottom
+      if(mac>=107 && mac<=190) return 30; //top
+      if(mac>=191 && mac<=204) return 31; //rim west
+      if(mac>=205 && mac<=218) return 32; //rim east
+      if(mac>=219 && mac<=224) return 33; //rim south
+      if(mac>=225 && mac<=230) return 34; //rim north
+      if(            mac<=12 ) return 40; //west side, south stack
+      if(mac>=13  && mac<=24 ) return 41; //west side, center stack
+      if(mac>=25  && mac<=36 ) return 42; //west side, north stack
+      if(mac>=37  && mac<=48 ) return 43; //east side, south stack
+      if(mac>=49  && mac<=60 ) return 44; //east side, center stack
+      if(mac>=61  && mac<=72 ) return 45; //east side, north stack
+      if(mac>=73  && mac<=84 ) return 46; //south
+      if(mac>=85  && mac<=92 ) return 47; //north
+      if(mac>=93 && mac<=106) return 50; //bottom
 
+      std::cout << "ERROR in CRTHitRecoAlg::MacToRegion: unknown mac address " << mac << std::endl;
       return 0;
   }
 
+  char CRTHitRecoAlg::MacToType(int mac) 
+  {
 
-  std::string CRTHitRecoAlg::MacToRegionName(int mac){
+      int reg = MacToRegion(mac);
+      if(reg>=30&&reg<40) return 'c';
+      if(reg>=40&&reg<50) return 'm';
+      if(reg==50) return 'd';
+      std::cout << "ERROR in CRTHitRecoAlg::MacToType: type not set!" << std::endl;
+      return 'e';
+  }
 
-      if(mac>=162 && mac<=245) return "top";
-      if(mac>=246 && mac<=258) return "slope left";
-      if(mac>=259 && mac<=271) return "slope right";
-      if(mac>=272 && mac<=277) return "slope front";
-      if(mac>=278 && mac<=283) return "slope back";
-      if(            mac<=17 ) return "left";
-      if(mac>=50  && mac<=67 ) return "left";
-      if(mac>=18  && mac<=35 ) return "right";
-      if(mac>=68  && mac<=85 ) return "right";
-      if(mac>=36  && mac<=42 ) return "front";
-      if(mac>=86  && mac<=92 ) return "front";
-      if(mac>=43  && mac<=49 ) return "back";
-      if(mac>=93  && mac<=99 ) return "back";
-      if(mac>=148 && mac<=161) return "bottom";
-
+  std::string CRTHitRecoAlg::MacToRegionName(int mac)
+  {
+      int reg = MacToRegion(mac);
+      switch(reg) {
+          case 30 : return "top";
+          case 31 : return "rimWest";
+          case 32 : return "rimEast";
+          case 33 : return "rimSouth";
+          case 34 : return "rimNorth";
+          case 40 : return "westSouth";
+          case 41 : return "westCenter";
+          case 42 : return "westNorth";
+          case 43 : return "eastSouth";
+          case 44 : return "eastCenter";
+          case 45 : return "eastNorth";
+          case 46 : return "south";
+          case 47 : return "north";
+          case 50 : return "bottom";
+      }
       return "";
   }
 
@@ -483,30 +523,29 @@ namespace icarus {
     return INT_MAX;
   }
 
-  int CRTHitRecoAlg::MacToAuxDetID(int mac, int chan){
-    char type = MacToType(mac);
-    if (type == 'e') return INT_MAX;
-    if (type == 'c' || type == 'd') return mac;
-    if (type == 'm') {
-      if (mac>49) mac+=-50;
-      if (mac<40) {
-          if (            chan<=9 ) return mac*3;
-          if (chan>=10 && chan<=19) return mac*3 + 1;
-          if (chan>=20 && chan<=29) return mac*3 + 2;
-      }
-      else if (mac<47) {
-          if (            chan<=9 ) return mac*3 - 1;
-          if (chan>=10 && chan<=19) return mac*3;
-          if (chan>=20 && chan<=29) return mac*3 + 1;
-      }
-      else {
-          if (            chan<=9 ) return mac*3 - 2;
-          if (chan>=10 && chan<=19) return mac*3 - 1;
-          if (chan>=20 && chan<=29) return mac*3;
+  int CRTHitRecoAlg::MacToAuxDetID(int mac, int chan)
+  {
+      FillFEBMap();
+      char type = MacToType(mac);
+      if (type == 'e') return INT_MAX;
+
+      int pos=1;
+      if(type=='m')
+          pos = chan/10 + 1;
+
+      if((this->fFebMap).empty()) 
+          std::cout << "ERROR in CRTHitRecoAlg::MacToAuxDetID: FEBMap is empty!" << std::endl;
+
+      for(const auto&  p : this->fFebMap) {
+          if(p.second[0].first == mac && p.second[0].second==pos)
+              return (uint32_t)p.first;
+          if(p.second.size()==2)
+              if(p.second[1].first==mac && p.second[1].second==pos)
+                  return (uint32_t)p.first;
       }
 
-    }
 
+    std::cout << "ERROR in CRTHitRecoAlg::MacToAuxDetID: auxDetID not set!" << std::endl;
     return INT_MAX;
   }
 

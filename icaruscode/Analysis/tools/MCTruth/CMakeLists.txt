@@ -8,7 +8,7 @@ art_make( MODULE_LIBRARIES lardataobj_RecoBase
                            larsim_MCCheater_BackTrackerService_service
                            larsim_MCCheater_ParticleInventoryService_service
                            icaruscode_gallery_MCTruthBase
-                           nutools_ParticleNavigation
+                           nug4_ParticleNavigation
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -38,7 +38,7 @@ art_make( MODULE_LIBRARIES lardataobj_RecoBase
                            larsim_MCCheater_BackTrackerService_service
                            larsim_MCCheater_ParticleInventoryService_service
                            icaruscode_gallery_MCTruthBase
-                           nutools_ParticleNavigation
+                           nug4_ParticleNavigation
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}

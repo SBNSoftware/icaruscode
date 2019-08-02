@@ -21,7 +21,7 @@
 #include "canvas/Persistency/Common/PtrVector.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "art/Framework/Services/Optional/TFileService.h"
+#include "art_root_io/TFileService.h"
 #include "art/Persistency/Common/PtrMaker.h"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
@@ -107,7 +107,7 @@ crt::CRTTrack shcut(CRTavehit ppA,CRTavehit ppb, uint32_t time0s,uint16_t terr);
 
 // Constructor
 CRTTrackProducer::CRTTrackProducer(fhicl::ParameterSet const & p)
-  : trackAlg(p.get<fhicl::ParameterSet>("TrackAlg"))
+  : EDProducer{p}, trackAlg(p.get<fhicl::ParameterSet>("TrackAlg"))
 {  
   // Initialize member data here.
   fDataLabelHits      = p.get<std::string>("DataLabelHits");      // CRTHit producer module name

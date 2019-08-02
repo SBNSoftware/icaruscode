@@ -14,16 +14,17 @@
 
 
 // ICARUS libraries
-#include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
-#include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
-#include "lardataalg/Utilities/quantities/electronics.h" // tick, counts_f
-#include "lardataalg/Utilities/quantities/electromagnetism.h" // picocoulomb
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // picocoulomb
+#include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
+#include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
+#include "lardataalg/Utilities/quantities/electronics.h" // tick, counts_f
+#include "lardataalg/Utilities/quantities/electromagnetism.h" // picocoulomb
 
 // framework libraries
 #include "fhiclcpp/types/Atom.h"
@@ -48,6 +49,10 @@
 
 namespace icarus {
   namespace opdet {
+    
+    
+    using namespace util::quantities::electromagnetism_literals;
+    
     
     // -------------------------------------------------------------------------
     /**
@@ -194,7 +199,8 @@ namespace icarus {
         { return fSampledShape[tick]; }
       
       /// Returns the value sampled for the specified `tick` (the first is `0`).
-      ADCcount operator() (Tick_t tick) const { return this->operator[](tick); }
+      ADCcount operator() (Tick_t tick) const
+        { return this->operator[](tick.value()); }
       
       /// Evaluates the shape at the specified time.
       ADCcount operator() (Time_t time) const { return fShape(time); }
@@ -384,7 +390,11 @@ namespace icarus {
       using hertz = util::quantities::hertz;
       using megahertz = util::quantities::megahertz;
       using picocoulomb = util::quantities::picocoulomb;
+      using tick = util::quantities::tick;
       using ADCcount = DiscretePhotoelectronPulse::ADCcount;
+      
+      using time_interval = detinfo::timescales::time_interval;
+      using optical_tick = detinfo::timescales::optical_tick;
     
       /// Type holding all configuration parameters for this algorithm.
       struct ConfigurationParameters_t {    
@@ -399,12 +409,12 @@ namespace icarus {
         float  pretrigFraction;       ///< Fraction of window size to be before "trigger"
         ADCcount thresholdADC; ///< ADC Threshold for self-triggered readout
         int    pulsePolarity;         ///< Pulse polarity (=1 for positive, =-1 for negative)
-        microsecond triggerOffsetPMT; ///< Time (us) relative to trigger when pmt readout starts
+        time_interval triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
             
         microsecond readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
     
         bool createBeamGateTriggers; ///< Option to create unbiased readout around beam spill
-        microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers
+        microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
         size_t beamGateTriggerNReps; ///< Number of beamgate trigger reps to produce
     
         float ADC;      ///< charge to ADC conversion scale
@@ -435,7 +445,7 @@ namespace icarus {
         std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
         std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
         int expectedPulsePolarity() const
-          { return ((ADC * meanAmplitude) < 0.0)? -1: +1; }
+          { return ((ADC * meanAmplitude) < 0.0_pC)? -1: +1; }
         /// @}
         
       }; // ConfigurationParameters_t
@@ -493,9 +503,9 @@ namespace icarus {
 			      std::vector<raw::OpDetWaveform>& output_opdets);
 
 
-    void AddSPE(size_t time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
+    void AddSPE(tick time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
     /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-    void AddPhotoelectrons(size_t time_bin, unsigned int n, Waveform_t& wave) const;
+    void AddPhotoelectrons(tick time_bin, unsigned int n, Waveform_t& wave) const;
     
     
     void AddNoise(Waveform_t& wave); //add noise to baseline
@@ -524,7 +534,7 @@ namespace icarus {
      * additional interest points that are added independently of whether there
      * is actual interesting activity in there.
      */
-    std::set<size_t> FindTriggers(Waveform_t const& wvfm) const;
+    std::set<optical_tick> FindTriggers(Waveform_t const& wvfm) const;
     
     /**
      * @brief Generate periodic interest points regardless the actual activity.
@@ -538,8 +548,13 @@ namespace icarus {
      * as defined by `detinfo::DetectorClocks::BeamGateTime()`.
      * 
      * See `FindTriggers()` for the meaning of "interest point".
+     * 
+     * @note It is assumed that tick `0` happens at a time defined by
+     *       `triggerOffsetPMT` configuration parameter _after_ the trigger
+     *       (but since the value of that parameter is expected to be negative,
+     *       tick `0` effectively happens _before_ the trigger).
      */
-    std::set<size_t> CreateBeamGateTriggers() const;
+    std::set<optical_tick> CreateBeamGateTriggers() const;
     
       /// Returns a random response whether a photon generates a photoelectron.
       bool KicksPhotoelectron() const;
