@@ -140,9 +140,28 @@ namespace icarus {
 
               adGeo.LocalToWorld(hitLocal,hitPoint); //tranform from module to world coords
 
-              hitPointErr[0] = width/sqrt(12);
-              hitPointErr[1] = adGeo.HalfHeight();
-              hitPointErr[2] = width/sqrt(12);
+              if(regionName=="top") {
+                  hitPointErr[0] = width/sqrt(12);
+                  hitPointErr[1] = 2*adGeo.HalfHeight()/sqrt(12);
+                  hitPointErr[2] = width/sqrt(12);
+              }
+              else if(regionName=="rimWest" || regionName=="rimEast" {
+                  hitPointErr[0] = 2*adGeo.HalfHeight()/sqrt(12);
+                  hitPointErr[1] = width/sqrt(12);
+                  hitPointErr[2] = width/sqrt(12);
+              }
+              else if(regionName=="rimSouth" || regionName=="rimNorth"){
+                  hitPointErr[0] = width/sqrt(12);
+                  hitPointErr[1] = adGeo.HalfHeight();
+                  hitPointErr[2] = 2*adGeo.HalfHeight()/sqrt(12); 
+              }
+              else {
+                  hitPointErr[0] = 0.0;
+                  hitPointErr[1] = 0.0;
+                  hitPointErr[2] = 0.0;
+		  std::cout << "ERROR: no valid region name found for c-module. Hit errors set to 0!" << std::endl;
+              }
+                  
               nHitC++;
 
           }//if c type
@@ -156,10 +175,11 @@ namespace icarus {
              hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
              hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
              hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
-
-             hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
-             hitPointErr[1] = adGeo.HalfHeight();
-             hitPointErr[2] = length/sqrt(12);
+             hitPointErr[1] = 2*adGeo.HalfHeight()/sqrt(12);
+             if(abs(stripPosWorld1[2])>300) {
+                 hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
+                 hitPointErr[2] = length/sqrt(12);
+             }
              nHitD++;
 
              distToReadoutX = abs( adsGeo1.HalfLength() - modPos1[2]);

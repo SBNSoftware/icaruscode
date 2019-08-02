@@ -24,7 +24,7 @@
 #include "mctrutht0matching.fcl"
 
 #include "crtsimhitproducer.fcl"
-#####include /"/crttzeroproducer_icarus.fcl"
+#####/include "crttzeroproducer_icarus.fcl"
 #include "crttrackproducer_icarus.fcl"
 
 BEGIN_PROLOG
@@ -173,7 +173,7 @@ icarus_reco_producers:
   ## crt producers
   crtsimhit:                      @local::standard_crtsimhitproducer
   #crttzero:                       @local::standard_crttzeroproducer
-  crttrack:                       @local::standard_crttrackproducer
+  crtsimtrack:                    @local::standard_crttrackproducer
 }
 
 icarus_reco_filters:
@@ -336,7 +336,7 @@ icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
 
 icarus_reco_crt:                  [ crtsimhit,
                                     #crttzero ]
-                                    crttrack ]
+                                    crtsimtrack ]
 
 # Define the full reconstruction sequence
 icarus_track_reconstruction:      [ #@sequence::icarus_reco_signalprocessing,

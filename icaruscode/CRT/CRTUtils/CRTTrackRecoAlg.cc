@@ -415,7 +415,8 @@ std::vector<crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(std::vector<crt::CRTHit
     size_t hit_i = hitPairDist[i].first.first;
     size_t hit_j = hitPairDist[i].first.second;
     //Make sure bottom plane hit is always hit_i
-    if(hits[hit_j].tagger=="volTaggerBot_0") std::swap(hit_i, hit_j);
+    //if(hits[hit_j].tagger=="volTaggerBot_0") std::swap(hit_i, hit_j);
+    if(hits[hit_j].tagger=="Bottom") std::swap(hit_i, hit_j); //different name used in ICARUS geo
     crt::CRTHit ihit = hits[hit_i];
     crt::CRTHit jhit = hits[hit_j];
     //If the bottom plane hit is a 1D hit

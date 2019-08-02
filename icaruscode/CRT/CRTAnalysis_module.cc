@@ -61,6 +61,7 @@
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTTruthMatchUtils.h"
 
 using std::string;
@@ -68,9 +69,6 @@ using std::vector;
 using std::map;
 using std::set;
 using std::pair;
-
-//using cmath::pow;
-//using cmath::sqrt;
 
 namespace {
 
@@ -195,6 +193,7 @@ namespace crt {
     TTree* fDetSimNtuple;
     TTree* fSimHitNtuple;
     TTree* fTrueCRTHitNtuple;
+    TTree* fSimTrackNtuple;
 
     // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
@@ -344,6 +343,18 @@ namespace crt {
     int       fTrueHitPDG;
     int       fTrueHitModID[2]; // one for c or d type, 2 entries for m type
 
+    //reco track vars
+    float fTrackPos1[3]
+    float fTrackPos2[3];
+    float fTrackPos1Err[3];
+    float fTrackPos2Err[3];
+    float fTrackLength;
+    float fTrackTheta;
+    float fTrackPhi;
+    uint32_t fTrackT01;
+    uint32_t fTrackT01Err;
+    uint32_t fTrackT02;
+    uint32_t fTrackT02Err;
 
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
@@ -417,6 +428,7 @@ namespace crt {
     fDetSimNtuple        = tfs->make<TTree>("DetTree",          "MyCRTDetSim");
     fSimHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTSimHit");
     fTrueCRTHitNtuple    = tfs->make<TTree>("TrueCRTHitTree",   "CRT hits from truth info");
+    fSimTrackNtuple      = tfs->make<TTree>("TrackTree",        "CRT tracks from reco");
 
     // Construct truth matching histograms
     //fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
@@ -563,6 +575,8 @@ namespace crt {
     fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk,      "trackID/I");
     fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG,      "pdg/I");
     fTrueCRTHitNtuple->Branch("modID",       fTrueHitModID,     "modID[2]/I");
+
+    fSimTrackNtuple->Branch("event",         &f
 
 }
    
