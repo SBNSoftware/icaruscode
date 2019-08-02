@@ -85,6 +85,7 @@ namespace icarus {
 
       double length = adsGeo1.Length(); //strip length
       double width = adsGeo1.HalfWidth1()*2; //strip width
+      double height = adsGeo1.HalfHeight()*2; //strip height
 
       double tCor1=0, tCor2=0;
       double t01=0, t02=0, t01corr=0, t02corr=0;
@@ -142,18 +143,18 @@ namespace icarus {
 
               if(regionName=="top") {
                   hitPointErr[0] = width/sqrt(12);
-                  hitPointErr[1] = 2*adGeo.HalfHeight()/sqrt(12);
+                  hitPointErr[1] = height/sqrt(12);
                   hitPointErr[2] = width/sqrt(12);
               }
               else if(regionName=="rimWest" || regionName=="rimEast" {
-                  hitPointErr[0] = 2*adGeo.HalfHeight()/sqrt(12);
+                  hitPointErr[0] = height/sqrt(12);
                   hitPointErr[1] = width/sqrt(12);
                   hitPointErr[2] = width/sqrt(12);
               }
               else if(regionName=="rimSouth" || regionName=="rimNorth"){
                   hitPointErr[0] = width/sqrt(12);
-                  hitPointErr[1] = adGeo.HalfHeight();
-                  hitPointErr[2] = 2*adGeo.HalfHeight()/sqrt(12); 
+                  hitPointErr[1] = width/sqrt(12);;
+                  hitPointErr[2] = height/sqrt(12); 
               }
               else {
                   hitPointErr[0] = 0.0;
@@ -175,10 +176,17 @@ namespace icarus {
              hitPoint[0] = 0.5 * ( stripPosWorld1[0] + stripPosWorld2[0] );
              hitPoint[1] = 0.5 * ( stripPosWorld1[1] + stripPosWorld2[1] );
              hitPoint[2] = 0.5 * ( stripPosWorld1[2] + stripPosWorld2[2] );
-             hitPointErr[1] = 2*adGeo.HalfHeight()/sqrt(12);
+             
+             hitPointErr[1] = height/sqrt(12);
+             //if strips are parallel to z-dir
              if(abs(stripPosWorld1[2])>300) {
-                 hitPointErr[0] = abs(stripPosWorld1[0] - stripPosWorld2[0])/sqrt(12);
+                 hitPointErr[0] = 1.5*width/sqrt(12);
                  hitPointErr[2] = length/sqrt(12);
+             }
+             //else they are parallel to x-dir
+             else {
+                 hitPointErr[0] = length/sqrt(12);
+                 hitPointErr[2] = 1.5*width/sqrt(12);
              }
              nHitD++;
 
