@@ -1,0 +1,49 @@
+<?xml version='1.0'?>
+<gdml>
+
+<!--+++++++++++++++++++ PMT Solids ++++++++++++++++++++++-->
+
+<solids> 
+ <sphere name="PMTVolume"
+  rmin="9.66"
+  rmax="10.16"
+  deltaphi="360"
+  deltatheta="90"
+  aunit="deg"
+  lunit="cm"/>
+ <sphere name="PMTPassSphere"
+  rmin="9.66"
+  rmax="10.16"
+  deltaphi="360"
+  deltatheta="90"
+  aunit="deg"
+  lunit="cm"/>
+ <tube name="PMTPassTube"
+  rmax="4.225"
+  rmin="3.725"
+  z="8.45" 
+  deltaphi="360"
+  aunit="deg"
+  lunit="cm"/>
+ <union name="PMTPassVolume">
+  <first ref="PMTPassSphere"/>
+  <second ref="PMTPassTube"/>
+  <positionref ref="PMTtube"/>
+  <rotationref ref="rMinus90AboutZ"/>
+ </union>
+</solids>   
+<structure>
+
+<!--+++++++++++++++++ PMT Logical Volumes ++++++++++++++++++++-->
+
+    <volume name="volOpDetSensitive"> 
+      <materialref ref="LAr"/>  
+      <solidref ref="PMTVolume"/>
+    </volume>
+    <volume name="volNotOpDetSensitive"> 
+      <materialref ref="Glass"/>  
+      <solidref ref="PMTPassVolume"/>
+    </volume>
+
+</structure>
+</gdml>

@@ -98,13 +98,15 @@ namespace geo {
       fADGeoToName[a] = volName;
       fNameToADGeo[volName] = a;
 
-      //if volName contains "Module" (search doesn't hit end)
+      //if volume is a module, not a strip (search doesn't hit end)
       if (volName.find("volAuxDet_") != std::string::npos) {
 	//loop over strips
         for (size_t svID=0; svID<nsv; svID++) {
           //CERN modules
           if (nsv==16){
             for (size_t svID=0; svID<16; svID++) {
+              //each strip has 2 fibers, 1 SiPM per fiber at the same strip end
+              //ch id in range (0,31)
               for (size_t ich=0; ich<2; ich++) {
                 size_t chID = 2 * svID + ich;
                 fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
@@ -113,6 +115,7 @@ namespace geo {
           }
           //DC modules
 	  if (nsv==64){
+            //1 fiber per strip read out at one end
 	    for (size_t svID=0; svID<64; svID++) {
                 fADGeoToChannelAndSV[a].push_back(std::make_pair(svID, svID));
             }
@@ -121,7 +124,8 @@ namespace geo {
           if (nsv==20){
             for (size_t svID=0; svID<20; svID++) {
               for (size_t ich=0; ich<2; ich++) {
-                size_t chID = 2 * svID + ich;
+                //size_t chID = 2 * svID + ich;
+                size_t chID = svID/2 + ich+31; //2 fibers on one SiPM, at both ends, w/different FEBs
                 fADGeoToChannelAndSV[a].push_back(std::make_pair(chID, svID));
               }
             }
