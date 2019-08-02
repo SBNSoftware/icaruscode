@@ -569,7 +569,7 @@ void CRTDetSim::produce(art::Event& e) {
     if (auxDetType == 'm') {
       //lateral stacks (6 total, 3 per side)
       if ( region.find("West")!=std::string::npos || region.find("East")!=std::string::npos ) {
-          layid = ( abs(modulePosMother[0]>0) );
+          layid = ( modulePosMother[0]>0 );
       }
       //longitudinal walls
       if ( region=="South" || region=="North" ) {

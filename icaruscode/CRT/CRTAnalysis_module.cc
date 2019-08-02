@@ -1106,7 +1106,7 @@ namespace crt {
                     if ( fADType[fNAuxDet] == 1 ) {
                         // if east or west stacks (6 in total)
                         if ( fAuxDetReg[fNAuxDet] >=40 && fAuxDetReg[fNAuxDet] <=45 ) {
-                            layid = ( abs(modulePosMother[0]>0) );
+                            layid = ( modulePosMother[0]>0 );
                         }
                         // if front or back
                         if ( fAuxDetReg[fNAuxDet] == 46 || fAuxDetReg[fNAuxDet] == 47) {
