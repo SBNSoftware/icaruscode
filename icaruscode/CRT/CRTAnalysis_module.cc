@@ -359,17 +359,17 @@ namespace crt {
     int       fTrueHitModID[2]; // one for c or d type, 2 entries for m type
 
     //reco track vars
-    float fTrackPos1[3]
-    float fTrackPos2[3];
-    float fTrackPos1Err[3];
-    float fTrackPos2Err[3];
-    float fTrackLength;
-    float fTrackTheta;
-    float fTrackPhi;
-    uint32_t fTrackT01;
-    uint32_t fTrackT01Err;
-    uint32_t fTrackT02;
-    uint32_t fTrackT02Err;
+    float fRecoTrackPos1[3];
+    float fRecoTrackPos2[3];
+    float fRecoTrackPos1Err[3];
+    float fRecoTrackPos2Err[3];
+    float fRecoTrackLength;
+    float fRecoTrackTheta;
+    float fRecoTrackPhi;
+    uint32_t fRecoTrackT01;
+    uint32_t fRecoTrackT01Err;
+    uint32_t fRecoTrackT02;
+    uint32_t fRecoTrackT02Err;
 
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
@@ -621,7 +621,7 @@ namespace crt {
     fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG,      "pdg/I");
     fTrueCRTHitNtuple->Branch("modID",       fTrueHitModID,     "modID[2]/I");
 
-    fSimTrackNtuple->Branch("event",         &f
+    //fSimTrackNtuple->Branch("event",         &fRecoTrackEvent;
 
 }
    

@@ -151,7 +151,7 @@ namespace icarus {
                   hitPointErr[1] = height/sqrt(12);
                   hitPointErr[2] = width/sqrt(12);
               }
-              else if(regionName=="rimWest" || regionName=="rimEast" {
+              else if(regionName=="rimWest" || regionName=="rimEast") {
                   hitPointErr[0] = height/sqrt(12);
                   hitPointErr[1] = width/sqrt(12);
                   hitPointErr[2] = width/sqrt(12);

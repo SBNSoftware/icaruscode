@@ -1,0 +1,9 @@
+#include "reco_icarus_driver_common.fcl"
+
+process_name: McRecoCrt
+
+physics.reco: [@sequence::icarus_reco_crt]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+source.inputCommands: ["keep *_*_*_*", "drop *_*_*_McReco*" ]
