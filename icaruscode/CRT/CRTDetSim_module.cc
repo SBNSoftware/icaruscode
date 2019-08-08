@@ -235,15 +235,19 @@ CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer(p),
 }
 
 //read from file and fill map modID->FEB(s), FEB channel subset(s). can be 2 if MINOS module (not cut)
-void CRTDetSim::FillFebMap()//std::map< int,std::vector< std::pair<int,int> > >& m){
+void CRTDetSim::FillFebMap()
 {
     if(!this->fFebMap.empty())
         return;
-    std::string geodir="/icarus/app/users/chilgenb/dev_areas/v08_22_00_prof/srcs/icaruscode/icaruscode/Geometry/gdml/";
+
+    std::string fullFileName;
+    cet::search_path searchPath("FW_SEARCH_PATH");
+    searchPath.find_file("feb_map.txt",fullFileName);
     std::ifstream fin;
-    fin.open(geodir+"feb_map.txt",std::ios::in);
+    fin.open(fullFileName,std::ios::in);
     if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
+    else 
+        throw cet::exception("CRTDetSim::FillFebMap") << "Unable to find/open file 'feb_map.txt'" << std::endl;
     std::vector<std::string> row;
     std::string line, word;
     while(getline(fin,line)) {
