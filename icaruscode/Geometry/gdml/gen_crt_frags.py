@@ -53,12 +53,13 @@ SIDECRTSHELFTHICK = 0.56 #to be verified, could also be 0.64 depending on steel 
 
 #dimensions of top CRT support beams, wide flange W10 x 49
 #true area is larger than that calculated assuming perfect I shape
-#91.54 cm^2 vs 92.9 cm^2 
+#91.55 cm^2 vs 92.90 cm^2, adjust web and flange thickness to match true mass 
 #bottom of CRT beam offset vertically + 0.635cm from bottom of ledge riser
+CRTBEAMLENGTH = 1132.84
 CRTBEAMHEIGHT = 25.3
 CRTBEAMWIDTH  = 25.4
-CRTBEAMFLANGETHICK = 14.22
-CRTBEAMWEBTHICK = 0.86
+CRTBEAMFLANGETHICK = 1.434 #true 1.422, adjusted to match true area
+CRTBEAMWEBTHICK = 0.89407 #true 0.86, adjusted to match true area
 CRTBEAMMASSDENS = 73 #kg/m, density 7849 kg/m^3
 
 #strip width, length, thickness (cm)
@@ -142,12 +143,13 @@ CERNTOPY = SHELLY*0.5 - 0.6*cModH
 CERNRIMSY = CERNTOPY - 0.5*cModH - CRTBEAMHEIGHT - 2.54 - 0.5*cModW
 CERNRIMSZ = -0.5*WVLENGTH - CERNRIMSWVOFFSET
 CERNRIMNY = CERNRIMSY + 29.0
-CERNRIMNZ = CERNROOFL + CERNRIMSZ + 0.6*cModH
+CERNRIMNZ = CERNROOFL + CERNRIMSZ + 0.6*cModH + CRTBEAMSPACING
 CERNTOPZ = CERNRIMSZ + 0.5*CERNROOFL  #roof center assuming south edge of roof aligned with south rim center in z
 CERNRIMLATX = 0.5*WVWIDTH + 0.5*cModH + 38.0
 CERNRIMLATY = CERNRIMSY
 CERNRIMLATZ = CERNTOPZ
 
+#previously 1.01*...
 SHELLZ = 1.01*(0.5*cModH+CERNRIMNZ-min(CERNRIMSZ+0.5*cModH,MINOSLATSOUTHZ-(mModL+MINOSLATSOUTHACTIVEOVERHANG+SIDECRTSOUTHWALLLATOFFSET)*0.5)) #2*(CERNROOFL - 0.5*IVLENGTH - cModW)
 SHELLWVOFFSET = SHELLZ*0.5/1.01 - WVLENGTH*0.5
 if CERNRIMSZ+0.5*cModH < MINOSLATSOUTHZ-(mModL+MINOSLATSOUTHACTIVEOVERHANG+SIDECRTSOUTHWALLLATOFFSET)*0.5:
@@ -170,6 +172,7 @@ solids_store = {}
 modToFeb = dict()
 feb_id = 0
 mod_id = -1
+beam_id = 0
 nModM = 0
 nModC = 0
 nModD = 0
@@ -192,6 +195,86 @@ def get_mod_id(style='m'):
 def get_mod_id_num():
     global mod_id
     return str(mod_id)
+
+def beam():
+    '''build one wide flange beam for top CRT support'''
+
+    global beam_id
+    beam_id += 1
+
+    xx = str(CRTBEAMWIDTH)
+    yy = str(CRTBEAMHEIGHT)
+    zz = str(CRTBEAMLENGTH)
+    xxsub = str(0.5*(CRTBEAMWIDTH-CRTBEAMWEBTHICK))
+    yysub = str(CRTBEAMHEIGHT-2*CRTBEAMFLANGETHICK)
+    zzsub = zz
+    xsubpos = 0.5*(CRTBEAMWIDTH-0.5*(CRTBEAMWIDTH-CRTBEAMWEBTHICK))
+    area = CRTBEAMWIDTH*CRTBEAMHEIGHT-(CRTBEAMWIDTH-CRTBEAMWEBTHICK)*(CRTBEAMHEIGHT-2*CRTBEAMFLANGETHICK)
+    if beam_id==1: print('modeled - true beam areas (cm^2): '+str(area-92.90304))
+
+    sname = 'TopCRTSupportBeam'
+    vname = 'vol'+sname+'_'+str(beam_id)
+
+    if not sname in solids_store:
+        snameext = sname+'_external'
+        snameint = sname+'_internal'
+        snamesub = sname+'_firstsubtraction'
+        sexternal= ET.SubElement(solids, 'box', name=snameext, lunit="cm", x=xx, y=yy, z=zz)
+        sinternal = ET.SubElement(solids, 'box', name=snameint, lunit="cm", x=xxsub, y=yysub, z=zzsub)
+        ssub = ET.SubElement(solids, 'subtraction', name=snamesub)
+        #s = ET.SubElement(solids, 'subtraction', name=sname)
+        ET.SubElement(ssub, 'first', ref=snameext)
+        ET.SubElement(ssub, 'second', ref=snameint)
+        ET.SubElement(ssub, 'position', name='beamsubpos1', unit='cm', x=str(xsubpos), y='0', z='0')
+        s = ET.SubElement(solids, 'subtraction', name=sname)
+        ET.SubElement(s, 'first', ref=snamesub)
+        ET.SubElement(s, 'second', ref=snameint)
+        ET.SubElement(s, 'position', name='beamsubpos2', unit='cm', x=str(-1*xsubpos), y='0', z='0')
+        solids_store[sname] = s
+
+    else:
+        s = solids_store[sname]
+
+    v = ET.SubElement(structure, 'volume', name=vname) #Logical volume
+    ET.SubElement(v, 'materialref', ref='STEEL_A992')
+    ET.SubElement(v, 'solidref', ref=sname)
+
+    return (s,v)
+
+def beamVol():
+
+    padding = 0.01
+    nbeam = 29
+    xx = str(CRTBEAMLENGTH+padding)
+    yy = str(CRTBEAMHEIGHT+padding)
+    zz = (nbeam-1)*CRTBEAMSPACING+CRTBEAMWIDTH+padding
+
+    sname = 'TopCRTSupportBeamEnclosure'
+    vname = 'vol'+sname
+
+    beams = []
+    for i in range(nbeam):
+        beams.append(beam())
+
+    s = ET.SubElement(solids, 'box', name=sname, lunit="cm", x=xx, y=yy, z=str(zz))
+    v = ET.SubElement(structure, 'volume', name=vname)
+    ET.SubElement(v, 'materialref', ref='Air')
+    ET.SubElement(v, 'solidref', ref=sname)
+
+    for i, (sbeam,vbeam) in enumerate(beams):
+
+        pv = ET.SubElement(v, 'physvol')
+        ET.SubElement(pv, 'volumeref', ref=vbeam.attrib['name'])
+
+        dz = str(0.5*(padding-zz+CRTBEAMWIDTH) + i*CRTBEAMSPACING)
+
+        posname = 'pos' + vbeam.attrib['name']
+        ET.SubElement(pv, 'position', name=posname,unit="cm", x='0', y='0', z=dz)
+        posname = 'rot' + vbeam.attrib['name']
+        ET.SubElement(pv, 'rotation', name=posname, unit="deg", x='0', y='90', z='0')
+
+    return (s,v)
+
 
 def strip(style="m", modnum=0, stripnum=0, length=0):
     '''Build one scintillator strip.'''
@@ -989,6 +1072,7 @@ def detectorEnclosure():
     (s,vre) = cernLatRimTagger('R') #CERN RimEast
     (s,vrs) = cernLongRimTagger('U') #CERN RimSouth
     (s,vrn) = cernLongRimTagger('D') #CERN RimNorth
+    (s,vbeam) = beamVol()
 
     #CRT Shell containing all of the tagger volumes and a void to cointain the warm vessel
     sname = 'CRT_Shell'
@@ -1005,6 +1089,12 @@ def detectorEnclosure():
     vshell = ET.SubElement(structure, 'volume', name=vname)
     ET.SubElement(vshell, 'materialref', ref='Air')
     ET.SubElement(vshell, 'solidref', ref=sname)
+
+    #crt support beam
+    pv = ET.SubElement(vshell, 'physvol')
+    ET.SubElement(pv, 'volumeref', ref=vbeam.attrib['name'])
+    posname = 'pos' + vbeam.attrib['name']
+    ET.SubElement(pv, 'position', name=posname, unit="cm", x='0', y=str(CERNTOPY-CRTBEAMHEIGHT*0.5-cModH*0.6), z=str(0))
 
     #position MINOS west, south
     pv = ET.SubElement(vshell, 'physvol')
@@ -1181,21 +1271,37 @@ def detectorEnclosure():
 if testmode:
    m = ET.SubElement(materials, 'element', name='aluminum', formula='Al', Z='13')
    ET.SubElement(m, 'atom', value='26.9815')
-
    m = ET.SubElement(materials, 'element', name='nitrogen', formula='N', Z='7')
    ET.SubElement(m, 'atom', value='14.0067')
-
    m = ET.SubElement(materials, 'element', name='oxygen', formula='O', Z='8')
    ET.SubElement(m, 'atom', value='15.999')
-
    m = ET.SubElement(materials, 'element', name='argon', formula='Ar', Z='18')
    ET.SubElement(m, 'atom', value='39.9480')
-
    m = ET.SubElement(materials, 'element', name='hydrogen', formula='H', Z='1')
    ET.SubElement(m, 'atom', value='1.0079')
-
    m = ET.SubElement(materials, 'element', name='carbon', formula='C', Z='6')
    ET.SubElement(m, 'atom', value='12.0107')
+   m = ET.SubElement(materials, 'element', name='iron', formula='Fe', Z='26')
+   ET.SubElement(m, 'atom', value='55.8450')
+   m = ET.SubElement(materials, 'element', name='niobium', formula='Nb', Z='41')  #add
+   ET.SubElement(m, 'atom', value='92.90637')
+   m = ET.SubElement(materials, 'element', name='copper', formula='Cu', Z='29') #add
+   ET.SubElement(m, 'atom', value='63.5463')
+   m = ET.SubElement(materials, 'element', name='manganese', formula='Mn', Z='25') #add
+   ET.SubElement(m, 'atom', value='54.938043')
+   m = ET.SubElement(materials, 'element', name='molybdenum', formula='Mo', Z='42') #add
+   ET.SubElement(m, 'atom', value='95.951')
+   m = ET.SubElement(materials, 'element', name='nickel', formula='Ni', Z='28')
+   ET.SubElement(m, 'atom', value='58.6934')
+   m = ET.SubElement(materials, 'element', name='phosphorus', formula='P', Z='15')
+   ET.SubElement(m, 'atom', value='30.973')
+   m = ET.SubElement(materials, 'element', name='silicon', formula='Si', Z='14')
+   ET.SubElement(m, 'atom', value='28.0855')
+   m = ET.SubElement(materials, 'element', name='sulfur', formula='S', Z='16')
+   ET.SubElement(m, 'atom', value='32.065')
+   m = ET.SubElement(materials, 'element', name='vanadium', formula='V', Z='23')
+   ET.SubElement(m, 'atom', value='50.94151')
+
 
    m = ET.SubElement(materials, 'material', name='ALUMINUM_Al', formula='ALUMINUM_Al')
    ET.SubElement(m, 'D', value='2.6990', unit='g/cm3')
@@ -1211,6 +1317,20 @@ if testmode:
    ET.SubElement(m, 'D', value='1.19', unit='g/cm3')
    ET.SubElement(m, 'fraction', n='0.077418', ref='hydrogen')
    ET.SubElement(m, 'fraction', n='0.922582', ref='carbon')
+
+   m  = ET.SubElement(materials, 'material', name='STEEL_A992')
+   ET.SubElement(m, 'D', value='7.85', unit='g/cm3')
+   ET.SubElement(m, 'fraction', n='0.0022', ref='carbon')
+   ET.SubElement(m, 'fraction', n='0.0004', ref='niobium')
+   ET.SubElement(m, 'fraction', n='0.005', ref='copper')
+   ET.SubElement(m, 'fraction', n='0.01', ref='manganese')
+   ET.SubElement(m, 'fraction', n='0.0014', ref='molybdenum')
+   ET.SubElement(m, 'fraction', n='0.0044', ref='nickel')
+   ET.SubElement(m, 'fraction', n='0.00034', ref='phosphorus')
+   ET.SubElement(m, 'fraction', n='0.0039', ref='silicon')
+   ET.SubElement(m, 'fraction', n='0.00044', ref='sulfur')
+   ET.SubElement(m, 'fraction', n='0.001', ref='vanadium')
+   ET.SubElement(m, 'fraction', n='0.97092', ref='iron')
 
 #crt shell volume
 (s,v) = detectorEnclosure()

@@ -40,12 +40,25 @@
 		<box lunit="cm" name="tagger_RimEast" x="184.292" y="2.732" z="2581.362"/>
 		<box lunit="cm" name="tagger_RimSouth" x="1106.242" y="2.732" z="184.292"/>
 		<box lunit="cm" name="tagger_RimNorth" x="1106.242" y="2.732" z="184.292"/>
-		<box lunit="cm" name="CRT_Shell_external" x="1143.095" y="971.085" z="2659.59563"/>
+		<box lunit="cm" name="TopCRTSupportBeam_external" x="25.4" y="25.3" z="1132.84"/>
+		<box lunit="cm" name="TopCRTSupportBeam_internal" x="12.252965" y="22.432" z="1132.84"/>
+		<subtraction name="TopCRTSupportBeam_firstsubtraction">
+			<first ref="TopCRTSupportBeam_external"/>
+			<second ref="TopCRTSupportBeam_internal"/>
+			<position name="beamsubpos1" unit="cm" x="6.5735175" y="0" z="0"/>
+		</subtraction>
+		<subtraction name="TopCRTSupportBeam">
+			<first ref="TopCRTSupportBeam_firstsubtraction"/>
+			<second ref="TopCRTSupportBeam_internal"/>
+			<position name="beamsubpos2" unit="cm" x="-6.5735175" y="0" z="0"/>
+		</subtraction>
+		<box lunit="cm" name="TopCRTSupportBeamEnclosure" x="1132.85" y="25.31" z="2621.29"/>
+		<box lunit="cm" name="CRT_Shell_external" x="1143.095" y="971.085" z="2753.23273"/>
 		<box lunit="cm" name="CRT_Shell_internal" x="1040.06" y="653.4" z="2277.06"/>
 		<subtraction name="CRT_Shell">
 			<first ref="CRT_Shell_external"/>
 			<second ref="CRT_Shell_internal"/>
-			<position name="crtshellsubpos" unit="cm" x="0" y="-149.1825" z="-118.2315"/>
+			<position name="crtshellsubpos" unit="cm" x="0" y="-149.1825" z="-164.5865"/>
 		</subtraction>
 	</solids>
 	<structure>
@@ -53387,67 +53400,336 @@
 				<position name="posvolAuxDet_CERN_module_292_RimNorth" unit="cm" x="460.975" y="0" z="0"/>
 			</physvol>
 		</volume>
+		<volume name="volTopCRTSupportBeam_1">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_2">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_3">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_4">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_5">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_6">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_7">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_8">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_9">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_10">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_11">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_12">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_13">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_14">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_15">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_16">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_17">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_18">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_19">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_20">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_21">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_22">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_23">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_24">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_25">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_26">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_27">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_28">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeam_29">
+			<materialref ref="STEEL_A992"/>
+			<solidref ref="TopCRTSupportBeam"/>
+		</volume>
+		<volume name="volTopCRTSupportBeamEnclosure">
+			<materialref ref="Air"/>
+			<solidref ref="TopCRTSupportBeamEnclosure"/>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_1"/>
+				<position name="posvolTopCRTSupportBeam_1" unit="cm" x="0" y="0" z="-1297.94"/>
+				<rotation name="rotvolTopCRTSupportBeam_1" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_2"/>
+				<position name="posvolTopCRTSupportBeam_2" unit="cm" x="0" y="0" z="-1205.23"/>
+				<rotation name="rotvolTopCRTSupportBeam_2" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_3"/>
+				<position name="posvolTopCRTSupportBeam_3" unit="cm" x="0" y="0" z="-1112.52"/>
+				<rotation name="rotvolTopCRTSupportBeam_3" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_4"/>
+				<position name="posvolTopCRTSupportBeam_4" unit="cm" x="0" y="0" z="-1019.81"/>
+				<rotation name="rotvolTopCRTSupportBeam_4" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_5"/>
+				<position name="posvolTopCRTSupportBeam_5" unit="cm" x="0" y="0" z="-927.1"/>
+				<rotation name="rotvolTopCRTSupportBeam_5" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_6"/>
+				<position name="posvolTopCRTSupportBeam_6" unit="cm" x="0" y="0" z="-834.39"/>
+				<rotation name="rotvolTopCRTSupportBeam_6" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_7"/>
+				<position name="posvolTopCRTSupportBeam_7" unit="cm" x="0" y="0" z="-741.68"/>
+				<rotation name="rotvolTopCRTSupportBeam_7" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_8"/>
+				<position name="posvolTopCRTSupportBeam_8" unit="cm" x="0" y="0" z="-648.97"/>
+				<rotation name="rotvolTopCRTSupportBeam_8" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_9"/>
+				<position name="posvolTopCRTSupportBeam_9" unit="cm" x="0" y="0" z="-556.26"/>
+				<rotation name="rotvolTopCRTSupportBeam_9" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_10"/>
+				<position name="posvolTopCRTSupportBeam_10" unit="cm" x="0" y="0" z="-463.55"/>
+				<rotation name="rotvolTopCRTSupportBeam_10" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_11"/>
+				<position name="posvolTopCRTSupportBeam_11" unit="cm" x="0" y="0" z="-370.84"/>
+				<rotation name="rotvolTopCRTSupportBeam_11" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_12"/>
+				<position name="posvolTopCRTSupportBeam_12" unit="cm" x="0" y="0" z="-278.13"/>
+				<rotation name="rotvolTopCRTSupportBeam_12" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_13"/>
+				<position name="posvolTopCRTSupportBeam_13" unit="cm" x="0" y="0" z="-185.42"/>
+				<rotation name="rotvolTopCRTSupportBeam_13" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_14"/>
+				<position name="posvolTopCRTSupportBeam_14" unit="cm" x="0" y="0" z="-92.71"/>
+				<rotation name="rotvolTopCRTSupportBeam_14" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_15"/>
+				<position name="posvolTopCRTSupportBeam_15" unit="cm" x="0" y="0" z="0.0"/>
+				<rotation name="rotvolTopCRTSupportBeam_15" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_16"/>
+				<position name="posvolTopCRTSupportBeam_16" unit="cm" x="0" y="0" z="92.71"/>
+				<rotation name="rotvolTopCRTSupportBeam_16" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_17"/>
+				<position name="posvolTopCRTSupportBeam_17" unit="cm" x="0" y="0" z="185.42"/>
+				<rotation name="rotvolTopCRTSupportBeam_17" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_18"/>
+				<position name="posvolTopCRTSupportBeam_18" unit="cm" x="0" y="0" z="278.13"/>
+				<rotation name="rotvolTopCRTSupportBeam_18" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_19"/>
+				<position name="posvolTopCRTSupportBeam_19" unit="cm" x="0" y="0" z="370.84"/>
+				<rotation name="rotvolTopCRTSupportBeam_19" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_20"/>
+				<position name="posvolTopCRTSupportBeam_20" unit="cm" x="0" y="0" z="463.55"/>
+				<rotation name="rotvolTopCRTSupportBeam_20" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_21"/>
+				<position name="posvolTopCRTSupportBeam_21" unit="cm" x="0" y="0" z="556.26"/>
+				<rotation name="rotvolTopCRTSupportBeam_21" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_22"/>
+				<position name="posvolTopCRTSupportBeam_22" unit="cm" x="0" y="0" z="648.97"/>
+				<rotation name="rotvolTopCRTSupportBeam_22" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_23"/>
+				<position name="posvolTopCRTSupportBeam_23" unit="cm" x="0" y="0" z="741.68"/>
+				<rotation name="rotvolTopCRTSupportBeam_23" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_24"/>
+				<position name="posvolTopCRTSupportBeam_24" unit="cm" x="0" y="0" z="834.39"/>
+				<rotation name="rotvolTopCRTSupportBeam_24" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_25"/>
+				<position name="posvolTopCRTSupportBeam_25" unit="cm" x="0" y="0" z="927.1"/>
+				<rotation name="rotvolTopCRTSupportBeam_25" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_26"/>
+				<position name="posvolTopCRTSupportBeam_26" unit="cm" x="0" y="0" z="1019.81"/>
+				<rotation name="rotvolTopCRTSupportBeam_26" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_27"/>
+				<position name="posvolTopCRTSupportBeam_27" unit="cm" x="0" y="0" z="1112.52"/>
+				<rotation name="rotvolTopCRTSupportBeam_27" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_28"/>
+				<position name="posvolTopCRTSupportBeam_28" unit="cm" x="0" y="0" z="1205.23"/>
+				<rotation name="rotvolTopCRTSupportBeam_28" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+			<physvol>
+				<volumeref ref="volTopCRTSupportBeam_29"/>
+				<position name="posvolTopCRTSupportBeam_29" unit="cm" x="0" y="0" z="1297.94"/>
+				<rotation name="rotvolTopCRTSupportBeam_29" unit="deg" x="0" y="90" z="0"/>
+			</physvol>
+		</volume>
 		<volume name="volCRT_Shell">
 			<materialref ref="Air"/>
 			<solidref ref="CRT_Shell"/>
 			<physvol>
+				<volumeref ref="volTopCRTSupportBeamEnclosure"/>
+				<position name="posvolTopCRTSupportBeamEnclosure" unit="cm" x="0" y="469.6165" z="0"/>
+			</physvol>
+			<physvol>
 				<volumeref ref="vol_tagger_SideLat_South_WestSouth"/>
-				<position name="posvol_tagger_SideLat_South_WestSouth" unit="cm" x="530.355" y="-97.7465" z="-884.5715"/>
+				<position name="posvol_tagger_SideLat_South_WestSouth" unit="cm" x="530.355" y="-97.7465" z="-930.9265"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_Center_WestCenter"/>
-				<position name="posvol_tagger_SideLat_Center_WestCenter" unit="cm" x="560.19" y="-128.9015" z="-150.2315"/>
+				<position name="posvol_tagger_SideLat_Center_WestCenter" unit="cm" x="560.19" y="-128.9015" z="-196.5865"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_North_WestNorth"/>
-				<position name="posvol_tagger_SideLat_North_WestNorth" unit="cm" x="530.355" y="-97.7465" z="616.1085"/>
+				<position name="posvol_tagger_SideLat_North_WestNorth" unit="cm" x="530.355" y="-97.7465" z="569.7535"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_South_EastSouth"/>
-				<position name="posvol_tagger_SideLat_South_EastSouth" unit="cm" x="-530.355" y="-97.7465" z="-884.5715"/>
+				<position name="posvol_tagger_SideLat_South_EastSouth" unit="cm" x="-530.355" y="-97.7465" z="-930.9265"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_Center_EastCenter"/>
-				<position name="posvol_tagger_SideLat_Center_EastCenter" unit="cm" x="-560.19" y="-128.9015" z="-150.2315"/>
+				<position name="posvol_tagger_SideLat_Center_EastCenter" unit="cm" x="-560.19" y="-128.9015" z="-196.5865"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideLat_North_EastNorth"/>
-				<position name="posvol_tagger_SideLat_North_EastNorth" unit="cm" x="-530.355" y="-97.7465" z="616.1085"/>
+				<position name="posvol_tagger_SideLat_North_EastNorth" unit="cm" x="-530.355" y="-97.7465" z="569.7535"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideNorth"/>
-				<position name="posvol_tagger_SideNorth" unit="cm" x="0.0" y="-87.7305" z="1030.6235"/>
+				<position name="posvol_tagger_SideNorth" unit="cm" x="0.0" y="-87.7305" z="984.2685"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_SideSouth"/>
-				<position name="posvol_tagger_SideSouth" unit="cm" x="0.0" y="-97.7465" z="-1267.647"/>
+				<position name="posvol_tagger_SideSouth" unit="cm" x="0.0" y="-97.7465" z="-1314.002"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_Bottom"/>
-				<position name="posvol_tagger_Bottom" unit="cm" x="0" y="-480.135" z="-118.2315"/>
+				<position name="posvol_tagger_Bottom" unit="cm" x="0" y="-480.135" z="-164.5865"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_Top"/>
-				<position name="posvol_tagger_Top" unit="cm" x="0.0" y="483.9045" z="4.6985"/>
+				<position name="posvol_tagger_Top" unit="cm" x="0.0" y="483.9045" z="-41.6565"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_RimWest"/>
-				<position name="posvol_tagger_RimWest" unit="cm" x="555.265" y="362.5545" z="4.6985"/>
+				<position name="posvol_tagger_RimWest" unit="cm" x="555.265" y="362.5545" z="-41.6565"/>
 				<rotation name="rotvol_tagger_RimWest" unit="deg" x="0" y="0" z="90.0"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_RimEast"/>
-				<position name="posvol_tagger_RimEast" unit="cm" x="-555.265" y="362.5545" z="4.6985"/>
+				<position name="posvol_tagger_RimEast" unit="cm" x="-555.265" y="362.5545" z="-41.6565"/>
 				<rotation name="rotvol_tagger_RimEast" unit="deg" x="0" y="0" z="-90.0"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_RimSouth"/>
-				<position name="posvol_tagger_RimSouth" unit="cm" x="0.0" y="362.5545" z="-1286.6315"/>
+				<position name="posvol_tagger_RimSouth" unit="cm" x="0.0" y="362.5545" z="-1332.9865"/>
 				<rotation name="rotvol_tagger_RimSouth" unit="deg" x="90.0" y="0" z="0"/>
 			</physvol>
 			<physvol>
 				<volumeref ref="vol_tagger_RimNorth"/>
-				<position name="posvol_tagger_RimNorth" unit="cm" x="0.0" y="391.5545" z="1297.6665"/>
+				<position name="posvol_tagger_RimNorth" unit="cm" x="0.0" y="391.5545" z="1344.0215"/>
 				<rotation name="rotvol_tagger_RimNorth" unit="deg" x="-90.0" y="0" z="0"/>
 			</physvol>
 		</volume>
