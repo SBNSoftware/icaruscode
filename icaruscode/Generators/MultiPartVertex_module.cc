@@ -368,17 +368,17 @@ void MultiPartVertex::produce(art::Event & e)
     }
     
     if(_debug) std::cout << "Total number particles: " << mct.NParticles() << std::endl;
-    
+
     simb::MCParticle nu(mct.NParticles(), 16, "primary", mct.NParticles(), 0, 0);
     double px=0;
     double py=0;
     double pz=0;
     double en=0;
     for(auto const& part : part_v) {
-        px = part.Momentum().Px();
-        py = part.Momentum().Py();
-        pz = part.Momentum().Pz();
-        en = part.Momentum().E();
+        px += part.Momentum().Px();
+        py += part.Momentum().Py();
+        pz += part.Momentum().Pz();
+        en += part.Momentum().E();
     }
     TLorentzVector mom(px,py,pz,en);
     nu.AddTrajectoryPoint(pos,mom);
@@ -386,7 +386,20 @@ void MultiPartVertex::produce(art::Event & e)
     mct.Add(nu);
     for(auto& part : part_v)
         mct.Add(part);
-    
+ 
+    // Set the neutrino for the MCTruth object:
+    // NOTE: currently these parameters are all pretty much a guess...
+    mct.SetNeutrino(simb::kCC,
+                    simb::kQE, // not sure what the mode should be here, assumed that these are all QE???
+                    simb::kCCQE, // not sure what the int_type should be either...
+                    0, // target is AR40? not sure how to specify that...
+                    0, // nucleon pdg ???
+                    0, // quark pdg ???
+                    -1.0,  // W ??? - not sure how to calculate this from the above
+                    -1.0,  // X ??? - not sure how to calculate this from the above
+                    -1.0,  // Y ??? - not sure how to calculate this from the above
+                    -1.0); // Qsqr ??? - not sure how to calculate this from the above
+
     mctArray->push_back(mct);
     
     e.put(std::move(mctArray));

@@ -13,7 +13,6 @@
 #
 
 #include "larfft.fcl"
-#include "photpropservices_icarus.fcl"
 
 BEGIN_PROLOG
 

@@ -21,9 +21,26 @@ CorrelatedNoiseTool:
   StoreHistograms:          true
   NoiseHistFileName:        "T600noise_corr.root"
   HistogramName:            "hnoiseI1"
+
   CorrAmpHistFileName:      "CorrAmplitude.root"
   CorrAmpHistogramName:     "hbrms"
   StoreHistograms:          true
+}
+SBNNoiseTool:
+{
+  tool_type:                 SBNNoise
+  Plane:                     0
+  MedianNumBins:             25
+  NoiseRand:                 0.
+  CorrelatedSeed:            1000
+  UncorrelatedSeed:          5000
+  StoreHistograms:           false
+  NoiseHistFileName:         "FFtsbnEE20M.root"
+  CorrelatedHistogramName:   "fftBhisto"
+  UncorrelatedHistogramName: "fftUhisto"
+  TotalRMSHistoName:         "RMShisto"
+  CorrelatedRMSHistoName:    "RMSBhisto"
+  UncorrelatedRMSHistoName:  "RMSUhisto"
 }
 WhiteNoiseTool:
 {
@@ -54,10 +71,6 @@ standard_simwire:
   MakeHistograms:     "true"
   NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
 }
-
-#standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
-#standard_simwire.NoiseGenToolVec[1].HistogramName: "hnoiseI2"
-#standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
 
 icarus_simwire:  @local::standard_simwire
 
