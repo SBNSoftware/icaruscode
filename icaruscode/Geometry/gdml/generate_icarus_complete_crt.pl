@@ -364,7 +364,7 @@ $ExpHall_VertSpace = $ExpHall_y - $HallWallThicnekss - $Overburden_y/3;
 $DetEnc_pad = 0.1;
 $DetEnc_x = 1245;
 $DetEnc_y = $ExpHall_VertSpace - 2*$DetEnc_pad;
-$DetEnc_z = 3000;
+$DetEnc_z = 3200;
 $WarmVessel_FootHeight = 6.0; # heigth of support feet from bottom of support structure
 $WarmVessel_FloorSpace = 10.16; # space between WV feet and concrete floor due to concrete islands, grout, padding
 $WarmVessel_CenterToFloor = $WarmVessel_FootHeight + $WarmVessel_FloorSpace + $WarmVessel_y/2;
@@ -387,7 +387,7 @@ $WarmVesselInDetEncl_y = $ThermInsInDetEncl_y;
 $CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2;
 
 $CRTSHELL_WV_OFFSET_Y = 15;
-$CRTSHELL_WV_OFFSET_Z = 118.2315;
+$CRTSHELL_WV_OFFSET_Z = 164.5865; #v08_22_00 had 118.2315;
 #$CryoInWarmVessel_y = $WarmVesselInDetEncl_y -$WarmVessel_y/2 + $FoamPadding + $WarmVesselThickness + $Cryostat_y/2 + $GaseousAr_y/2;
 #+++++++++++++++++++++++++ End defining variables ++++++++++++++++++++++++++
 
@@ -530,7 +530,12 @@ sub gen_Materials()
   <element name="titanium" formula="Ti" Z="22"> <atom value="47.867"/>   </element>
   <element name="argon" formula="Ar" Z="18"> <atom value="39.9480"/>  </element>
   <element name="sulphur" formula="S" Z="16"> <atom value="32.065"/>  </element>
-  <element name="phosphorus" formula="P" Z="16"> <atom value="30.973"/>  </element>
+  <element name="phosphorus" formula="P" Z="15"> <atom value="30.973"/>  </element>
+  <element name="niobium" formula="Nb" Z="41"> <atom value="92.90637"/>  </element>
+  <element name="copper" formula="Cu" Z="29"> <atom value="63.5463"/>  </element>
+  <element name="manganese" formula="Mn" Z="25"> <atom value="54.938043"/>  </element>
+  <element name="molybdenum" formula="Mo" Z="42"> <atom value="95.951"/>  </element>
+  <element name="vanadium" formula="V" Z="23"> <atom value="50.94151"/>  </element>
 
   <material name="Vacuum" formula="Vacuum">
    <D value="1.e-25" unit="g/cm3"/>
@@ -782,7 +787,23 @@ sub gen_Materials()
    <composite n="10" ref="oxygen"/>
   </material>
 
+  <material name="STEEL_A992">
+   <D unit="g/cm3" value="7.85"/>
+   <fraction n="0.0022"  ref="carbon"/>
+   <fraction n="0.0004"  ref="niobium"/>
+   <fraction n="0.005"   ref="copper"/>
+   <fraction n="0.01"    ref="manganese"/>
+   <fraction n="0.0014"  ref="molybdenum"/>
+   <fraction n="0.0044"  ref="nickel"/>
+   <fraction n="0.00034" ref="phosphorus"/>
+   <fraction n="0.0039"  ref="silicon"/>
+   <fraction n="0.00044" ref="sulphur"/>
+   <fraction n="0.001"   ref="vanadium"/>
+   <fraction n="0.97092" ref="iron" />
+  </material>
+
 </materials>
+
 EOF
 
 close(MAT);

@@ -15,7 +15,7 @@
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
    <position name="posThermInsInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
    <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
-   <position name="posCRTShellInDetEncl" unit="cm" x="0" y="15" z="118.2315"/>
+   <position name="posCRTShellInDetEncl" unit="cm" x="0" y="15" z="164.5865"/>
    <position name="posBuildingInWorld" unit="cm" x="0" y="1300" z="0"/>
    <position name="posExpHallInWorld" unit="cm" x="0" y="155" z="0"/>
    <rotation name="rPlus90AboutZPlus90AboutY"  unit="deg" x="0" y="90" z="90"/>
