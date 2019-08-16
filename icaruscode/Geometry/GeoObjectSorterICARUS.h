@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "larcorealg/Geometry/GeoObjectSorter.h"
+#include "fhiclcpp/ParameterSet.h"
 
 namespace geo{
 
