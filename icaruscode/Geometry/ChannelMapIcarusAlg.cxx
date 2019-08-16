@@ -7,6 +7,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "ChannelMapIcarusAlg.h"
+#include "larcorealg/Geometry/Exceptions.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeo.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
