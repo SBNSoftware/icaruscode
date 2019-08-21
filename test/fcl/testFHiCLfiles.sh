@@ -123,8 +123,8 @@ EOH
 
 ################################################################################
 declare -Ar TestDescriptions=(
-  ['dump']='FHiCL syntax check (\`fhicl-dump\`)'
-  ['validate']='ask \`art\` to perform validation (\`lar --validate-config\`)'
+  ['dump']='FHiCL syntax check (`fhicl-dump`)'
+  ['validate']='ask `art` to perform validation (`lar --validate-config`)'
 )
 
 function printTests() {
@@ -220,10 +220,15 @@ function Test_validate() {
   
   local -a Options
   
-  $lar --validate-config '/dev/null' "${Options[@]}" --config "$FHiCLpath" > /dev/null
+  local Cwd="$(pwd)"
+  local -a Cmd=( $lar --validate-config '/dev/null' "${Options[@]}" --config "$FHiCLpath" )
+  "${Cmd[@]}" > /dev/null
   local -i res=$?
   
-  [[ $res == 0 ]] || ERROR "File '${FHiCLpath}' failed validation (code: ${res})."
+  if [[ $res != 0 ]]; then
+    ERROR "File '${FHiCLpath}' failed validation (code: ${res})."
+    INFO "Command was:\n${Cwd}\$ ${Cmd[@]}"
+  fi
   return $res
 } # Test_validate()
 

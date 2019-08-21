@@ -1,0 +1,129 @@
+#
+# File:    beamspilltimings.fcl
+# Purpose: Configuration of FNAL beam time structure for GENIEHelper.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    August 19, 2019
+# Version: 1.0
+#
+# Configurations are provided to drive GENIEGen/GENIEHelper to produce a
+# neutrino interactions with time distribution reflecting the beam time
+# structure.
+# `evgb::GENIEHelper` determines the timing of each generated event via an
+# algorithm configured via `SpillTimeConfig`. One of the available algorithms
+# is specific to FNAL beams and it is implemented in `nugen` package as
+# `evgb::EvtTimeFNALBeam` class, with inline documentation worth a reading
+# (`nugen/EventGeneratorBase/GENIE/EvtTimeFNALBeam.h`).
+# 
+# The configuration is a string with the name of the algorithm first, and then
+# the configuration parameters.
+# 
+# Configurations are provided for BnB and NuMI at some known times.
+# 
+# Example of usage
+# -----------------
+# 
+# Assuming there is a configuration `generator` for `GENIEGen`, FHiCL
+# configuration can be amended by appending to it:
+#     
+#     physics.producers.generator.SpillTimeConfig: @local::FNAL_BnB_default
+#     
+# 
+# 
+# Provided configurations
+# ------------------------
+# 
+# * `FNAL_BnB_default`: settings from `evgb::EvtTimeFNALBeam` itself
+# * `FNAL_NuMI_default`: settings from `evgb::EvtTimeFNALBeam` itself
+# 
+# 
+# Explanation of the configuration parameters
+# --------------------------------------------
+# 
+# This documentation reflects the configuration string of
+# `evgb::EvtTimeFNALBeam` class in `nugen` `v1_00_01` (`nutools` `v3_02_00`).
+# It is parsed by `evgb::EvtTimeFNALBeam::Config()` (the first word,
+# representing the name of the algorithm, is stripped by the caller,
+# `evgb::GENIEHelper`).
+# The configuration string is, well, a single string, sequence of
+# case-insensitive words separated by blanks (space, tabulation or new line).
+# Parameters are parsed in sequence and the latter overrides the previous.
+# Parameters may appear in any order, except for the algorithm name which must
+# be the first.
+# 
+# * `evgb::EvtTimeFNALBeam`: the algorithm name; `evgb::EvtTimeFNALBeam`
+#     describes a beam spill structured in a contiguous sequence of "batches",
+#     each one with a substructure of "buckets". Some batches can be "disabled",
+#     and some of the buckets at the end of each batch may be empty.
+#     Each bucket has a Gaussian time distribution. See the content of
+#     `nugen/EventGeneratorBase/GENIE/EvtTime*.h` for other possible algorithms.
+# * `intentsity <INT 1> <INT 2> ...  <INT M>` describes the relative intensity
+#     of the batches in the spill, and at the same time it defines the number
+#     _M_ of batches in the spill. A standard setting is to have all the batches
+#     (6 for NuMI, just 1 for BnB) set to `1.0`; `GENIEHelper` will take care of
+#     normalizing the numbers to a sum of 1.
+# * `sigma` or `FWHM` [ns]: the RMS or full width at half maximum peak of the
+#     time structure of a single bucket. The time distribution is always
+#     Gaussian (if specified as FWHM, it is converted to RMS for a Gaussian
+#     distribution).
+# * `dtbucket` [ns]: the time between the peak of two consecutive buckets.
+#     The default value (18.83 ns) assumes an extraction rate of 53.103 MHz.
+# * `nperbatch`, `nfilled`: the number of buckets in each spill, and the number
+#     of those which have actual protons in them. The default values include
+#     84 buckets, of which 81 are filled and the remaining 3, always at the end
+#     of the spill ("notch") are empty.
+# * `global` [ns]: offset of the start of the spill (i.e. the time of the peak
+#     of the first bucket of the first batch) with respect to the start
+#     of the generator time scale (see `detinfo::DetectorClocks`).
+# * `Booster`, `NuMI`: presets including all the above in hard-coded fashion;
+#     avoid using these to have better control and awareness of the settings.
+# 
+# Changes
+# --------
+# 
+# 20190819 (petrillo@slac.stanford.edu) [v1.0]
+#   explicitly pick settings hard-coded in `evgb::EvtTimeFNALBeam`
+#
+
+BEGIN_PROLOG
+
+################################################################################
+### Booster Neutrino Beam (BnB)
+################################################################################
+#
+# this configuration is taken from the default settings of
+# `evgb::EvtTimeFNALBeam` on `nugen` `v1_00_01` for BnB.
+# According to the comments in the code, "2.0 - 2.5 ns width for Booster is
+# reasonable", and "it is expected that the Booster width >> NuMI width due to
+# higher electric fields / deeper buckets".
+#
+FNAL_BnB_default: "evgb::EvtTimeFNALBeam
+intensity  1.0
+sigma      2.00
+dtbucket   18.8313277969
+nperbatch  84
+nfilled    81
+global     0.0
+"
+
+
+################################################################################
+### NuMI
+################################################################################
+#
+# this configuration is taken from the default settings of
+# `evgb::EvtTimeFNALBeam` on `nugen` `v1_00_01` for NuMI.
+# According to the comments in the code, "0.75 ns sigma for NuMI comes from
+# MINOS Time-of-Flight paper though it could be currently ~ 1ns".
+#
+FNAL_NuMI_default: "evgb::EvtTimeFNALBeam
+intensity  1.0 1.0 1.0 1.0 1.0 1.0
+sigma      0.75
+dtbucket   18.8313277969
+nperbatch  84
+nfilled    81
+global     0.0
+"
+
+################################################################################
+
+END_PROLOG
