@@ -1,18 +1,91 @@
-#include "genie.fcl"
+#
+# File:    genie_icarus_numioffaxis.fcl
+# Purpose: Presets for simulation of interaction of neutrinos from NuMI
+#          (`GENIEGen` module).
+# Version: 1.1
+#
+# The configurations are good to go. E.g.:
+#     
+#     physics.producers.generator: @local::icarus_genie_NuMI
+#     
+#
+#
+# Provided configurations
+# ------------------------
+#
+# * `icarus_genie_simple_NuMI`:
+#     simple flux configuration for NuMI beam, with uniform beam time structure
+# * `icarus_genie_simple_NuMI`:
+#     simple flux configuration for NuMI beam, with NuMI time structure
+# 
+# 
+#
+# Changes
+# --------
+# 20180910
+#   original version by Minerba Betancourt/Tracy Usher
+# 20190819 (petrillo@slac.stanford.edu) [v1.1]
+#   added configurations for beam time structure;
+#   `icarus_genienumi_simple` renamed into `icarus_genie_simple_NuMI_base`
+#
+#
+
+#include "genie_icarus_bnb.fcl"
+#include "beamspilltimings.fcl"
+
 
 BEGIN_PROLOG
 
-icarus_genienumi_simple:                        @local::standard_genie
-icarus_genienumi_simple.FluxType:               "dk2nu"
-icarus_genienumi_simple.GenFlavors:             [12, 14, -12, -14]
-icarus_genienumi_simple.BeamName:               "numi"
-icarus_genienumi_simple.DetectorLocation:       "icarus-numi"
-icarus_genienumi_simple.EventGeneratorList:     "Default+CCMEC+NCMEC"
-icarus_genienumi_simple.FluxSearchPaths:        "/pnfs/icarus/persistent/numiflux_sample/neutrino_flux/"
-icarus_genienumi_simple.FluxFiles:              ["g4numiv6_dk2nu_minervame*.root"]
-icarus_genienumi_simple.GHepPrintLevel:         13
-icarus_genienumi_simple.POTPerSpill:            5.e12
 
-icarus_genienumi_simple.GlobalTimeOffset:       0.
-icarus_genienumi_simple.RandomTimeOffset:       9600.
+################################################################################
+###  
+###  NuMI configuration.
+###  
+################################################################################
+
+###
+### icarus_genie_NuMI_base
+###
+icarus_genie_NuMI_base: {
+  
+  @table::icarus_genie_BNB_base # from genie_icarus_bnb.fcl
+  
+  #
+  # flux
+  #
+  FluxType:             "dk2nu"
+  BeamName:             "numi"
+  DetectorLocation:     "icarus-numi"
+  FluxSearchPaths:      "/pnfs/icarus/persistent/numiflux_sample/neutrino_flux/"
+  FluxFiles:            ["g4numiv6_dk2nu_minervame*.root"]
+  
+  POTPerSpill:          3.0e13 # same as BnB per batch, but 6 batches in spill
+  
+  RandomTimeOffset:     9600.0 # same batch as BnB, but 6 batches in spill [ns]
+
+} # icarus_genie_NuMI_base
+
+
+# legacy alias
+icarus_genienumi_simple: @local::icarus_genie_NuMI_base
+
+
+###
+### icarus_genie_NuMI
+###
+#
+# Adds NuMI beam time structure.
+#
+icarus_genie_NuMI: {
+  
+  @table::icarus_genie_NuMI_base
+  
+  SpillTimeConfig: @local::FNAL_NuMI_default # from beamspilltimings.fcl
+  RandomTimeOffset: 0.0 # ns; it's ignored anyway when `SpillTimeConfig` is set
+  
+} # icarus_genie_NuMI
+
+
+################################################################################
+
 END_PROLOG

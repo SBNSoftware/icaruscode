@@ -1,0 +1,94 @@
+#
+# File:    genie_icarus_bnb.fcl
+# Purpose: Presets for simulation of interaction of neutrinos from BnB
+#          (`GENIEGen` module).
+# Version: 1.1
+#
+# The configurations are good to go. E.g.:
+#     
+#     physics.producers.generator: @local::icarus_genie_BNB
+#     
+#
+#
+# Provided configurations
+# ------------------------
+#
+# * `icarus_genie_BNB_base`:
+#     simple flux configuration with uniform time structure
+# * `icarus_genie_BNB`:
+#     simple flux configuration with BnB time structure
+# 
+# 
+#
+# Changes
+# --------
+# 20171019
+#   original version by Christian Farnese
+# 20190819 (petrillo@slac.stanford.edu) [v1.1]
+#   added configurations for beam time structure;
+#   `icarus_genie_simple` renamed into `icarus_genie_simple_BnB_base`
+#
+#
+
+#include "genie.fcl"
+#include "beamspilltimings.fcl"
+
+BEGIN_PROLOG
+
+
+################################################################################
+###  
+###  BnB configuration.
+###  
+################################################################################
+
+###
+### icarus_genie_BNB_base
+###
+icarus_genie_BNB_base: {
+  
+  @table::standard_genie # from genie.fcl
+  
+  FluxType:             "simple_flux"
+  GenFlavors:           [12, 14, -12, -14]
+# TopVolume:            "volTPCActive"
+# TopVolume:            "volCryostat"
+  BeamName:             "booster"
+  EventGeneratorList:   "Default+CCMEC+NCMEC"
+# EventGeneratorList:   "Default"
+# FluxCopyMethod:       "IFDH"
+  FluxSearchPaths:      "/pnfs/icarus/persistent/bnb_gsimple/fluxes_Oct2017/"
+  FluxFiles:            ["converted_beammc_icarus_*.root"]
+  GHepPrintLevel:       13
+  POTPerSpill:          5.0e12
+  EventsPerSpill:       @erase
+  
+  GlobalTimeOffset:     0.0 # [ns]
+  RandomTimeOffset:     1600.0 # [ns]
+  
+} # icarus_genie_BNB_base
+
+
+# legacy alias
+icarus_genie_simple: @local::icarus_genie_BNB_base
+
+
+###
+###  icarus_genie_BNB
+###
+#
+# Adds BnB time structure.
+#
+icarus_genie_BNB: {
+  
+  @table::icarus_genie_BNB_base
+  
+  SpillTimeConfig: @local::FNAL_BnB_default # from beamspilltimings.fcl
+  RandomTimeOffset: 0.0 # ns; it's ignored anyway when `SpillTimeConfig` is set
+  
+} # icarus_genie_BNB
+
+
+################################################################################
+
+END_PROLOG
