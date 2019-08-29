@@ -18,6 +18,7 @@
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandPoisson.h"
 #include "CLHEP/Random/RandGauss.h"
 #include "CLHEP/Random/RandExponential.h"
 
@@ -76,6 +77,36 @@ bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
 
 // -----------------------------------------------------------------------------   
 // ---  icarus::opdet::PMTsimulationAlg
+// -----------------------------------------------------------------------------   
+double
+icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::
+  multiplicationStageGain(unsigned int i /* = 1 */) const
+{
+  // if all stages were born equal:
+  // return std::pow(gain, 1.0 / nDynodes());
+  double const k = dynodeK;
+  double const mu = gain;
+  unsigned const N = nDynodes();
+  double prodRho = 1.0;
+  for (double rho: voltageDistribution) prodRho *= rho;
+  double const aVk
+    = std::pow(mu / std::pow(prodRho, k), 1.0/static_cast<double>(N));
+  return aVk * std::pow(voltageDistribution.at(i - 1), k);
+} // icarus::...::PMTsimulationAlg::...::PMTspecs_t::multiplicationStageGain()
+
+
+// -----------------------------------------------------------------------------   
+void icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::
+  setVoltageDistribution
+  (std::vector<double>&& Rs)
+{
+  voltageDistribution = std::move(Rs);
+  double total = std::accumulate
+    (voltageDistribution.begin(), voltageDistribution.end(), 0.0);
+  for (auto& R: voltageDistribution) R /= total;
+} // icarus::...::PMTsimulationAlg::...::PMTspecs_t::setPMTvoltageDistribution()
+
+
 // -----------------------------------------------------------------------------   
 icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   (ConfigurationParameters_t const& config)
@@ -186,12 +217,29 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
       // add the collected photoelectrons to the waveform
     unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
+    double nTotalEffectivePE [[gnu::unused]] = 0U; // unused if not in `debug` mode
+    
+    double const refGain = fParams.PMTspecs.firstStageGain();
+    CLHEP::RandPoisson randomGainFluctuation
+      (*fParams.gainRandomEngine, refGain);
+    
     for(auto const& pe : peMap){
-      auto const nPE = pe.second;
+      unsigned int const nPE = pe.second;
       nTotalPE += nPE;
-      if (nPE == 0) continue;
-      if (nPE == 1) AddSPE(pe.first, waveform); // faster if n = 1
-      else AddPhotoelectrons(pe.first, nPE, waveform);
+      
+      // add gain fluctuations in the conversion
+      double nEffectivePE = nPE;
+      if (fParams.doGainFluctuations) {
+        nEffectivePE *= randomGainFluctuation.fire() / refGain;
+      }
+      nTotalEffectivePE += nEffectivePE;
+      
+      if (nEffectivePE == 0.0) continue;
+      if (nEffectivePE == 1.0) AddSPE(pe.first, waveform); // faster if n = 1
+      else {
+        AddPhotoelectrons
+          (pe.first, static_cast<WaveformValue_t>(nEffectivePE), waveform);
+      }
     }
     MF_LOG_TRACE("PMTsimulationAlg") 
       << nTotalPE << " photoelectrons at " << peMap.size()
@@ -341,7 +389,9 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; } 
 
   
-  void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(tick time_bin, unsigned int n, Waveform_t& wave) const {
+  void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons
+    (tick time_bin, WaveformValue_t n, Waveform_t& wave) const
+  {
     
     
     std::size_t const min = time_bin.value();
@@ -419,8 +469,14 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   // PMT settings
   //
+  auto const& PMTspecs = config.PMTspecs();
   fBaseConfig.saturation               = config.Saturation();
   fBaseConfig.QEbase                   = config.QE();
+  fBaseConfig.PMTspecs.dynodeK         = PMTspecs.DynodeK();
+  fBaseConfig.PMTspecs.setVoltageDistribution
+                                        (PMTspecs.VoltageDistribution());
+  fBaseConfig.PMTspecs.gain            = PMTspecs.Gain();
+  fBaseConfig.doGainFluctuations       = config.FluctuateGain();
   
   //
   // single photoelectron response
@@ -468,6 +524,21 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
       ;
   } // check polarity consistency
   
+  if (fBaseConfig.doGainFluctuations) {
+    double const mu0 = fBaseConfig.PMTspecs.firstStageGain();
+    if (!std::isnormal(mu0) || (mu0 < 0.0)) {
+      cet::exception e("PMTsimulationAlg");
+      e << "PMT gain " << fBaseConfig.PMTspecs.gain
+        << ", dynode resistance values {";
+      for (double rho: fBaseConfig.PMTspecs.voltageDistribution)
+        e << " " << rho;
+      e << " } and dynode k constant " << fBaseConfig.PMTspecs.dynodeK
+        << " resulted in an invalid gain " << mu0
+        << " for the first multiplication stage!\n";
+      throw e;
+    }
+  } // if invalid gain fluctuation
+  
 } // icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker()
 
 
@@ -489,6 +560,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   params.timeService = &detClocks;
   
   params.randomEngine = &mainRandomEngine;
+  params.gainRandomEngine = params.randomEngine;
   params.darkNoiseRandomEngine = &darkNoiseRandomEngine;
   params.elecNoiseRandomEngine = &elecNoiseRandomEngine;
 
