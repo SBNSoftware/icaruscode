@@ -2,7 +2,7 @@
 # File:    genie_icarus_numioffaxis.fcl
 # Purpose: Presets for simulation of interaction of neutrinos from NuMI
 #          (`GENIEGen` module).
-# Version: 1.1
+# Version: 1.2
 #
 # The configurations are good to go. E.g.:
 #     
@@ -27,7 +27,8 @@
 # 20190819 (petrillo@slac.stanford.edu) [v1.1]
 #   added configurations for beam time structure;
 #   `icarus_genienumi_simple` renamed into `icarus_genie_simple_NuMI_base`
-#
+# 20190829 (petrillo@slac.stanford.edu) [v1.2]
+#   updated NuMI POT to 6+6 batches configuration
 #
 
 #include "genie_icarus_bnb.fcl"
@@ -59,7 +60,7 @@ icarus_genie_NuMI_base: {
   FluxSearchPaths:      "/pnfs/icarus/persistent/numiflux_sample/neutrino_flux/"
   FluxFiles:            ["g4numiv6_dk2nu_minervame*.root"]
   
-  POTPerSpill:          3.0e13 # same as BnB per batch, but 6 batches in spill
+  POTPerSpill:          6.0e13 # same as BnB per batch, but 6 batches in spill
   
   RandomTimeOffset:     9600.0 # same batch as BnB, but 6 batches in spill [ns]
 
