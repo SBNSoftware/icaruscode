@@ -30,6 +30,7 @@ SpacePointAnalysisTool:
   SpacePointLabelVec:      ["cluster3d"]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
+  SimEnergyLabel:          "largeant"
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
   SigmaVec:                [1.,1.,1.]
