@@ -163,6 +163,31 @@ namespace crt {
         Comment("maximum momentum for each PDG selected")
         };
 
+      fhicl::Atom<float> FiducialX {
+        Name("FiducialX"),
+        Comment("x distance from y-z planes defined by surface of active volume to y-z plane of fiducial volume surface")
+      };
+
+      fhicl::Atom<float> FiducialY {
+        Name("FiducialY"),
+        Comment("y distance from x-z planes defined by surface of active volume to x-z plane of fiducial volume surface")
+      };
+
+      fhicl::Atom<float> FiducialUpZ {
+        Name("FiducialUpZ"),
+        Comment("z distance from x-y plane defined by upstream surface of active volume to upstream x-y plane of fiducial volume surface")
+      };
+
+      fhicl::Atom<float> FiducialDownZ {
+        Name("FiducialDownZ"),
+        Comment("z distance from x-y plane defined by downstream surface of active volume to downstream x-y plane of fiducial volume surface")
+      };
+
+      fhicl::Atom<bool> FidInnerX {
+        Name("FidInnerX"),
+        Comment("whether or not to apply x fiducial cut to inner most TPCs")
+      };
+
     }; // Config
     
     using Parameters = art::EDAnalyzer::Table<Config>;
@@ -190,6 +215,11 @@ namespace crt {
     vector<int> fPDGs;                       ///< PDG code of particle we'll focus on
     vector<float> fMinMomenta;
     vector<float> fMaxMomenta;
+    float fFiducialX;
+    float fFiducialY;
+    float fFiducialUpZ;
+    float fFiducialDownZ;
+    bool  fFidInnerX;
 
     static map<int, vector<pair<int,int>>> fFebMap;
 
@@ -231,6 +261,13 @@ namespace crt {
     /// @name The variables that will go into the Gen n-tuple.
     /// @{
     int      fNGen;
+    bool     fGenHasNu;
+    int      fGenNuPDG;
+    int      fGenNuInt;
+    int      fGenCCNC;
+    double   fGenNuTheta;
+    int      fGenNuNucleon;
+    int      fGenNuTarget;
     vector<int> fGenTrack;
     vector<int> fGenPDG;
     vector<vector<double>>   fGenStartXYZT;
@@ -407,6 +444,11 @@ namespace crt {
     , fPDGs(config().PDGs())
     , fMinMomenta(config().MinMomenta())
     , fMaxMomenta(config().MaxMomenta())
+    , fFiducialX(config().FiducialX())
+    , fFiducialY(config().FiducialY())
+    , fFiducialUpZ(config().FiducialUpZ())
+    , fFiducialDownZ(config().FiducialDownZ())
+    , fFidInnerX(config().FidInnerX())
   {
     // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -484,6 +526,8 @@ namespace crt {
 
     // Define the branches of our event display n-tuple
     fCosmicDisplayNtuple->Branch("event",             &fCDEvent,             "event/I");
+    fCosmicDisplayNtuple->Branch("run",               &fRun,                 "run/I");
+    fCosmicDisplayNtuple->Branch("subRun",            &fSubRun,              "subRun/I");
     fCosmicDisplayNtuple->Branch("trackID",           &fCDTrackID,           "trackID/I");
     fCosmicDisplayNtuple->Branch("nSeg",              &fNCD,                 "nSeg/I");
     fCosmicDisplayNtuple->Branch("pdg",               &fCDpdg,               "pdg/I");
@@ -494,6 +538,8 @@ namespace crt {
 
     // Define the branches of our Gen n-tuple
     fGenNtuple->Branch("event",        &fEvent,         "event/I");
+    fGenNtuple->Branch("run",          &fRun,           "run/I");
+    fGenNtuple->Branch("subRun",       &fSubRun,        "subRun/I");
     fGenNtuple->Branch("nGen",         &fNGen,          "nGen/I");
     fGenNtuple->Branch("trackID",      &fGenTrack);
     fGenNtuple->Branch("pdg",          &fGenPDG);
@@ -501,12 +547,19 @@ namespace crt {
     fGenNtuple->Branch("endXYZT",      &fGenEndXYZT);
     fGenNtuple->Branch("startPE",      &fGenStartPE);
     fGenNtuple->Branch("endPE",        &fGenEndPE);
+    fGenNtuple->Branch("hasNu",        &fGenHasNu,      "hasNu/b");
+    fGenNtuple->Branch("nuPDG",        &fGenNuPDG,      "nuPDG/I");
+    fGenNtuple->Branch("nuInt",        &fGenNuInt,      "nuInt/I");
+    fGenNtuple->Branch("ccnc",         &fGenCCNC,       "ccnc/I");
+    fGenNtuple->Branch("nuTheta",      &fGenNuTheta,    "nuTheta/D");
+    fGenNtuple->Branch("nuNucleon",    &fGenNuNucleon,  "nuNucleon/I");
+    fGenNtuple->Branch("nuTarget",     &fGenNuTarget,   "nuTarget/I"); 
 
     // Define the branches of our simulation n-tuple
     fSimulationNtuple->Branch("event",             &fEvent,             "event/I");
-    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
-    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subRun/I");
     fSimulationNtuple->Branch("run",               &fRun,               "run/I");
+    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subRun/I");
+    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
     fSimulationNtuple->Branch("trackID",           &fSimTrackID,        "trackID/I");
     fSimulationNtuple->Branch("pdg",               &fSimPDG,            "pdg/I");
     fSimulationNtuple->Branch("trackLength",       &fTrackLength,       "trackLenth/F");
@@ -540,6 +593,8 @@ namespace crt {
 
     //regions tree
     fRegionsNtuple->Branch("event",                &fRegEvent,           "event/I");
+    fRegionsNtuple->Branch("run",                  &fRun,                "run/I");
+    fRegionsNtuple->Branch("subRun",               &fSubRun,             "subRun/I");
     fRegionsNtuple->Branch("nReg",                 &fNReg,               "nReg/I");
     fRegionsNtuple->Branch("fiducial",             &fRegFid,             "fiducial/I");
     fRegionsNtuple->Branch("active",               &fRegActive,          "active/I");
@@ -562,6 +617,8 @@ namespace crt {
 
     // Define the branches of our DetSim n-tuple 
     fDetSimNtuple->Branch("event",                 &fDetEvent,          "event/I");
+    fDetSimNtuple->Branch("run",                   &fRun,               "run/I");
+    fDetSimNtuple->Branch("subRun",                &fSubRun,            "subRun/I");
     fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
     fDetSimNtuple->Branch("channel",               &fChan);
     fDetSimNtuple->Branch("t0",                    &fT0);
@@ -580,6 +637,8 @@ namespace crt {
 
     // Define the branches of our SimHit n-tuple
     fSimHitNtuple->Branch("event",       &fHitEvent,    "event/I");
+    fSimHitNtuple->Branch("run",         &fRun,         "run/I");
+    fSimHitNtuple->Branch("subRun",      &fSubRun,      "subRun/I");
     fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
     fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
@@ -600,6 +659,8 @@ namespace crt {
 
     // Define the branches of our SimTrueHit n-tuple
     fTrueCRTHitNtuple->Branch("event",       &fTrueHitEvent,    "event/I");
+    fTrueCRTHitNtuple->Branch("run",         &fRun,             "run/I");
+    fTrueCRTHitNtuple->Branch("subRun",      &fSubRun,          "subRun/I");
     fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/D");
     fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/D");
     fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/D");
@@ -683,7 +744,24 @@ namespace crt {
     fGenEndXYZT.clear();
     fGenStartPE.clear();
     fGenEndPE.clear();
-   
+    fGenHasNu = truth.NeutrinoSet();
+    fGenNuPDG = 0;
+    fGenNuInt = -2;
+    fGenCCNC  = -1;
+    fGenNuTheta = 0.;
+    fGenNuNucleon = 0;
+    fGenNuTarget = 0; 
+
+    if(fGenHasNu) {
+        auto const& nu = truth.GetNeutrino();
+        fGenNuPDG = nu.Nu().PdgCode();
+        fGenNuInt = nu.InteractionType();
+        fGenCCNC = nu.CCNC();
+        fGenNuTheta = nu.Theta();
+        fGenNuNucleon = nu.HitNuc();
+        fGenNuTarget = nu.Target();
+    }
+  
     for ( int i=0; i<fNGen; i++ )
     {
         auto const& part = truth.GetParticle(i); //simb::MCParticle
@@ -858,21 +936,25 @@ namespace crt {
         fRegEntrySlope.clear();
         fRegExitSlope.clear();
 
-        int oldreg = -1;
+        //int oldreg = -1;
+        int reg=-1, regnext=-1;
+        bool fiducial = false;
 
         MF_LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
+	if (fSimHits==1) std::cout << "WARNING: one point track!" << std::endl;
 
         //loop over trajectory points
-        for (unsigned int i=0; i<fSimHits; i++){
+        for (unsigned int i=0; i<fSimHits-1; i++){
                 const TLorentzVector& pos = particle.Position(i); // 4-position in World coordinates
                 const TLorentzVector& posnext = particle.Position(i+1); // problem for last point???
                 const TLorentzVector& mom = particle.Momentum(i); // 4-momentum
-                const double point[3] = {pos.X(),pos.Y(),pos.Z()};
-                const double pointnext[3] = {posnext.X(),posnext.Y(),posnext.Z()};
+                const TLorentzVector& momnext = particle.Momentum(i+1); // 4-momentum
+		const TVector3 point = pos.Vect();
+                const TVector3 pointnext = posnext.Vect();
                 double opDetPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
                 double entryPos[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
                 double entryT = -FLT_MAX;
-                bool active0 = false, active1 = false, activenext0 = false, activenext1 = false;
+                bool fiducialnext = false;
 
                 // CosmicDisplay info
                 fCDxyzt.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
@@ -883,131 +965,156 @@ namespace crt {
                 // Regions info
                 // Check if trajectory points are in cryostats (active + inactve LAr ) 
                 if(cryo0.ContainsPosition(point)) {
+                    if(tpc00.ContainsPosition(point)) reg = 5;
+                    else if(tpc01.ContainsPosition(point)) reg = 6;
+                    else reg = 10;
+                 }
+                else if(cryo1.ContainsPosition(point)) {
 
-                        active0 = tpc00.ContainsPosition(point);
-                        active1 = tpc01.ContainsPosition(point);
-                        activenext0 = tpc00.ContainsPosition(pointnext);
-                        activenext1 = tpc01.ContainsPosition(pointnext);
+                    if(tpc10.ContainsPosition(point)) reg = 7;
+                    else if(tpc11.ContainsPosition(point)) reg = 8;
+                    else reg = 12;
+                }
+                else reg = -1;
 
-                        // if last point was not in this cryostat or is now entering AV
-                        if ( (oldreg!=10&&!active0&&!active1) || (active0&&oldreg!=5) || (active1&&oldreg!=6)) {
-                            fRegEntryXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                            fRegEntryPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                            fRegEntrySlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
-                            oldreg = 10;
-                            if (active0) oldreg = 5;
-                            if (active1) oldreg = 6;
+                if(cryo0.ContainsPosition(pointnext)) {
+                    if(tpc00.ContainsPosition(pointnext)) regnext = 5;
+                    else if(tpc01.ContainsPosition(pointnext)) regnext = 6;
+                    else regnext = 10;
+		}
+                else if(cryo1.ContainsPosition(pointnext)) {
+                    if(tpc10.ContainsPosition(pointnext)) regnext = 7;
+                    else if(tpc11.ContainsPosition(pointnext)) regnext = 8;
+                    else regnext = 12;
+                }
+                else regnext = -1;
+
+                if( i==0 && (reg>4&&reg<13)) {
+                    fRegEntryXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                    fRegEntryPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
+                    fRegEntrySlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
+                }
+
+                //check if current point is in fiducial volume
+                if(!fiducial && reg==5)
+                    fiducial = (tpc00.InFiducialX(point[0],fFiducialX,0)
+                              && tpc00.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc00.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                if(!fiducial && reg==6)
+                    fiducial = ( ((fFidInnerX && tpc01.InFiducialX(point[0],0,fFiducialX))||!fFidInnerX)
+                              && tpc01.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc01.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                if(!fiducial && reg==7)
+                    fiducial = ( ((fFidInnerX && tpc10.InFiducialX(point[0],fFiducialX,0))||!fFidInnerX)
+                              && tpc10.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc10.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));                  
+                if(!fiducial && reg==8)
+                    fiducial = (tpc11.InFiducialX(point[0],0,fFiducialX)
+                              && tpc11.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc11.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                //also check if last point is in fiducial volume
+                if(i==fSimHits-2) {
+                    if(regnext==5)
+                        fiducialnext = (tpc00.InFiducialX(pointnext[0],fFiducialX,0)
+                                  && tpc00.InFiducialY(pointnext[1],fFiducialY,fFiducialY)
+                                  && tpc00.InFiducialZ(pointnext[2],fFiducialUpZ,fFiducialDownZ));
+                    if(regnext==6)
+                        fiducialnext = ( (fFidInnerX && tpc01.InFiducialX(pointnext[0],0,fFiducialX))
+                                  && tpc01.InFiducialY(pointnext[1],fFiducialY,fFiducialY)
+                                  && tpc01.InFiducialZ(pointnext[2],fFiducialUpZ,fFiducialDownZ));
+                    if(regnext==7)
+                        fiducialnext = ( (fFidInnerX && tpc10.InFiducialX(pointnext[0],fFiducialX,0))
+                                  && tpc10.InFiducialY(pointnext[1],fFiducialY,fFiducialY)
+                                  && tpc10.InFiducialZ(pointnext[2],fFiducialUpZ,fFiducialDownZ));
+                    if(regnext==8)
+                        fiducialnext = (tpc11.InFiducialX(pointnext[0],0,fFiducialX)
+                                  && tpc11.InFiducialY(pointnext[1],fFiducialY,fFiducialY)
+                                  && tpc11.InFiducialZ(pointnext[2],fFiducialUpZ,fFiducialDownZ));
+                }//end if last point in FV
+
+                //if last point in region or last trajectory point
+                if( reg!=regnext || i==fSimHits-2 ){
+                    //if IV
+                    if (reg==10 || reg==12)
+                        fRegInactive++;
+                    //if AV
+                    if (reg>4&&reg<9) {
+                        fRegActive++;
+                        if (fiducial || (reg==regnext&&fiducialnext) ) {
+                            fRegFid++;
+                            fiducial = false;
+                        }//end if FV
+                    }//end if AV
+                    //if reg is in LAr
+                    if(reg>4&&reg<13) { 
+                        fRegRegions.push_back(reg);
+
+                        //if this point last in reg
+                        if(reg!=regnext) {
+                            fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                            fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
+                            fRegExitSlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});   
+                        }
+                        //reg==regnext can only be true if last point
+                        else {
+                            fRegExitXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
+                            fRegExitPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),momnext.E()});
+                            fRegExitSlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
                         }
 
-                        // if next point is outside of this volume or is last traj. point
-                        if (!cryo0.ContainsPosition(pointnext) || (oldreg==10&&(activenext0||activenext1))
-                            || i==fSimHits-1
-                            || (active0 && !activenext0) || (active1&&!activenext1) ){
+                        fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
+                                             +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
+                                             +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2) ));
+                        fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
+                        for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
+                        entryT = fRegEntryXYZT[fNReg][3];
+                        fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
+                        geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
+                        opDet.GetCenter(opDetPos);
+                        fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                     + pow(opDetPos[1]-entryPos[1],2)
+                                                     + pow(opDetPos[2]-entryPos[2],2) ));
+                        fRegOpDetXYZT.push_back({});
+                        for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                        fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
+                        fNReg++;
+                    }//end if reg LAr
 
-                                fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                                fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                                fRegExitSlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
-                                if (active0) {
-                                    fRegRegions.push_back(5);
-                                    fRegActive++;
-                                    if(tpc00.InFiducialX(point[0],25,0) && tpc00.InFiducialY(point[1],25,25)
-                                      && tpc00.InFiducialZ(point[2],30,50)) 
-                                        fRegFid++;
+                    //next point in new region and region is in LAr
+                    if(reg!=regnext && regnext>4&&regnext<13) {                    
+                        fRegEntryXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
+                        fRegEntryPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),mom.E()});
+                        fRegEntrySlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});   
 
-                                }
-                                else if (active1) {
-                                    fRegRegions.push_back(6);
-                                    fRegActive++;
-                                    if(tpc01.InFiducialX(point[0],25,0) && tpc01.InFiducialY(point[1],25,25)
-                                      && tpc01.InFiducialZ(point[2],30,50))  
-                                        fRegFid++;
-                                }
-                                else {
-                                    fRegRegions.push_back(10);
-                                    fRegInactive++;
-                                }
-                                fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                    +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                    +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
-                                fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
-                                for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
-                                entryT = fRegEntryXYZT[fNReg][3];
-                                fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
-                                geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
-                                opDet.GetCenter(opDetPos);
-                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
-                                                            + pow(opDetPos[1]-entryPos[1],2)
-                                                            + pow(opDetPos[2]-entryPos[2],2)));
-                                fRegOpDetXYZT.push_back({});
-                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
-                                fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
-                                fNReg++;
-                        }
-                } //if cryo0
-
-                // if this point in the other cryostat
-                if(cryo1.ContainsPosition(point)) {
- 
-                        //check if this or next points are in active volumes
-                        active0 = tpc10.ContainsPosition(point);
-                        active1 = tpc11.ContainsPosition(point);
-                        activenext0 = tpc10.ContainsPosition(pointnext);
-                        activenext1 = tpc11.ContainsPosition(pointnext);
-
-                        // if last point was not in this cryostat or is now entering AV
-                        if ( (oldreg!=12&&!active0&&!active1) || (active0&&oldreg!=7) || (active1&&oldreg!=8)) {
-                            fRegEntryXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                            fRegEntryPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                            fRegEntrySlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
-                            oldreg = 12;
-                            if (active0) oldreg = 7;
-                            if (active1) oldreg = 8;
-                        }
-
-                        if (!cryo1.ContainsPosition(pointnext) || (oldreg==12&&(activenext0||activenext1))
-                            || i==fSimHits-1
-                            || (active0 && !activenext0) || (active1&&!activenext1) ){
-
-                                fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                                fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                                fRegExitSlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
-                                if (active0) {
-                                    fRegRegions.push_back(7);
-                                    fRegActive++;
-                                    if(tpc10.InFiducialX(point[0],25,0) && tpc10.InFiducialY(point[1],25,25)
-                                      && tpc10.InFiducialZ(point[2],30,50))
-                                        fRegFid++;
-
-                                }
-                                else if (active1) {
-                                    fRegRegions.push_back(8);
-                                    fRegActive++;
-                                    if(tpc11.InFiducialX(point[0],25,0) && tpc11.InFiducialY(point[1],25,25)
-                                      && tpc11.InFiducialZ(point[2],30,50))
-                                        fRegFid++;
-                                }
-                                else {
-                                    fRegRegions.push_back(12);
-                                    fRegInactive++;
-                                }
-                                fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                                    +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                                    +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
-                                fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
-                                for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
-                                entryT = fRegEntryXYZT[fNReg][3];
-                                fRegOpDetID.push_back(cryo1.GetClosestOpDet(entryPos));
-                                geo::OpDetGeo const& opDet = cryo1.OpDet(fRegOpDetID[fNReg]);
-                                opDet.GetCenter(opDetPos);
-                                fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
-                                                            + pow(opDetPos[1]-entryPos[1],2)
-                                                            + pow(opDetPos[2]-entryPos[2],2)));
-                                fRegOpDetXYZT.push_back({});
-                                for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
-                                fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
-                                fNReg++;
-                        } // if exiting from volume
-                } //if cryo1
+                        //if last trajectory point only point in its region
+                        if(i==fSimHits-2){
+                            if (regnext==10 || regnext==12)
+                                fRegInactive++;
+                            if (regnext>4&&regnext<9)
+                                fRegActive++;
+                            if (fiducialnext)
+                                fRegFid++;
+                            fRegRegions.push_back(regnext);
+                            fRegExitXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
+                            fRegExitPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),mom.E()});
+                            fRegExitSlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
+                            fRegdL.push_back(0.);
+                            fRegEDep.push_back(fRegEntryPE[fNReg][3]);
+                            for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
+                            entryT = fRegEntryXYZT[fNReg][3];
+                            fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
+                            geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
+                            opDet.GetCenter(opDetPos);
+                            fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                         + pow(opDetPos[1]-entryPos[1],2)
+                                                         + pow(opDetPos[2]-entryPos[2],2) ));
+                            fRegOpDetXYZT.push_back({});
+                            for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                            fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
+                            fNReg++;
+                       }//end if last traj point
+                    }//end if next new reg in LAr
+                }//end if last point in reg or last traj point
 
         }//for trajectory points
 
@@ -1371,20 +1478,16 @@ namespace crt {
         } // outer loop over taggers
 
         if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
-        //auto tmpNReg = fNReg;
+
         for( auto it=regCRTEnter.begin(); it!=regCRTEnter.end(); it++) {
-            //std::cout << "found CRT region " << it->first << std::endl;
             fRegRegions.push_back(it->first);
-            fRegEntryXYZT.push_back({(it->second)[0],(it->second)[1],(it->second)[2],(it->second)[3]});
-            fRegExitXYZT.push_back({regCRTExit[it->first][0],regCRTExit[it->first][1],regCRTExit[it->first][2],
-                                    regCRTExit[it->first][3]});
+            fRegEntryXYZT.push_back(it->second); 
+            fRegExitXYZT.push_back(regCRTExit[it->first]);
             fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
                                   +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
                                   +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
-            fRegEntryPE.push_back({regCRTEnterPE[it->first][0],regCRTEnterPE[it->first][1],
-                                   regCRTEnterPE[it->first][2], regCRTEnterPE[it->first][3]});
-            fRegExitPE.push_back({regCRTExitPE[it->first][0],regCRTExitPE[it->first][1],
-                                   regCRTExitPE[it->first][2], regCRTExitPE[it->first][3]});
+            fRegEntryPE.push_back(regCRTEnterPE[it->first]);
+            fRegExitPE.push_back(regCRTExitPE[it->first]);
             fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
             fRegDistToOpDet.push_back(-1);
             fRegOpDetID.push_back(-1);
@@ -1394,61 +1497,57 @@ namespace crt {
             
             fNReg++; fRegCRTs++;
         }
-        //std::cout << "added " << fNReg-tmpNReg << " CRT regions to RegTree" << std::endl;
 
         //sort region tree entries by entry time
-        int flag = 1;    // set flag to 1 to start first pass
         int      tempInt;
         double   tempDoub;
         
-        for(int i = 1; (i <= (int)fNReg) && flag; i++)
+        for(int i = 0; i < (int)fNReg; i++)
         {
-            flag = 0;
-            for (int j=0; j < ((int)fNReg -1); j++)
+            for (int j=i+1; j < (int)fNReg; j++)
             {
-                if (fRegEntryXYZT[j+1][3] < fRegEntryXYZT[j][3]) 
+                if (fRegEntryXYZT[i][3] > fRegEntryXYZT[j][3]) 
                 { 
-                    tempInt = fRegRegions[j];             // swap regions
-                    fRegRegions[j] = fRegRegions[j+1];
-                    fRegRegions[j+1] = tempInt;
-                    tempDoub = fRegEDep[j];             // swap EDep
-                    fRegEDep[j] = fRegEDep[j+1];
-                    fRegEDep[j+1] = tempDoub;
-                    tempDoub = fRegdL[j];             // swap dL
-                    fRegdL[j] = fRegdL[j+1];
-                    fRegdL[j+1] = tempDoub;
-                    tempDoub = fRegDistToOpDet[j];    //swap distToOpDet
-                    fRegDistToOpDet[j] = fRegDistToOpDet[j+1];
-                    fRegDistToOpDet[j+1] = tempDoub;
-                    tempInt = fRegOpDetID[j];          //swap opDetID
-                    fRegOpDetID[j] = fRegOpDetID[j+1];
-                    fRegOpDetID[j+1] = tempInt;
+                    tempInt = fRegRegions[i];             // swap regions
+                    fRegRegions[i] = fRegRegions[j];
+                    fRegRegions[j] = tempInt;
+                    tempDoub = fRegEDep[i];             // swap EDep
+                    fRegEDep[i] = fRegEDep[j];
+                    fRegEDep[j] = tempDoub;
+                    tempDoub = fRegdL[i];             // swap dL
+                    fRegdL[i] = fRegdL[j];
+                    fRegdL[j] = tempDoub;
+                    tempDoub = fRegDistToOpDet[i];    //swap distToOpDet
+                    fRegDistToOpDet[i] = fRegDistToOpDet[j];
+                    fRegDistToOpDet[j] = tempDoub;
+                    tempInt = fRegOpDetID[i];          //swap opDetID
+                    fRegOpDetID[i] = fRegOpDetID[j];
+                    fRegOpDetID[j] = tempInt;
                     for (int k=0; k<4; k++) {
-                        tempDoub = fRegEntryPE[j][k];   //swap entryPE
-                        fRegEntryPE[j][k] = fRegEntryPE[j+1][k];
-                        fRegEntryPE[j+1][k] = tempDoub;
-                        tempDoub  = fRegExitPE[j][k]; //swap exitPE
-                        fRegExitPE[j][k] = fRegExitPE[j+1][k];
-                        fRegExitPE[j+1][k] = tempDoub;
-                        tempDoub = fRegEntryXYZT[j][k]; //swap entryXYZT
-                        fRegEntryXYZT[j][k] = fRegEntryXYZT[j+1][k];
-                        fRegEntryXYZT[j+1][k] = tempDoub;
-                        tempDoub = fRegExitXYZT[j][k]; //swap exitXYZT
-                        fRegExitXYZT[j][k] = fRegExitXYZT[j+1][k];
-                        fRegExitXYZT[j+1][k] = tempDoub;
-                        tempDoub = fRegOpDetXYZT[j][k];  //swap opDetXYZT
-                        fRegOpDetXYZT[j][k] = fRegOpDetXYZT[j+1][k];
-                        fRegOpDetXYZT[j+1][k] = tempDoub;
+                        tempDoub = fRegEntryPE[i][k];   //swap entryPE
+                        fRegEntryPE[i][k] = fRegEntryPE[j][k];
+                        fRegEntryPE[j][k] = tempDoub;
+                        tempDoub  = fRegExitPE[i][k]; //swap exitPE
+                        fRegExitPE[i][k] = fRegExitPE[j][k];
+                        fRegExitPE[j][k] = tempDoub;
+                        tempDoub = fRegEntryXYZT[i][k]; //swap entryXYZT
+                        fRegEntryXYZT[i][k] = fRegEntryXYZT[j][k];
+                        fRegEntryXYZT[j][k] = tempDoub;
+                        tempDoub = fRegExitXYZT[i][k]; //swap exitXYZT
+                        fRegExitXYZT[i][k] = fRegExitXYZT[j][k];
+                        fRegExitXYZT[j][k] = tempDoub;
+                        tempDoub = fRegOpDetXYZT[i][k];  //swap opDetXYZT
+                        fRegOpDetXYZT[i][k] = fRegOpDetXYZT[j][k];
+                        fRegOpDetXYZT[j][k] = tempDoub;
                         if(k<3) {
-                            tempDoub = fRegEntrySlope[j][k];
-                            fRegEntrySlope[j][k] = fRegEntrySlope[j+1][k];
-                            fRegEntrySlope[j+1][k] = tempDoub;
-                            tempDoub = fRegExitSlope[j][k];
-                            fRegExitSlope[j][k] = fRegExitSlope[j+1][k];
-                            fRegExitSlope[j+1][k] = tempDoub;
+                            tempDoub = fRegEntrySlope[i][k];
+                            fRegEntrySlope[i][k] = fRegEntrySlope[j][k];
+                            fRegEntrySlope[j][k] = tempDoub;
+                            tempDoub = fRegExitSlope[i][k];
+                            fRegExitSlope[i][k] = fRegExitSlope[j][k];
+                            fRegExitSlope[j][k] = tempDoub;
                         }
                     }
-                    flag = 1;               // indicates that a swap occurred.
                 }
             }
         }
@@ -1508,12 +1607,12 @@ namespace crt {
         }//outer chandat loop
 
 
-        if ( missedIDs.size() > 0 ) {
+        /*if ( missedIDs.size() > 0 ) {
             std::cout 
                 << " couldn't match " << missedIDs.size() << " trackIDs from DetSim to MCParticle:" 
             << std::endl;
             for (auto const& id : missedIDs) std::cout << "  - " << id << std::endl;
-        }
+        }*/
 
         fDetSimNtuple->Fill();
 

@@ -41,18 +41,18 @@ physics:
       module_type:     "CRTAnalysis"
 
       SimulationLabel: "largeant"
-
-      CRTSimHitLabel:   "crtsimhit"
-
+      CRTSimHitLabel:  "crtsimhit"
       CRTDetSimLabel:  "crtdaq"
 
-      #PDGs:                   [ 0 ]
-      #MinMomenta:             [ 0 ]
-      #MaxMomenta:             [ 0 ]
- 
-      PDGs:                     [ 13, -13 ]       #Request that the particle passing through the CRTs has a specific PDG.  You can specify multiple PDGs.  Specify 0 for any PDG
-      MinMomenta:             [ 0.1, 0.1 ] #, 0 ]    #Minimum momentum of particle(s) passing through thet CRTs.  Specify 0 to ignore min momentum.  Vector should be same length as PDG
-      MaxMomenta:             [ 10, 10 ] #, 0 ]    #Same but for maximum momentum
+      PDGs:          [ 0 ] #13, -13 ]    #Request that the particle passing through the CRTs has a specific PDG.  You can specify multiple PDGs.  Specify 0 for any PDG
+      MinMomenta:    [ 0 ] #.1, 0.1 ]   #Minimum momentum of particle(s) passing through thet CRTs.  Specify 0 to ignore min momentum.  Vector should be same length as PDG
+      MaxMomenta:    [ 0 ] #10, 10 ]     #Same but for maximum momentum
+
+      FiducialX:     25.0 #x distance between active and fiducial volume boundaries
+      FiducialY:     25.0 #y distance between active and fiducial volume boundaries
+      FiducialUpZ:   30.0 #upstream z distance between active and fiducial volume boundaries
+      FiducialDownZ: 50.0 #downstream z distance between active and fiducial volume boundaries
+      FidInnerX:     false #apply x fiducial cut to inner most 2 TPCs
 
     }
   }
