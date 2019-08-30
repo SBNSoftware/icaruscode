@@ -1,6 +1,18 @@
 # 
 # File:    geometry_icarus.fcl
 # Purpose: Configuration of LArSoft geometry and geometry service for ICARUS.
+#
+# NOTE
+# NOTE Note: there is a temporary replacement of the geometry file by a
+# NOTE       modified ("light") one which has some materials replaced.
+# NOTE       Those materials are not available in the reduced GENIE cross
+# NOTE       section file we use, and GENIE 3 suddenly got sensitive to that.
+# NOTE       Possible solutions: (1) definitely remove those materials from our
+# NOTE       detector description, (2) ask for those materials to be added to
+# NOTE       the cross section files, (3) create our own skim of the cross
+# NOTE       section file including all the materials we need.
+# NOTE 
+#
 # 
 # Suggested usage
 # ----------------
@@ -52,8 +64,8 @@ BEGIN_PROLOG
 icarus_single_induction_geometry: {
   SurfaceY:        6.9e2                   #in cm, vertical distance to the surface
   Name:            "icarus"
-  GDML:            "icarus_complete.gdml"
-  ROOT:            "icarus_complete.gdml"
+  GDML:            "icarus_complete_light.gdml" # see NOTE above
+  ROOT:            "icarus_complete_light.gdml" # see NOTE above
   DisableWiresInG4: true
 } # icarus_single_induction_geometry
 
