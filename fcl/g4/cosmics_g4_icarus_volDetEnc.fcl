@@ -1,7 +1,4 @@
-#include "standard_g4_icarus_extphotonlibrary.fcl"
-
-process_name: G4
-
+#include "standard_g4_icarus.fcl"
 
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]

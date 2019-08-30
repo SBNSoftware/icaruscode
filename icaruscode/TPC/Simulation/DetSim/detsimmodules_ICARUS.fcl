@@ -28,21 +28,19 @@ CorrelatedNoiseTool:
 }
 SBNNoiseTool:
 {
-  tool_type:                SBNNoise
-  Plane:                    0
-  MedianNumBins:            25
-  NoiseRand:                0.
-  CorrelatedSeed:           1000
-  UncorrelatedSeed:         5000
-#  IncoherentNoiseFraction:       0.
-#  CoherentNoiseRMS:         0.
-  StoreHistograms:          false
-  NoiseHistFileName:        "FFtsbnEE20M.root"
-  CorrelatedHistogramName:            "fftBhisto"
-  UncorrelatedHistogramName:            "fftUhisto" 
-  TotalRMSHistoName:        "RMShisto"
-  CorrelatedRMSHistoName:   "RMSBhisto"
-  UncorrelatedRMSHistoName: "RMSUhisto"  
+  tool_type:                 SBNNoise
+  Plane:                     0
+  MedianNumBins:             25
+  NoiseRand:                 0.
+  CorrelatedSeed:            1000
+  UncorrelatedSeed:          5000
+  StoreHistograms:           false
+  NoiseHistFileName:         "FFtsbnEE20M.root"
+  CorrelatedHistogramName:   "fftBhisto"
+  UncorrelatedHistogramName: "fftUhisto"
+  TotalRMSHistoName:         "RMShisto"
+  CorrelatedRMSHistoName:    "RMSBhisto"
+  UncorrelatedRMSHistoName:  "RMSUhisto"
 }
 WhiteNoiseTool:
 {
@@ -72,12 +70,7 @@ standard_simwire:
   Sample:             -1
   MakeHistograms:     "true"
   NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-#NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
 }
-
-#standard_simwire.NoiseGenToolVec[0].HistogramName: "hnoiseI1"
-#standard_simwire.NoiseGenToolVec[1].HistogramName: "hnoiseI2"
-#standard_simwire.NoiseGenToolVec[2].HistogramName: "hnoiseC"
 
 icarus_simwire:  @local::standard_simwire
 

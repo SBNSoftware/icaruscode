@@ -10,7 +10,10 @@
 
 #include <vector>
 
+#include "fhiclcpp/fwd.h"
+
 #include "larcorealg/Geometry/GeoObjectSorter.h"
+#include "fhiclcpp/ParameterSet.h"
 
 namespace geo{
 

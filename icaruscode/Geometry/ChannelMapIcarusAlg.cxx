@@ -7,12 +7,14 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "ChannelMapIcarusAlg.h"
+#include "larcorealg/Geometry/Exceptions.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeo.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/Geometry/PlaneGeo.h"
 #include "larcorealg/Geometry/WireGeo.h"
+#include "larcorealg/Geometry/Exceptions.h" // geo::InvalidWireIDError
 
 #include "messagefacility/MessageLogger/MessageLogger.h" 
 

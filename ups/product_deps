@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v08_27_00
+parent icaruscode v08_28_01
 defaultqual e17
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -33,21 +33,10 @@ table_fragment_end
 # Add the dependent product and version
 
 product          version
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-larsoft         v08_24_00
-icarusutil      v08_24_00
-=======
-larsoft         v08_27_00
-icarusutil      v08_22_00
->>>>>>> Stashed changes
-icarus_data     v08_15_01
-=======
-larsoft         v08_27_00
-icarusutil      v08_27_00
-icarus_data     v08_27_00
->>>>>>> e79af5bff9c02585dcaa7e6baf9ee709ccc8ca1e
-genie_xsec      v2_12_10
+larsoft         v08_28_01
+icarusutil      v08_28_01
+icarus_data     v08_28_00
+genie_xsec      v3_00_04a
 
 cetbuildtools	v7_13_02	-	only_for_build
 end_product_list
@@ -57,15 +46,15 @@ end_product_list
 # Make a table by adding columns before "notes". 
 # e15  - with gcc 6.4.0 and -std=c++1y
 qualifier	larsoft		icarusutil  icarus_data genie_xsec notes
-e17:debug	e17:debug	e17:debug   -nq-        DefaultPlusMECWithNC
-e17:opt		e17:opt		e17:opt     -nq-        DefaultPlusMECWithNC
-e17:prof    e17:prof	e17:prof    -nq-        DefaultPlusMECWithNC
-e15:debug	e15:debug	e15:debug   -nq-        DefaultPlusMECWithNC
-e15:opt		e15:opt		e15:opt     -nq-        DefaultPlusMECWithNC
-e15:prof    e15:prof	e15:prof    -nq-        DefaultPlusMECWithNC
-c2:debug    c2:debug    c2:debug    -nq-        DefaultPlusMECWithNC
-c2:opt      c2:opt      c2:opt      -nq-        DefaultPlusMECWithNC
-c2:prof     c2:prof     c2:prof     -nq-        DefaultPlusMECWithNC
+e17:debug	e17:debug	e17:debug   -nq-        G1810a0211a:k250:e1000
+e17:opt		e17:opt		e17:opt     -nq-        G1810a0211a:k250:e1000
+e17:prof    e17:prof	e17:prof    -nq-        G1810a0211a:k250:e1000
+e15:debug	e15:debug	e15:debug   -nq-        G1810a0211a:k250:e1000
+e15:opt		e15:opt		e15:opt     -nq-        G1810a0211a:k250:e1000
+e15:prof    e15:prof	e15:prof    -nq-        G1810a0211a:k250:e1000
+c2:debug    c2:debug    c2:debug    -nq-        G1810a0211a:k250:e1000
+c2:opt      c2:opt      c2:opt      -nq-        G1810a0211a:k250:e1000
+c2:prof     c2:prof     c2:prof     -nq-        G1810a0211a:k250:e1000
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

@@ -447,6 +447,10 @@ icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                
 icarus_reco_producers.cluster3DCryo0.Hit3DBuilderAlg.HitFinderTagVec:                      ["gaushitTPC0", "gaushitTPC1"]
 icarus_reco_producers.cluster3DCryo1.Hit3DBuilderAlg.HitFinderTagVec:                      ["gaushitTPC2", "gaushitTPC3"]
 
+# Temporary until LArSoft v08_29_00 and later
+icarus_reco_producers.cluster3DCryo0.Hit3DBuilderAlg.OutputHistograms:                     true
+icarus_reco_producers.cluster3DCryo1.Hit3DBuilderAlg.OutputHistograms:                     true
+
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                        "recowireraw"
 
 icarus_reco_producers.icarusHitTPC0.CalDataModuleLabel:                                    "recoWireRawTPC0"
