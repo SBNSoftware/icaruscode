@@ -16,22 +16,9 @@ physics.producers.largeant.KeepParticlesInVolumes: [
     "volTaggerBot"
 ]
 
-# use lite photons to be consistent w/ SBND production
-services.LArG4Parameters.UseLitePhotons: true
 # keep delta rays
 services.LArG4Parameters.KeepEMShowerDaughters: true
 
-services.DetectorPropertiesService.NumberTimeSamples: 12288 # 3 readout windows (3*4096)
-services.DetectorPropertiesService.ReadOutWindowSize: 12288 # 3 readout windows
-
-# to be used with prodoverlay_proton_sbnflux_icarus.fcl
-# run g4 for the 0.2 rise time + full drift window + 1st readout window before the neutrino arrives (t=0)
-services.DetectorClocksService.G4RefTime: -3.4768e3 # [us]
-
-# TPC starts one readout window before neutrino arrives
-services.DetectorClocksService.TriggerOffsetTPC: 1.6384e3 # [us] 
-
-# set neutrino arrival time
-services.DetectorClocksService.DefaultTrigTime: 3.4768e3 # [us]
-services.DetectorClocksService.DefaultBeamTime: 3.4768e3 # [us]
+# setup services parameters for 3 drift windows
+#include "3drift_services_config_icarus.fcl"
 

@@ -32,7 +32,7 @@ physics:
 
  producers:
  {
-   generator: @local::icarus_corsika_p
+   cosmgen: @local::icarus_corsika_p
    larg4intime: @local::icarus_largeant
    rns:       { module_type: "RandomNumberSaver" }
  }
@@ -66,7 +66,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below 
- simulate: [ rns, generator, GenInTimeSorter, larg4intime, timefilter ] 
+ simulate: [ rns, cosmgen, GenInTimeSorter, larg4intime, timefilter ] 
 
 
  #define the output stream, there could be more than one if using filters 
@@ -100,8 +100,8 @@ outputs:
  }
 }
 
-#physics.producers.generator.EnergyThreshold: 2.e-1
-physics.producers.generator.SubBoxLength: "subboxLength 60 "
+#physics.producers.cosmgen.EnergyThreshold: 2.e-1
+physics.producers.cosmgen.SubBoxLength: "subboxLength 60 "
 
 # set Photon Visibility to mapped library (better memory usage)
 services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
@@ -119,23 +119,14 @@ physics.producers.larg4intime.KeepParticlesInVolumes: [
     "volTaggerBot"
 ]
 
-# setup G4 config for 3 readout windows
-
 # keep delta rays
 services.LArG4Parameters.KeepEMShowerDaughters: true
 
-services.DetectorPropertiesService.NumberTimeSamples: 12288 # 3 readout windows (3*4096)
-services.DetectorPropertiesService.ReadOutWindowSize: 12288 # 3 readout windows
+# override default TimeOffset and SampleTime for 3 readout windows
+# 0.2ms (g4 rise time) + 1.6384ms (one full drift window) + 4.9152ms (3 readout windows)  
+physics.producers.cosmgen.SampleTime: 6.7536e-3 # [us]
+# start 4.9152ms readout window at -1.6384ms to match data
+physics.producers.cosmgen.TimeOffset: -3.4768e-3 # [us]
 
-# to be used with prodoverlay_proton_sbnflux_icarus.fcl
-# run g4 for the 0.2 rise time + full drift window + 1st readout window before the neutrino arrives (t=0)
-services.DetectorClocksService.G4RefTime: -3.4768e3 # [us]
-
-# TPC starts one readout window before neutrino arrives
-services.DetectorClocksService.TriggerOffsetTPC: 1.6384e3 # [us] 
-
-# set neutrino arrival time
-services.DetectorClocksService.DefaultTrigTime: 3.4768e3 # [us]
-services.DetectorClocksService.DefaultBeamTime: 3.4768e3 # [us]
-
-
+# setup services parameters for 3 drift windows
+#include "3drift_services_config_icarus.fcl"

@@ -20,7 +20,7 @@ services:
 {
   scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
   # Load the service that manages root files for histograms.
-  TFileService: { fileName: "single_hist_uboone.root" }
+  TFileService: { fileName: "overlay_hist_icarus.root" }
   TimeTracker:  {}
   MemoryTracker:     { ignoreTotal: 1 } # default is one
   RandomNumberGenerator: {} #ART native random number generator
@@ -96,4 +96,9 @@ physics.producers.cosmgen.TimeOffset: -3.4768e-3 # [us]
 # Each bunch has a gaussian distribution of neutrinos arriving over 1ns.
 # For now, approximate this with a uniform distribution over the full
 # beam spill (84 * 19ns = 1596ns)
-physics.producers.generator.RandomTimeOffset: 1596.
+physics.producers.generator.RandomTimeOffset: 1596. # [ns]
+
+# setup services parameters for 3 drift windows
+#include "3drift_services_config_icarus.fcl"
+
+
