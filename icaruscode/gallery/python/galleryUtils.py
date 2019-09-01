@@ -8,8 +8,8 @@ This module requires ROOT.
 """
 
 __all__ = [
-  'readHeader',
-  'SourceCode',
+  'readHeader', # imported from `cppUtils`
+  'SourceCode', # imported from `cppUtils`
   'make_getValidHandle',
   'makeFileList',
   'forEach',
@@ -18,12 +18,12 @@ __all__ = [
   'loadConfiguration',
   'ConfigurationClass',
   'startMessageFacility',
-  'ServiceRegistry',
+  'ServiceRegistryClass',
   'ConfigurationHelper',
   ]
 
 import sys, os
-import ROOT
+from ROOTutils import ROOT
 import cppUtils
 import warnings
 
@@ -50,7 +50,13 @@ class HandleMaker:
   
   def __call__(self, klass):
     if klass in HandleMaker.AlreadyMade: return
-    HandleMaker.make(klass)
+    res = HandleMaker.make(klass)
+    if res != ROOT.TInterpreter.kNoError:
+      raise RuntimeError(
+       "Could not create `ROOT.gallery.Event.getValidHandle` for '%s' (code: %d)"
+       % (klass, res)
+       )
+    # if
     HandleMaker.AlreadyMade.add(klass)
   # __call__()
   
@@ -133,6 +139,20 @@ def eventLoop(inputFiles,
  options = {},
  ):
   """
+  Applies the `process` function to each and every event from the specified
+  input files, in sequence.
+  
+  The `inputFiles` list may be a single file, or a list (or any iterable object)
+  of files, or a `std::vector<std::string>` object.
+  
+  The `process` callable is executed with two arguments: the number of argument
+  in the loop, and the event itself. No information on which file the event is
+  taken from is provided. If a call returns exactly `False`, it is considered
+  to have failed and an error counter is incremented. Exceptions raised in
+  `process` are not handled.
+  
+  The error counter is returned at the end of the execution.
+  
   Options:
   - 'nEvents': number of events to be processed (does not include skipped ones)
   - 'nSkip': number of events from the beginning of the sample to be skipped
@@ -141,6 +161,12 @@ def eventLoop(inputFiles,
   # option reading
   nSkip = options.get('nSkip', 0)
   nEvents = options.get('nEvents', None)
+  
+  # make sure the input file list is in the right format
+  if not isinstance(inputFiles, ROOT.vector(ROOT.string)):
+    if isinstance(inputFiles, str): inputFiles = [ inputFiles, ]
+    inputFiles = makeFileList(*inputFiles)
+  # if
   
   event = ROOT.gallery.Event(inputFiles)
   
@@ -191,7 +217,8 @@ def eventLoop(inputFiles,
 
 def findFHiCL(configRelPath, extraDirs = []):
   
-  if os.path.isfile(configRelPath): return os.path.join(os.getcwd(), configRelPath)
+  if os.path.isfile(configRelPath):
+    return os.path.join(os.getcwd(), configRelPath)
   for path in extraDirs + os.environ.get('FHICL_FILE_PATH', "").split(':'):
     candidate = os.path.join(path, configRelPath)
     if os.path.isfile(candidate): return candidate

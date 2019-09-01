@@ -9,10 +9,79 @@ Unsurprisingly, this module requires ROOT.
 
 __all__ = [
   "splitROOTpath", "createROOTpath", "getROOTclass",
+  "activateDirectory",
+  "ROOT",
   ]
 
-import ROOT
+################################################################################
+###
+### Try to save the command line arguments from unconsiderate ROOT behaviour
+###
+def ROOTloader():
+  """
+  The ROOT interpreter likes to peek at the command line arguments and interpret
+  them its own way.
+  For example, an option `-b` will be interpreted to set ROOT in batch mode.
+  Likewise, if a `--help` argument is present on the command line, the
+  interpreter will print the ROOT help message and, even worse, halt the script.
+  This is clearly not very friendly to the script.
+  
+  The initialization of the interpreter happens lazily the first time anything
+  is read out of `ROOT` module: `import ROOT` is not enough, but pretty much
+  everything after that involving ROOT is (exception: `ROOT.gROOT` will not
+  trigger the interpreter, but trying to get anything out of `ROOT.gROOT` will).
+  That makes it complicate to control when that happens.
+  
+  This function triggers the interpreter initialization after having removed all
+  command line options, and finally restores them (we use a context manager to
+  show that we know Python). The loaded module is returned.
+  
+  This function is called as soon as this module is imported. It is important
+  that this happens as early as possible, possibly as a replacement of ROOT
+  import, as:
+      
+      from ROOTutils import ROOT
+      
+      from ROOTutils import *
+      
+      import ROOTutils
+      import ROOT
+      
+  or equivalent.
+  """
+  import sys, logging
+  try:              alreadyLoaded = 'gInterpreter' in dir(ROOT)
+  except NameError: alreadyLoaded = False
+  if alreadyLoaded:
+    logging.warning(
+      "ROOT module was loaded before ROOTutils.py: command line arguments may be garbled"
+      )
+    return sys.modules['ROOT']
+  # if already loaded 
+  
+  class EmptyArgs:
+    def __enter__(self):
+      self.args = sys.argv
+      logging.debug("Saving command line: %s", self.args)
+      sys.argv = sys.argv[0:1]
+      logging.debug(
+       "Replaced command line %s with %s before loading ROOT module",
+       self.args, sys.argv)
+    def __exit__(self, exc_type, exc_value, traceback):
+      sys.argv = self.args
+      logging.debug("Restored command line %s", sys.argv)
+  # class EmptyArgs
+  
+  with EmptyArgs():
+    import ROOT
+    ROOT.gInterpreter # make sure that an interpreter is initialized
+    return ROOT
+  # with
+  
+# ROOTloader()
 
+ROOT = ROOTloader() # import ROOT...
+del ROOTloader
 
 ################################################################################
 ### Print vectors easily

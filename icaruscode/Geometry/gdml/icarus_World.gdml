@@ -1,0 +1,168 @@
+<?xml version='1.0'?>
+<gdml>
+<solids>
+    <box name="World" lunit="cm" 
+      x="10000" 
+      y="10000" 
+      z="10000"/>
+
+    <box name="BoxDirtAlongX" lunit="cm" 
+      x="1889.9" 
+      y="1249.9" 
+      z="3064.9"/>
+
+    <box name="BoxDirtAlongZ" lunit="cm" 
+      x="4054.9" 
+      y="1249.9" 
+      z="9999.9"/>
+
+    <box name="BoxDirtBottom" lunit="cm" 
+      x="9999.9" 
+      y="4530" 
+      z="9999.9"/>
+
+    <box name="OverburdenUp" lunit="cm" 
+      x="1830" 
+      y="200" 
+      z="3810"/>
+
+    <box name="OverburdenDown" lunit="cm" 
+      x="1830" 
+      y="100" 
+      z="3810"/>
+
+    <box name="Building" lunit="cm" 
+      x="1890" 
+      y="1040" 
+      z="3870"/>
+
+    <box name="AirBuilding" lunit="cm" 
+      x="1830" 
+      y="1010 " 
+      z="3810"/>
+
+    <subtraction name="WallBuilding">
+     <first ref="Building"/>
+     <second ref="AirBuilding"/>
+     <position name="posAirBuilding" unit="cm" x="0" y="-15" z="0"/>
+     </subtraction>
+
+    <box name="ExpHall" lunit="cm" 
+      x="1890" 
+      y="1250" 
+      z="3870"/>
+
+    <box name="AirExpHall" lunit="cm" 
+      x="1830" 
+      y="1220" 
+      z="3810"/>
+
+    <subtraction name="WallExpHall">
+     <first ref="ExpHall"/>
+     <second ref="AirExpHall"/>
+     <position name="posAirExpHall" unit="cm" x="0" y="15" z="0"/>
+     </subtraction>
+</solids>
+<structure>
+    <volume name="volOverburdenUp" >
+      <materialref ref="Concrete"/>
+      <solidref ref="OverburdenUp"/>
+    </volume>
+
+    <volume name="volBuilding" >
+      <materialref ref="Air"/>
+      <solidref ref="AirBuilding"/>
+    </volume>
+
+    <volume name="volWallBuilding" >
+      <materialref ref="Concrete"/>
+      <solidref ref="WallBuilding"/>
+
+</volume>
+    <volume name="volExpHall" >
+      <materialref ref="Air"/>
+      <solidref ref="AirExpHall"/>
+    </volume>
+
+    <volume name="volOverburdenDown" >
+      <materialref ref="Concrete"/>
+      <solidref ref="OverburdenDown"/>
+    </volume>
+
+    <volume name="volWallExpHall" >
+      <materialref ref="Concrete"/>
+      <solidref ref="WallExpHall"/>
+</volume>
+
+    <volume name="volBoxDirtAlongX" >
+      <materialref ref="Dirt"/>
+      <solidref ref="BoxDirtAlongX"/>
+    </volume>
+
+    <volume name="volBoxDirtAlongZ" >
+      <materialref ref="Dirt"/>
+      <solidref ref="BoxDirtAlongZ"/>
+    </volume>
+
+    <volume name="volBoxDirtBottom" >
+      <materialref ref="Dirt"/>
+      <solidref ref="BoxDirtBottom"/>
+     </volume>
+
+    <volume name="volWorld" >
+      <materialref ref="Air"/>
+      <solidref ref="World"/>
+
+    <physvol>
+    <volumeref ref="volWallBuilding"/>
+    <positionref ref="posBuildingInWorld"/>
+    </physvol>
+    
+    <physvol>
+    <volumeref ref="volWallExpHall"/>
+    <positionref ref="posExpHallInWorld"/>
+    </physvol>
+    
+     <physvol>
+        <volumeref ref="volOverburdenUp"/>
+	<position name="posOverburdenUp" unit="cm" x="0" y="880" z="0" />
+      </physvol>
+
+     <physvol>
+        <volumeref ref="volOverburdenDown"/>
+	<position name="posOverburdenDown" unit="cm" x="0" y="730" z="0" />
+      </physvol>
+
+      <physvol>
+        <volumeref ref="volBoxDirtAlongX"/>
+	<position name="posBoxDirtAlongX1" unit="cm" x="0" y="155.05" z="3467.5"/>
+      </physvol>
+
+      <physvol>
+        <volumeref ref="volBoxDirtAlongX"/>
+	<position name="posBoxDirtAlongX2" unit="cm" x="0" y="155.05" z="-3467.5"/>
+      </physvol>
+
+      <physvol>
+        <volumeref ref="volBoxDirtAlongZ"/>
+	<position name="posBoxDirtAlongZ1" unit="cm" x="2972.5" y="155.05" z="0"/>
+      </physvol>
+
+      <physvol>
+        <volumeref ref="volBoxDirtAlongZ"/>
+	<position name="posBoxDirtAlongZ2" unit="cm" x="-2972.5" y="155.05" z="0"/>
+      </physvol>
+
+      <physvol>        
+        <volumeref ref="volBoxDirtBottom"/>
+	<position name="posBoxDirtBottom" unit="cm" x="0" y="-2735" z="0"/>
+      </physvol>     
+
+      <physvol>
+        <volumeref ref="volDetEnclosure"/>
+	<positionref ref="posDetEncInWorld"/>
+      </physvol>
+
+    </volume>
+</structure>
+</gdml>

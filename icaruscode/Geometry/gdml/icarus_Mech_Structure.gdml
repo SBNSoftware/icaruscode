@@ -1,0 +1,41 @@
+<?xml version='1.0'?>
+<gdml>
+
+<!--+++++++++++++++++++ Structure Solids ++++++++++++++++++++++-->
+
+<solids> 
+  <box name="LatExtMechBox"
+  x="10"
+  y="341.8"
+  z="199.532" 
+  lunit="cm" />
+  <box name="LatIntMechBox"
+  x="10.1"
+  y="321.8"
+  z="179.532" 
+  lunit="cm" />
+  <box name="Pillar"
+  x="10"
+  y="321.8"
+  z="10" 
+  lunit="cm" />
+  <subtraction name="LatIntMechShell">
+    <first ref="LatIntMechBox"/>
+    <second ref="Pillar"/>
+  </subtraction>
+  <subtraction name="LatMechShell">
+   <first ref="LatExtMechBox"/>
+   <second ref="LatIntMechShell"/>
+ </subtraction>
+</solids>   
+<structure>
+
+<!--+++++++++++++++++ Structure Logical Volumes ++++++++++++++++++++-->
+
+<volume name="volLatMech"> 
+  <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni"/>  
+  <solidref ref="LatMechShell"/>
+</volume>
+
+</structure>
+</gdml>

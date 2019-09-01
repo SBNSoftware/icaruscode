@@ -26,4 +26,19 @@
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTData,icarus::crt::CRTHit,void> >"/>
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTHit,icarus::crt::CRTData,void> >"/>
 
+  <class name="art::Wrapper<icarus::crt::CRTTrack>"/>
+  <class name="std::vector<icarus::crt::CRTTrack>"/>
+  <class name="art::Wrapper<std::vector<icarus::crt::CRTTrack>>"/>
+  <class name="art::Assns<icarus::crt::CRTTrack, icarus::crt::CRTHit, void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::crt::CRTTrack, icarus::crt::CRTHit, void>>"/>
+  <class name="art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTrack, void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTrack, void>>"/>
+
+  <class name="std::vector<icarus::crt::CRTTzero>"/>
+  <class name="art::Wrapper< std::vector<icarus::crt::CRTTzero> >"/>
+  <class name="art::Assns<icarus::crt::CRTTzero, icarus::crt::CRTHit,    void>"           />
+  <class name="art::Wrapper< art::Assns<icarus::crt::CRTTzero, icarus::crt::CRTHit, void> >"           />
+  <class name="art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTzero,    void>"           />
+  <class name="art::Wrapper< art::Assns<icarus::crt::CRTHit, icarus::crt::CRTTzero, void> >"           />
+
 </lcgdict>

@@ -5,11 +5,11 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nutools_ParticleNavigation lardataobj_Simulation
+                              nug4_ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
-                              lardata_RecoObjects larreco_Deprecated
+                              lardata_RecoObjects
                               lardataobj_AnalysisBase
                               larreco_Calorimetry
                               lardata_Utilities
@@ -51,11 +51,11 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nutools_ParticleNavigation lardataobj_Simulation
+                              nug4_ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
-                              lardata_RecoObjects larreco_Deprecated
+                              lardata_RecoObjects
                               lardataobj_AnalysisBase
                               larreco_Calorimetry
                               lardata_Utilities

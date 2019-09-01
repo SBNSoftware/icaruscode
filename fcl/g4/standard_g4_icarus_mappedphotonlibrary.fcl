@@ -1,0 +1,15 @@
+#
+# File:    standard_g4_icarus_mappedphotonlibrary.fcl
+# Purpose: Standard ICARUS detector simulation with mapped photon library.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 8, 2019
+#
+# This is the standard GEANT4 simulation for ICARUS, but using a single cryostat
+# photon library mapped also to the second cryostat.
+#
+
+#include "photpropservices_icarus.fcl"
+#include "standard_g4_icarus.fcl"
+
+services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
+

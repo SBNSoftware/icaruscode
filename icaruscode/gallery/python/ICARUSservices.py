@@ -131,6 +131,10 @@ if __name__ == "__main__":
   if args.configPath is not None:
     ServiceManager.setConfiguration(args.configPath, args.serviceTable)
   
+  # we want ROOT module known in the interactive session;
+  # and we keep the good habit of loading it via ROOTutils
+  from ROOTutils import ROOT
+  
   try:
     import IPython
     IPython.embed()

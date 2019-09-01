@@ -83,7 +83,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
   // (1.2) determine the amount of shift required
   geo::Point_t const refPoint = fGeom->Cryostat(0).BoundingBox().Min();
   for (geo::CryostatGeo const& cryo: fGeom->IterateCryostats()) {
-    fTranslations.push_back(cryo.BoundingBox().Min() - refPoint);
+    fTranslations.push_back(refPoint - cryo.BoundingBox().Min());
   } // for all cryostats
   
 } // phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping()

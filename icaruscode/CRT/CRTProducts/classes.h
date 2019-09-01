@@ -3,6 +3,8 @@
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTzero.hh"
 #include <vector>
 #include <map>
 #include <utility>
