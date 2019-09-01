@@ -2,6 +2,8 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
+#include "photpropservices_icarus.fcl"
+
 
 process_name: CosmicsCorsikaCMCGenAndG4InTime
 
@@ -101,11 +103,8 @@ outputs:
 #physics.producers.generator.EnergyThreshold: 2.e-1
 physics.producers.generator.SubBoxLength: "subboxLength 60 "
 
-# override photon visibility to use external photon library
-services.PhotonVisibilityService.XMin: -395
-services.PhotonVisibilityService.XMax: 395
-services.PhotonVisibilityService.NX: 158
-services.PhotonVisibilityService.LibraryFile: "PhotonLibrary/Modif_PhotonLibrary-20180801.root"
+# set Photon Visibility to mapped library (better memory usage)
+services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
 
 # G4 overrides
 # keeping particles

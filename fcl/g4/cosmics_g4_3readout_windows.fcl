@@ -1,4 +1,4 @@
-#include "standard_g4_icarus_extphotonlibrary.fcl"
+#include "standard_g4_icarus_mappedphotonlibrary.fcl"
 
 # Author: Gray Putnam <grayputnam@uchicago.edu>
 # Adapted from cosmics_g4_icarus.fcl
