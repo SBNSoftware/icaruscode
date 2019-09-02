@@ -93,6 +93,7 @@ outputs:
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
+   SelectEvents: [simulate]
    outputCommands: [
      "keep *",
      "drop *_larg4intime_*_CosmicsCorsikaCMCGenAndG4InTime"
