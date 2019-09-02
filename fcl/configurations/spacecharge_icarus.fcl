@@ -1,0 +1,16 @@
+# Space charge service for ICARUS.
+#
+# NOTE: this file is a stub. It sets up the larevt standard SpaceChargeService,
+# which does nothing. Someone should probably at some point implement a real
+# space charge service for ICARUS, but that person will not be me....
+#
+# Gray Putnam <grayputnam@uchicago.edu>
+
+#include "spacecharge.fcl"
+
+
+BEGIN_PROLOG
+
+icarus_spacecharge: @local::standard_spacecharge
+
+END_PROLOG
