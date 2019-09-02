@@ -24,6 +24,7 @@
 #include "mctrutht0matching.fcl"
 
 #include "crtsimhitproducer.fcl"
+#include "crttrackproducer_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -330,7 +331,10 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crtsimhit ]
+icarus_reco_crt:                  [ crtsimhit #,
+                                    #crttzero ]
+                                    #crtsimtrack 
+                                  ]
 
 # Define what would be the first pass reconstructon (the "gauss" recon)
 icarus_gauss_reconstruction:      [ @sequence::icarus_reco_signalprocessinggaus,
@@ -540,10 +544,10 @@ icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                      
 icarus_reco_producers.mcsICARUSRawCryo1.inputs.inputLabel:                                "pandoraTrackICARUSCryo1"
 icarus_reco_producers.mcsICARUSGausCryo0.inputs.inputLabel:                               "pandoraTrackGausCryo0"
 icarus_reco_producers.mcsICARUSGausCryo1.inputs.inputLabel:                               "pandoraTrackGausCryo1"
-icarus_reco_producers.mcsstandardRawCryo0.inputs.inputLabel:                                "pandoraTrackICARUSCryo0"
-icarus_reco_producers.mcsstandardRawCryo1.inputs.inputLabel:                                "pandoraTrackICARUSCryo1"
-icarus_reco_producers.mcsstandardGausCryo0.inputs.inputLabel:                               "pandoraTrackGausCryo0"
-icarus_reco_producers.mcsstandardGausCryo1.inputs.inputLabel:                               "pandoraTrackGausCryo1"
+icarus_reco_producers.mcsstandardRawCryo0.inputs.inputLabel:                              "pandoraTrackICARUSCryo0"
+icarus_reco_producers.mcsstandardRawCryo1.inputs.inputLabel:                              "pandoraTrackICARUSCryo1"
+icarus_reco_producers.mcsstandardGausCryo0.inputs.inputLabel:                             "pandoraTrackGausCryo0"
+icarus_reco_producers.mcsstandardGausCryo1.inputs.inputLabel:                             "pandoraTrackGausCryo1"
 
 ### Definitions for single instance of PM algorithm
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                  "trajclusterICARUS"

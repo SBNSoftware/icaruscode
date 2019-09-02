@@ -6,3 +6,9 @@ install_fhicl()
 
 FILE(GLOB fcl_files *.fcl)
 install_source( EXTRAS ${fcl_files} )
+
+# Add the underlying folders
+
+add_subdirectory(Purity)
+add_subdirectory(Lifetime)
+
