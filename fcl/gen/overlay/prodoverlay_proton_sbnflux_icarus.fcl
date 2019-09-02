@@ -7,7 +7,7 @@
 #include "corsika_icarus.fcl"
 #include "mcreco.fcl"
 #include "services_icarus.fcl"
-#include "genie3_icarus.fcl"
+#include "genie_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 
 
@@ -47,7 +47,7 @@ physics:
 
  producers:
  {
-   generator: @local::icarus_genie3_simple
+   generator: @local::icarus_genie_simple
    cosmgen:   @local::icarus_corsika_p
    rns:       { module_type: "RandomNumberSaver" }
  }
