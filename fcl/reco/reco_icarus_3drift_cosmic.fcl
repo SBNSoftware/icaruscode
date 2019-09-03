@@ -1,0 +1,27 @@
+#include "reco_icarus_driver_common.fcl"
+
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+
+physics.reco: [@sequence::icarus_full_reconstruction]
+physics.trigger_paths: [ reco ]
+
+# fix memory bug
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms: true
+
+# overwrite back-trackers to look to "cosmgen" MCTruth
+physics.producers.cheatopflashTPC0.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC1.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC2.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC3.MCTruthProducer: "cosmgen"
+
+physics.producers.mcopflashTPC0.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC1.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC2.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC3.MCTruthProducer: "cosmgen"
+
+
+# setup services parameters for 3 drift windows
+#include "3drift_services_config_icarus.fcl"
+
+process_name: Reco
