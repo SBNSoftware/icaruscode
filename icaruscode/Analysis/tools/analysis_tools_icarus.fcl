@@ -23,6 +23,20 @@ TrackHitEfficiencyAnalysisTool:
   MinAllowedChannelStatus: 1
 }
 
+SpacePointAnalysisTool:
+{
+  tool_type:               "SpacePointAnalysis"
+
+  SpacePointLabelVec:      ["cluster3d"]
+  MCParticleLabel:         "largeant"
+  SimChannelLabel:         "largeant"
+  SimEnergyLabel:          "largeant"
+  LocalDirName:            "EfficHists"
+  OffsetVec:               [0,0,0]
+  SigmaVec:                [1.,1.,1.]
+  MinAllowedChannelStatus: 1
+}
+
 WireAnalysisTool:
 {
   tool_type:           "BasicWireAnalysis"

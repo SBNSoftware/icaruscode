@@ -73,3 +73,7 @@ cet_test(dump_channel_map_icarus_test HANDBUILT
   TEST_ARGS --rethrow-all --config ./dump_icarus_channelmap.fcl
 )
 
+
+install_headers()
+install_fhicl()
+install_source()

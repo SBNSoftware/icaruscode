@@ -1,0 +1,89 @@
+#
+# File:    simulation_genie_icarus_numi.fcl
+# Purpose: "Standard" simulation of neutrinos from NuMI in ICARUS.
+# Date:    August 19, 2019
+# Version: 1.0
+#
+#
+#
+# Changes
+# --------
+# 
+# 20190819 (petrillo@slac.stanford.edu) [v1.0]
+#   original version from `simulation_numi.fcl` cross
+#   `simulation_genie_icarus_bnbi.fcl`
+#
+#
+
+#include "services_icarus_simulation.fcl"
+#include "genie_icarus_numioffaxis.fcl"
+
+
+process_name: GenGenie
+
+
+services: {
+  
+  @table::icarus_gen_services
+  
+  IFDH:         {}
+  
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "Supplemental-simulation_genie_icarus_numi_%tc-%p.root" }
+  
+#  FileCatalogMetadata:  @local::art_file_catalog_mc
+  
+} # services
+
+
+source: {
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+} # source
+
+
+physics: {
+  
+  producers: {
+    
+    rns:       { module_type: "RandomNumberSaver" }
+    generator: @local::icarus_genie_NuMI # from `genie_icarus_numi.fcl`
+    
+  } # producers
+  
+  
+  simulate:     [ rns, generator ]
+  
+  outputstream: [ rootoutput ]
+  
+  trigger_paths: [ simulate ]
+  end_paths:     [ outputstream ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: {
+    module_type: RootOutput
+    
+    fileName:    "simulation_genie_icarus_numi_%tc-%p.root"
+    dataTier:    "simulated"
+    
+    compressionLevel: 1
+    
+    # SelectEvents: [ filterLabel ]
+    
+  } # rootoutput
+  
+} # outputs
+
+
+#
+# overrides
+#
+physics.producers.generator.TopVolume:  "volCryostat"
+

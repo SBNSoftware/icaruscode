@@ -4,7 +4,7 @@
 #include "magfield_larsoft.fcl"
 
 #include "largeantmodules.fcl"
-#include "genie_icarus.fcl"
+#include "genie_icarus_bnb.fcl"
 #include "mcreco.fcl"
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
@@ -42,7 +42,7 @@ physics:
 
  producers:
  {
-   generator: @local::icarus_genie_simple   
+   generator: @local::icarus_genie_BNB # from `genie_icarus_bnb.fcl`
    rns:       { module_type: "RandomNumberSaver" }
  }
 
