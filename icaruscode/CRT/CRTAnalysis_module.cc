@@ -268,6 +268,9 @@ namespace crt {
     double   fGenNuTheta;
     int      fGenNuNucleon;
     int      fGenNuTarget;
+    int      fGenNuLeptonID;
+    int      fGenNuReg;
+    bool     fGenNuFid;
     vector<int> fGenTrack;
     vector<int> fGenPDG;
     vector<vector<double>>   fGenStartXYZT;
@@ -554,6 +557,9 @@ namespace crt {
     fGenNtuple->Branch("nuTheta",      &fGenNuTheta,    "nuTheta/D");
     fGenNtuple->Branch("nuNucleon",    &fGenNuNucleon,  "nuNucleon/I");
     fGenNtuple->Branch("nuTarget",     &fGenNuTarget,   "nuTarget/I"); 
+    fGenNtuple->Branch("nuLeptonID",   &fGenNuLeptonID, "nuLeptonID/I");
+    fGenNtuple->Branch("nuReg",        &fGenNuReg,      "nuReg/I");
+    fGenNtuple->Branch("nuFid",        &fGenNuFid,      "nuFid/b");
 
     // Define the branches of our simulation n-tuple
     fSimulationNtuple->Branch("event",             &fEvent,             "event/I");
@@ -732,9 +738,18 @@ namespace crt {
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
     }
 
-    FillFebMap();//febMap);
+    FillFebMap();
 
-    if((*genHandle).size()>1) throw cet::exception("CRTAnalysis") << "gen stage MCParticle vector has more than 1 entry!" << std::endl;
+    //get TPC objects
+    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
+    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
+
+    geo::TPCGeo const& tpc00 = cryo0.TPC(0);
+    geo::TPCGeo const& tpc01 = cryo0.TPC(1);
+    geo::TPCGeo const& tpc10 = cryo1.TPC(0);
+    geo::TPCGeo const& tpc11 = cryo1.TPC(1);
+
+    //if((*genHandle).size()>1) throw cet::exception("CRTAnalysis") << "gen stage MCParticle vector has more than 1 entry!" << std::endl;
     auto const& truth = (*genHandle)[0];   
 
     fNGen = truth.NParticles();
@@ -751,6 +766,9 @@ namespace crt {
     fGenNuTheta = 0.;
     fGenNuNucleon = 0;
     fGenNuTarget = 0; 
+    fGenNuLeptonID = -1;
+    fGenNuReg = -1;
+    fGenNuFid = false;
 
     if(fGenHasNu) {
         auto const& nu = truth.GetNeutrino();
@@ -760,6 +778,41 @@ namespace crt {
         fGenNuTheta = nu.Theta();
         fGenNuNucleon = nu.HitNuc();
         fGenNuTarget = nu.Target();
+	fGenNuLeptonID = nu.Lepton().TrackId();
+        const TVector3 point = nu.Nu().Position(0).Vect();
+
+	if(cryo0.ContainsPosition(point)) {
+		if(tpc00.ContainsPosition(point)) {
+			fGenNuReg = 5;
+			fGenNuFid = (tpc00.InFiducialX(point[0],fFiducialX,0)
+                              && tpc00.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc00.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+		}
+                else if(tpc01.ContainsPosition(point)) {
+			fGenNuReg = 6;
+			fGenNuFid = ( ((fFidInnerX && tpc01.InFiducialX(point[0],0,fFiducialX))||!fFidInnerX)
+                              && tpc01.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc01.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                }
+		else
+			fGenNuReg = 10;
+	}
+        if(cryo1.ContainsPosition(point)) {
+                if(tpc10.ContainsPosition(point)) {
+                        fGenNuReg = 7;
+                        fGenNuFid = ( ((fFidInnerX && tpc10.InFiducialX(point[0],fFiducialX,0))||!fFidInnerX)
+                              && tpc10.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc10.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                }
+                else if(tpc11.ContainsPosition(point)) {
+                        fGenNuReg = 8;
+                        fGenNuFid = (tpc11.InFiducialX(point[0],0,fFiducialX)
+                              && tpc11.InFiducialY(point[1],fFiducialY,fFiducialY)
+                              && tpc11.InFiducialZ(point[2],fFiducialUpZ,fFiducialDownZ));
+                }
+                else
+                        fGenNuReg = 12;
+        }
     }
   
     for ( int i=0; i<fNGen; i++ )
@@ -796,14 +849,14 @@ namespace crt {
     std::cout << "event " << fEvent << " with " << particleMap.size() << " MCParticles" << std::endl;
 
     //get TPC objects
-    geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
+    /*geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
     geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
 
     geo::TPCGeo const& tpc00 = cryo0.TPC(0);
     geo::TPCGeo const& tpc01 = cryo0.TPC(1);
     geo::TPCGeo const& tpc10 = cryo1.TPC(0);
     geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-
+*/
     //loop over MCParticles
     for ( auto const& particle : (*particleHandle) )
     {
