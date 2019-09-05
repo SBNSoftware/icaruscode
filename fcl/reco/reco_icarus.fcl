@@ -313,14 +313,14 @@ icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
                                     @sequence::icarus_reco_cluster3DCryo0,
-                                    @sequence::icarus_reco_pandoraGausCryo0,
-                                    SBNShowerGausCryo0 ]
+                                    @sequence::icarus_reco_pandoraGausCryo0 ]
+#                                    SBNShowerGausCryo0 ]
 
 icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
                                     @sequence::icarus_reco_SigProcTPC3Gauss,
                                     @sequence::icarus_reco_cluster3DCryo1,
-                                    @sequence::icarus_reco_pandoraGausCryo1,
-                                    SBNShowerGausCryo1 ]
+                                    @sequence::icarus_reco_pandoraGausCryo1 ]
+#                                    SBNShowerGausCryo1 ]
 
 icarus_reco_raw_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Raw,
                                     @sequence::icarus_reco_SigProcTPC1Raw,
