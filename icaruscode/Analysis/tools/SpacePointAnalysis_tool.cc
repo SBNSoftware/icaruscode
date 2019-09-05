@@ -137,8 +137,12 @@ private:
     mutable std::vector<int>   fNumSCNotInSEVec;
     mutable std::vector<int>   fNumSENotInSCVec;
     mutable std::vector<int>   fNumSimChanIDEVec;
+    mutable std::vector<int>   fNumSimEnergyVec;
     mutable std::vector<float> fDepEneSimChanVec;
     mutable std::vector<float> fDepEneSimEneVec;
+    mutable std::vector<float> fDepEneCommonSCVec;
+    mutable std::vector<float> fDepEneCommonSEVec;
+    mutable std::vector<float> fDepEneCommonDiffVec;
 
     // Look at matching of SimChannel and SimEnergyDeposit
     mutable std::vector<float> fSEDeltaX;
@@ -248,8 +252,8 @@ void SpacePointAnalysis::configure(fhicl::ParameterSet const & pset)
     fSimChannelProducerLabel  = pset.get< art::InputTag             >("SimChannelLabel",     "largeant");
     fSimEnergyProducerLabel   = pset.get< art::InputTag             >("SimEnergyLabel",      "largeant");
     fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",           std::vector<int>()={0,0,0});
-    fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy", 0.001);
-    fSimEnergyMinEnergy       = pset.get<float                      >("SimEnergyMinEnergy",  0.001);
+    fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy", std::numeric_limits<float>::epsilon());
+    fSimEnergyMinEnergy       = pset.get<float                      >("SimEnergyMinEnergy",  std::numeric_limits<float>::epsilon());
 
     return;
 }
@@ -274,8 +278,12 @@ void SpacePointAnalysis::initializeTuple(TTree* tree)
     fTree->Branch("NumSCNotInSE",       "std::vector<int>",   &fNumSCNotInSEVec);
     fTree->Branch("NumSENotInSC",       "std::vector<int>",   &fNumSENotInSCVec);
     fTree->Branch("NumSimChanIDE",      "std::vector<int>",   &fNumSimChanIDEVec);
+    fTree->Branch("NumSimEnergy",       "std::vector<int>",   &fNumSimEnergyVec);
     fTree->Branch("DepEneSimChan",      "std::vector<float>", &fDepEneSimChanVec);
     fTree->Branch("DepEneSimEne",       "std::vector<float>", &fDepEneSimEneVec);
+    fTree->Branch("DepEneCommonSC",     "std::vector<float>", &fDepEneCommonSCVec);
+    fTree->Branch("DepEneCommonSE",     "std::vector<float>", &fDepEneCommonSEVec);
+    fTree->Branch("DepEneCommonDiff",   "std::vector<float>", &fDepEneCommonDiffVec);
 
     fTree->Branch("SEDeltaX",          "std::vector<float>",  &fSEDeltaX);
     fTree->Branch("SEDeltaY",          "std::vector<float>",  &fSEDeltaY);
@@ -358,8 +366,12 @@ void SpacePointAnalysis::clear() const
     fNumSCNotInSEVec.clear();
     fNumSENotInSCVec.clear();
     fNumSimChanIDEVec.clear();
+    fNumSimEnergyVec.clear();
     fDepEneSimChanVec.clear();
     fDepEneSimEneVec.clear();
+    fDepEneCommonSCVec.clear();
+    fDepEneCommonSEVec.clear();
+    fDepEneCommonDiffVec.clear();
 
     fNumIDEsHit0Vec.clear();
     fNumIDEsHit1Vec.clear();
@@ -431,6 +443,8 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     // If there is no sim channel informaton then exit
     if (!mcParticleHandle.isValid()) return;
     
+    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+
     // First task is to build a map between ides and voxel ids (that we calcualate based on position)
     // and also get the reverse since it will be useful in the end.
     // At the same time should also build a mapping of ides per channel so we can do quick hit lookup
@@ -445,30 +459,36 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     ChanToTDCToIDEMap  chanToTDCToIDEMap;
     VoxelIDSet         simChannelVoxelIDSet;
 
+    // Fill the above maps/structures
     for(const auto& simChannel : *simChannelHandle)
     {
         for(const auto& tdcide : simChannel.TDCIDEMap())
         {
-            double timeTDC  = 0.; // tdcide.first;  ==> Note this includes the drift time of the particle
-            
             for(const auto& ide : tdcide.second) //chanToTDCToIDEMap[simChannel.Channel()][tdcide.first] = ide;
             {
                 if (ide.energy < fSimChannelMinEnergy) continue;
                 
-                sim::LArVoxelID voxelID(ide.x,ide.y,ide.z,timeTDC);
+                sim::LArVoxelID voxelID(ide.x,ide.y,ide.z,0.);
                 
                 ideToVoxelIDMap[&ide]    = voxelID;
                 voxelIDToIDEMap[voxelID].insert(&ide);
                 chanToTDCToIDEMap[simChannel.Channel()][tdcide.first].insert(&ide);
                 simChannelVoxelIDSet.insert(voxelID);
                 
-                fDepEneSimChanVec.push_back(ide.energy);
-                
                 if (ide.energy < std::numeric_limits<float>::epsilon()) std::cout << ">> epsilon simchan deposited energy: " << ide.energy << std::endl;
             }
-            
-            fNumSimChanIDEVec.push_back(tdcide.second.size());
         }
+    }
+    
+    // Now analyze what we have
+    for(const auto& voxelIDPair : voxelIDToIDEMap)
+    {
+        // We want to look at the number of IDEs per voxel (unique) and the energy per voxel
+        float voxelEne = std::accumulate(voxelIDPair.second.begin(),voxelIDPair.second.end(),0.,[](auto& sum, const auto& ide){return sum += ide->energy;});
+        
+        fNumSimChanIDEVec.push_back(voxelIDPair.second.size());
+        fDepEneSimChanVec.push_back(voxelEne);
+
     }
 
     // Now we go throught the SimEnergyDeposit objects and try to make similar mappings
@@ -487,17 +507,24 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
         if (simEnergy.Energy() < fSimEnergyMinEnergy) continue;
         
         geo::Point_t    midPoint = simEnergy.MidPoint();
-        //double          timeTDC  = fClockService->TPCClock().Ticks(fClockService->G4ToElecTime(simEnergy.Time()));  // SimEnergy time is G4 time
-        double          timeTDC  = 0.; // fClockService->TPCG4Time2Tick(simEnergy.Time()); ==> This does not include the drift time...
-        sim::LArVoxelID voxelID(midPoint.X(),midPoint.Y(),midPoint.Z(),timeTDC);
+        sim::LArVoxelID voxelID(midPoint.X(),midPoint.Y(),midPoint.Z(),0.);
 
         simEnergyToVoxelIDMap[&simEnergy] = voxelID;
         voxelIDToSimEnergyVecMap[voxelID].push_back(&simEnergy);
         simEnergyVoxelIDSet.insert(voxelID);
         
-        fDepEneSimEneVec.push_back(simEnergy.Energy());
-        
         if (simEnergy.Energy() < std::numeric_limits<float>::epsilon()) std::cout << ">> epsilon simenergy deposited energy: " << simEnergy.Energy() << std::endl;
+    }
+    
+    // Now analyze what we have
+    for(const auto& voxelIDPair : voxelIDToSimEnergyVecMap)
+    {
+        // We want to look at the number of IDEs per voxel (unique) and the energy per voxel
+        float voxelEne = std::accumulate(voxelIDPair.second.begin(),voxelIDPair.second.end(),0.,[](auto& sum, const auto& simDep){return sum += simDep->Energy();});
+        
+        fNumSimEnergyVec.push_back(voxelIDPair.second.size());
+        fDepEneSimEneVec.push_back(voxelEne);
+        
     }
 
     // Look at the common voxels between the two collections
@@ -511,6 +538,34 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
         std::cout << ">>> SimEnergy voxels: " << simEnergyVoxelIDSet.size() << ", simChannel voxels: " << simChannelVoxelIDSet.size() << ", # common voxels " << commonElementsVec.size() << std::endl;
 
         fNumCommonVoxelIDVec.push_back(commonElementsVec.size());
+        
+        // Loop over common voxels
+        for(const auto& voxelID : commonElementsVec)
+        {
+            VoxelIDToIDESetMap::iterator simChanItr = voxelIDToIDEMap.find(voxelID);
+            
+            float simChanVoxelEne(0.);
+            
+            if (simChanItr != voxelIDToIDEMap.end())
+            {
+                for(const auto& ide : simChanItr->second) simChanVoxelEne += ide->energy;
+            }
+            
+            fDepEneCommonSCVec.push_back(simChanVoxelEne);
+            
+            VoxelIDToSimEnergyVecMap::iterator simEnergyItr = voxelIDToSimEnergyVecMap.find(voxelID);
+            
+            float simEnergyVoxelEne(0.);
+            
+            if (simEnergyItr != voxelIDToSimEnergyVecMap.end())
+            {
+                for(const auto& simDep : simEnergyItr->second) simEnergyVoxelEne += simDep->Energy();
+            }
+        
+            fDepEneCommonSEVec.push_back(simEnergyVoxelEne);
+            
+            fDepEneCommonDiffVec.push_back(simChanVoxelEne - simEnergyVoxelEne);
+        }
     }
 
     // Look at the difference, this will be the SimEnergyDeposit objects with no corresponding SimChannels...
@@ -545,10 +600,6 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     }
     else
         std::cout << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", No differences" << std::endl;
-    
-    
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
-    
     
     // Now go the other direction
     std::vector<sim::LArVoxelID>           simChanDiffVec(simEnergyVoxelIDSet.size() + simChannelVoxelIDSet.size());
