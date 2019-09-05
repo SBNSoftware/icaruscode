@@ -601,7 +601,7 @@ icarus_reco_producers.pandoraGausPid.CalorimetryModuleLabel: "pandoraGausCalo"
 
 icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0"
-icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel: "pandoraTrackGausCroy0"
+icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel: "pandoraGausCaloCryo0"
 
 icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
