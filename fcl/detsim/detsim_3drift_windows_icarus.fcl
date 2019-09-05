@@ -16,7 +16,8 @@ physics.producers.daq3.NoiseGenToolVec: [@local::WhiteNoiseTool, @local::WhiteNo
 # set up the PMT and CRT timing
 physics.producers.opdaq.TriggerOffsetPMT: -1.6384e3 # [us]
 
-physics.producers.crtdaq.GlobalT0Offset: -3.4768e6 # [ns]
+# CRT timing works by default
+physics.producers.crtdaq.GlobalT0Offset: 0 # [ns]
 
 # setup services parameters for 3 drift windows
 #include "3drift_services_config_icarus.fcl"
