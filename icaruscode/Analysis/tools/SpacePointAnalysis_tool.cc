@@ -133,7 +133,7 @@ private:
     // Keep track of voxels with energy deposits
     mutable std::vector<int>   fNumSimChanVoxelIDVec;
     mutable std::vector<int>   fNumSimEneVoxelIDVec;
-    mutable std::vector<int>.  fNumCommonVoxelIDVec;
+    mutable std::vector<int>   fNumCommonVoxelIDVec;
     mutable std::vector<int>   fNumSCNotInSEVec;
     mutable std::vector<int>   fNumSENotInSCVec;
     mutable std::vector<int>   fNumSimChanIDEVec;
@@ -502,7 +502,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
 
     // Look at the common voxels between the two collections
     std::vector<sim::LArVoxelID>           commonElementsVec(simEnergyVoxelIDSet.size() + simChannelVoxelIDSet.size());
-    std::vector<sim::LarVoxelID>::iterator commonElementsItr = std::set_intersection(simEnergyVoxelIDSet.begin(),simEnergyVoxelIDSet.end(),simChannelVoxelIDSet.begin(),simChannelVoxelIDSet.end(),energyDiffVec.begin());
+    std::vector<sim::LArVoxelID>::iterator commonElementsItr = std::set_intersection(simEnergyVoxelIDSet.begin(),simEnergyVoxelIDSet.end(),simChannelVoxelIDSet.begin(),simChannelVoxelIDSet.end(),commonElementsVec.begin());
 
     if (commonElementsItr != commonElementsVec.begin())
     {
