@@ -36,7 +36,7 @@ ShowerSlidingStandardCalodEdx:                                  @local::showersl
 ShowerSlidingStandardCalodEdx.PFParticleModuleLabel:            "pandoraGausCryo0"
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshower_stan:                                        @local::standard_shower
+standard_sbnshower_stan:                                        @local::standard_tracs_shower
 standard_sbnshower_stan.ShowerFinderTools:                      [  @local::ShowerStartPositionFinder
                                                                   ,@local::ShowerDirectionFinder
                                                                   ,@local::ShowerEnergyFinder
