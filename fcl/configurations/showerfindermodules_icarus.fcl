@@ -13,15 +13,9 @@ ShowerDirectionFinder.PFParticleModuleLabel:                    "pandoraGausCryo
 ShowerEnergyFinder:                                             @local::showerlinearenergy
 ShowerEnergyFinder.PFParticleModuleLabel:                       "pandoraGausCryo0"
                          
-ShowerInitialTrackFinder:                                       @local::showertrackfinder
-ShowerInitialTrackFinder.PFParticleModuleLabel:                 "pandoraGausCryo0"
-                         
 ShowerdEdxFinder:                                               @local::showerstandardcalodedx
 ShowerdEdxFinder.PFParticleModuleLabel:                         "pandoraGausCryo0"
 ShowerdEdxFinder.CalorimetryAlg:                                @local::icarus_calorimetryalgmc
-           
-ShowerTrackDirectionFinder:                                     @local::showertrackdirection
-ShowerTrackDirectionFinder.PFParticleModuleLabel:               "pandoraGausCryo0"
 
 ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajectorypointdirection
 ShowerTrackTrajectoryPointDirection.PFParticleModuleLabel:      "pandoraGausCryo0"
@@ -35,37 +29,14 @@ Shower2DLinearRegressionTrackHitFinder.PFParticleModuleLabel:   "pandoraGausCryo
 ShowerPMATrackfinder:                                           @local::showerpmatrackfinder
 ShowerPMATrackfinder.PFParticleModuleLabel:                     "pandoraGausCryo0"
 
-ShowerPandoraSlidingFitTrackFinder:                             @local::showerpandoraslidingfittrackfinder
-ShowerPandoraSlidingFitTrackFinder.PFParticleModuleLabel:       "pandoraGausCryo0"
-
 Shower3DTrackHitFinder:                                         @local::shower3Dtrackhitfinder
 Shower3DTrackHitFinder.PFParticleModuleLabel:                   "pandoraGausCryo0"
-
-ShowerTrackTrajToSpacePoint:                                    @local::showertracktrajtospacepoint
-ShowerTrackTrajToSpacePoint.PFParticleModuleLabel:              "pandoraGausCryo0"
-
-ShowerTrackHitDirection:                                        @local::showertrackhitdirection
-ShowerTrackHitDirection.PFParticleModuleLabel:                  "pandoraGausCryo0"
-
-ShowerTrackSpacePointDirection:                                 @local::showertrackspacepointdirection 
-ShowerTrackSpacePointDirection.PFParticleModuleLabel:           "pandoraGausCryo0"
 
 ShowerSlidingStandardCalodEdx:                                  @local::showerslidingstandardcalodedx
 ShowerSlidingStandardCalodEdx.PFParticleModuleLabel:            "pandoraGausCryo0"
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshowerhitremov:                                     @local::standard_sbnshower
-standard_sbnshowerhitremov.ShowerFinderTools:                   [  @local::ShowerStartPositionFinder
-                                                                  ,@local::ShowerDirectionFinder
-                                                                  ,@local::ShowerEnergyFinder
-                                                                  ,@local::Shower3DTrackHitFinder
-                                                                  ,@local::ShowerPandoraSlidingFitTrackFinder
-                                                                  ,@local::ShowerTrackTrajToSpacePoint
-                                                                  ,@local::ShowerdEdxFinder
-                                                                ]
-standard_sbnshowerhitremov.Verbose:                             true
-
-standard_sbnshower_stan:                                        @local::standard_sbnshower
+standard_sbnshower_stan:                                        @local::standard_shower
 standard_sbnshower_stan.ShowerFinderTools:                      [  @local::ShowerStartPositionFinder
                                                                   ,@local::ShowerDirectionFinder
                                                                   ,@local::ShowerEnergyFinder
