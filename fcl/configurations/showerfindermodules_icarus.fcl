@@ -3,20 +3,6 @@
 
 BEGIN_PROLOG
 
-
-ShowerStartPositionFinder:                                      @local::showerstartposition
-ShowerStartPositionFinder.PFParticleModuleLabel:                "pandoraGausCryo0"
-                         
-ShowerDirectionFinder:                                          @local::showerpcadirection
-ShowerDirectionFinder.PFParticleModuleLabel:                    "pandoraGausCryo0"
-                         
-ShowerEnergyFinder:                                             @local::showerlinearenergy
-ShowerEnergyFinder.PFParticleModuleLabel:                       "pandoraGausCryo0"
-                         
-ShowerdEdxFinder:                                               @local::showerstandardcalodedx
-ShowerdEdxFinder.PFParticleModuleLabel:                         "pandoraGausCryo0"
-ShowerdEdxFinder.CalorimetryAlg:                                @local::icarus_calorimetryalgmc
-
 ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajectorypointdirection
 ShowerTrackTrajectoryPointDirection.PFParticleModuleLabel:      "pandoraGausCryo0"
 
@@ -26,25 +12,10 @@ ShowerSmartTrackTrajectoryPointDirection.PFParticleModuleLabel: "pandoraGausCryo
 Shower2DLinearRegressionTrackHitFinder:                         @local::shower2Dlinearregressiontrackhitfinder 
 Shower2DLinearRegressionTrackHitFinder.PFParticleModuleLabel:   "pandoraGausCryo0"
 
-ShowerPMATrackfinder:                                           @local::showerpmatrackfinder
-ShowerPMATrackfinder.PFParticleModuleLabel:                     "pandoraGausCryo0"
-
-Shower3DTrackHitFinder:                                         @local::shower3Dtrackhitfinder
-Shower3DTrackHitFinder.PFParticleModuleLabel:                   "pandoraGausCryo0"
-
 ShowerSlidingStandardCalodEdx:                                  @local::showerslidingstandardcalodedx
 ShowerSlidingStandardCalodEdx.PFParticleModuleLabel:            "pandoraGausCryo0"
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
 standard_sbnshower_stan:                                        @local::standard_tracs_shower
-standard_sbnshower_stan.ShowerFinderTools:                      [  @local::ShowerStartPositionFinder
-                                                                  ,@local::ShowerDirectionFinder
-                                                                  ,@local::ShowerEnergyFinder
-                                                                  ,@local::Shower3DTrackHitFinder
-                                                                  ,@local::ShowerPMATrackfinder
-                                                                  ,@local::ShowerdEdxFinder                                         
-                                                                ]
-standard_sbnshower_stan.SBNShower.AllowPartialShowers:          false
-standard_sbnshower_stan.SBNShower.Verbose:                      true
 
 END_PROLOG
