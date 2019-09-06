@@ -272,7 +272,7 @@ icarus_reco_pandoraGaus:          [ pandoraGaus,
 
 icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
                                     pandoraTrackGausCryo0,
-                                    pandoraShowerGausCryo0,
+#                                    pandoraShowerGausCryo0,
                                     pandoraKalmanTrackGausCryo0
 #,                                    mcsICARUSGausCryo0
 #                                    ,mcsstandardGausCryo0  
@@ -280,7 +280,7 @@ icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
 
 icarus_reco_pandoraGausCryo1:     [ pandoraGausCryo1,
                                     pandoraTrackGausCryo1,
-                                    pandoraShowerGausCryo1,
+#                                    pandoraShowerGausCryo1,
                                     pandoraKalmanTrackGausCryo1
 #,                                    mcsICARUSGausCryo1
 #                                    ,mcsstandardGausCryo1  
@@ -313,14 +313,14 @@ icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
                                     @sequence::icarus_reco_cluster3DCryo0,
-                                    @sequence::icarus_reco_pandoraGausCryo0 ]
-#                                    SBNShowerGausCryo0 ]
+                                    @sequence::icarus_reco_pandoraGausCryo0,
+                                    SBNShowerGausCryo0 ]
 
 icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
                                     @sequence::icarus_reco_SigProcTPC3Gauss,
                                     @sequence::icarus_reco_cluster3DCryo1,
-                                    @sequence::icarus_reco_pandoraGausCryo1 ]
-#                                    SBNShowerGausCryo1 ]
+                                    @sequence::icarus_reco_pandoraGausCryo1,
+                                    SBNShowerGausCryo1 ]
 
 icarus_reco_raw_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Raw,
                                     @sequence::icarus_reco_SigProcTPC1Raw,
@@ -552,7 +552,29 @@ icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.options.showerFromPF:       
 ### Definitions for shower finding (both single and by cryostat)
 icarus_reco_producers.SBNShowerGaus.PFParticleModuleLabel:                                "pandoraGaus"
 icarus_reco_producers.SBNShowerGausCryo0.PFParticleModuleLabel:                           "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[0].PFParticleModuleLabel:      "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[0].TRACSAlg.HitModuleLabel:    "cluster3DCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[0].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[1].PFParticleModuleLabel:      "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[1].TRACSAlg.HitModuleLabel:    "cluster3DCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[1].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[2].PFParticleModuleLabel:      "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[3].PFParticleModuleLabel:      "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[3].TRACSAlg.HitModuleLabel:    "cluster3DCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[3].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
 icarus_reco_producers.SBNShowerGausCryo1.PFParticleModuleLabel:                           "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[0].PFParticleModuleLabel:      "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[0].TRACSAlg.HitModuleLabel:    "cluster3DCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[0].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[1].PFParticleModuleLabel:      "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[1].TRACSAlg.HitModuleLabel:    "cluster3DCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[1].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[2].PFParticleModuleLabel:      "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[3].PFParticleModuleLabel:      "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[3].TRACSAlg.HitModuleLabel:    "cluster3DCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[3].TRACSAlg.PFParticleModuleLabel: "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
 
 ### Definitions for MCS modules for cryostat-level reconstruction by cryostat
 icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                                "pandoraTrackICARUSCryo0"
