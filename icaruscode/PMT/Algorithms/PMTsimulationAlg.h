@@ -28,6 +28,8 @@
 
 // framework libraries
 #include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/Table.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // CLHEP libraries
@@ -356,6 +358,37 @@ namespace icarus {
      * of the noise.
      * 
      * 
+     * Photoelectrons
+     * ---------------
+     * 
+     * The response of the PMT to a single photoelectron is a fixed shape
+     * described in `icarus:opdet::PhotoelectronPulseWaveform`.
+     * 
+     * To account for gain fluctuations, that shape is considered to correspond
+     * to a nominal gain (`PMTspecs.gain` configuration parameter), which is
+     * then fluctuated to obtain the effective gain. This feature can be
+     * disabled by setting configuration parameter `FluctuateGain` to `false`.
+     * The approximation used here is that the fluctuation is entirely due to
+     * the first stage of multiplication. The gain on the first stage is
+     * described as a random variable with Poisson distribution around the mean
+     * gain. The gain on a single photoelectron at the first stage is, in fact,
+     * an integral number in each case.
+     * The time spread of the signal may be increased by the difference in time
+     * of the different branches of the multiplication avalanche. Therefore, 
+     * increasing or decreasing the number of branches, as it is done by
+     * changing the gain of the first stage, the time evolution of the signal
+     * will also be likewise affected.
+     * At this time we do not take this aspect into account in the simulation.
+     * For the nominal settings of a Hamamatsu 5912 photomultiplier
+     * (gain 10 ^7^, high multiplication on the first stage) the gain at the
+     * first stage is around 20, causing a fluctuation of about 20%.
+     * If the multiplication were equally distributed across the stages, that
+     * fluctuation would be almost 45%.
+     * 
+     * The first stage gain is computed by
+     * `icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::multiplicationStageGain()`.
+     * 
+     * 
      * Dark noise
      * -----------
      * 
@@ -375,6 +408,34 @@ namespace icarus {
      * standard deviation, controlled by the configuration parameter `AmpNoise`.
      * No noise correlation is simulated neither in time nor in space.
      * 
+     * 
+     * Configuration
+     * ==============
+     * 
+     * PMT specifications
+     * -------------------
+     * 
+     * PMT specifications are used to evaluate the variance of the gain.
+     * The details of the calculation are documented in
+     * `icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::multiplicationStageGain()`.
+     * 
+     * The available parameters include:
+     * 
+     * * `gain` (default: `1e7`): the nominal gain of the PMT; this is just a
+     *     reference value.
+     * * `voltageDistribution` is a sequence of values, one for each stage of
+     *     the multiplication chain of the PMT. Each number represents the
+     *     relative size of the resistance that determines the fall of the
+     *     potential on that stage. Only the stages that contribute to the gain
+     *     need to be included. The absolute value of each element is
+     *     inconsequential. For example, a 10-stage PMT with the first stage
+     *     having twice the resistance of all the other would be represented by
+     *     the setting `[ 2, 1, 1, 1, 1, 1, 1, 1, 1, 1 ]`.
+     * * `dynodeK` (default: `0.75`) represents the dependence of the gain of
+     *     a stage on the potential drop:
+     *     @f$ \mu_{i} \propto (\Delta V_{i})^{k} @f$ (with @f$ \mu_{i} @f$ the
+     *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
+     *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
      * 
      * Structure of the algorithm
      * ===========================
@@ -398,6 +459,63 @@ namespace icarus {
     
       /// Type holding all configuration parameters for this algorithm.
       struct ConfigurationParameters_t {    
+        
+        struct PMTspecs_t {
+          
+          /// Voltage distribution of the PMT. Each number represents the
+          /// relative weight of the resistor between the two arms of a
+          /// multiplication stage.
+          std::vector<double> voltageDistribution;
+          
+          /// Gain from stage with voltage dV is proportional to dV^K.
+          double dynodeK;
+          
+          double gain; ///< Total typical gain of a PMT.
+          
+          /**
+           * @brief Returns the gain of the specified multiplication stage.
+           * @param i index of multiplication stage (default: first, `1`)
+           * 
+           * The gain is assumed to be the product of gains from each
+           * multiplication stage. The stages are supposed to be connected
+           * by @f$ N @f$ resistors of known value, whose weight relative to the
+           * total (series) resistance is in `PMTvoltageDistribution`.
+           * The total gain (known from `gain`) is:
+           * @f[ \mu = \prod_{i} \mu_{i} @f]
+           * and the gain of each stage @f$ i @f$ is
+           * @f[ \mu_{i} = a (\Delta V_{i})^{k} @f]
+           * with @f$ k @f$ a known constant (`dynodeK`) and @f$ a @f$ an
+           * unknown one. Considered the total applied voltage (cathode to last
+           * dynode) to be @f$ \Delta V @f$, the total resistance
+           * @f$ R = \sum_{i} R_{i} @f$ and the weight of each stage
+           * @f$ \rho_{i} = R_{i} / R @f$ (stored in `PMTvoltageDistribution`),
+           * the potential on stage @f$ i @f$ is
+           * @f[ \Delta V_{i} = \Delta V \rho_{i} @f]
+           * (supporting a circuit current of @f$ \Delta V / R @f$) and
+           * therefore
+           * @f[ \mu = \prod_{i} a (\Delta V \rho_{i})^{k} @f]
+           * that allows to find
+           * @f[ a \Delta V^{k} = \sqrt[N]{\frac{\mu}{(\prod_{i} \rho_{i})^{k}}} @f]
+           * With this constant known, the gain of each stage is also known:
+           * @f[ \mu_{i} = a (\Delta V)^{k} (\rho_{i})^{k} @f]
+           * 
+           * This function returns @f$ \mu_{i} @f$, with `i` starting from `1`
+           * to `nDynodes()` included.
+           */
+          double multiplicationStageGain(unsigned int i = 1) const;
+          
+          /// Returns the gain from the first stage of PMT multiplication.
+          double firstStageGain() const { return multiplicationStageGain(1U); }
+          
+          /// Number of dynodes in the PMTs.
+          unsigned int nDynodes() const { return voltageDistribution.size(); }
+          
+          /// @}
+          
+          /// Sets `voltageDistribution` by stealing and normalizing `Rs`.
+          void setVoltageDistribution(std::vector<double>&& Rs);
+          
+        }; // struct PMTspecs_t
         
         
         /// @{
@@ -426,7 +544,9 @@ namespace icarus {
         ADCcount baseline; //waveform baseline
         ADCcount ampNoise; //amplitude of gaussian noise
         hertz darkNoiseRate;
-        float saturation; //equivalent to the number of p.e. that saturates the electronic signal	
+        float saturation; //equivalent to the number of p.e. that saturates the electronic signal
+        PMTspecs_t PMTspecs; ///< PMT specifications.
+        bool doGainFluctuations; ///< Whether to simulate fain fluctuations.
         /// @}
         
         /// @{
@@ -435,9 +555,19 @@ namespace icarus {
         
         detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
         detinfo::DetectorClocks const* timeService = nullptr; ///< DetectorClocks service provider.
-        CLHEP::HepRandomEngine* randomEngine = nullptr; ///< Main random stream engine.
-        CLHEP::HepRandomEngine* darkNoiseRandomEngine = nullptr; ///< Dark noise random stream engine.
-        CLHEP::HepRandomEngine* elecNoiseRandomEngine = nullptr; ///< Electronics noise random stream engine.
+        
+        ///< Main random stream engine.
+        CLHEP::HepRandomEngine* randomEngine = nullptr;
+        
+        ///< Random stream engine for gain fluctuations.
+        CLHEP::HepRandomEngine* gainRandomEngine = nullptr;
+        
+        ///< Dark noise random stream engine.
+        CLHEP::HepRandomEngine* darkNoiseRandomEngine = nullptr;
+        
+        ///< Electronics noise random stream engine.
+        CLHEP::HepRandomEngine* elecNoiseRandomEngine = nullptr;
+        
         /// @}
         
         /// @{
@@ -446,6 +576,7 @@ namespace icarus {
         std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
         int expectedPulsePolarity() const
           { return ((ADC * meanAmplitude) < 0.0_pC)? -1: +1; }
+        
         /// @}
         
       }; // ConfigurationParameters_t
@@ -486,6 +617,7 @@ namespace icarus {
         private:
       /// Type internally used for storing waveforms.
       using Waveform_t = std::vector<ADCcount>;
+      using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
       
       ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
     
@@ -505,7 +637,8 @@ namespace icarus {
 
     void AddSPE(tick time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
     /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-    void AddPhotoelectrons(tick time_bin, unsigned int n, Waveform_t& wave) const;
+    void AddPhotoelectrons
+      (tick time_bin, WaveformValue_t n, Waveform_t& wave) const;
     
     
     void AddNoise(Waveform_t& wave); //add noise to baseline
@@ -567,6 +700,29 @@ namespace icarus {
     class PMTsimulationAlgMaker {
       
          public:
+      struct PMTspecConfig {
+        using Name = fhicl::Name;
+        using Comment = fhicl::Comment;
+        
+        fhicl::Atom<double> DynodeK {
+          Name("DynodeK"),
+          Comment("exponent to the voltage in multiplication gain expression"),
+          0.75 // middle of Hamamatsu 5912 range [ 0.7 -- 0.8 ]
+          };
+        fhicl::Sequence<double> VoltageDistribution {
+          Name("VoltageDistribution"),
+          Comment("voltage distribution (relative resistor value)"),
+          { 17.4, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0, 2.4 }
+          // Hamamatsu 5912
+          };
+        fhicl::Atom<double> Gain {
+          Name("Gain"),
+          Comment("average total gain (from one photoelectron to full signal)"),
+          1.0e7
+          };
+        
+      }; // struct PMTspecConfig
+      
       struct Config {
         using Name = fhicl::Name;
         using Comment = fhicl::Comment;
@@ -618,6 +774,15 @@ namespace icarus {
           Name("QE"),
           Comment("total photoelectron quantum efficiency")
           // mandatory
+          };
+        fhicl::Table<PMTspecConfig> PMTspecs {
+          Name("PMTspecs"),
+          Comment("collection of PMT characteristics"),
+          };
+        fhicl::Atom<bool> FluctuateGain {
+          Name("FluctuateGain"),
+          Comment("include gain fluctuation in the photoelectron response"),
+          true
           };
         
         //
@@ -769,7 +934,7 @@ void icarus::opdet::DiscretePhotoelectronPulse::dump(Stream&& out,
 {
   out << firstIndent << "Sampled pulse waveform " << pulseLength()
     << " samples long (" << duration()
-    << " time units long, sampled at " << samplingFrequency()
+    << " long, sampled at " << samplingFrequency()
     << "); pulse shape:"
     << "\n" << indent;
   shape().dump(std::forward<Stream>(out), indent + "  ", "");
@@ -784,14 +949,17 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
 {
   out
-            << indent << "Baseline:          " << fParams.baseline
-    << '\n' << indent << "ReadoutWindowSize: " << fParams.readoutWindowSize << " ticks"
-    << '\n' << indent << "PreTrigFraction:   " << fParams.pretrigFraction
-    << '\n' << indent << "ThresholdADC:      " << fParams.thresholdADC
-    << '\n' << indent << "Saturation:        " << fParams.saturation << " p.e."
-    << '\n' << indent << "PulsePolarity:     " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
-    << '\n' << indent << "Sampling:          " << fSampling
-    << '\n' << indent << "Samples/waveform:  " << fNsamples << " ticks"
+            << indent << "Baseline:            " << fParams.baseline
+    << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
+    << '\n' << indent << "PreTrigFraction:     " << fParams.pretrigFraction
+    << '\n' << indent << "ThresholdADC:        " << fParams.thresholdADC
+    << '\n' << indent << "Saturation:          " << fParams.saturation << " p.e."
+    << '\n' << indent << "doGainFluctuations:  "
+      << std::boolalpha << fParams.doGainFluctuations
+    << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
+    << '\n' << indent << "Sampling:            " << fSampling
+    << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
+    << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     ;
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
