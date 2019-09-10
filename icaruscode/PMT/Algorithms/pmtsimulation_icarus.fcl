@@ -40,7 +40,7 @@ icarus_pmtsimulationalg_standard: {
   RiseTime:                  3.8            #ns
   MeanAmplitude:             0.9            #in pC
   AmpNoise:                  1.0            #in ADC
-  DarkNoiseRate:             1000.0         #in Hz
+  DarkNoiseRate:             1600.0         # in Hz; from CERN test stand measurement
 
   ##This is the readout window size for each "trigger" on the electronics
   ReadoutWindowSize:         2000           #ticks (if 2ns each --> 4us)
