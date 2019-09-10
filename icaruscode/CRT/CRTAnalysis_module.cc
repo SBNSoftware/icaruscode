@@ -3,7 +3,7 @@
  * @brief  Access CRT data and reco products and compare to MCTruth info 
  * @author Chris Hilgenberg (Chris.Hilgenberg@colostate.edu)
  * 
- * The last revision of this code was done in October 2018 with LArSoft v07_06_01.
+ * The last revision of this code was done in September 2019 with LArSoft v08_30_00.
  */
 
 // LArSoft includes
@@ -242,7 +242,7 @@ namespace crt {
 
     /// @name The variables that will go into the CosmicDisplay n-tuple.
     /// @{
-    static const int LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
+    static constexpr double LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
     //static const int kMaxSeg = 4000;
     int        fCDEvent;
     int        fCDTrackID;
@@ -333,13 +333,15 @@ namespace crt {
     vector<vector<double>> fRegExitXYZT;
     vector<vector<double>> fRegEntrySlope;
     vector<vector<double>> fRegExitSlope;
-    vector<int>            fRegOpDetID;
-    vector<double>         fRegDistToOpDet;
-    vector<vector<double>> fRegOpDetXYZT;
+    vector<int>            fRegEnterOpDetID;
+    vector<double>         fRegEnterDistToOpDet;
+    vector<vector<double>> fRegEnterOpDetXYZT;
+    vector<int>            fRegExitOpDetID;
+    vector<double>         fRegExitDistToOpDet;
+    vector<vector<double>> fRegExitOpDetXYZT;
 
     //CRT data product vars
-    //static const int kDetMax = 64;
-    int      fDetEvent;
+    //int      fDetEvent;
     int      fNChan; ///< number of channels above threshold for this front-end board readout
     int      fEntry; ///< front-end board entry number (reset for each event)
     double      fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
@@ -355,32 +357,24 @@ namespace crt {
     vector<int> fADC;///< signal amplitude
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
-    /*int      fChan[kDetMax]; ///< front-end board channel (0-31 or 0-63)
-    double      fT0[kDetMax]; ///< signal time w.r.t. global event time
-    double      fT1[kDetMax]; ///< signal time w.r.t. PPS
-    int      fADC[kDetMax]; ///< signal amplitude
-    int      fTrackID[kDetMax]; ///< track ID of particle that produced the signal
-    int      fDetPDG[kDetMax]; */
 
     //CRT hit product vars
-    int       fHitEvent;
-    float    fXHit; ///< reconstructed X position of CRT hit (cm)
-    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    float    fXErrHit; ///< stat error of CRT hit reco X (cm)
-    float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
-    float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    int32_t    fT0Hit; ///< hit time w.r.t. global event time
-    int32_t    fT1Hit; ///< hit time w.r.t. PPS
-    //double    fT0CorrHit;
-    //double    fT1CorrHit;
-    int       fHitReg; ///< region code of CRT hit
-    int       fHitSubSys;
-    int       fNHit; ///< number of CRT hits for this event
-    vector<int> fHitTrk;
-    vector<int> fHitPDG;
-    int       fHitStrip;
-    int       fHitMod;
+    int                 fNHit; ///< number of CRT hits for this event
+    vector<float>       fXHit; ///< reconstructed X position of CRT hit (cm)
+    vector<float>       fYHit; ///< reconstructed Y position of CRT hit (cm)
+    vector<float>       fZHit; ///< reconstructed Z position of CRT hit (cm)
+    vector<float>       fXErrHit; ///< stat error of CRT hit reco X (cm)
+    vector<float>       fYErrHit; ///< stat error of CRT hit reco Y (cm)
+    vector<float>       fZErrHit; ///< stat error of CRT hit reco Z (cm)
+    vector<int32_t>     fT0Hit; ///< hit time w.r.t. global event time
+    vector<int32_t>     fT1Hit; ///< hit time w.r.t. PPS
+    vector<int>         fHitReg; ///< region code of CRT hit
+    vector<int>         fHitSubSys;
+    vector<float>       fHitPE;
+    vector<vector<int>> fHitTrk;
+    vector<vector<int>> fHitPDG;
+    vector<vector<int>> fHitStrip;
+    vector<vector<int>> fHitMod;
 
     // truth CRT hit vars
     int       fTrueHitEvent;
@@ -611,9 +605,12 @@ namespace crt {
     fRegionsNtuple->Branch("trackID",              &fRegTrkID,           "trackID/I");
     fRegionsNtuple->Branch("eDep",                 &fRegEDep);
     fRegionsNtuple->Branch("dL",                   &fRegdL);
-    fRegionsNtuple->Branch("opDetID",              &fRegOpDetID);
-    fRegionsNtuple->Branch("distToOpDet",          &fRegDistToOpDet);
-    fRegionsNtuple->Branch("opDetXYZT",            &fRegOpDetXYZT);
+    fRegionsNtuple->Branch("opDetIDEnter",         &fRegEnterOpDetID);
+    fRegionsNtuple->Branch("distToOpDetEnter",     &fRegEnterDistToOpDet);
+    fRegionsNtuple->Branch("opDetXYZTEnter",       &fRegEnterOpDetXYZT);
+    fRegionsNtuple->Branch("opDetIDExit",          &fRegExitOpDetID);
+    fRegionsNtuple->Branch("distToOpDetExit",      &fRegExitDistToOpDet);
+    fRegionsNtuple->Branch("opDetXYZTExit",        &fRegExitOpDetXYZT);
     fRegionsNtuple->Branch("entryPE",              &fRegEntryPE);
     fRegionsNtuple->Branch("exitPE",               &fRegExitPE);
     fRegionsNtuple->Branch("entryXYZT",            &fRegEntryXYZT);
@@ -622,7 +619,7 @@ namespace crt {
     fRegionsNtuple->Branch("exitSlope",            &fRegExitSlope);
 
     // Define the branches of our DetSim n-tuple 
-    fDetSimNtuple->Branch("event",                 &fDetEvent,          "event/I");
+    fDetSimNtuple->Branch("event",                 &fEvent,             "event/I");
     fDetSimNtuple->Branch("run",                   &fRun,               "run/I");
     fDetSimNtuple->Branch("subRun",                &fSubRun,            "subRun/I");
     fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
@@ -642,26 +639,25 @@ namespace crt {
     fDetSimNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
 
     // Define the branches of our SimHit n-tuple
-    fSimHitNtuple->Branch("event",       &fHitEvent,    "event/I");
+    fSimHitNtuple->Branch("event",       &fEvent,        "event/I");
     fSimHitNtuple->Branch("run",         &fRun,         "run/I");
     fSimHitNtuple->Branch("subRun",      &fSubRun,      "subRun/I");
-    fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
-    fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
-    fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
-    fSimHitNtuple->Branch("z",           &fZHit,        "z/F");
-    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
-    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
-    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
-    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
-    //fSimHitNtuple->Branch("t0Corr",      &fT0CorrHit,   "t0/D");
-    //fSimHitNtuple->Branch("t1Corr",      &fT1CorrHit,   "t1/D");
-    fSimHitNtuple->Branch("region",      &fHitReg,      "region/I");  
-    fSimHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
+    fSimHitNtuple->Branch("nHit",        &fNHit);
+    fSimHitNtuple->Branch("x",           &fXHit);
+    fSimHitNtuple->Branch("y",           &fYHit);
+    fSimHitNtuple->Branch("z",           &fZHit);
+    fSimHitNtuple->Branch("xErr",        &fXErrHit);
+    fSimHitNtuple->Branch("yErr",        &fYErrHit);
+    fSimHitNtuple->Branch("zErr",        &fZErrHit);
+    fSimHitNtuple->Branch("t0",          &fT0Hit);
+    fSimHitNtuple->Branch("t1",          &fT1Hit);
+    fSimHitNtuple->Branch("region",      &fHitReg);
+    fSimHitNtuple->Branch("subSys",      &fHitSubSys);
+    fSimHitNtuple->Branch("pe",          &fHitPE);
     fSimHitNtuple->Branch("trackID",     &fHitTrk);
     fSimHitNtuple->Branch("pdg",         &fHitPDG);
-    fSimHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
-    fSimHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
+    fSimHitNtuple->Branch("modID",       &fHitMod);
+    fSimHitNtuple->Branch("stripID",     &fHitStrip);
 
     // Define the branches of our SimTrueHit n-tuple
     fTrueCRTHitNtuple->Branch("event",       &fTrueHitEvent,    "event/I");
@@ -848,15 +844,6 @@ namespace crt {
 
     std::cout << "event " << fEvent << " with " << particleMap.size() << " MCParticles" << std::endl;
 
-    //get TPC objects
-    /*geo::CryostatGeo const& cryo0 = fGeometryService->Cryostat(0);
-    geo::CryostatGeo const& cryo1 = fGeometryService->Cryostat(1);
-
-    geo::TPCGeo const& tpc00 = cryo0.TPC(0);
-    geo::TPCGeo const& tpc01 = cryo0.TPC(1);
-    geo::TPCGeo const& tpc10 = cryo1.TPC(0);
-    geo::TPCGeo const& tpc11 = cryo1.TPC(1);
-*/
     //loop over MCParticles
     for ( auto const& particle : (*particleHandle) )
     {
@@ -866,7 +853,6 @@ namespace crt {
         const double p = (momentumStart.Vect()).Mag();
         size_t index = 0; //index in PDG list
 
-        //if ( (particle.Process() != "primary"  && 
         //find matching PDG code given current MCParticle PDG
         // use for momentum cuts
         while (it!=fPDGs.end()) {
@@ -881,15 +867,7 @@ namespace crt {
         //check momentum is within region of interest
         if ( fMinMomenta[index] != 0 && p < fMinMomenta[index]) continue;
         if ( fMaxMomenta[index] != 0 && p > fMaxMomenta[index]) continue;
-        //if ( fMinMomenta.size()==1 && fMinMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMinMomenta[0] ) continue;
-        //if ( fMaxMomenta.size()==1 && fMaxMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMaxMomenta[0] ) continue;
-        //if ( abs(fSimPDG)==11 && particle.Process()!="compt" && particle.Process()!="conv" )
-        //  continue;
 
-        //count total number of muons present in event
-        //if (abs(fSimPDG)==13){
-        //    fNmuTruth++;
-       // }
 	fSimTrackID = particle.TrackId();
 
         // the following bit attempts to establish the ancestry
@@ -978,14 +956,18 @@ namespace crt {
         fRegPDG = fSimPDG;;
         fRegTrkID = fSimTrackID;
         fRegRegions.clear();
+        fRegdL.clear();
         fRegEDep.clear();
-        fRegDistToOpDet.clear();
-        fRegOpDetID.clear();
+        fRegEnterDistToOpDet.clear();
+        fRegEnterOpDetID.clear();
+        fRegEnterOpDetXYZT.clear();
+        fRegExitDistToOpDet.clear();
+        fRegExitOpDetID.clear();
+        fRegExitOpDetXYZT.clear();
         fRegEntryXYZT.clear();
         fRegExitXYZT.clear();
         fRegEntryPE.clear();
         fRegExitPE.clear();
-        fRegOpDetXYZT.clear();
         fRegEntrySlope.clear();
         fRegExitSlope.clear();
 
@@ -1030,6 +1012,34 @@ namespace crt {
                 }
                 else reg = -1;
 
+                if( i==0 ) {
+                    //std::cout << "i=0" << std::endl;
+                    fRegEntryXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                    fRegEntryPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
+                    fRegEntrySlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
+		    if(reg>4&&reg<13) {//if starting in LAr
+                        for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
+                        entryT = fRegEntryXYZT[fNReg][3];
+			auto cryo = &cryo0;
+                        if(reg==7||reg==8||reg==12) cryo = &cryo1;
+                        fRegEnterOpDetID.push_back(cryo->GetClosestOpDet(entryPos));
+                        geo::OpDetGeo const& opDet = cryo->OpDet(fRegEnterOpDetID[fNReg]);
+                        opDet.GetCenter(opDetPos);
+                        fRegEnterDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                     + pow(opDetPos[1]-entryPos[1],2)
+                                                     + pow(opDetPos[2]-entryPos[2],2) ));
+                        fRegEnterOpDetXYZT.push_back({});
+                        for (int index=0; index<3; index++) fRegEnterOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                        fRegEnterOpDetXYZT[fNReg].push_back(entryT + fRegEnterDistToOpDet[fNReg]*LAR_PROP_DELAY);
+
+		    }
+		    else {
+                        fRegEnterOpDetID.push_back(-1);
+                        fRegEnterDistToOpDet.push_back(-1);
+                        fRegEnterOpDetXYZT.push_back({-1,-1,-1,-1});
+		    }
+                }
+
                 if(cryo0.ContainsPosition(pointnext)) {
                     if(tpc00.ContainsPosition(pointnext)) regnext = 5;
                     else if(tpc01.ContainsPosition(pointnext)) regnext = 6;
@@ -1041,12 +1051,6 @@ namespace crt {
                     else regnext = 12;
                 }
                 else regnext = -1;
-
-                if( i==0 && (reg>4&&reg<13)) {
-                    fRegEntryXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                    fRegEntryPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                    fRegEntrySlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
-                }
 
                 //check if current point is in fiducial volume
                 if(!fiducial && reg==5)
@@ -1098,75 +1102,115 @@ namespace crt {
                             fiducial = false;
                         }//end if FV
                     }//end if AV
-                    //if reg is in LAr
-                    if(reg>4&&reg<13) { 
-                        fRegRegions.push_back(reg);
 
-                        //if this point last in reg
-                        if(reg!=regnext) {
-                            fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
-                            fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
-                            fRegExitSlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});   
-                        }
-                        //reg==regnext can only be true if last point
-                        else {
-                            fRegExitXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
-                            fRegExitPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),momnext.E()});
-                            fRegExitSlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
-                        }
+                    fRegRegions.push_back(reg);
 
-                        fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
-                                             +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
-                                             +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2) ));
-                        fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
-                        for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
-                        entryT = fRegEntryXYZT[fNReg][3];
-                        fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
-                        geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
-                        opDet.GetCenter(opDetPos);
-                        fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
-                                                     + pow(opDetPos[1]-entryPos[1],2)
-                                                     + pow(opDetPos[2]-entryPos[2],2) ));
-                        fRegOpDetXYZT.push_back({});
-                        for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
-                        fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
-                        fNReg++;
-                    }//end if reg LAr
-
-                    //next point in new region and region is in LAr
-                    if(reg!=regnext && regnext>4&&regnext<13) {                    
+                    //if this point last in reg
+                    if(reg!=regnext) {
+                        fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+                        fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
+                        fRegExitSlope.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()}); 
+      
                         fRegEntryXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
                         fRegEntryPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),mom.E()});
-                        fRegEntrySlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});   
+                        fRegEntrySlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
 
-                        //if last trajectory point only point in its region
-                        if(i==fSimHits-2){
-                            if (regnext==10 || regnext==12)
-                                fRegInactive++;
-                            if (regnext>4&&regnext<9)
-                                fRegActive++;
-                            if (fiducialnext)
-                                fRegFid++;
-                            fRegRegions.push_back(regnext);
-                            fRegExitXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
-                            fRegExitPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),mom.E()});
-                            fRegExitSlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
-                            fRegdL.push_back(0.);
-                            fRegEDep.push_back(fRegEntryPE[fNReg][3]);
-                            for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
-                            entryT = fRegEntryXYZT[fNReg][3];
-                            fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
-                            geo::OpDetGeo const& opDet = cryo0.OpDet(fRegOpDetID[fNReg]);
+                        if(regnext>4&&regnext<13) {//if next region in LAr
+ 			    //std::cout << "regnext" << std::endl;
+                            for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg+1][index];
+                            entryT = fRegEntryXYZT[fNReg+1][3];
+                            auto cryo = &cryo0;
+                            if(regnext==7||regnext==8||regnext==12) cryo = &cryo1;
+                            fRegEnterOpDetID.push_back(cryo->GetClosestOpDet(entryPos));
+			    /*std::cout << "closest opDet to pos{" << entryPos[0] << ","
+                                      << entryPos[1] << "," << entryPos[2] << "}: " 
+                                      << fRegEnterOpDetID.back() << std::endl;
+			    std::cout << "same as opDetID[fNReg]?: " << fRegEnterOpDetID[fNReg+1] << std::endl; 
+                            */geo::OpDetGeo const& opDet = cryo->OpDet(fRegEnterOpDetID[fNReg+1]);
                             opDet.GetCenter(opDetPos);
-                            fRegDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
+                            fRegEnterDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
                                                          + pow(opDetPos[1]-entryPos[1],2)
                                                          + pow(opDetPos[2]-entryPos[2],2) ));
-                            fRegOpDetXYZT.push_back({});
-                            for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
-                            fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
-                            fNReg++;
-                       }//end if last traj point
-                    }//end if next new reg in LAr
+                            fRegEnterOpDetXYZT.push_back({});
+                            for (int index=0; index<3; index++) fRegEnterOpDetXYZT[fNReg+1].push_back(opDetPos[index]);
+                            fRegEnterOpDetXYZT[fNReg+1].push_back(entryT + fRegEnterDistToOpDet[fNReg+1]*LAR_PROP_DELAY);
+                        }
+			else {
+                            fRegEnterOpDetID.push_back(-1);
+                            fRegEnterDistToOpDet.push_back(-1);
+                            fRegEnterOpDetXYZT.push_back({-1,-1,-1,-1});
+			}
+                    }
+                    //reg==regnext can only be true if last point
+                    else {
+                        //std::cout << "last traj point" << std::endl;
+                        fRegExitXYZT.push_back({posnext.X(),posnext.Y(),posnext.Z(),posnext.T()});
+                        fRegExitPE.push_back({momnext.Px(),momnext.Py(),momnext.Pz(),momnext.E()});
+                        fRegExitSlope.push_back({momnext.Px()/momnext.P(),momnext.Py()/momnext.P(),momnext.Pz()/momnext.P()});
+                    }
+
+                    fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
+                                         +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
+                                         +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2) ));
+                    fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
+
+		    if(reg>4&&reg<13) {
+			//std::cout << "reg" << std::endl;
+                        for (int index=0; index<3; index++) entryPos[index] = fRegExitXYZT[fNReg][index];
+                        entryT = fRegEntryXYZT[fNReg][3];
+                        auto cryo = &cryo0;
+                        if(reg==7||reg==8||reg==12) cryo = &cryo1;
+                        fRegExitOpDetID.push_back(cryo->GetClosestOpDet(entryPos));
+                        //std::cout << "cryo->OpDet(fRegExitOpDetID[fNReg])" << std::endl;
+                        geo::OpDetGeo const& opDet = cryo->OpDet(fRegExitOpDetID[fNReg]);
+                        opDet.GetCenter(opDetPos);
+                        fRegExitDistToOpDet.push_back(sqrt(pow(opDetPos[0]-entryPos[0],2)
+                                                     + pow(opDetPos[1]-entryPos[1],2)
+                                                     + pow(opDetPos[2]-entryPos[2],2) ));
+                        fRegExitOpDetXYZT.push_back({});
+                        //std::cout << "fill fRegExitOpDetXYZT[fNReg]" << std::endl;
+                        for (int index=0; index<3; index++) fRegExitOpDetXYZT[fNReg].push_back(opDetPos[index]);
+                        fRegExitOpDetXYZT[fNReg].push_back(entryT + fRegExitDistToOpDet[fNReg]*LAR_PROP_DELAY);
+		    }
+		    else {
+			fRegExitOpDetID.push_back(-1);
+			fRegExitDistToOpDet.push_back(-1);
+			fRegExitOpDetXYZT.push_back({-1,-1,-1,-1});
+		    }
+
+                    fNReg++;
+
+                    //if last trajectory point only point in its region
+                    if(reg!=regnext && i==fSimHits-2){
+			//std::cout << "last traj point and only point in region" << std::endl;
+                        if (regnext==10 || regnext==12)
+                            fRegInactive++;
+                        if (regnext>4&&regnext<9)
+                            fRegActive++;
+                        if (fiducialnext)
+                            fRegFid++;
+
+                        fRegExitXYZT.push_back(fRegEntryXYZT.back());
+                        fRegExitPE.push_back(fRegEntryPE.back());
+                        fRegExitSlope.push_back(fRegEntrySlope.back());
+
+                        fRegdL.push_back(0.);
+                        fRegEDep.push_back(fRegExitPE[fNReg][3]);//deposited energy is same as total particle energy?
+
+                        if(regnext>4&&regnext<13) {
+                            fRegExitOpDetID.push_back(fRegEnterOpDetID.back());
+                            fRegExitDistToOpDet.push_back(fRegEnterDistToOpDet.back());
+                            fRegExitOpDetXYZT.push_back(fRegEnterOpDetXYZT.back());
+                        }
+			else{
+			    fRegExitOpDetID.push_back(-1);
+			    fRegExitDistToOpDet.push_back(-1);
+			    fRegExitOpDetXYZT.push_back({-1,-1,-1,-1});
+			}
+
+                        fNReg++;
+                    }
+
                 }//end if last point in reg or last traj point
 
         }//for trajectory points
@@ -1542,9 +1586,12 @@ namespace crt {
             fRegEntryPE.push_back(regCRTEnterPE[it->first]);
             fRegExitPE.push_back(regCRTExitPE[it->first]);
             fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
-            fRegDistToOpDet.push_back(-1);
-            fRegOpDetID.push_back(-1);
-            fRegOpDetXYZT.push_back({-1,-1,-1,-1});
+            fRegEnterDistToOpDet.push_back(-1);
+            fRegEnterOpDetID.push_back(-1);
+            fRegEnterOpDetXYZT.push_back({-1,-1,-1,-1});
+            fRegExitDistToOpDet.push_back(-1);
+            fRegExitOpDetID.push_back(-1);
+            fRegExitOpDetXYZT.push_back({-1,-1,-1,-1});
             fRegEntrySlope.push_back({-1,-1,-1});
             fRegExitSlope.push_back({-1,-1,-1});
             
@@ -1570,12 +1617,18 @@ namespace crt {
                     tempDoub = fRegdL[i];             // swap dL
                     fRegdL[i] = fRegdL[j];
                     fRegdL[j] = tempDoub;
-                    tempDoub = fRegDistToOpDet[i];    //swap distToOpDet
-                    fRegDistToOpDet[i] = fRegDistToOpDet[j];
-                    fRegDistToOpDet[j] = tempDoub;
-                    tempInt = fRegOpDetID[i];          //swap opDetID
-                    fRegOpDetID[i] = fRegOpDetID[j];
-                    fRegOpDetID[j] = tempInt;
+                    tempDoub = fRegEnterDistToOpDet[i];    //swap distToOpDet
+                    fRegEnterDistToOpDet[i] = fRegEnterDistToOpDet[j];
+                    fRegEnterDistToOpDet[j] = tempDoub;
+                    tempInt = fRegEnterOpDetID[i];          //swap opDetID
+                    fRegEnterOpDetID[i] = fRegEnterOpDetID[j];
+                    fRegEnterOpDetID[j] = tempInt;
+                    tempDoub = fRegExitDistToOpDet[i];    //swap distToOpDet
+                    fRegExitDistToOpDet[i] = fRegExitDistToOpDet[j];
+                    fRegExitDistToOpDet[j] = tempDoub;
+                    tempInt = fRegExitOpDetID[i];          //swap opDetID
+                    fRegExitOpDetID[i] = fRegExitOpDetID[j];
+                    fRegExitOpDetID[j] = tempInt;
                     for (int k=0; k<4; k++) {
                         tempDoub = fRegEntryPE[i][k];   //swap entryPE
                         fRegEntryPE[i][k] = fRegEntryPE[j][k];
@@ -1589,9 +1642,12 @@ namespace crt {
                         tempDoub = fRegExitXYZT[i][k]; //swap exitXYZT
                         fRegExitXYZT[i][k] = fRegExitXYZT[j][k];
                         fRegExitXYZT[j][k] = tempDoub;
-                        tempDoub = fRegOpDetXYZT[i][k];  //swap opDetXYZT
-                        fRegOpDetXYZT[i][k] = fRegOpDetXYZT[j][k];
-                        fRegOpDetXYZT[j][k] = tempDoub;
+                        tempDoub = fRegEnterOpDetXYZT[i][k];  //swap opDetXYZT
+                        fRegEnterOpDetXYZT[i][k] = fRegEnterOpDetXYZT[j][k];
+                        fRegEnterOpDetXYZT[j][k] = tempDoub;
+                        tempDoub = fRegExitOpDetXYZT[i][k];  //swap opDetXYZT
+                        fRegExitOpDetXYZT[i][k] = fRegExitOpDetXYZT[j][k];
+                        fRegExitOpDetXYZT[j][k] = tempDoub;
                         if(k<3) {
                             tempDoub = fRegEntrySlope[i][k];
                             fRegEntrySlope[i][k] = fRegEntrySlope[j][k];
@@ -1616,7 +1672,7 @@ namespace crt {
     if (isCRTDetSim)  {
      std::cout << "about to loop over detsim entries" << std::endl;
      for ( auto const& febdat : (*crtDetSimHandle) ) {
-        fDetEvent       = febdat.Event();
+        //fDetEvent       = febdat.Event();
         fMac5           = febdat.Mac5();
         fChanTrig       = febdat.ChanTrig();
         fEntry          = febdat.Entry();
@@ -1679,13 +1735,30 @@ namespace crt {
     //std::vector<art::Ptr<icarus::crt::CRTHit>> crtSimHits;
     
     bool isCRTSimHit = event.getByLabel(fCRTSimHitProducerLabel, crtSimHitHandle);
-    std::vector<int> ids;
+    //std::vector<int> ids;
     fNHit = 0;
-    if (isCRTSimHit) {
+    if (isCRTSimHit&&(*crtSimHitHandle).size()==0) std::cout << "CRTHit product present but is empty" << std::endl;
+    else if (isCRTSimHit&&(*crtSimHitHandle).size()>0) {
+	fNHit=0;
+	fXHit.clear();
+	fYHit.clear();
+	fZHit.clear();
+	fXErrHit.clear();
+	fYErrHit.clear();
+	fZErrHit.clear();
+	fT0Hit.clear();
+	fT1Hit.clear();
+	fHitReg.clear();
+	fHitSubSys.clear();
+	fHitPE.clear();
+	fHitTrk.clear();
+	fHitPDG.clear();
+	fHitStrip.clear();
+	fHitMod.clear();
 
         //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
         art::FindManyP<icarus::crt::CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitProducerLabel);
-        std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
+        /*std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
 
         for(auto const& dat : data){
           for(auto const& chan : dat->ChanData()){
@@ -1697,30 +1770,53 @@ namespace crt {
 
         std::sort(ids.begin(), ids.end());
         ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-
+        */
         //auto trks = icarus::CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,0);
 
         std::cout << "looping over sim hits..." << std::endl;
-        for ( auto const& hit : *crtSimHitHandle )
+        for ( size_t ihit=0; ihit< crtSimHitHandle->size(); ihit++ )
         {
+	    icarus::crt::CRTHit hit = crtSimHitHandle->at(ihit);
+	    vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(ihit);
+
+	    vector<int> ids;
+	    for(auto const& dat : data){
+                for(auto const& chan : dat->ChanData()){
+                    for(auto const& trkid : chan.TrackID()){
+                        ids.push_back(trkid);
+                    }
+                }
+            }
+
+	    std::sort(ids.begin(), ids.end());
+	    ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+
             fNHit++;
-            fHitEvent = fEvent;
-            fXHit    = hit.x_pos;
-            fYHit    = hit.y_pos;
-            fZHit    = hit.z_pos;
-            fXErrHit = hit.x_err;
-            fYErrHit = hit.y_err;
-            fZErrHit = hit.z_err;
-            fT0Hit   = hit.ts0_ns;
-            fT1Hit   = hit.ts1_ns;
-            //fT0CorrHit = hit.T0Corr();
-            //fT1CorrHit = hit.T1Corr();
+            fXHit.push_back(hit.x_pos);
+            fYHit.push_back(hit.y_pos);
+            fZHit.push_back(hit.z_pos);
+            fXErrHit.push_back(hit.x_err);
+            fYErrHit.push_back(hit.y_err);
+            fZErrHit.push_back(hit.z_err);
+            fT0Hit.push_back(hit.ts0_ns);
+            fT1Hit.push_back(hit.ts1_ns);
+	    fHitPE.push_back(hit.peshit);
+	    fHitStrip.push_back({});
+	    fHitMod.push_back({});
+	    fHitTrk.push_back({});
+            fHitPDG.push_back({});
 
-            int mactmp = hit.feb_id[0];
-            fHitReg  = MacToADReg(mactmp);
-            fHitSubSys = RegToTypeCode(fHitReg);
+	    for(auto const& febs : hit.pesmap) {
+		for(auto const& ch : febs.second) {
+      		    fHitStrip.back().push_back(ChannelToAuxDetSensitiveID(febs.first,ch.first));
+	            fHitMod.back().push_back(MacToAuxDetID(this->fFebMap, febs.first,ch.first));
+                }
+	    }
+            //int mactmp = hit.feb_id[0];
+            fHitReg.push_back(MacToADReg(hit.feb_id[0]));
+            fHitSubSys.push_back(RegToTypeCode(fHitReg.back()));
 
-            auto ittmp = hit.pesmap.find(mactmp);
+            /*auto ittmp = hit.pesmap.find(mactmp);
             if (ittmp==hit.pesmap.end()) {
                 std::cout << "hitreg: " << fHitReg << std::endl;
                 std::cout << "fHitSubSys: "<< fHitSubSys << std::endl;
@@ -1729,22 +1825,24 @@ namespace crt {
                 continue;
             }
             int chantmp = (*ittmp).second[0].first;
-
+*/
             //auto trks = CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,fNHit-1);//hit.TrackID();
-            fHitTrk.clear();
-            fHitPDG.clear();
             for ( auto i=ids.begin(); i!=ids.end(); i++ ) {   
-                fHitTrk.push_back(*i);
-                if ( particleMap.find(fHitTrk.back()) != particleMap.end())
-                    fHitPDG.push_back(particleMap[fHitTrk.back()]->PdgCode());
+                fHitTrk.back().push_back(*i);
+                if ( particleMap.find(fHitTrk.back().back()) != particleMap.end())
+                    fHitPDG.back().push_back(particleMap[fHitTrk.back().back()]->PdgCode());
                 else
-                    fHitPDG.push_back(INT_MAX);
+                    fHitPDG.back().push_back(INT_MAX);
             }
-            fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
-            fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
+            //fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
+            //fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
 
-            fSimHitNtuple->Fill();
+
+            //fSimHitNtuple->Fill();
         }//for CRT Hits
+
+	fSimHitNtuple->Fill();
+
     }//if CRT Hits
 
     else std::cout << "CRTHit products not found! (expected if gen/G4/detsim step)" << std::endl;
