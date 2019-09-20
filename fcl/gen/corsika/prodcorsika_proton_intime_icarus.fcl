@@ -122,12 +122,3 @@ physics.producers.larg4intime.KeepParticlesInVolumes: [
 
 # keep delta rays
 services.LArG4Parameters.KeepEMShowerDaughters: true
-
-# override default TimeOffset and SampleTime for 3 readout windows
-# 0.2ms (g4 rise time) + 1.6384ms (one full drift window) + 4.9152ms (3 readout windows)  
-physics.producers.cosmgen.SampleTime: 6.7536e-3 # [us]
-# start 4.9152ms readout window at -1.6384ms to match data
-physics.producers.cosmgen.TimeOffset: -3.4768e-3 # [us]
-
-# setup services parameters for 3 drift windows
-#include "3drift_services_config_icarus.fcl"
