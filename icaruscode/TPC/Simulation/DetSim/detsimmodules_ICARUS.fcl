@@ -1,4 +1,4 @@
-BEGIN_PROLOG
+	BEGIN_PROLOG
 
 
 NoiseFromHistTool:
@@ -26,7 +26,7 @@ CorrelatedNoiseTool:
   CorrAmpHistogramName:     "hbrms"
   StoreHistograms:          true
 }
-SBNNoiseTool:
+SBNNoiseToolInd1:
 {
   tool_type:                 SBNNoise
   Plane:                     0
@@ -35,7 +35,43 @@ SBNNoiseTool:
   CorrelatedSeed:            1000
   UncorrelatedSeed:          5000
   StoreHistograms:           false
-  NoiseHistFileName:         "FFtsbnEE20M.root"
+  NoiseHistFileName:         "FFTww01m.root"
+
+  CorrelatedHistogramName:   "fftBhisto"
+  UncorrelatedHistogramName: "fftUhisto"
+  TotalRMSHistoName:         "RMShisto"
+  CorrelatedRMSHistoName:    "RMSBhisto"
+  UncorrelatedRMSHistoName:  "RMSUhisto"
+}
+SBNNoiseToolInd2:
+{
+  tool_type:                 SBNNoise
+  Plane:                     1
+  MedianNumBins:             25
+  NoiseRand:                 0.
+  CorrelatedSeed:            1000
+  UncorrelatedSeed:          5000
+  StoreHistograms:           false
+
+  NoiseHistFileName:         "FFTwe10.root"
+
+  CorrelatedHistogramName:   "fftBhisto"
+  UncorrelatedHistogramName: "fftUhisto"
+  TotalRMSHistoName:         "RMShisto"
+  CorrelatedRMSHistoName:    "RMSBhisto"
+  UncorrelatedRMSHistoName:  "RMSUhisto"
+}
+SBNNoiseToolColl:
+{
+  tool_type:                 SBNNoise
+  Plane:                     2
+  MedianNumBins:             25
+  NoiseRand:                 0.
+  CorrelatedSeed:            1000
+  UncorrelatedSeed:          5000
+  StoreHistograms:           false
+
+  NoiseHistFileName:         "FFTwe10.root"
   CorrelatedHistogramName:   "fftBhisto"
   UncorrelatedHistogramName: "fftUhisto"
   TotalRMSHistoName:         "RMShisto"
@@ -61,7 +97,7 @@ standard_simwire:
   TPC:                0
   CompressionType:    "none"
   SimDeadChannels:    false
-  SuppressNoSignal:   false
+  SuppressNoSignal:   true
   SmearPedestals:     true
   Test:               false
   TestWire:           0
@@ -69,7 +105,8 @@ standard_simwire:
   TestCharge:         [ 0. ]
   Sample:             -1
   MakeHistograms:     "true"
-  NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+  #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+NoiseGenToolVec:    [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
 }
 
 icarus_simwire:  @local::standard_simwire
