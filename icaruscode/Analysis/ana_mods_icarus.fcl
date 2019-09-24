@@ -1,0 +1,71 @@
+#include "analysis_icarus.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+process_name: HitEfficiency
+
+#Start each new event with an empty event.
+source:
+{
+	module_type:     RootInput
+  	maxEvents:       10          # Number of events to create
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ 	analyzers:
+ 	{
+ 	  	hitEffAnalysisGauss:       @local::icarus_HitEfficiencyAnalysis
+ 	  	hitEffAnalysisCluster3d:   @local::icarus_HitEfficiencyAnalysis
+ 	  	hitEffAnalysisRaw:         @local::icarus_HitEfficiencyAnalysis
+ 	}
+
+ 	#define the producer and filter modules for this path, order matters, 
+ 	#filters reject all following items.  see lines starting physics.producers below
+ 	ana: [ hitEffAnalysisGauss, hitEffAnalysisCluster3d, hitEffAnalysisRaw ]
+ 	end_paths:     [ana]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ 	out1:
+ 	{
+ 	  	module_type: RootOutput
+ 	  	fileName:    "hitEfficiency_icarus.root"
+ 	  	dataTier:    "reco-simulated"
+ 	  	compressionLevel: 1
+ 	  	fastCloning: false
+ 	}
+}
+
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].OffsetVec: [9, 4, 2]
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].RawDigitLabel:    "rawdigitfilter"
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].WireModuleLabel:  "recowireraw"
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].HitModuleLabel:   "icarushit"
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].MCParticleLabel:  "largeant"
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].SimChannelLabel:  "largeant"
+phsyics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].UseBadChannelDB:  false
+
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].RawDigitLabel:    "rawdigitfilter"
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].WireModuleLabel:  "recowire" #"decon1droi"
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].HitModuleLabel:   "gaushit"
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].MCParticleLabel:  "largeant"
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].SimChannelLabel:  "largeant"
+phsyics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].UseBadChannelDB:  false
+
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].RawDigitLabelVec:        ["rawDigitFilterTPC0","rawDigitFilterTPC1","rawDigitFilterTPC2","rawDigitFilterTPC3"]
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].WireModuleLabelVec:      ["decon1DroiTPC0","decon1DroiTPC1","decon1DroiTPC2","decon1DroiTPC3"]
+physics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].HitModuleLabelVec:       ["gaushitTPC0","gaushitTPC1","gaushitTPC2","gaushitTPC3"]
+phsyics.analyzers.hitEffAnalysisGauss.HitEfficiencyHistogramToolList[0].UseBadChannelDB:      false
+physics.analyzers.hitEffAnalysisCluster3d.HitEfficiencyHistogramToolList[0].RawDigitLabelVec:    ["rawDigitFilterTPC0","rawDigitFilterTPC1","rawDigitFilterTPC2","rawDigitFilterTPC3"]
+physics.analyzers.hitEffAnalysisCluster3d.HitEfficiencyHistogramToolList[0].WireModuleLabelVec:  ["decon1DroiTPC0","decon1DroiTPC1","decon1DroiTPC2","decon1DroiTPC3"]
+physics.analyzers.hitEffAnalysisCluster3d.HitEfficiencyHistogramToolList[0].HitModuleLabelVec:   ["cluster3DCryo0","cluster3DCryo1"]
+phsyics.analyzers.hitEffAnalysisCluster3d.HitEfficiencyHistogramToolList[0].UseBadChannelDB:  false
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].RawDigitLabelVec:          ["rawDigitFilterTPC0","rawDigitFilterTPC1","rawDigitFilterTPC2","rawDigitFilterTPC3"]
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].WireModuleLabelVec:        ["recoWireRawTPC0","recoWireRawTPC1","recoWireRawTPC2","recoWireRawTPC3"]
+physics.analyzers.hitEffAnalysisRaw.HitEfficiencyHistogramToolList[0].HitModuleLabelVec:         ["icarusHitTPC0","icarusHitTPC1","icarusHitTPC2","icarusHitTPC3"]
