@@ -72,22 +72,24 @@ standard_simwire:
     TestCharge:         [ 0. ]
     Sample:             -1
     MakeHistograms:     "true"
-    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-    NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+    # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
+    NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+    # This switches to an updated model, currently under development (Sep 2019), based on FNAL running
+    #NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
 }
 
 icarus_simwire:  @local::standard_simwire
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
 # Below overrides for SBN Noise tool
-icarus_simwire.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+#icarus_simwire.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
 
 icarus_simwire.NoiseGenToolVec[1].Plane:             1
 # Below overrides for SBN Noise model
-icarus_simwire.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+#icarus_simwire.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
 
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
 # Below overrides for SBN Noise model
-icarus_simwire.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+#icarus_simwire.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
 
 END_PROLOG
