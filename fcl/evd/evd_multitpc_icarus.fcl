@@ -1,0 +1,103 @@
+#include "evdservices_icarus.fcl"
+#include "services_icarus.fcl"
+
+process_name: EvdIcarus
+
+services:
+{
+  @table::icarus_disp
+}
+
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+outputs:{}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ producers: {}
+
+ filters:{}
+
+ analyzers:
+ {
+  evdisp:{module_type: EVD}
+ }
+ 
+ #list the modules for this path, order matters, filters reject all following items
+ evd: [ evdisp ] 
+
+ #end_path are things that do not modify art::Event, includes analyzers 
+ #and output modules. all items here can be run simultaneously
+ end_paths: [evd]  
+}
+services.RawDrawingOptions.TotalTicks: 4100
+
+# Some basic overrides to set up basic drawing
+
+services.RawDrawingOptions.DrawRawDataOrCalibWires:        1      # set to zero for raw digits only
+services.RawDrawingOptions.MinimumSignal:                  10     # This sets the minimum ADC value to be displayed in 2D display
+services.RecoDrawingOptions.DrawHits:                      1      # This turns on the drawing of hits in the 2D display
+services.RecoDrawingOptions.DrawPFParticles:               4      # Can be range of numbers, 4 is maximum options 
+services.RecoDrawingOptions.DrawClusters:                  4      # draw with connecting lines & labels
+services.RecoDrawingOptions.DrawTracks:                    3      # Draws "tracks"  
+services.RecoDrawingOptions.DrawProngs:                    3      # Draws "prongs" (which is really the same)
+services.RecoDrawingOptions.DrawTrackTrajectoryPoints:     3      # Draws points associated to tracks
+services.RecoDrawingOptions.Draw2DSlopeEndPoints:          1      # This draws cluster axis in 2D (but there is bug)
+services.RecoDrawingOptions.DrawTrackSpacePoints:          3      # Draws space points
+services.RecoDrawingOptions.DrawVertices:                  3
+services.RecoDrawingOptions.DrawSpacePoints:               3
+
+
+# Set up the display of truth information
+# For 2D display the information is not great
+services.SimulationDrawingOptions.ShowMCTruthVectors:      0
+services.SimulationDrawingOptions.ShowMCTruthTrajectories: true
+services.SimulationDrawingOptions.MinimumEnergyDeposition: 0.0001  # in GeV
+
+# The 3D display has better truth information
+services.SimulationDrawingOptions.ShowSimChannelInfo:      true
+services.SimulationDrawingOptions.ShowSimEnergyInfo:       false
+services.SimulationDrawingOptions.ShowSimPhotonInfo:       false
+
+# Below sets up the 2D viwer to see RawDigit, Wire and Hit data for the multi TPC reconstruction work flow
+# To view the "signgle" reconstruction work flow, replace the multiple names in the braces below with a single name:
+#       For RawDigits --> "rawdigitfilter"
+#       For Wire      --> "decon1droi"
+#       For hits      --> "cluster3d"   (or "gaushit")
+services.RawDrawingOptions.RawDataLabels:     ["rawDigitFilterTPC0","rawDigitFilterTPC1","rawDigitFilterTPC2","rawDigitFilterTPC3"]
+services.RecoDrawingOptions.WireModuleLabels: ["decon1DroiTPC0", "decon1DroiTPC1", "decon1DroiTPC2", "decon1DroiTPC3"] 
+services.RecoDrawingOptions.HitModuleLabels:  ["cluster3DCryo0", "cluster3DCryo1"]
+
+# Below sets up basic drawing of output from pandora (using gauss hits)
+#
+services.RecoDrawingOptions.ClusterModuleLabels:    ["pandoraGausCryo0",      "pandoraGausCryo1"]
+services.RecoDrawingOptions.EndPoint2DModuleLabels: ["pandoraGausCryo0",      "pandoraGausCryo1"]
+services.RecoDrawingOptions.PFParticleModuleLabels: ["pandoraGausCryo0",      "pandoraGausCryo1"]
+services.RecoDrawingOptions.SpacePointModuleLabels: ["pandoraGausCryo0",      "pandoraGausCryo1"] 
+services.RecoDrawingOptions.VertexModuleLabels:     ["pandoraGausCryo0",      "pandoraGausCryo1"]
+services.RecoDrawingOptions.TrackModuleLabels:      ["pandoraTrackGausCryo0", "pandoraTrackGausCryo1"]
+services.RecoDrawingOptions.ProngModuleLabels:      ["pandoraTrackGausCryo0", "pandoraTrackGausCryo1"]
+services.RecoDrawingOptions.EdgeModuleLabels:       [] 
+
+# Set up the optical display for the 3D display
+#
+# Note there are both MC and reconstructed versions to look at, below includes names for switching
+#
+services.RecoDrawingOptions.DrawOpHits:            1
+services.RecoDrawingOptions.OpHitModuleLabels:     ["mcophit"] #["ophit"]
+services.RecoDrawingOptions.DrawOpFlashes:         0
+services.RecoDrawingOptions.OpFlashModuleLabels:   ["opflashTPC0", "opflashTPC1", "opflashTPC2", "opflashTPC3"]
+#services.RecoDrawingOptions.OpFlashModuleLabels:   ["mcopflashTPC0", "mcopflashTPC1", "mcopflashTPC2", "mcopflashTPC3"]
+
+
