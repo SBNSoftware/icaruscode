@@ -3,116 +3,91 @@
 
 NoiseFromHistTool:
 {
-  tool_type:         NoiseFromHist
-  NoiseRand:         0.
-  NoiseHistFileName: "T600noise_corr.root"
-  HistogramName:     "hnoiseI1"
-  HistNormFactor:    0.45  # --> Histogram rms noise = 1
+    tool_type:         NoiseFromHist
+    NoiseRand:         0.
+    NoiseHistFileName: "T600noise_corr.root"
+    HistogramName:     "hnoiseI1"
+    HistNormFactor:    0.45  # --> Histogram rms noise = 1
 }
+
 CorrelatedNoiseTool:
 {
-  tool_type:                CorrelatedNoise
-  Plane:                    0
-  MedianNumBins:            25
-  NoiseRand:                0.
-  CorrelatedSeed:           1000
-  UncorrelatedSeed:         5000
-  IncoherentNoiseFraction:  0.95
-  StoreHistograms:          true
-  NoiseHistFileName:        "T600noise_corr.root"
-  HistogramName:            "hnoiseI1"
+    tool_type:                CorrelatedNoise
+    Plane:                    0
+    MedianNumBins:            25
+    NoiseRand:                0.
+    CorrelatedSeed:           1000
+    UncorrelatedSeed:         5000
+    IncoherentNoiseFraction:  0.95
+    StoreHistograms:          true
+    NoiseHistFileName:        "T600noise_corr.root"
+    HistogramName:            "hnoiseI1"
 
-  CorrAmpHistFileName:      "CorrAmplitude.root"
-  CorrAmpHistogramName:     "hbrms"
-  StoreHistograms:          true
+    CorrAmpHistFileName:      "CorrAmplitude.root"
+    CorrAmpHistogramName:     "hbrms"
+    StoreHistograms:          true
 }
-SBNNoiseToolInd1:
+
+SBNNoiseTool:
 {
-  tool_type:                 SBNNoise
-  Plane:                     0
-  MedianNumBins:             25
-  NoiseRand:                 0.
-  CorrelatedSeed:            1000
-  UncorrelatedSeed:          5000
-  StoreHistograms:           false
-  NoiseHistFileName:         "FFTww01m.root"
-
-  CorrelatedHistogramName:   "fftBhisto"
-  UncorrelatedHistogramName: "fftUhisto"
-  TotalRMSHistoName:         "RMShisto"
-  CorrelatedRMSHistoName:    "RMSBhisto"
-  UncorrelatedRMSHistoName:  "RMSUhisto"
+    tool_type:                 SBNNoise
+    Plane:                     0                 # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           false
+    NoiseHistFileName:         "FFTww01m.root"
+    CorrelatedHistogramName:   "fftBhisto"
+    UncorrelatedHistogramName: "fftUhisto"
+    TotalRMSHistoName:         "RMShisto"
+    CorrelatedRMSHistoName:    "RMSBhisto"
+    UncorrelatedRMSHistoName:  "RMSUhisto"
 }
-SBNNoiseToolInd2:
-{
-  tool_type:                 SBNNoise
-  Plane:                     1
-  MedianNumBins:             25
-  NoiseRand:                 0.
-  CorrelatedSeed:            1000
-  UncorrelatedSeed:          5000
-  StoreHistograms:           false
 
-  NoiseHistFileName:         "FFTwe10.root"
-
-  CorrelatedHistogramName:   "fftBhisto"
-  UncorrelatedHistogramName: "fftUhisto"
-  TotalRMSHistoName:         "RMShisto"
-  CorrelatedRMSHistoName:    "RMSBhisto"
-  UncorrelatedRMSHistoName:  "RMSUhisto"
-}
-SBNNoiseToolColl:
-{
-  tool_type:                 SBNNoise
-  Plane:                     2
-  MedianNumBins:             25
-  NoiseRand:                 0.
-  CorrelatedSeed:            1000
-  UncorrelatedSeed:          5000
-  StoreHistograms:           false
-
-  NoiseHistFileName:         "FFTwe10.root"
-  CorrelatedHistogramName:   "fftBhisto"
-  UncorrelatedHistogramName: "fftUhisto"
-  TotalRMSHistoName:         "RMShisto"
-  CorrelatedRMSHistoName:    "RMSBhisto"
-  UncorrelatedRMSHistoName:  "RMSUhisto"
-}
 WhiteNoiseTool:
 {
-  tool_type:         RandomNoise
+    tool_type:         RandomNoise
 }
 
 NoNoiseTool:
 {
-  tool_type:         NoNoise
+    tool_type:         NoNoise
 }
 
 standard_simwire:
 {
-  module_type:        "SimWireICARUS"
-  DriftEModuleLabel:  "largeant"
-  ProcessAllTPCs:     false
-  Cryostat:           0
-  TPC:                0
-  CompressionType:    "none"
-  SimDeadChannels:    false
-  SuppressNoSignal:   true
-  SmearPedestals:     true
-  Test:               false
-  TestWire:           0
-  TestIndex:          [ 0. ]
-  TestCharge:         [ 0. ]
-  Sample:             -1
-  MakeHistograms:     "true"
-  #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
-NoiseGenToolVec:    [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
+    module_type:        "SimWireICARUS"
+    DriftEModuleLabel:  "largeant"
+    ProcessAllTPCs:     false
+    Cryostat:           0
+    TPC:                0
+    CompressionType:    "none"
+    SimDeadChannels:    false
+    SuppressNoSignal:   true
+    SmearPedestals:     true
+    Test:               false
+    TestWire:           0
+    TestIndex:          [ 0. ]
+    TestCharge:         [ 0. ]
+    Sample:             -1
+    MakeHistograms:     "true"
+    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+    NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
 }
 
 icarus_simwire:  @local::standard_simwire
 
-icarus_simwire.NoiseGenToolVec[0].Plane: 0
-icarus_simwire.NoiseGenToolVec[1].Plane: 1
-icarus_simwire.NoiseGenToolVec[2].Plane: 2
+icarus_simwire.NoiseGenToolVec[0].Plane:             0
+# Below overrides for SBN Noise tool
+icarus_simwire.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+
+icarus_simwire.NoiseGenToolVec[1].Plane:             1
+# Below overrides for SBN Noise model
+icarus_simwire.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+
+icarus_simwire.NoiseGenToolVec[2].Plane:             2
+# Below overrides for SBN Noise model
+icarus_simwire.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
 
 END_PROLOG
