@@ -264,9 +264,8 @@ void TrackHitEfficiencyAnalysis::initializeHists(art::ServiceHandle<art::TFileSe
     fToteVHitEIntVec.resize(fGeometry->Nplanes());
     fHitENEvXZVec.resize(fGeometry->Nplanes());
     fNSimChannelHitsVec.resize(fGeometry->Nplanes());
-fNRecobHitVec.resize(fGeometry->Nplanes());    
-fNFakeHitVec.resize(fGeometry->Nplanes());
-//fNRejectedHitVec.resize(fGeometry->Nplanes());
+    fNRecobHitVec.resize(fGeometry->Nplanes());
+    fNFakeHitVec.resize(fGeometry->Nplanes());
     fHitEfficiencyVec.resize(fGeometry->Nplanes());
     fSimDivHitChgVec.resize(fGeometry->Nplanes());
     fSimDivHitChg1Vec.resize(fGeometry->Nplanes());
@@ -295,8 +294,7 @@ fNFakeHitVec.resize(fGeometry->Nplanes());
         fDeltaMidTDCVec.at(plane)        = dir.make<TH1F>(("DeltaMid"    + std::to_string(plane)).c_str(), ";# hits",                 50,  -25.,  25.);
         fNSimChannelHitsVec.at(plane)    = dir.make<TH1F>(("NSimChan"    + std::to_string(plane)).c_str(), ";# hits",                100,    0.,  1200.);
         fNRecobHitVec.at(plane)          = dir.make<TH1F>(("NRecobHit"   + std::to_string(plane)).c_str(), ";# hits",                100,    0.,  1200.);
-fNFakeHitVec.at(plane)          = dir.make<TH1F>(("NFakeHit"   + std::to_string(plane)).c_str(), ";# hits",                100,    0.,  50.);
-       // fNRejectedHitVec.at(plane)          = dir.make<TH1F>(("NRejectedHit"   + std::to_string(plane)).c_str(), ";# hits",                100,    0.,  1200.);
+        fNFakeHitVec.at(plane)           = dir.make<TH1F>(("NFakeHit"    + std::to_string(plane)).c_str(), ";# hits",                100,    0.,  50.);
         fHitEfficiencyVec.at(plane)      = dir.make<TH1F>(("PlnEffic"    + std::to_string(plane)).c_str(), ";# hits",                101,    0.,  1.01);
         fSimDivHitChgVec.at(plane)       = dir.make<TH1F>(("SimDivHit"   + std::to_string(plane)).c_str(), ";# e / SummedADC",       200,    0.,  200.);
         fSimDivHitChg1Vec.at(plane)      = dir.make<TH1F>(("SimDivHit1"  + std::to_string(plane)).c_str(), ";# e / Integral",        200,    0.,  200.);
@@ -451,18 +449,14 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     // Now start a loop over the individual TPCs to build out the structures for RawDigits and Wires
     for(size_t tpcID = 0; tpcID < fRawDigitProducerLabelVec.size(); tpcID++)
     {
-//std::cout <<  "TPC " << tpcID << " label " << fRawDigitProducerLabelVec[tpcID] << std::endl;
-//std::cout <<  "TPC " << tpcID << " wire label " << fWireProducerLabelVec[tpcID] << std::endl;
         art::Handle< std::vector<raw::RawDigit> > rawDigitHandle;
         event.getByLabel(fRawDigitProducerLabelVec[tpcID], rawDigitHandle);
-//std::cout << " rawDigitHandle? " << rawDigitHandle.isValid() << std::endl;
         
         art::Handle< std::vector<recob::Wire> > wireHandle;
         event.getByLabel(fWireProducerLabelVec[tpcID], wireHandle);
-    //    std::cout << " wireHandle? " << wireHandle.isValid() << std::endl;
+
         if (!rawDigitHandle.isValid() || !wireHandle.isValid()) return;
         
-//std::cout << " valid labels " << std::endl;
         for(const auto& wire : *wireHandle) channelToWireMap[wire.Channel()] = &wire;
         
         for(const auto& rawDigit : *rawDigitHandle) chanToRawDigitMap[rawDigit.Channel()] = &rawDigit;
@@ -489,16 +483,17 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     
     for(const auto& mcParticle : *mcParticleHandle) {
       trackIDToMCParticleMap[mcParticle.TrackId()] = &mcParticle;
-     // std::cout << " MCP process " << mcParticle.Process() << std::endl;
  }
     
     const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
-    std::vector<int> nSimChannelHitVec = {0,0,0};
-    std::vector<int> nRecobHitVec      = {0,0,0};
- std::vector<int> nFakeHitVec      = {0,0,0};
- std::vector<int> nSimulatedWiresVec      = {0,0,0};
-unsigned int lastwire=-1;
+    std::vector<int> nSimChannelHitVec  = {0,0,0};
+    std::vector<int> nRecobHitVec       = {0,0,0};
+    std::vector<int> nFakeHitVec        = {0,0,0};
+    std::vector<int> nSimulatedWiresVec = {0,0,0};
+    
+    unsigned int lastwire=-1;
+    
     for(const auto& partToChanInfo : partToChanToTDCToIDEMap)
     {
         TrackIDToMCParticleMap::const_iterator trackIDToMCPartItr = trackIDToMCParticleMap.find(partToChanInfo.first);
@@ -507,11 +502,10 @@ unsigned int lastwire=-1;
         
         int         trackPDGCode = trackIDToMCPartItr->second->PdgCode();
         std::string processName  = trackIDToMCPartItr->second->Process();
-       //std::cout << " trackPDGcode " << trackPDGCode << std::endl;
- //std::cout << " processName " << processName << std::endl;
+
         // Looking for primary muons (e.g. CR Tracks)
         if (fabs(trackPDGCode) != 13 || processName != "primary") continue;
-        //if (fabs(trackPDGCode) != 13) continue;
+
         // Recover particle position and angle information
         Eigen::Vector3f partStartPos(trackIDToMCPartItr->second->Vx(),trackIDToMCPartItr->second->Vy(),trackIDToMCPartItr->second->Vz());
         Eigen::Vector3f partStartDir(trackIDToMCPartItr->second->Px(),trackIDToMCPartItr->second->Py(),trackIDToMCPartItr->second->Pz());
@@ -582,10 +576,11 @@ unsigned int lastwire=-1;
             // Recover plane and wire in the plane
             unsigned int plane = wids[0].Plane;
             unsigned int wire  = wids[0].Wire;
-//std::cout << " plane " << plane << " wire  " << wire << std::endl;
-if(wire!=lastwire) nSimulatedWiresVec[plane]++;
-lastwire=wire;
+            
             Eigen::Vector3f avePosition(0.,0.,0.);
+
+            if(wire!=lastwire) nSimulatedWiresVec[plane]++;
+            lastwire=wire;
     
             for(const auto& ideVal : tdcToIDEMap)
             {
@@ -627,8 +622,6 @@ lastwire=wire;
             unsigned short startTDC = tdcToIDEMap.begin()->first;
             unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
 
-//std::cout << " startTDC " << startTDC << std::endl;
-// std::cout << " stopTDC " << stopTDC << std::endl;       
             // Convert to ticks to get in same units as hits
             unsigned short startTick = fClockService->TPCTDC2Tick(startTDC)        + fOffsetVec[plane];
             unsigned short stopTick  = fClockService->TPCTDC2Tick(stopTDC)         + fOffsetVec[plane];
@@ -651,7 +644,6 @@ lastwire=wire;
             float          hitSnippetLenBest(0.);
             unsigned short hitStopTickBest(0);
             unsigned short hitStartTickBest(0);
-//               unsigned short midHitTickBest(0);
         
             // Start by recovering the Wire associated to this channel
             ChanToWireMap::const_iterator wireItr = channelToWireMap.find(chanToTDCToIDEMap.first);
@@ -703,14 +695,10 @@ lastwire=wire;
                         {
                             unsigned short hitStartTick = hit->PeakTime() - fSigmaVec[plane] * hit->RMS();
                             unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec[plane] * hit->RMS();
-
-                         
-//                               unsigned short midHitTick   = (hitStopTick + hitStartTick) / 2;
                     
                             // If hit is out of range then skip, it is not related to this particle
                             if (hitStartTick > stopTick || hitStopTick < startTick)
                             {
-                           //  std::cout << " fake hit: wire " << wire << " plane " << plane << std::endl; 
                                  nFakeHitVec[plane]++;
                                  rejectedHit = hit;
                                 continue;
@@ -725,7 +713,6 @@ lastwire=wire;
                             bestHit          = hit;
                             hitStartTickBest = hitStartTick;
                             hitStopTickBest  = hitStopTick;
-//                               midHitTickBest   = midHitTick;
                         }
                     
                         // Find a match?
@@ -780,8 +767,6 @@ lastwire=wire;
                         }
                         else if (rejectedHit)
                         { 
-                            //std::cout << " rejecting hit " << std::endl;
-                           // nRejectedHitVec[plane]++;
                             unsigned short hitStartTick = rejectedHit->PeakTime() - fSigmaVec[plane] * rejectedHit->RMS();
                             unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec[plane] * rejectedHit->RMS();
         
@@ -795,9 +780,6 @@ lastwire=wire;
                     }
                 }
             }
-
-                
-            
 
             fWireEfficVec.at(plane)->Fill(totalElectrons, std::min(nMatchedWires,1), 1.);
             fWireEfficPHVec.at(plane)->Fill(maxElectrons, std::min(nMatchedWires,1), 1.);
@@ -849,18 +831,13 @@ lastwire=wire;
 
     for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
     {
-std::cout << " plane " << idx << " simchannelhits " << nSimChannelHitVec[idx] << std::endl;
         if (nSimChannelHitVec[idx] > 10)
         {
             float hitEfficiency = float(nRecobHitVec[idx]) / float(nSimChannelHitVec[idx]);
-std::cout << " hit efficiency " << hitEfficiency << std::endl;
         
             fNSimChannelHitsVec[idx]->Fill(std::min(nSimChannelHitVec[idx],1999),1.);
             fNRecobHitVec[idx]->Fill(std::min(nRecobHitVec[idx],1999), 1.);
- fNFakeHitVec[idx]->Fill(nFakeHitVec[idx]/(float)nSimulatedWiresVec[idx],1.);
-std::cout << " plane " << idx << " fakes " << nFakeHitVec[idx] << std::endl;
-std::cout << " matched wires " << nSimulatedWiresVec[idx] << std::endl;
-std::cout << " fake hit ratio " << nFakeHitVec[idx]/(float)nSimulatedWiresVec[idx] << std::endl;
+            fNFakeHitVec[idx]->Fill(nFakeHitVec[idx]/(float)nSimulatedWiresVec[idx],1.);
             fHitEfficiencyVec[idx]->Fill(hitEfficiency, 1.);
         }
     }
