@@ -54,16 +54,16 @@ physics:
 
 #
 # For MCC1.1 we are still suppressing channels with no signal in the TPC
-physics.producers.daq0.SuppressNoSignal: false
+physics.producers.daq0.SuppressNoSignal: true
 physics.producers.daq0.Cryostat:         0
 physics.producers.daq0.TPC:              0
-physics.producers.daq1.SuppressNoSignal: false
+physics.producers.daq1.SuppressNoSignal: true
 physics.producers.daq1.Cryostat:         0
 physics.producers.daq1.TPC:              1
-physics.producers.daq2.SuppressNoSignal: false
+physics.producers.daq2.SuppressNoSignal: true
 physics.producers.daq2.Cryostat:         1
 physics.producers.daq2.TPC:              0
-physics.producers.daq3.SuppressNoSignal: false
+physics.producers.daq3.SuppressNoSignal: true
 physics.producers.daq3.Cryostat:         1
 physics.producers.daq3.TPC:              1
 
