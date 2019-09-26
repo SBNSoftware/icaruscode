@@ -377,8 +377,8 @@ icarus_gauss_MultiTPCRecon:       [ @sequence::icarus_reco_Gauss_Cryo0,
                                     @sequence::icarus_reco_Gauss_Cryo1,
                                     #@sequence::icarus_reco_trajclusterGaus,
                                     #@sequence::icarus_reco_pmAlgTrackerGaus,
-                                    @sequence::icarus_reco_mcrecoGausMulti,
-                                    @sequence::icarus_reco_wmc_optical
+                                    @sequence::icarus_reco_mcrecoGausMulti
+                                    # @sequence::icarus_reco_wmc_optical
                                   ]
 
 # Define what would be the second pass reconstructon (the "ICARUS" recon)

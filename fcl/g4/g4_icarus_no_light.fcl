@@ -1,14 +1,10 @@
 #include "services_icarus_simulation.fcl"
-#include "detsimmodules_ICARUS.fcl"
-#include "opdetsim_pmt_icarus.fcl"
-#include "crtsimmodules_icarus.fcl"
-
-process_name: DetSim
+#include "largeantmodules_icarus.fcl"
+process_name: G4
 
 services:
 {
-  #FileCatalogMetadata:  @local::art_file_catalog_mc
-  @table::icarus_detsim_services
+  @table::icarus_g4_services
 }
 
 #source is now a root file
@@ -26,32 +22,30 @@ physics:
 
  producers:
  {
-   crtdaq:         @local::icarus_crtsim
-   #opdaq:          @local::icarus_simpmt
-   opdaq:          @local::icarus_simpmt_nonoise #turn off the noise so it runs more quickly
-   daq:            @local::icarus_simwire
-   rns:            { module_type: "RandomNumberSaver" }
+   largeant: @local::icarus_largeant
+   ionization: {
+                 module_type: "larsim/ElectronDrift/ShiftEdepSCE"
+                 EDepTag:     "largeant:TPCActive"
+                 MakeAnaTree: false
+               }
+   rns:        { module_type: "RandomNumberSaver" }
  }
- 
+
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, daq, crtdaq ]
+ simulate: [ rns, largeant, ionization ]
  
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
 
  #trigger_paths is a keyword and contains the paths that modify the art::event, 
  #ie filters and producers
- trigger_paths: [ simulate ] 
+ trigger_paths: [simulate] 
 
  #end_paths is a keyword and contains the paths that do not modify the art::Event, 
  #ie analyzers and output streams.  these all run simultaneously
  end_paths:     [stream1]  
 }
-
-#
-# For MCC1.1 we are still suppressing channels with no signal in the TPC
-physics.producers.daq.SuppressNoSignal: true
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
@@ -62,10 +56,32 @@ outputs:
  {
    module_type: RootOutput
    fileName:    "%ifb_%tc-%p.root"
-   dataTier:    "detector-simulated"
+   dataTier:    "simulated"
    saveMemoryObjectThreshold: 0
    compressionLevel: 1
    fastCloning: false
  }
 }
 
+#physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
+
+# turn on the SimEnergyDeposit output
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+services.LArG4Parameters.NoPhotonPropagation: true
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}
