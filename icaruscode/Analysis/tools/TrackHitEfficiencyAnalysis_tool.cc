@@ -481,9 +481,8 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     
     TrackIDToMCParticleMap trackIDToMCParticleMap;
     
-    for(const auto& mcParticle : *mcParticleHandle) {
+    for(const auto& mcParticle : *mcParticleHandle)
       trackIDToMCParticleMap[mcParticle.TrackId()] = &mcParticle;
- }
     
     const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
