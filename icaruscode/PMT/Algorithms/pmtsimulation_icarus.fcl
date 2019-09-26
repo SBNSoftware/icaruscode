@@ -54,7 +54,7 @@ icarus_pmtsimulationalg_standard: {
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
   TriggerOffsetPMT:          -1150          #Time (us) relative to trigger that readout begins
-  ReadoutEnablePeriod:       3450           #Time (us) for which pmt readout is enabled
+  ReadoutEnablePeriod:       2450           #Time (us) for which pmt readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
   BeamGateTriggerRepPeriod:  2.0            #Repetition Period (us) for BeamGateTriggers
   BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce
