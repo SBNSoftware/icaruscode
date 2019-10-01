@@ -1,0 +1,5 @@
+#include "reco_icarus_driver_reco_multitpc_gauss.fcl"
+
+# fix memory bug
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms: true
+
