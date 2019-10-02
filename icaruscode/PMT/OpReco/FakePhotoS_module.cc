@@ -13,6 +13,9 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
+#include "CLHEP/Random/RandFlat.h"
+#include "TRandom.h"
+#include "nurandom/RandomUtils/NuRandomService.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -44,27 +47,40 @@ public:
 private:
 
   // Declare member data here.
+  bool _verbose;
   double _frequency; // [MHz]
   double _duration;  // [us]
   double _tstart;    // [ns]
-  std::map<unsigned int,unsigned short> _pemap; // opch <=> #pe to be injected
+  size_t _min_pe;    // [p.e.]
+  size_t _max_pe;    // [p.e.]
+  std::vector<unsigned int> _ch_v; // opchannels to create photons for
+
+  CLHEP::HepRandomEngine& fFlatEngine;
+  CLHEP::RandFlat *fFlatRandom;
+
 };
 
 
 FakePhotoS::FakePhotoS(fhicl::ParameterSet const& p)
-  : EDProducer{p}  // ,
+  : EDProducer{p}
+  , fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
   // More initializers here.
 {
-  auto const ch_v = p.get<std::vector<unsigned int> >("Channels");
-  auto const pe_v = p.get<std::vector<unsigned int> >("PEs");
-  assert(ch_v.size() == pe_v.size());
-  for(size_t i=0; i<ch_v.size(); ++i) _pemap[ch_v[i]] = pe_v[i];
+  _verbose = p.get<bool>("Verbose",false);
+  auto min_pe = p.get<int>("MinPE",1);
+  auto max_pe = p.get<int>("MaxPE",1);
+  assert(min_pe < max_pe && min_pe>0 && max_pe>0);
+  _min_pe = min_pe;
+  _max_pe = max_pe;
+  _ch_v.clear();
+  _ch_v = p.get<std::vector<unsigned int> >("Channels",_ch_v);
   _frequency = p.get<double>("Frequency");
   _duration  = p.get<double>("Duration");
   _tstart    = p.get<double>("G4TStart");
   produces<std::vector<sim::SimPhotons> >();
   produces< sumdata::RunData, art::InRun >();
 
+  fFlatRandom = new CLHEP::RandFlat(fFlatEngine,_min_pe,_max_pe);
 }
 
 void FakePhotoS::beginRun(art::Run& run)
@@ -83,16 +99,23 @@ void FakePhotoS::produce(art::Event& e)
 {
   // Implementation of required member function here.
   auto simph_v = std::unique_ptr<std::vector<sim::SimPhotons> >(new std::vector<sim::SimPhotons>());
-  simph_v->reserve(_pemap.size());
-  for(auto const& key_val : _pemap) {
-    
-    auto const& ch  = key_val.first;
-    auto const& npe = key_val.second;
-    
-    sim::SimPhotons sphot(ch);
+
+  if(_ch_v.empty()) {
+    auto const geop = lar::providerFrom<geo::Geometry>();
+    _ch_v.reserve(geop->NOpChannels());
+    for(size_t opch=0; opch<geop->NOpChannels(); ++opch) 
+      _ch_v.push_back(opch);
+  }
+  simph_v->reserve(_ch_v.size());
+  for(auto const& opch : _ch_v) {
+    if(_verbose) std::cout << "OpChannel " << opch << std::endl;
+    sim::SimPhotons sphot(opch);
     sphot.reserve(int(_duration * _frequency));
     double clock = 0.;
     while(clock <= _duration) {
+      
+      size_t npe = fFlatRandom->fire(_min_pe,_max_pe+0.999999);
+      if(_verbose) std::cout << npe << "@" << (int)(_tstart + clock * 1.e3) << "[ns] " << std::flush; 
       for(size_t ctr=0;ctr<npe;++ctr) {
 	sim::OnePhoton phot;
 	phot.Time = _tstart + clock * 1.e3;
@@ -100,7 +123,7 @@ void FakePhotoS::produce(art::Event& e)
       }
       clock += (1./_frequency);
     }
-
+    if(_verbose) std::cout << std::endl;
     simph_v->emplace_back(std::move(sphot));
   }
 

@@ -54,6 +54,9 @@ physics:
  end_paths: [store]
 }
 
+physics.producers.generator.Verbose: true
+physics.producers.generator.Channels: [0]
+
 physics.producers.opdaq.QE: 1.0
 physics.producers.opdaq.InputModule: "generator"
 

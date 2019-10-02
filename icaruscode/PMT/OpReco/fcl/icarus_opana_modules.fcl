@@ -2,16 +2,17 @@
 BEGIN_PROLOG
 FakePhotoS: {
     module_type: "FakePhotoS"
-    Channels: [0,10,20,30,40,50,60,70,80,100,200,300]
-    PEs: [1,2,3,4,5,4,3,2,1,10,10,10]
+    Channels: []
+    MinPE: 1
+    MaxPE: 5
     Frequency: 1
-    Duration:  1
-    G4TStart:  0.
+    Duration:  4.1
+    G4TStart:  -1000.
 }
 
 ICARUSMCOpHit: {
     module_type: "ICARUSMCOpHit"
-    MergePeriod: 30
+    MergePeriod: 0.01
     SimPhotonsProducer: "largeant"
 }
 

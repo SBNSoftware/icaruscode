@@ -7,6 +7,7 @@ art_make(
 			larcoreobj_SummaryData
 			larana_OpticalDetector_OpHitFinder
 			nusimdata_SimulationBase
+			nurandom_RandomUtils_NuRandomService_service
                         ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -20,6 +21,7 @@ art_make(
 			${MF_UTILITIES}
 	                ${FHICLCPP}
 			${CETLIB}
+			${CLHEP}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}

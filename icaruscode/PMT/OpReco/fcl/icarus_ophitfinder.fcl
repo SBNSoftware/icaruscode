@@ -1,6 +1,9 @@
 #include "opticaldetectormodules.fcl"
 
 BEGIN_PROLOG
+#
+# Pedestal estimation alogrithms
+#
 icarus_opreco_pedestal_edges: @local::standard_algo_pedestal_edges
 icarus_opreco_pedestal_edges.NumSampleFront:  3
 icarus_opreco_pedestal_edges.NumSampleTail:   3
@@ -13,24 +16,16 @@ icarus_opreco_pedestal_rollingmean.MaxSigma:    1.5
 icarus_opreco_pedestal_rollingmean.PedRangeMax: 8010
 icarus_opreco_pedestal_rollingmean.PedRangeMin: 0
 
-icarus_opreco_pedestal_rmsslider: @local::standard_algo_pedestal_rmsslider
-icarus_opreco_pedestal_rmsslider.SampleSize:       7
-icarus_opreco_pedestal_rmsslider.Threshold:        0.6
-icarus_opreco_pedestal_rmsslider.Verbose:          false
-icarus_opreco_pedestal_rmsslider.NWaveformsToFile: 0
-icarus_opreco_pedestal_rmsslider.MaxSigma:         0.5
-icarus_opreco_pedestal_rmsslider.PedRangeMax:      2150
-icarus_opreco_pedestal_rmsslider.PedRangeMin:      100
+icarus_opreco_pedestal_rmsslider: @local::standard_algo_pedestal_ub
+icarus_opreco_pedestal_rmsslider.BeamGateSamples:   1
+icarus_opreco_pedestal_rmsslider.SampleSize:        20
+icarus_opreco_pedestal_rmsslider.Threshold:         1.5
+icarus_opreco_pedestal_rmsslider.Verbose:           false
+icarus_opreco_pedestal_rmsslider.NWaveformsToFile:  0
+icarus_opreco_pedestal_rmsslider.MaxSigma:          1.5
+icarus_opreco_pedestal_rmsslider.PedRangeMax:       8005
+icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
 
-icarus_opreco_pedestal_ub: @local::standard_algo_pedestal_ub
-icarus_opreco_pedestal_ub.BeamGateSamples:   1
-icarus_opreco_pedestal_ub.SampleSize:        7
-icarus_opreco_pedestal_ub.Threshold:         2.0
-icarus_opreco_pedestal_ub.Verbose:           false
-icarus_opreco_pedestal_ub.NWaveformsToFile:  0
-icarus_opreco_pedestal_ub.MaxSigma:          2.0
-icarus_opreco_pedestal_ub.PedRangeMax:       8005
-icarus_opreco_pedestal_ub.PedRangeMin:       0
 
 #
 # Hit Algorithms
@@ -74,12 +69,11 @@ icarus_ophit:
                         # used as single PE area (in ADC counts)
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
-   PedAlgoPset:    @local::icarus_opreco_pedestal_ub
+   PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
 icarus_ophitdebugger.module_type: "FullOpHitFinder"
 icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
-icarus_ophitdebugger.PedAlgoPset: @local::icarus_opreco_pedestal_rollingmean
 
 END_PROLOG

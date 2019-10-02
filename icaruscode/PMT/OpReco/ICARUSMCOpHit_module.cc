@@ -83,34 +83,30 @@ void ICARUSMCOpHit::produce(art::Event& e)
     processed_v[opch] = true;
     bool in_window  = false;
     double oph_time = 0.;
-    double pe = -1.;
+    double pe = 0.;
     // Retrieve photons and create OpHit
     for(auto const& oneph : simph) {
 
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-      if(this_time > (oph_time + _merge_period)) {
-	if(in_window) {
-	  recob::OpHit oph(opch, 
-			   oph_time,
-			   ts->G4ToElecTime(oneph.Time),
-			   0, // frame
-			   1., // width
-			   pe, // area,
-			   pe, // peakheight,
-			   pe, // pe
-			   0.);
-	  oph_v->emplace_back(std::move(oph));
-	}
+      std::cout << "This " << this_time << " G4 " << oneph.Time << " Elec " << ts->G4ToElecTime(oneph.Time) << " Trig " << ts->TriggerTime() << std::endl;
+      if(this_time > (oph_time + _merge_period) && in_window) {
+	recob::OpHit oph(opch, 
+			 oph_time,
+			 oph_time + ts->TriggerTime(),
+			 0, // frame
+			 1., // width
+			 pe, // area,
+			 pe, // peakheight,
+			 pe, // pe
+			 0.);
+	oph_v->emplace_back(std::move(oph));
 	in_window = false;
-      }else if(pe>0.) {
-	in_window = true;
-	++pe;
+	pe = 0;
       }
 
-      if(in_window) continue;
-      pe = 1.;
-      oph_time = this_time;
+      if(!in_window) oph_time = this_time;
       in_window = true;
+      pe += 1.;
     }
     if(in_window) {
       recob::OpHit oph(opch, 
