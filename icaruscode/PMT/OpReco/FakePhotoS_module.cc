@@ -66,17 +66,17 @@ FakePhotoS::FakePhotoS(fhicl::ParameterSet const& p)
   , fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
   // More initializers here.
 {
-  _verbose = p.get<bool>("Verbose",false);
-  auto min_pe = p.get<int>("MinPE",1);
-  auto max_pe = p.get<int>("MaxPE",1);
-  assert(min_pe < max_pe && min_pe>0 && max_pe>0);
+  _verbose = p.get<bool>("Verbose",false); // If you want someone to talk to you
+  auto min_pe = p.get<int>("MinPE",1);     // Min of the range of PE count to be injected in one shot
+  auto max_pe = p.get<int>("MaxPE",1);     // Max of the range of PE count to be injected in one shot
+  assert(min_pe < max_pe && min_pe>0 && max_pe>0); 
   _min_pe = min_pe;
   _max_pe = max_pe;
   _ch_v.clear();
-  _ch_v = p.get<std::vector<unsigned int> >("Channels",_ch_v);
-  _frequency = p.get<double>("Frequency");
-  _duration  = p.get<double>("Duration");
-  _tstart    = p.get<double>("G4TStart");
+  _ch_v = p.get<std::vector<unsigned int> >("Channels",_ch_v); // Specify if you want to use only select channels
+  _frequency = p.get<double>("Frequency"); // The frequency of photon(s) injection
+  _duration  = p.get<double>("Duration");  // The duration of photon(s) injection period
+  _tstart    = p.get<double>("G4TStart");  // The start time of photon injection period
   produces<std::vector<sim::SimPhotons> >();
   produces< sumdata::RunData, art::InRun >();
 
