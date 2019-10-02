@@ -7,11 +7,11 @@ icarus_opreco_pedestal_edges.NumSampleTail:   3
 icarus_opreco_pedestal_edges.NumSampleMethod: 2
 
 icarus_opreco_pedestal_rollingmean: @local::standard_algo_pedestal_rollingmean
-icarus_opreco_pedestal_rollingmean.
-icarus_opreco_pedestal_rollingmean.SampleSize:  2
-icarus_opreco_pedestal_rollingmean.MaxSigma:    0.5
-icarus_opreco_pedestal_rollingmean.PedRangeMax: 2150
-icarus_opreco_pedestal_rollingmean.PedRangeMin: 100
+icarus_opreco_pedestal_rollingmean.SampleSize:  20
+icarus_opreco_pedestal_rollingmean.Threshold:   2
+icarus_opreco_pedestal_rollingmean.MaxSigma:    1.5
+icarus_opreco_pedestal_rollingmean.PedRangeMax: 8010
+icarus_opreco_pedestal_rollingmean.PedRangeMin: 0
 
 icarus_opreco_pedestal_rmsslider: @local::standard_algo_pedestal_rmsslider
 icarus_opreco_pedestal_rmsslider.SampleSize:       7
@@ -25,10 +25,10 @@ icarus_opreco_pedestal_rmsslider.PedRangeMin:      100
 icarus_opreco_pedestal_ub: @local::standard_algo_pedestal_ub
 icarus_opreco_pedestal_ub.BeamGateSamples:   1
 icarus_opreco_pedestal_ub.SampleSize:        7
-icarus_opreco_pedestal_ub.Threshold:         0.6
+icarus_opreco_pedestal_ub.Threshold:         2.0
 icarus_opreco_pedestal_ub.Verbose:           false
 icarus_opreco_pedestal_ub.NWaveformsToFile:  0
-icarus_opreco_pedestal_ub.MaxSigma:          0.5
+icarus_opreco_pedestal_ub.MaxSigma:          2.0
 icarus_opreco_pedestal_ub.PedRangeMax:       8005
 icarus_opreco_pedestal_ub.PedRangeMin:       0
 
@@ -36,7 +36,7 @@ icarus_opreco_pedestal_ub.PedRangeMin:       0
 # Hit Algorithms
 #
 icarus_opreco_hit_threshold: @local::standard_algo_threshold
-icarus_opreco_hit_threshold.StartADCThreshold    : 3
+icarus_opreco_hit_threshold.StartADCThreshold    : 5
 icarus_opreco_hit_threshold.EndADCThreshold      : 2
 icarus_opreco_hit_threshold.NSigmaThresholdStart : 5
 icarus_opreco_hit_threshold.NSigmaThresholdEnd   : 3
@@ -48,7 +48,7 @@ icarus_opreco_hit_fixedwindow.EndIndex:   20
 icarus_opreco_hit_slidingwindow: @local::standard_algo_slidingwindow
 icarus_opreco_hit_slidingwindow.PositivePolarity:   false
 icarus_opreco_hit_slidingwindow.NumPreSample:       4
-icarus_opreco_hit_slidingwindow.ADCThreshold:       3
+icarus_opreco_hit_slidingwindow.ADCThreshold:       5
 icarus_opreco_hit_slidingwindow.NSigmaThreshold:    3
 icarus_opreco_hit_slidingwindow.EndADCThreshold:    1
 icarus_opreco_hit_slidingwindow.EndNSigmaThreshold: 1
@@ -76,4 +76,10 @@ icarus_ophit:
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
    PedAlgoPset:    @local::icarus_opreco_pedestal_ub
 }
+
+icarus_ophitdebugger: @local::icarus_ophit
+icarus_ophitdebugger.module_type: "FullOpHitFinder"
+icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
+icarus_ophitdebugger.PedAlgoPset: @local::icarus_opreco_pedestal_rollingmean
+
 END_PROLOG

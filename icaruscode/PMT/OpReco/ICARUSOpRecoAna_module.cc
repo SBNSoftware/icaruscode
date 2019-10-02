@@ -175,7 +175,7 @@ void ICARUSOpRecoAna::analyze(art::Event const& e)
 {
 
   _event = e.id().event();
-  _run   = e.id().run(),e.id().event();
+  _run   = e.id().run();
 
   if(!_simedep_label.empty()) {
     art::Handle< std::vector<sim::SimEnergyDeposit> > edep_h;

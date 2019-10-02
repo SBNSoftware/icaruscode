@@ -16,7 +16,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-
+#include "larcoreobj/SummaryData/RunData.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
@@ -40,7 +40,7 @@ public:
 
   // Required functions.
   void produce(art::Event& e) override;
-
+  void beginRun(art::Run& run) override;
 private:
 
   // Declare member data here.
@@ -63,8 +63,20 @@ FakePhotoS::FakePhotoS(fhicl::ParameterSet const& p)
   _duration  = p.get<double>("Duration");
   _tstart    = p.get<double>("G4TStart");
   produces<std::vector<sim::SimPhotons> >();
-  // Call appropriate produces<>() functions here.
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  produces< sumdata::RunData, art::InRun >();
+
+}
+
+void FakePhotoS::beginRun(art::Run& run)
+{
+  // grab the geometry object to see what geometry we are using                                                                                                  
+  art::ServiceHandle<geo::Geometry> geo;
+
+  std::unique_ptr<sumdata::RunData> runData(new sumdata::RunData(geo->DetectorName()));
+
+  run.put(std::move(runData));
+
+  return;
 }
 
 void FakePhotoS::produce(art::Event& e)
