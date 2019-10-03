@@ -12,7 +12,7 @@
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 #include "canvas/Utilities/InputTag.h"
 //#include "sbnddaq-datatypes/Overlays/NevisTPCFragment.hh"
-#include "../HeaderData.hh"
+//#include "../HeaderData.hh"
 //some standard C++ includes
 #include <iostream>
 #include <stdlib.h>
@@ -82,7 +82,7 @@ private:
   // whether the given nevis readout channel is mapped to a wire
   //bool is_mapped_channel(const sbnddaq::NevisTPCHeader *header, uint16_t nevis_channel_id);
   // build a HeaderData object from the Icarus Header
-  tpcAnalysis::HeaderData Fragment2HeaderData(art::Event &event, const artdaq::Fragment &frag);
+  //tpcAnalysis::HeaderData Fragment2HeaderData(art::Event &event, const artdaq::Fragment &frag);
   art::InputTag _tag;
   Config _config;
   // keeping track of incrementing numbers
