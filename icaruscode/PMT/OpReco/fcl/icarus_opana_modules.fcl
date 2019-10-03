@@ -4,10 +4,10 @@ FakePhotoS: {
     module_type: "FakePhotoS"
     Channels: []
     MinPE: 1
-    MaxPE: 5
-    Frequency: 1
-    Duration:  4.1
-    G4TStart:  -1000.
+    MaxPE: 10
+    Frequency: 0.2
+    Duration:  399
+    G4TStart:  -1000000.
 }
 
 ICARUSMCOpHit: {
@@ -59,6 +59,15 @@ ICARUSOpRecoAna: {
     OpFlashProducerList: ["opflashTPC0"]
     OpDetWaveformProducerList: ["opdaq"]
     SimEnergyDepositProducer: "largeant:TPCActive"
+}
+
+ICARUSOpHitAna: {
+    module_type:       "ICARUSOpHitAna"
+    OutputFileName:    "oprecoana.root"
+    OpHitProducerList: ["ophit"]
+    MCOpHitProducer:   "mcophit"
+    OpDetWaveformProducer: ""
+    MatchDT: 0.01
 }
 
 END_PROLOG

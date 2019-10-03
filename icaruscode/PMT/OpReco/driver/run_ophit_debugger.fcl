@@ -29,9 +29,10 @@ physics:
  {
    ophitdebugger: @local::icarus_ophitdebugger
    mcophit: @local::ICARUSMCOpHit
+   ophit:  @local::icarus_ophit
  }
- analyzers: { opana: @local::ICARUSOpRecoAna }
- produce: [ ophitdebugger, mcophit ]
+ analyzers: { opana: @local::ICARUSOpHitAna }
+ produce: [ ophitdebugger, ophit, mcophit ]
  analyze: [ opana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
@@ -54,10 +55,6 @@ outputs:
 services.TFileService.fileName: "ana.root"
 services.LArG4Parameters.FillSimEnergyDeposits:       true
 
-physics.analyzers.opana.OpHitProducerList:["mcophit"]
-physics.analyzers.opana.OpFlashProducerList:[]
-physics.analyzers.opana.SimEnergyDepositProducer: ""
-physics.analyzers.opana.OpDetWaveformProducerList: []
 physics.producers.mcophit.SimPhotonsProducer: "generator"
 #physics.producers.ophitdebugger.PedAlgoPset.Verbose: true
 
