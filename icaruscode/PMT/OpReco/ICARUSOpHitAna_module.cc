@@ -59,6 +59,7 @@ private:
   std::vector<std::string> _wf_label_v;
 
   // For hit trees
+  TTree* _mchittree;
   std::vector<TTree*> _hittree_v;
   double _time;
   double _amp;
@@ -66,8 +67,11 @@ private:
   double _pe;
   double _time_true;
   double _pe_true;
+  int _mc_idx;
 
   // Time period to match reco<=>MC (in micro-second)
+  double _match_time_min;
+  double _match_time_max;
   double _match_dt;
 
   // For geometry info
@@ -77,13 +81,16 @@ private:
 
 
 ICARUSOpHitAna::ICARUSOpHitAna(fhicl::ParameterSet const& p)
-  : EDAnalyzer{p}, _wftree(nullptr), _geotree(nullptr)
+  : EDAnalyzer{p}, _wftree(nullptr), _mchittree(nullptr), _geotree(nullptr)
 {
   _output_fname = p.get<std::string>("OutputFileName"        );
   _wf_label     = p.get<std::string>("OpDetWaveformProducer" );
   _mchit_label  = p.get<std::string>("MCOpHitProducer"       );
   _hit_label_v  = p.get<std::vector<std::string> >("OpHitProducerList");
-  _match_dt     = p.get<double>("MatchDT",0.01); // in micro-seconds
+  _match_time_min = p.get<double>("MatchTimeStart",0.100); // in micro-seconds
+  _match_time_max = p.get<double>("MatchTimeEnd",0.120); // in micro-seconds
+  _match_dt     = _match_time_max - _match_time_min;
+  assert(_match_dt>0);
 }
 
 void ICARUSOpHitAna::beginJob()
@@ -100,6 +107,14 @@ void ICARUSOpHitAna::beginJob()
     _wftree->Branch("tstart",&_tstart,"tstart/D");
   }
 
+  _mchittree = new TTree("mchittree","mchittree");
+  _mchittree->Branch("run",&_run,"run/I");
+  _mchittree->Branch("event",&_event,"event/I");
+  _mchittree->Branch("ch",&_ch,"ch/I");
+  _mchittree->Branch("mc_idx",&_mc_idx,"mc_idx/I");
+  _mchittree->Branch("pe_true",&_pe_true,"pe_true/D");
+  _mchittree->Branch("time_true",&_time_true,"time_true/D");
+
   for(auto const& label : _hit_label_v) {
     std::string name = label + "_hittree";
     auto hittree = new TTree(name.c_str(),name.c_str());
@@ -112,6 +127,7 @@ void ICARUSOpHitAna::beginJob()
     hittree->Branch("pe",&_pe,"pe/D");
     hittree->Branch("time_true",&_time_true,"time_true/D");
     hittree->Branch("pe_true",&_pe_true,"pe_true/D");
+    hittree->Branch("mc_idx",&_mc_idx,"mc_idx/I");
     _hittree_v.push_back(hittree);
   }
 
@@ -151,6 +167,7 @@ void ICARUSOpHitAna::beginJob()
 void ICARUSOpHitAna::endJob()
 {
   _f->cd();
+  _mchittree->Write();
   if(_wftree) _wftree->Write();
   for(auto& ptr : _hittree_v) { _f->cd(); ptr->Write(); }
   _f->cd(); _geotree->Write();
@@ -197,10 +214,14 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
   mchit_db.resize(geop->NOpChannels());
   for(size_t mchit_index=0; mchit_index < mchit_h->size(); ++mchit_index) {
     auto const& mchit = (*mchit_h)[mchit_index];
+    _pe_true = mchit.PE();
+    _time_true = mchit.PeakTime();
+    _ch = mchit.OpChannel();
+    _mc_idx = mchit_index;
+    _mchittree->Fill();
     auto& db = mchit_db.at(mchit.OpChannel());
-    db[mchit.PeakTime()] = mchit_index;
+    db[mchit.PeakTime() + _match_time_min] = mchit_index;
   }
-
   // now fill ophit trees
   for(size_t label_idx=0; label_idx<_hit_label_v.size(); ++label_idx) {
     // Get data product handle
@@ -212,6 +233,7 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
       std::cerr << "Invalid producer for recob::OpHit: " << label << std::endl;
       throw std::exception();
     }
+
     // keep the record of which mchit was used (to store un-tagged mchit at the end)
     std::vector<bool> mchit_used(mchit_h->size(),false);
     // now loop over hit, identify mc hit, fill ttree
@@ -230,12 +252,12 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
       if(low != db.begin()) {
 	--low;
 	// get mc ophit
-	auto const& mchit = (*hit_h)[(*low).second];
-	auto mctime = mchit.PeakTime();
+	auto const& mchit = (*mchit_h).at((*low).second);
 	// Check if this is in the "match" range
-	if( (_time - mctime) < _match_dt ) {
+	if( (_time - (*low).first) < _match_dt ) {
 	  _pe_true   = mchit.PE();
 	  _time_true = mchit.PeakTime();
+	  _mc_idx    = (*low).second;
 	  mchit_used[(*low).second] = true;
 	}
       }

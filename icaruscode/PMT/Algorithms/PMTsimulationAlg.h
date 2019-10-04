@@ -596,7 +596,7 @@ namespace icarus {
        * waveforms, which are all on the same channel but disjunct in time.
        */
       std::vector<raw::OpDetWaveform> simulate
-        (sim::SimPhotons const& photons);
+      (sim::SimPhotons const& photons, sim::SimPhotons &photons_used);
       
       /// Prints the configuration into the specified output stream.
       template <typename Stream>
@@ -628,7 +628,7 @@ namespace icarus {
       DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
     
     void CreateFullWaveform
-      (Waveform_t&, sim::SimPhotons const&);
+    (Waveform_t&, sim::SimPhotons const&, sim::SimPhotons &);
     
     void CreateOpDetWaveforms(raw::Channel_t const& opch,
 			      Waveform_t const& wvfm,

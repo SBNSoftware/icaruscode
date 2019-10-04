@@ -1,0 +1,82 @@
+
+#include "services_icarus_simulation.fcl"
+#include "services_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: OpReco
+
+services:
+{
+  @table::icarus_wirecalibration_services
+  LArG4Parameters:                       @local::icarus_largeantparameters
+  LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
+  SpaceChargeService:                    @local::icarus_spacecharge
+  MagneticField:                         @local::no_mag_larsoft
+  PhotonVisibilityService:         @local::icarus_photonvisibilityservice
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+physics:
+{
+
+ producers:
+ {
+   ophitdebugger: @local::icarus_ophitdebugger
+   mcophit:       @local::ICARUSMCOpHit
+   ophit:         @local::icarus_ophit
+   mcflash:       @local::ICARUSMCOpFlash
+   cheatflash:    @local::ICARUSMCOpFlash
+ }
+ analyzers: { 
+   ophitana: @local::ICARUSOpHitAna 
+   opflashana: @local::ICARUSOpFlashAna
+ }
+ produce: [ ophitdebugger, ophit, mcophit, mcflash, cheatflash ]
+ analyze: [ ophitana, opflashana ]
+ store:   [ out1 ]
+ trigger_paths: [ produce ]
+ end_paths:     [ store, analyze ]
+}
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "reconstructed.root"
+   dataTier:    "reco"
+   saveMemoryObjectThreshold: 0
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+services.TFileService.fileName: "ana.root"
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+
+physics.producers.mcophit.SimPhotonsProducer: "generator"
+physics.producers.cheatflash.OpHitProducer: "ophit"
+#physics.producers.ophitdebugger.PedAlgoPset.Verbose: true
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}

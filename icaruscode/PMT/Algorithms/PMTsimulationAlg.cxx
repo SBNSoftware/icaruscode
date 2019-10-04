@@ -161,12 +161,12 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 // -----------------------------------------------------------------------------   
 std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
-  (sim::SimPhotons const& photons)
+(sim::SimPhotons const& photons, sim::SimPhotons &photons_used)
 {
   std::vector<raw::OpDetWaveform> waveforms; // storage of the results
   
   Waveform_t waveform;
-  CreateFullWaveform(waveform, photons);
+  CreateFullWaveform(waveform, photons, photons_used);
   CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
   return waveforms;
   
@@ -175,7 +175,9 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 
 //------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
-					sim::SimPhotons const& photons){
+							 sim::SimPhotons const& photons,
+							 sim::SimPhotons& photons_used)
+{
     
     using namespace util::quantities::time_literals;
     using namespace util::quantities::frequency_literals;
@@ -193,9 +195,13 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     
     auto start = std::chrono::high_resolution_clock::now();
     
+    photons_used.clear();
+    photons_used.SetChannel(photons.OpChannel());
     for(auto const& ph : photons) {
       if (!KicksPhotoelectron()) continue;
-      
+
+      photons_used.push_back(ph);
+
       simulation_time const photonTime { ph.Time };
       
       trigger_time const mytime

@@ -5,20 +5,33 @@ FakePhotoS: {
     Channels: []
     MinPE: 1
     MaxPE: 10
-    Frequency: 0.2
-    Duration:  399
+    Frequency: 1
+    Duration:  999.5
     G4TStart:  -1000000.
+}
+
+FakeFlash: {
+    module_type: "FakeFlash"
+    Verbose: false
+    MinPhotons: 24000
+    MaxPhotons: 2400000
+    TPCList: [0]
+    Frequency: 0.1
+    Duration: 2000
+    G4TStart: -1000000
 }
 
 ICARUSMCOpHit: {
     module_type: "ICARUSMCOpHit"
     MergePeriod: 0.01
-    SimPhotonsProducer: "largeant"
+    SimPhotonsProducer: "opdaq"
+    MatchTimeMin: 0.105
+    MatchTimeMax: 0.120
 }
 
 ICARUSMCOpFlash: {
     module_type: "ICARUSMCOpFlash"
-    StoreEmptyFlash: false
+    StoreEmptyFlash: true
     MCTruthProducer: "generator"
     OpHitProducer:   "mcophit"
     MergePeriod: 8
@@ -52,22 +65,23 @@ ICARUSCheatOpFlashTPC2.OpChannelRange: [180,269]
 ICARUSCheatOpFlashTPC3: @local::ICARUSCheatOpFlash
 ICARUSCheatOpFlashTPC3.OpChannelRange: [270,359]
 
-ICARUSOpRecoAna: {
-    module_type:    "ICARUSOpRecoAna"
-    OutputFileName: "oprecoana.root"
-    OpHitProducerList: ["ophit"]
-    OpFlashProducerList: ["opflashTPC0"]
-    OpDetWaveformProducerList: ["opdaq"]
-    SimEnergyDepositProducer: "largeant:TPCActive"
-}
-
 ICARUSOpHitAna: {
     module_type:       "ICARUSOpHitAna"
-    OutputFileName:    "oprecoana.root"
+    OutputFileName:    "ophitana.root"
     OpHitProducerList: ["ophit"]
     MCOpHitProducer:   "mcophit"
     OpDetWaveformProducer: ""
-    MatchDT: 0.01
+    MatchTimeStart: 0.100
+    MatchTimeEnd:   0.130
+}
+
+ICARUSOpFlashAna: {
+    module_type: "ICARUSOpFlashAna"
+    OutputFileName: "opflashana.root"
+    MCOpFlashProducer: "mcflash"
+    OpFlashProducerList: ["cheatflash"]
+    MatchTimeStart: -1.0
+    MatchTimeEnd:    1.0
 }
 
 END_PROLOG

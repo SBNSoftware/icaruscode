@@ -40,7 +40,7 @@ physics:
 
  producers:
  {
-   generator: @local::FakePhotoS
+   generator: @local::FakeFlash
    #opdaq:    @local::icarus_simpmt_nonoise
    opdaq:    @local::icarus_simpmt
    rns:      { module_type: "RandomNumberSaver" }
@@ -55,12 +55,18 @@ physics:
 }
 
 physics.producers.generator.Verbose: false
-physics.producers.generator.Channels: [0]
-physics.producers.generator.Frequency: 0.1
-physics.producers.generator.Duration:  991
-physics.producers.generator.G4TStart: -1149000
-physics.producers.generator.MinPE: 1000
-physics.producers.generator.MaxPE: 1000
+physics.producers.generator.Frequency: 1.
+physics.producers.generator.Duration:  0.9
+physics.producers.generator.MinPE: 10000
+physics.producers.generator.MaxPE: 10000
+physics.producers.generator.ChannelMin: 0
+physics.producers.generator.ChannelMax: 179
+physics.producers.generator.XMin: 0.5
+physics.producers.generator.XMax: 0.501
+physics.producers.generator.YMin: 0.5
+physics.producers.generator.YMax: 0.501
+physics.producers.generator.ZMin: 0.5
+physics.producers.generator.ZMax: 0.501
 
 physics.producers.opdaq.QE: 1.0
 physics.producers.opdaq.DarkNoiseRate: 0.0

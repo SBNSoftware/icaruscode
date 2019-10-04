@@ -142,7 +142,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
  {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
-    
+    produces<std::vector<sim::SimPhotons> >();
   } // SimPMTIcarus::SimPMTIcarus()
   
   
@@ -155,7 +155,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // fetch the input
     //
     auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
-    
+    auto simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
     //
     // prepare the output
     //
@@ -177,11 +177,13 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // run the algorithm
     //
     for(auto const& photons : pmtVector) {
-      auto const& channelWaveforms = PMTsimulator->simulate(photons);
+      sim::SimPhotons photons_used;
+      auto const& channelWaveforms = PMTsimulator->simulate(photons,photons_used);
       std::move(
         channelWaveforms.cbegin(), channelWaveforms.cend(),
         std::back_inserter(*pulseVecPtr)
         );
+      simphVecPtr->emplace_back(std::move(photons_used));
     } // for
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
@@ -191,7 +193,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
-    
+    e.put(std::move(simphVecPtr));
   } // SimPMTIcarus::produce()
   
   

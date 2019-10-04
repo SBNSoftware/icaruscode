@@ -69,7 +69,7 @@ FakePhotoS::FakePhotoS(fhicl::ParameterSet const& p)
   _verbose = p.get<bool>("Verbose",false); // If you want someone to talk to you
   auto min_pe = p.get<int>("MinPE",1);     // Min of the range of PE count to be injected in one shot
   auto max_pe = p.get<int>("MaxPE",1);     // Max of the range of PE count to be injected in one shot
-  assert(min_pe < max_pe && min_pe>0 && max_pe>0); 
+  assert(min_pe <= max_pe && min_pe>0 && max_pe>0); 
   _min_pe = min_pe;
   _max_pe = max_pe;
   _ch_v.clear();

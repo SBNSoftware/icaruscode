@@ -82,13 +82,13 @@ void ICARUSMCOpHit::produce(art::Event& e)
     }
     processed_v[opch] = true;
     bool in_window  = false;
-    double oph_time = 0.;
+    double oph_time = -1.e9;
     double pe = 0.;
     // Retrieve photons and create OpHit
     for(auto const& oneph : simph) {
 
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-
+      
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
 			 oph_time,

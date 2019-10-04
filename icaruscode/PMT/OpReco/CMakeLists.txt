@@ -8,6 +8,7 @@ art_make(
 			larana_OpticalDetector_OpHitFinder
 			nusimdata_SimulationBase
 			nurandom_RandomUtils_NuRandomService_service
+			larsim_PhotonPropagation_PhotonVisibilityService_service
                         ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}
