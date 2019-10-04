@@ -1,4 +1,4 @@
-#include "simple_channel_info.fcl"
+//#include "simple_channel_info.fcl"
 physics:
 {
   // now also have something produce the digits and headers
