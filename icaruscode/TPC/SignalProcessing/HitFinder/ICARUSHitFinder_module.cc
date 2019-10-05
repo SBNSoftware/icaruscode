@@ -526,7 +526,10 @@ size_t iWire=wid.Wire;
           
     std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           
-          fHitFinderTool->findHitCandidates(holder, 0,channel,0,hitCandidateVec);
+          std::vector<float> tempVec = holder;
+          recob::Wire::RegionsOfInterest_t::datarange_t rangeData(size_t(0),std::move(tempVec));
+          
+          fHitFinderTool->findHitCandidates(rangeData, 0,channel,0,hitCandidateVec);
           //int jc=0;
           for(auto& hitCand : hitCandidateVec) {
             expandHit(hitCand,holder,hitCandidateVec);
@@ -535,7 +538,7 @@ size_t iWire=wid.Wire;
           
           
           
-          fHitFinderTool->MergeHitCandidates(holder, hitCandidateVec, mergedCandidateHitVec);          
+          fHitFinderTool->MergeHitCandidates(rangeData, hitCandidateVec, mergedCandidateHitVec);
 
       //numHits = hits.size();
           int nghC=0;

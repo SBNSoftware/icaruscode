@@ -27,13 +27,13 @@ public:
     
     void configure(const fhicl::ParameterSet& pset) override;
     
-    void findHitCandidates(const std::vector<float>&,
+    void findHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t&,
                            size_t,
                            size_t,
                            size_t,
                            HitCandidateVec&) const override;
     
-    void MergeHitCandidates(const Waveform&,
+    void MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t&,
                             const HitCandidateVec&,
                             MergeHitCandidateVec&) const override;
     
@@ -105,9 +105,11 @@ void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
     return;
 }
     
-void CandHitICARUS::findHitCandidates(const std::vector<float>& waveform,
-                                        size_t roiStart, size_t channel, size_t cnt,
-                                        HitCandidateVec& hits) const
+void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t& rangeData,
+                                      size_t                                               roiStart,
+                                      size_t                                               channel,
+                                      size_t                                               cnt,
+                                      HitCandidateVec&                                     hits) const
 {
     // get the WireID for this hit
     std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
@@ -116,6 +118,8 @@ void CandHitICARUS::findHitCandidates(const std::vector<float>& waveform,
     // We need to know the plane to look up parameters
     geo::PlaneID::PlaneID_t plane = wid.Plane;
     //int wire = wid.Wire;
+    
+    const Waveform& waveform = rangeData.data();
 
    // if(plane==1) return;
     // if(wire>2639) return;
@@ -417,9 +421,9 @@ void CandHitICARUS::findHitCandidates(std::vector<float>::const_iterator startIt
     return;
 }
   
-void CandHitICARUS::MergeHitCandidates(const Waveform&        signalVec,
-                                           const HitCandidateVec& hitCandidateVec,
-                                           MergeHitCandidateVec&  mergedHitsVec) const
+void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t& rangeData,
+                                       const HitCandidateVec&                               hitCandidateVec,
+                                       MergeHitCandidateVec&                                mergedHitsVec) const
 {
     // If nothing on the input end then nothing to do
     if (hitCandidateVec.empty()) return;
