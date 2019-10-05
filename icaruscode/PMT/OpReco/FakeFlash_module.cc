@@ -108,7 +108,7 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   _ch_max = geop->NOpChannels() - 1;
   _ch_min = p.get<size_t>("ChannelMin",_ch_min);
   _ch_max = p.get<size_t>("ChannelMax",_ch_max);
-  assert(ch_min<ch_max);
+  assert(_ch_min<_ch_max);
   // Given in micro-seconds as larsoft default time unit, but then we convert to ns to record as photon time
   _fast_tau *= 1.e3;
   _slow_tau *= 1.e3;
