@@ -93,7 +93,7 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   _verbose = p.get<bool>("Verbose",false); // If you want someone to talk to you
   auto min_photons = p.get<int>("MinPhotons",24000);     // Min of the range of photons to be injected in one shot
   auto max_photons = p.get<int>("MaxPhotons",2400000);   // Max of the range of photons to be injected in one shot
-  assert(min_pe < max_pe && min_pe>0 && max_pe>0); 
+  assert(min_photons < max_photons && min_photons>0 && max_photons>0); 
   _min_photons = min_photons;
   _max_photons = max_photons;
 
@@ -108,7 +108,7 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   _ch_max = geop->NOpChannels() - 1;
   _ch_min = p.get<size_t>("ChannelMin",_ch_min);
   _ch_max = p.get<size_t>("ChannelMax",_ch_max);
-  assert(ch_min<ch_max);
+  assert(_ch_min<_ch_max);
   // Given in micro-seconds as larsoft default time unit, but then we convert to ns to record as photon time
   _fast_tau *= 1.e3;
   _slow_tau *= 1.e3;

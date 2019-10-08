@@ -71,7 +71,7 @@ services.SimulationDrawingOptions.ShowSimEnergyInfo:       false
 services.SimulationDrawingOptions.ShowSimPhotonInfo:       false
 
 # Below sets up the 2D viwer to see RawDigit, Wire and Hit data for the multi TPC reconstruction work flow
-# To view the "signgle" reconstruction work flow, replace the multiple names in the braces below with a single name:
+# To view the "single" reconstruction work flow, replace the multiple names in the braces below with a single name:
 #       For RawDigits --> "rawdigitfilter"
 #       For Wire      --> "decon1droi"
 #       For hits      --> "cluster3d"   (or "gaushit")
@@ -95,9 +95,8 @@ services.RecoDrawingOptions.EdgeModuleLabels:       []
 # Note there are both MC and reconstructed versions to look at, below includes names for switching
 #
 services.RecoDrawingOptions.DrawOpHits:            1
-services.RecoDrawingOptions.OpHitModuleLabels:     ["mcophit"] #["ophit"]
+services.RecoDrawingOptions.OpHitModuleLabels:     ["ophit"]
 services.RecoDrawingOptions.DrawOpFlashes:         0
 services.RecoDrawingOptions.OpFlashModuleLabels:   ["opflashTPC0", "opflashTPC1", "opflashTPC2", "opflashTPC3"]
-#services.RecoDrawingOptions.OpFlashModuleLabels:   ["mcopflashTPC0", "mcopflashTPC1", "mcopflashTPC2", "mcopflashTPC3"]
 
 
