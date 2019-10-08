@@ -85,15 +85,17 @@ void ICARUSMCOpHit::produce(art::Event& e)
     double oph_time = -1.e9;
     double pe = 0.;
 
-    // Insert photon times into a sorted set 
-    std::set<double> time_s;
+    // Insert photon times into a vector, sort it 
+    std::vector<double> time_v;
+    time_v.reserve(simph.size());
     for(auto const& oneph : simph) {
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-      time_s.insert(this_time);
+      time_v.push_back(this_time);
     }
+    std::sort(time_v.begin(), time_v.end());
 
     // Loop over the time vector, emplace photons
-    for(auto const& this_time : time_s) {
+    for(auto const& this_time : time_v) {
 
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
