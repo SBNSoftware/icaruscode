@@ -3,6 +3,7 @@ art_make(
   EXCLUDE
     "ICARUSsplitInductionChannelMapSetupTool_tool.cc"
     "ICARUSsingleInductionChannelMapSetupTool_tool.cc"
+  SUBDIRS "details"
   MODULE_LIBRARIES
     larcorealg_Geometry
     ${ART_FRAMEWORK_CORE}
@@ -16,6 +17,7 @@ art_make(
     ${FHICLCPP}
   LIB_LIBRARIES
     larcorealg_Geometry
+    larcorealg_CoreUtils
     ${MF_MESSAGELOGGER}
     ${CETLIB}
     ${CETLIB_EXCEPT}
@@ -38,6 +40,10 @@ art_make(
 
 
 simple_plugin(ICARUSsplitInductionChannelMapSetupTool "tool"
+  icaruscode_Geometry
+  larcorealg_Geometry
+  )
+simple_plugin(ICARUSsingleInductionChannelMapSetupTool "tool"
   icaruscode_Geometry
   larcorealg_Geometry
   )

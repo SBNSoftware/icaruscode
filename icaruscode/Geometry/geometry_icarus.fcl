@@ -130,10 +130,10 @@ icarus_split_induction_geometry: {
   SurfaceY:         6.9e2   # how much below the surface our origin is [cm]
   Name:            "ICARUS"
   
-  # This is the version for test distributed on May 16, 2019
+  # This is the version for test distributed on September 5, 2019
   # by Alessandro Menegolli (alessandro.menegolli@pv.infn.it)
-  GDML:            "icarus_complete_splitwires_16may2019.gdml"
-  ROOT:            "icarus_complete_splitwires_16may2019.gdml"
+  GDML:            "icarus_complete_test_05sep2019.gdml"
+  ROOT:            "icarus_complete_test_05sep2019.gdml"
   
   DisableWiresInG4: true
   
@@ -144,6 +144,14 @@ icarus_split_induction_geometry: {
 #
 icarus_split_induction_geometry_helper: {
   service_provider: IcarusGeometryHelper
+  
+  Mapper: {
+    
+    # use the experimental new channel mapping algorithm
+    tool_type: "ICARUSsplitInductionChannelMapSetupTool"
+    
+  } # Mapper
+  
 } # icarus_split_induction_geometry_helper
 
 #
