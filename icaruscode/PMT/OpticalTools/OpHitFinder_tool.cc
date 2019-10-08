@@ -108,8 +108,11 @@ void OpHitFinder::FindOpHits(const raw::OpDetWaveform& opDetWaveform,
         
     if (notSaturated)
     {
-        fHitFinderTool->findHitCandidates(locWaveform, 0, 0, fEventCount, hitCandidateVec);
-        fHitFinderTool->MergeHitCandidates(locWaveform, hitCandidateVec, mergedCandidateHitVec);
+        std::vector<float> tempVec = locWaveform;
+        recob::Wire::RegionsOfInterest_t::datarange_t rangeData(size_t(0),std::move(tempVec));
+        
+        fHitFinderTool->findHitCandidates(rangeData, 0, 0, fEventCount, hitCandidateVec);
+        fHitFinderTool->MergeHitCandidates(rangeData, hitCandidateVec, mergedCandidateHitVec);
     }
     else
     {

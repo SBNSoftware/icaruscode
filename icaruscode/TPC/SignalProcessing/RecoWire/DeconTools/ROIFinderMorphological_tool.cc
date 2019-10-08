@@ -610,12 +610,11 @@ icarus_tool::HistogramMap ROIFinderMorphological::initializeHistograms(size_t ch
         size_t                   wire  = wids[0].Wire;
         
         // Make a directory for these histograms
-        art::TFileDirectory dir = fHistDirectory->mkdir(Form("ROIPlane_%1zu/c%1zu/c%1zut%1zuwire_%05zu",fPlane,cnt,cryo,tpc,wire));
+        art::TFileDirectory dir = fHistDirectory->mkdir(Form("Event_%03zu/C%1zuT%1zuP%1zu/Wire_%05zu",cnt,cryo,tpc,fPlane,wire));
         
         // We keep track of four histograms:
         try
         {
-            //            origWaveHist   = dir.make<TProfile>(Form("Inp_%03zu_ctw%01zu/%01zu/%05zu",cnt,cryo,tpc,wire), "Waveform", waveform.size(),      0, waveform.size(),      -500., 500.);
             histogramMap[icarus_tool::WAVEFORM] =
                     dir.make<TProfile>(Form("Wfm_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform", waveformSize, 0, waveformSize, -500., 500.);
             histogramMap[icarus_tool::WAVELESSAVE] =
