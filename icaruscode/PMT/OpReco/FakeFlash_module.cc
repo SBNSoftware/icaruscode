@@ -193,7 +193,7 @@ void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
   for(size_t opch=_ch_min; opch <= _ch_max; ++opch) {
     // get visibility
     size_t detected = ((double)(nphotons)) * Visibilities[opch];
-    std::cout<<opch<<","<<detected<<std::endl;
+    //std::cout<<opch<<","<<detected<<std::endl;
     auto time_array = this->GenerateTime(detected);
     assert(time_array.size() == detected);
     // record

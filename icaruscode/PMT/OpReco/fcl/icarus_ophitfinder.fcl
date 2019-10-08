@@ -47,6 +47,7 @@ icarus_opreco_hit_slidingwindow.ADCThreshold:       5
 icarus_opreco_hit_slidingwindow.NSigmaThreshold:    3
 icarus_opreco_hit_slidingwindow.EndADCThreshold:    1
 icarus_opreco_hit_slidingwindow.EndNSigmaThreshold: 1
+icarus_opreco_hit_slidingwindow.MinPulseWidth:      2
 icarus_opreco_hit_slidingwindow.Verbosity:          false
 
 icarus_opreco_hit_cfd: @local::standard_algo_cfd

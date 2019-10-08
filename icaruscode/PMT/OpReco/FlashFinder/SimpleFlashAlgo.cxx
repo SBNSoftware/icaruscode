@@ -15,6 +15,7 @@ namespace pmtana{
     {
         Reset();
         _debug          = p.get<bool>("DebugMode",false);
+	_min_pe_hit     = p.get<double>("PEThresholdHit",0.5);
         _min_pe_flash   = p.get<double>("PEThreshold",10);
         _min_pe_coinc   = p.get<double>("MinPECoinc",  5);
         _min_mult_coinc = p.get<double>("MinMultCoinc", 2);
@@ -149,6 +150,8 @@ namespace pmtana{
                 if(_debug) std::cout << "Ignoring hit @ time " << oph.peak_time << std::endl;
                 continue;
             }
+	    if(oph.pe <= 0.) continue;
+	    if(_min_pe_hit > 0. && oph.pe < _min_pe_hit) continue;
             size_t index = (size_t)((oph.peak_time - min_time) / _time_res);
             _pesum_v[index] += oph.pe;
             mult_v[index] += 1;

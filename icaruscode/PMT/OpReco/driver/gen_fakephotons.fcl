@@ -56,11 +56,13 @@ physics:
 
 physics.producers.generator.Verbose: false
 physics.producers.generator.Channels: [0]
-physics.producers.generator.Frequency: 0.1
-physics.producers.generator.Duration:  991
-physics.producers.generator.G4TStart: -1149000
-physics.producers.generator.MinPE: 1000
-physics.producers.generator.MaxPE: 1000
+physics.producers.generator.Frequency: 0.2
+#physics.producers.generator.Duration:  991
+#physics.producers.generator.G4TStart: -1149000
+physics.producers.generator.Duration:  499.9
+physics.producers.generator.G4TStart: -1000000
+physics.producers.generator.MinPE: 2
+physics.producers.generator.MaxPE: 2
 
 physics.producers.opdaq.QE: 1.0
 physics.producers.opdaq.DarkNoiseRate: 0.0

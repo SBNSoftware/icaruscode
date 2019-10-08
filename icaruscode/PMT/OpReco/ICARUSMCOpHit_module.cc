@@ -75,20 +75,28 @@ void ICARUSMCOpHit::produce(art::Event& e)
   for(auto const& simph : *simph_h) {
     // Make sure channel number is unique (e.g. one sim::SimPhotons per op channel)
     size_t opch = simph.OpChannel();
+
     if(opch >= processed_v.size()) processed_v.resize(opch+1,false);
     if(processed_v[opch]) {
       std::cerr << "Found duplicate channels in std::vector<sim::SimPhotons>! not expected (logic will fail).."<<std::endl;
       throw std::exception();
     }
+
     processed_v[opch] = true;
     bool in_window  = false;
     double oph_time = -1.e9;
     double pe = 0.;
-    // Retrieve photons and create OpHit
+    // Insert photon times into a sorted set
+    std::map<double,size_t> time_m;
     for(auto const& oneph : simph) {
-
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-      
+      time_m[this_time] += 1;
+    }
+
+    // Loop over the time vector, emplace photons
+    for(auto const& time_photon_pair : time_m) {
+
+      auto const& this_time = time_photon_pair.first;
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
 			 oph_time,
@@ -106,7 +114,7 @@ void ICARUSMCOpHit::produce(art::Event& e)
 
       if(!in_window) oph_time = this_time;
       in_window = true;
-      pe += 1.;
+      pe += time_photon_pair.second;
     }
     if(in_window) {
       recob::OpHit oph(opch, 

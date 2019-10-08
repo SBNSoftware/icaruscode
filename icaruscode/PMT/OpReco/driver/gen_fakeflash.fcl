@@ -55,8 +55,8 @@ physics:
 }
 
 physics.producers.generator.Verbose: false
-physics.producers.generator.Frequency: 1.
-physics.producers.generator.Duration:  0.9
+physics.producers.generator.Frequency: 0.1
+physics.producers.generator.Duration:  999.1
 physics.producers.generator.MinPE: 10000
 physics.producers.generator.MaxPE: 10000
 physics.producers.generator.ChannelMin: 0
