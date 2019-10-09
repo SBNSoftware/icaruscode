@@ -14,6 +14,8 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandFlat.h"
+#include "CLHEP/Random/RandExponential.h"
 #include "TRandom.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "canvas/Utilities/InputTag.h"
@@ -44,20 +46,25 @@ public:
   // Required functions.
   void produce(art::Event& e) override;
   void beginRun(art::Run& run) override;
-private:
 
+private:
+  std::vector<double> GenerateTime(size_t numphotons);
   // Declare member data here.
   bool _verbose;
-  double _frequency; // [MHz]
-  double _duration;  // [us]
-  double _tstart;    // [ns]
-  size_t _min_pe;    // [p.e.]
-  size_t _max_pe;    // [p.e.]
+  double _frequency; ///< [MHz]
+  double _duration;  ///< [us]
+  double _tstart;    ///< [ns]
+  size_t _min_pe;    ///< [p.e.]
+  size_t _max_pe;    ///< [p.e.]
+  bool   _simulate_time; ///< whether or not to simulate scintillation fall time
+  double _fast_frac; ///< fraction of prompt light
+  double _fast_tau;  ///< scintillation emission time constant for fast component
+  double _slow_tau;  ///< scintillation emission time constant for slow component
   std::vector<unsigned int> _ch_v; // opchannels to create photons for
 
-  CLHEP::HepRandomEngine& fFlatEngine;
-  CLHEP::RandFlat *fFlatRandom;
-
+  CLHEP::HepRandomEngine &fFlatEngine;
+  CLHEP::RandFlat        *fFlatRandom;
+  CLHEP::RandExponential *fExpoRandom;
 };
 
 
@@ -79,8 +86,14 @@ FakePhotoS::FakePhotoS(fhicl::ParameterSet const& p)
   _tstart    = p.get<double>("G4TStart");  // The start time of photon injection period
   produces<std::vector<sim::SimPhotons> >();
   produces< sumdata::RunData, art::InRun >();
+  // scintillation params (yeah fine you can replace these w/ service)
+  _simulate_time = p.get<bool>("SimulateTime",false); // scintillation fall timing simulation
+  _fast_frac = p.get<double>("PromptLightFraction",0.23);
+  _fast_tau  = p.get<double>("FastTimeConstant",0.006);
+  _slow_tau  = p.get<double>("SlowTimeConstant",1.5);
 
   fFlatRandom = new CLHEP::RandFlat(fFlatEngine,_min_pe,_max_pe);
+  fExpoRandom = new CLHEP::RandExponential(fFlatEngine);
 }
 
 void FakePhotoS::beginRun(art::Run& run)
@@ -93,6 +106,18 @@ void FakePhotoS::beginRun(art::Run& run)
   run.put(std::move(runData));
 
   return;
+}
+
+
+std::vector<double> FakePhotoS::GenerateTime(size_t numphotons) {
+
+  std::vector<double> res(numphotons);
+  for(int i=0; i<((int)numphotons); ++i) {
+    if(fFlatRandom->fire(0.,1.) < _fast_frac)
+      res[i] = fExpoRandom->fire(_fast_tau);
+    else res[i] = fExpoRandom->fire(_slow_tau);
+  }
+  return res;
 }
 
 void FakePhotoS::produce(art::Event& e)
@@ -116,9 +141,11 @@ void FakePhotoS::produce(art::Event& e)
       
       size_t npe = fFlatRandom->fire(_min_pe,_max_pe+0.999999);
       if(_verbose) std::cout << npe << "@" << (int)(_tstart + clock * 1.e3) << "[ns] " << std::flush; 
+      std::vector<double> time_array(npe,0.);
+      if(_simulate_time) time_array = this->GenerateTime(npe);
       for(size_t ctr=0;ctr<npe;++ctr) {
 	sim::OnePhoton phot;
-	phot.Time = _tstart + clock * 1.e3;
+	phot.Time = _tstart + clock * 1.e3 + time_array[ctr];
 	sphot.emplace_back(std::move(phot));
       }
       clock += (1./_frequency);

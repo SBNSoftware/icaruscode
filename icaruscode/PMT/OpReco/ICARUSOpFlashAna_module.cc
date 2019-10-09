@@ -193,6 +193,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
       _pe_true_v.resize(_pe_v.size());
       for(auto& pe : _pe_true_v) pe = 0.;
       _time_true = std::numeric_limits<double>::max();
+      _pe_sum_true = -1;
       if(low != mcflash_db.begin()) {
 	--low;
 	// get mc opflash
@@ -220,7 +221,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
       _time = std::numeric_limits<double>::max();
       _pe_v.clear();
       _pe_v.resize(_pe_true_v.size(),0.);
-      _pe_sum = 0.;
+      _pe_sum = -1.;
       flashtree->Fill();
     }
 

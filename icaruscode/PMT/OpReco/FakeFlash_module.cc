@@ -192,7 +192,7 @@ void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
   }
   for(size_t opch=_ch_min; opch <= _ch_max; ++opch) {
     // get visibility
-    size_t detected = ((double)(nphotons)) * Visibilities[opch];
+    size_t detected = fPoisRandom->fire((double)(nphotons) * Visibilities[opch]);
     //std::cout<<opch<<","<<detected<<std::endl;
     auto time_array = this->GenerateTime(detected);
     assert(time_array.size() == detected);
@@ -212,12 +212,9 @@ void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
 
 std::vector<double> FakeFlash::GenerateTime(size_t numphotons) {
 
-  double fast_expected = _fast_frac * numphotons;
-  // draw poison
-  int fast_count = std::max((long int)0,std::min(fPoisRandom->fire(fast_expected),(long int)numphotons));
   std::vector<double> res(numphotons);
   for(int i=0; i<((int)numphotons); ++i) {
-    if(i<fast_count)
+    if(fFlatRandom->fire(0.,1.) < _fast_frac)
       res[i] = fExpoRandom->fire(_fast_tau);
     else res[i] = fExpoRandom->fire(_slow_tau);
   }
