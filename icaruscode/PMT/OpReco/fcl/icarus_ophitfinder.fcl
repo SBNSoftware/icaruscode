@@ -1,5 +1,5 @@
 #include "opticaldetectormodules.fcl"
-
+#include "icarus_spe.fcl"
 BEGIN_PROLOG
 #
 # Pedestal estimation alogrithms
@@ -23,8 +23,10 @@ icarus_opreco_pedestal_rmsslider.Threshold:         1.5
 icarus_opreco_pedestal_rmsslider.Verbose:           false
 icarus_opreco_pedestal_rmsslider.NWaveformsToFile:  0
 icarus_opreco_pedestal_rmsslider.MaxSigma:          1.5
-icarus_opreco_pedestal_rmsslider.PedRangeMax:       8005
+icarus_opreco_pedestal_rmsslider.PedRangeMax:       8003
 icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
+icarus_opreco_pedestal_rmsslider.NumPreSample:      10
+icarus_opreco_pedestal_rmsslider.NumPostSample:     20
 
 
 #
@@ -41,14 +43,17 @@ icarus_opreco_hit_fixedwindow.StartIndex: 0
 icarus_opreco_hit_fixedwindow.EndIndex:   20
 
 icarus_opreco_hit_slidingwindow: @local::standard_algo_slidingwindow
-icarus_opreco_hit_slidingwindow.PositivePolarity:   false
-icarus_opreco_hit_slidingwindow.NumPreSample:       4
-icarus_opreco_hit_slidingwindow.ADCThreshold:       5
-icarus_opreco_hit_slidingwindow.NSigmaThreshold:    3
-icarus_opreco_hit_slidingwindow.EndADCThreshold:    1
-icarus_opreco_hit_slidingwindow.EndNSigmaThreshold: 1
-icarus_opreco_hit_slidingwindow.MinPulseWidth:      2
-icarus_opreco_hit_slidingwindow.Verbosity:          false
+icarus_opreco_hit_slidingwindow.PositivePolarity:    false
+icarus_opreco_hit_slidingwindow.NumPreSample:        5
+icarus_opreco_hit_slidingwindow.NumPostSample:       10
+icarus_opreco_hit_slidingwindow.ADCThreshold:        5 # ADC threshold (absolute) above pedestal mean to fire a pulse
+icarus_opreco_hit_slidingwindow.NSigmaThreshold:     3 # ADC threshold (N*pedestal sigma) above pedestal mean to fire a pulse
+icarus_opreco_hit_slidingwindow.TailADCThreshold:    2 # ADC threshold (absolute) below which next pulse is allowed to fire
+icarus_opreco_hit_slidingwindow.TailNSigmaThreshold: 2 # ADC threshold (N*pedestal sigma) below which next pulse is allowed to fire
+icarus_opreco_hit_slidingwindow.EndADCThreshold:     1 # ADC threshold (absolute) at which the pulse ends
+icarus_opreco_hit_slidingwindow.EndNSigmaThreshold:  1 # ADC threshold (N*pedetal sigma) at which the pulse ends
+icarus_opreco_hit_slidingwindow.MinPulseWidth:       2 # The width of a pulse needs to be equal or larger than this to be recorded
+icarus_opreco_hit_slidingwindow.Verbosity:           false
 
 icarus_opreco_hit_cfd: @local::standard_algo_cfd
 icarus_opreco_hit_cfd.Fraction:    0.9
@@ -65,9 +70,9 @@ icarus_ophit:
    InputLabels:    [ "" ]
    ChannelMasks:   []
    HitThreshold:   0.2   # PE
-   AreaToPE:       true # Use area to calculate number of PEs
-   SPEArea:        62.0 # If AreaToPE is true, this number is
-                        # used as single PE area (in ADC counts)
+   AreaToPE:       true  # Use area to calculate number of PEs
+   SPEArea:        @local::SPE.Area # If AreaToPE is true, this number is
+                         # used as single PE area (in ADC counts)
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
    PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider

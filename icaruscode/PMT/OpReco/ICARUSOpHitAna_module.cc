@@ -61,6 +61,7 @@ private:
   // For hit trees
   TTree* _mchittree;
   std::vector<TTree*> _hittree_v;
+  double _width;
   double _time;
   double _amp;
   double _area;
@@ -123,6 +124,7 @@ void ICARUSOpHitAna::beginJob()
     hittree->Branch("ch",&_ch,"ch/I");
     hittree->Branch("amp",&_amp,"amp/D");
     hittree->Branch("area",&_area,"area/D");
+    hittree->Branch("width",&_width,"width/D");
     hittree->Branch("time",&_time,"time/D");
     hittree->Branch("pe",&_pe,"pe/D");
     hittree->Branch("time_true",&_time_true,"time_true/D");
@@ -240,10 +242,11 @@ void ICARUSOpHitAna::analyze(art::Event const& e)
     for(auto const& hit : (*hit_h)) {
       // fill simple info
       _ch=hit.OpChannel();
-      _time = hit.PeakTime();
-      _amp  = hit.Amplitude();
-      _area = hit.Area();
-      _pe   = hit.PE();
+      _time  = hit.PeakTime();
+      _amp   = hit.Amplitude();
+      _width = hit.Width();
+      _area  = hit.Area();
+      _pe    = hit.PE();
       // search for corresponding mchit
       auto const& db = mchit_db.at(_ch);
       auto low = db.lower_bound(_time);
