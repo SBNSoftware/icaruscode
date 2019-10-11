@@ -67,7 +67,7 @@ icarus_ophit:
    module_type:    "OpHitFinder"
    GenModule:      "generator"
    InputModule:    "opdaq"
-   InputLabels:    [ "" ]
+   InputLabels:    []
    ChannelMasks:   []
    HitThreshold:   0.2   # PE
    AreaToPE:       true  # Use area to calculate number of PEs
