@@ -48,6 +48,7 @@ private:
 
   double _merge_period;
   std::string _simph_producer;
+  double _spe_area, _spe_amp;
 };
 
 
@@ -56,6 +57,8 @@ ICARUSMCOpHit::ICARUSMCOpHit(fhicl::ParameterSet const& p)
 {
   _merge_period = p.get<double>("MergePeriod");
   _simph_producer = p.get<std::string>("SimPhotonsProducer");
+  _spe_area = p.get<double>("SPEArea");
+  _spe_amp  = p.get<double>("SPEAmplitude");
   produces<std::vector<recob::OpHit> >();
 }
 
@@ -104,8 +107,8 @@ void ICARUSMCOpHit::produce(art::Event& e)
 			 oph_time + ts->TriggerTime(),
 			 0, // frame
 			 1., // width
-			 pe, // area,
-			 pe, // peakheight,
+			 pe * _spe_area, // area,
+			 pe * _spe_amp, // peakheight,
 			 pe, // pe
 			 0.);
 	oph_v->emplace_back(std::move(oph));
@@ -123,8 +126,8 @@ void ICARUSMCOpHit::produce(art::Event& e)
 		       oph_time + ts->TriggerTime(),
 		       0, // frame
 		       1., // width
-		       pe, // area,
-		       pe, // peakheight,
+		       pe * _spe_area, // area,
+		       pe * _spe_amp, // peakheight,
 		       pe, // pe
 		       0.);
       oph_v->emplace_back(std::move(oph));
