@@ -85,4 +85,9 @@ ICARUSOpFlashAna: {
     MatchTimeEnd:    1.0
 }
 
+ICARUSParticleAna: {
+		module_type: "ICARUSParticleAna"
+		OutputFileName: "particleana.root"
+		ParticleProducer: "generator"
+}
 END_PROLOG
