@@ -17,11 +17,13 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "nusimdata/SimulationBase/MCTruth.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include <TTree.h>
 #include <TFile.h>
+#include <TLorentzVector.h>
 
 class ICARUSOpFlashAna;
 
@@ -48,8 +50,9 @@ private:
   std::string _output_fname;
   // For data product labels
   std::string _mcflash_label;
+	std::string _mctruth_label;
   std::vector<std::string> _flash_label_v;
-  
+
   // For waveform tree
 
 
@@ -62,6 +65,10 @@ private:
   double _time_true;
   double _pe_sum_true;
   std::vector<double> _pe_true_v;
+	double _x;
+	double _y;
+	double _z;
+	double _nphotons;
 
   // Time period to match reco<=>MC (in micro-second)
   double _match_time_min;
@@ -79,6 +86,7 @@ ICARUSOpFlashAna::ICARUSOpFlashAna(fhicl::ParameterSet const& p)
 {
   _output_fname = p.get<std::string>("OutputFileName"        );
   _mcflash_label  = p.get<std::string>("MCOpFlashProducer"       );
+	_mctruth_label = p.get<std::string>("MCTruthProducer");
   _flash_label_v  = p.get<std::vector<std::string> >("OpFlashProducerList");
   _match_time_min = p.get<double>("MatchTimeStart",0.105); // in micro-seconds
   _match_time_max = p.get<double>("MatchTimeEnd",0.120); // in micro-seconds
@@ -101,6 +109,10 @@ void ICARUSOpFlashAna::beginJob()
     flashtree->Branch("pe_true_v",&_pe_true_v);
     flashtree->Branch("pe_sum",&_pe_sum,"pe_sum/D");
     flashtree->Branch("pe_sum_true",&_pe_sum_true,"pe_sum_true/D");
+    flashtree->Branch("x",&_x,"x/D");
+    flashtree->Branch("y",&_y,"y/D");
+    flashtree->Branch("z",&_z,"z/D");
+    flashtree->Branch("nphotons",&_nphotons,"nphotons/D");
     _flashtree_v.push_back(flashtree);
   }
 
@@ -151,6 +163,20 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
   _event = e.id().event();
   _run   = e.id().run();
 
+	// get MCTruth
+	art::Handle< std::vector< simb::MCTruth > > mctruth_h;
+	e.getByLabel(_mctruth_label, mctruth_h);
+	std::map<double, int> mctruth_db;
+	for (size_t mctruth_index = 0; mctruth_index < mctruth_h->size(); ++mctruth_index) {
+		auto const& mctruth = (*mctruth_h)[mctruth_index];
+		for (int part_idx = 0; part_idx < mctruth.NParticles(); ++part_idx) {
+			const simb::MCParticle & particle = mctruth.GetParticle(part_idx);
+			//const TLorentzVector& pos = particle.Position();
+			//const TLorentzVector& mom = particle.Momentum();
+			mctruth_db[particle.T() + _match_time_min] = part_idx; // FIXME assumes mctruth_h->size() == 1 always?
+		}
+	}
+
   // get MCOpFlash
   art::Handle< std::vector< recob::OpFlash > > mcflash_h;
   e.getByLabel(_mcflash_label, mcflash_h);
@@ -188,6 +214,19 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
       _time = flash.Time();
       _pe_v = flash.PEs();
       _pe_sum = flash.TotalPE();//std::accumulate(_pe_v.begin(),_pe_v.end());
+			// search for corresponding mctruth
+			auto low_mct = mctruth_db.lower_bound(_time);
+			if (low_mct != mctruth_db.begin()) {
+				--low_mct;
+				auto const& mctruth = (*mctruth_h).at(0);
+				auto const& particle = mctruth.GetParticle((*low_mct).second);
+				if ( (particle.T() - (*low_mct).first) < _match_dt) {
+					_nphotons = particle.E();
+					_x = particle.Vx();
+					_y = particle.Vy();
+					_z = particle.Vz();
+				}
+			}
       // search for corresponding mcflash
       auto low = mcflash_db.lower_bound(_time);
       _pe_true_v.resize(_pe_v.size());
@@ -205,6 +244,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
 	  _pe_sum_true = mcflash.TotalPE();
 	  //_pe_sum_true = std::accumulate(_pe_true_v.begin(),_pe_true_v.end());
 	  mcflash_used[(*low).second] = true;
+		std::cout << mcflash.TotalPE() << " " << std::accumulate(_pe_true_v.begin(), _pe_true_v.end(), 0.) << std::endl;
 	}
       }
       flashtree->Fill();
@@ -226,7 +266,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
     }
 
   }
-  
+
 }
 
 DEFINE_ART_MODULE(ICARUSOpFlashAna)
