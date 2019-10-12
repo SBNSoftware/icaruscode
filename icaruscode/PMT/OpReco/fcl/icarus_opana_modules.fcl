@@ -79,9 +79,15 @@ ICARUSOpFlashAna: {
     module_type: "ICARUSOpFlashAna"
     OutputFileName: "opflashana.root"
     MCOpFlashProducer: "mcflash"
+		MCTruthProducer: "generator"
     OpFlashProducerList: ["cheatflash"]
     MatchTimeStart: -1.0
     MatchTimeEnd:    1.0
 }
 
+ICARUSParticleAna: {
+		module_type: "ICARUSParticleAna"
+		OutputFileName: "particleana.root"
+		ParticleProducer: "generator"
+}
 END_PROLOG

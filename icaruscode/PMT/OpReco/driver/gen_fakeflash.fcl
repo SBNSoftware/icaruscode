@@ -55,20 +55,34 @@ physics:
 }
 
 physics.producers.generator.Verbose: false
-physics.producers.generator.Frequency: 0.1
-physics.producers.generator.Duration:  999.1
-physics.producers.generator.MinPE: 10000
-physics.producers.generator.MaxPE: 10000
+physics.producers.generator.Frequency: 0.1 # MHz
+physics.producers.generator.Duration:  999.1 # us
+physics.producers.generator.MinPhotons: 240000 # 10MeV
+physics.producers.generator.MaxPhotons: 240000 # 1GeV
 physics.producers.generator.ChannelMin: 0
 physics.producers.generator.ChannelMax: 179
 physics.producers.generator.XMin: 0.5
-physics.producers.generator.XMax: 0.501
+physics.producers.generator.XMax: 0.5
 physics.producers.generator.YMin: 0.5
-physics.producers.generator.YMax: 0.501
+physics.producers.generator.YMax: 0.5
 physics.producers.generator.ZMin: 0.5
-physics.producers.generator.ZMax: 0.501
+physics.producers.generator.ZMax: 0.5
 
-physics.producers.opdaq.QE: 1.0
+#physics.producers.generator.Verbose: false
+#physics.producers.generator.Frequency: 0.1
+#physics.producers.generator.Duration:  999.1
+#physics.producers.generator.MinPE: 240000 # 10MeV
+#physics.producers.generator.MaxPE: 24000000 # 1GeV
+#physics.producers.generator.ChannelMin: 0
+#physics.producers.generator.ChannelMax: 179
+#physics.producers.generator.XMin: 0.1
+#physics.producers.generator.XMax: 0.9
+#physics.producers.generator.YMin: 0.1
+#physics.producers.generator.YMax: 0.9
+#physics.producers.generator.ZMin: 0.05
+#physics.producers.generator.ZMax: 0.95
+
+#physics.producers.opdaq.QE: 1.0
 physics.producers.opdaq.DarkNoiseRate: 0.0
 physics.producers.opdaq.FluctuateGain: true
 physics.producers.opdaq.InputModule: "generator"
