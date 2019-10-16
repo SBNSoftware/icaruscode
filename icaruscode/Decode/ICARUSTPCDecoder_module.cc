@@ -20,46 +20,20 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "artdaq-core/Data/Fragment.hh"
 #include "lardataobj/RawData/RawDigit.h"
-//#include "sbnddaq-datatypes/Overlays/NevisTPCFragment.hh"
-//#include "sbnddaq-datatypes/NevisTPC/NevisTPCTypes.hh"
-//#include "sbnddaq-datatypes/NevisTPC/NevisTPCUtilities.hh"
-//#include "../HeaderData.hh"
-//#include "../../Mode/Mode.hh"
+
+#include "art/Framework/Services/Registry/ServiceHandle.h" 
+#include "art_root_io/TFileService.h" 
+#include "art_root_io/TFileDirectory.h" 
+
+
 DEFINE_ART_MODULE(daq::ICARUSTPCDecoder)
-// constructs a header data object from a icarus header
-// construct from a icarus header
-/*tpcAnalysis::HeaderData daq::ICARUSTPCDecoder::Fragment2HeaderData(art::Event &event, const artdaq::Fragment &frag) {
-
-      icarus::PhysCrateFragment fragment(frag);
-
-  const sbnddaq::NevisTPCHeader *raw_header = fragment.header();
-  tpcAnalysis::HeaderData ret;
-
-  ret.crate = raw_header->getFEMID();
-  ret.slot = raw_header->getSlot();
-  ret.event_number = raw_header->getEventNum();
-  // ret.frame_number = raw_header->getFrameNum();
-  ret.checksum = raw_header->getChecksum();
-  
-  ret.adc_word_count = raw_header->getADCWordCount();
-  // ret.trig_frame_number = raw_header->getTrigFrame();
-  
-  // formula for getting unix timestamp from nevis frame number:
-  // timestamp = frame_number * (timesize + 1) + trigger_sample
-  ret.timestamp = (raw_header->getFrameNum() * (_config.timesize + 1) + raw_header->get2mhzSample()) * _config.frame_to_dt;
-
-  ret.index = raw_header->getSlot() - _config.min_slot_no;
-
-  return ret;
-
-}
-*/
 daq::ICARUSTPCDecoder::ICARUSTPCDecoder(fhicl::ParameterSet const & param): 
   art::EDProducer{param},
   _tag(param.get<std::string>("raw_data_label", "daq"),param.get<std::string>("fragment_type_label", "PHYSCRATEDATA")),
   _config(param),
   _last_event_number(0),
-  _last_trig_frame_number(0)
+  _last_trig_frame_number(0),
+  _fragment_id_offset(param.get<uint32_t>("fragment_id_offset"))
  {
   
   // produce stuff
@@ -67,6 +41,15 @@ daq::ICARUSTPCDecoder::ICARUSTPCDecoder(fhicl::ParameterSet const & param):
  // if (_config.produce_header) {
  //   produces<std::vector<tpcAnalysis::HeaderData>>();
  // }
+
+  art::ServiceHandle<art::TFileService> tfs;
+  _header_ana_tree = tfs->make<TTree>("_header_ana_tree","Header Ana Tree");
+
+  _header_ana_tree->Branch("fragment_id",&_fragment_id,"fragment_id/i");
+  _header_ana_tree->Branch("board_id",&_board_id,"board_id/i");
+  _header_ana_tree->Branch("event",&_event_number,"event/i");
+  _header_ana_tree->Branch("timestamp",&_timestamp,"timestamp/i");
+
 }
 daq::ICARUSTPCDecoder::Config::Config(fhicl::ParameterSet const & param) {
   // amount of time to wait in between processing events
@@ -112,51 +95,63 @@ process_fragment(event, rawfrag, product_collection);
  //   event.put(std::move(header_collection));
  // }
 }
-/*
-bool daq::ICARUSTPCDecoder::is_mapped_channel(const sbnddaq::NevisTPCHeader *header, uint16_t nevis_channel_id) {
-  // TODO: make better
-  return true;
-}
 
-raw::ChannelID_t daq::ICARUSTPCDecoder::get_wire_id(const sbnddaq::NevisTPCHeader *header, uint16_t nevis_channel_id) {
-  // TODO: make better
-  return (header->getSlot() - _config.min_slot_no) * _config.channel_per_slot + nevis_channel_id;
-}
-*/
+
 void daq::ICARUSTPCDecoder::process_fragment(art::Event &event, const artdaq::Fragment &frag, 
   std::unique_ptr<std::vector<raw::RawDigit>> &product_collection) {
+
+
+  std::cout << "FragmentID is " << frag.fragmentID() << std::endl;
+  _fragment_id = frag.fragmentID() - _fragment_id_offset;
+
   // convert fragment to Nevis fragment
   icarus::PhysCrateFragment fragment(frag);
-        std::cout << " n boards " << fragment.nBoards() << std::endl;
+  std::cout << " n boards " << fragment.nBoards() << std::endl;
+  
 //int channel_count=0;
-for(size_t i_b=0; i_b < fragment.nBoards(); i_b++){
-        //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
-        for(size_t i_ch=0; i_ch < fragment.nChannelsPerBoard(); ++i_ch){
-          //raw::ChannelID_t channel_num = (i_ch & 0xff ) + (i_b << 8);
-           raw::ChannelID_t channel_num = i_ch+i_b*64;
-          raw::RawDigit::ADCvector_t wvfm(fragment.nSamplesPerChannel());
-          for(size_t i_t=0; i_t < fragment.nSamplesPerChannel(); ++i_t) {
-            wvfm[i_t] = fragment.adc_val(i_b,i_ch,i_t);
-           // if(channel_num==1855) std::cout << " sample " << i_t << " wave " << wvfm[i_t] << std::endl;
-}
-     //   product_collection->emplace_back(channel_count++,fragment.nSamplesPerChannel(),wvfm);
+  for(size_t i_b=0; i_b < fragment.nBoards(); i_b++){
+
+    _board_id = i_b;
+    _event_number = fragment.BoardEventNumber(i_b);
+    _timestamp = fragment.BoardTimeStamp(i_b);
+
+    _header_ana_tree->Fill();
+
+    //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
+    for(size_t i_ch=0; i_ch < fragment.nChannelsPerBoard(); ++i_ch){
+      //raw::ChannelID_t channel_num = (i_ch & 0xff ) + (i_b << 8);
+      raw::ChannelID_t channel_num = i_ch+i_b*64+_fragment_id*5*64;
+      raw::RawDigit::ADCvector_t wvfm(fragment.nSamplesPerChannel());
+      for(size_t i_t=0; i_t < fragment.nSamplesPerChannel(); ++i_t) {
+	wvfm[i_t] = fragment.adc_val(i_b,i_ch,i_t);
+	// if(channel_num==1855) std::cout << " sample " << i_t << " wave " << wvfm[i_t] << std::endl;
+      }
+      //   product_collection->emplace_back(channel_count++,fragment.nSamplesPerChannel(),wvfm);
       product_collection->emplace_back(channel_num,fragment.nSamplesPerChannel(),wvfm);
- //std::cout << " channel " << channel_num << " waveform size " << fragment.nSamplesPerChannel() << std::endl;
-        }//loop over channels
-      }//loop over boards
-      std::cout << "Total number of channels added is " << product_collection->size() << std::endl;
+      //std::cout << " channel " << channel_num << " waveform size " << fragment.nSamplesPerChannel() << std::endl;
+    }//loop over channels
+  }//loop over boards
+  std::cout << "Total number of channels added is " << product_collection->size() << std::endl;
+
+
+
+
+
+
+
+
   /*std::unordered_map<uint16_t,sbnddaq::NevisTPC_Data_t> waveform_map;
-  size_t n_waveforms = fragment.decode_data(waveform_map);
-  (void)n_waveforms;
-
+    size_t n_waveforms = fragment.decode_data(waveform_map);
+    (void)n_waveforms;
+    
   if (_config.produce_header) {
-    auto header_data = Fragment2HeaderData(event, frag);
-    if (_config.produce_header || _config.produce_metadata) {
-      // Construct HeaderData from the Nevis Header and throw it in the collection
-      header_collection->push_back(header_data);
-    }
+  auto header_data = Fragment2HeaderData(event, frag);
+  if (_config.produce_header || _config.produce_metadata) {
+  // Construct HeaderData from the Nevis Header and throw it in the collection
+  header_collection->push_back(header_data);
   }
-
+  }
+  
   for (auto waveform: waveform_map) {
     // ignore channels that aren't mapped to a wire
     if (!is_mapped_channel(fragment.header(), waveform.first)) continue;

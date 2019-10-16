@@ -13,6 +13,9 @@ simple_plugin( ICARUSTPCDecoder module
   ${MF_UTILITIES}
   ${ART_FRAMEWORK_CORE}
   ${ROOT_BASIC_LIB_LIST}
+                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
 )
 install_headers()
 install_fhicl()

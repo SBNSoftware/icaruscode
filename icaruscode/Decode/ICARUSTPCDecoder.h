@@ -24,6 +24,8 @@
 #include "TH1F.h"
 #include "TFile.h"
 #include "TVirtualFFT.h"
+#include "TTree.h"
+
 //"art" includes (canvas, and gallery)
 //#include "gallery/Event.h"
 //#include "gallery/ValidHandle.h"
@@ -88,5 +90,15 @@ private:
   // keeping track of incrementing numbers
   uint32_t _last_event_number;
   uint32_t _last_trig_frame_number;
+
+  uint32_t _fragment_id_offset;
+
+  TTree* _header_ana_tree;
+
+  unsigned int _event_number;
+  unsigned int _fragment_id;
+  unsigned int _board_id;
+  unsigned int _timestamp;
+
 };
 #endif /* ICARUSTPCDecoder_h */
