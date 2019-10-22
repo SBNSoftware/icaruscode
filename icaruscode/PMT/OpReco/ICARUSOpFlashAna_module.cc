@@ -130,12 +130,12 @@ void ICARUSOpFlashAna::beginJob()
   }
   for(auto iter=geop->begin_TPC(); iter!=geop->end_TPC(); ++iter) {
     auto const& tpc = (*iter);
-    minX.push_back(tpc.BoundingBox().MinX());
-    minY.push_back(tpc.BoundingBox().MinY());
-    minZ.push_back(tpc.BoundingBox().MinZ());
-    maxX.push_back(tpc.BoundingBox().MaxX());
-    maxY.push_back(tpc.BoundingBox().MaxY());
-    maxZ.push_back(tpc.BoundingBox().MaxZ());
+    minX.push_back(tpc.ActiveBoundingBox().MinX());
+    minY.push_back(tpc.ActiveBoundingBox().MinY());
+    minZ.push_back(tpc.ActiveBoundingBox().MinZ());
+    maxX.push_back(tpc.ActiveBoundingBox().MaxX());
+    maxY.push_back(tpc.ActiveBoundingBox().MaxY());
+    maxZ.push_back(tpc.ActiveBoundingBox().MaxZ());
   }
   _geotree->Branch("pmtX",&pmtX);
   _geotree->Branch("pmtY",&pmtY);

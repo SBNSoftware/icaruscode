@@ -88,6 +88,8 @@ ICARUSOpFlashAna: {
 ICARUSParticleAna: {
 		module_type: "ICARUSParticleAna"
 		OutputFileName: "particleana.root"
-		ParticleProducer: "generator"
+		ParticleProducer: "largeant"
+		TrajectoryProducer: "largeant"
 }
+
 END_PROLOG
