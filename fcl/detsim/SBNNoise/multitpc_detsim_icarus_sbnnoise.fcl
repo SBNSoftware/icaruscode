@@ -67,10 +67,35 @@ physics.producers.daq3.SuppressNoSignal: true
 physics.producers.daq3.Cryostat:         1
 physics.producers.daq3.TPC:              1
 
-physics.producers.daq0.NoiseGenToolVec:  [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
-physics.producers.daq1.NoiseGenToolVec:  [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
-physics.producers.daq2.NoiseGenToolVec:  [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
-physics.producers.daq3.NoiseGenToolVec:  [@local::SBNNoiseToolInd1, @local::SBNNoiseToolInd2, @local::SBNNoiseToolColl]
+physics.producers.daq0.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq1.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq2.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq3.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+
+physics.producers.daq0.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq0.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+physics.producers.daq0.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq0.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq0.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq0.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq1.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq1.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+physics.producers.daq1.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq1.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq1.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq1.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq2.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq2.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+physics.producers.daq2.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq2.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq2.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq2.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq3.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq3.NoiseGenToolVec[0].NoiseHistFileName: "FFTww01m.root"
+physics.producers.daq3.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq3.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq3.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq3.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
