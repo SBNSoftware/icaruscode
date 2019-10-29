@@ -84,28 +84,37 @@ namespace cluster {
     //TH1F* fNClusters;
     //TH1F* fNHitInCluster;
       //TH1F* fClusterNW;
-      //TH1F* fClusterNS;
+       TH1F* puritytpc0;
     // Cosmic Rays
-     //TH1F* fHitTime; 
-     //TH1F* fHitArea;
-      //TH1F* fHitIntegral;
+       TH1F* puritytpc1;
+       TH1F* puritytpc2;
+       TH1F* puritytpc3;
+
       //TH2D* fHitAreaTime;
       TH1F* purityvalues;
+      TH1F* purityvalues2;
+      TH1F* purityvalues3;
+
       //TH2D* h_basediff2;
-      //TH1F* h_basediff;
+      TH1F* h_basediff;
+      TH1F* h_base1;
+      TH1F* h_base2;
+      TH1F* h_basebase;
+
+
       TH1F* h_rms;
       TH1F* fRun; 
       TH2D* fRunSub;
-      TProfile2D* fRunSubPurity;
-      TProfile2D* fRunSubPurity2;
-      TProfile2D* fRunSubPurity3;
+      //TProfile2D* fRunSubPurity;
+      //TProfile2D* fRunSubPurity2;
+      //TProfile2D* fRunSubPurity3;
 
 
 
     std::string fHitsModuleLabel;
     std::string fClusterModuleLabel;
     std::string fVertexModuleLabel;
-      std::string fDigitModuleLabel;
+    std::vector<art::InputTag>  fDigitModuleLabel;
     short fPrintLevel;
     short moduleID;
     float fValoretaufcl; 
@@ -126,7 +135,7 @@ namespace cluster{
     , fHitsModuleLabel      (pset.get< std::string > ("HitsModuleLabel")         )
     , fClusterModuleLabel   (pset.get< std::string > ("ClusterModuleLabel"))
     , fVertexModuleLabel    (pset.get< std::string > ("VertexModuleLabel")         )
-    , fDigitModuleLabel    (pset.get< std::string > ("RawModuleLabel")         )
+    , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fPrintLevel           (pset.get< short >       ("PrintLevel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
   {
@@ -167,19 +176,32 @@ namespace cluster{
       //fClusterNW = tfs->make<TH1F>("fClusterNW","fClusterNW",1000,0,2000);
       //fClusterNS = tfs->make<TH1F>("fClusterNS","fClusterNS",1000,0,2500);
       purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
-      //h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",200,0,0);
+      h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",10000,-20,20);
+      h_basebase = tfs->make<TH1F>("h_basebase","h_basebase",10000,-20,20);
+      h_base1 = tfs->make<TH1F>("h_base1","h_base1",10000,-20,20);
+      h_base2 = tfs->make<TH1F>("h_base2","h_base2",10000,-20,20);
+
       h_rms = tfs->make<TH1F>("h_rms","h_rms",2000,0,20);
-      //h_basediff2 = tfs->make<TH2D>("h_basediff2","h_basediff2",200,0,0,200,0,0);
+      //h_basediff2 = tfs->make<TH2D>("h_basediff2","h_basediff2",10000,-20,20,10000,-20,20);
      fRun=tfs->make<TH1F>("fRun","Events per run", 4000,0.5 ,4000.5);
      fRunSub=tfs->make<TH2D>("fRunSub","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-    fRunSubPurity=tfs->make<TProfile2D>("fRunSubPurity","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-   fRunSubPurity2=tfs->make<TProfile2D>("fRunSubPurity2","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-   fRunSubPurity3=tfs->make<TProfile2D>("fRunSubPurity3","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
+    //fRunSubPurity=tfs->make<TProfile2D>("fRunSubPurity","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
+   //fRunSubPurity2=tfs->make<TProfile2D>("fRunSubPurity2","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
+   //fRunSubPurity3=tfs->make<TProfile2D>("fRunSubPurity3","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
+      purityvalues2 = tfs->make<TH1F>("purityvalues2","purityvalues2",20000,-10,10);
+      puritytpc0 = tfs->make<TH1F>("puritytpc0","puritytpc0",20000,-10,10);
+     puritytpc1 = tfs->make<TH1F>("puritytpc1","puritytpc1",20000,-10,10);
+     puritytpc2 = tfs->make<TH1F>("puritytpc2","puritytpc2",20000,-10,10);
+     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
+      purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
 
   }
   
-  void ICARUSPurityDQM::endJob()
+      
+ void ICARUSPurityDQM::endJob()
   {
+    std::ofstream goodpurofinal("valore_indicativo.out",std::ios::app);
+    goodpurofinal << purityvalues2->GetMean() << std::endl;
     if(fPrintLevel == -1) outFile.close();
   }
   
@@ -240,6 +262,8 @@ namespace cluster{
     
   void ICARUSPurityDQM::analyze(const art::Event& evt)
   {
+
+
     std::cout << " Inizia Purity ICARUS Ana " << std::endl;
     // code stolen from TrackAna_module.cc
     art::ServiceHandle<geo::Geometry>      geom;
@@ -254,7 +278,9 @@ namespace cluster{
 	fRun->Fill(evt.run());
         fRunSub->Fill(evt.run(),evt.subRun());
       art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-      evt.getByLabel(fDigitModuleLabel, digitVecHandle);
+for(const auto& digitlabel : fDigitModuleLabel)
+{
+      evt.getByLabel(digitlabel, digitVecHandle);
       std::vector<const raw::RawDigit*> rawDigitVec;
 
       if (digitVecHandle.isValid())
@@ -348,6 +374,11 @@ namespace cluster{
                   base_massimo_after+=(rawDigit->ADC(ijk)-pedestal2)*0.01;
               }
               float basebase=(base_massimo_after+base_massimo_before)*0.5;
+              h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
+             h_base1->Fill(base_massimo_before);
+	             h_base2->Fill(base_massimo_after);
+ 	     h_basebase->Fill(basebase);
+             //h_basediff2->Fill(base_massimo_before,base_massimo_after);
               float areaarea=0;
 /*
               for (unsigned int ijk=quale_sample_massimo-50; ijk<quale_sample_massimo+50; ijk++)
@@ -358,10 +389,11 @@ namespace cluster{
               for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
               {
                   if (ijk>(quale_sample_massimo-30) && ijk<(quale_sample_massimo+30)) {
-                  areaarea+=(rawDigit->ADC(ijk)-pedestal2-basebase);
+                      //areaarea+=(rawDigit->ADC(ijk)-pedestal2-basebase);
+                      areaarea+=(rawDigit->ADC(ijk)-pedestal2);
                   }
                   else{
-                      h111->Fill(rawDigit->ADC(ijk)-pedestal2);
+                      h111->Fill(rawDigit->ADC(ijk)-pedestal2-basebase);
                   }
                   
               }
@@ -626,7 +658,7 @@ namespace cluster{
 	std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_nn[icl] << std::endl;
 	int tpc_number=clusters_vi[icl];//qui andrebbe messo il numero di TPC
         
-	if (clusters_ds[icl]>1000 && clusters_dw[icl]>100)
+	if (clusters_ds[icl]>1100 && clusters_dw[icl]>100)
 	  {//if analisi
 
 	    std::vector<float> *whc=new std::vector<float>;
@@ -801,8 +833,8 @@ namespace cluster{
                                 if((*hittime)[kk]>=(minimo+stp*steptime) && (*hittime)[kk]<=(minimo+(stp+1)*(steptime))) hitpertaglio->push_back((*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau));
 			      }
                             ///////std::cout << hitpertaglio->size() << std::endl;
-                            float tagliomax=FoundMeanLog(hitpertaglio,0.90);
-                            float tagliomin=FoundMeanLog(hitpertaglio,0.10);
+                            float tagliomax=FoundMeanLog(hitpertaglio,0.90);//0.9com//0.8test1
+                            float tagliomin=FoundMeanLog(hitpertaglio,0.05);//0.1com//0.05test1
                             //float tagliomin=0;
                             //float tagliomax=1000000;
                             delete hitpertaglio;
@@ -870,31 +902,15 @@ namespace cluster{
                         
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
                         gr32->Fit("pol1");
-                        TCanvas c4 ("c4", "coll 1 ind 2", 10, 10, 700, 700);
-                        c4.Range(-79.46542,0.7467412,586.8952,3.249534);
-                        c4.SetFillColor(0);
-                        c4.SetBorderSize(2);
-                        c4.SetLeftMargin(0.1192529);
-                        c4.SetRightMargin(0.08045977);
-                        c4.SetFrameLineWidth(2);
-                        gr32->Draw("AP");
-                        c4.Print("grafico2.eps");
-                        c4.Print("grafico2.C");
                         
                         TF1 *fit2 = gr32->GetFunction("pol1");
                         float slope_purity_2=fit2->GetParameter(1);
                         float error_slope_purity_2=fit2->GetParError(1);
                         //float intercetta_purezza_2=fit2->GetParameter(0);
-                        //float chiquadro=fit2->GetChisquare()/(hitareagood->size()-2);
+                        float chiquadro=fit2->GetChisquare()/(hitareagood->size()-2);
 			std::ofstream goodpuro("purity_results.out",std::ios::app);
-			purityvalues->Fill(-slope_purity_2*1000.);
-			fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
-                        /////if(tpc_number==2 || tpc_number==5)
-			/////  {
-                            //goodpuro << " run " << evt.Run() << " event " << evt.event() << " vista " << tpc_number << std::endl;
-                            //goodpuro << chiquadro << std::endl;
-                            goodpuro << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_2 << " " << error_slope_purity_2 << std::endl;
-			  //////}
+                        std::ofstream goodpuro2("purity_results2.out",std::ios::app);
+
                         std::cout << -1/slope_purity_2 << std::endl;
                         std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
                         std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
@@ -903,60 +919,35 @@ namespace cluster{
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
-                        fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
+                        //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
+                        //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
                         std::cout << -1/slope_purity_exo << std::endl;
                         std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
+
+
+                        if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5)
+                        {
+			if(fabs(slope_purity_2)<0.01)purityvalues->Fill(-slope_purity_2*1000.);
+                            if(fabs(slope_purity_2)<0.01)goodpuro << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_2 << " " << error_slope_purity_2 << " " << chiquadro << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
+
+                        if(fabs(slope_purity_exo)<0.01)goodpuro2 << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_exo << " " << error_slope_purity_exo << " " << fitexo->GetChisquare()/(hitareagood->size()-2) << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
+                        if(fabs(slope_purity_exo)<0.01)purityvalues2->Fill(-slope_purity_exo*1000.);
+                        if(fabs(slope_purity_exo)<0.01 && tpc_number==0)puritytpc0->Fill(-slope_purity_exo*1000.);
+                        if(fabs(slope_purity_exo)<0.01 && tpc_number==1)puritytpc1->Fill(-slope_purity_exo*1000.);
+                        if(fabs(slope_purity_exo)<0.01 && tpc_number==2)puritytpc2->Fill(-slope_purity_exo*1000.);
+                        if(fabs(slope_purity_exo)<0.01 && tpc_number==3)puritytpc3->Fill(-slope_purity_exo*1000.);
+
+                        }
+
+
                         //std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         //goodpur << timeevent << " is time event " << std::endl;
                        
-                        TF1 *fitexo2 = new TF1("fitexo2","pol0+expo(1)");
-			fitexo2->SetParLimits(0,-100,100); 
-                        TGraphAsymmErrors *gr41b = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
-			gr41b->Fit("fitexo2");
-                        //gr41b->Fit("pol0(0)+expo(1)");
-                        //TF1 *fitexo2 = gr41b->GetFunction("pol0(0)+expo(1)");
-                        float slope_purity_exo2=fitexo2->GetParameter(2);
-                        float error_slope_purity_exo2=fitexo2->GetParError(2);
-                        fRunSubPurity3->Fill(evt.run(),evt.subRun(),-slope_purity_exo2*1000.);
-                        std::cout << -1/slope_purity_exo2 << std::endl;
-                        std::cout << -1/(slope_purity_exo2+error_slope_purity_exo2)+1/slope_purity_exo2 << std::endl;
-                        std::cout << 1/slope_purity_exo2-1/(slope_purity_exo2-error_slope_purity_exo2) << std::endl;
-                        std::cout << fitexo2->GetChisquare()/(hitareagood->size()-2) << std::endl;
-
-			std::cout << -1/slope_purity_exo2 << " " << -1/slope_purity_exo << " TUTTTI I VALUES " << -slope_purity_exo2*1000. << " " << -slope_purity_exo*1000. << std::endl;
-
-                        TCanvas c2 ("c2", "coll 1 ind 2", 10, 10, 700, 700);
-                        c2.Range(-79.46542,0.7467412,586.8952,3.249534);
-                        c2.SetFillColor(0);
-                        c2.SetBorderSize(2);
-                        c2.SetLogy();
-                        c2.SetLeftMargin(0.1192529);
-                        c2.SetRightMargin(0.08045977);
-                        c2.SetFrameLineWidth(2);
-                        //gr41->SetTitle("July, 10,2010, 17:45 #tau = 1473 #mus #pm 10%");
-                        gr41b->SetTitle("Purity Measurement");
-                        gr41b->SetFillColor(1);
-                        gr41b->SetLineColor(4);
-                        gr41b->SetLineWidth(2);
-                        gr41b->Draw("AP");
-                        gr41b->SetMinimum(50);
-                        gr41b->SetMaximum(5000);
-                        //gr41->SetDirectory(0);
-                        //gr41->SetStats(0);
-                        gr41b->GetXaxis()->SetTitle("hit time(#mus)");
-                        gr41b->GetYaxis()->SetTitle("hit area(ADC# * tsample)");
-                        gr41b->GetYaxis()->SetTitleOffset(1.3);
-                        fitexo2->SetFillColor(19);
-                        fitexo2->SetFillStyle(0);
-                        fitexo2->SetLineWidth(3);
-                        
-                        c2.Print("grafico.eps");
-                        c2.Print("grafico.C");
 		      }//hitarea size 30
 		  }
                 delete hittime;
@@ -1002,7 +993,7 @@ namespace cluster{
       delete aaa1;
       delete aaa2;
       delete aaa3;
-
+}
   } // analyze
 
 } //end namespace

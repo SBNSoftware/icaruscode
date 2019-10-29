@@ -26,15 +26,12 @@ physics:
 {
  analyzers:
  {
-   purityana0:  @local::standard_clusterana
-   purityana1:  @local::standard_clusterana
-   purityana2:  @local::standard_clusterana
-   purityana3:  @local::standard_clusterana
+   purityana:  @local::standard_clusterana
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- ana: [ purityana0, purityana1, purityana2, purityana3 ]
+ ana: [ purityana ]
  end_paths:     [ana]  
 }
 
@@ -54,15 +51,6 @@ outputs:
 }
 
 
-physics.analyzers.purityana0.RawModuleLabel:    "daq0"
-physics.analyzers.purityana0.module_type:    "ICARUSPurityDQM"
-physics.analyzers.purityana0.ValoreTauFCL:  600000.
-physics.analyzers.purityana1.RawModuleLabel:    "daq1"
-physics.analyzers.purityana1.module_type:    "ICARUSPurityDQM"
-physics.analyzers.purityana1.ValoreTauFCL:  600000.
-physics.analyzers.purityana2.RawModuleLabel:    "daq2"
-physics.analyzers.purityana2.module_type:    "ICARUSPurityDQM"
-physics.analyzers.purityana2.ValoreTauFCL:  600000.
-physics.analyzers.purityana3.RawModuleLabel:    "daq3"
-physics.analyzers.purityana3.module_type:    "ICARUSPurityDQM"
-physics.analyzers.purityana3.ValoreTauFCL:  600000.
+physics.analyzers.purityana.RawModuleLabel: ["daq0", "daq1", "daq2", "daq3"]
+physics.analyzers.purityana.module_type:    "ICARUSPurityDQM"
+physics.analyzers.purityana.ValoreTauFCL:  600000.
