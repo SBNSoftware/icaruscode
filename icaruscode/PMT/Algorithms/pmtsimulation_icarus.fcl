@@ -50,7 +50,7 @@ icarus_pmtsimulationalg_standard: {
 
   ##Threshold in ADC counts for a PMT self-trigger.
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
-  ThresholdADC:              10             #ADC counts
+  ThresholdADC:              4              #ADC counts
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
   TriggerOffsetPMT:          -1150          #Time (us) relative to trigger that readout begins
