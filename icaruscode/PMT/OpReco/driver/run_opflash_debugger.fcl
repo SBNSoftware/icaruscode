@@ -32,12 +32,13 @@ physics:
    ophit:         @local::icarus_ophit
    mcflash:       @local::ICARUSMCOpFlash
    cheatflash:    @local::ICARUSMCOpFlash
+   opflash:       @local::ICARUSSimpleFlash
  }
- analyzers: { 
-   ophitana: @local::ICARUSOpHitAna 
+ analyzers: {
+   ophitana: @local::ICARUSOpHitAna
    opflashana: @local::ICARUSOpFlashAna
  }
- produce: [ ophitdebugger, ophit, mcophit, mcflash, cheatflash ]
+ produce: [ ophitdebugger, ophit, mcophit, mcflash, cheatflash, opflash ]
  analyze: [ ophitana, opflashana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
@@ -60,10 +61,11 @@ outputs:
 services.TFileService.fileName: "ana.root"
 services.LArG4Parameters.FillSimEnergyDeposits:       true
 
-physics.producers.mcophit.SimPhotonsProducer: "generator"
+#physics.producers.mcophit.SimPhotonsProducer: "generator"
 physics.producers.cheatflash.OpHitProducer: "ophit"
 #physics.producers.ophitdebugger.PedAlgoPset.Verbose: true
-
+#physics.producers.ophitdebugger.HitAlgoPset.Verbosity: true
+physics.analyzers.opflashana.OpFlashProducerList: ["cheatflash","opflash"]
 services.message.destinations :
 {
   STDCOUT:

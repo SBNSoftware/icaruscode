@@ -54,6 +54,7 @@ private:
 
   // Declare member data here.
   double _merge_period;
+  double _pe_threshold;
   bool   _store_empty_flash;
   std::string _hit_label;
   std::string _mct_label;
@@ -65,6 +66,7 @@ ICARUSMCOpFlash::ICARUSMCOpFlash(fhicl::ParameterSet const& p)
   : EDProducer{p}  // ,
   // More initializers here.
 {
+  _pe_threshold = p.get<double>("PEThresholdHit",0.5);
   _store_empty_flash = p.get<bool>("StoreEmptyFlash",false);
   _mct_label = p.get<std::string>("MCTruthProducer");
   _hit_label = p.get<std::string>("OpHitProducer");
@@ -134,13 +136,28 @@ void ICARUSMCOpFlash::produce(art::Event& e)
   for(auto const& flash_time : flash_time_v) {
     std::vector<double> pe_v(geop->NOpChannels(),0.);
     double pe_total=-1.;
+    double pe_sum=0.;
+    double pe_sum1=0.;
+    double pe_sum2=0.;
     for(auto const& oph : *oph_h) {
       auto opch = oph.OpChannel();
+      if(oph.PE()<_pe_threshold) continue;
+      pe_sum += oph.PE();
       if((int)(_enabled_opch_v.size()) <= opch || !_enabled_opch_v[opch]) continue;
-      if(oph.PeakTime() < flash_time || oph.PeakTime() > (flash_time + _merge_period)) continue;
+      pe_sum1 += oph.PE();
+      if(oph.PeakTime() < flash_time || oph.PeakTime() > (flash_time + _merge_period)) {
+	/*
+	std::cout << "Ch " << opch << " Time: " << oph.PeakTime() 
+		  << " PE " << oph.PE()
+		  << " ... dt " << oph.PeakTime() - flash_time <<std::endl;
+	*/
+	continue;
+      }
+      pe_sum2 += oph.PE();
       pe_v[opch] += oph.PE();
       pe_total = (pe_total < 0. ? oph.PE() : pe_total + oph.PE());
     }
+    //std::cout<<"PE sum " << pe_sum << " " << pe_sum1 << " " << pe_sum2 << std::endl;
     if(pe_total < 0. && !_store_empty_flash) continue;
     double y,z,ywidth,zwidth;
     GetFlashLocation(pe_v,y,z,ywidth,zwidth);

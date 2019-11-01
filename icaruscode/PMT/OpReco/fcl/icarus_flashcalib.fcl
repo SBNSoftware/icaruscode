@@ -1,8 +1,8 @@
-
+#include "icarus_spe.fcl"
 BEGIN_PROLOG
 
 NoCalib: {
-  SPEAreaGain: 62.0
+  SPEAreaGain: @local::SPE.Area
 }
 
 END_PROLOG

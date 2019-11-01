@@ -35,7 +35,7 @@ icarus_pmtsimulationalg_standard: {
 
   TransitTime:               55.1           #ns
   ADC:                       -11.1927       #charge to adc factor
-  Baseline:                  8000.0         #in ADC
+  Baseline:                  7999.5         #in ADC
   FallTime:                  13.7           #ns
   RiseTime:                  3.8            #ns
   MeanAmplitude:             0.9            #in pC

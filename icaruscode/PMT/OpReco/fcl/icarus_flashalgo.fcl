@@ -4,12 +4,12 @@ BEGIN_PROLOG
 SimpleFlashStandard:
 {
   PEThreshold:    20
-  MinPECoinc:     6
-  MinMultCoinc:   3
+  MinPECoinc:     10
+  MinMultCoinc:   5
   IntegralTime:   8.
   PreSample:      0.1
   VetoSize:       8.
-  TimeResolution: 0.03
+  TimeResolution: 0.04
   HitVetoRangeStart: []
   HitVetoRangeEnd:   []
   OpChannelRange:    [0,359]
