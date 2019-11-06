@@ -11,7 +11,6 @@ art_make( TOOL_LIBRARIES lardataobj_RecoBase
                          nusimdata_SimulationBase
                          larsim_Simulation
                          nusimdata_SimulationBase
-                         nuevdb_EventDisplayBase
                          ${ART_FRAMEWORK_CORE}
                          ${ART_FRAMEWORK_PRINCIPAL}
                          ${ART_FRAMEWORK_SERVICES_REGISTRY}
