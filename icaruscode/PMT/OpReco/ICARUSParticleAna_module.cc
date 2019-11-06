@@ -19,6 +19,7 @@
 
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
+#include "lardataobj/MCBase/MCTrack.h"
 //#include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include <TTree.h>
 #include <TFile.h>
@@ -51,11 +52,15 @@ private:
   std::string _output_fname;
 	std::string _particle_label;
 	std::string _trajectory_label;
+	std::string _track_label;
 
 	TTree* _particletree;
+	TTree* _mctracktree;
 	int _run, _event;
 	int _pdg_code;
 	double _x, _y, _z;
+	double _start_x, _start_y, _start_z, _start_t;
+	double _end_x, _end_y, _end_z, _end_t;
 	double _time;
 	double _energy;
 	double _momentum;
@@ -72,6 +77,7 @@ ICARUSParticleAna::ICARUSParticleAna(fhicl::ParameterSet const& p)
 	_output_fname = p.get<std::string>("OutputFileName");
 	_particle_label = p.get<std::string>("ParticleProducer");
 	_trajectory_label = p.get<std::string>("TrajectoryProducer");
+	_track_label = p.get<std::string>("TrackProducer");
 }
 
 void ICARUSParticleAna::beginJob()
@@ -94,12 +100,27 @@ void ICARUSParticleAna::beginJob()
 	_particletree->Branch("z_v", &_z_v);
 	_particletree->Branch("time_v", &_time_v);
 	_particletree->Branch("energy_v", &_energy_v);
+
+	name = "mctracktree";
+	_mctracktree = new TTree(name.c_str(), name.c_str());
+	_mctracktree->Branch("run", &_run, "run/I");
+	_mctracktree->Branch("event", &_event, "event/I");
+  _mctracktree->Branch("pdg_code", &_pdg_code, "pdg_code/I");
+	_mctracktree->Branch("start_x", &_start_x, "start_x/D");
+	_mctracktree->Branch("start_y", &_start_y, "start_y/D");
+	_mctracktree->Branch("start_z", &_start_z, "start_z/D");
+	_mctracktree->Branch("start_t", &_start_t, "start_t/D");
+	_mctracktree->Branch("end_x", &_end_x, "end_x/D");
+	_mctracktree->Branch("end_y", &_end_y, "end_y/D");
+	_mctracktree->Branch("end_z", &_end_z, "end_z/D");
+	_mctracktree->Branch("end_t", &_end_t, "end_t/D");
 }
 
 void ICARUSParticleAna::endJob()
 {
 	_f->cd();
 	_particletree->Write();
+	_mctracktree->Write();
 	if (_f) _f->Close();
 }
 
@@ -153,6 +174,7 @@ void ICARUSParticleAna::analyze(art::Event const& e)
 	for (size_t idx = 0; idx < mcparticle_h->size(); ++idx) {
 		auto const& particle = (*mcparticle_h)[idx];
 		//for (auto const& particle : mcparticle_v) {
+			if (particle.StatusCode() != 1) continue;
 			_pdg_code = particle.PdgCode();
 			_x = particle.Vx();
 			_y = particle.Vy();
@@ -177,6 +199,21 @@ void ICARUSParticleAna::analyze(art::Event const& e)
 			}
 			_particletree->Fill();
 		//}
+	}
+	art::Handle<std::vector< sim::MCTrack > > mctrack_h;
+	e.getByLabel(_track_label, mctrack_h);
+	for(size_t idx = 0; idx < mctrack_h->size(); ++idx) {
+		auto const& particle = (*mctrack_h)[idx];
+		_pdg_code = particle.PdgCode();
+		_start_x = particle.Start().X();
+		_start_y = particle.Start().Y();
+		_start_z = particle.Start().Z();
+		_start_t = particle.Start().T();
+		_end_x = particle.End().X();
+		_end_y = particle.End().Y();
+		_end_z = particle.End().Z();
+		_end_t = particle.End().T();
+		_mctracktree->Fill();
 	}
 
 	// Also record sim::SimEnergyDeposit from largeant?

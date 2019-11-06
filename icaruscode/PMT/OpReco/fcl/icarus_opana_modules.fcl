@@ -90,6 +90,7 @@ ICARUSParticleAna: {
 		OutputFileName: "particleana.root"
 		ParticleProducer: "largeant"
 		TrajectoryProducer: "largeant"
+		TrackProducer: "mcreco"
 }
 
 END_PROLOG
