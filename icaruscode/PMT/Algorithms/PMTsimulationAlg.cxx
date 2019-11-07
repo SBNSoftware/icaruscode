@@ -206,7 +206,6 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       
       trigger_time const mytime
         = timings.toTriggerTime(photonTime)
-        + fParams.transitTime
         - fParams.triggerOffsetPMT
         ;
       if ((mytime < 0.0_us) || (mytime >= fParams.readoutEnablePeriod)) continue;
