@@ -8,7 +8,7 @@ SimpleFlashStandard:
   MinMultCoinc:   5
   IntegralTime:   8.
   PreSample:      0.1
-  VetoSize:       8.
+  VetoSize:       10.
   TimeResolution: 0.04
   HitVetoRangeStart: []
   HitVetoRangeEnd:   []

@@ -13,6 +13,8 @@ simple_plugin(SimPMTIcarus "module"
   icaruscode_PMT_Algorithms
   lardataobj_RawData
   lardataobj_Simulation
+  larcorealg_Geometry
+  larcore_Geometry_Geometry_service
   nurandom_RandomUtils_NuRandomService_service
   ${ART_FRAMEWORK_CORE}
   ${ART_FRAMEWORK_PRINCIPAL}

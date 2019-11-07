@@ -67,13 +67,14 @@ physics:
  analyzers: {
    ophitana: @local::ICARUSOpHitAna
    opflashana: @local::ICARUSOpFlashAna
-	 particleana: @local::ICARUSParticleAna
+   particleana: @local::ICARUSParticleAna
  }
- produce: [ rns, generator, largeant, mcreco, opdaq, ophit, mcophit, mcflash, cheatflash, opflash ]
+ produce: [ rns, generator, largeant, mcreco, opdaq , ophit, mcophit, mcflash, cheatflash, opflash ]
  analyze: [ ophitana, opflashana, particleana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
- end_paths:     [ analyze, store ]
+ #end_paths: [ ]
+ end_paths:  [ analyze ]
  #end_paths: [store]
 }
 
@@ -91,7 +92,10 @@ outputs:
 }
 
 services.TFileService.fileName: "ana.root"
-services.LArG4Parameters.FillSimEnergyDeposits:       true
+services.LArG4Parameters.FillSimEnergyDeposits: true
+services.LArG4Parameters.DisableWireplanes: true
+services.LArG4Parameters.KeepEMShowerDaughters: false
+services.LArG4Parameters.NoElectronPropagation: true
 
 # Particle generator
 #physics.producers.generator.PDG: [ 13 ]            # List of pdg codes for particles to makes
@@ -127,7 +131,7 @@ physics.producers.generator.ParticleParameter.PDGCode: [[13]]
 physics.producers.generator.ParticleParameter.MinMulti: [5]
 physics.producers.generator.ParticleParameter.MaxMulti: [8]
 physics.producers.generator.ParticleParameter.ProbWeight: [1]
-physics.producers.generator.ParticleParameter.KERange: [[800,1500]]
+physics.producers.generator.ParticleParameter.KERange: [[0.8,1.5]]
 physics.producers.generator.ParticleParameter.MomRange: []
 
 physics.producers.mcreco.SimChannelLabel: "largeant:TPCActive"
@@ -140,6 +144,9 @@ physics.producers.opdaq.DarkNoiseRate: 0.0
 physics.producers.opdaq.FluctuateGain: true
 physics.producers.opdaq.InputModule: "largeant" #"generator"
 physics.producers.opdaq.ThresholdADC: 5
+physics.producers.opdaq.TriggerOffsetPMT: -400
+physics.producers.opdaq.ReadoutEnablePeriod: 800
+physics.producers.opdaq.EnabledCryostats: [0]
 
 #physics.producers.mcophit.SimPhotonsProducer: "generator"
 physics.producers.cheatflash.OpHitProducer: "mcophit"

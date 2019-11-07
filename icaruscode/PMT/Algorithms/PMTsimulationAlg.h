@@ -855,7 +855,12 @@ namespace icarus {
           Comment("Time  when readout begins, relative to readout trigger [us]")
           // mandatory
           };
-        
+
+	fhicl::Sequence<size_t> EnabledCryostats {
+          Name("EnabledCryostats"),
+	  Comment("EnabledCryostats")
+          // mandatory
+	  };        
         
       }; // struct Config
       

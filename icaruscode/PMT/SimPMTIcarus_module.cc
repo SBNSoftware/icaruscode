@@ -10,6 +10,7 @@
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
 
 // LArSoft libraries
+#include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -126,6 +127,8 @@ namespace opdet{
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
     
+    /// set of OpChannels to simulate
+    std::vector<bool> fEnabledOpChannels;
   }; // class SimPMTIcarus
   
   
@@ -143,6 +146,30 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     produces<std::vector<sim::SimPhotons> >();
+    // opdet to opchannel
+    auto geop = lar::providerFrom<geo::Geometry>();
+    std::vector<int> opdet2opch;
+    for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
+      size_t opdet = geop->OpDetFromOpChannel(opch);
+      if(opdet2opch.size()<=opdet) opdet2opch.resize(opdet+1,-1);
+      opdet2opch[opdet] = opch;
+    }
+    
+    // Decide which cryostat to simulate
+    std::vector<size_t> cryostats{0,1};
+    cryostats = config.get_PSet().get<std::vector<size_t> >("EnabledCryostats",cryostats);
+    fEnabledOpChannels.clear();
+    for(size_t c = 0; c < geop->Ncryostats(); ++c) {
+      auto const& cryostat = geop->Cryostat(c);
+      //check if it should be enabled
+      bool enabled = false;
+      for(auto const& c_enabled : cryostats) {
+	if(c_enabled != c) continue;
+	enabled = true; break;
+      }
+      fEnabledOpChannels.resize(fEnabledOpChannels.size()+cryostat.NOpDet(),enabled);
+    }
+
   } // SimPMTIcarus::SimPMTIcarus()
   
   
@@ -177,6 +204,9 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // run the algorithm
     //
     for(auto const& photons : pmtVector) {
+      auto opch = photons.OpChannel();
+      if((int)(fEnabledOpChannels.size()) <= opch || !fEnabledOpChannels[opch])
+	continue;
       sim::SimPhotons photons_used;
       auto const& channelWaveforms = PMTsimulator->simulate(photons,photons_used);
       std::move(

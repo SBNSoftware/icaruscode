@@ -61,7 +61,7 @@ icarus_pmtsimulationalg_standard: {
   Saturation:                300            #in number of p.e. to see saturation effects in the signal
   QE:                        0.07           #TPB coated PMT quantum efficiency
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
-  
+  EnabledCryostats:          [0,1]
   PMTspecs: {
     DynodeK:                   0.75           # gain on a PMT multiplication stage
                                               # is proportional to dV^k

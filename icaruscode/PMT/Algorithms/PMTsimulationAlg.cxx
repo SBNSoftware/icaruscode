@@ -460,7 +460,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   using util::quantities::megahertz;
   using util::quantities::picocoulomb;
   using ADCcount = icarus::opdet::PMTsimulationAlg::ADCcount;
-  
+
   //
   // readout settings
   //
@@ -509,7 +509,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   fBaseConfig.createBeamGateTriggers   = config.CreateBeamGateTriggers();
   fBaseConfig.beamGateTriggerRepPeriod = microsecond(config.BeamGateTriggerRepPeriod());
   fBaseConfig.beamGateTriggerNReps     = config.BeamGateTriggerNReps();
-  
+
   //
   // parameter checks
   //
