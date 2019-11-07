@@ -72,6 +72,7 @@ physics:
  produce: [ rns, generator, largeant, mcreco, opdaq , ophit, mcophit, mcflash, cheatflash, opflash ]
  analyze: [ ophitana, opflashana, particleana ]
  store:   [ out1 ]
+
  trigger_paths: [ produce ]
  #end_paths: [ ]
  end_paths:  [ analyze ]
@@ -107,10 +108,10 @@ services.LArG4Parameters.NoElectronPropagation: true
 #physics.producers.generator.SigmaY: [ 0. ]         # variation in the starting y position
 #physics.producers.generator.SigmaZ: [ 0. ]         # variation in the starting z position
 #physics.producers.generator.PDist: 0               # 0 = uniform, 1 = gaussian
-#physics.producers.generator.P0: [ 0.0205 ]         # central value of momentum for each particle (MeV/c)
+#physics.producers.generator.P0: [ 1.101 ]          # central value of momentum for each particle (GeV/c)
 #physics.producers.generator.T0: [ 0. ]             # starting time
 #physics.producers.generator.SigmaT: [ 0. ]         # variation in the starting time
-#physics.producers.generator.SigmaP: [ 0. ]         # variation about the central value
+#physics.producers.generator.SigmaP: [ 0.2 ]        # variation about the central value
 #physics.producers.generator.Theta0XZ: [ 0. ]       # angle in XZ plane (degrees)
 #physics.producers.generator.Theta0YZ: [ 0. ]       # angle in YZ plane (degrees)
 #physics.producers.generator.SigmaThetaXZ: [ 180. ] # in degrees, 180 for isotropic
@@ -120,11 +121,11 @@ services.LArG4Parameters.NoElectronPropagation: true
 
 # MPR
 physics.producers.generator.G4Time: 0.0 #3925.0
-physics.producers.generator.G4TimeJitter: 300000 #800
+physics.producers.generator.G4TimeJitter: 600000 #800
 physics.producers.generator.TPCRange: [0,1]
-physics.producers.generator.XRange: [10]
-physics.producers.generator.YRange: [10]
-physics.producers.generator.ZRange: [10]
+physics.producers.generator.XRange: [-20,-20]
+physics.producers.generator.YRange: [-20,-20]
+physics.producers.generator.ZRange: [-20,-20]
 physics.producers.generator.MultiMax: 7
 physics.producers.generator.MultiMin: 5
 physics.producers.generator.ParticleParameter.PDGCode: [[13]]
@@ -134,6 +135,7 @@ physics.producers.generator.ParticleParameter.ProbWeight: [1]
 physics.producers.generator.ParticleParameter.KERange: [[0.8,1.5]]
 physics.producers.generator.ParticleParameter.MomRange: []
 
+physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
 physics.producers.mcreco.SimChannelLabel: "largeant:TPCActive"
 physics.producers.mcreco.MCParticleLabel: "largeant"
 physics.producers.mcreco.UseSimEnergyDeposit: true
