@@ -190,6 +190,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
   std::map<double,int> mcflash_db;
   // fill the map
   //auto const geop = lar::providerFrom<geo::Geometry>();
+	//std::cout << "mcflash count = " << mcflash_h->size() << std::endl;
   for(size_t mcflash_index=0; mcflash_index < mcflash_h->size(); ++mcflash_index) {
     auto const& mcflash = (*mcflash_h)[mcflash_index];
     mcflash_db[mcflash.Time() + _match_time_min] = mcflash_index;

@@ -89,7 +89,7 @@ ICARUSParticleAna: {
 		module_type: "ICARUSParticleAna"
 		OutputFileName: "particleana.root"
 		ParticleProducer: "largeant"
-		TrajectoryProducer: "largeant"
+		TrajectoryProducer: "" #"largeant"
 		TrackProducer: "mcreco"
 }
 

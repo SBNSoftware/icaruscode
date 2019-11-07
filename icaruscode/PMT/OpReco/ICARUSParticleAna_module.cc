@@ -76,7 +76,7 @@ ICARUSParticleAna::ICARUSParticleAna(fhicl::ParameterSet const& p)
   // Call appropriate consumes<>() for any products to be retrieved by this module.
 	_output_fname = p.get<std::string>("OutputFileName");
 	_particle_label = p.get<std::string>("ParticleProducer");
-	_trajectory_label = p.get<std::string>("TrajectoryProducer");
+	_trajectory_label = p.get<std::string>("TrajectoryProducer", "");
 	_track_label = p.get<std::string>("TrackProducer");
 }
 
@@ -84,42 +84,48 @@ void ICARUSParticleAna::beginJob()
 {
 	_f = TFile::Open(_output_fname.c_str(), "RECREATE");
 	std::string name = _particle_label + "_particletree";
-	_particletree = new TTree(name.c_str(), name.c_str());
-  _particletree->Branch("run", &_run, "run/I");
-	_particletree->Branch("event", &_event, "event/I");
-	_particletree->Branch("pdg_code", &_pdg_code, "pdg_code/I");
-	_particletree->Branch("x", &_x, "x/D");
-	_particletree->Branch("y", &_y, "y/D");
-	_particletree->Branch("z", &_z, "z/D");
-	_particletree->Branch("time", &_time, "time/D");
-	_particletree->Branch("energy", &_energy, "energy/D");
-	_particletree->Branch("momentum", &_momentum, "momentum/D");
-	_particletree->Branch("track_id", &_track_id, "track_id/I");
-	_particletree->Branch("x_v", &_x_v);
-	_particletree->Branch("y_v", &_y_v);
-	_particletree->Branch("z_v", &_z_v);
-	_particletree->Branch("time_v", &_time_v);
-	_particletree->Branch("energy_v", &_energy_v);
-
+	if (!_trajectory_label.empty()) {
+		_particletree = new TTree(name.c_str(), name.c_str());
+		_particletree->Branch("run", &_run, "run/I");
+		_particletree->Branch("event", &_event, "event/I");
+		_particletree->Branch("pdg_code", &_pdg_code, "pdg_code/I");
+		_particletree->Branch("x", &_x, "x/D");
+		_particletree->Branch("y", &_y, "y/D");
+		_particletree->Branch("z", &_z, "z/D");
+		_particletree->Branch("time", &_time, "time/D");
+		_particletree->Branch("energy", &_energy, "energy/D");
+		_particletree->Branch("momentum", &_momentum, "momentum/D");
+		_particletree->Branch("track_id", &_track_id, "track_id/I");
+		_particletree->Branch("x_v", &_x_v);
+		_particletree->Branch("y_v", &_y_v);
+		_particletree->Branch("z_v", &_z_v);
+		_particletree->Branch("time_v", &_time_v);
+		_particletree->Branch("energy_v", &_energy_v);
+	}
 	name = "mctracktree";
 	_mctracktree = new TTree(name.c_str(), name.c_str());
 	_mctracktree->Branch("run", &_run, "run/I");
 	_mctracktree->Branch("event", &_event, "event/I");
   _mctracktree->Branch("pdg_code", &_pdg_code, "pdg_code/I");
-	_mctracktree->Branch("start_x", &_start_x, "start_x/D");
+	/*_mctracktree->Branch("start_x", &_start_x, "start_x/D");
 	_mctracktree->Branch("start_y", &_start_y, "start_y/D");
 	_mctracktree->Branch("start_z", &_start_z, "start_z/D");
 	_mctracktree->Branch("start_t", &_start_t, "start_t/D");
 	_mctracktree->Branch("end_x", &_end_x, "end_x/D");
 	_mctracktree->Branch("end_y", &_end_y, "end_y/D");
 	_mctracktree->Branch("end_z", &_end_z, "end_z/D");
-	_mctracktree->Branch("end_t", &_end_t, "end_t/D");
+	_mctracktree->Branch("end_t", &_end_t, "end_t/D");*/
+	_mctracktree->Branch("x_v", &_x_v);
+	_mctracktree->Branch("y_v", &_y_v);
+	_mctracktree->Branch("z_v", &_z_v);
+	_mctracktree->Branch("time_v", &_time_v);
+	_mctracktree->Branch("energy_v", &_energy_v);
 }
 
 void ICARUSParticleAna::endJob()
 {
 	_f->cd();
-	_particletree->Write();
+	if (!_trajectory_label.empty()) _particletree->Write();
 	_mctracktree->Write();
 	if (_f) _f->Close();
 }
@@ -170,51 +176,71 @@ void ICARUSParticleAna::analyze(art::Event const& e)
 	}*/
 
 	art::Handle<std::vector< simb::MCParticle > > mcparticle_h;
-	e.getByLabel(_trajectory_label, mcparticle_h);
-	for (size_t idx = 0; idx < mcparticle_h->size(); ++idx) {
-		auto const& particle = (*mcparticle_h)[idx];
-		//for (auto const& particle : mcparticle_v) {
-			if (particle.StatusCode() != 1) continue;
-			_pdg_code = particle.PdgCode();
-			_x = particle.Vx();
-			_y = particle.Vy();
-			_z = particle.Vz();
-			_time = particle.T();
-			_energy = particle.E();
-			_momentum = particle.P();
-			_track_id = particle.TrackId();
+	if (!_trajectory_label.empty()) {
+		e.getByLabel(_trajectory_label, mcparticle_h);
+		for (size_t idx = 0; idx < mcparticle_h->size(); ++idx) {
+			auto const& particle = (*mcparticle_h)[idx];
+			//for (auto const& particle : mcparticle_v) {
+				if (particle.StatusCode() != 1) continue;
+				_pdg_code = particle.PdgCode();
+				_x = particle.Vx();
+				_y = particle.Vy();
+				_z = particle.Vz();
+				_time = particle.T();
+				_energy = particle.E();
+				_momentum = particle.P();
+				_track_id = particle.TrackId();
 
-			const auto& trajectory = particle.Trajectory();
-			_x_v.resize(trajectory.size(), 0.);
-			_y_v.resize(trajectory.size(), 0.);
-			_z_v.resize(trajectory.size(), 0.);
-			_time_v.resize(trajectory.size(), 0.);
-			_energy_v.resize(trajectory.size(), 0.);
-			for (size_t pt_idx = 0; pt_idx < trajectory.size(); ++pt_idx) {
-				_x_v[pt_idx] = trajectory.X(pt_idx);
-				_y_v[pt_idx] = trajectory.Y(pt_idx);
-				_z_v[pt_idx] = trajectory.Z(pt_idx);
-				_time_v[pt_idx] = trajectory.T(pt_idx);
-				_energy_v[pt_idx] = trajectory.E(pt_idx);
-			}
-			_particletree->Fill();
-		//}
+				const auto& trajectory = particle.Trajectory();
+				_x_v.resize(trajectory.size(), 0.);
+				_y_v.resize(trajectory.size(), 0.);
+				_z_v.resize(trajectory.size(), 0.);
+				_time_v.resize(trajectory.size(), 0.);
+				_energy_v.resize(trajectory.size(), 0.);
+				for (size_t pt_idx = 0; pt_idx < trajectory.size(); ++pt_idx) {
+					_x_v[pt_idx] = trajectory.X(pt_idx);
+					_y_v[pt_idx] = trajectory.Y(pt_idx);
+					_z_v[pt_idx] = trajectory.Z(pt_idx);
+					_time_v[pt_idx] = trajectory.T(pt_idx);
+					_energy_v[pt_idx] = trajectory.E(pt_idx);
+				}
+				_particletree->Fill();
+			//}
+		}
 	}
 	art::Handle<std::vector< sim::MCTrack > > mctrack_h;
 	e.getByLabel(_track_label, mctrack_h);
+	int mctrack_count = 0;
 	for(size_t idx = 0; idx < mctrack_h->size(); ++idx) {
 		auto const& particle = (*mctrack_h)[idx];
 		_pdg_code = particle.PdgCode();
-		_start_x = particle.Start().X();
+		/*_start_x = particle.Start().X();
 		_start_y = particle.Start().Y();
 		_start_z = particle.Start().Z();
 		_start_t = particle.Start().T();
 		_end_x = particle.End().X();
 		_end_y = particle.End().Y();
 		_end_z = particle.End().Z();
-		_end_t = particle.End().T();
+		_end_t = particle.End().T();*/
+		_x_v.resize(particle.size(), 0.);
+		_y_v.resize(particle.size(), 0.);
+		_z_v.resize(particle.size(), 0.);
+		_time_v.resize(particle.size(), 0.);
+		_energy_v.resize(particle.size(), 0.);
+		for (size_t pt_idx = 0; pt_idx < particle.size(); ++pt_idx) {
+			_x_v[pt_idx] = particle[pt_idx].X();
+			_y_v[pt_idx] = particle[pt_idx].Y();
+			_z_v[pt_idx] = particle[pt_idx].Z();
+			_time_v[pt_idx] = particle[pt_idx].T();
+			_energy_v[pt_idx] = particle[pt_idx].E();
+		}
 		_mctracktree->Fill();
+		if (_pdg_code == 13) {
+			++mctrack_count;
+			std::cout << "mctrack time = " << _start_t << " " << _end_t << std::endl;
+		}
 	}
+	std::cout << "mctrack count = " << mctrack_count << std::endl;
 
 	// Also record sim::SimEnergyDeposit from largeant?
 	//art::Handle<std::vector< sim::SimEnergyDeposit > > simenergy_h;
