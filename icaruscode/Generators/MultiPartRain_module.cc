@@ -335,8 +335,6 @@ void MultiPartRain::produce(art::Event & e)
     
     std::unique_ptr< std::vector<simb::MCTruth> > mctArray(new std::vector<simb::MCTruth>);
     
-    double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
-    
     simb::MCTruth mct;
     
     mct.SetOrigin(simb::kCosmicRay);
@@ -357,6 +355,7 @@ void MultiPartRain::produce(art::Event & e)
         if(_debug) std::cout << "  " << idx << "th instance PDG " << pdg << std::endl;
         double x, y, z;
         GenPosition(x,y,z);
+	double g4_time = fFlatRandom->fire(_t0 - _t0_sigma/2., _t0 + _t0_sigma/2.);
         TLorentzVector pos(x,y,z,g4_time);
         GenMomentum(param,mass,px,py,pz);
         TLorentzVector mom(px,py,pz,sqrt(pow(px,2)+pow(py,2)+pow(pz,2)+pow(mass,2)));
