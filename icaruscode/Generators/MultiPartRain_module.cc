@@ -131,7 +131,7 @@ MultiPartRain::MultiPartRain(fhicl::ParameterSet const & p)
     _multi_min = p.get<size_t>("MultiMin");
     _multi_max = p.get<size_t>("MultiMax");
     
-    auto const _tpc_v = p.get<std::vector<unsigned short> >("TPCRange");
+    _tpc_v = p.get<std::vector<unsigned short> >("TPCRange");
     auto const xrange = p.get<std::vector<double> > ("XRange");
     auto const yrange = p.get<std::vector<double> > ("YRange");
     auto const zrange = p.get<std::vector<double> > ("ZRange");
@@ -276,7 +276,8 @@ std::vector<size_t> MultiPartRain::GenParticles() const {
 
 void MultiPartRain::GenPosition(double& x, double& y, double& z) {
     
-    size_t tpc_id = (size_t)(fFlatRandom->fire(0,_tpc_v.size()));
+    auto rand_tpc_id = fFlatRandom->fire(0,_tpc_v.size());
+    size_t tpc_id = (size_t)(rand_tpc_id);
     bool found = false;
     // Implementation of required member function here.
     auto geop = lar::providerFrom<geo::Geometry>();
@@ -295,7 +296,13 @@ void MultiPartRain::GenPosition(double& x, double& y, double& z) {
         y = fFlatRandom->fire(ymin,ymax);
         z = fFlatRandom->fire(zmin,zmax);
         found = true;
-        break;
+	if(_debug>0) {
+	  std::cout<<"Generating in TPC " << tpc_id << "(" << rand_tpc_id << " ... " << _tpc_v.size() << ")" << std::endl;
+	  std::cout<<"X " << x << " (" << xmin << " => " << xmax << ")" << std::endl;
+	  std::cout<<"Y " << y << " (" << ymin << " => " << ymax << ")" << std::endl;
+	  std::cout<<"Z " << z << " (" << zmin << " => " << zmax << ")" << std::endl;
+	}
+	break;
     }
     if(!found) std::cerr<< "\033[93mTPC " << tpc_id << " not found...\033[00m" << std::endl;
 }

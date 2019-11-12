@@ -134,6 +134,7 @@ physics.producers.generator.ParticleParameter.MaxMulti: [8]
 physics.producers.generator.ParticleParameter.ProbWeight: [1]
 physics.producers.generator.ParticleParameter.KERange: [[0.8,1.5]]
 physics.producers.generator.ParticleParameter.MomRange: []
+physics.producers.generator.DebugMode: 0
 
 physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
 physics.producers.mcreco.SimChannelLabel: "largeant:TPCActive"
