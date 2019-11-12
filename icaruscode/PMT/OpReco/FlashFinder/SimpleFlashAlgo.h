@@ -29,6 +29,9 @@ namespace pmtana
 
     double TotalCharge(const std::vector<double>& PEs);
 
+    // minimum PE to account for a hit
+    double _min_pe_hit;
+
     // minimum PE to make a flash
     double _min_pe_flash;
 

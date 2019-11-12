@@ -48,6 +48,7 @@ private:
 
   double _merge_period;
   std::string _simph_producer;
+  double _spe_area, _spe_amp;
 };
 
 
@@ -56,6 +57,8 @@ ICARUSMCOpHit::ICARUSMCOpHit(fhicl::ParameterSet const& p)
 {
   _merge_period = p.get<double>("MergePeriod");
   _simph_producer = p.get<std::string>("SimPhotonsProducer");
+  _spe_area = p.get<double>("SPEArea");
+  _spe_amp  = p.get<double>("SPEAmplitude");
   produces<std::vector<recob::OpHit> >();
 }
 
@@ -75,27 +78,28 @@ void ICARUSMCOpHit::produce(art::Event& e)
   for(auto const& simph : *simph_h) {
     // Make sure channel number is unique (e.g. one sim::SimPhotons per op channel)
     size_t opch = simph.OpChannel();
+
     if(opch >= processed_v.size()) processed_v.resize(opch+1,false);
     if(processed_v[opch]) {
       std::cerr << "Found duplicate channels in std::vector<sim::SimPhotons>! not expected (logic will fail).."<<std::endl;
       throw std::exception();
     }
+
     processed_v[opch] = true;
     bool in_window  = false;
     double oph_time = -1.e9;
     double pe = 0.;
-
-    // Insert photon times into a vector, sort it 
-    std::vector<double> time_v;
-    time_v.reserve(simph.size());
+    // Insert photon times into a sorted set
+    std::map<double,size_t> time_m;
     for(auto const& oneph : simph) {
       double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
-      time_v.push_back(this_time);
+      time_m[this_time] += 1;
     }
-    std::sort(time_v.begin(), time_v.end());
 
     // Loop over the time vector, emplace photons
-    for(auto const& this_time : time_v) {
+    for(auto const& time_photon_pair : time_m) {
+
+      auto const& this_time = time_photon_pair.first;
 
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
@@ -103,8 +107,8 @@ void ICARUSMCOpHit::produce(art::Event& e)
 			 oph_time + ts->TriggerTime(),
 			 0, // frame
 			 1., // width
-			 pe, // area,
-			 pe, // peakheight,
+			 pe * _spe_area, // area,
+			 pe * _spe_amp, // peakheight,
 			 pe, // pe
 			 0.);
 	oph_v->emplace_back(std::move(oph));
@@ -114,7 +118,7 @@ void ICARUSMCOpHit::produce(art::Event& e)
 
       if(!in_window) oph_time = this_time;
       in_window = true;
-      pe += 1.;
+      pe += time_photon_pair.second;
     }
     if(in_window) {
       recob::OpHit oph(opch, 
@@ -122,8 +126,8 @@ void ICARUSMCOpHit::produce(art::Event& e)
 		       oph_time + ts->TriggerTime(),
 		       0, // frame
 		       1., // width
-		       pe, // area,
-		       pe, // peakheight,
+		       pe * _spe_area, // area,
+		       pe * _spe_amp, // peakheight,
 		       pe, // pe
 		       0.);
       oph_v->emplace_back(std::move(oph));

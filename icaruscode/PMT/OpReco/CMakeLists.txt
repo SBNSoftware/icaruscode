@@ -1,5 +1,5 @@
 
-art_make( 
+art_make(
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 			lardataobj_RecoBase
@@ -34,3 +34,4 @@ install_headers()
 install_source()
 add_subdirectory(FlashFinder)
 add_subdirectory(fcl)
+add_subdirectory(driver)

@@ -35,7 +35,7 @@ icarus_pmtsimulationalg_standard: {
 
   TransitTime:               55.1           #ns
   ADC:                       -11.1927       #charge to adc factor
-  Baseline:                  8000.0         #in ADC
+  Baseline:                  7999.5         #in ADC
   FallTime:                  13.7           #ns
   RiseTime:                  3.8            #ns
   MeanAmplitude:             0.9            #in pC
@@ -50,11 +50,11 @@ icarus_pmtsimulationalg_standard: {
 
   ##Threshold in ADC counts for a PMT self-trigger.
   ##NOTE this is assumed to be positive-going and ABOVE BASELINE! Pulse polarity is corrected before determining trigger.
-  ThresholdADC:              10             #ADC counts
+  ThresholdADC:              4              #ADC counts
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
-  TriggerOffsetPMT:          -1150          #Time (us) relative to trigger that readout begins
-  ReadoutEnablePeriod:       3450           #Time (us) for which pmt readout is enabled
+  TriggerOffsetPMT:          -1400          #Time (us) relative to trigger that readout begins
+  ReadoutEnablePeriod:       2800           #Time (us) for which pmt readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
   BeamGateTriggerRepPeriod:  2.0            #Repetition Period (us) for BeamGateTriggers
   BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce

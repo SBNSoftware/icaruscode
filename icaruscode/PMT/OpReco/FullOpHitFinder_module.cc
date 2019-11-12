@@ -242,69 +242,50 @@ namespace opdet {
     // Get the pulses from the event
     //
 
-    // Reserve a large enough array
-    int totalsize = 0;
-    for (auto label : fInputLabels)
-    {
-      art::Handle< std::vector< raw::OpDetWaveform > > wfHandle;
-      evt.getByLabel(fInputModule, label, wfHandle);
-      if (!wfHandle.isValid()) continue; // Skip non-existent collections
-      totalsize += wfHandle->size();
-    }
+    if(fInputLabels.empty()) fInputLabels.push_back("");
+    for (auto label : fInputLabels) {
 
-    // Load pulses into WaveformVector
-    std::vector< raw::OpDetWaveform > WaveformVector;
-    WaveformVector.reserve(totalsize);
-    for (auto label : fInputLabels)
-    {
       art::Handle< std::vector< raw::OpDetWaveform > > wfHandle;
       evt.getByLabel(fInputModule, label, wfHandle);
       if (!wfHandle.isValid()) continue; // Skip non-existent collections
 
-      for(auto const& wf : *wfHandle)
-      {
-        if (fChannelMasks.find(wf.ChannelNumber())
-            != fChannelMasks.end()) continue;
-        WaveformVector.push_back(wf);
+      for(auto const& waveform : (*wfHandle)) {
+	
+	_ch = static_cast< int >(waveform.ChannelNumber());
+	_tstart = waveform.TimeStamp();
+	
+	_wf.clear();
+	_wf.resize(waveform.size());
+	for(size_t idx=0; idx<_wf.size(); ++idx)
+	  _wf[idx] = waveform[idx];
+	
+	fPulseRecoMgr.Reconstruct(waveform);
+	
+	// Record waveforms
+	_ped_mean_v = fPedAlg->Mean();
+	_ped_sigma_v = fPedAlg->Sigma();
+	_wftree->Fill();
+	
+	// Record pulses
+	auto const& pulses = fThreshAlg->GetPulses();
+	size_t npulse = pulses.size();
+	_tstart_v.resize(npulse); _tmax_v.resize(npulse); _tend_v.resize(npulse); _tcross_v.resize(npulse);
+	_amp_v.resize(npulse); _area_v.resize(npulse);
+	_ped_mean_v.resize(npulse); _ped_sigma_v.resize(npulse);
+	
+	for(size_t idx=0; idx<npulse; ++idx) {
+	  auto const& pulse = pulses[idx];
+	  _tstart_v[idx] = pulse.t_start;
+	  _tmax_v[idx]   = pulse.t_max;
+	  _tend_v[idx]   = pulse.t_end;
+	  _tcross_v[idx] = pulse.t_cfdcross;
+	  _amp_v[idx]    = pulse.peak;
+	  _area_v[idx]   = pulse.area;
+	  _ped_mean_v[idx]  = pulse.ped_mean;
+	  _ped_sigma_v[idx] = pulse.ped_sigma;
+	}
+	_hittree->Fill();
       }
-    }
-
-    for (auto const& waveform : WaveformVector) {
-
-      _ch = static_cast< int >(waveform.ChannelNumber());
-      _tstart = waveform.TimeStamp();
-
-      _wf.clear();
-      _wf.resize(waveform.size());
-      for(size_t idx=0; idx<_wf.size(); ++idx)
-	_wf[idx] = waveform[idx];
-      
-      fPulseRecoMgr.Reconstruct(waveform);
-      
-      // Record waveforms
-      _ped_mean_v = fPedAlg->Mean();
-      _ped_sigma_v = fPedAlg->Sigma();
-      _wftree->Fill();
-
-      // Record pulses
-      auto const& pulses = fThreshAlg->GetPulses();
-      size_t npulse = pulses.size();
-      _tstart_v.resize(npulse); _tmax_v.resize(npulse); _tend_v.resize(npulse); _tcross_v.resize(npulse);
-      _amp_v.resize(npulse); _area_v.resize(npulse);
-      _ped_mean_v.resize(npulse); _ped_sigma_v.resize(npulse);
-
-      for(size_t idx=0; idx<npulse; ++idx) {
-	auto const& pulse = pulses[idx];
-	_tstart_v[idx] = pulse.t_start;
-	_tmax_v[idx]   = pulse.t_max;
-	_tend_v[idx]   = pulse.t_end;
-	_tcross_v[idx] = pulse.t_cfdcross;
-	_amp_v[idx]    = pulse.peak;
-	_area_v[idx]   = pulse.area;
-	_ped_mean_v[idx]  = pulse.ped_mean;
-	_ped_sigma_v[idx] = pulse.ped_sigma;
-      }
-      _hittree->Fill();
     }
   }
 
