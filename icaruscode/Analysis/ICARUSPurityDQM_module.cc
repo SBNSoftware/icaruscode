@@ -153,12 +153,6 @@ namespace cluster{
       outFile.open(fileName);
     }
 
-    //Initialise metrics manager and configuration
-    // GRAY: initialize metric manager
-    sbndqm::InitializeMetricManager(pset.get<fhicl::ParameterSet>("metrics"));
-    // GRAY: initialize metric config
-    sbndqm::GenerateMetricConfig(pset.get<fhicl::ParameterSet>("metric_config"));
-      
   }
   
   //------------------------------------------------------------------
@@ -947,29 +941,6 @@ for(const auto& digitlabel : fDigitModuleLabel)
 
                         }
 
-			int level = 0;     
-
-			std::string group_name = "TPC";
-			artdaq::MetricMode mode = artdaq::MetricMode::Average; 
-			std::string readout_number_str = std::to_string(tpc_number);
-			if(purityS > -10 && purityS < 10){
-			  sbndqm::sendMetric(group_name, readout_number_str, "purity", purityS, level, mode);
-			}
-
-			if(purityS > -10 && purityS < 10){
-			  if(tpc_number==0){
-			    pur0->Fill(purityS);
-			  }
-			  if(tpc_number==1){
-			    pur1->Fill(purityS);
-			  }
-			  if(tpc_number==2){
-			    pur2->Fill(purityS);
-			  }
-			  if(tpc_number==3){
-			    pur3->Fill(purityS);
-			  }
-			}
                         //std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
