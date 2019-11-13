@@ -241,7 +241,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
     //LET HITCOLLECTIONCREATOR DECLARE THAT WE ARE GOING TO PRODUCE
     //HITS AND ASSOCIATIONS TO RAW DIGITS BUT NOT ASSOCIATIONS TO WIRES
     //(WITH NO PARTICULAR PRODUCT LABEL).
-    recob::HitCollectionCreator::declare_products(*this, 
+    recob::HitCollectionCreator::declare_products(producesCollector(),
         /*instance_name*/"");
   }
 
@@ -339,7 +339,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       // and its associations to wires and raw digits
       
       // Handle the filtered hits collection...
-      recob::HitCollectionCreator  hcol(*this, evt);
+      recob::HitCollectionCreator  hcol(evt);
 
       //    if (fAllHitsInstanceName != "") filteredHitCol = &hcol;
       
