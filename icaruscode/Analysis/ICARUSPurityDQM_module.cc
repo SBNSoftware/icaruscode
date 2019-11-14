@@ -61,6 +61,36 @@
 
 class TH1F;
 class TH2F;
+
+
+namespace anab {
+
+  struct TPCPurityInfo{
+    
+    unsigned int Run;
+    unsigned int Subrun;
+    unsigned int Event;
+
+    //unsigned int Cryostat;
+    unsigned int TPC;
+
+    double Attenuation;
+
+    void Print()
+    {
+      std::cout << "TPCPurityInfo:" << std::endl;
+      std::cout << "\tRun,Subrun,Event: " << Run << "," << Subrun  << "," << Event;
+      std::cout << "\n\tTPC: " << TPC;
+      std::cout << "\n\tAttenuation = " << Attenuation;
+      std::cout << std::endl;
+    }
+
+  };
+
+}
+
+
+
 ///Cluster finding and building 
 namespace cluster {
 
@@ -275,14 +305,31 @@ namespace cluster{
     //to get run and event info, you use this "eventAuxillary()" object.
     art::Timestamp ts = evt.time();
     std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
-	fRun->Fill(evt.run());
-        fRunSub->Fill(evt.run(),evt.subRun());
-      art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-for(const auto& digitlabel : fDigitModuleLabel)
-{
-      evt.getByLabel(digitlabel, digitVecHandle);
-      std::vector<const raw::RawDigit*> rawDigitVec;
 
+    fRun->Fill(evt.run());
+    fRunSub->Fill(evt.run(),evt.subRun());
+    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
+    std::vector<const raw::RawDigit*> rawDigitVec;
+
+
+    //setup output vector
+    std::unique_ptr< std::vector<anab::TPCPurityInfo> > outputPtrVector(new std::vector<anab::TPCPurityInfo>() );
+    std::vector<anab::TPCPurityInfo> outputVec(*outputPtrVector);
+
+    anab::TPCPurityInfo purity_info;
+    purity_info.Run = evt.run();
+    purity_info.Subrun = evt.subrun();
+    purity_info.Event = evt.event();
+
+    purity_info.Print();
+
+
+    for(const auto& digitlabel : fDigitModuleLabel)
+      {
+	evt.getByLabel(digitlabel, digitVecHandle);
+	std::vector<const raw::RawDigit*> rawDigitVec;
+	
       if (digitVecHandle.isValid())
       {
           //unsigned int maxChannels    = fGeometry->Nchannels();
