@@ -2,17 +2,6 @@
 # File:    geometry_icarus.fcl
 # Purpose: Configuration of LArSoft geometry and geometry service for ICARUS.
 #
-# NOTE
-# NOTE Note: there is a temporary replacement of the geometry file by a
-# NOTE       modified ("light") one which has some materials replaced.
-# NOTE       Those materials are not available in the reduced GENIE cross
-# NOTE       section file we use, and GENIE 3 suddenly got sensitive to that.
-# NOTE       Possible solutions: (1) definitely remove those materials from our
-# NOTE       detector description, (2) ask for those materials to be added to
-# NOTE       the cross section files, (3) create our own skim of the cross
-# NOTE       section file including all the materials we need.
-# NOTE 
-#
 # 
 # Suggested usage
 # ----------------
@@ -103,25 +92,10 @@ icarus_single_induction_geometry_services: {
 
 ################################################################################
 ###
-### Default ICARUS geometry configuration
-###
-### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires on first induction plane.
-###
-
-icarus_geo:              @local::icarus_single_induction_geometry_services.Geometry
-icarus_geometry_helper:  @local::icarus_single_induction_geometry_services.ExptGeoHelperInterface
-
-icarus_geometry_services: @local::icarus_single_induction_geometry_services
-
-
-
-################################################################################
-###
 ### icarus_split_induction_geometry_services
 ###
-### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires onfirst induction plane.
+### Complete geometry (including CRT) with two TPCs per drift volume and 9 meter
+### long wires on first induction plane.
 ###
 # 
 # Geometry service configuration:
@@ -130,10 +104,10 @@ icarus_split_induction_geometry: {
   SurfaceY:         6.9e2   # how much below the surface our origin is [cm]
   Name:            "ICARUS"
   
-  # This is the version for test distributed on September 5, 2019
+  # This is the version for test distributed on November 11, 2019
   # by Alessandro Menegolli (alessandro.menegolli@pv.infn.it)
-  GDML:            "icarus_complete_test_05sep2019.gdml"
-  ROOT:            "icarus_complete_test_05sep2019.gdml"
+  GDML:            "icarus_complete-20191111.gdml"
+  ROOT:            "icarus_complete-20191111.gdml"
   
   DisableWiresInG4: true
   
@@ -168,6 +142,21 @@ icarus_split_induction_geometry_services: {
 #  AuxDetGeometry:                  @local::icarus_auxdetgeo
 #  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
 } # icarus_split_induction_geometry_services
+
+
+
+################################################################################
+###
+### Default ICARUS geometry configuration
+###
+### Complete geometry (including CRT) with two TPC's per drift volume and 9
+### meter long wires on first induction plane.
+###
+
+icarus_geo:              @local::icarus_split_induction_geometry_services.Geometry
+icarus_geometry_helper:  @local::icarus_split_induction_geometry_services.ExptGeoHelperInterface
+
+icarus_geometry_services: @local::icarus_split_induction_geometry_services
 
 
 ################################################################################

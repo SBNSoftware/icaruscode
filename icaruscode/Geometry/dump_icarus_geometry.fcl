@@ -25,6 +25,7 @@ services: {
     destinations: {
       GeometryLog: {
         type: file
+        
         filename:  "ICARUS-geometry.txt"
         threshold:  INFO
         categories: {
