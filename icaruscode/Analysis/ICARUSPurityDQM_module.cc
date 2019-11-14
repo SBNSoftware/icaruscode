@@ -76,6 +76,15 @@ namespace anab {
 
     double Attenuation;
 
+    TPCPurityInfo()
+    {
+      Run=0;
+      Subrun=0;
+      Event=0;
+      TPC=999999;
+      Attenuation = -9999999;
+    }
+
     void Print()
     {
       std::cout << "TPCPurityInfo:" << std::endl;
@@ -309,7 +318,6 @@ namespace cluster{
     fRun->Fill(evt.run());
     fRunSub->Fill(evt.run(),evt.subRun());
     art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
     std::vector<const raw::RawDigit*> rawDigitVec;
 
 
@@ -319,7 +327,7 @@ namespace cluster{
 
     anab::TPCPurityInfo purity_info;
     purity_info.Run = evt.run();
-    purity_info.Subrun = evt.subrun();
+    purity_info.Subrun = evt.subRun();
     purity_info.Event = evt.event();
 
     purity_info.Print();
@@ -330,21 +338,21 @@ namespace cluster{
 	evt.getByLabel(digitlabel, digitVecHandle);
 	std::vector<const raw::RawDigit*> rawDigitVec;
 	
-      if (digitVecHandle.isValid())
-      {
-          //unsigned int maxChannels    = fGeometry->Nchannels();
-          //unsigned int maxTimeSamples = fDetectorProperties->NumberTimeSamples();
-          // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
-          // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
-          // Ugliness to fill the pointer vector...
-          for(size_t idx = 0; idx < digitVecHandle->size(); idx++) rawDigitVec.push_back(&digitVecHandle->at(idx)); //art::Ptr<raw::RawDigit>(digitVecHandle, idx).get());
-          // Sort (use a lambda to sort by channel id)
-          std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
-      }
- 
-      
-       std::vector<int> *www0=new std::vector<int>;
-       std::vector<float> *sss0=new std::vector<float>;
+	if (digitVecHandle.isValid())
+	  {
+	    //unsigned int maxChannels    = fGeometry->Nchannels();
+	    //unsigned int maxTimeSamples = fDetectorProperties->NumberTimeSamples();
+	    // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
+	    // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
+	    // Ugliness to fill the pointer vector...
+	    for(size_t idx = 0; idx < digitVecHandle->size(); idx++) rawDigitVec.push_back(&digitVecHandle->at(idx)); //art::Ptr<raw::RawDigit>(digitVecHandle, idx).get());
+	    // Sort (use a lambda to sort by channel id)
+	    std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
+	  }
+	
+	
+	std::vector<int> *www0=new std::vector<int>;
+	std::vector<float> *sss0=new std::vector<float>;
        std::vector<float> *hhh0=new std::vector<float>;
        std::vector<float> *ehh0=new std::vector<float>;
       std::vector<int> *www1=new std::vector<int>;
