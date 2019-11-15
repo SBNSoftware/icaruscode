@@ -39,14 +39,14 @@
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Vertex.h"
-// #include "RawData/RawDigit.h"
 #include "larsim/MCCheater/BackTracker.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 
-
+//purity info class
+#include "icaruscode/IcarusObj/TPCPurityInfo.hh"
 
 #include "art/Framework/Core/EDAnalyzer.h"
 #include <TMath.h>
@@ -61,43 +61,6 @@
 
 class TH1F;
 class TH2F;
-
-
-namespace anab {
-
-  struct TPCPurityInfo{
-    
-    unsigned int Run;
-    unsigned int Subrun;
-    unsigned int Event;
-
-    //unsigned int Cryostat;
-    unsigned int TPC;
-
-    double Attenuation;
-
-    TPCPurityInfo()
-    {
-      Run=0;
-      Subrun=0;
-      Event=0;
-      TPC=999999;
-      Attenuation = -9999999;
-    }
-
-    void Print()
-    {
-      std::cout << "TPCPurityInfo:" << std::endl;
-      std::cout << "\tRun,Subrun,Event: " << Run << "," << Subrun  << "," << Event;
-      std::cout << "\n\tTPC: " << TPC;
-      std::cout << "\n\tAttenuation = " << Attenuation;
-      std::cout << std::endl;
-    }
-
-  };
-
-}
-
 
 
 ///Cluster finding and building 
