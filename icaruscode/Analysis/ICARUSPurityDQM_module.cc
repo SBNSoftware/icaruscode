@@ -66,7 +66,7 @@ class TH2F;
 ///Cluster finding and building 
 namespace cluster {
    
-  class ICARUSPurityDQM : public art::EDAnalyzer {
+  class ICARUSPurityDQM : public art::EDProducer {
     
   public:
     
@@ -74,7 +74,7 @@ namespace cluster {
     virtual ~ICARUSPurityDQM();
     
     /// read access to event
-    void analyze(const art::Event& evt);
+    void produce(art::Event& evt);
     void beginJob();
     void endJob();
     int Nothere(std::vector<int>* a, int b);
@@ -105,6 +105,8 @@ namespace cluster {
     std::vector<art::InputTag>  fDigitModuleLabel;
     short fPrintLevel;
     float fValoretaufcl; 
+
+    bool fPersistPurityInfo;
     
   }; // class ICARUSPurityDQM
   
@@ -116,11 +118,20 @@ namespace cluster{
 
   //--------------------------------------------------------------------
   ICARUSPurityDQM::ICARUSPurityDQM(fhicl::ParameterSet const& pset)
-    : EDAnalyzer(pset)
+    : EDProducer(pset)
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fPrintLevel           (pset.get< short >       ("PrintLevel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
+    , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",true))
   {
+
+    //declare what we produce .. allow it to not be persistable to the event
+    if(fPersistPurityInfo)
+      produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::Yes);
+    else
+      produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::No);      
+
+    
   }
   
   //------------------------------------------------------------------
@@ -215,7 +226,7 @@ namespace cluster{
   
   
   
-  void ICARUSPurityDQM::analyze(const art::Event& evt)
+  void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
     
@@ -978,7 +989,11 @@ namespace cluster{
 	delete aaa2;
 	delete aaa3;
       }
-  } // analyze
+
+    //put info onto the event
+    evt.put(std::move(outputPtrVector));
+
+  } // produces
   
 } //end namespace
 
