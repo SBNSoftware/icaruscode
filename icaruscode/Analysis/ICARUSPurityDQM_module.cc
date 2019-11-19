@@ -82,7 +82,7 @@ namespace anab {
       Subrun=0;
       Event=0;
       TPC=999999;
-      Attenuation = -9999999;
+      Attenuation = -99;
     }
 
     void Print()
@@ -330,8 +330,9 @@ namespace cluster{
     purity_info.Subrun = evt.subRun();
     purity_info.Event = evt.event();
 
+    std::cout << "Calling at the beginning…" << std::endl;    //    std::cout<<"HERE"<<std::endl;
     purity_info.Print();
-
+    // std::cout<<"DONE"<<std::endl;
 
     for(const auto& digitlabel : fDigitModuleLabel)
       {
@@ -985,7 +986,7 @@ namespace cluster{
                         if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5)
                         {
 			if(fabs(slope_purity_2)<0.01)purityvalues->Fill(-slope_purity_2*1000.);
-                            if(fabs(slope_purity_2)<0.01)goodpuro << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_2 << " " << error_slope_purity_2 << " " << chiquadro << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
+                            if(fabs(slope_purity_2)<0.01)goodpuro << evt.run() << " " << evt.subRun() << "  " << evt.event() << "  " << tpc_number << "  " << slope_purity_2 << "  " << error_slope_purity_2 << " " << chiquadro << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
 
                         if(fabs(slope_purity_exo)<0.01)goodpuro2 << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_exo << " " << error_slope_purity_exo << " " << fitexo->GetChisquare()/(hitareagood->size()-2) << " " << clusters_dw[icl] << " " << clusters_ds[icl] << std::endl;
                         if(fabs(slope_purity_exo)<0.01)purityvalues2->Fill(-slope_purity_exo*1000.);
@@ -995,6 +996,17 @@ namespace cluster{
                         if(fabs(slope_purity_exo)<0.01 && tpc_number==3)puritytpc3->Fill(-slope_purity_exo*1000.);
 
                         }
+
+			anab::TPCPurityInfo purity_info;
+			purity_info.Run = evt.run();
+			purity_info.Subrun = evt.subRun();
+			purity_info.Event = evt.event();
+			purity_info.TPC = tpc_number;
+			purity_info.Attenuation = slope_purity_exo;
+		
+			std::cout << "Calling after filling attenuation … " << std::endl;
+			purity_info.Print();
+			outputVec.push_back(purity_info);
 
                         //std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
@@ -1047,7 +1059,17 @@ namespace cluster{
       delete aaa1;
       delete aaa2;
       delete aaa3;
-}
+      }
+
+    std::cout << "Checking everything in the output..." << std::endl;
+    std::cout << "There are " << outputVec.size() << " objects in the output vector." << std::endl;
+
+    for (size_t i_info = 0; i_info<outputVec.size(); ++i_info){
+      auto info = outputVec[i_info];
+      info.Print();
+    }
+
+
   } // analyze
 
 } //end namespace
