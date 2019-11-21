@@ -785,7 +785,7 @@ namespace cluster{
 			Double_t ek[10000];
 			Double_t ez[10000];
 			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
-
+			
 			if(hitarea->size()>100)//prima 30
 			  {
 			    float minimo=100000;
@@ -799,25 +799,25 @@ namespace cluster{
 			    //int gruppi=hitarea->size()/50;
 			    int gruppi=8;
 			    //std::cout << gruppi << std::endl;
-
+			    
 			    float steptime=(massimo-minimo)/(gruppi+1);
 			    //std::cout << steptime << " steptime " << minimo << " " << massimo << std::endl;
 			    float starting_value_tau=fValoretaufcl;
 			    
-			    ////////std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
+			    //std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
 			    //if(tpc_number==2 || tpc_number==5)starting_value_tau=6500;
 			    //if(tpc_number==10 || tpc_number==13)starting_value_tau=5700;
 			    for(int stp=0;stp<=gruppi;stp++)
 			      {
 				std::vector<float>* hitpertaglio=new std::vector<float>;
 				//std::cout << 500+stp*steptime << " time " << 500+(stp+1)*(steptime) << std::endl;
-				///////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
+				/////////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
 				for(int kk=0;kk<(int)hitarea->size();kk++)
 				  {
 				    if((*hittime)[kk]>=(minimo+stp*steptime) && (*hittime)[kk]<=(minimo+(stp+1)*(steptime))) 
 				      hitpertaglio->push_back((*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau));
 				  }
-				///////std::cout << hitpertaglio->size() << std::endl;
+				/////////std::cout << hitpertaglio->size() << std::endl;
 				float tagliomax=FoundMeanLog(hitpertaglio,0.90);//0.9com//0.8test1
 				float tagliomin=FoundMeanLog(hitpertaglio,0.05);//0.1com//0.05test1
 				//float tagliomin=0;
@@ -839,7 +839,7 @@ namespace cluster{
 				      }
 				  }
 			      }
-			    std::cout << hitareagood->size() << " hitareagood" << std::endl;    
+			    //std::cout << hitareagood->size() << " hitareagood" << std::endl;    
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				//if((*hittimegood)[k]-600*0.4<=1000)//correzione 15/08
@@ -869,7 +869,6 @@ namespace cluster{
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 			      }
-			  }
                         
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
                         gr32->Fit("pol1");
@@ -882,9 +881,9 @@ namespace cluster{
 			std::ofstream goodpuro("purity_results.out",std::ios::app);
                         std::ofstream goodpuro2("purity_results2.out",std::ios::app);
 			
-                        std::cout << -1/slope_purity_2 << std::endl;
-                        std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
-                        std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
+                        //std::cout << -1/slope_purity_2 << std::endl;
+                        //std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
+                        //std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
                         gr41->Fit("expo");
                         TF1 *fitexo = gr41->GetFunction("expo");
@@ -892,10 +891,10 @@ namespace cluster{
                         float error_slope_purity_exo=fitexo->GetParError(1);
                         //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
                         //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
-                        std::cout << -1/slope_purity_exo << std::endl;
-                        std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
-                        std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
-                        std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
+                        //std::cout << -1/slope_purity_exo << std::endl;
+                        //std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
+                        //std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
+                        //std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
 			
 			
                         if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5)
@@ -928,7 +927,9 @@ namespace cluster{
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         //goodpur << timeevent << " is time event " << std::endl;
+			  }
 		      }
+		    std::cout << "Delete hit stuff." << std::endl;
 
 		    delete hittime;
 		    delete hitarea;
@@ -938,6 +939,7 @@ namespace cluster{
 		    delete hitwire;
 		  }
 		
+		std::cout << "Delete cluster stuff." << std::endl;
 		
 		delete shc;
 		delete ahc;
@@ -947,6 +949,8 @@ namespace cluster{
 	      }//fine if ananlisi
 	  }
 	}
+
+	std::cout << "Delete bigg stuff." << std::endl;
 
 	delete www0;
 	delete sss0;

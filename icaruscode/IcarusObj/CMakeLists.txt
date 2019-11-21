@@ -1,14 +1,12 @@
-# for classes_def.xml!!
-include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
-include_directories( $ENV{NURANDOM_INC} )
-
-art_make( 
-          LIBRARY_NAME icaruscode_IcarusObj
-          LIB_LIBRARIES
-                        ${ROOT_BASIC_LIB_LIST}
-                        ${ROOT_EG}
-        )
-
+cet_make(NO_DICTIONARY
+         LIBRARIES
+#           canvas
+#           MF_MessageLogger
+           cetlib_except
+           ${ROOT_BASIC_LIB_LIST}
+           ${ROOT_EG}
+           ${ROOT_CORE})
+art_dictionary(DICTIONARY_LIBRARIES icaruscode_IcarusObj)
 install_headers()
-install_fhicl()
 install_source()
+install_fhicl()
