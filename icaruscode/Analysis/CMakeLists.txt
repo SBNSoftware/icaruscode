@@ -11,6 +11,7 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service
+			   icaruscode_IcarusObj
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
