@@ -122,7 +122,7 @@ namespace cluster{
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fPrintLevel           (pset.get< short >       ("PrintLevel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
-    , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",true))
+    , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",false))
   {
 
     //declare what we produce .. allow it to not be persistable to the event
