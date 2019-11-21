@@ -1,6 +1,1 @@
-#include "services_icarus.fcl"
-#include "sbnmar18_detsim_icarus.fcl"
-
-services: {
-  @table::icarus_wirecalibration_services
-}
+#include "standard_detsim_icarus.fcl"
