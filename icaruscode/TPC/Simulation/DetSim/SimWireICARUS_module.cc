@@ -9,6 +9,18 @@
 // - save the electron clusters associated with each digit.
 //
 ////////////////////////////////////////////////////////////////////////
+
+/**
+ * If defined, a hack to make sure DetectorClocksService knows about the new
+ * hardware trigger time is enabled.
+ * This is violating art/LArSoft recommended practices, and it is not even
+ * useful in ICARUS where the
+ * @ref DetectorClocksElectronicsStartTime "electronics time start"
+ * is _determined_ by the hardware trigger.
+ */
+#undef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
+
+
 // C/C++ standard library
 #include <stdexcept> // std::range_error
 #include <vector>
@@ -51,7 +63,10 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
+#endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
 #include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "lardataobj/Simulation/sim.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -251,13 +266,13 @@ void SimWireICARUS::produce(art::Event& evt)
         mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
         << fNTimeSamples << " greater than FFTSize " << nTicks << "!";
     
-    //TimeService
-    art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
-    
+#ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
     // In case trigger simulation is run in the same job...
     // FIXME:  You should not be calling preProcessEvent
-    tss->preProcessEvent(evt,art::ScheduleContext::invalid());
-    auto const* ts = tss->provider();
+    art::ServiceHandle<detinfo::DetectorClocksServiceStandard>()
+      ->preProcessEvent(evt,art::ScheduleContext::invalid());
+#endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
+    auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
