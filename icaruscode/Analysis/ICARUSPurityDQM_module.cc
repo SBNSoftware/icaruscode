@@ -152,7 +152,7 @@ namespace cluster{
       std::string fileName = fClusterModuleLabel + ".tru";
       outFile.open(fileName);
     }
-  
+
   }
   
   //------------------------------------------------------------------
@@ -940,7 +940,6 @@ for(const auto& digitlabel : fDigitModuleLabel)
                         if(fabs(slope_purity_exo)<0.01 && tpc_number==3)puritytpc3->Fill(-slope_purity_exo*1000.);
 
                         }
-
 
                         //std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
