@@ -50,10 +50,14 @@
 #include "art_root_io/TFileService.h"
 #include "art_root_io/TFileDirectory.h"
 #include "art/Utilities/make_tool.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 // art extensions
-#include "nurandom/RandomUtils/NuRandomService.h"
+#include "nurandom/RandomUtils/NuRandomService.h" // `rndm` namespace
 // LArSoft libraries
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
@@ -83,42 +87,206 @@ class SimWireICARUS : public art::EDProducer
 {
 public:
     
-    explicit SimWireICARUS(fhicl::ParameterSet const& pset);
-    virtual ~SimWireICARUS();
+    /// Module configuration.
+    struct Config {
+      
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      // --- BEGIN -- Source parameters ----------------------------------------
+      /// @name Source parameters
+      /// @{
+      //
+      fhicl::Atom<bool> Test {
+        Name("Test"),
+        Comment("if set, just inject test charges on one channel (see below)")
+        // default
+        };
+      
+      fhicl::Atom<art::InputTag> DriftEModuleLabel {
+        Name("DriftEModuleLabel"),
+        Comment
+          ("data product tag for input drifted electrons (`sim::SimChannel`)")
+        // default
+        };
+      
+      fhicl::Atom<std::size_t> TestWire {
+        Name("TestWire"),
+        Comment("channel to inject test charge in")
+        };
+      fhicl::Sequence<std::size_t> TestIndex {
+        Name("TestIndex"),
+        Comment("ADC counts to inject the test charges at")
+        };
+      fhicl::Sequence<double> TestCharge {
+        Name("TestCharge"),
+        Comment("charge to be injected at each of the times in `TestIndex`")
+        };
+      
+      /// @}
+      // --- END -- Source parameters ------------------------------------------
+      
+      
+      // --- BEGIN -- Detector region ------------------------------------------
+      /// @name Detector region
+      /// @{
+      
+      fhicl::Atom<bool> ProcessAllTPCs {
+        Name("ProcessAllTPCs"),
+        Comment("whether all channels in all TPC's are processed"),
+        false // default
+        };
+      
+      fhicl::Atom<unsigned int> Cryostat {
+        Name("Cryostat"),
+        Comment("number of the (only) cryostat to process"),
+        0U // default
+        };
+      
+      fhicl::Atom<unsigned int> TPC {
+        Name("TPC"),
+        Comment
+          ("number of the (only) TPC to process in the specified `Cryostat`"),
+        0U // default
+        };
+      
+      /// @}
+      // --- END -- Source parameters ------------------------------------------
+      
+      
+      // --- BEGIN -- Output format --------------------------------------------
+      /// @name Output format
+      /// @{
+      
+      fhicl::Atom<std::string> CompressionType {
+        Name("CompressionType"),
+        Comment("waveform output compression type: \"none\" or \"Huffman\""),
+        "none" // default
+        };
+      
+      fhicl::Atom<bool> SuppressNoSignal {
+        Name("SuppressNoSignal"),
+        Comment
+          ("skip all channels of the boards with only channels with no charge")
+        // default
+        };
+      
+      /// @}
+      // --- END -- Output format ----------------------------------------------
+      
+      
+      // --- BEGIN -- Readout information --------------------------------------
+      /// @name Readout information
+      /// @{
+      
+      fhicl::Atom<int> NumChanPerMB {
+        Name("NumChanPerMB"),
+        Comment("channels on the same plane in a TPC readout board"),
+        32 // default
+        };
+      
+      /// @}
+      // --- END -- Readout information ----------------------------------------
+      
+      
+      // --- BEGIN -- Simulation settings --------------------------------------
+      /// @name Simulation settings
+      /// @{
+      
+      fhicl::Atom<bool> SimDeadChannels {
+        Name("SimDeadChannels"),
+        Comment("simulate also channels identified as bad (otherwise skipped)")
+        };
+      
+      fhicl::DelegatedParameter NoiseGenToolVec {
+        Name("NoiseGenToolVec"),
+        Comment("configuration of noise generator tools, one per plane")
+        };
+      
+      fhicl::Atom<bool> SmearPedestals {
+        Name("SmearPedestals"),
+        Comment(
+          "apply random fluctuations to channel pedestal levels (from database)"
+          ),
+        true // default
+        };
+      
+      /// @}
+      // --- END -- Simulation settings ----------------------------------------
+      
+      
+      // --- BEGIN -- Random generator seeds -----------------------------------
+      /// @name Random generator seeds
+      /// @{
+      
+      rndm::SeedAtom Seed {
+        Name("Seed"),
+        Comment("random engine seed for coherent noise and uncoherent noise")
+        };
+      
+      rndm::SeedAtom SeedPedestal {
+        Name("SeedPedestal"),
+        Comment("random engine seed for pedestal slow fluctuations")
+        };
+      
+      /// @}
+      // --- END -- Random generator seeds -------------------------------------
+      
+      
+      fhicl::Atom<bool> MakeHistograms {
+        Name("MakeHistograms"),
+        Comment
+          ("also produces a few histograms (stored in TFileService output"),
+        false // default
+        };
+      
+      fhicl::Atom<int> Sample { // TODO remove me!
+        Name("Sample"),
+        Comment("unused")
+        // default
+        };
+      
+    }; // struct Config
+    
+    using Parameters = art::EDProducer::Table<Config>;
+    
+    
+//    explicit SimWireICARUS(fhicl::ParameterSet const& pset);
+    explicit SimWireICARUS(Parameters const& config);
     
     // read/write access to event
     void produce (art::Event& evt);
     void beginJob();
     void endJob();
-    void reconfigure(fhicl::ParameterSet const& p);
+//    void reconfigure(fhicl::ParameterSet const& p);
     
 private:
     
     void MakeADCVec(std::vector<short>& adc, std::vector<float> const& noise,
                     std::vector<double> const& charge, float ped_mean) const;
     
-    std::string                  fDriftEModuleLabel; ///< module making the ionization electrons
-    bool                         fProcessAllTPCs;    ///< If true we process all TPCs
-    unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
-    unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
+    art::InputTag const          fDriftEModuleLabel; ///< module making the ionization electrons
+    bool const                   fProcessAllTPCs;    ///< If true we process all TPCs
+    unsigned int const           fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
+    unsigned int const           fTPC;               ///< If ProcessAllTPCs is false then TPC to use
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
     
-    bool                         fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
-    bool                         fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
-    bool                         fSmearPedestals;    ///< If True then we smear the pedestals
-    int                          fNumChanPerMB;      ///< Number of channels per motherboard
+    bool const                   fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
+    bool const                   fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
+    bool const                   fSmearPedestals;    ///< If True then we smear the pedestals
+    int const                    fNumChanPerMB;      ///< Number of channels per motherboard
     
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
-    bool                         fMakeHistograms;
-    bool                         fTest; // for forcing a test case
+    bool const                   fMakeHistograms;
+    bool const                   fTest; // for forcing a test case
     std::vector<sim::SimChannel> fTestSimChannel_v;
-    size_t                       fTestWire;
-    std::vector<size_t>          fTestIndex;
-    std::vector<double>          fTestCharge;
-    int                          fSample; // for histograms, -1 means no histos
+    size_t const                 fTestWire;
+    std::vector<size_t> const    fTestIndex;
+    std::vector<double> const    fTestCharge;
+    int const                    fSample; // for histograms, -1 means no histos
     
     TH1F*                        fSimCharge;
     TH2F*                        fSimChargeWire;
@@ -148,48 +316,41 @@ private:
     
 }; // class SimWireICARUS
 DEFINE_ART_MODULE(SimWireICARUS)
-    
+
 //-------------------------------------------------
-SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
-    : EDProducer{pset}
-    , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
-    , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
-    , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
-    , fGeometry(*lar::providerFrom<geo::Geometry>())
+SimWireICARUS::SimWireICARUS(Parameters const& config)
+    : EDProducer(config)
+    , fDriftEModuleLabel(config().DriftEModuleLabel())
+    , fProcessAllTPCs   (config().ProcessAllTPCs   ())
+    , fCryostat         (config().Cryostat         ())
+    , fTPC              (config().TPC              ())
+    , fSimDeadChannels  (config().SimDeadChannels  ())
+    , fSuppressNoSignal (config().SuppressNoSignal ())
+    , fSmearPedestals   (config().SmearPedestals   ())
+    , fNumChanPerMB     (config().NumChanPerMB     ())
+    , fMakeHistograms   (config().MakeHistograms   ())
+    , fTest             (config().Test             ())
+    , fTestWire         (config().TestWire         ())
+    , fTestIndex        (config().TestIndex        ())
+    , fTestCharge       (config().TestCharge       ())
+    , fSample           (config().Sample           ())
+    , fPedestalEngine   (art::ServiceHandle<rndm::NuRandomService>()->createEngine
+                         (*this, "HepJamesRandom", "pedestal", config().SeedPedestal)
+                        )
+    , fUncNoiseEngine   (art::ServiceHandle<rndm::NuRandomService>()->createEngine
+                         (*this, "HepJamesRandom", "noise",    config().Seed)
+                        )
+    , fCorNoiseEngine   (art::ServiceHandle<rndm::NuRandomService>()->createEngine
+                         (*this, "HepJamesRandom", "cornoise", config().Seed)
+                        )
+    , fGeometry         (*lar::providerFrom<geo::Geometry>())
 {
-    this->reconfigure(pset);
-    
-    produces< std::vector<raw::RawDigit>   >();
-    fCompression = raw::kNone;
-    TString compression(pset.get< std::string >("CompressionType"));
-    if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
-    
-    return;
-}
-//-------------------------------------------------
-SimWireICARUS::~SimWireICARUS() {}
-//-------------------------------------------------
-void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
-{
-    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel"    );
-    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs", false);
-    fCryostat         = p.get< unsigned int        >("Cryostat",           0);
-    fTPC              = p.get< unsigned int        >("TPC",                0);
-    fSimDeadChannels  = p.get< bool                >("SimDeadChannels"      );
-    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal"     );
-    fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
-    fSample           = p.get< int                 >("Sample"               );
-    fSmearPedestals   = p.get< bool                >("SmearPedestals",  true);
-    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",      32);
-    fTest             = p.get< bool                >("Test"                 );
-    fTestWire         = p.get< size_t              >("TestWire"             );
-    fTestIndex        = p.get< std::vector<size_t> >("TestIndex"            );
-    fTestCharge       = p.get< std::vector<double> >("TestCharge"           );
     
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
-    std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
+    std::vector<fhicl::ParameterSet> noiseToolParamSetVec
+      = config().NoiseGenToolVec.get<std::vector<fhicl::ParameterSet>>();
     
     for(auto& noiseToolParams : noiseToolParamSetVec) {
         fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
@@ -201,9 +362,29 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
     fNTimeSamples = detprop->NumberTimeSamples();
+
+    TString compression(config().CompressionType());
+    if (compression.IsNull() || compression.Contains("none", TString::kIgnoreCase))
+      fCompression = raw::kNone;
+    else if (compression.Contains("Huffman", TString::kIgnoreCase))
+      fCompression = raw::kHuffman;
+    else {
+      throw art::Exception(art::errors::Configuration)
+        << "Unsupported compression requested: '" << compression << "'\n";
+    }
     
-    return;
-}
+    //
+    // input:
+    //
+    if(!fTest) consumes<std::vector<sim::SimChannel>>(fDriftEModuleLabel);
+    
+    //
+    // output:
+    //
+    produces<std::vector<raw::RawDigit>>();
+    
+    
+} // SimWireICARUS::SimWireICARUS()
 //-------------------------------------------------
 void SimWireICARUS::beginJob()
 {
