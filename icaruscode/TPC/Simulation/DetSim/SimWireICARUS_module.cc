@@ -27,8 +27,7 @@
 #include <string>
 #include <algorithm> // std::fill()
 #include <functional>
-#include <random>
-#include <chrono>
+#include <cassert>
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandGaussQ.h"
@@ -48,11 +47,12 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
-#include "art_root_io/TFileDirectory.h"
 #include "art/Utilities/make_tool.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/TupleAs.h"
+#include "fhiclcpp/types/OptionalTupleAs.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -61,7 +61,6 @@
 // LArSoft libraries
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
-#include "lardataobj/RawData/TriggerData.h"
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -69,16 +68,259 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
+#include "lardataobj/RawData/TriggerData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
 #endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
 #include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
-#include "lardataobj/Simulation/sim.h"
+#include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector<>
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "tools/IGenNoise.h"
 using namespace util;
+
+
+// TODO move this into a larcoreobj/SimpleTypesAndConstants/geo_types_fhicl.h
+#ifndef LARCOREOBJ_SIMPLETYPESANDCONSTANTS_GEO_TYPES_FHICL_H
+#define LARCOREOBJ_SIMPLETYPESANDCONSTANTS_GEO_TYPES_FHICL_H
+
+
+// LArSoft libraries
+#include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+
+// support libraries
+#include "fhiclcpp/types/OptionalTupleAs.h"
+#include "fhiclcpp/types/TupleAs.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/Atom.h"
+
+
+/// FHiCL objects representing geometry classes as configuration parameters.
+namespace geo::fhicl {
+  
+  // --- BEGIN -- Validated configuration parameters for geometry ID objects ---
+  /**
+   * @name Validated configuration parameters for geometry ID objects
+   * 
+   * These data types can be used in a class for validated FHiCL configuration.
+   * They are implemented as direct aliases of `fhicl::TupleAs`, with all the
+   * implications of that.
+   * An ID described data member can be specified as a sequence of integer
+   * numbers, e.g. `[ 1, 3, 2 ]` for the plane `C:1 T:3 P:2`.
+   * Invalid IDs are not supported.
+   * Example:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   fhicl::Sequence<geo::fhicl::PlaneID> Planes {
+   *     fhicl::Name("Planes"),
+   *     fhicl::Comment("anode planes to process"),
+   *     std::vector<geo::PlaneID>{} // no planes by default
+   *     };
+   *   
+   *   geo::fhicl::OptionalPlaneID ReferencePlane {
+   *     fhicl::Name("ReferencePlane"),
+   *     fhicl::Comment("reference anode plane (first one by default)")
+   *     };
+   *   
+   * }; // struct Config
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * which can be configured as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * Planes: [
+   *   [ 0, 1, 0 ], # C:0 T:1 P:0
+   *   [ 0, 1, 1 ], # C:0 T:1 P:1
+   *   [ 0, 1, 2 ]  # C:0 T:1 P:2
+   *   ]
+   * ReferencePlane: [ 0, 1, 2 ] # C:0 T:1 P:2
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * and read as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * void readParams(art::EDProducer::Table<Config> const& config) {
+   *   
+   *   std::vector<geo::PlaneID> planes = config().Planes();
+   *   if (planes.empty()) {
+   *     throw art::Exception(art::errors::Configuration)
+   *       << "At least one plane is needed.\n";
+   *   }
+   *   
+   *   geo::PlaneID refPlane; // invalid by default
+   *   if (!config().ReferencePlane(refPlane)) refPlane = planes.front();
+   *   
+   * } // readParams()
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   */
+  /// @{
+  
+  /// Member type of validated `geo::CryostatID` parameter.
+  using CryostatID = ::fhicl::TupleAs
+    <geo::CryostatID(geo::CryostatID::CryostatID_t)>;
+  
+  /// Member type of validated `geo::TPCID` parameter.
+  using TPCID = ::fhicl::TupleAs
+    <geo::TPCID(geo::TPCID::CryostatID_t, geo::TPCID::TPCID_t)>;
+  
+  /// Member type of validated `geo::PlaneID` parameter.
+  using PlaneID = ::fhicl::TupleAs<geo::PlaneID(
+    geo::PlaneID::CryostatID_t, geo::PlaneID::TPCID_t, geo::PlaneID::PlaneID_t
+    )>;
+  
+  /// Member type of validated `geo::WireID` parameter.
+  using WireID = ::fhicl::TupleAs<geo::WireID(
+    geo::WireID::CryostatID_t, geo::WireID::TPCID_t,
+    geo::WireID::PlaneID_t, geo::WireID::WireID_t
+    )>;
+  
+  /// Member type of optional validated `geo::CryostatID` parameter.
+  using OptionalCryostatID = ::fhicl::OptionalTupleAs
+    <geo::CryostatID(geo::CryostatID::CryostatID_t)>;
+  
+  /// Member type of optional validated `geo::TPCID` parameter.
+  using OptionalTPCID = ::fhicl::OptionalTupleAs
+    <geo::TPCID(geo::TPCID::CryostatID_t, geo::TPCID::TPCID_t)>;
+  
+  /// Member type of optional validated `geo::PlaneID` parameter.
+  using OptionalPlaneID = ::fhicl::OptionalTupleAs<geo::PlaneID(
+    geo::PlaneID::CryostatID_t, geo::PlaneID::TPCID_t, geo::PlaneID::PlaneID_t
+    )>;
+  
+  /// Member type of optional validated `geo::WireID` parameter.
+  using OptionalWireID = ::fhicl::OptionalTupleAs<geo::WireID(
+    geo::WireID::CryostatID_t, geo::WireID::TPCID_t,
+    geo::WireID::PlaneID_t, geo::WireID::WireID_t
+    )>;
+  
+  /// @}
+  // --- END -- Validated configuration parameters for geometry ID objects -----
+  
+} // namespace geo::fhicl
+
+#endif // LARCOREOBJ_SIMPLETYPESANDCONSTANTS_GEO_TYPES_FHICL_H
+
+//
+// TODO move this into a larcoreobj/SimpleTypesAndConstants/readout_types_fhicl.h
+//
+#ifndef LARCOREOBJ_SIMPLETYPESANDCONSTANTS_READOUT_TYPES_FHICL_H
+#define LARCOREOBJ_SIMPLETYPESANDCONSTANTS_READOUT_TYPES_FHICL_H
+
+
+// LArSoft libraries
+#include "larcoreobj/SimpleTypesAndConstants/readout_types.h"
+
+// support libraries
+#include "fhiclcpp/types/OptionalTupleAs.h"
+#include "fhiclcpp/types/TupleAs.h"
+#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/Atom.h"
+
+
+/// FHiCL objects representing readout classes as configuration parameters.
+namespace readout::fhicl {
+  
+  // --- BEGIN -- Validated configuration parameters for readout ID objects ----
+  /**
+   * @name Validated configuration parameters for readout ID objects
+   * 
+   * These data types can be used in a class for validated FHiCL configuration.
+   * They are implemented as direct aliases of `fhicl::TupleAs`, with all the
+   * implications of that.
+   * An ID described data member can be specified as a sequence of integer
+   * numbers, e.g. `[ 1, 3, 2 ]` for the readout plane `C:1 S:3 R:2`.
+   * Invalid IDs are not supported.
+   * Example:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   fhicl::Sequence<readout::fhicl::ROPID> ROPs {
+   *     fhicl::Name("ROPs"),
+   *     fhicl::Comment("readout planes to process"),
+   *     std::vector<readout::ROPID>{} // no readout planes by default
+   *     };
+   *   
+   *   readout::fhicl::OptionalROPID ReferenceROP {
+   *     fhicl::Name("ReferenceROP"),
+   *     fhicl::Comment("reference readout plane (first one by default)")
+   *     };
+   *   
+   * }; // struct Config
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * which can be configured as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * ROPs: [
+   *   [ 0, 1, 0 ], # C:0 S:1 R:0
+   *   [ 0, 1, 1 ], # C:0 S:1 R:1
+   *   [ 0, 1, 2 ]  # C:0 S:1 R:2
+   *   ]
+   * ReferenceROP: [ 0, 1, 2 ] # C:0 S:1 R:2
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * and read as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * void readParams(art::EDProducer::Table<Config> const& config) {
+   *   
+   *   std::vector<readout::ROPID> ROPs = config().ROPs();
+   *   if (ROPs.empty()) {
+   *     throw art::Exception(art::errors::Configuration)
+   *       << "At least one readout plane is needed.\n";
+   *   }
+   *   
+   *   readout::ROPID refROP; // invalid by default
+   *   if (!config().ReferenceROP(refROP)) refROP = ROPs.front();
+   *   
+   * } // readParams()
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * 
+   * The exception is `readout::fhicl::ChannelID`, which is provided for
+   * completeness but is just a `fhicl::Atom` type and reads just as a plain
+   * integral number.
+   */
+  /// @{
+  
+  /// Member type of validated `geo::CryostatID` parameter.
+  using CryostatID = ::fhicl::TupleAs
+    <readout::CryostatID(readout::CryostatID::CryostatID_t)>;
+  
+  /// Member type of validated `readout::TPCsetID` parameter.
+  using TPCsetID = ::fhicl::TupleAs<readout::TPCsetID(
+    readout::TPCsetID::CryostatID_t, readout::TPCsetID::TPCsetID_t
+    )>;
+  
+  /// Member type of validated `readout::ROPID` parameter.
+  using ROPID = ::fhicl::TupleAs<readout::ROPID(
+    readout::ROPID::CryostatID_t, readout::ROPID::TPCsetID_t,
+    readout::ROPID::ROPID_t
+    )>;
+  
+  /// Member type of validated `raw::ChannelID_t` parameter.
+  using ChannelID = ::fhicl::Atom<raw::ChannelID_t>;
+  
+  /// Member type of optional validated `geo::CryostatID` parameter.
+  using OptionalCryostatID = ::fhicl::OptionalTupleAs
+    <readout::CryostatID(readout::CryostatID::CryostatID_t)>;
+  
+  /// Member type of optional validated `readout::TPCsetID` parameter.
+  using OptionalTPCsetID = ::fhicl::OptionalTupleAs<readout::TPCsetID(
+    readout::TPCsetID::CryostatID_t, readout::TPCsetID::TPCsetID_t
+    )>;
+  
+  /// Member type of optional validated `readout::ROPID` parameter.
+  using OptionalROPID = ::fhicl::OptionalTupleAs<readout::ROPID(
+    readout::ROPID::CryostatID_t, readout::ROPID::TPCsetID_t,
+    readout::ROPID::ROPID_t
+    )>;
+  
+  /// Member type of optional validated `raw::ChannelID_t` parameter.
+  using OptionalChannelID = ::fhicl::OptionalAtom<raw::ChannelID_t>;
+  
+  
+  /// @}
+  // --- END -- Validated configuration parameters for readout ID objects ------
+  
+} // namespace readout::fhicl
+
+#endif // LARCOREOBJ_SIMPLETYPESANDCONSTANTS_READOUT_TYPES_FHICL_H
+
+
 ///Detector simulation of raw signals on wires
 namespace detsim {
     
@@ -131,12 +373,12 @@ public:
       /// @name Detector region
       /// @{
       
+#if 0
       fhicl::Atom<bool> ProcessAllTPCs {
         Name("ProcessAllTPCs"),
         Comment("whether all channels in all TPC's are processed"),
         false // default
         };
-      
       fhicl::Atom<unsigned int> Cryostat {
         Name("Cryostat"),
         Comment("number of the (only) cryostat to process"),
@@ -148,6 +390,13 @@ public:
         Comment
           ("number of the (only) TPC to process in the specified `Cryostat`"),
         0U // default
+        };
+        */
+#endif // 0
+      fhicl::Sequence<geo::fhicl::TPCID> TPCs {
+        Name("TPCs"),
+        Comment("only process channels on these TPC's (empty processes all)"),
+        std::vector<geo::TPCID>{} // default
         };
       
       /// @}
@@ -266,9 +515,13 @@ private:
                     std::vector<double> const& charge, float ped_mean) const;
     
     art::InputTag const          fDriftEModuleLabel; ///< module making the ionization electrons
+#if 0
     bool const                   fProcessAllTPCs;    ///< If true we process all TPCs
     unsigned int const           fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
     unsigned int const           fTPC;               ///< If ProcessAllTPCs is false then TPC to use
+#else
+    std::vector<geo::TPCID>      fTPCs;              ///< Process only these TPCs
+#endif // 0
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -287,6 +540,10 @@ private:
     std::vector<size_t> const    fTestIndex;
     std::vector<double> const    fTestCharge;
     int const                    fSample; // for histograms, -1 means no histos
+    
+    
+    ///< Range of channels to process: [ `first`, `second` [
+    std::pair<raw::ChannelID_t, raw::ChannelID_t> fChannelRange;
     
     TH1F*                        fSimCharge;
     TH2F*                        fSimChargeWire;
@@ -314,6 +571,18 @@ private:
     //services
     const geo::GeometryCore& fGeometry;
     
+    
+#if 0
+#else
+    bool processAllTPCs() const { return fTPCs.empty(); }
+#endif // 0
+
+    /// Returns IDs of first and past-the-last channel to process.
+    std::pair<raw::ChannelID_t, raw::ChannelID_t> channelRangeToProcess() const;
+    
+    
+    
+    
 }; // class SimWireICARUS
 DEFINE_ART_MODULE(SimWireICARUS)
 
@@ -321,9 +590,13 @@ DEFINE_ART_MODULE(SimWireICARUS)
 SimWireICARUS::SimWireICARUS(Parameters const& config)
     : EDProducer(config)
     , fDriftEModuleLabel(config().DriftEModuleLabel())
+#if 0
     , fProcessAllTPCs   (config().ProcessAllTPCs   ())
     , fCryostat         (config().Cryostat         ())
     , fTPC              (config().TPC              ())
+#else
+    , fTPCs             (config().TPCs             ())
+#endif // 0
     , fSimDeadChannels  (config().SimDeadChannels  ())
     , fSuppressNoSignal (config().SuppressNoSignal ())
     , fSmearPedestals   (config().SmearPedestals   ())
@@ -372,6 +645,20 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
       throw art::Exception(art::errors::Configuration)
         << "Unsupported compression requested: '" << compression << "'\n";
     }
+    
+    fChannelRange = channelRangeToProcess();
+    if (!processAllTPCs()) {
+      mf::LogInfo log("SimWireICARUS");
+      log << "Only " << fTPCs.size() << " TPC's will be processed:";
+      for (geo::TPCID const& tpcid: fTPCs) log << " { " << tpcid << " }";
+      
+      auto const [ firstChannel, endChannel ] = fChannelRange;
+      
+      log << "\nAll the " << (endChannel - firstChannel) << " channels from "
+        << firstChannel << " to " << endChannel
+        << " (excluded) will be processed.";
+    } // if selected TPCs
+    
     
     //
     // input:
@@ -520,26 +807,7 @@ void SimWireICARUS::produce(art::Event& evt)
     
     MBWithSignalSet mbWithSignalSet;
     
-    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
-    raw::ChannelID_t firstChannel(0);
-    raw::ChannelID_t endChannel(maxChannel);
-    
-    if (!fProcessAllTPCs)
-    {
-        firstChannel = maxChannel;
-        endChannel   = 0;
-        
-        for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
-        {
-            raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
-            
-            if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
-            
-            raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
-            
-            if (planeEndChannel > endChannel) endChannel = planeEndChannel;
-        }
-    }
+    auto const [ firstChannel, endChannel ] = fChannelRange;
     
     // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
     if (!fSuppressNoSignal)
@@ -694,5 +962,71 @@ void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> co
     
     return;
 }
+//-------------------------------------------------
+std::pair<raw::ChannelID_t, raw::ChannelID_t>
+SimWireICARUS::channelRangeToProcess() const {
+    
+    // return the first and last channel numbers
+    // based on whether we are outputting selected TPC's or all of them
+    
+    raw::ChannelID_t const maxChannel { fGeometry.Nchannels() };
+    
+#if 0
+    if (!fProcessAllTPCs)
+#else
+    if (processAllTPCs())
+#endif // 0
+        return { raw::ChannelID_t{ 0 }, maxChannel };
+    
+    //
+    // channel selection
+    //
+
+#if 0
+    raw::ChannelID_t firstChannel { maxChannel };
+    raw::ChannelID_t endChannel { 0 };
+    for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
+    {
+        raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
+        
+        if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
+        
+        raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
+        
+        if (planeEndChannel > endChannel) endChannel = planeEndChannel;
+    }
+    return { firstChannel, endChannel };
+#else
+
+    lar::util::MinMaxCollector<raw::ChannelID_t> stats;
+    
+    for (geo::TPCID const& tpcid: fTPCs) {
+        
+        for (geo::PlaneGeo const& plane: fGeometry.IteratePlanes(tpcid)) {
+            
+            raw::ChannelID_t const planeStartChannel
+              = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
+            
+            stats.add(planeStartChannel);
+            
+            raw::ChannelID_t const planeEndChannel
+              = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
+            
+            stats.add(planeEndChannel);
+            
+        } // for planes in TPC
+        
+    } // for all TPCs
+    
+    assert(stats.has_data());
+    
+#endif // 0
+
+    return { stats.min(), stats.max() };
+    
+} // SimWireICARUS::channelRangeToProcess()
+
+
+//-------------------------------------------------
     
 }
