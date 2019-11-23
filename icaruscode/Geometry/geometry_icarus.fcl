@@ -104,10 +104,10 @@ icarus_split_induction_geometry: {
   SurfaceY:         6.9e2   # how much below the surface our origin is [cm]
   Name:            "ICARUS"
   
-  # This is the version for test distributed on November 11, 2019
+  # This is the version for test distributed on November 18, 2019
   # by Alessandro Menegolli (alessandro.menegolli@pv.infn.it)
-  GDML:            "icarus_complete-20191111.gdml"
-  ROOT:            "icarus_complete-20191111.gdml"
+  GDML:            "icarus_complete_20191118.gdml"
+  ROOT:            "icarus_complete_20191118.gdml"
   
   DisableWiresInG4: true
   
