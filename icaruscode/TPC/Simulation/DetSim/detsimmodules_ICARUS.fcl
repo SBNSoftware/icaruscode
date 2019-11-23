@@ -63,10 +63,6 @@ icarus_standard_simwire:
     SimDeadChannels:    false
     SuppressNoSignal:   true
     SmearPedestals:     true
-    Test:               false
-    TestWire:           0
-    TestIndex:          [ 0. ]
-    TestCharge:         [ 0. ]
     Sample:             -1
     MakeHistograms:     "true"
     

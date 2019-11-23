@@ -190,9 +190,9 @@ double icarus::ICARUSChannelMapAlg::WireCoordinate
   cet::exception e("ICARUSChannelMapAlg");
   e << "ICARUSChannelMapAlg does not support `WireCoordinate()` call."
     "\nPlease update calling software to use geo::PlaneGeo::WireCoordinate()`:"
-    "\n\n";
+    "\n";
   
-  lar::debug::printBacktrace(e, 3U);
+  lar::debug::printBacktrace(e, 4U);
   
   throw e;
 } // icarus::ICARUSChannelMapAlg::WireCoordinate()
@@ -209,7 +209,7 @@ geo::WireID icarus::ICARUSChannelMapAlg::NearestWireID
   cet::exception e("ICARUSChannelMapAlg");
   e << "ICARUSChannelMapAlg does not support `NearestWireID()` call."
     "\nPlease update calling software to use geo::PlaneGeo::NearestWireID()`:"
-    "\n\n";
+    "\n";
   
   lar::debug::printBacktrace(e, 3U);
   
@@ -235,7 +235,7 @@ std::set<geo::PlaneID> const& icarus::ICARUSChannelMapAlg::PlaneIDs() const {
   cet::exception e("ICARUSChannelMapAlg");
   e << "ICARUSChannelMapAlg does not support `PlaneIDs()` call."
     "\nPlease update calling software to use geo::GeometryCore::IteratePlanes()`"
-    "\n\n";
+    "\n";
   
   lar::debug::printBacktrace(e, 3U);
   

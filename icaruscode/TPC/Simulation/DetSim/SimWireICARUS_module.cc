@@ -64,6 +64,7 @@
 #include "lardataobj/Simulation/SimChannel.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -321,6 +322,19 @@ namespace readout::fhicl {
 #endif // LARCOREOBJ_SIMPLETYPESANDCONSTANTS_READOUT_TYPES_FHICL_H
 
 
+namespace {
+  
+  template <typename T, typename Src>
+  std::vector<T> convertToVectorOf(Src const& src) {
+    std::vector<T> dest;
+    dest.reserve(src.size());
+    std::copy(util::begin(src), util::end(src), dest.begin());
+    return dest;
+  } // convertToVectorOf(Src)
+  
+} // local namespace
+
+
 ///Detector simulation of raw signals on wires
 namespace detsim {
     
@@ -338,32 +352,47 @@ public:
       // --- BEGIN -- Source parameters ----------------------------------------
       /// @name Source parameters
       /// @{
-      //
-      fhicl::Atom<bool> Test {
-        Name("Test"),
-        Comment("if set, just inject test charges on one channel (see below)")
-        // default
+      
+      /// Parameters for a single test charge.
+      struct TestChargeParams {
+        
+        fhicl::Atom<std::size_t> Index {
+          Name("Index"),
+          Comment("TDC count to inject the test charge at")
+          };
+        fhicl::Atom<double> Charge {
+          Name("Charge"),
+          Comment("charge to be injected")
+          };
+        
+      }; // struct TestChargeParams
+      
+      
+      fhicl::Sequence<geo::fhicl::WireID> TestWires {
+        Name("TestWires"),
+        Comment(
+          "wire IDs to inject test charge in"
+          " (e.g. [ 0, 1, 1, 23 ] => C:0 T:1 P:1 W:23)"
+          ),
+        std::vector<geo::WireID>{}
+        };
+      fhicl::Sequence<fhicl::Table<TestChargeParams>> TestCharges {
+        Name("TestCharges"),
+        Comment("test charges that are injected into all test wires"),
+        fhicl::use_if(this, &Config::isTesting)
         };
       
       fhicl::Atom<art::InputTag> DriftEModuleLabel {
         Name("DriftEModuleLabel"),
-        Comment
-          ("data product tag for input drifted electrons (`sim::SimChannel`)")
-        // default
+        Comment(
+          "data product tag for input drifted electrons (`sim::SimChannel`)"
+          " [forbidden if test wires are specified]"
+          ),
+        fhicl::use_if(this, &Config::isNotTesting)
         };
       
-      fhicl::Atom<std::size_t> TestWire {
-        Name("TestWire"),
-        Comment("channel to inject test charge in")
-        };
-      fhicl::Sequence<std::size_t> TestIndex {
-        Name("TestIndex"),
-        Comment("ADC counts to inject the test charges at")
-        };
-      fhicl::Sequence<double> TestCharge {
-        Name("TestCharge"),
-        Comment("charge to be injected at each of the times in `TestIndex`")
-        };
+      bool isTesting() const { return !TestWires.empty(); }
+      bool isNotTesting() const { return !isTesting(); }
       
       /// @}
       // --- END -- Source parameters ------------------------------------------
@@ -500,6 +529,17 @@ public:
     using Parameters = art::EDProducer::Table<Config>;
     
     
+    struct TestChargeParams {
+      std::size_t index;
+      double charge;
+      
+      TestChargeParams() = default;
+      TestChargeParams(Config::TestChargeParams const& config)
+        : index(config.Index()), charge(config.Charge()) {}
+      
+    }; // struct TestChargeParams
+    
+    
 //    explicit SimWireICARUS(fhicl::ParameterSet const& pset);
     explicit SimWireICARUS(Parameters const& config);
     
@@ -534,11 +574,9 @@ private:
     std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
     bool const                   fMakeHistograms;
-    bool const                   fTest; // for forcing a test case
+    std::vector<geo::WireID>     fTestWires; ///< Where to inject test charge.
+    std::vector<TestChargeParams> fTestParams; ///< When to inject which test charge.
     std::vector<sim::SimChannel> fTestSimChannel_v;
-    size_t const                 fTestWire;
-    std::vector<size_t> const    fTestIndex;
-    std::vector<double> const    fTestCharge;
     int const                    fSample; // for histograms, -1 means no histos
     
     
@@ -576,6 +614,8 @@ private:
 #else
     bool processAllTPCs() const { return fTPCs.empty(); }
 #endif // 0
+    
+    bool isTesting() const { return !fTestWires.empty(); }
 
     /// Returns IDs of first and past-the-last channel to process.
     std::pair<raw::ChannelID_t, raw::ChannelID_t> channelRangeToProcess() const;
@@ -602,10 +642,8 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
     , fSmearPedestals   (config().SmearPedestals   ())
     , fNumChanPerMB     (config().NumChanPerMB     ())
     , fMakeHistograms   (config().MakeHistograms   ())
-    , fTest             (config().Test             ())
-    , fTestWire         (config().TestWire         ())
-    , fTestIndex        (config().TestIndex        ())
-    , fTestCharge       (config().TestCharge       ())
+    , fTestWires        (config().TestWires        ())
+    , fTestParams       (convertToVectorOf<TestChargeParams>(config().TestCharges()))
     , fSample           (config().Sample           ())
     , fPedestalEngine   (art::ServiceHandle<rndm::NuRandomService>()->createEngine
                          (*this, "HepJamesRandom", "pedestal", config().SeedPedestal)
@@ -618,9 +656,6 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
                         )
     , fGeometry         (*lar::providerFrom<geo::Geometry>())
 {
-    
-    if(fTestIndex.size() != fTestCharge.size())
-        throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
     std::vector<fhicl::ParameterSet> noiseToolParamSetVec
       = config().NoiseGenToolVec.get<std::vector<fhicl::ParameterSet>>();
@@ -663,7 +698,7 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
     //
     // input:
     //
-    if(!fTest) consumes<std::vector<sim::SimChannel>>(fDriftEModuleLabel);
+    if(!isTesting()) consumes<std::vector<sim::SimChannel>>(fDriftEModuleLabel);
     
     //
     // output:
@@ -679,27 +714,27 @@ void SimWireICARUS::beginJob()
     art::ServiceHandle<art::TFileService> tfs;
     
     // If in test mode create a test data set
-    if(fTest)
+    if(isTesting())
     {
-        if(fGeometry.Nchannels()<=fTestWire)
-            throw cet::exception(__FUNCTION__)<<"Invalid test wire channel: "<<fTestWire;
-        std::vector<unsigned int> channels;
-        for(auto const& plane_id : fGeometry.IteratePlaneIDs())
-            channels.push_back(fGeometry.PlaneWireToChannel(plane_id.Plane,fTestWire));
-        double xyz[3] = { std::numeric_limits<double>::max() };
-        for(auto const& ch : channels)
-        {
-            fTestSimChannel_v.push_back(sim::SimChannel(ch));
-            for(size_t i=0; i<fTestIndex.size(); ++i)
-            {
-                fTestSimChannel_v.back().AddIonizationElectrons(-1,
-                                                                fTestIndex[i],
-                                                                fTestCharge[i],
-                                                                xyz,
-                                                                std::numeric_limits<double>::max());
-            }
-        }
-    }
+        std::array<double, 3U> xyz;
+        xyz.fill(std::numeric_limits<double>::quiet_NaN());
+        for (geo::WireID const& wire: fTestWires) {
+            
+            raw::ChannelID_t const channel = fGeometry.PlaneWireToChannel(wire);
+            
+            sim::SimChannel sch(channel);
+            for (TestChargeParams const& params: fTestParams) {
+                sch.AddIonizationElectrons(
+                  -1, params.index, params.charge,
+                  xyz.data(), std::numeric_limits<double>::max()
+                  );
+            } // for inject parameters
+            
+            fTestSimChannel_v.push_back(std::move(sch));
+            
+        } // for wires in test
+        
+    } // if testing
     
     fSimCharge     = tfs->make<TH1F>("fSimCharge", "simulated charge", 150, 0, 1500);
     fSimChargeWire = tfs->make<TH2F>("fSimChargeWire", "simulated charge", 5600,0.,5600.,500, 0, 1500);
@@ -761,7 +796,7 @@ void SimWireICARUS::produce(art::Event& evt)
     // and set the entries for the channels that have signal on them
     // using the chanHandle
     std::vector<const sim::SimChannel*> channels(maxChannel,nullptr);
-    if(!fTest)
+    if(!isTesting())
     {
         std::vector<const sim::SimChannel*> chanHandle;
         evt.getView(fDriftEModuleLabel,chanHandle);
