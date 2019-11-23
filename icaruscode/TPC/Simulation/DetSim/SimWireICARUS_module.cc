@@ -402,26 +402,6 @@ public:
       /// @name Detector region
       /// @{
       
-#if 0
-      fhicl::Atom<bool> ProcessAllTPCs {
-        Name("ProcessAllTPCs"),
-        Comment("whether all channels in all TPC's are processed"),
-        false // default
-        };
-      fhicl::Atom<unsigned int> Cryostat {
-        Name("Cryostat"),
-        Comment("number of the (only) cryostat to process"),
-        0U // default
-        };
-      
-      fhicl::Atom<unsigned int> TPC {
-        Name("TPC"),
-        Comment
-          ("number of the (only) TPC to process in the specified `Cryostat`"),
-        0U // default
-        };
-        */
-#endif // 0
       fhicl::Sequence<geo::fhicl::TPCID> TPCs {
         Name("TPCs"),
         Comment("only process channels on these TPC's (empty processes all)"),
@@ -518,12 +498,6 @@ public:
         false // default
         };
       
-      fhicl::Atom<int> Sample { // TODO remove me!
-        Name("Sample"),
-        Comment("unused")
-        // default
-        };
-      
     }; // struct Config
     
     using Parameters = art::EDProducer::Table<Config>;
@@ -540,7 +514,6 @@ public:
     }; // struct TestChargeParams
     
     
-//    explicit SimWireICARUS(fhicl::ParameterSet const& pset);
     explicit SimWireICARUS(Parameters const& config);
     
     // read/write access to event
@@ -555,13 +528,7 @@ private:
                     std::vector<double> const& charge, float ped_mean) const;
     
     art::InputTag const          fDriftEModuleLabel; ///< module making the ionization electrons
-#if 0
-    bool const                   fProcessAllTPCs;    ///< If true we process all TPCs
-    unsigned int const           fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
-    unsigned int const           fTPC;               ///< If ProcessAllTPCs is false then TPC to use
-#else
     std::vector<geo::TPCID>      fTPCs;              ///< Process only these TPCs
-#endif // 0
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -610,10 +577,7 @@ private:
     const geo::GeometryCore& fGeometry;
     
     
-#if 0
-#else
     bool processAllTPCs() const { return fTPCs.empty(); }
-#endif // 0
     
     bool isTesting() const { return !fTestWires.empty(); }
 
@@ -630,13 +594,7 @@ DEFINE_ART_MODULE(SimWireICARUS)
 SimWireICARUS::SimWireICARUS(Parameters const& config)
     : EDProducer(config)
     , fDriftEModuleLabel(config().DriftEModuleLabel())
-#if 0
-    , fProcessAllTPCs   (config().ProcessAllTPCs   ())
-    , fCryostat         (config().Cryostat         ())
-    , fTPC              (config().TPC              ())
-#else
     , fTPCs             (config().TPCs             ())
-#endif // 0
     , fSimDeadChannels  (config().SimDeadChannels  ())
     , fSuppressNoSignal (config().SuppressNoSignal ())
     , fSmearPedestals   (config().SmearPedestals   ())
@@ -1006,32 +964,12 @@ SimWireICARUS::channelRangeToProcess() const {
     
     raw::ChannelID_t const maxChannel { fGeometry.Nchannels() };
     
-#if 0
-    if (!fProcessAllTPCs)
-#else
     if (processAllTPCs())
-#endif // 0
         return { raw::ChannelID_t{ 0 }, maxChannel };
     
     //
     // channel selection
     //
-
-#if 0
-    raw::ChannelID_t firstChannel { maxChannel };
-    raw::ChannelID_t endChannel { 0 };
-    for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
-    {
-        raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
-        
-        if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
-        
-        raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
-        
-        if (planeEndChannel > endChannel) endChannel = planeEndChannel;
-    }
-    return { firstChannel, endChannel };
-#else
 
     lar::util::MinMaxCollector<raw::ChannelID_t> stats;
     
@@ -1055,8 +993,6 @@ SimWireICARUS::channelRangeToProcess() const {
     
     assert(stats.has_data());
     
-#endif // 0
-
     return { stats.min(), stats.max() };
     
 } // SimWireICARUS::channelRangeToProcess()
