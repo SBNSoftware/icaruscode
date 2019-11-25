@@ -91,10 +91,16 @@ using namespace util;
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 
 // support libraries
-#include "fhiclcpp/types/OptionalTupleAs.h"
-#include "fhiclcpp/types/TupleAs.h"
-#include "fhiclcpp/types/OptionalAtom.h"
+#include "fhiclcpp/types/OptionalTable.h"
+#include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/OptionalSequence.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
+
+// C/C++ standard libraries
+#include <vector>
+#include <optional>
+#include <cstddef> // std::size_t
 
 
 /// FHiCL objects representing geometry classes as configuration parameters.
@@ -105,19 +111,20 @@ namespace geo::fhicl {
    * @name Validated configuration parameters for geometry ID objects
    * 
    * These data types can be used in a class for validated FHiCL configuration.
-   * They are implemented as direct aliases of `fhicl::TupleAs`, with all the
-   * implications of that.
-   * An ID described data member can be specified as a sequence of integer
-   * numbers, e.g. `[ 1, 3, 2 ]` for the plane `C:1 T:3 P:2`.
-   * Invalid IDs are not supported.
+   * They are implemented as configuration tables (`fhicl::Table`) of a
+   * configuration structure containing one parameter (`fhicl::Atom`) per index
+   * in the ID. They do _not_ support default values, but optional parameters
+   * may be used as a workaround.
+   * An ID described data member can be specified as a table with the same
+   * syntax as the standard printout of the IDs, e.g. `{ C:1 T:3 P:2 }`
+   * for the plane `C:1 T:3 P:2`.
    * Example:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * struct Config {
    *   
-   *   fhicl::Sequence<geo::fhicl::PlaneID> Planes {
+   *   geo::fhicl::PlaneIDsequence Planes {
    *     fhicl::Name("Planes"),
-   *     fhicl::Comment("anode planes to process"),
-   *     std::vector<geo::PlaneID>{} // no planes by default
+   *     fhicl::Comment("anode planes to process")
    *     };
    *   
    *   geo::fhicl::OptionalPlaneID ReferencePlane {
@@ -130,17 +137,17 @@ namespace geo::fhicl {
    * which can be configured as:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    * Planes: [
-   *   [ 0, 1, 0 ], # C:0 T:1 P:0
-   *   [ 0, 1, 1 ], # C:0 T:1 P:1
-   *   [ 0, 1, 2 ]  # C:0 T:1 P:2
+   *   { C:0 T:1 P:0 },
+   *   { C:0 T:1 P:1 },
+   *   { C:0 T:1 P:2 }
    *   ]
-   * ReferencePlane: [ 0, 1, 2 ] # C:0 T:1 P:2
+   * ReferencePlane: { C:0 T:1 P:2 }
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    * and read as:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * void readParams(art::EDProducer::Table<Config> const& config) {
    *   
-   *   std::vector<geo::PlaneID> planes = config().Planes();
+   *   std::vector<geo::PlaneID> planes = readIDsequence(config().Planes);
    *   if (planes.empty()) {
    *     throw art::Exception(art::errors::Configuration)
    *       << "At least one plane is needed.\n";
@@ -151,51 +158,390 @@ namespace geo::fhicl {
    *   
    * } // readParams()
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * 
+   * Currently default values are not supported.
+   * The workaround is to use the "optional" version of the objects.
+   * For parameter sequences the use is a bit more complicate, and an utility
+   * is provided for that:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   geo::fhicl::OptionalPlaneIDsequence Planes {
+   *     fhicl::Name("Planes"),
+   *     fhicl::Comment("anode planes to process (omit or empty processes all)")
+   *     };
+   *   
+   * }; // struct Config
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * reading as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * void readParams(art::EDProducer::Table<Config> const& config) {
+   *   
+   *   std::vector<geo::PlaneID> planes
+   *     = readOptionalIDsequence(config().Planes, {});
+   *   
+   * } // readParams()
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * Note however that the default value will not show in the regular
+   * `lar --print-description` output.
+   * 
    */
   /// @{
   
+  /// Helper class holding the ID validity flag.
+  struct ValidIDConfig {
+    
+    ::fhicl::Atom<bool> isValid {
+      ::fhicl::Name("isValid"),
+      ::fhicl::Comment("whether the ID is valid"),
+      true // default
+      };
+    
+    bool valid() const { return isValid(); }
+    
+  }; // struct ValidIDConfig
+  
+  
+  // --- BEGIN -- Cryostat ID --------------------------------------------------
+  /// Configuration structure for validated `geo::CryostatID` parameter.
+  struct CryostatIDConfig: public ValidIDConfig {
+    using ID_t = geo::CryostatID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<geo::CryostatID::CryostatID_t> C {
+      ::fhicl::Name("C"),
+      ::fhicl::Comment("cryostat number"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return ID_t{ C() }; }
+    operator ID_t() const { return ID(); }
+    
+  }; // struct CryostatIDConfig
+  
   /// Member type of validated `geo::CryostatID` parameter.
-  using CryostatID = ::fhicl::TupleAs
-    <geo::CryostatID(geo::CryostatID::CryostatID_t)>;
-  
-  /// Member type of validated `geo::TPCID` parameter.
-  using TPCID = ::fhicl::TupleAs
-    <geo::TPCID(geo::TPCID::CryostatID_t, geo::TPCID::TPCID_t)>;
-  
-  /// Member type of validated `geo::PlaneID` parameter.
-  using PlaneID = ::fhicl::TupleAs<geo::PlaneID(
-    geo::PlaneID::CryostatID_t, geo::PlaneID::TPCID_t, geo::PlaneID::PlaneID_t
-    )>;
-  
-  /// Member type of validated `geo::WireID` parameter.
-  using WireID = ::fhicl::TupleAs<geo::WireID(
-    geo::WireID::CryostatID_t, geo::WireID::TPCID_t,
-    geo::WireID::PlaneID_t, geo::WireID::WireID_t
-    )>;
+  using CryostatID = ::fhicl::Table<CryostatIDConfig>;
   
   /// Member type of optional validated `geo::CryostatID` parameter.
-  using OptionalCryostatID = ::fhicl::OptionalTupleAs
-    <geo::CryostatID(geo::CryostatID::CryostatID_t)>;
+  using OptionalCryostatID = ::fhicl::OptionalTable<CryostatIDConfig>;
+  
+  /// Member type of sequence of `geo::CryostatID` parameters.
+  using CryostatIDsequence = ::fhicl::Sequence<CryostatID>;
+  
+  /// Member type of optional sequence of `geo::CryostatID` parameters.
+  using OptionalCryostatIDsequence = ::fhicl::OptionalSequence<CryostatID>;
+  
+  // --- END -- Cryostat ID ----------------------------------------------------
+  
+  
+  // --- BEGIN -- TPC ID -------------------------------------------------------
+  /// Configuration structure for validated `geo::TPCID` parameter.
+  struct TPCIDConfig: public CryostatIDConfig {
+    using ID_t = geo::TPCID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<geo::TPCID::TPCID_t> T {
+      ::fhicl::Name("T"),
+      ::fhicl::Comment("TPC number within the cryostat"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return { CryostatIDConfig::ID(), T() }; }
+    operator ID_t() const { return ID(); }
+  }; // struct TPCIDConfig
+  
+  /// Member type of validated `geo::TPCID` parameter.
+  using TPCID = ::fhicl::Table<TPCIDConfig>;
   
   /// Member type of optional validated `geo::TPCID` parameter.
-  using OptionalTPCID = ::fhicl::OptionalTupleAs
-    <geo::TPCID(geo::TPCID::CryostatID_t, geo::TPCID::TPCID_t)>;
+  using OptionalTPCID = ::fhicl::OptionalTable<TPCIDConfig>;
+  
+  /// Member type of sequence of `geo::TPCID` parameters.
+  using TPCIDsequence = ::fhicl::Sequence<TPCID>;
+  
+  /// Member type of optional sequence of `geo::TPCID` parameters.
+  using OptionalTPCIDsequence = ::fhicl::OptionalSequence<TPCID>;
+  
+  // --- END -- TPC ID ---------------------------------------------------------
+  
+  
+  // --- BEGIN -- Plane ID -----------------------------------------------------
+  /// Configuration structure for validated `geo::PlaneID` parameter.
+  struct PlaneIDConfig: public TPCIDConfig {
+    using ID_t = geo::PlaneID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<geo::PlaneID::PlaneID_t> P {
+      ::fhicl::Name("P"),
+      ::fhicl::Comment("Plane number within the TPC"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return { TPCIDConfig::ID(), P() }; }
+    operator ID_t() const { return ID(); }
+  }; // struct PlaneIDConfig
+  
+  /// Member type of validated `geo::PlaneID` parameter.
+  using PlaneID = ::fhicl::Table<PlaneIDConfig>;
   
   /// Member type of optional validated `geo::PlaneID` parameter.
-  using OptionalPlaneID = ::fhicl::OptionalTupleAs<geo::PlaneID(
-    geo::PlaneID::CryostatID_t, geo::PlaneID::TPCID_t, geo::PlaneID::PlaneID_t
-    )>;
+  using OptionalPlaneID = ::fhicl::OptionalTable<PlaneIDConfig>;
+  
+  /// Member type of sequence of `geo::PlaneID` parameters.
+  using PlaneIDsequence = ::fhicl::Sequence<PlaneID>;
+  
+  /// Member type of optional sequence of `geo::PlaneID` parameters.
+  using OptionalPlaneIDsequence = ::fhicl::OptionalSequence<PlaneID>;
+  
+  // --- END -- Plane ID -------------------------------------------------------
+  
+  
+  // --- BEGIN -- Wire ID -----------------------------------------------------
+  /// Configuration structure for validated `geo::PlaneID` parameter.
+  struct WireIDConfig: public PlaneIDConfig {
+    using ID_t = geo::WireID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<geo::WireID::WireID_t> W {
+      ::fhicl::Name("W"),
+      ::fhicl::Comment("Wire number within the plane"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return { PlaneIDConfig::ID(), W() }; }
+    operator ID_t() const { return ID(); }
+  }; // struct WireIDConfig
+  
+  /// Member type of validated `geo::WireID` parameter.
+  using WireID = ::fhicl::Table<WireIDConfig>;
   
   /// Member type of optional validated `geo::WireID` parameter.
-  using OptionalWireID = ::fhicl::OptionalTupleAs<geo::WireID(
-    geo::WireID::CryostatID_t, geo::WireID::TPCID_t,
-    geo::WireID::PlaneID_t, geo::WireID::WireID_t
-    )>;
+  using OptionalWireID = ::fhicl::OptionalTable<WireIDConfig>;
+  
+  /// Member type of sequence of `geo::WireID` parameters.
+  using WireIDsequence = ::fhicl::Sequence<WireID>;
+  
+  /// Member type of optional sequence of `geo::WireID` parameters.
+  using OptionalWireIDsequence = ::fhicl::OptionalSequence<WireID>;
+  
+  // --- END -- Wire ID -------------------------------------------------------
+  
+  
+  // --- BEGIN -- ID sequence parsing ------------------------------------------
+  
+  //@{
+  /// Type of the ID in the ID sequence.
+  template <typename IDsequence>
+  using IDofSequence = typename IDsequence::value_type::value_type::ID_t;
+  //@}
+  
+  //@{
+  /**
+   * @brief Returns a vector of IDs extracted from the specified ID sequence.
+   * @tparam IDsequence type of FHiCL sequence object
+   * @tparam ID type of the element in the returned collection
+   *            (default: the ID type of `IDsequence`)
+   * @param seq the sequence of ID parameters to convert
+   * @return a STL vector of `ID` objects converted from `seq` parameter values
+   * 
+   * This function returns the value of the specified FHiCL sequence object
+   * (`fhicl::Sequence`). It supports both fixed and variable size sequences,
+   * but it always returns a STL vector as a result.
+   * 
+   * Example of usage: the configuration object `Config` and the data member to
+   * store the configuration parameter value are defined in a class as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   geo::fhicl::TPCIDsequence TPCs
+   *     { fhicl::Name("TPCs"), fhicl::Comment("selected TPCs") };
+   *   
+   * };
+   * 
+   * std::vector<geo::TPCID> fTPCs;
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * The constructor of that class should have an entry in the initializer list
+   * like:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   *   fTPCs(geo::fhicl::readIDsequence(config().TPCs))
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * (note that the argument is just `config().TPCs`, not `config().TPCs()`).
+   * 
+   * @note The additional template parameter `ID` is provided as an added bonus
+   *       to choose which type to convert the configuration parameters into,
+   *       and it's not enforced to be a ID type at all.
+   */
+  template <typename IDsequence, typename ID = IDofSequence<IDsequence>>
+  std::vector<IDofSequence<IDsequence>> readIDsequence(IDsequence const& seq);
+  //@}
+  
+  //@{
+  /**
+   * @brief Returns a vector of IDs extracted from the specified optional ID
+   *        sequence.
+   * @tparam IDsequence type of FHiCL optional sequence object
+   * @tparam ID type of the element in the returned collection
+   *            (default: the ID type of `IDsequence`)
+   * @param seq the optional sequence of ID parameters to convert
+   * @return an optional collection containing a STL vector of `ID` objects
+   *         converted from `seq` parameter values, or no value if the parameter
+   *         was omitted
+   * 
+   * This function returns the value of the specified FHiCL optional sequence
+   * object (`fhicl::OptionalSequence`). It supports both fixed and variable
+   * size optional sequences, but it always returns an optional STL vector as a
+   * result.
+   * 
+   * Example of usage: the configuration object `Config` and the data member to
+   * store the configuration parameter value are defined in a class as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   geo::fhicl::OptionalTPCIDsequence TPCs
+   *     { fhicl::Name("TPCs"), fhicl::Comment("selected TPCs") };
+   *   
+   * };
+   * 
+   * std::optional<std::vector<geo::TPCID>> fTPCs;
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * The constructor of that class should have an entry in the initializer list
+   * like:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   *   fTPCs(geo::fhicl::readIDsequence(config().TPCs))
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * (note that the argument is just `config().TPCs`, not `config().TPCs()`).
+   * If instead a "default value" needs to be provided, the data member is
+   * simply:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * std::vector<geo::TPCID> fTPCs;
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * and the value can be assigned via the standard `std::optional` interface:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   *   fTPCs(geo::fhicl::readIDsequence(config().TPCs).value_or(std::vector<geo::TPCID>{}))
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * (in this case the default value is an empty collection of TPC IDs) or using
+   * a different overload of `readOptionalIDsequence()`:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   *   fTPCs(geo::fhicl::readIDsequence(config().TPCs, {}))
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * 
+   * 
+   * @note The additional template parameter `ID` is provided as an added bonus
+   *       to choose which type to convert the configuration parameters into,
+   *       and it's not enforced to be a ID type at all.
+   */
+  template <typename IDsequence, typename ID = IDofSequence<IDsequence>>
+  std::optional<std::vector<IDofSequence<IDsequence>>>
+    readOptionalIDsequence(IDsequence const& seq);
+  //@}
+  
+  //@{
+  /**
+   * @brief Returns a vector of IDs extracted from the specified optional ID
+   *        sequence, or a default value.
+   * @tparam IDsequence type of FHiCL optional sequence object
+   * @tparam ID type of the element in the returned collection
+   *            (default: the ID type of `IDsequence`)
+   * @param seq the optional sequence of ID parameters to convert
+   * @param defValue value to be returned if the optional parameter was omitted
+   * @return a collection containing a STL vector of `ID` objects
+   *         converted either from `seq` parameter values or from `defValue`
+   * 
+   * This function is based on `readOptionalIDsequence(IDsequence const&)`.
+   * The operating mode is the same, but if the value is not available from
+   * the parameters, a copy of `defValue` is returned, or `defValue` content
+   * is moved into the returned value.
+   */
+  template <typename IDsequence, typename ID = IDofSequence<IDsequence>>
+  std::vector<IDofSequence<IDsequence>> readOptionalIDsequence(
+    IDsequence const& seq,
+    std::vector<IDofSequence<IDsequence>> const& defValue
+    );
+  
+  template <typename IDsequence, typename ID = IDofSequence<IDsequence>>
+  std::vector<IDofSequence<IDsequence>> readOptionalIDsequence(
+    IDsequence const& seq,
+    std::vector<IDofSequence<IDsequence>>&& defValue
+    );
+  //@}
+  
+  // --- END -- ID sequence parsing --------------------------------------------
+  
   
   /// @}
   // --- END -- Validated configuration parameters for geometry ID objects -----
   
 } // namespace geo::fhicl
+
+
+// -----------------------------------------------------------------------------
+// ---  template implementation
+// -----------------------------------------------------------------------------
+template<
+  typename IDsequence,
+  typename ID /* = geo::fhicl::IDofSequence<IDsequence> */
+  >
+auto geo::fhicl::readIDsequence(IDsequence const& seq)
+  -> std::vector<IDofSequence<IDsequence>>
+{
+  using ID_t = ID;
+  
+  std::vector<ID_t> IDs;
+  std::size_t const n = seq.size();
+  IDs.reserve(n);
+  for (std::size_t i = 0; i < n; ++i)
+    IDs.push_back(seq(i)); // seq(i) is TPCIDConfig
+  return IDs;
+} // geo::fhicl::readIDsequence()
+
+
+// -----------------------------------------------------------------------------
+template <
+  typename IDsequence,
+  typename ID /* = geo::fhicl::IDofSequence<IDsequence> */
+  >
+auto geo::fhicl::readOptionalIDsequence(IDsequence const& seq)
+  -> std::optional<std::vector<IDofSequence<IDsequence>>>
+{
+  using values_t = std::vector<ID>;
+  
+  typename IDsequence::value_type values;
+  if (!seq(values)) return std::nullopt;
+  
+  values_t IDs;
+  IDs.reserve(values.size());
+  std::copy(values.begin(), values.end(), std::back_inserter(IDs));
+  return { std::move(IDs) };
+  
+} // geo::fhicl::readOptionalIDsequence()
+
+
+// -----------------------------------------------------------------------------
+template <
+  typename IDsequence,
+  typename ID /* = geo::fhicl::IDofSequence<IDsequence> */
+  >
+auto geo::fhicl::readOptionalIDsequence
+  (IDsequence const& seq, std::vector<IDofSequence<IDsequence>> const& defValue)
+  -> std::vector<IDofSequence<IDsequence>>
+{
+  // making sure `paramValue` is not a r-value; not sure whether it is necessary
+  auto paramValue = readOptionalIDsequence(seq);
+  return paramValue.value_or(defValue);
+} // geo::fhicl::readOptionalIDsequence(IDsequence, std::vector const&)
+
+
+// -----------------------------------------------------------------------------
+template <
+  typename IDsequence,
+  typename ID /* = geo::fhicl::IDofSequence<IDsequence> */
+  >
+auto geo::fhicl::readOptionalIDsequence
+  (IDsequence const& seq, std::vector<IDofSequence<IDsequence>>&& defValue)
+  -> std::vector<IDofSequence<IDsequence>>
+{
+  return readOptionalIDsequence(seq).value_or(std::move(defValue));
+} // geo::fhicl::readOptionalIDsequence(IDsequence, std::vector const&)
+
+
+// -----------------------------------------------------------------------------
+
 
 #endif // LARCOREOBJ_SIMPLETYPESANDCONSTANTS_GEO_TYPES_FHICL_H
 
@@ -207,11 +553,14 @@ namespace geo::fhicl {
 
 
 // LArSoft libraries
+// #include "larcoreobj/SimpleTypesAndConstants/geo_types_fhicl.h"
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h"
 
 // support libraries
-#include "fhiclcpp/types/OptionalTupleAs.h"
-#include "fhiclcpp/types/TupleAs.h"
+#include "fhiclcpp/types/OptionalTable.h"
+#include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/OptionalSequence.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 
@@ -224,24 +573,25 @@ namespace readout::fhicl {
    * @name Validated configuration parameters for readout ID objects
    * 
    * These data types can be used in a class for validated FHiCL configuration.
-   * They are implemented as direct aliases of `fhicl::TupleAs`, with all the
-   * implications of that.
-   * An ID described data member can be specified as a sequence of integer
-   * numbers, e.g. `[ 1, 3, 2 ]` for the readout plane `C:1 S:3 R:2`.
-   * Invalid IDs are not supported.
+   * They are implemented as configuration tables (`fhicl::Table`) of a
+   * configuration structure containing one parameter (`fhicl::Atom`) per index
+   * in the ID. They do _not_ support default values, but optional parameters
+   * may be used as a workaround.
+   * An ID described data member can be specified as a table with the same
+   * syntax as the standard printout of the IDs, e.g. `{ C:1 S:3 R:2 }`
+   * for the plane `C:1 S:3 R:2`.
    * Example:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * struct Config {
    *   
-   *   fhicl::Sequence<readout::fhicl::ROPID> ROPs {
+   *   geo::fhicl::ROPIDsequence ROPs {
    *     fhicl::Name("ROPs"),
-   *     fhicl::Comment("readout planes to process"),
-   *     std::vector<readout::ROPID>{} // no readout planes by default
+   *     fhicl::Comment("readout planes to process")
    *     };
    *   
-   *   readout::fhicl::OptionalROPID ReferenceROP {
+   *   geo::fhicl::OptionalROPID ReferenceROP {
    *     fhicl::Name("ReferenceROP"),
-   *     fhicl::Comment("reference readout plane (first one by default)")
+   *     fhicl::Comment("reference readout anode plane (first one by default)")
    *     };
    *   
    * }; // struct Config
@@ -249,24 +599,24 @@ namespace readout::fhicl {
    * which can be configured as:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    * ROPs: [
-   *   [ 0, 1, 0 ], # C:0 S:1 R:0
-   *   [ 0, 1, 1 ], # C:0 S:1 R:1
-   *   [ 0, 1, 2 ]  # C:0 S:1 R:2
+   *   { C:0 S:1 R:0 },
+   *   { C:0 S:1 R:1 },
+   *   { C:0 S:1 R:2 }
    *   ]
-   * ReferenceROP: [ 0, 1, 2 ] # C:0 S:1 R:2
+   * ReferenceROP: { C:0 S:1 R:2 }
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    * and read as:
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * void readParams(art::EDProducer::Table<Config> const& config) {
    *   
-   *   std::vector<readout::ROPID> ROPs = config().ROPs();
+   *   std::vector<geo::ROPID> ROPs = readIDsequence(config().ROPs);
    *   if (ROPs.empty()) {
    *     throw art::Exception(art::errors::Configuration)
    *       << "At least one readout plane is needed.\n";
    *   }
    *   
-   *   readout::ROPID refROP; // invalid by default
-   *   if (!config().ReferenceROP(refROP)) refROP = ROPs.front();
+   *   geo::ROPID refROP; // invalid by default
+   *   if (!config().ReferenceROP(refROP)) refROP = planes.front();
    *   
    * } // readParams()
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -274,45 +624,142 @@ namespace readout::fhicl {
    * The exception is `readout::fhicl::ChannelID`, which is provided for
    * completeness but is just a `fhicl::Atom` type and reads just as a plain
    * integral number.
+   * 
+   * Currently default values are not supported.
+   * The workaround is to use the "optional" version of the objects.
+   * For parameter sequences the use is a bit more complicate, and an utility
+   * is provided for that:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * struct Config {
+   *   
+   *   geo::fhicl::OptionalROPIDsequence ROPs {
+   *     fhicl::Name("ROPs"),
+   *     fhicl::Comment
+   *       ("readout anode planes to process (omit or empty processes all)")
+   *     };
+   *   
+   * }; // struct Config
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * reading as:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * void readParams(art::EDProducer::Table<Config> const& config) {
+   *   
+   *   std::vector<geo::ROPID> ROPs
+   *     = readOptionalIDsequence(config().ROPs, {});
+   *   
+   * } // readParams()
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * Note however that the default value will not show in the regular
+   * `lar --print-description` output.
    */
   /// @{
   
-  /// Member type of validated `geo::CryostatID` parameter.
-  using CryostatID = ::fhicl::TupleAs
-    <readout::CryostatID(readout::CryostatID::CryostatID_t)>;
+  // --- BEGIN -- Cryostat ID --------------------------------------------------
+  /// Configuration structure for validated `readout::CryostatID` parameter.
+  struct CryostatIDConfig: public geo::fhicl::ValidIDConfig {
+    using ID_t = readout::CryostatID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<readout::CryostatID::CryostatID_t> C {
+      ::fhicl::Name("C"),
+      ::fhicl::Comment("cryostat number"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return ID_t{ C() }; }
+    operator ID_t() const { return ID(); }
+    
+  }; // struct CryostatIDConfig
+  
+  /// Member type of validated `readout::CryostatID` parameter.
+  using CryostatID = ::fhicl::Table<CryostatIDConfig>;
+  
+  /// Member type of optional validated `readout::CryostatID` parameter.
+  using OptionalCryostatID = ::fhicl::OptionalTable<CryostatIDConfig>;
+  
+  /// Member type of sequence of `readout::CryostatID` parameters.
+  using CryostatIDsequence = ::fhicl::Sequence<CryostatID>;
+  
+  /// Member type of optional sequence of `readout::CryostatID` parameters.
+  using OptionalCryostatIDsequence = ::fhicl::OptionalSequence<CryostatID>;
+  
+  // --- END -- Cryostat ID ----------------------------------------------------
+  
+  
+  // --- BEGIN -- TPC set ID ---------------------------------------------------
+  /// Configuration structure for validated `readout::TPCsetID` parameter.
+  struct TPCsetIDConfig: public CryostatIDConfig {
+    using ID_t = readout::TPCsetID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<readout::TPCsetID::TPCsetID_t> S {
+      ::fhicl::Name("S"),
+      ::fhicl::Comment("TPC set number within the cryostat"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return { CryostatIDConfig::ID(), S() }; }
+    operator ID_t() const { return ID(); }
+  }; // struct TPCsetIDIDConfig
   
   /// Member type of validated `readout::TPCsetID` parameter.
-  using TPCsetID = ::fhicl::TupleAs<readout::TPCsetID(
-    readout::TPCsetID::CryostatID_t, readout::TPCsetID::TPCsetID_t
-    )>;
+  using TPCsetID = ::fhicl::Table<TPCsetIDConfig>;
+  
+  /// Member type of optional validated `readout::TPCsetID` parameter.
+  using OptionalTPCsetID = ::fhicl::OptionalTable<TPCsetIDConfig>;
+  
+  /// Member type of sequence of `readout::TPCsetID` parameters.
+  using TPCsetIDsequence = ::fhicl::Sequence<TPCsetID>;
+  
+  /// Member type of optional sequence of `readout::TPCsetID` parameters.
+  using OptionalTPCsetIDsequence = ::fhicl::OptionalSequence<TPCsetID>;
+  
+  // --- END -- TPC set ID -----------------------------------------------------
+  
+  
+  // --- BEGIN -- Readout plane ID ---------------------------------------------
+  /// Configuration structure for validated `readout::ROPID` parameter.
+  struct ROPIDConfig: public TPCsetIDConfig {
+    using ID_t = readout::ROPID; ///< Type read by this configuration.
+    
+    ::fhicl::Atom<readout::ROPID::ROPID_t> R {
+      ::fhicl::Name("R"),
+      ::fhicl::Comment("Readout plane number within the TPC set"),
+      [this](){ return isValid(); }
+      };
+    
+    ID_t ID() const { return { TPCsetIDConfig::ID(), R() }; }
+    operator ID_t() const { return ID(); }
+  }; // struct ROPIDConfig
   
   /// Member type of validated `readout::ROPID` parameter.
-  using ROPID = ::fhicl::TupleAs<readout::ROPID(
-    readout::ROPID::CryostatID_t, readout::ROPID::TPCsetID_t,
-    readout::ROPID::ROPID_t
-    )>;
+  using ROPID = ::fhicl::Table<ROPIDConfig>;
+  
+  /// Member type of optional validated `readout::ROPID` parameter.
+  using OptionalROPID = ::fhicl::OptionalTable<ROPIDConfig>;
+  
+  /// Member type of sequence of `readout::ROPID` parameters.
+  using ROPIDsequence = ::fhicl::Sequence<ROPID>;
+  
+  /// Member type of optional sequence of `readout::ROPID` parameters.
+  using OptionalROPIDsequence = ::fhicl::OptionalSequence<ROPID>;
+  
+  // --- END -- Readout plane ID -----------------------------------------------
+  
+  
+  // --- BEGIN -- Channel ID ---------------------------------------------------
   
   /// Member type of validated `raw::ChannelID_t` parameter.
   using ChannelID = ::fhicl::Atom<raw::ChannelID_t>;
   
-  /// Member type of optional validated `geo::CryostatID` parameter.
-  using OptionalCryostatID = ::fhicl::OptionalTupleAs
-    <readout::CryostatID(readout::CryostatID::CryostatID_t)>;
-  
-  /// Member type of optional validated `readout::TPCsetID` parameter.
-  using OptionalTPCsetID = ::fhicl::OptionalTupleAs<readout::TPCsetID(
-    readout::TPCsetID::CryostatID_t, readout::TPCsetID::TPCsetID_t
-    )>;
-  
-  /// Member type of optional validated `readout::ROPID` parameter.
-  using OptionalROPID = ::fhicl::OptionalTupleAs<readout::ROPID(
-    readout::ROPID::CryostatID_t, readout::ROPID::TPCsetID_t,
-    readout::ROPID::ROPID_t
-    )>;
-  
   /// Member type of optional validated `raw::ChannelID_t` parameter.
   using OptionalChannelID = ::fhicl::OptionalAtom<raw::ChannelID_t>;
   
+  /// Member type of sequence of `raw::ChannelID_t` parameters.
+  using ChannelIDsequence = ::fhicl::Sequence<raw::ChannelID_t>;
+  
+  /// Member type of optional sequence of `raw::ChannelID_t` parameters.
+  using OptionalChannelIDsequence = ::fhicl::OptionalSequence<raw::ChannelID_t>;
+  
+  // --- END -- Channel ID -----------------------------------------------------
   
   /// @}
   // --- END -- Validated configuration parameters for readout ID objects ------
@@ -368,13 +815,12 @@ public:
       }; // struct TestChargeParams
       
       
-      fhicl::Sequence<geo::fhicl::WireID> TestWires {
+      geo::fhicl::OptionalWireIDsequence TestWires {
         Name("TestWires"),
         Comment(
-          "wire IDs to inject test charge in"
-          " (e.g. [ 0, 1, 1, 23 ] => C:0 T:1 P:1 W:23)"
+          "wire IDs to inject test charge into"
+          " (e.g. { C:0 T:1 P:1 W:23 } => C:0 T:1 P:1 W:23)"
           ),
-        std::vector<geo::WireID>{}
         };
       fhicl::Sequence<fhicl::Table<TestChargeParams>> TestCharges {
         Name("TestCharges"),
@@ -391,7 +837,13 @@ public:
         fhicl::use_if(this, &Config::isNotTesting)
         };
       
-      bool isTesting() const { return !TestWires.empty(); }
+      bool isTesting() const {
+        // FIXME when issue #23652 is resolved
+        // return TestWires.hasValue();
+        decltype(TestWires)::value_type dummy; return TestWires(dummy);
+        }
+      
+      
       bool isNotTesting() const { return !isTesting(); }
       
       /// @}
@@ -402,10 +854,11 @@ public:
       /// @name Detector region
       /// @{
       
-      fhicl::Sequence<geo::fhicl::TPCID> TPCs {
+      geo::fhicl::OptionalTPCIDsequence TPCs {
+//       fhicl::Sequence<geo::fhicl::TPCID> TPCs {
         Name("TPCs"),
-        Comment("only process channels on these TPC's (empty processes all)"),
-        std::vector<geo::TPCID>{} // default
+        Comment("only process channels on these TPC's (empty or omitted processes all)")
+//        , std::vector<geo::TPCID>{} // default
         };
       
       /// @}
@@ -528,7 +981,8 @@ private:
                     std::vector<double> const& charge, float ped_mean) const;
     
     art::InputTag const          fDriftEModuleLabel; ///< module making the ionization electrons
-    std::vector<geo::TPCID>      fTPCs;              ///< Process only these TPCs
+    std::optional<std::vector<geo::TPCID>>
+                                 fTPCs;              ///< Process only these TPCs
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -544,7 +998,6 @@ private:
     std::vector<geo::WireID>     fTestWires; ///< Where to inject test charge.
     std::vector<TestChargeParams> fTestParams; ///< When to inject which test charge.
     std::vector<sim::SimChannel> fTestSimChannel_v;
-    int const                    fSample; // for histograms, -1 means no histos
     
     
     ///< Range of channels to process: [ `first`, `second` [
@@ -577,7 +1030,7 @@ private:
     const geo::GeometryCore& fGeometry;
     
     
-    bool processAllTPCs() const { return fTPCs.empty(); }
+    bool processAllTPCs() const { return !fTPCs.has_value(); }
     
     bool isTesting() const { return !fTestWires.empty(); }
 
@@ -594,15 +1047,15 @@ DEFINE_ART_MODULE(SimWireICARUS)
 SimWireICARUS::SimWireICARUS(Parameters const& config)
     : EDProducer(config)
     , fDriftEModuleLabel(config().DriftEModuleLabel())
-    , fTPCs             (config().TPCs             ())
+//    , fTPCs             (config().TPCs             ())
+    , fTPCs             (geo::fhicl::readOptionalIDsequence(config().TPCs))
     , fSimDeadChannels  (config().SimDeadChannels  ())
     , fSuppressNoSignal (config().SuppressNoSignal ())
     , fSmearPedestals   (config().SmearPedestals   ())
     , fNumChanPerMB     (config().NumChanPerMB     ())
     , fMakeHistograms   (config().MakeHistograms   ())
-    , fTestWires        (config().TestWires        ())
+    , fTestWires        (geo::fhicl::readOptionalIDsequence(config().TestWires, {}))
     , fTestParams       (convertToVectorOf<TestChargeParams>(config().TestCharges()))
-    , fSample           (config().Sample           ())
     , fPedestalEngine   (art::ServiceHandle<rndm::NuRandomService>()->createEngine
                          (*this, "HepJamesRandom", "pedestal", config().SeedPedestal)
                         )
@@ -642,8 +1095,9 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
     fChannelRange = channelRangeToProcess();
     if (!processAllTPCs()) {
       mf::LogInfo log("SimWireICARUS");
-      log << "Only " << fTPCs.size() << " TPC's will be processed:";
-      for (geo::TPCID const& tpcid: fTPCs) log << " { " << tpcid << " }";
+      log << "Only " << fTPCs->size() << " TPC's will be processed:";
+      for (geo::TPCID const& tpcid: fTPCs.value())
+        log << " { " << tpcid << " }";
       
       auto const [ firstChannel, endChannel ] = fChannelRange;
       
@@ -973,7 +1427,7 @@ SimWireICARUS::channelRangeToProcess() const {
 
     lar::util::MinMaxCollector<raw::ChannelID_t> stats;
     
-    for (geo::TPCID const& tpcid: fTPCs) {
+    for (geo::TPCID const& tpcid: fTPCs.value()) {
         
         for (geo::PlaneGeo const& plane: fGeometry.IteratePlanes(tpcid)) {
             

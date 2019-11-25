@@ -63,7 +63,6 @@ icarus_standard_simwire:
     SimDeadChannels:    false
     SuppressNoSignal:   true
     SmearPedestals:     true
-    Sample:             -1
     MakeHistograms:     "true"
     
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
