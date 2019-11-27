@@ -1,0 +1,35 @@
+//#include "simple_channel_info.fcl"
+physics:
+{
+  // now also have something produce the digits and headers
+  producers:
+  {
+    daq: {
+      module_type: ICARUSTPCDecoder
+      // for debugging -- time (in s) to wait in between analyzing events
+      wait_time: -1
+      // make the header
+      produce_header: true
+      baseline_calc: false
+      // parameters for timestamps
+      timesize: 2559
+      // produce timestamps in units of mus
+      frame_to_dt: 0.5
+      // parameters for header index
+      min_slot_no: 5
+      channel_per_slot: 64
+    }
+  }
+  analyzers: {}
+  my_producer_modules: [daq]
+  a: [rootout]
+  end_paths: [a]
+}
+source: {}
+outputs: {
+  rootout: {
+    module_type: "RootOutput"
+    fileName: "digits.root"
+  }
+}
+process_name: TPCANALYSIS
