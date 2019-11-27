@@ -32,11 +32,11 @@ table_fragment_end
 
 # Add the dependent product and version
 
-product          version
-larsoft         v08_36_02
-icarusutil      v08_36_02
-icarus_data     v08_31_01
-genie_xsec      v3_00_04a
+product             version
+larsoft            v08_36_02
+icarusutil         v08_36_02
+icarus_data        v08_31_01
+genie_xsec         v3_00_04a
 sbndaq_artdaq_core v0_03_01
 
 cetbuildtools	v7_14_00	-	only_for_build
