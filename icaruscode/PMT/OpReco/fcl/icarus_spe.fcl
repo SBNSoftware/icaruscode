@@ -1,0 +1,9 @@
+
+BEGIN_PROLOG
+
+SPE: {
+  Area: 65.47
+  Amplitude: 10.
+}
+
+END_PROLOG

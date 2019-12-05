@@ -93,7 +93,7 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
   _verbose = p.get<bool>("Verbose",false); // If you want someone to talk to you
   auto min_photons = p.get<int>("MinPhotons",24000);     // Min of the range of photons to be injected in one shot
   auto max_photons = p.get<int>("MaxPhotons",2400000);   // Max of the range of photons to be injected in one shot
-  assert(min_photons < max_photons && min_photons>0 && max_photons>0); 
+  assert(min_photons < max_photons && min_photons>0 && max_photons>0);
   _min_photons = min_photons;
   _max_photons = max_photons;
 
@@ -138,7 +138,7 @@ FakeFlash::FakeFlash(fhicl::ParameterSet const& p)
 
 void FakeFlash::beginRun(art::Run& run)
 {
-  // grab the geometry object to see what geometry we are using                                                                                                  
+  // grab the geometry object to see what geometry we are using
   art::ServiceHandle<geo::Geometry> geo;
 
   std::unique_ptr<sumdata::RunData> runData(new sumdata::RunData(geo->DetectorName()));
@@ -149,7 +149,7 @@ void FakeFlash::beginRun(art::Run& run)
 }
 
 void FakeFlash::GenPosition(double& x, double& y, double& z) {
-    
+
     size_t tpc_id = (size_t)(fFlatRandom->fire(0,_tpc_v.size()));
     bool found = false;
     // Implementation of required member function here.
@@ -174,9 +174,9 @@ void FakeFlash::GenPosition(double& x, double& y, double& z) {
     if(!found) std::cerr<< "\033[93mTPC " << tpc_id << " not found...\033[00m" << std::endl;
 }
 
-void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v, 
+void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
 			       int mother_trackid,
-			       size_t nphotons, 
+			       size_t nphotons,
 			       const TLorentzVector& pos)
 {
   art::ServiceHandle<phot::PhotonVisibilityService const> pvs;
@@ -187,13 +187,13 @@ void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
   auto const& Visibilities = pvs->GetAllVisibilities(xyz);
   // Now loop over optical channels and fill SimPhotons array
   if(simph_v.empty()) {
-    for(size_t opch=_ch_min; opch<=_ch_max; ++opch) 
+    for(size_t opch=_ch_min; opch<=_ch_max; ++opch)
       simph_v.push_back(sim::SimPhotons(opch));
   }
   for(size_t opch=_ch_min; opch <= _ch_max; ++opch) {
     // get visibility
-    size_t detected = ((double)(nphotons)) * Visibilities[opch];
-    std::cout<<opch<<","<<detected<<std::endl;
+    size_t detected = fPoisRandom->fire((double)(nphotons) * Visibilities[opch]);
+    //std::cout<<opch<<","<<detected<<std::endl;
     auto time_array = this->GenerateTime(detected);
     assert(time_array.size() == detected);
     // record
@@ -212,12 +212,9 @@ void FakeFlash::FillSimPhotons(std::vector<sim::SimPhotons>& simph_v,
 
 std::vector<double> FakeFlash::GenerateTime(size_t numphotons) {
 
-  double fast_expected = _fast_frac * numphotons;
-  // draw poison
-  int fast_count = std::max((long int)0,std::min(fPoisRandom->fire(fast_expected),(long int)numphotons));
   std::vector<double> res(numphotons);
   for(int i=0; i<((int)numphotons); ++i) {
-    if(i<fast_count)
+    if(fFlatRandom->fire(0.,1.) < _fast_frac)
       res[i] = fExpoRandom->fire(_fast_tau);
     else res[i] = fExpoRandom->fire(_slow_tau);
   }
@@ -234,7 +231,7 @@ void FakeFlash::produce(art::Event& e)
   while(clock <= _duration) {
     // Determine photon count
     int nphotons = _min_photons + (_max_photons - _min_photons) * (fFlatRandom->fire(0,1));
-    
+
     // Generate position 4 vector
     double time = _tstart + clock * 1.e3;
     double x,y,z;
