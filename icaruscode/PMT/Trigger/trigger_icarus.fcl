@@ -46,7 +46,7 @@ icarus_triggergate_basic: {
   # thresholds for channel trigger gate opening [ADC counts]
   ChannelThresholds: [ 5, 15, 25, 40, 60, 100, 150 ]
   
-} # icarus_dynamictriggergate
+} # icarus_triggergate_basic
 
 
 ################################################################################

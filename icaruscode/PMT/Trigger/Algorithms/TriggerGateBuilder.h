@@ -65,7 +65,7 @@ class icarus::trigger::TriggerGateBuilder {
     
       public:
     using triggergate_t = icarus::trigger::SingleChannelOpticalTriggerGate;
-    using GateData_t= std::vector<triggergate_t>;
+    using GateData_t = std::vector<triggergate_t>;
     
     /// Constructor: acquires data of the specified gates.
     TriggerGates(ADCCounts_t threshold, GateData_t&& gates)

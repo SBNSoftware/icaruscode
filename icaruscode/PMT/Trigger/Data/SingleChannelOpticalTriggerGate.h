@@ -68,15 +68,34 @@ class icarus::trigger::SingleChannelOpticalTriggerGate
   //      mind.
   //
   
+  using Base_t = icarus::trigger::OpticalTriggerGate;
+  
     public:
   
   /// Constructor: a closed gate for the channel in `waveform`.
   SingleChannelOpticalTriggerGate(raw::OpDetWaveform const& waveform)
-    : icarus::trigger::OpticalTriggerGate(waveform)
+    : Base_t(waveform)
     {}
+  
+  SingleChannelOpticalTriggerGate
+    (SingleChannelOpticalTriggerGate const&) = default;
+  SingleChannelOpticalTriggerGate
+    (SingleChannelOpticalTriggerGate&&) = default;
+  SingleChannelOpticalTriggerGate& operator=
+    (SingleChannelOpticalTriggerGate const&) = default;
+  SingleChannelOpticalTriggerGate& operator=
+    (SingleChannelOpticalTriggerGate&&) = default;
   
   /// Adds another waveform to the channel (unless it has just been added).
   bool add(raw::OpDetWaveform const& waveform);
+  
+  //@{
+  /// Copies/steals all the levels from the specified data.
+  SingleChannelOpticalTriggerGate& operator= (GateData_t const& data)
+    { Base_t::operator=(data); return *this; }
+  SingleChannelOpticalTriggerGate& operator= (GateData_t&& data)
+    { Base_t::operator=(std::move(data)); return *this; }
+  //@}
   
   // --- BEGIN Query -----------------------------------------------------------
   /// @name Query
