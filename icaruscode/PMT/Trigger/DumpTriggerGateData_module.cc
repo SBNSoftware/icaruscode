@@ -8,35 +8,12 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
-#if 0
-#include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
-#include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
-#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
-#endif // 0
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/CoreUtils/enumerate.h"
-#if 0
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
-#include "lardataalg/DetectorInfo/DetectorTimings.h"
-#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // detinfo::timescales
-#include "lardataalg/DetectorInfo/DetectorClocks.h"
-#include "lardataalg/Utilities/quantities/spacetime.h" // microsecond
-#include "larcorealg/Geometry/GeometryCore.h"
-#include "larcorealg/CoreUtils/span.h" // util::make_transformed_span(), ...
-#include "larcorealg/CoreUtils/operations.h" // util::dereference()
-#include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
-// #include "larcorealg/CoreUtils/DebugUtils.h" // lar::debug::::static_assert_on<>
-
-// nutools libraries
-#include "nusimdata/SimulationBase/MCParticle.h"
-#include "nusimdata/SimulationBase/MCTruth.h"
 
 // framework libraries
-#endif // 0
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -45,9 +22,6 @@
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
-#if 0
-#include "canvas/Utilities/Exception.h"
-#endif // 0
 
 // C/C++ standard libraries
 #include <vector>
@@ -55,10 +29,7 @@
 #include <set>
 #include <optional>
 #include <type_traits> // std::decay_t
-#if 0
-#include <algorithm> // std::accumulate()
-#include <memory> // std::unique_ptr
-#endif // 0
+
 
 //------------------------------------------------------------------------------
 namespace icarus::trigger { class DumpTriggerGateData; }
