@@ -1,0 +1,106 @@
+#
+# File:    trigger_icarus.fcl
+# Purpose: Configurations of ICARUS trigger related algorithm.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 2, 2019
+#
+# Configurations are provided for algorithms related to triggering.
+# 
+# Current offer includes:
+# 
+# * trigger gate builder tool configurations: tools to create discriminated
+#     waveforms out of full PMT waveforms
+# 
+#
+
+#include "pmtsimulation_icarus.fcl"
+
+BEGIN_PROLOG
+
+################################################################################
+###  Trigger gate builders
+################################################################################
+###
+### A "trigger gate" is a gate signal (i.e. open or closed vs. time) related
+### to a PMT channel and typically used for triggering.
+### 
+### We have a few algorithms available, and these are their standard
+### configurations.
+### Note that some of the parameters here are very hard to call "standard" in
+### that they are just a matter of choice: see e.g. the discrimination
+### thresholds.
+###
+###
+###
+#
+# icarus_triggergate_basic: basic configuration to be included in the full
+#   algorithm configuration
+# 
+# It includes the threshold and a single "universal" baseline level.
+#
+icarus_triggergate_basic: {
+  
+  # waveform baseline [ADC counts]
+  Baseline: 8000
+  
+  # thresholds for channel trigger gate opening [ADC counts]
+  ChannelThresholds: [ 5, 15, 25, 40, 60, 100, 150 ]
+  
+} # icarus_dynamictriggergate
+
+
+################################################################################
+###
+### icarus_dynamictriggergate: variable length gates
+###
+icarus_dynamictriggergate: {
+  
+  tool_type: DynamicTriggerGateBuilderTool
+  
+  @table::icarus_triggergate_basic
+  
+} # icarus_dynamictriggergate
+
+
+################################################################################
+###
+### icarus_dynamictriggergate: fixed length gates
+###
+icarus_fixedtriggergate: {
+  
+  tool_type: FixedTriggerGateBuilderTool
+  
+  @table::icarus_triggergate_basic
+  
+  # minimum duration of a trigger gate [us]
+  GateDuration: 10.0
+  
+} # icarus_fixedtriggergate
+
+
+
+################################################################################
+icarus_region_finder: {
+  
+  # waveform baseline [ADC counts]
+  Baseline: 8000
+  
+  # minimum sampled value for a region to start
+  EnablingThreshold: @local::icarus_triggergate_basic.ChannelThresholds[0]
+  
+  # sampled value below which a region ends (default: as `EnablingThreshold`)
+  # DisablingThreshold: 5
+  
+  # how many samples above threshold for a region to start
+  MinSamplesAboveThreshold: 3  # default
+  
+  # how many samples below threshold for a region to end
+  # (default: as `MinSamplesAboveThreshold`)
+  # MinSamplesBelowThreshold: 3
+  
+} # icarus_region_finder
+
+
+################################################################################
+
+END_PROLOG

@@ -62,14 +62,14 @@ class icarus::trigger::FixedTriggerGateBuilder
     
     struct FixedGateInfo: public GateInfoBase {
       /// Activity ignored up to this tick excluded.
-      optical_tick openUntil = TriggerGate_t::MinTick;
+      optical_tick openUntil { TriggerGate_t::MinTick };
       
       ///Ticks to keep the gate open.
       optical_time_ticks gateDuration;
       
       FixedGateInfo(
         TriggerGate_t& gate, optical_time_ticks gateDuration,
-        optical_tick openUntil = TriggerGate_t::MinTick
+        optical_tick openUntil = optical_tick{ TriggerGate_t::MinTick }
         )
         : GateInfoBase(gate), gateDuration(gateDuration) {}
       
@@ -85,14 +85,15 @@ class icarus::trigger::FixedTriggerGateBuilder
               << ", come back later.";
             return; // open only if not in "dead time"
           }
-          gate().openFor(tick, gateDuration); // open the gate for this long
+          // open the gate for this long:
+          gate().openFor(tick.value(), gateDuration.value());
           openUntil = tick + gateDuration; // set some dead time
           MF_LOG_TRACE(details::TriggerGateDebugLog) << "  gate (re)opened ("
-            << gate().openingCount(tick - 1_tick)
-            << " => " << gate().openingCount(tick)
+            << gate().openingCount((tick - 1_tick).value())
+            << " => " << gate().openingCount(tick.value())
             << ") for " << gateDuration << " until " << openUntil
-            << " (" << gate().openingCount(openUntil - 1_tick)
-            << " => " << gate().openingCount(openUntil) << ")";
+            << " (" << gate().openingCount((openUntil - 1_tick).value())
+            << " => " << gate().openingCount(openUntil.value()) << ")";
         }
       
     }; // struct FixedGateInfo

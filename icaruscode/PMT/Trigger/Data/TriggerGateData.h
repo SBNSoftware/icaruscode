@@ -38,6 +38,30 @@ namespace icarus::trigger {
       Shift    ///< Relative shift, _adding_ an offset to the previous level.
     }; // TriggerGateEventType
     
+    template
+      <typename ClockTick = unsigned int, typename OpeningCount = unsigned int>
+    struct TriggerGateStatus {
+      
+      static constexpr ClockTick MinTick
+        = std::numeric_limits<ClockTick>::min();
+      
+      /// The event which yielded this status.
+      TriggerGateEventType event { TriggerGateEventType::Unknown };
+      
+      /// When the status starts being valid.
+      ClockTick tick { std::numeric_limits<ClockTick>::lowest() };
+      
+      OpeningCount opening { 0 }; ///< The total opening of the gate.
+      
+      // default constructor is needed by ROOT I/O
+      constexpr TriggerGateStatus() = default;
+      constexpr TriggerGateStatus
+        (TriggerGateEventType event, ClockTick tick, OpeningCount opening)
+        : event(event), tick(tick), opening(opening)
+        {}
+      
+    }; // struct TriggerGateStatus
+    
     
   } // namespace details
   
@@ -328,8 +352,8 @@ class icarus::trigger::TriggerGateData {
   template <typename Op>
   static triggergatedata_t SymmetricCombination(
     Op&& op, triggergatedata_t const& a, triggergatedata_t const& b,
-    ClockTicks_t aDelay = ClockTicks_t{ 0 },
-    ClockTicks_t bDelay = ClockTicks_t{ 0 }
+    ClockTicks_t aDelay = ClockTicks_t{},
+    ClockTicks_t bDelay = ClockTicks_t{}
     );
   
   /// @}
@@ -339,19 +363,7 @@ class icarus::trigger::TriggerGateData {
   
   // --- BEGIN Gate data types -------------------------------------------------
   using EventType = details::TriggerGateEventType;
-  
-  struct Status {
-    /// The event which yielded this status.
-    EventType event { EventType::Set };
-    ClockTick_t tick { MinTick }; ///< When the status starts being valid.
-    OpeningCount_t opening { 0U }; ///< The total opening of the gate.
-    
-    Status() = default;
-    constexpr Status(EventType event, ClockTick_t tick, OpeningCount_t opening)
-      : event(event), tick(tick), opening(opening)
-      {}
-    
-  }; // struct Status
+  using Status = details::TriggerGateStatus<ClockTick_t, OpeningCount_t>;
   
   /// Type to describe the time evolution of the gate.
   using GateEvolution_t = std::vector<Status>;

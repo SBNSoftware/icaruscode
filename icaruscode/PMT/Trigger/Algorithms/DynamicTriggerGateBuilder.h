@@ -63,8 +63,8 @@ class icarus::trigger::DynamicTriggerGateBuilder
     struct DynamicGateInfo: public GateInfoBase {
       DynamicGateInfo(TriggerGate_t& gate): GateInfoBase(gate) {}
       
-      void belowThresholdAt(optical_tick tick) { gate().closeAt(tick); }
-      void aboveThresholdAt(optical_tick tick) { gate().openAt(tick); }
+      void belowThresholdAt(optical_tick tick) { gate().closeAt(tick.value()); }
+      void aboveThresholdAt(optical_tick tick) { gate().openAt(tick.value()); }
       
     }; // struct DynamicGateInfo
     

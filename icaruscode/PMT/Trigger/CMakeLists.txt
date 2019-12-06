@@ -7,8 +7,8 @@ art_make(
     icaruscode_PMT_Trigger_Data
     lardataalg_DetectorInfo
     lardataobj_RawData
-    MF_MessageLogger
-    fhiclcpp
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
   )
 
 install_headers()

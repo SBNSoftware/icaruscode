@@ -16,6 +16,7 @@
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // detinfo::timescales
+#include "lardataalg/Utilities/quantities/electronics.h" // tick
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 // C/C++ standard libraries
@@ -32,6 +33,10 @@
 namespace icarus::trigger {
   class OpticalTriggerGate;
   std::ostream& operator<< (std::ostream&, OpticalTriggerGate const&);
+  
+  using TriggerGateTick_t = util::quantities::tick::value_t; ///< Tick point.
+  using TriggerGateTicks_t = util::quantities::tick::value_t; ///< Tick interval.
+  
 } // namespace icarus::trigger
 
 
@@ -40,16 +45,27 @@ namespace icarus::trigger {
  * @brief Logical multi-level gate associated to one or more waveforms.
  * 
  * This object is a trigger gate associated with one or more optical waveforms.
+ * 
+ * @note This object should be parametrized with optical ticks
+ *       (`detinfo::timescales::optical_tick`). But currently the quantities
+ *       (`util::quantity` derived objects) are not well suited to be serialized
+ *       by ROOT, because
+ *       1. they are defined in `lardataalg` rather than `lardataobj`
+ *       2. writing all their serialization is daunting (see how ROOT dealt with
+ *           GenVector vectors for an example of how to do it)
+ *       So we chicken out here and use simple data types instead.
  */
 class icarus::trigger::OpticalTriggerGate
   : public icarus::trigger::TriggerGateData
-    <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
+     <TriggerGateTick_t, TriggerGateTicks_t>
+//     <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
 {
   
     public:
   /// Type for gate data access.
   using GateData_t = icarus::trigger::TriggerGateData
-    <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
+    <TriggerGateTick_t, TriggerGateTicks_t>
+//     <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
     ;
   
   
