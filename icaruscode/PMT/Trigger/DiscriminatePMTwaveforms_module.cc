@@ -570,8 +570,7 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   // declaration of output
   //
   
-  // TODO
-  for (std::string const& instanceName: util::values(fSelectedThresholds))
+  for (std::string const& instanceName: util::const_values(fSelectedThresholds))
   {
     produces<std::vector<TriggerGateData_t>>(instanceName);
     produces<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>(instanceName);
