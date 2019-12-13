@@ -990,7 +990,6 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         float samples1[bigw];   //list to contain samples bellow the startTick
         float samples2[bigw];   //list to contain samples above the stopTick
         
-        reco_tool::ICandidateHitFinder::MergeHitCandidateVec::iterator hiter;
         reco_tool::ICandidateHitFinder::MergeHitCandidateVec hlist;
 
         float min1;

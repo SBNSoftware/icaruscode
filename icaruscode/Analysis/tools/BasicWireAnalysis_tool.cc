@@ -310,8 +310,6 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
             fFullRmsHist.at(plane)->Fill(fullRMS, 1.);
             fNumTruncHist.at(plane)->Fill(float(nTrunc)/float(waveform.size()),1.);
 
-            Waveform::const_iterator timeIter;          // iterator for time bins
-            
             // ROI start time
             raw::TDCtick_t roiStartTick = range.begin_index();
             
