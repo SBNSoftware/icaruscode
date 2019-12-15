@@ -16,7 +16,7 @@
 
 <lcgdict>
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- icarus::trigger::OpticalTriggerGate::GateData_t -->
+  <!-- icarus::trigger::OpticalTriggerGateData_t -->
   <!--   (a.k.a. `icarus::trigger::TriggerGateData<TriggerGateTick_t, TriggerGateTicks_t>` -->
 
   <!--   class -->

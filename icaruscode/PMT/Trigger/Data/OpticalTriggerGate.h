@@ -37,6 +37,12 @@ namespace icarus::trigger {
   using TriggerGateTick_t = util::quantities::tick::value_t; ///< Tick point.
   using TriggerGateTicks_t = util::quantities::tick::value_t; ///< Tick interval.
   
+  /// Type of trigger gate data serialized into _art_ data products.
+  using OpticalTriggerGateData_t = icarus::trigger::TriggerGateData
+    <TriggerGateTick_t, TriggerGateTicks_t>
+//   <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
+    ;
+
 } // namespace icarus::trigger
 
 
@@ -63,10 +69,7 @@ class icarus::trigger::OpticalTriggerGate
   
     public:
   /// Type for gate data access.
-  using GateData_t = icarus::trigger::TriggerGateData
-    <TriggerGateTick_t, TriggerGateTicks_t>
-//     <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
-    ;
+  using GateData_t = OpticalTriggerGateData_t;
   
   
   /// Constructor: a closed gate with no associated waveform (`add()` them).
