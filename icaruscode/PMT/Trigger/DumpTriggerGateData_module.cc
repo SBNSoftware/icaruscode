@@ -85,7 +85,7 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
   /// The type of data this dumper is dumping.
   using TriggerGateData_t = icarus::trigger::OpticalTriggerGate::GateData_t;
   
-  
+
   // --- BEGIN Configuration ---------------------------------------------------
   struct Config {
     
@@ -96,13 +96,13 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
       Name("TriggerGateDataTag"),
       Comment("tag of trigger gate data collection")
       };
-    
+
     fhicl::Atom<bool> PrintChannels {
       Name("PrintChannels"),
       Comment("whether to print the channel of the gate"),
       true // default
       };
-    
+
     fhicl::Atom<std::string> OutputCategory {
       Name("OutputCategory"),
       Comment("name of the category used for the output"),
@@ -116,7 +116,7 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
       "opdaq" // tradition demands
       };
     */
-    
+
   }; // struct Config
   
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -149,7 +149,7 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
   
   art::InputTag fTriggerGateDataTag; ///< Input trigger gate data tag.
   bool fPrintChannels; ///< Whether to print associated optical waveform info.
-  
+
   std::string fOutputCategory; ///< Category used for message facility stream.
   
   // --- END Configuration variables -------------------------------------------
@@ -159,7 +159,7 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
   
 //   detinfo::DetectorClocks const& fDetClocks;
 //   detinfo::DetectorTimings fDetTimings;
-//   
+//
 //   /// Total number of optical channels (PMTs).
 //   unsigned int fNOpDetChannels = 0;
 //   microsecond const fOpDetTickDuration; ///< Optical detector sampling period.
@@ -208,7 +208,7 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
   auto maybeItOpDetWave { gateToWaveforms
     ? std::make_optional<AssnIter_t>(gateToWaveforms->begin()): std::nullopt
     };
-  
+
   mf::LogVerbatim log(fOutputCategory);
   log << event.id() << ": " << fTriggerGateDataTag << " has " << gates.size()
     << " trigger gates:";
@@ -239,7 +239,7 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
         channels.insert(itOpDetWave->second->ChannelNumber());
         ++itOpDetWave;
       } // while
-      
+
       log << "\n  associated with "
         << std::distance(firstOpDetWave, itOpDetWave)
         << " optical detector waveforms on ";
@@ -250,10 +250,10 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
         log << channels.size() << " channels:";
         for (auto const& channel: channels) log << " " << channel;
       }
-      
+
     } // if printing associated information
   } // for
-  
+
 } // icarus::trigger::DumpTriggerGateData::analyze()
 
 

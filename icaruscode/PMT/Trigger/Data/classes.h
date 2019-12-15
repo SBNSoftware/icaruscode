@@ -27,7 +27,7 @@
 #include <ostream>
 
 namespace {
-  
+
   icarus::trigger::OpticalTriggerGate::GateData_t tgd;
   
 } // local namespace
