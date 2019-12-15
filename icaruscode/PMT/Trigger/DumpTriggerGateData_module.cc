@@ -184,8 +184,10 @@ icarus::trigger::DumpTriggerGateData::DumpTriggerGateData
   , fOutputCategory    (config().OutputCategory())
 {
   consumes<std::vector<TriggerGateData_t>>(fTriggerGateDataTag);
-  mayConsume<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
-    (fTriggerGateDataTag);
+  if (fPrintChannels) {
+    consumes<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
+      (fTriggerGateDataTag);
+  }
   
 } // icarus::trigger::DumpTriggerGateData::DumpTriggerGateData()
 
@@ -216,14 +218,14 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
     log << "\n[#" << iGate << "] " << gate;
     if (gateToWaveforms) {
       auto& itOpDetWave = maybeItOpDetWave.value();
-      
+      auto const owend = gateToWaveforms->end();
+
       /*
        * Associations are expected to be in the same order as the trigger gates;
        * so we look for the first one matching this gate
        * (matching by the position in the data product collection)
        * and then for the last one; if there is none... well, we say so.
        */
-      auto const owend = gateToWaveforms->end();
       while (itOpDetWave != owend) {
         if (itOpDetWave->first.key() == iGate) break;
         ++itOpDetWave;
