@@ -12,7 +12,7 @@
 
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
+#include "icaruscode/PMT/Trigger/Data/ReadoutTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // detinfo::timescales
@@ -38,9 +38,9 @@ namespace icarus::trigger {
   using TriggerGateTicks_t = util::quantities::tick::value_t; ///< Tick interval.
   
   /// Type of trigger gate data serialized into _art_ data products.
-  using OpticalTriggerGateData_t = icarus::trigger::TriggerGateData
-    <TriggerGateTick_t, TriggerGateTicks_t>
-//   <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
+  using OpticalTriggerGateData_t = icarus::trigger::ReadoutTriggerGate
+    <TriggerGateTick_t, TriggerGateTicks_t, raw::Channel_t>
+//   <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks, raw::Channel_t>
     ;
 
 } // namespace icarus::trigger
@@ -62,9 +62,7 @@ namespace icarus::trigger {
  *       So we chicken out here and use simple data types instead.
  */
 class icarus::trigger::OpticalTriggerGate
-  : public icarus::trigger::TriggerGateData
-     <TriggerGateTick_t, TriggerGateTicks_t>
-//     <detinfo::timescales::optical_tick, detinfo::timescales::optical_time_ticks>
+  : public icarus::trigger::OpticalTriggerGateData_t
 {
   
     public:
@@ -218,8 +216,8 @@ class icarus::trigger::OpticalTriggerGate
   template <typename Op>
   static OpticalTriggerGate SymmetricCombination(
     Op&& op, OpticalTriggerGate const& a, OpticalTriggerGate const& b,
-    ClockTicks_t aDelay = ClockTicks_t{ 0 },
-    ClockTicks_t bDelay = ClockTicks_t{ 0 }
+    TriggerGateTicks_t aDelay = TriggerGateTicks_t{ 0 },
+    TriggerGateTicks_t bDelay = TriggerGateTicks_t{ 0 }
     );
   
   /// @}
@@ -234,7 +232,8 @@ class icarus::trigger::OpticalTriggerGate
   
   /// Protected constructor: set the data directly.
   OpticalTriggerGate(GateEvolution_t&& gateLevel, Waveforms_t&& waveforms)
-    : TriggerGateData(std::move(gateLevel)), fWaveforms(std::move(waveforms))
+    : ReadoutTriggerGate(std::move(gateLevel), waveformChannels(waveforms))
+    , fWaveforms(std::move(waveforms))
     {}
   
   
@@ -255,6 +254,14 @@ class icarus::trigger::OpticalTriggerGate
   std::vector<raw::OpDetWaveform const*> fWaveforms;
   
   
+  /// Returns the list of all channels from the `waveforms` (duplicate allowed).
+  static GateData_t::ChannelList_t extractChannels
+    (Waveforms_t const& waveforms);
+  
+  /// Returns the list of all unique channels (sorted) from the `waveforms`.
+  static GateData_t::ChannelList_t waveformChannels
+    (Waveforms_t const& waveforms);
+
 }; // class icarus::trigger::OpticalTriggerGate
 
 

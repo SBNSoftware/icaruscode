@@ -17,10 +17,11 @@
 <lcgdict>
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
   <!-- icarus::trigger::OpticalTriggerGateData_t -->
-  <!--   (a.k.a. `icarus::trigger::TriggerGateData<TriggerGateTick_t, TriggerGateTicks_t>` -->
+  <!--   (a.k.a. `icarus::trigger::ReadoutGateData<TriggerGateTick_t, TriggerGateTicks_t, ChannelID>` -->
 
   <!--   class -->
-  <class name="icarus::trigger::OpticalTriggerGate::GateData_t" ClassVersion="10" >
+  <class name="icarus::trigger::OpticalTriggerGate::GateData_t" ClassVersion="11" >
+   <version ClassVersion="11" checksum="1145932755"/>
    <version ClassVersion="10" checksum="864830688"/>
   </class>
     
@@ -29,8 +30,9 @@
       <!- - detinfo::timescales::optical_tick - ->
     <class name="util::quantities::concepts::Point<util::quantities::tick, detinfo::timescales::OpticalTimeCategory, util::quantities::concepts::Interval<util::quantities::tick, detinfo::timescales::OpticalTimeCategory>>;" ClassVersion="10" />
     -->
-    <class name="std::vector<icarus::trigger::OpticalTriggerGate::GateData_t::Status>" />
-    <class name="icarus::trigger::OpticalTriggerGate::GateData_t::Status" ClassVersion="10" >
+    <class name="icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t" />
+    <class name="std::vector<icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t::Status>" />
+    <class name="icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t::Status" ClassVersion="10" >
      <version ClassVersion="10" checksum="3147326942"/>
     </class>
     <enum name="icarus::trigger::details::TriggerGateEventType" ClassVersion="10" />

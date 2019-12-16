@@ -54,17 +54,25 @@ namespace {
 void icarus::trigger::OpticalTriggerGate::registerWaveforms
   (Waveforms_t const& moreWaveforms)
 {
+  //
+  // add channels
+  //
+  associateChannels(extractChannels(moreWaveforms));
+
+  //
   // merge the two lists, then sort them
+  //
   auto const middle = fWaveforms.insert
     (fWaveforms.end(), moreWaveforms.begin(), moreWaveforms.end());
   std::inplace_merge
    (fWaveforms.begin(), middle, fWaveforms.end(), ::OpDetWaveformComp());
-  
-  // finally remove any duplicate (there should be non, should it?)
+
+  // finally remove any duplicate (there should be none, should it?)
   auto const actualEnd
     = std::unique(fWaveforms.begin(), fWaveforms.end()); // pointer comparison
   fWaveforms.erase(actualEnd, fWaveforms.end());
-  
+
+
 } // OpticalTriggerGate::registerWaveforms()
 
 
@@ -157,8 +165,8 @@ template <typename Op>
 icarus::trigger::OpticalTriggerGate
 icarus::trigger::OpticalTriggerGate::SymmetricCombination(
   Op&& op, OpticalTriggerGate const& a, OpticalTriggerGate const& b,
-  ClockTicks_t aDelay /* = ClockTicks_t{ 0 } */,
-  ClockTicks_t bDelay /* = ClockTicks_t{ 0 } */
+  TriggerGateTicks_t aDelay /* = TriggerGateTicks_t{ 0 } */,
+  TriggerGateTicks_t bDelay /* = TriggerGateTicks_t{ 0 } */
   )
 {
   return { 
@@ -180,8 +188,31 @@ bool icarus::trigger::OpticalTriggerGate::add
   if ((insertionPoint != fWaveforms.end()) && (*insertionPoint == &waveform))
     return false;
   fWaveforms.insert(insertionPoint, &waveform);
+  addChannel(waveform.ChannelNumber());
   return true;
 } // icarus::trigger::OpticalTriggerGate::add()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::OpticalTriggerGate::extractChannels
+  (Waveforms_t const& waveforms) -> GateData_t::ChannelList_t
+{
+  GateData_t::ChannelList_t channels;
+  channels.reserve(waveforms.size());
+  std::transform(
+    waveforms.begin(), waveforms.end(), std::back_inserter(channels),
+    std::mem_fn(&raw::OpDetWaveform::ChannelNumber)
+    );
+  return channels;
+} // icarus::trigger::OpticalTriggerGate::extractChannels()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::OpticalTriggerGate::waveformChannels
+  (Waveforms_t const& waveforms) -> GateData_t::ChannelList_t
+{
+  return GateData_t::normalizeChannels(extractChannels(waveforms));
+} // icarus::trigger::OpticalTriggerGate::waveformChannels()
 
 
 //------------------------------------------------------------------------------
