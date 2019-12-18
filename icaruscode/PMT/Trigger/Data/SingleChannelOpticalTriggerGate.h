@@ -21,24 +21,6 @@
 #include <iosfwd> // std::ostream
 
 
-namespace icarus::trigger {
-  
-  // ---------------------------------------------------------------------------
-  //
-  // declarations
-  //
-  
-  class SingleChannelOpticalTriggerGate;
-  
-  std::ostream& operator<<
-    (std::ostream&, SingleChannelOpticalTriggerGate const&);
-  
-  
-  // ---------------------------------------------------------------------------
-  
-} // namespace icarus::trigger
-
-
 //------------------------------------------------------------------------------
 // TODO move this into `lardataobj/RawData/OpDetWaveform.h`
 namespace raw {
@@ -54,6 +36,7 @@ namespace raw {
 
 
 //------------------------------------------------------------------------------
+namespace icarus::trigger { class SingleChannelOpticalTriggerGate; }
 /**
  * @brief Logical multi-level gate associated to a optical detector channel.
  * 
@@ -97,30 +80,15 @@ class icarus::trigger::SingleChannelOpticalTriggerGate
     { Base_t::operator=(std::move(data)); return *this; }
   //@}
   
-  // --- BEGIN Query -----------------------------------------------------------
-  /// @name Query
-  /// @{
   
-  /// Returns the channel this gate is on.
-  raw::Channel_t channel() const
-    { 
-      return waveforms().empty()
-        ? raw::InvalidChannel: refWaveform().ChannelNumber();
-    }
-  
-  // --- END Query -------------------------------------------------------------
-  
-  
+  /// Do not support multi-channel interface.
+  decltype(auto) channels() const = delete;
   
   /// Comparison operator: sorts by increasing channel number.
   bool operator< (SingleChannelOpticalTriggerGate const& other) const
     { return channel() < other.channel(); }
   
     private:
-  
-  friend std::ostream& operator<<
-    (std::ostream&, SingleChannelOpticalTriggerGate const&);
-  
   
   /// Returns the "reference" waveform, used when a single waveform is needed.
   bool hasRefWaveform() const { return !waveforms().empty(); }

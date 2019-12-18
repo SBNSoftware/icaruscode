@@ -33,9 +33,6 @@ namespace icarus::trigger {
   
   class MultiChannelOpticalTriggerGate;
   
-  std::ostream& operator<<
-    (std::ostream&, MultiChannelOpticalTriggerGate const&);
-
   MultiChannelOpticalTriggerGate sumTriggerGates
     (std::vector<SingleChannelOpticalTriggerGate> const& gates);
   
@@ -59,14 +56,8 @@ class icarus::trigger::MultiChannelOpticalTriggerGate
   
     public:
   
-  // --- BEGIN Query -----------------------------------------------------------
-  /// @name Query
-  /// @{
-  
-  /// Returns a list of channels contributing to this gate.
-  std::vector<raw::Channel_t> channels() const;
-  
-  // --- END Query -------------------------------------------------------------
+  /// Do not support single-channel interface.
+  ChannelID_t channel() const = delete;
   
 }; // class icarus::trigger::MultiChannelOpticalTriggerGate
 

@@ -23,8 +23,9 @@
 bool icarus::trigger::SingleChannelOpticalTriggerGate::add
   (raw::OpDetWaveform const& waveform)
 {
-  if (raw::isValidChannel(channel()) && (channel() != waveform.ChannelNumber()))
-  {
+  if (hasChannel() && raw::isValidChannel(channel())
+    && (channel() != waveform.ChannelNumber())
+  ) {
     // currently we require each gate to be on the same channel
     throw cet::exception("TriggerGateBuilder")
       << "icarus::trigger::SingleChannelOpticalTriggerGate::add(): "
@@ -33,18 +34,6 @@ bool icarus::trigger::SingleChannelOpticalTriggerGate::add
   }
   return OpticalTriggerGate::add(waveform);
 } // icarus::trigger::SingleChannelOpticalTriggerGate::add()
-
-
-//------------------------------------------------------------------------------
-std::ostream& icarus::trigger::operator<< (
-  std::ostream& out,
-  icarus::trigger::SingleChannelOpticalTriggerGate const& gate
-) {
-  out << "on channel " << gate.channel() << " " <<
-    static_cast<icarus::trigger::OpticalTriggerGate const&>(gate)
-    ;
-  return out;
-} // icarus::trigger::operator<< (SingleChannelOpticalTriggerGate)
 
 
 //------------------------------------------------------------------------------
