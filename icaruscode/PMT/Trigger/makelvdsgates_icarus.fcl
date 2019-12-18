@@ -1,0 +1,92 @@
+#
+# File:    makelvdsgates_icarus.fcl
+# Purpose: Runs `icarus::trigger::LVDSgates` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 2, 2019
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * simulated particles (LArG4-like): `largeant`
+#  * simulated energy deposits (LArG4-like): `largeant`
+#  * simulated optical detector readout: `opdaq`
+#
+
+#include "services_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: TriggerLVDS
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorClocksService:     @erase
+  DetectorPropertiesService: @erase
+
+} # services
+
+
+physics: {
+  
+  producers: {
+  
+    lvdsgates: {
+      
+      module_type: LVDSgates
+      
+      TriggerGatesTag: discrimopdaq
+      
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      
+      # combination mode: disable, input1, input2, AND, OR.
+      CombinationMode: "AND"
+
+      # use the standard ICARUS pairing
+      ChannelPairing: @local::icarus_trigger_channel_pairings
+      
+      # message facility stream
+      LogCategory: "LVDSgates"
+      
+    } # lvdsgates
+    
+  } # producers
+  
+  trigger: [ lvdsgates ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+  
+} # outputs
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.LVDSLog: {
+  type:       file
+  filename:  "LVDS.log"
+  threshold:  DEBUG
+  categories: {
+    LVDSgates: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.LVDSLog
+

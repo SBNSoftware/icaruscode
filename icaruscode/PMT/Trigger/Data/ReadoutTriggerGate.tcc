@@ -266,7 +266,7 @@ std::ostream& icarus::trigger::operator<< (
     out << "channel: " << gate.channel();
   }
   else if (gate.hasChannels()) {
-    out << gate.nChannels() << " channels: ";
+    out << gate.nChannels() << " channels:";
     for (auto channel: gate.channels()) out << " " << channel;
   }
   else out << "no channel";

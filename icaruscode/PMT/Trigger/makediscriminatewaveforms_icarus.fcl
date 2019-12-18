@@ -10,7 +10,12 @@
 # ----------------
 # 
 #  * simulated optical detector readout: `opdaq`
+#
+#
+# Required services
+# ------------------
 # 
+#  * DetectorClocksService (DiscriminatePMTwaveforms)
 #
 
 #include "services_icarus.fcl"
@@ -27,6 +32,11 @@ services: {
   #                Geometry, detector properties and clocks
   @table::icarus_basic_services
   
+  # currently unused (remove the line if they start mattering):
+  Geometry:                  @erase
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+
 } # services
 
 
