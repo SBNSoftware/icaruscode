@@ -10,8 +10,8 @@
  *
  */
 
-#ifndef CRTHit_hh_
-#define CRTHit_hh_
+#ifndef ICCRTHit_hh_
+#define ICCRTHit_hh_
 
 #include <cstdint>
 #include <vector>
