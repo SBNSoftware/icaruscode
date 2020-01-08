@@ -25,6 +25,8 @@
 #include <map>
 #include <vector>
 #include <tuple>
+#include <string> // std::to_string()
+#include <stdexcept> // std::out_of_range
 #include <utility> // std::move()
 
 
@@ -313,6 +315,52 @@ namespace icarus::trigger {
 
 
   // ---------------------------------------------------------------------------
+  /// Associates each optical detector channel to a gate.
+  template <typename GateObject>
+  class TriggerGateIndex {
+
+      public:
+
+    using TriggerGate_t = GateObject; ///< Type of gate the index lists.
+
+    /// Constructs an empty index expecting to be filled by `expectedChannels`
+    /// registered channels.
+    TriggerGateIndex(std::size_t expectedChannels = 0U);
+
+    /// Initializes the index from all the `gates` in the specified collection.
+    TriggerGateIndex(std::vector<TriggerGate_t> const& gates);
+
+    /// Adds a new gate to the index.
+    /// @throws cet::exception (`"TriggerGateIndex"`) if it conflicts with a
+    ///         gate already added
+    void add(TriggerGate_t const& gate);
+
+    /// Returns the total number of registered channels.
+    unsigned int nChannels() const;
+
+    /// Returns the gate corresponding to the specified `channel`.
+    TriggerGate_t const* find(raw::Channel_t const channel) const;
+
+    /// Returns the gate corresponding to the specified `channel`.
+    /// @throws std::out_of_range if the channel is not registered
+    TriggerGate_t const& operator[](raw::Channel_t const channel) const;
+
+      private:
+
+    /// Index of gates by channel number (the same gate may appear many times).
+    std::vector<TriggerGate_t const*> fGates;
+
+    /// Extends internal map with `nullptr` to hold at least `chIndex`.
+    /// @return whether an extension was performed
+    bool expandToHold(std::size_t chIndex);
+
+    /// Converts a channel number into an index.
+    static std::size_t channelIndex(raw::Channel_t channel);
+
+  }; // class TriggerGateIndex
+
+
+  // ---------------------------------------------------------------------------
 
 } // namespace icarus::trigger
 
@@ -449,7 +497,96 @@ std::vector<GateObject> icarus::trigger::FillTriggerGates(
   } // for gates
 
   return allGates;
-} // icarus::trigger::TriggerDesignPlots::FillTriggerGates()
+} // icarus::trigger::FillTriggerGates()
+
+
+// -----------------------------------------------------------------------------
+// --- icarus::trigger::TriggerGateIndex
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+icarus::trigger::TriggerGateIndex<GateObject>::TriggerGateIndex
+  (std::size_t expectedChannels /* = 0U */)
+{
+  if (expectedChannels > 0) fGates.reserve(expectedChannels);
+} // icarus::trigger::TriggerGateIndex::TriggerGateIndex(size_t)
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+icarus::trigger::TriggerGateIndex<GateObject>::TriggerGateIndex
+  (std::vector<TriggerGate_t> const& gates)
+{
+  for (TriggerGate_t const& gate: gates) add(gate);
+} // icarus::trigger::TriggerGateIndex::TriggerGateIndex(gates)
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+void icarus::trigger::TriggerGateIndex<GateObject>::add
+  (TriggerGate_t const& gate)
+{
+
+  for (raw::Channel_t const channel: gate.channels()) {
+    auto const chIndex = static_cast<std::size_t>(channel);
+
+    if (expandToHold(chIndex) || !fGates[chIndex]) {
+      fGates[chIndex] = &gate;
+    }
+    else if (fGates[chIndex] != &gate) {
+      throw cet::exception("TriggerGateIndex") << "TriggerGateIndex::add(): "
+        << "A gate was already present for channel " << channel << ".\n";
+    }
+
+  } // for
+
+} // icarus::trigger::TriggerGateIndex::add()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+unsigned int icarus::trigger::TriggerGateIndex<GateObject>::nChannels() const
+  { return static_cast<unsigned int>(fGates.size()); }
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+auto icarus::trigger::TriggerGateIndex<GateObject>::find
+  (raw::Channel_t const channel) const -> TriggerGate_t const*
+{
+  auto const chIndex = channelIndex(channel);
+  return (chIndex < nChannels())? fGates[chIndex]: nullptr;
+} // icarus::trigger::TriggerGateIndex::find()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+auto icarus::trigger::TriggerGateIndex<GateObject>::operator[]
+  (raw::Channel_t const channel) const -> TriggerGate_t const&
+{
+  auto const gate = find(channel);
+  if (gate) return *gate;
+  throw std::out_of_range(std::to_string(channel));
+} // icarus::trigger::TriggerGateIndex::operator[]()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+bool icarus::trigger::TriggerGateIndex<GateObject>::expandToHold
+  (std::size_t chIndex)
+{
+
+  if (chIndex < fGates.size()) return false;
+
+  fGates.resize(chIndex + 1U, nullptr);
+  return true;
+
+} // icarus::trigger::TriggerGateIndex::expandToHold()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateObject>
+std::size_t icarus::trigger::TriggerGateIndex<GateObject>::channelIndex
+  (raw::Channel_t channel)
+  { return static_cast<std::size_t>(channel); }
 
 
 // -----------------------------------------------------------------------------
