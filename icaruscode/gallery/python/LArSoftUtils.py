@@ -86,6 +86,11 @@ def loadGeometry(config=None, registry=None, mapping=None):
     except AttributeError: continue
     klass.__str__ = klass.toString
   # for ID
+  for varName in ( 'CryostatID', 'TPCsetID', 'ROPID', ):
+    try: klass = getattr(ROOT.readout, varName) 
+    except AttributeError: continue
+    klass.__str__ = klass.toString
+  # for ID
   # ... and geometry objects
   for varName in ( 'CryostatGeo', 'TPCGeo', 'PlaneGeo', 'WireGeo', 'OpDetGeo', 'AuxDetGeo', ):
     try: klass = getattr(ROOT.geo, varName) 
