@@ -121,7 +121,7 @@ auto icarus::trigger::PMTverticalSlicingAlg::clusterPMTby
   // PMTs with a coordinate within 5 cm (kind of) will be clustered together
   constexpr double tol = 5.0; // cm
   auto const closeEnough
-    = [tol](double a, double b){ return std::abs(a - b) < tol; };
+    = [](double a, double b){ return std::abs(a - b) < tol; };
 
   return util::clusterBy(PMTs, PMTcenterProjection, closeEnough, std::less<>());
 
