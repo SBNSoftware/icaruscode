@@ -17,6 +17,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/Utilities/MultipleChoiceSelection.h"
 #include "larcorealg/Geometry/GeometryCore.h"
+#include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/get_elements.h" // util::get_elements()
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -32,7 +33,7 @@
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
-#include "fhiclcpp/types/OptionalSequence.h"
+#include "fhiclcpp/types/Sequence.h"
 #include "cetlib_except/exception.h"
 
 
@@ -53,24 +54,19 @@ namespace icarus::trigger { class LVDSgates; }
 /**
  * @brief Combines discriminated PMT outputs into V1730 LVDS gates.
  * 
- * This module produces sets of plots based on the configured trigger settings.
+ * This module simulates the combination of discriminated PMT outputs
+ * by the V1730 board LVDS output.
  * 
  * 
  * Input data products
  * ====================
- * 
- * * `TriggerGatesTag` (string, default: `discrimopdaq`): name of the module
- *     instance which produced the discriminated waveforms; it must not include
- *     any instance name, as the instance names will be automatically added from
- *     `Thresholds` parameter, or automatically detected.
- * * `Thresholds` (list of integers, mandatory): list of the discrimination
- *     thresholds to consider, in ADC counts. A data product containing a
- *     digital signal is read for each one of the thresholds, and the tag of the
- *     data product is expected to be the module label `TriggerGatesTag` with as
- *     instance name the value of the threshold (e.g. for a threshold of 6 ADC
- *     counts the data product tag might be `discrimopdaq:6`).
- * 
- * 
+ *
+ * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
+ *   `TriggerGatesTag` and `Thresholds`): full sets of discriminated waveforms,
+ *   each waveform possibly covering multiple optical channels,
+ *   and their associations to optical waveforms. One set per threshold.
+ *
+ *
  * Requirements
  * -------------
  * 
@@ -81,6 +77,16 @@ namespace icarus::trigger { class LVDSgates; }
  * for a certain channel, a discriminated waveform should appear for that
  * channel, with a gate always closed.
  * 
+ *
+ * Output data products
+ * =====================
+ *
+ * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (instance name:
+ *   same as the input gates): sets of gates combined according to the
+ *   configuration; one set per input threshold.
+ * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, raw::OpDetWaveform>`
+ *   (instance name: same as the input gates): associations between each
+ *   produced gate and the optical waveforms providing the original data.
  * 
  * 
  * Configuration parameters
@@ -92,7 +98,7 @@ namespace icarus::trigger { class LVDSgates; }
  * * `TriggerGatesTag` (string, default: `discrimopdaq`): name of the module
  *     instance which produced the discriminated waveforms; it must not include
  *     any instance name, as the instance names will be automatically added from
- *     `Thresholds` parameter, or automatically detected.
+ *     `Thresholds` parameter.
  * * `Thresholds` (list of integers, mandatory): list of the discrimination
  *     thresholds to consider, in ADC counts. A data product containing a
  *     digital signal is read for each one of the thresholds, and the tag of the
@@ -235,9 +241,6 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   
   // --- BEGIN Configuration variables -----------------------------------------
   
-//   art::InputTag fOpDetWaveformTag; ///< Input optical waveform tag.
-  art::InputTag fPropagatedParticlesTag; ///< Input simulated particles.
-
   /// ADC thresholds to read, and the input tag connected to their data.
   std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
   
@@ -256,7 +259,7 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
     icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
     icarus::trigger::ADCCounts_t const threshold,
     art::InputTag const& dataTag
-    );
+    ) const;
   
   
   // --- BEGIN -- Combination modes --------------------------------------------
@@ -380,7 +383,7 @@ icarus::trigger::LVDSgates::LVDSgates
   } // for
   
   
-} // icarus::trigger::TriggerDesignPlots::TriggerDesignPlots()
+} // icarus::trigger::LVDSgates::LVDSgates()
 
 
 //------------------------------------------------------------------------------
@@ -403,7 +406,7 @@ void icarus::trigger::LVDSgates::produceThreshold(
   icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
   icarus::trigger::ADCCounts_t const threshold,
   art::InputTag const& dataTag
-) {
+) const {
   
   mf::LogDebug(fLogCategory)
     << "Processing threshold " << threshold

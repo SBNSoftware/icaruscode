@@ -9,9 +9,7 @@
 # Required inputs
 # ----------------
 # 
-#  * simulated particles (LArG4-like): `largeant`
-#  * simulated energy deposits (LArG4-like): `largeant`
-#  * simulated optical detector readout: `opdaq`
+#  * discriminated waveforms (with threshold) from single channels
 #
 
 #include "services_icarus.fcl"
@@ -31,6 +29,8 @@ services: {
   LArPropertiesService:      @erase
   DetectorClocksService:     @erase
   DetectorPropertiesService: @erase
+  
+  TFileService:              @erase
 
 } # services
 
