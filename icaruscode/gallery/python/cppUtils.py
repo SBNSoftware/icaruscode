@@ -80,7 +80,7 @@ class SourceCentral:
   def findLibrary(self, libName, extraPaths = []):
     expLibName = SourceCentral.expandLibraryName(libName)
     for path in reversed(
-     SourceCentral.LibraryPaths() + map(os.path.expandvars, extraPaths)
+     SourceCentral.LibraryPaths() + list(map(os.path.expandvars, extraPaths))
      ):
       candidate = os.path.join(path, expLibName)
       if os.path.exists(candidate): return candidate
