@@ -201,8 +201,7 @@ def eventLoop(inputFiles,
     
   # for
   if nErrors > 0:
-    #print >>sys.stderr, "Encountered %d/%d errors." % (nErrors, nProcessedEvents)
-    print("Encountered %d/%d errors." % (nErrors, nProcessedEvents),end="",file=sys.stderr)
+    print("Encountered %d/%d errors." % (nErrors, nProcessedEvents),file=sys.stderr)
   return nErrors
 # eventLoop()
 
@@ -301,28 +300,6 @@ class ConfigurationHelper:
   def pset(self): return self.config
   
 # class ConfigurationHelper
-import tempfile
-
-class TemporaryFile:
-  def __init__(self, data = None):
-    with warnings.catch_warnings():
-      # os.tempnam() is a potential security risk: ACK
-      warnings.filterwarnings("ignore", ".*tempnam .*", RuntimeWarning)
-      self._file = tempfile.NamedTemporaryFile("w+") # open(os.tempnam(), "w+")
-    self.name = self._file.name
-    if data is not None:
-      self._file.write(str(data))
-      self._file.flush() # we are not going to close this file...
-    # 
-  # __init__()
-  def __del__(self):
-    if not self._file: return
-    del self._file
-    # Not needed? os.remove(self.name)
-  # __del__()
-  def file_(self): return self._file
-  def __str__(self): return self.name
-# class TemporaryFile
 
 
 def loadConfiguration(configSpec):
@@ -331,7 +308,9 @@ def loadConfiguration(configSpec):
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
  
   if isinstance(configSpec, ConfigurationString):
-    configFile = TemporaryFile(configSpec)
+    configFile = tempfile.NamedTemporaryFile("w+")
+    configFile.write(str(configSpec))
+    configFile.flush()
     configPath = configFile.name
   else:
     configFile = None
