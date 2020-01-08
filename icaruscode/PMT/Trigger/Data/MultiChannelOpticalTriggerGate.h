@@ -19,6 +19,7 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 // C/C++ standard libraries
+#include <utility> // std::move()
 #include <iosfwd> // std::ostream
 
 
@@ -56,6 +57,19 @@ class icarus::trigger::MultiChannelOpticalTriggerGate
   
     public:
   
+  using OpticalTriggerGate::OpticalTriggerGate;
+
+  MultiChannelOpticalTriggerGate(OpticalTriggerGate const& gate)
+    : OpticalTriggerGate(gate) {}
+  MultiChannelOpticalTriggerGate(OpticalTriggerGate&& gate)
+    : OpticalTriggerGate(std::move(gate)) {}
+
+  using OpticalTriggerGate::operator=;
+  MultiChannelOpticalTriggerGate& operator= (OpticalTriggerGate const& gate)
+    { OpticalTriggerGate::operator=(gate); return *this; }
+  MultiChannelOpticalTriggerGate& operator= (OpticalTriggerGate&& gate)
+    { OpticalTriggerGate::operator=(std::move(gate)); return *this; }
+
   /// Do not support single-channel interface.
   ChannelID_t channel() const = delete;
   
