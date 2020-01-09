@@ -308,6 +308,7 @@ def loadConfiguration(configSpec):
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
  
   if isinstance(configSpec, ConfigurationString):
+    import tempfile
     configFile = tempfile.NamedTemporaryFile("w+")
     configFile.write(str(configSpec))
     configFile.flush()
