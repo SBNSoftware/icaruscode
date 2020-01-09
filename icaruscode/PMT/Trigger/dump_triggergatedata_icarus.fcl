@@ -1,0 +1,83 @@
+#
+# File:    dump_triggergatedata_icarus.fcl
+# Purpose: Dumps the specified trigger gate data product on a file.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 6, 2019
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * simulated trigger gate data (needs to be overridden!)
+#
+#
+# Service dependencies
+# ---------------------
+# 
+# * message facility
+# 
+#
+
+process_name: DumpTriggerGateData
+
+services: {
+  
+  message: {
+    destinations: {
+      
+      # grab all the "DumpTriggerGateData" messages and put them in DumpTriggerGateData.log
+      LogGates: {
+        append: false
+        categories: {
+          DumpTriggerGateData: { limit: -1 }
+          default: { limit: 0 }
+        }
+        filename: "DumpTriggerGateData.log"
+        threshold: "INFO"
+        type: "file"
+      } # LogGates
+      
+      LogStandardOut: {
+        categories: {
+          DumpTriggerGateData: { limit: 0 }
+          default: {}
+        }
+#         threshold: "WARNING"
+        threshold: "DEBUG"
+        type: "cout"
+      } # LogStandardOut
+      
+    } # destinations
+  } # message
+} # services
+
+
+source: {
+  module_type: RootInput
+  maxEvents:  -1            # number of events to read
+} # source
+
+
+physics: {
+  producers:{}
+  filters:  {}
+  analyzers: {
+    dumptriggergatedata: {
+      module_type:  DumpTriggerGateData
+      
+      # specify the input tag of the raw::OpDetWaveform producer
+      TriggerGateDataTag: "discrimopdaq:60"
+      
+      # output category ("TriggerGateDataTag" by default), useful for filtering (see above)
+      OutputCategory: "DumpTriggerGateData"
+      
+    } # dumptriggergatedata
+  } # analyzers
+  
+  dumpers:  [ dumptriggergatedata ]
+  
+  trigger_paths: []
+  end_paths:     [ dumpers ]
+} # physics
+

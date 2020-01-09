@@ -1,0 +1,87 @@
+<!--
+  
+  ROOT dictionary generation for:
+  
+  * `icarus::trigger::TriggerGateData<detinfo::timescales::optical_tick>`
+  
+  
+  Reminder:
+  
+  * include `art::Wrapper` lines for objects that we would like to put into the event
+  * include the non-wrapper lines for all objects on the `art::Wrapper` lines
+    and for all objects that are data members of those objects.
+  
+  -->
+
+
+<lcgdict>
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- icarus::trigger::OpticalTriggerGateData_t -->
+  <!--   (a.k.a. `icarus::trigger::ReadoutGateData<TriggerGateTick_t, TriggerGateTicks_t, ChannelID>` -->
+
+  <!--   class -->
+  <class name="icarus::trigger::OpticalTriggerGate::GateData_t" ClassVersion="11" >
+   <version ClassVersion="11" checksum="1145932755"/>
+   <version ClassVersion="10" checksum="864830688"/>
+  </class>
+    
+    <!-- dependencies -->
+    <!--
+      <!- - detinfo::timescales::optical_tick - ->
+    <class name="util::quantities::concepts::Point<util::quantities::tick, detinfo::timescales::OpticalTimeCategory, util::quantities::concepts::Interval<util::quantities::tick, detinfo::timescales::OpticalTimeCategory>>;" ClassVersion="10" />
+    -->
+    <class name="icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t" />
+    <class name="std::vector<icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t::Status>" />
+    <class name="icarus::trigger::OpticalTriggerGate::GateData_t::GateData_t::Status" ClassVersion="10" >
+     <version ClassVersion="10" checksum="3147326942"/>
+    </class>
+    <enum name="icarus::trigger::details::TriggerGateEventType" ClassVersion="10" />
+
+    <!-- art pointers and wrappers -->
+  <class name="art::Ptr<icarus::trigger::OpticalTriggerGate::GateData_t>"/>
+  <class name="std::vector<icarus::trigger::OpticalTriggerGate::GateData_t>"/>
+  <class name="art::Wrapper<std::vector<icarus::trigger::OpticalTriggerGate::GateData_t>>"/>
+
+    <!-- associations and wrappers -->
+      <!-- raw::OpDetWaveform -->
+  <class name="art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform, void>"/>
+  <class name="art::Assns<raw::OpDetWaveform, icarus::trigger::OpticalTriggerGate::GateData_t, void>"/>
+  <class name="std::pair<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform>"/>
+  <class name="std::pair<raw::OpDetWaveform, icarus::trigger::OpticalTriggerGate::GateData_t>"/>
+  <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform, void>>"/>
+  <class name="art::Wrapper<art::Assns<raw::OpDetWaveform, icarus::trigger::OpticalTriggerGate::GateData_t, void>>"/>
+  
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- copy&paste templates for: -->
+  <!-- PROD -->
+
+    <!-- class -->
+  <!--
+  <class name="PROD"/>
+  -->
+
+    <!-- schema evolution rules -->
+      <!-- version 11 -->
+    
+    <!-- dependencies -->
+    <!-- art pointers and wrappers -->
+      <!-- data product collection (PROD) -->
+  <!--
+  <class name="art::Ptr<PROD>"/>
+  <class name="std::vector<PROD>"/>
+  <class name="art::Wrapper<std::vector<PROD>>"/>
+    -->
+
+    <!-- associations and wrappers (PROD <==> OTHER) -->
+  <!--
+  <class name="art::Assns<PROD, OTHER, void>"/>
+  <class name="art::Assns<OTHER, PROD, void>"/>
+  <class name="std::pair<art::Ptr<PROD>, art::Ptr<OTHER>>"/>
+  <class name="art::Wrapper<art::Assns<OTHER, PROD, void>>"/>
+  <class name="std::pair<art::Ptr<OTHER>, art::Ptr<PROD>>"/>
+  <class name="art::Wrapper<art::Assns<OTHER, PROD, void>>"/>
+    -->
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+</lcgdict>

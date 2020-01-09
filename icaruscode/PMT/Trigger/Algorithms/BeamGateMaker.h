@@ -87,8 +87,8 @@ class icarus::trigger::BeamGateMaker {
     {
       icarus::trigger::OpticalTriggerGate beamGate;
       beamGate.gateLevels().openFor(
-        fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + delay),
-        fDetTimings.toOpticalTicks(length)
+        fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + delay).value(),
+        fDetTimings.toOpticalTicks(length).value()
         );
       return beamGate;
     }

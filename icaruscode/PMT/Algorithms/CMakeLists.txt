@@ -3,6 +3,7 @@
 
 art_make(
   LIB_LIBRARIES 
+    larcorealg_Geometry
     lardataobj_RawData
 #    lardataobj_RecoBase
 #    lardata_Utilities
@@ -16,6 +17,7 @@ art_make(
      ${CETLIB}
      cetlib_except
      ${ROOT_FFTW}
+     ${ROOT_GENVECTOR}
      ${ROOT_BASIC_LIB_LIST}
      ${CLHEP}
 #    ${Boost_SYSTEM_LIBRARY}

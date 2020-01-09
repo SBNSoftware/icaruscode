@@ -1,5 +1,5 @@
-#ifndef CRTData_hh_
-#define CRTData_hh_
+#ifndef ICCRTData_hh_
+#define ICCRTData_hh_
 
 #include <stdint.h> //int
 #include <map>

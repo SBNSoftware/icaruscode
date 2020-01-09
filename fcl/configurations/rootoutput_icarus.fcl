@@ -1,0 +1,81 @@
+#
+# File:    rootoutput_icarus.fcl
+# Purpose: standard _art_ ROOT output file naming
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 4, 2019
+#
+# This file provides a base configuration for the ROOT output module which
+# includes a standard name based on the input file.
+#
+# Provided configuration:
+# 
+# * `icarus_rootoutput`: configuration for `RootOutput` module
+# * `icarus_rootoutput_fromempty`: (BROKEN) configuration for `EmptyEvent` module
+#
+# See below for usage examples.
+#
+
+BEGIN_PROLOG
+
+################################################################################
+###  RootOutput: icarus_rootoutput
+################################################################################
+###
+### Standard configuration for `RootOutput` module.
+### Use it in the configuration of jobs using an input ROOT file (e.g. with
+### `RootInput` module, but not with jobs using `EmptyEvent`).
+###
+### Example of usage:
+###     
+###     outputs: {
+###       rootoutput: @local::icarus_rootoutput
+###     }
+###     
+### will cause the job to create a _art_ ROOT file named after the input file,
+### with the process name and file closing time added.
+### The file has minimal standard ROOT compression (level 1).
+### Fast cloning is left default.
+###
+###
+icarus_rootoutput: {
+  module_type:               RootOutput
+  fileName:                 "%ifb_%tc-%p.root"
+  compressionLevel:          1
+} # icarus_rootoutput
+
+
+
+################################################################################
+###  RootOutput: icarus_rootoutput_fromempty
+################################################################################
+###
+### Standard configuration for `RootOutput` module for jobs without an input
+### ROOT file (e.g. jobs using `EmptyEvent`).
+###
+### Example of usage:
+###     
+###     outputs: {
+###       rootoutput: @local::icarus_rootoutput_fromempty
+###     }
+###     
+### will cause the job to create a _art_ ROOT file following the same settings
+### as for `rootoutput_icarus`, except that the name of the output file is
+### the name of the configuration file, with the process name and file closing
+### time added.
+### 
+### WARNING
+### WARNING This configuration is not functional, waiting for the necessary
+### WARNING feature to be implemented in _art_
+### WARNING (request #22357: https://cdcvs.fnal.gov/redmine/issues/22357)
+### WARNING
+### 
+icarus_rootoutput_fromempty: {
+  @table::icarus_rootoutput
+  fileName:                 "%c_%tc-%p.root"
+} # icarus_rootoutput_fromempty
+
+
+
+################################################################################
+
+END_PROLOG

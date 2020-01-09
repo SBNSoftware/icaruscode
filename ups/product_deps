@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v08_37_00
+parent icaruscode v08_39_00
 defaultqual e17
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -33,8 +33,8 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-larsoft            v08_37_00
-icarusutil         v08_36_02
+larsoft            v08_39_00
+icarusutil         v08_38_00
 icarus_data        v08_31_01
 genie_xsec         v3_00_04a
 sbndaq_artdaq_core v0_03_01
@@ -46,16 +46,24 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier	larsoft		icarusutil  icarus_data sbndaq_artdaq_core  genie_xsec notes
-e17:debug	e17:debug	e17:debug   -nq-        e17:s93:debug	    G1810a0211a:k250:e1000
-e17:opt		e17:opt		e17:opt     -nq-        e17:s93:opt	    G1810a0211a:k250:e1000
-e17:prof    e17:prof	e17:prof    -nq-                e17:s93:prof	    G1810a0211a:k250:e1000
-e15:debug	e15:debug	e15:debug   -nq-        e15:s93:debug	    G1810a0211a:k250:e1000
-e15:opt		e15:opt		e15:opt     -nq-        e15:s93:opt	    G1810a0211a:k250:e1000
-e15:prof    e15:prof	e15:prof    -nq-        	e15:s93:prof	    G1810a0211a:k250:e1000
-c2:debug    c2:debug    c2:debug    -nq-        	c2:s93:debug	    G1810a0211a:k250:e1000
-c2:opt      c2:opt      c2:opt      -nq-        	c2:s93:opt	    G1810a0211a:k250:e1000
-c2:prof     c2:prof     c2:prof     -nq-        	c2:s93:prof	    G1810a0211a:k250:e1000
+qualifier		larsoft			icarusutil  icarus_data sbndaq_artdaq_core  genie_xsec notes
+e19:debug		e19:debug		e19:debug   	-nq-        e19:s93:debug	    G1810a0211a:k250:e1000
+e19:opt			e19:opt			e19:opt     	-nq-        e19:s93:opt	    	G1810a0211a:k250:e1000
+e19:prof    	e19:prof		e19:prof    	-nq-        e19:s93:prof	    G1810a0211a:k250:e1000
+e19:py3:debug	e19:py3:debug	e19:py3:debug   -nq-        e19:py3:s93:debug	G1810a0211a:k250:e1000
+e19:py3:prof    e19:py3:prof	e19:py3:prof    -nq-        e19:py3:s93:prof	G1810a0211a:k250:e1000
+e17:debug		e17:debug		e17:debug   	-nq-        e17:s93:debug	    G1810a0211a:k250:e1000
+e17:opt			e17:opt			e17:opt     	-nq-        e17:s93:opt	    	G1810a0211a:k250:e1000
+e17:prof    	e17:prof		e17:prof    	-nq-        e17:s93:prof	    G1810a0211a:k250:e1000
+e15:debug		e15:debug		e15:debug   	-nq-        e15:s93:debug	    G1810a0211a:k250:e1000
+e15:opt			e15:opt			e15:opt     	-nq-        e15:s93:opt	    	G1810a0211a:k250:e1000
+e15:prof    	e15:prof		e15:prof    	-nq-        e15:s93:prof	    G1810a0211a:k250:e1000
+c2:debug    	c2:debug    	c2:debug    	-nq-        c2:s93:debug	    G1810a0211a:k250:e1000
+c2:opt      	c2:opt      	c2:opt      	-nq-        c2:s93:opt	    	G1810a0211a:k250:e1000
+c2:prof     	c2:prof     	c2:prof     	-nq-        c2:s93:prof	    	G1810a0211a:k250:e1000
+c7:debug    	c7:debug    	c7:debug    	-nq-        c7:s93:debug	    G1810a0211a:k250:e1000
+c7:opt      	c7:opt      	c7:opt      	-nq-        c7:s93:opt	    	G1810a0211a:k250:e1000
+c7:prof     	c7:prof     	c7:prof     	-nq-        c7:s93:prof	    	G1810a0211a:k250:e1000
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

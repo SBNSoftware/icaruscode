@@ -21,24 +21,6 @@
 #include <iosfwd> // std::ostream
 
 
-namespace icarus::trigger {
-  
-  // ---------------------------------------------------------------------------
-  //
-  // declarations
-  //
-  
-  class SingleChannelOpticalTriggerGate;
-  
-  std::ostream& operator<<
-    (std::ostream&, SingleChannelOpticalTriggerGate const&);
-  
-  
-  // ---------------------------------------------------------------------------
-  
-} // namespace icarus::trigger
-
-
 //------------------------------------------------------------------------------
 // TODO move this into `lardataobj/RawData/OpDetWaveform.h`
 namespace raw {
@@ -54,6 +36,7 @@ namespace raw {
 
 
 //------------------------------------------------------------------------------
+namespace icarus::trigger { class SingleChannelOpticalTriggerGate; }
 /**
  * @brief Logical multi-level gate associated to a optical detector channel.
  * 
@@ -68,40 +51,44 @@ class icarus::trigger::SingleChannelOpticalTriggerGate
   //      mind.
   //
   
+  using Base_t = icarus::trigger::OpticalTriggerGate;
+  
     public:
   
   /// Constructor: a closed gate for the channel in `waveform`.
   SingleChannelOpticalTriggerGate(raw::OpDetWaveform const& waveform)
-    : icarus::trigger::OpticalTriggerGate(waveform)
+    : Base_t(waveform)
     {}
+  
+  SingleChannelOpticalTriggerGate
+    (SingleChannelOpticalTriggerGate const&) = default;
+  SingleChannelOpticalTriggerGate
+    (SingleChannelOpticalTriggerGate&&) = default;
+  SingleChannelOpticalTriggerGate& operator=
+    (SingleChannelOpticalTriggerGate const&) = default;
+  SingleChannelOpticalTriggerGate& operator=
+    (SingleChannelOpticalTriggerGate&&) = default;
   
   /// Adds another waveform to the channel (unless it has just been added).
   bool add(raw::OpDetWaveform const& waveform);
   
-  // --- BEGIN Query -----------------------------------------------------------
-  /// @name Query
-  /// @{
-  
-  /// Returns the channel this gate is on.
-  raw::Channel_t channel() const
-    { 
-      return waveforms().empty()
-        ? raw::InvalidChannel: refWaveform().ChannelNumber();
-    }
-  
-  // --- END Query -------------------------------------------------------------
+  //@{
+  /// Copies/steals all the levels from the specified data.
+  SingleChannelOpticalTriggerGate& operator= (GateData_t const& data)
+    { Base_t::operator=(data); return *this; }
+  SingleChannelOpticalTriggerGate& operator= (GateData_t&& data)
+    { Base_t::operator=(std::move(data)); return *this; }
+  //@}
   
   
+  /// Do not support multi-channel interface.
+  decltype(auto) channels() const = delete;
   
   /// Comparison operator: sorts by increasing channel number.
   bool operator< (SingleChannelOpticalTriggerGate const& other) const
     { return channel() < other.channel(); }
   
     private:
-  
-  friend std::ostream& operator<<
-    (std::ostream&, SingleChannelOpticalTriggerGate const&);
-  
   
   /// Returns the "reference" waveform, used when a single waveform is needed.
   bool hasRefWaveform() const { return !waveforms().empty(); }
