@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface gallery with python.
@@ -181,7 +182,7 @@ def eventLoop(inputFiles,
     
     if iFile != event.fileEntry():
       iFile = event.fileEntry()
-      print "Opening: '%s'" % inputFiles[iFile]
+      print("Opening: '%s'" % inputFiles[iFile])
     # if new file
     
     # event flow control
@@ -201,7 +202,7 @@ def eventLoop(inputFiles,
     
   # for
   if nErrors > 0:
-    print >>sys.stderr, "Encountered %d/%d errors." % (nErrors, nProcessedEvents)
+    print("Encountered %d/%d errors." % (nErrors, nProcessedEvents),file=sys.stderr)
   return nErrors
 # eventLoop()
 
@@ -218,9 +219,9 @@ def eventLoop(inputFiles,
 def findFHiCL(configRelPath, extraDirs = []):
   
   if os.path.isfile(configRelPath):
-    return os.path.join(os.getcwd(), configRelPath)
+    return os.path.join(os.getcwd(), str(configRelPath))
   for path in extraDirs + os.environ.get('FHICL_FILE_PATH', "").split(':'):
-    candidate = os.path.join(path, configRelPath)
+    candidate = os.path.join(path, str(configRelPath))
     if os.path.isfile(candidate): return candidate
   else: return None
 
@@ -302,41 +303,22 @@ class ConfigurationHelper:
 # class ConfigurationHelper
 
 
-class TemporaryFile:
-  def __init__(self, data = None):
-    with warnings.catch_warnings():
-      # os.tempnam() is a potential security risk: ACK
-      warnings.filterwarnings("ignore", ".*tempnam .*", RuntimeWarning)
-      self._file = open(os.tempnam(), "w+")
-    self.name = self._file.name
-    if data is not None:
-      self._file.write(str(data))
-      self._file.flush() # we are not going to close this file...
-    # 
-  # __init__()
-  def __del__(self):
-    if not self._file: return
-    del self._file
-    os.remove(self.name)
-  # __del__()
-  def file_(self): return self._file
-  def __str__(self): return self.name
-# class TemporaryFile
-
-
 def loadConfiguration(configSpec):
   # this utility actually relies on generic utilities that while not LArSoft
   # specific, are nevertheless distributed with LArSoft (`larcorealg`).
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
-  
+ 
   if isinstance(configSpec, ConfigurationString):
-    configFile = TemporaryFile(configSpec)
+    import tempfile
+    configFile = tempfile.NamedTemporaryFile("w+")
+    configFile.write(str(configSpec))
+    configFile.flush()
     configPath = configFile.name
   else:
     configFile = None
     configPath = configSpec
   # if
-  
+
   fullPath = findFHiCL(configPath)
   if not fullPath:
     raise RuntimeError("Couldn't find configuration file '%s'" % configPath)
@@ -411,7 +393,7 @@ class startMessageFacility:
   def init(self, config, applName):
     if not applName: applName = os.path.basename(sys.argv[0])
     if isinstance(config, ConfigurationClass): config = config.service("message")
-    print "Starting message facility for %s..." % applName
+    print("Starting message facility for %s..." % applName)
     ROOT.mf.StartMessageFacility(config, applName)
     startMessageFacility.Init = True
   # init()

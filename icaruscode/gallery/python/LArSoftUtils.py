@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface LArSoft with python and gallery.
@@ -381,7 +382,7 @@ class ServiceManagerClass(ServiceManagerInterface):
     except KeyError:
       loader = SimpleServiceLoader(serviceKey, interfaceClass=interfaceClass)
     
-    print "Loading service provider: '{}'".format(serviceKey)
+    print("Loading service provider: '{}'".format(serviceKey))
     return loader(self)
     
   # get()
