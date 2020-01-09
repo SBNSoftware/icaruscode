@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface gallery with python.
@@ -308,6 +309,7 @@ def loadConfiguration(configSpec):
   SourceCode.loadHeaderFromUPS("larcorealg/Geometry/StandaloneBasicSetup.h")
  
   if isinstance(configSpec, ConfigurationString):
+    import tempfile
     configFile = tempfile.NamedTemporaryFile("w+")
     configFile.write(str(configSpec))
     configFile.flush()
