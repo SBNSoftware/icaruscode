@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface gallery with python.

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface C++ code with Python via PyROOT.
@@ -55,7 +56,7 @@ class SourceCentral:
     if not os.path.isdir(expPath):
       print(
         "Warning: include path '%s'" % path,
-        (" ( => '%s')" % expPath) if path != expPath else "",
+        (" ( => '%s')" % expPath if path != expPath else ""),
         " does not exist.",
         sep='',
         file=sys.stderr
@@ -88,7 +89,7 @@ class SourceCentral:
   # findLibrary()
   
   def findHeader(self, relPath, extraPaths = []):
-    for path in reversed(self.includePaths, list(map(os.path.expandvars, extraPaths))):
+    for path in reversed(self.includePaths + list(map(os.path.expandvars, extraPaths))):
       candidate = os.path.join(path, relPath)
       if os.path.exists(candidate): return candidate
     else: return None
