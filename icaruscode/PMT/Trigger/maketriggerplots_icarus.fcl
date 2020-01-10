@@ -1,0 +1,81 @@
+#
+# File:    maketriggerplots_icarus.fcl
+# Purpose: Runs `icarus::trigger::TriggerEfficiencyPlots` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    January 9, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * discriminated waveforms (with threshold)
+#
+
+#include "services_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: TrgPlots
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  Geometry:                  @erase
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  analyzers: {
+  
+    triggerplots: {
+      
+      module_type: TriggerEfficiencyPlots
+      
+      TriggerGatesTag: lvdsgates
+      
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      
+      # minimum number of trigger primitives required for the trigger to fire
+      MinimumPrimitives: [ 1, 2, 3, 4, 5, 8, 12, 20, 50 ]
+      
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: "1.6 us"
+
+      # message facility stream
+      LogCategory: "TriggerEfficiencyPlots"
+      
+    } # triggerplots
+    
+  } # producers
+  
+  plots: [ triggerplots ]
+  
+  trigger_paths: []
+  end_paths: [ plots ]
+  
+} # physics
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.TriggerEfficiencyPlotsLog: {
+  type:       file
+  filename:  "TriggerEfficiencyPlots.log"
+  threshold:  DEBUG
+  categories: {
+    TriggerEfficiencyPlots: { limit: -1 }
+    default:                { limit: 0 }
+  }
+} # services.messages.destinations.TriggerEfficiencyPlotsLog
+
