@@ -80,7 +80,7 @@ class icarus::trigger::OpticalTriggerGate
 
   /// Constructor: a closed gate for the channel in `waveform`.
   OpticalTriggerGate(raw::OpDetWaveform const& waveform)
-    : GateData_t()
+    : GateData_t({ waveform.ChannelNumber() })
     , fWaveforms({ &waveform })
     {}
 
