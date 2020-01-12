@@ -213,7 +213,17 @@ class PlotCategory {
 }; // class PlotCategory
 using PlotCategories_t = std::vector<PlotCategory>;
 
-
+/**
+ * @brief List of event categories.
+ * 
+ * category name  | condition
+ * -------------- | ------------------------------------------------------------
+ * `All`          | any event
+ * `NuCC`         | at least one generated charged current neutrino interaction
+ * `NuNC`         | at least one generated neutral current neutrino interaction
+ * 
+ * 
+ */
 PlotCategories_t const PlotCategories {
 
   PlotCategory{
@@ -236,31 +246,295 @@ PlotCategories_t const PlotCategories {
 //------------------------------------------------------------------------------
 namespace icarus::trigger { class TriggerEfficiencyPlots; }
 /**
- * @brief Produces plots to inform trigger design.
+ * @brief Produces plots about trigger simulation and trigger efficiency.
  * 
- * This module produces sets of plots based on the configured trigger settings.
+ * This module produces sets of plots based on trigger primitives given in
+ * input.
+ * 
+ * The following documentation mainly deals with the most standard configuration
+ * and operations in ICARUS. This module and the ones upstream of it have quite
+ * some knobs that can be manipulated to test unorthodox configurations.
+ * 
+ * 
+ * Overview of trigger simulation steps
+ * =====================================
+ * 
+ * This simulation only trigger primitives derived from the optical detector
+ * via hardware (V1730B boards).
+ * The trigger simulation branches from the standard simulation of optical
+ * detector waveforms (`icarus::SimPMTIcarus` module).
+ * From there, multiple steps are needed.
+ * 
+ * 1. Produce single-PMT-channel discriminated waveforms: the discrimination
+ *    threshold can be chosen ("ADC threshold" or just "threshold" in the
+ *    following), and the result is one binary discriminated waveform that
+ *    has value `0` when the waveform is under threshold and `1` when it's
+ *    above threshold, with the same time discretization as the PMT waveform.
+ *    Each discriminated waveform spans the whole event readout time and
+ *    therefore it may merge information from multiple readout waveforms
+ *    (`raw::OpDetWaveform`), but all from the same optical detector channel.
+ *    This step can be performed with the module
+ *    `icarus::trigger::DiscriminatePMTwaveforms`.
+ * 2. Combine the discriminated waveforms in pairs, in the same fashion as the
+ *    V1730B readout board does to produce LVDS output. The output of this step
+ *    is roughly half as many discriminated outputs as there were from the
+ *    previous step (some channels are not paired). This output will be called
+ *    _trigger primitives_ because it is what the trigger logics is based on.
+ *    We say that a trigger primitive is "on" when its level is `1`.
+ *    This step can be performed with the module `icarus::trigger::LVDSgates`.
+ * 3. Simulate the trigger logic based on the trigger primitives _(see below)_.
+ *    This usually includes the requirement of coincidence with the beam gate.
+ * 
+ * Trigger logic may be complex, being implemented in a FPGA.
+ * Many options are available, including:
+ * 
+ * * coincidence of a minimum number of trigger primitives: the event is trigger
+ *   if at least _N_ trigger primitives are on at the same time;
+ * * sliding window: primitives are grouped depending on their location, and
+ *   there is a requirement on the minimum number of primitives in "on" level
+ *   within one or more of these groups. For example, any sliding window of 30
+ *   channels (corresponding to 16 trigger primitives in standard ICARUS PMT
+ *   readout installation) has to contain at least 10 trigger primitives "on"
+ *   at the same time; or there must be two sliding windows with that condition;
+ *   etc. Sliding windows can be obtained from further processing of the LVDS
+ *   trigger primitives, for example with the module
+ *   `icarus::trigger::SlidingWindowTrigger`.
+ * 
+ * This module (`icarus::trigger::TriggerEfficiencyPlots`) is designed for
+ * implementing a trigger logic based on coincidence of trigger primitives,
+ * and to plot trigger efficiency and related information based on a requirement
+ * of a minimum number of trigger primitives, in that enabling the simulation
+ * in the fashion of the first option above. More details on the steps performed
+ * by this module are documented @ref TriggerEfficiencyPlots_Algorithm "later".
+ * 
+ * For the implementation of sliding window, different logic needs to be
+ * implemented, possibly keeping track of the location of each primitive, and
+ * different plots are needed as well. This module may provide a template for
+ * such implementation, but it hasn't been designed with enough flexibility to
+ * accommodate that directly.
+ * 
+ * 
+ * Data objects for discriminated waveforms
+ * -----------------------------------------
+ * 
+ * A discriminated waveform is the information whether the level of a waveform
+ * is beyond threshold, as function of time.
+ * A discriminated waveform may be binary, i.e. with only levels `0` and `1`
+ * based on a single threshold, or with multiple levels.
+ * Also the numerical _addition_ of two binary discriminated waveforms
+ * yields a multi-level waveform (in fact, three levels -- `0`, `1` and `2`).
+ * 
+ * We represent this data in the forms of "events": an event is a change of
+ * level happening at a certain time. The class holding this information,
+ * `icarus::trigger::TriggerGateData`, covers the whole time, starting with a
+ * ground level `0`. The next event will be a "opening" that increases the
+ * level, usually to `1`. Other changing events may follow, and typically the
+ * last one will bring the level back to `0`.
+ * 
+ * This information is joined by a list of _channel numbers_ in order to
+ * represent a discriminated waveform e.g. from the optical detector.
+ * There may be one or more channels associated to a discriminated waveform,
+ * but for us there should always be at least one.
+ * The discriminated waveforms from PMT readout (`raw::OpDetWaveform`) are
+ * associated to a single channel, while LVDS trigger primitives are most often
+ * associated to two channels (some channels are not paired and will have only
+ * one channel). A sliding window will have as many channels as the PMT it
+ * covers. The global trigger should have _all_ channels, while in ICARUS each
+ * of the two discriminated wabeforms from a cryostat should have half the
+ * channels.
+ * This information is represented in the class
+ * `icarus::trigger::ReadoutTriggerGate`, which inherits from
+ * `icarus::trigger::TriggerGateData`.
+ * This class is generic and can hold any representation for the time of the
+ * level changing events, for the levels, and for the identifiers of the
+ * channels. ICARUS specifies a data type for each of these quantities, and
+ * the resulting `icarus::trigger::ReadoutTriggerGate` class instance is called
+ * `icarus::trigger::OpticalTriggerGateData_t`.
+ * 
+ * @note The class `icarus::trigger::OpticalTriggerGateData_t` is the one that
+ *       gets written to disk in the _art_ ROOT files.
+ *       That is not a class by itself, but rather an alias of
+ *       `icarus::trigger::ReadoutTriggerGate`, and many coding tools will call
+ *       it in the latter way.
+ * 
+ * The class `icarus::trigger::OpticalTriggerGate` is currently the most
+ * commonly used in the code. It adds to the information of
+ * `icarus::trigger::ReadoutTriggerGate`, from which it derives, a list of
+ * optical waveforms (`raw::OpDetWaveform`) it originates from.
+ * 
+ * Finally, the classes `icarus::trigger::SingleChannelOpticalTriggerGate` and
+ * `icarus::trigger::MultiChannelOpticalTriggerGate` do not add any information
+ * to the `icarus::trigger::OpticalTriggerGate` they derive from, but they
+ * have an interface explicitly tuned for discriminated waveforms from a single
+ * channel or from multiple channels, respectively (for example, the former
+ * provides a `channel()` method returning a single channel identifier, while
+ * the latter provides a `channels()` method returning a list of channels).
+ * 
+ * These three higher level classes, `icarus::trigger::OpticalTriggerGate` and
+ * derivatives, _can't be directly saved_ in _art_ ROOT files.
+ * There are utilities available in
+ * `icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h` that can convert them
+ * into a collection of `icarus::trigger::OpticalTriggerGateData_t` objects
+ * plus a collection of _art_ associations (for writing), and the other way
+ * around (for reading). The module `icarus::trigger::LVDSgates` uses both sides
+ * and can be used as an illustration of the functionality.
+ * 
+ * A module is provided, called `icarus::trigger::DumpTriggerGateData`, which
+ * dumps on screen or on text file the information from a collection of
+ * discriminated waveforms in a (sort-of) human readable format.
+ * An example configuration for this module is provided in `icaruscode`, called
+ * `dump_triggergatedata_icarus.fcl`.
+ * 
+ * The main functions to manipulate the trigger gates are defined in the very
+ * base class, `icarus::trigger::TriggerGateData`: these allow e.g. to find
+ * events and query the level at a given time.
+ * Another important set of features is also present in
+ * `icarus::trigger::TriggerGateData` and replicated in the higher levels:
+ * the combination of trigger gates by sum (`OR`), multiplication (_AND_),
+ * minimum and maximum value.
+ * 
+ * @note Combining a multi-level gate via `Min()` with a binary gate results
+ *       into a binary gate which is logic AND of the two gates.
+ * 
+ * 
+ * On the terminology
+ * -------------------
+ * 
+ * In this documentation, the "discriminated waveforms" are sometimes called
+ * "trigger gates" and sometimes "trigger primitives".
+ * Although these concepts are, strictly, different, usually the difference
+ * does not affect the meaning and they end up being exchanged carelessly.
+ * 
+ * 
+ * Trigger logic algorithm
+ * ========================
+ * 
+ * @anchor TriggerEfficiencyPlots_Algorithm
+ * 
+ * This section describes the trigger logic algorithm used in
+ * `icarus::trigger::TriggerEfficiencyPlots` and its assumptions.
+ * 
+ * The algorithm treats all the trigger primitives equally, whether they
+ * originate from one or from two channels (or 10 or 30), and wherever their
+ * channels are in the detector.
+ * The trigger primitives are combined in a multi-level gate by adding them,
+ * so that the level of the resulting gate describes at any time matches how
+ * many trigger primitives are on at that time.
+ * 
+ * This multi-level gate is set in coincidence with the beam gate by multiplying
+ * the multi-level and the beam gates.
+ * The beam gate opens at a time configured in `DetectorClocks` service provider
+ * (`detinfo::DetectorClocks::BeamGateTime()`) and has a duration configured
+ * in this module (`BeamGateDuration`).
+ * 
+ * At this point, the trigger gate is a multi-level gate suppressed everywhere
+ * except than during the beam gate.
+ * The algorithm handles multiple trigger definitions, or requirements.
+ * Each requirement is simply how many trigger primitives must be open at the
+ * same time for the trigger to fire. The values of these requirements are
+ * set in the configuration (`MinimumPrimitives`).
+ * To determine whether a trigger with a given requirement, i.e. with a required
+ * minimum number of trigger primitives open at the same time, has fired, the
+ * gate is scanned to find _the first tick_ where the level of the gate reaches
+ * or passes this minimum required number. If such tick exists, the trigger is
+ * considered to have fired, and at that time.
+ * 
+ * As a consequence, there are for each event as many different trigger
+ * responses as how many different requirements are configured in
+ * `MinimumPrimitives`, _times_ how many ADC thresholds are provided in input,
+ * configured in `Thresholds`.
+ * 
+ * While there _is_ a parameter describing the time resolution of the trigger
+ * (`TriggerTimeResolution`), this is currently only used for aesthetic purposes
+ * to choose the binning of some plots: the resolution is _not_ superimposed
+ * to the gates (yet).
+ * 
+ * This algorithm is currently implemented in
+ * `detinfo::trigger::TriggerEfficiencyPlots::plotResponses()`.
+ * 
+ * 
+ * Event categories
+ * =================
+ * 
+ * Each event is assigned to a set of categories, and its information
+ * contributes to the plots of all those categories.
+ * The categories are defined in the `PlotCategories` list (hard-coded).
+ * 
+ * 
+ * Module usage
+ * =============
  * 
  * 
  * Input data products
- * ====================
+ * --------------------
  * 
- * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
- *   `TriggerGatesTag` and `Thresholds`): full sets of discriminated waveforms,
- *   each waveform possibly covering multiple optical channels,
- *   and their associations to optical waveforms. One set per threshold.
- * * `std::vector<simb::MCTruth>`: generator information, used for categorising
- *      the events for plot sets
- * * `std::vector<simb::MCParticle>`: simulation information, used for
- *      categorizing the events for plotting
+ * This module uses the following data products as input:
+ * 
+ * * trigger primitives:
+ *     * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
+ *       `TriggerGatesTag` and `Thresholds`): full sets of discriminated
+ *       waveforms, each waveform possibly covering multiple optical channels,
+ *       and their associations to optical waveforms. One set per threshold;
+ *     * associations with `raw::OpDetWaveform` (currently superfluous);
+ * * event characterization:
+ *     * `std::vector<simb::MCTruth>`: generator information (from
+ *       `GeneratorTags`; multiple generators are allowed at the same time);
+ *       it is used mostly to categorize the type of event (background,
+ *       weak charged current, electron neutrino, etc.);
+ *     * `std::vector<simb::MCParticle>`: particles propagating in the detector
+ *       (from `PropagatedParticles`); currently not used;
+ *     * `std::vector<sim::SimEnergyDeposit>`: energy deposited in the active
+ *       liquid argon volume (from `EnergyDepositTags`); it is used to
+ *       quantify the energy available to be detected in the event.
  * 
  * 
  * Output plots
- * =============
+ * -------------
  * 
- * For each event category, a set of plots is left into a ROOT subdirectory.
+ * The module produces a standard set of plots for each configured ADC threshold
+ * and for each event category.
+ * The plots are saved via _art_ service `TFileService` in a ROOT file and they
+ * are organized in nested ROOT directories under the module label directory
+ * which is assigned by _art_:
  * 
- * @todo Document which plots these are!
+ * * `Thr###` (outer level) describes the ADC threshold on the discriminated
+ *   waveforms: the threshold is `###` from the baseline;
+ * * `\<Category\>` (inner level) describes the category of events included in
+ *   the plots (e.g. `All`, `NuCC`; see `PlotCategories`).
  * 
+ * Each of the inner ROOT directories contains a full set of plots, whose name
+ * is the standard plot name followed by its event category and threshold
+ * (e.g. `Eff_NuCC_Thr15` for the trigger efficiency plot on neutrino charged
+ * current events with 15 ADC counts as PMT threshold).
+ * 
+ * Each set of plots, defined in
+ * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`, is
+ * contributed only by the events in the set category.
+ * 
+ * Some plots are specific to the trigger, and they are different according to
+ * the ADC threshold:
+ * 
+ * * `Eff`: trigger efficiency defined as number of triggered events over the
+ *   total number of events, as function of the minimum number of trigger
+ *   primitives (`MinimumPrimitives`) to define a firing trigger; uncertainties
+ *   are managed by `TEfficiency`.
+ * * `TriggerTick`: distribution of the time of the earliest trigger for the
+ *   event, as function of the minimum number of trigger primitives (as in
+ *   `Eff`). It may happen that the event is such that there is e.g. a
+ *   20-primitive flash, then subsiding, and then another 30-primitive flash.
+ *   In such a case, in the trigger requirement "&geq; 15 primitives" such event
+ *   will show at the time of the 20-primitive flash, while in the trigger
+ *   requirement "&geq; 25 primitives" it will show at the time of the 
+ *   30-primitive flash. Each event appears at most once for each trigger
+ *   requirement, and it may not appear at all if does not fire a trigger.
+ * * `NPrimitives`: the maximum number of primitives "on" at any time.
+ * 
+ * Some plots are independent of the ADC threshold and they have the same
+ * content in each of the plot set for a given event category:
+ * 
+ * * `EnergyInSpill`: total energy deposited in the detector during the time the
+ *   beam gate is open. It is proportional to the amount of scintillation light
+ *   in the event.
  * 
  * 
  * Configuration parameters
@@ -282,33 +556,71 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *     data product is expected to be the module label `TriggerGatesTag` with as
  *     instance name the value of the threshold (e.g. for a threshold of 60 ADC
  *     counts the data product tag might be `LVDSgates:60`).
+ * * `GeneratorTags` (list of input tags, default: `[ generator ]`): a list of
+ *     data products containing the particles generated by event generators;
+ * * `DetectorParticleTag` (input tag, default: `largeant`): data product
+ *     containing the list of particles going through the argon in the detector;
+ * * `EnergyDepositTags`
+ *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
+ *     data products with energy depositions;
+ * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
+ *     gate; _the time requires the unit to be explicitly specified_: use
+ *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
+ *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
+ *     `trigger_icarus.fcl`);
+ * * `MinimumPrimitives` (list of integers, _mandatory_): a list of alternative
+ *     requirements for the definition of a trigger; each value is the number
+ *     of trigger primitives needed to be "on" at the same time for the trigger
+ *     to fire;
+ * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
+ *     trigger primitives;
  * * `LogCategory` (string, default `TriggerEfficiencyPlots`): name of category
  *     used to stream messages from this module into message facility.
- * * `PropagatedParticles` (input tag, default: `largeant`): data product
- *     containing the list of particles going through the argon in the detector.
  * 
- * @todo Complete the documentation
- * 
- * * `PlotSets` (list of selection criteria, see below):
- *     for each element in the list, a set of plots is created. The plots are
- *     contributed only by the events fulfilling the specified category.
- *     If no plot set is specified at all, a single plot set is created in the
- *     main ROOT directory, contributed by all the events in the input.
+ * An example job configuration is provided as `maketriggerplots_icarus.fcl`.
  * 
  * 
- * Selection criteria for plot sets
- * ---------------------------------
+ * Technical description of the module
+ * ====================================
  * 
- * * `CategoryKey` (string; default: from the activated criteria):
- *     name used for the ROOT subdirectory where the plots are stored.
- *     It may be used in ROOT object names as needed.
- * * `CategoryName` (string; default: from the activated criteria):
- *     string used in plot titles and other ROOT objects.
- * * `CurrentType` (string; default: `"any"`): plot only the events from a weak
- *     current interaction of this type; valid types are `"charged"` and
- *     `"neutral"`. All events are plotted when `"any"` is instead specified.
+ * @todo Meh. Include:
+ *       
+ *       * how the plots are organised, and how that reflects the algorithm
+ *       * how response and plotting are entangled
+ *       * the plot sand box mechanism
+ *       * how the selection of event categories happens
+ *       * how the result is distributed to different event categories
+ *       * how to add new plots
+ *       * how to change the algorithm
  * 
  * 
+ * Code style: quantities with units
+ * ----------------------------------
+ * 
+ * To avoid issues with missing or wrong conversions, this code often uses
+ * LArSoft quantities library. A variable with a `Quantity` type is represented
+ * with a specific unit (e.g. microseconds) and can undergo only limited
+ * manipulation. The allowed manipulation should guarantee that the unit of
+ * the quantity is correctly preserved. For example, it is not possible to
+ * add to a `microseconds` interval a pure number (e.g. `9.0`), but rather
+ * it is only possible to add time quantities (e.g. another `microseconds`
+ * variable, or a `nanoseconds` variable, or a literal value with unit, like
+ * `9.0_ns`), and those quantities are properly converted, with the caveat that
+ * rounding errors may happen that a more careful explicit handling could avoid.
+ * Also, there are two types of variables that can feature the same unit,
+ * intervals and points. A point can't be scaled (e.g. you can't "double" the
+ * time the beam gate opens, while you can double the beam gate _duration_)
+ * and it can't be added to another point (the difference between two points
+ * is an interval).
+ * 
+ * To avoid mistakes in the conversion between different time scales, the
+ * LArSoft utility library `detinfo::DetectorTimings` is used, which is a
+ * wrapper of `DetectorClocks` service provider that makes the interface to
+ * convert times easier and uniform. Here we use it to convert time points
+ * from the simulation (which are expressed in nanoseconds and are starting
+ * at trigger time) into optical detector readout ticks, and vice versa.
+ * The values returned by this library have encoded in them which time scale
+ * they belong to, and in which unit they are measured.
  * 
  */
 class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
@@ -354,7 +666,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
     fhicl::Atom<microseconds> BeamGateDuration {
       Name("BeamGateDuration"),
-      Comment("length of time interval when optical triggers are accepted [us]")
+      Comment("length of time interval when optical triggers are accepted")
       };
 
     fhicl::Sequence<unsigned int> MinimumPrimitives {
@@ -364,7 +676,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
     
     fhicl::Atom<nanoseconds> TriggerTimeResolution {
       Name("TriggerTimeResolution"),
-      Comment("resolution of trigger in time [ns]"),
+      Comment("resolution of trigger in time"),
       8_ns
       };
 
@@ -966,7 +1278,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    * (may be with "fired" or "not fired" on each bin)
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
-  bool fired = true;
+  bool fired = true; // the final trigger response (changes with requirement)
   for (OpeningCount_t minCount: fMinimumPrimitives) {
     
     if (fired && (lastMinCount.second < minCount)) {
@@ -1006,7 +1318,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   } // for all thresholds
   
   /*
-   * Now fill the plots independent of the minimum trigger primitives:
+   * Now fill the plots independent of the trigger response:
    * the same value is plotted in all plot sets.
    * 
    */
