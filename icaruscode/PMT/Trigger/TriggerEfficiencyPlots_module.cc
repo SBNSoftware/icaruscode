@@ -1553,10 +1553,12 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
           << "Never got at " << minCount << " primitives or above.";
         fired = false;
       }
-      lastMinCount = { time, primitiveCount.openingCount(time) };
-      mf::LogTrace(fLogCategory)
-        << "Reached " << minCount << " primitives or above ("
-        << lastMinCount.second << ") at " << lastMinCount.first << ".";
+      else {
+        lastMinCount = { time, primitiveCount.openingCount(time) };
+        mf::LogTrace(fLogCategory)
+          << "Reached " << minCount << " primitives or above ("
+          << lastMinCount.second << ") at " << lastMinCount.first << ".";
+      }
     } // if
     
     // at this point we know we have minCount or more trigger primitives,
