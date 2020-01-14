@@ -722,6 +722,31 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * @ref TriggerEfficiencyPlots_OrganizationOfPlots "above".
  *
  *
+ * Adding an event category
+ * -------------------------
+ *
+ * @anchor TriggerEfficiencyPlots_AddingCategory
+ *
+ * Event categories are listed in `PlotCategories`: each one is described by
+ * a simple object `PlotCategory` which contains a name (used in ROOT
+ * directories, plot name tags and to univocally identify the category),
+ * a description (used in plot titles) and a condition for the event to fulfill
+ * in order to qualify for the category. The condition is a function object
+ * that accepts an `EventInfo_t` object with the relevant event information,
+ * and returns its decision (`true` if the event belongs to this category).
+ *
+ * To add a category, it is enough to append an entry at the end of the
+ * `PlotCategories` list, taking the existing ones as example.
+ *
+ * The condition function adjudicates based on the information in `EventInfo_t`.
+ * It is likely though that if a new category is needed, the information
+ * currently available in `EventInfo_t` is not enough to decide the response.
+ * In that case, `EventInfo_t` must be extended to hold the newly required
+ * information. In addition, the method `extractEventInfo()` must be modified
+ * to set the new information. The documentation of that method expands on this
+ * topic.
+ *
+ *
  * Changing the trigger logic
  * ---------------------------
  *
@@ -788,24 +813,22 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *    @ref TriggerEfficiencyPlots_Data "trigger gate objects";
  * 3. interpretation of that data structure in terms of trigger firing:
  *    for the loose trigger, we look for the first time the maximum window level
- *    reaches the designated threshold; for the trighter trigger, some
+ *    reaches the designated threshold; for the tighter trigger, some
  *    additional logic is required, discriminating the maximum window level
- *    primitive to the higher TODO
+ *    primitive to the higher threshold, the opposite window level on the lower
+ *    threshold, and setting them in coincidence; then the time the resulting
+ *    gate opens, if any, is the trigger time;
  * 4. configuration of trigger logic parameters: the two requirements (single
  *    window, double window with their minimum number of LVDS primitives)
  *    are read from the module FHiCL configuration; for computing efficiency,
  *    either in the constructor or in a `beginJob()` method we may also prepare
  *    the associations (pairing) between opposite windows or just channels;
  *
- * @todo add ability to discriminate a trigger gate object
+ * @todo add ability to discriminate a trigger gate object?
+ *       discrimination on level _N_ (>=N -> 1, \<N -> 0) can be obtained with
+ *       adding a _-N_ uniform level, flooring on level 0 and (if needed) maxing
+ *       on level 1.
  *
- * @todo Meh. Include:
- *       
- *       * how response and plotting are entangled
- *       * how the selection of event categories happens
- *       * how the result is distributed to different event categories
- *       * how to change the algorithm
- * 
  * 
  * Code style: quantities with units
  * ----------------------------------
@@ -1004,7 +1027,36 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   std::vector<std::string> selectPlotCategories
     (EventInfo_t const& info, PlotCategories_t const& categories) const;
 
-  /// Extracts from `event` the relevant information on the physics event.
+  /**
+   * @brief Extracts from `event` the relevant information on the physics event.
+   *
+   * This returns a `EventInfo_t` object filled as completely as possible.
+   * The result is used in the context of
+   * @ref TriggerEfficiencyPlots_AddingCategory "assigning the `event` to categories".
+   *
+   * This method can read any data product in the event, and has access to the
+   * module configuration. If information is needed from a data product that
+   * is not read yet, the following actions are needed:
+   *
+   * 1. decide the input tag of the data product(s) to be read; this is usually
+   *    delegated to the user via module configuration (see `Config` structure);
+   * 2. the required input tags need to be stored into `TriggerEfficiencyPlots`
+   *    object;
+   * 3. _art_ needs to be informed of the intention of reading the data products
+   *    via `consumes()` or equivalent calls, in `TriggerEfficiencyPlots`
+   *    constructor;
+   * 4. the data product can be read with the usual means in this method.
+   *
+   * For an example of this procedure, see how the configuration parameter
+   * `DetectorParticleTag` is treated: read by `Config::DetectorParticleTag`,
+   * stored in `fDetectorParticleTag`, declared as "consumed" in
+   * `TriggerEfficiencyPlots` constructor. Likewise a known list of data
+   * products can be used: see `GeneratorTags` parameter, read by the sequence
+   * `Config::GeneratorTags`, stored in the class field `fGeneratorTags`,
+   * declared as "consumed" in a loop in `TriggerEfficiencyPlots` constructor,
+   * and read in `extractEventInfo()` to be used within it.
+   *
+   */
   EventInfo_t extractEventInfo(art::Event const& event) const;
   
   /// Computes the trigger response from primitives with the given `threshold`.
