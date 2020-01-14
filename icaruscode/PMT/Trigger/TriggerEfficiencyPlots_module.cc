@@ -317,6 +317,8 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * Data objects for discriminated waveforms
  * -----------------------------------------
  * 
+ * @anchor TriggerEfficiencyPlots_Data
+ *
  * A discriminated waveform is the information whether the level of a waveform
  * is beyond threshold, as function of time.
  * A discriminated waveform may be binary, i.e. with only levels `0` and `1`
@@ -583,14 +585,225 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * Technical description of the module
  * ====================================
  * 
+ * This module reads
+ * @ref TriggerEfficiencyPlots_Data "trigger gate data products" from different
+ * ADC thresholds, and for each threahold it combines the data into a trigger
+ * response depending on a ADC threshold.
+ * It then applies different requirement levels and for each one it fills plots.
+ *
+ * All the input sets (each with its own ADC treshold) are treated independently
+ * from each other.
+ *
+ * We can separate the plots in two categories: the ones which depend on the
+ * trigger response, and the ones which do not.
+ * The latter include event-wide information like the total energy deposited in
+ * the detector by one event. They also include plots that depend on the ADC
+ * threshold, e.g. the largest number of trigger primitives available at any
+ * time during the event. Therefore there are more precisely three plot
+ * categories:
+ *
+ * 1. plots which do not depend on the trigger primitives at all;
+ * 2. plots which depend on the ADC threshold of the trigger primitives,
+ *    but not on the trigger response;
+ * 3. plots which depend on the trigger response (and therefore also on the
+ *    ADC threshold of the trigger primitives).
+ *
+ * In addition, each event is assigned to event categories. These categories
+ * do not depend on trigger primitives. For example, a electron neutrino neutral
+ * current interaction event would be assigned to the neutral current neutrino
+ * interaction category, to the electron neutrino category, and so on.
+ * A set of plot is produced at once for each of the event categories.
+ *
+ * This module is designed as follows:
+ *
+ * * each _art_ event is treated independently from the others
+ *   (this is the norm; method: `analyze()`);
+ * * information for the plots which do not depend on the trigger primitives
+ *   are extracted once per event (method: `extractEventInfo()`);
+ * * the event is assigned its categories (method: `selectedPlotCategories()`,
+ *   with the categories efined in `PlotCategories` global variable);
+ * * for each input primitive set (i.e. for each ADC threshold):
+ *     * trigger logic is applied (method: `combineTriggerPrimitives()`):
+ *         * all trigger primitives are combined in a single nulti-level gate
+ *         * the level of the gate is the count of trigger primitives on which
+ *           the trigger response is based
+ *     * the beam gate is imposed in coincidence (method: `applyBeamGate()`)
+ *     * control is passed to method `plotResponses()` for plots, together with
+ *       the list of all the categories the event belongs:
+ *     * for each trigger requirement, that is a minimum number of
+ *       primitives, the response to that requirement is plotted (as
+ *       efficiency) and the time of the resulting trigger is added into an
+ *       histogram
+ *     * response-independent plots are also filled
+ *     * the event is plotted for all the event categories which apply
+ *
+ * Note that the plots depending on the response may require multiple fillings.
+ * For example, the trigger efficiency plot is a single plot in the plot set
+ * which requires a filling for every requirement level.
+ * In a similar fashion, the plot of trigger time requires one filling for
+ * each requirement level that is met.
+ *
+ *
+ * Organization of the plots
+ * --------------------------
+ *
+ * @anchor TriggerEfficiencyPlots_OrganizationOfPlots
+ *
+ * Plots are written on disk via the standard _art_ service `TFileService`,
+ * which puts them in a ROOT subdirectory named as the instance of this module
+ * being run.
+ *
+ * As described above, there are two "dimensions" for the plot sets: there is
+ * one plot set for each ADC threshold and for each event category, the total
+ * number of plot sets being the product of the options in the two dimensions.
+ *
+ * The code is structured to work by threshold by threshold, because the trigger
+ * response depends on the threshold but not by the event category: the response
+ * is computed once per threshold, then all the plots related to that response
+ * (including all the event categories) are filled.
+ *
+ * The structure in the file reflects this logic, and there are two levels of
+ * ROOT directories inside the one assigned by _art_ to this module:
+ * * the outer level pins down the ADC threshold of the plots inside it;
+ *   the name of the directory follows the pattern `Thr###` (### being the ADC
+ *   threshold), which is the "threshold tag";
+ * * the inner level is the category of events included in the plots, and the
+ *   name of the directories reflect the name of the category as defined in
+ *   the corresponding `PlotCategory` object (`PlotCategory::name()`); this
+ *   defines the "category tag".
+ *
+ * In each inner directory, a complete set of plots is contained.
+ * The name of each plot is a base name for that plot (e.g. `Eff` for the
+ * efficiency plot) with the event category tag and the threshold tag appended
+ * (separated by an underscore character, `"_"`). The title of the plot is also
+ * modified to include the description of the plot category (as defined in
+ * `PlotCategory::description()`) and the ADC threshold.
+ * Therefore, within the same module directory, all plot names are different.
+ *
+ *
+ * Adding a plot
+ * --------------
+ *
+ * When adding a plot, two actions are necessary:
+ *
+ * 1. initialize the new plot
+ * 2. fill the new plot
+ *
+ * The initialization happens in
+ * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()` method.
+ * A request must be issued to the
+ * @ref TriggerEfficiencyPlots_PlotSandboxes "plot sandbox" to "make" the plot.
+ * In general it can be expected that all the arguments `args` in a call
+ * `plots.make<PlotType>(args)` are forwarded to the constructor of `PlotType`,
+ * so that to make a new `PlotType` object one has to consult only the
+ * constructor of that class. Be aware though that the library expects the first
+ * argument to be the ROOT name of the new object and the second to be its ROOT
+ * title.
+ * It is possible to work around this requirement with additional coding.
+ *
+ * The method performing the plotting is `plotResponses()`.
+ * The plots should be filled inside loops going through all plot sets.
+ * The existing code already does that in two loops, one for the plots
+ * depending on the trigger response requirement, and the other for the plots
+ * _not_ depending on it.
+ *
+ *
+ * ### About plot sandboxes
+ *
+ * @anchor TriggerEfficiencyPlots_PlotSandboxes
+ *
+ * For the sake of this module, a plot sandbox is an object similar to a ROOT
+ * `TDirectory`, which can mangle the objects it contains to change ("process")
+ * their name and title, and that interacts properly with `art::TFileDirectory`
+ * so make `TFileService` happy.
+ * The processing of the name and title is used to add the category and
+ * threshold tags to the plot ROOT name and the corresponding annotations to
+ * the plot title, as described
+ * @ref TriggerEfficiencyPlots_OrganizationOfPlots "above".
+ *
+ *
+ * Changing the trigger logic
+ * ---------------------------
+ *
+ * The trigger logic is hard-coded in `analyze()`, but it effectively has a
+ * follow up in the plotting code.
+ * In fact, in `analyze()` the primitives are combined into a single object,
+ * but it is in `plotResponses()` that this object is interpreted to decide
+ * whether the trigger fired according to a requirement.
+ *
+ * To implement a radically different trigger logic, several components need
+ * to be coordinated:
+ *
+ * 1. configuration of trigger logic parameters
+ * 2. combination of trigger primitives;
+ * 3. the data structure the combination is stored in;
+ * 4. interpretation of that data structure in terms of trigger firing;
+ * 5. configuration of the trigger logic from user parameters.
+ *
+ * Because of the design of this module, the first and the third elements are
+ * in different places (causing the necessity of the shared data structure that
+ * is the second element) and changing one typically imply changing the other.
+ *
+ * This module simulates a trigger counting the number of primitives that are
+ * "on" and imposing a required minimum on that number for the trigger to fire.
+ * This is how _this_ implementation includes those elements:
+ *
+ * 1. combination of trigger primitives: primitives are summed into a single
+ *    multilevel gate (with beam gate on top);
+ * 2. the data structure the combination is stored in: a
+ *    @ref TriggerEfficiencyPlots_Data "trigger gate object";
+ * 3. interpretation of that data structure in terms of trigger firing:
+ *    the logic requires a minimum number of primitives being on at the same
+ *    time; the interpretation uses the level of the combined trigger gate as
+ *    the number of primitives on at every time, and decides that the first
+ *    time this number meets the requirement, the trigger fires;
+ * 4. configuration of the trigger logic from user parameters:
+ *    it's a parameter of the module itself (`MinimumPrimitives`).
+ *
+ * An example of how a different trigger logic _could_ be implemented following
+ * a similar model. Let's assume we want a trigger based on two sliding windows.
+ * A window is a group of LVDS signals from neighboring channels. We can split
+ * the whole optical detector channels into many windows, and we can make the
+ * windows overlap: for example, a window includes the first 30 channels behind
+ * one anode plane, the second window includes 30 channels starting from the
+ * fifteenth, the third window includes 30 channels starting from the thirtieth,
+ * and so on. In ICARUS, 30 channels are served in 16 LVDS discriminated
+ * waveforms, i.e. 16 trigger primitives. We may require as a loose trigger
+ * that any window contains at least 10 primitives on at the same time (that is
+ * about 20 PMT channels beyond ADC threshold), and as a tighter trigger that
+ * there is a window with at least 8 trigger primitives on, _and_ the
+ * corresponding window in the opposite TPC has at least 6 primitives on
+ * at the same time. Note that a splitting 7/7 won't do: one of the two windows
+ * must have 8 or more primitives on.
+ * The input primitives from the point of view of the module now become the
+ * "sliding window" combination of the LVDS trigger primitives, as produced e.g.
+ * by `icarus::trigger::SlidingWindowTrigger` module.
+ * How this can be implemented following the pattern of this module:
+ *
+ * 1. combination of trigger primitives: we prepare two primitives:
+ *    one describes the maximum level among all the windows, and the other
+ *    describes the level of the window opposite to the maximum (the way to
+ *    achieve this is quite complicate);
+ * 2. the data structure the combination is stored in: two
+ *    @ref TriggerEfficiencyPlots_Data "trigger gate objects";
+ * 3. interpretation of that data structure in terms of trigger firing:
+ *    for the loose trigger, we look for the first time the maximum window level
+ *    reaches the designated threshold; for the trighter trigger, some
+ *    additional logic is required, discriminating the maximum window level
+ *    primitive to the higher TODO
+ * 4. configuration of trigger logic parameters: the two requirements (single
+ *    window, double window with their minimum number of LVDS primitives)
+ *    are read from the module FHiCL configuration; for computing efficiency,
+ *    either in the constructor or in a `beginJob()` method we may also prepare
+ *    the associations (pairing) between opposite windows or just channels;
+ *
+ * @todo add ability to discriminate a trigger gate object
+ *
  * @todo Meh. Include:
  *       
- *       * how the plots are organised, and how that reflects the algorithm
  *       * how response and plotting are entangled
- *       * the plot sand box mechanism
  *       * how the selection of event categories happens
  *       * how the result is distributed to different event categories
- *       * how to add new plots
  *       * how to change the algorithm
  * 
  * 
@@ -1188,7 +1401,6 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
 
   //
   // simple count
-  // TODO replace by a art tool
   //
 
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> const& gates
