@@ -16,3 +16,5 @@ add_subdirectory(Utilities)
 add_subdirectory(Decode)
 
 #add_subdirectory(LArCVImageMaker)
+
+add_subdirectory(LArProduceML)
