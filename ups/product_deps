@@ -37,7 +37,7 @@ larsoft            v08_40_00
 icarusutil         v08_39_00
 icarus_data        v08_31_01
 genie_xsec         v3_00_04a
-sbndaq_artdaq_core v0_04_02
+sbndaq_artdaq_core v0_04_02_f00
 
 cetbuildtools	v7_14_00	-	only_for_build
 end_product_list
