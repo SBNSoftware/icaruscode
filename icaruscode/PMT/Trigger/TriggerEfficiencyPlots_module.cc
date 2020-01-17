@@ -14,9 +14,6 @@
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
-#if 0
-#include "icaruscode/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
-#endif // 0
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -57,6 +54,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "cetlib_except/exception.h"
 #if 0
 #include "fhiclcpp/types/DelegatedParameter.h"
@@ -574,6 +572,10 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *     to fire;
  * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
  *     trigger primitives;
+ * * `EventDetailsLogCategory` (optional string): if specified, information for
+ *     each single event is output into the specified stream category; if
+ *     the string is specified empty, the default module stream is used, as
+ *     determined by `LogCategory` parameter;
  * * `LogCategory` (string, default `TriggerEfficiencyPlots`): name of category
  *     used to stream messages from this module into message facility.
  * 
@@ -911,6 +913,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
       8_ns
       };
 
+    fhicl::OptionalAtom<std::string> EventDetailsLogCategory {
+      Name("EventDetailsLogCategory"),
+      Comment("name of the category used for event information output")
+      };
+
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
@@ -977,6 +984,8 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// Message facility stream category for output.
   std::string const fLogCategory;
 
+  std::string fLogEventDetails; ///< Steam where to print event info.
+  
   // --- END Configuration variables -------------------------------------------
 
 
@@ -1121,6 +1130,12 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   //
   // more complex parameter parsing
   //
+  if (config().EventDetailsLogCategory(fLogEventDetails)) {
+    // the parameter is somehow set, so fLogEventDetails won't be empty;
+    // but if the parameter value is specified empty, we set it to fLogCategory
+    if (fLogEventDetails.empty()) fLogEventDetails = fLogCategory;
+  } // if EventDetailsLogCategory is specified
+
   std::string const discrModuleLabel = config().TriggerGatesTag();
   for (raw::ADC_Count_t threshold: config().Thresholds()) {
     fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
@@ -1193,8 +1208,12 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
       ;
     for (std::string const& name: selectedPlotCategories)
       log << " \"" << name << "\"";
-    
+    // print the information on the event
   } // local block
+  if (!fLogEventDetails.empty()) {
+    mf::LogTrace(fLogEventDetails)
+      << "Event " << event.id() << ": " << eventInfo;
+  }
 
   //
   // 2. for each threshold:
