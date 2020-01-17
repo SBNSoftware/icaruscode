@@ -314,10 +314,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * accommodate that directly.
  * 
  * 
+ * @anchor TriggerEfficiencyPlots_Data
  * Data objects for discriminated waveforms
  * -----------------------------------------
- * 
- * @anchor TriggerEfficiencyPlots_Data
  *
  * A discriminated waveform is the information whether the level of a waveform
  * is beyond threshold, as function of time.
@@ -408,10 +407,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * does not affect the meaning and they end up being exchanged carelessly.
  * 
  * 
+ * @anchor TriggerEfficiencyPlots_Algorithm
  * Trigger logic algorithm
  * ========================
- * 
- * @anchor TriggerEfficiencyPlots_Algorithm
  * 
  * This section describes the trigger logic algorithm used in
  * `icarus::trigger::TriggerEfficiencyPlots` and its assumptions.
@@ -644,10 +642,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * each requirement level that is met.
  *
  *
+ * @anchor TriggerEfficiencyPlots_OrganizationOfPlots
  * Organization of the plots
  * --------------------------
- *
- * @anchor TriggerEfficiencyPlots_OrganizationOfPlots
  *
  * Plots are written on disk via the standard _art_ service `TFileService`,
  * which puts them in a ROOT subdirectory named as the instance of this module
@@ -708,9 +705,8 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * _not_ depending on it.
  *
  *
- * ### About plot sandboxes
- *
  * @anchor TriggerEfficiencyPlots_PlotSandboxes
+ * ### About plot sandboxes
  *
  * For the sake of this module, a plot sandbox is an object similar to a ROOT
  * `TDirectory`, which can mangle the objects it contains to change ("process")
@@ -722,10 +718,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * @ref TriggerEfficiencyPlots_OrganizationOfPlots "above".
  *
  *
+ * @anchor TriggerEfficiencyPlots_AddingCategory
  * Adding an event category
  * -------------------------
- *
- * @anchor TriggerEfficiencyPlots_AddingCategory
  *
  * Event categories are listed in `PlotCategories`: each one is described by
  * a simple object `PlotCategory` which contains a name (used in ROOT
