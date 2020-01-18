@@ -23,7 +23,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds, ...
-#include "lardataalg/Utilities/quantities/energy.h" // gigaelectronvolt // FIXME
+#include "lardataalg/Utilities/quantities/energy.h" // megaelectronvolt, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "larcorealg/CoreUtils/get_elements.h"
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
@@ -81,10 +81,8 @@
 
 
 //------------------------------------------------------------------------------
-// using GeV = double;
-// FIXME: replace by
+using MeV = util::quantities::megaelectronvolt;
 using GeV = util::quantities::gigaelectronvolt;
-// when `lardataalg/Utilities/quantities/energy.h` is released
 
 using namespace util::quantities::time_literals; // ""_ns ...
 
@@ -1592,7 +1590,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
     
     for (sim::SimEnergyDeposit const& edep: energyDeposits) {
       
-      GeV const e { edep.Energy() }; // assuming it's stored in GeV
+      MeV const e { edep.Energy() }; // assuming it's stored in MeV
       
       detinfo::timescales::simulation_time const t { edep.Time() };
       bool const inSpill
