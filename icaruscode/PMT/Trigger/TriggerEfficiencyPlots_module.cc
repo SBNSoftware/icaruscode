@@ -17,6 +17,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/Utilities/TensorIndices.h" // util::MatrixIndices
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
@@ -27,6 +28,7 @@
 #include "larcorealg/CoreUtils/get_elements.h"
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/zip.h"
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
 #if 0
@@ -65,6 +67,7 @@
 #include "TEfficiency.h"
 #include "TH1F.h"
 #include "TH2F.h"
+#include "TTree.h"
 
 // C/C++ standard libraries
 #include <ostream>
@@ -172,7 +175,6 @@ std::ostream& operator<< (std::ostream& out, EventInfo_t const& info)
   { info.dump(out); return out; }
 
 
-
 //------------------------------------------------------------------------------
 class PlotCategory {
   
@@ -239,6 +241,125 @@ PlotCategories_t const PlotCategories {
     }
 
 }; // PlotCategories[]
+
+
+
+// --- BEGIN -- ROOT tree helpers ----------------------------------------------
+struct TreeHolder {
+
+  TreeHolder() = default;
+  TreeHolder(TTree& tree): fTree(&tree) {}
+
+  TTree& tree() { return *fTree; }
+  TTree const& tree() const { return *fTree; }
+
+    private:
+  TTree* fTree = nullptr;
+
+}; // struct TreeHolder
+
+
+/**
+ * @brief Class managing the serialization of event ID in a simple ROOT tree.
+ *
+ * The tree is supplied by the caller.
+ * This object will create the proper branches into the tree and assign
+ * addresses to them. Then it will assume they will stay assigned.
+ *
+ * On `assignEvent()`, the branch addresses are assigned the values from the
+ * event ID. The tree is not `Fill()`-ed.
+ *
+ * The tree structure is: `Run/i:SubRun/i:Event/i`, with a single branch per
+ * element.
+ */
+struct EventIDTree: public TreeHolder {
+
+  /// Creates the required branches and assigns addresses to them.
+  EventIDTree(TTree& tree);
+
+  /// Fills the information of the specified event.
+  void assignID(art::EventID const& id);
+  void assignEvent(art::Event const& event) { assignID(event.id()); }
+
+  UInt_t fRunNo;
+  UInt_t fSubRunNo;
+  UInt_t fEventNo;
+
+}; // struct EventIDTree
+
+
+/**
+ * @brief Class managing the serialization of event information in a simple ROOT
+ *        tree.
+ *
+ * The tree is supplied by the caller.
+ * This object will create the proper branches into the tree and assign
+ * addresses to them. Then it will assume they will stay assigned.
+ *
+ * On `assignEvent()`, the branch addresses are assigned the values from the
+ * event information. The tree is not `Fill()`-ed.
+ *
+ * The tree structure is:
+ * `CC/i:NC/i:TotE/D:SpillE/D`,
+ * with a single branch per element.
+ *
+ * Branches:
+ *  * `CC` (unsigned integer): number of neutrino CC interactions in the event
+ *  * `NC` (unsigned integer): number of neutrino NC interactions in the event
+ *  * `TotE` (double): total deposited energy in the event [GeV]
+ *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
+ *
+ */
+struct EventInfoTree: public TreeHolder {
+
+  /// Creates the required branches and assigns addresses to them.
+  EventInfoTree(TTree& tree);
+
+  /// Fills the information of the specified event.
+  void assignEvent(EventInfo_t const& info);
+
+  UInt_t fCC;
+  UInt_t fNC;
+  Double_t fTotE;
+  Double_t fSpillE;
+
+}; // struct EventInfoTree
+
+
+/**
+ * @brief Class managing the serialization of trigger responses in a simple ROOT
+ *        tree.
+ *
+ * The tree is supplied by the caller.
+ * This object will create the proper branches into the tree and assign
+ * addresses to them. Then it will assume they will stay assigned.
+ *
+ * On `assignResponse()`, the proper branch address is assigned the specified
+ * trigger response (`true` or `false`).
+ *
+ * The branch structure is: a `RespTxxRxx/O` branch for each threshold (numeric)
+ * and requirement (also numeric).
+ * with a single branch per element.
+ *
+ */
+struct ResponseTree: public TreeHolder {
+
+  /// Constructor: accommodates that many thresholds and requirements.
+  template <typename Thresholds, typename Requirements>
+  ResponseTree
+    (TTree& tree, Thresholds const& thresholds, Requirements const& minReqs);
+
+  /// Assigns the response for the specified trigger.
+  void assignResponse(std::size_t iThr, std::size_t iReq, bool resp);
+
+  // `std::vector<bool>` is too special for us. Let's pack it to go.
+  util::MatrixIndices indices;
+  std::unique_ptr<bool[]> RespTxxRxx;
+
+}; // struct ResponseTree
+
+
+// --- END -- ROOT tree helpers ------------------------------------------------
 
 
 //------------------------------------------------------------------------------
@@ -572,6 +693,9 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *     to fire;
  * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
  *     trigger primitives;
+ * * `EventTreeName` (optional string): if specified, a simple ROOT tree is
+ *     created with the information from each event (see `EventInfoTree` for
+ *     its structure);
  * * `EventDetailsLogCategory` (optional string): if specified, information for
  *     each single event is output into the specified stream category; if
  *     the string is specified empty, the default module stream is used, as
@@ -913,6 +1037,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
       8_ns
       };
 
+    fhicl::OptionalAtom<std::string> EventTreeName {
+      Name("EventTreeName"),
+      Comment("name of a ROOT tree where to store event-by-event information")
+      };
+
     fhicl::OptionalAtom<std::string> EventDetailsLogCategory {
       Name("EventDetailsLogCategory"),
       Comment("name of the category used for event information output")
@@ -1018,6 +1147,10 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// All plots, one set per ADC threshold.
   std::vector<PlotSandbox> fThresholdPlots;
 
+  std::unique_ptr<EventIDTree> fIDTree; ///< Handler of ROOT tree output.
+  std::unique_ptr<EventInfoTree> fEventTree; ///< Handler of ROOT tree output.
+  std::unique_ptr<ResponseTree> fResponseTree; ///< Handler of ROOT tree output.
+
   // --- END Internal variables ------------------------------------------------
 
 
@@ -1076,7 +1209,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
   /// Adds all the `responses` (one per threshold) to the plots.
   void plotResponses(
-    icarus::trigger::ADCCounts_t const threshold,
+    std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plots, EventInfo_t const& info,
     TriggerGateData_t const& primitiveCount
     ) const;
@@ -1141,6 +1274,20 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
     fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
       = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
   }
+
+  if (config().EventTreeName.hasValue()) {
+    std::string treeName;
+    config().EventTreeName(treeName);
+
+    fIDTree = std::make_unique<EventIDTree>
+      (*(fOutputDir.make<TTree>(treeName.c_str(), "Event information")));
+    fEventTree = std::make_unique<EventInfoTree>(fIDTree->tree());
+    fResponseTree = std::make_unique<ResponseTree>(
+      fIDTree->tree(),
+      util::get_elements<0U>(fADCthresholds), fMinimumPrimitives
+      );
+
+  } // if make tree
 
   //
   // input data declaration
@@ -1215,11 +1362,15 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
       << "Event " << event.id() << ": " << eventInfo;
   }
 
+  if (fIDTree) fIDTree->assignEvent(event);
+  if (fEventTree) fEventTree->assignEvent(eventInfo);
+
   //
   // 2. for each threshold:
   //
-  for (auto&& [ thrPair, thrPlots ]: util::zip(fADCthresholds, fThresholdPlots))
-  {
+  for (auto&& [ iThr, thrPair, thrPlots ]
+    : util::enumerate(fADCthresholds, fThresholdPlots)
+  ) {
 
     auto const& [ threshold, dataTag ] = thrPair;
 
@@ -1241,10 +1392,15 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
       selectedPlots.emplace_back(*(thrPlots.findSandbox(name)));
     
     // 1.6. add the response to the appropriate plots
-    plotResponses(threshold, selectedPlots, eventInfo, primitiveCount);
+    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCount);
     
-  } // for
+  } // for thresholds
 
+
+  //
+  // store information in output tree if any
+  //
+  if (fIDTree) fIDTree->tree().Fill();
 
 } // icarus::trigger::TriggerEfficiencyPlots::analyze()
 
@@ -1505,6 +1661,7 @@ GateObject icarus::trigger::TriggerEfficiencyPlots::applyBeamGate
 
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
+  std::size_t iThr,
   icarus::trigger::ADCCounts_t const threshold,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
@@ -1557,7 +1714,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
-  for (OpeningCount_t minCount: fMinimumPrimitives) {
+  for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
     if (fired && (lastMinCount.second < minCount)) {
       // if we haven't passed this minimum yet
@@ -1578,6 +1735,8 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
+    if (fResponseTree) fResponseTree->assignResponse(iThr, iReq, fired);
+
     // go through all the plot categories this event qualifies for
     for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
       
@@ -1646,6 +1805,90 @@ icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
   }
 
 } // icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates()
+
+
+//------------------------------------------------------------------------------
+//--- EventIDTree
+//------------------------------------------------------------------------------
+EventIDTree::EventIDTree(TTree& tree): TreeHolder(tree) {
+
+  this->tree().Branch("RunNo", &fRunNo);
+  this->tree().Branch("SubRunNo", &fSubRunNo);
+  this->tree().Branch("EventNo", &fEventNo);
+
+} // EventIDTree::EventIDTree()
+
+
+//------------------------------------------------------------------------------
+void EventIDTree::assignID(art::EventID const& id) {
+
+  fRunNo = id.run();
+  fSubRunNo = id.subRun();
+  fEventNo = id.event();
+
+} // EventInfoTree::assignID()
+
+
+//------------------------------------------------------------------------------
+//--- EventInfoTree
+//------------------------------------------------------------------------------
+EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
+
+  this->tree().Branch("CC", &fCC);
+  this->tree().Branch("NC", &fNC);
+  this->tree().Branch("TotE", &fTotE);
+  this->tree().Branch("SpillE", &fSpillE);
+
+} // EventInfoTree::EventInfoTree()
+
+
+//------------------------------------------------------------------------------
+void EventInfoTree::assignEvent(EventInfo_t const& info) {
+
+  fCC = info.isWeakChargedCurrent();
+  fNC = info.isWeakNeutralCurrent();
+  fTotE = Double_t(info.DepositedEnergy());
+  fSpillE = Double_t(info.DepositedEnergyInSpill());
+
+} // EventInfoTree::assignEvent()
+
+
+//------------------------------------------------------------------------------
+//--- ResponseTree
+//------------------------------------------------------------------------------
+template <typename Thresholds, typename Requirements>
+ResponseTree::ResponseTree
+  (TTree& tree, Thresholds const& thresholds, Requirements const& minReqs)
+  : TreeHolder(tree)
+  , indices(std::size(thresholds), std::size(minReqs))
+  , RespTxxRxx{ std::make_unique<bool[]>(indices.size()) }
+{
+  std::cout << "Prepared for " << indices.dim<0U>() << "x" << indices.dim<1U>() << " responses." << std::endl;
+
+  for (auto [ iThr, threshold]: util::enumerate(thresholds)) {
+    std::string const thrStr = util::to_string(raw::ADC_Count_t(threshold));
+
+    for (auto [ iReq, req ]: util::enumerate(minReqs)) {
+
+      std::string const branchName
+        = "RespT" + thrStr + "R" + util::to_string(req);
+
+      this->tree().Branch
+        (branchName.c_str(), &(RespTxxRxx[indices(iThr, iReq)]));
+
+    } // for all requirements
+
+  } // for all thresholds
+
+} // ResponseTree::ResponseTree()
+
+
+//------------------------------------------------------------------------------
+void ResponseTree::assignResponse
+  (std::size_t iThr, std::size_t iReq, bool resp)
+{
+  RespTxxRxx[indices(iThr, iReq)] = resp;
+} // ResponseTree::assignResponse()
 
 
 //------------------------------------------------------------------------------

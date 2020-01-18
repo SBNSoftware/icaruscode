@@ -39,6 +39,7 @@ simple_plugin(TriggerEfficiencyPlots module
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
   ${ROOT_HIST}
+  ${ROOT_TREE}
   ${ROOT_CORE}
   )
 
