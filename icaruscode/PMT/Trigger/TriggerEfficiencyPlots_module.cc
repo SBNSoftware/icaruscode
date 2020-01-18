@@ -90,19 +90,40 @@ using namespace util::quantities::time_literals; // ""_ns ...
 //------------------------------------------------------------------------------
 /// Information about the event.
 struct EventInfo_t {
-
+  
+  /// Constructor. As if nobody noticed.
+  EventInfo_t() { fInteractions.fill(0U); }
+  
   // --- BEGIN Query interface -----------------------------------------------
   /// @name Query interface
   /// @{
 
-  /// Returns whether the event is generated as a neutrino interaction.
-  bool isWeakChargedCurrent() const { return fInteractionTypeMask & itWCC; }
+  /// Returns the number of weak charged current interactions in the event.
+  unsigned int nWeakChargedCurrentInteractions() const
+    { return fInteractions[itWCC]; }
+
+  /// Returns the number of weak neutral current interactions in the event.
+  unsigned int nWeakNeutralCurrentInteractions() const
+    { return fInteractions[itWNC]; }
+
+  /// Returns the number of weak current interactions in the event.
+  unsigned int nWeakCurrentInteractions() const
+    {
+      return
+        nWeakChargedCurrentInteractions() + nWeakNeutralCurrentInteractions();
+    }
+
+  /// Returns whether the event is generated as a neutrino CC interaction.
+  bool isWeakChargedCurrent() const
+    { return nWeakChargedCurrentInteractions() > 0U; }
+
+  /// Returns whether the event is generated as a neutrino NC interaction.
+  bool isWeakNeutralCurrent() const
+    { return nWeakNeutralCurrentInteractions() > 0U; }
 
   /// Returns whether the event is generated as a neutrino interaction.
-  bool isWeakNeutralCurrent() const { return fInteractionTypeMask & itWNC; }
-
-  /// Returns whether the event is generated as a neutrino interaction.
-  bool isNeutrino() const { return fInteractionTypeMask & itWC; }
+  bool isNeutrino() const
+    { return isWeakChargedCurrent() || isWeakNeutralCurrent(); }
   
   /// Returns the total energy deposited in the detector during the event [GeV]
   GeV DepositedEnergy() const { return fEnergyDepTotal; }
@@ -118,11 +139,13 @@ struct EventInfo_t {
   /// @name Set interface
   /// @{
 
-  /// Marks this event as including a weak charged current interaction.
-  void SetWeakChargedCurrent() { fInteractionTypeMask |= itWCC; }
+  /// Marks this event as including _n_ more weak charged current interactions.
+  void AddWeakChargedCurrentInteractions(unsigned int n = 1U)
+    { fInteractions[itWCC] += n; }
 
-  /// Marks this event as including a weak neutral current interaction.
-  void SetWeakNeutralCurrent() { fInteractionTypeMask |= itWNC; }
+  /// Marks this event as including _n_ more weak neutral current interactions.
+  void AddWeakNeutralCurrentInteractions(unsigned int n = 1U)
+    { fInteractions[itWNC] += n; }
 
   /// Sets the total deposited energy of the event [GeV]
   void SetDepositedEnergy(GeV e) { fEnergyDepTotal = e; }
@@ -138,8 +161,10 @@ struct EventInfo_t {
     {
       out << "Event contains:";
       if (isNeutrino()) {
-        if (isWeakChargedCurrent()) out << " CC";
-        if (isWeakNeutralCurrent()) out << " NC";
+        if (nWeakChargedCurrentInteractions())
+          out << " " << nWeakChargedCurrentInteractions() << " CC";
+        if (nWeakNeutralCurrentInteractions())
+          out << " " << nWeakNeutralCurrentInteractions() << " NC";
       }
       else {
         out << " no neutrino interaction";
@@ -153,19 +178,17 @@ struct EventInfo_t {
     private:
 
   // --- BEGIN interaction type constants ------------------------------------
-  using InteractionType_t = std::size_t;
-  static constexpr InteractionType_t itWCC = 0x01; ///< Charged weak current.
-  static constexpr InteractionType_t itWNC = 0x02; ///< Neutral weak current.
-
-  static constexpr InteractionType_t itWC = itWNC | itWCC; ///< Neutral current.
+  
+  static constexpr std::size_t itWCC { 0U }; ///< Charged weak current.
+  static constexpr std::size_t itWNC { 1U }; ///< Neutral weak current.
+  static constexpr std::size_t NInteractionTypes { 2U };
 
   // --- END interaction type constants --------------------------------------
 
-  InteractionType_t fInteractionTypeMask {}; ///< Type of interaction.
+  std::array<unsigned int, NInteractionTypes> fInteractions;
 
   GeV fEnergyDepTotal { 0.0 }; ///< Total deposited energy [GeV]
   GeV fEnergyDepSpill { 0.0 }; ///< Total deposited energy [GeV]
-
 
 }; // struct EventInfo_t
 
@@ -1561,8 +1584,8 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
         // interaction type (CC, NC)
         //
         switch (truth.GetNeutrino().CCNC()) {
-          case simb::kCC: info.SetWeakChargedCurrent(); break;
-          case simb::kNC: info.SetWeakNeutralCurrent(); break;
+          case simb::kCC: info.AddWeakChargedCurrentInteractions(); break;
+          case simb::kNC: info.AddWeakNeutralCurrentInteractions(); break;
           default:
             mf::LogWarning(fLogCategory)
               << "Event " << event.id() << " has unexpected NC/CC flag ("
@@ -1843,8 +1866,8 @@ EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
 //------------------------------------------------------------------------------
 void EventInfoTree::assignEvent(EventInfo_t const& info) {
 
-  fCC = info.isWeakChargedCurrent();
-  fNC = info.isWeakNeutralCurrent();
+  fCC = info.nWeakChargedCurrentInteractions();
+  fNC = info.nWeakNeutralCurrentInteractions();
   fTotE = Double_t(info.DepositedEnergy());
   fSpillE = Double_t(info.DepositedEnergyInSpill());
 

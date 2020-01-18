@@ -56,7 +56,7 @@ physics: {
       
     } # triggerplots
     
-  } # producers
+  } # analyzers
   
   plots: [ triggerplots ]
   
