@@ -105,6 +105,12 @@ struct EventInfo_t {
   /// Returns whether the event is generated as a neutrino interaction.
   bool isNeutrino() const { return fInteractionTypeMask & itWC; }
   
+  bool isNu_mu() const { return nu_mu; }
+  bool isNu_e() const { return nu_e; }
+
+  /// Returns the neutrino PDG code
+  int NeutrinoPDG() const { return fNeutrinoPDG; }
+
   /// Returns the total energy deposited in the detector during the event [GeV]
   GeV DepositedEnergy() const { return fEnergyDepTotal; }
   
@@ -125,6 +131,12 @@ struct EventInfo_t {
   /// Marks this event as including a weak neutral current interaction.
   void SetWeakNeutralCurrent() { fInteractionTypeMask |= itWNC; }
 
+  void SetNu_mu(bool numu) { nu_mu = numu; }
+  void SetNu_e(bool nue) { nu_e = nue; }
+
+  /// Marks this event's neutrino type
+  void SetNeutrinoPDG(int NU) { fNeutrinoPDG = NU; }
+
   /// Sets the total deposited energy of the event [GeV]
   void SetDepositedEnergy(GeV e) { fEnergyDepTotal = e; }
 
@@ -141,6 +153,9 @@ struct EventInfo_t {
       if (isNeutrino()) {
         if (isWeakChargedCurrent()) out << " CC";
         if (isWeakNeutralCurrent()) out << " NC";
+
+		if (isNu_mu()) out << "nu_mu";
+		if (isNu_e()) out << "nu_e";
       }
       else {
         out << " no neutrino interaction";
@@ -167,6 +182,10 @@ struct EventInfo_t {
   GeV fEnergyDepTotal { 0.0 }; ///< Total deposited energy [GeV]
   GeV fEnergyDepSpill { 0.0 }; ///< Total deposited energy [GeV]
 
+  int fNeutrinoPDG { 0 };
+  
+  bool nu_mu { false };
+  bool nu_e { false };
 
 }; // struct EventInfo_t
 
@@ -219,8 +238,14 @@ using PlotCategories_t = std::vector<PlotCategory>;
  * category name  | condition
  * -------------- | ------------------------------------------------------------
  * `All`          | any event
+ *  ---Nu_mu      |
+ *  ---Nu_e       |
  * `NuCC`         | at least one generated charged current neutrino interaction
+ *  ---Nu_mu      |
+ *  ---Nu_e       |
  * `NuNC`         | at least one generated neutral current neutrino interaction
+ *  ---Nu_mu      |
+ *  ---Nu_e       |
  * 
  * 
  */
@@ -231,13 +256,43 @@ PlotCategories_t const PlotCategories {
     },
 
   PlotCategory{
+	"All nu_mu", "nu_mu",
+    [](EventInfo_t const& info){ return info.isNu_mu(); }
+	},
+
+  PlotCategory{
+	"All nu_e", "nu_e",
+    [](EventInfo_t const& info){ return info.isNu_e(); }
+	},
+
+  PlotCategory{
     "NuCC", "CC",
     [](EventInfo_t const& info){ return info.isWeakChargedCurrent(); }
     },
 
   PlotCategory{
+    "NuCC_mu", "CC_mu",
+    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_mu()); }
+    },
+
+  PlotCategory{
+    "NuCC_e", "CC_e",
+    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_e()); }
+    },
+
+  PlotCategory{
     "NuNC", "NC",
     [](EventInfo_t const& info){ return info.isWeakNeutralCurrent(); }
+    },
+
+  PlotCategory{
+    "NuNC_mu", "NC_mu",
+    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_mu()); }
+    },
+
+  PlotCategory{
+    "NuNC_e", "NC_e",
+    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_e()); }
     }
 
 }; // PlotCategories[]
@@ -1340,6 +1395,22 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
         //
         // interaction type (CC, NC)
         //
+
+        info.SetNeutrinoPDG(truth.GetNeutrino().Nu().PdgCode());
+
+		switch (truth.GetNeutrino().Nu().PdgCode()) {
+		  case 14:
+		  case -14:
+			info.SetNu_mu(true);
+			info.SetNu_e(false);
+			break;
+		  case 12:
+		  case -12:
+			info.SetNu_e(true);
+			info.SetNu_mu(false);
+			break;
+		}
+
         switch (truth.GetNeutrino().CCNC()) {
           case simb::kCC: info.SetWeakChargedCurrent(); break;
           case simb::kNC: info.SetWeakNeutralCurrent(); break;
