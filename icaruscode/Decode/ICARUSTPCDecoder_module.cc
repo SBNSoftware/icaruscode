@@ -98,9 +98,6 @@ void ICARUSTPCDecoder::produce(art::Event & event)
     // storage for waveform
     std::unique_ptr<std::vector<raw::RawDigit>> product_collection(new std::vector<raw::RawDigit>);
 
-    std::cout << "**************** PROCESSING NEW EVENT **********************" << std::endl;
-    std::cout << "--> fragments size: " << daq_handle->size() << std::endl;
-
     // storage for header info
    // std::unique_ptr<std::vector<tpcAnalysis::HeaderData>> header_collection(new std::vector<tpcAnalysis::HeaderData>);
     for (auto const &rawfrag: *daq_handle) 
@@ -108,8 +105,6 @@ void ICARUSTPCDecoder::produce(art::Event & event)
       //process_fragment(event, rawfrag, product_collection, header_collection);
       process_fragment(event, rawfrag, product_collection);
     }
-
-    std::cout << "================= DONE PROCESSING EVENT ==================" << std::endl;
 
     event.put(std::move(product_collection));
 
@@ -125,8 +120,6 @@ void ICARUSTPCDecoder::process_fragment(art::Event                              
   
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment fragment(frag);
-
-    std::cout << "---> FragmentID: " << frag.fragmentID() << ", _fragment_id: " << _fragment_id << ", # boards: " << fragment.nBoards() << std::endl;
     
     size_t nBoardsPerFragment = fragment.nBoards();
     size_t nChannelsPerBoard  = fragment.nChannelsPerBoard();
@@ -140,9 +133,6 @@ void ICARUSTPCDecoder::process_fragment(art::Event                              
   
         _header_ana_tree->Fill();
 
-        std::cout << "    --> Processing board " << i_b << ", ev # " << _event_number << ", time: " << _timestamp 
-                  << ", # channels: " << fragment.nChannelsPerBoard() << ", # samples: " << fragment.nSamplesPerChannel() << std::endl;
-
         size_t boardId = nChannelsPerBoard * (nBoardsPerFragment * _fragment_id + i_b);
 
         //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
@@ -152,8 +142,6 @@ void ICARUSTPCDecoder::process_fragment(art::Event                              
             raw::ChannelID_t           channel_num = boardId + i_ch;
             raw::RawDigit::ADCvector_t wvfm(fragment.nSamplesPerChannel());
 
-            std::cout << "        --> i_ch: " << i_ch << ", boardId: " << boardId << ", chan: " << channel_num << std::endl;
-
             for(size_t i_t=0; i_t < fragment.nSamplesPerChannel(); ++i_t) {
   	            wvfm[i_t] = fragment.adc_val(i_b,i_ch,i_t);
             }
@@ -162,8 +150,6 @@ void ICARUSTPCDecoder::process_fragment(art::Event                              
             product_collection->emplace_back(channel_num,fragment.nSamplesPerChannel(),wvfm);
         }//loop over channels
     }//loop over boards
-
-    std::cout << "Total number of channels added is " << product_collection->size() << std::endl;
 
   /*std::unordered_map<uint16_t,sbnddaq::NevisTPC_Data_t> waveform_map;
     size_t n_waveforms = fragment.decode_data(waveform_map);
