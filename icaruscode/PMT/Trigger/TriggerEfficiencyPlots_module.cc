@@ -1863,7 +1863,6 @@ ResponseTree::ResponseTree
   , indices(std::size(thresholds), std::size(minReqs))
   , RespTxxRxx{ std::make_unique<bool[]>(indices.size()) }
 {
-  std::cout << "Prepared for " << indices.dim<0U>() << "x" << indices.dim<1U>() << " responses." << std::endl;
 
   for (auto [ iThr, threshold]: util::enumerate(thresholds)) {
     std::string const thrStr = util::to_string(raw::ADC_Count_t(threshold));
