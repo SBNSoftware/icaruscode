@@ -29,6 +29,8 @@ icarus_pandora.ShouldRunSlicing:                 true
 icarus_pandora.ShouldRunNeutrinoRecoOption:      true
 icarus_pandora.ShouldRunCosmicRecoOption:        true
 icarus_pandora.ShouldPerformSliceId:             true
+# ADDED TO ENABLE THE TRAINING STUFF
+icarus_pandora.EnableMCParticles:                true
 
 icarus_pandorawriter:                            @local::icarus_basicpandora
 icarus_pandorawriter.ConfigFile:                 "PandoraSettings_Write.xml"
