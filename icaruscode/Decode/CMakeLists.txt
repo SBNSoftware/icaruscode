@@ -1,22 +1,35 @@
-#find_ups_product(artdaq_core)
-#find_ups_product(sbndaq_artdaq_core)
+cet_enable_asserts()
 
-simple_plugin( ICARUSTPCDecoder module
-#  tpcAnalysis_MODE
-  sbndaq-artdaq-core_Overlays_ICARUS 
-  artdaq-core_Utilities
-  ${LARDATAOBJ}
-  lardataobj_RawData
-  ${ART_UTILITIES}
-  ${FHICLCPP}
-  ${MF_MESSAGELOGGER}
-  ${MF_UTILITIES}
-  ${ART_FRAMEWORK_CORE}
-  ${ROOT_BASIC_LIB_LIST}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-)
+art_make(
+          MODULE_LIBRARIES
+                        sbndaq-artdaq-core_Overlays_ICARUS 
+                        artdaq-core_Utilities
+                        larcorealg_Geometry
+                        larcore_Geometry_Geometry_service
+                        lardata_Utilities
+                        larevt_Filters
+                        lardataobj_RawData
+                        lardata_ArtDataHelper
+                        ${ROOT_BASIC_LIB_LIST}
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                        ${ART_ROOT_IO_TFILE_SUPPORT}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        ${ART_UTILITIES}
+                        art_Persistency_Common canvas
+                        art_Persistency_Provenance canvas
+                        art_Utilities canvas
+                        ${MF_MESSAGELOGGER}
+                        ${MF_UTILITIES}
+                        ${FHICLCPP}
+                        cetlib cetlib_except
+        )
+
 install_headers()
 install_fhicl()
 install_source()
+
+# Add our tools directory
+add_subdirectory(DecoderTools)
+
