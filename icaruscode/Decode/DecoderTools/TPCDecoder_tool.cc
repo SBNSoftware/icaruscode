@@ -169,7 +169,7 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
 void TPCDecoder::outputDataProducts(art::Event& event)
 {
     // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
-//    std::sort(fRawDigitCollection->begin(),fRawDigitCollection->end());
+    std::sort(fRawDigitCollection->begin(),fRawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
 
     // Now transfer ownership to the event store
     event.put(std::move(fRawDigitCollection));
