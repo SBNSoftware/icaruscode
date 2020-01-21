@@ -125,6 +125,7 @@ struct EventInfo_t {
   bool isNeutrino() const
     { return isWeakChargedCurrent() || isWeakNeutralCurrent(); }
   
+  /// Returns which neutrino flavor is present in an event
   bool isNu_mu() const { return nu_mu; }
   bool isNu_e() const { return nu_e; }
 
@@ -153,6 +154,7 @@ struct EventInfo_t {
   void AddWeakNeutralCurrentInteractions(unsigned int n = 1U)
     { fInteractions[itWNC] += n; }
 
+  /// Marks the neutrino flavor
   void SetNu_mu(bool numu) { nu_mu = numu; }
   void SetNu_e(bool nue) { nu_e = nue; }
 
@@ -1636,6 +1638,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
       
       if (truth.NeutrinoSet()) {
         //
+        // interaction flavor (nu_mu, nu_e)
         // interaction type (CC, NC)
         //
 
@@ -1645,12 +1648,10 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
           case 14:
           case -14:
             info.SetNu_mu(true);
-            info.SetNu_e(false);
             break;
           case 12:
           case -12:
             info.SetNu_e(true);
-            info.SetNu_mu(false);
             break;
         }
 
