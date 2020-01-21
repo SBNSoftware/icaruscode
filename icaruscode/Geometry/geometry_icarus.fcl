@@ -53,8 +53,8 @@ BEGIN_PROLOG
 icarus_single_induction_geometry: {
   SurfaceY:        6.9e2                   #in cm, vertical distance to the surface
   Name:            "icarus"
-  GDML:            "icarus_complete_light.gdml" # see NOTE above
-  ROOT:            "icarus_complete_light.gdml" # see NOTE above
+  GDML:            "icarus_complete_no_overburden.gdml" # see NOTE above
+  ROOT:            "icarus_complete_no_overburden.gdml" # see NOTE above
   DisableWiresInG4: true
 } # icarus_single_induction_geometry
 
