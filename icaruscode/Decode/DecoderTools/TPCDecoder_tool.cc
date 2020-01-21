@@ -149,6 +149,9 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
 
         size_t boardId = nChannelsPerBoard * (nBoardsPerFragment * fragment_id + board);
 
+        // Get the pointer to the start of this board's block of data
+        const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+
         //A2795DataBlock const& block_data = *(crate_data.BoardDataBlock(i_b));
         for(size_t channel = 0; channel < physCrateFragment.nChannelsPerBoard(); channel++)
         {
@@ -156,8 +159,10 @@ void TPCDecoder::process_fragment(const artdaq::Fragment &fragment)
             raw::ChannelID_t           channel_num = boardId + channel;
             raw::RawDigit::ADCvector_t wvfm(physCrateFragment.nSamplesPerChannel());
 
-            for(size_t tick = 0; tick < physCrateFragment.nSamplesPerChannel(); tick++) 
-                wvfm[tick] = physCrateFragment.adc_val(board,channel,tick);
+            // It seems that the data is read from each channel for each tick so the 
+            // loop indices below are chosen to pick out the "right" ticks for a given channel
+            for(size_t tick = 0; tick < physCrateFragment.nSamplesPerChannel(); tick++)
+                wvfm[tick] = dataBlock[channel + tick * physCrateFragment.nChannelsPerBoard()];
         
             fRawDigitCollection->emplace_back(channel_num,physCrateFragment.nSamplesPerChannel(),wvfm);
         }//loop over channels
