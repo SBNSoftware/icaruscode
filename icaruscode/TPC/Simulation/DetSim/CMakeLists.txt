@@ -42,7 +42,6 @@ simple_plugin(SimWireICARUS "module"
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData
-                           lardata_DetectorInfoServices_DetectorClocksServiceStandard_service # BUG note that we link to a specific service implementation
                            icaruscode_Utilities_SignalShapingServiceICARUS_service
                            larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service

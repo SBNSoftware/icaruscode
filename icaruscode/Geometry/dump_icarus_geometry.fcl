@@ -25,12 +25,17 @@ services: {
     destinations: {
       GeometryLog: {
         type: file
+        
         filename:  "ICARUS-geometry.txt"
         threshold:  INFO
         categories: {
           DumpGeometry: { limit: -1 }
           default: { limit: 0 }
         }
+      }
+      CriticalLog: {
+        type: cerr
+        threshold:  SYSTEM
       }
     } # destinations
   } # message
