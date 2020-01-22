@@ -2,8 +2,6 @@
 #include "singles.fcl"
 #include "larproperties.fcl"
 #include "magfield_larsoft.fcl"
-#include "hitalgorithms.fcl"
-#include "clustermodules.fcl"
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
 #include "services_icarus.fcl"
@@ -26,7 +24,7 @@ physics:
 {
  analyzers:
  {
-   purityana:  @local::standard_clusterana
+   purityana:  { module_type: "ICARUSPurityDQM" }
  }
 
  #define the producer and filter modules for this path, order matters, 
@@ -52,5 +50,5 @@ outputs:
 
 
 physics.analyzers.purityana.RawModuleLabel: ["daq0", "daq1", "daq2", "daq3"]
-physics.analyzers.purityana.module_type:    "ICARUSPurityDQM"
+#physics.analyzers.purityana.module_type:    "ICARUSPurityDQM"
 physics.analyzers.purityana.ValoreTauFCL:  600000.
