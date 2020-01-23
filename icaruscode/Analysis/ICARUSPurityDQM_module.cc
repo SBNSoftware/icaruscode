@@ -58,6 +58,7 @@
 #include <TGraphAsymmErrors.h>
 #include "TF1.h"
 #include "TCanvas.h"
+#include "TNtuple.h"
 
 class TH1F;
 class TH2F;
@@ -108,6 +109,9 @@ namespace cluster {
 
     bool fPersistPurityInfo;
     
+
+    TNtuple* purityTuple;
+
   }; // class ICARUSPurityDQM
   
 }
@@ -162,7 +166,9 @@ namespace cluster{
     puritytpc2 = tfs->make<TH1F>("puritytpc2","puritytpc2",20000,-10,10);
     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
     purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
-    
+
+    purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
+
   }
   
       
@@ -229,39 +235,37 @@ namespace cluster{
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
+      std::cout << " Inizia Purity ICARUS Ana " << std::endl;
+      // code stolen from TrackAna_module.cc
+      art::ServiceHandle<geo::Geometry>      geom;
+      unsigned int  fDataSize;
+      std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
+      // get all hits in the event
+      //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
+      
+      //to get run and event info, you use this "eventAuxillary()" object.
+      art::Timestamp ts = evt.time();
+      std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
     
-    std::cout << " Inizia Purity ICARUS Ana " << std::endl;
-    // code stolen from TrackAna_module.cc
-    art::ServiceHandle<geo::Geometry>      geom;
-    unsigned int  fDataSize;
-    std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
-    // get all hits in the event
-    //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
-    
-    //to get run and event info, you use this "eventAuxillary()" object.
-    art::Timestamp ts = evt.time();
-    std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
-    
-    fRun->Fill(evt.run());
-    fRunSub->Fill(evt.run(),evt.subRun());
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-    std::vector<const raw::RawDigit*> rawDigitVec;
-    
-    
-    //setup output vector
-    std::unique_ptr< std::vector<anab::TPCPurityInfo> > outputPtrVector(new std::vector<anab::TPCPurityInfo>() );
-    std::vector<anab::TPCPurityInfo> outputVec(*outputPtrVector);
-    
-    anab::TPCPurityInfo purity_info;
-    purity_info.Run = evt.run();
-    purity_info.Subrun = evt.subRun();
-    purity_info.Event = evt.event();
+      fRun->Fill(evt.run());
+      fRunSub->Fill(evt.run(),evt.subRun());
+      art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+      std::vector<const raw::RawDigit*> rawDigitVec;
 
-    std::cout << "Calling at the beginning…" << std::endl;    //    std::cout<<"HERE"<<std::endl;
-    purity_info.Print();
-    // std::cout<<"DONE"<<std::endl;
+      //setup output vector
+      std::unique_ptr< std::vector<anab::TPCPurityInfo> > outputPtrVector(new std::vector<anab::TPCPurityInfo>() );
+      std::vector<anab::TPCPurityInfo> outputVec(*outputPtrVector);
+    
+      anab::TPCPurityInfo purity_info;
+      purity_info.Run = evt.run();
+      purity_info.Subrun = evt.subRun();
+      purity_info.Event = evt.event();
 
-    for(const auto& digitlabel : fDigitModuleLabel)
+      std::cout << "Calling at the beginning…" << std::endl;    //    std::cout<<"HERE"<<std::endl;
+      purity_info.Print();
+      // std::cout<<"DONE"<<std::endl;
+      
+      for(const auto& digitlabel : fDigitModuleLabel)
       {
 	evt.getByLabel(digitlabel, digitVecHandle);
 	std::vector<const raw::RawDigit*> rawDigitVec;
@@ -917,12 +921,14 @@ namespace cluster{
 			purity_info.Event = evt.event();
 			purity_info.TPC = tpc_number;
 			purity_info.Attenuation = slope_purity_exo;
-			
+
+			purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
+
 			std::cout << "Calling after filling attenuation … " << std::endl;
 			purity_info.Print();
 			outputVec.push_back(purity_info);
-			
-                        //std::cout << ts << " is time event " << std::endl;
+        
+			//std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
@@ -950,7 +956,7 @@ namespace cluster{
 	  }
 	}
 
-	std::cout << "Delete bigg stuff." << std::endl;
+	std::cout << "Delete big stuff." << std::endl;
 
 	delete www0;
 	delete sss0;
@@ -987,11 +993,10 @@ namespace cluster{
       auto info = outputVec[i_info];
       info.Print();
     }
+
     
-    //put info onto the event
+   //put info onto the event
     evt.put(std::move(outputPtrVector));
-    
-    
   } // produces
   
 } //end namespace
