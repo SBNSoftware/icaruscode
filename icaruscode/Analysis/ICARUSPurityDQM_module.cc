@@ -35,8 +35,8 @@
 //LArSoft includes
 #include "larcore/Geometry/Geometry.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
-#include "nutools/ParticleNavigation/ParticleList.h"
-#include "nutools/ParticleNavigation/EmEveIdCalculator.h"
+#include "nug4/ParticleNavigation/ParticleList.h"
+#include "nug4/ParticleNavigation/EmEveIdCalculator.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/Wire.h"
@@ -47,17 +47,14 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 
-<<<<<<< HEAD
 //Database Connection Files
-#include "../../MetricManagerShim/MetricManager.hh"
-#include "../../MetricConfig/ConfigureRedis.hh"
+//#include "../../MetricManagerShim/MetricManager.hh"
+//#include "../../MetricConfig/ConfigureRedis.hh"
 
-=======
 //purity info class
 #include "icaruscode/IcarusObj/TPCPurityInfo.hh"
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 
-#include "art/Framework/Core/EDAnalyzer.h"
+#include "art/Framework/Core/EDProducer.h"
 #include <TMath.h>
 #include <TH1F.h>
 #include "TH2D.h"
@@ -76,7 +73,7 @@ class TH2F;
 
 
 ///Cluster finding and building 
-namespace cluster {
+namespace icarus {
    
   class ICARUSPurityDQM : public art::EDProducer {
     
@@ -92,39 +89,7 @@ namespace cluster {
     int Nothere(std::vector<int>* a, int b);
     int Notheref(std::vector<float>* a, float b);
     Double_t FoundMeanLog(std::vector<float>* a,float b);
-<<<<<<< HEAD
 
-  private:
-    //TH1F* fNClusters;
-    //TH1F* fNHitInCluster;
-    //TH1F* fClusterNW;
-    //TH1F* fClusterNS;
-    // Cosmic Rays
-    //TH1F* fHitTime; 
-    //TH1F* fHitArea;
-    //TH1F* fHitIntegral;
-    //TH2D* fHitAreaTime;
-    TH1F* purityvalues;
-    //TH2D* h_basediff2;
-    //TH1F* h_basediff;
-    TH1F* h_rms;
-    TH1F* fRun; 
-    TH2D* fRunSub;
-    TProfile2D* fRunSubPurity;
-    TProfile2D* fRunSubPurity2;
-    TProfile2D* fRunSubPurity3;
-    TH1F* pur0;
-    TH1F* pur1;
-    TH1F* pur2;
-    TH1F* pur3;
-
-
-
-    std::string fHitsModuleLabel;
-    std::string fClusterModuleLabel;
-    std::string fVertexModuleLabel;
-=======
-    
   private:
 
     TH1F* puritytpc0;
@@ -146,76 +111,27 @@ namespace cluster {
     TH1F* fRun; 
     TH2D* fRunSub;
 
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
     std::vector<art::InputTag>  fDigitModuleLabel;
-    short fPrintLevel;
+    //short fPrintLevel;
+
     float fValoretaufcl; 
 
     bool fPersistPurityInfo;
     
-<<<<<<< HEAD
     std::ofstream outFile;
 
-    //adding in the connection to the Redis Database                                                                                            
-    //  redisContext* context;
-
-    // std::string fRedisHostname;
-    //int fRedisPort;       
-
-=======
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
   }; // class ICARUSPurityDQM
   
 }
 
 //#endif 
 
-namespace cluster{
+namespace icarus{
 
   //--------------------------------------------------------------------
   ICARUSPurityDQM::ICARUSPurityDQM(fhicl::ParameterSet const& pset)
-<<<<<<< HEAD
-    : EDAnalyzer(pset)
-
-    , fHitsModuleLabel      (pset.get< std::string > ("HitsModuleLabel")         )
-    , fClusterModuleLabel   (pset.get< std::string > ("ClusterModuleLabel"))
-    , fVertexModuleLabel    (pset.get< std::string > ("VertexModuleLabel")         )
-    , fDigitModuleLabel     (pset.get< std::string > ("RawModuleLabel"))
-    , fPrintLevel           (pset.get< short >       ("PrintLevel"))
-    , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
-      //, fRedisHostname(pset.get<std::string>("RedisHostname","icarus-db02")) 
-      //, fRedisPort(pset.get<int>("RedisPort",6379))  
-  {
-
-    //fhicl::ParameterSet metric_pset = pset.get<fhicl::ParameterSet>("metric_config");
-    //std::string TPCGroupName = metric_pset.get<std::string>("";)
-  
-    if(fPrintLevel == -1) {
-      // encode the clustermodule label into an integer
-      moduleID = 0;
-      size_t found = fClusterModuleLabel.find("traj"); if(found != std::string::npos) moduleID = 1;
-      found = fClusterModuleLabel.find("line"); if(found != std::string::npos) moduleID = 2;
-      found = fClusterModuleLabel.find("fuzz"); if(found != std::string::npos) moduleID = 3;
-      found = fClusterModuleLabel.find("pand"); if(found != std::string::npos) moduleID = 4;
-      std::cout<<"fClusterModuleLabel "<<fClusterModuleLabel<<" ID "<<moduleID<<"\n";
-      
-      std::string fileName = fClusterModuleLabel + ".tru";
-      outFile.open(fileName);
-
-    }
-
-    
-    //Initialise metrics manager and configuration
-    // GRAY: initialize metric manager
-    sbndqm::InitializeMetricManager(pset.get<fhicl::ParameterSet>("metrics"));
-    // GRAY: initialize metric config
-    sbndqm::GenerateMetricConfig(pset.get<fhicl::ParameterSet>("metric_config"));
-    
-  
-=======
     : EDProducer(pset)
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
-    , fPrintLevel           (pset.get< short >       ("PrintLevel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
     , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",true))
   {
@@ -227,7 +143,12 @@ namespace cluster{
       produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::No);      
 
     
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
+    for(const auto& digitlabel2 : fDigitModuleLabel)
+      {
+	
+	std::cout<<"fDigitModuleLabel "<<digitlabel2<<"\n";
+      }
+ 
   }
   
   //------------------------------------------------------------------
@@ -242,7 +163,6 @@ namespace cluster{
     // get access to the TFile service
     art::ServiceHandle<art::TFileService> tfs;
   
-<<<<<<< HEAD
     //fNClusters=tfs->make<TH1F>("fNoClustersInEvent","Number of Clusters", 400,0 ,400);
     //fNHitInCluster = tfs->make<TH1F>("fNHitInCluster","NHitInCluster",1000,0,10000);
     //fHitArea = tfs->make<TH1F>("fHitArea","fHitArea",1000,0,22000);
@@ -251,21 +171,6 @@ namespace cluster{
     //fHitAreaTime = tfs->make<TH2D>("fHitAreaTime","fHitAreaTime",1000,0,22000,25,0,2500);
     //fClusterNW = tfs->make<TH1F>("fClusterNW","fClusterNW",1000,0,2000);
     //fClusterNS = tfs->make<TH1F>("fClusterNS","fClusterNS",1000,0,2500);
-    purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
-    //h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",200,0,0);
-    h_rms = tfs->make<TH1F>("h_rms","h_rms",2000,0,20);
-    //h_basediff2 = tfs->make<TH2D>("h_basediff2","h_basediff2",200,0,0,200,0,0);
-    fRun=tfs->make<TH1F>("fRun","Events per run", 4000,0.5 ,4000.5);
-    fRunSub=tfs->make<TH2D>("fRunSub","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-    fRunSubPurity=tfs->make<TProfile2D>("fRunSubPurity","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-    fRunSubPurity2=tfs->make<TProfile2D>("fRunSubPurity2","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-    fRunSubPurity3=tfs->make<TProfile2D>("fRunSubPurity3","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
-
-    pur0 = tfs->make<TH1F>("pur0", "Purity TPC 0", 2000, -20, 30);
-    pur1 = tfs->make<TH1F>("pur1", "Purity TPC 1", 2000, -20, 30);
-    pur2 = tfs->make<TH1F>("pur2", "Purity TPC 2", 2000, -20, 30);
-    pur3 = tfs->make<TH1F>("pur3", "Purity TPC 3", 2000, -20, 30);
-=======
     purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
     h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",10000,-20,20);
     h_basebase = tfs->make<TH1F>("h_basebase","h_basebase",10000,-20,20);
@@ -283,39 +188,13 @@ namespace cluster{
     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
     purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
     
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
   }
   
   void ICARUSPurityDQM::endJob()
   {
-<<<<<<< HEAD
-    if(fPrintLevel == -1) outFile.close();
-
-    if(fDigitModuleLabel=="TPC0"){
-      TCanvas p0 ("p0", "Purity distribution of the TPC 0", 10, 10, 700, 700);
-      pur0->Draw();
-      p0.Print("Purity_TPC0.pdf");
-    }
-    if(fDigitModuleLabel=="TPC1"){
-      TCanvas p1 ("p1", "Purity distribution of the TPC 1", 10, 10, 700, 700);
-      pur1->Draw();
-      p1.Print("Purity_TPC1.pdf");
-    }
-    if(fDigitModuleLabel=="TPC2"){
-      TCanvas p2 ("p2", "Purity distribution of the TPC 2", 10, 10, 700, 700);
-      pur2->Draw();
-      p2.Print("Purity_TPC2.pdf");
-    }
-    if(fDigitModuleLabel=="TPC3"){
-      TCanvas p3 ("p3", "Purity distribution of the TPC 3", 10, 10, 700, 700);
-      pur3->Draw();
-      p3.Print("Purity_TPC3.pdf");
-    }
-
-=======
     std::ofstream goodpurofinal("valore_indicativo.out",std::ios::app);
     goodpurofinal << purityvalues2->GetMean() << std::endl;
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
+    //if(fPrintLevel == -1) outFile.close();
   }
   
   
@@ -328,19 +207,10 @@ namespace cluster{
 	    Cisono=8;
 	  }
       }
-<<<<<<< HEAD
-        
-    return Cisono;//se "ci sono" vale 8 allora l'intero b e' contenuto nel vettore a mentre se "ci sono" vale 3 a non contiene b.
-  }
-
-    
-=======
-    
     return Cisono;//se "ci sono" vale 8 allora l'intero b e' contenuto nel vettore a mentre se "ci sono" vale 3 a non contiene b.
   }
   
   
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
   int ICARUSPurityDQM::Notheref(std::vector<float>* a, float b){
     int Cisono=3;
     for(int i=0; i<(int)a->size();i++)
@@ -350,7 +220,6 @@ namespace cluster{
 	    Cisono=8;
 	  }
       }
-<<<<<<< HEAD
         
     return Cisono;//se "ci sono" vale 8 allora l'intero b e' contenuto nel vettore a mentre se "ci sono" vale 3 a non contiene b.
   }
@@ -360,16 +229,6 @@ namespace cluster{
     int punto_taglio=a->size()*(1-b)+0.5;
     /////std::cout << punto_taglio << " e " << a->size() << std::endl;
     //if(punto_taglio==0)punto_taglio=1;
-=======
-    
-    return Cisono;//se "ci sono" vale 8 allora l'intero b e' contenuto nel vettore a mentre se "ci sono" vale 3 a non contiene b.
-  }
-  
-  Double_t ICARUSPurityDQM::FoundMeanLog(std::vector<float>* a,float b){
-    
-    int punto_taglio=a->size()*(1-b)+0.5;
-    
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
     std::vector<float>* usedhere=new std::vector<float>;
     for(int jj=0;jj<punto_taglio+1;jj++)
       {
@@ -381,32 +240,18 @@ namespace cluster{
 	      {
 		maximum=(*a)[j];
 	      }
-<<<<<<< HEAD
 	  }
-=======
-            }
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 	//cout << maximum << endl;
 	usedhere->push_back(maximum);
       }
     //cout << (*usedhere)[punto_taglio] << endl;
     return (*usedhere)[punto_taglio-1];
   }
-<<<<<<< HEAD
-    
       
-  void ICARUSPurityDQM::analyze(const art::Event& evt)
-  {
-=======
-  
-  
-  
-  
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
     
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
     std::cout << " Inizia Purity ICARUS Ana " << std::endl;
     // code stolen from TrackAna_module.cc
     art::ServiceHandle<geo::Geometry>      geom;
@@ -414,69 +259,6 @@ namespace cluster{
     std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
     // get all hits in the event
     //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
-<<<<<<< HEAD
-
-
-    //to get run and event info, you use this "eventAuxillary()" object.
-    art::Timestamp ts = evt.time();
-    std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
-    fRun->Fill(evt.run());
-    fRunSub->Fill(evt.run(),evt.subRun());
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
-    std::vector<const raw::RawDigit*> rawDigitVec;
-
-
-    if (digitVecHandle.isValid())
-      {
-	//unsigned int maxChannels    = fGeometry->Nchannels();
-	//unsigned int maxTimeSamples = fDetectorProperties->NumberTimeSamples();
-	// Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
-	// what we want to do here. So we make a vector of pointers to the input raw digits and sort them
-	// Ugliness to fill the pointer vector...
-	for(size_t idx = 0; idx < digitVecHandle->size(); idx++) rawDigitVec.push_back(&digitVecHandle->at(idx)); //art::Ptr<raw::RawDigit>(digitVecHandle, idx).get());
-	// Sort (use a lambda to sort by channel id)
-	std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
-
-
-
-	// Data is calculated in producer module
-	// This is simply retrieving the data and pushing to the database
-
-	
-	 
-         
-	//sendMetric(group name, channel number (look into this :) ), "metric name", metric value, level , mode);
-	//"metric name" corresponds to values/names under metrics in fcl file
-
-	   
-      }  
-
-    std::vector<int> *www0=new std::vector<int>;
-    std::vector<float> *sss0=new std::vector<float>;
-    std::vector<float> *hhh0=new std::vector<float>;
-    std::vector<float> *ehh0=new std::vector<float>;
-    std::vector<int> *www1=new std::vector<int>;
-    std::vector<float> *sss1=new std::vector<float>;
-    std::vector<float> *hhh1=new std::vector<float>;
-    std::vector<float> *ehh1=new std::vector<float>;
-    std::vector<int> *www2=new std::vector<int>;
-    std::vector<float> *sss2=new std::vector<float>;
-    std::vector<float> *hhh2=new std::vector<float>;
-    std::vector<float> *ehh2=new std::vector<float>;
-    std::vector<int> *www3=new std::vector<int>;
-    std::vector<float> *sss3=new std::vector<float>;
-    std::vector<float> *hhh3=new std::vector<float>;
-    std::vector<float> *ehh3=new std::vector<float>;
-    std::vector<int> *ccc0=new std::vector<int>;
-    std::vector<int> *ccc1=new std::vector<int>;
-    std::vector<int> *ccc2=new std::vector<int>;
-    std::vector<int> *ccc3=new std::vector<int>;
-    std::vector<float> *aaa0=new std::vector<float>;
-    std::vector<float> *aaa1=new std::vector<float>;
-    std::vector<float> *aaa2=new std::vector<float>;
-    std::vector<float> *aaa3=new std::vector<float>;
-=======
     
     //to get run and event info, you use this "eventAuxillary()" object.
     art::Timestamp ts = evt.time();
@@ -496,406 +278,7 @@ namespace cluster{
     purity_info.Run = evt.run();
     purity_info.Subrun = evt.subRun();
     purity_info.Event = evt.event();
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 
-    std::cout << "Calling at the beginning…" << std::endl;    //    std::cout<<"HERE"<<std::endl;
-    purity_info.Print();
-    // std::cout<<"DONE"<<std::endl;
-
-<<<<<<< HEAD
-      
-    for(const auto& rawDigit : rawDigitVec)
-      {
-	raw::ChannelID_t channel = rawDigit->Channel();
-	//std::cout << channel << std::endl;
-	std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
-	// for now, just take the first option returned from ChannelToWire
-	geo::WireID wid  = wids[0];
-	// We need to know the plane to look up parameters
-	geo::PlaneID::PlaneID_t plane = wid.Plane;
-	size_t cryostat=wid.Cryostat;
-	size_t tpc=wid.TPC;
-	size_t iWire=wid.Wire;
-	//std::cout << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
-	fDataSize = rawDigit->Samples();
-	rawadc.resize(fDataSize);
-          
-
-	//UNCOMPRESS THE DATA.
-	int pedestal = (int)rawDigit->GetPedestal();
-	float pedestal2 = rawDigit->GetPedestal();
-	float sigma_pedestal = rawDigit->GetSigma();
-	raw::Uncompress(rawDigit->ADCs(), rawadc, pedestal, rawDigit->Compression());
-	//std::cout << pedestal2 << " " << fDataSize << " " << rawadc.size() << " " << sigma_pedestal << std::endl;
-	float massimo=0;
-	float quale_sample_massimo;
-
-	if (plane==2) {
-	  TH1F *h111 = new TH1F("h111","delta aree",20000,0,0);
-	  for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
-	    {
-	      //h111->Fill(rawDigit->ADC(ijk)-pedestal2);
-	      //std::cout << rawDigit->ADC(ijk) << " " << rawDigit->ADC(ijk)-pedestal2 << std::endl;
-	      if ((rawDigit->ADC(ijk)-pedestal2)>massimo && ijk>150 && ijk<(fDataSize-150))
-		{
-		  massimo=(rawDigit->ADC(ijk)-pedestal2);
-		  quale_sample_massimo=ijk;
-		}
-	    }
-	  //sigma_pedestal=h111->GetRMS();
-	  //h111->Delete();
-	  float base_massimo_before=0;
-	  float base_massimo_after=0;
-	  for (unsigned int ijk=quale_sample_massimo-150; ijk<quale_sample_massimo-50; ijk++)
-	    {
-	      base_massimo_before+=(rawDigit->ADC(ijk)-pedestal2)*0.01;
-	    }
-	  for (unsigned int ijk=quale_sample_massimo+50; ijk<quale_sample_massimo+150; ijk++)
-	    {
-	      base_massimo_after+=(rawDigit->ADC(ijk)-pedestal2)*0.01;
-	    }
-	  float basebase=(base_massimo_after+base_massimo_before)*0.5;
-	  float areaarea=0;
-
-	  for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
-	    {
-	      if (ijk>(quale_sample_massimo-30) && ijk<(quale_sample_massimo+30)) {
-		//areaarea+=(rawDigit->ADC(ijk)-pedestal2-basebase);
-		areaarea+=(rawDigit->ADC(ijk)-pedestal2);
-	      }
-	      else{
-		h111->Fill(rawDigit->ADC(ijk)-pedestal2-basebase);
-	      }
-                  
-	    }
-	  sigma_pedestal=h111->GetRMS();
-	  h111->Delete();
-	  //std::cout << "MASSIMO BASE " << massimo << " " << base_massimo_before << " " << base_massimo_after << std::endl;
-	  //h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
-	  //h_basediff2->Fill(fabs(base_massimo_after-base_massimo_before),sigma_pedestal);
-	  h_rms->Fill(sigma_pedestal);
-	  if (massimo>(5*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
-	    {
-                    
-	      if(cryostat==0 && tpc==0)www0->push_back(iWire);
-	      if(cryostat==0 && tpc==0)sss0->push_back(quale_sample_massimo);
-	      if(cryostat==0 && tpc==0)hhh0->push_back(massimo);
-	      if(cryostat==0 && tpc==0)ehh0->push_back(sigma_pedestal);
-	      if(cryostat==0 && tpc==0)ccc0->push_back(-1);
-	      if(cryostat==0 && tpc==1)www1->push_back(iWire);
-	      if(cryostat==0 && tpc==1)sss1->push_back(quale_sample_massimo);
-	      if(cryostat==0 && tpc==1)hhh1->push_back(massimo);
-	      if(cryostat==0 && tpc==1)ehh1->push_back(sigma_pedestal);
-	      if(cryostat==0 && tpc==1)ccc1->push_back(-1);
-	      if(cryostat==1 && tpc==0)www2->push_back(iWire);
-	      if(cryostat==1 && tpc==0)sss2->push_back(quale_sample_massimo);
-	      if(cryostat==1 && tpc==0)hhh2->push_back(massimo);
-	      if(cryostat==1 && tpc==0)ehh2->push_back(sigma_pedestal);
-	      if(cryostat==1 && tpc==0)ccc2->push_back(-1);
-	      if(cryostat==1 && tpc==1)www3->push_back(iWire);
-	      if(cryostat==1 && tpc==1)sss3->push_back(quale_sample_massimo);
-	      if(cryostat==1 && tpc==1)hhh3->push_back(massimo);
-	      if(cryostat==1 && tpc==1)ehh3->push_back(sigma_pedestal);
-	      if(cryostat==1 && tpc==1)ccc3->push_back(-1);
-	      if(cryostat==0 && tpc==0)aaa0->push_back(areaarea);
-	      if(cryostat==0 && tpc==1)aaa1->push_back(areaarea);
-	      if(cryostat==1 && tpc==0)aaa2->push_back(areaarea);
-	      if(cryostat==1 && tpc==1)aaa3->push_back(areaarea);
-	      //std::cout << "MASSIMO " << massimo << " " << quale_sample_massimo << std::endl;
-	      //std::cout << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
-	    }
-	}
-      }
-          
-    for (unsigned int ijk=0; ijk<www0->size(); ijk++)
-      {
-	for (unsigned int ijk2=0; ijk2<www0->size(); ijk2++)
-          {
-	    if (fabs((*www0)[ijk]-(*www0)[ijk2])<5 && ijk!=ijk2 && fabs((*sss0)[ijk]-(*sss0)[ijk2])<150)
-              {
-		if ((*ccc0)[ijk]<0 && (*ccc0)[ijk2]<0)
-                  {
-		    (*ccc0)[ijk]=ijk+1;
-		    (*ccc0)[ijk2]=ijk+1;
-                  }
-		else if ((*ccc0)[ijk]>0 && (*ccc0)[ijk2]<0)
-                  {
-		    (*ccc0)[ijk2]=(*ccc0)[ijk];
-                  }
-		else if ((*ccc0)[ijk]<0 && (*ccc0)[ijk2]>0)
-                  {
-		    (*ccc0)[ijk]=(*ccc0)[ijk2];
-                  }
-		else if ((*ccc0)[ijk]>0 && (*ccc0)[ijk2]>0)
-                  {
-		    for (unsigned int ijk3=0; ijk3<www0->size(); ijk3++)
-                      {
-			if(((*ccc0)[ijk3])==((*ccc0)[ijk2]))(*ccc0)[ijk3]=(*ccc0)[ijk];
-                      }
-                  }
-              }
-          }
-      }
- 
-    for (unsigned int ijk=0; ijk<www1->size(); ijk++)
-      {
-	for (unsigned int ijk2=0; ijk2<www1->size(); ijk2++)
-          {
-	    if (fabs((*www1)[ijk]-(*www1)[ijk2])<5 && ijk!=ijk2 && fabs((*sss1)[ijk]-(*sss1)[ijk2])<150)
-              {
-		if ((*ccc1)[ijk]<0 && (*ccc1)[ijk2]<0)
-                  {
-		    (*ccc1)[ijk]=ijk+1;
-		    (*ccc1)[ijk2]=ijk+1;
-                  }
-		else if ((*ccc1)[ijk]>0 && (*ccc1)[ijk2]<0)
-                  {
-		    (*ccc1)[ijk2]=(*ccc1)[ijk];
-                  }
-		else if ((*ccc1)[ijk]<0 && (*ccc1)[ijk2]>0)
-                  {
-		    (*ccc1)[ijk]=(*ccc1)[ijk2];
-                  }
-		else if ((*ccc1)[ijk]>0 && (*ccc1)[ijk2]>0)
-                  {
-		    for (unsigned int ijk3=0; ijk3<www1->size(); ijk3++)
-                      {
-			if(((*ccc1)[ijk3])==((*ccc1)[ijk2]))(*ccc1)[ijk3]=(*ccc1)[ijk];
-                      }
-                  }
-              }
-          }
-      }
-
-    for (unsigned int ijk=0; ijk<www2->size(); ijk++)
-      {
-	for (unsigned int ijk2=0; ijk2<www2->size(); ijk2++)
-          {
-	    if (fabs((*www2)[ijk]-(*www2)[ijk2])<5 && ijk!=ijk2 && fabs((*sss2)[ijk]-(*sss2)[ijk2])<150)
-              {
-		if ((*ccc2)[ijk]<0 && (*ccc2)[ijk2]<0)
-                  {
-		    (*ccc2)[ijk]=ijk+1;
-		    (*ccc2)[ijk2]=ijk+1;
-                  }
-		else if ((*ccc2)[ijk]>0 && (*ccc2)[ijk2]<0)
-                  {
-		    (*ccc2)[ijk2]=(*ccc2)[ijk];
-                  }
-		else if ((*ccc2)[ijk]<0 && (*ccc2)[ijk2]>0)
-                  {
-		    (*ccc2)[ijk]=(*ccc2)[ijk2];
-                  }
-		else if ((*ccc2)[ijk]>0 && (*ccc2)[ijk2]>0)
-                  {
-		    for (unsigned int ijk3=0; ijk3<www2->size(); ijk3++)
-                      {
-			if(((*ccc2)[ijk3])==((*ccc2)[ijk2]))(*ccc2)[ijk3]=(*ccc2)[ijk];
-                      }
-                  }
-              }
-          }
-      }
-
-    for (unsigned int ijk=0; ijk<www3->size(); ijk++)
-      {
-	for (unsigned int ijk2=0; ijk2<www3->size(); ijk2++)
-          {
-	    if (fabs((*www3)[ijk]-(*www3)[ijk2])<5 && ijk!=ijk2 && fabs((*sss3)[ijk]-(*sss3)[ijk2])<150)
-              {
-		if ((*ccc3)[ijk]<0 && (*ccc3)[ijk2]<0)
-                  {
-		    (*ccc3)[ijk]=ijk+1;
-		    (*ccc3)[ijk2]=ijk+1;
-                  }
-		else if ((*ccc3)[ijk]>0 && (*ccc3)[ijk2]<0)
-                  {
-		    (*ccc3)[ijk2]=(*ccc3)[ijk];
-                  }
-		else if ((*ccc3)[ijk]<0 && (*ccc3)[ijk2]>0)
-                  {
-		    (*ccc3)[ijk]=(*ccc3)[ijk2];
-                  }
-		else if ((*ccc3)[ijk]>0 && (*ccc3)[ijk2]>0)
-                  {
-		    for (unsigned int ijk3=0; ijk3<www3->size(); ijk3++)
-                      {
-			if(((*ccc3)[ijk3])==((*ccc3)[ijk2]))(*ccc3)[ijk3]=(*ccc3)[ijk];
-                      }
-                  }
-              }
-          }
-      }
-
-      
-      
-      
-    Int_t clusters_creation[4][6000];
-    //Int_t clusters_avewire[4][1000];
-    Int_t clusters_swire[4][6000];
-    Int_t clusters_lwire[4][6000];
-    Int_t clusters_ssample[4][6000];
-    Int_t clusters_lsample[4][6000];
-      
-    Int_t clusters_nn[1000];
-    Int_t clusters_vi[1000];
-    Int_t clusters_qq[1000];
-    //Int_t clusters_avewire[4][1000];
-    Int_t clusters_dw[1000];
-    Int_t clusters_ds[1000];
-
-
-    for (unsigned int ijk=0; ijk<4; ijk++) {
-      for (unsigned int ijk2=0; ijk2<6000; ijk2++) {
-	clusters_creation[ijk][ijk2]=0;
-	clusters_swire[ijk][ijk2]=100000;
-	clusters_lwire[ijk][ijk2]=0;
-	clusters_ssample[ijk][ijk2]=100000;
-	clusters_lsample[ijk][ijk2]=0;
-	if (ijk2<1000 && ijk>2) {
-	  clusters_nn[ijk2]=-1;
-	  clusters_vi[ijk2]=-1;
-	  clusters_dw[ijk2]=-1;
-	  clusters_ds[ijk2]=-1;
-	  clusters_qq[ijk2]=-1;
-	}
-      }
-    }
-      
-    for (unsigned int ijk=0; ijk<www0->size(); ijk++)
-      {
-	if ((*ccc0)[ijk]>0) {
-	  int numero=(*ccc0)[ijk];
-	  clusters_creation[0][numero]+=1;
-	  if((*www0)[ijk]<clusters_swire[0][numero])clusters_swire[0][numero]=(*www0)[ijk];
-	  if((*www0)[ijk]>clusters_lwire[0][numero])clusters_lwire[0][numero]=(*www0)[ijk];
-	  if((*sss0)[ijk]<clusters_ssample[0][numero])clusters_ssample[0][numero]=(*sss0)[ijk];
-	  if((*sss0)[ijk]>clusters_lsample[0][numero])clusters_lsample[0][numero]=(*sss0)[ijk];
-	}
-      }
-    for (unsigned int ijk=0; ijk<www1->size(); ijk++)
-      {
-	if ((*ccc1)[ijk]>0) {
-	  int numero=(*ccc1)[ijk];
-	  clusters_creation[1][numero]+=1;
-	  if((*www1)[ijk]<clusters_swire[1][numero])clusters_swire[1][numero]=(*www1)[ijk];
-	  if((*www1)[ijk]>clusters_lwire[1][numero])clusters_lwire[1][numero]=(*www1)[ijk];
-	  if((*sss1)[ijk]<clusters_ssample[1][numero])clusters_ssample[1][numero]=(*sss1)[ijk];
-	  if((*sss1)[ijk]>clusters_lsample[1][numero])clusters_lsample[1][numero]=(*sss1)[ijk];
-	}
-      }
-    for (unsigned int ijk=0; ijk<www2->size(); ijk++)
-      {
-	if ((*ccc2)[ijk]>0) {
-	  int numero=(*ccc2)[ijk];
-	  clusters_creation[2][numero]+=1;
-	  if((*www2)[ijk]<clusters_swire[2][numero])clusters_swire[2][numero]=(*www2)[ijk];
-	  if((*www2)[ijk]>clusters_lwire[2][numero])clusters_lwire[2][numero]=(*www2)[ijk];
-	  if((*sss2)[ijk]<clusters_ssample[2][numero])clusters_ssample[2][numero]=(*sss2)[ijk];
-	  if((*sss2)[ijk]>clusters_lsample[2][numero])clusters_lsample[2][numero]=(*sss2)[ijk];
-	}
-      }
-    for (unsigned int ijk=0; ijk<www3->size(); ijk++)
-      {
-	if ((*ccc3)[ijk]>0) {
-	  int numero=(*ccc3)[ijk];
-	  clusters_creation[3][numero]+=1;
-	  if((*www3)[ijk]<clusters_swire[3][numero])clusters_swire[3][numero]=(*www3)[ijk];
-	  if((*www3)[ijk]>clusters_lwire[3][numero])clusters_lwire[3][numero]=(*www3)[ijk];
-	  if((*sss3)[ijk]<clusters_ssample[3][numero])clusters_ssample[3][numero]=(*sss3)[ijk];
-	  if((*sss3)[ijk]>clusters_lsample[3][numero])clusters_lsample[3][numero]=(*sss3)[ijk];
-	}
-      }
-
-    int quanti_clusters=0;
-    for (unsigned int ijk=0; ijk<4; ijk++) {
-      for (unsigned int ijk2=0; ijk2<6000; ijk2++) {
-	if(clusters_creation[ijk][ijk2]>50)
-	  {
-	    std::cout<<clusters_creation[ijk][ijk2] << " CLUSTER MINE " << clusters_swire[ijk][ijk2] << " " << clusters_lwire[ijk][ijk2] << " " << clusters_ssample[ijk][ijk2] << " " << clusters_lsample[ijk][ijk2] << std::endl;
-	    clusters_qq[quanti_clusters]=clusters_creation[ijk][ijk2];
-	    clusters_vi[quanti_clusters]=ijk;
-	    clusters_nn[quanti_clusters]=ijk2;
-	    clusters_dw[quanti_clusters]=clusters_lwire[ijk][ijk2]-clusters_swire[ijk][ijk2];
-	    clusters_ds[quanti_clusters]=clusters_lsample[ijk][ijk2]-clusters_ssample[ijk][ijk2];
-	    quanti_clusters+=1;
-	  }
-      }
-    }
-
-      
-    for(int icl = 0; icl < quanti_clusters; ++icl){
-      if (clusters_qq[icl]>0) {
-	std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << " " << clusters_nn[icl] << "\n\n event=" << evt.event() << " length in space dw=" << clusters_dw[icl] << "  length in time  ds=" << clusters_ds[icl] << " angle=" <<float( float(clusters_dw[icl])/float(clusters_ds[icl])) << "\n\n" << std::endl;
-
-	int tpc_number=clusters_vi[icl];//qui andrebbe messo il numero di TPC
-        
-	if (clusters_ds[icl]>1100 && clusters_dw[icl]>100)
-	  {//if analisi
-
-	    std::vector<float> *whc=new std::vector<float>;
-	    std::vector<float> *shc=new std::vector<float>;
-	    std::vector<float> *ahc=new std::vector<float>;
-	    std::vector<float> *fahc=new std::vector<float>;
- 
-	    if (clusters_vi[icl]==0) {
-              for (unsigned int ijk=0; ijk<www0->size(); ijk++) {
-		if ((*ccc0)[ijk]==clusters_nn[icl]) {
-		  whc->push_back((*www0)[ijk]);
-		  shc->push_back((*sss0)[ijk]);
-		  ///ahc->push_back((*hhh0)[ijk]);
-		  ahc->push_back((*aaa0)[ijk]);
-		  fahc->push_back((*ehh0)[ijk]);
-		}
-              }
-	    }
-	    if (clusters_vi[icl]==1) {
-              for (unsigned int ijk=0; ijk<www1->size(); ijk++) {
-		if ((*ccc1)[ijk]==clusters_nn[icl]) {
-		  whc->push_back((*www1)[ijk]);
-		  shc->push_back((*sss1)[ijk]);
-		  ahc->push_back((*aaa1)[ijk]);
-		  //ahc->push_back((*hhh1)[ijk]);
-		  fahc->push_back((*ehh1)[ijk]);
-		}
-              }
-	    }
-	    if (clusters_vi[icl]==2) {
-              for (unsigned int ijk=0; ijk<www2->size(); ijk++) {
-		if ((*ccc2)[ijk]==clusters_nn[icl]) {
-		  whc->push_back((*www2)[ijk]);
-		  shc->push_back((*sss2)[ijk]);
-		  ahc->push_back((*aaa2)[ijk]);
-		  //ahc->push_back((*hhh2)[ijk]);
-		  fahc->push_back((*ehh2)[ijk]);
-		}
-              }
-	    }
-	    if (clusters_vi[icl]==3) {
-              for (unsigned int ijk=0; ijk<www3->size(); ijk++) {
-		if ((*ccc3)[ijk]==clusters_nn[icl]) {
-		  whc->push_back((*www3)[ijk]);
-		  shc->push_back((*sss3)[ijk]);
-		  //ahc->push_back((*hhh3)[ijk]);
-		  ahc->push_back((*aaa3)[ijk]);
-		  fahc->push_back((*ehh3)[ijk]);
-		}
-              }
-	    }
-
-          
-	    std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << whc->size() << std::endl;
-
-
-
-
-	        
-	    if(whc->size()>30)//prima 0
-	      {
-		float pendenza=0;float intercetta=0;int found_ok=0;
-		std::vector<int> *escluse=new std::vector<int>;
-		for(int j=0;j<(int)whc->size();j++)
-=======
     for(const auto& digitlabel : fDigitModuleLabel)
       {
 	evt.getByLabel(digitlabel, digitVecHandle);
@@ -1335,7 +718,6 @@ namespace cluster{
 		
 		
 		if(whc->size()>30)//prima 0
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 		  {
 		    float pendenza=0;float intercetta=0;int found_ok=0;
 		    std::vector<int> *escluse=new std::vector<int>;
@@ -1383,26 +765,6 @@ namespace cluster{
 			    if(found_max==0)found_ok=1;
 			  }
 		      }
-<<<<<<< HEAD
-		  }
-		std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
-                delete escluse;
-		std::vector<float> *hittime=new std::vector<float>;
-		std::vector<float> *hitwire=new std::vector<float>;
-		std::vector<float> *hitarea=new std::vector<float>;
-		std::vector<float> *hittimegood=new std::vector<float>;
-		std::vector<float> *hitareagood=new std::vector<float>;
-		std::vector<float> *hitwiregood=new std::vector<float>;
-                /////std::cout <<  found_ok << std::endl;
-                /////std::cout <<  pendenza << std::endl;
-                /////std::cout <<  intercetta << std::endl;
-                if(found_ok==1)
-		  {
-                    //float t_max=-1400/0.4*log(8/(3.3*peach));
-                    //float t_max=3800;
-                    //if(t_max>1500) t_max=1500;
-                    for(int kkk=0;kkk<(int)whc->size();kkk++)
-=======
 		    std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
 		    delete escluse;
 		    std::vector<float> *hittime=new std::vector<float>;
@@ -1415,7 +777,6 @@ namespace cluster{
 		    /////std::cout <<  pendenza << std::endl;
 		    /////std::cout <<  intercetta << std::endl;
 		    if(found_ok==1)
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 		      {
 			for(int kkk=0;kkk<(int)whc->size();kkk++)
 			  {
@@ -1431,40 +792,6 @@ namespace cluster{
 				  }
 			      }
 			  }
-<<<<<<< HEAD
-		      }
-                    //float result_rms=0.14;
-                    //std::cout << result_rms << endl;
-                    Double_t area[10000];
-                    Double_t nologarea[10000];
-                    Double_t tempo[10000];
-                    Double_t ex[10000];
-                    //Double_t quale[10000];
-                    Double_t ey[10000];
-                    Double_t ek[10000];
-                    Double_t ez[10000];
-		    std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
-                    if(hitarea->size()>100)//prima 30
-		      {
-                        float minimo=100000;
-                        float massimo=0;
-                        for(int kk=0;kk<(int)hitarea->size();kk++)
-			  {
-			    if((*hittime)[kk]>massimo)massimo=(*hittime)[kk];
-			    if((*hittime)[kk]<minimo)minimo=(*hittime)[kk];
-			  }
-                        //std::cout << hitarea->size() << std::endl;
-                        //int gruppi=hitarea->size()/50;
-                        int gruppi=8;
-                        //std::cout << gruppi << std::endl;
-                        float steptime=(massimo-minimo)/(gruppi+1);
-                        //std::cout << steptime << " steptime " << minimo << " " << massimo << std::endl;
-                        float starting_value_tau=fValoretaufcl;
-                        ////////std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
-                        //if(tpc_number==2 || tpc_number==5)starting_value_tau=6500;
-                        //if(tpc_number==10 || tpc_number==13)starting_value_tau=5700;
-                        for(int stp=0;stp<=gruppi;stp++)
-=======
 			//float result_rms=0.14;
 			//std::cout << result_rms << endl;
 			Double_t area[10000];
@@ -1478,7 +805,6 @@ namespace cluster{
 			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
 
 			if(hitarea->size()>100)//prima 30
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 			  {
 			    float minimo=100000;
 			    float massimo=0;
@@ -1487,16 +813,6 @@ namespace cluster{
 				if((*hittime)[kk]>massimo)massimo=(*hittime)[kk];
 				if((*hittime)[kk]<minimo)minimo=(*hittime)[kk];
 			      }
-<<<<<<< HEAD
-                            ///////std::cout << hitpertaglio->size() << std::endl;
-                            float tagliomax=FoundMeanLog(hitpertaglio,0.90);
-                            float tagliomin=FoundMeanLog(hitpertaglio,0.05);
-                            //float tagliomin=0;
-                            //float tagliomax=1000000;
-                            delete hitpertaglio;
-                            //std::cout << tagliomax << " t " << std::endl;
-                            for(int kk=0;kk<(int)hitarea->size();kk++)
-=======
 			    //std::cout << hitarea->size() << std::endl;
 			    //int gruppi=hitarea->size()/50;
 			    int gruppi=8;
@@ -1510,7 +826,6 @@ namespace cluster{
 			    //if(tpc_number==2 || tpc_number==5)starting_value_tau=6500;
 			    //if(tpc_number==10 || tpc_number==13)starting_value_tau=5700;
 			    for(int stp=0;stp<=gruppi;stp++)
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 			      {
 				std::vector<float>* hitpertaglio=new std::vector<float>;
 				//std::cout << 500+stp*steptime << " time " << 500+(stp+1)*(steptime) << std::endl;
@@ -1542,17 +857,8 @@ namespace cluster{
 				      }
 				  }
 			      }
-<<<<<<< HEAD
-			  }
-			std::cout << hitareagood->size() << " hitareagood" << std::endl;    
-                        for(int k=0;k<(int)hitareagood->size();k++)
-			  {
-                            //if((*hittimegood)[k]-600*0.4<=1000)//correzione 15/08
-                            if((*hittimegood)[k]<=2240)
-=======
 			    std::cout << hitareagood->size() << " hitareagood" << std::endl;    
 			    for(int k=0;k<(int)hitareagood->size();k++)
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 			      {
 				//if((*hittimegood)[k]-600*0.4<=1000)//correzione 15/08
 				if((*hittimegood)[k]<=2240)
@@ -1566,36 +872,6 @@ namespace cluster{
 				    ey[k]=0.23;
 				  }
 			      }
-<<<<<<< HEAD
-			  }
-                        TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
-                        //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
-                        gr31->Fit("pol1");
-                        TF1 *fit = gr31->GetFunction("pol1");
-                        float slope_purity=fit->GetParameter(1);
-                        float error_slope_purity=fit->GetParError(1);
-                        float intercetta_purezza=fit->GetParameter(0);
-                  
-                        TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
-                        float sum_per_rms_test=0;
-                        for(int k=0;k<(int)hitareagood->size();k++)
-			  {
-                            h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
-                            sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
-			  }
-                        h111->Fit("gaus");
-                        TF1 *fitg = h111->GetFunction("gaus");
-                        float error=fitg->GetParameter(2);
-			std::cout << " error " << error << std::endl;
-                        float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
-			std::cout << " error vero" << error_2 << std::endl;
-                        h111->Delete();
-                  
-                        for(int k=0;k<(int)hitareagood->size();k++)
-			  {
-                            //if((*hittimegood)[k]-600*0.4<=1000)//15/08
-                            if((*hittimegood)[k]<=2240)
-=======
 			    TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
 			    //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
 			    gr31->Fit("pol1");
@@ -1607,7 +883,6 @@ namespace cluster{
 			    TH1F *h111 = new TH1F("h111","delta aree",200,-10,10);
 			    float sum_per_rms_test=0;
 			    for(int k=0;k<(int)hitareagood->size();k++)
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 			      {
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
@@ -1623,41 +898,16 @@ namespace cluster{
                         //float intercetta_purezza_2=fit2->GetParameter(0);
                         float chiquadro=fit2->GetChisquare()/(hitareagood->size()-2);
 			std::ofstream goodpuro("purity_results.out",std::ios::app);
-<<<<<<< HEAD
-			//purityvalues->Fill(-slope_purity_2*1000.);
-			//fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
-                        /////if(tpc_number==2 || tpc_number==5)
-			/////  {
-			//goodpuro << " run " << evt.Run() << " event " << evt.event() << " vista " << tpc_number << std::endl;
-			//goodpuro << chiquadro << std::endl;
-			//goodpuro << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_2 << " " << error_slope_purity_2 << std::endl;
-			//////}
-			std::cout << -1/slope_purity_2 << std::endl;
-			std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
-			std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
-=======
                         std::ofstream goodpuro2("purity_results2.out",std::ios::app);
 			
                         std::cout << -1/slope_purity_2 << std::endl;
                         std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
                         std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
                         gr41->Fit("expo");
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
-<<<<<<< HEAD
-                        fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
-
-			std::cout << "\n\n Purity from exponential fit for the TPC number " << tpc_number << " is " << -1./(slope_purity*1000) << " with error " << error_slope_purity <<  std::endl;
-			std::cout << "\n Purity from linear fit for the TPC number " << tpc_number << " is " << -1./(slope_purity_2*1000) << " with error " << error_slope_purity_2 << "\n\n" << std::endl;
-
-			std::cout << -1/slope_purity_exo << std::endl;
-			std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
-			std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
-			std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
-=======
                         //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
                         //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
                         std::cout << -1/slope_purity_exo << std::endl;
@@ -1691,53 +941,11 @@ namespace cluster{
 			purity_info.Print();
 			outputVec.push_back(purity_info);
 			
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
                         //std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         //goodpur << timeevent << " is time event " << std::endl;
-<<<<<<< HEAD
-                       
-
-			std::cout << -1/slope_purity_exo << " TUTTTI I VALUES " << -slope_purity_exo2*1000. << " " << -slope_purity_exo*1000. << std::endl;
-			float purityS=-9999;
-			if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5)
-			  {
-			    if(fabs(slope_purity_exo)<0.01)
-			      {
-				purityS= -(slope_purity_exo*1000);
-				purityvalues->Fill(-slope_purity_exo*1000.);
-				goodpuro << evt.run() << " " << evt.subRun() << " " << evt.event() << " " << tpc_number << " " << slope_purity_exo << " " << error_slope_purity_exo << std::endl;
-			      }
-			  }
- 
-			int level = 0;     
-
-			std::string group_name = "TPC";
-			artdaq::MetricMode mode = artdaq::MetricMode::Average; 
-			std::string readout_number_str = std::to_string(tpc_number);
-			if(purityS > -10 && purityS < 10){
-			  sbndqm::sendMetric(group_name, readout_number_str, "purity", purityS, level, mode);
-			}
-
-			if(purityS > -10 && purityS < 10){
-			  if(tpc_number==0){
-			    pur0->Fill(purityS);
-			  }
-			  if(tpc_number==1){
-			    pur1->Fill(purityS);
-			  }
-			  if(tpc_number==2){
-			    pur2->Fill(purityS);
-			  }
-			  if(tpc_number==3){
-			    pur3->Fill(purityS);
-			  }
-			}
-
-		      }//hitarea size 30
-=======
 		      }
 
 		    delete hittime;
@@ -1746,50 +954,8 @@ namespace cluster{
 		    delete hitareagood;
 		    delete hitwiregood;
 		    delete hitwire;
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
 		  }
 		
-<<<<<<< HEAD
-		      
-	      }//end whc->size>0
-	        
-            
-	    delete shc;
-	    delete ahc;
-	    delete fahc;
-	    delete whc;
-	        
-	  } 
- 
-      }//fine if ananlisi
-    }
-    delete www0;
-    delete sss0;
-    delete hhh0;
-    delete ehh0;
-    delete ccc0;
-    delete www1;
-    delete sss1;
-    delete hhh1;
-    delete ehh1;
-    delete ccc1;
-    delete www2;
-    delete sss2;
-    delete hhh2;
-    delete ehh2;
-    delete ccc2;
-    delete www3;
-    delete sss3;
-    delete hhh3;
-    delete ehh3;
-    delete ccc3;
-    delete aaa0;
-    delete aaa1;
-    delete aaa2;
-    delete aaa3;
-      
-  } // analyze
-=======
 		
 		delete shc;
 		delete ahc;
@@ -1827,8 +993,6 @@ namespace cluster{
 
       }
 
->>>>>>> 83e870774c759e03bfc1fe573219b44643361158
-
     std::cout << "Checking everything in the output..." << std::endl;
     std::cout << "There are " << outputVec.size() << " objects in the output vector." << std::endl;
     
@@ -1846,8 +1010,8 @@ namespace cluster{
 } //end namespace
 
 
-namespace cluster{
-  
+namespace icarus{
+
   DEFINE_ART_MODULE(ICARUSPurityDQM)
   
 }

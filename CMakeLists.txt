@@ -66,6 +66,9 @@ find_ups_product( eigen )
 find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
 
+find_ups_product( artdaq_core )
+find_ups_product( sbndaq_artdaq_core )
+
 cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE 
                   NAMES nurandom_RandomUtils_NuRandomService_service

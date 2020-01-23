@@ -65,7 +65,7 @@ class icarus::trigger::TriggerGateBuilder {
     
       public:
     using triggergate_t = icarus::trigger::SingleChannelOpticalTriggerGate;
-    using GateData_t= std::vector<triggergate_t>;
+    using GateData_t = std::vector<triggergate_t>;
     
     /// Constructor: acquires data of the specified gates.
     TriggerGates(ADCCounts_t threshold, GateData_t&& gates)
@@ -81,7 +81,15 @@ class icarus::trigger::TriggerGateBuilder {
     ADCCounts_t threshold() const { return fThreshold; }
     
     /// Returns the complete collection of trigger gates on all channels.
-    GateData_t const& gates() const { return fGates; }
+    GateData_t const& gates() const& { return fGates; }
+    
+    /**
+     * @brief Yields the complete collection of trigger gates on all channels.
+     * @return the gates that were contained in this object
+     * 
+     * After this call, the gate information is lost (except for the threshold).
+     */
+    GateData_t gates() && { return std::move(fGates); }
     
     /// Returns (and creates, if necessary) the gate for the specified waveform.
     icarus::trigger::SingleChannelOpticalTriggerGate& gateFor

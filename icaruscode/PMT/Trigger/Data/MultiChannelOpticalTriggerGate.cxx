@@ -21,46 +21,6 @@
 //------------------------------------------------------------------------------
 //--- icarus::trigger::MultiChannelOpticalTriggerGate
 //------------------------------------------------------------------------------
-std::vector<raw::Channel_t>
-icarus::trigger::MultiChannelOpticalTriggerGate::channels() const {
-  
-  std::vector<raw::Channel_t> channels;
-  
-  // we skip invalid channels
-  for (auto const* waveform: waveforms()) {
-    raw::Channel_t const channel = waveform->ChannelNumber();
-    
-    if (!raw::isValidChannel(channel)) continue;
-    
-    if (!channels.empty() && (channel == channels.back())) continue;
-    
-    channels.push_back(channel);
-  } // for
-  
-  return channels;
-  
-} // icarus::trigger::MultiChannelOpticalTriggerGate::channels()
-
-
-//------------------------------------------------------------------------------
-std::ostream& icarus::trigger::operator<< (
-  std::ostream& out,
-  icarus::trigger::MultiChannelOpticalTriggerGate const& gate
-) {
-  auto const& channels = gate.channels();
-  if (channels.empty())
-    out << "(no channels)";
-  else {
-    out << "on " << channels.size() << " channels {";
-    for (auto channel: channels) out << " " << channel;
-    out << " },";
-  }
-  out << " " << static_cast<icarus::trigger::OpticalTriggerGate const&>(gate);
-  return out;
-} // icarus::trigger::operator<< (MultiChannelOpticalTriggerGate)
-
-
-//------------------------------------------------------------------------------
 icarus::trigger::MultiChannelOpticalTriggerGate
 icarus::trigger::sumTriggerGates
   (std::vector<icarus::trigger::SingleChannelOpticalTriggerGate> const& gates)

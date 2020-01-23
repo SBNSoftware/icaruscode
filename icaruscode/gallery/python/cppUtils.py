@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface C++ code with Python via PyROOT.
@@ -53,9 +54,13 @@ class SourceCentral:
   def addIncPath(self, path, force=False):
     expPath = os.path.expandvars(path)
     if not os.path.isdir(expPath):
-      print >>sys.stderr, "Warning: include path '%s'" % path,
-      if path != expPath: print >>sys.stderr, " ( => '%s')" % expPath
-      print >>sys.stderr, " does not exist."
+      print(
+        "Warning: include path '%s'" % path,
+        (" ( => '%s')" % expPath if path != expPath else ""),
+        " does not exist.",
+        sep='',
+        file=sys.stderr
+        )
     if force or expPath not in self.includePaths:
       self.includePaths.append(expPath)
   # addIncPath()
@@ -76,7 +81,7 @@ class SourceCentral:
   def findLibrary(self, libName, extraPaths = []):
     expLibName = SourceCentral.expandLibraryName(libName)
     for path in reversed(
-     SourceCentral.LibraryPaths() + map(os.path.expandvars, extraPaths)
+     SourceCentral.LibraryPaths() + list(map(os.path.expandvars, extraPaths))
      ):
       candidate = os.path.join(path, expLibName)
       if os.path.exists(candidate): return candidate
@@ -84,7 +89,7 @@ class SourceCentral:
   # findLibrary()
   
   def findHeader(self, relPath, extraPaths = []):
-    for path in reversed(self.includePaths + map(os.path.expandvars, extraPaths)):
+    for path in reversed(self.includePaths + list(map(os.path.expandvars, extraPaths))):
       candidate = os.path.join(path, relPath)
       if os.path.exists(candidate): return candidate
     else: return None

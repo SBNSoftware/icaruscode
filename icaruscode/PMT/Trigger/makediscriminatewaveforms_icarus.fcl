@@ -1,0 +1,99 @@
+#
+# File:    makediscriminatewaveforms_icarus.fcl
+# Purpose: Runs `icarus::trigger::DiscriminatePMTwaveforms` analysis module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 4, 2019
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * simulated optical detector readout: `opdaq`
+#
+#
+# Required services
+# ------------------
+# 
+#  * DetectorClocksService (DiscriminatePMTwaveforms)
+#
+
+#include "services_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+
+process_name: Trigger
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  Geometry:                  @erase
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+
+} # services
+
+
+physics: {
+  
+  producers: {
+    
+    discrimopdaq: {
+      
+      module_type: DiscriminatePMTwaveforms
+      
+      # input optical waveform data product tag:
+      OpticalWaveforms: "opdaq"
+      
+      #
+      # choosing the discrimination algorithm: fixed length gates
+      #
+      # TriggerGateBuilder: @local::icarus_dynamictriggergate
+      TriggerGateBuilder: @local::icarus_fixedtriggergate # from trigger_icarus.fcl
+      
+      
+      # select which thresholds to save (the algorithm *must* provide them!);
+      # omitted: save all thresholds that the algorithm provides
+    #  SelectThresholds: [ 5, 15 ]
+      
+      
+    } # discrimopdaq
+    
+  } # producers
+  
+  
+  opdet: [ discrimopdaq ]
+  
+  output: [ rootoutput ]
+  
+  trigger_paths: [ opdet ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+  
+} # outputs
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.TriggerThresholdLog: {
+  type:       file
+  filename:  "TriggerThresholds.log"
+  threshold:  DEBUG
+  categories: {
+    DiscriminatePMTwaveforms: { limit: -1 }
+    default: { limit: 0 }
+  }
+} # services.messages.destinations.TriggerThresholdLog

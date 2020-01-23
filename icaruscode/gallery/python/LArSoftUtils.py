@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 
 __doc__ = """
 Collection of utilities to interface LArSoft with python and gallery.
@@ -83,6 +84,11 @@ def loadGeometry(config=None, registry=None, mapping=None):
   # ... and IDs...
   for varName in ( 'CryostatID', 'TPCID', 'PlaneID', 'WireID', ):
     try: klass = getattr(ROOT.geo, varName) 
+    except AttributeError: continue
+    klass.__str__ = klass.toString
+  # for ID
+  for varName in ( 'CryostatID', 'TPCsetID', 'ROPID', ):
+    try: klass = getattr(ROOT.readout, varName) 
     except AttributeError: continue
     klass.__str__ = klass.toString
   # for ID
@@ -376,7 +382,7 @@ class ServiceManagerClass(ServiceManagerInterface):
     except KeyError:
       loader = SimpleServiceLoader(serviceKey, interfaceClass=interfaceClass)
     
-    print "Loading service provider: '{}'".format(serviceKey)
+    print("Loading service provider: '{}'".format(serviceKey))
     return loader(self)
     
   # get()
