@@ -65,6 +65,6 @@ namespace Icarus
   };
 
 }
-DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface, SHARED)
 
 #endif // Icarus_ExptGeoHelperInterface_h

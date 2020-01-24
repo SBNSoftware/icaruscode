@@ -146,7 +146,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     
     eigenFFT.fwd(fftOutputVec, corValVec);
     
-    size_t halfFFTDataSize(fftDataSize/2);
+    size_t halfFFTDataSize(fftDataSize/2 + 1);
     
     std::vector<T> powerVec(halfFFTDataSize);
     
@@ -178,7 +178,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
                     std::complex<T> interpVal = fftOutputVec[startTick] + T(tick - startTick) * slope;
                     
                     fftOutputVec[tick]                   = interpVal;
-                    fftOutputVec[fftDataSize - tick - 1] = interpVal;
+                    //fftOutputVec[fftDataSize - tick - 1] = interpVal;
                 }
             }
         }
@@ -193,6 +193,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     return;
 }
     
+template void RawDigitFFTAlg::getFFTCorrection<double>(std::vector<double>&, double) const;
 template void RawDigitFFTAlg::getFFTCorrection<float>(std::vector<float>&, double) const;
 
 template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVec, size_t maxBin) const
@@ -254,10 +255,14 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
         fFilterVec.at(plane).reserve(halfFFTDataSize);
         for(auto& rootComplex : filter) fFilterVec.at(plane).emplace_back(rootComplex.Re(),rootComplex.Im());
     }
+
+    //std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
     
-    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
+    //for(size_t idx = 0; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx - 1] = fFFTOutputVec[idx];
     
-    for(size_t idx = 0; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx - 1] = fFFTOutputVec[idx];
+    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
+
+    for(size_t idx = 1; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx] = fFFTOutputVec[idx];
 
     fEigenFFT->inv(fFFTInputVec, fFFTOutputVec);
 
