@@ -21,6 +21,7 @@
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // picocoulomb
+#include "lardataalg/Utilities/quantities_fhicl.h" // microsecond from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
 #include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
 #include "lardataalg/Utilities/quantities/electronics.h" // tick, counts_f
@@ -170,13 +171,13 @@ namespace icarus {
     class DiscretePhotoelectronPulse {
         public:
       using gigahertz = util::quantities::gigahertz;
-      using nanosecond = util::quantities::nanosecond;
+      using nanoseconds = util::quantities::nanosecond;
       
       /// Type of shape (times are in nanoseconds).
-      using PulseFunction_t = PhotoelectronPulseWaveform<nanosecond>;
+      using PulseFunction_t = PhotoelectronPulseWaveform<nanoseconds>;
       using ADCcount = PulseFunction_t::ADCcount;
       
-      using Time_t = nanosecond;
+      using Time_t = nanoseconds;
       using Tick_t = util::quantities::tick;
       
       static_assert(!std::is_same<Time_t, Tick_t>(),
@@ -224,11 +225,11 @@ namespace icarus {
       gigahertz samplingFrequency() const { return fSamplingFreq; }
       
       /// Returns the sampling period (inverse of frequency).
-      nanosecond samplingPeriod() const { return 1.0 / samplingFrequency(); }
+      nanoseconds samplingPeriod() const { return 1.0 / samplingFrequency(); }
       
       /// Returns the duration of the waveform in time units.
       /// @see `pulseLength()`
-      nanosecond duration() const { return pulseLength() * samplingPeriod(); }
+      nanoseconds duration() const { return pulseLength() * samplingPeriod(); }
 
       // @{
       /**
@@ -446,8 +447,8 @@ namespace icarus {
     class PMTsimulationAlg {
       
         public:
-      using microsecond = util::quantities::microsecond;
-      using nanosecond = util::quantities::nanosecond;
+      using microseconds = util::quantities::microsecond;
+      using nanoseconds = util::quantities::nanosecond;
       using hertz = util::quantities::hertz;
       using megahertz = util::quantities::megahertz;
       using picocoulomb = util::quantities::picocoulomb;
@@ -527,19 +528,19 @@ namespace icarus {
         float  pretrigFraction;       ///< Fraction of window size to be before "trigger"
         ADCcount thresholdADC; ///< ADC Threshold for self-triggered readout
         int    pulsePolarity;         ///< Pulse polarity (=1 for positive, =-1 for negative)
-        time_interval triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
+        microseconds triggerOffsetPMT; ///< Time relative to trigger when PMT readout starts TODO make it a `trigger_time` point
             
-        microsecond readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
+        microseconds readoutEnablePeriod;  ///< Time (us) for which pmt readout is enabled
     
         bool createBeamGateTriggers; ///< Option to create unbiased readout around beam spill
-        microsecond beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
+        microseconds beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
         size_t beamGateTriggerNReps; ///< Number of beamgate trigger reps to produce
     
         float ADC;      ///< charge to ADC conversion scale
-        nanosecond transitTime; ///< to be added to pulse minimum time
+        nanoseconds transitTime; ///< to be added to pulse minimum time
         picocoulomb meanAmplitude;
-        nanosecond fallTime;
-        nanosecond riseTime;
+        nanoseconds fallTime;
+        nanoseconds riseTime;
     
         ADCcount baseline; //waveform baseline
         ADCcount ampNoise; //amplitude of gaussian noise
@@ -700,6 +701,11 @@ namespace icarus {
     class PMTsimulationAlgMaker {
       
          public:
+      using microseconds = util::quantities::microsecond;
+      using nanoseconds = util::quantities::nanosecond;
+      using hertz = util::quantities::hertz;
+      using picocoulomb = util::quantities::picocoulomb;
+
       struct PMTspecConfig {
         using Name = fhicl::Name;
         using Comment = fhicl::Comment;
@@ -730,7 +736,7 @@ namespace icarus {
         //
         // readout settings
         //
-        fhicl::Atom<double> ReadoutEnablePeriod {
+        fhicl::Atom<microseconds> ReadoutEnablePeriod {
           Name("ReadoutEnablePeriod"),
           Comment("Time for which PMT readout is enabled [us]")
           // mandatory
@@ -788,22 +794,22 @@ namespace icarus {
         //
         // single photoelectron response
         //
-        fhicl::Atom<double> TransitTime {
+        fhicl::Atom<nanoseconds> TransitTime {
           Name("TransitTime"),
           Comment("Single photoelectron: peak time from the beginning of the waveform [ns]")
           // mandatory
           };
-        fhicl::Atom<float> MeanAmplitude {
+        fhicl::Atom<picocoulomb> MeanAmplitude {
           Name("MeanAmplitude"),
-          Comment("Single photoelectron: signal amplitude at peak [V]")
+          Comment("Single photoelectron: signal amplitude at peak [pC]")
           // mandatory
           };
-        fhicl::Atom<double> RiseTime {
+        fhicl::Atom<nanoseconds> RiseTime {
           Name("RiseTime"),
           Comment("Single photoelectron: rise time (10% to 90%, sigma * ~1.687) [ns]")
           // mandatory
           };
-        fhicl::Atom<double> FallTime {
+        fhicl::Atom<nanoseconds> FallTime {
           Name("FallTime"),
           Comment("Single photoelectron: fall time (90% to 10%, sigma * ~1.687) [ns]")
           // mandatory
@@ -812,7 +818,7 @@ namespace icarus {
         //
         // dark noise
         //
-        fhicl::Atom<double> DarkNoiseRate {
+        fhicl::Atom<hertz> DarkNoiseRate {
           Name("DarkNoiseRate"),
           Comment("Frequency of \"spontaneous\" emission of a dark noise photoelectron [Hz]")
           // mandatory
@@ -840,7 +846,7 @@ namespace icarus {
           Comment("Whether to create unbiased readout trigger at beam spill")
           // mandatory
           };
-        fhicl::Atom<double> BeamGateTriggerRepPeriod {
+        fhicl::Atom<microseconds> BeamGateTriggerRepPeriod {
           Name("BeamGateTriggerRepPeriod"),
           Comment("Repetition period for beam gate generated readout triggers [us]")
           // mandatory
@@ -850,7 +856,7 @@ namespace icarus {
           Comment("Number of beam gate readout triggers to generate")
           // mandatory
           };
-        fhicl::Atom<double> TriggerOffsetPMT {
+        fhicl::Atom<microseconds> TriggerOffsetPMT {
           Name("TriggerOffsetPMT"),
           Comment("Time  when readout begins, relative to readout trigger [us]")
           // mandatory
