@@ -1,16 +1,16 @@
 /**
- * @file    icaruscode/Light/Algorithms/PMTsimulationAlg.h
+ * @file    icaruscode/PMT/Algorithms/PMTsimulationAlg.h
  * @brief   Algorithms for the simulation of ICARUS PMT channels.
  * @date    October 16, 2018
- * @see     `icaruscode/Light/Algorithms/PMTsimulationAlg.cxx`
+ * @see     `icaruscode/PMT/Algorithms/PMTsimulationAlg.cxx`
  *
  * These algoritms were originally extracted from the module
  * `SimPMTICARUS_module.cc`, which was in turnb based on 
  * `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho
  */
 
-#ifndef ICARUSCODE_LIGHT_ALGORITHMS_PMTSIMULATIONALG_H
-#define ICARUSCODE_LIGHT_ALGORITHMS_PMTSIMULATIONALG_H
+#ifndef ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
+#define ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
 
 
 // ICARUS libraries
@@ -983,5 +983,5 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
 //-----------------------------------------------------------------------------
 
  
-#endif // ICARUSCODE_LIGHT_ALGORITHMS_PMTSIMULATIONALG_H
+#endif // ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
 
