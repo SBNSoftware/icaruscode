@@ -106,8 +106,8 @@ icarus_split_induction_geometry: {
   
   # This is the version for test distributed on November 18, 2019
   # by Alessandro Menegolli (alessandro.menegolli@pv.infn.it)
-  GDML:            "icarus_complete_20191118.gdml"
-  ROOT:            "icarus_complete_20191118.gdml"
+  GDML:            "icarus_complete_no_overburden.gdml"
+  ROOT:            "icarus_complete_no_overburden.gdml"
   
   DisableWiresInG4: true
   
