@@ -64,6 +64,7 @@
 #include <TGraphAsymmErrors.h>
 #include "TF1.h"
 #include "TCanvas.h"
+#include "TNtuple.h"
 
 //Redis connection 
 //#include "sbndaq-redis-plugin/Utilities.h"
@@ -118,7 +119,7 @@ namespace icarus {
 
     bool fPersistPurityInfo;
     
-    std::ofstream outFile;
+    TNtuple* purityTuple;
 
   }; // class ICARUSPurityDQM
   
@@ -133,7 +134,7 @@ namespace icarus{
     : EDProducer(pset)
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
-    , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",true))
+    , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",false))
   {
 
     //declare what we produce .. allow it to not be persistable to the event
@@ -187,7 +188,9 @@ namespace icarus{
     puritytpc2 = tfs->make<TH1F>("puritytpc2","puritytpc2",20000,-10,10);
     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
     purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
-    
+
+    purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
+
   }
   
   void ICARUSPurityDQM::endJob()
@@ -251,28 +254,25 @@ namespace icarus{
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
+      std::cout << " Inizia Purity ICARUS Ana " << std::endl;
+      // code stolen from TrackAna_module.cc
+      art::ServiceHandle<geo::Geometry>      geom;
+      unsigned int  fDataSize;
+      std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
+      // get all hits in the event
+      //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
+      
+      //to get run and event info, you use this "eventAuxillary()" object.
+      art::Timestamp ts = evt.time();
+      std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
     
-    std::cout << " Inizia Purity ICARUS Ana " << std::endl;
-    // code stolen from TrackAna_module.cc
-    art::ServiceHandle<geo::Geometry>      geom;
-    unsigned int  fDataSize;
-    std::vector<short> rawadc;      //UNCOMPRESSED ADC VALUES.
-    // get all hits in the event
-    //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
-    
-    //to get run and event info, you use this "eventAuxillary()" object.
-    art::Timestamp ts = evt.time();
-    std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
-    
-    fRun->Fill(evt.run());
-    fRunSub->Fill(evt.run(),evt.subRun());
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
-    std::vector<const raw::RawDigit*> rawDigitVec;
-    
-    
-    //setup output vector
-    std::unique_ptr< std::vector<anab::TPCPurityInfo> > outputPtrVector(new std::vector<anab::TPCPurityInfo>() );
-    std::vector<anab::TPCPurityInfo> outputVec(*outputPtrVector);
+      fRun->Fill(evt.run());
+      fRunSub->Fill(evt.run(),evt.subRun());
+      art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+      std::vector<const raw::RawDigit*> rawDigitVec;
+
+      //setup output vector
+      std::unique_ptr< std::vector<anab::TPCPurityInfo> > outputPtrVector(new std::vector<anab::TPCPurityInfo>() );
     
     anab::TPCPurityInfo purity_info;
     purity_info.Run = evt.run();
@@ -803,7 +803,7 @@ namespace icarus{
 			Double_t ek[10000];
 			Double_t ez[10000];
 			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
-
+			
 			if(hitarea->size()>100)//prima 30
 			  {
 			    float minimo=100000;
@@ -817,25 +817,25 @@ namespace icarus{
 			    //int gruppi=hitarea->size()/50;
 			    int gruppi=8;
 			    //std::cout << gruppi << std::endl;
-
+			    
 			    float steptime=(massimo-minimo)/(gruppi+1);
 			    //std::cout << steptime << " steptime " << minimo << " " << massimo << std::endl;
 			    float starting_value_tau=fValoretaufcl;
 			    
-			    ////////std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
+			    //std::cout << starting_value_tau << " VALORE INDICATIVO TAU " << std::endl;
 			    //if(tpc_number==2 || tpc_number==5)starting_value_tau=6500;
 			    //if(tpc_number==10 || tpc_number==13)starting_value_tau=5700;
 			    for(int stp=0;stp<=gruppi;stp++)
 			      {
 				std::vector<float>* hitpertaglio=new std::vector<float>;
 				//std::cout << 500+stp*steptime << " time " << 500+(stp+1)*(steptime) << std::endl;
-				///////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
+				/////////std::cout << minimo+stp*steptime << " " << minimo+(stp+1)*(steptime) << std::endl;
 				for(int kk=0;kk<(int)hitarea->size();kk++)
 				  {
 				    if((*hittime)[kk]>=(minimo+stp*steptime) && (*hittime)[kk]<=(minimo+(stp+1)*(steptime))) 
 				      hitpertaglio->push_back((*hitarea)[kk]*exp((*hittime)[kk]/starting_value_tau));
 				  }
-				///////std::cout << hitpertaglio->size() << std::endl;
+				/////////std::cout << hitpertaglio->size() << std::endl;
 				float tagliomax=FoundMeanLog(hitpertaglio,0.90);//0.9com//0.8test1
 				float tagliomin=FoundMeanLog(hitpertaglio,0.05);//0.1com//0.05test1
 				//float tagliomin=0;
@@ -857,7 +857,7 @@ namespace icarus{
 				      }
 				  }
 			      }
-			    std::cout << hitareagood->size() << " hitareagood" << std::endl;    
+			    //std::cout << hitareagood->size() << " hitareagood" << std::endl;    
 			    for(int k=0;k<(int)hitareagood->size();k++)
 			      {
 				//if((*hittimegood)[k]-600*0.4<=1000)//correzione 15/08
@@ -887,7 +887,6 @@ namespace icarus{
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 			      }
-			  }
                         
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
                         gr32->Fit("pol1");
@@ -900,9 +899,9 @@ namespace icarus{
 			std::ofstream goodpuro("purity_results.out",std::ios::app);
                         std::ofstream goodpuro2("purity_results2.out",std::ios::app);
 			
-                        std::cout << -1/slope_purity_2 << std::endl;
-                        std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
-                        std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
+                        //std::cout << -1/slope_purity_2 << std::endl;
+                        //std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
+                        //std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
                         gr41->Fit("expo");
                         TF1 *fitexo = gr41->GetFunction("expo");
@@ -910,10 +909,10 @@ namespace icarus{
                         float error_slope_purity_exo=fitexo->GetParError(1);
                         //fRunSubPurity2->Fill(evt.run(),evt.subRun(),-slope_purity_exo*1000.);
                         //fRunSubPurity->Fill(evt.run(),evt.subRun(),-slope_purity_2*1000.);
-                        std::cout << -1/slope_purity_exo << std::endl;
-                        std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
-                        std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
-                        std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
+                        //std::cout << -1/slope_purity_exo << std::endl;
+                        //std::cout << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
+                        //std::cout << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
+                        //std::cout << fitexo->GetChisquare()/(hitareagood->size()-2) << std::endl;
 			
 			
                         if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5)
@@ -936,17 +935,21 @@ namespace icarus{
 			purity_info.Event = evt.event();
 			purity_info.TPC = tpc_number;
 			purity_info.Attenuation = slope_purity_exo;
-			
+
+			purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
+
 			std::cout << "Calling after filling attenuation … " << std::endl;
 			purity_info.Print();
-			outputVec.push_back(purity_info);
-			
-                        //std::cout << ts << " is time event " << std::endl;
+			outputPtrVector->push_back(purity_info);
+        
+			//std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
                         //goodpur << 1/slope_purity_exo-1/(slope_purity_exo-error_slope_purity_exo) << std::endl;
                         //goodpur << timeevent << " is time event " << std::endl;
+			  }
 		      }
+		    std::cout << "Delete hit stuff." << std::endl;
 
 		    delete hittime;
 		    delete hitarea;
@@ -956,6 +959,7 @@ namespace icarus{
 		    delete hitwire;
 		  }
 		
+		std::cout << "Delete cluster stuff." << std::endl;
 		
 		delete shc;
 		delete ahc;
@@ -965,6 +969,8 @@ namespace icarus{
 	      }//fine if ananlisi
 	  }
 	}
+
+	std::cout << "Delete big stuff." << std::endl;
 
 	delete www0;
 	delete sss0;
@@ -994,17 +1000,16 @@ namespace icarus{
       }
 
     std::cout << "Checking everything in the output..." << std::endl;
-    std::cout << "There are " << outputVec.size() << " objects in the output vector." << std::endl;
+    std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
     
-    for (size_t i_info = 0; i_info<outputVec.size(); ++i_info){
-      auto info = outputVec[i_info];
+    for (size_t i_info = 0; i_info<outputPtrVector->size(); ++i_info){
+      auto info = outputPtrVector->at(i_info);
       info.Print();
     }
+
     
-    //put info onto the event
+   //put info onto the event
     evt.put(std::move(outputPtrVector));
-    
-    
   } // produces
   
 } //end namespace
