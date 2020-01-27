@@ -120,6 +120,7 @@ namespace icarus {
     bool fPersistPurityInfo;
     
     TNtuple* purityTuple;
+    bool fFillAnaTuple;
 
   }; // class ICARUSPurityDQM
   
@@ -135,6 +136,7 @@ namespace icarus{
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
     , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",false))
+    , fFillAnaTuple         (pset.get< bool  >       ("FillAnaTuple",false))
   {
 
     //declare what we produce .. allow it to not be persistable to the event
@@ -189,7 +191,8 @@ namespace icarus{
     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
     purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
 
-    purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
+    if(fFillAnaTuple)
+      purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
 
   }
   
@@ -934,9 +937,13 @@ namespace icarus{
 			purity_info.Subrun = evt.subRun();
 			purity_info.Event = evt.event();
 			purity_info.TPC = tpc_number;
-			purity_info.Attenuation = slope_purity_exo;
+			if(purity_info.TPC<2) purity_info.Cryostat=0;
+			else purity_info.Cryostat=1;
+			purity_info.Attenuation = slope_purity_exo*-1.;
+			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
 
-			purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
+			if(fFillAnaTuple)
+			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
 
 			std::cout << "Calling after filling attenuation … " << std::endl;
 			purity_info.Print();
@@ -1001,12 +1008,12 @@ namespace icarus{
 
     std::cout << "Checking everything in the output..." << std::endl;
     std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
-    
+    /* //don't need this printed here.    
     for (size_t i_info = 0; i_info<outputPtrVector->size(); ++i_info){
       auto info = outputPtrVector->at(i_info);
       info.Print();
     }
-
+    */
     
    //put info onto the event
     evt.put(std::move(outputPtrVector));

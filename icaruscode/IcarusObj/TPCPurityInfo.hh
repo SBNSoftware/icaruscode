@@ -23,9 +23,10 @@ namespace anab {
     unsigned int TPC;
 
     double Attenuation;
+    double FracError;
 
     TPCPurityInfo();
-    void Print();
+    void Print() const;
   };
 
 }
