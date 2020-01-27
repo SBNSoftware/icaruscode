@@ -1,6 +1,9 @@
 <lcgdict>
 
-  <class name="anab::TPCPurityInfo" classVersion="10"/>
+  <class name="anab::TPCPurityInfo" ClassVersion="10">
+   <version ClassVersion="10" checksum="3597317665"/>
+  </class>
+  <class name="std::vector<anab::TPCPurityInfo>"/>
   <class name="art::Wrapper< anab::TPCPurityInfo>"/>
   <class name="art::Wrapper< std::vector<anab::TPCPurityInfo>>"/>
 

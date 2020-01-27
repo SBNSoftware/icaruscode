@@ -39,7 +39,7 @@ icarus_data        v08_31_01
 genie_xsec         v3_00_04a
 sbndaq_artdaq_core v0_04_02_f01
 
-cetbuildtools	v7_14_00	-	only_for_build
+cetbuildtools	v7_15_01	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
