@@ -100,7 +100,7 @@ namespace icarus {
     
     TH1F* purityvalues;
     TH1F* purityvalues2;
-    TH1F* purityvalues3;
+    //TH1F* purityvalues3;
     
     TH1F* h_basediff;
     TH1F* h_base1;
@@ -109,8 +109,8 @@ namespace icarus {
     
 
     TH1F* h_rms;
-    TH1F* fRun; 
-    TH2D* fRunSub;
+    //TH1F* fRun; 
+    //TH2D* fRunSub;
 
     std::vector<art::InputTag>  fDigitModuleLabel;
     //short fPrintLevel;
@@ -166,14 +166,6 @@ namespace icarus{
     // get access to the TFile service
     art::ServiceHandle<art::TFileService> tfs;
   
-    //fNClusters=tfs->make<TH1F>("fNoClustersInEvent","Number of Clusters", 400,0 ,400);
-    //fNHitInCluster = tfs->make<TH1F>("fNHitInCluster","NHitInCluster",1000,0,10000);
-    //fHitArea = tfs->make<TH1F>("fHitArea","fHitArea",1000,0,22000);
-    //fHitTime = tfs->make<TH1F>("fHitTime","fHitTime",1000,0,4100);
-    //fHitIntegral = tfs->make<TH1F>("fHitIntegral","fHitIntegral",1000,0,22000);
-    //fHitAreaTime = tfs->make<TH2D>("fHitAreaTime","fHitAreaTime",1000,0,22000,25,0,2500);
-    //fClusterNW = tfs->make<TH1F>("fClusterNW","fClusterNW",1000,0,2000);
-    //fClusterNS = tfs->make<TH1F>("fClusterNS","fClusterNS",1000,0,2500);
     purityvalues = tfs->make<TH1F>("purityvalues","purityvalues",20000,-10,10);
     h_basediff = tfs->make<TH1F>("h_basediff","h_basediff",10000,-20,20);
     h_basebase = tfs->make<TH1F>("h_basebase","h_basebase",10000,-20,20);
@@ -181,15 +173,15 @@ namespace icarus{
     h_base2 = tfs->make<TH1F>("h_base2","h_base2",10000,-20,20);
     
     h_rms = tfs->make<TH1F>("h_rms","h_rms",2000,0,20);
-    fRun=tfs->make<TH1F>("fRun","Events per run", 4000,0.5 ,4000.5);
-    fRunSub=tfs->make<TH2D>("fRunSub","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
+    //fRun=tfs->make<TH1F>("fRun","Events per run", 4000,0.5 ,4000.5);
+    //fRunSub=tfs->make<TH2D>("fRunSub","Events per run", 4000,0.5 ,4000.5,50,0.5,50.5);
 
     purityvalues2 = tfs->make<TH1F>("purityvalues2","purityvalues2",20000,-10,10);
     puritytpc0 = tfs->make<TH1F>("puritytpc0","puritytpc0",20000,-10,10);
     puritytpc1 = tfs->make<TH1F>("puritytpc1","puritytpc1",20000,-10,10);
     puritytpc2 = tfs->make<TH1F>("puritytpc2","puritytpc2",20000,-10,10);
     puritytpc3 = tfs->make<TH1F>("puritytpc3","puritytpc3",20000,-10,10);
-    purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
+    //purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
 
     if(fFillAnaTuple)
       purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
@@ -257,7 +249,7 @@ namespace icarus{
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
-      std::cout << " Inizia Purity ICARUS Ana " << std::endl;
+      std::cout << " Inizia Purity ICARUS Ana - upgraded by WES and OLIVIA " << std::endl;
       // code stolen from TrackAna_module.cc
       art::ServiceHandle<geo::Geometry>      geom;
       unsigned int  fDataSize;
@@ -269,8 +261,8 @@ namespace icarus{
       art::Timestamp ts = evt.time();
       std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
     
-      fRun->Fill(evt.run());
-      fRunSub->Fill(evt.run(),evt.subRun());
+      //fRun->Fill(evt.run());
+      //fRunSub->Fill(evt.run(),evt.subRun());
       art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
       std::vector<const raw::RawDigit*> rawDigitVec;
 
@@ -890,7 +882,24 @@ namespace icarus{
 				h111->Fill(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 			      }
-                        
+                       
+                        h111->Fit("gaus");
+                        TF1 *fitg = h111->GetFunction("gaus");
+                        float error=fitg->GetParameter(2);
+                        std::cout << " error " << error << std::endl;
+                        float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
+                        std::cout << " error vero" << error_2 << std::endl;
+                        h111->Delete();
+                        for(int k=0;k<(int)hitareagood->size();k++)
+                          {
+                            if((*hittimegood)[k]<=2240)
+                              {
+                                ek[k]=-nologarea[k]+exp(area[k]+error);
+                                ez[k]=nologarea[k]-exp(area[k]-error);
+                                ey[k]=error;
+                              }
+                          }
+ 
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
                         gr32->Fit("pol1");
                   
@@ -931,7 +940,8 @@ namespace icarus{
 			    if(fabs(slope_purity_exo)<0.01 && tpc_number==3)puritytpc3->Fill(-slope_purity_exo*1000.);
 			    
 			  }
-			
+		        if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5 && fabs(slope_purity_exo)<0.01)
+                        {	
 			anab::TPCPurityInfo purity_info;
 			purity_info.Run = evt.run();
 			purity_info.Subrun = evt.subRun();
@@ -941,6 +951,8 @@ namespace icarus{
 			else purity_info.Cryostat=1;
 			purity_info.Attenuation = slope_purity_exo*-1.;
 			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
+                        //purity_info.Attenuation_2 = slope_purity_2*-1.;
+                        //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
 
 			if(fFillAnaTuple)
 			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
@@ -948,7 +960,7 @@ namespace icarus{
 			std::cout << "Calling after filling attenuation … " << std::endl;
 			purity_info.Print();
 			outputPtrVector->push_back(purity_info);
-        
+                        }
 			//std::cout << ts << " is time event " << std::endl;
                         //goodpur << -1/slope_purity_exo << std::endl;
                         //goodpur << -1/(slope_purity_exo+error_slope_purity_exo)+1/slope_purity_exo << std::endl;
