@@ -1,0 +1,50 @@
+#include "services_icarus.fcl"
+#include "decodertools.fcl"
+
+process_name: decoder
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
+}
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+physics:
+{
+    // now also have something produce the digits and headers
+    producers:
+    {
+        daq: {
+            module_type:       FilterNoiseICARUS
+            FragmentsLabel:    "daq"
+            OutputPedestalCor: true
+            DecoderToolVec:
+            {
+                DecoderTPC : @local::TPCDecoderFilterTool
+            }
+        }
+    }
+  
+    analyzers: {}
+    my_producer_modules: [daq]
+    a: [rootout]
+    end_paths: [a]
+}
+
+source.inputCommands: ["keep *_*_*_*", "drop *_*_*_TPCANALYSIS" ]
+
+outputs: {
+  rootout: {
+    module_type: "RootOutput"
+    fileName: "%ifb_%tc-%p.root"
+  }
+}

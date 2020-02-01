@@ -5,6 +5,8 @@ art_make(
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
+                        icarussigproc
+                        icaruscode_Utilities_SignalShapingServiceICARUS_service
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
