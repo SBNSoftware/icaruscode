@@ -1,5 +1,5 @@
 /**
- *  @file   TPCDecoderFilter1D_tool.cc
+ *  @file   TPCDecoderFilter2D_tool.cc
  *
  *  @brief  This tool converts from daq to LArSoft format with noise filtering
  *
@@ -129,7 +129,7 @@ private:
 
     uint32_t                           fFragment_id_offset;     //< Allow offset for id
     size_t                             fCoherentNoiseGrouping;  //< # channels in common for coherent noise
-    size_t                             fStructuringElement;     //< Structuring element for morphological filter
+    std::vector<size_t>                fStructuringElement;     //< Structuring element for morphological filter
     size_t                             fMorphWindow;            //< Window for filter
     float                              fThreshold;              //< Threshold to apply for saving signal
 
@@ -185,11 +185,11 @@ TPCDecoderFilter1D::~TPCDecoderFilter1D()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 {
-    fFragment_id_offset    = pset.get<uint32_t>("fragment_id_offset"    );
-    fCoherentNoiseGrouping = pset.get<size_t  >("CoherentGrouping",   64);
-    fStructuringElement    = pset.get<size_t  >("StructuringElement", 20);
-    fMorphWindow           = pset.get<size_t  >("FilterWindow",       10);
-    fThreshold             = pset.get<float   >("Threshold",         7.5);
+    fFragment_id_offset    = pset.get<uint32_t           >("fragment_id_offset"                                );
+    fCoherentNoiseGrouping = pset.get<size_t             >("CoherentGrouping",                               64);
+    fStructuringElement    = pset.get<std::vector<size_t>>("StructuringElement", std::vector<size_t>() = {7,20});
+    fMorphWindow           = pset.get<size_t             >("FilterWindow",                                   10);
+    fThreshold             = pset.get<float              >("Threshold",                                     7.5);
 
     fFilterModeVec         = {'d','e','g'};
 
@@ -266,8 +266,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     fFakeParticleTool->overlayFakeParticle(fPedSubtractedWaveforms);
 
     // Run the coherent filter
-    denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
-                                   fFilterModeVec[0],fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
+    denoiser.removeCoherentNoise2D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
+                                   fFilterModeVec[2],fCoherentNoiseGrouping,fStructuringElement[0],fStructuringElement[1],fMorphWindow,fThreshold);
 
     return;
 }

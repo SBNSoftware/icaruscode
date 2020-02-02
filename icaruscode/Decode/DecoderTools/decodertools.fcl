@@ -39,3 +39,13 @@ TPCDecoderOverlayFilter1DTool: {
     Threshold:          7.5
     FakeParticle:       @local::FakeParticleTool
 }
+
+TPCDecoderOverlayFilter2DTool: {
+    tool_type:          TPCDecoderOverlayFilter2D
+    fragment_id_offset: 0
+    CoherentGrouping:   64
+    StructuringElement: [7,20]
+    FilterWindow:       10
+    Threshold:          7.5
+    FakeParticle:       @local::FakeParticleTool
+}
