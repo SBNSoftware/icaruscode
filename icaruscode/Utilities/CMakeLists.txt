@@ -37,6 +37,10 @@ simple_plugin( SignalShapingServiceICARUS  "service"
                ${icarus_util_lib_list}
         )
 
+simple_plugin( SignalShaperServiceICARUS  "service"
+               ${icarus_util_lib_list}
+        )
+
 simple_plugin(SaveConfigurationIntoTFile "module"
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
               ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}

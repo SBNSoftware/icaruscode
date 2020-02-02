@@ -37,6 +37,7 @@ art_make(
                         ${ROOT_GDML}
 			${ROOT_FFTW}
 			${ROOT_BASIC_LIB_LIST}
+			${TBB}
         )
 
 install_headers()

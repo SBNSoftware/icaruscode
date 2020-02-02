@@ -20,6 +20,7 @@ art_make(
             lardataobj_RecoBase
             lardata_ArtDataHelper
             icaruscode_Utilities_SignalShapingServiceICARUS_service
+            icaruscode_Utilities_SignalShaperServiceICARUS_service
             ${ART_FRAMEWORK_CORE}
             ${ART_FRAMEWORK_PRINCIPAL}
             ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -35,6 +36,7 @@ art_make(
             ${CETLIB}
             ${ROOT_FFTW}
             ${ROOT_BASIC_LIB_LIST}
+            ${TBB}
         )
 
 install_headers()

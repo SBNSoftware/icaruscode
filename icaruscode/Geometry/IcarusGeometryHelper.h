@@ -109,6 +109,7 @@ class icarus::IcarusGeometryHelper: public geo::ExptGeoHelperInterface {
   
 }; // icarus::IcarusGeometryHelper
 
+DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface, SHARED)
 
 // -----------------------------------------------------------------------------
 DECLARE_ART_SERVICE_INTERFACE_IMPL

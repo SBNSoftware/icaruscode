@@ -1,3 +1,5 @@
+cet_find_library( FFTW_LIBRARY NAMES fftw3 PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
+
 art_make( 
           LIB_LIBRARIES 
                           lardataobj_RawData
@@ -32,6 +34,7 @@ art_make(
                           ${ROOT_GDML}
                           ${ROOT_FFTW}
                           ${ROOT_BASIC_LIB_LIST}
+			  ${FFTW_LIBRARY}
           TOOL_LIBRARIES  icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
                           lardataobj_RawData
                           lardataobj_RecoBase
