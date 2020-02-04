@@ -76,9 +76,12 @@ private:
     art::InputTag                                fFragmentsLabel;      ///< The input artdaq fragment label
     bool                                         fOutputPedestalCor;   ///< Should we output pedestal corrected (not noise filtered)?
     std::string                                  fOutputPedCorPath;    ///< Path to assign to the output if asked for
+    unsigned int                                 fPlaneToSimulate;     ///< Use to get fragment offset
 
     // Statistics.
     int                                          fNumEvent;             ///< Number of events seen.
+
+    size_t                                       fFragmentOffset;       ///< The fragment offset to set channel numbering
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                     fGeometry;             ///< pointer to Geometry service
@@ -117,6 +120,33 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
         fDecoderToolVec.push_back(art::make_tool<IDecoderFilter>(decoderToolParamSet));
     }
 
+    // Compute the fragment offset from the channel number for the desired plane
+    // Get a base channel number for the plane we want
+    std::cout << "ICARUS has " << fGeometry->Nchannels() << " in total with " << fGeometry->Views().size() << " views" << std::endl;
+
+    geo::WireID wireID(0, 0, fPlaneToSimulate, 0);
+
+    std::cout << "WireID: " << wireID << std::endl;
+
+    geo::WireID firstWireID = fGeometry->GetBeginWireID(geo::PlaneID(0,0,fPlaneToSimulate));
+
+    std::cout << "From geo, first WireID: " << firstWireID << std::endl;
+
+    raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(wireID);
+
+    std::cout << "Channel: " << channel << std::endl;
+
+    for(size_t thePlane = 0; thePlane < 3; thePlane++)
+    {
+        geo::WireID  tempWireID(0, 0, thePlane, 0);
+        geo::PlaneID tempPlaneID = tempWireID.planeID();
+
+        std::cout << "thePlane: " << thePlane << ", WireID: " << tempWireID << ", channel: " << 
+        fGeometry->PlaneWireToChannel(tempWireID) << ", view: " << fGeometry->View(tempPlaneID) << std::endl;
+    }
+
+    fFragmentOffset = channel / 576;
+
     produces<std::vector<raw::RawDigit>>();
 
     if (fOutputPedestalCor)
@@ -143,6 +173,7 @@ void FilterNoiseICARUS::configure(fhicl::ParameterSet const & pset)
     fFragmentsLabel    = pset.get<art::InputTag>("FragmentsLabel",    "daq:PHYSCRATEDATA");
     fOutputPedestalCor = pset.get<bool         >("OutputPedestalCor",               false);
     fOutputPedCorPath  = pset.get<std::string  >("OutputPedCorPath",                "RAW");
+    fPlaneToSimulate   = pset.get<unsigned int >("PlaneToSimulate",                     2);
 }
 
 //----------------------------------------------------------------------------
@@ -195,7 +226,7 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
         size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
 
         // Set base channel for both the board and the board/fragment
-        size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * fragment.fragmentID();
+        size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragment.fragmentID() + fFragmentOffset);
 
         // Save the filtered RawDigits
         saveRawDigits(decoderTool->getWaveLessCoherent(),decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
@@ -225,22 +256,22 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 
 void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArray, 
                                       const icarussigproc::VectorFloat& rmsVec,
-                                      RawDigitCollectionPtr&                  rawDigitCol, 
-                                      size_t                                  channel)
+                                      RawDigitCollectionPtr&            rawDigitCol, 
+                                      size_t                            channel)
 {
-        raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
+    raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 
-        // Loop over the channels to recover the RawDigits after filtering
-        for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
-        {
-            const icarussigproc::VectorFloat& dataVec = dataArray[chanIdx];
+    // Loop over the channels to recover the RawDigits after filtering
+    for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+    {
+        const icarussigproc::VectorFloat& dataVec = dataArray[chanIdx];
 
-            // Need to convert from float to short int
-            std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+        // Need to convert from float to short int
+        std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
-            rawDigitCol->emplace_back(channel++,wvfm.size(),wvfm); 
-            rawDigitCol->back().SetPedestal(0.,rmsVec[chanIdx]);
-        }//loop over channel indices
+        rawDigitCol->emplace_back(channel++,wvfm.size(),wvfm); 
+        rawDigitCol->back().SetPedestal(0.,rmsVec[chanIdx]);
+    }//loop over channel indices
 
     return;
 }
