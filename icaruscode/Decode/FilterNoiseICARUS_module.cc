@@ -31,6 +31,9 @@
 #include "canvas/Persistency/Common/Ptr.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
@@ -59,15 +62,44 @@ public:
     virtual void beginJob(art::ProcessingFrame const& frame);
     virtual void endJob(art::ProcessingFrame const& frame);
 
-private:
     // Define the RawDigit collection
     using RawDigitCollection    = std::vector<raw::RawDigit>;
     using RawDigitCollectionPtr = std::unique_ptr<RawDigitCollection>;
 
+    // Function to do the work
+    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, RawDigitCollectionPtr&, RawDigitCollectionPtr&) const;
+
+private:
+
+    class multiThreadFragmentProcessing 
+    {
+    public:
+        multiThreadFragmentProcessing(FilterNoiseICARUS const& parent,
+                                      art::Handle<artdaq::Fragments>& fragmentsHandle, 
+                                      RawDigitCollectionPtr& rawDigitCollection,
+                                      RawDigitCollectionPtr& rawRawDigitCollection)
+            : fFilterNoiseICARUS(parent),
+              fFragmentsHandle(fragmentsHandle),
+              fRawDigitCollection(rawDigitCollection),
+              fRawRawDigitCollection(rawRawDigitCollection)
+        {}
+
+        void operator()(const tbb::blocked_range<size_t>& range) const
+        {
+            for (size_t idx = range.begin(); idx < range.end(); idx++)
+                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection);
+        }
+    private:
+        const FilterNoiseICARUS&        fFilterNoiseICARUS;
+        art::Handle<artdaq::Fragments>& fFragmentsHandle;
+        RawDigitCollectionPtr&          fRawDigitCollection;
+        RawDigitCollectionPtr&          fRawRawDigitCollection;
+    };
+
     // Function to save our RawDigits
     void saveRawDigits(const icarussigproc::ArrayFloat&, 
                        const icarussigproc::VectorFloat&, 
-                       RawDigitCollectionPtr&, size_t);
+                       RawDigitCollectionPtr&, size_t) const;
 
     // Tools for decoding fragments depending on type
     std::vector<std::unique_ptr<IDecoderFilter>> fDecoderToolVec;      ///< Decoder tools
@@ -207,34 +239,39 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 
     std::cout << "**** Processing raw data fragments ****" << std::endl;
 
-    // Get the right tool for the job
-    daq::IDecoderFilter* decoderTool = fDecoderToolVec.back().get();
+    // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
+    multiThreadFragmentProcessing fragmentProcessing(*this, daq_handle, rawDigitCollection, rawRawDigitCollection);
 
-    // Loop over daq fragments
-    for (auto const &fragment: *daq_handle) 
-    {
-        std::cout << "--> Processing fragment ID: " << fragment.fragmentID() << std::endl;
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
 
-        //process_fragment(event, rawfrag, product_collection, header_collection);
-        decoderTool->process_fragment(fragment);
-
-        // Useful numerology
-        // convert fragment to Nevis fragment
-        icarus::PhysCrateFragment physCrateFragment(fragment);
-
-        size_t nBoardsPerFragment = physCrateFragment.nBoards();
-        size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
-
-        // Set base channel for both the board and the board/fragment
-        size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragment.fragmentID() + fFragmentOffset);
-
-        // Save the filtered RawDigits
-        saveRawDigits(decoderTool->getWaveLessCoherent(),decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
-
-        // Optionally, save the pedestal corrected RawDigits
-        if (fOutputPedestalCor)
-            saveRawDigits(decoderTool->getPedSubtractedWaveforms(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
-    }
+//    // Get the right tool for the job
+//    daq::IDecoderFilter* decoderTool = fDecoderToolVec.back().get();
+//
+//    // Loop over daq fragments
+//    for (auto const &fragment: *daq_handle) 
+//    {
+//        std::cout << "--> Processing fragment ID: " << fragment.fragmentID() << std::endl;
+//
+//        //process_fragment(event, rawfrag, product_collection, header_collection);
+//        decoderTool->process_fragment(fragment);
+//
+//        // Useful numerology
+//        // convert fragment to Nevis fragment
+//        icarus::PhysCrateFragment physCrateFragment(fragment);
+//
+//        size_t nBoardsPerFragment = physCrateFragment.nBoards();
+//        size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
+//
+//        // Set base channel for both the board and the board/fragment
+//        size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragment.fragmentID() + fFragmentOffset);
+//
+//        // Save the filtered RawDigits
+//        saveRawDigits(decoderTool->getWaveLessCoherent(),decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
+//
+//        // Optionally, save the pedestal corrected RawDigits
+//        if (fOutputPedestalCor)
+//            saveRawDigits(decoderTool->getPedSubtractedWaveforms(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
+//    }
 
     // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
     std::sort(rawDigitCollection->begin(),rawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
@@ -254,10 +291,45 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
     return;
 }
 
+void FilterNoiseICARUS::processSingleFragment(size_t                         idx, 
+                                              art::Handle<artdaq::Fragments> fragmentHandle,
+                                              RawDigitCollectionPtr&         rawDigitCollection,
+                                              RawDigitCollectionPtr&         rawRawDigitCollection) const
+{
+    art::Ptr<artdaq::Fragment> fragmentPtr(fragmentHandle, idx);
+
+    std::cout << "--> Processing fragment ID: " << fragmentPtr->fragmentID() << std::endl;
+
+    // Recover pointer to the decoder needed here
+    IDecoderFilter* decoderTool = fDecoderToolVec.back().get();
+
+    //process_fragment(event, rawfrag, product_collection, header_collection);
+    decoderTool->process_fragment(*fragmentPtr);
+
+    // Useful numerology
+    // convert fragment to Nevis fragment
+    icarus::PhysCrateFragment physCrateFragment(*fragmentPtr);
+
+    size_t nBoardsPerFragment = physCrateFragment.nBoards();
+    size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
+
+    // Set base channel for both the board and the board/fragment
+    size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragmentPtr->fragmentID() + fFragmentOffset);
+
+    // Save the filtered RawDigits
+    saveRawDigits(decoderTool->getWaveLessCoherent(),decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
+
+    // Optionally, save the pedestal corrected RawDigits
+    if (fOutputPedestalCor)
+        saveRawDigits(decoderTool->getPedSubtractedWaveforms(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
+
+    return;
+}
+
 void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArray, 
                                       const icarussigproc::VectorFloat& rmsVec,
                                       RawDigitCollectionPtr&            rawDigitCol, 
-                                      size_t                            channel)
+                                      size_t                            channel) const
 {
     raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 

@@ -24,6 +24,7 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
+                        ${TBB}
         )
 
 install_headers()
