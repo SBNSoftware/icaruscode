@@ -61,8 +61,8 @@ private:
     // Utility routine for converting numbers to strings
     std::string             numberToString(int number);
     
-    int fFFTSize;		//size of transform
-    std::string fFFTOption;     //FFTW setting
+    int                     fFFTSize;		//size of transform
+    std::string             fFFTOption;     //FFTW setting
 
     // Member variables from the fhicl file
     size_t                  fThisPlane;

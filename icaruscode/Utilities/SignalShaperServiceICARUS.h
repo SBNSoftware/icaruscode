@@ -117,7 +117,7 @@ namespace util {
         double                     GetRawNoise(unsigned int const channel)            const ;
         double                     GetDeconNoise(unsigned int const channel)          const;
         
-        const util::SignalShaper& SignalShaper(size_t channel)                      const;
+        const util::SignalShaper&  SignalShaper(size_t channel)                      const;
         
         int                        FieldResponseTOffset(unsigned int const channel)   const;
         

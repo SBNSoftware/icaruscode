@@ -65,8 +65,8 @@ void util::SignalShaperServiceICARUS::reconfigure(const fhicl::ParameterSet& pse
     for(std::string& responseTool : responseTools.get_pset_names())
     {
         fhicl::ParameterSet responseToolParamSet = responseTools.get<fhicl::ParameterSet>(responseTool);
-	responseToolParamSet.put_or_replace<int>("FFTSize",fFFTSize);
-	responseToolParamSet.put_or_replace<std::string>("FFTOption",fFFTOption);
+	    responseToolParamSet.put_or_replace<int>("FFTSize",fFFTSize);
+	    responseToolParamSet.put_or_replace<std::string>("FFTOption",fFFTOption);
         size_t                     planeIdx             = responseToolParamSet.get<size_t>("Plane");
         
         fPlaneToResponseMap[planeIdx].push_back(art::make_tool<icarus_tool::shprIResponse>(responseToolParamSet));
