@@ -1,5 +1,5 @@
 #include "services_icarus.fcl"
-#include "decodertools.fcl"
+#include "decoderDefs.fcl"
 
 process_name: decoder
 
@@ -23,15 +23,7 @@ physics:
     // now also have something produce the digits and headers
     producers:
     {
-        daq: {
-            module_type:       FilterNoiseICARUS
-            FragmentsLabel:    "daq"
-            OutputPedestalCor: true
-            DecoderToolVec:
-            {
-                DecoderTPC : @local::TPCDecoderFilterTool
-            }
-        }
+        daq: @local::decodeFilterNoise
     }
   
     analyzers: {}
