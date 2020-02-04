@@ -1,8 +1,10 @@
+BEGIN_PROLOG
 
 FakeParticleTool: {
     tool_type:          FakeParticle
-    WireRange:          [10,550]
-    TickRange:          [1000,3000]
+    WireEndPoints:      [10,550]
+    StartTick:          1000
+    StartAngle:         45  # in degrees
     NumElectronsPerMM:  7500
     PlaneToSimulate:    2
 }
@@ -49,3 +51,5 @@ TPCDecoderOverlayFilter2DTool: {
     Threshold:          7.5
     FakeParticle:       @local::FakeParticleTool
 }
+
+END_PROLOG

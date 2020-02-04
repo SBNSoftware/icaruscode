@@ -68,8 +68,9 @@ public:
 private:
 
     // fhicl variables
-    std::vector<size_t>                fWireRange;             //< The range of wires our particle extends over
-    std::vector<size_t>                fTickRange;             //< The range of ticks our particle extends over
+    std::vector<size_t>                fWireEndPoints;         //< Desired wire endpoints for our particle
+    size_t                             fStartTick;             //< The tick for the start point of our particle
+    float                              fStartAngle;            //< Angle (in degrees) for the trajectory
     int                                fNumElectronsPerMM;     //< The number of electrons/mm to deposit
     size_t                             fPlaneToSimulate;       //< The plane to simulate
 
@@ -80,6 +81,7 @@ private:
     float                              fTanTheta;              //< tangent in euclidean space
     float                              fSinTheta;              //< sine of this angle
     float                              fCosTheta;              //< save some time by also doing cosine
+    std::vector<size_t>                fTickEndPoints;         //< Tick endpoints to overlay
 
     const geo::Geometry*               fGeometry;              //< pointer to the Geometry service
     const detinfo::DetectorProperties* fDetector;              //< Pointer to the detector properties
@@ -102,11 +104,12 @@ FakeParticle::~FakeParticle()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void FakeParticle::configure(fhicl::ParameterSet const &pset)
 {
-    fWireRange         = pset.get<std::vector<size_t>>("WireRange",             std::vector<size_t>() = {0,575});
-    fTickRange         = pset.get<std::vector<size_t>>("TickRange",         std::vector<size_t>() = {1000,4000});
-    fNumElectronsPerMM = pset.get<int                >("NumElectronsPerMM",                                6000);
-    fPlaneToSimulate   = pset.get<size_t             >("PlaneToSimulate",                                     2);
-
+    fWireEndPoints     = pset.get<std::vector<size_t>>("WireEndPoints", std::vector<size_t>()={25,550});
+    fStartTick         = pset.get<size_t             >("StartTick",                               1000);
+    fStartAngle        = pset.get<float              >("StartAngle",                                45);
+    fNumElectronsPerMM = pset.get<int                >("NumElectronsPerMM",                       6000);
+    fPlaneToSimulate   = pset.get<size_t             >("PlaneToSimulate",                            2);
+                                  
     fGeometry           = art::ServiceHandle<geo::Geometry const>{}.get();
     fDetector           = lar::providerFrom<detinfo::DetectorPropertiesService>();
     fSignalShapeService = art::ServiceHandle<util::SignalShapingServiceICARUS>{}.get();
@@ -119,11 +122,33 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
 
     fMMPerWire = fGeometry->WirePitch() * 10.;  // wire pitch returned in cm, want mm
 
-    // Get the sin/tan of the angle in wire space
-    fTanThetaTW = float(fTickRange[1] - fTickRange[0]) / float(fWireRange[1] - fWireRange[0]);
-    fTanTheta   = fTanThetaTW * fMMPerTick / fMMPerWire;
+    // Get slope (tan(theta)) and related angles
+    fTanTheta   = std::tan(fStartAngle * M_PI / 180.);
     fCosTheta   = 1. / sqrt(1. + fTanTheta * fTanTheta);
     fSinTheta   = fTanTheta * fCosTheta;
+
+    fTanThetaTW = fTanTheta * fMMPerWire / fMMPerTick;
+
+    // Constrain x range
+    fWireEndPoints[1] = std::min(fWireEndPoints[1],size_t(576));
+
+    // Now compute the tick start/end points
+    fTickEndPoints.push_back(fStartTick);
+    fTickEndPoints.push_back(size_t(std::round(fTanThetaTW * float(fWireEndPoints[1] - fWireEndPoints[0]) + fStartTick)));
+
+    // Check to see if we have run off the end of our frame (max 576,4096)
+    if (fTickEndPoints[1] > size_t(4096))
+    {
+        // Probably should worry about the 90 degree case...
+        if (std::fabs(fStartAngle) < 90)
+        {
+            fWireEndPoints[1] = std::round(float(4096 - fStartTick) / fTanTheta + fWireEndPoints[0]);
+            fTickEndPoints[1] = 4096;
+        }
+        else
+            fWireEndPoints[1] = fWireEndPoints[0];
+        
+    }
 
     return;
 }
@@ -133,7 +158,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
     // We have assumed the input waveform array will have 576 wires... 
     // Our "range" must be contained within that. By assumption we start at wire 0, so really just need
     // to set the max range 
-    size_t maxWire = std::min(waveforms.size(),fWireRange[1]);
+    size_t maxWire = std::min(waveforms.size(),fWireEndPoints[1]);
 
     // Create a temporary waveform to handle the input charge
     std::vector<float> tempWaveform(waveforms[0].size(),0.);
@@ -145,15 +170,15 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
     raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(fPlaneToSimulate, 0);
 
     // Loop over the wire range
-    for(size_t wireIdx = fWireRange[0]; wireIdx < maxWire; wireIdx++)
+    for(size_t wireIdx = fWireEndPoints[0]; wireIdx < maxWire; wireIdx++)
     {
         // As the track angle becomes more parallel to the electron drift direction there will be more charge
         // deposited per mm that will impact a given wire. So we need to try to accommodate this here.
         // Start by computing the starting tick (based on how far we have gone so far)
-        size_t startTick = size_t(fTanThetaTW * float(wireIdx - fWireRange[0])) + fTickRange[0];
+        size_t startTick = size_t(fTanThetaTW * float(wireIdx - fWireEndPoints[0])) + fTickEndPoints[0];
 
         // If this has gone outside the maximum tick then we are done
-        if (!(startTick < fTickRange[1] && startTick < tempWaveform.size())) break;
+        if (!(startTick < fTickEndPoints[1] && startTick < tempWaveform.size())) break;
 
         // Begin by computing the number of ticks for this given wire, converted to tick units and 
         // always at least one tick
@@ -161,7 +186,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
         size_t endTick    = startTick + deltaTicks;
 
         // Trim back if we look to step outside of the max range 
-        endTick = std::min(endTick,fTickRange[1]);
+        endTick = std::min(endTick,fTickEndPoints[1]);
         endTick = std::min(endTick,tempWaveform.size());
 
         // Ok, now loop through the ticks and deposit charge. 
