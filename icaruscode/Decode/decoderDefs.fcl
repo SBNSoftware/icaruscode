@@ -1,0 +1,39 @@
+#include "decodertools.fcl"
+
+BEGIN_PROLOG
+
+
+decode: {
+                    module_type: ICARUSDecoder
+                    // for debugging -- time (in s) to wait in between analyzing events
+                    wait_time: -1
+                    // make the header
+                    produce_header: true
+                    baseline_calc: false
+                    // parameters for timestamps
+                    timesize: 2559
+                    // produce timestamps in units of mus
+                    frame_to_dt: 0.5
+                    // parameters for header index
+                    min_slot_no: 5
+                    channel_per_slot: 64
+                    fragment_id_offset: 0
+                    DecoderToolVec:
+                    {
+                        DecoderTPC : @local::TPCDecoderTool
+                    }
+}
+
+decodeFilterNoise: {
+                    module_type:        FilterNoiseICARUS
+                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    OutputPedestalCor:  false
+                    OutputPedestalPath: "RAW"
+                    DecoderToolVec:
+                    {
+                        DecoderTPC : @local::TPCDecoderOverlayFilter1DTool
+                    }
+}
+
+END_PROLOG
+
