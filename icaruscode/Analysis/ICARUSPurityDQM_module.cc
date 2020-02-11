@@ -62,7 +62,7 @@
 class TH1F;
 class TH2F;
 ///Cluster finding and building 
-namespace cluster {
+namespace icarus {
 
    
   class ICARUSPurityDQM : public art::EDAnalyzer {
@@ -110,13 +110,12 @@ namespace cluster {
       //TProfile2D* fRunSubPurity3;
 
 
-
-    std::string fHitsModuleLabel;
-    std::string fClusterModuleLabel;
-    std::string fVertexModuleLabel;
+    //std::string fHitsModuleLabel;
+    //std::string fClusterModuleLabel;
+    //std::string fVertexModuleLabel;
     std::vector<art::InputTag>  fDigitModuleLabel;
-    short fPrintLevel;
-    short moduleID;
+    //short fPrintLevel;
+    //short moduleID;
     float fValoretaufcl; 
     
     std::ofstream outFile;
@@ -127,32 +126,20 @@ namespace cluster {
 
 //#endif 
 
-namespace cluster{
+namespace icarus{
 
   //--------------------------------------------------------------------
   ICARUSPurityDQM::ICARUSPurityDQM(fhicl::ParameterSet const& pset)
     : EDAnalyzer(pset)
-    , fHitsModuleLabel      (pset.get< std::string > ("HitsModuleLabel")         )
-    , fClusterModuleLabel   (pset.get< std::string > ("ClusterModuleLabel"))
-    , fVertexModuleLabel    (pset.get< std::string > ("VertexModuleLabel")         )
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
-    , fPrintLevel           (pset.get< short >       ("PrintLevel"))
-    , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
+     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
   {
-  
-    if(fPrintLevel == -1) {
-      // encode the clustermodule label into an integer
-      moduleID = 0;
-      size_t found = fClusterModuleLabel.find("traj"); if(found != std::string::npos) moduleID = 1;
-      found = fClusterModuleLabel.find("line"); if(found != std::string::npos) moduleID = 2;
-      found = fClusterModuleLabel.find("fuzz"); if(found != std::string::npos) moduleID = 3;
-      found = fClusterModuleLabel.find("pand"); if(found != std::string::npos) moduleID = 4;
-      std::cout<<"fClusterModuleLabel "<<fClusterModuleLabel<<" ID "<<moduleID<<"\n";
-      
-      std::string fileName = fClusterModuleLabel + ".tru";
-      outFile.open(fileName);
-    }
+  	for(const auto& digitlabel2 : fDigitModuleLabel)
+	{
 
+     		std::cout<<"fDigitModuleLabel "<<digitlabel2<<"\n";
+      }
+ 
   }
   
   //------------------------------------------------------------------
@@ -202,7 +189,7 @@ namespace cluster{
   {
     std::ofstream goodpurofinal("valore_indicativo.out",std::ios::app);
     goodpurofinal << purityvalues2->GetMean() << std::endl;
-    if(fPrintLevel == -1) outFile.close();
+    //if(fPrintLevel == -1) outFile.close();
   }
   
   
@@ -998,7 +985,7 @@ for(const auto& digitlabel : fDigitModuleLabel)
 } //end namespace
 
 
-namespace cluster{
+namespace icarus{
 
   DEFINE_ART_MODULE(ICARUSPurityDQM)
   
