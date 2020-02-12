@@ -128,6 +128,17 @@ icarus_split_induction_geometry_helper: {
     # use the experimental new channel mapping algorithm
     tool_type: "ICARUSsplitInductionChannelMapSetupTool"
     
+    WirelessChannels: {
+      
+      # each collection and second induction plane has 64 additional channels
+      # per side not connected to any wire
+      SecondInductionPreChannels:  64
+      SecondInductionPostChannels: 64
+      CollectionPreChannels:       64
+      CollectionPostChannels:      64
+    
+    } # WirelessChannels
+    
   } # Mapper
   
 } # icarus_split_induction_geometry_helper

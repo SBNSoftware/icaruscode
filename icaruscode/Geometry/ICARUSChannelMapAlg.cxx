@@ -75,7 +75,9 @@ namespace {
 
 // -----------------------------------------------------------------------------
 icarus::ICARUSChannelMapAlg::ICARUSChannelMapAlg(Config const& config)
-  : fSorter(getOptionalParameterSet(config.Sorter))
+  : fWirelessChannelCounts
+    (extractWirelessChannelParams(config.WirelessChannels()))
+  , fSorter(getOptionalParameterSet(config.Sorter))
   {}
 
 
@@ -476,6 +478,9 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
         readout::ROPID const rid { sid, r };
         log << "ROP: " << rid;
         
+        auto const& WirelessChannelCounts
+          = fWirelessChannelCounts.at(findPlaneType(rid));
+        
         PlaneColl_t const& planes = ROPplanes(rid);
         log << " (" << planes.size() << " planes):";
         assert(!planes.empty());
@@ -486,9 +491,10 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
         auto const pend = util::end(planes);
         
         // assign available channels to all wires of the first plane
-        nextChannel += (*iPlane)->Nwires();
+        nextChannel += WirelessChannelCounts.first + (*iPlane)->Nwires();
         fPlaneInfo[(*iPlane)->ID()] = {
-          ChannelRange_t{ firstROPchannel, nextChannel },
+          ChannelRange_t
+            { firstROPchannel + WirelessChannelCounts.first, nextChannel },
           rid
           };
         log << " [" << (*iPlane)->ID() << "] "
@@ -538,6 +544,7 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
           
         } // while
         
+        nextChannel += WirelessChannelCounts.second;
         unsigned int const nChannels = nextChannel - firstROPchannel;
         fChannelToWireMap.addROP(rid, firstROPchannel, nChannels);
         log
@@ -572,6 +579,25 @@ void icarus::ICARUSChannelMapAlg::buildReadoutPlanes
     );
   
 } // icarus::ICARUSChannelMapAlg::buildReadoutPlanes()
+
+
+// -----------------------------------------------------------------------------
+std::size_t icarus::ICARUSChannelMapAlg::findPlaneType
+  (readout::ROPID const& rid) const
+{
+  /*
+   * This implementation is very fragile, relying on the fact that the first
+   * induction plane numbers are `kFirstInductionType`, the second induction
+   * plane numbers are `kSecondInductionType` and the collection plane numbers
+   * are `kCollectionType`. This assumption is not checked anywhere.
+   * 
+   */
+  PlaneColl_t const& planes = ROPplanes(rid);
+  return planes.empty()
+    ? std::numeric_limits<std::size_t>::max()
+    : static_cast<std::size_t>(planes.front()->ID().Plane);
+  
+} // icarus::ICARUSChannelMapAlg::findPlaneType()
 
 
 // ----------------------------------------------------------------------------
@@ -617,6 +643,19 @@ geo::SigType_t icarus::ICARUSChannelMapAlg::SignalTypeForChannelImpl
     ;
   
 } // icarus::ICARUSChannelMapAlg::SignalTypeForChannelImpl()
+
+
+// -----------------------------------------------------------------------------
+auto icarus::ICARUSChannelMapAlg::extractWirelessChannelParams
+  (Config::WirelessChannelStruct const& params) -> WirelessChannelCounts_t
+{
+  return {
+    std::make_pair(params.FirstInductionPreChannels(), params.FirstInductionPostChannels()),
+    std::make_pair(params.SecondInductionPreChannels(), params.SecondInductionPostChannels()),
+    std::make_pair(params.CollectionPreChannels(), params.CollectionPostChannels())
+    };
+  
+} // icarus::ICARUSChannelMapAlg::extractWirelessChannelParams()
 
 
 // ----------------------------------------------------------------------------
