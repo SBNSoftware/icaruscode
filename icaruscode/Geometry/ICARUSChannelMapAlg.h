@@ -232,13 +232,9 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
    * @param tpcsetid ID of the TPC set to convert into TPC IDs
    * @return the list of TPCs, empty if TPC set is invalid
    *
-   * In this mapping, TPC sets and TPCs are mapped one-to-one.
-   * The returned list contains always one entry, unless the specified TPC
-   * set ID is invalid, in which case the list is empty.
-   * Note that the check is performed on the validity of the TPC set ID, that
-   * does not necessarily imply that the TPC set specified by the ID actually
-   * exists. Check the existence of the TPC set first (HasTPCset()).
-   * Behaviour on valid, non-existent TPC set IDs is undefined.
+   * Each TPC set contains one TPC if on first induction plane, where wires are
+   * split, or two in the second induction and collection planes, which have
+   * shared channels.
    */
   virtual std::vector<geo::TPCID> TPCsetToTPCs
     (readout::TPCsetID const& tpcsetid) const override;

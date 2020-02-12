@@ -9,10 +9,8 @@
 // library header
 #include "icaruscode/Geometry/details/ROPandTPCsetBuildingAlg.h"
 
-// ICARUS libraries
-#include "larcorealg/Geometry/details/extractMaxGeometryElements.h"
-
 // LArSoft libraries
+#include "larcorealg/Geometry/details/extractMaxGeometryElements.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::size()
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h" // readout::TPCsetID, ...
@@ -651,8 +649,7 @@ void icarus::details::ROPandTPCsetBuildingAlg::fillTPCsInSet
       { // local block for debug output
         auto const& TPCs = TPCsetTPCs[tpcsetid];
         mf::LogTrace log("ICARUSChannelMapAlg");
-        log << tpcsetid << " has " << cryo.ID() << " has " << TPCs.size() 
-          << " TPCs:";
+        log << tpcsetid << " has " << TPCs.size() << " TPCs:";
         for (geo::TPCGeo const* tpc: TPCs) log << " " << tpc->ID() << ";";
       } // local block for debug output
       
@@ -821,7 +818,8 @@ void icarus::details::ROPandTPCsetBuildingAlg::fillPlanesInROP(
           // each time, including the two conflicting assignments.
           //
           throw cet::exception(fLogCategory)
-            << "Logic error: ROPID " << ropid << " has already been assigned!";
+            << "Logic error: ROPID " << ropid
+            << " has already been assigned!\n";
         }
         ROPplanes[ropid] = std::move(planes);
         
