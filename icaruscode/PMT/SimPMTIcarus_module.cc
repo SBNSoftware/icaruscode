@@ -50,9 +50,16 @@ namespace opdet{
    * Configuration
    * ==============
    * 
-   * Apart from the input collection of propagated photons, all the
-   * configuration parameters are passed directly to the
-   * `icarus::opdet::PMTsimulationAlg` algorithm.
+   * All the configuration parameters are passed directly to the
+   * `icarus::opdet::PMTsimulationAlg` algorithm, with the following exceptions:
+   * * **InputModule** (input tag): tag of the data product containing the
+   *   `sim::SimPhotons` collection to be digitized;
+   * * **ElectronicsNoiseRandomEngine** and **DarkNoiseRandomEngine** (strings,
+   *   default: `HepJamesRandom`): name of the random number generation
+   *   algorithm to use; valid values are all the ones supported by
+   *   `art::RandomNumberGenerator` (which match the random engine classes
+   *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
+   *   `NonRandomEngine` and `RandEngine`).
    * 
    * The module also utilizes three random number engines.
    * Currently, no configuration interface is provided to directly control their
@@ -96,7 +103,19 @@ namespace opdet{
             Name("InputModule"),
             Comment("simulated photons to be digitised (sim::SimPhotons)")
         };
-        
+
+        fhicl::Atom<std::string> electronicsNoiseRandomEngine {
+            Name("ElectronicsNoiseRandomEngine"),
+            Comment("type of random engine to use for electronics noise"),
+            "HepJamesRandom"
+        };
+
+        fhicl::Atom<std::string> darkNoiseRandomEngine {
+            Name("DarkNoiseRandomEngine"),
+            Comment("type of random engine to use for dark noise"),
+            "HepJamesRandom"
+        };
+
         fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
     }; // struct Config
       
@@ -137,8 +156,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     , fInputModuleName(config().inputModuleLabel())
     , makePMTsimulator(config().algoConfig())
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies")) //, config.Seed))
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise")) //, config.Seed))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise")) //, config.Seed, "SeedElectronicsNoise"))
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, config().darkNoiseRandomEngine(), "DarkNoise")) //, config.Seed))
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, config().electronicsNoiseRandomEngine(), "ElectronicsNoise")) //, config.Seed, "SeedElectronicsNoise"))
  {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
