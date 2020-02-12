@@ -13,6 +13,7 @@
 #include "larcorealg/Geometry/details/extractMaxGeometryElements.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::size()
+#include "larcorealg/CoreUtils/RealComparisons.h" // lar::util::makeVector3DComparison()
 #include "larcoreobj/SimpleTypesAndConstants/readout_types.h" // readout::TPCsetID, ...
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 
@@ -24,7 +25,7 @@
 #include <string>
 #include <vector>
 #include <tuple>
-#include <algorithm> // std::max(), std::transform()
+#include <algorithm> // std::max(), std::transform(), std::stable_sort()
 #include <utility> // std::move(), std::pair, std::declval()
 #include <type_traits> // std::decay_t
 #include <cmath> // std::abs()
@@ -194,7 +195,7 @@ namespace icarus::details { class ROPnumberDispatcher; }
 /**
  * @brief Algorithm assigning IDs to readout planes.
  * 
- * The workflow is the following:
+ * The usage workflow is the following:
  * 
  * 1. the algorithm is initialized with a TPC set to be taken as model
  *    (constructor);
@@ -274,7 +275,7 @@ auto icarus::details::ROPnumberDispatcher::PreferredROPrangesByView
   DataByView_t<unsigned int> const viewROPcounts = ViewROPcounts(ROPs);
   
   DataByView_t<readout::ROPID::ROPID_t> FirstROPno;
-  readout::ROPID::ROPID_t nextAvailable = 0;
+  readout::ROPID::ROPID_t nextAvailable { 0 };
   
   for (PlaneColl_t const& planes: ROPs) {
     
@@ -782,9 +783,14 @@ void icarus::details::ROPandTPCsetBuildingAlg::fillPlanesInROP(
   auto& ROPcount = fROPcount;
   auto& ROPplanes = fROPplanes;
   
-  // assign the preferred numbers according to the first TPC set:
+  // assign the preferred numbers according to the first TPC set;
+  // before that, sort the planes in that TPC set by local drift coordinate
+  // (possibly different from the one used for the clustering by the verse)
+  std::vector<PlaneColl_t> const sortedTPCset0
+    = sortByNormalCoordinate(PlanesInProtoROPs[{ 0, 0 }]);
+  
   icarus::details::ROPnumberDispatcher ROPIDdispatcher
-    (PlanesInProtoROPs[{ 0, 0 }], fLogCategory);
+    { sortedTPCset0, fLogCategory };
   
   // (double) loop through all TPC sets:
   for (auto [ c, nTPCsets ]: util::enumerate(TPCsetCount)) {
@@ -934,6 +940,81 @@ void icarus::details::ROPandTPCsetBuildingAlg::fillPlaneToROPmap() {
   } // for cryostats
   
 } // icarus::details::ROPandTPCsetBuildingAlg::fillPlaneToROPmap()
+
+
+// -----------------------------------------------------------------------------
+auto icarus::details::ROPandTPCsetBuildingAlg::sortByNormalCoordinate
+  (std::vector<PlaneColl_t> const& ROPs) const -> std::vector<PlaneColl_t>
+{
+  /*
+   * The `ROPs` are sorted in order of decreasing normal plane coordinate.
+   * 
+   * 1. consistency of normal direction is first verified
+   * 2. the ROPs are sorted so that the center of the first sorted plane,
+   *    projected on the normal direction of a reference plane, is the largest
+   *    (plane closest to the cathode); sorting is stable.
+   * 
+   */
+  assert(!ROPs.empty()); // don't waste our time!
+  
+  checkNormalDirection(ROPs); // throws on error
+  
+  geo::PlaneGeo const* const pRefPlane = ROPs.front().front();
+  auto sortedROPs { ROPs };
+  std::stable_sort(sortedROPs.begin(), sortedROPs.end(),
+    [pRefPlane](PlaneColl_t const& A, PlaneColl_t const& B) -> bool
+    {
+      return
+        pRefPlane->DistanceFromPlane(A.front()->GetCenter<geo::Point_t>())
+        > pRefPlane->DistanceFromPlane(B.front()->GetCenter<geo::Point_t>());
+    }
+    );
+  
+  return sortedROPs;
+} // icarus::details::ROPandTPCsetBuildingAlg::sortByNormalCoordinate()
+
+
+// -----------------------------------------------------------------------------
+void icarus::details::ROPandTPCsetBuildingAlg::checkNormalDirection
+  (std::vector<PlaneColl_t> const& ROPs) const
+{
+  /*
+   * Checks the normal direction of each plane in each ROP.
+   * Throws an exception when it finds two inconsistent ones.
+   */
+  if (ROPs.empty()) return;
+  
+  auto iROP = ROPs.begin();
+  assert(!iROP->empty()); // just be there already
+  
+  auto const& comp = lar::util::makeVector3DComparison(1.0e-4);
+  
+  geo::PlaneGeo const* const pFirstPlane = iROP->front();
+  auto const normDir = pFirstPlane->GetNormalDirection<geo::Vector_t>();
+  
+  for (PlaneColl_t const& ROP: ROPs) {
+    if (ROP.empty()) { // we do not accept this!
+      throw cet::exception(fLogCategory)
+        << "icarus::details::ROPandTPCsetBuildingAlg::checkNormalDirection(): "
+        "ROP must contain planes.\n"
+        ;
+    }
+    for (geo::PlaneGeo const* plane: ROP) {
+      if (comp.equal(normDir, plane->GetNormalDirection<geo::Vector_t>()))
+        continue;
+      
+      throw cet::exception(fLogCategory)
+        << "icarus::details::ROPandTPCsetBuildingAlg::checkNormalDirection(): "
+        " plane " << plane->ID()
+        << " has normal " << plane->GetNormalDirection<geo::Vector_t>()
+        << ", " << normDir << " (as for " << pFirstPlane->ID()
+        << ") expected.\n"
+        ;
+        
+    } // for all planes in ROP
+  } // for all ROPs
+  
+} // icarus::details::ROPandTPCsetBuildingAlg::checkNormalDirection()
 
 
 // ----------------------------------------------------------------------------

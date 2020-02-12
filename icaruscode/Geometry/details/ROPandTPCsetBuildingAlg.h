@@ -62,6 +62,12 @@ namespace icarus::details {
  * same time the TPC sets that contain them.
  * 
  * 
+ * Assignment of readout plane IDs
+ * --------------------------------
+ * 
+ * Readout planes closer to the cathode have lower ID.
+ * 
+ * 
  * Algorithm workflow
  * ===================
  * 
@@ -338,6 +344,13 @@ class icarus::details::ROPandTPCsetBuildingAlg {
    * already.
    */
   void fillPlaneToROPmap();
+  
+  /// Returns the `planes` sorted by decreasing normal coordinate.
+  std::vector<PlaneColl_t> sortByNormalCoordinate
+    (std::vector<PlaneColl_t> const& planes) const;
+  
+  /// Throws an exception if planes do not share the same normal direction.
+  void checkNormalDirection(std::vector<PlaneColl_t> const& planes) const;
   
   
   /**

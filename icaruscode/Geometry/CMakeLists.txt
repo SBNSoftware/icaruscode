@@ -23,6 +23,7 @@ art_make(
     ${CETLIB_EXCEPT}
     ${FHICLCPP}
     ${ROOT_GEOM}
+    ${ROOT_GENVECTOR}
     ${ROOT_BASIC_LIB_LIST}
   SERVICE_LIBRARIES
     icaruscode_Geometry
