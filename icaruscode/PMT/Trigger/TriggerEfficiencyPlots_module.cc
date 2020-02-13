@@ -214,6 +214,10 @@ struct EventInfo_t {
           out << " " << nWeakNeutralCurrentInteractions() << " NC";
         if (isNu_mu()) out << " nu_mu";
         if (isNu_e()) out << " nu_e";
+        out << "\nThe first neutrino has E=" << NeutrinoEnergy()
+          << " and becomes a lepton with E=" << LeptonEnergy()
+          << " with an interaction " << InteractionType()
+          ;
       }
       else {
         out << " no neutrino interaction";
@@ -470,12 +474,15 @@ struct PlotInfoTree: public TreeHolder {
  * event information. The tree is not `Fill()`-ed.
  *
  * The tree structure is:
- * `CC/i:NC/i:TotE/D:SpillE/D:InActive/O`,
+ * `CC/i:NC/i:IntType:I/NuE:D/OutLeptE:D/TotE/D:SpillE/D:InActive/O`,
  * with a single branch per element.
  *
  * Branches:
  *  * `CC` (unsigned integer): number of neutrino CC interactions in the event
  *  * `NC` (unsigned integer): number of neutrino NC interactions in the event
+ *  * `IntType` (integer): code of interaction type (see `simb::int_type_`)
+ *  * `NuE` (double): energy of the generated initial state neutrino [GeV]
+ *  * `OutLeptE` (double): energy of the generated final state lepton [GeV]
  *  * `TotE` (double): total deposited energy in the event [GeV]
  *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
  *  * `InActive` (bool): whether an interaction happened in active volume'
@@ -496,10 +503,14 @@ struct EventInfoTree: public TreeHolder {
 
   UInt_t fCC;
   UInt_t fNC;
+  Int_t fIntType;
+  Double_t fNuE;
+  Double_t fOutLeptE;
   Double_t fTotE;
   Double_t fSpillE;
+  
   Bool_t fInActive;
-
+  
 }; // struct EventInfoTree
 
 
@@ -2186,10 +2197,14 @@ void PlotInfoTree::assign(bool inPlots) {
 //------------------------------------------------------------------------------
 EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
 
-  this->tree().Branch("CC", &fCC);
-  this->tree().Branch("NC", &fNC);
-  this->tree().Branch("TotE", &fTotE);
-  this->tree().Branch("SpillE", &fSpillE);
+  this->tree().Branch("CC",       &fCC);
+  this->tree().Branch("NC",       &fNC);
+  this->tree().Branch("IntType",  &fIntType);
+  this->tree().Branch("NuE",      &fNuE);
+  this->tree().Branch("OutLeptE", &fOutLeptE);
+  
+  this->tree().Branch("TotE",     &fTotE);
+  this->tree().Branch("SpillE",   &fSpillE);
   this->tree().Branch("InActive", &fInActive);
   
 } // EventInfoTree::EventInfoTree()
@@ -2198,10 +2213,14 @@ EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
 //------------------------------------------------------------------------------
 void EventInfoTree::assignEvent(EventInfo_t const& info) {
 
-  fCC = info.nWeakChargedCurrentInteractions();
-  fNC = info.nWeakNeutralCurrentInteractions();
-  fTotE = static_cast<Double_t>(info.DepositedEnergy());
-  fSpillE = static_cast<Double_t>(info.DepositedEnergyInSpill());
+  fCC       = info.nWeakChargedCurrentInteractions();
+  fNC       = info.nWeakNeutralCurrentInteractions();
+  fIntType  = info.InteractionType();
+  fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
+  fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
+
+  fTotE     = static_cast<Double_t>(info.DepositedEnergy());
+  fSpillE   = static_cast<Double_t>(info.DepositedEnergyInSpill());
   fInActive = static_cast<Bool_t>(info.isInActiveVolume());
   
 } // EventInfoTree::assignEvent()
