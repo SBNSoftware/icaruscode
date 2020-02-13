@@ -143,10 +143,10 @@ struct EventInfo_t {
   GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
 
   // Returns the neutrino energy [GeV]
-  double NeutrinoEnergy() const { return fNeutrinoEnergy; }
+  GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
 
   // Returns the lepton energy [GeV]
-  double LeptonEnergy() const { return fLeptonEnergy; }
+  GeV LeptonEnergy() const { return fLeptonEnergy; }
 
   // Returns the interaction type
   int InteractionType() const { return fInteractionType; }
@@ -186,11 +186,11 @@ struct EventInfo_t {
   /// Sets the energy of the event deposited during beam gate [GeV]
   void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
 
-  // Sets the neutrino energy
-  void SetNeutrinoEnergy(double eNu) { fNeutrinoEnergy = eNu; }
+  // Sets the neutrino energy.
+  void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
 
-  // Sets the lepton energy
-  void SetLeptonEnergy(double eL) { fLeptonEnergy = eL; }
+  // Sets the lepton energy.
+  void SetLeptonEnergy(GeV eL) { fLeptonEnergy = eL; }
 
   // Sets the interaction type
   void SetInteractionType(int type) { fInteractionType = type; }
@@ -261,9 +261,9 @@ struct EventInfo_t {
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
 
-  double fNeutrinoEnergy { 0 };
-  double fLeptonEnergy { 0 };
-  //GeV fNucleonEnergy { 0 };
+  GeV fNeutrinoEnergy { 0.0 };
+  GeV fLeptonEnergy { 0.0 };
+  //GeV fNucleonEnergy { 0.0 };
   
   bool nu_mu { false };
   bool nu_e { false };
@@ -1854,8 +1854,8 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
         info.SetNeutrinoPDG(nu.PdgCode());
         info.SetInteractionType(truth.GetNeutrino().InteractionType());
 
-        info.SetNeutrinoEnergy(nu.E());
-        info.SetLeptonEnergy(truth.GetNeutrino().Lepton().E());
+        info.SetNeutrinoEnergy(GeV{ nu.E() });
+        info.SetLeptonEnergy(GeV{ truth.GetNeutrino().Lepton().E() });
         //info.SetNucleonEnergy(truth.GetNeutrino().HitNuc().E());
 
         switch (nu.PdgCode()) {
@@ -2093,9 +2093,9 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       // non triggered events
       if (!fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
         getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-        getHist("NeutrinoEnergy_NoTrig"s)->Fill(eventInfo.NeutrinoEnergy());
+        getHist("NeutrinoEnergy_NoTrig"s)->Fill(double(eventInfo.NeutrinoEnergy()));
         getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
-        getHist("LeptonEnergy_NoTrig"s)->Fill(eventInfo.LeptonEnergy());
+        getHist("LeptonEnergy_NoTrig"s)->Fill(double(eventInfo.LeptonEnergy()));
         //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
       }
 
