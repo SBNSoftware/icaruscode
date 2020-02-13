@@ -1643,10 +1643,10 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
     );
   plots.make<TH1I>(
     "InteractionType_NoTrig",
-    "Interaction type of Non-Triggered Eevnt"
+    "Interaction type of Non-Triggered Event"
       ";Interaction Type"
       ";events  [ / 50 MeV ]",
-    200, 1000.0, 1200.0 
+    200, 999.5, 1199.5 
     );
   plots.make<TH1F>(
     "LeptonEnergy_NoTrig",
@@ -1897,6 +1897,8 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
         { return plotSet.use<TEfficiency>(name); };
       auto getHist2D = [&plotSet](std::string const& name)
         { return plotSet.use<TH2>(name); };
+      auto getHist = [&plotSet](std::string const& name)
+        { return plotSet.use<TH1>(name); };
       
       // simple efficiency
       getEff("Eff"s)->Fill(fired, minCount);
@@ -1905,6 +1907,16 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       if (fired) {
         getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first); 
       }
+
+      // non triggered events
+      if (!fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
+        getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
+        getHist("NeutrinoEnergy_NoTrig"s)->Fill(eventInfo.NeutrinoEnergy());
+        getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
+        getHist("LeptonEnergy_NoTrig"s)->Fill(eventInfo.LeptonEnergy());
+        //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
+      }
+
     } // for all qualifying plot categories
     
   } // for all thresholds
@@ -1924,15 +1936,6 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     
     // number of primitives
     getHist("NPrimitives"s)->Fill(maxPrimitives.second);
-
-    // non triggered events
-    if (!fired) {
-      getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-      getHist("NeutrinoEnergy_NoTrig"s)->Fill(eventInfo.NeutrinoEnergy());
-      getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
-      getHist("LeptonEnergy_NoTrig"s)->Fill(eventInfo.LeptonEnergy());
-      //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
-    }
     
   } // for 
 
