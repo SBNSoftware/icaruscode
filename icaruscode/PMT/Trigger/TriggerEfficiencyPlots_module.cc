@@ -23,6 +23,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/MCDumpers/MCDumperUtils.h" // sim::TruthInteractionTypeName
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds, ...
 #include "lardataalg/Utilities/quantities/energy.h" // megaelectronvolt, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
@@ -216,7 +217,8 @@ struct EventInfo_t {
         if (isNu_e()) out << " nu_e";
         out << "\nThe first neutrino has E=" << NeutrinoEnergy()
           << " and becomes a lepton with E=" << LeptonEnergy()
-          << " with an interaction " << InteractionType()
+          << " with a " << sim::TruthInteractionTypeName(InteractionType())
+          << " interaction"
           ;
       }
       else {
@@ -235,7 +237,7 @@ struct EventInfo_t {
         while (++iVertex != vend) out << "; " << *iVertex;
         out << ".";
       }
-      out << "\nThe event is" << (isInActiveVolume()? " ": " NOT")
+      out << "\nThe event is" << (isInActiveVolume()? "": " NOT")
         << " marked as in the active volume of the detector.";
       out << "\n";
       out.flush();

@@ -27,6 +27,7 @@ simple_plugin(TriggerEfficiencyPlots module
   icaruscode_PMT_Trigger_Utilities
   icaruscode_PMT_Trigger_Data
   larcore_Geometry_Geometry_service
+  lardataalg_MCDumpers
   larcorealg_Geometry
   lardataobj_RawData
   nusimdata_SimulationBase
