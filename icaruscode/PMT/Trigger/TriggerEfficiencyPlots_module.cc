@@ -138,6 +138,15 @@ struct EventInfo_t {
   /// Returns the total energy deposited in the detector during beam [GeV]
   GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
 
+  // Returns the neutrino energy [GeV]
+  double NeutrinoEnergy() const { return fNeutrinoEnergy; }
+
+  // Returns the lepton energy [GeV]
+  double LeptonEnergy() const { return fLeptonEnergy; }
+
+  // Returns the interaction type
+  int InteractionType() const { return fInteractionType; }
+
   /// @}
   // --- END Query interface -------------------------------------------------
 
@@ -166,6 +175,15 @@ struct EventInfo_t {
 
   /// Sets the energy of the event deposited during beam gate [GeV]
   void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
+
+  // Sets the neutrino energy
+  void SetNeutrinoEnergy(double eNu) { fNeutrinoEnergy = eNu; }
+
+  // Sets the lepton energy
+  void SetLeptonEnergy(double eL) { fLeptonEnergy = eL; }
+
+  // Sets the interaction type
+  void SetInteractionType(int type) { fInteractionType = type; }
 
   /// @}
   // --- END Set interface ---------------------------------------------------
@@ -207,6 +225,11 @@ struct EventInfo_t {
   GeV fEnergyDepSpill { 0.0 }; ///< Total deposited energy [GeV]
 
   int fNeutrinoPDG { 0 };
+  int fInteractionType { 0 };
+
+  double fNeutrinoEnergy { 0 };
+  double fLeptonEnergy { 0 };
+  //GeV fNucleonEnergy { 0 };
   
   bool nu_mu { false };
   bool nu_e { false };
@@ -1600,7 +1623,39 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
-  
+
+  //
+  // No trigger related plots
+  //
+  plots.make<TH1F>(
+    "NeutrinoEnergy_NoTrig",
+    "True Neutrino Energy of Non-Triggered Event"
+      ";neutrino energy [GeV]"
+      ";events",
+    120,0.0,6.0 // GeV
+  );
+  plots.make<TH1F>(
+    "EnergyInSpill_NoTrig",
+    "Energy eposited during the beam gate opening of Non-Triggered Event"
+      ";deposited energy  [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1I>(
+    "InteractionType_NoTrig",
+    "Interaction type of Non-Triggered Eevnt"
+      ";Interaction Type"
+      ";events  [ / 50 MeV ]",
+    200, 1000.0, 1200.0 
+    );
+  plots.make<TH1F>(
+    "LeptonEnergy_NoTrig",
+    "Energy of outgoing lepton of Non-Triggered Event"
+      ";deposited energy  [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 
+    );
+ 
 } // icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()
 
 
@@ -1643,6 +1698,11 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
         //
 
         info.SetNeutrinoPDG(truth.GetNeutrino().Nu().PdgCode());
+        info.SetInteractionType(truth.GetNeutrino().InteractionType());
+
+        info.SetNeutrinoEnergy(truth.GetNeutrino().Nu().E());
+        info.SetLeptonEnergy(truth.GetNeutrino().Lepton().E());
+        //info.SetNucleonEnergy(truth.GetNeutrino().HitNuc().E());
 
         switch (truth.GetNeutrino().Nu().PdgCode()) {
           case 14:
@@ -1662,7 +1722,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
             mf::LogWarning(fLogCategory)
               << "Event " << event.id() << " has unexpected NC/CC flag ("
               << truth.GetNeutrino().CCNC() << ")";
-        } // switch
+        } // switch   
         
       } // if neutrino event
       
@@ -1842,9 +1902,9 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       getEff("Eff"s)->Fill(fired, minCount);
 
       // trigger time (if any)
-      if (fired)
-        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first);
-
+      if (fired) {
+        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first); 
+      }
     } // for all qualifying plot categories
     
   } // for all thresholds
@@ -1864,6 +1924,15 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     
     // number of primitives
     getHist("NPrimitives"s)->Fill(maxPrimitives.second);
+
+    // non triggered events
+    if (!fired) {
+      getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
+      getHist("NeutrinoEnergy_NoTrig"s)->Fill(eventInfo.NeutrinoEnergy());
+      getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
+      getHist("LeptonEnergy_NoTrig"s)->Fill(eventInfo.LeptonEnergy());
+      //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
+    }
     
   } // for 
 
