@@ -26,6 +26,8 @@ art_make(
 simple_plugin(TriggerEfficiencyPlots module
   icaruscode_PMT_Trigger_Utilities
   icaruscode_PMT_Trigger_Data
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
   lardataobj_RawData
   nusimdata_SimulationBase
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
@@ -38,6 +40,7 @@ simple_plugin(TriggerEfficiencyPlots module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
+  ${ROOT_GENVECTOR}
   ${ROOT_HIST}
   ${ROOT_TREE}
   ${ROOT_CORE}

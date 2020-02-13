@@ -18,6 +18,7 @@
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/Utilities/TensorIndices.h" // util::MatrixIndices
+#include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
@@ -25,22 +26,23 @@
 #include "lardataalg/Utilities/quantities/spacetime.h" // microseconds, ...
 #include "lardataalg/Utilities/quantities/energy.h" // megaelectronvolt, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/get_elements.h"
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/zip.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h"
 #if 0
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
 // #include "larcorealg/CoreUtils/DebugUtils.h" // lar::debug::::static_assert_on<>
 #include "lardataobj/RawData/OpDetWaveform.h"
 #endif // 0
 
 // nutools libraries
 #include "nusimdata/SimulationBase/MCTruth.h"
-// #include "nusimdata/SimulationBase/MCParticle.h"
+#include "nusimdata/SimulationBase/MCNeutrino.h"
+#include "nusimdata/SimulationBase/MCParticle.h"
 
 // framework libraries
 #include "art_root_io/TFileService.h"
@@ -71,6 +73,7 @@
 
 // C/C++ standard libraries
 #include <ostream>
+#include <atomic>
 #include <map>
 #include <vector>
 #include <string>
@@ -147,6 +150,12 @@ struct EventInfo_t {
   // Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
+  /// Returns whether this type of event has a known vertex.
+  bool hasVertex() const { return !fVertices.empty(); }
+  
+  /// Returns whether there is an interaction within the active volume.
+  bool isInActiveVolume() const { return fInActiveVolume; }
+  
   /// @}
   // --- END Query interface -------------------------------------------------
 
@@ -185,6 +194,12 @@ struct EventInfo_t {
   // Sets the interaction type
   void SetInteractionType(int type) { fInteractionType = type; }
 
+  /// Set whether the event has relevant activity in the active volume.
+  void SetInActiveVolume(bool active = true) { fInActiveVolume = active; }
+  
+  /// Adds a point to the list of interaction vertices in the event.
+  void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
+  
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -205,6 +220,19 @@ struct EventInfo_t {
       }
       out << "\nTotal deposited energy: " << DepositedEnergy()
         << ", of which in spill " << DepositedEnergyInSpill();
+      if (fVertices.empty()) {
+        out << "\nNo interaction vertex found.";
+      }
+      else {
+        auto iVertex = fVertices.begin();
+        auto const vend = fVertices.end();
+        out
+          << "\n" << fVertices.size() << " interaction vertices: " << *iVertex;
+        while (++iVertex != vend) out << "; " << *iVertex;
+        out << ".";
+      }
+      out << "\nThe event is" << (isInActiveVolume()? " ": " NOT")
+        << " marked as in the active volume of the detector.";
       out << "\n";
       out.flush();
     } // dump()
@@ -233,7 +261,12 @@ struct EventInfo_t {
   
   bool nu_mu { false };
   bool nu_e { false };
-
+  
+  /// Whether the event has activity inside the active volume.
+  bool fInActiveVolume { false };
+  
+  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+  
 }; // struct EventInfo_t
 
 std::ostream& operator<< (std::ostream& out, EventInfo_t const& info)
@@ -390,6 +423,42 @@ struct EventIDTree: public TreeHolder {
 
 
 /**
+ * @brief Class managing the serialization of plot information in a simple ROOT
+ *        tree.
+ *
+ * The tree is supplied by the caller.
+ * This object will create the proper branches into the tree and assign
+ * addresses to them. Then it will assume they will stay assigned.
+ *
+ * On `assign()`, the branch addresses are assigned the values from the
+ * arguments. The tree is not `Fill()`-ed.
+ *
+ * The tree structure is:
+ * `InPlots/O`,
+ * with a single branch per element.
+ *
+ * Branches:
+ *  * `InPlots` (bool): the event was _not_ filtered out before plotting
+ *    (it may still belong to no category and eventually appear in no plot)
+ *
+ */
+struct PlotInfoTree: public TreeHolder {
+
+  /// Creates the required branches and assigns addresses to them.
+  PlotInfoTree(TTree& tree);
+
+  /**
+   * @brief Fills the information of the specified event.
+   * @param inPlots whether this event is plotted (as opposed to filtered out)
+   */
+  void assign(bool inPlots);
+
+  Bool_t fInPlots;
+
+}; // struct PlotInfoTree
+
+
+/**
  * @brief Class managing the serialization of event information in a simple ROOT
  *        tree.
  *
@@ -401,7 +470,7 @@ struct EventIDTree: public TreeHolder {
  * event information. The tree is not `Fill()`-ed.
  *
  * The tree structure is:
- * `CC/i:NC/i:TotE/D:SpillE/D`,
+ * `CC/i:NC/i:TotE/D:SpillE/D:InActive/O`,
  * with a single branch per element.
  *
  * Branches:
@@ -409,6 +478,8 @@ struct EventIDTree: public TreeHolder {
  *  * `NC` (unsigned integer): number of neutrino NC interactions in the event
  *  * `TotE` (double): total deposited energy in the event [GeV]
  *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
+ *  * `InActive` (bool): whether an interaction happened in active volume'
+ *      this requires an interaction vertex (e.g. cosmic rays are out)
  *
  */
 struct EventInfoTree: public TreeHolder {
@@ -416,13 +487,18 @@ struct EventInfoTree: public TreeHolder {
   /// Creates the required branches and assigns addresses to them.
   EventInfoTree(TTree& tree);
 
-  /// Fills the information of the specified event.
+  /**
+   * @brief Fills the information of the specified event.
+   * @param info event information to fill the tree with
+   * @param inPlots whether this event is plotted (as opposed to filtered out)
+   */
   void assignEvent(EventInfo_t const& info);
 
   UInt_t fCC;
   UInt_t fNC;
   Double_t fTotE;
   Double_t fSpillE;
+  Bool_t fInActive;
 
 }; // struct EventInfoTree
 
@@ -1137,7 +1213,14 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
       Comment("resolution of trigger in time"),
       8_ns
       };
-
+    
+    fhicl::Atom<bool> PlotOnlyActiveVolume {
+      Name("PlotOnlyActiveVolume"),
+      Comment
+        ("only events within TPC active volume are plot (if that makes sense)"),
+      true
+      };
+    
     fhicl::OptionalAtom<std::string> EventTreeName {
       Name("EventTreeName"),
       Comment("name of a ROOT tree where to store event-by-event information")
@@ -1177,6 +1260,9 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// Fills the plots. Also extracts the information to fill them with.
   virtual void analyze(art::Event const& event) override;
   
+  /// Prints end-of-job summaries.
+  virtual void endJob() override;
+  
   // --- END Framework hooks ---------------------------------------------------
   
   
@@ -1211,6 +1297,8 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
+  bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
+  
   /// Message facility stream category for output.
   std::string const fLogCategory;
 
@@ -1221,6 +1309,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
   // --- BEGIN Service variables -----------------------------------------------
 
+  geo::GeometryCore const& fGeom;
   detinfo::DetectorClocks const& fDetClocks;
   detinfo::DetectorTimings fDetTimings;
 
@@ -1249,8 +1338,12 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   std::vector<PlotSandbox> fThresholdPlots;
 
   std::unique_ptr<EventIDTree> fIDTree; ///< Handler of ROOT tree output.
+  std::unique_ptr<PlotInfoTree> fPlotTree; ///< Handler of ROOT tree output.
   std::unique_ptr<EventInfoTree> fEventTree; ///< Handler of ROOT tree output.
   std::unique_ptr<ResponseTree> fResponseTree; ///< Handler of ROOT tree output.
+  
+  std::atomic<unsigned int> nEvents { 0U }; ///< Count of seen events.
+  std::atomic<unsigned int> nPlottedEvents { 0U }; ///< Count of plotted events.
 
   // --- END Internal variables ------------------------------------------------
 
@@ -1260,6 +1353,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
   /// Initializes a single plot set (ADC threshold + category) into `plots`.
   void initializePlotSet(PlotSandbox& plots) const;
+
+  /// Returns whether an event with the specified information should be included
+  /// in the plots at all (it's a filter).
+  bool shouldPlotEvent(EventInfo_t const& eventInfo) const;
+
 
   /// Returns the names of the plot categories event qualifies for.
   std::vector<std::string> selectPlotCategories
@@ -1296,6 +1394,13 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
    *
    */
   EventInfo_t extractEventInfo(art::Event const& event) const;
+  
+  /// Returns the TPC `point` is within, `nullptr` if none.
+  geo::TPCGeo const* pointInTPC(geo::Point_t const& point) const;
+  
+  /// Returns in which TPC `point` is within the _active volume_ of;
+  /// `nullptr` if none.
+  geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const;
   
   /// Computes the trigger response from primitives with the given `threshold`.
   TriggerGateData_t combineTriggerPrimitives(
@@ -1344,8 +1449,10 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   , fBeamGateDuration     (config().BeamGateDuration())
   , fMinimumPrimitives    (config().MinimumPrimitives())
   , fTriggerTimeResolution(config().TriggerTimeResolution())
+  , fPlotOnlyActiveVolume (config().PlotOnlyActiveVolume())
   , fLogCategory          (config().LogCategory())
   // services
+  , fGeom      (*lar::providerFrom<geo::Geometry>())
   , fDetClocks (*lar::providerFrom<detinfo::DetectorClocksService>())
   , fDetTimings(fDetClocks)
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
@@ -1383,6 +1490,7 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
     fIDTree = std::make_unique<EventIDTree>
       (*(fOutputDir.make<TTree>(treeName.c_str(), "Event information")));
     fEventTree = std::make_unique<EventInfoTree>(fIDTree->tree());
+    fPlotTree = std::make_unique<PlotInfoTree>(fIDTree->tree());
     fResponseTree = std::make_unique<ResponseTree>(
       fIDTree->tree(),
       util::get_elements<0U>(fADCthresholds), fMinimumPrimitives
@@ -1440,11 +1548,20 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
    *   6. add the response to all the plots
    *
    */
-
+  
+  ++nEvents;
+  
   //
   // 1. find out the features of the event and the categories it belongs to
   //
   EventInfo_t const eventInfo = extractEventInfo(event);
+  
+  bool const bPlot = shouldPlotEvent(eventInfo);
+  if (bPlot) ++nPlottedEvents;
+  
+  if (fIDTree) fIDTree->assignEvent(event);
+  if (fPlotTree) fPlotTree->assign(bPlot);
+  if (fEventTree) fEventTree->assignEvent(eventInfo);
   
   std::vector<std::string> selectedPlotCategories
     = selectPlotCategories(eventInfo, ::PlotCategories);
@@ -1462,9 +1579,6 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     mf::LogTrace(fLogEventDetails)
       << "Event " << event.id() << ": " << eventInfo;
   }
-
-  if (fIDTree) fIDTree->assignEvent(event);
-  if (fEventTree) fEventTree->assignEvent(eventInfo);
 
   //
   // 2. for each threshold:
@@ -1489,8 +1603,10 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     //
     PlotSandboxRefs_t selectedPlots;
     
-    for (std::string const& name: selectedPlotCategories)
-      selectedPlots.emplace_back(*(thrPlots.findSandbox(name)));
+    if (bPlot) {
+      for (std::string const& name: selectedPlotCategories)
+        selectedPlots.emplace_back(*(thrPlots.findSandbox(name)));
+    }
     
     // 1.6. add the response to the appropriate plots
     plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCount);
@@ -1504,6 +1620,16 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
   if (fIDTree) fIDTree->tree().Fill();
 
 } // icarus::trigger::TriggerEfficiencyPlots::analyze()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlots::endJob() {
+  
+  mf::LogInfo(fLogCategory)
+    << nPlottedEvents << "/" << nEvents << " events plotted."
+    ;
+  
+} // icarus::trigger::TriggerEfficiencyPlots::endJob()
 
 
 //------------------------------------------------------------------------------
@@ -1660,6 +1786,20 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
 
 
 //------------------------------------------------------------------------------
+bool icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent
+  (EventInfo_t const& eventInfo) const
+{
+  if (fPlotOnlyActiveVolume
+    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume())
+  {
+    return false;
+  }
+  
+  return true;
+} // icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent()
+
+
+//------------------------------------------------------------------------------
 std::vector<std::string>
 icarus::trigger::TriggerEfficiencyPlots::selectPlotCategories
   (EventInfo_t const& info, PlotCategories_t const& categories) const
@@ -1697,14 +1837,15 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
         // interaction type (CC, NC)
         //
 
-        info.SetNeutrinoPDG(truth.GetNeutrino().Nu().PdgCode());
+        simb::MCParticle const& nu = truth.GetNeutrino().Nu();
+        info.SetNeutrinoPDG(nu.PdgCode());
         info.SetInteractionType(truth.GetNeutrino().InteractionType());
 
-        info.SetNeutrinoEnergy(truth.GetNeutrino().Nu().E());
+        info.SetNeutrinoEnergy(nu.E());
         info.SetLeptonEnergy(truth.GetNeutrino().Lepton().E());
         //info.SetNucleonEnergy(truth.GetNeutrino().HitNuc().E());
 
-        switch (truth.GetNeutrino().Nu().PdgCode()) {
+        switch (nu.PdgCode()) {
           case 14:
           case -14:
             info.SetNu_mu(true);
@@ -1723,6 +1864,16 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
               << "Event " << event.id() << " has unexpected NC/CC flag ("
               << truth.GetNeutrino().CCNC() << ")";
         } // switch   
+        
+        // we do not trust the vertex (`GvX()`) of the neutrino particle,
+        // since GenieHelper does not translate the vertex
+        // of some of the particles from GENIE to detector frame;
+        // trajectory is always translated:
+        geo::Point_t const vertex { nu.EndX(), nu.EndY(), nu.EndZ() };
+        info.AddVertex(vertex);
+        
+        geo::TPCGeo const* tpc = pointInActiveTPC(vertex);
+        if (tpc) info.SetInActiveVolume();
         
       } // if neutrino event
       
@@ -1765,6 +1916,24 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
   
   return info;
 } // icarus::trigger::TriggerEfficiencyPlots::extractEventInfo()
+
+
+//------------------------------------------------------------------------------
+geo::TPCGeo const* icarus::trigger::TriggerEfficiencyPlots::pointInTPC
+  (geo::Point_t const& point) const
+{
+  return fGeom.PositionToTPCptr(point);
+} // icarus::trigger::TriggerEfficiencyPlots::pointInTPC()
+
+
+//------------------------------------------------------------------------------
+geo::TPCGeo const* icarus::trigger::TriggerEfficiencyPlots::pointInActiveTPC
+  (geo::Point_t const& point) const
+{
+  geo::TPCGeo const* tpc = pointInTPC(point);
+  return
+    (tpc && tpc->ActiveBoundingBox().ContainsPosition(point))? tpc: nullptr;
+} // icarus::trigger::TriggerEfficiencyPlots::pointInActiveTPC()
 
 
 //------------------------------------------------------------------------------
@@ -1991,7 +2160,25 @@ void EventIDTree::assignID(art::EventID const& id) {
   fSubRunNo = id.subRun();
   fEventNo = id.event();
 
-} // EventInfoTree::assignID()
+} // EventIDTree::assignID()
+
+
+//------------------------------------------------------------------------------
+//--- PlotInfoTree
+//------------------------------------------------------------------------------
+PlotInfoTree::PlotInfoTree(TTree& tree): TreeHolder(tree) {
+
+  this->tree().Branch("InPlots", &fInPlots);
+
+} // PlotInfoTree::PlotInfoTree()
+
+
+//------------------------------------------------------------------------------
+void PlotInfoTree::assign(bool inPlots) {
+
+  fInPlots = static_cast<Bool_t>(inPlots);
+
+} // PlotInfoTree::assignEvent()
 
 
 //------------------------------------------------------------------------------
@@ -2003,7 +2190,8 @@ EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
   this->tree().Branch("NC", &fNC);
   this->tree().Branch("TotE", &fTotE);
   this->tree().Branch("SpillE", &fSpillE);
-
+  this->tree().Branch("InActive", &fInActive);
+  
 } // EventInfoTree::EventInfoTree()
 
 
@@ -2012,9 +2200,10 @@ void EventInfoTree::assignEvent(EventInfo_t const& info) {
 
   fCC = info.nWeakChargedCurrentInteractions();
   fNC = info.nWeakNeutralCurrentInteractions();
-  fTotE = Double_t(info.DepositedEnergy());
-  fSpillE = Double_t(info.DepositedEnergyInSpill());
-
+  fTotE = static_cast<Double_t>(info.DepositedEnergy());
+  fSpillE = static_cast<Double_t>(info.DepositedEnergyInSpill());
+  fInActive = static_cast<Bool_t>(info.isInActiveVolume());
+  
 } // EventInfoTree::assignEvent()
 
 
