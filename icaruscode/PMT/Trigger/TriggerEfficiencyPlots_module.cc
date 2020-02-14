@@ -1803,11 +1803,11 @@ bool icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent
   (EventInfo_t const& eventInfo) const
 {
   if (fPlotOnlyActiveVolume
-    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume())
+    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume()
+    && eventInfo.isNeutrino()) // Only care if active volume vertex is neutrino
   {
     return false;
   }
-  
   return true;
 } // icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent()
 
