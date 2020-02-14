@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// \file IcarusGeometryHelper.h
-/// \brief Geometry helper service for Icarus geometries. 
-/// 
+/// \brief Geometry helper service for Icarus geometries.
+///
 /// Handles Icarus-specific information for the generic Geometry service
 /// within LArSoft. Derived from the ExptGeoHelperInterface class
 ///
@@ -13,58 +13,36 @@
 #define Icarus_ExptGeoHelperInterface_h
 
 #include "larcore/Geometry/ExptGeoHelperInterface.h"
-#include "larcorealg/Geometry/CryostatGeo.h"
-#include "larcorealg/Geometry/AuxDetGeo.h"
 
 #include <memory>
-#include <vector>
 
 // Forward declarations
 //
-class TString;
-
 namespace geo
 {
   class ChannelMapAlg;
 }
 
-// Declaration
-//
 namespace Icarus
 {
   class IcarusGeometryHelper : public geo::ExptGeoHelperInterface
   {
   public:
-  
-    IcarusGeometryHelper( fhicl::ParameterSet const & pset, art::ActivityRegistry &reg );
-    ~IcarusGeometryHelper() throw();
 
-    // Public interface for ExptGeoHelperInterface (for reference purposes)
-    //
-    // Configure and initialize the channel map.
-    //
-    // void  ConfigureChannelMapAlg( const TString & detectorName, 
-    //                               fhicl::ParameterSet const & sortingParam,
-    //                               std::vector<geo::CryostatGeo*> & c,
-    //				     std::vector<geo::AuxDetGeo*>   & ad );
-    //
-    // Returns null pointer if the initialization failed
-    // NOTE:  the sub-class owns the ChannelMapAlg object
-    //
-    // std::shared_ptr<const geo::ChannelMapAlg> & GetChannelMapAlg() const;
-  
+    explicit IcarusGeometryHelper(fhicl::ParameterSet const& pset);
+
   private:
 
-    void doConfigureChannelMapAlg( fhicl::ParameterSet const & sortingParameters, geo::GeometryCore* geom ) override;
-    ChannelMapAlgPtr_t doGetChannelMapAlg() const override;
-    
+    ChannelMapAlgPtr_t
+    doConfigureChannelMapAlg(fhicl::ParameterSet const& sortingParameters,
+                             std::string const& detectorName) const override;
+
     fhicl::ParameterSet fPset; ///< copy of configuration parameter set
-    //art::ActivityRegistry fReg; ///< copy of activity registry
-    std::shared_ptr<geo::ChannelMapAlg> fChannelMap;
-  
   };
 
 }
-DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper,
+                                   geo::ExptGeoHelperInterface,
+                                   SHARED)
 
 #endif // Icarus_ExptGeoHelperInterface_h

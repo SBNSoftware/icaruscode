@@ -10,45 +10,24 @@
 #include "icaruscode/Geometry/IcarusGeometryHelper.h"
 #include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 
-//#include "larcorealg/Geometry/ChannelMapAlg.h"
 #include "larcorealg/Geometry/GeometryCore.h" // larcore. geo::GeometryData_t
-
-#include "TString.h"
-
 
 namespace Icarus
 {
 
-IcarusGeometryHelper::IcarusGeometryHelper( fhicl::ParameterSet const & pset, art::ActivityRegistry & reg )
-:  fPset( pset )
-   //fReg( reg )
+IcarusGeometryHelper::IcarusGeometryHelper(fhicl::ParameterSet const & pset)
+  : fPset(pset)
 {}
 
-IcarusGeometryHelper::~IcarusGeometryHelper() throw()
-{}  
-
-void IcarusGeometryHelper::doConfigureChannelMapAlg( fhicl::ParameterSet const & sortingParameters, geo::GeometryCore* geom ) 
+std::unique_ptr<geo::ChannelMapAlg>
+IcarusGeometryHelper::doConfigureChannelMapAlg(fhicl::ParameterSet const & sortingParameters,
+                                               std::string const& detectorName) const
 {
-    fChannelMap.reset();
-    std::string const detectorName = geom->DetectorName();
-
     if ( detectorName.find("icarus") == std::string::npos ) {
         std::cout << __PRETTY_FUNCTION__ << ": WARNING USING CHANNEL MAP ALG WITH NON-ICARUS GEO!" << std::endl;
     }
 
-//    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset, sortingParameters );
-    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset );
-
-    if ( fChannelMap )
-    {
-        geom->ApplyChannelMap(fChannelMap); // calls Initialize(fGeoData) for us
-    }
-
-}
-
-std::shared_ptr<const geo::ChannelMapAlg> IcarusGeometryHelper::doGetChannelMapAlg() const
-{
-    return fChannelMap;
+    return std::make_unique<geo::ChannelMapIcarusAlg>(fPset);
 }
 
 }
