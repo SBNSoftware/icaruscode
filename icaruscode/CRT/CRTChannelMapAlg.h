@@ -31,14 +31,14 @@ namespace geo{
 
     uint32_t PositionToAuxDetChannel(
         double const worldLoc[3],
-        std::vector<geo::AuxDetGeo*> const& auxDets,
+        std::vector<geo::AuxDetGeo> const& auxDets,
         size_t& ad,
         size_t& sv) const override;
 
     const TVector3 AuxDetChannelToPosition(
         uint32_t const& channel,
         std::string const& auxDetName,
-        std::vector<geo::AuxDetGeo*> const& auxDets) const override;
+        std::vector<geo::AuxDetGeo> const& auxDets) const override;
 
   private:
     geo::CRTGeoObjectSorter fSorter; ///< Class to sort geo objects
@@ -48,4 +48,3 @@ namespace geo{
 //} //namespace icarus
 
 #endif  // ICARUS_CRTChannelMapAlg_h
-
