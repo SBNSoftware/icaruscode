@@ -97,7 +97,23 @@ namespace opdet{
             Comment("simulated photons to be digitised (sim::SimPhotons)")
         };
         
+        rndm::SeedAtom EfficiencySeed {
+          Name("EfficiencySeed"),
+          Comment("fix the seed for stocastic photon detection efficiency")
+          };
+        
+        rndm::SeedAtom DarkNoiseSeed {
+          Name("DarkNoiseSeed"),
+          Comment("fix the seed for stocastic dark noise generation")
+          };
+        
+        rndm::SeedAtom ElectronicsNoiseSeed {
+          Name("ElectronicsNoiseSeed"),
+          Comment("fix the seed for stocastic electronics noise generation")
+          };
+        
         fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+        
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -136,9 +152,15 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
     , makePMTsimulator(config().algoConfig())
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies")) //, config.Seed))
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise")) //, config.Seed))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise")) //, config.Seed, "SeedElectronicsNoise"))
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
+      )
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "DarkNoise", config().DarkNoiseSeed)
+      )
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "ElectronicsNoise", config().ElectronicsNoiseSeed)
+      )
  {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
