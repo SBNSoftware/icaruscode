@@ -437,6 +437,21 @@ namespace icarus::opdet {
    *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
    *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
    *
+   * 
+   * Random number generators
+   * -------------------------
+   * 
+   * @anchor ICARUS_PMTSimulationAlg_RandomEngines
+   * 
+   * Three independent random engines are currently used in the simulation:
+   * 
+   * * "main" random engine:
+   *     * residual quantum efficiency;
+   *     * gain fluctuations;
+   * * "dark noise" engine: dark current noise only;
+   * * "electronics noise" engine: electronics noise only.
+   * 
+   * 
    * Structure of the algorithm
    * ===========================
    *
