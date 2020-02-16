@@ -20,7 +20,6 @@
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandPoisson.h"
-#include "CLHEP/Random/RandGauss.h"
 #include "CLHEP/Random/RandExponential.h"
 
 // C++ standard libaries
@@ -452,10 +451,10 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
   
   void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave){
     
-    CLHEP::RandGauss random(*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise.value());
+    auto& engine = *fParams.elecNoiseRandomEngine;
+    
     for(auto& sample: wave) {
-      ADCcount const noise { static_cast<float>(random.fire()) }; //gaussian noise
-      sample += noise;
+      sample += fParams.ampNoise * fFastGauss(engine.flat());
     } // for sample
     
   } // PMTsimulationAlg::AddNoise()

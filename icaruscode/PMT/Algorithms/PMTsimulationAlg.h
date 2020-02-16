@@ -14,6 +14,7 @@
 
 
 // ICARUS libraries
+#include "icaruscode/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -641,6 +642,9 @@ namespace icarus::opdet {
 
     DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
+    ///< Transformation uniform to Gaussian for electronics noise.
+    util::FastAndPoorGauss<32768U, float> fFastGauss;
+    
   void CreateFullWaveform
   (Waveform_t&, sim::SimPhotons const&, sim::SimPhotons &);
 
