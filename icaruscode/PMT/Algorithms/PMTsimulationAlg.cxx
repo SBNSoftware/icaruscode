@@ -276,7 +276,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
   } // CreateFullWaveform()
 
   auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
-    -> std::set<optical_tick>
+    -> std::vector<optical_tick>
   {
     using namespace util::quantities::time_literals;
     using detinfo::timescales::trigger_time;
@@ -284,7 +284,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     detinfo::DetectorTimings const& timings
       = detinfo::makeDetectorTimings(fParams.timeService);
     
-    std::set<optical_tick> trigger_locations;
+    std::vector<optical_tick> trigger_locations;
+    trigger_locations.reserve(fParams.beamGateTriggerNReps);
     trigger_time const beamTime = timings.toTriggerTime(timings.BeamGateTime());
 
     for(unsigned int i_trig=0; i_trig<fParams.beamGateTriggerNReps; ++i_trig) {
@@ -302,10 +303,9 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
   }
 
   auto icarus::opdet::PMTsimulationAlg::FindTriggers(Waveform_t const& wvfm) const
-    -> std::set<optical_tick>
+    -> std::vector<optical_tick>
   {
-    std::set<optical_tick> trigger_locations;
-    if (fParams.createBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
+    std::vector<optical_tick> trigger_locations;
     
     // find all ticks at which we would trigger readout
     bool above_thresh=false;
@@ -328,7 +328,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       auto beamGateTriggers = CreateBeamGateTriggers();
       
       // insert the new triggers and sort them
-      trigger_locations.insert(beamGateTriggers.begin(), beamGateTriggers.end());
+      trigger_locations.insert(trigger_locations.end(),
+        beamGateTriggers.begin(), beamGateTriggers.end());
       std::inplace_merge(
         trigger_locations.begin(),
         trigger_locations.end() - beamGateTriggers.size(),
@@ -355,7 +356,7 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
       = timings.TriggerTime() + time_interval{ fParams.triggerOffsetPMT };
 
     
-    std::set<optical_tick> trigger_locations = FindTriggers(wvfm);
+    std::vector<optical_tick> trigger_locations = FindTriggers(wvfm);
     auto iNextTrigger = trigger_locations.begin();
     optical_tick nextTrigger
       = trigger_locations.empty()

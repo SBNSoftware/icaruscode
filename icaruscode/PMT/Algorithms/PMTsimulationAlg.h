@@ -41,7 +41,6 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <set>
 #include <algorithm> // std::transform()
 #include <utility> // std::forward()
 #include <memory> // std::unique_ptr()
@@ -682,7 +681,7 @@ namespace icarus::opdet {
    * additional interest points that are added independently of whether there
    * is actual interesting activity in there.
    */
-  std::set<optical_tick> FindTriggers(Waveform_t const& wvfm) const;
+  std::vector<optical_tick> FindTriggers(Waveform_t const& wvfm) const;
 
   /**
    * @brief Generate periodic interest points regardless the actual activity.
@@ -702,7 +701,7 @@ namespace icarus::opdet {
    *       (but since the value of that parameter is expected to be negative,
    *       tick `0` effectively happens _before_ the trigger).
    */
-  std::set<optical_tick> CreateBeamGateTriggers() const;
+  std::vector<optical_tick> CreateBeamGateTriggers() const;
 
     /// Returns a random response whether a photon generates a photoelectron.
     bool KicksPhotoelectron() const;
