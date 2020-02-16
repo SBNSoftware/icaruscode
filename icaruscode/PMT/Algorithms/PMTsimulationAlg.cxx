@@ -12,6 +12,7 @@
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "larcorealg/CoreUtils/counter.h"
 
 // framework libraries
 #include "cetlib_except/exception.h"
@@ -294,7 +295,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
         ;
       if (trig_time < 0_us) continue;
       if (trig_time > fParams.readoutEnablePeriod) break;
-      trigger_locations.insert
+      trigger_locations.push_back
         (optical_tick::castFrom(trig_time.quantity()*fSampling));
     }
     return trigger_locations;
@@ -306,22 +307,35 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     std::set<optical_tick> trigger_locations;
     if (fParams.createBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
     
+    // find all ticks at which we would trigger readout
     bool above_thresh=false;
-
-    //next, find all ticks at which we would trigger readout
     for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
       
       auto const val { fParams.pulsePolarity* (wvfm[i_t]-fParams.baseline) };
 
       if(!above_thresh && val>=fParams.thresholdADC){
 	above_thresh=true;
-	trigger_locations.insert(optical_tick::castFrom(i_t));
+	trigger_locations.push_back(optical_tick::castFrom(i_t));
       }
       else if(above_thresh && val<fParams.thresholdADC){
 	above_thresh=false;
       } 
       
-    }//end loop over waveform   
+    }//end loop over waveform
+    
+    // next, add the triggers injected at beam gate time
+    if (fParams.createBeamGateTriggers) {
+      auto beamGateTriggers = CreateBeamGateTriggers();
+      
+      // insert the new triggers and sort them
+      trigger_locations.insert(beamGateTriggers.begin(), beamGateTriggers.end());
+      std::inplace_merge(
+        trigger_locations.begin(),
+        trigger_locations.end() - beamGateTriggers.size(),
+        trigger_locations.end()
+        );
+    }
+
     return trigger_locations;
   }
 
@@ -342,6 +356,12 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 
     
     std::set<optical_tick> trigger_locations = FindTriggers(wvfm);
+    auto iNextTrigger = trigger_locations.begin();
+    optical_tick nextTrigger
+      = trigger_locations.empty()
+      ? std::numeric_limits<optical_tick>::max()
+      : *iNextTrigger
+      ;
 
     //std::cout << "Creating opdet waveforms in " << opch << std::endl;
 
@@ -352,10 +372,20 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     auto const posttrigSize = fParams.posttrigSize();
     MF_LOG_TRACE("PMTsimulationAlg")
       << "Channel #" << opch << ": " << trigger_locations.size() << " triggers";
-    for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
+    for (std::size_t const i_t: util::counter(wvfm.size())) {
+      
+      auto const thisTick = optical_tick::castFrom(i_t);
 
       //if we are at a trigger point, open the window
-      if(trigger_locations.count(optical_tick::castFrom(i_t))==1){
+      if (thisTick == nextTrigger) {
+        
+        // update the next trigger
+        nextTrigger
+          = (++iNextTrigger == trigger_locations.end())
+          ? std::numeric_limits<optical_tick>::max()
+          : *iNextTrigger
+          ;
+        
 
 	//if not already in a pulse
 	if(!in_pulse){
@@ -387,8 +417,8 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 	in_pulse=false;
       }
       
-    }//end loop over waveform
-  }
+    } // for i_t (loop over waveform)
+  } // icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms()
 
   bool icarus::opdet::PMTsimulationAlg::KicksPhotoelectron() const
     { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; } 
