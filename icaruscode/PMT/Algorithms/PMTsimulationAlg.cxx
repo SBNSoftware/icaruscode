@@ -20,6 +20,7 @@
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandPoisson.h"
+#include "CLHEP/Random/RandGaussQ.h"
 #include "CLHEP/Random/RandExponential.h"
 
 // C++ standard libaries
@@ -78,6 +79,15 @@ bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
 // -----------------------------------------------------------------------------   
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------   
+
+// The reason for this being static is feeble... in short: because it can be;
+// the memory it takes is already "static" anyway, so no gain in there.
+// At least, this clarifies the absolute nature of this object.
+util::FastAndPoorGauss<32768U, float> const
+  icarus::opdet::PMTsimulationAlg::fFastGauss;
+
+
+// -----------------------------------------------------------------------------   
 double
 icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::
   multiplicationStageGain(unsigned int i /* = 1 */) const
@@ -126,6 +136,10 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     },
     fSampling,
     6.0        // 6 std. dev. of tail should suffice
+    )
+  , fNoiseAdder(fParams.useFastElectronicsNoise
+      ? &icarus::opdet::PMTsimulationAlg::AddNoise_faster
+      : &icarus::opdet::PMTsimulationAlg::AddNoise
     )
 {
   using namespace util::quantities::electronics_literals;
@@ -254,7 +268,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
       start=std::chrono::high_resolution_clock::now();
 
-      if(fParams.ampNoise > 0.0_ADCf) AddNoise(waveform);
+      if(fParams.ampNoise > 0.0_ADCf) (this->*fNoiseAdder)(waveform);
       if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform);
 
       end=std::chrono::high_resolution_clock::now(); diff = end-start;
@@ -448,17 +462,46 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,std::plus<ADCcount>());
     
   }
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave) const {
   
-  void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave){
-    
-    auto& engine = *fParams.elecNoiseRandomEngine;
-    
-    for(auto& sample: wave) {
-      sample += fParams.ampNoise * fFastGauss(engine.flat());
-    } // for sample
-    
-  } // PMTsimulationAlg::AddNoise()
+  CLHEP::RandGaussQ random
+    (*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise.value());
+  for(auto& sample: wave) {
+    ADCcount const noise { static_cast<float>(random.fire()) }; // Gaussian noise
+    sample += noise;
+  } // for sample
   
+} // PMTsimulationAlg::AddNoise()
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::AddNoise_faster(Waveform_t& wave) const {
+  
+  /*
+    * Compared to AddNoise(), we use a somehow faster random generator;
+    * to squeeze the CPU cycles, we avoid the CLHEP interface as much as
+    * possible; the random number from the engine is immediately converted
+    * to single precision, and the rest of the math happens in there as well.
+    * No virtual interfaces nor indirection is involved within this function
+    * (except for CLHEP random engine). We generate a normal variable _z_
+    * (standard deviation 1, mean 0) and we just scale it to the desired
+    * standard deviation, not bothering to add the mean offset of 0.
+    * Note that unless the random engine is multi-thread safe, this function
+    * won't gain anything from multi-threading.
+    */
+  auto& engine = *fParams.elecNoiseRandomEngine;
+  
+  for(auto& sample: wave) {
+    sample += fParams.ampNoise * fFastGauss(engine.flat()); // Gaussian noise
+  } // for sample
+  
+} // PMTsimulationAlg::AddNoise_faster()
+
+
+// -----------------------------------------------------------------------------
   void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave)
   {
     using namespace util::quantities::frequency_literals;
@@ -530,6 +573,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   // electronics noise
   //
   fBaseConfig.ampNoise                 = ADCcount(config.AmpNoise());
+  fBaseConfig.useFastElectronicsNoise  = config.FastElectronicsNoise();
   
   //
   // trigger

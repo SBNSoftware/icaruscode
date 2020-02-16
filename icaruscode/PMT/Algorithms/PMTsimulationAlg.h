@@ -558,6 +558,7 @@ namespace icarus::opdet {
 
       ADCcount baseline; //waveform baseline
       ADCcount ampNoise; //amplitude of gaussian noise
+      bool useFastElectronicsNoise; ///< Whether to use fast generator for electronics noise.
       hertz darkNoiseRate;
       float saturation; //equivalent to the number of p.e. that saturates the electronic signal
       PMTspecs_t PMTspecs; ///< PMT specifications.
@@ -587,6 +588,7 @@ namespace icarus::opdet {
 
       /// @{
       /// @name Derivative configuration parameters.
+      
       std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
       std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
       int expectedPulsePolarity() const
@@ -634,6 +636,9 @@ namespace icarus::opdet {
     using Waveform_t = std::vector<ADCcount>;
     using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
 
+    /// Type of member function to add electronics noise.
+    using NoiseAdderFunc_t = void (PMTsimulationAlg::*)(Waveform_t&) const;
+    
     ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
 
     double fQE;            ///< PMT quantum efficiency.
@@ -642,8 +647,10 @@ namespace icarus::opdet {
 
     DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
+    NoiseAdderFunc_t const fNoiseAdder; ///< Selected electronics noise method.
+    
     ///< Transformation uniform to Gaussian for electronics noise.
-    util::FastAndPoorGauss<32768U, float> fFastGauss;
+    static util::FastAndPoorGauss<32768U, float> const fFastGauss;
     
   void CreateFullWaveform
   (Waveform_t&, sim::SimPhotons const&, sim::SimPhotons &);
@@ -659,7 +666,9 @@ namespace icarus::opdet {
     (tick time_bin, WaveformValue_t n, Waveform_t& wave) const;
 
 
-  void AddNoise(Waveform_t& wave); //add noise to baseline
+  void AddNoise(Waveform_t& wave) const; //add noise to baseline
+  /// Same as `AddNoise()` but using an alternative generator.
+  void AddNoise_faster(Waveform_t& wave) const;
   void AddDarkNoise(Waveform_t& wave); //add noise to baseline
 
   /**
@@ -849,6 +858,12 @@ namespace icarus::opdet {
         Comment("RMS of the electronics noise fluctuations [ADC counts]")
         // mandatory
         };
+      fhicl::Atom<bool> FastElectronicsNoise {
+        Name("FastElectronicsNoise"),
+        Comment
+          ("use an approximate and faster random generator for electronics noise"),
+        true
+        };
 
       //
       // trigger
@@ -970,6 +985,8 @@ template <typename Stream>
 void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
 {
+  using namespace util::quantities::electronics_literals;
+  
   out
             << indent << "Baseline:            " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
@@ -983,6 +1000,14 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     ;
+  
+  out << '\n' << indent << "Electronics noise:   ";
+  if (fParams.ampNoise > 0_ADCf) {
+    out << fParams.ampNoise << " RMS ("
+      << (fParams.useFastElectronicsNoise? "faster": "slower") << " algorithm)";
+  }
+  else out << "none";
+  
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
       << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
