@@ -1,9 +1,12 @@
 cet_enable_asserts()
 
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make( 
-          TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingServiceICARUS_service
+          TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingICARUSService_service
                           icaruscode_Utilities_SignalShaperServiceICARUS_service
-			  lardata_Utilities_LArFFT_service
+                          icaruscode_Utilities
+			              lardata_Utilities_LArFFT_service
                           larcorealg_Geometry
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
@@ -18,7 +21,7 @@ art_make(
                           art_Persistency_Provenance
                           ${ART_FRAMEWORK_SERVICES_BASIC}
                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
+                          ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                           ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
                           art_Utilities
@@ -29,7 +32,7 @@ art_make(
                           ${CETLIB}
                           ${Boost_FILESYSTEM_LIBRARY}
                           ${Boost_SYSTEM_LIBRARY}
-                           ${CLHEP}
+                          ${CLHEP}
                           ${ROOT_BASIC_LIB_LIST}
     )
 

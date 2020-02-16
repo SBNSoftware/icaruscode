@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
@@ -24,6 +24,7 @@
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TF1.h"
+#include "TComplex.h"
 #include "TVirtualFFT.h"
 
 #include <cmath>
@@ -120,10 +121,10 @@ private:
     std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore&           fGeometry;             ///< pointer to Geometry service
-    util::SignalShapingServiceICARUS&  fSignalServices;       ///< The signal shaping service
-    const detinfo::DetectorProperties* fDetectorProperties;   ///< Detector properties service
-    const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
+    const geo::GeometryCore&                 fGeometry;             ///< pointer to Geometry service
+    icarusutil::SignalShapingICARUSService&  fSignalServices;       ///< The signal shaping service
+    const detinfo::DetectorProperties*       fDetectorProperties;   ///< Detector properties service
+    const lariov::DetPedestalProvider&       fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
     
 //----------------------------------------------------------------------------
@@ -136,7 +137,7 @@ private:
 BasicRawDigitAnalysis::BasicRawDigitAnalysis(fhicl::ParameterSet const & pset) :
     fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),
     fGeometry(*lar::providerFrom<geo::Geometry>()),
-    fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
+    fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
     fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
@@ -288,14 +289,14 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
         raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(plane,0);
         
         // Recover the filter from signal shaping services...
-        const std::vector<TComplex>& response = fSignalServices.SignalShaping(channel).ConvKernel();
-        const std::vector<TComplex>& filter   = fSignalServices.SignalShaping(channel).Filter();
+        const icarusutil::FrequencyVec& response = fSignalServices.SignalShaping(channel).ConvKernel();
+        const icarusutil::FrequencyVec& filter   = fSignalServices.SignalShaping(channel).Filter();
         
         for(size_t idx = 0; idx < numSamples; idx++)
         {
             double freq = 1.e6 * double(idx)/ (sampleRate * readOutSize);
-            fConvKernelVec[plane]->Fill(freq, response.at(idx).Rho(), 1.);
-            fFilterFuncVec[plane]->Fill(freq, filter.at(idx).Rho(), 1.);
+            fConvKernelVec[plane]->Fill(freq, std::abs(response.at(idx)), 1.);
+            fFilterFuncVec[plane]->Fill(freq, std::abs(filter.at(idx)), 1.);
         }
     }
 
@@ -552,10 +553,16 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     }
     
     // Recover the filter from signal shaping services...
-    const std::vector<TComplex>& filter   = fSignalServices.SignalShaping(channel).Filter();
+    const icarusutil::FrequencyVec& filter   = fSignalServices.SignalShaping(channel).Filter();
     
     // Convolve this with the FFT of the input waveform
-    std::transform(complexVals.begin(),complexVals.end(),filter.begin(),complexVals.begin(),std::multiplies<TComplex>());
+    for(size_t idx = 0; idx < complexVals.size(); idx++)
+    {
+        TComplex filterVal(filter[idx].real(),filter[idx].imag());
+
+        complexVals[idx] *= filterVal;
+    }
+
     std::transform(complexVals.begin(), complexVals.end(), powerVec.begin(), [](const auto& val){return val.Rho();});
 
     for(size_t idx = 0; idx < halfFFTDataSize; idx++)

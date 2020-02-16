@@ -13,6 +13,7 @@
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "icaruscode/Utilities/tools/IFilter.h"
 
+#include <complex.h>
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 
@@ -73,7 +74,7 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
-        fFilterVec[planeIdx] = std::vector<std::complex<float>>();
+        fFilterVecMap[planeIdx] = std::vector<std::complex<float>>();
     }
     
     fEigenFFT = std::make_unique<Eigen::FFT<float>>();
@@ -243,8 +244,8 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, fPowerVec.begin(), [](const auto& complex){return std::abs(complex);});
 
     // Recover the filter function we are using...
-    const std::vector<TComplex>&            filter    = fFilterToolMap.at(plane)->getResponseVec();
-    const std::vector<std::complex<float>>& filterVec = fFilterVec.at(plane);;
+    const icarusutil::FrequencyVec&         filter    = fFilterToolMap.at(plane)->getResponseVec();
+    const std::vector<std::complex<float>>& filterVec = fFilterVecMap.at(plane);;
 
     // Make sure the filter has been correctly initialized
     if (filter.size() != halfFFTDataSize)
@@ -252,8 +253,8 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
         fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
         
         // Set up the internal FFT vector
-        fFilterVec.at(plane).reserve(halfFFTDataSize);
-        for(auto& rootComplex : filter) fFilterVec.at(plane).emplace_back(rootComplex.Re(),rootComplex.Im());
+        fFilterVecMap.at(plane).reserve(halfFFTDataSize);
+        for(auto& complex : filter) fFilterVecMap.at(plane).emplace_back(complex);
     }
 
     //std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
@@ -293,7 +294,7 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
         {
             float freq = 1.e6 * float(idx)/ (sampleRate * readOutSize);
             fConvFFTPowerVec[plane]->Fill(freq, std::min(fPowerVec[idx],float(999.)), 1.);
-            fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
+            fFilterFuncVec[plane]->Fill(freq, double(std::abs(filter[idx])), 1.);
         }
     }
     

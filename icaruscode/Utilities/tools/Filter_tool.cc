@@ -13,7 +13,6 @@
 
 #include "TF1.h"
 #include "TProfile.h"
-#include "TComplex.h"
 
 #include <fstream>
 
@@ -31,18 +30,18 @@ public:
     void setResponse(size_t numBins, double correct3D, double timeScaleFctr) override;
     void outputHistograms(art::TFileDirectory&)                        const override;
     
-    size_t                       getPlane()       const override {return fPlane;}
-    const std::vector<TComplex>& getResponseVec() const override {return fFilterVec;}
+    size_t                          getPlane()                         const override {return fPlane;}
+    const icarusutil::FrequencyVec& getResponseVec()                   const override {return fFilterVec;}
     
 private:
     // Member variables from the fhicl file
-    size_t                fPlane;
-    std::vector<double>   fParameters;
-    std::string           fFunctionString;
-    double                fFilterWidthCorrectionFactor;
+    size_t                   fPlane;
+    std::vector<double>      fParameters;
+    std::string              fFunctionString;
+    double                   fFilterWidthCorrectionFactor;
     
     // Container for the field response "function"
-    std::vector<TComplex> fFilterVec;
+    icarusutil::FrequencyVec fFilterVec;
 };
     
 //----------------------------------------------------------------------
@@ -100,12 +99,11 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = bin * freqRes;
-
-        double f = function.Eval(freq);
+        double f    = function.Eval(freq);
 
         peakVal = std::max(peakVal, f);
         
-        fFilterVec.push_back(TComplex(f, 0.));
+        fFilterVec.push_back(icarusutil::ComplexVal(f, 0.));
     }
     
     // "Normalize" to peak value
@@ -135,7 +133,7 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     {
         double freq = bin * minFreq;
         
-        hist->Fill(freq, fFilterVec.at(bin).Re(), 1.);
+        hist->Fill(freq, std::abs(fFilterVec.at(bin)), 1.);
     }
     
     

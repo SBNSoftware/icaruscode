@@ -1,12 +1,15 @@
 
 cet_enable_asserts()
 
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make(
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         icarussigproc
-                        icaruscode_Utilities_SignalShapingServiceICARUS_service
+                        icaruscode_Utilities_SignalShapingICARUSService_service
+                        icaruscode_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities

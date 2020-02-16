@@ -1,5 +1,7 @@
 add_subdirectory(Algorithms)
 
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make(
           LIB_LIBRARIES 
                         lardataobj_RawData
@@ -11,6 +13,7 @@ art_make(
           MODULE_LIBRARIES
                         larcorealg_Geometry
                         icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
+                        icaruscode_Utilities
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
                         larevt_Filters
@@ -19,7 +22,7 @@ art_make(
                         larevt_CalibrationDBI_Providers
                         lardataobj_RecoBase
                         lardata_ArtDataHelper
-                        icaruscode_Utilities_SignalShapingServiceICARUS_service
+                        icaruscode_Utilities_SignalShapingICARUSService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}

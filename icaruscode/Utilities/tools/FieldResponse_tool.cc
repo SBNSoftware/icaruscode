@@ -17,7 +17,10 @@
 #include "TFile.h"
 #include "TProfile.h"
 
-#include <Eigen/Core>
+#ifndef EIGEN_FFTW_DEFAULT
+#error EIGEN_FFTW_DEFAULT is not defined
+#endif
+
 #include <unsupported/Eigen/FFT>
 
 #include <fstream>
@@ -33,51 +36,51 @@ public:
     
     ~FieldResponse() {}
     
-    void configure(const fhicl::ParameterSet&)        override;
-    void setResponse(double, double, double)          override;
-    void outputHistograms(art::TFileDirectory&) const override;
+    void configure(const fhicl::ParameterSet&)                  override;
+    void setResponse(double, double, double)                    override;
+    void outputHistograms(art::TFileDirectory&)           const override;
     
-    size_t                                   getPlane()             const override;
-    size_t                                   getNumBins()           const override;
-    double                                   getBinCenter(int bin)  const override;
-    double                                   getBinContent(int bin) const override;
-    double                                   getLowEdge()           const override;
-    double                                   getHighEdge()          const override;
-    double                                   getBinWidth()          const override;
-    double                                   getTOffset()           const override;
-    double                                   getIntegral()          const override;
-    double                                   interpolate(double x)  const override;
+    size_t                         getPlane()             const override;
+    size_t                         getNumBins()           const override;
+    double                         getBinCenter(int bin)  const override;
+    double                         getBinContent(int bin) const override;
+    double                         getLowEdge()           const override;
+    double                         getHighEdge()          const override;
+    double                         getBinWidth()          const override;
+    double                         getTOffset()           const override;
+    double                         getIntegral()          const override;
+    double                         interpolate(double x)  const override;
     
-    const std::vector<double>&               getResponseVec()       const override {return fFieldResponseVec;}
-    const std::vector<std::complex<double>>& getResponseFFTVec()    const override {return fFieldResponseFFTVec;}
+    const icarusutil::TimeVec&      getResponseVec()       const override {return fFieldResponseVec;}
+    const icarusutil::FrequencyVec& getResponseFFTVec()    const override {return fFieldResponseFFTVec;}
 
 private:
     // Utility routine for converting numbers to strings
-    std::string         numberToString(int number);    
+    std::string              numberToString(int number);    
     
     // Make sure we have been initialized
-    bool                fIsValid;
+    bool                     fIsValid;
     
     // Member variables from the fhicl file
-    size_t              fThisPlane;
-    geo::SigType_t      fSignalType;
-    std::string         fFieldResponseFileName;
-    std::string         fFieldResponseFileVersion;
-    std::string         fFieldResponseHistName;
-    double              fFieldResponseAmplitude;
-    double              fTimeCorrectionFactor;
+    size_t                   fThisPlane;
+    geo::SigType_t           fSignalType;
+    std::string              fFieldResponseFileName;
+    std::string              fFieldResponseFileVersion;
+    std::string              fFieldResponseHistName;
+    double                   fFieldResponseAmplitude;
+    double                   fTimeCorrectionFactor;
     
     // Pointer to the input histogram
-    TH1D*               fFieldResponseHist;
+    TH1D*                    fFieldResponseHist;
     
     // Container for the field response "function"
-    std::vector<double> fFieldResponseVec;
+    icarusutil::TimeVec      fFieldResponseVec;
     
     // And a container for the FFT of the above
-    std::vector<std::complex<double>> fFieldResponseFFTVec;
+    icarusutil::FrequencyVec fFieldResponseFFTVec;
     
     // Derived variables
-    double              fT0Offset;
+    double                   fT0Offset;
 };
     
 //----------------------------------------------------------------------

@@ -10,7 +10,7 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
 
 #include "TH1D.h"
 
@@ -26,16 +26,16 @@ public:
     
     ~BaselineStandard();
     
-    void configure(const fhicl::ParameterSet& pset)                                override;
-    void outputHistograms(art::TFileDirectory&)                              const override;
+    void configure(const fhicl::ParameterSet& pset)                                       override;
+    void outputHistograms(art::TFileDirectory&)                                     const override;
     
-    float GetBaseline(std::vector<float> const&, raw::ChannelID_t, size_t, size_t) const override;
+    float GetBaseline(icarusutil::TimeVec const&, raw::ChannelID_t, size_t, size_t) const override;
     
 private:
     // fhicl parameters
     int    fNumBinsToAverage;
     
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
 };
     
 //----------------------------------------------------------------------
@@ -55,16 +55,16 @@ void BaselineStandard::configure(const fhicl::ParameterSet& pset)
     fNumBinsToAverage = pset.get<int>("NumBinsToAverage", 20);
     
     // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
+    fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
     
     return;
 }
 
     
-float BaselineStandard::GetBaseline(std::vector<float> const& holder,
-                                    raw::ChannelID_t    channel,
-                                    size_t              roiStart,
-                                    size_t              roiLen) const
+float BaselineStandard::GetBaseline(icarusutil::TimeVec const& holder,
+                                    raw::ChannelID_t           channel,
+                                    size_t                     roiStart,
+                                    size_t                     roiLen) const
 {
     float base=0;
     //1. Check Baseline match?

@@ -28,6 +28,7 @@
 #include "TFile.h"
 #include "TComplex.h"
 
+#include <complex.h>
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 
@@ -49,14 +50,14 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
-                       std::vector<float>& noise,
+                       icarusutil::TimeVec& noise,
                        double noise_factor,
                        unsigned int wire) override;
     
 private:
-    void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int);
-    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, std::vector<float>&, double, unsigned int);
-    void GenNoise(std::function<void (double[])>&, const std::vector<float>&, std::vector<float>&, float);
+    void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
+    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
+    void GenNoise(std::function<void (double[])>&, const icarusutil::TimeVec&, icarusutil::TimeVec&, float);
     void ComputeRMSs();
     void makeHistograms();
     
@@ -79,16 +80,16 @@ private:
 
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
-    std::vector<float>                          fCoherentNoiseVec;       //< Input full noise frequency distribution
-    std::vector<float>                          fIncoherentNoiseVec;       //< Input full noise frequency distribution
+    icarusutil::TimeVec                          fCoherentNoiseVec;       //< Input full noise frequency distribution
+    icarusutil::TimeVec                          fIncoherentNoiseVec;       //< Input full noise frequency distribution
 
     std::vector<double>                         fCorrAmpDistVec;     //< Keep track of motherboard contributions
     
- float                                       fIncoherentNoiseRMS; //< RMS of full noise waveform
-    float                                       fCoherentNoiseRMS;   //< RMS of full noise waveform
+    double                                      fIncoherentNoiseRMS; //< RMS of full noise waveform
+    double                                      fCoherentNoiseRMS;   //< RMS of full noise waveform
 
     // Container for doing the work
-    std::vector<std::complex<float>>            fNoiseFrequencyVec;
+    icarusutil::FrequencyVec                    fNoiseFrequencyVec;
     
     // Keep track of seed initialization for uncorrelated noise
     bool                                        fNeedFirstSeed=true;
@@ -98,15 +99,15 @@ private:
     TProfile*                                   fMedianNoiseHist;
     TProfile*                                   fPeakNoiseHist;
     TProfile*                                   fCorAmpDistHist;
-TH1D* corrRMSHistPtr;
-TH1D* uncorrRMSHistPtr;
-TH1D* totalRMSHistPtr;
+    TH1D*                                       corrRMSHistPtr;
+    TH1D*                                       uncorrRMSHistPtr;
+    TH1D*                                       totalRMSHistPtr;
 
 float totalRMS;
 
     
     // Keep instance of the eigen FFT
-    Eigen::FFT<float>                           fEigenFFT;
+    Eigen::FFT<double>                          fEigenFFT;
     
     // Useful services, keep copies for now (we can update during begin run periods)
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
@@ -240,15 +241,15 @@ void SBNNoise::nextEvent()
 
 void SBNNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
-                                    std::vector<float>&     noise,
+                                    icarusutil::TimeVec&     noise,
                                     double                  noise_factor,
                                     unsigned int            channel)
 {
 noise_factor=totalRMS;
 //std::cout <<  " generating noise " << std::endl;
     // Define a couple of vectors to hold intermediate work
-    std::vector<float> noise_unc(noise.size(),0.);
-    std::vector<float> noise_corr(noise.size(),0.);
+    icarusutil::TimeVec noise_unc(noise.size(),0.);
+    icarusutil::TimeVec noise_corr(noise.size(),0.);
     
     // Make sure the work vector is size right with the output
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
@@ -267,7 +268,7 @@ noise_factor=totalRMS;
     return;
 }
     
-void SBNNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, std::vector<float> &noise, double noise_factor, unsigned int channel)
+void SBNNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int channel)
 {
     // Here we aim to produce a waveform consisting of incoherent noise
     // Note that this is expected to be the dominate noise contribution
@@ -290,7 +291,7 @@ void SBNNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, std::ve
     return;
 }
     
-void SBNNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, std::vector<float> &noise, double noise_factor, unsigned int board)
+void SBNNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int board)
 {    
    
         // Set the engine seed to the board being considered
@@ -309,7 +310,7 @@ void SBNNoise::GenerateCorrelatedNoise(CLHEP::HepRandomEngine& engine, std::vect
     return;
 }
     
-void SBNNoise::GenNoise(std::function<void (double[])>& gen,const std::vector<float>& freqDist, std::vector<float>& noise, float scaleFactor)
+void SBNNoise::GenNoise(std::function<void (double[])>& gen,const icarusutil::TimeVec& freqDist, icarusutil::TimeVec& noise, float scaleFactor)
 {
     double rnd_corr[2] = {0.,0.};
     
@@ -328,7 +329,7 @@ void SBNNoise::GenNoise(std::function<void (double[])>& gen,const std::vector<fl
     }
     
     // inverse FFT MCSignal
-    fEigenFFT.inv(noise, fNoiseFrequencyVec, fNoiseFrequencyVec.size());
+    fEigenFFT.inv(noise, fNoiseFrequencyVec);
     
     return;
 }
@@ -346,15 +347,15 @@ void SBNNoise::ComputeRMSs()
     // produce a waveform and then get the rms from that
     std::function<void (double[])> randGenFunc = [](double randArray[]){randArray[0]=0.5; randArray[1]=0.5;};
     
-    std::vector<float> waveNoise(fIncoherentNoiseVec.size());
+    icarusutil::TimeVec waveNoise(fIncoherentNoiseVec.size());
     float              scaleFactor = 1.;
     
     GenNoise(randGenFunc, fIncoherentNoiseVec, waveNoise, scaleFactor);
     
     // Now get the details...
-    float nSig(3.);
-    float mean,rmsTrunc;
-    int   nTrunc;
+    double nSig(3.);
+    double mean,rmsTrunc;
+    int    nTrunc;
     
     // Use the waveform tool to recover the full rms
     fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);

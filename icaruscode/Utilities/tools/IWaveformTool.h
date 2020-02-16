@@ -14,6 +14,8 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "TProfile.h"
 
+#include "icaruscode/Utilities/tools/SignalProcessingDefs.h"
+
 namespace icarus_tool
 {
     template <class T> using Waveform = std::vector<T>;

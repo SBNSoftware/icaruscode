@@ -34,28 +34,28 @@ public:
     void setResponse(size_t numBins, double binWidth)       override;
     void outputHistograms(art::TFileDirectory&)       const override;
     
-    size_t                     getPlane()                        const override {return fPlane;}
-    double                     getFCperADCMicroS()               const override {return fFCperADCMicroS;}
-    double                     getASICShapingTime()              const override {return fASICShapingTime;}
-    const std::vector<double>& getResponseVec()                  const override {return fElectronicsResponseBesselApproxVec;}
-    const std::vector<std::complex<double>>& getResponseFFTVec() const override {return fElectronicsResponseFFTVec;}
+    size_t                          getPlane()           const override {return fPlane;}
+    double                          getFCperADCMicroS()  const override {return fFCperADCMicroS;}
+    double                          getASICShapingTime() const override {return fASICShapingTime;}
+    const icarusutil::TimeVec&      getResponseVec()     const override {return fElectronicsResponseBesselApproxVec;}
+    const icarusutil::FrequencyVec& getResponseFFTVec()  const override {return fElectronicsResponseFFTVec;}
 
 private:
     // Member variables from the fhicl file
-    size_t              fPlane;
-    double              fFCperADCMicroS;
-    double              fASICShapingTime;
-    double              fADCPerPCAtLowestASICGain;
-    double              fTimeOffset;
+    size_t                   fPlane;
+    double                   fFCperADCMicroS;
+    double                   fASICShapingTime;
+    double                   fADCPerPCAtLowestASICGain;
+    double                   fTimeOffset;
     
     // Keep track of the bin width (for histograms)
-    double              fBinWidth;
+    double                   fBinWidth;
     
     // Container for the electronics response "function"
-    std::vector<double> fElectronicsResponseBesselApproxVec;
+    icarusutil::TimeVec      fElectronicsResponseBesselApproxVec;
     
     // And a container for the FFT of the above
-    std::vector<std::complex<double>> fElectronicsResponseFFTVec;
+    icarusutil::FrequencyVec fElectronicsResponseFFTVec;
 };
     
 //----------------------------------------------------------------------
@@ -134,7 +134,7 @@ void ElectronicsResponseBesselApprox::setResponse(size_t numBins, double binWidt
     std::transform(fElectronicsResponseBesselApproxVec.begin(),fElectronicsResponseBesselApproxVec.end(),fElectronicsResponseBesselApproxVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
     // Now we take the FFT...
-    Eigen::FFT<double> eigenFFT;
+    Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;
     
     eigenFFT.fwd(fElectronicsResponseFFTVec, fElectronicsResponseBesselApproxVec);
 
@@ -166,7 +166,7 @@ void ElectronicsResponseBesselApprox::outputHistograms(art::TFileDirectory& hist
     std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
     
     // Get the FFT of the response
-    std::vector<double> powerVec;
+    icarusutil::TimeVec powerVec;
     
     waveformTool->getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
     

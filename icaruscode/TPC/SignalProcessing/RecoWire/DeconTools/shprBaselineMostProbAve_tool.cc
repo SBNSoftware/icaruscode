@@ -27,13 +27,13 @@ public:
     
     ~shprBaselineMostProbAve();
     
-    void configure(const fhicl::ParameterSet& pset)                                      override;
-    void outputHistograms(art::TFileDirectory&)                                    const override;
+    void configure(const fhicl::ParameterSet& pset)                                        override;
+    void outputHistograms(art::TFileDirectory&)                                      const override;
     
-    float GetBaseline(const std::vector<float>&, raw::ChannelID_t, size_t, size_t) const override;
+    float GetBaseline(const icarusutil::TimeVec&, raw::ChannelID_t, size_t, size_t)  const override;
     
 private:
-    std::pair<float,int> GetBaseline(const std::vector<float>&, int, size_t, size_t) const;
+    std::pair<float,int> GetBaseline(const icarusutil::TimeVec&, int, size_t, size_t) const;
     
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
@@ -71,10 +71,10 @@ void shprBaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
 }
 
     
-float shprBaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                       raw::ChannelID_t          channel,
-                                       size_t                    roiStart,
-                                       size_t                    roiLen) const
+float shprBaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                       raw::ChannelID_t               channel,
+                                       size_t                         roiStart,
+                                       size_t                         roiLen) const
 {
     float base(0.);
 
@@ -102,10 +102,10 @@ float shprBaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
     return base;
 }
     
-std::pair<float,int> shprBaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                                      int                       binRange,
-                                                      size_t                    roiStart,
-                                                      size_t                    roiStop) const
+std::pair<float,int> shprBaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                                      int                            binRange,
+                                                      size_t                         roiStart,
+                                                      size_t                         roiStop) const
 {
     std::pair<float,int> base(0.,1);
     

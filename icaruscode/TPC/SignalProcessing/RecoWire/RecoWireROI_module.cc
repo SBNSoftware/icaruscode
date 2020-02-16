@@ -44,7 +44,7 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -92,12 +92,12 @@ private:
 
     float fMinROIAverageTickThreshold; // try to remove bad ROIs
 
-    void doDecon(std::vector<float>&                                   holder,
-                 raw::ChannelID_t                                      channel,
-                 unsigned int                                          thePlane,
-                 const std::vector<std::pair<size_t, size_t>>&         rois,
-                 const std::vector<std::pair<size_t, size_t>>&         holderInfo,
-                 recob::Wire::RegionsOfInterest_t&                     ROIVec);
+    void doDecon(icarusutil::TimeVec&                          holder,
+                 raw::ChannelID_t                              channel,
+                 unsigned int                                  thePlane,
+                 const std::vector<std::pair<size_t, size_t>>& rois,
+                 const std::vector<std::pair<size_t, size_t>>& holderInfo,
+                 recob::Wire::RegionsOfInterest_t&             ROIVec);
     
     float SubtractBaseline(std::vector<float>& holder,
                            float               basePre,
@@ -108,8 +108,8 @@ private:
 
     float SubtractBaseline(const std::vector<float>& holder);
     
-    const geo::GeometryCore&             fGeometry;
-    util::SignalShapingServiceICARUS&    fSignalServices;
+    const geo::GeometryCore&                fGeometry;
+    icarusutil::SignalShapingICARUSService& fSignalServices;
     const lariov::ChannelStatusProvider& fChanFilt;
 }; // class RecoWireROI
 
@@ -118,7 +118,7 @@ DEFINE_ART_MODULE(RecoWireROI)
 //-------------------------------------------------
 RecoWireROI::RecoWireROI(fhicl::ParameterSet const& pset) : EDProducer{pset},
     fGeometry(*lar::providerFrom<geo::Geometry>()),
-    fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
+    fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fChanFilt(art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider())
 {
     this->reconfigure(pset);
@@ -307,7 +307,7 @@ void RecoWireROI::produce(art::Event& evt)
                 transformSize = fFFT->FFTSize();
             }
             
-            std::vector<float> rawAdcLessPedVec;
+            icarusutil::TimeVec rawAdcLessPedVec;
             
             rawAdcLessPedVec.resize(transformSize,0.);
             
@@ -341,7 +341,7 @@ void RecoWireROI::produce(art::Event& evt)
             std::fill(rawAdcLessPedVec.begin()+startBin+dataSize,rawAdcLessPedVec.end(),0.); //rawAdcLessPedVec.at(startBin+dataSize-1));
             
             // Try a loose cut to see if there is a potential for activity on this channel
-            std::vector<float>::iterator overThreshItr = std::find_if(rawAdcLessPedVec.begin(),rawAdcLessPedVec.end(),[raw_noise](const auto& val){return val > 2.5 * raw_noise;});
+            icarusutil::TimeVec::iterator overThreshItr = std::find_if(rawAdcLessPedVec.begin(),rawAdcLessPedVec.end(),[raw_noise](const auto& val){return val > 2.5 * raw_noise;});
             
             if (overThreshItr == rawAdcLessPedVec.end()) continue;
 
@@ -474,8 +474,8 @@ void RecoWireROI::produce(art::Event& evt)
                         int   nTries(0);
 
                         // get start of roi and find the maximum we can extend to
-                        std::vector<float>::iterator rawAdcRoiStartItr = rawAdcLessPedVec.begin() + binOffset + roi.first;
-                        std::vector<float>::iterator rawAdcMaxItr      = rawAdcLessPedVec.end()   - binOffset;
+                        icarusutil::TimeVec::iterator rawAdcRoiStartItr = rawAdcLessPedVec.begin() + binOffset + roi.first;
+                        icarusutil::TimeVec::iterator rawAdcMaxItr      = rawAdcLessPedVec.end()   - binOffset;
 
                         // if this is not the last roi then limit max range to start of next roi
                         if (roiIdx < rois.size() - 1)
@@ -631,12 +631,12 @@ float RecoWireROI::SubtractBaseline(std::vector<float>& holder,
 }
 
   
-void RecoWireROI::doDecon(std::vector<float>&                                   holder,
-                         raw::ChannelID_t                                      channel,
-                         unsigned int                                          thePlane,
-                         const std::vector<std::pair<size_t,size_t>>&          rois,
-                         const std::vector<std::pair<size_t,size_t>>&          holderInfo,
-                         recob::Wire::RegionsOfInterest_t&                     ROIVec)
+void RecoWireROI::doDecon(icarusutil::TimeVec&                         holder,
+                          raw::ChannelID_t                             channel,
+                          unsigned int                                 thePlane,
+                          const std::vector<std::pair<size_t,size_t>>& rois,
+                          const std::vector<std::pair<size_t,size_t>>& holderInfo,
+                          recob::Wire::RegionsOfInterest_t&            ROIVec)
 {
     fSignalServices.Deconvolute(channel,holder);
 

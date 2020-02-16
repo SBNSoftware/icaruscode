@@ -1,9 +1,12 @@
 cet_enable_asserts()
 add_subdirectory(MCTruth)
 
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
                          lardataobj_Simulation
                          icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
+                         icaruscode_Utilities
                          larcorealg_Geometry
                          larcore_Geometry_Geometry_service
                          lardata_RecoObjects

@@ -67,7 +67,7 @@ private:
     std::vector<size_t>                                    fHiWireByPlane;         ///< Hi wire for individual wire histograms
     
     // Try to optimize the filter FFT function with static memory...
-    std::map<size_t,std::vector<std::complex<float>>>      fFilterVec;
+    std::map<size_t,std::vector<std::complex<float>>>      fFilterVecMap;
     std::vector<float>                                     fFFTInputVec;
     std::vector<std::complex<float>>                       fFFTOutputVec;
     std::vector<float>                                     fPowerVec;

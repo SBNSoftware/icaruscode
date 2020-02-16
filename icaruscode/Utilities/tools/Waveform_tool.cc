@@ -10,13 +10,12 @@
 #include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "lardata/Utilities/SignalShaping.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
 
+#include <complex.h>
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 

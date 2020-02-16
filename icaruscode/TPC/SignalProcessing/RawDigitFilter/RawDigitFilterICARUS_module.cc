@@ -65,6 +65,9 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 
+#include <Eigen/Core>
+#include <unsupported/Eigen/FFT>
+
 
 class RawDigitFilterICARUS : public art::ReplicatedProducer
 {
@@ -104,12 +107,12 @@ private:
     int fNumEvent;        ///< Number of events seen.
 
     // Correction algorithms
-    caldata::RawDigitBinAverageAlg               fBinAverageAlg;
-    caldata::RawDigitCharacterizationAlg         fCharacterizationAlg;
-    caldata::RawDigitCorrelatedCorrectionAlg   fCorCorrectAlg;
+    caldata::RawDigitBinAverageAlg                         fBinAverageAlg;
+    caldata::RawDigitCharacterizationAlg                   fCharacterizationAlg;
+    caldata::RawDigitCorrelatedCorrectionAlg               fCorCorrectAlg;
 
-    std::unique_ptr<caldata::IRawDigitFilter>    fRawDigitFilterTool;
-    std::map<size_t,std::vector<std::complex<double>>>     fFilterVec;
+    std::unique_ptr<caldata::IRawDigitFilter>              fRawDigitFilterTool;
+    std::map<size_t,icarusutil::FrequencyVec>              fFilterVec;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
@@ -276,10 +279,8 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
         unsigned int halfFFTSize(fftSize/2 + 1);
         for(unsigned int plne = 0; plne < 3; plne++){
           fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
-          const std::vector<TComplex>& filter = fFilterToolMap.at(plne)->getResponseVec();
-          fFilterVec[plne] = std::vector<std::complex<double>>();
-          fFilterVec.at(plne).reserve(halfFFTSize);
-          for(auto& rootComplex : filter) fFilterVec.at(plne).emplace_back(rootComplex.Re(),rootComplex.Im());
+          const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
+          fFilterVec[plne] = filter;
         }
 
         // .. Now set up the fftw plan
@@ -366,17 +367,24 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
             }
 
             if (fDoFFTCorrection){
-              // .. Subtract the pedestal
-              float pedestal = fPedestalRetrievalAlg.PedMean(channel);
-              std::vector<float> holder(fftSize);
-              std::transform(rawadc.begin(),rawadc.end(),holder.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
+                // .. Subtract the pedestal
+                double              pedestal = fPedestalRetrievalAlg.PedMean(channel);
+                icarusutil::TimeVec holder(fftSize);
 
-              // .. Do the correction
-              util::LArFFTW lfftw(fftSize, lfftwp.fPlan, lfftwp.rPlan, 0);
-              lfftw.Convolute(holder, fFilterVec.at(plane));
+                std::transform(rawadc.begin(),rawadc.end(),holder.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
 
-              // .. Restore the pedestal
-              std::transform(holder.begin(), holder.end(), rawadc.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
+                // .. Do the correction
+                Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;
+
+                icarusutil::FrequencyVec holderFFT(rawadc.size());
+
+                eigenFFT.fwd(holderFFT, holder);
+
+                std::transform(fFilterVec.at(plane).begin(),fFilterVec.at(plane).end(),holderFFT.begin(),holderFFT.begin(),std::multiplies<std::complex<double>>());
+
+                eigenFFT.inv(holder, holderFFT);
+               // .. Restore the pedestal
+                std::transform(holder.begin(), holder.end(), rawadc.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
             }
 
             // Get the kitchen sink

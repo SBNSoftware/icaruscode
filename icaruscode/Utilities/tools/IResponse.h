@@ -15,9 +15,9 @@
 
 #include "fhiclcpp/ParameterSet.h"
 
-namespace util
+namespace icarusutil
 {
-    class SignalShaping;
+    class SignalShapingICARUS;
 }
 
 namespace art
@@ -36,17 +36,17 @@ namespace icarus_tool
     public:
         virtual ~IResponse() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)   = 0;
-        virtual void setResponse(double weight)                   = 0;
-        virtual void outputHistograms(art::TFileDirectory&) const = 0;
+        virtual void                                    configure(const fhicl::ParameterSet& pset)   = 0;
+        virtual void                                    setResponse(double weight)                   = 0;
+        virtual void                                    outputHistograms(art::TFileDirectory&) const = 0;
         
-        virtual size_t                      getPlane()               const = 0;
+        virtual size_t                                  getPlane()                             const = 0;
         
-        virtual const IFieldResponse*       getFieldResponse()       const = 0;
-        virtual const IElectronicsResponse* getElectronicsResponse() const = 0;
-        virtual const IFilter*              getFilter()              const = 0;
+        virtual const IFieldResponse*                   getFieldResponse()                     const = 0;
+        virtual const IElectronicsResponse*             getElectronicsResponse()               const = 0;
+        virtual const IFilter*                          getFilter()                            const = 0;
         
-        virtual const util::SignalShaping&  getSignalShaping()       const = 0;
+        virtual const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS()               const = 0;
     };
 }
 

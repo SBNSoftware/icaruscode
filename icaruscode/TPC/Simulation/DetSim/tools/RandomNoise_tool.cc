@@ -35,7 +35,7 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& engine,
                        CLHEP::HepRandomEngine&,
-                       std::vector<float>&,
+                       icarusutil::TimeVec&,
                        double,
                        unsigned int) override;
     
@@ -68,7 +68,7 @@ void RandomNoise::configure(const fhicl::ParameterSet& pset)
 
 void RandomNoise::generateNoise(CLHEP::HepRandomEngine& engine,
                                 CLHEP::HepRandomEngine&,
-                                std::vector<float>& noise,
+                                icarusutil::TimeVec& noise,
                                 double noise_factor,
                                 unsigned int)
 {

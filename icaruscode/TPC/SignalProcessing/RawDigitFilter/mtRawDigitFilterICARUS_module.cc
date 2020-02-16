@@ -134,7 +134,7 @@ private:
 
     std::unique_ptr<caldata::IRawDigitFilter>    fRawDigitFilterTool;
 
-    std::map<size_t,std::vector<std::complex<double>>>      fFilterVec;
+    std::map<size_t,std::vector<std::complex<double>>>     fFilterVec;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
@@ -447,12 +447,10 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
     // .. First set up the filters
     unsigned int halfFFTSize(fftSize/2 + 1);
-    for(unsigned int plne = 0; plne < 3; plne++){
-      fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
-      const std::vector<TComplex>& filter = fFilterToolMap.at(plne)->getResponseVec();
-      fFilterVec[plne] = std::vector<std::complex<double>>();
-      fFilterVec.at(plne).reserve(halfFFTSize);
-      for(auto& rootComplex : filter) fFilterVec.at(plne).emplace_back(rootComplex.Re(),rootComplex.Im());
+    for(unsigned int plne = 0; plne < 3; plne++)
+    {
+        fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
+        fFilterVec[plne] = fFilterToolMap.at(plne)->getResponseVec();
     }
 
     // .. Now set up the fftw plan
@@ -729,17 +727,24 @@ void RawDigitFilterICARUS::WaveformChar(unsigned int i, unsigned int& fDataSize,
   unsigned int plane = wgcvec[igrp][iwdx].plane;
 
   if (fDoFFTCorrection){
-    // .. Subtract the pedestal
-    float pedestal = fPedestalRetrievalAlg.PedMean(channel);
-    std::vector<float> holder(fftSize);
-    std::transform(rawADC.begin(),rawADC.end(),holder.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
+      // .. Subtract the pedestal
+      float pedestal = fPedestalRetrievalAlg.PedMean(channel);
+      std::vector<float> holder(fftSize);
+      std::transform(rawADC.begin(),rawADC.end(),holder.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
 
-    // .. Do the correction
-    util::LArFFTW lfftw(fftSize, fplan, rplan, 0);
-    lfftw.Convolute(holder, fFilterVec.at(plane));
+      const icarusutil::FrequencyVec& filterVecPlane = fFilterVec.at(plane);
 
-    // .. Restore the pedestal
-    std::transform(holder.begin(), holder.end(), rawADC.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
+      std::vector<std::complex<double>> filterVec(filterVecPlane.size());
+
+      for(size_t idx = 0; idx < filterVecPlane.size(); idx++) 
+          filterVec[idx] = filterVecPlane[idx];
+
+      // .. Do the correction
+      util::LArFFTW lfftw(fftSize, fplan, rplan, 0);
+      lfftw.Convolute(holder, filterVec);
+
+      // .. Restore the pedestal
+      std::transform(holder.begin(), holder.end(), rawADC.begin(), [pedestal](const float& adc){return std::round(adc + pedestal);});
   }
 
   fCharacterizationAlg.getWaveformParams(rawADC,

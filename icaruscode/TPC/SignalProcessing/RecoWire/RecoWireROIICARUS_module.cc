@@ -42,9 +42,7 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -95,8 +93,6 @@ class RecoWireROIICARUS : public art::EDProducer
     std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
     
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                        fFFT;
-    art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
     
     // Define here a temporary set of histograms...
     std::vector<TH1F*>     fPedestalOffsetVec;

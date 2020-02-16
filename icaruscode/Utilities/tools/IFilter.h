@@ -13,8 +13,7 @@
 #define IFilter_H
 
 #include "fhiclcpp/ParameterSet.h"
-
-class TComplex;
+#include "icaruscode/Utilities/tools/SignalProcessingDefs.h"
 
 namespace art
 {
@@ -32,8 +31,8 @@ namespace icarus_tool
         virtual void setResponse(size_t numBins, double correct3D, double timeScaleFctr) = 0;
         virtual void outputHistograms(art::TFileDirectory&)                        const = 0;
         
-        virtual size_t                       getPlane()           const = 0;
-        virtual const std::vector<TComplex>& getResponseVec()     const = 0;
+        virtual size_t                          getPlane()                         const = 0;
+        virtual const icarusutil::FrequencyVec& getResponseVec()                   const = 0;
     };
 }
 

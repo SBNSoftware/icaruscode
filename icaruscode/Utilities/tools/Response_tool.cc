@@ -11,10 +11,10 @@
 #include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "lardata/Utilities/SignalShaping.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
+
+#include "icaruscode/Utilities/SignalShapingICARUS.h"
 
 #include "art/Utilities/make_tool.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
@@ -44,13 +44,13 @@ public:
     void setResponse(double weight)                   override;
     void outputHistograms(art::TFileDirectory&) const override;
     
-    size_t                      getPlane()               const override {return fThisPlane;}
+    size_t                                  getPlane()               const override {return fThisPlane;}
     
-    const IFieldResponse*       getFieldResponse()       const override {return fFieldResponse.get();}
-    const IElectronicsResponse* getElectronicsResponse() const override {return fElectronicsResponse.get();}
-    const IFilter*              getFilter()              const override {return fFilter.get();}
+    const IFieldResponse*                   getFieldResponse()       const override {return fFieldResponse.get();}
+    const IElectronicsResponse*             getElectronicsResponse() const override {return fElectronicsResponse.get();}
+    const IFilter*                          getFilter()              const override {return fFilter.get();}
     
-    const util::SignalShaping&  getSignalShaping()       const override {return fSignalShaping;}
+    const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS() const override {return fSignalShaping;}
     
 private:
     using IFieldResponsePtr       = std::unique_ptr<icarus_tool::IFieldResponse>;
@@ -58,21 +58,24 @@ private:
     using IFilterPtr              = std::unique_ptr<icarus_tool::IFilter>;
 
     // Utility routine for converting numbers to strings
-    std::string             numberToString(int number);
+    std::string                     numberToString(int number);
+
+    // Keep track of our status
+    bool                            fResponseHasBeenSet;
     
     // Member variables from the fhicl file
-    size_t                  fThisPlane;
-    double                  f3DCorrection;
-    double                  fTimeScaleFactor;
-    int                     fDeconvPol;
+    size_t                          fThisPlane;
+    double                          f3DCorrection;
+    double                          fTimeScaleFactor;
+    int                             fDeconvPol;
     
     // Keep track of our base tools
-    IFieldResponsePtr       fFieldResponse;
-    IElectronicsResponsePtr fElectronicsResponse;
-    IFilterPtr              fFilter;
+    IFieldResponsePtr               fFieldResponse;
+    IElectronicsResponsePtr         fElectronicsResponse;
+    IFilterPtr                      fFilter;
     
     // The actual response function
-    util::SignalShaping     fSignalShaping;
+    icarusutil::SignalShapingICARUS fSignalShaping;
 };
     
 //----------------------------------------------------------------------
@@ -85,10 +88,12 @@ Response::Response(const fhicl::ParameterSet& pset)
 void Response::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fThisPlane       = pset.get<size_t>("Plane");
-    f3DCorrection    = pset.get<size_t>("Correction3D");
-    fTimeScaleFactor = pset.get<size_t>("TimeScaleFactor");
-    fDeconvPol       = pset.get<int   >("DeconvPol");
+    fThisPlane           = pset.get<size_t>("Plane");
+    f3DCorrection        = pset.get<size_t>("Correction3D");
+    fTimeScaleFactor     = pset.get<size_t>("TimeScaleFactor");
+    fDeconvPol           = pset.get<int   >("DeconvPol");
+
+    fResponseHasBeenSet  = false;
     
     // Build out the underlying tools we'll be using
     fFieldResponse       = art::make_tool<icarus_tool::IFieldResponse>(pset.get<fhicl::ParameterSet>("FieldResponse"));
@@ -100,9 +105,10 @@ void Response::configure(const fhicl::ParameterSet& pset)
     
 void Response::setResponse(double weight)
 {
-    // We'll need the FFT service
-    art::ServiceHandle<util::LArFFT> fastFourierTransform;
-    
+    // If we have already done the setup then can return
+    if (fResponseHasBeenSet) return;
+
+    // Recover detector properties service
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     // First of all set the field response
@@ -113,38 +119,38 @@ void Response::setResponse(double weight)
     
     // Next we perform the convolution of the field and electronics responses and then invert to get the
     // interim response function which will be set up in the time binning/range of the field response
-    const std::vector<std::complex<double>>& fieldResponseFFTVec       = fFieldResponse->getResponseFFTVec();
-    const std::vector<std::complex<double>>& electronicsResponseFFTVec = fElectronicsResponse->getResponseFFTVec();
+    const icarusutil::FrequencyVec& fieldResponseFFTVec       = fFieldResponse->getResponseFFTVec();
+    const icarusutil::FrequencyVec& electronicsResponseFFTVec = fElectronicsResponse->getResponseFFTVec();
     
-    std::vector<std::complex<double>> curResponseFFTVec(fieldResponseFFTVec.size());
+    icarusutil::FrequencyVec curResponseFFTVec(fieldResponseFFTVec.size());
     
-    std::transform(fieldResponseFFTVec.begin(), fieldResponseFFTVec.begin() + fieldResponseFFTVec.size()/2, electronicsResponseFFTVec.begin(), curResponseFFTVec.begin(), std::multiplies<std::complex<double>>());
+    std::transform(fieldResponseFFTVec.begin(), fieldResponseFFTVec.begin() + fieldResponseFFTVec.size()/2, electronicsResponseFFTVec.begin(), curResponseFFTVec.begin(), std::multiplies<icarusutil::ComplexVal>());
     
     // And now we recover the current response vector which is the convolution of the two above
     // (and still in the units of the original field response)
-    std::vector<double> curResponseVec(fieldResponseFFTVec.size());
+    icarusutil::TimeVec curResponseVec(fieldResponseFFTVec.size());
     
-    Eigen::FFT<double> eigenFFT;
+    Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;
 
     eigenFFT.inv(curResponseVec, curResponseFFTVec);
 
-    // Add these elements to the SignalShaping class
-//    fSignalShaping.Reset();
-//    fSignalShaping.AddResponseFunction(fFieldResponse->getResponseVec());
-//    fSignalShaping.AddResponseFunction(fElectronicsResponse->getResponseVec());
-//    fSignalShaping.save_response();
-//    fSignalShaping.set_normflag(false);
+    // Add these elements to the SignalShapingICARUS class
+//    fSignalShapingICARUS.Reset();
+//    fSignalShapingICARUS.AddResponseFunction(fFieldResponse->getResponseVec());
+//    fSignalShapingICARUS.AddResponseFunction(fElectronicsResponse->getResponseVec());
+//    fSignalShapingICARUS.save_response();
+//    fSignalShapingICARUS.set_normflag(false);
     
     // Now set to the task of determing the actual sampling response
     // We have to remember that the bin size for determining the field response probably
     // does not match that for the detector readout so we'll need to "convert"
     // from one to the other.
-    size_t fftSize = fastFourierTransform->FFTSize();
+    size_t fftSize = detprop->NumberTimeSamples();
     
-    std::vector<double> samplingTimeVec( fftSize, 0. );
+    icarusutil::TimeVec samplingTimeVec( fftSize, 0. );
     
     // Recover the combined response from above
-//    const std::vector<double>& curResponseVec = fSignalShaping.Response_save();
+//    const std::vector<double>& curResponseVec = fSignalShapingICARUS.Response_save();
     
     double respIntegral = std::accumulate(curResponseVec.begin(),curResponseVec.end(),0.);
     
@@ -178,7 +184,7 @@ void Response::setResponse(double weight)
             
             if (responseHiIdx >= curResponseVec.size()) break;
             
-            std::vector<double>::const_iterator curResponseItr = curResponseVec.begin();
+            icarusutil::TimeVec::const_iterator curResponseItr = curResponseVec.begin();
             
             std::advance(curResponseItr,responseLowIdx);
             
@@ -217,18 +223,18 @@ void Response::setResponse(double weight)
     // The following can be uncommented to do some consistency checks if desired
 //    // Do some consistency/cross checks here
 //    // Check area of convolution function
-//    const std::vector<TComplex>& convKernel = fSignalShaping.ConvKernel();
+//    const std::vector<TComplex>& convKernel = fSignalShapingICARUS.ConvKernel();
 //
 //    double normFactor = std::accumulate(convKernel.begin(),convKernel.end(),0.,[](const auto& val, double sum){return sum + std::abs(val);});
 //
 //    mf::LogInfo("Response_tool")  << "Response for plane: " << fThisPlane << ", convKernel integral: " << normFactor << std::endl;
 //
-//    const std::vector<TComplex>& deconvKernel = fSignalShaping.DeconvKernel();
+//    const std::vector<TComplex>& deconvKernel = fSignalShapingICARUS.DeconvKernel();
 //    std::vector<TComplex>  combKernel(deconvKernel.size());
 //
 //    std::transform(convKernel.begin(),convKernel.end(),deconvKernel.begin(),combKernel.begin(),std::multiplies<TComplex>());
 //
-//    const std::vector<TComplex>& filterKernel = fSignalShaping.Filter();
+//    const std::vector<TComplex>& filterKernel = fSignalShapingICARUS.Filter();
 //
 //    int    diffCount(0);
 //    double maxRhoDiff(0.);
@@ -243,6 +249,8 @@ void Response::setResponse(double weight)
 //    }
 //
 //    mf::LogInfo("Response_tool") << "Checking recovery of the filter, # differences: " << diffCount << ", max diff seen: " << maxRhoDiff << std::endl;
+
+    fResponseHasBeenSet = true;
 
     return;
 }
@@ -263,7 +271,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     std::string dirName = "Response_" + std::to_string(fThisPlane);
     
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
-    const std::vector<double>& responseVec  = this->getSignalShaping().Response();
+    const icarusutil::TimeVec& responseVec  = this->getSignalShapingICARUS().Response();
     auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     int                        numBins      = responseVec.size();
     double                     samplingRate = detprop->SamplingRate(); // **Sampling time in ns**
@@ -284,7 +292,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
     
-    std::vector<double> powerVec;
+    icarusutil::TimeVec powerVec;
     
     waveformTool->getFFTPower(responseVec, powerVec);
     
@@ -299,7 +307,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
         freqHist->Fill(freq, powerVec.at(idx), 1.);
     }
     
-    const std::vector<TComplex>& convKernel = this->getSignalShaping().ConvKernel();
+    const icarusutil::FrequencyVec& convKernel = this->getSignalShapingICARUS().ConvKernel();
     
     std::string convKernelName   = "ConvKernel_" + std::to_string(fThisPlane);
     TProfile*   fullResponseHist = dir.make<TProfile>(convKernelName.c_str(), "Convolution Kernel;Frequency(MHz)", convKernel.size(), minFreq, maxFreq);
@@ -308,10 +316,10 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     {
         double freq = freqWidth * (idx + 0.5);
         
-        fullResponseHist->Fill(freq, convKernel.at(idx).Rho(), 1.);
+        fullResponseHist->Fill(freq, std::abs(convKernel[idx]), 1.);
     }
     
-    const std::vector<TComplex>& deconKernel = this->getSignalShaping().DeconvKernel();
+    const icarusutil::FrequencyVec& deconKernel = this->getSignalShapingICARUS().DeconvKernel();
     
     std::string deconName = "DeconKernel_" + std::to_string(fThisPlane);
     TProfile*   deconHist = dir.make<TProfile>(deconName.c_str(), "Deconvolution Kernel;Frequency(MHz)", deconKernel.size(), minFreq, maxFreq);
@@ -320,7 +328,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     {
         double freq = freqWidth * (idx + 0.5);
         
-        deconHist->Fill(freq, deconKernel.at(idx).Rho(), 1.);
+        deconHist->Fill(freq, std::abs(deconKernel[idx]), 1.);
     }
 
     return;

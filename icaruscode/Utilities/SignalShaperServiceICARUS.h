@@ -96,66 +96,66 @@ namespace icarus_tool
 
 namespace util {
     
-    class SignalShaperServiceICARUS
-    {
-    public:
-        
-        // Constructor, destructor.
-        SignalShaperServiceICARUS(const fhicl::ParameterSet& pset,
-                                  art::ActivityRegistry& reg);
-        ~SignalShaperServiceICARUS();
-        
-        // Update configuration parameters.
-        void                       reconfigure(const fhicl::ParameterSet& pset);
-        
-        // Accessors.
-        DoubleVec2                 GetNoiseFactVec() { return fNoiseFactVec; }
-        
-        double                     GetASICGain(unsigned int const channel)            const;
-        double                     GetShapingTime(unsigned int const channel)         const;
-        
-        double                     GetRawNoise(unsigned int const channel)            const ;
-        double                     GetDeconNoise(unsigned int const channel)          const;
-        
-        const util::SignalShaper&  SignalShaper(size_t channel)                      const;
-        
-        int                        FieldResponseTOffset(unsigned int const channel)   const;
-        
-        void                       SetDecon(int fftsize, size_t channel);
-        double                     GetDeconNorm() {return fDeconNorm;};
-        
-        const std::vector<std::complex<double>>& GetDeconvKernel(unsigned int const channel) const;	// mwang added
-        int GetFFTSize() const { return fFFTSize; }
-        
-    private:
-        
-        // Private configuration methods.
-        using IResponsePtr             = std::unique_ptr<icarus_tool::shprIResponse>;
-        using ResponseVec              = std::vector<IResponsePtr>;
-        using PlaneToResponseMap       = std::map<size_t, ResponseVec>;
-        static int setFFTSize(int fftsize, int initfftsize);
-        
-        // Post-constructor initialization.
-        void init() const{const_cast<SignalShaperServiceICARUS*>(this)->init();}
-        void init();
-        
-        // Attributes.
-        bool fInit;                                                 ///< Initialization flag
-        
-        // Fcl parameters.
-        size_t                              fPlaneForNormalization; ///< Normalize responses to this plane
-        double                              fDeconNorm;             ///< Final normalization to apply
-        DoubleVec2                          fNoiseFactVec;          ///< RMS noise in ADCs for lowest gain setting
-        int                                 fInitialFFTSize;        ///< Size we initially initalize the responses
-        bool                                fPrintResponses;
-        bool                                fStoreHistograms;
-        int                                 fFFTSize;               //size of transform
-        std::string                         fFFTOption;             //FFTW setting
-        int                                 fFFTFitBins;            //Bins used for peak fit
-        
-        // Field response tools
-        PlaneToResponseMap                  fPlaneToResponseMap;
-    };
+class SignalShaperServiceICARUS
+{
+public:
+    
+    // Constructor, destructor.
+    SignalShaperServiceICARUS(const fhicl::ParameterSet& pset,
+                              art::ActivityRegistry& reg);
+    ~SignalShaperServiceICARUS();
+    
+    // Update configuration parameters.
+    void                       reconfigure(const fhicl::ParameterSet& pset);
+    
+    // Accessors.
+    DoubleVec2                 GetNoiseFactVec() { return fNoiseFactVec; }
+    
+    double                     GetASICGain(unsigned int const channel)            const;
+    double                     GetShapingTime(unsigned int const channel)         const;
+    
+    double                     GetRawNoise(unsigned int const channel)            const ;
+    double                     GetDeconNoise(unsigned int const channel)          const;
+    
+    const util::SignalShaper&  SignalShaper(size_t channel)                      const;
+    
+    int                        FieldResponseTOffset(unsigned int const channel)   const;
+    
+    void                       SetDecon(int fftsize, size_t channel);
+    double                     GetDeconNorm() {return fDeconNorm;};
+    
+    const std::vector<std::complex<double>>& GetDeconvKernel(unsigned int const channel) const;	// mwang added
+    int GetFFTSize() const { return fFFTSize; }
+    
+private:
+    
+    // Private configuration methods.
+    using IResponsePtr             = std::unique_ptr<icarus_tool::shprIResponse>;
+    using ResponseVec              = std::vector<IResponsePtr>;
+    using PlaneToResponseMap       = std::map<size_t, ResponseVec>;
+    static int setFFTSize(int fftsize, int initfftsize);
+    
+    // Post-constructor initialization.
+    void init() const{const_cast<SignalShaperServiceICARUS*>(this)->init();}
+    void init();
+    
+    // Attributes.
+    bool fInit;                                                 ///< Initialization flag
+    
+    // Fcl parameters.
+    size_t                              fPlaneForNormalization; ///< Normalize responses to this plane
+    double                              fDeconNorm;             ///< Final normalization to apply
+    DoubleVec2                          fNoiseFactVec;          ///< RMS noise in ADCs for lowest gain setting
+    int                                 fInitialFFTSize;        ///< Size we initially initalize the responses
+    bool                                fPrintResponses;
+    bool                                fStoreHistograms;
+    int                                 fFFTSize;               //size of transform
+    std::string                         fFFTOption;             //FFTW setting
+    int                                 fFFTFitBins;            //Bins used for peak fit
+    
+    // Field response tools
+    PlaneToResponseMap                  fPlaneToResponseMap;
+};
 }
 
 DECLARE_ART_SERVICE(util::SignalShaperServiceICARUS, SHARED)

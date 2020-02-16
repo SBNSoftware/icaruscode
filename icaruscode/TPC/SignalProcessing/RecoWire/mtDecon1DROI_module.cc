@@ -498,7 +498,7 @@ void mtDecon1DROI::Deconvolute(size_t rdIter,
     icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
     fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
   
-    std::vector<float> holder;
+    icarusutil::TimeVec holder;
   
     // We need to copy the deconvolved (and corrected) waveform ROI's
     for(const auto& candROI : candRoiVec)
@@ -509,8 +509,8 @@ void mtDecon1DROI::Deconvolute(size_t rdIter,
   	std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
   	
   	// Now we do the baseline determination and correct the ROI
-  	float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
-  	std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
+  	double base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
+  	std::transform(holder.begin(),holder.end(),holder.begin(),[base](double& adcVal){return adcVal - base;});
 
   	// add the range into ROIVec
   	ROIVec.add_range(candROI.first, std::move(holder));

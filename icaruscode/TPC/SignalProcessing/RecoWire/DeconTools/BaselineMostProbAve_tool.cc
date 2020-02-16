@@ -11,7 +11,7 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 
 #include <fstream>
@@ -27,18 +27,18 @@ public:
     
     ~BaselineMostProbAve();
     
-    void configure(const fhicl::ParameterSet& pset)                                      override;
-    void outputHistograms(art::TFileDirectory&)                                    const override;
+    void configure(const fhicl::ParameterSet& pset)                                         override;
+    void outputHistograms(art::TFileDirectory&)                                       const override;
     
-    float GetBaseline(const std::vector<float>&, raw::ChannelID_t, size_t, size_t) const override;
+    float GetBaseline(const icarusutil::TimeVec&, raw::ChannelID_t, size_t, size_t)   const override;
     
 private:
-    std::pair<float,int> GetBaseline(const std::vector<float>&, int, size_t, size_t) const;
+    std::pair<float,int> GetBaseline(const icarusutil::TimeVec&, int, size_t, size_t) const;
     
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
-    std::unique_ptr<icarus_tool::IWaveformTool>          fWaveformTool;
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
+    std::unique_ptr<icarus_tool::IWaveformTool>                fWaveformTool;
 };
     
 //----------------------------------------------------------------------
@@ -58,7 +58,7 @@ void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
     fMaxROILength = pset.get<size_t>("MaxROILength", 100);
     
     // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
+    fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     // Let's apply some smoothing as an experiment... first let's get the tool we need
     fhicl::ParameterSet waveformToolParams;
@@ -71,10 +71,10 @@ void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
 }
 
     
-float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                       raw::ChannelID_t          channel,
-                                       size_t                    roiStart,
-                                       size_t                    roiLen) const
+float BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                       raw::ChannelID_t           channel,
+                                       size_t                     roiStart,
+                                       size_t                     roiLen) const
 {
     float base(0.);
 
@@ -102,10 +102,10 @@ float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
     return base;
 }
     
-std::pair<float,int> BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                                      int                       binRange,
-                                                      size_t                    roiStart,
-                                                      size_t                    roiStop) const
+std::pair<float,int> BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                                      int                        binRange,
+                                                      size_t                     roiStart,
+                                                      size_t                     roiStop) const
 {
     std::pair<float,int> base(0.,1);
     
