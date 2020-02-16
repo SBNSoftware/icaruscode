@@ -42,9 +42,7 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -55,8 +53,15 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range.h"
+#include "tbb/task_arena.h"
+#include "tbb/spin_mutex.h"
+
 ///creation of calibrated signals on wires
 namespace caldata {
+    
+tbb::spin_mutex deconvolutionSpinMutex;
 
 class Decon1DROI : public art::EDProducer
 {
@@ -72,32 +77,69 @@ class Decon1DROI : public art::EDProducer
     void reconfigure(fhicl::ParameterSet const& p);
     
   private:
+
+    // Define a class to handle processing for individual threads
+    class multiThreadDeconvolutionProcessing 
+    {
+    public:
+        multiThreadDeconvolutionProcessing(Decon1DROI const&                        parent,
+                                           art::Event&                              event,
+                                           art::Handle<std::vector<raw::RawDigit>>& rawDigitHandle, 
+                                           std::vector<recob::Wire>&                wireColVec,
+                                           art::Assns<raw::RawDigit,recob::Wire>&   wireAssns)
+            : fDecon1DROI(parent),
+              fEvent(event),
+              fRawDigitHandle(rawDigitHandle),
+              fWireColVec(wireColVec),
+              fWireAssns(wireAssns)
+        {}
+
+        void operator()(const tbb::blocked_range<size_t>& range) const
+        {
+            for (size_t idx = range.begin(); idx < range.end(); idx++)
+                fDecon1DROI.processChannel(idx, fEvent, fRawDigitHandle, fWireColVec, fWireAssns);
+        }
+    private:
+        const Decon1DROI&                        fDecon1DROI;
+        art::Event&                              fEvent;
+        art::Handle<std::vector<raw::RawDigit>>& fRawDigitHandle;
+        std::vector<recob::Wire>&                fWireColVec;
+        art::Assns<raw::RawDigit,recob::Wire>&   fWireAssns;
+    };
+
     // It seems there are pedestal shifts that need correcting
     float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&) const;
     
     float getTruncatedRMS(const std::vector<float>&) const;
+
+    // Function to do the work
+    void  processChannel(size_t,
+                         art::Event&,
+                         art::Handle<std::vector<raw::RawDigit>>, 
+                         std::vector<recob::Wire>&, 
+                         art::Assns<raw::RawDigit,recob::Wire>&) const;
     
-    std::string                                             fDigitModuleLabel;           ///< module that made digits
-    std::string                                             fSpillName;                  ///< nominal spill is an empty string
+    std::string                                                fDigitModuleLabel;           ///< module that made digits
+    std::string                                                fSpillName;                  ///< nominal spill is an empty string
                                                                                          ///< it is set by the DigitModuleLabel
                                                                                          ///< ex.:  "daq:preSpill" for prespill data
-    unsigned short                                          fNoiseSource;                ///< Used to determine ROI threshold
-    int                                                     fSaveWireWF;                 ///< Save recob::wire object waveforms
-    size_t                                                  fEventCount;                 ///< count of event processed
-    int                                                     fMinAllowedChanStatus;       ///< Don't consider channels with lower status
+    unsigned short                                             fNoiseSource;                ///< Used to determine ROI threshold
+    int                                                        fSaveWireWF;                 ///< Save recob::wire object waveforms
+    size_t                                                     fEventCount;                 ///< count of event processed
+    int                                                        fMinAllowedChanStatus;       ///< Don't consider channels with lower status
     
-    float                                                   fTruncRMSThreshold;          ///< Calculate RMS up to this threshold...
-    float                                                   fTruncRMSMinFraction;        ///< or at least this fraction of time bins
-    bool                                                    fOutputHistograms;           ///< Output histograms?
+    float                                                      fTruncRMSThreshold;          ///< Calculate RMS up to this threshold...
+    float                                                      fTruncRMSMinFraction;        ///< or at least this fraction of time bins
+    bool                                                       fOutputHistograms;           ///< Output histograms?
     
-    std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
-    std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
-    std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
-    std::unique_ptr<icarus_tool::IBaseline>                 fBaseline;
+    std::vector<std::unique_ptr<icarus_tool::IROIFinder>>      fROIFinderVec;               ///< ROI finders per plane
+    std::unique_ptr<icarus_tool::IDeconvolution>               fDeconvolution;
+    std::unique_ptr<icarus_tool::IWaveformTool>                fWaveformTool;
+    std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
 
-    const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                        fFFT;
-    art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
+    const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
+    const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();
+    const lariov::DetPedestalProvider*                         fPedRetrievalAlg = lar::providerFrom<lariov::DetPedestalService>();
     
     // Define here a temporary set of histograms...
     std::vector<TH1F*>     fPedestalOffsetVec;
@@ -219,164 +261,42 @@ void Decon1DROI::endJob()
 //////////////////////////////////////////////////////
 void Decon1DROI::produce(art::Event& evt)
 {
-    //get pedestal conditions
-    const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
-
     // make a collection of Wires
-    std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
+    std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     // ... and an association set
-    std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
+    std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire>> wireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
 
     // Read in the digit List object(s). 
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+    art::Handle< std::vector<raw::RawDigit>> digitVecHandle;
     
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
 
     if (!digitVecHandle->size())
     {
-        evt.put(std::move(wirecol), fSpillName);
-        evt.put(std::move(WireDigitAssn), fSpillName);
+        evt.put(std::move(wireCol), fSpillName);
+        evt.put(std::move(wireDigitAssn), fSpillName);
         return;
     }
+
+    // Reserve the room for the output
+    wireCol->reserve(digitVecHandle->size());
+
+    // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
+    multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, digitVecHandle, *wireCol, *wireDigitAssn);
+
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, digitVecHandle->size()), deconvolutionProcessing);
     
-    raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
-    
-    const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
-    
-    // loop over all wires
-    wirecol->reserve(digitVecHandle->size());
-    for(size_t rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter)
-    {
-        // vector that will be moved into the Wire object
-        recob::Wire::RegionsOfInterest_t deconVec;
-        recob::Wire::RegionsOfInterest_t ROIVec;
-
-        // get the reference to the current raw::RawDigit
-        art::Ptr<raw::RawDigit> digitVec(digitVecHandle, rdIter);
-        channel = digitVec->Channel();
-      
-        // The following test is meant to be temporary until the "correct" solution is implemented
-        if (!chanFilt.IsPresent(channel)) continue;
-
-        // Testing an idea about rejecting channels
-        if (digitVec->GetPedestal() < 0.) continue;
-
-        float pedestal = 0.;
-        
-        // skip bad channels
-        if( chanFilt.Status(channel) >= fMinAllowedChanStatus)
-        {
-            size_t dataSize = digitVec->Samples();
-            
-            // Recover the plane info
-            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
-            const geo::PlaneID&      planeID = wids[0].planeID();
-
-            // vector holding uncompressed adc values
-            std::vector<short> rawadc(dataSize);
-            
-            // uncompress the data
-            raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
-            
-            // loop over all adc values and subtract the pedestal
-            // When we have a pedestal database, can provide the digit timestamp as the third argument of GetPedestalMean
-            pedestal = pedestalRetrievalAlg.PedMean(channel);
-            
-            // Get the pedestal subtracted data, centered in the deconvolution vector
-            std::vector<float> rawAdcLessPedVec(dataSize);
-            
-            std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
-            
-            // It seems there are deviations from the pedestal when using wirecell for noise filtering
-            float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
-            
-            // Recover a measure of the noise on the channel for use in the ROI finder
-            //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
-            
-            // Try smoothing the input waveform
-//            std::vector<float> rawAdcSmoothVec;
-//            fWaveformTool->medianSmooth(rawAdcLessPedVec,rawAdcSmoothVec);
-            
-            // Make a dummy candidate roi vec
-            icarus_tool::IROIFinder::CandidateROIVec deconROIVec;
-            
-            deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size()));
-            
-            // Do the deconvolution on the full waveform
-            fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, deconROIVec, deconVec);
-            
-            // Recover the deconvolved waveform
-            const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();
-
-            // vector of candidate ROI begin and end bins
-            icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
-            
-            // Now find the candidate ROI's
-            fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
-            
-            std::vector<float> holder;
-            
-            // We need to copy the deconvolved (and corrected) waveform ROI's
-            for(const auto& candROI : candRoiVec)
-            {
-                // First up: copy out the relevent ADC bins into the ROI holder
-                size_t roiLen = candROI.second - candROI.first;
-                
-                holder.resize(roiLen);
-                
-                std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
-                
-                // Now we do the baseline determination and correct the ROI
-                //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
-                float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
-                
-                std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
-
-                // add the range into ROIVec
-                ROIVec.add_range(candROI.first, std::move(holder));
-            }
-
-            // Make some histograms?
-            if (fOutputHistograms)
-            {
-                // First up, determine what kind of wire we have
-                std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
-                const geo::PlaneID&      planeID = wids[0].planeID();
-                
-                fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
-                
-                for(const auto& pair : candRoiVec)
-                    fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
-            }
-        } // end if not a bad channel
-        
-        // Don't save empty wires
-        if (ROIVec.empty()) continue;
-
-        // create the new wire directly in wirecol
-        wirecol->push_back(recob::WireCreator(std::move(ROIVec),*digitVec).move());
-
-        // add an association between the last object in wirecol
-        // (that we just inserted) and digitVec
-        if (!util::CreateAssn(*this, evt, *wirecol, digitVec, *WireDigitAssn, fSpillName))
-        {
-            throw art::Exception(art::errors::ProductRegistrationFailure)
-                << "Can't associate wire #" << (wirecol->size() - 1)
-                << " with raw digit #" << digitVec.key();
-        } // if failed to add association
-        //  DumpWire(wirecol->back()); // for debugging
-    }
-
-    if(wirecol->size() == 0)
+    // Time to stroe everything
+    if(wireCol->size() == 0)
       mf::LogWarning("Decon1DROI") << "No wires made for this event.";
 
     //Make Histogram of recob::wire objects from Signal() vector
     // get access to the TFile service
     if ( fSaveWireWF ){
         art::ServiceHandle<art::TFileService> tfs;
-        for (size_t wireN = 0; wireN < wirecol->size(); wireN++){
-            std::vector<float> sigTMP = wirecol->at(wireN).Signal();
+        for (size_t wireN = 0; wireN < wireCol->size(); wireN++){
+            std::vector<float> sigTMP = wireCol->at(wireN).Signal();
             TH1D* fWire = tfs->make<TH1D>(Form("Noise_Evt%04zu_N%04zu",fEventCount,wireN), ";Noise (ADC);",
 				      sigTMP.size(),-0.5,sigTMP.size()-0.5);
             for (size_t tick = 0; tick < sigTMP.size(); tick++){
@@ -385,8 +305,8 @@ void Decon1DROI::produce(art::Event& evt)
         }
     }
     
-    evt.put(std::move(wirecol), fSpillName);
-    evt.put(std::move(WireDigitAssn), fSpillName);
+    evt.put(std::move(wireCol), fSpillName);
+    evt.put(std::move(wireDigitAssn), fSpillName);
 
     fEventCount++;
 
@@ -478,6 +398,137 @@ float Decon1DROI::fixTheFreakingWaveform(const std::vector<float>& waveform, raw
     }
     
     return localRMS;
+}
+
+void  Decon1DROI::processChannel(size_t                                  idx,
+                                 art::Event&                             event,
+                                 art::Handle<std::vector<raw::RawDigit>> digitVecHandle, 
+                                 std::vector<recob::Wire>&               wireColVec, 
+                                 art::Assns<raw::RawDigit,recob::Wire>&  wireAssns) const
+{
+    // vector that will be moved into the Wire object
+    recob::Wire::RegionsOfInterest_t deconVec;
+    recob::Wire::RegionsOfInterest_t ROIVec;
+
+    // get the reference to the current raw::RawDigit
+    art::Ptr<raw::RawDigit> digitVec(digitVecHandle, idx);
+
+    raw::ChannelID_t channel = digitVec->Channel();
+    
+    // The following test is meant to be temporary until the "correct" solution is implemented
+    if (!fChannelFilter->IsPresent(channel)) return;
+
+    // Testing an idea about rejecting channels
+    if (digitVec->GetPedestal() < 0.) return;
+
+    float pedestal = 0.;
+    
+    // skip bad channels
+    if( fChannelFilter->Status(channel) >= fMinAllowedChanStatus)
+    {
+        size_t dataSize = digitVec->Samples();
+        
+        // Recover the plane info
+        std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+        const geo::PlaneID&      planeID = wids[0].planeID();
+
+        // vector holding uncompressed adc values
+        std::vector<short> rawadc(dataSize);
+        
+        // uncompress the data
+        raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
+        
+        // loop over all adc values and subtract the pedestal
+        // When we have a pedestal database, can provide the digit timestamp as the third argument of GetPedestalMean
+        pedestal = fPedRetrievalAlg->PedMean(channel);
+        
+        // Get the pedestal subtracted data, centered in the deconvolution vector
+        std::vector<float> rawAdcLessPedVec(dataSize);
+        
+        std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
+        
+        // It seems there are deviations from the pedestal when using wirecell for noise filtering
+        float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+        
+        // Recover a measure of the noise on the channel for use in the ROI finder
+        //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
+        
+        // Try smoothing the input waveform
+//        std::vector<float> rawAdcSmoothVec;
+//        fWaveformTool->medianSmooth(rawAdcLessPedVec,rawAdcSmoothVec);
+        
+        // Make a dummy candidate roi vec
+        icarus_tool::IROIFinder::CandidateROIVec deconROIVec;
+        
+        deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size()));
+        
+        // Do the deconvolution on the full waveform
+        fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, deconROIVec, deconVec);
+        
+        // Recover the deconvolved waveform
+        const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();
+
+        // vector of candidate ROI begin and end bins
+        icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
+        
+        // Now find the candidate ROI's
+        fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
+        
+        icarusutil::TimeVec holder;
+        
+        // We need to copy the deconvolved (and corrected) waveform ROI's
+        for(const auto& candROI : candRoiVec)
+        {
+            // First up: copy out the relevent ADC bins into the ROI holder
+            size_t roiLen = candROI.second - candROI.first;
+            
+            holder.resize(roiLen);
+            
+            std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
+            
+            // Now we do the baseline determination and correct the ROI
+            //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
+            float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
+            
+            std::transform(holder.begin(),holder.end(),holder.begin(),[base](auto& adcVal){return adcVal - base;});
+
+            // add the range into ROIVec
+            ROIVec.add_range(candROI.first, std::move(holder));
+        }
+
+        // Make some histograms?
+        if (fOutputHistograms)
+        {
+            // First up, determine what kind of wire we have
+            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+            const geo::PlaneID&      planeID = wids[0].planeID();
+            
+            fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
+            
+            for(const auto& pair : candRoiVec)
+                fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
+        }
+    } // end if not a bad channel
+        
+    // Don't save empty wires
+    if (ROIVec.empty()) return;
+
+    // First get a lock to make sure we are clear to run
+    tbb::spin_mutex::scoped_lock lock(deconvolutionSpinMutex);
+
+    // create the new wire directly in wirecol
+    wireColVec.push_back(recob::WireCreator(std::move(ROIVec),*digitVec).move());
+
+    // add an association between the last object in wirecol
+    // (that we just inserted) and digitVec
+    if (!util::CreateAssn(*this, event, wireColVec, digitVec, wireAssns, fSpillName))
+    {
+        throw art::Exception(art::errors::ProductRegistrationFailure)
+            << "Can't associate wire #" << (wireColVec.size() - 1)
+            << " with raw digit #" << digitVec.key();
+    } // if failed to add association
+
+    return;
 }
 
 } // end namespace caldata

@@ -203,6 +203,10 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
 void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 {
+    cet::cpu_timer theClockTotal;
+
+    theClockTotal.start();
+
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);
     
@@ -227,6 +231,10 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     // Allocate the de-noising object
     icarussigproc::Denoising         denoiser;
     icarussigproc::WaveformParamsAlg waveformParams;
+
+    cet::cpu_timer theClockPedestal;
+
+    theClockPedestal.start();
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
@@ -262,12 +270,38 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         }
     }
 
+    theClockPedestal.stop();
+
+    double pedestalTime = theClockPedestal.accumulated_real_time();
+
+    cet::cpu_timer theClockFake;
+
+    theClockFake.start();
+
     // Overlay a fake particle on this array of waveforms
     fFakeParticleTool->overlayFakeParticle(fPedSubtractedWaveforms);
+
+    theClockFake.stop();
+
+    double fakeTime = theClockFake.accumulated_real_time();
+
+    cet::cpu_timer theClockDenoise;
+
+    theClockDenoise.start();
 
     // Run the coherent filter
     denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
                                    fFilterModeVec[0],fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
+
+    theClockDenoise.stop();
+
+    double denoiseTime = theClockDenoise.accumulated_real_time();
+
+    theClockTotal.stop();
+
+    double totalTime = theClockTotal.accumulated_real_time();
+
+    std::cout << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", fake: " << fakeTime << ", noise: " << denoiseTime << std::endl;
 
     return;
 }

@@ -21,8 +21,10 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // ICARUS package includes
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
 #include "icaruscode/Decode/DecoderTools/IFakeParticle.h"
+
+#include "icaruscode/Utilities/ICARUSFFT.h"
 
 // std includes
 #include <string>
@@ -68,24 +70,30 @@ public:
 private:
 
     // fhicl variables
-    std::vector<size_t>                fWireEndPoints;         //< Desired wire endpoints for our particle
-    size_t                             fStartTick;             //< The tick for the start point of our particle
-    float                              fStartAngle;            //< Angle (in degrees) for the trajectory
-    int                                fNumElectronsPerMM;     //< The number of electrons/mm to deposit
-    size_t                             fPlaneToSimulate;       //< The plane to simulate
+    std::vector<size_t>                      fWireEndPoints;         //< Desired wire endpoints for our particle
+    size_t                                   fStartTick;             //< The tick for the start point of our particle
+    float                                    fStartAngle;            //< Angle (in degrees) for the trajectory
+    int                                      fNumElectronsPerMM;     //< The number of electrons/mm to deposit
+    size_t                                   fPlaneToSimulate;       //< The plane to simulate
 
     // Some useful variables
-    float                              fMMPerTick;             //< Convert ticks in us to mm
-    float                              fMMPerWire;             //< Convert wire pitch to mm
-    float                              fTanThetaTW;            //< tangent of angle in time/wire space
-    float                              fTanTheta;              //< tangent in euclidean space
-    float                              fSinTheta;              //< sine of this angle
-    float                              fCosTheta;              //< save some time by also doing cosine
-    std::vector<size_t>                fTickEndPoints;         //< Tick endpoints to overlay
+    float                                    fMMPerTick;             //< Convert ticks in us to mm
+    float                                    fMMPerWire;             //< Convert wire pitch to mm
+    float                                    fTanThetaTW;            //< tangent of angle in time/wire space
+    float                                    fTanTheta;              //< tangent in euclidean space
+    float                                    fSinTheta;              //< sine of this angle
+    float                                    fCosTheta;              //< save some time by also doing cosine
+    std::vector<size_t>                      fTickEndPoints;         //< Tick endpoints to overlay
 
-    const geo::Geometry*               fGeometry;              //< pointer to the Geometry service
-    const detinfo::DetectorProperties* fDetector;              //< Pointer to the detector properties
-    util::SignalShapingServiceICARUS*  fSignalShapeService;    //< Access to the response functions
+    icarusutil::TimeVec                      fFFTTimeVec;            //< Local time vector
+
+    using FFTPointer = std::unique_ptr<icarusutil::ICARUSFFT<double>>;
+
+    FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
+
+    const geo::Geometry*                     fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*       fDetector;              //< Pointer to the detector properties
+    icarusutil::SignalShapingICARUSService*  fSignalShapingService;  //< Access to the response functions
 };
 
 FakeParticle::FakeParticle(fhicl::ParameterSet const &pset)
@@ -112,7 +120,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
                                   
     fGeometry           = art::ServiceHandle<geo::Geometry const>{}.get();
     fDetector           = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fSignalShapeService = art::ServiceHandle<util::SignalShapingServiceICARUS>{}.get();
+    fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
     // Convert ticks in us to mm by taking the drift velocity and multiplying by the tick period
     double driftVelocity = fDetector->DriftVelocity() * 10.;   // should be mm/us
@@ -150,6 +158,13 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
         
     }
 
+    // Now set up our plans for doing the convolution
+    int numberTimeSamples = fDetector->NumberTimeSamples();
+
+    fFFTTimeVec.resize(numberTimeSamples,0.);
+
+    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(numberTimeSamples);
+
     return;
 }
 
@@ -161,13 +176,19 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
     size_t maxWire = std::min(waveforms.size(),fWireEndPoints[1]);
 
     // Create a temporary waveform to handle the input charge
-    std::vector<float> tempWaveform(waveforms[0].size(),0.);
+//    icarusutil::TimeVec tempWaveform(waveforms[0].size(),0.);
 
     // Also recover the gain
-    float asicGain = fSignalShapeService->GetASICGain(0) * fDetector->SamplingRate() / 1000.;  // something like 67.4
+    float asicGain = fSignalShapingService->GetASICGain(0) * fDetector->SamplingRate() / 1000.;  // something like 67.4
 
     // Get a base channel number for the plane we want
     raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(fPlaneToSimulate, 0);
+
+    // Recover the response function information for this channel
+    const icarusutil::SignalShapingICARUS& signalShaping = fSignalShapingService->SignalShaping(channel);
+
+    // Also want the time offset for this channel
+    int timeOffset = fSignalShapingService->FieldResponseTOffset(channel);
 
     // Loop over the wire range
     for(size_t wireIdx = fWireEndPoints[0]; wireIdx < maxWire; wireIdx++)
@@ -178,7 +199,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
         size_t startTick = size_t(fTanThetaTW * float(wireIdx - fWireEndPoints[0])) + fTickEndPoints[0];
 
         // If this has gone outside the maximum tick then we are done
-        if (!(startTick < fTickEndPoints[1] && startTick < tempWaveform.size())) break;
+        if (!(startTick < fTickEndPoints[1] && startTick < fFFTTimeVec.size())) break;
 
         // Begin by computing the number of ticks for this given wire, converted to tick units and 
         // always at least one tick
@@ -187,7 +208,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
 
         // Trim back if we look to step outside of the max range 
         endTick = std::min(endTick,fTickEndPoints[1]);
-        endTick = std::min(endTick,tempWaveform.size());
+        endTick = std::min(endTick,fFFTTimeVec.size());
 
         // Ok, now loop through the ticks and deposit charge. 
         // This will be the number of electrons per mm (input) 
@@ -198,19 +219,20 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
         float fracElecPerTick  = numElectronsWire * arcLenPerTick / arcLenPerWire;
 
         // Make sure the waveform is zeroed
-        std::fill(tempWaveform.begin(),tempWaveform.end(),0.);
+        std::fill(fFFTTimeVec.begin(),fFFTTimeVec.end(),0.);
 
         // Now loop through the ticks and deposit charge
         for(size_t tickIdx = startTick; tickIdx < endTick; tickIdx++)
-            tempWaveform[tickIdx] = fracElecPerTick / asicGain;
+            fFFTTimeVec[tickIdx] = fracElecPerTick / asicGain;
 
         // Convolute with the response functions
-        fSignalShapeService->Convolute(channel, tempWaveform);
+//        fSignalShapingService->Convolute(channel, fFFTTimeVec);
+        fFFT->convolute(fFFTTimeVec, signalShaping.ConvKernel(), timeOffset);
 
         // And now add this to the waveform in question 
         VectorFloat& waveform = waveforms[wireIdx];
 
-        std::transform(waveform.begin(),waveform.end(),tempWaveform.begin(),waveform.begin(),std::plus<float>());
+        std::transform(waveform.begin(),waveform.end(),fFFTTimeVec.begin(),waveform.begin(),std::plus<float>());
     }
 
     return;

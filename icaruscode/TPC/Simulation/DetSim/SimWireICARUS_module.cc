@@ -65,14 +65,14 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
 #endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/Utilities/ICARUSFFT.h"
 #include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector<>
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
@@ -977,43 +977,42 @@ public:
     
 private:
     
-    void MakeADCVec(std::vector<short>& adc, std::vector<float> const& noise,
-                    std::vector<double> const& charge, float ped_mean) const;
+    void MakeADCVec(std::vector<short>& adc, const icarusutil::TimeVec& noise, const icarusutil::TimeVec& charge, float ped_mean) const;
     
-    art::InputTag const          fDriftEModuleLabel; ///< module making the ionization electrons
-    std::optional<std::vector<geo::TPCID>>
-                                 fTPCs;              ///< Process only these TPCs
-    raw::Compress_t              fCompression;       ///< compression type to use
-    unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
-    std::map< double, int >      fShapingTimeOrder;
+    art::InputTag const                                  fDriftEModuleLabel; ///< module making the ionization electrons
+    std::optional<std::vector<geo::TPCID>>               fTPCs;              ///< Process only these TPCs
+    raw::Compress_t                                      fCompression;       ///< compression type to use
+    unsigned int                                         fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
+    std::map< double, int >                              fShapingTimeOrder;
     
-    bool const                   fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
-    bool const                   fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
-    bool const                   fSmearPedestals;    ///< If True then we smear the pedestals
-    int const                    fNumChanPerMB;      ///< Number of channels per motherboard
+    bool const                                           fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
+    bool const                                           fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
+    bool const                                           fSmearPedestals;    ///< If True then we smear the pedestals
+    int const                                            fNumChanPerMB;      ///< Number of channels per motherboard
     
-    std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
-    
-    bool const                   fMakeHistograms;
-    std::vector<geo::WireID>     fTestWires; ///< Where to inject test charge.
-    std::vector<TestChargeParams> fTestParams; ///< When to inject which test charge.
-    std::vector<sim::SimChannel> fTestSimChannel_v;
+    std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec;      ///< Tool for generating noise
+    std::unique_ptr<icarusutil::ICARUSFFT<double>>       fFFT;               ///< Object to handle thread safe FFT
+
+    bool const                                           fMakeHistograms;
+    std::vector<geo::WireID>                             fTestWires; ///< Where to inject test charge.
+    std::vector<TestChargeParams>                        fTestParams; ///< When to inject which test charge.
+    std::vector<sim::SimChannel>                         fTestSimChannel_v;
     
     
     ///< Range of channels to process: [ `first`, `second` [
-    std::pair<raw::ChannelID_t, raw::ChannelID_t> fChannelRange;
+    std::pair<raw::ChannelID_t, raw::ChannelID_t>        fChannelRange;
     
-    TH1F*                        fSimCharge;
-    TH2F*                        fSimChargeWire;
+    TH1F*                                                fSimCharge;
+    TH2F*                                                fSimChargeWire;
     
     // Random engines
-    CLHEP::HepRandomEngine&      fPedestalEngine;
-    CLHEP::HepRandomEngine&      fUncNoiseEngine;
-    CLHEP::HepRandomEngine&      fCorNoiseEngine;
+    CLHEP::HepRandomEngine&                              fPedestalEngine;
+    CLHEP::HepRandomEngine&                              fUncNoiseEngine;
+    CLHEP::HepRandomEngine&                              fCorNoiseEngine;
 
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
-    const float                  adcsaturation = 4095;
+    const float                                          adcsaturation = 4095;
     
     // little helper class to hold the params of each charge dep
     class ResponseParams {
@@ -1036,18 +1035,14 @@ private:
 
     /// Returns IDs of first and past-the-last channel to process.
     std::pair<raw::ChannelID_t, raw::ChannelID_t> channelRangeToProcess() const;
-    
-    
-    
-    
 }; // class SimWireICARUS
+
 DEFINE_ART_MODULE(SimWireICARUS)
 
 //-------------------------------------------------
 SimWireICARUS::SimWireICARUS(Parameters const& config)
     : EDProducer(config)
     , fDriftEModuleLabel(config().DriftEModuleLabel())
-//    , fTPCs             (config().TPCs             ())
     , fTPCs             (geo::fhicl::readOptionalIDsequence(config().TPCs))
     , fSimDeadChannels  (config().SimDeadChannels  ())
     , fSuppressNoSignal (config().SuppressNoSignal ())
@@ -1083,29 +1078,28 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
     fNTimeSamples = detprop->NumberTimeSamples();
 
     TString compression(config().CompressionType());
-    if (compression.IsNull() || compression.Contains("none", TString::kIgnoreCase))
-      fCompression = raw::kNone;
-    else if (compression.Contains("Huffman", TString::kIgnoreCase))
-      fCompression = raw::kHuffman;
-    else {
-      throw art::Exception(art::errors::Configuration)
-        << "Unsupported compression requested: '" << compression << "'\n";
-    }
+    if (compression.IsNull() || compression.Contains("none", TString::kIgnoreCase)) fCompression = raw::kNone;
+    else if (compression.Contains("Huffman", TString::kIgnoreCase))                 fCompression = raw::kHuffman;
+    else throw art::Exception(art::errors::Configuration) << "Unsupported compression requested: '" << compression << "'\n";
+  
     
     fChannelRange = channelRangeToProcess();
-    if (!processAllTPCs()) {
-      mf::LogInfo log("SimWireICARUS");
-      log << "Only " << fTPCs->size() << " TPC's will be processed:";
-      for (geo::TPCID const& tpcid: fTPCs.value())
-        log << " { " << tpcid << " }";
+    if (!processAllTPCs()) 
+    {
+        mf::LogInfo log("SimWireICARUS");
+        log << "Only " << fTPCs->size() << " TPC's will be processed:";
       
-      auto const [ firstChannel, endChannel ] = fChannelRange;
+        for (geo::TPCID const& tpcid: fTPCs.value()) log << " { " << tpcid << " }";
       
-      log << "\nAll the " << (endChannel - firstChannel) << " channels from "
-        << firstChannel << " to " << endChannel
-        << " (excluded) will be processed.";
+        auto const [ firstChannel, endChannel ] = fChannelRange;
+      
+        log << "\nAll the " << (endChannel - firstChannel) << " channels from "
+            << firstChannel << " to " << endChannel
+            << " (excluded) will be processed.";
     } // if selected TPCs
     
+    // Get instance of FFT machine
+    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(fNTimeSamples);
     
     //
     // input:
@@ -1170,23 +1164,13 @@ void SimWireICARUS::produce(art::Event& evt)
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
-    //get the FFT
-    art::ServiceHandle<util::LArFFT> fFFT;
-    fFFT->ReinitializeFFT(fNTimeSamples,fFFT->FFTOptions(),fFFT->FFTFitBins());
-    size_t nTicks = fFFT->FFTSize();
-    if ( nTicks%2 != 0 )
-        MF_LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << nTicks << " not a power of 2. "
-        << "May cause issues in (de)convolution.\n";
-    if ( fNTimeSamples > nTicks )
-        mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
-        << fNTimeSamples << " greater than FFTSize " << nTicks << "!";
-    
 #ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
     // In case trigger simulation is run in the same job...
     // FIXME:  You should not be calling preProcessEvent
     art::ServiceHandle<detinfo::DetectorClocksServiceStandard>()
       ->preProcessEvent(evt,art::ScheduleContext::invalid());
 #endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
+
     auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
@@ -1196,7 +1180,7 @@ void SimWireICARUS::produce(art::Event& evt)
     // flag added to use nominal one response per plane or multiple responses
     // per plane and scaling for YZ dependent responses
     // or data driven field responses
-    art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> sss;
 
     //--------------------------------------------------------------------
     //
@@ -1231,9 +1215,9 @@ void SimWireICARUS::produce(art::Event& evt)
     
     // vectors for working in the following for loop
     std::vector<short>  adcvec(fNTimeSamples, 0);
-    std::vector<double> chargeWork(nTicks,0.);
-    std::vector<double> zeroCharge(nTicks,0.);
-    std::vector<float>  noisetmp(nTicks,0.);
+    icarusutil::TimeVec chargeWork(fNTimeSamples,0.);
+    icarusutil::TimeVec zeroCharge(fNTimeSamples,0.);
+    icarusutil::TimeVec noisetmp(fNTimeSamples,0.);
     
     // make sure chargeWork is correct size
     if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
@@ -1287,7 +1271,7 @@ void SimWireICARUS::produce(art::Event& evt)
         {
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
-            noisetmp.resize(nTicks, 0.);     //just in case
+            noisetmp.resize(fNTimeSamples, 0.);     //just in case
             
             //use channel number to set some useful numbers
             std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
@@ -1339,7 +1323,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 std::fill(chargeWork.begin(), chargeWork.end(), 0.);
                 
                 // loop over the tdcs and grab the number of electrons for each
-                for(int tick = 0; tick < (int)nTicks; tick++)
+                for(int tick = 0; tick < int(fNTimeSamples); tick++)
                 {
                     int tdc = ts->TPCTick2TDC(tick);
                     
@@ -1352,7 +1336,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 } // loop over tdcs
                 // now we have the tempWork for the adjacent wire of interest
                 // convolve it with the appropriate response function
-                sss->Convolute(channel, chargeWork);
+                fFFT->convolute(chargeWork, sss->SignalShaping(channel).ConvKernel(), sss->FieldResponseTOffset(channel));
                 
                 // "Make" the ADC vector
                 MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
@@ -1391,8 +1375,8 @@ void SimWireICARUS::produce(art::Event& evt)
     return;
 }
 //-------------------------------------------------
-void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> const& noisevec,
-                               std::vector<double> const& chargevec, float ped_mean) const
+void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, const icarusutil::TimeVec& noisevec,
+                               const icarusutil::TimeVec& chargevec, float ped_mean) const
 {
     for(unsigned int i = 0; i < fNTimeSamples; ++i)
     {
