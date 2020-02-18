@@ -29,7 +29,7 @@
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCorrelatedCorrectionAlg.h"
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/IRawDigitFilter.h"
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/ChannelGroups.h"
-#include "icaruscode/Utilities/tools/IFilter.h"
+#include "icaruscode/TPC/Utilities/tools/IFilter.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"

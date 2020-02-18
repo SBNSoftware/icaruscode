@@ -1,7 +1,7 @@
 cet_enable_asserts()
 
 art_make( 
-          TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingICARUSService_service
+          TOOL_LIBRARIES  icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                           larcorealg_Geometry
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers

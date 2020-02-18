@@ -1,8 +1,0 @@
-BEGIN_PROLOG
-
-Waveform_Tool:
-{
-    tool_type: Waveform
-}
-
-END_PROLOG

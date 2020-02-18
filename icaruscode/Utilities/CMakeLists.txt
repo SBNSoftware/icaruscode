@@ -1,6 +1,3 @@
-add_subdirectory(tools)
-
-add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 set( icarus_util_lib_list
                         larcorealg_Geometry
@@ -11,7 +8,6 @@ set( icarus_util_lib_list
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
                         nurandom_RandomUtils_NuRandomService_service
-                        ${ICARUS_FFTW_LIBRARIES}
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}

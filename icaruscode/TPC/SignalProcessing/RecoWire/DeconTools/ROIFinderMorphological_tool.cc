@@ -12,7 +12,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 #include "TH1F.h"
 #include "TH2F.h"

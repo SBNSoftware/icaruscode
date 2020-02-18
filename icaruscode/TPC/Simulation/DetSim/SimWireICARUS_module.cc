@@ -71,8 +71,8 @@
 #include "lardataobj/RawData/TriggerData.h"
 #include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
 #endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/Utilities/ICARUSFFT.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
 #include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector<>
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"

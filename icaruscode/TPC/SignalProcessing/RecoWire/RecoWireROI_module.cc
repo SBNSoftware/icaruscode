@@ -43,8 +43,8 @@
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/Utilities/ICARUSFFT.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
 
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"

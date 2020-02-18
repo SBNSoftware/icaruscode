@@ -10,7 +10,7 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "TH1D.h"
 

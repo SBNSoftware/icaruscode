@@ -3,15 +3,13 @@ cet_enable_asserts()
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 art_make( 
-          TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingICARUSService_service
-                          icaruscode_Utilities_SignalShaperServiceICARUS_service
-                          icaruscode_Utilities
-                          larcorealg_Geometry
+          TOOL_LIBRARIES  larcorealg_Geometry
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
                           lardataobj_RecoBase
                           larcore_Geometry_Geometry_service
                           lardata_Utilities
+                          icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                           nurandom_RandomUtils_NuRandomService_service
                           ${ART_FRAMEWORK_CORE}
                           ${ART_FRAMEWORK_PRINCIPAL}

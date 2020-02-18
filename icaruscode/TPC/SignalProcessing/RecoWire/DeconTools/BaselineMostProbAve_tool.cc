@@ -11,8 +11,8 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()

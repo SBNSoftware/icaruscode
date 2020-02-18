@@ -18,7 +18,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // FFT
-#include "icaruscode/Utilities/ICARUSFFT.h"
+#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"

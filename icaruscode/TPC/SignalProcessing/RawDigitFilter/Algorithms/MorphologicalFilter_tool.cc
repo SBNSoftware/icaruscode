@@ -13,7 +13,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/IRawDigitFilter.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 #include "TH1F.h"
 #include "TH2F.h"

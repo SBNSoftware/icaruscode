@@ -11,9 +11,8 @@ art_make(
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData
-                           icaruscode_Utilities_SignalShapingICARUSService_service
-                           icaruscode_Utilities
-			   larevt_CalibrationDBI_Providers
+                           icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+		           larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service
                            ${ART_FRAMEWORK_CORE}
                            ${ART_FRAMEWORK_PRINCIPAL}
@@ -44,8 +43,7 @@ simple_plugin(SimWireICARUS "module"
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData
-                           icaruscode_Utilities_SignalShapingICARUSService_service
-                           icaruscode_Utilities
+                           icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                            larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service
                            ${ART_FRAMEWORK_CORE}

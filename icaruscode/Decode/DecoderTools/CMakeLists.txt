@@ -8,8 +8,7 @@ art_make(
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         icarussigproc
-                        icaruscode_Utilities_SignalShapingICARUSService_service
-                        icaruscode_Utilities
+                        icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities

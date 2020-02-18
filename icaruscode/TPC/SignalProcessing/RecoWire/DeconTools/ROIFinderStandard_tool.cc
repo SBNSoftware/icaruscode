@@ -11,7 +11,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "TH1D.h"
 

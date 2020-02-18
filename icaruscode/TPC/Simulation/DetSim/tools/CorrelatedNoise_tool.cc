@@ -16,7 +16,7 @@
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"

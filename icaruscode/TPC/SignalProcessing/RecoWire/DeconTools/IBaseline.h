@@ -14,7 +14,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
-#include "icaruscode/Utilities/tools/SignalProcessingDefs.h"
+#include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
 
 namespace art
 {

@@ -14,7 +14,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "CLHEP/Random/RandomEngine.h"
-#include "icaruscode/Utilities/tools/SignalProcessingDefs.h"
+#include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
 
 class TComplex;
 

@@ -10,8 +10,8 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
-#include "icaruscode/Utilities/tools/IFilter.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IFilter.h"
 
 #include <complex.h>
 #include <Eigen/Core>

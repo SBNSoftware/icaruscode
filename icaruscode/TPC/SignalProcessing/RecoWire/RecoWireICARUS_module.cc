@@ -39,7 +39,7 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "icaruscode/Utilities/ICARUSFFT.h"
+#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
 
 ///creation of calibrated signals on wires
 namespace recowire {

@@ -11,13 +11,13 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 #include "TH1.h"
 #include "TH2.h"

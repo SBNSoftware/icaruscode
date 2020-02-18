@@ -51,7 +51,7 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"

@@ -9,8 +9,7 @@ art_make(   LIB_LIBRARIES
                 ${ROOT_BASIC_LIB_LIST}
             MODULE_LIBRARIES
                 icaruscode_TPC_SignalProcessing_RecoWire_SimTestPulse
-                icaruscode_Utilities_SignalShapingICARUSService_service
-                icaruscode_Utilities
+                icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                 lardata_Utilities
                 lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
                 lardataobj_Simulation

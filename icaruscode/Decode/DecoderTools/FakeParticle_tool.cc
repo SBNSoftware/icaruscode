@@ -21,10 +21,10 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // ICARUS package includes
-#include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "icaruscode/Decode/DecoderTools/IFakeParticle.h"
 
-#include "icaruscode/Utilities/ICARUSFFT.h"
+#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
 
 // std includes
 #include <string>

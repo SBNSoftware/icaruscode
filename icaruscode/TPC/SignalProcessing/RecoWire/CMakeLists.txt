@@ -12,7 +12,8 @@ art_make(
             ${FHICLCPP}
             ${CETLIB}
             ${ROOT_BASIC_LIB_LIST}
-          MODULE_LIBRARIES larcorealg_Geometry
+          MODULE_LIBRARIES 
+            larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities
             larevt_Filters
@@ -21,9 +22,7 @@ art_make(
             larevt_CalibrationDBI_Providers
             lardataobj_RecoBase
             lardata_ArtDataHelper
-            icaruscode_Utilities_SignalShapingICARUSService_service
-            icaruscode_Utilities_SignalShaperServiceICARUS_service
-            icaruscode_Utilities
+            icaruscode_TPC_Utilities_SignalShapingICARUSService_service
             ${ART_FRAMEWORK_CORE}
             ${ART_FRAMEWORK_PRINCIPAL}
             ${ART_FRAMEWORK_SERVICES_REGISTRY}
