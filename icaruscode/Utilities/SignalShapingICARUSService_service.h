@@ -150,7 +150,7 @@ private:
 
 } // end of namespace
 
-DECLARE_ART_SERVICE(icarusutil::SignalShapingICARUSService, LEGACY)
+DECLARE_ART_SERVICE(icarusutil::SignalShapingICARUSService, SHARED)
 #endif
 
 

@@ -127,7 +127,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     std::transform(fElectronicsResponseVec.begin(),fElectronicsResponseVec.end(),fElectronicsResponseVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
     // Resize and pad with zeroes
-    fElectronicsResponseFFTVec.resize(fElectronicsResponseVec.size(),0.);
+    fElectronicsResponseFFTVec.resize(fElectronicsResponseVec.size(),std::complex<double>(0.,0.));
     
     // Now we take the FFT...
     Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;

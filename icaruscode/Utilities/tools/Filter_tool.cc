@@ -90,13 +90,15 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     
     // Don't assume that the filter vec has not already been initialized...
     // Note we are setting up the FFT to be the "full" so add a bin for folding over
-    fFilterVec.resize(numBins+1,icarusutil::ComplexVal(0.,0.));
+    fFilterVec.resize(numBins,icarusutil::ComplexVal(0.,0.));
     
     // Keep track of the peak value
     double peakVal(std::numeric_limits<double>::min());
 
+    size_t nyquistBin = numBins/2 + 1;
+
     // Now ready to set the response vector
-    for(size_t bin = 0; bin < numBins/2 + 1; bin++)
+    for(size_t bin = 0; bin < nyquistBin; bin++)
     {
         // This takes a sampling rate in ns -> gives a frequency in cycles/us
         double freq = bin * freqRes;
@@ -108,8 +110,8 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     }
 
     // Since we are returning the "full" FFT... folder over the first half
-    for(size_t bin = 0; bin < numBins/2; bin++)
-        fFilterVec[numBins-bin] = fFilterVec[bin];
+    for(size_t bin = nyquistBin; bin < numBins; bin++)
+        fFilterVec[bin] = std::conj(fFilterVec[numBins - bin]);
     
     // "Normalize" to peak value
     for(auto& filterValue : fFilterVec) filterValue = filterValue / peakVal;

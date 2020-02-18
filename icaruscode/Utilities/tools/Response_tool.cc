@@ -14,8 +14,6 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 
-#include "icaruscode/Utilities/SignalShapingICARUS.h"
-
 #include "art/Utilities/make_tool.h"
 #include "icaruscode/Utilities/tools/IWaveformTool.h"
 #include "IFieldResponse.h"
@@ -54,8 +52,6 @@ public:
     const icarusutil::FrequencyVec&         getConvKernel()          const override {return fConvolutionKernel;}
     const icarusutil::FrequencyVec&         getDeconvKernel()        const override {return fDeconvolutionKernel;}
     
-    const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS() const override {return fSignalShaping;}
-    
 private:
     // Calculate the response function
     void                                    calculateResponse(double weight);
@@ -86,9 +82,6 @@ private:
     icarusutil::TimeVec                            fResponse;
     icarusutil::FrequencyVec                       fConvolutionKernel;
     icarusutil::FrequencyVec                       fDeconvolutionKernel;           
-    
-    // The actual response function
-    icarusutil::SignalShapingICARUS fSignalShaping;
 
     std::unique_ptr<icarusutil::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
     detinfo::DetectorProperties const*             fDetectorProperties;   ///< Detector properties service
@@ -142,27 +135,11 @@ void Response::setResponse(double weight)
     // Now compute the deconvolution kernel
     fDeconvolutionKernel = fFilter->getResponseVec();
 
-    for(size_t idx = 0; idx < fNumberTimeSamples/2 + 1; idx++)
+    for(size_t idx = 0; idx < fNumberTimeSamples; idx++)
     {
         if (std::abs(fConvolutionKernel[idx]) < 0.0001) fDeconvolutionKernel[idx]  = 0.;
         else                                            fDeconvolutionKernel[idx] /= fConvolutionKernel[idx];
-
-        // fold over
-        fDeconvolutionKernel[fNumberTimeSamples-idx] = fDeconvolutionKernel[idx];
     }
-
-    // To be deprecated
-    fSignalShaping.Reset();
-    fSignalShaping.AddResponseFunction(fResponse, true);
-
-    // Set up the filter
-    fFilter->setResponse(fNumberTimeSamples, f3DCorrection, fTimeScaleFactor);
-    
-    // Finalize the Signal Shaping
-    fSignalShaping.AddFilterFunction(fFilter->getResponseVec());
-    fSignalShaping.SetDeconvKernelPolarity( fDeconvPol );         // Note that this is only important if set_normflag above has been set to true
-    fSignalShaping.set_normflag(false);                           // WE are handling the normalization
-    fSignalShaping.CalculateDeconvKernel();
     
     // The following can be uncommented to do some consistency checks if desired
 //    // Do some consistency/cross checks here
@@ -309,7 +286,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     std::string dirName = "Response_" + std::to_string(fThisPlane);
     
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
-    const icarusutil::TimeVec& responseVec  = this->getSignalShapingICARUS().Response();
+    const icarusutil::TimeVec& responseVec  = fResponse;
     auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     int                        numBins      = responseVec.size();
     double                     samplingRate = detprop->SamplingRate(); // **Sampling time in ns**
@@ -345,7 +322,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
         freqHist->Fill(freq, powerVec.at(idx), 1.);
     }
     
-    const icarusutil::FrequencyVec& convKernel = this->getSignalShapingICARUS().ConvKernel();
+    const icarusutil::FrequencyVec& convKernel = fConvolutionKernel;
     
     std::string convKernelName   = "ConvKernel_" + std::to_string(fThisPlane);
     TProfile*   fullResponseHist = dir.make<TProfile>(convKernelName.c_str(), "Convolution Kernel;Frequency(MHz)", convKernel.size(), minFreq, maxFreq);
@@ -357,7 +334,7 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
         fullResponseHist->Fill(freq, std::abs(convKernel[idx]), 1.);
     }
     
-    const icarusutil::FrequencyVec& deconKernel = this->getSignalShapingICARUS().DeconvKernel();
+    const icarusutil::FrequencyVec& deconKernel = fDeconvolutionKernel;
     
     std::string deconName = "DeconKernel_" + std::to_string(fThisPlane);
     TProfile*   deconHist = dir.make<TProfile>(deconName.c_str(), "Deconvolution Kernel;Frequency(MHz)", deconKernel.size(), minFreq, maxFreq);

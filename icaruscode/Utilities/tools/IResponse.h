@@ -69,11 +69,6 @@ public:
     virtual const icarusutil::TimeVec&               getResponse()                          const = 0;
     virtual const icarusutil::FrequencyVec&          getConvKernel()                        const = 0;
     virtual const icarusutil::FrequencyVec&          getDeconvKernel()                      const = 0;
-
-    /**
-     *  @brief Deprecated
-     */
-    virtual const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS()               const = 0;
 };
 }
 
