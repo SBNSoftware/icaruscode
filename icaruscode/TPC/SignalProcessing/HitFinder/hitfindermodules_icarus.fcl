@@ -51,6 +51,7 @@ gaus_hitfinder_icarus.TryNplus1Fits:                                            
 gaus_hitfinder_icarus.Chi2NDF:                                                     500.
 gaus_hitfinder_icarus.PeakFitter.MinWidth:                                         1
 gaus_hitfinder_icarus.PeakFitter.FloatBaseline:                                    false
+gaus_hitfinder_icarus.PeakFitter.tool_type:                                        "PeakFitterMrqdt"
 gaus_hitfinder_icarus.LongMaxHits:                                                 [25, 25, 25]
 gaus_hitfinder_icarus.LongPulseWidth:                                              [10, 10, 10]
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
