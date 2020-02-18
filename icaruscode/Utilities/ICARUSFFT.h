@@ -55,7 +55,7 @@ template <class T> inline ICARUSFFT<T>::ICARUSFFT(int numTimeSamples)
 {
     // First size our two local vectors
     fTimeVec.resize(numTimeSamples, 0.);
-    fFrequencyVec.resize(numTimeSamples, std::complex<T>(0.,0.));
+    fFrequencyVec.resize(numTimeSamples, std::complex<T>(0.,0.)); // One extra bin to reflect
 
     // Now get the plans
     fForwardPlan = fftw_plan_dft_r2c_1d(numTimeSamples, fTimeVec.data(), reinterpret_cast<fftw_complex*>(fFrequencyVec.data()), FFTW_ESTIMATE | FFTW_PRESERVE_INPUT);
@@ -80,15 +80,16 @@ template <class T> inline void ICARUSFFT<T>::forwardFFT(TimeVec& timeVec, Freque
     if (timeVec.size() != fTimeVec.size()) 
         throw std::runtime_error("ICARUSFFT: Input time vector size does not match expected");
 
+    frequencyVec.resize(timeVec.size());
+
     fftw_execute_dft_r2c(fForwardPlan, timeVec.data(), reinterpret_cast<fftw_complex*>(frequencyVec.data()));
 
     // Reflect the output frequency vector
-    size_t numFreqBins = timeVec.size() + 1;
+    size_t vecSize    = timeVec.size();
+    size_t nyquistBin = vecSize/2 + 1;
 
-    frequencyVec.resize(numFreqBins--,std::complex<T>(0.,0.));
-
-    for(size_t idx = 0; idx < timeVec.size()/2; idx++)
-        frequencyVec[numFreqBins - idx] = frequencyVec[idx];
+    for(size_t idx = nyquistBin; idx < timeVec.size(); idx++)
+        frequencyVec[idx] = std::conj(frequencyVec[vecSize - idx]);
 
     return;
 }
@@ -97,6 +98,8 @@ template <class T> inline void ICARUSFFT<T>::inverseFFT(FrequencyVec& frequencyV
 {
     if (frequencyVec.size() < fFrequencyVec.size()) 
         throw std::runtime_error("ICARUSFFT: Input frequency vector size does not match expected");
+
+    timeVec.resize(frequencyVec.size());
 
     fftw_execute_dft_c2r(fInversePlan, reinterpret_cast<fftw_complex*>(frequencyVec.data()), timeVec.data());
 
