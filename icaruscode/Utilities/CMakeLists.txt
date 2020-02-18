@@ -3,7 +3,6 @@ add_subdirectory(tools)
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 set( icarus_util_lib_list
-                        lardata_Utilities_LArFFT_service
                         larcorealg_Geometry
                         larevt_CalibrationDBI_IOVData
                         larevt_CalibrationDBI_Providers

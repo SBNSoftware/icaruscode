@@ -1336,7 +1336,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 } // loop over tdcs
                 // now we have the tempWork for the adjacent wire of interest
                 // convolve it with the appropriate response function
-                fFFT->convolute(chargeWork, sss->SignalShaping(channel).ConvKernel(), sss->FieldResponseTOffset(channel));
+                fFFT->convolute(chargeWork, sss->GetResponse(channel).getConvKernel(), sss->FieldResponseTOffset(channel));
                 
                 // "Make" the ADC vector
                 MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);

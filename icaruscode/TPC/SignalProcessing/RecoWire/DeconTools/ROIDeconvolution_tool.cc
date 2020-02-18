@@ -5,6 +5,7 @@
 
 #include <cmath>
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -12,10 +13,9 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
-#include "lardata/Utilities/LArFFT.h"
 
-#include "art/Utilities/make_tool.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
+#include "icaruscode/Utilities/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -50,8 +50,8 @@ private:
     std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
     
     const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                           fFFT;
     art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
+    std::unique_ptr<icarusutil::ICARUSFFT<double>>             fFFT;                  ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
@@ -107,6 +107,11 @@ void ROIDeconvolution::configure(const fhicl::ParameterSet& pset)
     
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
+
+    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
+    // Now set up our plans for doing the convolution
+    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(detprop->NumberTimeSamples());
     
     return;
 }
@@ -184,7 +189,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, holder.begin() + holderOffset);
         
         // Deconvolute the raw signal using the channel's nominal response
-        fSignalShaping->Deconvolute(channel,holder);
+        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
         
         // Get rid of the leading and trailing "extra" bins needed to keep the FFT happy
         if (roiStart > 0 || holderOffset > 0) std::copy(holder.begin() + holderOffset + roiStart, holder.begin() + holderOffset + roiStop, holder.begin());

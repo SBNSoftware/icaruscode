@@ -14,6 +14,10 @@
 #define IResponse_H
 
 #include "fhiclcpp/ParameterSet.h"
+#include "icaruscode/Utilities/tools/SignalProcessingDefs.h"
+#include "icaruscode/Utilities/tools/IFieldResponse.h"
+#include "icaruscode/Utilities/tools/IElectronicsResponse.h"
+#include "icaruscode/Utilities/tools/IFilter.h"
 
 namespace icarusutil
 {
@@ -27,27 +31,50 @@ namespace art
 
 namespace icarus_tool
 {
-    class IFieldResponse;
-    class IElectronicsResponse;
-    class IFilter;
+
+class IResponse
+{
+public:
+    virtual ~IResponse() noexcept = default;
     
-    class IResponse
-    {
-    public:
-        virtual ~IResponse() noexcept = default;
-        
-        virtual void                                    configure(const fhicl::ParameterSet& pset)   = 0;
-        virtual void                                    setResponse(double weight)                   = 0;
-        virtual void                                    outputHistograms(art::TFileDirectory&) const = 0;
-        
-        virtual size_t                                  getPlane()                             const = 0;
-        
-        virtual const IFieldResponse*                   getFieldResponse()                     const = 0;
-        virtual const IElectronicsResponse*             getElectronicsResponse()               const = 0;
-        virtual const IFilter*                          getFilter()                            const = 0;
-        
-        virtual const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS()               const = 0;
-    };
+    /**
+     *  @brief Setup routines
+     *
+     *  @param output                the object containting the art output
+     *  @param clusHitPairVector     List of 3D hits to output as "extreme" space points
+     */
+    virtual void                                    configure(const fhicl::ParameterSet& pset)   = 0;
+    virtual void                                    setResponse(double weight)                   = 0;
+    virtual void                                    outputHistograms(art::TFileDirectory&) const = 0;
+
+    /**
+     *  @brief Return the plane these functions represent
+     */
+    virtual size_t                                  getPlane()                             const = 0;
+
+    /**
+     *  @brief Recover the individual response elements
+     */
+    virtual const IFieldResponse*                   getFieldResponse()                     const = 0;
+    virtual const IElectronicsResponse*             getElectronicsResponse()               const = 0;
+    virtual const IFilter*                          getFilter()                            const = 0;
+    
+    /**
+     *  @brief here recover the combined response elements
+     *
+     *  @param output                the object containting the art output
+     *  @param clusHitPairVector     List of 3D hits to output as "extreme" space points
+     */
+    virtual size_t                                   getNumberTimeSamples()                 const = 0;
+    virtual const icarusutil::TimeVec&               getResponse()                          const = 0;
+    virtual const icarusutil::FrequencyVec&          getConvKernel()                        const = 0;
+    virtual const icarusutil::FrequencyVec&          getDeconvKernel()                      const = 0;
+
+    /**
+     *  @brief Deprecated
+     */
+    virtual const icarusutil::SignalShapingICARUS&  getSignalShapingICARUS()               const = 0;
+};
 }
 
 #endif

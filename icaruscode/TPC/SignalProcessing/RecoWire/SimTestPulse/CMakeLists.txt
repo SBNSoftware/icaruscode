@@ -11,7 +11,6 @@ art_make(   LIB_LIBRARIES
                 icaruscode_TPC_SignalProcessing_RecoWire_SimTestPulse
                 icaruscode_Utilities_SignalShapingICARUSService_service
                 icaruscode_Utilities
-                lardata_Utilities_LArFFT_service
                 lardata_Utilities
                 lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
                 lardataobj_Simulation

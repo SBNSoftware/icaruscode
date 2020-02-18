@@ -42,9 +42,10 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "icaruscode/Utilities/SignalShapingICARUSService_service.h"
+#include "icaruscode/Utilities/ICARUSFFT.h"
+
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -108,9 +109,10 @@ private:
 
     float SubtractBaseline(const std::vector<float>& holder);
     
-    const geo::GeometryCore&                fGeometry;
-    icarusutil::SignalShapingICARUSService& fSignalServices;
-    const lariov::ChannelStatusProvider& fChanFilt;
+    const geo::GeometryCore&                        fGeometry;
+    icarusutil::SignalShapingICARUSService&         fSignalServices;
+    const lariov::ChannelStatusProvider&            fChanFilt;
+    std::unique_ptr<icarusutil::ICARUSFFT<double>>  fFFT;                  ///< Object to handle thread safe FFT
 }; // class RecoWireROI
 
 DEFINE_ART_MODULE(RecoWireROI)
@@ -175,13 +177,6 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
       fSpillName = fDigitModuleLabel.substr( pos+1 );
       fDigitModuleLabel = fDigitModuleLabel.substr( 0, pos );
     }
-    
-    // re-initialize the FFT service for the request size
-    // art::ServiceHandle<util::LArFFT> fFFT;
-    // std::string options = fFFT->FFTOptions();
-    // int fitbins = fFFT->FFTFitBins();
-    // fFFT->ReinitializeFFT(fFFTSize, options, fitbins);
-    //reconfFFT(fFFTSize);
 
     //wire-by-wire calibration
     fDodQdxCalib        = p.get< bool >                          ("DodQdxCalib", false);
@@ -210,7 +205,11 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
 	if (channel%1000==0) std::cout<<"Channel "<<channel<<" correction factor "<<fdQdxCalib[channel]<<std::endl;
       }
     }
+
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
 	
+    // Now set up our plans for doing the convolution
+    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(detprop->NumberTimeSamples());
 }
 
 //-------------------------------------------------
@@ -229,9 +228,6 @@ void RecoWireROI::produce(art::Event& evt)
 {
     //get pedestal conditions
     const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
-
-    // get the FFT service to have access to the FFT size
-    art::ServiceHandle<util::LArFFT> fFFT;
     
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
@@ -304,7 +300,7 @@ void RecoWireROI::produce(art::Event& evt)
             if (!transformSize)
             {
                 fSignalServices.SetDecon(dataSize, channel);
-                transformSize = fFFT->FFTSize();
+                transformSize = dataSize;
             }
             
             icarusutil::TimeVec rawAdcLessPedVec;
@@ -434,7 +430,8 @@ void RecoWireROI::produce(art::Event& evt)
             }
             
             // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
-            fSignalServices.Deconvolute(channel,rawAdcLessPedVec);
+            // Deconvolute the raw signal using the channel's nominal response
+            fFFT->deconvolute(rawAdcLessPedVec, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.FieldResponseTOffset(channel));
             
             std::vector<float> holder;
             
@@ -638,7 +635,8 @@ void RecoWireROI::doDecon(icarusutil::TimeVec&                         holder,
                           const std::vector<std::pair<size_t,size_t>>& holderInfo,
                           recob::Wire::RegionsOfInterest_t&            ROIVec)
 {
-    fSignalServices.Deconvolute(channel,holder);
+    // Deconvolute the raw signal using the channel's nominal response
+    fFFT->deconvolute(holder, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.FieldResponseTOffset(channel));
 
     // transfer the ROIs and start bins into the vector that will be
     // put into the event

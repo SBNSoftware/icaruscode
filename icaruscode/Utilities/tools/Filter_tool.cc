@@ -89,7 +89,8 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
     for(const auto& parameter : fParameters) function.SetParameter(paramIdx++, timeFactor * parameter);
     
     // Don't assume that the filter vec has not already been initialized...
-    fFilterVec.clear();
+    // Note we are setting up the FFT to be the "full" so add a bin for folding over
+    fFilterVec.resize(numBins+1,icarusutil::ComplexVal(0.,0.));
     
     // Keep track of the peak value
     double peakVal(std::numeric_limits<double>::min());
@@ -103,8 +104,12 @@ void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
 
         peakVal = std::max(peakVal, f);
         
-        fFilterVec.push_back(icarusutil::ComplexVal(f, 0.));
+        fFilterVec[bin] = icarusutil::ComplexVal(f, 0.);
     }
+
+    // Since we are returning the "full" FFT... folder over the first half
+    for(size_t bin = 0; bin < numBins/2; bin++)
+        fFilterVec[numBins-bin] = fFilterVec[bin];
     
     // "Normalize" to peak value
     for(auto& filterValue : fFilterVec) filterValue = filterValue / peakVal;

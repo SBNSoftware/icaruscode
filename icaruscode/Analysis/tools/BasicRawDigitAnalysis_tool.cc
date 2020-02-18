@@ -29,6 +29,7 @@
 
 #include <cmath>
 #include <algorithm>
+#include <vector>
 
 namespace BasicRawDigitAnalysis
 {
@@ -289,8 +290,8 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
         raw::ChannelID_t channel = fGeometry.PlaneWireToChannel(plane,0);
         
         // Recover the filter from signal shaping services...
-        const icarusutil::FrequencyVec& response = fSignalServices.SignalShaping(channel).ConvKernel();
-        const icarusutil::FrequencyVec& filter   = fSignalServices.SignalShaping(channel).Filter();
+        const icarusutil::FrequencyVec& response = fSignalServices.GetResponse(channel).getConvKernel();
+        const icarusutil::FrequencyVec& filter   = fSignalServices.GetResponse(channel).getFilter()->getResponseVec();
         
         for(size_t idx = 0; idx < numSamples; idx++)
         {
@@ -553,7 +554,7 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     }
     
     // Recover the filter from signal shaping services...
-    const icarusutil::FrequencyVec& filter   = fSignalServices.SignalShaping(channel).Filter();
+    const icarusutil::FrequencyVec& filter   = fSignalServices.GetResponse(channel).getFilter()->getResponseVec();
     
     // Convolve this with the FFT of the input waveform
     for(size_t idx = 0; idx < complexVals.size(); idx++)

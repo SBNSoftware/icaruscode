@@ -185,7 +185,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
     raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(fPlaneToSimulate, 0);
 
     // Recover the response function information for this channel
-    const icarusutil::SignalShapingICARUS& signalShaping = fSignalShapingService->SignalShaping(channel);
+    const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
 
     // Also want the time offset for this channel
     int timeOffset = fSignalShapingService->FieldResponseTOffset(channel);
@@ -227,7 +227,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
 
         // Convolute with the response functions
 //        fSignalShapingService->Convolute(channel, fFFTTimeVec);
-        fFFT->convolute(fFFTTimeVec, signalShaping.ConvKernel(), timeOffset);
+        fFFT->convolute(fFFTTimeVec, response.getConvKernel(), timeOffset);
 
         // And now add this to the waveform in question 
         VectorFloat& waveform = waveforms[wireIdx];

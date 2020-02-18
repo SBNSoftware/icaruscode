@@ -12,10 +12,13 @@
 #include "art/Utilities/ToolMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "lardata/Utilities/LArFFT.h"
 
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+
+// FFT
+#include "icaruscode/Utilities/ICARUSFFT.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
@@ -56,6 +59,9 @@ private:
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
     std::vector<double> fNoiseHistVec;
+
+    const detinfo::DetectorProperties*             fDetector;              //< Pointer to the detector properties
+    std::unique_ptr<icarusutil::ICARUSFFT<double>> fFFT;
 };
     
 //----------------------------------------------------------------------
@@ -98,6 +104,13 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
     
     // Close the input file
     inputFile.Close();
+
+    fDetector = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
+    // Now set up our plans for doing the convolution
+    int numberTimeSamples = fDetector->NumberTimeSamples();
+
+    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(numberTimeSamples);
    
     return;
 }
@@ -107,12 +120,10 @@ void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
                                   icarusutil::TimeVec& noise,
                                   double noise_factor,
                                   unsigned int channel)
-{
-    art::ServiceHandle<util::LArFFT>               fFFT;
-    
+{    
     CLHEP::RandFlat flat(engine,-1,1);
     
-    size_t nFFTTicks = fFFT->FFTSize();
+    size_t nFFTTicks = fDetector->NumberTimeSamples();
     
     if(noise.size() != nFFTTicks)
         throw cet::exception("SimWireICARUS")
@@ -123,7 +134,7 @@ void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
         << std::endl;
     
     // noise in frequency space
-    std::vector<TComplex> noiseFrequency(nFFTTicks/2+1, 0.);
+    std::vector<std::complex<double>> noiseFrequency(nFFTTicks/2+1, 0.);
     
     double pval        = 0.;
     double phase       = 0.;
@@ -147,7 +158,7 @@ void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
     }
     
     // inverse FFT MCSignal
-    fFFT->DoInvFFT(noiseFrequency, noise);
+    fFFT->inverseFFT(noiseFrequency, noise);
     
     noiseFrequency.clear();
 

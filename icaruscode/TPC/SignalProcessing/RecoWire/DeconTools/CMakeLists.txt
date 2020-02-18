@@ -6,7 +6,6 @@ art_make(
           TOOL_LIBRARIES  icaruscode_Utilities_SignalShapingICARUSService_service
                           icaruscode_Utilities_SignalShaperServiceICARUS_service
                           icaruscode_Utilities
-			              lardata_Utilities_LArFFT_service
                           larcorealg_Geometry
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
