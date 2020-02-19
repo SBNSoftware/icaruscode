@@ -22,6 +22,7 @@
 #include <functional> // std::function<>
 #include <limits> // std::numeric_limits<>
 #include <cmath> // std::isnormal()
+#include <cassert>
 
 
 // ---------------------------------------------------------------------------
@@ -150,9 +151,6 @@ class util::SampledFunction {
   SubsampleData_t subsample(gsl::index const n) const
     { return { subsampleData(n), static_cast<gsl::index>(fNSamples) }; }
 
-  /// @}
-  // --- END --- Access --------------------------------------------------------
-
   /**
    * @brief Returns the index of the step including `x`.
    * @param x the argument to the function
@@ -162,9 +160,8 @@ class util::SampledFunction {
    * This function returns the index of the sample whose step includes `x`.
    * A step includes its lower limit but not its upper limit, which usually
    * belongs to the next step (or it does not belong to any valid step).
-   * If there is no step including `x`, `npos` is returned (it can be checked
-   * e.g. with `isValidStepIndex()`).
-   *
+   * If there is no step including `x`, the index of the would-be step is 
+   * returned (it can be checked e.g. with `isValidStepIndex()`).
    */
   gsl::index stepIndex(X_t const x, gsl::index const iSubsample) const;
 
@@ -172,6 +169,30 @@ class util::SampledFunction {
   bool isValidStepIndex(gsl::index const index) const
     { return (index >= 0) && (index < size()); }
   
+  /**
+   * @brief Returns the subsample closest to the value `x`.
+   * @param x value to be checked
+   * @return the index of the subsample found
+   * 
+   * The subsample with the bin including `x` whose lower bound is the closest
+   * to `x` itself is returned.
+   * 
+   * For example, assuming bins aligned with 0 and a sampling with steps of
+   * size 1 and 5 subsamples, there will be 5 bins contaning the value `x` 3.65:
+   * [ 3.0, 4.0 ], [ 3.2, 4.2 ], [ 3.4, 4.4 ], [ 3.6, 4.6 ] and [ 2.8, 3.8 ],
+   * one for each subsample: `closestSubsampleIndex(3.65)` will return the
+   * sample with the bin [ 3.6, 4.6 ] (that is the fourth one, i.e. subsample
+   * number 3), because its lower bound 3.6 is the closest to 3.65.
+   * 
+   * The value `x` does not need to be in the sampling range. In the example
+   * above, the range could have been between 0 and 2, and the result would be
+   * the same.
+   */
+  gsl::index closestSubsampleIndex(X_t x) const;
+  
+  /// @}
+  // --- END --- Access --------------------------------------------------------
+
   
     private:
 
@@ -203,98 +224,10 @@ class util::SampledFunction {
   /// Samples the `function` and fills the internal caches.
   void fillSamples(Function_t const& function);
 
-#if 0
-  /**
-   * @brief Constructor: samples the pulse.
-   * @param pulseShape the shape to be pulsed; times in nanoseconds
-   * @param samplingFreq frequency of samples [gigahertz]
-   * @param rightSigmas sample until this standard deviations after peak
-   *
-   * Samples start from time 0 (as defined by the pulse shape).
-   */
-  DiscretePhotoelectronPulse
-    (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas);
-
-  /// Returns the length of the sampled pulse in ticks.
-  std::size_t pulseLength() const { return fSampledShape.size(); }
-
-  /// Returns the value sampled for the specified `tick` (the first is `0`).
-  ADCcount operator[] (std::size_t tick) const
-    { return fSampledShape[tick]; }
-
-  /// Returns the value sampled for the specified `tick` (the first is `0`).
-  ADCcount operator() (Tick_t tick) const
-    { return this->operator[](tick.value()); }
-
-  /// Evaluates the shape at the specified time.
-  ADCcount operator() (Time_t time) const { return fShape(time); }
-
-  /// @{
-  /// @name Iterator interface.
-
-  auto cbegin() const { return fSampledShape.cbegin(); }
-  auto cend() const { return fSampledShape.cend(); }
-  auto begin() const { return fSampledShape.begin(); }
-  auto end() const { return fSampledShape.end(); }
-
-  /// @}
-
-  /// Returns the function which was sampled.
-  PulseFunction_t const& shape() const { return fShape; }
-
-  /// Returns the sampling frequency (same units as entered).
-  gigahertz samplingFrequency() const { return fSamplingFreq; }
-
-  /// Returns the sampling period (inverse of frequency).
-  nanoseconds samplingPeriod() const { return 1.0 / samplingFrequency(); }
-
-  /// Returns the duration of the waveform in time units.
-  /// @see `pulseLength()`
-  nanoseconds duration() const { return pulseLength() * samplingPeriod(); }
-
-  // @{
-  /**
-   * @brief Prints on stream the parameters of this shape.
-   * @tparam Stream type of stream to write into
-   * @param out the stream to write into
-   * @param indent indentation string, prepended to all lines except first
-   * @param indentFirst indentation string prepended to the first line
-   */
-  template <typename Stream>
-  void dump(Stream&& out,
-    std::string const& indent, std::string const& firstIndent
-    ) const;
-  template <typename Stream>
-  void dump(Stream&& out, std::string const& indent = "") const
-    { dump(std::forward<Stream>(out), indent, indent); }
-  // @}
-
-  /**
-   * @brief Checks that the waveform tails not sampled are negligible.
-   * @param limit threshold below which the waveform is considered negligible
-   * @param outputCat _(default: empty)_ message facility output category
-   *        to use for messages
-   * @return whether the two tails are negligible
-   *
-   * If `outputCat` is empty (default) no message is printed.
-   * Otherwise, in case of failure a message is sent to message facility
-   * (under category `outputCat`) describing the failure(s).
-   */
-  bool checkRange(ADCcount limit, std::string const& outputCat) const;
-
-    private:
-  PulseFunction_t fShape;  ///< Analytical shape of the pules.
-  gigahertz fSamplingFreq; ///< Sampling frequency.
-
-  std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretized.
-
-  /// Builds the sampling cache.
-  static std::vector<ADCcount> sampleShape(
-    PulseFunction_t const& pulseShape,
-    gigahertz samplingFreq, double rightSigmas
-    );
-#endif // 0
-
+  /// Returns `value` made non-negative by adding multiples of `range`.
+  template <typename T>
+  static T wrapUp(T value, T range);
+  
 }; // class SampledFunction<>
 
 
@@ -326,8 +259,18 @@ template <typename XType, typename YType>
 gsl::index util::SampledFunction<XType, YType>::stepIndex
   (X_t const x, gsl::index const iSubsample) const
 {
-  return
-    static_cast<gsl::index>((x - subsampleOffset(iSubsample)) / stepSize());
+  return static_cast<gsl::index>
+    (std::floor((x - subsampleOffset(iSubsample)) / stepSize()));
+} // gsl::index util::SampledFunction<XType, YType>::stepIndex()
+
+
+// -----------------------------------------------------------------------------
+template <typename XType, typename YType>
+gsl::index util::SampledFunction<XType, YType>::closestSubsampleIndex
+  (X_t const x) const
+{
+  return static_cast<gsl::index>
+    (wrapUp(std::fmod(x - lower(), stepSize()), stepSize()) / substepSize());
 } // gsl::index util::SampledFunction<XType, YType>::stepIndex()
 
 
@@ -372,6 +315,15 @@ void util::SampledFunction<XType, YType>::fillSamples
   } // for subsamples
 
 } // util::SampledFunction<>::fillSamples()
+
+
+// -----------------------------------------------------------------------------
+template <typename XType, typename YType>
+template <typename T>
+T util::SampledFunction<XType, YType>::wrapUp(T value, T range) {
+  while (value < T{ 0 }) value += range;
+  return value;
+} // util::SampledFunction<>::wrapUp()
 
 
 // -----------------------------------------------------------------------------
