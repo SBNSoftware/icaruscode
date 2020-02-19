@@ -1,4 +1,12 @@
 
+art_make(
+  EXCLUDE
+    "SignalShapingServiceICARUS_service.cc"
+    "SaveConfigurationIntoTFile_module.cc"
+  LIB_LIBRARIES
+    ${CLHEP}
+  )
+
 set( icarus_util_lib_list
                         larcorealg_Geometry
                         larevt_CalibrationDBI_IOVData

@@ -27,6 +27,16 @@
 //--- template implementation
 //------------------------------------------------------------------------------
 template <typename Tick, typename TickInterval, typename ChannelIDType>
+icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>::ReadoutTriggerGate
+  (std::initializer_list<ChannelID_t> channels)
+  : ReadoutTriggerGate()
+{
+  addChannels(channels);
+} // icarus::trigger::ReadoutTriggerGate<>::ReadoutTriggerGate(ChannelID_t)
+
+
+//------------------------------------------------------------------------------
+template <typename Tick, typename TickInterval, typename ChannelIDType>
 decltype(auto)
 icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>::channels
   () const

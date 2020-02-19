@@ -36,6 +36,8 @@ services: {
   Geometry:                  @erase
   LArPropertiesService:      @erase
   DetectorPropertiesService: @erase
+  
+  TFileService:              @erase
 
 } # services
 

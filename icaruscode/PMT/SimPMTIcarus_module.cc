@@ -50,11 +50,25 @@ namespace opdet{
    * Configuration
    * ==============
    * 
-   * Apart from the input collection of propagated photons, all the
-   * configuration parameters are passed directly to the
-   * `icarus::opdet::PMTsimulationAlg` algorithm.
+   * All the configuration parameters are passed directly to the
+   * `icarus::opdet::PMTsimulationAlg` algorithm, with the following exceptions:
+   * * **InputModule** (input tag): tag of the data product containing the
+   *   `sim::SimPhotons` collection to be digitized;
+   * * **EfficiencySeed**, **DarkNoiseSeed** and **ElectronicsNoiseSeed**
+   *   (integers, optional): if specified, each number is used to seed the
+   *   pertaining random engine; otherwise, the seed is assigned by
+   *   `NuRandomService`;
+   * * **ElectronicsNoiseRandomEngine** and **DarkNoiseRandomEngine** (strings,
+   *   default: `HepJamesRandom`): name of the random number generation
+   *   algorithm to use; valid values are all the ones supported by
+   *   `art::RandomNumberGenerator` (which match the random engine classes
+   *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
+   *   `NonRandomEngine` and `RandEngine`).
    * 
-   * The module also utilizes three random number engines.
+   * See the @ref ICARUS_PMTSimulationAlg_RandomEngines "documentation" of
+   * `icarus::PMTsimulationAlg` for the purpose of the three random number
+   * engines.
+   * 
    * Currently, no configuration interface is provided to directly control their
    * seeds, which is delegated to `rndm::NuRandomService` service.
    * 
@@ -97,7 +111,35 @@ namespace opdet{
             Comment("simulated photons to be digitised (sim::SimPhotons)")
         };
         
+        rndm::SeedAtom EfficiencySeed {
+          Name("EfficiencySeed"),
+          Comment("fix the seed for stocastic photon detection efficiency")
+          };
+        
+        rndm::SeedAtom DarkNoiseSeed {
+          Name("DarkNoiseSeed"),
+          Comment("fix the seed for stocastic dark noise generation")
+          };
+        
+        rndm::SeedAtom ElectronicsNoiseSeed {
+          Name("ElectronicsNoiseSeed"),
+          Comment("fix the seed for stocastic electronics noise generation")
+          };
+        
+        fhicl::Atom<std::string> electronicsNoiseRandomEngine {
+            Name("ElectronicsNoiseRandomEngine"),
+            Comment("type of random engine to use for electronics noise"),
+            "HepJamesRandom"
+        };
+
+        fhicl::Atom<std::string> darkNoiseRandomEngine {
+            Name("DarkNoiseRandomEngine"),
+            Comment("type of random engine to use for dark noise"),
+            "HepJamesRandom"
+        };
+
         fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+        
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -136,10 +178,22 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
     , makePMTsimulator(config().algoConfig())
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies")) //, config.Seed))
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise")) //, config.Seed))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise")) //, config.Seed, "SeedElectronicsNoise"))
- {
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
+      )
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
+        config().darkNoiseRandomEngine(),
+        "DarkNoise",
+        config().DarkNoiseSeed
+      ))
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
+        config().electronicsNoiseRandomEngine(),
+        "ElectronicsNoise",
+        config().ElectronicsNoiseSeed
+      ))
+  {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     produces<std::vector<sim::SimPhotons> >();
