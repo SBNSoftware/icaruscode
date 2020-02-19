@@ -259,8 +259,8 @@ template <typename XType, typename YType>
 gsl::index util::SampledFunction<XType, YType>::stepIndex
   (X_t const x, gsl::index const iSubsample) const
 {
-  return static_cast<gsl::index>
-    (std::floor((x - subsampleOffset(iSubsample)) / stepSize()));
+  auto const dx = static_cast<double>(x - subsampleOffset(iSubsample));
+  return static_cast<gsl::index>(std::floor(dx / stepSize()));
 } // gsl::index util::SampledFunction<XType, YType>::stepIndex()
 
 
@@ -269,8 +269,9 @@ template <typename XType, typename YType>
 gsl::index util::SampledFunction<XType, YType>::closestSubsampleIndex
   (X_t const x) const
 {
+  auto const dx = static_cast<double>(x - lower());
   return static_cast<gsl::index>
-    (wrapUp(std::fmod(x - lower(), stepSize()), stepSize()) / substepSize());
+    (wrapUp(std::fmod(dx, stepSize()), stepSize()) / substepSize());
 } // gsl::index util::SampledFunction<XType, YType>::stepIndex()
 
 
