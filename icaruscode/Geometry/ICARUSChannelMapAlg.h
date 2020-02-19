@@ -24,6 +24,7 @@
 
 // framework libraries
 #include "fhiclcpp/types/OptionalDelegatedParameter.h"
+#include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/ParameterSet.h"
 
@@ -71,9 +72,9 @@ namespace icarus {
  * The numbering of channels is as follows:
  * 
  * * the numbering is driven by physical wire planes
- * * plane `2` goes first, then planes `1` and `0` follow; plane `0` is the
+ * * plane `0` goes first, then planes `1` and `2` follow; plane `0` is the
  *   plane closest to the drift volume, that is the first induction plane;
- * * the internal order of the channel is defined by `geo::PlaneGeo` internal
+ * * the internal order of the channels is defined by `geo::PlaneGeo` internal
  *   sorting algorithms, but it is guaranteed to be such that contiguous wires
  *   within the same logical wire plane have contiguous wire numbers, with no
  *   jumps and holes allowed;
@@ -81,15 +82,64 @@ namespace icarus {
  *   go first, then TPCs `2` and `3`
  * * cryostat `0` goes first, then cryostat `1`
  * 
- * This implies that the first wire plane being enumerated is `C:0 T:0 P:2`,
- * and then `C:0 T:1 P:2` to complete the collection plane of the first drift
- * volume, then the same thing with `C:0 T:0 P:1` and `C:0 T:1 P:1` for the
- * second induction plane, and finally `C:0 T:0 P:0` and `C:0 T:1 P:0` for the
- * first induction plane; then, `C:0 T:0 P:1` and `C:0 T:1 P:1` to complete the
- * second induction plane.
- * Thereafter, the enumeration proceeds with `C:0 T:2 P:2` (covering `C:0 T:2`
- * and `C:0 T:3`) and then with the other cryostat in the same TPC and plane
- * order.
+ * This implies that the first wire plane being enumerated is `C:0 T:0 P:0`,
+ * and then `C:0 T:1 P:0`, that cover the first induction plane of the first
+ * drift volume, then the `C:0 T:0 P:1` and `C:0 T:1 P:1` are grouped together
+ * for the second induction plane, and finally `C:0 T:0 P:2` and `C:0 T:1 P:2`
+ * for the collection.
+ * Thereafter, the enumeration proceeds through `C:0 T:2` and `C:0 T:3` starting
+ * with `C:0 T:2 P:0`, and then with the other cryostat in the same TPC and
+ * plane order.
+ * 
+ * 
+ * Wireless channels
+ * ==================
+ * 
+ * It is possible to specify that some channels at the beginning and at the end
+ * of a readout plane are not connected to wires.
+ * 
+ * When a readout plane is extended to include "wireless" channels, additional
+ * channel IDs are included in the sequence of channels.
+ * The range of channels belonging to the readout plane (intended in LArSoft
+ * fashion as `readout::ROPID`) is extended to include the new wireless
+ * channels, but each of the wire planes does not include them: they are
+ * orphaned of wire planes (`geo::PlaneID`).
+ * The total number of channels reported by the mapping (and by the geometry
+ * service) includes the wireless channels as well: they are "valid" readout
+ * channels. Nevertheless, mapping them to a wire list will return an empty
+ * list.
+ * 
+ * 
+ * Configuration
+ * --------------
+ * 
+ * These channels are assigned _per logical readout plane_: in the standard
+ * ICARUS geometry, for example, in each TPC set (i.e. drift volume) there
+ * are two first induction readout planes with 1056 wires each, and one second
+ * induction and one collection readout planes with 5600 wires each, and each
+ * spanning two logical wire planes. Assigning pre- or post-channels to the
+ * first induction planes will increase each of them from 1056 channels to
+ * whatever is requested. Assigning pre- or post-channels to the
+ * second induction or collection planes will increase them from 5600 channels
+ * to whatever is requested.
+ * 
+ * The standard ICARUS detector configuration should include:
+ *     
+ *     WirelessChannels: {
+ *       
+ *       SecondInductionPreChannels:  64
+ *       SecondInductionPostChannels: 64
+ *       CollectionPreChannels:       64
+ *       CollectionPostChannels:      64
+ *     
+ *     } # WirelessChannels
+ *     
+ * The configuration parameters must be specified in the `WirelessChannels`
+ * configuration table, as `FirstInductionPreChannels`,
+ * `FirstInductionPostChannels`, `SecondInductionPreChannels`,
+ * `SecondInductionPostChannels`, `CollectionPreChannels` and
+ * `CollectionPostChannels`. They are all `0` by default.
+ * 
  * 
  */
 class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
@@ -105,9 +155,61 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
+    struct WirelessChannelStruct {
+      
+      fhicl::Atom<unsigned int> FirstInductionPreChannels {
+        Name("FirstInductionPreChannels"),
+        Comment
+          ("number of wireless channels before the first regular channel in first induction plane"),
+        0U
+        };
+      
+      fhicl::Atom<unsigned int> FirstInductionPostChannels {
+        Name("FirstInductionPostChannels"),
+        Comment
+          ("number of wireless channels after the last regular channel in first induction plane"),
+        0U
+        };
+      
+      fhicl::Atom<unsigned int> SecondInductionPreChannels {
+        Name("SecondInductionPreChannels"),
+        Comment
+          ("number of wireless channels before the first regular channel in second induction plane"),
+        0U
+        };
+      
+      fhicl::Atom<unsigned int> SecondInductionPostChannels {
+        Name("SecondInductionPostChannels"),
+        Comment
+          ("number of wireless channels after the last regular channel in second induction plane"),
+        0U
+        };
+      
+      fhicl::Atom<unsigned int> CollectionPreChannels {
+        Name("CollectionPreChannels"),
+        Comment
+          ("number of wireless channels before the first regular channel in collection plane"),
+        0U
+        };
+      
+      fhicl::Atom<unsigned int> CollectionPostChannels {
+        Name("CollectionPostChannels"),
+        Comment
+          ("number of wireless channels after the last regular channel in collection plane"),
+        0U
+        };
+      
+    }; // WirelessChannelStruct
+    
+    
     fhicl::OptionalDelegatedParameter Sorter {
       Name("Sorter"),
       Comment("configuration of the geometry object sorter")
+      };
+    
+    fhicl::Table<WirelessChannelStruct> WirelessChannels {
+      Name("WirelessChannels"),
+      Comment("configuration of channels with no connected wire")
       };
     
   }; // struct Config
@@ -232,13 +334,9 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
    * @param tpcsetid ID of the TPC set to convert into TPC IDs
    * @return the list of TPCs, empty if TPC set is invalid
    *
-   * In this mapping, TPC sets and TPCs are mapped one-to-one.
-   * The returned list contains always one entry, unless the specified TPC
-   * set ID is invalid, in which case the list is empty.
-   * Note that the check is performed on the validity of the TPC set ID, that
-   * does not necessarily imply that the TPC set specified by the ID actually
-   * exists. Check the existence of the TPC set first (HasTPCset()).
-   * Behaviour on valid, non-existent TPC set IDs is undefined.
+   * Each TPC set contains one TPC if on first induction plane, where wires are
+   * split, or two in the second induction and collection planes, which have
+   * shared channels.
    */
   virtual std::vector<geo::TPCID> TPCsetToTPCs
     (readout::TPCsetID const& tpcsetid) const override;
@@ -352,6 +450,14 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
     { return fSorter; }
 
     private:
+  
+  /// Type for counts of wireless channels: per plane starting from the closest
+  /// to the cathode, `first` is the number of wireless channels before the
+  /// regular ones, `second` is the one after them.
+  using WirelessChannelCounts_t
+    = std::array<std::pair<unsigned int, unsigned int>, 3U>;
+  
+
   
   // --- BEGIN -- Readout element information ----------------------------------
   /**
@@ -478,13 +584,28 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
   /// @}
   // --- END -- Readout element information ------------------------------------
   
+  // --- BEGIN -- Configuration parameters -------------------------------------
   
+  /// Count of wireless channels on each plane.
+  WirelessChannelCounts_t const fWirelessChannelCounts;
+  
+  // --- END -- Configuration parameters ---------------------------------------
+
   // --- BEGIN -- Sorting ------------------------------------------------------
   /// Algorithms to sort geometry elements.
   geo::GeoObjectSorterStandard fSorter;
   
   // --- END -- Sorting --------------------------------------------------------
   
+  /// Identifier for first induction plane type.
+  static constexpr std::size_t kFirstInduction [[gnu::unused]] = 0U;
+  /// Identifier for second induction plane type.
+  static constexpr std::size_t kSecondInduction [[gnu::unused]] = 1U;
+  /// Identifier for collection plane type.
+  static constexpr std::size_t kCollection [[gnu::unused]] = 2U;
+  /// Identifier for unknown plane type.
+  static constexpr std::size_t kUnknownType [[gnu::unused]]
+    = std::numeric_limits<std::size_t>::max();
   
   // --- BEGIN -- Readout element information access ---------------------------
   /// @name Readout element information access
@@ -581,10 +702,29 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
   void buildReadoutPlanes(geo::GeometryData_t::CryostatList_t const& Cryostats);
   
   
+  /**
+   * @brief Returns the "type" of readout plane.
+   * @param ropid ID of the readout plane to query
+   * 
+   * Here the "type" refers to the position of the plane in the TPC and as a
+   * consequence to its signal type.
+   * The type of the readout plane is deduced from the type of the planes it
+   * contains.
+   * 
+   * The returned value is `kFirstInduction`, `kSecondInduction`, `kCollection`
+   * or `kUnknownType`.
+   */
+  std::size_t findPlaneType(readout::ROPID const& ropid) const;
+
+
   /// Returns the type of signal on the specified `channel`.
   virtual geo::SigType_t SignalTypeForChannelImpl
     (raw::ChannelID_t const channel) const override;
   
+  
+  static WirelessChannelCounts_t extractWirelessChannelParams
+    (Config::WirelessChannelStruct const& params);
+
   
 }; // class icarus::ICARUSChannelMapAlg
 
