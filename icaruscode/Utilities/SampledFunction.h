@@ -69,7 +69,7 @@ class util::SampledFunction {
 
   using X_t = XType; ///< Type of value accepted by the function.
   using Y_t = YType; ///< Type of value returned by the function.
-  using Function_t = std::function<X_t(Y_t)>; ///< Type of sampled function.
+  using Function_t = std::function<Y_t(X_t)>; ///< Type of sampled function.
 
   /// Invalid index of sample, returned in case of error.
   static constexpr auto npos = std::numeric_limits<gsl::index>::max();
@@ -270,8 +270,9 @@ gsl::index util::SampledFunction<XType, YType>::closestSubsampleIndex
   (X_t const x) const
 {
   auto const dx = static_cast<double>(x - lower());
-  return static_cast<gsl::index>
-    (wrapUp(std::fmod(dx, stepSize()), stepSize()) / substepSize());
+  auto const step = static_cast<double>(stepSize());
+  auto const substep = static_cast<double>(substepSize());
+  return static_cast<gsl::index>(wrapUp(std::fmod(dx, step), step) / substep);
 } // gsl::index util::SampledFunction<XType, YType>::stepIndex()
 
 
