@@ -1,5 +1,13 @@
 add_subdirectory(tools)
 
+art_make(
+  EXCLUDE
+    "SignalShapingServiceICARUS_service.cc"
+    "SaveConfigurationIntoTFile_module.cc"
+  LIB_LIBRARIES
+    ${CLHEP}
+  )
+
 set( icarus_util_lib_list
                         lardata_Utilities_LArFFT_service
                         larcorealg_Geometry

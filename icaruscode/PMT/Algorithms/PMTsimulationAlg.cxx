@@ -463,13 +463,13 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   // readout settings
   //
-  fBaseConfig.readoutEnablePeriod      = microsecond(config.ReadoutEnablePeriod());
+  fBaseConfig.readoutEnablePeriod      = config.ReadoutEnablePeriod();
   fBaseConfig.readoutWindowSize        = config.ReadoutWindowSize();
   fBaseConfig.ADC                      = config.ADC();
   fBaseConfig.baseline                 = ADCcount(config.Baseline());
   fBaseConfig.pulsePolarity            = config.PulsePolarity();
   fBaseConfig.pretrigFraction          = config.PreTrigFraction();
-  fBaseConfig.triggerOffsetPMT         = microsecond(config.TriggerOffsetPMT());
+  fBaseConfig.triggerOffsetPMT         = config.TriggerOffsetPMT();
   
   //
   // PMT settings
@@ -486,10 +486,10 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   // single photoelectron response
   //
-  fBaseConfig.transitTime              = nanosecond(config.TransitTime());
-  fBaseConfig.riseTime                 = nanosecond(config.RiseTime());
-  fBaseConfig.fallTime                 = nanosecond(config.FallTime());
-  fBaseConfig.meanAmplitude            = picocoulomb(config.MeanAmplitude());
+  fBaseConfig.transitTime              = config.TransitTime();
+  fBaseConfig.riseTime                 = config.RiseTime();
+  fBaseConfig.fallTime                 = config.FallTime();
+  fBaseConfig.meanAmplitude            = config.MeanAmplitude();
   
   //
   // dark noise
