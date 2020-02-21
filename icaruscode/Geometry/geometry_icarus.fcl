@@ -47,6 +47,12 @@
 #     wires on the first induction plane
 # * `icarus_split_induction_geometry_services`: geometry with 9 meter long
 #     wires for the first induction plane, on split TPCs 
+# * `icarus_single_induction_overburden_geometry_services`:
+#     equivalent to `icarus_single_induction_geometry_services` but with
+#     concrete overburden
+# * `icarus_single_induction_no_overburden_geometry_services`:
+#     equivalent to `icarus_single_induction_geometry_services` but without
+#     concrete overburden
 #
 
 BEGIN_PROLOG
@@ -56,7 +62,7 @@ BEGIN_PROLOG
 ### icarus_single_induction_geometry_services
 ###
 ### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires onfirst induction plane.
+### long wires on first induction plane.
 ###
 # 
 # Geometry service configuration:
@@ -99,6 +105,88 @@ icarus_single_induction_geometry_services: {
 #  AuxDetGeometry:                  @local::icarus_auxdetgeo
 #  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
 } # icarus_single_induction_geometry_services
+
+
+################################################################################
+###
+### icarus_single_induction_overburden_geometry_services
+###
+### Derivative configuration with an alternative ICARUS detector geometry
+### including the concrete overburden.
+###
+
+# 
+# Geometry service configuration:
+# 
+
+icarus_single_induction_overburden_geometry: {
+
+  @table::icarus_single_induction_geometry
+
+  GDML:            "icarus_complete_light.gdml"
+  ROOT:            "icarus_complete_light.gdml"
+  
+} # icarus_single_induction_overburden_geometry
+
+#
+# Auxiliary detector service configuration
+#
+
+icarus_overburden_auxdetgeo: {
+  @table::icarus_single_induction_overburden_geometry
+  SortingParameters: {}
+}
+
+#
+# geometry configuration bundle
+#
+icarus_single_induction_overburden_geometry_services: {
+  Geometry:                        @local::icarus_single_induction_overburden_geometry
+  ExptGeoHelperInterface:          @local::icarus_single_induction_geometry_helper
+#  AuxDetGeometry:                  @local::icarus_auxdetgeo
+#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
+} # icarus_single_induction_overburden_geometry_services
+
+
+################################################################################
+###
+### icarus_single_induction_no_overburden_geometry_services
+###
+### Derivative configuration with an alternative ICARUS detector geometry
+### deprived of the concrete overburden.
+###
+
+# 
+# Geometry service configuration:
+# 
+
+icarus_single_induction_no_overburden_geometry: {
+
+  @table::icarus_single_induction_geometry
+
+  GDML:            "icarus_complete_no_overburden.gdml"
+  ROOT:            "icarus_complete_no_overburden.gdml"
+  
+} # icarus_single_induction_no_overburden_geometry
+
+#
+# Auxiliary detector service configuration
+#
+
+icarus_no_overburden_auxdetgeo: {
+  @table::icarus_single_induction_no_overburden_geometry
+  SortingParameters: {}
+}
+
+#
+# geometry configuration bundle
+#
+icarus_single_induction_no_overburden_geometry_services: {
+  Geometry:                        @local::icarus_single_induction_no_overburden_geometry
+  ExptGeoHelperInterface:          @local::icarus_single_induction_geometry_helper
+#  AuxDetGeometry:                  @local::icarus_auxdetgeo
+#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
+} # icarus_single_induction_no_overburden_geometry_services
 
 
 ################################################################################

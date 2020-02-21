@@ -82,6 +82,7 @@ include(BuildPlugins)
 
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(icaruscode)
+add_subdirectory(scripts)
 
 # subdirectory for test code
 add_subdirectory(test)
