@@ -201,6 +201,8 @@ struct EventInfo_t {
   /// Adds a point to the list of interaction vertices in the event.
   void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
   
+  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -271,7 +273,7 @@ struct EventInfo_t {
   /// Whether the event has activity inside the active volume.
   bool fInActiveVolume { false };
   
-  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+  //std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
   
 }; // struct EventInfo_t
 
@@ -1757,11 +1759,21 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   //
   plots.make<TH1F>(
     "EnergyInSpill",
-    "Energy eposited during the beam gate opening"
+    "Energy deposited during the beam gate opening"
       ";deposited energy  [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
+  
+  plots.make<TH2F>(
+    "NeutrinoVertexYZ",
+    "Vertex of triggered neutrino"
+      ";Z [cm]"
+      ";Y [cm]",
+    120,-1200.,1200.,
+    120,-500.,350.
+    );
+
 
   //
   // No trigger related plots
@@ -1803,11 +1815,11 @@ bool icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent
   (EventInfo_t const& eventInfo) const
 {
   if (fPlotOnlyActiveVolume
-    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume()
-    && eventInfo.isNeutrino()) // Only care if active volume vertex is neutrino
+    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume())
   {
     return false;
   }
+  
   return true;
 } // icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent()
 
@@ -2087,11 +2099,16 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
 
       // trigger time (if any)
       if (fired) {
-        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first); 
+        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first);
+        if (minCount == 1) {
+          for (auto point : eventInfo.fVertices) {
+            getHist2D("NeutrinoVertexYZ"s)->Fill(point.Z(), point.Y());
+          }
+        }
       }
 
       // non triggered events
-      if (!fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
+      if (fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
         getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
         getHist("NeutrinoEnergy_NoTrig"s)->Fill(double(eventInfo.NeutrinoEnergy()));
         getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
