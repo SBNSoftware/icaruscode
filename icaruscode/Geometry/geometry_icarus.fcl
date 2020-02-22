@@ -194,13 +194,13 @@ icarus_single_induction_no_overburden_geometry_services: {
 ### Default ICARUS geometry configuration
 ###
 ### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires on first induction plane.
+### long wires on first induction plane. No concrete overburden.
 ###
 
-icarus_geo:              @local::icarus_single_induction_geometry_services.Geometry
-icarus_geometry_helper:  @local::icarus_single_induction_geometry_services.ExptGeoHelperInterface
+icarus_geo:              @local::icarus_single_induction_no_overburden_geometry_services.Geometry
+icarus_geometry_helper:  @local::icarus_single_induction_no_overburden_geometry_services.ExptGeoHelperInterface
 
-icarus_geometry_services: @local::icarus_single_induction_geometry_services
+icarus_geometry_services: @local::icarus_single_induction_no_overburden_geometry_services
 
 
 
