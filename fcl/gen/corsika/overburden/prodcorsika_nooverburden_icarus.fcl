@@ -12,3 +12,5 @@
 # turn to no-overburden geometry:
 #include "use_no_overburden_geometry_icarus.fcl"
 
+outputs.out1.fileName:          "prodcorsika_nooverburden_icarus_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-prodcorsika_overburden_icarus_%tc-%p.root"
