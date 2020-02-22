@@ -2,7 +2,7 @@
 # File:    makelvdsgates_icarus.fcl
 # Purpose: Runs `icarus::trigger::LVDSgates` module.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
-# Date:    April 2, 2019
+# Date:    January 6, 2020
 #
 # This is a top-level configuration that can be run directly.
 # 
@@ -16,7 +16,7 @@
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
-process_name: TriggerLVDS
+process_name: TrgLVDS
 
 
 services: {
