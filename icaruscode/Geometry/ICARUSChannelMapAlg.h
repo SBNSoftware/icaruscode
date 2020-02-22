@@ -100,27 +100,20 @@ namespace icarus {
  * 
  * When a readout plane is extended to include "wireless" channels, additional
  * channel IDs are included in the sequence of channels.
- * Channel mapping does not distinguish between wireless channels (which have
- * readout, cable but no wire), ghost channels (which have no bable either)
- * and virtual channels (which do not have even readout): the count of wireless
- * channels includes all of these categories, i.e. all the categories that have
- * a readout channel ID but no physical wire.
- * 
  * The range of channels belonging to the readout plane (intended in LArSoft
- * fashion as `readout::ROPID`) is extended to include these wireless channels,
- * but each of the wire planes does not include them: they are orphaned of wire
- * planes (no `geo::PlaneID`).
+ * fashion as `readout::ROPID`) is extended to include the new wireless
+ * channels, but each of the wire planes does not include them: they are
+ * orphaned of wire planes (`geo::PlaneID`).
  * The total number of channels reported by the mapping (and by the geometry
- * service) includes these wireless channels as well: they are "valid" readout
+ * service) includes the wireless channels as well: they are "valid" readout
  * channels. Nevertheless, mapping them to a wire list will return an empty
- * list. The `ChannelStatus` services should be utilized to find out the actual
- * category of the channels when needed.
+ * list.
  * 
  * 
  * Configuration
  * --------------
  * 
- * These channels are assigned _to each logical readout plane_: in the standard
+ * These channels are assigned _per logical readout plane_: in the standard
  * ICARUS geometry, for example, in each TPC set (i.e. drift volume) there
  * are two first induction readout planes with 1056 wires each, and one second
  * induction and one collection readout planes with 5600 wires each, and each
@@ -134,30 +127,18 @@ namespace icarus {
  *     
  *     WirelessChannels: {
  *       
- *       FirstInductionPreChannels:        0
- *       FirstInductionPostChannels:      96 # 32 ghost, then 64 virtual
- *       
- *       # C:x S:0 (east TPC)
- *       SecondInductionEvenPreChannels:  96 # 32 ghost, then 64 wireless
- *       SecondInductionEvenPostChannels: 64 # 64 wireless
- *       CollectionEvenPreChannels:       64 # 64 wireless
- *       CollectionEvenPostChannels:      96 # 64 wireless, then 32 ghost
- * 
- *       # C:x S:1 (west TPC)
- *       SecondInductionOddPreChannels:   64 # 64 wireless
- *       SecondInductionOddPostChannels:  96 # 64 wireless, then 32 ghost
- *       CollectionOddPreChannels:        96 # 32 ghost, then 64 wireless
- *       CollectionOddPostChannels:       64 # 64 wireless
+ *       SecondInductionPreChannels:  64
+ *       SecondInductionPostChannels: 64
+ *       CollectionPreChannels:       64
+ *       CollectionPostChannels:      64
  *     
  *     } # WirelessChannels
  *     
  * The configuration parameters must be specified in the `WirelessChannels`
  * configuration table, as `FirstInductionPreChannels`,
- * `FirstInductionPostChannels`, `SecondInductionEvenPreChannels`,
- * `SecondInductionEvenPostChannels`, `CollectionEvenPreChannels`,
- * `CollectionEvenPostChannels`, `SecondInductionOddPreChannels`,
- * `SecondInductionOddPostChannels`, `CollectionOddPreChannels` and
- * `CollectionOddPostChannels`. They are all `0` by default.
+ * `FirstInductionPostChannels`, `SecondInductionPreChannels`,
+ * `SecondInductionPostChannels`, `CollectionPreChannels` and
+ * `CollectionPostChannels`. They are all `0` by default.
  * 
  * 
  */
@@ -190,59 +171,31 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
         0U
         };
       
-      fhicl::Atom<unsigned int> SecondInductionEvenPreChannels {
-        Name("SecondInductionEvenPreChannels"),
+      fhicl::Atom<unsigned int> SecondInductionPreChannels {
+        Name("SecondInductionPreChannels"),
         Comment
-          ("number of wireless/ghost/virtual channels before the first regular channel in second induction planes in even TPC sets"),
+          ("number of wireless channels before the first regular channel in second induction plane"),
         0U
         };
       
-      fhicl::Atom<unsigned int> SecondInductionEvenPostChannels {
-        Name("SecondInductionEvenPostChannels"),
+      fhicl::Atom<unsigned int> SecondInductionPostChannels {
+        Name("SecondInductionPostChannels"),
         Comment
-          ("number of wireless/ghost/virtual channels after the last regular channel in second induction plane in even TPC sets"),
+          ("number of wireless channels after the last regular channel in second induction plane"),
         0U
         };
       
-      fhicl::Atom<unsigned int> SecondInductionOddPreChannels {
-        Name("SecondInductionOddPreChannels"),
+      fhicl::Atom<unsigned int> CollectionPreChannels {
+        Name("CollectionPreChannels"),
         Comment
-          ("number of wireless/ghost/virtual channels before the first regular channel in second induction plane in odd TPC sets"),
+          ("number of wireless channels before the first regular channel in collection plane"),
         0U
         };
       
-      fhicl::Atom<unsigned int> SecondInductionOddPostChannels {
-        Name("SecondInductionOddPostChannels"),
+      fhicl::Atom<unsigned int> CollectionPostChannels {
+        Name("CollectionPostChannels"),
         Comment
-          ("number of wireless/ghost/virtual channels after the last regular channel in second induction plane in odd TPC sets"),
-        0U
-        };
-      
-      fhicl::Atom<unsigned int> CollectionEvenPreChannels {
-        Name("CollectionEvenPreChannels"),
-        Comment
-          ("number of wireless/ghost/virtual channels before the first regular channel in collection plane in even TPC sets"),
-        0U
-        };
-      
-      fhicl::Atom<unsigned int> CollectionEvenPostChannels {
-        Name("CollectionEvenPostChannels"),
-        Comment
-          ("number of wireless/ghost/virtual channels after the last regular channel in collection plane in even TPC sets"),
-        0U
-        };
-      
-      fhicl::Atom<unsigned int> CollectionOddPreChannels {
-        Name("CollectionOddPreChannels"),
-        Comment
-          ("number of wireless/ghost/virtual channels before the first regular channel in collection plane in odd TPC sets"),
-        0U
-        };
-      
-      fhicl::Atom<unsigned int> CollectionOddPostChannels {
-        Name("CollectionOddPostChannels"),
-        Comment
-          ("number of wireless/ghost/virtual channels after the last regular channel in collection plane in odd TPC sets"),
+          ("number of wireless channels after the last regular channel in collection plane"),
         0U
         };
       
@@ -498,11 +451,11 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
 
     private:
   
-  /// Type for counts of wireless channels: per TPC set (even/odd), then per
-  /// plane starting from the closest to the cathode; `first` is the number of
-  /// wireless channels before the regular ones, `second` is the one after them.
+  /// Type for counts of wireless channels: per plane starting from the closest
+  /// to the cathode, `first` is the number of wireless channels before the
+  /// regular ones, `second` is the one after them.
   using WirelessChannelCounts_t
-    = std::array<std::array<std::pair<unsigned int, unsigned int>, 3U>, 2U>;
+    = std::array<std::pair<unsigned int, unsigned int>, 3U>;
   
 
   

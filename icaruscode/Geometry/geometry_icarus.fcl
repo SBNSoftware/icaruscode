@@ -130,25 +130,15 @@ icarus_split_induction_geometry_helper: {
     
     WirelessChannels: {
       
-      # first induction plane configuration is shared by all TPC sets;
-      # 1056 regular channels per plane are included
-      FirstInductionPreChannels:        0 # starts with regular channels
-      FirstInductionPostChannels:      96 # 32 ghost, then 64 virtual
-      
-      # C:x S:0 (east TPC); 5600 regular channels per plane are included
-      SecondInductionEvenPreChannels:  96 # 32 ghost, then 64 wireless
-      SecondInductionEvenPostChannels: 64 # 64 wireless
-      CollectionEvenPreChannels:       64 # 64 wireless
-      CollectionEvenPostChannels:      96 # 64 wireless, then 32 ghost
- 
-      # C:x S:1 (west TPC); 5600 regular channels per plane are included
-      SecondInductionOddPreChannels:   64 # 64 wireless
-      SecondInductionOddPostChannels:  96 # 64 wireless, then 32 ghost
-      CollectionOddPreChannels:        96 # 32 ghost, then 64 wireless
-      CollectionOddPostChannels:       64 # 64 wireless
+      # each collection and second induction plane has 64 additional channels
+      # per side not connected to any wire
+      SecondInductionPreChannels:  64
+      SecondInductionPostChannels: 64
+      CollectionPreChannels:       64
+      CollectionPostChannels:      64
     
     } # WirelessChannels
-
+    
   } # Mapper
   
 } # icarus_split_induction_geometry_helper

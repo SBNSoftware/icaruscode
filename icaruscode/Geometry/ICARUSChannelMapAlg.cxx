@@ -469,12 +469,6 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
       
       readout::TPCsetID const sid { cid, s };
       
-      // select the channel count according to whether the TPC set is even or
-      // odd; the selected structure is an array with one element for wire
-      // plane signal type (first induction, second induction and collection):
-      auto const& TPCsetChannelCounts
-        = fWirelessChannelCounts.at(sid.TPCset & 1);
-      
       auto const nROPs = static_cast<readout::ROPID::ROPID_t>(ROPcount(sid));
       
       for (readout::ROPID::ROPID_t r: util::counter(nROPs)) {
@@ -485,7 +479,7 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
         log << "ROP: " << rid;
         
         auto const& WirelessChannelCounts
-          = TPCsetChannelCounts.at(findPlaneType(rid));
+          = fWirelessChannelCounts.at(findPlaneType(rid));
         
         PlaneColl_t const& planes = ROPplanes(rid);
         log << " (" << planes.size() << " planes):";
@@ -656,36 +650,9 @@ auto icarus::ICARUSChannelMapAlg::extractWirelessChannelParams
   (Config::WirelessChannelStruct const& params) -> WirelessChannelCounts_t
 {
   return {
-    // even TPC sets (e.g. C:0 S:0)
-    std::array{
-      std::make_pair(
-        params.FirstInductionPreChannels(),
-        params.FirstInductionPostChannels()
-        ),
-      std::make_pair(
-        params.SecondInductionEvenPreChannels(),
-        params.SecondInductionEvenPostChannels()
-        ),
-      std::make_pair(
-        params.CollectionEvenPreChannels(),
-        params.CollectionEvenPostChannels()
-        )
-    },
-    // odd TPC sets (e.g. C:0 S:1)
-    std::array{
-      std::make_pair(
-        params.FirstInductionPreChannels(),
-        params.FirstInductionPostChannels()
-        ),
-      std::make_pair(
-        params.SecondInductionOddPreChannels(),
-        params.SecondInductionOddPostChannels()
-        ),
-      std::make_pair(
-        params.CollectionOddPreChannels(),
-        params.CollectionOddPostChannels()
-        )
-    }
+    std::make_pair(params.FirstInductionPreChannels(), params.FirstInductionPostChannels()),
+    std::make_pair(params.SecondInductionPreChannels(), params.SecondInductionPostChannels()),
+    std::make_pair(params.CollectionPreChannels(), params.CollectionPostChannels())
     };
   
 } // icarus::ICARUSChannelMapAlg::extractWirelessChannelParams()
