@@ -164,6 +164,7 @@ icarus_single_induction_no_overburden_geometry: {
 
   @table::icarus_single_induction_geometry
 
+  Name:            "icarus_no_overburden"
   GDML:            "icarus_complete_no_overburden.gdml"
   ROOT:            "icarus_complete_no_overburden.gdml"
   
