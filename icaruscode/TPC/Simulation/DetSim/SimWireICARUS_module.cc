@@ -530,16 +530,16 @@ void SimWireICARUS::produce(art::Event& evt)
     // of entries as the number of channels in the detector
     // and set the entries for the channels that have signal on them
     // using the chanHandle
-    std::vector<const sim::SimChannel*> channels(maxChannel,nullptr);
+    std::vector<const sim::SimChannel*> simChannelVec(maxChannel,nullptr);
     if(!isTesting())
     {
         std::vector<const sim::SimChannel*> chanHandle;
         evt.getView(fDriftEModuleLabel,chanHandle);
         
-        for(const auto& simChannel : chanHandle) channels.at(simChannel->Channel()) = simChannel;
+        for(const auto& simChannel : chanHandle) simChannelVec.at(simChannel->Channel()) = simChannel;
     }
     else
-        for(const auto& testChannel : fTestSimChannel_v) channels.at(testChannel.Channel()) = &testChannel;
+        for(const auto& testChannel : fTestSimChannel_v) simChannelVec.at(testChannel.Channel()) = &testChannel;
     
     // make a unique_ptr of sim::SimDigits that allows ownership of the produced
     // digits to be transferred to the art::Event after the put statement below
@@ -589,7 +589,7 @@ void SimWireICARUS::produce(art::Event& evt)
     }
     else
     {
-        for(const auto& simChan : channels)
+        for(const auto& simChan : simChannelVec)
         {
             if (simChan)
             {
@@ -657,7 +657,7 @@ void SimWireICARUS::produce(art::Event& evt)
                                                 channel);
             
             // Recover the SimChannel (if one) for this channel
-            const sim::SimChannel* simChan = channels[channel];
+            const sim::SimChannel* simChan = simChannelVec[channel];
             
             // If there is something on this wire, and it is not dead, then add the signal to the wire
             if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
@@ -738,8 +738,8 @@ void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, icarusutil::TimeVec c
     return;
 }
 //-------------------------------------------------
-std::pair<raw::ChannelID_t, raw::ChannelID_t>
-SimWireICARUS::channelRangeToProcess() const {
+std::pair<raw::ChannelID_t, raw::ChannelID_t> SimWireICARUS::channelRangeToProcess() const 
+{
     
     // return the first and last channel numbers
     // based on whether we are outputting selected TPC's or all of them
