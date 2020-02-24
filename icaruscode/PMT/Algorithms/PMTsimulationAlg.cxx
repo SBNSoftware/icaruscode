@@ -12,6 +12,7 @@
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "larcorealg/CoreUtils/counter.h"
 
 // framework libraries
 #include "cetlib_except/exception.h"
@@ -19,7 +20,7 @@
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
 #include "CLHEP/Random/RandPoisson.h"
-#include "CLHEP/Random/RandGauss.h"
+#include "CLHEP/Random/RandGaussQ.h"
 #include "CLHEP/Random/RandExponential.h"
 
 // C++ standard libaries
@@ -78,6 +79,15 @@ bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
 // -----------------------------------------------------------------------------   
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------   
+
+// The reason for this being static is feeble... in short: because it can be;
+// the memory it takes is already "static" anyway, so no gain in there.
+// At least, this clarifies the absolute nature of this object.
+util::FastAndPoorGauss<32768U, float> const
+  icarus::opdet::PMTsimulationAlg::fFastGauss;
+
+
+// -----------------------------------------------------------------------------   
 double
 icarus::opdet::PMTsimulationAlg::ConfigurationParameters_t::PMTspecs_t::
   multiplicationStageGain(unsigned int i /* = 1 */) const
@@ -126,6 +136,10 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
     },
     fSampling,
     6.0        // 6 std. dev. of tail should suffice
+    )
+  , fNoiseAdder(fParams.useFastElectronicsNoise
+      ? &icarus::opdet::PMTsimulationAlg::AddNoise_faster
+      : &icarus::opdet::PMTsimulationAlg::AddNoise
     )
 {
   using namespace util::quantities::electronics_literals;
@@ -254,7 +268,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
       start=std::chrono::high_resolution_clock::now();
 
-      if(fParams.ampNoise > 0.0_ADCf) AddNoise(waveform);
+      if(fParams.ampNoise > 0.0_ADCf) (this->*fNoiseAdder)(waveform);
       if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform);
 
       end=std::chrono::high_resolution_clock::now(); diff = end-start;
@@ -275,7 +289,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
   } // CreateFullWaveform()
 
   auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
-    -> std::set<optical_tick>
+    -> std::vector<optical_tick>
   {
     using namespace util::quantities::time_literals;
     using detinfo::timescales::trigger_time;
@@ -283,7 +297,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     detinfo::DetectorTimings const& timings
       = detinfo::makeDetectorTimings(fParams.timeService);
     
-    std::set<optical_tick> trigger_locations;
+    std::vector<optical_tick> trigger_locations;
+    trigger_locations.reserve(fParams.beamGateTriggerNReps);
     trigger_time const beamTime = timings.toTriggerTime(timings.BeamGateTime());
 
     for(unsigned int i_trig=0; i_trig<fParams.beamGateTriggerNReps; ++i_trig) {
@@ -294,34 +309,47 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
         ;
       if (trig_time < 0_us) continue;
       if (trig_time > fParams.readoutEnablePeriod) break;
-      trigger_locations.insert
+      trigger_locations.push_back
         (optical_tick::castFrom(trig_time.quantity()*fSampling));
     }
     return trigger_locations;
   }
 
   auto icarus::opdet::PMTsimulationAlg::FindTriggers(Waveform_t const& wvfm) const
-    -> std::set<optical_tick>
+    -> std::vector<optical_tick>
   {
-    std::set<optical_tick> trigger_locations;
-    if (fParams.createBeamGateTriggers) trigger_locations = CreateBeamGateTriggers();
+    std::vector<optical_tick> trigger_locations;
     
+    // find all ticks at which we would trigger readout
     bool above_thresh=false;
-
-    //next, find all ticks at which we would trigger readout
     for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
       
       auto const val { fParams.pulsePolarity* (wvfm[i_t]-fParams.baseline) };
 
       if(!above_thresh && val>=fParams.thresholdADC){
 	above_thresh=true;
-	trigger_locations.insert(optical_tick::castFrom(i_t));
+	trigger_locations.push_back(optical_tick::castFrom(i_t));
       }
       else if(above_thresh && val<fParams.thresholdADC){
 	above_thresh=false;
       } 
       
-    }//end loop over waveform   
+    }//end loop over waveform
+    
+    // next, add the triggers injected at beam gate time
+    if (fParams.createBeamGateTriggers) {
+      auto beamGateTriggers = CreateBeamGateTriggers();
+      
+      // insert the new triggers and sort them
+      trigger_locations.insert(trigger_locations.end(),
+        beamGateTriggers.begin(), beamGateTriggers.end());
+      std::inplace_merge(
+        trigger_locations.begin(),
+        trigger_locations.end() - beamGateTriggers.size(),
+        trigger_locations.end()
+        );
+    }
+
     return trigger_locations;
   }
 
@@ -341,7 +369,13 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
       = timings.TriggerTime() + time_interval{ fParams.triggerOffsetPMT };
 
     
-    std::set<optical_tick> trigger_locations = FindTriggers(wvfm);
+    std::vector<optical_tick> trigger_locations = FindTriggers(wvfm);
+    auto iNextTrigger = trigger_locations.begin();
+    optical_tick nextTrigger
+      = trigger_locations.empty()
+      ? std::numeric_limits<optical_tick>::max()
+      : *iNextTrigger
+      ;
 
     //std::cout << "Creating opdet waveforms in " << opch << std::endl;
 
@@ -352,10 +386,20 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     auto const posttrigSize = fParams.posttrigSize();
     MF_LOG_TRACE("PMTsimulationAlg")
       << "Channel #" << opch << ": " << trigger_locations.size() << " triggers";
-    for(size_t i_t=0; i_t<wvfm.size(); ++i_t){
+    for (std::size_t const i_t: util::counter(wvfm.size())) {
+      
+      auto const thisTick = optical_tick::castFrom(i_t);
 
       //if we are at a trigger point, open the window
-      if(trigger_locations.count(optical_tick::castFrom(i_t))==1){
+      if (thisTick == nextTrigger) {
+        
+        // update the next trigger
+        nextTrigger
+          = (++iNextTrigger == trigger_locations.end())
+          ? std::numeric_limits<optical_tick>::max()
+          : *iNextTrigger
+          ;
+        
 
 	//if not already in a pulse
 	if(!in_pulse){
@@ -387,8 +431,8 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
 	in_pulse=false;
       }
       
-    }//end loop over waveform
-  }
+    } // for i_t (loop over waveform)
+  } // icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms()
 
   bool icarus::opdet::PMTsimulationAlg::KicksPhotoelectron() const
     { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; } 
@@ -418,17 +462,46 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     std::transform(wave.begin()+min,wave.begin()+max,wsp.begin(),wave.begin()+min,std::plus<ADCcount>());
     
   }
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave) const {
   
-  void icarus::opdet::PMTsimulationAlg::AddNoise(Waveform_t& wave){
-    
-    CLHEP::RandGauss random(*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise.value());
-    for(auto& sample: wave) {
-      ADCcount const noise { static_cast<float>(random.fire()) }; //gaussian noise
-      sample += noise;
-    } // for sample
-    
-  } // PMTsimulationAlg::AddNoise()
+  CLHEP::RandGaussQ random
+    (*fParams.elecNoiseRandomEngine, 0.0, fParams.ampNoise.value());
+  for(auto& sample: wave) {
+    ADCcount const noise { static_cast<float>(random.fire()) }; // Gaussian noise
+    sample += noise;
+  } // for sample
   
+} // PMTsimulationAlg::AddNoise()
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::AddNoise_faster(Waveform_t& wave) const {
+  
+  /*
+    * Compared to AddNoise(), we use a somehow faster random generator;
+    * to squeeze the CPU cycles, we avoid the CLHEP interface as much as
+    * possible; the random number from the engine is immediately converted
+    * to single precision, and the rest of the math happens in there as well.
+    * No virtual interfaces nor indirection is involved within this function
+    * (except for CLHEP random engine). We generate a normal variable _z_
+    * (standard deviation 1, mean 0) and we just scale it to the desired
+    * standard deviation, not bothering to add the mean offset of 0.
+    * Note that unless the random engine is multi-thread safe, this function
+    * won't gain anything from multi-threading.
+    */
+  auto& engine = *fParams.elecNoiseRandomEngine;
+  
+  for(auto& sample: wave) {
+    sample += fParams.ampNoise * fFastGauss(engine.flat()); // Gaussian noise
+  } // for sample
+  
+} // PMTsimulationAlg::AddNoise_faster()
+
+
+// -----------------------------------------------------------------------------
   void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave)
   {
     using namespace util::quantities::frequency_literals;
@@ -500,6 +573,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   // electronics noise
   //
   fBaseConfig.ampNoise                 = ADCcount(config.AmpNoise());
+  fBaseConfig.useFastElectronicsNoise  = config.FastElectronicsNoise();
   
   //
   // trigger

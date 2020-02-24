@@ -65,6 +65,7 @@ find_ups_product( postgresql v9_1_5 )
 find_ups_product( eigen )
 find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
+find_ups_product( guideline_sl )
 
 find_ups_product( artdaq_core )
 find_ups_product( sbndaq_artdaq_core )
