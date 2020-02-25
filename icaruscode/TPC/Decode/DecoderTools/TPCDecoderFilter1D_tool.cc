@@ -81,7 +81,12 @@ public:
     /**
      *  @brief Recover the pedestal subtracted waveforms
      */
-    const icarussigproc::ArrayFloat getPedSubtractedWaveforms() const override {return fPedSubtractedWaveforms;};
+    const icarussigproc::ArrayFloat getRawWaveforms() const override {return fPedSubtractedWaveforms;};
+
+    /**
+     *  @brief Recover the pedestal subtracted waveforms
+     */
+    const icarussigproc::ArrayFloat getPedCorWaveforms() const override {return fPedSubtractedWaveforms;};
 
     /**
      *  @brief Recover the "intrinsic" RMS
@@ -246,10 +251,19 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
             // Now determine the pedestal and correct for it
             waveformParams.getMeanAndTruncRms(dataVec, 
+                                              dataVec,
                                               fPedestalVals[channelOnBoard], 
                                               fFullRMSVals[channelOnBoard], 
                                               fTruncRMSVals[channelOnBoard], 
                                               fNumTruncBins[channelOnBoard]);
+
+            if (fPedestalVals[channelOnBoard] < 1900.) 
+            {
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+                std::cout << "+++ Instance of out of range pedestal, channelOnBoard: " << channelOnBoard << ", ped: " << fPedestalVals[channelOnBoard]
+                          << ", rms: " << fFullRMSVals[channelOnBoard] << std::endl;
+                std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+            }
         }
     }
 

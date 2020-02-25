@@ -73,7 +73,7 @@ public:
     using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
 
     // Function to do the work
-    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
+    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
 
 private:
  
@@ -83,28 +83,32 @@ private:
         multiThreadFragmentProcessing(FilterNoiseICARUS const&        parent,
                                       art::Handle<artdaq::Fragments>& fragmentsHandle, 
                                       ConcurrentRawDigitCol&          rawDigitCollection,
-                                      ConcurrentRawDigitCol&          rawRawDigitCollection)
+                                      ConcurrentRawDigitCol&          rawRawDigitCollection,
+                                      ConcurrentRawDigitCol&          coherentCollection)
             : fFilterNoiseICARUS(parent),
               fFragmentsHandle(fragmentsHandle),
               fRawDigitCollection(rawDigitCollection),
-              fRawRawDigitCollection(rawRawDigitCollection)
+              fRawRawDigitCollection(rawRawDigitCollection),
+              fCoherentCollection(coherentCollection)
         {}
 
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection);
+                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
         }
     private:
         const FilterNoiseICARUS&        fFilterNoiseICARUS;
         art::Handle<artdaq::Fragments>& fFragmentsHandle;
         ConcurrentRawDigitCol&          fRawDigitCollection;
         ConcurrentRawDigitCol&          fRawRawDigitCollection;
+        ConcurrentRawDigitCol&          fCoherentCollection;
     };
 
     // Function to save our RawDigits
     void saveRawDigits(const icarussigproc::ArrayFloat&, 
                        const icarussigproc::VectorFloat&, 
+                       const icarussigproc::VectorFloat&,
                        ConcurrentRawDigitCol&, size_t) const;
 
     // Tools for decoding fragments depending on type
@@ -113,7 +117,9 @@ private:
     // Fcl parameters.
     art::InputTag                                fFragmentsLabel;      ///< The input artdaq fragment label
     bool                                         fOutputPedestalCor;   ///< Should we output pedestal corrected (not noise filtered)?
+    bool                                         fOutputCorrection;    ///< Should we output the coherent noise correction vectors?
     std::string                                  fOutputPedCorPath;    ///< Path to assign to the output if asked for
+    std::string                                  fOutputCoherentPath;  ///< Path to assign to the output if asked for
     unsigned int                                 fPlaneToSimulate;     ///< Use to get fragment offset
 
     // Statistics.
@@ -211,10 +217,12 @@ FilterNoiseICARUS::~FilterNoiseICARUS()
 ///
 void FilterNoiseICARUS::configure(fhicl::ParameterSet const & pset)
 {
-    fFragmentsLabel    = pset.get<art::InputTag>("FragmentsLabel",    "daq:PHYSCRATEDATA");
-    fOutputPedestalCor = pset.get<bool         >("OutputPedestalCor",               false);
-    fOutputPedCorPath  = pset.get<std::string  >("OutputPedCorPath",                "RAW");
-    fPlaneToSimulate   = pset.get<unsigned int >("PlaneToSimulate",                     2);
+    fFragmentsLabel     = pset.get<art::InputTag>("FragmentsLabel",    "daq:PHYSCRATEDATA");
+    fOutputPedestalCor  = pset.get<bool         >("OutputPedestalCor",               false);
+    fOutputCorrection   = pset.get<bool         >("OutputCorrection",                false);
+    fOutputPedCorPath   = pset.get<std::string  >("OutputPedCorPath",                "RAW");
+    fOutputCoherentPath = pset.get<std::string  >("OutputCoherentPath",              "Cor");
+    fPlaneToSimulate    = pset.get<unsigned int >("PlaneToSimulate",                     2);
 }
 
 //----------------------------------------------------------------------------
@@ -253,12 +261,14 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 
     ConcurrentRawDigitCol concurrentRawDigits;
     ConcurrentRawDigitCol concurrentRawRawDigits;
+    ConcurrentRawDigitCol coherentRawDigits;
 
     // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
     multiThreadFragmentProcessing fragmentProcessing(*this, 
                                                      daq_handle, 
                                                      concurrentRawDigits, 
-                                                     concurrentRawRawDigits);
+                                                     concurrentRawRawDigits,
+                                                     coherentRawDigits);
 
     tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
 
@@ -284,6 +294,18 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
         event.put(std::move(rawRawDigitCollection),fOutputPedCorPath);
     }
 
+    if (fOutputCorrection)
+    {
+        // Copy the raw digits from the concurrent vector to our output vector
+        RawDigitCollectionPtr coherentCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(coherentRawDigits.begin()), 
+                                                                                                std::move_iterator(coherentRawDigits.end()));
+        // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
+        std::sort(coherentCollection->begin(),coherentCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
+
+        // Now transfer ownership to the event store
+        event.put(std::move(coherentCollection),fOutputCoherentPath);
+    }
+
     theClockTotal.stop();
 
     double totalTime = theClockTotal.accumulated_real_time();
@@ -296,7 +318,8 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 void FilterNoiseICARUS::processSingleFragment(size_t                         idx, 
                                               art::Handle<artdaq::Fragments> fragmentHandle,
                                               ConcurrentRawDigitCol&         rawDigitCollection,
-                                              ConcurrentRawDigitCol&         rawRawDigitCollection) const
+                                              ConcurrentRawDigitCol&         rawRawDigitCollection,
+                                              ConcurrentRawDigitCol&         coherentCollection) const
 {
     cet::cpu_timer theClockProcess;
 
@@ -327,18 +350,25 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
 
     double totalTime = theClockProcess.accumulated_real_time();
 
-    // Save the filtered RawDigitsactive: " << tbb::this_task_arena::is_active() << ", 
-    saveRawDigits(decoderTool->getWaveLessCoherent(),decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
+    // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
+    icarussigproc::VectorFloat locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
+
+    saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
 
     // Optionally, save the pedestal corrected RawDigits
     if (fOutputPedestalCor)
-        saveRawDigits(decoderTool->getPedSubtractedWaveforms(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
+        saveRawDigits(decoderTool->getRawWaveforms(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
+
+    // Also optional is to output the coherent corrections (note there will be many fewer of these! )
+    if (fOutputPedestalCor)
+        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),coherentCollection,boardFragOffset);
 
     std::cout << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
 }
 
 void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArray, 
+                                      const icarussigproc::VectorFloat& pedestalVec,
                                       const icarussigproc::VectorFloat& rmsVec,
                                       ConcurrentRawDigitCol&            rawDigitCol, 
                                       size_t                            channel) const
@@ -359,8 +389,8 @@ void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArra
         // Need to convert from float to short int
         std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
-        rawDigitCol.emplace_back(channel++,wvfm.size(),wvfm); 
-        rawDigitCol.back().SetPedestal(0.,rmsVec[chanIdx]);
+        ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channel++,wvfm.size(),wvfm); 
+        newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
     }//loop over channel indices
 
     theClockSave.stop();

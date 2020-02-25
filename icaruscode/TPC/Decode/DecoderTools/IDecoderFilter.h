@@ -59,9 +59,14 @@ public:
     virtual const icarussigproc::ArrayBool  getROIVals()           const = 0;
 
     /**
-     *  @brief Recover the pedestal subtracted waveforms
+     *  @brief Recover the original raw waveforms
      */
-    virtual const icarussigproc::ArrayFloat getPedSubtractedWaveforms() const = 0;
+    virtual const icarussigproc::ArrayFloat getRawWaveforms() const = 0;
+
+    /**
+     *  @brief Recover the pedestal corrected waveforms
+     */
+    virtual const icarussigproc::ArrayFloat getPedCorWaveforms() const = 0;
 
     /**
      *  @brief Recover the "intrinsic" RMS
