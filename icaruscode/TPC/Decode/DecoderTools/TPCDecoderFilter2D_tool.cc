@@ -24,7 +24,7 @@
 
 #include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
 
-#include "icarussigproc/WaveformParamsAlg.h"
+#include "icarussigproc/WaveformTools.h"
 #include "icarussigproc/Denoising.h"
 
 // std includes
@@ -223,8 +223,8 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
     if (fNumTruncBins.empty())           fNumTruncBins           = icarussigproc::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
-    icarussigproc::Denoising         denoiser;
-    icarussigproc::WaveformParamsAlg waveformParams;
+    icarussigproc::Denoising            denoiser;
+    icarussigproc::WaveformTools<float> waveformTools;
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
@@ -250,12 +250,13 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
                 dataVec[tick] = dataBlock[chanIdx + tick * nChannelsPerBoard];
 
             // Now determine the pedestal and correct for it
-            waveformParams.getMeanAndTruncRms(dataVec, 
-                                              dataVec,
-                                              fPedestalVals[channelOnBoard], 
-                                              fFullRMSVals[channelOnBoard], 
-                                              fTruncRMSVals[channelOnBoard], 
-                                              fNumTruncBins[channelOnBoard]);
+            waveformTools.getPedestalCorrectedWaveform(dataVec, 
+                                                       dataVec,
+                                                       3,
+                                                       fPedestalVals[channelOnBoard], 
+                                                       fFullRMSVals[channelOnBoard], 
+                                                       fTruncRMSVals[channelOnBoard], 
+                                                       fNumTruncBins[channelOnBoard]);
         }
     }
 

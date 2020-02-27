@@ -51,7 +51,7 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 ///creation of calibrated signals on wires
 namespace caldata {
@@ -90,7 +90,8 @@ class RecoWireROIICARUS : public art::EDProducer
     
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
-    std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
+
+    icarussigproc::WaveformTools<float>                     fWaveformTool;
     
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
     
@@ -141,13 +142,6 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
     std::sort(fROIFinderVec.begin(),fROIFinderVec.end(),[](const auto& left,const auto& right){return left->plane() < right->plane();});
 
     fDeconvolution = art::make_tool<icarus_tool::IDeconvolution>(pset.get<fhicl::ParameterSet>("Deconvolution"));
-    
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
     fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);
@@ -381,11 +375,10 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
     float truncMean;
     float nSig(2.0);  // make tight constraint
     int   nTrunc;
+
+    fixedWaveform.resize(waveform.size());
     
-    fWaveformTool->getTruncatedMeanRMS(waveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
-    
-    // Set the waveform to the new baseline
-    std::transform(waveform.begin(), waveform.end(), fixedWaveform.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
+    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
     
     // Fill histograms
     if (fOutputHistograms)

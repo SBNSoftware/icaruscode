@@ -12,7 +12,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()
@@ -37,8 +37,9 @@ private:
     
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
+    icarussigproc::WaveformTools<double>                       fWaveformTool;
+
     art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
-    std::unique_ptr<icarus_tool::IWaveformTool>                fWaveformTool;
 };
     
 //----------------------------------------------------------------------
@@ -59,13 +60,6 @@ void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
     
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
-
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     return;
 }
@@ -107,16 +101,16 @@ std::pair<float,int> BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec&
                                                       size_t                     roiStart,
                                                       size_t                     roiStop) const
 {
-    std::pair<float,int> base(0.,1);
+    std::pair<double,int> base(0.,1);
     
     if (roiStop > roiStart)
     {
         // Get the truncated mean and rms
-        std::vector<float> temp(roiStop - roiStart + 1,0.);
+        icarusutil::TimeVec temp(roiStop - roiStart + 1,0.);
         
         std::copy(holder.begin() + roiStart,holder.begin() + roiStop,temp.begin());
         
-        fWaveformTool->getTruncatedMean(temp, base.first, base.second);
+        fWaveformTool.getTruncatedMean(temp, base.first, base.second);
     }
     
     return base;

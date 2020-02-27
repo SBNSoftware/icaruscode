@@ -25,6 +25,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
@@ -33,14 +34,13 @@
 
 namespace icarus_tool
 {
-    class IWaveformTool;
     class IFilter;
 }
 
 namespace caldata
 {
     
-class RawDigitFFTAlg
+template <class T> class RawDigitFFTAlg
 {
 public:
 
@@ -52,9 +52,9 @@ public:
     void reconfigure(fhicl::ParameterSet const & pset);
     void initializeHists(art::ServiceHandle<art::TFileService>&);
     
-    template <class T> void getFFTCorrection(std::vector<T>&, double) const;
+    void getFFTCorrection(std::vector<T>&, double) const;
     
-    template <class T> void getFFTCorrection(std::vector<T>&, size_t) const;
+    void getFFTCorrection(std::vector<T>&, size_t) const;
     
     void filterFFT(std::vector<short>&, size_t, size_t, float pedestal=0.);
     
@@ -77,7 +77,7 @@ private:
     std::vector<TProfile*>                                 fConvFFTPowerVec;
     std::vector<TProfile*>                                 fFilterFuncVec;
 
-    std::unique_ptr<icarus_tool::IWaveformTool>            fWaveformTool;
+    icarussigproc::WaveformTools<T>                        fWaveformTool;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
     
     std::unique_ptr<Eigen::FFT<float>>                     fEigenFFT;

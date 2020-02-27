@@ -51,7 +51,7 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
@@ -134,8 +134,9 @@ class Decon1DROI : public art::EDProducer
     
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>      fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>               fDeconvolution;
-    std::unique_ptr<icarus_tool::IWaveformTool>                fWaveformTool;
     std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
+
+    icarussigproc::WaveformTools<float>                        fWaveformTool;
 
     const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();
@@ -191,13 +192,6 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
     
     // Recover the baseline tool
     fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
-
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
     fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);

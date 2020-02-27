@@ -17,7 +17,7 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -92,34 +92,34 @@ private:
     void filterFFT(std::vector<short>&, raw::ChannelID_t, size_t, size_t, float, bool) const;
 
     // Fcl parameters.
-    std::vector<size_t>                 fLoWireByPlane;    ///< Low wire for individual wire histograms
-    std::vector<size_t>                 fHiWireByPlane;    ///< Hi wire for individual wire histograms
-    std::vector<std::string>            fFFTFitFuncVec;    ///< Function definitions for fitting the average FFT power spectra
-    std::vector<std::vector<double>>    fParameterVec;     ///< Initial parameters for fit function
+    std::vector<size_t>                  fLoWireByPlane;    ///< Low wire for individual wire histograms
+    std::vector<size_t>                  fHiWireByPlane;    ///< Hi wire for individual wire histograms
+    std::vector<std::string>             fFFTFitFuncVec;    ///< Function definitions for fitting the average FFT power spectra
+    std::vector<std::vector<double>>     fParameterVec;     ///< Initial parameters for fit function
 
     // Pointers to the histograms we'll create.
-    std::vector<TH1D*>                  fTruncMeanHist;
-    std::vector<TH1D*>                  fTruncRmsHist;
-    std::vector<TH1D*>                  fFullRmsHist;
+    std::vector<TH1D*>                   fTruncMeanHist;
+    std::vector<TH1D*>                   fTruncRmsHist;
+    std::vector<TH1D*>                   fFullRmsHist;
 
-    std::vector<std::vector<TProfile*>> fFFTPowerVec;
-    std::vector<std::vector<TProfile*>> fFFTPowerDerivVec;
-    std::vector<std::vector<TProfile*>> fFFTRealVec;
-    std::vector<std::vector<TProfile*>> fFFTImaginaryVec;
-    std::vector<std::vector<TProfile*>> fSmoothPowerVec;
+    std::vector<std::vector<TProfile*>>  fFFTPowerVec;
+    std::vector<std::vector<TProfile*>>  fFFTPowerDerivVec;
+    std::vector<std::vector<TProfile*>>  fFFTRealVec;
+    std::vector<std::vector<TProfile*>>  fFFTImaginaryVec;
+    std::vector<std::vector<TProfile*>>  fSmoothPowerVec;
     
-    std::vector<TProfile*>              fAveFFTPowerVec;
-    std::vector<TProfile*>              fConvFFTPowerVec;
-    std::vector<TProfile*>              fConvKernelVec;
-    std::vector<TProfile*>              fFilterFuncVec;
-    std::vector<TProfile*>              fAveFFTPowerDerivVec;
-    std::vector<TProfile*>              fAveFFTRealVec;
-    std::vector<TProfile*>              fAveFFTImaginaryVec;
-    std::vector<TProfile*>              fAveSmoothPowerVec;
+    std::vector<TProfile*>               fAveFFTPowerVec;
+    std::vector<TProfile*>               fConvFFTPowerVec;
+    std::vector<TProfile*>               fConvKernelVec;
+    std::vector<TProfile*>               fFilterFuncVec;
+    std::vector<TProfile*>               fAveFFTPowerDerivVec;
+    std::vector<TProfile*>               fAveFFTRealVec;
+    std::vector<TProfile*>               fAveFFTImaginaryVec;
+    std::vector<TProfile*>               fAveSmoothPowerVec;
 
     caldata::RawDigitCharacterizationAlg fCharacterizationAlg;
     
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    icarussigproc::WaveformTools<double> fWaveformTool;
 
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore&                 fGeometry;             ///< pointer to Geometry service
@@ -169,8 +169,6 @@ void BasicRawDigitAnalysis::configure(fhicl::ParameterSet const & pset)
     fParameterVec   = pset.get<std::vector<std::vector<double>>>("FFTFuncParamsVec", std::vector<std::vector<double>>() = {{1},{1},{1}});
 
     const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
-    
-    fWaveformTool   = art::make_tool<icarus_tool::IWaveformTool>(waveformParamSet);
 }
 
 //----------------------------------------------------------------------------
@@ -491,16 +489,16 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     
     size_t currentBin(halfFFTDataSize - numBinsToAve - 1);
     
-    fWaveformTool->triangleSmooth(powerVec, powerVec);
+    fWaveformTool.triangleSmooth(powerVec, powerVec);
     
     std::vector<double> powerDerivVec;
     
-    fWaveformTool->firstDerivative(powerVec, powerDerivVec);
+    fWaveformTool.firstDerivative(powerVec, powerDerivVec);
     
     // Find the peaks...
-    icarus_tool::IWaveformTool::PeakTupleVec peakTupleVec;
+    icarussigproc::WaveformTools<float>::PeakTupleVec peakTupleVec;
     
-    fWaveformTool->findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
+    fWaveformTool.findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
     
     // Try smoothing the peak regions
     for(const auto& peakTuple : peakTupleVec)

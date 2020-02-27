@@ -16,7 +16,7 @@
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
@@ -76,7 +76,10 @@ private:
     std::string                                 fCorrelatedRMSHistoName;
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+
+    using WaveformTools = icarussigproc::WaveformTools<icarusutil::SigProcPrecision>;
+
+    WaveformTools                               fWaveformTool;
 
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
@@ -219,15 +222,7 @@ std::cout << " after filling vectors " << std::endl;
         
         fCorAmpDistHist   = dir.make<TProfile>("CorAmp",    ";Motherboard", fCorrAmpDistVec.size(),0.,fCorrAmpDistVec.size());
     }
-
-    // Recover an instance of the waveform tool
-    // Here we just make a parameterset to pass to it...
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
-    
+   
     return;
 }
     
@@ -358,12 +353,12 @@ void SBNNoise::ComputeRMSs()
     int    nTrunc;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
 
     if (fStoreHistograms)
     {

@@ -26,7 +26,7 @@
 #include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
 #include "icaruscode/TPC/Decode/DecoderTools/IFakeParticle.h"
 
-#include "icarussigproc/WaveformParamsAlg.h"
+#include "icarussigproc/WaveformTools.h"
 #include "icarussigproc/Denoising.h"
 
 // std includes
@@ -237,8 +237,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     if (fNumTruncBins.empty())           fNumTruncBins     = icarussigproc::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
-    icarussigproc::Denoising         denoiser;
-    icarussigproc::WaveformParamsAlg waveformParams;
+    icarussigproc::Denoising            denoiser;
+    icarussigproc::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;
 
@@ -272,12 +272,13 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             icarussigproc::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
             // Now determine the pedestal and correct for it
-            waveformParams.getMeanAndTruncRms(rawDataVec,
-                                              pedCorDataVec,
-                                              fPedestalVals[channelOnBoard], 
-                                              fFullRMSVals[channelOnBoard], 
-                                              fTruncRMSVals[channelOnBoard], 
-                                              fNumTruncBins[channelOnBoard]);
+            waveformTools.getPedestalCorrectedWaveform(rawDataVec,
+                                                       pedCorDataVec,
+                                                       3,
+                                                       fPedestalVals[channelOnBoard], 
+                                                       fFullRMSVals[channelOnBoard], 
+                                                       fTruncRMSVals[channelOnBoard], 
+                                                       fNumTruncBins[channelOnBoard]);
         }
     }
 

@@ -12,7 +12,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -73,7 +73,7 @@ private:
     TH1F*                                       fMinMaxSigmaHist;
     TH2F*                                       fDPeakVDistHist;
 
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    icarussigproc::WaveformTools<float>         fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
@@ -110,13 +110,6 @@ void ROIFinderDifferential::configure(const fhicl::ParameterSet& pset)
     
     // The "Max2MinDistance" is input in ticks but needs to be scaled if we are averaging
 //    if (fNumBinsToAve > 1) fMax2MinDistance = std::round(fMax2MinDistance / fNumBinsToAve) + 1;
-    
-    // Recover an instance of the waveform tool
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     // If asked, define some histograms
     if (fOutputHistograms)
@@ -178,7 +171,8 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
     Waveform waveformDeriv(waveform.size());
     
     // If we have a collection plane then take the derivative
-    if (sigType == geo::kCollection) fWaveformTool->firstDerivative(waveform, waveformDeriv);
+    if (sigType == geo::kCollection) fWaveformTool.firstDerivative(waveform, waveformDeriv);
+
     // Otherwise a straight copy since the bipolar pulses are, effectively, derivatives
     else std::copy(waveform.begin(),waveform.end(),waveformDeriv.begin());
     
@@ -196,7 +190,8 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
     float nSig(2.5);
     int   nTrunc(0);
     
-    fWaveformTool->getTruncatedMeanRMS(aveWaveformDeriv, nSig, truncMean, fullRMS, truncRMS, nTrunc);
+    fWaveformTool.getTruncatedMean(aveWaveformDeriv, truncMean, nTrunc);
+    fWaveformTool.getTruncatedRMS(aveWaveformDeriv, nSig, fullRMS, truncRMS, nTrunc);
     
     // Put a floor on the value of the truncated RMS...
     float truncRMSFloor = std::max(truncRMS, float(0.25));

@@ -12,7 +12,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/TPC/Utilities/SignalShaperServiceICARUS.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()

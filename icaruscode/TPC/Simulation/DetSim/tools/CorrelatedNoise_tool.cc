@@ -16,7 +16,7 @@
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
@@ -75,7 +75,9 @@ private:
     std::string                                 fCorrAmpHistFileName;
     std::string                                 fCorrAmpHistogramName;
 
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    using WaveformTools = icarussigproc::WaveformTools<icarusutil::SigProcPrecision>;
+
+    WaveformTools                               fWaveformTool;
 
     // We'll recover the bin contents and store in a vector
     // with the likely false hope this will be faster...
@@ -84,8 +86,8 @@ private:
     icarusutil::TimeVec                         fIncoherentNoiseVec; //< Incoherent frequency distribution
     icarusutil::TimeVec                         fCorrAmpDistVec;     //< Keep track of motherboard contributions
     
-    double                                      fIncoherentNoiseRMS; //< RMS of full noise waveform
-    double                                      fCoherentNoiseRMS;   //< RMS of full noise waveform
+    icarusutil::SigProcPrecision                fIncoherentNoiseRMS; //< RMS of full noise waveform
+    icarusutil::SigProcPrecision                fCoherentNoiseRMS;   //< RMS of full noise waveform
 
     // Container for doing the work
     icarusutil::FrequencyVec                    fNoiseFrequencyVec;
@@ -211,14 +213,6 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
         
         fCorAmpDistHist   = dir.make<TProfile>("CorAmp",    ";Motherboard", fCorrAmpDistVec.size(),0.,fCorrAmpDistVec.size());
     }
-
-    // Recover an instance of the waveform tool
-    // Here we just make a parameterset to pass to it...
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
     
     return;
 }
@@ -362,7 +356,7 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     fIncoherentNoiseVec.resize(fNoiseHistVec.size(), 0.);
     
     // This does a median smoothing based on the number of bins we input
-    fWaveformTool->medianSmooth(fNoiseHistVec, fIncoherentNoiseVec, fMedianNumBins);
+    fWaveformTool.medianSmooth(fNoiseHistVec, fIncoherentNoiseVec, fMedianNumBins);
     
     icarusutil::TimeVec peakVec(fNoiseHistVec.size());
     
@@ -403,17 +397,19 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     GenNoise(randGenFunc, fIncoherentNoiseVec, waveNoise, scaleFactor);
     
     // Now get the details...
-    double nSig(3.);
-    double mean,rmsTrunc;
-    int    nTrunc;
+    icarusutil::SigProcPrecision nSig(3.);
+    icarusutil::SigProcPrecision mean,rmsTrunc;
+    int                          nTrunc;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedRMS(waveNoise, nSig, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool->getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedRMS(waveNoise, nSig, fCoherentNoiseRMS, rmsTrunc, nTrunc);
 
     if (fStoreHistograms)
     {

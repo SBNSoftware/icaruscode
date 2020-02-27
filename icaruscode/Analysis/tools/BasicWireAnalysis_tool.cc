@@ -17,7 +17,7 @@
 #include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
 
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TH1.h"
 #include "TH2.h"

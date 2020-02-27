@@ -57,7 +57,7 @@
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 using std::cout;
 using std::endl;

@@ -89,7 +89,7 @@
 #include "tools/IGenNoise.h"
 
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
+#include "icarussigproc/ICARUSFFT.h"
 namespace {
   
   template <typename T, typename Src>
@@ -359,7 +359,7 @@ private:
     //be made a fcl parameter but not likely to ever change
     const double                            adcsaturation = 4095;
 
-    using FFTPointer = std::unique_ptr<icarusutil::ICARUSFFT<double>>;
+    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
 
     FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
@@ -436,7 +436,7 @@ SimWireICARUS::SimWireICARUS(Parameters const& config)
 
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
-    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(fNTimeSamples);
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fNTimeSamples);
     
     //
     // input:

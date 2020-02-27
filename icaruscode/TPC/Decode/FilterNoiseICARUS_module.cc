@@ -199,6 +199,9 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
     if (fOutputPedestalCor)
         produces<std::vector<raw::RawDigit>>(fOutputPedCorPath);
 
+    if (fOutputCorrection)
+        produces<std::vector<raw::RawDigit>>(fOutputCoherentPath);
+
     // Report.
     mf::LogInfo("FilterNoiseICARUS") << "FilterNoiseICARUS configured\n";
 }

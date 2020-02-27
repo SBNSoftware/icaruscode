@@ -24,7 +24,7 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "icaruscode/TPC/Decode/DecoderTools/IFakeParticle.h"
 
-#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 // std includes
 #include <string>
@@ -87,7 +87,7 @@ private:
 
     icarusutil::TimeVec                      fFFTTimeVec;            //< Local time vector
 
-    using FFTPointer = std::unique_ptr<icarusutil::ICARUSFFT<double>>;
+    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
 
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
@@ -155,7 +155,6 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
         }
         else
             fWireEndPoints[1] = fWireEndPoints[0];
-        
     }
 
     // Now set up our plans for doing the convolution
@@ -163,7 +162,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
 
     fFFTTimeVec.resize(numberTimeSamples,0.);
 
-    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(numberTimeSamples);
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numberTimeSamples);
 
     return;
 }

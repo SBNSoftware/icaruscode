@@ -13,7 +13,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art_root_io/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 #include "TFile.h"
 #include "TProfile.h"
 
@@ -214,19 +214,15 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
         hist->Fill(xBin, binVal, 1.);
         histResponseVec.at(idx) = binVal;
     }
-    
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    // Grab some useful tools
+    icarussigproc::WaveformTools<double> waveformTool;
 
     // Make a copy of the response vec
     std::vector<double> smoothedResponseVec;
     
     // Run the triangulation smoothing
-    waveformTool->triangleSmooth(histResponseVec, smoothedResponseVec);
+    waveformTool.triangleSmooth(histResponseVec, smoothedResponseVec);
 
     // Now make histogram of this
     std::string histName = "Smooth_" + fFieldResponseHistName;

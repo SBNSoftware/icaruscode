@@ -44,7 +44,7 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
@@ -112,7 +112,7 @@ private:
     const geo::GeometryCore&                        fGeometry;
     icarusutil::SignalShapingICARUSService&         fSignalServices;
     const lariov::ChannelStatusProvider&            fChanFilt;
-    std::unique_ptr<icarusutil::ICARUSFFT<double>>  fFFT;                  ///< Object to handle thread safe FFT
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>>  fFFT;                  ///< Object to handle thread safe FFT
 }; // class RecoWireROI
 
 DEFINE_ART_MODULE(RecoWireROI)
@@ -209,7 +209,7 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
 	
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(detprop->NumberTimeSamples());
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(detprop->NumberTimeSamples());
 }
 
 //-------------------------------------------------

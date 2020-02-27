@@ -15,14 +15,14 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 #include "IFieldResponse.h"
 #include "IElectronicsResponse.h"
 #include "IFilter.h"
 
 #include "TProfile.h"
 
-#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 #include <fstream>
 #include <iomanip>
@@ -83,7 +83,7 @@ private:
     icarusutil::FrequencyVec                       fConvolutionKernel;
     icarusutil::FrequencyVec                       fDeconvolutionKernel;           
 
-    std::unique_ptr<icarusutil::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
     detinfo::DetectorProperties const*             fDetectorProperties;   ///< Detector properties service
 };
     
@@ -113,7 +113,7 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fNumberTimeSamples   = fDetectorProperties->NumberTimeSamples();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(fNumberTimeSamples);
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fNumberTimeSamples);
     
     return;
 }
@@ -198,7 +198,7 @@ void Response::calculateResponse(double weight)
     icarusutil::TimeVec curResponseVec(fieldResponseFFTVec.size());
     
     // Note that we need a local version of the FFT because our time samples currently don't match what we will have
-    icarusutil::ICARUSFFT<double> locFFT(curResponseVec.size());
+    icarussigproc::ICARUSFFT<double> locFFT(curResponseVec.size());
 
     locFFT.inverseFFT(curResponseFFTVec, curResponseVec);
     
@@ -300,16 +300,12 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
         hist->Fill((double(bin) + 0.5) * samplingRate * 1.e-3, responseVec.at(bin), 1.);
     }
 
-    // Get the FFT, need the waveform tool for consistency
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    // Get an instance of our tools
+    icarussigproc::WaveformTools<double> waveformTools;
     
     icarusutil::TimeVec powerVec;
     
-    waveformTool->getFFTPower(responseVec, powerVec);
+    waveformTools.getFFTPower(responseVec, powerVec);
     
     double      freqWidth = maxFreq / (powerVec.size() - 1);
     std::string freqName  = "Response_FFTPlane_" + std::to_string(fThisPlane);

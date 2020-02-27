@@ -12,7 +12,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -101,7 +101,7 @@ private:
     TH2F*                                       fDTixVDiffHist;
     TH2F*                                       fDiffVDilHist;
 
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+    icarussigproc::WaveformTools<float>         fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
@@ -143,14 +143,6 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
     // put the ROI pad sizes into more variables
     fPreROIPad  = zin[0];
     fPostROIPad = zin[1];
-    
-    // Recover an instance of the waveform tool
-    // Here we just make a parameterset to pass to it...
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     // If asked, define the global histograms
     if (fOutputHistograms)
@@ -228,7 +220,7 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     if (!histogramMap.empty()) for(size_t idx = 0; idx < waveform.size(); idx++) histogramMap.at(WAVEFORMHIST)->Fill(idx, waveform.at(idx), 1.);
 
     // Compute the morphological filter vectors
-    fWaveformTool->getErosionDilationAverageDifference(smoothWaveform, fStructuringElement, histogramMap, erosionVec, dilationVec, averageVec, differenceVec);
+    fWaveformTool.getErosionDilationAverageDifference(smoothWaveform, fStructuringElement, erosionVec, dilationVec, averageVec, differenceVec);
 
     // Use the average vector to find ROI's
     float fullRMS;
@@ -237,8 +229,16 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     float nSig(2.5);
     int   nTrunc;
     
-    if (fUseDifference) fWaveformTool->getTruncatedMeanRMS(differenceVec, nSig, truncMean, fullRMS, truncRMS, nTrunc);
-    else                fWaveformTool->getTruncatedMeanRMS(dilationVec,   nSig, truncMean, fullRMS, truncRMS, nTrunc);
+    if (fUseDifference) 
+    {
+        fWaveformTool.getTruncatedMean(differenceVec, truncMean, nTrunc);
+        fWaveformTool.getTruncatedRMS(differenceVec, nSig, fullRMS, truncRMS, nTrunc);
+    }
+    else                
+    {
+        fWaveformTool.getTruncatedMean(dilationVec, truncMean, nTrunc);
+        fWaveformTool.getTruncatedRMS(dilationVec, nSig, fullRMS, truncRMS, nTrunc);
+    }
     
     // Calculate a threshold to use based on the truncated mand and rms...
     float threshold = truncMean + fNumSigma * std::max(float(0.02),truncRMS);

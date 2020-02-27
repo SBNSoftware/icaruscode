@@ -13,7 +13,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/IRawDigitFilter.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -47,10 +47,10 @@ private:
     // Actual histogram initialization...
     enum HistogramType : int
     {
-        CORWAVEFORM = icarus_tool::LASTELEMENT + 1
+        CORWAVEFORM = caldata::LASTELEMENT + 1
     };
     
-    icarus_tool::HistogramMap initializeHistograms(size_t, size_t, size_t) const;
+    caldata::HistogramMap initializeHistograms(size_t, size_t, size_t) const;
 
     // Member variables from the fhicl file
     size_t                                      fPlane;
@@ -71,8 +71,8 @@ private:
     TH1F*                                       fNumSigNextHist;
     TH1F*                                       fDeltaTicksHist;
     TH2F*                                       fDTixVDiffHist;
-    
-    std::unique_ptr<icarus_tool::IWaveformTool> fWaveformTool;
+
+    icarussigproc::WaveformTools<short>         fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
@@ -98,14 +98,6 @@ void MorphologicalFilter::configure(const fhicl::ParameterSet& pset)
     fNumBinsToAve          = pset.get< int >                       ("NumBinsToAve"              );
     fStructuringElement    = pset.get< int>                        ("StructuringElement"        );
     fOutputHistograms      = pset.get< bool  >                     ("OutputHistograms",    false);
-    
-    // Recover an instance of the waveform tool
-    // Here we just make a parameterset to pass to it...
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     // If asked, define the global histograms
     if (fOutputHistograms)
@@ -164,10 +156,10 @@ void MorphologicalFilter::FilterWaveform(RawDigitVector& waveform, size_t channe
     Waveform differenceVec;
     
     // Define histograms for this particular channel?
-    icarus_tool::HistogramMap histogramMap = initializeHistograms(channel, cnt, waveform.size());
+    caldata::HistogramMap histogramMap = initializeHistograms(channel, cnt, waveform.size());
     
     // If histogramming, then keep track of the original input channel
-    if (!histogramMap.empty()) for(size_t idx = 0; idx < waveform.size(); idx++) histogramMap.at(icarus_tool::WAVEFORM)->Fill(idx, waveform.at(idx), 1.);
+    if (!histogramMap.empty()) for(size_t idx = 0; idx < waveform.size(); idx++) histogramMap.at(caldata::WAVEFORM)->Fill(idx, waveform.at(idx), 1.);
     
     Waveform smoothWaveform = waveform;
     
@@ -176,13 +168,13 @@ void MorphologicalFilter::FilterWaveform(RawDigitVector& waveform, size_t channe
         std::transform(waveform.begin(),waveform.end(),smoothWaveform.begin(),[pedestal](const auto& val){return val - short(std::round(pedestal));});
 
     // Compute the morphological filter vectors
-    fWaveformTool->getErosionDilationAverageDifference(smoothWaveform, fStructuringElement, histogramMap, erosionVec, dilationVec, averageVec, differenceVec);
+    fWaveformTool.getErosionDilationAverageDifference(smoothWaveform, fStructuringElement, erosionVec, dilationVec, averageVec, differenceVec);
     
     // What we are really interested in here is the closing vector but compute both
     Waveform openingVec;
     Waveform closingVec;
     
-    fWaveformTool->getOpeningAndClosing(erosionVec,dilationVec,fStructuringElement,histogramMap,openingVec,closingVec);
+    fWaveformTool.getOpeningAndClosing(erosionVec,dilationVec,fStructuringElement,openingVec,closingVec);
     
     // Ok, get an average of the two
     std::transform(openingVec.begin(),openingVec.end(),closingVec.begin(),averageVec.begin(),[](const auto& left, const auto& right){return (left + right)/2;});
@@ -259,9 +251,9 @@ void MorphologicalFilter::initializeHistograms(art::TFileDirectory& histDir) con
     return;
 }
     
-icarus_tool::HistogramMap MorphologicalFilter::initializeHistograms(size_t channel, size_t cnt, size_t waveformSize) const
+caldata::HistogramMap MorphologicalFilter::initializeHistograms(size_t channel, size_t cnt, size_t waveformSize) const
 {
-    icarus_tool::HistogramMap histogramMap;
+    HistogramMap histogramMap;
     
     if (fOutputHistograms)
     {
@@ -279,19 +271,19 @@ icarus_tool::HistogramMap MorphologicalFilter::initializeHistograms(size_t chann
         try
         {
             //            origWaveHist   = dir.make<TProfile>(Form("Inp_%03zu_ctw%01zu/%01zu/%05zu",cnt,cryo,tpc,wire), "Waveform", waveform.size(),      0, waveform.size(),      -500., 500.);
-            histogramMap[icarus_tool::WAVEFORM] =
+            histogramMap[caldata::WAVEFORM] =
                     dir.make<TProfile>(Form("MFWfm_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Waveform",   waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::EROSION] =
+            histogramMap[caldata::EROSION] =
                     dir.make<TProfile>(Form("MFEro_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Erosion",    waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::DILATION] =
+            histogramMap[caldata::DILATION] =
                     dir.make<TProfile>(Form("MFDil_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Dilation",   waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::AVERAGE] =
+            histogramMap[caldata::AVERAGE] =
                     dir.make<TProfile>(Form("MFAve_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Average",    waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::DIFFERENCE] =
+            histogramMap[caldata::DIFFERENCE] =
                     dir.make<TProfile>(Form("MFDif_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Difference", waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::OPENING] =
+            histogramMap[caldata::OPENING] =
                     dir.make<TProfile>(Form("MFOpe_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Opening",    waveformSize, 0, waveformSize, -500., 500.);
-            histogramMap[icarus_tool::CLOSING] =
+            histogramMap[caldata::CLOSING] =
                     dir.make<TProfile>(Form("MFClo_%03zu_ctw%01zu-%01zu-%01zu-%05zu",cnt,cryo,tpc,plane,wire), "Closing",    waveformSize, 0, waveformSize, -500., 500.);
             
             // Also, if smoothing then we would like to keep track of the original waveform too

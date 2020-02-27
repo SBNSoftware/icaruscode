@@ -15,8 +15,8 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
-#include "icaruscode/TPC/Utilities/ICARUSFFT.h"
+#include "icarussigproc/WaveformTools.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -47,9 +47,9 @@ private:
     std::string                                                fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
     std::map<unsigned int, float>                              fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
 
-    std::unique_ptr<icarus_tool::IWaveformTool>                fWaveformTool;
+    icarussigproc::WaveformTools<float>                        fWaveformTool;
 
-    std::unique_ptr<icarusutil::ICARUSFFT<double>>             fFFT;                        ///< Object to handle thread safe FFT
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>>          fFFT;                        ///< Object to handle thread safe FFT
 
     const geo::GeometryCore*                                   fGeometry           = lar::providerFrom<geo::Geometry>();
     detinfo::DetectorProperties const*                         fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
@@ -101,20 +101,12 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
             if (channel%1000==0) std::cout<<"Channel "<<channel<<" correction factor "<<fdQdxCalib[channel]<<std::endl;
         }
     }
-    
-    // Recover an instance of the waveform tool
-    // Here we just make a parameterset to pass to it...
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarusutil::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
      
     return;
 }
@@ -165,7 +157,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         float truncMean;
         int   nTrunc;
         
-        fWaveformTool->getTruncatedMean(holder, truncMean, nTrunc);
+        fWaveformTool.getTruncatedMean(holder, truncMean, nTrunc);
         
         std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
 

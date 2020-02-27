@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icaruscode/TPC/Utilities/tools/IWaveformTool.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include "TProfile.h"
 
@@ -157,18 +157,14 @@ void ElectronicsResponseBesselApprox::outputHistograms(art::TFileDirectory& hist
     TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", fElectronicsResponseBesselApproxVec.size(), 0., hiEdge);
     
     for(size_t idx = 0; idx < fElectronicsResponseBesselApproxVec.size(); idx++) hist->Fill(idx * fBinWidth, fElectronicsResponseBesselApproxVec.at(idx), 1.);
-    
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    std::unique_ptr<icarus_tool::IWaveformTool> waveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+
+    // Get the necessary tools
+    icarussigproc::WaveformTools<double> waveformTools;
     
     // Get the FFT of the response
     icarusutil::TimeVec powerVec;
     
-    waveformTool->getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
+    waveformTools.getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
     
     // Now we can plot this...
     double maxFreq   = 0.5 / fBinWidth;   // binWidth will be in us, maxFreq will be units of MHz
