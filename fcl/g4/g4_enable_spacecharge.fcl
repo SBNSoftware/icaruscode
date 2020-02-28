@@ -5,5 +5,6 @@ services.SpaceChargeService.EnableSimSpatialSCE: true
 services.SpaceChargeService.EnableSimEfieldSCE: true
 
 services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
-services.SpaceChargeService.InputFilename: 'users/rlazur/SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root' #if voxelizedTH3 files not in icarus_data
-#services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root'
+
+services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root'
+#services.SpaceChargeService.InputFilename: 'users/rlazur/SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root' #if icarus_data not up to date
