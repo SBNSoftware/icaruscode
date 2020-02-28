@@ -1,0 +1,483 @@
+## 
+##  ICARUS reconstruction
+##  modeled on standard version
+##
+
+#
+#
+#
+# BH BH BH: Copied from portions of ICARUS Reco scripts to work like the SBND one
+#   This code will take the input files and make text files for training of Pandora Vertexing, the Region and Vertex files...
+#
+#
+#
+
+#include "services_icarus.fcl"
+#include "rawdigitfilter_icarus.fcl"
+#include "recowire_icarus.fcl"
+
+#include "hitfindermodules_icarus.fcl"
+#include "cluster_icarus.fcl"
+#include "trackfindermodules_icarus.fcl"
+#include "showerfindermodules_icarus.fcl"  
+#include "mcsfitproducer_icarus.fcl"
+#include "mcsfitproducer_standard.fcl"
+
+#include "calorimetry_icarus.fcl"
+
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+#include "mchitmodules.fcl"
+#include "mcreco.fcl"
+#include "mctrutht0matching.fcl"
+
+#include "crtsimhitproducer.fcl"
+#include "crttrackproducer_icarus.fcl"
+
+#include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+#include "correctionservices_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
+
+process_name: McRecoICARUS
+
+services:
+{
+  @table::icarus_basic_services
+  @table::icarus_wirecalibration_services
+  @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+}
+
+#source is a root file
+source:
+{
+  module_type: RootInput
+  maxEvents:  10000        # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+  producers:
+  {
+    ### random number saver
+    rns:                            { module_type: RandomNumberSaver }
+
+    ### Optical reconstruction
+    ophit:                          @local::icarus_ophit
+    opflashTPC0:                    @local::ICARUSSimpleFlashTPC0
+    opflashTPC1:                    @local::ICARUSSimpleFlashTPC1
+    opflashTPC2:                    @local::ICARUSSimpleFlashTPC2
+    opflashTPC3:                    @local::ICARUSSimpleFlashTPC3
+
+    mcophit:                        @local::ICARUSMCOpHit
+    mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
+    mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
+    mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
+    mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
+
+    cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
+    cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
+    cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
+    cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
+
+    ### noise filtering module
+    rawdigitfilter:                 @local::icarus_rawdigitfilter
+    rawDigitFilterTPC0:             @local::icarus_rawdigitfilter
+    rawDigitFilterTPC1:             @local::icarus_rawdigitfilter
+    rawDigitFilterTPC2:             @local::icarus_rawdigitfilter
+    rawDigitFilterTPC3:             @local::icarus_rawdigitfilter
+  
+    ### calwire producers
+    decon1droi:                     @local::icarus_decon1droi
+    decon1DroiTPC0:                 @local::icarus_decon1droi
+    decon1DroiTPC1:                 @local::icarus_decon1droi
+    decon1DroiTPC2:                 @local::icarus_decon1droi
+    decon1DroiTPC3:                 @local::icarus_decon1droi
+
+    recowireraw:                    @local::icarus_recowireraw
+    recoWireRawTPC0:                @local::icarus_recowireraw
+    recoWireRawTPC1:                @local::icarus_recowireraw
+    recoWireRawTPC2:                @local::icarus_recowireraw
+    recoWireRawTPC3:                @local::icarus_recowireraw
+
+    ### hit-finder producers
+    gaushit:                        @local::gaus_hitfinder_icarus
+    gaushitTPC0:                    @local::gaus_hitfinder_icarus
+    gaushitTPC1:                    @local::gaus_hitfinder_icarus
+    gaushitTPC2:                    @local::gaus_hitfinder_icarus
+    gaushitTPC3:                    @local::gaus_hitfinder_icarus
+
+    icarushit:                      @local::icarus_hitfinder
+    icarusHitTPC0:                  @local::icarus_hitfinder
+    icarusHitTPC1:                  @local::icarus_hitfinder
+    icarusHitTPC2:                  @local::icarus_hitfinder
+    icarusHitTPC3:                  @local::icarus_hitfinder
+
+    ### hit selector
+    gaushitsel:                     @local::icarus_hitselector
+
+    ### hit merger for raw hit finding
+    hitMergerCryo0:                 @local::icarus_hitmerger
+    hitMergerCryo1:                 @local::icarus_hitmerger
+
+    ### trajcluster
+    trajclusterGaus:                @local::icarus_trajcluster
+    trajclusterICARUS:              @local::icarus_trajcluster
+   
+    ### Cluster3D
+    cluster3d:                      @local::icarus_cluster3d
+    cluster3DCryo0:                 @local::icarus_cluster3d
+    cluster3DCryo1:                 @local::icarus_cluster3d
+
+    ### pandora
+    pandoraGaus:                    @local::icarus_pandora
+    pandoraTrackGaus:               @local::icarus_pandoraTrackCreation
+    pandoraShowerGaus:              @local::icarus_pandoraShowerCreation
+    pandoraGausCryo0:               @local::icarus_pandora
+    pandoraTrackGausCryo0:          @local::icarus_pandoraTrackCreation
+    pandoraShowerGausCryo0:         @local::icarus_pandoraShowerCreation
+    pandoraGausCryo1:               @local::icarus_pandora
+    pandoraTrackGausCryo1:          @local::icarus_pandoraTrackCreation
+    pandoraShowerGausCryo1:         @local::icarus_pandoraShowerCreation
+
+    pandoraICARUS:                  @local::icarus_pandora
+    pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
+    pandoraShowerICARUS:            @local::icarus_pandoraShowerCreation
+    pandoraICARUSCryo0:             @local::icarus_pandora
+    pandoraTrackICARUSCryo0:        @local::icarus_pandoraTrackCreation
+    pandoraShowerICARUSCryo0:       @local::icarus_pandoraShowerCreation
+    pandoraICARUSCryo1:             @local::icarus_pandora
+    pandoraTrackICARUSCryo1:        @local::icarus_pandoraTrackCreation
+    pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
+
+    ### PM algorithm for pandora
+    pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
+
+    pandoraKalmanTrackGausCryo0:    @local::icarus_pandora_kalmantrack
+    pandoraKalmanTrackGausCryo1:    @local::icarus_pandora_kalmantrack
+
+    pandoraKalmanTrackICARUS:       @local::icarus_pandora_kalmantrack
+
+    pandoraKalmanTrackICARUSCryo0:  @local::icarus_pandora_kalmantrack
+    pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
+
+    ## Shower finding modules
+    SBNShowerGaus:                  @local::standard_sbnshower_stan
+    SBNShowerGausCryo0:             @local::standard_sbnshower_stan
+    SBNShowerGausCryo1:             @local::standard_sbnshower_stan
+
+    ## MCS modules
+    mcsICARUSRaw:                   @local::mcsfitproducericarus_raw
+    mcsICARUSGaus:                  @local::mcsfitproducericarus_gaus
+    mcsICARUSRawCryo0:              @local::mcsfitproducericarus_raw
+    mcsICARUSGausCryo0:             @local::mcsfitproducericarus_gaus
+    mcsICARUSRawCryo1:              @local::mcsfitproducericarus_raw
+    mcsICARUSGausCryo1:             @local::mcsfitproducericarus_gaus
+    mcsstandardRaw:                   @local::mcsfitproducerstandard_raw
+    mcsstandardGaus:                  @local::mcsfitproducerstandard_gaus
+    mcsstandardRawCryo0:              @local::mcsfitproducerstandard_raw
+    mcsstandardGausCryo0:             @local::mcsfitproducerstandard_gaus
+    mcsstandardRawCryo1:              @local::mcsfitproducerstandard_raw
+    mcsstandardGausCryo1:             @local::mcsfitproducerstandard_gaus
+
+    ### PM algorithm
+    pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
+    pmAlgTrackerICARUS:             @local::icarus_pmalgtrackmaker
+
+    ### PM kalman tracks
+    pmAlgKalmanTrackGaus:           @local::icarus_pmalgkalmantrack
+    pmAlgKalmanTrackICARUS:         @local::icarus_pmalgkalmantrack
+
+    ### mc producers
+    mchitfinder:                    @local::standard_mchitfinder
+    mcassociationsGaus:             @local::standard_mcparticlehitmatching
+    mcassociationsGausCryo0:        @local::standard_mcparticlehitmatching
+    mcassociationsGausCryo1:        @local::standard_mcparticlehitmatching
+    mcassociationsICARUS:           @local::standard_mcparticlehitmatching
+    mcassociationsICARUSCryo0:      @local::standard_mcparticlehitmatching
+    mcassociationsICARUSCryo1:      @local::standard_mcparticlehitmatching
+
+    ## crt producers
+    crtsimhit:                      @local::standard_crtsimhitproducer
+  }
+
+  #define the producer and filter modules for this path, order matters,
+  #filters reject all following items.  see lines starting physics.producers below
+  reco1: [ rns
+           , pandoraGausCryo0
+         ]
+
+  #define the output stream, there could be more than one if using filters
+  stream1:  [ ]
+
+  #trigger_paths is a keyword and contains the paths that modify the art::event,
+  #ie filters and producers
+  trigger_paths: [reco1]
+
+  #end_paths is a keyword and contains the paths that do not modify the art::Event,
+  #ie analyzers and output streams.  these all run simultaneously
+  end_paths:     [stream1]
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+  out1:
+  {
+    fileName:    "%ifb_%tc-%p.root"
+    dataTier:    "reconstructed"
+  }
+}
+
+### Below we include overrides for the modules above
+
+### Definitions for a single instance of the RawDigitFilter
+physics.producers.rawdigitfilter.ProcessNoise:                                             false
+physics.producers.rawdigitfilter.NumWiresToGroup:                                          [1, 1, 1]
+physics.producers.rawdigitfilter.FFTNoise:                                                 true
+physics.producers.rawdigitfilter.FFTAlg.FillHistograms:                                    false
+
+### Definitions for instances by TPC
+physics.producers.rawDigitFilterTPC0.DigitModuleLabel:                                     "daq0"
+physics.producers.rawDigitFilterTPC0.ProcessNoise:                                         false
+physics.producers.rawDigitFilterTPC0.NumWiresToGroup:                                      [1, 1, 1]
+physics.producers.rawDigitFilterTPC0.FFTNoise:                                             true
+physics.producers.rawDigitFilterTPC0.FFTAlg.FillHistograms:                                false
+physics.producers.rawDigitFilterTPC1.DigitModuleLabel:                                     "daq1"
+physics.producers.rawDigitFilterTPC1.ProcessNoise:                                         false
+physics.producers.rawDigitFilterTPC1.NumWiresToGroup:                                      [1, 1, 1]
+physics.producers.rawDigitFilterTPC1.FFTNoise:                                             true
+physics.producers.rawDigitFilterTPC1.FFTAlg.FillHistograms:                                false
+physics.producers.rawDigitFilterTPC2.DigitModuleLabel:                                     "daq2"
+physics.producers.rawDigitFilterTPC2.ProcessNoise:                                         false
+physics.producers.rawDigitFilterTPC2.NumWiresToGroup:                                      [1, 1, 1]
+physics.producers.rawDigitFilterTPC2.FFTNoise:                                             true
+physics.producers.rawDigitFilterTPC2.FFTAlg.FillHistograms:                                false
+physics.producers.rawDigitFilterTPC3.DigitModuleLabel:                                     "daq3"
+physics.producers.rawDigitFilterTPC3.ProcessNoise:                                         false
+physics.producers.rawDigitFilterTPC3.NumWiresToGroup:                                      [1, 1, 1]
+physics.producers.rawDigitFilterTPC3.FFTNoise:                                             true
+physics.producers.rawDigitFilterTPC3.FFTAlg.FillHistograms:                                false
+
+### Definitions for a single instance of the deconvolution
+physics.producers.decon1droi.DigitModuleLabel:                                             "rawdigitfilter"
+    
+### Definitions for instances by TPC    
+physics.producers.decon1DroiTPC0.DigitModuleLabel:                                         "rawDigitFilterTPC0"
+physics.producers.decon1DroiTPC1.DigitModuleLabel:                                         "rawDigitFilterTPC1"
+physics.producers.decon1DroiTPC2.DigitModuleLabel:                                         "rawDigitFilterTPC2"
+physics.producers.decon1DroiTPC3.DigitModuleLabel:                                         "rawDigitFilterTPC3"
+    
+physics.producers.recowireraw.DigitModuleLabel:                                            "rawdigitfilter"
+    
+physics.producers.recoWireRawTPC0.DigitModuleLabel:                                        "rawDigitFilterTPC0"
+physics.producers.recoWireRawTPC1.DigitModuleLabel:                                        "rawDigitFilterTPC1"
+physics.producers.recoWireRawTPC2.DigitModuleLabel:                                        "rawDigitFilterTPC2"
+physics.producers.recoWireRawTPC3.DigitModuleLabel:                                        "rawDigitFilterTPC3"
+    
+### Definitions for a single instance of the hit finding    
+physics.producers.gaushit.CalDataModuleLabel:                                              "decon1droi"
+    
+### Definitions for instances by TPC    
+physics.producers.gaushitTPC0.CalDataModuleLabel:                                          "decon1DroiTPC0"
+physics.producers.gaushitTPC1.CalDataModuleLabel:                                          "decon1DroiTPC1"
+physics.producers.gaushitTPC2.CalDataModuleLabel:                                          "decon1DroiTPC2"
+physics.producers.gaushitTPC3.CalDataModuleLabel:                                          "decon1DroiTPC3"
+    
+physics.producers.gaushitsel.HitProducerLabel:                                             "gaushit"
+
+### Need to define hitmerger for the raw hit finding when done by TPC
+physics.producers.hitMergerCryo0.hitProducerLabelVec:                                      ["icarusHitTPC0","icarusHitTPC1"]
+physics.producers.hitMergerCryo1.hitProducerLabelVec:                                      ["icarusHitTPC2","icarusHitTPC3"]
+    
+## Standard 3D hit building    
+physics.producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
+    
+## Definitions for running the 3D clustering by Cryostat    
+physics.producers.cluster3DCryo0.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPC0", "gaushitTPC1"]
+physics.producers.cluster3DCryo1.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPC2", "gaushitTPC3"]
+    
+physics.producers.icarushit.CalDataModuleLabel:                                            "recowireraw"
+    
+physics.producers.icarusHitTPC0.CalDataModuleLabel:                                        "recoWireRawTPC0"
+physics.producers.icarusHitTPC1.CalDataModuleLabel:                                        "recoWireRawTPC1"
+physics.producers.icarusHitTPC2.CalDataModuleLabel:                                        "recoWireRawTPC2"
+physics.producers.icarusHitTPC3.CalDataModuleLabel:                                        "recoWireRawTPC3"
+    
+### Need to define hitmerger for the raw hit finding when done by TPC    
+physics.producers.hitMergerCryo0.HitProducerLabelVec:                                      ["icarusHitTPC0","icarusHitTPC1"]
+physics.producers.hitMergerCryo1.HitProducerLabelVec:                                      ["icarusHitTPC2","icarusHitTPC3"]
+    
+physics.producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                     "cluster3d"
+
+### Definitions for a single pandora instance
+physics.producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
+physics.producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
+physics.producers.pandoraShowerGaus.PFParticleLabel:                                       "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:                      "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                          "pandoraTrackGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:                         "pandoraShowerGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:                            ""
+physics.producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                             ""
+physics.producers.pandoraKalmanTrackGaus.options.trackFromPF:                              false
+physics.producers.pandoraKalmanTrackGaus.options.showerFromPF:                             false
+    
+### Definitions for a pandora by cryostat    
+physics.producers.pandoraGausCryo0.HitFinderModuleLabel:                                   "cluster3DCryo0"
+physics.producers.pandoraTrackGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
+physics.producers.pandoraShowerGausCryo0.PFParticleLabel:                                  "pandoraGausCryo0"
+physics.producers.pandoraKalmanTrackGausCryo0.inputs.inputPFParticleLabel:                 "pandoraGausCryo0"
+physics.producers.pandoraKalmanTrackGausCryo0.inputs.inputTracksLabel:                     "pandoraTrackGausCryo0"
+physics.producers.pandoraKalmanTrackGausCryo0.inputs.inputShowersLabel:                    "pandoraShowerGausCryo0"
+physics.producers.pandoraKalmanTrackGausCryo0.inputs.inputCaloLabel:                       ""
+physics.producers.pandoraKalmanTrackGausCryo0.inputs.inputPidLabel:                        ""
+physics.producers.pandoraKalmanTrackGausCryo0.options.trackFromPF:                         false
+physics.producers.pandoraKalmanTrackGausCryo0.options.showerFromPF:                        false
+
+physics.producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
+physics.producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
+physics.producers.pandoraShowerGausCryo1.PFParticleLabel:                                  "pandoraGausCryo1"
+physics.producers.pandoraKalmanTrackGausCryo1.inputs.inputPFParticleLabel:                 "pandoraGausCryo1"
+physics.producers.pandoraKalmanTrackGausCryo1.inputs.inputTracksLabel:                     "pandoraTrackGausCryo1"
+physics.producers.pandoraKalmanTrackGausCryo1.inputs.inputShowersLabel:                    "pandoraShowerGausCryo1"
+physics.producers.pandoraKalmanTrackGausCryo1.inputs.inputCaloLabel:                       ""
+physics.producers.pandoraKalmanTrackGausCryo1.inputs.inputPidLabel:                        ""
+physics.producers.pandoraKalmanTrackGausCryo1.options.trackFromPF:                         false
+physics.producers.pandoraKalmanTrackGausCryo1.options.showerFromPF:                        false
+    
+physics.producers.pmAlgTrackerGaus.HitModuleLabel:                                         "trajclusterGaus"
+physics.producers.pmAlgTrackerGaus.WireModuleLabel:                                        "decon1droi"
+physics.producers.pmAlgTrackerGaus.ClusterModuleLabel:                                     "trajclusterGaus"
+    
+physics.producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
+             
+physics.producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
+    
+### Definitions for a single instance of trajCluster    
+physics.producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:                   "icarushit"
+         
+### Definitions for a single pandora instance
+physics.producers.pandoraICARUS.HitFinderModuleLabel:                                      "icarushit"
+physics.producers.pandoraTrackICARUS.PFParticleLabel:                                      "pandoraICARUS"
+physics.producers.pandoraShowerICARUS.PFParticleLabel:                                     "pandoraICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:                    "pandoraICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:                        "pandoraTrackICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:                       "pandoraShowerICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputCaloLabel:                          ""
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputPidLabel:                           ""
+physics.producers.pandoraKalmanTrackICARUS.options.trackFromPF:                            false
+physics.producers.pandoraKalmanTrackICARUS.options.showerFromPF:                           false
+
+### Definitions for a pandora by cryostat
+physics.producers.pandoraICARUSCryo0.HitFinderModuleLabel:                                 "hitMergerCryo0"
+physics.producers.pandoraTrackICARUSCryo0.PFParticleLabel:                                 "pandoraICARUSCryo0"
+physics.producers.pandoraShowerICARUSCryo0.PFParticleLabel:                                "pandoraICARUSCryo0"
+physics.producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPFParticleLabel:               "pandoraICARUSCryo0"
+physics.producers.pandoraKalmanTrackICARUSCryo0.inputs.inputTracksLabel:                   "pandoraTrackICARUSCryo0"
+physics.producers.pandoraKalmanTrackICARUSCryo0.inputs.inputShowersLabel:                  "pandoraShowerICARUSCryo0"
+physics.producers.pandoraKalmanTrackICARUSCryo0.inputs.inputCaloLabel:                     ""
+physics.producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPidLabel:                      ""
+physics.producers.pandoraKalmanTrackICARUSCryo0.options.trackFromPF:                       false
+physics.producers.pandoraKalmanTrackICARUSCryo0.options.showerFromPF:                      false
+     
+physics.producers.pandoraICARUSCryo1.HitFinderModuleLabel:                                 "hitMergerCryo1"
+physics.producers.pandoraTrackICARUSCryo1.PFParticleLabel:                                 "pandoraICARUSCryo1"
+physics.producers.pandoraShowerICARUSCryo1.PFParticleLabel:                                "pandoraICARUSCryo1"
+physics.producers.pandoraKalmanTrackICARUSCryo1.inputs.inputPFParticleLabel:               "pandoraICARUSCryo1"
+physics.producers.pandoraKalmanTrackICARUSCryo1.inputs.inputTracksLabel:                   "pandoraTrackICARUSCryo1"
+physics.producers.pandoraKalmanTrackICARUSCryo1.inputs.inputShowersLabel:                  "pandoraShowerICARUSCryo1"
+physics.producers.pandoraKalmanTrackICARUSCryo1.inputs.inputCaloLabel:                     ""
+physics.producers.pandoraKalmanTrackICARUSCryo1.inputs.inputPidLabel:                      ""
+physics.producers.pandoraKalmanTrackICARUSCryo1.options.trackFromPF:                       false
+physics.producers.pandoraKalmanTrackICARUSCryo1.options.showerFromPF:                      false
+
+### Definitions for shower finding (both single and by cryostat)
+physics.producers.SBNShowerGaus.PFParticleModuleLabel:                                     "pandoraGaus"
+physics.producers.SBNShowerGausCryo0.PFParticleModuleLabel:                                "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[0].PFParticleModuleLabel:           "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[0].TRACSAlg.HitModuleLabel:         "cluster3DCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[0].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[1].PFParticleModuleLabel:           "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[1].TRACSAlg.HitModuleLabel:         "cluster3DCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[1].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[2].PFParticleModuleLabel:           "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[3].PFParticleModuleLabel:           "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[3].TRACSAlg.HitModuleLabel:         "cluster3DCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[3].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo0"
+physics.producers.SBNShowerGausCryo0.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+physics.producers.SBNShowerGausCryo1.PFParticleModuleLabel:                                "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[0].PFParticleModuleLabel:           "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[0].TRACSAlg.HitModuleLabel:         "cluster3DCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[0].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[1].PFParticleModuleLabel:           "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[1].TRACSAlg.HitModuleLabel:         "cluster3DCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[1].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[2].PFParticleModuleLabel:           "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[3].PFParticleModuleLabel:           "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[3].TRACSAlg.HitModuleLabel:         "cluster3DCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[3].TRACSAlg.PFParticleModuleLabel:  "pandoraGausCryo1"
+physics.producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+
+### Definitions for MCS modules for cryostat-level reconstruction by cryostat
+physics.producers.mcsICARUSRawCryo0.inputs.inputLabel:                                     "pandoraTrackICARUSCryo0"
+physics.producers.mcsICARUSRawCryo1.inputs.inputLabel:                                     "pandoraTrackICARUSCryo1"
+physics.producers.mcsICARUSGausCryo0.inputs.inputLabel:                                    "pandoraTrackGausCryo0"
+physics.producers.mcsICARUSGausCryo1.inputs.inputLabel:                                    "pandoraTrackGausCryo1"
+physics.producers.mcsstandardRawCryo0.inputs.inputLabel:                                   "pandoraTrackICARUSCryo0"
+physics.producers.mcsstandardRawCryo1.inputs.inputLabel:                                   "pandoraTrackICARUSCryo1"
+physics.producers.mcsstandardGausCryo0.inputs.inputLabel:                                  "pandoraTrackGausCryo0"
+physics.producers.mcsstandardGausCryo1.inputs.inputLabel:                                  "pandoraTrackGausCryo1"
+     
+### Definitions for single instance of PM algorithm     
+physics.producers.pmAlgTrackerICARUS.HitModuleLabel:                                       "trajclusterICARUS"
+physics.producers.pmAlgTrackerICARUS.WireModuleLabel:                                      "recowireraw"
+physics.producers.pmAlgTrackerICARUS.ClusterModuleLabel:                                   "trajclusterICARUS"
+              
+physics.producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                      "pmAlgTrackerICARUS"
+              
+physics.producers.mcassociationsGaus.TrackModuleLabel:                                     "pandoraTrackGaus"
+physics.producers.mcassociationsGaus.HitModuleLabel:                                       ["gaushit"]
+physics.producers.mcassociationsGaus.makeT0Assns:                                          false
+physics.producers.mcassociationsGausCryo0.TrackModuleLabel:                                "pandoraTrackGausCryo0"
+physics.producers.mcassociationsGausCryo0.HitModuleLabel:                                  ["cluster3DCryo0"]
+physics.producers.mcassociationsGausCryo0.makeT0Assns:                                     false
+physics.producers.mcassociationsGausCryo1.TrackModuleLabel:                                "pandoraTrackGausCryo1"
+physics.producers.mcassociationsGausCryo1.HitModuleLabel:                                  ["cluster3DCryo1"]
+physics.producers.mcassociationsGausCryo1.makeT0Assns:                                     false
+     
+physics.producers.mcassociationsICARUS.TrackModuleLabel:                                   "pandoraTrackICARUS"
+physics.producers.mcassociationsICARUS.HitModuleLabel:                                     ["icarushit"]
+physics.producers.mcassociationsICARUS.makeT0Assns:                                        false
+physics.producers.mcassociationsGausICARUSCryo0.TrackModuleLabel:                          "pandoraTrackICARUSCryo0"
+physics.producers.mcassociationsGausICARUSCryo0.HitModuleLabel:                            ["hitMergerCryo0"]
+physics.producers.mcassociationsGausICARUSCryo0.makeT0Assns:                               false
+physics.producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:                          "pandoraTrackICARUSCryo1"
+physics.producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                            ["hitMergerCryo1"]
+physics.producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
+
+#
+# BH BH BH -- these are the additional pieces to make the text files
+#
+
+#physics.producers.pandoraGausCryo0.HitFinderModuleLabel:                  "linecluster"
+physics.producers.pandoraGausCryo0.ConfigFile: "PandoraSettings_Master_Vertex_Train.xml"
+#physics.producers.pandoraNew.ConfigFile: "PandoraSettings_Neutrino_Standard.xml"
+
+outputs.out1.outputCommands: [
+  "drop *"
+]
+
+#services.scheduler.IgnoreCompletely: [ 'LArPandora' ]
+#services.scheduler.defaultExceptions: true
+
+# BH BH BH: added
+#services.ChannelStatusService: @local::icarus_channelstatusservice
