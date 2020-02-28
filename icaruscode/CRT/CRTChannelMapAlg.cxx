@@ -32,21 +32,21 @@ namespace geo {
   void CRTChannelMapAlg::Initialize(AuxDetGeometryData_t& geodata) {
     Uninitialize();
 
-    std::vector<geo::AuxDetGeo*>& adgeo = geodata.auxDets;
+    std::vector<geo::AuxDetGeo>& adgeo = geodata.auxDets;
     std::vector<geo::AuxDetGeo*> adgeo_copy;
-    for (size_t i=0; i<adgeo.size(); i++) adgeo_copy.push_back(adgeo[i]);
+    for (size_t i=0; i<adgeo.size(); i++) adgeo_copy.push_back(&adgeo[i]);
 
     // Sort the AuxDetGeo objects and map them to names of the detectors
     // (SBN workshop 19 March) seemed to cause some problems for SBND folks --comment out?
     fSorter.SortAuxDets(adgeo);
 
     for (size_t i=0; i<adgeo.size(); i++) {
-      std::cout << "i: " << i 
-      << " | name1: " << adgeo[i]->TotalVolume()->GetName()
+      std::cout << "i: " << i
+      << " | name1: " << adgeo[i].TotalVolume()->GetName()
       << " | name2: " << adgeo_copy[i]->TotalVolume()->GetName() << std::endl;
     }
 
-    
+
 
     // Map the AuxDetGeo names to their position in the sorted vector
     //
@@ -76,7 +76,7 @@ namespace geo {
     // Bottom:             14 modules, 896 strips, 896 channels
     //
     // Total: 284 modules, 5808 strips, 7760 channels
-    //    CERN type:  122 modules, 122 FEBs, 3904 channels: 4052-7956 
+    //    CERN type:  122 modules, 122 FEBs, 3904 channels: 4052-7956
     //    MINOS type: 148 modules, 100 FEBs, 2960 channels: 0-3155 (2 channels/FEB not used)
     //    DblCh type:  14 modules,  14 FEBs,  896 channels: 3156-4051
 
@@ -85,10 +85,10 @@ namespace geo {
 
     //loop over modules
     for (size_t a=0; a<adgeo.size(); a++){
-      std::string volName(adgeo[a]->TotalVolume()->GetName());
+      std::string volName(adgeo[a].TotalVolume()->GetName());
 
       //get number of strips in this module
-      size_t nsv = adgeo[a]->NSensitiveVolume();
+      size_t nsv = adgeo[a].NSensitiveVolume();
       if (nsv != 20 && nsv !=16 && nsv != 64) {
         throw cet::exception("CRTChannelMap")
         << "Wrong number of sensitive volumes for CRT volume "
@@ -100,7 +100,7 @@ namespace geo {
 
       //if volume is a module, not a strip (search doesn't hit end)
       if (volName.find("volAuxDet_") != std::string::npos) {
-	//loop over strips
+        //loop over strips
         for (size_t svID=0; svID<nsv; svID++) {
           //CERN modules
           if (nsv==16){
@@ -114,12 +114,12 @@ namespace geo {
             }
           }
           //DC modules
-	  if (nsv==64){
+          if (nsv==64){
             //1 fiber per strip read out at one end
-	    for (size_t svID=0; svID<64; svID++) {
+            for (size_t svID=0; svID<64; svID++) {
                 fADGeoToChannelAndSV[a].push_back(std::make_pair(svID, svID));
             }
-	  }
+          }
           //MINOS modules
           if (nsv==20){
             for (size_t svID=0; svID<20; svID++) {
@@ -148,7 +148,7 @@ namespace geo {
   //----------------------------------------------------------------------------
   uint32_t CRTChannelMapAlg::PositionToAuxDetChannel(
       double const worldLoc[3],
-      std::vector<geo::AuxDetGeo*> const& auxDets,
+      std::vector<geo::AuxDetGeo> const& auxDets,
       size_t& ad,
       size_t& sv) const {
 
@@ -163,7 +163,7 @@ namespace geo {
     double svOrigin[3] = {0, 0, 0};
     double localOrigin[3] = {0, 0, 0};
 
-    auxDets[ad]->SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
+    auxDets[ad].SensitiveVolume(sv).LocalToWorld(localOrigin, svOrigin);
 
     // Check to see which AuxDet this position corresponds to
     auto gnItr = fADGeoToName.find(ad);
@@ -197,7 +197,7 @@ namespace geo {
   const TVector3 CRTChannelMapAlg::AuxDetChannelToPosition(
       uint32_t const& channel,
       std::string const& auxDetName,
-      std::vector<geo::AuxDetGeo*> const& auxDets) const {
+      std::vector<geo::AuxDetGeo> const& auxDets) const {
     double x = 0;
     double y = 0;
     double z = 0;
@@ -229,7 +229,7 @@ namespace geo {
     for (auto csv : csvItr->second) {
       if (csv.first == channel) {
         // Get the center of the sensitive volume for this channel
-        auxDets[ad]->SensitiveVolume(csv.second).LocalToWorld(localOrigin,
+        auxDets[ad].SensitiveVolume(csv.second).LocalToWorld(localOrigin,
                                                               svOrigin);
 
         x = svOrigin[0];
@@ -245,4 +245,3 @@ namespace geo {
 
 }  // namespace crt
 //} //namespace icarus
-
