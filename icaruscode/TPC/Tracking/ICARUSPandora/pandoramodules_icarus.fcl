@@ -18,6 +18,7 @@ icarus_basicpandora:
     ShouldRunCosmicRecoOption:                   false
     ShouldPerformSliceId:                        false
     PrintOverallRecoStatus:                      false
+    icarus_pandora.EnableMCParticles:            true
 }
 
 icarus_pandora:                                  @local::icarus_basicpandora
