@@ -11,12 +11,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 #include "TProfile.h"
-
-#include <Eigen/Core>
-#include <unsupported/Eigen/FFT>
 
 #include <fstream>
 
@@ -56,12 +53,16 @@ private:
     
     // And a container for the FFT of the above
     icarusutil::FrequencyVec fElectronicsResponseFFTVec;
+
+    // Keep track of the FFT 
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
 // Constructor.
 ElectronicsResponseBesselApprox::ElectronicsResponseBesselApprox(const fhicl::ParameterSet& pset) :
-    fBinWidth(0.)
+    fBinWidth(0.),
+    fFFT(nullptr)
 {
     configure(pset);
 }
@@ -87,6 +88,9 @@ void ElectronicsResponseBesselApprox::setResponse(size_t numBins, double binWidt
     fBinWidth = binWidth * timeCorrect;
     
     fElectronicsResponseBesselApproxVec.resize(numBins, 0.);
+
+    // Check that we have initialized our FFT object
+    if (!fFFT) fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numBins);
     
     // This note from Filippo:
     // The following sets the ICARUS electronics response function in
@@ -133,10 +137,7 @@ void ElectronicsResponseBesselApprox::setResponse(size_t numBins, double binWidt
 
     std::transform(fElectronicsResponseBesselApproxVec.begin(),fElectronicsResponseBesselApproxVec.end(),fElectronicsResponseBesselApproxVec.begin(),std::bind(std::divides<double>(),std::placeholders::_1,respIntegral));
     
-    // Now we take the FFT...
-    Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;
-    
-    eigenFFT.fwd(fElectronicsResponseFFTVec, fElectronicsResponseBesselApproxVec);
+    fFFT->forwardFFT(fElectronicsResponseBesselApproxVec, fElectronicsResponseFFTVec);
 
     return;
 }
@@ -157,14 +158,11 @@ void ElectronicsResponseBesselApprox::outputHistograms(art::TFileDirectory& hist
     TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", fElectronicsResponseBesselApproxVec.size(), 0., hiEdge);
     
     for(size_t idx = 0; idx < fElectronicsResponseBesselApproxVec.size(); idx++) hist->Fill(idx * fBinWidth, fElectronicsResponseBesselApproxVec.at(idx), 1.);
-
-    // Get the necessary tools
-    icarussigproc::WaveformTools<double> waveformTools;
     
     // Get the FFT of the response
     icarusutil::TimeVec powerVec;
     
-    waveformTools.getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
+    fFFT->getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
     
     // Now we can plot this...
     double maxFreq   = 0.5 / fBinWidth;   // binWidth will be in us, maxFreq will be units of MHz

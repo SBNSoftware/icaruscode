@@ -11,12 +11,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarussigproc/ICARUSFFT.h"
 
 #include "TProfile.h"
-
-#include <Eigen/Core>
-#include <unsupported/Eigen/FFT>
 
 #include <fstream>
 
@@ -55,12 +52,16 @@ private:
     
     // And a container for the FFT of the above
     icarusutil::FrequencyVec fElectronicsResponseFFTVec;
+
+    // Keep track of the FFT 
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
 };
 
 //----------------------------------------------------------------------
 // Constructor.
 ElectronicsResponse::ElectronicsResponse(const fhicl::ParameterSet& pset) :
-    fBinWidth(0.)
+    fBinWidth(0.),
+    fFFT(nullptr)
 {
     configure(pset);
 }
@@ -85,6 +86,9 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     fBinWidth = binWidth * timeCorrect;
     
     fElectronicsResponseVec.resize(numBins, 0.);
+
+    // Check that we have initialized our FFT object
+    if (!fFFT) fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numBins);
     
     // This note from Filippo:
     // The following sets the ICARUS electronics response function in
@@ -129,10 +133,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     // Resize and pad with zeroes
     fElectronicsResponseFFTVec.resize(fElectronicsResponseVec.size(),std::complex<double>(0.,0.));
     
-    // Now we take the FFT...
-    Eigen::FFT<icarusutil::SigProcPrecision> eigenFFT;
-    
-    eigenFFT.fwd(fElectronicsResponseFFTVec, fElectronicsResponseVec);
+    fFFT->forwardFFT(fElectronicsResponseVec, fElectronicsResponseFFTVec);
 
     return;
 }
@@ -153,14 +154,11 @@ void ElectronicsResponse::outputHistograms(art::TFileDirectory& histDir) const
     TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", fElectronicsResponseVec.size(), 0., hiEdge);
     
     for(size_t idx = 0; idx < fElectronicsResponseVec.size(); idx++) hist->Fill(idx * fBinWidth, fElectronicsResponseVec.at(idx), 1.);
-
-    // Get a hold of some tools
-    icarussigproc::WaveformTools<icarusutil::SigProcPrecision> waveformTools;
     
     // Get the FFT of the response
     icarusutil::TimeVec powerVec;
     
-    waveformTools.getFFTPower(fElectronicsResponseVec, powerVec);
+    fFFT->getFFTPower(fElectronicsResponseVec, powerVec);
     
     // Now we can plot this...
     double maxFreq   = 0.5 / fBinWidth;   // binWidth will be in us, maxFreq will be units of MHz

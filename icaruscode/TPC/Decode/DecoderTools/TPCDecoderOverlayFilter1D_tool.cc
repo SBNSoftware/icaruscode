@@ -222,19 +222,19 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     size_t nChannelsPerFragment = nBoardsPerFragment * nChannelsPerBoard;
     size_t nSamplesPerChannel   = physCrateFragment.nSamplesPerChannel();
 
-    if (fSelectVals.empty())             fSelectVals       = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
-    if (fROIVals.empty())                fROIVals          = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
-    if (fRawWaveforms.empty())           fRawWaveforms     = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fPedCorWaveforms.empty())        fPedCorWaveforms  = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fIntrinsicRMS.empty())           fIntrinsicRMS     = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fCorrectedMedians.empty())       fCorrectedMedians = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fWaveLessCoherent.empty())       fWaveLessCoherent = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fMorphedWaveforms.empty())       fMorphedWaveforms = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fSelectVals.empty())       fSelectVals       = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
+    if (fROIVals.empty())          fROIVals          = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
+    if (fRawWaveforms.empty())     fRawWaveforms     = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fPedCorWaveforms.empty())  fPedCorWaveforms  = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fIntrinsicRMS.empty())     fIntrinsicRMS     = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fCorrectedMedians.empty()) fCorrectedMedians = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fWaveLessCoherent.empty()) fWaveLessCoherent = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fMorphedWaveforms.empty()) fMorphedWaveforms = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
 
-    if (fPedestalVals.empty())           fPedestalVals     = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fFullRMSVals.empty())            fFullRMSVals      = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fTruncRMSVals.empty())           fTruncRMSVals     = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fNumTruncBins.empty())           fNumTruncBins     = icarussigproc::VectorInt(nChannelsPerFragment);
+    if (fPedestalVals.empty())     fPedestalVals     = icarussigproc::VectorFloat(nChannelsPerFragment);
+    if (fFullRMSVals.empty())      fFullRMSVals      = icarussigproc::VectorFloat(nChannelsPerFragment);
+    if (fTruncRMSVals.empty())     fTruncRMSVals     = icarussigproc::VectorFloat(nChannelsPerFragment);
+    if (fNumTruncBins.empty())     fNumTruncBins     = icarussigproc::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
     icarussigproc::Denoising            denoiser;

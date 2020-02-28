@@ -60,31 +60,31 @@ private:
     std::string                             numberToString(int number);
 
     // Keep track of our status
-    bool                                           fResponseHasBeenSet;
+    bool                                              fResponseHasBeenSet;
     
     // Member variables from the fhicl file
-    size_t                                         fThisPlane;
-    double                                         f3DCorrection;
-    double                                         fTimeScaleFactor;
-    int                                            fDeconvPol;
+    size_t                                            fThisPlane;
+    double                                            f3DCorrection;
+    double                                            fTimeScaleFactor;
+    int                                               fDeconvPol;
     
     using IFieldResponsePtr       = std::unique_ptr<icarus_tool::IFieldResponse>;
     using IElectronicsResponsePtr = std::unique_ptr<icarus_tool::IElectronicsResponse>;
     using IFilterPtr              = std::unique_ptr<icarus_tool::IFilter>;
 
     // Keep track of our base tools
-    IFieldResponsePtr                              fFieldResponse;
-    IElectronicsResponsePtr                        fElectronicsResponse;
-    IFilterPtr                                     fFilter;
+    IFieldResponsePtr                                 fFieldResponse;
+    IElectronicsResponsePtr                           fElectronicsResponse;
+    IFilterPtr                                        fFilter;
 
     // Keep track of overall response functions
-    size_t                                         fNumberTimeSamples;
-    icarusutil::TimeVec                            fResponse;
-    icarusutil::FrequencyVec                       fConvolutionKernel;
-    icarusutil::FrequencyVec                       fDeconvolutionKernel;           
+    size_t                                            fNumberTimeSamples;
+    icarusutil::TimeVec                               fResponse;
+    icarusutil::FrequencyVec                          fConvolutionKernel;
+    icarusutil::FrequencyVec                          fDeconvolutionKernel;           
 
     std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
-    detinfo::DetectorProperties const*             fDetectorProperties;   ///< Detector properties service
+    detinfo::DetectorProperties const*                fDetectorProperties;   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------
@@ -299,13 +299,10 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     {
         hist->Fill((double(bin) + 0.5) * samplingRate * 1.e-3, responseVec.at(bin), 1.);
     }
-
-    // Get an instance of our tools
-    icarussigproc::WaveformTools<double> waveformTools;
     
     icarusutil::TimeVec powerVec;
     
-    waveformTools.getFFTPower(responseVec, powerVec);
+    fFFT->getFFTPower(responseVec, powerVec);
     
     double      freqWidth = maxFreq / (powerVec.size() - 1);
     std::string freqName  = "Response_FFTPlane_" + std::to_string(fThisPlane);

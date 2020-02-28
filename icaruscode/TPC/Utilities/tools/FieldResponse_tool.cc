@@ -13,15 +13,10 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art_root_io/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "icarussigproc/ICARUSFFT.h"
 #include "icarussigproc/WaveformTools.h"
 #include "TFile.h"
 #include "TProfile.h"
-
-#ifndef EIGEN_FFTW_DEFAULT
-#error EIGEN_FFTW_DEFAULT is not defined
-#endif
-
-#include <unsupported/Eigen/FFT>
 
 #include <fstream>
 #include <iomanip>
@@ -81,12 +76,15 @@ private:
     
     // Derived variables
     double                   fT0Offset;
+
+    // Keep track of the FFT 
+    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
 // Constructor.
 FieldResponse::FieldResponse(const fhicl::ParameterSet& pset) :
-    fIsValid(false), fSignalType(geo::kMysteryType)
+    fIsValid(false), fSignalType(geo::kMysteryType), fFFT(nullptr)
 {
     configure(pset);
 }
@@ -148,6 +146,15 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fT0Offset = -(fFieldResponseHist->GetXaxis()->GetBinCenter(binOfInterest) - fFieldResponseHist->GetXaxis()->GetBinCenter(1)) * fTimeCorrectionFactor;
     
     fIsValid = true;
+
+    // Hoops to jump throught to find "correct" size for FFT
+    // Find the next power of 2 that is larger than the vector we have
+    size_t newVecSize(64);
+    
+    while(getNumBins() > newVecSize) newVecSize *= 2;
+
+    // Check that we have initialized our FFT object
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(newVecSize);
     
     double integral = getIntegral();
     
@@ -182,13 +189,10 @@ void FieldResponse::setResponse(double weight, double correction3D, double timeS
     
     // Resize and pad with zeroes
     fFieldResponseVec.resize(newVecSize,0.);
-
-    // Now we take the FFT...
-    Eigen::FFT<double> eigenFFT;
     
     fFieldResponseFFTVec.resize(newVecSize);
     
-    eigenFFT.fwd(fFieldResponseFFTVec, fFieldResponseVec);
+    fFFT->forwardFFT(fFieldResponseVec, fFieldResponseFFTVec);
     
     return;
 }
