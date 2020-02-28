@@ -24,15 +24,15 @@ BEGIN_PROLOG
 #     services.SpaceChargeService: @local::icarus_spacecharge
 #
 icarus_spacecharge: {
-    service_provider:       SpaceChargeServiceStandard
+    service_provider:       SpaceChargeServiceICARUS
     
     EnableSimSpatialSCE:    false
     EnableSimEfieldSCE:     false
     EnableCorrSCE:          false
     EnableCalSpatialSCE:    false
     EnableCalEfieldSCE:     false
-    RepresentationType:     "Parametric"
-    InputFilename:          "SCEoffsets.root"
+    RepresentationType:     "Voxelized_TH3"
+    InputFilename:          "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
     
 } # icarus_spacecharge
 

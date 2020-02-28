@@ -12,6 +12,8 @@ add_subdirectory(PMT)
 add_subdirectory(RecoUtils)
 add_subdirectory(TPC)
 add_subdirectory(Utilities)
+add_subdirectory(SpaceCharge)
+add_subdirectory(SpaceChargeServices)
 
 add_subdirectory(Decode)
 
