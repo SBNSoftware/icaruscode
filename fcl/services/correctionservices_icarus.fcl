@@ -33,7 +33,6 @@ icarus_spacecharge: {
     EnableCalEfieldSCE:     false
     RepresentationType:     "Voxelized_TH3"
     InputFilename:          "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
-    
 } # icarus_spacecharge
 
 
