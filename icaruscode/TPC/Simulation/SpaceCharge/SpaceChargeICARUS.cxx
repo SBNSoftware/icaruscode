@@ -11,7 +11,7 @@
 #include <math.h>
 #include <stdio.h>
 // LArSoft includes
-#include "icaruscode/SpaceCharge/SpaceChargeICARUS.h"
+#include "icaruscode/TPC/Simulation/SpaceCharge/SpaceChargeICARUS.h"
 
 // Framework includes
 #include "cetlib_except/exception.h"

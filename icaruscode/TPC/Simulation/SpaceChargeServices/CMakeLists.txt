@@ -1,5 +1,5 @@
 simple_plugin(SpaceChargeServiceICARUS "service"
-	icaruscode_SpaceCharge
+	icaruscode_TPC_Simulation_SpaceCharge
 	lardataalg_DetectorInfo
 	${ART_FRAMEWORK_CORE}
 	${ART_FRAMEWORK_PRINCIPAL}

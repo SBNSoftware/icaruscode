@@ -93,7 +93,7 @@ using DoubleVec2 = std::vector<DoubleVec>;
 
 namespace icarusutil {
     
-class SignalShapingICARUSService
+class SignalShapingICARUSService : private lar::EnsureOnlyOneSchedule
 {
 public:
     

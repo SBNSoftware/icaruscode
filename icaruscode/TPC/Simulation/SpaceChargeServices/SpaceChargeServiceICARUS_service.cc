@@ -8,7 +8,7 @@
 #include <iostream>
 
 // LArSoft includes                                                                       
-#include "icaruscode/SpaceChargeServices/SpaceChargeServiceICARUS.h"
+#include "icaruscode/TPC/Simulation/SpaceChargeServices/SpaceChargeServiceICARUS.h"
 
 // ROOT includes                                                                          
 #include "TMath.h"
