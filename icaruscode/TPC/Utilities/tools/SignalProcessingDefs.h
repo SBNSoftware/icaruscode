@@ -11,7 +11,7 @@
 #ifndef SignalProcessingDefs_H
 #define SignalProcessingDefs_H
 
-#include <complex.h>
+#include <complex>
 
 namespace icarusutil
 {

@@ -17,15 +17,16 @@
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitCharacterizationAlg.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
 
 #include "TH1.h"
 #include "TH2.h"
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TF1.h"
-#include "TComplex.h"
-#include "TVirtualFFT.h"
+
+#include "icarussigproc/ICARUSFFT.h"
+#include "icarussigproc/WaveformTools.h"
 
 #include <cmath>
 #include <algorithm>
@@ -121,6 +122,10 @@ private:
     
     icarussigproc::WaveformTools<double> fWaveformTool;
 
+    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
+
+    FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
+
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore&                 fGeometry;             ///< pointer to Geometry service
     icarusutil::SignalShapingICARUSService&  fSignalServices;       ///< The signal shaping service
@@ -142,6 +147,11 @@ BasicRawDigitAnalysis::BasicRawDigitAnalysis(fhicl::ParameterSet const & pset) :
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
     fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
+    // Now set up our plans for doing the convolution
+    int numberTimeSamples = fDetectorProperties->NumberTimeSamples();
+
+    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numberTimeSamples);
     
     configure(pset);
     
@@ -433,38 +443,15 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     //       double binSize     = sampleFreq / readOutSize;
     
     // Step one is to setup and then get the FFT transform of the input waveform
-    int    fftDataSize = rawadc.size();
+    size_t fftDataSize = rawadc.size();
+    size_t halfFFTDataSize = fftDataSize / 2 + 1;
     
-    TVirtualFFT* fftr2c = TVirtualFFT::FFT(1, &fftDataSize, "R2C M");
-    
-    std::vector<double> fftInputVec;
-    
-    fftInputVec.resize(fftDataSize, 0.);
-    
-    std::transform(rawadc.begin(),rawadc.end(),fftInputVec.begin(),[pedestal](const auto& val){return double(val) - pedestal;});
-    
-    fftr2c->SetPoints(fftInputVec.data());
-    fftr2c->Transform();
-    
-    // Now we set up and recover the FFT power spectrum
-    std::vector<double>   realVals;
-    std::vector<double>   imaginaryVals;
-    std::vector<TComplex> complexVals;
-    
-    size_t halfFFTDataSize(fftDataSize/2 + 1);
-    
-    realVals.resize(halfFFTDataSize,0.);
-    imaginaryVals.resize(halfFFTDataSize,0.);
-    
-    fftr2c->GetPointsComplex(realVals.data(), imaginaryVals.data());
-    
-    std::vector<double> powerVec;
-    powerVec.resize(halfFFTDataSize, 0.);
-            
-    std::transform(realVals.begin(), realVals.begin() + halfFFTDataSize, imaginaryVals.begin(), powerVec.begin(), [](const double& real, const double& imaginary){return std::sqrt(real*real + imaginary*imaginary);});
-    
-    // Not sure the better way to do this...
-    for(size_t complexIdx = 0; complexIdx < halfFFTDataSize; complexIdx++) complexVals.emplace_back(realVals.at(complexIdx),imaginaryVals.at(complexIdx));
+    icarusutil::TimeVec inputVec(fftDataSize, 0.);
+    icarusutil::TimeVec powerVec(fftDataSize, 0.);
+
+    std::transform(rawadc.begin(),rawadc.end(),inputVec.begin(),[pedestal](const auto& val){return double(val) - pedestal;});
+
+    fFFT->getFFTPower(inputVec,powerVec);
 
     // Fill any individual wire histograms we want to look at
     if (wire >= fLoWireByPlane[plane] && wire < fHiWireByPlane[plane])
@@ -491,7 +478,7 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     
     fWaveformTool.triangleSmooth(powerVec, powerVec);
     
-    std::vector<double> powerDerivVec;
+    icarusutil::TimeVec powerDerivVec;
     
     fWaveformTool.firstDerivative(powerVec, powerDerivVec);
     
@@ -499,6 +486,8 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     icarussigproc::WaveformTools<float>::PeakTupleVec peakTupleVec;
     
     fWaveformTool.findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
+
+    icarusutil::TimeVec smoothPowerVec = powerVec;
     
     // Try smoothing the peak regions
     for(const auto& peakTuple : peakTupleVec)
@@ -519,50 +508,34 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
         while(++firstBin < lastBin)
         {
             // Update the power first
-            powerVec.at(firstBin)  = newBinVal;
-            newBinVal             += stepVal;
-            
-            // Now scale the real and imaginary values...
-            double scaleFactor = 1. / sqrt(realVals.at(firstBin)*realVals.at(firstBin) + imaginaryVals.at(firstBin)*imaginaryVals.at(firstBin));
-            
-            realVals.at(firstBin)      *= powerVec.at(firstBin) * scaleFactor;
-            imaginaryVals.at(firstBin) *= powerVec.at(firstBin) * scaleFactor;
+            smoothPowerVec[firstBin]  = newBinVal;
+            newBinVal                += stepVal;
         }
     }
     
     while(currentBin > lowestBin)
     {
-        double avePowerThisBin(powerVec.at(currentBin));
+        double avePowerThisBin(smoothPowerVec.at(currentBin));
         double freq = 1.e6 * double(currentBin)/ (sampleRate * readOutSize);
 
         if (wire >= fLoWireByPlane[plane] && wire < fHiWireByPlane[plane])
         {
             fSmoothPowerVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, avePowerThisBin, 1.);
             fFFTPowerDerivVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, powerDerivVec.at(currentBin), 1.);
-            fFFTRealVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, realVals.at(currentBin), 1.);
-            fFFTImaginaryVec[plane][wire-fLoWireByPlane[plane]]->Fill(freq, imaginaryVals.at(currentBin), 1.);
         }
         
         fAveSmoothPowerVec[plane]->Fill(freq, avePowerThisBin, 1.);
         fAveFFTPowerDerivVec[plane]->Fill(freq, powerDerivVec.at(currentBin), 1.);
-        fAveFFTRealVec[plane]->Fill(freq, realVals.at(currentBin), 1.);
-        fAveFFTImaginaryVec[plane]->Fill(freq, imaginaryVals.at(currentBin), 1.);
 
         currentBin--;
     }
     
     // Recover the filter from signal shaping services...
-    const icarusutil::FrequencyVec& filter   = fSignalServices.GetResponse(channel).getFilter()->getResponseVec();
+    const icarusutil::FrequencyVec& filter = fSignalServices.GetResponse(channel).getFilter()->getResponseVec();
     
     // Convolve this with the FFT of the input waveform
-    for(size_t idx = 0; idx < complexVals.size(); idx++)
-    {
-        TComplex filterVal(filter[idx].real(),filter[idx].imag());
-
-        complexVals[idx] *= filterVal;
-    }
-
-    std::transform(complexVals.begin(), complexVals.end(), powerVec.begin(), [](const auto& val){return val.Rho();});
+    fFFT->convolute(inputVec,filter,0);
+    fFFT->getFFTPower(inputVec,powerVec);
 
     for(size_t idx = 0; idx < halfFFTDataSize; idx++)
     {

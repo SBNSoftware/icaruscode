@@ -13,15 +13,8 @@
 #include "icarussigproc/WaveformTools.h"
 #include "icaruscode/TPC/Utilities/tools/IFilter.h"
 
-#include <complex.h>
-#include <Eigen/Core>
-#include <unsupported/Eigen/FFT>
-
 #include <cmath>
 #include <algorithm>
-#include <complex>
-
-#include "TComplex.h"
 
 namespace caldata
 {

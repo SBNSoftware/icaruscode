@@ -26,7 +26,6 @@
 #include "TH1F.h"
 #include "TProfile.h"
 #include "TFile.h"
-#include "TComplex.h"
 
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
@@ -314,7 +313,7 @@ void CorrelatedNoise::GenNoise(std::function<void (double[])>& gen,const icarusu
         gen(rnd_corr);
         
         double pval  = freqDist[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
-        double phase = rnd_corr[1] * 2. * TMath::Pi();
+        double phase = rnd_corr[1] * 2. * M_PI;
         
         std::complex<double> tc(pval*cos(phase),pval*sin(phase));
         

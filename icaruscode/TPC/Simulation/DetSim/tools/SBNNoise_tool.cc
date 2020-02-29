@@ -26,7 +26,6 @@
 #include "TH1F.h"
 #include "TProfile.h"
 #include "TFile.h"
-#include "TComplex.h"
 
 #include <complex.h>
 #include <Eigen/Core>
@@ -316,7 +315,7 @@ void SBNNoise::GenNoise(std::function<void (double[])>& gen,const icarusutil::Ti
         gen(rnd_corr);
         
         float pval  = freqDist[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd_corr[0]) * scaleFactor;
-        float phase = rnd_corr[1] * 2. * TMath::Pi();
+        float phase = rnd_corr[1] * 2. * M_PI;
         
         std::complex<float> tc(pval*cos(phase),pval*sin(phase));
         

@@ -26,7 +26,6 @@
 
 #include "TH1D.h"
 #include "TFile.h"
-#include "TComplex.h"
 
 #include <fstream>
 
@@ -150,9 +149,9 @@ void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
         
         pval = fNoiseHistVec[i] * ((1-fNoiseRand) + 2 * fNoiseRand*rnd[0]) * scaleFactor;
 
-        phase = rnd[1] * 2. * TMath::Pi();
+        phase = rnd[1] * 2. * M_PI;
 
-        TComplex tc(pval*cos(phase),pval*sin(phase));
+        std::complex<double> tc(pval*cos(phase),pval*sin(phase));
 
         noiseFrequency.at(i) += tc;
     }
