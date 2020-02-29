@@ -294,14 +294,11 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
         }
         nTotalEffectivePE += nEffectivePE;
 
-        if (nEffectivePE == 0.0) continue;
-        if (nEffectivePE == 1.0) AddSPE(subsample, waveform, startTick);
-        else {
-          AddPhotoelectrons(
-            subsample, waveform, startTick,
-            static_cast<WaveformValue_t>(nEffectivePE)
-            );
-        }
+        AddPhotoelectrons(
+          subsample, waveform, startTick,
+          static_cast<WaveformValue_t>(nEffectivePE)
+          );
+        
       } // for sample
     } // for subsamples
     MF_LOG_TRACE("PMTsimulationAlg")
@@ -487,40 +484,45 @@ void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const&
     { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; }
 
 
-  void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(
-    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
-    WaveformValue_t const n
-  ) const {
-
-
-    std::size_t const min = time_bin.value();
-    std::size_t const max = std::min(min + pulse.size(), fNsamples);
-    if (min >= max) return;
-
-    std::transform(
-      wave.begin() + min, wave.begin() + max,
-      pulse.begin(),
-      wave.begin() + min,
-      [n](auto a, auto b) { return a+n*b; }
-      );
-
-  } // PMTsimulationAlg::AddPhotoelectrons()
-
-  void icarus::opdet::PMTsimulationAlg::AddSPE
-    (PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin) const
-  {
-    std::size_t const min = time_bin.value();
-    std::size_t const max = std::min(min + pulse.size(), fNsamples);
-    if (min >= max) return;
-
-    std::transform(
-      wave.begin() + min, wave.begin() + max,
-      pulse.begin(),
-      wave.begin() + min,
-      std::plus<ADCcount>()
-      );
-
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(
+  PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+  WaveformValue_t const n
+) const {
+  
+  if (n == 0.0) return;
+  
+  if (n == 1.0) {
+    // simple addition
+    AddPulseShape(pulse, wave, time_bin, std::plus<ADCcount>());
   }
+  else {
+    // multiply each `pulse` sample by `n`:
+    AddPulseShape(pulse, wave, time_bin, [n](auto a, auto b) { return a+n*b; });
+  }
+  
+} // icarus::opdet::PMTsimulationAlg::AddPhotoelectrons()
+
+
+// -----------------------------------------------------------------------------
+template <typename Combine>
+void icarus::opdet::PMTsimulationAlg::AddPulseShape(
+  PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+  Combine combination
+  ) const
+{
+  std::size_t const min = time_bin.value();
+  std::size_t const max = std::min(min + pulse.size(), fNsamples);
+  if (min >= max) return;
+
+  std::transform(
+    wave.begin() + min, wave.begin() + max,
+    pulse.begin(),
+    wave.begin() + min,
+    combination
+    );
+
+} // icarus::opdet::PMTsimulationAlg::AddPulseShape()
 
 
 // -----------------------------------------------------------------------------
@@ -599,13 +601,14 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
     
     auto const [ tick, subtick ] = toTickAndSubtick(darkNoiseTime * fSampling);
     
+    // TODO: add gain fluctuation
     double const n = 1.0;
     MF_LOG_TRACE("PMTsimulationAlg")
       << " * at " << darkNoiseTime << " (" << tick << ", subsample " << subtick
       << ") x" << n;
     
-    // TODO: add gain fluctuation
-    AddSPE(wsp.subsample(subtick), wave, tick);
+    AddPhotoelectrons
+      (wsp.subsample(subtick), wave, tick, static_cast<WaveformValue_t>(n));
     
     // time of the next leakage event:
     darkNoiseTime += nanoseconds{ random.fire() };

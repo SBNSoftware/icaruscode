@@ -721,24 +721,24 @@ namespace icarus::opdet {
 
 
   /**
-   * @brief Adds a single pulse to a waveform, starting at a given tick.
+   * @brief Adds a pulse to a waveform, starting at a given tick.
+   * @tparam Combine binary operation combining two ADC counts into one
    * @param pulse the sampling to add to the waveform
    * @param wave the waveform the pulse will be added to
    * @param time_bin the tick of the waveform where the pulse starts
-   *
-   * All the samples of `pulse` are _added_ to the sampling waveform `wave`,
-   * starting from the `time_bin` sample of this waveform.
+   * @param combination how to combine the pulse and the waveform
    * 
-   * The `pulse` samples are a sequence of ADC counts describing the single
-   * photoelectron pulse shape. The waveform is also a sequence of samples
-   * representing a optical detector channel digitized waveform, starting at
-   * tick #0.
+   * This is the internal implementation of `AddPhotoelectrons()`.
    * 
-   * This function adds exactly one photoelectron shape `pulse`. To add more
-   * (or less) than one, use `AddPhotoelectrons()` instead.
+   * The `combination` functor behaves as a binary function taking the
+   * existing `wave` sample and the sample from the `pulse` at the same time
+   * and returning their combination as a new sample value.
    */
-  void AddSPE
-    (PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin) const;
+  template <typename Combine>
+  void AddPulseShape(
+    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+    Combine combination
+    ) const;
   
   /**
    * @brief Adds a number of pulses to a waveform, starting at a given tick.
@@ -755,10 +755,6 @@ namespace icarus::opdet {
    * photoelectron pulse shape. The waveform is also a sequence of samples
    * representing a optical detector channel digitized waveform, starting at
    * tick #0.
-   * 
-   * This function adds an arbitraty number of photoelectron shapes all like
-   * `pulse`. To add exactly one pulse, the faster `AddSPE()` can be used
-   * instead.
    */
   void AddPhotoelectrons(
     PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
