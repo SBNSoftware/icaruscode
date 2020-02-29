@@ -203,6 +203,21 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 
 
 //------------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
+  
+  using Fluctuator_t = GainFluctuator<CLHEP::RandPoisson>;
+  
+  if (fParams.doGainFluctuations) {
+    double const refGain = fParams.PMTspecs.firstStageGain();
+    return Fluctuator_t
+      { refGain, CLHEP::RandPoisson{ *fParams.gainRandomEngine, refGain } };
+  }
+  else return Fluctuator_t{}; // default-constructed does not fluctuate anything
+  
+} // icarus::opdet::PMTsimulationAlg::makeGainFluctuator()
+
+
+//------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 							 sim::SimPhotons const& photons,
 							 sim::SimPhotons& photons_used)
@@ -274,9 +289,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
     double nTotalEffectivePE [[gnu::unused]] = 0U; // unused if not in `debug` mode
 
-    double const refGain = fParams.PMTspecs.firstStageGain();
-    CLHEP::RandPoisson randomGainFluctuation
-      (*fParams.gainRandomEngine, refGain);
+    auto gainFluctuation = makeGainFluctuator();
 
     // go though all subsamples (starting each at a fraction of a tick)
     for (auto const& [ iSubsample, peMap ]: util::enumerate(peMaps)) {
@@ -287,11 +300,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       for (auto const& [ startTick, nPE ]: peMap) {
         nTotalPE += nPE;
 
-        // add gain fluctuations in the conversion
-        double nEffectivePE = nPE;
-        if (fParams.doGainFluctuations) {
-          nEffectivePE *= randomGainFluctuation.fire() / refGain;
-        }
+        double const nEffectivePE = gainFluctuation(nPE);
         nTotalEffectivePE += nEffectivePE;
 
         AddPhotoelectrons(
@@ -594,6 +603,8 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
   
   TimeToTickAndSubtickConverter const toTickAndSubtick(wsp.nSubsamples());
 
+  auto gainFluctuation = makeGainFluctuator();
+
   MF_LOG_TRACE("PMTsimulationAlg")
     << "Adding dark noise (" << fParams.darkNoiseRate << ") up to " << maxTime;
   
@@ -601,8 +612,7 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
     
     auto const [ tick, subtick ] = toTickAndSubtick(darkNoiseTime * fSampling);
     
-    // TODO: add gain fluctuation
-    double const n = 1.0;
+    double const n = gainFluctuation(1.0); // leakage is one photoelectron
     MF_LOG_TRACE("PMTsimulationAlg")
       << " * at " << darkNoiseTime << " (" << tick << ", subsample " << subtick
       << ") x" << n;
@@ -630,6 +640,13 @@ auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
     static_cast<SubsampleIndex_t>(subtick)
     };
 } // icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
+
+
+// -----------------------------------------------------------------------------
+template <typename Rand>
+double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
+  (double const n)
+  { return fRandomGain? (n * fRandomGain->fire() / fReferenceGain): n; }
 
 
 // -----------------------------------------------------------------------------

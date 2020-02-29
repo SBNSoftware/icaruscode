@@ -681,6 +681,7 @@ namespace icarus::opdet {
     using NoiseAdderFunc_t = void (PMTsimulationAlg::*)(Waveform_t&) const;
 
     
+    // --- BEGIN -- Helper functors --------------------------------------------
     /// Functor to convert tick point into a tick number and a subsample index.
     class TimeToTickAndSubtickConverter {
       
@@ -697,6 +698,31 @@ namespace icarus::opdet {
       
     }; // TimeToTickAndSubtickConverter
     
+    
+    /// Applies a random gain fluctuation to the specified number of
+    /// photoelectrons.
+    template <typename Rand>
+    class GainFluctuator {
+      
+      std::optional<Rand> fRandomGain; ///< Random gain extractor (optional).
+      double const fReferenceGain = 0.0; ///< Reference (average) gain.
+      
+        public:
+      GainFluctuator() = default;
+      GainFluctuator(double const refGain, Rand&& randomGain)
+        : fRandomGain(std::move(randomGain))
+        , fReferenceGain(refGain)
+        {}
+      
+      /// Returns the new number of photoelectrons after fluctuation from `n`.
+      double operator() (double const n);
+      
+    }; // GainFluctuator
+    
+    /// Returns a configured gain fluctuator object.
+    auto makeGainFluctuator() const;
+    
+    // --- END -- Helper functors ----------------------------------------------
     
     
     ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
