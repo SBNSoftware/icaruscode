@@ -56,8 +56,8 @@ BEGIN_PROLOG
 icarus_single_induction_geometry: {
   SurfaceY:        6.9e2                   #in cm, vertical distance to the surface
   Name:            "icarus"
-  GDML:            @nil
-  ROOT:            @nil
+  GDML:            "icarus_single_complete_no_overburden.gdml"
+  ROOT:            "icarus_single_complete_no_overburden.gdml"
   DisableWiresInG4: true
 } # icarus_single_induction_geometry
 
@@ -176,12 +176,14 @@ icarus_split_induction_geometry_services: {
 ###
 ### Complete geometry (including CRT) with two TPC's per drift volume and 9
 ### meter long wires on first induction plane.
+### Well, that is the plan for the near future but for this first release 
+### we stay with the single wire geometry 
 ###
 
-icarus_geo:              @local::icarus_split_induction_geometry_services.Geometry
-icarus_geometry_helper:  @local::icarus_split_induction_geometry_services.ExptGeoHelperInterface
+icarus_geo:              @local::icarus_single_induction_geometry_services.Geometry
+icarus_geometry_helper:  @local::icarus_single_induction_geometry_services.ExptGeoHelperInterface
 
-icarus_geometry_services: @local::icarus_split_induction_geometry_services
+icarus_geometry_services: @local::icarus_single_induction_geometry_services
 
 
 ################################################################################
