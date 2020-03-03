@@ -5,7 +5,7 @@
  * @see     `icaruscode/PMT/Algorithms/PMTsimulationAlg.cxx`
  *
  * These algoritms were originally extracted from the module
- * `SimPMTICARUS_module.cc`, which was in turnb based on 
+ * `SimPMTICARUS_module.cc`, which was in turnb based on
  * `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho
  */
 
@@ -14,6 +14,7 @@
 
 
 // ICARUS libraries
+#include "icaruscode/Utilities/SampledFunction.h"
 #include "icaruscode/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
@@ -43,6 +44,7 @@
 #include <string>
 #include <unordered_map>
 #include <algorithm> // std::transform()
+#include <tuple>
 #include <utility> // std::forward()
 #include <memory> // std::unique_ptr()
 #include <functional> // std::plus
@@ -119,9 +121,9 @@ namespace icarus::opdet {
      */
     ADCcount evaluateAt(Time time) const
       {
-        return Gaussian(time,
+        return round(Gaussian(time,
           peakTime(), ((time < peakTime())? leftSigma(): rightSigma()),
-          amplitude()
+          amplitude())
           );
       } // evaluateAt()
 
@@ -158,6 +160,13 @@ namespace icarus::opdet {
     template <typename V>
     static V sqr(V value) { return value * value; }
 
+    template <typename V>
+    static V round(V value)
+      {
+        using namespace util::quantities::electronics_literals;
+        return (value.abs() < 1e-6_ADCf)? 0.0_ADCf: value;
+      }
+
   }; // class PhotoelectronPulseWaveform<>
 
 
@@ -165,7 +174,7 @@ namespace icarus::opdet {
   /**
    * @brief Precomputed digitised shape of a given function.
    *
-   * The sampling happens internally in double precision.
+   * Multiple samplings ("subsamples") are performed with sub-tick offsets.
    */
   class DiscretePhotoelectronPulse {
       public:
@@ -175,9 +184,19 @@ namespace icarus::opdet {
     /// Type of shape (times are in nanoseconds).
     using PulseFunction_t = PhotoelectronPulseWaveform<nanoseconds>;
     using ADCcount = PulseFunction_t::ADCcount;
-
+    
+      private:
+    /// Internal discretized representation of the sampled pulse shape.
+    using SampledFunction_t = util::SampledFunction<nanoseconds, ADCcount>;
+    
+      public:
     using Time_t = nanoseconds;
     using Tick_t = util::quantities::tick;
+
+    using SubsampleIndex_t = gsl::index; ///< Type of index of subsample.
+    
+    /// Type of subsample data (a sampling of the full range).
+    using Subsample_t = SampledFunction_t::SubsampleData_t;
 
     static_assert(!std::is_same<Time_t, Tick_t>(),
       "Time and tick must be different types!");
@@ -190,31 +209,45 @@ namespace icarus::opdet {
      *
      * Samples start from time 0 (as defined by the pulse shape).
      */
-    DiscretePhotoelectronPulse
-      (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas);
+    DiscretePhotoelectronPulse(
+      PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas,
+      unsigned int nSubsamples = 1U
+      );
 
     /// Returns the length of the sampled pulse in ticks.
     std::size_t pulseLength() const { return fSampledShape.size(); }
 
-    /// Returns the value sampled for the specified `tick` (the first is `0`).
-    ADCcount operator[] (std::size_t tick) const
-      { return fSampledShape[tick]; }
-
-    /// Returns the value sampled for the specified `tick` (the first is `0`).
-    ADCcount operator() (Tick_t tick) const
-      { return this->operator[](tick.value()); }
-
     /// Evaluates the shape at the specified time.
     ADCcount operator() (Time_t time) const { return fShape(time); }
 
+    /**
+     * @name Access to subsamples.
+     *
+     * A subsample is represented by a forward-iterable object. For example:
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+     * using namespace util::quantities::time_literals;
+     * auto const& subsample = dpp.subsampleFor(5_ns);
+     * for (auto sample: subsample) // ...
+     * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+     *
+     * @note Direct iterator access is currently not implemented because the
+     *       underlying implementation of the subsample object (`gsl::span`)
+     *       does not support "borrowing" the data. See the note in
+     *       `util::SampledFunction` for more details. The issue should be
+     *       solved with C++20.
+     */
     /// @{
-    /// @name Iterator interface.
 
-    auto cbegin() const { return fSampledShape.cbegin(); }
-    auto cend() const { return fSampledShape.cend(); }
-    auto begin() const { return fSampledShape.begin(); }
-    auto end() const { return fSampledShape.end(); }
+    /// Returns the subsample specified by index `i`, undefined if invalid.
+    decltype(auto) subsample(SubsampleIndex_t i) const
+      { return fSampledShape.subsample(i); }
 
+    /// Returns the index of the subsample whose tick left limit is closest to
+    /// `time` (see `util::SampledFunction::closestSubsampleIndex()`).
+    decltype(auto) subsampleFor(Time_t time) const
+      { return subsample(fSampledShape.closestSubsampleIndex(time)); }
+
+    SubsampleIndex_t nSubsamples() const { return fSampledShape.nSubsamples(); }
     /// @}
 
     /// Returns the function which was sampled.
@@ -261,15 +294,19 @@ namespace icarus::opdet {
     bool checkRange(ADCcount limit, std::string const& outputCat) const;
 
       private:
+
     PulseFunction_t fShape;  ///< Analytical shape of the pules.
     gigahertz fSamplingFreq; ///< Sampling frequency.
 
-    std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretized.
+    /// Pulse shape, discretized.
+    SampledFunction_t fSampledShape;
+
 
     /// Builds the sampling cache.
-    static std::vector<ADCcount> sampleShape(
+    static SampledFunction_t sampleShape(
       PulseFunction_t const& pulseShape,
-      gigahertz samplingFreq, double rightSigmas
+      gigahertz samplingFreq, double rightSigmas,
+      unsigned int nSubsamples
       );
 
   }; // class DiscretePhotoelectronPulse<>
@@ -437,21 +474,21 @@ namespace icarus::opdet {
    *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
    *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
    *
-   * 
+   *
    * Random number generators
    * -------------------------
-   * 
+   *
    * @anchor ICARUS_PMTSimulationAlg_RandomEngines
-   * 
+   *
    * Three independent random engines are currently used in the simulation:
-   * 
+   *
    * * "main" random engine:
    *     * residual quantum efficiency;
    *     * gain fluctuations;
    * * "dark noise" engine: dark current noise only;
    * * "electronics noise" engine: electronics noise only.
-   * 
-   * 
+   *
+   *
    * Structure of the algorithm
    * ===========================
    *
@@ -555,6 +592,7 @@ namespace icarus::opdet {
       picocoulomb meanAmplitude;
       nanoseconds fallTime;
       nanoseconds riseTime;
+      unsigned int pulseSubsamples = 1U; ///< Number of tick subsamples.
 
       ADCcount baseline; //waveform baseline
       ADCcount ampNoise; //amplitude of gaussian noise
@@ -588,7 +626,7 @@ namespace icarus::opdet {
 
       /// @{
       /// @name Derivative configuration parameters.
-      
+
       std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
       std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
       int expectedPulsePolarity() const
@@ -635,9 +673,57 @@ namespace icarus::opdet {
     /// Type internally used for storing waveforms.
     using Waveform_t = std::vector<ADCcount>;
     using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
+    
+    /// Type of sampled pulse shape: sequence of samples, one per tick.
+    using PulseSampling_t = DiscretePhotoelectronPulse::Subsample_t;
 
     /// Type of member function to add electronics noise.
     using NoiseAdderFunc_t = void (PMTsimulationAlg::*)(Waveform_t&) const;
+
+    
+    // --- BEGIN -- Helper functors --------------------------------------------
+    /// Functor to convert tick point into a tick number and a subsample index.
+    class TimeToTickAndSubtickConverter {
+      
+      double const fNSubsamples; ///< Number of subsamples.
+      
+        public:
+      using SubsampleIndex_t = DiscretePhotoelectronPulse::SubsampleIndex_t;
+
+      TimeToTickAndSubtickConverter(unsigned int nSubsamples)
+        : fNSubsamples(static_cast<double>(nSubsamples)) {}
+      
+      /// Converts the `tick_d` in a subsample number and tick number.
+      std::tuple<tick, SubsampleIndex_t> operator() (double const tick_d) const;
+      
+    }; // TimeToTickAndSubtickConverter
+    
+    
+    /// Applies a random gain fluctuation to the specified number of
+    /// photoelectrons.
+    template <typename Rand>
+    class GainFluctuator {
+      
+      std::optional<Rand> fRandomGain; ///< Random gain extractor (optional).
+      double const fReferenceGain = 0.0; ///< Reference (average) gain.
+      
+        public:
+      GainFluctuator() = default;
+      GainFluctuator(double const refGain, Rand&& randomGain)
+        : fRandomGain(std::move(randomGain))
+        , fReferenceGain(refGain)
+        {}
+      
+      /// Returns the new number of photoelectrons after fluctuation from `n`.
+      double operator() (double const n);
+      
+    }; // GainFluctuator
+    
+    /// Returns a configured gain fluctuator object.
+    auto makeGainFluctuator() const;
+    
+    // --- END -- Helper functors ----------------------------------------------
+    
     
     ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
 
@@ -648,10 +734,10 @@ namespace icarus::opdet {
     DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
     NoiseAdderFunc_t const fNoiseAdder; ///< Selected electronics noise method.
-    
+
     ///< Transformation uniform to Gaussian for electronics noise.
     static util::FastAndPoorGauss<32768U, float> const fFastGauss;
-    
+
   void CreateFullWaveform
   (Waveform_t&, sim::SimPhotons const&, sim::SimPhotons &);
 
@@ -660,16 +746,53 @@ namespace icarus::opdet {
           std::vector<raw::OpDetWaveform>& output_opdets);
 
 
-  void AddSPE(tick time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
-  /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-  void AddPhotoelectrons
-    (tick time_bin, WaveformValue_t n, Waveform_t& wave) const;
+  /**
+   * @brief Adds a pulse to a waveform, starting at a given tick.
+   * @tparam Combine binary operation combining two ADC counts into one
+   * @param pulse the sampling to add to the waveform
+   * @param wave the waveform the pulse will be added to
+   * @param time_bin the tick of the waveform where the pulse starts
+   * @param combination how to combine the pulse and the waveform
+   * 
+   * This is the internal implementation of `AddPhotoelectrons()`.
+   * 
+   * The `combination` functor behaves as a binary function taking the
+   * existing `wave` sample and the sample from the `pulse` at the same time
+   * and returning their combination as a new sample value.
+   */
+  template <typename Combine>
+  void AddPulseShape(
+    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+    Combine combination
+    ) const;
+  
+  /**
+   * @brief Adds a number of pulses to a waveform, starting at a given tick.
+   * @param pulse the sampling to add, scaled, to the waveform
+   * @param wave the waveform the pulses will be added to
+   * @param time_bin the tick of the waveform where the pulses start being added
+   * @param n the number of pulses added (it may be fractional)
+   *
+   * All the samples of `pulse` are scaled by the factor `n` and then _added_
+   * to the sampling waveform `wave`, starting from the `time_bin` sample of
+   * this waveform.
+   * 
+   * The `pulse` samples are a sequence of ADC counts describing the single
+   * photoelectron pulse shape. The waveform is also a sequence of samples
+   * representing a optical detector channel digitized waveform, starting at
+   * tick #0.
+   */
+  void AddPhotoelectrons(
+    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+    WaveformValue_t const n
+    ) const;
 
 
   void AddNoise(Waveform_t& wave) const; //add noise to baseline
   /// Same as `AddNoise()` but using an alternative generator.
   void AddNoise_faster(Waveform_t& wave) const;
-  void AddDarkNoise(Waveform_t& wave); //add noise to baseline
+  // Add "dark" noise to baseline.
+  void AddDarkNoise(Waveform_t& wave) const;
 
   /**
    * @brief Ticks in the specified waveform where some signal activity starts.
@@ -840,6 +963,12 @@ namespace icarus::opdet {
         Comment("Single photoelectron: fall time (90% to 10%, sigma * ~1.687) [ns]")
         // mandatory
         };
+      fhicl::Atom<unsigned int> PulseSubsamples {
+        Name("PulseSubsamples"),
+        Comment
+          ("split each tick by this many subsamples to increase PMT timing simulation"),
+        1U
+        };
 
       //
       // dark noise
@@ -955,11 +1084,13 @@ void icarus::opdet::PhotoelectronPulseWaveform<T>::dump(Stream&& out,
 // -----------------------------------------------------------------------------
 // --- icarus::opdet::DiscretePhotoelectronPulse
 // -----------------------------------------------------------------------------
-inline icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse
-  (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas)
+inline icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse(
+  PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas,
+  unsigned int nSubsamples /* = 1U */
+  )
   : fShape(std::move(pulseShape))
   , fSamplingFreq(samplingFreq)
-  , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas))
+  , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas, nSubsamples))
   {}
 
 
@@ -972,9 +1103,10 @@ void icarus::opdet::DiscretePhotoelectronPulse::dump(Stream&& out,
   out << firstIndent << "Sampled pulse waveform " << pulseLength()
     << " samples long (" << duration()
     << " long, sampled at " << samplingFrequency()
-    << "); pulse shape:"
-    << "\n" << indent;
-  shape().dump(std::forward<Stream>(out), indent + "  ", "");
+    << ");"
+    << "\n";
+  shape().dump(std::forward<Stream>(out), indent + "  ", indent);
+  fSampledShape.dump(out, indent + "  ", indent);
 } // icarus::opdet::DiscretePhotoelectronPulse::dump()
 
 
@@ -986,7 +1118,7 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
 {
   using namespace util::quantities::electronics_literals;
-  
+
   out
             << indent << "Baseline:            " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
@@ -996,26 +1128,29 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations
     << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
-    << '\n' << indent << "Sampling:            " << fSampling
+    << '\n' << indent << "Sampling:            " << fSampling;
+  if (fParams.pulseSubsamples > 1U)
+    out << " (subsampling: x" << fParams.pulseSubsamples << ")";
+  out
     << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     ;
-  
+
   out << '\n' << indent << "Electronics noise:   ";
   if (fParams.ampNoise > 0_ADCf) {
     out << fParams.ampNoise << " RMS ("
       << (fParams.useFastElectronicsNoise? "faster": "slower") << " algorithm)";
   }
   else out << "none";
-  
+
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
       << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
-  
+
   out << '\n' << indent << "... and more.";
-  
+
   out << '\n' << indent << "Template photoelectron waveform settings:"
     << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
@@ -1025,6 +1160,6 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
 
 //-----------------------------------------------------------------------------
 
- 
+
 #endif // ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
 
