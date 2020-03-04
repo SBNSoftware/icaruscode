@@ -74,6 +74,55 @@ cet_test(dump_channel_map_icarus_test HANDBUILT
 )
 
 
+# test for geometry _single_induction_nooverburden
+cet_test(geometry_single_induction_nooverburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_single_induction_nooverburden_icarus.fcl
+)
+
+# test for geometry _single_induction_overburden
+cet_test(geometry_single_induction_overburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_single_induction_overburden_icarus.fcl
+)
+
+# test for geometry _single_induction
+cet_test(geometry_single_induction_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_single_induction_icarus.fcl
+)
+
+# test for geometry _split_induction_nooverburden
+cet_test(geometry_split_induction_nooverburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_split_induction_nooverburden_icarus.fcl
+)
+
+# test for geometry _split_induction_overburden
+cet_test(geometry_split_induction_overburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_split_induction_overburden_icarus.fcl
+)
+
+# test for geometry _split_induction
+cet_test(geometry_split_induction_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_split_induction_icarus.fcl
+)
+
+# test for geometry _nooverburden
+cet_test(geometry_nooverburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_nooverburden_icarus.fcl
+)
+
+# test for geometry _overburden
+cet_test(geometry_overburden_icarus HANDBUILT
+  TEST_EXEC lar
+  TEST_ARGS --rethrow-all --config test_geometry_overburden_icarus.fcl
+)
+
+
 install_headers()
 install_fhicl()
 install_source()
