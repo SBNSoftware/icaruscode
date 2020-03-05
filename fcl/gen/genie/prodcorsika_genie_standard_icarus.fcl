@@ -72,7 +72,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_crygen_icarus.root"
+   fileName:    "prodcorsika_genie_standard_icarus_%tc-%p.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
@@ -81,3 +81,5 @@ outputs:
 
 #physics.producers.cosmgen.EnergyThreshold: 2e-1
 #physics.producers.cosmgen.SubBoxLength: "subboxLength 60 "
+
+services.TFileService.fileName: "Supplemental-prodcorsika_genie_standard_icarus_%tc-%p.root"
