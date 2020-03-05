@@ -24,8 +24,8 @@
 
 #include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
 
-#include "icarussigproc/WaveformTools.h"
-#include "icarussigproc/Denoising.h"
+#include "icarus_signal_processing/WaveformTools.h"
+#include "icarus_signal_processing/Denoising.h"
 
 // std includes
 #include <string>
@@ -71,89 +71,89 @@ public:
     /**
      *  @brief Recover the selection values
      */
-    const icarussigproc::ArrayBool  getSelectionVals() const override {return fSelectVals;};
+    const icarus_signal_processing::ArrayBool  getSelectionVals() const override {return fSelectVals;};
 
     /**
      *  @brief Recover the ROI values
      */
-    const icarussigproc::ArrayBool  getROIVals() const override {return fROIVals;};
+    const icarus_signal_processing::ArrayBool  getROIVals() const override {return fROIVals;};
 
     /**
      *  @brief Recover the pedestal subtracted waveforms
      */
-    const icarussigproc::ArrayFloat getRawWaveforms() const override {return fPedSubtractedWaveforms;};
+    const icarus_signal_processing::ArrayFloat getRawWaveforms() const override {return fPedSubtractedWaveforms;};
 
     /**
      *  @brief Recover the pedestal subtracted waveforms
      */
-    const icarussigproc::ArrayFloat getPedCorWaveforms() const override {return fPedSubtractedWaveforms;};
+    const icarus_signal_processing::ArrayFloat getPedCorWaveforms() const override {return fPedSubtractedWaveforms;};
 
     /**
      *  @brief Recover the "intrinsic" RMS
      */
-    const icarussigproc::ArrayFloat getIntrinsicRMS() const override {return fIntrinsicRMS;};
+    const icarus_signal_processing::ArrayFloat getIntrinsicRMS() const override {return fIntrinsicRMS;};
 
     /**
      *  @brief Recover the correction median values
      */
-    const icarussigproc::ArrayFloat getCorrectedMedians() const override {return fCorrectedMedians;};
+    const icarus_signal_processing::ArrayFloat getCorrectedMedians() const override {return fCorrectedMedians;};
 
     /**
      *  @brief Recover the waveforms less coherent noise
      */
-    const icarussigproc::ArrayFloat getWaveLessCoherent()  const override {return fWaveLessCoherent;};
+    const icarus_signal_processing::ArrayFloat getWaveLessCoherent()  const override {return fWaveLessCoherent;};
 
     /**
      *  @brief Recover the morphological filter waveforms
      */
-    const icarussigproc::ArrayFloat getMorphedWaveforms()  const override {return fMorphedWaveforms;};
+    const icarus_signal_processing::ArrayFloat getMorphedWaveforms()  const override {return fMorphedWaveforms;};
 
     /**
      *  @brief Recover the pedestals for each channel
      */
-    const icarussigproc::VectorFloat getPedestalVals() const override {return fPedestalVals;};
+    const icarus_signal_processing::VectorFloat getPedestalVals() const override {return fPedestalVals;};
 
     /**
      *  @brief Recover the full RMS before coherent noise
      */
-    const icarussigproc::VectorFloat getFullRMSVals()  const override {return fFullRMSVals;};
+    const icarus_signal_processing::VectorFloat getFullRMSVals()  const override {return fFullRMSVals;};
  
     /**
      *  @brief Recover the truncated RMS noise 
      */
-    const icarussigproc::VectorFloat getTruncRMSVals() const override {return fTruncRMSVals;};
+    const icarus_signal_processing::VectorFloat getTruncRMSVals() const override {return fTruncRMSVals;};
 
     /**
      *  @brief Recover the number of bins after truncation
      */
-    const icarussigproc::VectorInt   getNumTruncBins() const override {return fNumTruncBins;};
+    const icarus_signal_processing::VectorInt   getNumTruncBins() const override {return fNumTruncBins;};
 
 private:
 
-    uint32_t                           fFragment_id_offset;     //< Allow offset for id
-    size_t                             fCoherentNoiseGrouping;  //< # channels in common for coherent noise
-    std::vector<size_t>                fStructuringElement;     //< Structuring element for morphological filter
-    size_t                             fMorphWindow;            //< Window for filter
-    float                              fThreshold;              //< Threshold to apply for saving signal
+    uint32_t                              fFragment_id_offset;     //< Allow offset for id
+    size_t                                fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    std::vector<size_t>                   fStructuringElement;     //< Structuring element for morphological filter
+    size_t                                fMorphWindow;            //< Window for filter
+    float                                 fThreshold;              //< Threshold to apply for saving signal
 
-    std::vector<char>                  fFilterModeVec;          //< Allowed modes for the filter
+    std::vector<char>                     fFilterModeVec;          //< Allowed modes for the filter
 
     // Allocate containers for noise processing
-    icarussigproc::ArrayBool           fSelectVals;
-    icarussigproc::ArrayBool           fROIVals;
-    icarussigproc::ArrayFloat          fPedSubtractedWaveforms;
-    icarussigproc::ArrayFloat          fIntrinsicRMS;
-    icarussigproc::ArrayFloat          fCorrectedMedians;
-    icarussigproc::ArrayFloat          fWaveLessCoherent;
-    icarussigproc::ArrayFloat          fMorphedWaveforms;
+    icarus_signal_processing::ArrayBool   fSelectVals;
+    icarus_signal_processing::ArrayBool   fROIVals;
+    icarus_signal_processing::ArrayFloat  fPedSubtractedWaveforms;
+    icarus_signal_processing::ArrayFloat  fIntrinsicRMS;
+    icarus_signal_processing::ArrayFloat  fCorrectedMedians;
+    icarus_signal_processing::ArrayFloat  fWaveLessCoherent;
+    icarus_signal_processing::ArrayFloat  fMorphedWaveforms;
 
-    icarussigproc::VectorFloat         fPedestalVals;
-    icarussigproc::VectorFloat         fFullRMSVals;
-    icarussigproc::VectorFloat         fTruncRMSVals;
-    icarussigproc::VectorInt           fNumTruncBins;
+    icarus_signal_processing::VectorFloat fPedestalVals;
+    icarus_signal_processing::VectorFloat fFullRMSVals;
+    icarus_signal_processing::VectorFloat fTruncRMSVals;
+    icarus_signal_processing::VectorInt   fNumTruncBins;
 
-    const geo::Geometry*               fGeometry;              //< pointer to the Geometry service
-    const detinfo::DetectorProperties* fDetector;              //< Pointer to the detector properties
+    const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter2D::TPCDecoderFilter2D(fhicl::ParameterSet const &pset)
@@ -209,22 +209,22 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
     size_t nChannelsPerFragment = nBoardsPerFragment * nChannelsPerBoard;
     size_t nSamplesPerChannel   = physCrateFragment.nSamplesPerChannel();
 
-    if (fSelectVals.empty())             fSelectVals             = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
-    if (fROIVals.empty())                fROIVals                = icarussigproc::ArrayBool(nChannelsPerFragment,  icarussigproc::VectorBool(nSamplesPerChannel));
-    if (fPedSubtractedWaveforms.empty()) fPedSubtractedWaveforms = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fIntrinsicRMS.empty())           fIntrinsicRMS           = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fCorrectedMedians.empty())       fCorrectedMedians       = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fWaveLessCoherent.empty())       fWaveLessCoherent       = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
-    if (fMorphedWaveforms.empty())       fMorphedWaveforms       = icarussigproc::ArrayFloat(nChannelsPerFragment, icarussigproc::VectorFloat(nSamplesPerChannel));
+    if (fSelectVals.empty())             fSelectVals             = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fROIVals.empty())                fROIVals                = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fPedSubtractedWaveforms.empty()) fPedSubtractedWaveforms = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fIntrinsicRMS.empty())           fIntrinsicRMS           = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fCorrectedMedians.empty())       fCorrectedMedians       = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fWaveLessCoherent.empty())       fWaveLessCoherent       = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fMorphedWaveforms.empty())       fMorphedWaveforms       = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
 
-    if (fPedestalVals.empty())           fPedestalVals           = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fFullRMSVals.empty())            fFullRMSVals            = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fTruncRMSVals.empty())           fTruncRMSVals           = icarussigproc::VectorFloat(nChannelsPerFragment);
-    if (fNumTruncBins.empty())           fNumTruncBins           = icarussigproc::VectorInt(nChannelsPerFragment);
+    if (fPedestalVals.empty())           fPedestalVals           = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
+    if (fFullRMSVals.empty())            fFullRMSVals            = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
+    if (fTruncRMSVals.empty())           fTruncRMSVals           = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
+    if (fNumTruncBins.empty())           fNumTruncBins           = icarus_signal_processing::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
-    icarussigproc::Denoising            denoiser;
-    icarussigproc::WaveformTools<float> waveformTools;
+    icarus_signal_processing::Denoising            denoiser;
+    icarus_signal_processing::WaveformTools<float> waveformTools;
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
@@ -244,7 +244,7 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
             // Get the channel number on the Fragment
             size_t channelOnBoard = boardOffset + chanIdx;
 
-            icarussigproc::VectorFloat& dataVec = fPedSubtractedWaveforms[channelOnBoard];
+            icarus_signal_processing::VectorFloat& dataVec = fPedSubtractedWaveforms[channelOnBoard];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
                 dataVec[tick] = dataBlock[chanIdx + tick * nChannelsPerBoard];

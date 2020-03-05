@@ -48,7 +48,7 @@
 
 #include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
 
-#include "icarussigproc/ICARUSSigProcDefs.h"
+#include "icarus_signal_processing/ICARUSSigProcDefs.h"
 
 namespace daq 
 {
@@ -106,9 +106,9 @@ private:
     };
 
     // Function to save our RawDigits
-    void saveRawDigits(const icarussigproc::ArrayFloat&, 
-                       const icarussigproc::VectorFloat&, 
-                       const icarussigproc::VectorFloat&,
+    void saveRawDigits(const icarus_signal_processing::ArrayFloat&, 
+                       const icarus_signal_processing::VectorFloat&, 
+                       const icarus_signal_processing::VectorFloat&,
                        ConcurrentRawDigitCol&, size_t) const;
 
     // Tools for decoding fragments depending on type
@@ -354,7 +354,7 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     double totalTime = theClockProcess.accumulated_real_time();
 
     // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
-    icarussigproc::VectorFloat locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
+    icarus_signal_processing::VectorFloat locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
 
     saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
 
@@ -370,9 +370,9 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     return;
 }
 
-void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArray, 
-                                      const icarussigproc::VectorFloat& pedestalVec,
-                                      const icarussigproc::VectorFloat& rmsVec,
+void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat&  dataArray, 
+                                      const icarus_signal_processing::VectorFloat& pedestalVec,
+                                      const icarus_signal_processing::VectorFloat& rmsVec,
                                       ConcurrentRawDigitCol&            rawDigitCol, 
                                       size_t                            channel) const
 {
@@ -387,7 +387,7 @@ void FilterNoiseICARUS::saveRawDigits(const icarussigproc::ArrayFloat&  dataArra
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
     {
-        const icarussigproc::VectorFloat& dataVec = dataArray[chanIdx];
+        const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
 
         // Need to convert from float to short int
         std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});

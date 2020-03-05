@@ -24,7 +24,7 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "icaruscode/TPC/Decode/DecoderTools/IFakeParticle.h"
 
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 // std includes
 #include <string>
@@ -87,7 +87,7 @@ private:
 
     icarusutil::TimeVec                      fFFTTimeVec;            //< Local time vector
 
-    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
+    using FFTPointer = std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>;
 
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
@@ -162,7 +162,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
 
     fFFTTimeVec.resize(numberTimeSamples,0.);
 
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numberTimeSamples);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numberTimeSamples);
 
     return;
 }

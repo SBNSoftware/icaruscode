@@ -15,7 +15,7 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -51,7 +51,7 @@ private:
     
     const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
     art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>>          fFFT;                  ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>          fFFT;                  ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
@@ -111,7 +111,7 @@ void ROIDeconvolution::configure(const fhicl::ParameterSet& pset)
     auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(detprop->NumberTimeSamples());
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop->NumberTimeSamples());
     
     return;
 }

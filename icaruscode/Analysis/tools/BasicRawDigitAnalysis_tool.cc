@@ -25,8 +25,8 @@
 #include "TProfile2D.h"
 #include "TF1.h"
 
-#include "icarussigproc/ICARUSFFT.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include <cmath>
 #include <algorithm>
@@ -118,11 +118,13 @@ private:
     std::vector<TProfile*>               fAveFFTImaginaryVec;
     std::vector<TProfile*>               fAveSmoothPowerVec;
 
-    caldata::RawDigitCharacterizationAlg fCharacterizationAlg;
-    
-    icarussigproc::WaveformTools<double> fWaveformTool;
+    caldata::RawDigitCharacterizationAlg     fCharacterizationAlg;
 
-    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
+    using WaveformTools = icarus_signal_processing::WaveformTools<double>;
+    
+    WaveformTools                            fWaveformTool;
+
+    using FFTPointer = std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>;
 
     FFTPointer                               fFFT;                   //< Object to handle thread safe FFT
 
@@ -151,7 +153,7 @@ BasicRawDigitAnalysis::BasicRawDigitAnalysis(fhicl::ParameterSet const & pset) :
     // Now set up our plans for doing the convolution
     int numberTimeSamples = fDetectorProperties->NumberTimeSamples();
 
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numberTimeSamples);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numberTimeSamples);
     
     configure(pset);
     
@@ -483,7 +485,7 @@ void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID
     fWaveformTool.firstDerivative(powerVec, powerDerivVec);
     
     // Find the peaks...
-    icarussigproc::WaveformTools<float>::PeakTupleVec peakTupleVec;
+    icarus_signal_processing::WaveformTools<float>::PeakTupleVec peakTupleVec;
     
     fWaveformTool.findPeaks(powerDerivVec.begin() + 300, powerDerivVec.end(), peakTupleVec, 10., 0);
 

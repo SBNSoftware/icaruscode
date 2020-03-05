@@ -16,7 +16,7 @@
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
 
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
@@ -76,7 +76,7 @@ private:
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
 
-    using WaveformTools = icarussigproc::WaveformTools<icarusutil::SigProcPrecision>;
+    using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
     WaveformTools                               fWaveformTool;
 

@@ -11,7 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 #include "TProfile.h"
 
@@ -54,7 +54,7 @@ private:
     icarusutil::FrequencyVec fElectronicsResponseFFTVec;
 
     // Keep track of the FFT 
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
 };
 
 //----------------------------------------------------------------------
@@ -88,7 +88,7 @@ void ElectronicsResponse::setResponse(size_t numBins, double binWidth)
     fElectronicsResponseVec.resize(numBins, 0.);
 
     // Check that we have initialized our FFT object
-    if (!fFFT) fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numBins);
+    if (!fFFT) fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numBins);
     
     // This note from Filippo:
     // The following sets the ICARUS electronics response function in

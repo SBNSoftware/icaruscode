@@ -18,7 +18,7 @@
 
 #include "art/Utilities/make_tool.h"
 #include "icaruscode/TPC/Utilities/SignalShaperServiceICARUS.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 #include "IFieldResponse.h"
 #include "IElectronicsResponse.h"
 #include "shprIFilter.h"

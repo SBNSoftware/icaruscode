@@ -33,30 +33,30 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-larsoft            v08_44_00
-icarusutil         v08_44_00
-icarussigproc      v08_41_00
-icarus_data        v08_31_01
-genie_xsec         v3_00_04a
-fftw               v3_3_8a
-sbndaq_artdaq_core v0_04_02_f02
+larsoft                   v08_44_00
+icarusutil                v08_44_00
+icarus_signal_processing  v08_41_00
+icarus_data               v08_31_01
+genie_xsec                v3_00_04a
+fftw                      v3_3_8a
+sbndaq_artdaq_core        v0_04_02_f02
 
-cetbuildtools	v7_15_01	-	only_for_build
+cetbuildtools	          v7_15_01	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes". 
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier		larsoft			icarusutil   icarussigproc   icarus_data  sbndaq_artdaq_core    genie_xsec              fftw notes
-e19:debug		e19:debug		e19:debug       e19:debug      -nq-        e19:s95:debug	    G1810a0211a:k250:e1000  debug
-e19:opt			e19:opt			e19:opt     	e19:opt        -nq-        e19:s95:opt	    	G1810a0211a:k250:e1000  opt
-e19:prof    	e19:prof		e19:prof    	e19:prof       -nq-        e19:s95:prof	        G1810a0211a:k250:e1000  prof 
-e19:py2:debug	e19:py2:debug	e19:py2:debug   e19:py2:debug  -nq-        e19:py2:s94:debug	G1810a0211a:k250:e1000  debug
-e19:py2:prof    e19:py2:prof	e19:py2:prof    e19:py2:prof   -nq-        e19:py2:s94:prof	    G1810a0211a:k250:e1000  prof
-c7:debug    	c7:debug    	c7:debug    	c7:debug       -nq-        c7:s95:debug	        G1810a0211a:k250:e1000  debug
-c7:opt      	c7:opt      	c7:opt      	c7:opt         -nq-        c7:s95:opt	    	G1810a0211a:k250:e1000  opt
-c7:prof     	c7:prof     	c7:prof     	c7:prof        -nq-        c7:s95:prof	    	G1810a0211a:k250:e1000  prof
+qualifier		larsoft			icarusutil   icarus_signal_processing   icarus_data  sbndaq_artdaq_core     genie_xsec              fftw  notes
+e19:debug		e19:debug		e19:debug          e19:debug               -nq-        e19:s95:debug	    G1810a0211a:k250:e1000  debug
+e19:opt			e19:opt			e19:opt     	   e19:opt                 -nq-        e19:s95:opt	    	G1810a0211a:k250:e1000  opt
+e19:prof    	e19:prof		e19:prof    	   e19:prof                -nq-        e19:s95:prof	        G1810a0211a:k250:e1000  prof 
+e19:py2:debug	e19:py2:debug	e19:py2:debug      e19:py2:debug           -nq-        e19:py2:s94:debug	G1810a0211a:k250:e1000  debug
+e19:py2:prof    e19:py2:prof	e19:py2:prof       e19:py2:prof            -nq-        e19:py2:s94:prof	    G1810a0211a:k250:e1000  prof
+c7:debug    	c7:debug    	c7:debug    	   c7:debug                -nq-        c7:s95:debug	        G1810a0211a:k250:e1000  debug
+c7:opt      	c7:opt      	c7:opt      	   c7:opt                  -nq-        c7:s95:opt	    	G1810a0211a:k250:e1000  opt
+c7:prof     	c7:prof     	c7:prof     	   c7:prof                 -nq-        c7:s95:prof	    	G1810a0211a:k250:e1000  prof
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

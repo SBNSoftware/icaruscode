@@ -18,7 +18,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // FFT
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"
@@ -60,7 +60,7 @@ private:
     std::vector<double> fNoiseHistVec;
 
     const detinfo::DetectorProperties*                fDetector;              //< Pointer to the detector properties
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT;
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;
 };
     
 //----------------------------------------------------------------------
@@ -109,7 +109,7 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
     // Now set up our plans for doing the convolution
     int numberTimeSamples = fDetector->NumberTimeSamples();
 
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(numberTimeSamples);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numberTimeSamples);
    
     return;
 }

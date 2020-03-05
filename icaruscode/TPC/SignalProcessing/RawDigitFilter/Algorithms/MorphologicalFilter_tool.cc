@@ -13,7 +13,7 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/IRawDigitFilter.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -72,7 +72,7 @@ private:
     TH1F*                                       fDeltaTicksHist;
     TH2F*                                       fDTixVDiffHist;
 
-    icarussigproc::WaveformTools<short>         fWaveformTool;
+    icarus_signal_processing::WaveformTools<short>         fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();

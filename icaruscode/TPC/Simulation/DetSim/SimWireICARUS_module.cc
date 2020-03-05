@@ -74,7 +74,7 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "tools/IGenNoise.h"
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 using namespace util;
 ///Detector simulation of raw signals on wires
@@ -145,7 +145,7 @@ private:
         size_t m_time;
     };
 
-    using FFTPointer = std::unique_ptr<icarussigproc::ICARUSFFT<double>>;
+    using FFTPointer = std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>;
     FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
     //services
@@ -212,7 +212,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fNTimeSamples);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fNTimeSamples);
     
     return;
 }

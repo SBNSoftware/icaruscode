@@ -51,7 +51,7 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
@@ -136,7 +136,7 @@ class Decon1DROI : public art::EDProducer
     std::unique_ptr<icarus_tool::IDeconvolution>               fDeconvolution;
     std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
 
-    icarussigproc::WaveformTools<float>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>                        fWaveformTool;
 
     const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();

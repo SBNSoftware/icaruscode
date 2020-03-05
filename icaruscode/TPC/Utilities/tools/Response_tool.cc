@@ -15,14 +15,14 @@
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 #include "IFieldResponse.h"
 #include "IElectronicsResponse.h"
 #include "IFilter.h"
 
 #include "TProfile.h"
 
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 #include <fstream>
 #include <iomanip>
@@ -83,7 +83,7 @@ private:
     icarusutil::FrequencyVec                          fConvolutionKernel;
     icarusutil::FrequencyVec                          fDeconvolutionKernel;           
 
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
     detinfo::DetectorProperties const*                fDetectorProperties;   ///< Detector properties service
 };
     
@@ -113,7 +113,7 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fNumberTimeSamples   = fDetectorProperties->NumberTimeSamples();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fNumberTimeSamples);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fNumberTimeSamples);
     
     return;
 }
@@ -198,7 +198,7 @@ void Response::calculateResponse(double weight)
     icarusutil::TimeVec curResponseVec(fieldResponseFFTVec.size());
     
     // Note that we need a local version of the FFT because our time samples currently don't match what we will have
-    icarussigproc::ICARUSFFT<double> locFFT(curResponseVec.size());
+    icarus_signal_processing::ICARUSFFT<double> locFFT(curResponseVec.size());
 
     locFFT.inverseFFT(curResponseFFTVec, curResponseVec);
     

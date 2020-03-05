@@ -12,7 +12,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()
@@ -37,7 +37,7 @@ private:
     
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
-    icarussigproc::WaveformTools<double>                       fWaveformTool;
+    icarus_signal_processing::WaveformTools<double>                       fWaveformTool;
 
     art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
 };

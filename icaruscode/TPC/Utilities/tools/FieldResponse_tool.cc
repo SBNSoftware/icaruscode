@@ -13,8 +13,8 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art_root_io/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "icarussigproc/ICARUSFFT.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/WaveformTools.h"
 #include "TFile.h"
 #include "TProfile.h"
 
@@ -78,7 +78,7 @@ private:
     double                   fT0Offset;
 
     // Keep track of the FFT 
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT; ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
@@ -154,7 +154,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     while(getNumBins() > newVecSize) newVecSize *= 2;
 
     // Check that we have initialized our FFT object
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(newVecSize);
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(newVecSize);
     
     double integral = getIntegral();
     
@@ -220,7 +220,7 @@ void FieldResponse::outputHistograms(art::TFileDirectory& histDir) const
     }
 
     // Grab some useful tools
-    icarussigproc::WaveformTools<double> waveformTool;
+    icarus_signal_processing::WaveformTools<double> waveformTool;
 
     // Make a copy of the response vec
     std::vector<double> smoothedResponseVec;

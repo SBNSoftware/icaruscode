@@ -15,8 +15,8 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "art/Utilities/make_tool.h"
-#include "icarussigproc/WaveformTools.h"
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/WaveformTools.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -47,9 +47,9 @@ private:
     std::string                                                fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
     std::map<unsigned int, float>                              fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
 
-    icarussigproc::WaveformTools<float>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>                        fWaveformTool;
 
-    std::unique_ptr<icarussigproc::ICARUSFFT<double>>          fFFT;                        ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>          fFFT;                        ///< Object to handle thread safe FFT
 
     const geo::GeometryCore*                                   fGeometry           = lar::providerFrom<geo::Geometry>();
     detinfo::DetectorProperties const*                         fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
@@ -106,7 +106,7 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarussigproc::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
      
     return;
 }

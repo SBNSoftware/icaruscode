@@ -17,7 +17,7 @@
 // Algorithm includes
 #include "artdaq-core/Data/Fragment.hh"
 
-#include "icarussigproc/ICARUSSigProcDefs.h"
+#include "icarus_signal_processing/ICARUSSigProcDefs.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -51,62 +51,62 @@ public:
     /**
      *  @brief Recover the selection values
      */
-    virtual const icarussigproc::ArrayBool  getSelectionVals()     const = 0;
+    virtual const icarus_signal_processing::ArrayBool  getSelectionVals()     const = 0;
 
     /**
      *  @brief Recover the ROI values
      */
-    virtual const icarussigproc::ArrayBool  getROIVals()           const = 0;
+    virtual const icarus_signal_processing::ArrayBool  getROIVals()           const = 0;
 
     /**
      *  @brief Recover the original raw waveforms
      */
-    virtual const icarussigproc::ArrayFloat getRawWaveforms() const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getRawWaveforms() const = 0;
 
     /**
      *  @brief Recover the pedestal corrected waveforms
      */
-    virtual const icarussigproc::ArrayFloat getPedCorWaveforms() const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getPedCorWaveforms() const = 0;
 
     /**
      *  @brief Recover the "intrinsic" RMS
      */
-    virtual const icarussigproc::ArrayFloat getIntrinsicRMS()      const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getIntrinsicRMS()      const = 0;
 
     /**
      *  @brief Recover the correction median values
      */
-    virtual const icarussigproc::ArrayFloat getCorrectedMedians()  const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getCorrectedMedians()  const = 0;
 
     /**
      *  @brief Recover the waveforms less coherent noise
      */
-    virtual const icarussigproc::ArrayFloat getWaveLessCoherent()  const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getWaveLessCoherent()  const = 0;
 
     /**
      *  @brief Recover the morphological filter waveforms
      */
-    virtual const icarussigproc::ArrayFloat getMorphedWaveforms()  const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getMorphedWaveforms()  const = 0;
 
     /**
      *  @brief Recover the pedestals for each channel
      */
-    virtual const icarussigproc::VectorFloat getPedestalVals() const = 0;
+    virtual const icarus_signal_processing::VectorFloat getPedestalVals() const = 0;
 
     /**
      *  @brief Recover the full RMS before coherent noise
      */
-    virtual const icarussigproc::VectorFloat getFullRMSVals()  const = 0;
+    virtual const icarus_signal_processing::VectorFloat getFullRMSVals()  const = 0;
  
     /**
      *  @brief Recover the truncated RMS noise 
      */
-    virtual const icarussigproc::VectorFloat getTruncRMSVals() const = 0;
+    virtual const icarus_signal_processing::VectorFloat getTruncRMSVals() const = 0;
 
     /**
      *  @brief Recover the number of bins after truncation
      */
-    virtual const icarussigproc::VectorInt   getNumTruncBins() const = 0;
+    virtual const icarus_signal_processing::VectorInt   getNumTruncBins() const = 0;
  
 };
 

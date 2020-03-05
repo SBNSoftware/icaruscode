@@ -25,7 +25,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
@@ -77,7 +77,7 @@ private:
     std::vector<TProfile*>                                 fConvFFTPowerVec;
     std::vector<TProfile*>                                 fFilterFuncVec;
 
-    icarussigproc::WaveformTools<T>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<T>                        fWaveformTool;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
     
     std::unique_ptr<Eigen::FFT<float>>                     fEigenFFT;

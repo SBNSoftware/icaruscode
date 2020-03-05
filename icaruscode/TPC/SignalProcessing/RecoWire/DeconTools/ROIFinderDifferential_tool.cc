@@ -12,7 +12,7 @@
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -73,7 +73,7 @@ private:
     TH1F*                                       fMinMaxSigmaHist;
     TH2F*                                       fDPeakVDistHist;
 
-    icarussigproc::WaveformTools<float>         fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>         fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();

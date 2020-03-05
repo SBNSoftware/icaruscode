@@ -10,7 +10,7 @@
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-#include "icarussigproc/WaveformTools.h"
+#include "icarus_signal_processing/WaveformTools.h"
 #include "icaruscode/TPC/Utilities/tools/IFilter.h"
 
 #include <cmath>
@@ -148,7 +148,7 @@ template <class T> void RawDigitFFTAlg<T>::getFFTCorrection(std::vector<T>& corV
     fWaveformTool.firstDerivative(powerVec, firstDerivVec);
     
     // Find the peaks
-    icarussigproc::WaveformTools<float>::PeakTupleVec peakTupleVec;
+    icarus_signal_processing::WaveformTools<float>::PeakTupleVec peakTupleVec;
     
     fWaveformTool.findPeaks(firstDerivVec.begin(),firstDerivVec.end(),peakTupleVec,minPowerThreshold,0);
     

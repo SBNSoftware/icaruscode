@@ -39,7 +39,7 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
-#include "icarussigproc/ICARUSFFT.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 ///creation of calibrated signals on wires
 namespace recowire {
@@ -222,7 +222,7 @@ namespace recowire{
     raw::ChannelID_t channel(raw::InvalidChannelID); // channel number
     unsigned int bin(0);     // time bin loop variable
 
-    icarussigproc::ICARUSFFT<double> fft(transformSize);
+    icarus_signal_processing::ICARUSFFT<double> fft(transformSize);
     
     double decayConst = 0.;  // exponential decay constant of electronics shaping
     double fitAmplitude    = 0.;  //This is the seed value for the amplitude in the exponential tail fit 
@@ -352,7 +352,7 @@ namespace recowire{
 	  // adapt as appropriate
       
 	  // Figure out which kernel to use (0=induction, 1=collection).
-    icarussigproc::ICARUSFFT<double>::TimeVec temp(holder.size());
+    icarus_signal_processing::ICARUSFFT<double>::TimeVec temp(holder.size());
     std::copy(holder.begin(),holder.end(),temp.begin());
 	  fft.convolute(temp,kernel[k],0);
     std::copy(temp.begin(),temp.end(),holder.begin());
