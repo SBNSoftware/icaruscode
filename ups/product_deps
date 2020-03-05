@@ -36,7 +36,7 @@ product             version
 larsoft                   v08_44_00
 icarusutil                v08_44_00
 icarus_signal_processing  v08_41_00
-icarus_data               v08_31_01
+icarus_data               v08_44_00
 genie_xsec                v3_00_04a
 fftw                      v3_3_8a
 sbndaq_artdaq_core        v0_04_02_f02
