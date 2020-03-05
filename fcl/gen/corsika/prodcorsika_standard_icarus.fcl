@@ -56,7 +56,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "single_corsika_icarus.root"
+   fileName:    "prodcorsika_standard_icarus_%tc-%p.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false
@@ -68,3 +68,4 @@ outputs:
 #physics.producers.generator.EnergyThreshold: 2.e-1
 physics.producers.generator.SubBoxLength: "subboxLength 60 "
 
+services.TFileService.fileName: "Supplemental-prodcorsika_standard_icarus_%tc-%p.root"

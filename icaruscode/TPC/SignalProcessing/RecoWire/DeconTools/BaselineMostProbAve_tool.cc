@@ -11,8 +11,8 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include <fstream>
 #include <algorithm> // std::minmax_element()
@@ -27,18 +27,19 @@ public:
     
     ~BaselineMostProbAve();
     
-    void configure(const fhicl::ParameterSet& pset)                                      override;
-    void outputHistograms(art::TFileDirectory&)                                    const override;
+    void configure(const fhicl::ParameterSet& pset)                                         override;
+    void outputHistograms(art::TFileDirectory&)                                       const override;
     
-    float GetBaseline(const std::vector<float>&, raw::ChannelID_t, size_t, size_t) const override;
+    float GetBaseline(const icarusutil::TimeVec&, raw::ChannelID_t, size_t, size_t)   const override;
     
 private:
-    std::pair<float,int> GetBaseline(const std::vector<float>&, int, size_t, size_t) const;
+    std::pair<float,int> GetBaseline(const icarusutil::TimeVec&, int, size_t, size_t) const;
     
     size_t fMaxROILength;    ///< Maximum length for calculating Most Probable Value
 
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
-    std::unique_ptr<icarus_tool::IWaveformTool>          fWaveformTool;
+    icarus_signal_processing::WaveformTools<double>                       fWaveformTool;
+
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
 };
     
 //----------------------------------------------------------------------
@@ -58,23 +59,16 @@ void BaselineMostProbAve::configure(const fhicl::ParameterSet& pset)
     fMaxROILength = pset.get<size_t>("MaxROILength", 100);
     
     // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
-
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
+    fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     return;
 }
 
     
-float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                       raw::ChannelID_t          channel,
-                                       size_t                    roiStart,
-                                       size_t                    roiLen) const
+float BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                       raw::ChannelID_t           channel,
+                                       size_t                     roiStart,
+                                       size_t                     roiLen) const
 {
     float base(0.);
 
@@ -102,21 +96,21 @@ float BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
     return base;
 }
     
-std::pair<float,int> BaselineMostProbAve::GetBaseline(const std::vector<float>& holder,
-                                                      int                       binRange,
-                                                      size_t                    roiStart,
-                                                      size_t                    roiStop) const
+std::pair<float,int> BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
+                                                      int                        binRange,
+                                                      size_t                     roiStart,
+                                                      size_t                     roiStop) const
 {
-    std::pair<float,int> base(0.,1);
+    std::pair<double,int> base(0.,1);
     
     if (roiStop > roiStart)
     {
         // Get the truncated mean and rms
-        std::vector<float> temp(roiStop - roiStart + 1,0.);
+        icarusutil::TimeVec temp(roiStop - roiStart + 1,0.);
         
         std::copy(holder.begin() + roiStart,holder.begin() + roiStop,temp.begin());
         
-        fWaveformTool->getTruncatedMean(temp, base.first, base.second);
+        fWaveformTool.getTruncatedMean(temp, base.first, base.second);
     }
     
     return base;

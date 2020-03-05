@@ -33,7 +33,6 @@
 //LArSoft
 #include "larcore/Geometry/Geometry.h"
 #include "larevt/Filters/ChannelFilter.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Hit.h"
