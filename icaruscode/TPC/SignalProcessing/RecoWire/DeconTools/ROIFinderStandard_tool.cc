@@ -9,9 +9,9 @@
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "TH1D.h"
 
@@ -43,8 +43,8 @@ private:
     std::vector<unsigned short>   fPostROIPad;                 ///< ROI padding
     
     // Services
-    const geo::GeometryCore*                             fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
 };
     
 //----------------------------------------------------------------------
@@ -88,8 +88,7 @@ void ROIFinderStandard::configure(const fhicl::ParameterSet& pset)
     fPreROIPad[2]  = zin[0];
     fPostROIPad[2] = zin[1];
     
-    // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
+    fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
     
     return;
 }

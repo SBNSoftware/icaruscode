@@ -8,7 +8,6 @@
 #include "art/Utilities/ToolMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
-#include "lardata/Utilities/LArFFT.h"
 
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
@@ -35,7 +34,7 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine& engine,
                        CLHEP::HepRandomEngine&,
-                       std::vector<float>&,
+                       icarusutil::TimeVec&,
                        double,
                        unsigned int) override;
     
@@ -68,7 +67,7 @@ void RandomNoise::configure(const fhicl::ParameterSet& pset)
 
 void RandomNoise::generateNoise(CLHEP::HepRandomEngine& engine,
                                 CLHEP::HepRandomEngine&,
-                                std::vector<float>& noise,
+                                icarusutil::TimeVec& noise,
                                 double noise_factor,
                                 unsigned int)
 {

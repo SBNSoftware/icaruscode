@@ -2,6 +2,8 @@
 add_subdirectory(DeconTools)
 add_subdirectory(SimTestPulse)
 
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make( 
           LIB_LIBRARIES 
             lardataobj_RawData
@@ -10,7 +12,8 @@ art_make(
             ${FHICLCPP}
             ${CETLIB}
             ${ROOT_BASIC_LIB_LIST}
-          MODULE_LIBRARIES larcorealg_Geometry
+          MODULE_LIBRARIES 
+            larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities
             larevt_Filters
@@ -19,7 +22,7 @@ art_make(
             larevt_CalibrationDBI_Providers
             lardataobj_RecoBase
             lardata_ArtDataHelper
-            icaruscode_Utilities_SignalShapingServiceICARUS_service
+            icaruscode_TPC_Utilities_SignalShapingICARUSService_service
             ${ART_FRAMEWORK_CORE}
             ${ART_FRAMEWORK_PRINCIPAL}
             ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -35,6 +38,7 @@ art_make(
             ${CETLIB}
             ${ROOT_FFTW}
             ${ROOT_BASIC_LIB_LIST}
+            ${TBB}
         )
 
 install_headers()

@@ -10,7 +10,7 @@
 #include "prodcorsika_genie_standard_icarus.fcl"
 
 # turn to no-overburden geometry:
-#include "use_no_overburden_geometry_icarus.fcl"
+#include "use_nooverburden_geometry_icarus.fcl"
 
 outputs.out1.fileName:          "prodcorsika_genie_nooverburden_icarus_%tc-%p.root"
 services.TFileService.fileName: "Supplemental-prodcorsika_genie_nooverburden_icarus_%tc-%p.root"

@@ -39,7 +39,6 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
 ///creation of calibrated signals on wires

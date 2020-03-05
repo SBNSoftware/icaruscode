@@ -1,192 +1,316 @@
-# 
+#
 # File:    geometry_icarus.fcl
 # Purpose: Configuration of LArSoft geometry and geometry service for ICARUS.
 #
-# NOTE
-# NOTE Note: there is a temporary replacement of the geometry file by a
-# NOTE       modified ("light") one which has some materials replaced.
-# NOTE       Those materials are not available in the reduced GENIE cross
-# NOTE       section file we use, and GENIE 3 suddenly got sensitive to that.
-# NOTE       Possible solutions: (1) definitely remove those materials from our
-# NOTE       detector description, (2) ask for those materials to be added to
-# NOTE       the cross section files, (3) create our own skim of the cross
-# NOTE       section file including all the materials we need.
-# NOTE 
 #
-# 
 # Suggested usage
 # ----------------
-# 
+#
 # Unless there are special needs, the geometry configuration should be included
 # via a configuration bundle.
 # The default one is called `icarus_geometry_services`.
 # To use it in a complete configuration:
-#     
+#
 #     services: {
 #       # ...
 #       @table::icarus_geometry_services  # from geometry_icarus.fcl
 #       # ...
 #     } # services
-#     
+#
 # To add it to a preexisting configuration, overwriting any existing geometry
 # configuration:
-#     
+#
 #     services: {
 #       @table::services
 #       @table::icarus_geometry_services  # from geometry_icarus.fcl
 #     } # services
-#     
-# 
+#
+#
 # Options
 # --------
 #
 # Currently the following configurations are provided:
-# 
-# * `icarus_geometry_services`: current default configuration
-# * `icarus_single_induction_geometry_services`: geometry with 18 meter long
-#     wires on the first induction plane
-# * `icarus_split_induction_geometry_services`: geometry with 9 meter long
-#     wires for the first induction plane, on split TPCs 
-# * `icarus_single_induction_overburden_geometry_services`:
-#     equivalent to `icarus_single_induction_geometry_services` but with
-#     concrete overburden
-# * `icarus_single_induction_no_overburden_geometry_services`:
-#     equivalent to `icarus_single_induction_geometry_services` but without
-#     concrete overburden
 #
+# * `icarus_geometry_services`: current default configuration
+# * geometry with 18 meter long wires on the first induction plane:
+#     * `icarus_single_induction_overburden_geometry_services`:
+#         detector with concrete overburden
+#     * `icarus_single_induction_no_overburden_geometry_services`:
+#         detector without concrete overburden
+#     * `icarus_single_induction_geometry_services`:
+#         the default geometry in this category
+# * geometry with 9 meter long wires for the first induction plane, on split
+#    TPCs:
+#     * `icarus_split_induction_overburden_geometry_services`:
+#         detector with concrete overburden
+#     * `icarus_split_induction_no_overburden_geometry_services`:
+#         detector without concrete overburden
+#     * `icarus_split_induction_geometry_services`: the default geometry in
+#         this category
+#
+# Since the documentation is often not updated, check the definitions below
+# to see which are the current defaults.
+#
+
 
 BEGIN_PROLOG
 
 ################################################################################
-###
-### icarus_single_induction_geometry_services
-###
-### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires on first induction plane.
-###
-# 
-# Geometry service configuration:
-# 
-icarus_single_induction_geometry: {
-  SurfaceY:        6.9e2                   #in cm, vertical distance to the surface
+#
+# Basic definitions for ICARUS configurations; no serviceable parts here!
+#
+
+icarus_geometry_template: {
+  SurfaceY:        6.9e2    # in cm, vertical distance to the surface
   Name:            "icarus"
-  GDML:            "icarus_complete_light.gdml" # see NOTE above
-  ROOT:            "icarus_complete_light.gdml" # see NOTE above
   DisableWiresInG4: true
-} # icarus_single_induction_geometry
+} # icarus_geometry_template
 
 #
 # ExptGeoHelperInterface
 #
-icarus_single_induction_geometry_helper: {
+icarus_geometry_helper_base: {
   service_provider: IcarusGeometryHelper
-} # icarus_single_induction_geometry_helper
-
-
-#
-# Auxiliary detector service configuration
-#
-
-icarus_auxdetgeo: {
-  @table::icarus_single_induction_geometry
-  SortingParameters: {}
-}
-
-icarus_auxdetgeometry_helper: {
-  service_provider: "CRTGeometryHelper"
-}
-
-#
-# geometry configuration bundle
-#
-icarus_single_induction_geometry_services: {
-  Geometry:                        @local::icarus_single_induction_geometry
-  ExptGeoHelperInterface:          @local::icarus_single_induction_geometry_helper
-#  AuxDetGeometry:                  @local::icarus_auxdetgeo
-#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
-} # icarus_single_induction_geometry_services
+} # icarus_geometry_helper_base
 
 
 ################################################################################
+###  Single first induction plane wires (18 m)
 ###
-### icarus_single_induction_overburden_geometry_services
+### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
+### long wires on first induction plane.
 ###
-### Derivative configuration with an alternative ICARUS detector geometry
-### including the concrete overburden.
+### Default for this configuration is defined below:
+### `icarus_single_induction_geometry_services`.
+###
+################################################################################
+###
+### Configuration with 3 meter deep concrete overburden
+### (`icarus_single_induction_overburden_geometry_services`).
+###
+### This used to be the default configuration used sometimes before March 2020.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_single_induction_overburden_geometry_services
+###     }
+###
 ###
 
-# 
+#
 # Geometry service configuration:
-# 
-
+#
 icarus_single_induction_overburden_geometry: {
+  @table::icarus_geometry_template
 
-  @table::icarus_single_induction_geometry
+  Name: "icarus"
+  GDML: "icarus_single_complete.gdml"
+  ROOT: "icarus_single_complete.gdml"
 
-  GDML:            "icarus_complete_light.gdml"
-  ROOT:            "icarus_complete_light.gdml"
-  
 } # icarus_single_induction_overburden_geometry
 
 #
-# Auxiliary detector service configuration
+# ExptGeoHelperInterface
 #
-
-icarus_overburden_auxdetgeo: {
-  @table::icarus_single_induction_overburden_geometry
-  SortingParameters: {}
-}
+icarus_single_induction_geometry_helper: @local::icarus_geometry_helper_base
 
 #
 # geometry configuration bundle
 #
 icarus_single_induction_overburden_geometry_services: {
-  Geometry:                        @local::icarus_single_induction_overburden_geometry
-  ExptGeoHelperInterface:          @local::icarus_single_induction_geometry_helper
-#  AuxDetGeometry:                  @local::icarus_auxdetgeo
-#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
+
+  Geometry:               @local::icarus_single_induction_overburden_geometry
+  ExptGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+
 } # icarus_single_induction_overburden_geometry_services
 
 
-################################################################################
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration with no concrete overburden
+### (`icarus_single_induction_nooverburden_geometry_services`).
 ###
-### icarus_single_induction_no_overburden_geometry_services
+### This was the configuration of commissioning studies while waiting for the
+### split wire geometry to be fully supported.
 ###
-### Derivative configuration with an alternative ICARUS detector geometry
-### deprived of the concrete overburden.
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_single_induction_nooverburden_geometry_services
+###     }
+###
 ###
 
-# 
+#
 # Geometry service configuration:
-# 
-
-icarus_single_induction_no_overburden_geometry: {
-
-  @table::icarus_single_induction_geometry
-
-  GDML:            "icarus_complete_no_overburden.gdml"
-  ROOT:            "icarus_complete_no_overburden.gdml"
-  
-} # icarus_single_induction_no_overburden_geometry
-
 #
-# Auxiliary detector service configuration
-#
+icarus_single_induction_nooverburden_geometry: {
+  @table::icarus_geometry_template
 
-icarus_no_overburden_auxdetgeo: {
-  @table::icarus_single_induction_no_overburden_geometry
-  SortingParameters: {}
-}
+  Name: "icarus"
+  GDML: "icarus_single_complete_no_overburden.gdml"
+  ROOT: "icarus_single_complete_no_overburden.gdml"
+
+} # icarus_single_induction_nooverburden_geometry
 
 #
 # geometry configuration bundle
 #
-icarus_single_induction_no_overburden_geometry_services: {
-  Geometry:                        @local::icarus_single_induction_no_overburden_geometry
-  ExptGeoHelperInterface:          @local::icarus_single_induction_geometry_helper
-#  AuxDetGeometry:                  @local::icarus_auxdetgeo
-#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
-} # icarus_single_induction_no_overburden_geometry_services
+icarus_single_induction_nooverburden_geometry_services: {
+
+  Geometry:               @local::icarus_single_induction_nooverburden_geometry
+  ExptGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+
+} # icarus_single_induction_nooverburden_geometry_services
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Default configuration with single long first induction wires (18 m)
+### (`icarus_single_induction_geometry_services`)
+###
+### This configuration includes no overburden as of now.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_single_induction_geometry_services
+###     }
+###
+###
+
+#
+# Geometry service configuration:
+#
+icarus_single_induction_geometry: @local::icarus_single_induction_nooverburden_geometry
+
+#
+# geometry configuration bundle
+#
+icarus_single_induction_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+
+
+
+################################################################################
+###
+###  Split first induction plane wires (9 m)
+###
+### Complete geometry (including CRT) with two logical TPCs per drift volume and
+### 9 meter long wires on each half of the first induction planes.
+### This reflects the actual configuration of the ICARUS detector.
+###
+### Default for this configuration is defined below:
+### `icarus_split_induction_geometry_services`.
+###
+################################################################################
+###
+### Configuration with 3 meter deep concrete overburden
+### (`icarus_split_induction_overburden_geometry_services`).
+###
+### This is the most accurate description of ICARUS detector as of March 2020.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_split_induction_overburden_geometry_services
+###     }
+###
+###
+
+#
+# Geometry service configuration:
+#
+icarus_split_induction_overburden_geometry: {
+  @table::icarus_geometry_template
+
+  Name: "icarus_splitwires"
+  GDML: "icarus_complete.gdml"
+  ROOT: "icarus_complete.gdml"
+
+} # icarus_split_induction_overburden_geometry
+
+#
+# ExptGeoHelperInterface
+#
+icarus_split_induction_geometry_helper: @local::icarus_geometry_helper_base
+
+#
+# geometry configuration bundle
+#
+icarus_split_induction_overburden_geometry_services: {
+
+  Geometry:               @local::icarus_split_induction_overburden_geometry
+  ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
+
+} # icarus_split_induction_overburden_geometry_services
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Configuration with no concrete overburden
+### (`icarus_split_induction_nooverburden_geometry_services`).
+###
+### This is the configuration for detector commissioning studies.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_split_induction_nooverburden_geometry_services
+###     }
+###
+###
+
+#
+# Geometry service configuration:
+#
+icarus_split_induction_nooverburden_geometry: {
+  @table::icarus_geometry_template
+
+  Name: "icarus_splitwires"
+  GDML: "icarus_complete_no_overburden.gdml"
+  ROOT: "icarus_complete_no_overburden.gdml"
+
+} # icarus_split_induction_nooverburden_geometry
+
+#
+# geometry configuration bundle
+#
+icarus_split_induction_nooverburden_geometry_services: {
+
+  Geometry:               @local::icarus_split_induction_nooverburden_geometry
+  ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
+
+} # icarus_split_induction_nooverburden_geometry_services
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Default configuration with split first induction wires (9 m)
+### (`icarus_split_induction_geometry_services`)
+###
+### This configuration includes no overburden as of now.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_split_induction_geometry_services
+###     }
+###
+###
+
+#
+# Geometry service configuration:
+#
+icarus_split_induction_geometry: @local::icarus_split_induction_nooverburden_geometry
+
+#
+# geometry configuration bundle
+#
+icarus_split_induction_geometry_services: @local::icarus_split_induction_nooverburden_geometry_services
+
 
 
 ################################################################################
@@ -195,59 +319,86 @@ icarus_single_induction_no_overburden_geometry_services: {
 ###
 ### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
 ### long wires on first induction plane.
+### Options are avaialble for the presence of overburden; the geometry global
+### default includes a choice for that option: see `icarus_geometry_services`.
 ###
-
-icarus_geo:              @local::icarus_single_induction_geometry_services.Geometry
-icarus_geometry_helper:  @local::icarus_single_induction_geometry_services.ExptGeoHelperInterface
-
-icarus_geometry_services: @local::icarus_single_induction_geometry_services
-
-
-
 ################################################################################
 ###
-### icarus_split_induction_geometry_services
+### Default configuration with with 3 meter deep concrete overburden
+### (`icarus_overburden_geometry_services`).
 ###
-### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
-### long wires onfirst induction plane.
+### This default currently points to the single wire geometry.
 ###
-# 
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_overburden_geometry_services
+###     }
+###
+###
+
+#
 # Geometry service configuration:
-# 
-icarus_split_induction_geometry: {
-  SurfaceY:         6.9e2   # how much below the surface our origin is [cm]
-  Name:            "ICARUS"
-  
-  # This is the version for test distributed on May 16, 2019
-  # by Alessandro Menegolli (alessandro.menegolli@pv.infn.it)
-  GDML:            "icarus_complete_splitwires_16may2019.gdml"
-  ROOT:            "icarus_complete_splitwires_16may2019.gdml"
-  
-  DisableWiresInG4: true
-  
-} # icarus_split_induction_geometry
+#
+
+icarus_overburden_geometry_services: @local::icarus_single_induction_overburden_geometry_services
+
+icarus_overburden_geometry: @local::icarus_overburden_geometry_services.Geometry
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Default configuration with no concrete overburden
+### (`icarus_nooverburden_geometry_services`).
+###
+### This default currently points to the single wire geometry.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_nooverburden_geometry_services
+###     }
+###
+###
 
 #
-# ExptGeoHelperInterface
+# Geometry service configuration:
 #
-icarus_split_induction_geometry_helper: {
-  service_provider: IcarusGeometryHelper
-} # icarus_split_induction_geometry_helper
 
-#
-# auxiliary detector configuration is the same
-# as in `icarus_single_induction_geometry_services`
-# 
+icarus_nooverburden_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+
+icarus_nooverburden_geometry: @local::icarus_nooverburden_geometry_services.Geometry
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Default ICARUS geometry configuration
+### (`icarus_geometry_services`)
+###
+### This configuration includes no overburden and long first induction wires
+### (18 m) as of now.
+###
+### Override a geometry configuration by:
+###
+###     services: {
+###       @table::services
+###       @table::icarus_geometry_services
+###     }
+###
+###
 
 #
 # geometry configuration bundle
 #
-icarus_split_induction_geometry_services: {
-  Geometry:                        @local::icarus_split_induction_geometry
-  ExptGeoHelperInterface:          @local::icarus_split_induction_geometry_helper
-#  AuxDetGeometry:                  @local::icarus_auxdetgeo
-#  AuxDetExptGeoHelperInterface:    @local::icarus_auxdetgeometry_helper
-} # icarus_split_induction_geometry_services
+icarus_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+
+#
+# Geometry service configuration:
+#
+icarus_geometry: @local::icarus_geometry_services.Geometry
+icarus_geo:      @local::icarus_geometry # backward compatibility
+
+icarus_geometry_helper:  @local::icarus_geometry_services.ExptGeoHelperInterface
 
 
 ################################################################################

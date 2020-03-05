@@ -29,7 +29,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "RawDigitNoiseFilterDefs.h"
-#include "RawDigitFFTAlg.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
@@ -56,7 +55,7 @@ public:
     // Provide for initialization
     void reconfigure(fhicl::ParameterSet const & pset);
     void initializeHists(art::ServiceHandle<art::TFileService>&);
-    
+
     void removeCorrelatedNoise(RawDigitAdcIdxPair& digitIdxPair,
                                unsigned int        viewIdx,
                                std::vector<float>& truncMeanWireVec,
@@ -65,13 +64,21 @@ public:
                                std::vector<short>& meanWireVec,
                                std::vector<float>& skewnessWireVec,
                                std::vector<float>& neighborRatioWireVec,
-                               std::vector<float>& pedCorWireVec) const;
+                               std::vector<float>& pedCorWireVec,
+                               unsigned int& fftSize, unsigned int& halfFFTSize,
+                               void* fplan, void* rplan) const;
 
 private:
-    
+
     void smoothCorrectionVec(std::vector<float>&, unsigned int&) const;
-    
+
     template<class T> T getMedian(std::vector<T>&, T) const;
+
+    template <typename T> void findPeaks(typename std::vector<T>::iterator startItr,
+                                         typename std::vector<T>::iterator stopItr,
+                                         std::vector<std::tuple<size_t,size_t,size_t>>& peakTupleVec,
+                                         T                                 threshold,
+                                         size_t                            firstTick) const;
 
     // Fcl parameters.
     float                fTruncMeanFraction;     ///< Fraction for truncated mean
@@ -87,34 +94,14 @@ private:
     bool                 fFillHistograms;        ///< if true then will fill diagnostic hists
     bool                 fRunFFTCorrected;       ///< Should we run FFT's on corrected wires?
     std::vector<float>   fNumRmsToSmoothVec;     ///< # "sigma" to smooth correlated correction vec
-    
-    // Pointers to the histograms we'll create for monitoring what is happening
-    TProfile*            fFFTHist[3];
-    TProfile*            fFFTHistLow[3];
-    TProfile*            fFFTHistCor[3];
-    
-    TProfile*            fCorValHist[3];
-    TProfile*            fFFTCorValHist[3];
-    TProfile*            fFFTCorHist[3];
-    
-    std::vector<std::vector<TProfile*>> fInputWaveHists;
-    std::vector<std::vector<TProfile*>> fOutputWaveHists;
-    std::vector<std::vector<TProfile*>> fStdCorWaveHists;
-    
-    std::vector<std::vector<TH1D*>>     fWaveformProfHists;    
-    std::vector<std::vector<TProfile*>> fWaveCorHists;
-    
-    TProfile2D*          fFFTvsMBProf[3];
-    
+
     std::vector<std::set<size_t>> fBadWiresbyViewAndWire;
-    
-    RawDigitFFTAlg fFFTAlg;
-    
+
     // Useful services, keep copies for now (we can update during begin run periods)
     art::ServiceHandle<geo::Geometry>            fGeometry;             ///< pointer to Geometry service
     detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
-    
+
 } // end caldata namespace
 
 #endif
