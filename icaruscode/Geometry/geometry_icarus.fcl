@@ -66,13 +66,6 @@ icarus_geometry_template: {
   DisableWiresInG4: true
 } # icarus_geometry_template
 
-#
-# ExptGeoHelperInterface
-#
-icarus_geometry_helper_base: {
-  service_provider: IcarusGeometryHelper
-} # icarus_geometry_helper_base
-
 
 ################################################################################
 ###  Single first induction plane wires (18 m)
@@ -83,6 +76,18 @@ icarus_geometry_helper_base: {
 ### Default for this configuration is defined below:
 ### `icarus_single_induction_geometry_services`.
 ###
+
+#
+# ExptGeoHelperInterface
+#
+icarus_single_induction_geometry_helper: {
+  service_provider: IcarusGeometryHelper
+  Mapper: {
+    tool_type: "ICARUSsingleInductionChannelMapSetupTool"
+  }
+} # icarus_single_induction_geometry_helper
+
+
 ################################################################################
 ###
 ### Configuration with 3 meter deep concrete overburden
@@ -111,10 +116,6 @@ icarus_single_induction_overburden_geometry: {
 
 } # icarus_single_induction_overburden_geometry
 
-#
-# ExptGeoHelperInterface
-#
-icarus_single_induction_geometry_helper: @local::icarus_geometry_helper_base
 
 #
 # geometry configuration bundle
@@ -204,6 +205,18 @@ icarus_single_induction_geometry_services: @local::icarus_single_induction_noove
 ### Default for this configuration is defined below:
 ### `icarus_split_induction_geometry_services`.
 ###
+
+#
+# ExptGeoHelperInterface
+#
+icarus_split_induction_geometry_helper: {
+  service_provider: IcarusGeometryHelper
+  Mapper: {
+    tool_type: "ICARUSsplitInductionChannelMapSetupTool"
+  }
+} # icarus_split_induction_geometry_helper
+
+
 ################################################################################
 ###
 ### Configuration with 3 meter deep concrete overburden
@@ -231,11 +244,6 @@ icarus_split_induction_overburden_geometry: {
   ROOT: "icarus_complete.gdml"
 
 } # icarus_split_induction_overburden_geometry
-
-#
-# ExptGeoHelperInterface
-#
-icarus_split_induction_geometry_helper: @local::icarus_geometry_helper_base
 
 #
 # geometry configuration bundle
