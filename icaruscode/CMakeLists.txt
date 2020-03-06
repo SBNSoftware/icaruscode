@@ -14,6 +14,4 @@ add_subdirectory(RecoUtils)
 add_subdirectory(TPC)
 add_subdirectory(Utilities)
 
-add_subdirectory(Decode)
-
 #add_subdirectory(LArCVImageMaker)

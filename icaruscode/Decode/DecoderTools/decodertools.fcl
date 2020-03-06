@@ -1,5 +1,0 @@
-
-TPCDecoderTool: {
-    tool_type:          TPCDecoder
-    fragment_id_offset: 0
-}

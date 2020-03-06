@@ -5,17 +5,17 @@
 
 #include <cmath>
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
+#include "art/Utilities/make_tool.h"
 #include "art/Utilities/ToolMacros.h"
 #include "art_root_io/TFileService.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
-#include "lardata/Utilities/LArFFT.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
-#include "art/Utilities/make_tool.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -41,17 +41,17 @@ public:
     
 private:
     // Member variables from the fhicl file
-    size_t                                               fFFTSize;                    ///< FFT size for ROI deconvolution
-    bool                                                 fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
-    std::string                                          fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
-    std::map<unsigned int, float>                        fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
+    size_t                                                     fFFTSize;                    ///< FFT size for ROI deconvolution
+    bool                                                       fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
+    std::string                                                fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
+    std::map<unsigned int, float>                              fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
     ///< number, content is correction factor
     
-    std::unique_ptr<icarus_tool::IBaseline>              fBaseline;
+    std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
     
-    const geo::GeometryCore*                             fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                     fFFT;
-    art::ServiceHandle<util::SignalShapingServiceICARUS> fSignalShaping;
+    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>          fFFT;                  ///< Object to handle thread safe FFT
 };
     
 //----------------------------------------------------------------------
@@ -106,8 +106,12 @@ void ROIDeconvolution::configure(const fhicl::ParameterSet& pset)
     fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
     
     // Get signal shaping service.
-    fSignalShaping = art::ServiceHandle<util::SignalShapingServiceICARUS>();
-    fFFT           = art::ServiceHandle<util::LArFFT>();
+    fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
+
+    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+
+    // Now set up our plans for doing the convolution
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop->NumberTimeSamples());
     
     return;
 }
@@ -137,9 +141,9 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         // In theory, most ROI's are around the same size so this should mostly be a noop
         fSignalShaping->SetDecon(deconSize, channel);
         
-        deconSize = fFFT->FFTSize();
+        deconSize = fFFTSize;
         
-        std::vector<float> holder(deconSize);
+        icarusutil::TimeVec holder(deconSize);
         
         // Pad with zeroes if the deconvolution buffer is larger than the input waveform
         if (deconSize > waveform.size()) holder.resize(deconSize, 0.);
@@ -185,7 +189,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, holder.begin() + holderOffset);
         
         // Deconvolute the raw signal using the channel's nominal response
-        fSignalShaping->Deconvolute(channel,holder);
+        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
         
         // Get rid of the leading and trailing "extra" bins needed to keep the FFT happy
         if (roiStart > 0 || holderOffset > 0) std::copy(holder.begin() + holderOffset + roiStart, holder.begin() + holderOffset + roiStop, holder.begin());
@@ -194,13 +198,13 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         holder.resize(roiLen);
        
         // "normalize" the vector
-        std::transform(holder.begin(),holder.end(),holder.begin(),[deconNorm](float& deconVal){return deconVal/deconNorm;});
+        std::transform(holder.begin(),holder.end(),holder.begin(),[deconNorm](auto& deconVal){return deconVal/deconNorm;});
         
         // Now we do the baseline determination and correct the ROI
         //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
         float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
         
-        std::transform(holder.begin(),holder.end(),holder.begin(),[base](float& adcVal){return adcVal - base;});
+        std::transform(holder.begin(),holder.end(),holder.begin(),[base](const auto& adcVal){return adcVal - base;});
         
         // apply wire-by-wire calibration
         if (fDodQdxCalib)

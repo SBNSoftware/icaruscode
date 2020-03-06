@@ -19,43 +19,43 @@ namespace geo{
 
   //----------------------------------------------------------------------------
   // Define sort order for cryostats in standard configuration
-  static bool sortAuxDetStandard(const AuxDetGeo* ad1, const AuxDetGeo* ad2)
+  static bool sortAuxDetStandard(const AuxDetGeo& ad1, const AuxDetGeo& ad2)
   {
     std::string type1 = "", type2 = "";
-    switch (ad1->NSensitiveVolume()) {
+    switch (ad1.NSensitiveVolume()) {
         case 20 : type1 = "MINOS"; break;
         case 16 : type1 = "CERN"; break;
         case 64 : type1 = "DC"; break;
     }
-    switch (ad2->NSensitiveVolume()) {
+    switch (ad2.NSensitiveVolume()) {
         case 20 : type2 = "MINOS"; break;
         case 16 : type2 = "CERN"; break;
         case 64 : type2 = "DC"; break;
     }
 
     // sort based off of GDML name, module number
-    std::string ad1name = (ad1->TotalVolume())->GetName();
-    std::string ad2name = (ad2->TotalVolume())->GetName();
+    std::string ad1name = (ad1.TotalVolume())->GetName();
+    std::string ad2name = (ad2.TotalVolume())->GetName();
     // assume volume name is "volAuxDet_<type>_module_###_<region>"
     std::string base1 = "volAuxDet_"+type1+"_module_";
     std::string base2 = "volAuxDet_"+type2+"_module_";
 
     int ad1Num = atoi( ad1name.substr( base1.size(), 3).c_str() );
-    int ad2Num = atoi( ad2name.substr( base2.size(), 3).c_str() );  
-  
+    int ad2Num = atoi( ad2name.substr( base2.size(), 3).c_str() );
+
     return ad1Num < ad2Num;
-   
+
   }
 
   //----------------------------------------------------------------------------
   // Define sort order for cryostats in standard configuration
-  static bool sortAuxDetSensitiveStandard(const AuxDetSensitiveGeo* ad1, const AuxDetSensitiveGeo* ad2)
+  static bool sortAuxDetSensitiveStandard(const AuxDetSensitiveGeo& ad1, const AuxDetSensitiveGeo& ad2)
   {
     std::string type1 = "", type2 = "";
 
     // sort based off of GDML name, assuming ordering is encoded
-    std::string ad1name = (ad1->TotalVolume())->GetName();
-    std::string ad2name = (ad2->TotalVolume())->GetName();
+    std::string ad1name = (ad1.TotalVolume())->GetName();
+    std::string ad2name = (ad2.TotalVolume())->GetName();
 
     if ( ad1name.find("MINOS") != std::string::npos ) type1 = "MINOS";
     if ( ad1name.find("CERN") != std::string::npos ) type1 = "CERN";
@@ -78,33 +78,33 @@ namespace geo{
     ad1Num = atoi( ad1name.substr( baseStr1.size(), 2).c_str() );
     ad2Num = atoi( ad2name.substr( baseStr2.size(), 2).c_str() );
 
-    
+
     return ad1Num < ad2Num;
-   
+
   }
 
   //----------------------------------------------------------------------------
   // Define sort order for cryostats in standard configuration
-  static bool sortCryoStandard(const CryostatGeo* c1, const CryostatGeo* c2)
+  static bool sortCryoStandard(const CryostatGeo& c1, const CryostatGeo& c2)
   {
     double xyz1[3] = {0.}, xyz2[3] = {0.};
-    double local[3] = {0.}; 
-    c1->LocalToWorld(local, xyz1);
-    c2->LocalToWorld(local, xyz2);
+    double local[3] = {0.};
+    c1.LocalToWorld(local, xyz1);
+    c2.LocalToWorld(local, xyz2);
 
-    return xyz1[0] < xyz2[0];   
+    return xyz1[0] < xyz2[0];
   }
 
 
   //----------------------------------------------------------------------------
   // Define sort order for tpcs in standard configuration.
-  static bool sortTPCStandard(const TPCGeo* t1, const TPCGeo* t2) 
+  static bool sortTPCStandard(const TPCGeo& t1, const TPCGeo& t2)
   {
     double xyz1[3] = {0.};
     double xyz2[3] = {0.};
     double local[3] = {0.};
-    t1->LocalToWorld(local, xyz1);
-    t2->LocalToWorld(local, xyz2);
+    t1.LocalToWorld(local, xyz1);
+    t2.LocalToWorld(local, xyz2);
 
     // sort TPCs according to x
     if(xyz1[0] < xyz2[0]) return true;
@@ -113,16 +113,16 @@ namespace geo{
   }
 
   const double EPSILON = 0.000001;
-  
+
   //----------------------------------------------------------------------------
   // Define sort order for planes in standard configuration
-  static bool sortPlaneStandard(const PlaneGeo* p1, const PlaneGeo* p2) 
+  static bool sortPlaneStandard(const PlaneGeo& p1, const PlaneGeo& p2)
   {
     double xyz1[3] = {0.};
     double xyz2[3] = {0.};
     double local[3] = {0.};
-    p1->LocalToWorld(local, xyz1);
-    p2->LocalToWorld(local, xyz2);
+    p1.LocalToWorld(local, xyz1);
+    p2.LocalToWorld(local, xyz2);
 
     //if the planes are in the same drift coordinate, lower Z is first plane
     if( std::abs(xyz1[0] - xyz2[0]) < EPSILON)
@@ -135,11 +135,11 @@ namespace geo{
 
 
   //----------------------------------------------------------------------------
-  bool sortWireStandard(WireGeo* w1, WireGeo* w2){
+  static bool sortWireStandard(WireGeo const& w1, WireGeo const& w2){
     double xyz1[3] = {0.};
     double xyz2[3] = {0.};
 
-    w1->GetCenter(xyz1); w2->GetCenter(xyz2);
+    w1.GetCenter(xyz1); w2.GetCenter(xyz2);
 
     //we have horizontal wires...
     if( std::abs(xyz1[2]-xyz2[2]) < EPSILON)
@@ -155,46 +155,32 @@ namespace geo{
   }
 
   //----------------------------------------------------------------------------
-  GeoObjectSorterICARUS::~GeoObjectSorterICARUS()
-  {
-  }
-
-  //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortAuxDets(std::vector<geo::AuxDetGeo*> & adgeo) const
+  void GeoObjectSorterICARUS::SortAuxDets(std::vector<geo::AuxDetGeo> & adgeo) const
   {
     std::sort(adgeo.begin(), adgeo.end(), sortAuxDetStandard);
-    
-    return;
   }
 
   //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo*> & adsgeo) const
+  void GeoObjectSorterICARUS::SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo> & adsgeo) const
   {
     std::sort(adsgeo.begin(), adsgeo.end(), sortAuxDetSensitiveStandard);
-    
-    return;
   }
 
   //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortCryostats(std::vector<geo::CryostatGeo*> & cgeo) const
+  void GeoObjectSorterICARUS::SortCryostats(std::vector<geo::CryostatGeo> & cgeo) const
   {
     std::sort(cgeo.begin(), cgeo.end(), sortCryoStandard);
-    
-    return;
   }
 
   //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortTPCs(std::vector<geo::TPCGeo*>  & tgeo) const
+  void GeoObjectSorterICARUS::SortTPCs(std::vector<geo::TPCGeo>  & tgeo) const
   {
-    
     std::sort(tgeo.begin(), tgeo.end(), sortTPCStandard);
-
-    return;
   }
 
   //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortPlanes(std::vector<geo::PlaneGeo*> & pgeo,
-					   geo::DriftDirection_t  const& driftDir) const
+  void GeoObjectSorterICARUS::SortPlanes(std::vector<geo::PlaneGeo> & pgeo,
+                                           geo::DriftDirection_t  const driftDir) const
   {
     // sort the planes to increase in drift direction
     // The drift direction has to be set before this method is called.  It is set when
@@ -203,16 +189,12 @@ namespace geo{
     else if(driftDir == geo::kNegX) std::sort(pgeo.begin(),  pgeo.end(),  sortPlaneStandard);
     else if(driftDir == geo::kUnknownDrift)
       throw cet::exception("TPCGeo") << "Drift direction is unknown, can't sort the planes\n";
-
-    return;
   }
 
   //----------------------------------------------------------------------------
-  void GeoObjectSorterICARUS::SortWires(std::vector<geo::WireGeo*> & wgeo) const
+  void GeoObjectSorterICARUS::SortWires(std::vector<geo::WireGeo> & wgeo) const
   {
     std::sort(wgeo.begin(), wgeo.end(), sortWireStandard);
-
-    return;
   }
 
 }
