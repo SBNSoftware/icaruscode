@@ -6,6 +6,7 @@ art_make_library(
     larcore_Geometry_Geometry_service
     larcorealg_Geometry
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_UTILITIES}
     ${CANVAS}
     ${CETLIB_EXCEPT}
     ${MF_MESSAGELOGGER}
