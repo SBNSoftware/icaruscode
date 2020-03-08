@@ -36,6 +36,7 @@
 #include <iterator> // std::back_inserter()
 #include <memory> // std::make_unique()
 #include <utility> // std::move()
+#include <optional>
 
 
 namespace opdet{
@@ -63,7 +64,11 @@ namespace opdet{
    *   algorithm to use; valid values are all the ones supported by
    *   `art::RandomNumberGenerator` (which match the random engine classes
    *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
-   *   `NonRandomEngine` and `RandEngine`).
+   *   `NonRandomEngine` and `RandEngine`);
+   * * **WritePhotons** (boolean, default: `false`): saves in an additional
+   *   `sim::SimPhotons` collection the photons effectively contributing to
+   *   the waveforms; currently, no selection ever happens and all photons are
+   *   contributing, making this collection the same as the input one.
    * 
    * See the @ref ICARUS_PMTSimulationAlg_RandomEngines "documentation" of
    * `icarus::PMTsimulationAlg` for the purpose of the three random number
@@ -86,6 +91,10 @@ namespace opdet{
    * A collection of optical detector waveforms
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
+   * 
+   * If `WritePhotons` configuration parameter is set `true`, a collection of
+   * the scintillation photons (`std::vector<sim::SimPhotons>`) which
+   * contributed to the waveforms is also produced.
    * 
    * 
    * Requirements
@@ -138,6 +147,13 @@ namespace opdet{
             "HepJamesRandom"
         };
 
+        fhicl::Atom<bool> writePhotons {
+            Name("WritePhotons"),
+            Comment
+              ("writes the scintillation photon contributing to the waveforms"),
+            false
+        };
+
         fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
         
     }; // struct Config
@@ -161,6 +177,8 @@ namespace opdet{
     // Declare member data here.
     art::InputTag fInputModuleName;
     
+    bool fWritePhotons { false }; ///< Whether to save contributing photons.
+    
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
 
@@ -177,6 +195,7 @@ namespace opdet{
 SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
+    , fWritePhotons(config().writePhotons())
     , makePMTsimulator(config().algoConfig())
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
         (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
@@ -196,7 +215,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
-    produces<std::vector<sim::SimPhotons> >();
+    if (fWritePhotons) produces<std::vector<sim::SimPhotons> >();
   } // SimPMTIcarus::SimPMTIcarus()
   
   
@@ -209,7 +228,11 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // fetch the input
     //
     auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
-    auto simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
+    std::unique_ptr<std::vector<sim::SimPhotons>> simphVecPtr;
+    if (fWritePhotons)
+      simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
     //
     // prepare the output
     //
@@ -224,20 +247,24 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       *(lar::providerFrom<detinfo::DetectorClocksService>()),
       fEfficiencyEngine,
       fDarkNoiseEngine,
-      fElectronicsNoiseEngine
+      fElectronicsNoiseEngine,
+      fWritePhotons
       );
     
     //
     // run the algorithm
     //
     for(auto const& photons : pmtVector) {
-      sim::SimPhotons photons_used;
-      auto const& channelWaveforms = PMTsimulator->simulate(photons,photons_used);
+      
+      auto const& [ channelWaveforms, photons_used ]
+        = PMTsimulator->simulate(photons);
       std::move(
         channelWaveforms.cbegin(), channelWaveforms.cend(),
         std::back_inserter(*pulseVecPtr)
         );
-      simphVecPtr->emplace_back(std::move(photons_used));
+      if (simphVecPtr && photons_used)
+        simphVecPtr->emplace_back(std::move(photons_used.value()));
+      
     } // for
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
@@ -247,7 +274,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
-    e.put(std::move(simphVecPtr));
+    if (simphVecPtr) e.put(std::move(simphVecPtr));
   } // SimPMTIcarus::produce()
   
   

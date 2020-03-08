@@ -174,15 +174,19 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 
 // -----------------------------------------------------------------------------   
-std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
-(sim::SimPhotons const& photons, sim::SimPhotons &photons_used)
+std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
 {
-  std::vector<raw::OpDetWaveform> waveforms; // storage of the results
-  
+  // to be returned:
+  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+    result;
+  // give the return value elements nice names:
+  auto& [ waveforms, photons_used ] = result;
+
   Waveform_t waveform;
   CreateFullWaveform(waveform, photons, photons_used);
   CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
-  return waveforms;
+  return result;
   
 } // icarus::opdet::PMTsimulationAlg::simulate()
 
@@ -190,7 +194,7 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 //------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 							 sim::SimPhotons const& photons,
-							 sim::SimPhotons& photons_used)
+							 std::optional<sim::SimPhotons>& photons_used)
 {
     
     using namespace util::quantities::time_literals;
@@ -209,12 +213,14 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     
     auto start = std::chrono::high_resolution_clock::now();
     
-    photons_used.clear();
-    photons_used.SetChannel(photons.OpChannel());
+    if (photons_used) {
+      photons_used->clear();
+      photons_used->SetChannel(photons.OpChannel());
+    }
     for(auto const& ph : photons) {
       if (!KicksPhotoelectron()) continue;
 
-      photons_used.push_back(ph);
+      if (photons_used) photons_used->push_back(ph); // copy
 
       simulation_time const photonTime { ph.Time };
       
@@ -626,9 +632,10 @@ std::unique_ptr<icarus::opdet::PMTsimulationAlg>
 icarus::opdet::PMTsimulationAlgMaker::operator()(
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocks const& detClocks,
-  CLHEP::HepRandomEngine& mainRandomEngine, 
-  CLHEP::HepRandomEngine& darkNoiseRandomEngine, 
-  CLHEP::HepRandomEngine& elecNoiseRandomEngine 
+  CLHEP::HepRandomEngine& mainRandomEngine,
+  CLHEP::HepRandomEngine& darkNoiseRandomEngine,
+  CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+  bool trackSelectedPhotons /* = false */
   ) const
 {
   // set the configuration 
@@ -642,6 +649,8 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   params.gainRandomEngine = params.randomEngine;
   params.darkNoiseRandomEngine = &darkNoiseRandomEngine;
   params.elecNoiseRandomEngine = &elecNoiseRandomEngine;
+  
+  params.trackSelectedPhotons = trackSelectedPhotons;
 
   return std::make_unique<PMTsimulationAlg>(params);
    
