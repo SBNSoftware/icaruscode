@@ -9,12 +9,12 @@
    <position name="posTPC0inCryo"    unit="cm" x="-74.745" y="-3.25"    z="0" />
    <position name="posCathode"  unit="cm" x="0"  y="-3.25"    z="0" />
    <position name="posTPC1inCryo"    unit="cm" x="74.745" y="-3.25"    z="0" />
-   <position name="posCryo1InWarmVessel"  unit="cm" x="-220.215" y="-155.1" z="0" />
-   <position name="posCryo2InWarmVessel"  unit="cm" x="220.215" y="-155.1" z="0" />
-   <position name="posDetEncInWorld" unit="cm" x="0"     y="134.9"     z="0"/>
+   <position name="posCryo1InWarmVessel"  unit="cm" x="-220.215" y="-205.1" z="0" />
+   <position name="posCryo2InWarmVessel"  unit="cm" x="220.215" y="-205.1" z="0" />
+   <position name="posDetEncInWorld" unit="cm" x="0"     y="184.9"     z="0"/>
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
-   <position name="posThermInsInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
-   <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
+   <position name="posThermInsInDetEncl" unit="cm" x="0" y="-184.9" z="0"/>
+   <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="-184.9" z="0"/>
    <position name="posCRTShellInDetEncl" unit="cm" x="0" y="15" z="164.5865"/>
    <position name="posBuildingInWorld" unit="cm" x="0" y="1300" z="0"/>
    <position name="posExpHallInWorld" unit="cm" x="0" y="155" z="0"/>
