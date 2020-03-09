@@ -99,7 +99,7 @@ private:
     void MakeADCVec(std::vector<short>& adc, icarusutil::TimeVec const& noise,
                     icarusutil::TimeVec const& charge, float ped_mean) const;
     
-    std::string                  fDriftEModuleLabel; ///< module making the ionization electrons
+    art::InputTag                fDriftEModuleLabel; ///< module making the ionization electrons
     bool                         fProcessAllTPCs;    ///< If true we process all TPCs
     unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
     unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
@@ -120,7 +120,6 @@ private:
     size_t                       fTestWire;
     std::vector<size_t>          fTestIndex;
     std::vector<double>          fTestCharge;
-    int                          fSample; // for histograms, -1 means no histos
     
     TH1F*                        fSimCharge;
     TH2F*                        fSimChargeWire;
@@ -177,20 +176,19 @@ SimWireICARUS::~SimWireICARUS() {}
 //-------------------------------------------------
 void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
-    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel"    );
-    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs", false);
-    fCryostat         = p.get< unsigned int        >("Cryostat",           0);
-    fTPC              = p.get< unsigned int        >("TPC",                0);
-    fSimDeadChannels  = p.get< bool                >("SimDeadChannels"      );
-    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal"     );
-    fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
-    fSample           = p.get< int                 >("Sample"               );
-    fSmearPedestals   = p.get< bool                >("SmearPedestals",  true);
-    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",      32);
-    fTest             = p.get< bool                >("Test"                 );
-    fTestWire         = p.get< size_t              >("TestWire"             );
-    fTestIndex        = p.get< std::vector<size_t> >("TestIndex"            );
-    fTestCharge       = p.get< std::vector<double> >("TestCharge"           );
+    fDriftEModuleLabel= p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
+    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs",                     false);
+    fCryostat         = p.get< unsigned int        >("Cryostat",                               0);
+    fTPC              = p.get< unsigned int        >("TPC",                                    0);
+    fSimDeadChannels  = p.get< bool                >("SimDeadChannels",                    false);
+    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal",                   false);
+    fMakeHistograms   = p.get< bool                >("MakeHistograms",                     false);
+    fSmearPedestals   = p.get< bool                >("SmearPedestals",                      true);
+    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",                          32);
+    fTest             = p.get< bool                >("Test",                               false);
+    fTestWire         = p.get< size_t              >("TestWire",                               0);
+    fTestIndex        = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
+    fTestCharge       = p.get< std::vector<double> >("TestCharge",         std::vector<double>());
     
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
