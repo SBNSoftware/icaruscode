@@ -21,7 +21,15 @@
       y="4530" 
       z="9999.9"/>
 
-        <!-- This GDML version has no overburden-->
+    <box name="OverburdenUp" lunit="cm" 
+      x="1830" 
+      y="200" 
+      z="3810"/>
+
+    <box name="OverburdenDown" lunit="cm" 
+      x="1830" 
+      y="100" 
+      z="3810"/>
 
     <box name="Building" lunit="cm" 
       x="1890" 
@@ -56,6 +64,10 @@
      </subtraction>
 </solids>
 <structure>
+    <volume name="volOverburdenUp" >
+      <materialref ref="Air"/>
+      <solidref ref="OverburdenUp"/>
+    </volume>
 
     <volume name="volBuilding" >
       <materialref ref="Air"/>
@@ -72,6 +84,10 @@
       <solidref ref="AirExpHall"/>
     </volume>
 
+    <volume name="volOverburdenDown" >
+      <materialref ref="Air"/>
+      <solidref ref="OverburdenDown"/>
+    </volume>
 
     <volume name="volWallExpHall" >
       <materialref ref="Concrete"/>
@@ -109,12 +125,12 @@
     
      <physvol>
         <volumeref ref="volOverburdenUp"/>
-	<position name="posOverburdenUp" unit="cm" x="0" y="780" z="0" />
+	<position name="posOverburdenUp" unit="cm" x="0" y="880" z="0" />
       </physvol>
 
      <physvol>
         <volumeref ref="volOverburdenDown"/>
-	<position name="posOverburdenDown" unit="cm" x="0" y="780" z="0" />
+	<position name="posOverburdenDown" unit="cm" x="0" y="730" z="0" />
       </physvol>
 
       <physvol>

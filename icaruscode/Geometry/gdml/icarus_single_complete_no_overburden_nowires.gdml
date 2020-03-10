@@ -11,12 +11,12 @@
    <position name="posTPC0inCryo"    unit="cm" x="-74.745" y="-3.25"    z="0" />
    <position name="posCathode"  unit="cm" x="0"  y="-3.25"    z="0" />
    <position name="posTPC1inCryo"    unit="cm" x="74.745" y="-3.25"    z="0" />
-   <position name="posCryo1InWarmVessel"  unit="cm" x="-220.215" y="-205.1" z="0" />
-   <position name="posCryo2InWarmVessel"  unit="cm" x="220.215" y="-205.1" z="0" />
-   <position name="posDetEncInWorld" unit="cm" x="0"     y="184.9"     z="0"/>
+   <position name="posCryo1InWarmVessel"  unit="cm" x="-220.215" y="-155.1" z="0" />
+   <position name="posCryo2InWarmVessel"  unit="cm" x="220.215" y="-155.1" z="0" />
+   <position name="posDetEncInWorld" unit="cm" x="0"     y="134.9"     z="0"/>
    <position name="posCenter"           unit="cm" x="0" y="0" z="0"/>
-   <position name="posThermInsInDetEncl" unit="cm" x="0" y="-184.9" z="0"/>
-   <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="-184.9" z="0"/>
+   <position name="posThermInsInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
+   <position name="posWarmVesselInDetEncl" unit="cm" x="0" y="-134.9" z="0"/>
    <position name="posCRTShellInDetEncl" unit="cm" x="0" y="15" z="164.5865"/>
    <position name="posBuildingInWorld" unit="cm" x="0" y="1300" z="0"/>
    <position name="posExpHallInWorld" unit="cm" x="0" y="155" z="0"/>
@@ -557,7 +557,7 @@
 
     <box name="DetEnclosure" lunit="cm" 
       x="1245"
-      y="1189.8"
+      y="1089.8"
       z="3200"/>
      
     <box name="ThermIns" lunit="cm" 
@@ -611,7 +611,15 @@
       y="4530" 
       z="9999.9"/>
 
-        <!-- This GDML version has no overburden-->
+    <box name="OverburdenUp" lunit="cm" 
+      x="1830" 
+      y="200" 
+      z="3810"/>
+
+    <box name="OverburdenDown" lunit="cm" 
+      x="1830" 
+      y="100" 
+      z="3810"/>
 
     <box name="Building" lunit="cm" 
       x="1890" 
@@ -56211,6 +56219,10 @@
 </volume>
 
 
+    <volume name="volOverburdenUp" >
+      <materialref ref="Air"/>
+      <solidref ref="OverburdenUp"/>
+    </volume>
 
     <volume name="volBuilding" >
       <materialref ref="Air"/>
@@ -56227,6 +56239,10 @@
       <solidref ref="AirExpHall"/>
     </volume>
 
+    <volume name="volOverburdenDown" >
+      <materialref ref="Air"/>
+      <solidref ref="OverburdenDown"/>
+    </volume>
 
     <volume name="volWallExpHall" >
       <materialref ref="Concrete"/>
@@ -56264,12 +56280,12 @@
     
      <physvol>
         <volumeref ref="volOverburdenUp"/>
-	<position name="posOverburdenUp" unit="cm" x="0" y="780" z="0" />
+	<position name="posOverburdenUp" unit="cm" x="0" y="880" z="0" />
       </physvol>
 
      <physvol>
         <volumeref ref="volOverburdenDown"/>
-	<position name="posOverburdenDown" unit="cm" x="0" y="780" z="0" />
+	<position name="posOverburdenDown" unit="cm" x="0" y="730" z="0" />
       </physvol>
 
       <physvol>
