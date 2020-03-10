@@ -29,7 +29,7 @@ decodeFilterNoise: {
                     FragmentsLabel:     "daq:PHYSCRATEDATA"
                     OutputPedestalCor:  false
                     OutputPedestalPath: "RAW"
-                    DecoderTool:        @local::TPCDecoderOverlayFilter1DTool
+                    DecoderTool:        @local::TPCDecoderFilter1DTool
 }
 
 END_PROLOG
