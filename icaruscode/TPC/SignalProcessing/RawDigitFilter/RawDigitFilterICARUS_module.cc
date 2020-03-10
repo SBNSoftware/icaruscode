@@ -269,18 +269,17 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
         art::Ptr<raw::RawDigit> digitVec0(digitVecHandle, 0);
         unsigned int fDataSize = digitVec0->Samples(); //size of raw data vectors
         unsigned int fftSize;
-        if (fTruncateTicks) {
-          fftSize = fWindowSize;
-        } else {
-          fftSize = fDataSize;
-        }
+        if (fTruncateTicks) fftSize = fWindowSize;
+        else                fftSize = fDataSize;
 
         // .. First set up the filters
         unsigned int halfFFTSize(fftSize/2 + 1);
-        for(unsigned int plne = 0; plne < 3; plne++){
-          fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
-          const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
-          fFilterVec[plne] = filter;
+
+        for(unsigned int plne = 0; plne < 3; plne++)
+        {
+            fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
+            const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
+            fFilterVec[plne] = filter;
         }
 
         // .. Now set up the fftw plan
@@ -366,7 +365,8 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
                 raw::Uncompress(rawDigit->ADCs(), rawadc, rawDigit->Compression());
             }
 
-            if (fDoFFTCorrection){
+            if (fDoFFTCorrection)
+            {
                 // .. Subtract the pedestal
                 double              pedestal = fPedestalRetrievalAlg.PedMean(channel);
                 icarusutil::TimeVec holder(fftSize);
