@@ -2330,7 +2330,7 @@ EOF
 if ( $concrete_on != 0) { 
 print WORLD <<EOF;
     <volume name="volOverburdenUp" >
-      <materialref ref="Concrete"/>
+      <materialref ref="Air"/>
       <solidref ref="OverburdenUp"/>
     </volume>
 EOF
@@ -2375,7 +2375,7 @@ EOF
 if ( $concrete_on != 0) { 
 print WORLD <<EOF;
     <volume name="volOverburdenDown" >
-      <materialref ref="Concrete"/>
+      <materialref ref="Air"/>
       <solidref ref="OverburdenDown"/>
     </volume>
 EOF

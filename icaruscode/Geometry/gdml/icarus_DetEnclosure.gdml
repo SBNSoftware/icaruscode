@@ -4,7 +4,7 @@
 
     <box name="DetEnclosure" lunit="cm" 
       x="1245"
-      y="1189.8"
+      y="1089.8"
       z="3200"/>
      
     <box name="ThermIns" lunit="cm" 
