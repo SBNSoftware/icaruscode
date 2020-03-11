@@ -102,9 +102,9 @@ class util::SampledFunction {
   /// Span of subsample data. Can be forward iterated.
   using SubsampleData_t = gsl::span<Y_t const>;
 
-  // @{
   /**
    * @brief Constructor: samples `function` in the specified range.
+   * @tparam Func type of a functor (see requirements below)
    * @param function the function to be sampled
    * @param lower the lower limit of the range to be sampled
    * @param upper the upper limit of the range to be sampled
@@ -114,22 +114,60 @@ class util::SampledFunction {
    *
    * The sampling of `function` is performed on `nSamples` points from `lower`
    * to `upper` (excluded).
+   *
+   * The `function` parameter type `Func` need to be a unary functor, i.e. it
+   * must support a call of type `function(X_t) const` returning some value
+   * convertible to `Y_t`. Plain C functions and closures also work.
+   *
+   * The `function` is not copied nor retained in any form, so it can be from
+   * a temporary object.
    */
-  SampledFunction(Function_t const& function,
+  template <typename Func>
+  SampledFunction(Func const& function,
     X_t lower, X_t upper,
     gsl::index nSamples,
     gsl::index subsamples = 1
     );
 
-  template <typename Func>
-  SampledFunction(Func function,
-    X_t lower, X_t upper,
-    gsl::index nSamples,
+
+  // @{
+  /**
+   * @brief Constructor: samples `function` in the specified range.
+   * @tparam UntilFunc type of functor indicating when to stop sampling
+   * @param function the function to be sampled
+   * @param lower the lower limit of the range to be sampled
+   * @param step the sampling interval
+   * @param until functor to indicate when to stop sampling
+   * @param subsamples (default: `1`) the number (_M_) of subsamples to be
+   *                   computed
+   * @param min_upper (default: none) minimum value covered by the sampling
+   *
+   * The sampling of `function` is performed from `lower`, advancing by `step`
+   * at each following sample, until the `until` functor returns `true`.
+   * If `min_upper` is specified, regardless of the result of `until`, samples
+   * below `min_upper` are always covered.
+   *
+   * The functor `until` should be callable as in `bool until(X_t x, Y_t y)`,
+   * and should return `false` if the sample of value `y`, corresponding to the
+   * evaluation point `x`, needs to be sampled, and `true` if instead that
+   * sample needs to be discarded, and the sampling stopped. For example,
+   * to apply a threshold so that sampling stops when the function is 0.1,
+   * `until` can be defined as `[](X_t, Y_t s){ return s >= Y_t{0.1}; }` (`x`
+   * is ignored).
+   *
+   * Subsampling is performed based on the `subsamples` argument.
+   */
+  template <typename Func, typename UntilFunc>
+  SampledFunction(Func const& function,
+    X_t lower, X_t step, UntilFunc&& until,
+    gsl::index subsamples,
+    X_t min_upper
+    );
+  template <typename Func, typename UntilFunc>
+  SampledFunction(Func const& function,
+    X_t lower, X_t step, UntilFunc&& until,
     gsl::index subsamples = 1
-    )
-    : SampledFunction
-      (Function_t(function), lower, upper, nSamples, subsamples)
-    {}
+    );
   // @}
 
 
@@ -138,26 +176,40 @@ class util::SampledFunction {
   /// @name Query
   /// @{
 
+  // @{
   /// Returns the number of samples (in each subsample).
   gsl::index size() const { return fNSamples; }
+  // @}
 
+  // @{
   /// Returns the number of subsamples.
   gsl::index nSubsamples() const { return fNSubsamples; }
+  // @}
 
+  // @{
   /// Returns the lower limit of the covered range.
   X_t lower() const { return fLower; }
+  // @}
 
+  // @{
   /// Returns the upper limit of the covered range.
   X_t upper() const { return fUpper; }
+  // @}
 
+  // @{
   /// Returns the extension of the covered range.
   X_t rangeSize() const { return upper() - lower(); }
+  // @}
 
+  // @{
   /// Returns the extension of a step.
   X_t stepSize() const { return fStep; }
+  // @}
 
+  // @{
   /// Returns the base offset of the subsamples.
   X_t substepSize() const { return stepSize() / nSubsamples(); }
+  // @}
 
   /// @}
   // --- END --- Query ---------------------------------------------------------
@@ -167,15 +219,20 @@ class util::SampledFunction {
   /// @name Access to the sampled data
   /// @{
 
+  // @{
   /// Returns the `iSample` value of the subsample with the specified index `n`.
   Y_t value(gsl::index iSample, gsl::index n = 0U) const
     { return subsampleData(n)[iSample]; }
+  // @}
 
 
+  // @{
   /// Returns the data of the subsample with the specified index `n`.
   SubsampleData_t subsample(gsl::index const n) const
     { return { subsampleData(n), static_cast<gsl::index>(fNSamples) }; }
+  // @}
 
+  // @{
   /**
    * @brief Returns the index of the step including `x`.
    * @param x the argument to the function
@@ -189,11 +246,15 @@ class util::SampledFunction {
    * returned (it can be checked e.g. with `isValidStepIndex()`).
    */
   gsl::index stepIndex(X_t const x, gsl::index const iSubsample) const;
+  // @}
 
+  // @{
   /// Returns whether the specified step index is valid.
   bool isValidStepIndex(gsl::index const index) const
     { return (index >= 0) && (index < size()); }
+  // @}
 
+  // @{
   /**
    * @brief Returns the subsample closest to the value `x`.
    * @param x value to be checked
@@ -214,6 +275,7 @@ class util::SampledFunction {
    * the same.
    */
   gsl::index closestSubsampleIndex(X_t x) const;
+  // @}
 
   /// @}
   // --- END --- Access --------------------------------------------------------
@@ -232,6 +294,13 @@ class util::SampledFunction {
 
     private:
 
+  /// Record used during initialization.
+  struct Range_t {
+    X_t lower, upper;
+    X_t step;
+    gsl::index nSamples;
+  }; // Range_t
+
   X_t fLower; ///< Lower limit of sampled range.
   X_t fUpper; ///< Upper limit of sampled range.
   gsl::index fNSamples; ///< Number of samples in the range.
@@ -241,6 +310,10 @@ class util::SampledFunction {
 
   /// All samples, the entire first subsample first.
   std::vector<Y_t> fAllSamples;
+
+  /// Constructor implementation.
+  SampledFunction
+    (Function_t const& function, Range_t const& range, gsl::index subsamples);
 
   /// Returns the starting point of the subsample `n`.
   X_t subsampleOffset(gsl::index n) const
@@ -257,8 +330,19 @@ class util::SampledFunction {
   /// Computes the total size of the data.
   std::size_t computeTotalSize() const { return nSubsamples() * size(); }
 
+
+  /// Returns a range including at least from `lower` to `min_upper`,
+  /// extended enough that `until(upper, f(upper))` is `true`, and with an
+  /// integral number of steps.
+  template <typename UntilFunc>
+  static Range_t extendRange(
+    Function_t const& function, X_t lower, X_t min_upper, X_t step,
+    UntilFunc&& until
+    );
+
   /// Samples the `function` and fills the internal caches.
   void fillSamples(Function_t const& function);
+
 
   /// Returns `value` made non-negative by adding multiples of `range`.
   template <typename T>
@@ -271,23 +355,37 @@ class util::SampledFunction {
 // ===  template implementation
 // =============================================================================
 template <typename XType, typename YType>
+template <typename Func>
 util::SampledFunction<XType, YType>::SampledFunction(
-  Function_t const& function,
+  Func const& function,
   X_t lower, X_t upper,
   gsl::index nSamples,
-  gsl::index subsamples /* = 1 */
+  gsl::index subsamples
   )
-  : fLower(lower)
-  , fUpper(upper)
-  , fNSamples(nSamples)
-  , fNSubsamples(subsamples)
-  , fStep(rangeSize() / fNSamples)
-  , fAllSamples(computeTotalSize())
-{
-  assert(nSamples > 0);
-  assert(subsamples > 0);
-  fillSamples(function);
-} // util::SampledFunction<>::SampledFunction()
+  : SampledFunction(
+      Function_t(function),
+      Range_t{ lower, upper, (upper - lower) / nSamples, nSamples },
+      subsamples
+    )
+{}
+
+
+// -----------------------------------------------------------------------------
+template <typename XType, typename YType>
+template <typename Func, typename UntilFunc>
+util::SampledFunction<XType, YType>::SampledFunction(
+  Func const& function,
+  X_t lower, X_t step, UntilFunc&& until,
+  gsl::index subsamples,
+  X_t min_upper
+  )
+  : SampledFunction(
+      Function_t(function),
+      extendRange
+        (function, lower, min_upper, step, std::forward<UntilFunc>(until)),
+      subsamples
+    )
+{}
 
 
 // -----------------------------------------------------------------------------
@@ -334,6 +432,53 @@ void util::SampledFunction<XType, YType>::dump
   } // for
   out << "\n";
 } // util::SampledFunction<>::dump()
+
+
+// -----------------------------------------------------------------------------
+template <typename XType, typename YType>
+util::SampledFunction<XType, YType>::SampledFunction(
+  Function_t const& function,
+  Range_t const& range,
+  gsl::index subsamples
+  )
+  : fLower(range.lower)
+  , fUpper(range.upper)
+  , fNSamples(range.nSamples)
+  , fNSubsamples(subsamples)
+  , fStep(range.step)
+  , fAllSamples(computeTotalSize())
+{
+  assert(fNSamples > 0);
+  assert(subsamples > 0);
+  fillSamples(function);
+} // util::SampledFunction<>::SampledFunction(range)
+
+
+// -----------------------------------------------------------------------------
+template <typename XType, typename YType>
+template <typename UntilFunc>
+auto util::SampledFunction<XType, YType>::extendRange(
+  Function_t const& function, X_t lower, X_t min_upper, X_t step,
+  UntilFunc&& until
+  ) -> Range_t
+{
+  assert(min_upper >= lower);
+  auto const startSamples
+    = static_cast<gsl::index>(std::ceil((min_upper - lower) / step));
+
+  auto const endStep
+    = [lower, step](gsl::index iStep){ return lower + step * iStep; };
+
+  Range_t r { lower, endStep(startSamples), step, startSamples };
+
+  while (!until(r.upper + r.step, function(r.upper + r.step))) {
+    // upper + step is not too much: extend to there
+    ++r.nSamples;
+    r.upper = endStep(r.nSamples);
+  } // while
+
+  return r;
+} // util::SampledFunction<>::extendRange()
 
 
 // -----------------------------------------------------------------------------

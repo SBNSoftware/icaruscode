@@ -1,4 +1,4 @@
-/**
+﻿/**
  * @file    icaruscode/Light/Algorithms/PMTsimulationAlg.cxx
  * @brief   Algorithms for the simulation of ICARUS PMT channels.
  * @date    October 16, 2018
@@ -9,6 +9,11 @@
 
 // this library header
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
+
+// ICARUS libraries
+#include "icaruscode/PMT/Algorithms/AsymGaussPulseFunction.h"
+#include "icaruscode/Utilities/WaveformOperations.h"
+
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -31,22 +36,47 @@
 // ---  icarus::opdet::DiscretePhotoelectronPulse
 // -----------------------------------------------------------------------------
 auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
-  PulseFunction_t const& pulseShape, gigahertz samplingFreq, double rightSigmas,
-  unsigned int nSubsamples
+  PulseFunction_t const& pulseShape,
+  gigahertz samplingFreq, unsigned int nSubsamples,
+  ADCcount threshold
 ) -> SampledFunction_t
 {
   using namespace util::quantities::time_literals;
+  using namespace icarus::waveform_operations;
 
-  nanoseconds const pulseDuration
-    = pulseShape.peakTime() + rightSigmas * pulseShape.rightSigma();
-  std::size_t const pulseSize = samplingFreq * pulseDuration;
-  nanoseconds const roundPulseDuration = pulseSize / samplingFreq;
+  // pick the function according to polarity;
+  // the pulse polarity is included in the values,
+  // the two functions (lambda) are of different type, so they are being wrapped
+  // in the common `std::function` type
+
+  auto const isBelowThreshold = (pulseShape.polarity() == +1)
+    ? std::function(
+      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
+        {
+          return
+            PositivePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
+              < threshold
+            ;
+        }
+      )
+    : std::function(
+      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
+        {
+          return
+            NegativePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
+              < threshold
+            ;
+        }
+      )
+    ;
 
   return SampledFunction_t{
-    pulseShape,
-    0.0_ns, roundPulseDuration, // time range of the pulse shape
-    static_cast<gsl::index>(pulseSize), // number of samples
-    static_cast<gsl::index>(nSubsamples) // how many subsamples per tick
+    std::cref(pulseShape), // function to sample (by reference because abstract)
+    0.0_ns,                // sampling start time
+    1.0 / samplingFreq,    // tick duration
+    isBelowThreshold,      // when to stop the sampling
+    static_cast<gsl::index>(nSubsamples), // how many subsamples per tick
+    pulseShape.peakTime() // sample at least until here
     };
 
 } // icarus::opdet::DiscretePhotoelectronPulse::sampleShape()
@@ -68,20 +98,15 @@ bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
     mf::LogWarning log(outputCat);
     log << "Check on sampled photoelectron waveform template failed!";
     if (!bLowOk) {
-      log
-        << "\n => low tail after " << (shape().peakTime() / shape().leftSigma())
-          << " standard deviations is still at " << low
-        ;
+      log << "\n => low tail at the starting of sampling is already " << low;
     }
     if (!bHighOk) {
       log
-        << "\n => high tail after "
-          << ((duration() - shape().peakTime()) / shape().rightSigma())
-          << " standard deviations is still at " << high
+        << "\n => high tail at the end of sampling ("
+          << duration() << ") is still at " << high
         ;
     }
-    log << "\nShape parameters:";
-    shape().dump(log, "  ", "");
+    log << "\nShape parameters:" << shape().toString("  ", "");
   } // if writing a message on failure
   return false;
 } // icarus::opdet::DiscretePhotoelectronPulse::checkRange()
@@ -137,7 +162,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   , fSampling(fParams.timeService->OpticalClock().Frequency())
   , fNsamples(fParams.readoutEnablePeriod * fSampling) // us * MHz cancels out
   , wsp(
-    { // PhotoelectronPulseWaveform
+    std::make_unique<icarus::opdet::AsymGaussPulseFunction<nanoseconds>>(
       // amplitude is a charge, so we have to wrap the arm of the constructor to
       // accept it as ADC count (`value()` makes `meanAmplitude` lose its unit)
       // `ADCcount` conversion is redundant but left for clarity
@@ -145,10 +170,10 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
       fParams.transitTime,                 // peak time
       riseTimeToRMS(fParams.riseTime),     // sigma left
       riseTimeToRMS(fParams.fallTime)      // sigma right
-    },
+    ),
     fSampling,
-    6.0,                    // 6 std. dev. of tail should suffice
-    fParams.pulseSubsamples // tick subsampling
+    fParams.pulseSubsamples, // tick subsampling
+    1.0e-3_ADCf // stop sampling when ADC counts are below this value
     )
   , fNoiseAdder(fParams.useFastElectronicsNoise
       ? &icarus::opdet::PMTsimulationAlg::AddNoise_faster
@@ -183,7 +208,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
   // check that the sampled waveform has a sufficiently large range, so that
   // tails are below 10^-3 ADC counts (absolute value)
-  wsp.checkRange(1e-3_ADCf, "PMTsimulationAlg");
+  wsp.checkRange(1e-4_ADCf, "PMTsimulationAlg");
 
 } // icarus::opdet::PMTsimulationAlg::PMTsimulationAlg()
 
@@ -204,16 +229,16 @@ std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
 
 //------------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
-  
+
   using Fluctuator_t = GainFluctuator<CLHEP::RandPoisson>;
-  
+
   if (fParams.doGainFluctuations) {
     double const refGain = fParams.PMTspecs.firstStageGain();
     return Fluctuator_t
       { refGain, CLHEP::RandPoisson{ *fParams.gainRandomEngine, refGain } };
   }
   else return Fluctuator_t{}; // default-constructed does not fluctuate anything
-  
+
 } // icarus::opdet::PMTsimulationAlg::makeGainFluctuator()
 
 
@@ -293,10 +318,10 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
     // go though all subsamples (starting each at a fraction of a tick)
     for (auto const& [ iSubsample, peMap ]: util::enumerate(peMaps)) {
-      
+
       // this is the waveform sampling for the selected subsample:
       auto const& subsample = wsp.subsample(iSubsample);
-      
+
       for (auto const& [ startTick, nPE ]: peMap) {
         nTotalPE += nPE;
 
@@ -307,7 +332,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
           subsample, waveform, startTick,
           static_cast<WaveformValue_t>(nEffectivePE)
           );
-        
+
       } // for sample
     } // for subsamples
     MF_LOG_TRACE("PMTsimulationAlg")
@@ -333,7 +358,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       // Implementing saturation effects;
       // waveform is negative, and saturation is a minimum ADC count
       auto const saturationLevel
-        = fParams.baseline + fParams.saturation*wsp.shape().amplitude();
+        = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
       std::replace_if(waveform.begin(),waveform.end(),
 		      [saturationLevel](auto s) -> bool{return s < saturationLevel;},
 		      saturationLevel);
@@ -498,9 +523,9 @@ void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(
   PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
   WaveformValue_t const n
 ) const {
-  
+
   if (n == 0.0) return;
-  
+
   if (n == 1.0) {
     // simple addition
     AddPulseShape(pulse, wave, time_bin, std::plus<ADCcount>());
@@ -509,7 +534,7 @@ void icarus::opdet::PMTsimulationAlg::AddPhotoelectrons(
     // multiply each `pulse` sample by `n`:
     AddPulseShape(pulse, wave, time_bin, [n](auto a, auto b) { return a+n*b; });
   }
-  
+
 } // icarus::opdet::PMTsimulationAlg::AddPhotoelectrons()
 
 
@@ -576,55 +601,55 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
   /*
    * We assume leakage current ("dark noise") is completely stochastic and
    * distributed uniformly in time with a fixed and known rate.
-   * 
+   *
    * In these condition, the time between two consecutive events follows an
    * exponential distribution with as decay constant the same rate.
    * We extact all the leakage events (including the first one) according to
    * that distribution.
-   * 
+   *
    * We follow the "standard" approach of subsampling of tick as for the
    * photoelectron.
-   * 
+   *
    */
   using namespace util::quantities::frequency_literals;
-  
+
   if (fParams.darkNoiseRate <= 0.0_Hz) return; // no dark noise
-  
+
   // CLHEP random objects do not understand quantities, so we use scalars;
   // we choose to work with nanosecond
   CLHEP::RandExponential random(*(fParams.darkNoiseRandomEngine),
     (1.0 / fParams.darkNoiseRate).convertInto<nanoseconds>().value());
-  
+
   // time to stop at: full duration of the waveform
   nanoseconds const maxTime = static_cast<double>(wave.size()) / fSampling;
-  
+
   // the time of first leakage event:
   nanoseconds darkNoiseTime { random.fire() };
-  
+
   TimeToTickAndSubtickConverter const toTickAndSubtick(wsp.nSubsamples());
 
   auto gainFluctuation = makeGainFluctuator();
 
   MF_LOG_TRACE("PMTsimulationAlg")
     << "Adding dark noise (" << fParams.darkNoiseRate << ") up to " << maxTime;
-  
+
   while (darkNoiseTime < maxTime) {
-    
+
     auto const [ tick, subtick ] = toTickAndSubtick(darkNoiseTime * fSampling);
-    
+
     double const n = gainFluctuation(1.0); // leakage is one photoelectron
     MF_LOG_TRACE("PMTsimulationAlg")
       << " * at " << darkNoiseTime << " (" << tick << ", subsample " << subtick
       << ") x" << n;
-    
+
     AddPhotoelectrons
       (wsp.subsample(subtick), wave, tick, static_cast<WaveformValue_t>(n));
-    
+
     // time of the next leakage event:
     darkNoiseTime += nanoseconds{ random.fire() };
-    
+
   } // while
-  
+
 } // icarus::opdet::PMTsimulationAlg::AddDarkNoise()
 
 
