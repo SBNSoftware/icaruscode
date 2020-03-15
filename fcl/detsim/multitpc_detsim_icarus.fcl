@@ -55,17 +55,17 @@ physics:
 #
 # For MCC1.1 we are still suppressing channels with no signal in the TPC
 physics.producers.daq0.SuppressNoSignal: true
-# physics.producers.daq0.TPCs: [ [ 0, 0 ], [ 0, 1 ] ]
-physics.producers.daq0.TPCs: [ { C:0 T:0 }, { C:0 T:1 } ]
+physics.producers.daq0.TPCs: [ [ 0, 0 ], [ 0, 1 ] ]
+#physics.producers.daq0.TPCs: [ { C:0 T:0 }, { C:0 T:1 } ]
 physics.producers.daq1.SuppressNoSignal: true
-# physics.producers.daq1.TPCs: [ [ 0, 2 ], [ 0, 3 ] ]
-physics.producers.daq1.TPCs: [ { C:0 T:2 }, { C:0 T:3 } ]
+physics.producers.daq1.TPCs: [ [ 0, 2 ], [ 0, 3 ] ]
+#physics.producers.daq1.TPCs: [ { C:0 T:2 }, { C:0 T:3 } ]
 physics.producers.daq2.SuppressNoSignal: true
-# physics.producers.daq2.TPCs: [ [ 1, 0 ], [ 1, 1 ] ]
-physics.producers.daq2.TPCs: [ { C:1 T:0 }, { C:1 T:1 } ]
+physics.producers.daq2.TPCs: [ [ 1, 0 ], [ 1, 1 ] ]
+#physics.producers.daq2.TPCs: [ { C:1 T:0 }, { C:1 T:1 } ]
 physics.producers.daq3.SuppressNoSignal: true
-#physics.producers.daq3.TPCs: [ [ 1, 2 ], [ 1, 3 ] ]
-physics.producers.daq3.TPCs: [ { C:1 T:2 }, { C:1 T:3 } ]
+physics.producers.daq3.TPCs: [ [ 1, 2 ], [ 1, 3 ] ]
+#physics.producers.daq3.TPCs: [ { C:1 T:2 }, { C:1 T:3 } ]
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}

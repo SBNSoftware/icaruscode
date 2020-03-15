@@ -105,7 +105,6 @@ private:
     bool                         fProcessAllTPCs;    ///< If true we process all TPCs
     unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
     TPCIDVec                     fTPCVec;            ///< List of TPCs to process for this instance of the module
-    unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -179,20 +178,18 @@ SimWireICARUS::~SimWireICARUS() {}
 //-------------------------------------------------
 void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
-    fDriftEModuleLabel= p.get< art::InputTag           >("DriftEModuleLabel",             "largeant");
-    fProcessAllTPCs   = p.get< bool                    >("ProcessAllTPCs",                     false);
-    fCryostat         = p.get< unsigned int            >("Cryostat",                               0);
-//    fTPCVec           = p.get< std::vector<geo::TPCID> >("TPCVec",         std::vector<geo::TPCID>());
-    fTPC              = p.get< unsigned int            >("TPC",                                    0);
-    fSimDeadChannels  = p.get< bool                    >("SimDeadChannels",                    false);
-    fSuppressNoSignal = p.get< bool                    >("SuppressNoSignal",                   false);
-    fMakeHistograms   = p.get< bool                    >("MakeHistograms",                     false);
-    fSmearPedestals   = p.get< bool                    >("SmearPedestals",                      true);
-    fNumChanPerMB     = p.get< int                     >("NumChanPerMB",                          32);
-    fTest             = p.get< bool                    >("Test",                               false);
-    fTestWire         = p.get< size_t                  >("TestWire",                               0);
-    fTestIndex        = p.get< std::vector<size_t>     >("TestIndex",          std::vector<size_t>());
-    fTestCharge       = p.get< std::vector<double>     >("TestCharge",         std::vector<double>());
+    fDriftEModuleLabel= p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
+    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs",                     false);
+    fCryostat         = p.get< unsigned int        >("Cryostat",                               0);
+    fSimDeadChannels  = p.get< bool                >("SimDeadChannels",                    false);
+    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal",                   false);
+    fMakeHistograms   = p.get< bool                >("MakeHistograms",                     false);
+    fSmearPedestals   = p.get< bool                >("SmearPedestals",                      true);
+    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",                          32);
+    fTest             = p.get< bool                >("Test",                               false);
+    fTestWire         = p.get< size_t              >("TestWire",                               0);
+    fTestIndex        = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
+    fTestCharge       = p.get< std::vector<double> >("TestCharge",         std::vector<double>());
 
     using TPCValsPair = std::pair<unsigned int, unsigned int>; // Assume cryostat, TPC 
     using TPCValsVec  = std::vector<TPCValsPair>;
