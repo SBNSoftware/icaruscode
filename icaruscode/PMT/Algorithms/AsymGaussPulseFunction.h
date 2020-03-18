@@ -50,17 +50,17 @@ class icarus::opdet::AsymGaussPulseFunction
   using Time = typename Base_t::Time; ///< Type of time being used.
 
   /**
-    * @brief Constructor: assigns the parameters of the shape.
-    * @param amplitude the maximum amplitudes of the shape (at transition)
-    * @param peakTime the time of the maximum amplitude of the shape
-    * @param sigmaLeft the standard deviation of the shape before transition
-    * @param sigmaRight the standard deviation of the shape after transition
-    *
-    * The time parameters (`peakTime`, `sigmaLeft` and `sigmaRight`) must be
-    * measured in same unit. The `peakTime` defined the position of the shape
-    * with respect to time 0.
-    *
-    */
+   * @brief Constructor: assigns the parameters of the shape.
+   * @param amplitude the maximum amplitudes of the shape (at transition)
+   * @param peakTime the time of the maximum amplitude of the shape
+   * @param sigmaLeft the standard deviation of the shape before transition
+   * @param sigmaRight the standard deviation of the shape after transition
+   *
+   * The time parameters (`peakTime`, `sigmaLeft` and `sigmaRight`) must be
+   * measured in same unit. The `peakTime` defined the position of the shape
+   * with respect to time 0.
+   *
+   */
   AsymGaussPulseFunction(
     ADCcount amplitude,
     Time peakTime,
@@ -102,12 +102,12 @@ class icarus::opdet::AsymGaussPulseFunction
 
   // --- BEGIN -- Interface implementation -------------------------------------
   /**
-    * @brief Evaluates the pulse at the given time.
-    * @param time time to evaluate the shape at
-    *
-    * The scale of the time is defined by the transition time passed
-    * at construction.
-    */
+   * @brief Evaluates the pulse at the given time.
+   * @param time time to evaluate the shape at
+   *
+   * The scale of the time is defined by the transition time passed
+   * at construction.
+   */
   virtual ADCcount doEvaluateAt(Time time) const override;
 
   /// Returns the time at which the first peak is found.
@@ -117,11 +117,11 @@ class icarus::opdet::AsymGaussPulseFunction
   virtual ADCcount doPeakAmplitude() const override { return myAmplitude(); }
 
   /**
-    * @brief Prints on stream the parameters of this shape.
-    * @param out the stream to write into
-    * @param indent indentation string, prepended to all lines except first
-    * @param indentFirst indentation string prepended to the first line
-    */
+   * @brief Prints on stream the parameters of this shape.
+   * @param out the stream to write into
+   * @param indent indentation string, prepended to all lines except first
+   * @param indentFirst indentation string prepended to the first line
+   */
   virtual void doDump(
     std::ostream& out,
     std::string const& indent, std::string const& firstIndent

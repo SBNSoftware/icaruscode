@@ -7,11 +7,14 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
+#include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
@@ -23,16 +26,20 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
+#include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/types/TableFragment.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/ParameterSet.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
 // C/C++ standard library
 #include <vector>
+#include <atomic> // std::atomic_flag
 #include <iterator> // std::back_inserter()
 #include <memory> // std::make_unique()
 #include <utility> // std::move()
@@ -103,43 +110,51 @@ namespace opdet{
       
     struct Config
     {
-        using Comment = fhicl::Comment;
-        using Name = fhicl::Name;
-        
-        fhicl::Atom<art::InputTag> inputModuleLabel {
-            Name("InputModule"),
-            Comment("simulated photons to be digitised (sim::SimPhotons)")
+      using Comment = fhicl::Comment;
+      using Name = fhicl::Name;
+      
+      fhicl::Atom<art::InputTag> inputModuleLabel {
+          Name("InputModule"),
+          Comment("simulated photons to be digitised (sim::SimPhotons)")
+      };
+      
+      rndm::SeedAtom EfficiencySeed {
+        Name("EfficiencySeed"),
+        Comment("fix the seed for stocastic photon detection efficiency")
         };
-        
-        rndm::SeedAtom EfficiencySeed {
-          Name("EfficiencySeed"),
-          Comment("fix the seed for stocastic photon detection efficiency")
-          };
-        
-        rndm::SeedAtom DarkNoiseSeed {
-          Name("DarkNoiseSeed"),
-          Comment("fix the seed for stocastic dark noise generation")
-          };
-        
-        rndm::SeedAtom ElectronicsNoiseSeed {
-          Name("ElectronicsNoiseSeed"),
-          Comment("fix the seed for stocastic electronics noise generation")
-          };
-        
-        fhicl::Atom<std::string> electronicsNoiseRandomEngine {
-            Name("ElectronicsNoiseRandomEngine"),
-            Comment("type of random engine to use for electronics noise"),
-            "HepJamesRandom"
+      
+      rndm::SeedAtom DarkNoiseSeed {
+        Name("DarkNoiseSeed"),
+        Comment("fix the seed for stocastic dark noise generation")
         };
+      
+      rndm::SeedAtom ElectronicsNoiseSeed {
+        Name("ElectronicsNoiseSeed"),
+        Comment("fix the seed for stocastic electronics noise generation")
+        };
+      
+      fhicl::Atom<std::string> electronicsNoiseRandomEngine {
+          Name("ElectronicsNoiseRandomEngine"),
+          Comment("type of random engine to use for electronics noise"),
+          "HepJamesRandom"
+      };
 
-        fhicl::Atom<std::string> darkNoiseRandomEngine {
-            Name("DarkNoiseRandomEngine"),
-            Comment("type of random engine to use for dark noise"),
-            "HepJamesRandom"
-        };
+      fhicl::Atom<std::string> darkNoiseRandomEngine {
+          Name("DarkNoiseRandomEngine"),
+          Comment("type of random engine to use for dark noise"),
+          "HepJamesRandom"
+      };
 
-        fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
-        
+      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+      
+      fhicl::DelegatedParameter SinglePhotonResponse {
+        fhicl::Name("SinglePhotonResponse"),
+        fhicl::Comment(
+          "parameters describing the single photon response"
+          " (SinglePhotonPulseFunctionTool tool)"
+          )
+        };
+      
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -158,8 +173,15 @@ namespace opdet{
     
   private:
     
-    // Declare member data here.
+    /// Type of single photoelectron response function.
+    using SinglePhotonResponseFunc_t
+      = icarus::opdet::SinglePhotonResponseFunc_t const;
+    
+    /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
+    
+    /// Single photoelectron response function.
+    std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
     
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
@@ -167,6 +189,13 @@ namespace opdet{
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
+    
+    
+    /// True if `firstTime()` has already been called.
+    std::atomic_flag fNotFirstTime;
+    
+    /// Returns whether no other event has been processed yet.
+    bool firstTime() { return !fNotFirstTime.test_and_set(); }
     
   }; // class SimPMTIcarus
   
@@ -177,6 +206,11 @@ namespace opdet{
 SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
+    , fSinglePhotonResponseFunc{
+        art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
+          (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
+          ->getPulseFunction()
+      }
     , makePMTsimulator(config().algoConfig())
     , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
         (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
@@ -222,10 +256,17 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     auto PMTsimulator = makePMTsimulator(
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
       *(lar::providerFrom<detinfo::DetectorClocksService>()),
+      *fSinglePhotonResponseFunc,
       fEfficiencyEngine,
       fDarkNoiseEngine,
       fElectronicsNoiseEngine
       );
+    
+    if (firstTime()) {
+      mf::LogDebug log { "SimPMTIcarus" };
+      log << "PMT simulation configuration (first event):\n";
+      PMTsimulator->printConfiguration(log);
+    } // if first time
     
     //
     // run the algorithm
@@ -251,7 +292,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   } // SimPMTIcarus::produce()
   
   
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
   DEFINE_ART_MODULE(SimPMTIcarus)
   
   

@@ -31,18 +31,41 @@ BEGIN_PROLOG
 ################################################################################
 ###  Configurations for `PMTsimulationAlg`
 ################################################################################
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Single photoelectron response configurations
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+# Single photoelectron response with a Gaussian rise and a fall shape.
+# 
+# Parameters are as used since forever to at least v08_46_00.
+# 
+icarus_photoelectronresponse_standard: {
+  
+  # run `lar --print-description AsymGaussPulseFunctionTool` for configuration
+  tool_type: AsymGaussPulseFunctionTool
+  
+  TransitTime:               "55.1 ns"
+  RaiseTime:                 "3.8 ns"
+  FallTime:                  "13.7 ns"
+  MeanAmplitude:             "0.9 pC"
+  ADC:                       -11.1927       #charge to adc factor
+  
+} # icarus_photoelectronresponse_standard
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### Standard configuration: `icarus_pmtsimulationalg_standard`
 ###
 ###
+
 icarus_pmtsimulationalg_standard: {
 
-  TransitTime:               "55.1 ns"
-  ADC:                       -11.1927       #charge to adc factor
   Baseline:                  7999.5         #in ADC
-  FallTime:                  "13.7 ns"
-  RiseTime:                  "3.8 ns"
-  MeanAmplitude:             "0.9 pC"
+  
+  SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
+  
   AmpNoise:                  1.0            #in ADC
   DarkNoiseRate:             "1.6 kHz"      # from CERN test stand measurement
 

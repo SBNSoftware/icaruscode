@@ -29,88 +29,12 @@
 #include "CLHEP/Random/RandExponential.h"
 
 // C++ standard libaries
-#include <utility> // std::move()
-
-
-// -----------------------------------------------------------------------------
-// ---  icarus::opdet::DiscretePhotoelectronPulse
-// -----------------------------------------------------------------------------
-auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
-  PulseFunction_t const& pulseShape,
-  gigahertz samplingFreq, unsigned int nSubsamples,
-  ADCcount threshold
-) -> SampledFunction_t
-{
-  using namespace util::quantities::time_literals;
-  using namespace icarus::waveform_operations;
-
-  // pick the function according to polarity;
-  // the pulse polarity is included in the values,
-  // the two functions (lambda) are of different type, so they are being wrapped
-  // in the common `std::function` type
-
-  auto const isBelowThreshold = (pulseShape.polarity() == +1)
-    ? std::function(
-      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
-        {
-          return
-            PositivePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
-              < threshold
-            ;
-        }
-      )
-    : std::function(
-      [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
-        {
-          return
-            NegativePolarityOperations<ADCcount>::subtractBaseline(s, baseline)
-              < threshold
-            ;
-        }
-      )
-    ;
-
-  return SampledFunction_t{
-    std::cref(pulseShape), // function to sample (by reference because abstract)
-    0.0_ns,                // sampling start time
-    1.0 / samplingFreq,    // tick duration
-    isBelowThreshold,      // when to stop the sampling
-    static_cast<gsl::index>(nSubsamples), // how many subsamples per tick
-    pulseShape.peakTime() // sample at least until here
-    };
-
-} // icarus::opdet::DiscretePhotoelectronPulse::sampleShape()
-
-
-// -----------------------------------------------------------------------------
-bool icarus::opdet::DiscretePhotoelectronPulse::checkRange
-  (ADCcount limit, std::string const& outputCat /* = "" */) const
-{
-  assert(pulseLength() > 0);
-  auto const low = *(fSampledShape.subsample(0).begin());
-  auto const high
-    = *(fSampledShape.subsample(fSampledShape.nSubsamples() - 1).rbegin());
-
-  bool const bLowOk = (low.abs() < limit);
-  bool const bHighOk = (high.abs() < limit);
-  if (bLowOk && bHighOk) return true;
-  if (!outputCat.empty()) {
-    mf::LogWarning log(outputCat);
-    log << "Check on sampled photoelectron waveform template failed!";
-    if (!bLowOk) {
-      log << "\n => low tail at the starting of sampling is already " << low;
-    }
-    if (!bHighOk) {
-      log
-        << "\n => high tail at the end of sampling ("
-          << duration() << ") is still at " << high
-        ;
-    }
-    log << "\nShape parameters:" << shape().toString("  ", "");
-  } // if writing a message on failure
-  return false;
-} // icarus::opdet::DiscretePhotoelectronPulse::checkRange()
-
+#include <chrono> // std::chrono::high_resolution_clock
+#include <unordered_map>
+#include <algorithm> // std::accumulate()
+#include <utility> // std::move(), std::cref(), ...
+#include <limits> // std::numeric_limits
+#include <cmath> // std::signbit(), std::pow()
 
 
 // -----------------------------------------------------------------------------
@@ -162,18 +86,10 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   , fSampling(fParams.timeService->OpticalClock().Frequency())
   , fNsamples(fParams.readoutEnablePeriod * fSampling) // us * MHz cancels out
   , wsp(
-    std::make_unique<icarus::opdet::AsymGaussPulseFunction<nanoseconds>>(
-      // amplitude is a charge, so we have to wrap the arm of the constructor to
-      // accept it as ADC count (`value()` makes `meanAmplitude` lose its unit)
-      // `ADCcount` conversion is redundant but left for clarity
-      ADCcount(fParams.ADC * fParams.meanAmplitude.value()), // amplitude
-      fParams.transitTime,                 // peak time
-      riseTimeToRMS(fParams.riseTime),     // sigma left
-      riseTimeToRMS(fParams.fallTime)      // sigma right
-    ),
+    *(fParams.pulseFunction),
     fSampling,
     fParams.pulseSubsamples, // tick subsampling
-    1.0e-3_ADCf // stop sampling when ADC counts are below this value
+    1.0e-4_ADCf // stop sampling when ADC counts are below this value
     )
   , fNoiseAdder(fParams.useFastElectronicsNoise
       ? &icarus::opdet::PMTsimulationAlg::AddNoise_faster
@@ -203,12 +119,10 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
       ;
   }
 
-  printConfiguration
-    (mf::LogDebug("PMTsimulationAlg") << "PMT simulation configuration:\n");
-
   // check that the sampled waveform has a sufficiently large range, so that
-  // tails are below 10^-3 ADC counts (absolute value)
-  wsp.checkRange(1e-4_ADCf, "PMTsimulationAlg");
+  // tails are below 10^-3 ADC counts (absolute value);
+  // if this test fails, it's better to reduce the threshold in wsp constructor
+  wsp.checkRange(1.0e-3_ADCf, "PMTsimulationAlg");
 
 } // icarus::opdet::PMTsimulationAlg::PMTsimulationAlg()
 
@@ -273,7 +187,7 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     // returns tick and relative subtick number
     TimeToTickAndSubtickConverter const toTickAndSubtick(peMaps.size());
 
-    auto start = std::chrono::high_resolution_clock::now();
+//     auto start = std::chrono::high_resolution_clock::now();
 
     photons_used.clear();
     photons_used.SetChannel(photons.OpChannel());
@@ -303,10 +217,10 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       ++peMaps[subtick][tick];
     } // for photons
 
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> diff = end-start;
-    //std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
-    start=std::chrono::high_resolution_clock::now();
+//     auto end = std::chrono::high_resolution_clock::now();
+//     std::chrono::duration<double> diff = end-start;
+//     std::cout << "\tcollected pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
+//     start=std::chrono::high_resolution_clock::now();
 
     //
     // add the collected photoelectrons to the waveform
@@ -344,27 +258,28 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
       << " times in channel " << photons.OpChannel()
       ;
 
-      end=std::chrono::high_resolution_clock::now(); diff = end-start;
-      //std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
-      start=std::chrono::high_resolution_clock::now();
+//       end=std::chrono::high_resolution_clock::now(); diff = end-start;
+//       std::cout << "\tadded pes... " << photons.OpChannel() << " " << diff.count() << std::endl;
+//       start=std::chrono::high_resolution_clock::now();
 
       if(fParams.ampNoise > 0.0_ADCf) (this->*fNoiseAdder)(waveform);
       if(fParams.darkNoiseRate > 0.0_Hz) AddDarkNoise(waveform);
 
-      end=std::chrono::high_resolution_clock::now(); diff = end-start;
-      //std::cout << "\tadded noise... " << photons.OpChannel() << " " << diff.count() << std::endl;
-      start=std::chrono::high_resolution_clock::now();
+//       end=std::chrono::high_resolution_clock::now(); diff = end-start;
+//       std::cout << "\tadded noise... " << photons.OpChannel() << " " << diff.count() << std::endl;
+//       start=std::chrono::high_resolution_clock::now();
 
       // Implementing saturation effects;
       // waveform is negative, and saturation is a minimum ADC count
+      // TODO use waveform_operations (what is polarity is different?)
       auto const saturationLevel
         = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
       std::replace_if(waveform.begin(),waveform.end(),
 		      [saturationLevel](auto s) -> bool{return s < saturationLevel;},
 		      saturationLevel);
 
-      end=std::chrono::high_resolution_clock::now(); diff = end-start;
-      //std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
+//       end=std::chrono::high_resolution_clock::now(); diff = end-start;
+//       std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
 
   } // CreateFullWaveform()
 
@@ -692,7 +607,6 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   fBaseConfig.readoutEnablePeriod      = config.ReadoutEnablePeriod();
   fBaseConfig.readoutWindowSize        = config.ReadoutWindowSize();
-  fBaseConfig.ADC                      = config.ADC();
   fBaseConfig.baseline                 = ADCcount(config.Baseline());
   fBaseConfig.pulsePolarity            = config.PulsePolarity();
   fBaseConfig.pretrigFraction          = config.PreTrigFraction();
@@ -713,10 +627,6 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   //
   // single photoelectron response
   //
-  fBaseConfig.transitTime              = config.TransitTime();
-  fBaseConfig.riseTime                 = config.RiseTime();
-  fBaseConfig.fallTime                 = config.FallTime();
-  fBaseConfig.meanAmplitude            = config.MeanAmplitude();
   fBaseConfig.pulseSubsamples          = config.PulseSubsamples();
 
   //
@@ -748,16 +658,6 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
       ;
   } // check pulse polarity
 
-  if (fBaseConfig.pulsePolarity != fBaseConfig.expectedPulsePolarity())
-  {
-    throw cet::exception("PMTsimulationAlg")
-      << "Inconsistent settings: pulse polarity (" << fBaseConfig.pulsePolarity
-      << "), photoelectron waveform amplitude (" << fBaseConfig.meanAmplitude
-      << ") and ADC-per-charge calibration factor (" << fBaseConfig.ADC
-      << ")\n"
-      ;
-  } // check polarity consistency
-
   if (fBaseConfig.doGainFluctuations) {
     double const mu0 = fBaseConfig.PMTspecs.firstStageGain();
     if (!std::isnormal(mu0) || (mu0 < 0.0)) {
@@ -781,24 +681,69 @@ std::unique_ptr<icarus::opdet::PMTsimulationAlg>
 icarus::opdet::PMTsimulationAlgMaker::operator()(
   detinfo::LArProperties const& larProp,
   detinfo::DetectorClocks const& detClocks,
+  SinglePhotonResponseFunc_t const& SPRfunction,
   CLHEP::HepRandomEngine& mainRandomEngine,
   CLHEP::HepRandomEngine& darkNoiseRandomEngine,
   CLHEP::HepRandomEngine& elecNoiseRandomEngine
   ) const
 {
+  return std::make_unique<PMTsimulationAlg>(makeParams(
+    larProp, detClocks,
+    SPRfunction,
+    mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine
+    ));
+
+} // icarus::opdet::PMTsimulationAlgMaker::operator()
+
+
+//-----------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
+  detinfo::LArProperties const& larProp,
+  detinfo::DetectorClocks const& detClocks,
+  SinglePhotonResponseFunc_t const& SPRfunction,
+  CLHEP::HepRandomEngine& mainRandomEngine,
+  CLHEP::HepRandomEngine& darkNoiseRandomEngine,
+  CLHEP::HepRandomEngine& elecNoiseRandomEngine
+  ) const -> PMTsimulationAlg::ConfigurationParameters_t
+{
+  using namespace util::quantities::electronics_literals;
+  
+  //
   // set the configuration
+  //
   auto params = fBaseConfig;
 
+  //
   // set up parameters
+  //
   params.larProp = &larProp;
   params.timeService = &detClocks;
+
+  params.pulseFunction = &SPRfunction;
 
   params.randomEngine = &mainRandomEngine;
   params.gainRandomEngine = params.randomEngine;
   params.darkNoiseRandomEngine = &darkNoiseRandomEngine;
   params.elecNoiseRandomEngine = &elecNoiseRandomEngine;
+  
+  //
+  // setup checks
+  //
+  bool const expectedNegativePolarity
+    = (SPRfunction.peakAmplitude() < 0.0_ADCf);
+  
+  if (std::signbit(params.pulsePolarity) != expectedNegativePolarity) {
+    throw cet::exception("PMTsimulationAlg")
+      << "Inconsistent settings: pulse polarity declared "
+      << params.pulsePolarity << ", but photoelectron waveform amplitude is "
+      << SPRfunction.peakAmplitude()
+      << "\n"
+      ;
+  } // check polarity consistency
 
-  return std::make_unique<PMTsimulationAlg>(params);
+  return params;
 
 } // icarus::opdet::PMTsimulationAlgMaker::create()
 
+
+//-----------------------------------------------------------------------------
