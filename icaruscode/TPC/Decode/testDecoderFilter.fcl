@@ -20,6 +20,9 @@ source:
   maxEvents:   -1       # Number of events to create
 }
 
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
 physics:
 {
     // now also have something produce the digits and headers
@@ -35,8 +38,6 @@ physics:
     a: [rootout]
     end_paths: [a]
 }
-
-source.inputCommands: ["keep *_*_*_*", "drop *_*_*_TPCANALYSIS" ]
 
 # Leaving the following here for example purposes only, will be removed
 # in future releases
@@ -71,3 +72,6 @@ outputs: {
     fileName: "%ifb_%tc-%p.root"
   }
 }
+
+# Drop the artdaq format files on output
+outputs.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
