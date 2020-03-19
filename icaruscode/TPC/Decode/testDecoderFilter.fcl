@@ -74,4 +74,4 @@ outputs: {
 }
 
 # Drop the artdaq format files on output
-#outputs.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
+outputs.routout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
