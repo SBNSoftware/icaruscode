@@ -54,6 +54,32 @@ icarus_photoelectronresponse_standard: {
 } # icarus_photoelectronresponse_standard
 
 
+#
+# Custom photoelectron response.
+# 
+# This is just an example for an arbitrary function shape; the example tries to
+# reproduce an `AsymGaussPulseFunction`.
+# The names of the parameters are arbitrary and their value must be numerical.
+# 
+icarus_photoelectronresponse_customexample: {
+  
+  # run `lar --print-description CustomPulseFunctionTool` for configuration
+  tool_type: CustomPulseFunctionTool
+  
+  ShapeFormula:
+    "[ADC] * [MeanAmplitude] * exp(-0.5*((x - [TransitTime])/((x < [TransitTime])? [RaiseTime]: [FallTime]))**2)"
+  PeakTime: "[TransitTime]"
+  Parameters: {
+    TransitTime:               55.1
+    RaiseTime:                 3.8
+    FallTime:                  13.7
+    MeanAmplitude:             0.9
+    ADC:                       -11.1927
+  } # parameters
+  
+} # icarus_photoelectronresponse_standard
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### Standard configuration: `icarus_pmtsimulationalg_standard`

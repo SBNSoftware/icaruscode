@@ -34,11 +34,17 @@ simple_plugin(AsymGaussPulseFunctionTool "tool"
   icaruscode_PMT_Algorithms
   )
 
+simple_plugin(CustomPulseFunctionTool "tool"
+  icaruscode_PMT_Algorithms
+  ROOT::Hist
+  )
+
 
 art_make(
   EXCLUDE
     "SimPMTIcarus_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
+    "CustomPulseFunctionTool_tool.cc"
           LIB_LIBRARIES 
             lardataobj_RawData
             lardataobj_RecoBase
