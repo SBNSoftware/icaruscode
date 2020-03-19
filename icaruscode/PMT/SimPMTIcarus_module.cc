@@ -250,6 +250,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
     if (fWritePhotons) produces<std::vector<sim::SimPhotons> >();
+    
+    fNotFirstTime.clear(); // superfluous in C++20
   } // SimPMTIcarus::SimPMTIcarus()
   
   
