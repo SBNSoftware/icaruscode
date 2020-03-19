@@ -64,6 +64,7 @@ icarus_standard_simwire:
     SuppressNoSignal:   true
     SmearPedestals:     true
     MakeHistograms:     "true"
+    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
     
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
     NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]

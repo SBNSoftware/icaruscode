@@ -8,7 +8,11 @@ declare -ar DefaultTests=(
 
 declare -r ConfigurationTag='_CONFIGURATION'
 declare -r TemplateSuffix='.template'
-declare -r TestConfigurationFile="test_geometry${ConfigurationTag}_icarus.fcl${TemplateSuffix}"
+declare -rA TestConfigurationFiles=(
+  ["geometry test"]="test_geometry${ConfigurationTag}_icarus.fcl${TemplateSuffix}"
+  ["geometry dump"]="dump${ConfigurationTag}_icarus_geometry.fcl${TemplateSuffix}"
+  ["channel mapping dump"]="dump${ConfigurationTag}_icarus_channelmap.fcl${TemplateSuffix}"
+)
 
 # ------------------------------------------------------------------------------
 function STDERR() { echo "$*" >&2 ; }
@@ -36,18 +40,20 @@ function Exec() {
 # ------------------------------------------------------------------------------
 function CMakeTestCommandHeader() {
   local TestName="$1"
-  local ConfigurationFile="$2" # unused
-  echo "# test for geometry ${TestName}"
+  local TestType="$2"
+  local ConfigurationFile="$3" # unused
+  echo "# ${TestType} for geometry ${TestName}"
 } # CMakeTestCommandHeader()
 
 
 function CMakeTestCommand() {
   local TestName="$1"
-  local ConfigurationFile="$2"
+  local TestType="$2"
+  local ConfigurationFile="$3"
   cat <<EOC
 
-$(CMakeTestCommandHeader "$TestName" "$ConfigurationFile")
-cet_test(geometry${TestName}_icarus HANDBUILT
+$(CMakeTestCommandHeader "$TestName" "$TestType" "$ConfigurationFile")
+cet_test(geometry${TestName}_${TestType// /_}_icarus HANDBUILT
   TEST_EXEC lar
   TEST_ARGS --rethrow-all --config ${ConfigurationFile}
 )
@@ -57,7 +63,8 @@ EOC
 
 function makeJobConfigurationName() {
   local -r TestName="$1"
-  local TempPath="$TestConfigurationFile"
+  local -r TemplatePath="$2"
+  local TempPath="$TemplatePath"
 
   # keep basename
   TempPath="$(basename "${TempPath}")"
@@ -78,28 +85,34 @@ function addTest() {
 
   echo "Test: '${TestName}'"
 
-  local -r JobConfigurationFile="$(makeJobConfigurationName "$TestName")"
-  echo " - creating configuration file: '${JobConfigurationFile}'"
-  Exec sed -e "s/${ConfigurationTag}/${TestName}/g" "$TestConfigurationFile" > "$JobConfigurationFile"
-  LASTFATAL "Failed to create job file."
+  local TestType
+  for TestType in "${!TestConfigurationFiles[@]}" ; do
+    TemplatePath="${TestConfigurationFiles["$TestType"]}"
+    local JobConfigurationFile="$(makeJobConfigurationName "$TestName" "$TemplatePath")"
+    echo " - ${TestType}: creating configuration file: '${JobConfigurationFile}'"
+    Exec sed -e "s/${ConfigurationTag}/${TestName}/g" "$TemplatePath" > "$JobConfigurationFile"
+    LASTFATAL "Failed to create job file."
 
-  if [[ -w "$CMakeListsFile" ]]; then
-    if grep -q "^$(CMakeTestCommandHeader "$TestName" "$JobConfigurationFile")$" "$CMakeListsFile" ; then
-      echo " - test already present in '${CMakeListsFile}'"
-    else
-      echo " - adding the test to '${CMakeListsFile}'"
-      Exec CMakeTestCommand "$TestName" "$JobConfigurationFile" >> "$CMakeListsFile"
+    if [[ -w "$CMakeListsFile" ]]; then
+      if grep -q "^$(CMakeTestCommandHeader "$TestName" "$TestType" "$JobConfigurationFile")$" "$CMakeListsFile" ; then
+        echo " - ${TestType}: test already present in '${CMakeListsFile}'"
+      else
+        echo " - ${TestType}: adding the test to '${CMakeListsFile}'"
+        Exec CMakeTestCommand "$TestName" "$TestType" "$JobConfigurationFile" >> "$CMakeListsFile"
+      fi
     fi
-  fi
+  done
 
 } # addTest()
 
 
 
 # ------------------------------------------------------------------------------
-[[ -r "$TestConfigurationFile" ]] || FATAL 2 "Could not find the template test job configuration '${TestConfigurationFile}'!"
+for TemplatePath in "${TestConfigurationFiles[@]}" ; do
+  [[ -r "$TemplatePath" ]] || FATAL 2 "Could not find the template test job configuration '${TemplatePath}'!"
+done
 
-: ${CMakeListsDir:="$(dirname "$TestConfigurationFile")"}
+: ${CMakeListsDir:="$(dirname "$0")"}
 declare -r CMakeListsFile="${CMakeListsDir%/}/CMakeLists.txt"
 
 if [[ ! -r "$CMakeListsFile" ]]; then

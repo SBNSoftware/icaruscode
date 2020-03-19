@@ -1,5 +1,5 @@
 /**
- *  @file   TPCDecoderFilter1D_tool.cc
+ *  @file   TPCDecoderOverlayFilter1D_tool.cc
  *
  *  @brief  This tool converts from daq to LArSoft format with noise filtering
  *
@@ -39,9 +39,9 @@
 
 namespace daq {
 /**
- *  @brief  TPCDecoderFilter1D class definiton
+ *  @brief  TPCDecoderOverlayFilter1D class definiton
  */
-class TPCDecoderFilter1D : virtual public IDecoderFilter
+class TPCDecoderOverlayFilter1D : virtual public IDecoderFilter
 {
 public:
     /**
@@ -49,12 +49,12 @@ public:
      *
      *  @param  pset
      */
-    explicit TPCDecoderFilter1D(fhicl::ParameterSet const &pset);
+    explicit TPCDecoderOverlayFilter1D(fhicl::ParameterSet const &pset);
 
     /**
      *  @brief  Destructor
      */
-    ~TPCDecoderFilter1D();
+    ~TPCDecoderOverlayFilter1D();
 
     /**
      *  @brief Interface for configuring the particular algorithm tool
@@ -162,7 +162,7 @@ private:
     const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
-TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
+TPCDecoderOverlayFilter1D::TPCDecoderOverlayFilter1D(fhicl::ParameterSet const &pset)
 {
     this->configure(pset);
 
@@ -185,12 +185,12 @@ TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-TPCDecoderFilter1D::~TPCDecoderFilter1D()
+TPCDecoderOverlayFilter1D::~TPCDecoderOverlayFilter1D()
 {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
+void TPCDecoderOverlayFilter1D::configure(fhicl::ParameterSet const &pset)
 {
     fFragment_id_offset    = pset.get<uint32_t>("fragment_id_offset"    );
     fCoherentNoiseGrouping = pset.get<size_t  >("CoherentGrouping",   64);
@@ -208,7 +208,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
+void TPCDecoderOverlayFilter1D::process_fragment(const artdaq::Fragment &fragment)
 {
     cet::cpu_timer theClockTotal;
 
@@ -318,5 +318,5 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     return;
 }
 
-DEFINE_ART_CLASS_TOOL(TPCDecoderFilter1D)
+DEFINE_ART_CLASS_TOOL(TPCDecoderOverlayFilter1D)
 } // namespace lar_cluster3d

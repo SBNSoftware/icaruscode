@@ -90,7 +90,6 @@ icarus_simulation_dark_services: {
     
     @table::icarus_simulation_basic_services
     
-    # LArFFT:                          @local::icarus_larfft
     # SignalShapingServiceICARUS:      @local::icarus_signalshapingservice
     # DetPedestalService:              @local::icarus_detpedestalservice
     # ChannelStatusService:            @local::icarus_channelstatus_service

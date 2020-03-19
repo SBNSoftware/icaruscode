@@ -402,18 +402,21 @@ namespace icarus::opdet {
       /// Single photon response function.
       SinglePhotonResponseFunc_t const* pulseFunction;
 
-      ///< Main random stream engine.
+      /// Main random stream engine.
       CLHEP::HepRandomEngine* randomEngine = nullptr;
 
-      ///< Random stream engine for gain fluctuations.
+      /// Random stream engine for gain fluctuations.
       CLHEP::HepRandomEngine* gainRandomEngine = nullptr;
 
-      ///< Dark noise random stream engine.
+      /// Dark noise random stream engine.
       CLHEP::HepRandomEngine* darkNoiseRandomEngine = nullptr;
 
-      ///< Electronics noise random stream engine.
+      /// Electronics noise random stream engine.
       CLHEP::HepRandomEngine* elecNoiseRandomEngine = nullptr;
 
+      /// Whether to track the scintillation photons used.
+      bool trackSelectedPhotons = false;
+      
       /// @}
 
       /// @{
@@ -438,13 +441,19 @@ namespace icarus::opdet {
     /**
      * @brief Returns the waveforms originating from simulated photons.
      * @param photons all the photons simulated to land on the channel
-     * @return a list of optical waveforms, response to those photons
+     * @return a list of optical waveforms, response to those photons,
+     *         and which photons were used (if requested)
      *
      * Due to threshold readout, a single channel may result in multiple
      * waveforms, which are all on the same channel but disjunct in time.
+     * 
+     * The second element of the return value is optional and filled only
+     * if the `trackSelectedPhotons` configuration parameter is set to `true`.
+     * In that case, the returned `sim::SimPhotons` contains a copy of each of
+     * the `photons` contributing to any of the waveforms.
      */
-    std::vector<raw::OpDetWaveform> simulate
-    (sim::SimPhotons const& photons, sim::SimPhotons &photons_used);
+    std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+      simulate(sim::SimPhotons const& photons);
 
     /// Prints the configuration into the specified output stream.
     template <typename Stream>
@@ -522,7 +531,7 @@ namespace icarus::opdet {
     static util::FastAndPoorGauss<32768U, float> const fFastGauss;
 
   void CreateFullWaveform
-  (Waveform_t&, sim::SimPhotons const&, sim::SimPhotons &);
+    (Waveform_t&, sim::SimPhotons const&, std::optional<sim::SimPhotons>&);
 
   void CreateOpDetWaveforms(raw::Channel_t const& opch,
           Waveform_t const& wvfm,
@@ -796,6 +805,8 @@ namespace icarus::opdet {
      * @param mainRandomEngine main random engine (quantum efficiency, etc.)
      * @param darkNoiseRandomEngine random engine for dark noise simulation
      * @param elecNoiseRandomEngine random engine for electronics noise simulation
+     * @param trackSelectedPhotons (default: `false`) keep track and return
+     *                             a copy of the scintillation photons used
      *
      * All random engines are required in this interface, even if the
      * configuration disabled noise simulation.
@@ -806,7 +817,8 @@ namespace icarus::opdet {
       SinglePhotonResponseFunc_t const& SPRfunction,
       CLHEP::HepRandomEngine& mainRandomEngine,
       CLHEP::HepRandomEngine& darkNoiseRandomEngine,
-      CLHEP::HepRandomEngine& elecNoiseRandomEngine
+      CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+      bool trackSelectedPhotons = false
       ) const;
 
     /**
@@ -831,7 +843,8 @@ namespace icarus::opdet {
       SinglePhotonResponseFunc_t const& SPRfunction,
       CLHEP::HepRandomEngine& mainRandomEngine,
       CLHEP::HepRandomEngine& darkNoiseRandomEngine,
-      CLHEP::HepRandomEngine& elecNoiseRandomEngine
+      CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+      bool trackSelectedPhotons = false
       ) const;
 
       private:
@@ -892,7 +905,10 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   out << '\n' << indent << "Template photoelectron waveform settings:"
     << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
-  out << '\n';
+  
+  out << '\n' << indent << "Track used photons:  "
+    << std::boolalpha << fParams.trackSelectedPhotons
+    << '\n';
 } // icarus::opdet::PMTsimulationAlg::printConfiguration()
 
 

@@ -43,6 +43,7 @@
 #include <iterator> // std::back_inserter()
 #include <memory> // std::make_unique()
 #include <utility> // std::move()
+#include <optional>
 
 
 namespace opdet{
@@ -70,7 +71,11 @@ namespace opdet{
    *   algorithm to use; valid values are all the ones supported by
    *   `art::RandomNumberGenerator` (which match the random engine classes
    *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
-   *   `NonRandomEngine` and `RandEngine`).
+   *   `NonRandomEngine` and `RandEngine`);
+   * * **WritePhotons** (boolean, default: `false`): saves in an additional
+   *   `sim::SimPhotons` collection the photons effectively contributing to
+   *   the waveforms; currently, no selection ever happens and all photons are
+   *   contributing, making this collection the same as the input one.
    * 
    * See the @ref ICARUS_PMTSimulationAlg_RandomEngines "documentation" of
    * `icarus::PMTsimulationAlg` for the purpose of the three random number
@@ -94,6 +99,10 @@ namespace opdet{
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
    * 
+   * If `WritePhotons` configuration parameter is set `true`, a collection of
+   * the scintillation photons (`std::vector<sim::SimPhotons>`) which
+   * contributed to the waveforms is also produced.
+   * 
    * 
    * Requirements
    * =============
@@ -116,6 +125,23 @@ namespace opdet{
       fhicl::Atom<art::InputTag> inputModuleLabel {
           Name("InputModule"),
           Comment("simulated photons to be digitised (sim::SimPhotons)")
+      };
+      
+      fhicl::DelegatedParameter SinglePhotonResponse {
+        fhicl::Name("SinglePhotonResponse"),
+        fhicl::Comment(
+          "parameters describing the single photon response"
+          " (SinglePhotonPulseFunctionTool tool)"
+          )
+        };
+
+      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+      
+      fhicl::Atom<bool> writePhotons {
+          Name("WritePhotons"),
+          Comment
+            ("writes the scintillation photon contributing to the waveforms"),
+          false
       };
       
       rndm::SeedAtom EfficiencySeed {
@@ -145,16 +171,6 @@ namespace opdet{
           "HepJamesRandom"
       };
 
-      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
-      
-      fhicl::DelegatedParameter SinglePhotonResponse {
-        fhicl::Name("SinglePhotonResponse"),
-        fhicl::Comment(
-          "parameters describing the single photon response"
-          " (SinglePhotonPulseFunctionTool tool)"
-          )
-        };
-      
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -179,6 +195,8 @@ namespace opdet{
     
     /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
+    
+    bool fWritePhotons { false }; ///< Whether to save contributing photons.
     
     /// Single photoelectron response function.
     std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
@@ -206,6 +224,7 @@ namespace opdet{
 SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
+    , fWritePhotons(config().writePhotons())
     , fSinglePhotonResponseFunc{
         art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
           (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
@@ -230,7 +249,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
-    produces<std::vector<sim::SimPhotons> >();
+    if (fWritePhotons) produces<std::vector<sim::SimPhotons> >();
   } // SimPMTIcarus::SimPMTIcarus()
   
   
@@ -243,7 +262,11 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // fetch the input
     //
     auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
-    auto simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
+    std::unique_ptr<std::vector<sim::SimPhotons>> simphVecPtr;
+    if (fWritePhotons)
+      simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
     //
     // prepare the output
     //
@@ -259,7 +282,8 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
       *fSinglePhotonResponseFunc,
       fEfficiencyEngine,
       fDarkNoiseEngine,
-      fElectronicsNoiseEngine
+      fElectronicsNoiseEngine,
+      fWritePhotons
       );
     
     if (firstTime()) {
@@ -272,13 +296,16 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // run the algorithm
     //
     for(auto const& photons : pmtVector) {
-      sim::SimPhotons photons_used;
-      auto const& channelWaveforms = PMTsimulator->simulate(photons,photons_used);
+      
+      auto const& [ channelWaveforms, photons_used ]
+        = PMTsimulator->simulate(photons);
       std::move(
         channelWaveforms.cbegin(), channelWaveforms.cend(),
         std::back_inserter(*pulseVecPtr)
         );
-      simphVecPtr->emplace_back(std::move(photons_used));
+      if (simphVecPtr && photons_used)
+        simphVecPtr->emplace_back(std::move(photons_used.value()));
+      
     } // for
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
@@ -288,7 +315,7 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
-    e.put(std::move(simphVecPtr));
+    if (simphVecPtr) e.put(std::move(simphVecPtr));
   } // SimPMTIcarus::produce()
   
   

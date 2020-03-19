@@ -128,16 +128,20 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 
 
 // -----------------------------------------------------------------------------
-std::vector<raw::OpDetWaveform> icarus::opdet::PMTsimulationAlg::simulate
-(sim::SimPhotons const& photons, sim::SimPhotons &photons_used)
+std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+  icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
 {
-  std::vector<raw::OpDetWaveform> waveforms; // storage of the results
+  // to be returned:
+  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
+    result;
+  // give the return value elements nice names:
+  auto& [ waveforms, photons_used ] = result;
 
   Waveform_t waveform;
   CreateFullWaveform(waveform, photons, photons_used);
   CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
-  return waveforms;
-
+  return result;
+  
 } // icarus::opdet::PMTsimulationAlg::simulate()
 
 
@@ -159,7 +163,7 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 //------------------------------------------------------------------------------
 void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 							 sim::SimPhotons const& photons,
-							 sim::SimPhotons& photons_used)
+							 std::optional<sim::SimPhotons>& photons_used)
 {
 
     using namespace util::quantities::time_literals;
@@ -188,13 +192,15 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     TimeToTickAndSubtickConverter const toTickAndSubtick(peMaps.size());
 
 //     auto start = std::chrono::high_resolution_clock::now();
-
-    photons_used.clear();
-    photons_used.SetChannel(photons.OpChannel());
+    
+    if (photons_used) {
+      photons_used->clear();
+      photons_used->SetChannel(photons.OpChannel());
+    }
     for(auto const& ph : photons) {
       if (!KicksPhotoelectron()) continue;
 
-      photons_used.push_back(ph);
+      if (photons_used) photons_used->push_back(ph); // copy
 
       simulation_time const photonTime { ph.Time };
 
@@ -684,13 +690,15 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   SinglePhotonResponseFunc_t const& SPRfunction,
   CLHEP::HepRandomEngine& mainRandomEngine,
   CLHEP::HepRandomEngine& darkNoiseRandomEngine,
-  CLHEP::HepRandomEngine& elecNoiseRandomEngine
+  CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+  bool trackSelectedPhotons /* = false */
   ) const
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
     larProp, detClocks,
     SPRfunction,
-    mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine
+    mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
+    trackSelectedPhotons
     ));
 
 } // icarus::opdet::PMTsimulationAlgMaker::operator()
@@ -703,7 +711,8 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   SinglePhotonResponseFunc_t const& SPRfunction,
   CLHEP::HepRandomEngine& mainRandomEngine,
   CLHEP::HepRandomEngine& darkNoiseRandomEngine,
-  CLHEP::HepRandomEngine& elecNoiseRandomEngine
+  CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+  bool trackSelectedPhotons /* = false */
   ) const -> PMTsimulationAlg::ConfigurationParameters_t
 {
   using namespace util::quantities::electronics_literals;
@@ -726,6 +735,8 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   params.darkNoiseRandomEngine = &darkNoiseRandomEngine;
   params.elecNoiseRandomEngine = &elecNoiseRandomEngine;
   
+  params.trackSelectedPhotons = trackSelectedPhotons;
+  
   //
   // setup checks
   //
@@ -742,7 +753,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   } // check polarity consistency
 
   return params;
-
+  
 } // icarus::opdet::PMTsimulationAlgMaker::create()
 
 

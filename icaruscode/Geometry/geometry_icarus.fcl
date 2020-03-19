@@ -66,23 +66,31 @@ icarus_geometry_template: {
   DisableWiresInG4: true
 } # icarus_geometry_template
 
-#
-# ExptGeoHelperInterface
-#
-icarus_geometry_helper_base: {
-  service_provider: IcarusGeometryHelper
-} # icarus_geometry_helper_base
 
 
 ################################################################################
+###
 ###  Single first induction plane wires (18 m)
 ###
+################################################################################
 ### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
 ### long wires on first induction plane.
 ###
 ### Default for this configuration is defined below:
 ### `icarus_single_induction_geometry_services`.
 ###
+
+#
+# ExptGeoHelperInterface
+#
+icarus_single_induction_geometry_helper: {
+  service_provider: IcarusGeometryHelper
+  Mapper: {
+    tool_type: "ICARUSsingleInductionChannelMapSetupTool"
+  }
+} # icarus_single_induction_geometry_helper
+
+
 ################################################################################
 ###
 ### Configuration with 3 meter deep concrete overburden
@@ -111,10 +119,6 @@ icarus_single_induction_overburden_geometry: {
 
 } # icarus_single_induction_overburden_geometry
 
-#
-# ExptGeoHelperInterface
-#
-icarus_single_induction_geometry_helper: @local::icarus_geometry_helper_base
 
 #
 # geometry configuration bundle
@@ -197,6 +201,7 @@ icarus_single_induction_geometry_services: @local::icarus_single_induction_noove
 ###
 ###  Split first induction plane wires (9 m)
 ###
+################################################################################
 ### Complete geometry (including CRT) with two logical TPCs per drift volume and
 ### 9 meter long wires on each half of the first induction planes.
 ### This reflects the actual configuration of the ICARUS detector.
@@ -204,6 +209,39 @@ icarus_single_induction_geometry_services: @local::icarus_single_induction_noove
 ### Default for this configuration is defined below:
 ### `icarus_split_induction_geometry_services`.
 ###
+
+#
+# ExptGeoHelperInterface
+#
+icarus_split_induction_geometry_helper: {
+  service_provider: IcarusGeometryHelper
+  Mapper: {
+    tool_type: "ICARUSsplitInductionChannelMapSetupTool"
+  
+    WirelessChannels: {
+      
+      FirstInductionPreChannels:        0
+      FirstInductionPostChannels:      96 # 32 ghost, then 64 virtual
+      
+      # C:x S:0 (east TPC)
+      SecondInductionEvenPreChannels:  96 # 32 ghost, then 64 wireless
+      SecondInductionEvenPostChannels: 64 # 64 wireless
+      CollectionEvenPreChannels:       64 # 64 wireless
+      CollectionEvenPostChannels:      96 # 64 wireless, then 32 ghost
+  
+      # C:x S:1 (west TPC)
+      SecondInductionOddPreChannels:   64 # 64 wireless
+      SecondInductionOddPostChannels:  96 # 64 wireless, then 32 ghost
+      CollectionOddPreChannels:        96 # 32 ghost, then 64 wireless
+      CollectionOddPostChannels:       64 # 64 wireless
+    
+    } # WirelessChannels
+    
+  } # Mapper
+  
+} # icarus_split_induction_geometry_helper
+
+
 ################################################################################
 ###
 ### Configuration with 3 meter deep concrete overburden
@@ -231,11 +269,6 @@ icarus_split_induction_overburden_geometry: {
   ROOT: "icarus_complete.gdml"
 
 } # icarus_split_induction_overburden_geometry
-
-#
-# ExptGeoHelperInterface
-#
-icarus_split_induction_geometry_helper: @local::icarus_geometry_helper_base
 
 #
 # geometry configuration bundle
