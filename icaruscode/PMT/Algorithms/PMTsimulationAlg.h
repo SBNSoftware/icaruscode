@@ -65,7 +65,52 @@ namespace icarus::opdet {
   using SinglePhotonResponseFunc_t
     = DiscretePhotoelectronPulse::PulseFunction_t;
 
+  template <typename SampleType> class OpDetWaveformMakerClass;
 
+}
+
+// -----------------------------------------------------------------------------
+/// Helper class to cut a `raw::OpDetWaveform` from a longer waveform data.
+template <typename SampleType>
+class icarus::opdet::OpDetWaveformMakerClass {
+  
+    public:
+  using Sample_t = SampleType;
+  
+  /// Type of waveform data.
+  using WaveformData_t = std::vector<Sample_t>;
+  
+  using BufferRange_t = std::pair
+    <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>;
+  
+  WaveformData_t const& fWaveform; ///< Full data from the PMT channel.
+  
+  /// Time of the first sample in waveform.
+  detinfo::timescales::electronics_time const fPMTstartTime;
+  
+  util::quantities::nanosecond fSamplingPeriod; /// Sampling period.
+  
+  /// Constructor: waveform data, start time and sampling period
+  OpDetWaveformMakerClass(
+    WaveformData_t const& waveform,
+    detinfo::timescales::electronics_time PMTstartTime,
+    util::quantities::nanosecond samplingPeriod
+    );
+  
+  // @{
+  /// Returns an `raw::OpDetWaveform` with data at the `bufferRange`.
+  raw::OpDetWaveform create
+    (raw::Channel_t opChannel, BufferRange_t const& bufferRange) const;
+  raw::OpDetWaveform operator()
+    (raw::Channel_t opChannel, BufferRange_t const& bufferRange) const
+    { return create(opChannel, bufferRange); }
+  // @}
+
+}; // class icarus::opdet::OpDetWaveformMakerClass<>
+
+
+namespace icarus::opdet {
+  
   // -------------------------------------------------------------------------
 
   /** ************************************************************************
@@ -462,8 +507,12 @@ namespace icarus::opdet {
 
 
       private:
+    
+    using OpDetWaveformMaker_t
+      = icarus::opdet::OpDetWaveformMakerClass<ADCcount>;
+    
     /// Type internally used for storing waveforms.
-    using Waveform_t = std::vector<ADCcount>;
+    using Waveform_t = OpDetWaveformMaker_t::WaveformData_t;
     using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
 
     /// Type of sampled pulse shape: sequence of samples, one per tick.
@@ -533,11 +582,56 @@ namespace icarus::opdet {
   void CreateFullWaveform
     (Waveform_t&, sim::SimPhotons const&, std::optional<sim::SimPhotons>&);
 
-  void CreateOpDetWaveforms(raw::Channel_t const& opch,
-          Waveform_t const& wvfm,
-          std::vector<raw::OpDetWaveform>& output_opdets);
+  /**
+   * @brief Creates `raw::OpDetWaveform` objects from a waveform data.
+   * @param opChannel number of optical detector channel the data belongs to
+   * @param waveform the waveform data
+   * @return a collection of `raw::OpDetWaveform`
+   * 
+   * The waveform data is a sequence of samples on the optical detector channel,
+   * starting at the beginning of the optical time clock, that is set by the
+   * algorithm configuration as the global hardware trigger time (configured
+   * in `detinfo::DetectorClocks`) and an offset.
+   * 
+   * Applies zero suppression to the full optical detector channel data,
+   * producing non-overlapping fixed-size waveforms.
+   * 
+   * The procedure attempts to mimic the working mode of CAEN V1730B boards
+   * as described on page 32 of the manual "UM2792_V1730_V1725_rev2.pdf"
+   * in SBN DocDB 15024.
+   * 
+   * In the board readout language, the "trigger" is the per-channel
+   * information that the signal on the channel has passed the threshold.
+   * 
+   * It is critical to understand the details of the generation of the triggers.
+   * At the time of writing, the algorithm in `FindTriggers()` emits a trigger
+   * every time the signal passes from under threshold to beyond threshold.
+   * Assuming that the threshold is at less than one photoelectron,
+   * this kind of behavior implies that every scintillation photons arriving on
+   * the tail of the first (large?) signal will add a new waveform in tail.
+   * It is not clear what happens if _two_ more triggers happen while the window
+   * from the first trigger is still open.
+   * 
+   * The assumptions in the code include:
+   * 
+   * 1. overlapped triggers are not discarded (p. 32);
+   * 2. board is set for self-trigger (p. 38);
+   * 3. each waveform has a fixed duration (except the ones overlapping the
+   *    previous one);
+   * 4. when a trigger starts the recording window on a channel, only the last
+   *    trigger happening during that window ("overlapping"), if any, is kept.
+   * 5. at decoding time, contiguous buffers are merged in a single waveform
+   * 
+   * The fixed duration of the waveform if the sum of pre- and post-trigger
+   * window length.
+   * If during this window another trigger is emitted, a new window will follow
+   * the current one and it will be long enough to contain all the post-trigger
+   * data.
+   */
+  std::vector<raw::OpDetWaveform> CreateFixedSizeOpDetWaveforms
+    (raw::Channel_t opChannel, Waveform_t const& waveform) const;
 
-
+  
   /**
    * @brief Adds a pulse to a waveform, starting at a given tick.
    * @tparam Combine binary operation combining two ADC counts into one
@@ -588,7 +682,7 @@ namespace icarus::opdet {
 
   /**
    * @brief Ticks in the specified waveform where some signal activity starts.
-   * @return a collection of ticks with interesting activity
+   * @return a collection of ticks with interesting activity, sorted
    * @see `CreateBeamGateTriggers()`
    *
    * We define an "interest point" a time when some activity in the
@@ -861,6 +955,50 @@ namespace icarus::opdet {
 
 //-----------------------------------------------------------------------------
 //--- template implementation
+//-----------------------------------------------------------------------------
+//--- icarus::opdet::OpDetWaveformMakerClass
+// -----------------------------------------------------------------------------
+template <typename SampleType>
+icarus::opdet::OpDetWaveformMakerClass<SampleType>::OpDetWaveformMakerClass(
+  WaveformData_t const& waveform,
+  detinfo::timescales::electronics_time PMTstartTime,
+  util::quantities::nanosecond samplingPeriod
+  )
+  : fWaveform(waveform)
+  , fPMTstartTime(PMTstartTime)
+  , fSamplingPeriod(samplingPeriod)
+{}
+
+
+// -----------------------------------------------------------------------------
+template <typename SampleType>
+raw::OpDetWaveform icarus::opdet::OpDetWaveformMakerClass<SampleType>::create
+  (raw::Channel_t opChannel, BufferRange_t const& bufferRange) const
+{
+  std::size_t const start
+    = std::min(std::size_t(bufferRange.first.value()), fWaveform.size());
+  std::size_t const end
+    = std::min(std::size_t(bufferRange.second.value()), fWaveform.size());
+  assert(start <= end);
+  
+  // start of the waveform (tick #0) in the full optical reading
+  raw::TimeStamp_t const timeStamp { fPMTstartTime + start * fSamplingPeriod };
+  
+  // create a new waveform preallocating enough room for the full buffer
+  raw::OpDetWaveform outputWaveform(timeStamp, opChannel, end - start);
+  
+  // copy the buffer (need to unwrap the ADCcount value)
+  std::transform(
+    fWaveform.begin() + start,
+    fWaveform.begin() + end,
+    std::back_inserter(outputWaveform),
+    [](auto sample){ return sample.value(); }
+    );
+  
+  return outputWaveform;
+} // icarus::opdet::OpDetWaveformMakerClass<>::create()
+
+
 //-----------------------------------------------------------------------------
 //--- icarus::opdet::PMTsimulationAlg
 //-----------------------------------------------------------------------------
