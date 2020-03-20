@@ -10,7 +10,7 @@
 
 // class header
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
-#include "icaruscode/PMT/Trigger/Algorithms/WaveformOperations.h"
+#include "icaruscode/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

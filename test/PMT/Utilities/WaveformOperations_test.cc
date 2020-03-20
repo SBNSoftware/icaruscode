@@ -3,7 +3,7 @@
  * @brief  Unit test for waveform operations.
  * @date   June 27, 2019
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
- * @see    `icaruscode/PMT/Trigger/WaveformOperations.h`
+ * @see    `icaruscode/Utilities/WaveformOperations.h`
  */
 
 // Boost libraries
@@ -12,7 +12,7 @@
 #include <boost/test/test_tools.hpp> // BOOST_CHECK(), BOOST_CHECK_EQUAL()
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Algorithms/WaveformOperations.h"
+#include "icaruscode/Utilities/WaveformOperations.h"
 
 
 //------------------------------------------------------------------------------

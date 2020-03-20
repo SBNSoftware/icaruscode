@@ -1,12 +1,14 @@
-/**
+﻿/**
  * @file    icaruscode/PMT/Algorithms/PMTsimulationAlg.h
  * @brief   Algorithms for the simulation of ICARUS PMT channels.
  * @date    October 16, 2018
  * @see     `icaruscode/PMT/Algorithms/PMTsimulationAlg.cxx`
  *
  * These algoritms were originally extracted from the module
- * `SimPMTICARUS_module.cc`, which was in turnb based on 
- * `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho
+ * `SimPMTIcarus_module.cc`, which was in turn based on
+ * `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.
+ * Heavy hands of Wesley Ketchum (ketchum@fnal.gov) and Gianluca Petrillo
+ * (petrillo@slac.standord.edu) for the ICARUS customization.
  */
 
 #ifndef ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
@@ -14,6 +16,9 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
+#include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
+#include "icaruscode/Utilities/SampledFunction.h"
 #include "icaruscode/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
@@ -21,7 +26,7 @@
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataalg/DetectorInfo/LArProperties.h"
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
-#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // picocoulomb
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h"
 #include "lardataalg/Utilities/quantities_fhicl.h" // microsecond from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
 #include "lardataalg/Utilities/quantities/frequency.h" // hertz, gigahertz
@@ -29,20 +34,20 @@
 #include "lardataalg/Utilities/quantities/electromagnetism.h" // picocoulomb
 
 // framework libraries
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Table.h"
-#include "messagefacility/MessageLogger/MessageLogger.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
 // C++ standard library
-#include <chrono> // std::chrono::high_resolution_clock
 #include <vector>
 #include <string>
-#include <unordered_map>
-#include <algorithm> // std::transform()
+#include <tuple>
+#include <optional>
+#include <ios> // std::boolalpha
 #include <utility> // std::forward()
 #include <memory> // std::unique_ptr()
 #include <functional> // std::plus
@@ -54,225 +59,11 @@ namespace icarus::opdet {
 
 
   using namespace util::quantities::electromagnetism_literals;
-
-
-  // -------------------------------------------------------------------------
-  /**
-   * @brief Describes the waveform from a single photoelectron.
-   * @tparam Time type of time unit to be used
-   *
-   * This functor (class behaving like a function) describes the shape of the
-   * response to a single photoelectron.
-   *
-   * It is currently implemented as an asymmetric Gaussian shape.
-   */
-  template <typename T>
-  class PhotoelectronPulseWaveform {
-
-      public:
-   /// Type for ADC counts (floating point).
-   using ADCcount = util::quantities::counts_f;
-
-   using Time = T; ///< Type of time being used.
-
-    /**
-     * @brief Constructor: assigns the parameters of the shape.
-     * @brief amplitude the maximum amplitudes of the shape (at transition)
-     * @brief peakTime the time of the maximum amplitude of the shape
-     * @brief sigmaLeft the standard deviation of the shape before transition
-     * @brief sigmaRight the standard deviation of the shape after transition
-     *
-     * The time parameters (`peakTime`, `sigmaLeft` and `sigmaRight`) must be
-     * measured in same unit. The `peakTime` defined the position of the shape
-     * with respect to time 0.
-     *
-     */
-    PhotoelectronPulseWaveform(
-      ADCcount amplitude,
-      Time peakTime,
-      Time sigmaLeft,
-      Time sigmaRight
-      )
-      : fAmplitude(amplitude)
-      , fTransitTime(peakTime)
-      , fSigmaL(sigmaLeft)
-      , fSigmaR(sigmaRight)
-      {}
-
-    // @{
-    // @name Parameter accessors.
-
-    Time peakTime() const { return fTransitTime; }
-    Time leftSigma() const { return fSigmaL; }
-    Time rightSigma() const { return fSigmaR; }
-    ADCcount amplitude() const { return fAmplitude; }
-
-    /// @}
-
-    /**
-     * @brief Evaluates the pulse at the given time.
-     * @param time time to evaluate the shape at
-     * @see `PhotoelectronPulseWaveform()`
-     *
-     * The unit and scale of the time are defined by the transition time passed
-     * at construction.
-     */
-    ADCcount evaluateAt(Time time) const
-      {
-        return Gaussian(time,
-          peakTime(), ((time < peakTime())? leftSigma(): rightSigma()),
-          amplitude()
-          );
-      } // evaluateAt()
-
-    /// Alias of `evaluateAt()`.
-    ADCcount operator() (Time time) const { return evaluateAt(time); }
-
-    // @{
-    /**
-     * @brief Prints on stream the parameters of this shape.
-     * @tparam Stream type of stream to write into
-     * @param out the stream to write into
-     * @param indent indentation string, prepended to all lines except first
-     * @param indentFirst indentation string prepended to the first line
-     */
-    template <typename Stream>
-    void dump(Stream&& out,
-      std::string const& indent, std::string const& firstIndent
-      ) const;
-    template <typename Stream>
-    void dump(Stream&& out, std::string const& indent = "") const
-      { dump(std::forward<Stream>(out), indent, indent); }
-    // @}
-
-    /// Returns the value of normal distribution at specified point.
-    static ADCcount Gaussian(Time x, Time mean, Time sigma, ADCcount amplitude)
-      { return amplitude * std::exp(-sqr((x - mean)/sigma)/2.0); }
-
-      private:
-    ADCcount fAmplitude; ///< Amplitude of the Gaussian shapes at peak (transition).
-    Time fTransitTime; ///< Time of transition between the two forms of shape.
-    Time fSigmaL; ///< RMS parameter of the shape before transition.
-    Time fSigmaR; ///< RMS parameter of the shape after transition.
-
-    template <typename V>
-    static V sqr(V value) { return value * value; }
-
-  }; // class PhotoelectronPulseWaveform<>
-
-
-  // -------------------------------------------------------------------------
-  /**
-   * @brief Precomputed digitised shape of a given function.
-   *
-   * The sampling happens internally in double precision.
-   */
-  class DiscretePhotoelectronPulse {
-      public:
-    using gigahertz = util::quantities::gigahertz;
-    using nanoseconds = util::quantities::nanosecond;
-
-    /// Type of shape (times are in nanoseconds).
-    using PulseFunction_t = PhotoelectronPulseWaveform<nanoseconds>;
-    using ADCcount = PulseFunction_t::ADCcount;
-
-    using Time_t = nanoseconds;
-    using Tick_t = util::quantities::tick;
-
-    static_assert(!std::is_same<Time_t, Tick_t>(),
-      "Time and tick must be different types!");
-
-    /**
-     * @brief Constructor: samples the pulse.
-     * @param pulseShape the shape to be pulsed; times in nanoseconds
-     * @param samplingFreq frequency of samples [gigahertz]
-     * @param rightSigmas sample until this standard deviations after peak
-     *
-     * Samples start from time 0 (as defined by the pulse shape).
-     */
-    DiscretePhotoelectronPulse
-      (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas);
-
-    /// Returns the length of the sampled pulse in ticks.
-    std::size_t pulseLength() const { return fSampledShape.size(); }
-
-    /// Returns the value sampled for the specified `tick` (the first is `0`).
-    ADCcount operator[] (std::size_t tick) const
-      { return fSampledShape[tick]; }
-
-    /// Returns the value sampled for the specified `tick` (the first is `0`).
-    ADCcount operator() (Tick_t tick) const
-      { return this->operator[](tick.value()); }
-
-    /// Evaluates the shape at the specified time.
-    ADCcount operator() (Time_t time) const { return fShape(time); }
-
-    /// @{
-    /// @name Iterator interface.
-
-    auto cbegin() const { return fSampledShape.cbegin(); }
-    auto cend() const { return fSampledShape.cend(); }
-    auto begin() const { return fSampledShape.begin(); }
-    auto end() const { return fSampledShape.end(); }
-
-    /// @}
-
-    /// Returns the function which was sampled.
-    PulseFunction_t const& shape() const { return fShape; }
-
-    /// Returns the sampling frequency (same units as entered).
-    gigahertz samplingFrequency() const { return fSamplingFreq; }
-
-    /// Returns the sampling period (inverse of frequency).
-    nanoseconds samplingPeriod() const { return 1.0 / samplingFrequency(); }
-
-    /// Returns the duration of the waveform in time units.
-    /// @see `pulseLength()`
-    nanoseconds duration() const { return pulseLength() * samplingPeriod(); }
-
-    // @{
-    /**
-     * @brief Prints on stream the parameters of this shape.
-     * @tparam Stream type of stream to write into
-     * @param out the stream to write into
-     * @param indent indentation string, prepended to all lines except first
-     * @param indentFirst indentation string prepended to the first line
-     */
-    template <typename Stream>
-    void dump(Stream&& out,
-      std::string const& indent, std::string const& firstIndent
-      ) const;
-    template <typename Stream>
-    void dump(Stream&& out, std::string const& indent = "") const
-      { dump(std::forward<Stream>(out), indent, indent); }
-    // @}
-
-    /**
-     * @brief Checks that the waveform tails not sampled are negligible.
-     * @param limit threshold below which the waveform is considered negligible
-     * @param outputCat _(default: empty)_ message facility output category
-     *        to use for messages
-     * @return whether the two tails are negligible
-     *
-     * If `outputCat` is empty (default) no message is printed.
-     * Otherwise, in case of failure a message is sent to message facility
-     * (under category `outputCat`) describing the failure(s).
-     */
-    bool checkRange(ADCcount limit, std::string const& outputCat) const;
-
-      private:
-    PulseFunction_t fShape;  ///< Analytical shape of the pules.
-    gigahertz fSamplingFreq; ///< Sampling frequency.
-
-    std::vector<ADCcount> const fSampledShape; ///< Pulse shape, discretized.
-
-    /// Builds the sampling cache.
-    static std::vector<ADCcount> sampleShape(
-      PulseFunction_t const& pulseShape,
-      gigahertz samplingFreq, double rightSigmas
-      );
-
-  }; // class DiscretePhotoelectronPulse<>
+  using namespace util::quantities::electronics_literals;
+  
+  /// Type for single photon response shape function: nanosecond -> ADC counts.
+  using SinglePhotonResponseFunc_t
+    = DiscretePhotoelectronPulse::PulseFunction_t;
 
 
   // -------------------------------------------------------------------------
@@ -361,8 +152,11 @@ namespace icarus::opdet {
    * Photoelectrons
    * ---------------
    *
-   * The response of the PMT to a single photoelectron is a fixed shape
-   * described in `icarus:opdet::PhotoelectronPulseWaveform`.
+   * The response of the PMT to a single photoelectron is passed to the
+   * algorithm as a full blown function of type `SinglePhotonResponseFunc_t`.
+   * The function needs to be valid for the lifetime of the algorithm, since
+   * the algorithm refers to without owning it, and it is expected not to
+   * change during that time. See `icarus::opdet::SimPMTIcarus`
    *
    * To account for gain fluctuations, that shape is considered to correspond
    * to a nominal gain (`PMTspecs.gain` configuration parameter), which is
@@ -437,26 +231,63 @@ namespace icarus::opdet {
    *     gain for stage @f$ i @f$, @f$ \Delta V_{i} @f$ the drop of potential
    *     of that stage and @f$ k @f$ the parameter set by `dynodeK`.
    *
-   * 
+   *
    * Random number generators
    * -------------------------
-   * 
+   *
    * @anchor ICARUS_PMTSimulationAlg_RandomEngines
-   * 
+   *
    * Three independent random engines are currently used in the simulation:
-   * 
+   *
    * * "main" random engine:
    *     * residual quantum efficiency;
    *     * gain fluctuations;
    * * "dark noise" engine: dark current noise only;
    * * "electronics noise" engine: electronics noise only.
-   * 
-   * 
+   *
+   *
    * Structure of the algorithm
    * ===========================
    *
-   *
-   *
+   * _This section needs completion._
+   * 
+   * The algorithm is serviceable immediately after construction.
+   * Construction relies on a custom parameter data structure.
+   * 
+   * An utility, `PMTsimulationAlgMaker`, splits the set up in two parts:
+   * 
+   * 1. configuration, where the full set of parameters is learned;
+   * 2. set up, where service providers, random number engines and the external
+   *    single photon response function are acquired.
+   * 
+   * This is supposed to make the creation of the filling of parameter structure
+   * and the creation of the algorithm easier.
+   * At that point, a single `sim::SimPhotons` can be processed (`simulate()`)
+   * at a time, or multiple at the same time (see the multithreading notes
+   * below).
+   * 
+   * The function used to describe the single particle response is customizable
+   * and it must in fact be specified by the caller, since there is no default
+   * form. The function must implement the `PulseFunction_t` interface.
+   * 
+   * 
+   * Multithreading notes
+   * ---------------------
+   * 
+   * The algorithm processes one channel at a time, and it does not depend on
+   * event-level information; therefore, the same algorithm object can be used
+   * to process many events in sequence.
+   * On the other hand, multithreading is impaired by the random number
+   * generation, in the sense that multithreading will break reproducibility
+   * if the random engine is not magically thread-resistant.
+   * 
+   * If the set up is event-dependent, then this object can't be used for
+   * multiple events at the same time. There is no global state, so at least
+   * different instances of the algorithm can be run at the same time.
+   * In fact, the creation of an algorithm is expected to take negligible time
+   * compared to its run time on a single event, and it is conceivable to create
+   * a new algorithm instance for each event.
+   * 
    */
   class PMTsimulationAlg {
 
@@ -550,11 +381,7 @@ namespace icarus::opdet {
       microseconds beamGateTriggerRepPeriod; ///< Repetition Period (us) for BeamGateTriggers TODO make this a time_interval
       size_t beamGateTriggerNReps; ///< Number of beamgate trigger reps to produce
 
-      float ADC;      ///< charge to ADC conversion scale
-      nanoseconds transitTime; ///< to be added to pulse minimum time
-      picocoulomb meanAmplitude;
-      nanoseconds fallTime;
-      nanoseconds riseTime;
+      unsigned int pulseSubsamples = 1U; ///< Number of tick subsamples.
 
       ADCcount baseline; //waveform baseline
       ADCcount ampNoise; //amplitude of gaussian noise
@@ -571,6 +398,9 @@ namespace icarus::opdet {
 
       detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
       detinfo::DetectorClocks const* timeService = nullptr; ///< DetectorClocks service provider.
+
+      /// Single photon response function.
+      SinglePhotonResponseFunc_t const* pulseFunction;
 
       /// Main random stream engine.
       CLHEP::HepRandomEngine* randomEngine = nullptr;
@@ -591,12 +421,13 @@ namespace icarus::opdet {
 
       /// @{
       /// @name Derivative configuration parameters.
-      
+
       std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
       std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
+/*
       int expectedPulsePolarity() const
         { return ((ADC * meanAmplitude) < 0.0_pC)? -1: +1; }
-
+*/
       /// @}
 
     }; // ConfigurationParameters_t
@@ -629,25 +460,63 @@ namespace icarus::opdet {
     void printConfiguration(Stream&& out, std::string indent = "") const;
 
 
-    /// Converts rise time (10% to 90%) into a RMS under Gaussian hypothesis.
-    template <typename T>
-    static T riseTimeToRMS(T riseTime)
-      {
-        return riseTime / (
-          std::sqrt(2.0)
-          * (std::sqrt(-std::log(0.1)) - std::sqrt(-std::log(0.9)))
-          );
-      }
-
 
       private:
     /// Type internally used for storing waveforms.
     using Waveform_t = std::vector<ADCcount>;
     using WaveformValue_t = ADCcount::value_t; ///< Numeric type in waveforms.
 
+    /// Type of sampled pulse shape: sequence of samples, one per tick.
+    using PulseSampling_t = DiscretePhotoelectronPulse::Subsample_t;
+
     /// Type of member function to add electronics noise.
     using NoiseAdderFunc_t = void (PMTsimulationAlg::*)(Waveform_t&) const;
-    
+
+
+    // --- BEGIN -- Helper functors --------------------------------------------
+    /// Functor to convert tick point into a tick number and a subsample index.
+    class TimeToTickAndSubtickConverter {
+
+      double const fNSubsamples; ///< Number of subsamples.
+
+        public:
+      using SubsampleIndex_t = DiscretePhotoelectronPulse::SubsampleIndex_t;
+
+      TimeToTickAndSubtickConverter(unsigned int nSubsamples)
+        : fNSubsamples(static_cast<double>(nSubsamples)) {}
+
+      /// Converts the `tick_d` in a subsample number and tick number.
+      std::tuple<tick, SubsampleIndex_t> operator() (double const tick_d) const;
+
+    }; // TimeToTickAndSubtickConverter
+
+
+    /// Applies a random gain fluctuation to the specified number of
+    /// photoelectrons.
+    template <typename Rand>
+    class GainFluctuator {
+
+      std::optional<Rand> fRandomGain; ///< Random gain extractor (optional).
+      double const fReferenceGain = 0.0; ///< Reference (average) gain.
+
+        public:
+      GainFluctuator() = default;
+      GainFluctuator(double const refGain, Rand&& randomGain)
+        : fRandomGain(std::move(randomGain))
+        , fReferenceGain(refGain)
+        {}
+
+      /// Returns the new number of photoelectrons after fluctuation from `n`.
+      double operator() (double const n);
+
+    }; // GainFluctuator
+
+    /// Returns a configured gain fluctuator object.
+    auto makeGainFluctuator() const;
+
+    // --- END -- Helper functors ----------------------------------------------
+
+
     ConfigurationParameters_t fParams; ///< Complete algorithm configuration.
 
     double fQE;            ///< PMT quantum efficiency.
@@ -657,10 +526,10 @@ namespace icarus::opdet {
     DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
     NoiseAdderFunc_t const fNoiseAdder; ///< Selected electronics noise method.
-    
+
     ///< Transformation uniform to Gaussian for electronics noise.
     static util::FastAndPoorGauss<32768U, float> const fFastGauss;
-    
+
   void CreateFullWaveform
     (Waveform_t&, sim::SimPhotons const&, std::optional<sim::SimPhotons>&);
 
@@ -669,16 +538,53 @@ namespace icarus::opdet {
           std::vector<raw::OpDetWaveform>& output_opdets);
 
 
-  void AddSPE(tick time_bin, Waveform_t& wave); // add single pulse to auxiliary waveform
-  /// Add `n` standard pulses starting at the specified `time_bin` of `wave`.
-  void AddPhotoelectrons
-    (tick time_bin, WaveformValue_t n, Waveform_t& wave) const;
+  /**
+   * @brief Adds a pulse to a waveform, starting at a given tick.
+   * @tparam Combine binary operation combining two ADC counts into one
+   * @param pulse the sampling to add to the waveform
+   * @param wave the waveform the pulse will be added to
+   * @param time_bin the tick of the waveform where the pulse starts
+   * @param combination how to combine the pulse and the waveform
+   *
+   * This is the internal implementation of `AddPhotoelectrons()`.
+   *
+   * The `combination` functor behaves as a binary function taking the
+   * existing `wave` sample and the sample from the `pulse` at the same time
+   * and returning their combination as a new sample value.
+   */
+  template <typename Combine>
+  void AddPulseShape(
+    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+    Combine combination
+    ) const;
+
+  /**
+   * @brief Adds a number of pulses to a waveform, starting at a given tick.
+   * @param pulse the sampling to add, scaled, to the waveform
+   * @param wave the waveform the pulses will be added to
+   * @param time_bin the tick of the waveform where the pulses start being added
+   * @param n the number of pulses added (it may be fractional)
+   *
+   * All the samples of `pulse` are scaled by the factor `n` and then _added_
+   * to the sampling waveform `wave`, starting from the `time_bin` sample of
+   * this waveform.
+   *
+   * The `pulse` samples are a sequence of ADC counts describing the single
+   * photoelectron pulse shape. The waveform is also a sequence of samples
+   * representing a optical detector channel digitized waveform, starting at
+   * tick #0.
+   */
+  void AddPhotoelectrons(
+    PulseSampling_t const& pulse, Waveform_t& wave, tick const time_bin,
+    WaveformValue_t const n
+    ) const;
 
 
   void AddNoise(Waveform_t& wave) const; //add noise to baseline
   /// Same as `AddNoise()` but using an alternative generator.
   void AddNoise_faster(Waveform_t& wave) const;
-  void AddDarkNoise(Waveform_t& wave); //add noise to baseline
+  // Add "dark" noise to baseline.
+  void AddDarkNoise(Waveform_t& wave) const;
 
   /**
    * @brief Ticks in the specified waveform where some signal activity starts.
@@ -787,11 +693,6 @@ namespace icarus::opdet {
         Comment("Waveform baseline (may be fractional) [ADC]")
         // mandatory
         };
-      fhicl::Atom<float> ADC {
-        Name("ADC"),
-        Comment("Voltage to ADC conversion factor")
-        // mandatory
-        };
       fhicl::Atom<int> PulsePolarity {
         Name("PulsePolarity"),
         Comment("Pulse polarity: 1 for positive, -1 for negative")
@@ -829,25 +730,11 @@ namespace icarus::opdet {
       //
       // single photoelectron response
       //
-      fhicl::Atom<nanoseconds> TransitTime {
-        Name("TransitTime"),
-        Comment("Single photoelectron: peak time from the beginning of the waveform [ns]")
-        // mandatory
-        };
-      fhicl::Atom<picocoulomb> MeanAmplitude {
-        Name("MeanAmplitude"),
-        Comment("Single photoelectron: signal amplitude at peak [pC]")
-        // mandatory
-        };
-      fhicl::Atom<nanoseconds> RiseTime {
-        Name("RiseTime"),
-        Comment("Single photoelectron: rise time (10% to 90%, sigma * ~1.687) [ns]")
-        // mandatory
-        };
-      fhicl::Atom<nanoseconds> FallTime {
-        Name("FallTime"),
-        Comment("Single photoelectron: fall time (90% to 10%, sigma * ~1.687) [ns]")
-        // mandatory
+      fhicl::Atom<unsigned int> PulseSubsamples {
+        Name("PulseSubsamples"),
+        Comment
+          ("split each tick by this many subsamples to increase PMT timing simulation"),
+        1U
         };
 
       //
@@ -914,6 +801,7 @@ namespace icarus::opdet {
      * @brief Creates and returns a new algorithm instance.
      * @param larProp instance of `detinfo::LArProperties` to be used
      * @param detClocks instance of `detinfo::DetectorClocks` to be used
+     * @param SPRfunction function to use for the single photon response
      * @param mainRandomEngine main random engine (quantum efficiency, etc.)
      * @param darkNoiseRandomEngine random engine for dark noise simulation
      * @param elecNoiseRandomEngine random engine for electronics noise simulation
@@ -926,6 +814,33 @@ namespace icarus::opdet {
     std::unique_ptr<PMTsimulationAlg> operator()(
       detinfo::LArProperties const& larProp,
       detinfo::DetectorClocks const& detClocks,
+      SinglePhotonResponseFunc_t const& SPRfunction,
+      CLHEP::HepRandomEngine& mainRandomEngine,
+      CLHEP::HepRandomEngine& darkNoiseRandomEngine,
+      CLHEP::HepRandomEngine& elecNoiseRandomEngine,
+      bool trackSelectedPhotons = false
+      ) const;
+
+    /**
+     * @brief Returns a data structure to construct the algorithm.
+     * @param larProp instance of `detinfo::LArProperties` to be used
+     * @param detClocks instance of `detinfo::DetectorClocks` to be used
+     * @param SPRfunction function to use for the single photon response
+     * @param mainRandomEngine main random engine (quantum efficiency, etc.)
+     * @param darkNoiseRandomEngine random engine for dark noise simulation
+     * @param elecNoiseRandomEngine random engine for electronics noise simulation
+     *
+     * Returns a data structure ready to be used to construct a
+     * `PMTsimulationAlg` algorithm object, based on the configuration passed
+     * at construction time and the arguments specified in this function call.
+     * 
+     * All random engines are required in this interface, even if the
+     * configuration disabled noise simulation.
+     */
+    PMTsimulationAlg::ConfigurationParameters_t makeParams(
+      detinfo::LArProperties const& larProp,
+      detinfo::DetectorClocks const& detClocks,
+      SinglePhotonResponseFunc_t const& SPRfunction,
       CLHEP::HepRandomEngine& mainRandomEngine,
       CLHEP::HepRandomEngine& darkNoiseRandomEngine,
       CLHEP::HepRandomEngine& elecNoiseRandomEngine,
@@ -947,50 +862,6 @@ namespace icarus::opdet {
 //-----------------------------------------------------------------------------
 //--- template implementation
 //-----------------------------------------------------------------------------
-// --- icarus::opdet::PhotoelectronPulseWaveform
-// -----------------------------------------------------------------------------
-template <typename T>
-template <typename Stream>
-void icarus::opdet::PhotoelectronPulseWaveform<T>::dump(Stream&& out,
-  std::string const& indent, std::string const& firstIndent
-  ) const
-{
-  out
-       << firstIndent << "Pulse shape: asymmetric Gaussian with peak at "
-          << peakTime() << " and amplitude " << amplitude() << ":"
-    << '\n' << indent << "  (t <  " << peakTime() << "): sigma " << leftSigma()
-    << '\n' << indent << "  (t >= " << peakTime() << "): sigma " << rightSigma()
-    << '\n';
-} // icarus::opdet::PhotoelectronPulseWaveform::dump()
-
-
-// -----------------------------------------------------------------------------
-// --- icarus::opdet::DiscretePhotoelectronPulse
-// -----------------------------------------------------------------------------
-inline icarus::opdet::DiscretePhotoelectronPulse::DiscretePhotoelectronPulse
-  (PulseFunction_t&& pulseShape, gigahertz samplingFreq, double rightSigmas)
-  : fShape(std::move(pulseShape))
-  , fSamplingFreq(samplingFreq)
-  , fSampledShape(sampleShape(fShape, fSamplingFreq, rightSigmas))
-  {}
-
-
-//-----------------------------------------------------------------------------
-template <typename Stream>
-void icarus::opdet::DiscretePhotoelectronPulse::dump(Stream&& out,
-  std::string const& indent, std::string const& firstIndent
-  ) const
-{
-  out << firstIndent << "Sampled pulse waveform " << pulseLength()
-    << " samples long (" << duration()
-    << " long, sampled at " << samplingFrequency()
-    << "); pulse shape:"
-    << "\n" << indent;
-  shape().dump(std::forward<Stream>(out), indent + "  ", "");
-} // icarus::opdet::DiscretePhotoelectronPulse::dump()
-
-
-//-----------------------------------------------------------------------------
 //--- icarus::opdet::PMTsimulationAlg
 //-----------------------------------------------------------------------------
 template <typename Stream>
@@ -998,7 +869,7 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   (Stream&& out, std::string indent /* = "" */) const
 {
   using namespace util::quantities::electronics_literals;
-  
+
   out
             << indent << "Baseline:            " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
@@ -1008,26 +879,29 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
     << '\n' << indent << "doGainFluctuations:  "
       << std::boolalpha << fParams.doGainFluctuations
     << '\n' << indent << "PulsePolarity:       " << ((fParams.pulsePolarity == 1)? "positive": "negative") << " (=" << fParams.pulsePolarity << ")"
-    << '\n' << indent << "Sampling:            " << fSampling
+    << '\n' << indent << "Sampling:            " << fSampling;
+  if (fParams.pulseSubsamples > 1U)
+    out << " (subsampling: x" << fParams.pulseSubsamples << ")";
+  out
     << '\n' << indent << "Samples/waveform:    " << fNsamples << " ticks"
     << '\n' << indent << "Gain at first stage: " << fParams.PMTspecs.firstStageGain()
     ;
-  
+
   out << '\n' << indent << "Electronics noise:   ";
   if (fParams.ampNoise > 0_ADCf) {
     out << fParams.ampNoise << " RMS ("
       << (fParams.useFastElectronicsNoise? "faster": "slower") << " algorithm)";
   }
   else out << "none";
-  
+
   if (fParams.createBeamGateTriggers) {
     out << '\n' << indent << "Create " << fParams.beamGateTriggerNReps
       << " beam gate triggers, one every " << fParams.beamGateTriggerRepPeriod << ".";
   }
   else out << '\n' << indent << "Do not create beam gate triggers.";
-  
+
   out << '\n' << indent << "... and more.";
-  
+
   out << '\n' << indent << "Template photoelectron waveform settings:"
     << '\n';
   wsp.dump(std::forward<Stream>(out), indent + "  ");
@@ -1040,6 +914,6 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
 
 //-----------------------------------------------------------------------------
 
- 
+
 #endif // ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
 
