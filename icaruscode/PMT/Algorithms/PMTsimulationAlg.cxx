@@ -132,18 +132,14 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
   icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
 {
-  // to be returned:
-  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
-    result;
-  // give the return value elements nice names:
-  auto& [ waveforms, photons_used ] = result;
+  std::optional<sim::SimPhotons> photons_used;
 
-  Waveform_t waveform;
-  CreateFullWaveform(waveform, photons, photons_used);
-  waveforms = CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform);
+  Waveform_t const waveform = CreateFullWaveform(photons, photons_used);
 
-//  CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
-  return result;
+  return {
+    CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
+    std::move(photons_used)
+    };
   
 } // icarus::opdet::PMTsimulationAlg::simulate()
 
@@ -164,9 +160,9 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 
 
 //------------------------------------------------------------------------------
-void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
-							 sim::SimPhotons const& photons,
-							 std::optional<sim::SimPhotons>& photons_used)
+auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
+  (sim::SimPhotons const& photons, std::optional<sim::SimPhotons>& photons_used)
+  const -> Waveform_t
 {
 
     using namespace util::quantities::time_literals;
@@ -177,7 +173,6 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     detinfo::DetectorTimings const& timings
       = detinfo::makeDetectorTimings(fParams.timeService);
 
-    waveform.resize(fNsamples,fParams.baseline);
     tick const endSample = tick::castFrom(fNsamples);
 
     //
@@ -234,6 +229,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     //
     // add the collected photoelectrons to the waveform
     //
+    Waveform_t waveform(fNsamples, fParams.baseline);
+    
     unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
     double nTotalEffectivePE [[gnu::unused]] = 0U; // unused if not in `debug` mode
 
@@ -289,7 +286,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
-
+    
+    return waveform;
   } // CreateFullWaveform()
 
   auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
@@ -362,6 +360,16 @@ std::vector<raw::OpDetWaveform>
 icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms
   (raw::Channel_t opChannel, Waveform_t const& waveform) const
 {
+  /*
+   * Plan:
+   * 
+   * 1. set up
+   * 2. get the trigger points of the waveform
+   * 3. define the size of data around each trigger to commit to waveforms
+   *    (also merge contiguous and overlapping intervals)
+   * 4. create the actual `raw::OpDetWaveform` objects
+   * 
+   */
   
   //
   // parameters check and setup

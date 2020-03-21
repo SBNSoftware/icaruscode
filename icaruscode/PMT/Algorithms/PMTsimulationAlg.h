@@ -579,8 +579,28 @@ namespace icarus::opdet {
     ///< Transformation uniform to Gaussian for electronics noise.
     static util::FastAndPoorGauss<32768U, float> const fFastGauss;
 
-  void CreateFullWaveform
-    (Waveform_t&, sim::SimPhotons const&, std::optional<sim::SimPhotons>&);
+  /**
+   * @brief Creates `raw::OpDetWaveform` objects from simulated photoelectrons.
+   * @param photons the simulated list of photoelectrons
+   * @param photons_used (_output_) list of used photoelectrons
+   * @return a collection of digitised `raw::OpDetWaveform` objects
+   * 
+   * This function performs the digitization of a optical detector channel which
+   * is collecting the photoelectrons in the `photons` list.
+   * 
+   * The photoelectrons are already screened for quantum efficiency: all of them
+   * are considered for use. It is still possible, if a reduction of the quantum
+   * efficiency is requested, that some of them are discarded.
+   * 
+   * The `photons_used` output argument is constructed and filled only if the
+   * configuration of the algorithm requires the creation of a list of used
+   * photons.
+   * 
+   */
+  Waveform_t CreateFullWaveform(
+    sim::SimPhotons const& photons,
+    std::optional<sim::SimPhotons>& photons_used
+    ) const;
 
   /**
    * @brief Creates `raw::OpDetWaveform` objects from a waveform data.
@@ -592,13 +612,21 @@ namespace icarus::opdet {
    * starting at the beginning of the optical time clock, that is set by the
    * algorithm configuration as the global hardware trigger time (configured
    * in `detinfo::DetectorClocks`) and an offset.
+   * It may be obtained from `CreateFullWaveform()`.
    * 
-   * Applies zero suppression to the full optical detector channel data,
-   * producing non-overlapping fixed-size waveforms.
+   * Multiple waveforms may be returned for a single channel, since a form of
+   * zero suppression is applied by the simulated hardware.
+   * The waveforms are guaranteed to be non-overlapping, non-contiguous and
+   * sorted with increasing timestamp.
    * 
    * The procedure attempts to mimic the working mode of CAEN V1730B boards
    * as described on page 32 of the manual "UM2792_V1730_V1725_rev2.pdf"
    * in SBN DocDB 15024.
+   * 
+   * 
+   * 
+   * Algorithm details
+   * ------------------
    * 
    * In the board readout language, the "trigger" is the per-channel
    * information that the signal on the channel has passed the threshold.
