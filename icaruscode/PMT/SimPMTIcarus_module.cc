@@ -12,6 +12,7 @@
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 
 // LArSoft libraries
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
