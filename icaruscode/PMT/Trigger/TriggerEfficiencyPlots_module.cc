@@ -1418,7 +1418,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const;
   
   /// Computes the trigger response from primitives with the given `threshold`.
-  TriggerGateData_t combineTriggerPrimitives(
+  std::vector<TriggerGateData_t> combineTriggerPrimitives(
     art::Event const& event,
     icarus::trigger::ADCCounts_t const threshold,
     art::InputTag const& dataTag
@@ -1432,11 +1432,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   void plotResponses(
     std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plots, EventInfo_t const& info,
-    TriggerGateData_t const& primitiveCount
+    std::vector<TriggerGateData_t> const& primitiveCounts
     ) const;
 
   /// Reads a set of input gates from the `event`.
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> ReadTriggerGates
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> ReadTriggerGates
     (art::Event const& event, art::InputTag const& dataTag) const;
   
   static std::string thrAndCatName
@@ -1610,9 +1610,17 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     // 1.3. apply the beam gate on the primitives
     // 1.4. generate the trigger response
     //
-    TriggerGateData_t const primitiveCount
-      = applyBeamGate(combineTriggerPrimitives(event, threshold, dataTag));
 
+    std::vector<TriggerGateData_t> primitiveCounts;
+    std::vector<TriggerGateData_t> combinedTriggerPrimitives = combineTriggerPrimitives(event, threshold, dataTag);
+
+    for (TriggerGateData_t combinedPrimitive : (combinedTriggerPrimitives)) {
+      TriggerGateData_t const primitiveCount
+        = applyBeamGate(combinedPrimitive);
+
+      primitiveCounts.push_back(primitiveCount);
+    }
+    
     //
     // 1.5. pick the plots to be filled
     //
@@ -1624,7 +1632,7 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     }
     
     // 1.6. add the response to the appropriate plots
-    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCount);
+    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCounts);
     
   } // for thresholds
 
@@ -1966,34 +1974,40 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
   art::Event const& event,
   icarus::trigger::ADCCounts_t const threshold,
   art::InputTag const& dataTag
-) const -> TriggerGateData_t {
+) const -> std::vector<TriggerGateData_t>{
 
   //
   // simple count
   //
 
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> const& gates
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> const& cryoGates
     = ReadTriggerGates(event, dataTag);
 
-  mf::LogTrace(fLogCategory)
-    << "Simulating trigger response with ADC threshold " << threshold
-    << " from '" << dataTag.encode() << "' (" << gates.size() << " primitives)";
+  std::vector<TriggerGateData_t> cryoCombinedGate;
 
-  TriggerGateData_t combinedGate;
+  for (auto const& gates: (cryoGates)) {
+    mf::LogTrace(fLogCategory)
+      << "Simulating trigger response with ADC threshold " << threshold
+      << " from '" << dataTag.encode() << "' (" << gates.size() << " primitives)";
 
-  auto itGate = gates.begin();
-  auto const gend = gates.end();
-  if (itGate == gend) { // this is unexpected...
-    mf::LogWarning(fLogCategory)
-      << "  No trigger primitive found for threshold " << threshold
-      << " ('" << dataTag.encode() << "')";
-    return {};
-  } // if no gates
+    TriggerGateData_t combinedGate;
 
-  combinedGate = *itGate;
-  while (++itGate != gend) combinedGate.Sum(*itGate);
+    auto itGate = gates.begin();
+    auto const gend = gates.end();
+    if (itGate == gend) { // this is unexpected...
+      mf::LogWarning(fLogCategory)
+        << "  No trigger primitive found for threshold " << threshold
+        << " ('" << dataTag.encode() << "')";
+      return {};
+    } // if no gates
 
-  return combinedGate;
+    combinedGate = *itGate;
+    while (++itGate != gend) combinedGate.Sum(*itGate);
+
+    cryoCombinedGate.push_back(combinedGate) ;
+  }
+
+  return cryoCombinedGate;
 } // icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives()
 
 
@@ -2012,7 +2026,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   icarus::trigger::ADCCounts_t const threshold,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
-  TriggerGateData_t const& primitiveCount
+  std::vector<TriggerGateData_t> const& primitiveCounts
 ) const {
   
   /*
@@ -2038,13 +2052,27 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
-  // largest number of trigger primitives at any time
-  detinfo::DetectorTimings::optical_tick const maxPrimitiveTime
-    { primitiveCount.findMaxOpen() };
-  PrimitiveCount_t const maxPrimitives { 
-    maxPrimitiveTime.value(),
-    primitiveCount.openingCount(maxPrimitiveTime.value())
-    };
+  // largest number of trigger primitives at any time TODO
+  PrimitiveCount_t maxPrimitives;
+  TriggerGateData_t primitiveCount;
+  detinfo::DetectorTimings::optical_tick maxPrimitiveTime;
+  unsigned int mostPrimitives = 0;
+
+  for ( TriggerGateData_t pCount : (primitiveCounts)) {
+    detinfo::DetectorTimings::optical_tick const cryoMaxPrimitiveTime
+      { pCount.findMaxOpen() };
+    PrimitiveCount_t const cryoMaxPrimitives {
+      cryoMaxPrimitiveTime.value(),
+      pCount.openingCount(maxPrimitiveTime.value())
+      };
+
+    // largest number of trigger primitives in all cryostats
+    if (pCount.openingCount(pCount.findMaxOpen()) > mostPrimitives) {
+      maxPrimitives = cryoMaxPrimitives; 
+      maxPrimitiveTime = cryoMaxPrimitiveTime;
+      primitiveCount = pCount;
+    }
+  }
 
   mf::LogTrace(fLogCategory)
     << "Max primitive count in " << threshold << ": "
@@ -2142,7 +2170,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
 
 
 //------------------------------------------------------------------------------
-std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>
+std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>>
 icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
   (art::Event const& event, art::InputTag const& dataTag) const
 {
@@ -2159,14 +2187,32 @@ icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
       <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
     );
   try {
-    return icarus::trigger::FillTriggerGates
-      <icarus::trigger::MultiChannelOpticalTriggerGate>(gates, gateToWaveforms);
+    auto check = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
+    (gates, gateToWaveforms);
   }
   catch (cet::exception const& e) {
     throw cet::exception("TriggerEfficiencyPlots", "", e)
       << "Error encountered while reading data products from '"
       << dataTag.encode() << "'\n";
   }
+
+  auto allGates = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
+  (gates, gateToWaveforms);
+
+  std::vector<geo::CryostatID> fChannelCryostat;
+
+  fChannelCryostat.reserve(fGeom.NOpChannels());
+  for (auto const opChannel: util::counter(fGeom.NOpChannels())) {
+    if (!fGeom.IsValidOpChannel(opChannel)) continue;
+    fChannelCryostat[opChannel] = fGeom.OpDetGeoFromOpChannel(opChannel).ID();
+  } // for all channels
+  
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> gatesPerCryostat{ fGeom.Ncryostats() };
+  for (auto& gate: allGates) {
+    assert(gate.hasChannels());
+    gatesPerCryostat[fChannelCryostat[gate.channels().front()].Cryostat].push_back(std::move(gate));
+  }
+  return gatesPerCryostat;
 
 } // icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates()
 
