@@ -37,8 +37,9 @@
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
+
+#include "icarus_signal_processing/ICARUSFFT.h"
 
 ///creation of calibrated signals on wires
 namespace recowire {
@@ -65,18 +66,18 @@ namespace recowire {
     int          fPostsample;        ///< number of postsample bins
     std::string  fDigitModuleLabel;  ///< module that made digits
 
-    std::vector<std::vector<TComplex> > fKernelR;      ///< holds transformed induction 
-                                                       ///< response function
-    std::vector<std::vector<TComplex> > fKernelS;      ///< holds transformed induction 
-                                                       ///< response function
-    std::vector<double>                 fDecayConstsR; ///< vector holding RC decay 
-                                                       ///< constants
-    std::vector<double>                 fDecayConstsS; ///< vector holding RC decay 
-                                                       ///< constants
-    std::vector<int>                    fKernMapR;     ///< map telling which channels  
-                                                       ///< have which response functions
-    std::vector<int>                    fKernMapS;     ///< map telling which channels 
-                                                       ///< have which response functions
+    std::vector<std::vector<std::complex<double>>> fKernelR;      ///< holds transformed induction 
+                                                                  ///< response function
+    std::vector<std::vector<std::complex<double>>> fKernelS;      ///< holds transformed induction 
+                                                                  ///< response function
+    std::vector<double>                            fDecayConstsR; ///< vector holding RC decay 
+                                                                  ///< constants
+    std::vector<double>                            fDecayConstsS; ///< vector holding RC decay 
+                                                                  ///< constants
+    std::vector<int>                               fKernMapR;     ///< map telling which channels  
+                                                                  ///< have which response functions
+    std::vector<int>                               fKernMapS;     ///< map telling which channels 
+                                                                  ///< have which response functions
   protected: 
     
   }; // class RecoWireICARUS
@@ -186,7 +187,7 @@ namespace recowire{
 
     std::vector<double> decayConsts;  
     std::vector<int> kernMap;
-    std::vector<std::vector<TComplex> > kernel; 
+    std::vector<std::vector<std::complex<double>>> kernel; 
     //Put correct response functions and decay constants in place
     if(evt.isRealData()) {
       decayConsts=fDecayConstsR;
@@ -198,9 +199,6 @@ namespace recowire{
       kernMap=fKernMapS;
       kernel=fKernelS;
     }
-
-    // get the FFT service to have access to the FFT size
-    art::ServiceHandle<util::LArFFT> fFFT;
 
     // make a collection of Wires
     std::unique_ptr<std::vector<recob::Wire> > wirecol(new std::vector<recob::Wire>);
@@ -220,9 +218,11 @@ namespace recowire{
         
     unsigned int dataSize = digitVec0->Samples(); //size of raw data vectors
     
-    int transformSize = fFFT->FFTSize();
+    int transformSize = dataSize;
     raw::ChannelID_t channel(raw::InvalidChannelID); // channel number
     unsigned int bin(0);     // time bin loop variable
+
+    icarus_signal_processing::ICARUSFFT<double> fft(transformSize);
     
     double decayConst = 0.;  // exponential decay constant of electronics shaping
     double fitAmplitude    = 0.;  //This is the seed value for the amplitude in the exponential tail fit 
@@ -230,7 +230,7 @@ namespace recowire{
     std::vector<float> shortADC;                // holds signal data
     std::vector<float> longADC;                // holds signal data
     std::vector<short> rawadc(transformSize);  // vector holding uncompressed adc values
-    std::vector<TComplex> freqHolder(transformSize+1); // temporary frequency data
+    std::vector<std::complex<double>> freqHolder(transformSize+1); // temporary frequency data
     wirecol->reserve(digitVecHandle->size()); 
     // loop over all wires    
     for(unsigned int rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter){ // ++ move
@@ -352,10 +352,11 @@ namespace recowire{
 	  // adapt as appropriate
       
 	  // Figure out which kernel to use (0=induction, 1=collection).
-      
-	  fFFT->Convolute(holder,kernel[k]);
+    icarus_signal_processing::ICARUSFFT<double>::TimeVec temp(holder.size());
+    std::copy(holder.begin(),holder.end(),temp.begin());
+	  fft.convolute(temp,kernel[k],0);
+    std::copy(temp.begin(),temp.end(),holder.begin());
     
-	  holder.resize(dataSize,1e-5);
 	  //This restores the DC component to signal removed by the deconvolution.
 	  if(fPostsample) {
 	    double average=0.0;

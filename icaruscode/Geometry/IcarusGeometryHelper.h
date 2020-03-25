@@ -1,70 +1,81 @@
-////////////////////////////////////////////////////////////////////////////////
-/// \file IcarusGeometryHelper.h
-/// \brief Geometry helper service for Icarus geometries. 
-/// 
-/// Handles Icarus-specific information for the generic Geometry service
-/// within LArSoft. Derived from the ExptGeoHelperInterface class
-///
-/// \verion $Id
-/// \author rs@fnal.gov
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * @file    icaruscode/Geometry/IcarusGeometryHelper.h
+ * @brief   Geometry helper service for ICARUS geometries.
+ * @see     `icaruscode/Geometry/IcarusGeometryHelper_service.cc`
+ *
+ * Handles Icarus-specific information for the generic Geometry service
+ * within LArSoft. Derived from the `geo::ExptGeoHelperInterface` class.
+ */
 
-#ifndef Icarus_ExptGeoHelperInterface_h
-#define Icarus_ExptGeoHelperInterface_h
+#ifndef ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H
+#define ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H
 
+// LArSoft libraries
+// #include "larcore/Geometry/ChannelMapSetupTool.h"
 #include "larcore/Geometry/ExptGeoHelperInterface.h"
-#include "larcorealg/Geometry/CryostatGeo.h"
-#include "larcorealg/Geometry/AuxDetGeo.h"
 
-#include <memory>
-#include <vector>
+// framework libraries
+#include "art/Framework/Services/Registry/ServiceMacros.h"
+#include "fhiclcpp/ParameterSet.h"
 
+// C/C++ standard libraries
+#include <memory> // std::unique_ptr<>, std::shared_ptr<>
+
+
+// -----------------------------------------------------------------------------
 // Forward declarations
-//
-class TString;
+namespace geo { class ChannelMapAlg; }
+namespace icarus { class IcarusGeometryHelper; }
 
-namespace geo
-{
-  class ChannelMapAlg;
-}
+// -----------------------------------------------------------------------------
+/**
+ * @brief Implementation of `geo::ExptGeoHelperInterface` for ICARUS.
+ *
+ * This service utilizes a _art_ tool to create the proper channel mapper
+ * algorithm instance.
+ *
+ *
+ * Configuration
+ * --------------
+ *
+ * * *Mapper* (tool parameter set):
+ *     the configuration includes a `tool_type` parameter to identify the tool
+ *     to use, and the rest of the configuration is passed to the tool itself.
+ *     The standard tool (_not default!_) is `icarus::ICARUSChannelMapAlgTool`
+ *     By default, uses `icarus::ICARUSSingleInductionChannelMapAlgTool`
+ *     (legacy).
+ *
+ *
+ */
+class icarus::IcarusGeometryHelper: public geo::ExptGeoHelperInterface {
 
-// Declaration
-//
-namespace Icarus
-{
-  class IcarusGeometryHelper : public geo::ExptGeoHelperInterface
-  {
-  public:
-  
-    IcarusGeometryHelper( fhicl::ParameterSet const & pset, art::ActivityRegistry &reg );
-    ~IcarusGeometryHelper() throw();
+    public:
 
-    // Public interface for ExptGeoHelperInterface (for reference purposes)
-    //
-    // Configure and initialize the channel map.
-    //
-    // void  ConfigureChannelMapAlg( const TString & detectorName, 
-    //                               fhicl::ParameterSet const & sortingParam,
-    //                               std::vector<geo::CryostatGeo*> & c,
-    //				     std::vector<geo::AuxDetGeo*>   & ad );
-    //
-    // Returns null pointer if the initialization failed
-    // NOTE:  the sub-class owns the ChannelMapAlg object
-    //
-    // std::shared_ptr<const geo::ChannelMapAlg> & GetChannelMapAlg() const;
-  
-  private:
+  /// Constructor: records the configuration.
+  IcarusGeometryHelper(fhicl::ParameterSet const& pset): fPset(pset) {}
 
-    void doConfigureChannelMapAlg( fhicl::ParameterSet const & sortingParameters, geo::GeometryCore* geom ) override;
-    ChannelMapAlgPtr_t doGetChannelMapAlg() const override;
-    
-    fhicl::ParameterSet fPset; ///< copy of configuration parameter set
-    //art::ActivityRegistry fReg; ///< copy of activity registry
-    std::shared_ptr<geo::ChannelMapAlg> fChannelMap;
-  
-  };
+    private:
 
-}
-DECLARE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface, LEGACY)
+  fhicl::ParameterSet fPset; ///< Copy of configuration parameter set.
 
-#endif // Icarus_ExptGeoHelperInterface_h
+  // --- BEGIN -- Virtual interface definitions --------------------------------
+  virtual ChannelMapAlgPtr_t doConfigureChannelMapAlg(
+    fhicl::ParameterSet const& /* sortingParameters */,
+    std::string const& detectorName
+    ) const override;
+
+  // --- END -- Virtual interface definitions ----------------------------------
+
+  /// Creates and returns the channel mapping instance via a _art_ tool.
+  std::unique_ptr<geo::ChannelMapAlg> makeChannelMapping
+    (fhicl::ParameterSet const& parameters) const;
+
+}; // icarus::IcarusGeometryHelper
+
+
+// -----------------------------------------------------------------------------
+DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::IcarusGeometryHelper,
+                                   geo::ExptGeoHelperInterface,
+                                   SHARED)
+
+#endif // ICARUSCODE_GEOMETRY_ICARUSGEOMETRYHELPER_H

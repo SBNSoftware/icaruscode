@@ -18,9 +18,6 @@
 #           fileName: "TreeFile.root"
 #         }
 #
-#         # add a single service
-#         LArFFT: @local::icarus_larfft
-#         
 #         # add a set of services
 #         @table::icarus_backtracking_services
 #         
@@ -112,8 +109,7 @@ icarus_wirecalibration_services: {
     
                                     @table::icarus_basic_services
     
-    LArFFT:                         @local::icarus_larfft # from `correctionservices_icarus.fcl`
-    SignalShapingServiceICARUS:     @local::icarus_signalshapingservice
+    SignalShapingICARUSService:     @local::icarus_signalshapingservice
     
                                     @table::icarus_calibration_services
     

@@ -14,6 +14,7 @@
 #define IROIFinder_H
 
 #include "fhiclcpp/ParameterSet.h"
+#include "TProfile.h"
 
 namespace art
 {
@@ -22,6 +23,22 @@ namespace art
 
 namespace icarus_tool
 {
+    enum HistogramType : int
+    {
+        WAVEFORM,
+        WAVELESSAVE,
+        EROSION,
+        DILATION,
+        AVERAGE,
+        DIFFERENCE,
+        OPENING,
+        CLOSING,
+        DOPENCLOSING,
+        LASTELEMENT
+    };
+    
+    using HistogramMap = std::map<int, TProfile*>;
+
     class IROIFinder
     {
     public:

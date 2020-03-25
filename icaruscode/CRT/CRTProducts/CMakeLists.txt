@@ -5,8 +5,8 @@ include_directories( $ENV{NURANDOM_INC} )
 art_make( 
           LIBRARY_NAME icaruscode_CRTProducts
           LIB_LIBRARIES
-                        ${ROOT_BASIC_LIB_LIST}
-                        ${ROOT_EG}
+                        ROOT::Core
+                        ROOT::EG
         )
 
 install_headers()

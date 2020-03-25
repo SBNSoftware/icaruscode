@@ -47,6 +47,11 @@ services: {
   }
 }
 
+source: {
+  module_type: EmptyEvent
+  maxEvents: 0
+}
+
 physics: {
 
   analyzers: {

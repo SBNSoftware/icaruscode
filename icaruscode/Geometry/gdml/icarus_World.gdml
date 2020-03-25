@@ -65,7 +65,7 @@
 </solids>
 <structure>
     <volume name="volOverburdenUp" >
-      <materialref ref="Concrete"/>
+      <materialref ref="Air"/>
       <solidref ref="OverburdenUp"/>
     </volume>
 
@@ -85,7 +85,7 @@
     </volume>
 
     <volume name="volOverburdenDown" >
-      <materialref ref="Concrete"/>
+      <materialref ref="Air"/>
       <solidref ref="OverburdenDown"/>
     </volume>
 

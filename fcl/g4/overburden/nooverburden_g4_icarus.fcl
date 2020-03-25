@@ -10,5 +10,5 @@
 #include "standard_g4_icarus.fcl"
 
 # turn to no-overburden geometry:
-#include "use_no_overburden_geometry_icarus.fcl"
+#include "use_nooverburden_geometry_icarus.fcl"
 
