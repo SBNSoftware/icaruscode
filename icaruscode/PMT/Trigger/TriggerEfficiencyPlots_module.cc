@@ -2224,9 +2224,11 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       
       // plotting split for triggering/not triggering events
       getTrigHist("EnergyInSpill"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-      getTrigHist("NeutrinoEnergy"s)->Fill(double(eventInfo.NeutrinoEnergy()));
-      getTrigHist("InteractionType"s)->Fill(eventInfo.InteractionType());
-      getTrigHist("LeptonEnergy"s)->Fill(double(eventInfo.LeptonEnergy()));
+      if (eventInfo.isNeutrino()) {
+        getTrigHist("NeutrinoEnergy"s)->Fill(double(eventInfo.NeutrinoEnergy()));
+        getTrigHist("InteractionType"s)->Fill(eventInfo.InteractionType());
+        getTrigHist("LeptonEnergy"s)->Fill(double(eventInfo.LeptonEnergy()));
+      }
       TH2* vertexHist = getTrigHist2D("NeutrinoVertexYZ"s);
       for (auto const& point: eventInfo.fVertices)
         vertexHist->Fill(point.Z(), point.Y());
