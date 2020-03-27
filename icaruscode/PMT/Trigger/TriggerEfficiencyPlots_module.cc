@@ -839,13 +839,32 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *   30-primitive flash. Each event appears at most once for each trigger
  *   requirement, and it may not appear at all if does not fire a trigger.
  * * `NPrimitives`: the maximum number of primitives "on" at any time.
+ * * plots specific to each requirement are also drawn, splitting triggering
+ *   and non-triggering events; in each subfolder:
+ *     * `ReqXX`, containing information for trigger with minimum required
+ *       primitives `XX`;
+ *     * `triggering` and `nontriggering`, which contain only the events which
+ *       triggered the requirement in the parent folder.
+ *   Each of these sets replicates the plots listed as independent of the
+ *   trigger below.
  * 
- * Some plots are independent of the ADC threshold and they have the same
- * content in each of the plot set for a given event category:
+ * Some plots are independent of the ADC threshold and trigger requirements and
+ * they have the same content in each of the plot set for a given event
+ * category:
  * 
  * * `EnergyInSpill`: total energy deposited in the detector during the time the
  *   beam gate is open. It is proportional to the amount of scintillation light
- *   in the event.
+ *   in the event;
+ * * plots specific to neutrino interactions (if the event is not a neutrino
+ *   interaction, it will not contribute to them); if not otherwise specified,
+ *   only the first neutrino interaction in the event is considered:
+ *     * `NeutrinoEnergy`: generated energy of the interacting neutrino;
+ *     * `InteractionType`: code of the interaction type, as in
+ *       `sim::TruthInteractionTypeName`;
+ *     * `LeptonEnergy`: generated energy of the lepton out of the _first_
+ *       neutrino interaction;
+ *     * `NeutrinoVertexYZ`: coordinates of the location of all interactions
+ *       in the event, in world coordinates, projected on the anode plane.
  * 
  * 
  * Configuration parameters
@@ -1782,7 +1801,64 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
     120,-500.,350.
     );
 
-
+  //
+  // sub-sandboxes
+  //
+  using SS_t = std::pair<std::string, std::string>;
+  std::array<SS_t, 3U> const classes {
+    SS_t{ "triggering", "triggering events" },
+    SS_t{ "nontriggering", "non-triggering events" },
+    };
+  for (auto minCount: fMinimumPrimitives) {
+    
+    std::string const minCountStr = std::to_string(minCount);
+    
+    PlotSandbox& reqBox = plots.addSubSandbox
+      ("Req" + minCountStr, minCountStr + " channels required");
+    
+    
+    for (auto const& [ name, desc ]: classes) {
+      PlotSandbox& box = reqBox.addSubSandbox(name, desc);
+      
+      box.make<TH1F>(
+        "NeutrinoEnergy",
+        "True Neutrino Energy"
+          ";neutrino energy [GeV]"
+          ";events",
+        120,0.0,6.0 // GeV
+      );
+      box.make<TH1F>(
+        "EnergyInSpill",
+        "Energy deposited during the beam gate opening"
+          ";deposited energy  [ GeV ]"
+          ";events  [ / 50 MeV ]",
+        120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+        );
+      box.make<TH1I>(
+        "InteractionType",
+        "Interaction type"
+          ";Interaction Type"
+          ";events  [ / 50 MeV ]",
+        200, 999.5, 1199.5
+        );
+      box.make<TH1F>(
+        "LeptonEnergy",
+        "Energy of outgoing lepton"
+          ";deposited energy  [ GeV ]"
+          ";events  [ / 50 MeV ]",
+        120, 0.0, 6.0
+        );
+      box.make<TH2F>(
+        "NeutrinoVertexYZ",
+        "Vertex of triggered neutrino"
+          ";Z [cm]"
+          ";Y [cm]",
+        120,-1200.,1200.,
+        120,-500.,350.
+        );
+    } // for triggering requirement
+  } // for triggering classes
+  
   //
   // No trigger related plots
   //
@@ -2112,7 +2188,9 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     // and the time of this one is in lastMinCount.first (just in case)
     
     if (fResponseTree) fResponseTree->assignResponse(iThr, iReq, fired);
-
+    
+    std::string const minCountStr { "Req" + std::to_string(minCount) };
+    
     // go through all the plot categories this event qualifies for
     for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
       
@@ -2122,6 +2200,15 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
         { return plotSet.use<TH2>(name); };
       auto getHist = [&plotSet](std::string const& name)
         { return plotSet.use<TH1>(name); };
+      
+      // returns a 1D histogram from the proper subset: triggered or not
+      PlotSandbox const& trigHists
+        = *(plotSet.findSandbox(minCountStr)
+        ->findSandbox(fired? "triggering": "nontriggering"));
+      auto getTrigHist = [&trigHists](std::string const& name)
+        { return trigHists.use<TH1>(name); };
+      auto getTrigHist2D = [&trigHists](std::string const& name)
+        { return trigHists.use<TH2>(name); };
       
       // simple efficiency
       getEff("Eff"s)->Fill(fired, minCount);
@@ -2135,6 +2222,17 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
           }
         }
       }
+      
+      // plotting split for triggering/not triggering events
+      getTrigHist("EnergyInSpill"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
+      if (eventInfo.isNeutrino()) {
+        getTrigHist("NeutrinoEnergy"s)->Fill(double(eventInfo.NeutrinoEnergy()));
+        getTrigHist("InteractionType"s)->Fill(eventInfo.InteractionType());
+        getTrigHist("LeptonEnergy"s)->Fill(double(eventInfo.LeptonEnergy()));
+      }
+      TH2* vertexHist = getTrigHist2D("NeutrinoVertexYZ"s);
+      for (auto const& point: eventInfo.fVertices)
+        vertexHist->Fill(point.Z(), point.Y());
 
       // non triggered events
       if (fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
