@@ -432,7 +432,13 @@ void SpacePointAnalysis::clear() const
 
     return;
 }
-
+   
+// Create a struct allowing us to sort IDEs in a set by largest to smallest energy
+struct ideCompare
+{
+    bool operator() (const sim::IDE* left, const sim::IDE* right) const {return left->energy > right->energy;}
+};
+     
 void SpacePointAnalysis::fillHistograms(const art::Event& event) const
 {
     // Ok... this is starting to grow too much and get out of control... we will need to break it up directly...
@@ -456,14 +462,15 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     // If there is no sim channel informaton then exit
     if (!mcParticleHandle.isValid()) return;
     
-    std::cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
+    mf::LogDebug("SpacePointAnalysis") << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << std::endl;
 
     // First task is to build a map between ides and voxel ids (that we calcualate based on position)
     // and also get the reverse since it will be useful in the end.
     // At the same time should also build a mapping of ides per channel so we can do quick hit lookup
+    using SimIDESet          = std::set<const sim::IDE*,ideCompare>;
     using IDEToVoxelIDMap    = std::unordered_map<const sim::IDE*, sim::LArVoxelID>;
-    using VoxelIDToIDESetMap = std::map<sim::LArVoxelID, std::set<const sim::IDE*>>;
-    using TDCToIDEMap        = std::map<unsigned short, std::unordered_set<const sim::IDE*>>; // We need this one in order
+    using VoxelIDToIDESetMap = std::map<sim::LArVoxelID, SimIDESet>;
+    using TDCToIDEMap        = std::map<unsigned short, SimIDESet>; // We need this one in order
     using ChanToTDCToIDEMap  = std::map<raw::ChannelID_t, TDCToIDEMap>;
     using VoxelIDSet         = std::set<sim::LArVoxelID>;
 
@@ -488,7 +495,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 chanToTDCToIDEMap[simChannel.Channel()][tdcide.first].insert(&ide);
                 simChannelVoxelIDSet.insert(voxelID);
                 
-                if (ide.energy < std::numeric_limits<float>::epsilon()) std::cout << ">> epsilon simchan deposited energy: " << ide.energy << std::endl;
+                if (ide.energy < std::numeric_limits<float>::epsilon()) mf::LogDebug("SpacePointAnalysis") << ">> epsilon simchan deposited energy: " << ide.energy << std::endl;
             }
         }
     }
@@ -525,7 +532,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
         voxelIDToSimEnergySetMap[voxelID].insert(&simEnergy);
         simEnergyVoxelIDSet.insert(voxelID);
         
-        if (simEnergy.Energy() < std::numeric_limits<float>::epsilon()) std::cout << ">> epsilon simenergy deposited energy: " << simEnergy.Energy() << std::endl;
+        if (simEnergy.Energy() < std::numeric_limits<float>::epsilon()) mf::LogDebug("SpacePointAnalysis") << ">> epsilon simenergy deposited energy: " << simEnergy.Energy() << std::endl;
     }
     
     // Now analyze what we have
@@ -546,7 +553,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     {
         commonElementsVec.resize(commonElementsItr - commonElementsVec.begin());
 
-        std::cout << ">>> SimEnergy voxels: " << simEnergyVoxelIDSet.size() << ", simChannel voxels: " << simChannelVoxelIDSet.size() << ", # common voxels " << commonElementsVec.size() << std::endl;
+        mf::LogDebug("SpacePointAnalysis") << ">>> SimEnergy voxels: " << simEnergyVoxelIDSet.size() << ", simChannel voxels: " << simChannelVoxelIDSet.size() << ", # common voxels " << commonElementsVec.size() << std::endl;
 
         fNumCommonVoxelIDVec.push_back(commonElementsVec.size());
         
@@ -587,10 +594,10 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     {
         energyDiffVec.resize(energyDiffVecItr - energyDiffVec.begin());
         
-        std::cout << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", # in SimEnergy not in SimChannel: " << energyDiffVec.size() << std::endl;
+       mf::LogDebug("SpacePointAnalysis") << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", # in SimEnergy not in SimChannel: " << energyDiffVec.size() << std::endl;
     }
     else
-        std::cout << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", No differences" << std::endl;
+        mf::LogDebug("SpacePointAnalysis") << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", No differences" << std::endl;
     
     // Now go the other direction
     std::vector<sim::LArVoxelID>           simChanDiffVec(simEnergyVoxelIDSet.size() + simChannelVoxelIDSet.size());
@@ -601,7 +608,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     {
         simChanDiffVec.resize(simChanDiffVecItr - simChanDiffVec.begin());
         
-        std::cout << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", # in SimChannel not in SimEnergy: " << simChanDiffVec.size() << std::endl;
+        mf::LogDebug("SpacePointAnalysis") << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", # in SimChannel not in SimEnergy: " << simChanDiffVec.size() << std::endl;
         
         // In this direction, diff vec contains voxel IDs in SimChannelVoxelIDSet but not in SimEnergyVoxelIDSet
         for(const auto& voxelID : simChanDiffVec)
@@ -610,7 +617,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
             sim::LArVoxelID nearestVoxelID(voxelID);
             
             // Recover the total energy in SimChannels for this voxel
-            const std::set<const sim::IDE*> ideSet = voxelIDToIDEMap[voxelID];
+            const SimIDESet& ideSet = voxelIDToIDEMap[voxelID];
             
             float voxelEneSC = std::accumulate(ideSet.begin(),ideSet.end(),0.,[](auto& sum, const auto& ide){return sum += ide->energy;});
                                         
@@ -633,7 +640,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 
                 if (simEnergyItr == voxelIDToSimEnergySetMap.end())
                 {
-                    std::cout << "--> there is no SimEnergyDeposit object for this voxel?" << std::endl;
+                    mf::LogDebug("SpacePointAnalysis") << "--> there is no SimEnergyDeposit object for this voxel?" << std::endl;
                     continue;
                 }
                 
@@ -641,7 +648,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 
                 if (simEnergySet.empty())
                 {
-                    std::cout << "--> The associated SimEnergyDeposit voxel is actually empty?" << std::endl;
+                    mf::LogDebug("SpacePointAnalysis") << "--> The associated SimEnergyDeposit voxel is actually empty?" << std::endl;
                     continue;
                 }
                 
@@ -688,7 +695,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
         }
     }
     else
-        std::cout << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", No differences" << std::endl;
+        mf::LogDebug("SpacePointAnalysis") << "==> SimEnergy size: " << simEnergyVoxelIDSet.size() << ", simChannel size: " << simChannelVoxelIDSet.size() << ", No differences" << std::endl;
     
     // Keep track of everything
     fNumSimChanVoxelIDVec.push_back(simChannelVoxelIDSet.size());
@@ -699,7 +706,9 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     // Ok, for my next trick I want to build a mapping between hits and voxel IDs. Note that any given hit can be associated to more than one voxel...
     // We do this on the entire hit collection, ultimately we will want to consider SpacePoint efficiency (this could be done in the loop over SpacePoints
     // using the associated hits and would save time/memory)
-    using RecobHitToVoxelIDMap = std::unordered_map<const recob::Hit*, std::set<sim::LArVoxelID>>;
+    using VoxelIDSet           = std::set<sim::LArVoxelID>;
+    using VoxelIDSetVec        = std::vector<VoxelIDSet>;
+    using RecobHitToVoxelIDMap = std::unordered_map<const recob::Hit*, VoxelIDSetVec>;
     
     RecobHitToVoxelIDMap recobHitToVoxelIDMap;
     
@@ -713,14 +722,22 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
         {
             // Recover channel information based on this hit
             ChanToTDCToIDEMap::const_iterator chanToTDCToIDEItr = chanToTDCToIDEMap.find(hit.Channel());
+
+            // Recover the vector for this hit
+            VoxelIDSetVec& voxelIDSetVec = recobHitToVoxelIDMap[&hit];
             
             if (chanToTDCToIDEItr != chanToTDCToIDEMap.end())
             {
                 // Recover hit time range (in ticks)
                 int startTick = hit.PeakTime() - 2. * hit.RMS();
                 int endTick   = hit.PeakTime() + 2. * hit.RMS() + 1.;
+
+                // Grab the voxelID set for this tick
+                VoxelIDSet voxelIDSet;
                 
                 const TDCToIDEMap& tdcToIDEMap = chanToTDCToIDEItr->second;
+
+                std::cout << "---------------------- checking ticks for next hit, peak bin: " << hit.PeakTime() - startTick << ", rms: " << hit.RMS() << " ------------------------------" << std::endl;
 
                 // Get the number of electrons
                 for(unsigned short tick =startTick; tick <= endTick; tick++)
@@ -731,14 +748,21 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                     
                     if (ideIterator != tdcToIDEMap.end())
                     {
+                        std::cout << "-> tick: " << tick-startTick << " has " << ideIterator->second.size() << " ides " << std::endl;
+                        std::cout << "         ";
                         for (const auto& ide : ideIterator->second)
                         {
-                            sim::LArVoxelID voxelID = ideToVoxelIDMap[ide];
+                            const sim::LArVoxelID& voxelID = ideToVoxelIDMap[ide];
+
+                            std::cout << "Vox: " << voxelID.XBin() << "/" << voxelID.YBin() << "/" << voxelID.ZBin() << ", id: " << ide->trackID << ", e: " << ide->energy << " ";
                             
-                            recobHitToVoxelIDMap[&hit].insert(voxelID);
+                            voxelIDSet.insert(voxelID);
                         }
+                        std::cout << std::endl;
                     }
                 }
+
+                voxelIDSetVec.emplace_back(voxelIDSet);
             }
         }
     }
@@ -767,7 +791,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 
                 if (associatedHits.size() != 3)
                 {
-                    std::cout << "I am certain this cannot happen... but here you go, space point with " << associatedHits.size() << " hits" << std::endl;
+                    mf::LogDebug("SpacePointAnalysis") << "I am certain this cannot happen... but here you go, space point with " << associatedHits.size() << " hits" << std::endl;
                     continue;
                 }
                 
@@ -790,7 +814,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 {
                     RecobHitToVoxelIDMap::iterator hitToVoxelItr = recobHitToVoxelIDMap.find(hitPtr.get());
                     
-                    float peakAmplitude = hitPtr->PeakAmplitude();
+                    float  peakAmplitude = hitPtr->PeakAmplitude();
                     
                     averagePH += peakAmplitude;
                     averagePT += hitPtr->PeakTime();
@@ -821,6 +845,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 // hits. If this condition is not satisfied it means one or more hits making the SpacePoint are noise hits
                 if (recobHitToVoxelIterVec.size() == 3)
                 {
+    /*
                     bool ghostHit(true);
                     
                     // Find the intersection of the vectors of IDEs for the first two hits
@@ -879,6 +904,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                         fAveragePHGhostVec.push_back(averagePH);
                         fLargestDelTGhostVec.push_back(largestDelT);
                     }
+    */
                 }
                 else
                 {
