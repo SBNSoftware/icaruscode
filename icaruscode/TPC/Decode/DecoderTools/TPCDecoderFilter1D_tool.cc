@@ -296,7 +296,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    std::cout << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << std::endl;
+    mf::LogDebug("TPCDecoderFilter1D") << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << std::endl;
 
     return;
 }
