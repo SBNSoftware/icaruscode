@@ -2071,6 +2071,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       maxPrimitives = cryoMaxPrimitives; 
       maxPrimitiveTime = cryoMaxPrimitiveTime;
       primitiveCount = pCount;
+      mostPrimitives = pCount.openingCount(pCount.findMaxOpen());
     }
   }
 
