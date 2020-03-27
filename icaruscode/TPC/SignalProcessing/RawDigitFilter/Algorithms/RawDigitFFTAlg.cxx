@@ -1,4 +1,3 @@
-
 #include "RawDigitFFTAlg.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -7,6 +6,7 @@
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
