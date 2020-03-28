@@ -2134,14 +2134,17 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   detinfo::DetectorTimings::optical_tick maxPrimitiveTime;
   unsigned int mostPrimitives = 0;
 
-  for ( TriggerGateData_t pCount : (primitiveCounts)) {
+  for (TriggerGateData_t const& pCount: primitiveCounts) {
     detinfo::DetectorTimings::optical_tick const cryoMaxPrimitiveTime
       { pCount.findMaxOpen() };
     PrimitiveCount_t const cryoMaxPrimitives {
       cryoMaxPrimitiveTime.value(),
-      pCount.openingCount(maxPrimitiveTime.value())
+      pCount.openingCount(cryoMaxPrimitiveTime.value())
       };
 
+    mf::LogTrace(fLogCategory)
+      << "Maximum primitive counts in group: " << cryoMaxPrimitives.second
+      << " (at " << cryoMaxPrimitiveTime << ")";
     // largest number of trigger primitives in all cryostats
     if (pCount.openingCount(pCount.findMaxOpen()) > mostPrimitives) {
       maxPrimitives = cryoMaxPrimitives; 
