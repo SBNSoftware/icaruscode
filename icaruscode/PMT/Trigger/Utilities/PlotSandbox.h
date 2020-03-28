@@ -146,7 +146,11 @@ class icarus::trigger::PlotSandbox {
   
   /// Helper function for `findSandbox()` implementations.
   template <typename SandboxType>
-  static auto findSandbox(SandboxType& sandbox, std::string const& name);
+  static auto* findSandbox(SandboxType& sandbox, std::string const& name);
+  
+  /// Helper function for `demandSandbox()` implementations.
+  template <typename SandboxType>
+  static auto& demandSandbox(SandboxType& sandbox, std::string const& name);
   
   
     public:
@@ -243,6 +247,21 @@ class icarus::trigger::PlotSandbox {
   Obj* use(std::string const& name) const;
   
   /**
+   * @brief Fetches an object with the specified name to be modified.
+   * @tparam Obj (default: `TObject`) type of the object to fetch
+   * @param name unprocessed name and path of the object to fetch
+   * @return the requested object
+   * @throw cet::exception (category: `"PlotSandbox"`) if no object with `name`
+   *        exists in the box
+   * @see `get()`, `use()`
+   * 
+   * This method is equivalent to `use()`, with the difference that the
+   * returned object must exist.
+   */
+  template <typename Obj = TObject>
+  Obj& demand(std::string const& name) const;
+  
+  /**
    * @brief Fetches the directory with the specified name from the sandbox.
    * @tparam DirObj (default: `TDirectory`) type of ROOT directory object to get
    * @param path path of the directory to fetch within this sandbox
@@ -308,9 +327,23 @@ class icarus::trigger::PlotSandbox {
    * @brief Returns the first contained sandbox with the specified name.
    * @param name unprocessed name of the box to be retrieved
    * @return the requested contained sandbox, or `nullptr` if not found
+   * @see `demandSandbox()`
    */
   PlotSandbox const* findSandbox(std::string const& name) const;
   PlotSandbox* findSandbox(std::string const& name);
+  // @}
+  
+  // @{
+  /**
+   * @brief Returns the first contained sandbox with the specified name.
+   * @param name unprocessed name of the box to be retrieved
+   * @return the requested contained sandbox
+   * @throw cet::exception (category: `"PlotSandbox"`) if no a sandbox with this
+   *        `name` exists
+   * @see `findSandbox()`
+   */
+  PlotSandbox const& demandSandbox(std::string const& name) const;
+  PlotSandbox& demandSandbox(std::string const& name);
   // @}
   
   // @{
@@ -371,6 +404,11 @@ class icarus::trigger::PlotSandbox {
   /// processed object descriptions.
   virtual std::string processedSandboxDesc() const;
 
+  /// Dumps the content of this box (nosubboxes) into `out` stream.
+  template <typename Stream>
+  void dumpContent
+    (Stream&& out, std::string indent, std::string firstIndent) const;
+  
   
   /// Retrieves or, if not present, creates a ROOT subdirectory in the sandbox.
   /// Returns a pair with the directory and the name part of `path`.
@@ -446,7 +484,23 @@ Obj* icarus::trigger::PlotSandbox::use(std::string const& name) const {
   std::string const processedName = processName(objName);
   return dir->Get<Obj>(processedName.c_str());
   
-} // icarus::trigger::PlotSandbox::get()
+} // icarus::trigger::PlotSandbox::use()
+
+
+//------------------------------------------------------------------------------
+template <typename Obj /* = TObject */>
+Obj& icarus::trigger::PlotSandbox::demand(std::string const& name) const {
+  
+  auto* obj = use<Obj>(name);
+  if (obj) return *obj;
+  cet::exception e { "PlotSandbox" };
+  e << "PlotSandbox::demand(): object '" << name
+    << "' not available in the sandbox '" << ID() << "'"
+    << "\nBox content: ";
+  dumpContent(e, "", ""); // no indent
+  
+  throw e << "\n";
+} // icarus::trigger::PlotSandbox::demand()
 
 
 //------------------------------------------------------------------------------
@@ -501,12 +555,37 @@ SandboxType& icarus::trigger::PlotSandbox::addSubSandbox
 
 //------------------------------------------------------------------------------
 template <typename SandboxType>
-auto icarus::trigger::PlotSandbox::findSandbox
+auto* icarus::trigger::PlotSandbox::findSandbox
   (SandboxType& sandbox, std::string const& name)
 {
   auto const it = sandbox.fData.subBoxes.find(name);
   return (it == sandbox.fData.subBoxes.end())? nullptr: it->second.get();
 }
+
+
+//------------------------------------------------------------------------------
+template <typename SandboxType>
+auto& icarus::trigger::PlotSandbox::demandSandbox
+  (SandboxType& sandbox, std::string const& name)
+{
+  auto* box = findSandbox(sandbox, name);
+  if (box) return *box;
+  
+  cet::exception e { "PlotSandbox" };
+  e << "PlotSandbox::demandSandbox(): box '" << name
+    << "' not available in the sandbox '" << sandbox.ID() << "'";
+  if (sandbox.nSubSandboxes()) {
+    e << "\n" << "Available nested boxes (" << sandbox.nSubSandboxes() << "):";
+    for (auto const& subbox: sandbox.subSandboxes())
+      e << "\n * '" << subbox.ID() << "'";
+  } // if has subboxes
+  else {
+    e << "  (no contained box!)";
+  }
+  throw e << "\n";
+
+} // icarus::trigger::PlotSandbox::demandSandbox(SandboxType)
+
 
 
 //------------------------------------------------------------------------------
@@ -518,31 +597,8 @@ void icarus::trigger::PlotSandbox::dump
   if (hasName()) out << "Box '" << name() << "'";
   else           out << "Unnamed box";
   if (hasDescription()) out << " (\"" << description() << "\")";
-  out << " [ID=" << ID() << "]";
-  
-  TDirectory const* pDir = fData.outputDir.fROOTdir;
-  if (pDir) {
-    TList const* objects = pDir->GetList();
-    TList const* keys = pDir->GetListOfKeys();
-    if (objects && !objects->IsEmpty()) {
-      out << " with " << objects->GetSize() << " direct entries:";
-      for (TObject const* obj: *objects) {
-        out << "\n" << indent << "  '" << obj->GetName() << "'  ["
-          << obj->IsA()->GetName() << "]";
-      } // for objects
-    }
-    if (keys) {
-      for (TObject const* keyObj: *keys) {
-        auto key = dynamic_cast<TKey const*>(keyObj);
-        if (!key) continue;
-        if (objects->Contains(key->GetName())) continue; // already in objects
-        out << "\n" << indent
-          << "[KEY]  '" << key->GetName() << "'  ["
-          << key->GetClassName() << "]"
-          ;
-      } // for
-    } // if has keys
-  } // if pDir
+  out << " [ID=" << ID() << "] with ";
+  dumpContent(std::forward<Stream>(out), indent, "");
   
   if (nSubSandboxes()) {
     out << "\n" << indent << "Nested boxes (" << nSubSandboxes() << "):";
@@ -552,6 +608,44 @@ void icarus::trigger::PlotSandbox::dump
     }
   } // if has subboxes
 } // icarus::trigger::PlotSandbox::dump()
+
+
+//------------------------------------------------------------------------------
+template <typename Stream>
+void icarus::trigger::PlotSandbox::dumpContent
+  (Stream&& out, std::string indent, std::string firstIndent) const
+{
+  out << firstIndent;
+  
+  TDirectory const* pDir = fData.outputDir.fROOTdir;
+  if (!pDir) {
+    out << "no content available";
+    return;
+  }
+  
+  TList const* objects = pDir->GetList();
+  TList const* keys = pDir->GetListOfKeys();
+  if (objects && !objects->IsEmpty()) {
+    out << objects->GetSize() << " direct entries:";
+    for (TObject const* obj: *objects) {
+      out << "\n" << indent << "  '" << obj->GetName() << "'  ["
+        << obj->IsA()->GetName() << "]";
+    } // for objects
+  }
+  else out << "no direct entries;";
+  if (keys) {
+    for (TObject const* keyObj: *keys) {
+      auto key = dynamic_cast<TKey const*>(keyObj);
+      if (!key) continue;
+      if (objects->Contains(key->GetName())) continue; // already in objects
+      out << "\n" << indent
+        << "[KEY]  '" << key->GetName() << "'  ["
+        << key->GetClassName() << "]"
+        ;
+    } // for
+  } // if has keys
+  
+} // icarus::trigger::PlotSandbox::dumpContent()
 
 
 //------------------------------------------------------------------------------
