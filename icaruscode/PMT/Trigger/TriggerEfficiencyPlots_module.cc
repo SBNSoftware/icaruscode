@@ -1566,6 +1566,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
   
+  /// Returns a gate that is `Max()` of all the specified `gates`.
+  template <typename TrigGateColl>
+  static auto computeMaxGate(TrigGateColl const& gates);
+
+  
 }; // icarus::trigger::TriggerEfficiencyPlots
 
 
@@ -2291,6 +2296,25 @@ GateObject icarus::trigger::TriggerEfficiencyPlots::applyBeamGate
 
 
 //------------------------------------------------------------------------------
+// out-of-order definition, needs to be before `plotResponses()`
+template <typename TrigGateColl>
+auto icarus::trigger::TriggerEfficiencyPlots::computeMaxGate
+  (TrigGateColl const& gates)
+{
+  
+  // if `gates` is empty return a default-constructed gate of the contained type
+  if (empty(gates)) return decltype(*begin(gates)){};
+  
+  auto iGate = cbegin(gates);
+  auto const gend = cend(gates);
+  auto maxGate = *iGate;
+  while (++iGate != gend) maxGate.Max(*iGate);
+  
+  return maxGate;
+} // icarus::trigger::TriggerEfficiencyPlots::computeMaxGate()
+
+
+//------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   std::size_t iThr,
   icarus::trigger::ADCCounts_t const threshold,
@@ -2322,36 +2346,20 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
-  // largest number of trigger primitives at any time TODO
-  PrimitiveCount_t maxPrimitives;
-  TriggerGateData_t primitiveCount;
-  detinfo::DetectorTimings::optical_tick maxPrimitiveTime;
-  unsigned int mostPrimitives = 0;
-
-  for (TriggerGateData_t const& pCount: primitiveCounts) {
-    detinfo::DetectorTimings::optical_tick const cryoMaxPrimitiveTime
-      { pCount.findMaxOpen() };
-    PrimitiveCount_t const cryoMaxPrimitives {
-      cryoMaxPrimitiveTime.value(),
-      pCount.openingCount(cryoMaxPrimitiveTime.value())
-      };
-
-    mf::LogTrace(fLogCategory)
-      << "Maximum primitive counts in group: " << cryoMaxPrimitives.second
-      << " (at " << cryoMaxPrimitiveTime << ")";
-    // largest number of trigger primitives in all cryostats
-    if (pCount.openingCount(pCount.findMaxOpen()) > mostPrimitives) {
-      maxPrimitives = cryoMaxPrimitives; 
-      maxPrimitiveTime = cryoMaxPrimitiveTime;
-      primitiveCount = pCount;
-      mostPrimitives = pCount.openingCount(pCount.findMaxOpen());
-    }
-  }
+  // largest number of trigger primitives at any time
+  assert(!primitiveCounts.empty());
+  auto const primitiveCount = computeMaxGate(primitiveCounts);
+  
+  auto const maxPrimitiveTime { primitiveCount.findMaxOpen() };
+  PrimitiveCount_t const maxPrimitives
+    { maxPrimitiveTime, primitiveCount.openingCount(maxPrimitiveTime) };
 
   mf::LogTrace(fLogCategory)
     << "Max primitive count in " << threshold << ": "
-    << maxPrimitives.second << " at tick " << maxPrimitives.first
-    << " (" << fDetTimings.toElectronicsTime(maxPrimitiveTime) << ")"
+    << maxPrimitives.second << " at tick " << maxPrimitives.first << " ("
+    << fDetTimings.toElectronicsTime
+      (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
+    << ")"
     ;
   
   /*
