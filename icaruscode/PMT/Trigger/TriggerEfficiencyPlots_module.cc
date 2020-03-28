@@ -142,6 +142,13 @@ struct EventInfo_t {
   /// Returns the total energy deposited in the detector during beam [GeV]
   GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
 
+  /// Returns the energy deposited in the active volume during the event [GeV]
+  GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
+  
+  /// Returns the energy deposited in the active volume during the beam [GeV]
+  GeV DepositedEnergyInSpillInActiveVolume() const
+    { return fEnergyDepSpillActive; }
+
   // Returns the neutrino energy [GeV]
   GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
 
@@ -186,6 +193,14 @@ struct EventInfo_t {
   /// Sets the energy of the event deposited during beam gate [GeV]
   void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
 
+  /// Sets the total deposited energy of the event in active volume [GeV]
+  void SetDepositedEnergyInActiveVolume(GeV e) { fEnergyDepActive = e; }
+
+  /// Sets the energy of the event deposited during beam gate in active volume
+  /// [GeV]
+  void SetDepositedEnergyInActiveVolumeInSpill(GeV e)
+    { fEnergyDepSpillActive = e; }
+
   // Sets the neutrino energy.
   void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
 
@@ -227,7 +242,10 @@ struct EventInfo_t {
         out << " no neutrino interaction";
       }
       out << "\nTotal deposited energy: " << DepositedEnergy()
-        << ", of which in spill " << DepositedEnergyInSpill();
+        << ", of which in spill " << DepositedEnergyInSpill()
+        << ", in active volume " << DepositedEnergyInActiveVolume()
+        << ", in active volume and in spill "
+          << DepositedEnergyInSpillInActiveVolume();
       if (fVertices.empty()) {
         out << "\nNo interaction vertex found.";
       }
@@ -257,8 +275,11 @@ struct EventInfo_t {
 
   std::array<unsigned int, NInteractionTypes> fInteractions;
 
-  GeV fEnergyDepTotal { 0.0 }; ///< Total deposited energy [GeV]
-  GeV fEnergyDepSpill { 0.0 }; ///< Total deposited energy [GeV]
+  GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
+  GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
+  GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
+  /// Energy deposited in active volume in spill.
+  GeV fEnergyDepSpillActive { 0.0 };
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
@@ -512,6 +533,8 @@ struct EventInfoTree: public TreeHolder {
   Double_t fOutLeptE;
   Double_t fTotE;
   Double_t fSpillE;
+  Double_t fActiveE;
+  Double_t fSpillActiveE;
   
   Bool_t fInActive;
   
@@ -1877,6 +1900,14 @@ void icarus::trigger::TriggerEfficiencyPlots::initializeEfficiencyPerTriggerPlot
     );
   
   plots.make<TEfficiency>(
+    "EffVsEnergyInSpillActive",
+    "Efficiency of triggering vs. energy deposited in active volume"
+      ";energy deposited in active volume in spill  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  
+  plots.make<TEfficiency>(
     "EffVsNeutrinoEnergy",
     "Efficiency of triggering vs. neutrino energy"
       ";neutrino true energy  [ GeV ]"
@@ -1942,6 +1973,13 @@ void icarus::trigger::TriggerEfficiencyPlots::initializeEventPlots
     "EnergyInSpill",
     "Energy deposited during the beam gate opening"
       ";energy deposited in spill [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1F>(
+    "EnergyInSpillActive",
+    "Energy deposited during the beam gate opening in active volume"
+      ";energy deposited in active volume in spill [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
@@ -2071,6 +2109,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
   // propagation in the detector
   //
   GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
+  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 };
   
   for (art::InputTag const& edepTag: fEnergyDepositTags) {
     
@@ -2091,12 +2130,19 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
       totalEnergy += e;
       if (inSpill) inSpillEnergy += e;
       
+      if (pointInActiveTPC(edep.MidPoint())) {
+        activeEnergy += e;
+        if (inSpill) inSpillActiveEnergy += e;
+      }
+      
     } // for all energy deposits in the data product
     
   } // for all energy deposit tags
   
   info.SetDepositedEnergy(totalEnergy);
   info.SetDepositedEnergyInSpill(inSpillEnergy);
+  info.SetDepositedEnergyInActiveVolume(activeEnergy);
+  info.SetDepositedEnergyInActiveVolumeInSpill(inSpillActiveEnergy);
   
   mf::LogTrace(fLogCategory) << "Event " << event.id() << ": " << info;
   
@@ -2315,6 +2361,8 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
       // efficiency plots
       getTrigEff.Eff("EffVsEnergyInSpill").Fill
         (fired, double(eventInfo.DepositedEnergyInSpill()));
+      getTrigEff.Eff("EffVsEnergyInSpillActive").Fill
+        (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
       getTrigEff.Eff("EffVsNeutrinoEnergy").Fill
         (fired, double(eventInfo.NeutrinoEnergy()));
       getTrigEff.Eff("EffVsLeptonEnergy").Fill
@@ -2332,6 +2380,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
         { getTrigEff.box().demandSandbox(fired? "triggering": "nontriggering") };
       
       getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+      getTrig.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
       if (eventInfo.isNeutrino()) {
         getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
         getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
@@ -2371,6 +2420,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     
     // selection-related plots:
     get.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+    get.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
     
     if (eventInfo.isNeutrino()) {
       get.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
@@ -2485,9 +2535,11 @@ EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
   this->tree().Branch("NuE",      &fNuE);
   this->tree().Branch("OutLeptE", &fOutLeptE);
   
-  this->tree().Branch("TotE",     &fTotE);
-  this->tree().Branch("SpillE",   &fSpillE);
-  this->tree().Branch("InActive", &fInActive);
+  this->tree().Branch("TotE",         &fTotE);
+  this->tree().Branch("SpillE",       &fSpillE);
+  this->tree().Branch("ActiveE",      &fActiveE);
+  this->tree().Branch("SpillActiveE", &fSpillActiveE);
+  this->tree().Branch("InActive",     &fInActive);
   
 } // EventInfoTree::EventInfoTree()
 
@@ -2501,9 +2553,11 @@ void EventInfoTree::assignEvent(EventInfo_t const& info) {
   fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
   fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
 
-  fTotE     = static_cast<Double_t>(info.DepositedEnergy());
-  fSpillE   = static_cast<Double_t>(info.DepositedEnergyInSpill());
-  fInActive = static_cast<Bool_t>(info.isInActiveVolume());
+  fTotE         = static_cast<Double_t>(info.DepositedEnergy());
+  fSpillE       = static_cast<Double_t>(info.DepositedEnergyInSpill());
+  fActiveE      = static_cast<Double_t>(info.DepositedEnergyInActiveVolume());
+  fSpillActiveE = static_cast<Double_t>(info.DepositedEnergyInSpillInActiveVolume());
+  fInActive     = static_cast<Bool_t>(info.isInActiveVolume());
   
 } // EventInfoTree::assignEvent()
 
