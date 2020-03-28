@@ -842,11 +842,63 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * current events with 15 ADC counts as PMT threshold).
  * 
  * Each set of plots, defined in
- * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`, is
- * contributed only by the events in the set category.
+ * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`
+ * (and, within, `initializeEventPlots()`
+ * and `initializeEfficiencyPerTriggerPlots()`), is contributed only by the
+ * events in the set category.
  * 
- * Some plots are specific to the trigger, and they are different according to
- * the ADC threshold:
+ * There are different "types" of plots. Some
+ * @ref TriggerEfficiencyPlots_SelectionPlots "do not depend on triggering at all",
+ * like the deposited energy distribution. Others
+ * @ref TriggerEfficiencyPlots_MultiTriggerPlots "cross different trigger definitions",
+ * like the trigger efficiency as function of trigger requirement. Others still
+ * @ref TriggerEfficiencyPlots_SingleTriggerPlots "assume a single trigger definition":
+ * this is the case of trigger efficiency plots versus energy. Finally, there are
+ * @ref TriggerEfficiencyPlots_SingleTriggerResponsePlots "plots that depend on a specific trigger definition and outcome":
+ * this is the case of all the plots including only triggering or non-triggering
+ * events.
+ * 
+ * A list of plots follows for each plot type.
+ * All the plots are always relative to a specific optical detector channel
+ * threshold (ADC) and a broad event category.
+ * 
+ * 
+ * ### Plots independent of the triggers (selection plots)
+ * 
+ * @anchor TriggerEfficiencyPlots_SelectionPlots
+ * 
+ * These plots are stored directly in a threshold/category folder:
+ * 
+ * * `EnergyInSpill`: total energy deposited in the detector during the time the
+ *   beam gate is open. It is proportional to the amount of scintillation light
+ *   in the event;
+ * * `EnergyInSpillActive`: energy deposited in the active volume of the
+ *   detector during the time the beam gate is open; the active volume is
+ *   defined as the union of all TPC drift voulmes;
+ * * plots specific to neutrino interactions (if the event is not a neutrino
+ *   interaction, it will not contribute to them); if not otherwise specified,
+ *   only the first neutrino interaction in the event is considered:
+ *     * `InteractionType`: code of the interaction type, as in
+ *       `sim::TruthInteractionTypeName`;
+ *     * `NeutrinoEnergy`: generated energy of the interacting neutrino;
+ *     * `LeptonEnergy`: generated energy of the lepton out of the _first_
+ *       neutrino interaction;
+ *     * `InteractionVertexYZ`: coordinates of the location of all interactions
+ *       in the event, in world coordinates, projected on the anode plane.
+ * 
+ * @note In fact, these plots usually do not even depend on the ADC threshold
+ *       of the optical detector channels. Nevertheless, they are stored in the
+ *       folders under specific thresholds, and they are duplicate.
+ * 
+ * 
+ * ### Plots including different trigger requirements
+ * 
+ * @anchor TriggerEfficiencyPlots_MultiTriggerPlots
+ * 
+ * These plots collect information from scenarios with different trigger
+ * requirements, but still with the same underlying optical detector channel
+ * ADC threshold.
+ * They are also stored in the threshold/category folder:
  * 
  * * `Eff`: trigger efficiency defined as number of triggered events over the
  *   total number of events, as function of the minimum number of trigger
@@ -862,32 +914,51 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *   30-primitive flash. Each event appears at most once for each trigger
  *   requirement, and it may not appear at all if does not fire a trigger.
  * * `NPrimitives`: the maximum number of primitives "on" at any time.
- * * plots specific to each requirement are also drawn, splitting triggering
- *   and non-triggering events; in each subfolder:
- *     * `ReqXX`, containing information for trigger with minimum required
- *       primitives `XX`;
- *     * `triggering` and `nontriggering`, which contain only the events which
- *       triggered the requirement in the parent folder.
- *   Each of these sets replicates the plots listed as independent of the
- *   trigger below.
  * 
- * Some plots are independent of the ADC threshold and trigger requirements and
- * they have the same content in each of the plot set for a given event
- * category:
  * 
- * * `EnergyInSpill`: total energy deposited in the detector during the time the
- *   beam gate is open. It is proportional to the amount of scintillation light
- *   in the event;
- * * plots specific to neutrino interactions (if the event is not a neutrino
- *   interaction, it will not contribute to them); if not otherwise specified,
- *   only the first neutrino interaction in the event is considered:
- *     * `NeutrinoEnergy`: generated energy of the interacting neutrino;
- *     * `InteractionType`: code of the interaction type, as in
- *       `sim::TruthInteractionTypeName`;
- *     * `LeptonEnergy`: generated energy of the lepton out of the _first_
- *       neutrino interaction;
- *     * `NeutrinoVertexYZ`: coordinates of the location of all interactions
- *       in the event, in world coordinates, projected on the anode plane.
+ * ### Plots depending on a specific trigger definition
+ * 
+ * @anchor TriggerEfficiencyPlots_SingleTriggerPlots
+ * 
+ * The following plots depend on the full definition of the trigger, including
+ * PMT thresholds _and_ other requirements.
+ * They are hosted each in a subfolder of the threshold/category folder, with
+ * a name encoding the requirement: `ReqXX` for trigger with minimum required
+ * primitives `XX`.
+ * 
+ * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
+ *   deposited during the beam gate;
+ * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
+ *   deposited in the TPC active volumes during the beam gate;
+ * * `EffVsNeutrinoEnergy`, `EffVsLeptonEnergy`: trigger efficiency as function
+ *   of the true energy of the first interacting neutrino, and of the outgoing
+ *   lepton in the final state of the interaction, respectively;
+ * * `TriggerTick`: time of the earliest trigger. Only triggering events
+ *   contribute.
+ * 
+ * The parameters are defined in the same way as in the
+ * @ref TriggerEfficiencyPlots_SelectionPlots "selection plots", unless stated
+ * otherwise.
+ *
+ *
+ * ### Plots depending on a specific trigger definition and response
+ *
+ * @anchor TriggerEfficiencyPlots_SingleTriggerResponsePlots
+ *
+ * These plots depend on the trigger definition, as the ones in the previous
+ * type, and on the actual trigger response.
+ * They are hosted each in a subfolder of the threshold/category/requirement
+ * folder, with a name encoding the response: `triggering` for triggering
+ * events, `nontriggering` for the others.
+ * 
+ * Their event pool is filtered to include only the events in the current
+ * category which also pass, or do not pass, the trigger requirement.
+ * 
+ * The plots are:
+ * * `EnergyInSpill`, `EnergyInSpillActive`, `InteractionType`,
+ *   `NeutrinoEnergy`,`LeptonEnergy`, `InteractionVertexYZ`:
+ *   these are defined in the same way as the
+ *   @ref TriggerEfficiencyPlots_SelectionPlots "selection plots"
  * 
  * 
  * Configuration parameters
