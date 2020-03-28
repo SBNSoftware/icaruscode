@@ -1385,9 +1385,16 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// Initializes all the plot sets, one per threshold.
   void initializePlots(PlotCategories_t const& categories);
 
-  /// Initializes a single plot set (ADC threshold + category) into `plots`.
+  /// Initializes full set of plots for (ADC threshold + category) into `plots`.
   void initializePlotSet(PlotSandbox& plots) const;
 
+  /// Initializes set of plots per complete trigger definition into `plots`.
+  void initializeEfficiencyPerTriggerPlots(PlotSandbox& plots) const;
+  
+  /// Initializes a single, trigger-independent plot set into `plots`.
+  void initializeEventPlots(PlotSandbox& plots) const;
+  
+  
   /// Returns whether an event with the specified information should be included
   /// in the plots at all (it's a filter).
   bool shouldPlotEvent(EventInfo_t const& eventInfo) const;
@@ -1784,78 +1791,34 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   //
   // Selection-related plots
   //
-  plots.make<TH1F>(
-    "EnergyInSpill",
-    "Energy deposited during the beam gate opening"
-      ";deposited energy  [ GeV ]"
-      ";events  [ / 50 MeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-    );
+  initializeEventPlots(plots);
   
-  plots.make<TH2F>(
-    "NeutrinoVertexYZ",
-    "Vertex of triggered neutrino"
-      ";Z [cm]"
-      ";Y [cm]",
-    120,-1200.,1200.,
-    120,-500.,350.
-    );
 
   //
-  // sub-sandboxes
+  // Plots per trigger setting, split in triggering and not triggering events;
+  // the plot set is the same as the "global" one.
   //
   using SS_t = std::pair<std::string, std::string>;
-  std::array<SS_t, 3U> const classes {
+  std::array<SS_t, 2U> const classes {
     SS_t{ "triggering", "triggering events" },
-    SS_t{ "nontriggering", "non-triggering events" },
+    SS_t{ "nontriggering", "non-triggering events" }
     };
   for (auto minCount: fMinimumPrimitives) {
     
     std::string const minCountStr = std::to_string(minCount);
     
+    // this defines a specific trigger, with its thresholds and settings
     PlotSandbox& reqBox = plots.addSubSandbox
       ("Req" + minCountStr, minCountStr + " channels required");
     
+    initializeEfficiencyPerTriggerPlots(reqBox);
     
     for (auto const& [ name, desc ]: classes) {
+      
       PlotSandbox& box = reqBox.addSubSandbox(name, desc);
       
-      box.make<TH1F>(
-        "NeutrinoEnergy",
-        "True Neutrino Energy"
-          ";neutrino energy [GeV]"
-          ";events",
-        120,0.0,6.0 // GeV
-      );
-      box.make<TH1F>(
-        "EnergyInSpill",
-        "Energy deposited during the beam gate opening"
-          ";deposited energy  [ GeV ]"
-          ";events  [ / 50 MeV ]",
-        120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-        );
-      box.make<TH1I>(
-        "InteractionType",
-        "Interaction type"
-          ";Interaction Type"
-          ";events  [ / 50 MeV ]",
-        200, 999.5, 1199.5
-        );
-      box.make<TH1F>(
-        "LeptonEnergy",
-        "Energy of outgoing lepton"
-          ";deposited energy  [ GeV ]"
-          ";events  [ / 50 MeV ]",
-        120, 0.0, 6.0
-        );
-      box.make<TH2F>(
-        "NeutrinoVertexYZ",
-        "Vertex of triggered neutrino"
-          ";Z [cm]"
-          ";Y [cm]",
-        120,-1200.,1200.,
-        120,-500.,350.
-        );
+      initializeEventPlots(box);
+      
     } // for triggering requirement
   } // for triggering classes
   
@@ -1886,12 +1849,126 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   plots.make<TH1F>(
     "LeptonEnergy_NoTrig",
     "Energy of outgoing lepton of Non-Triggered Event"
-      ";deposited energy  [ GeV ]"
+      ";lepton generated energy  [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 
     );
  
 } // icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlots::initializeEfficiencyPerTriggerPlots
+  (PlotSandbox& plots) const
+{
+  
+  detinfo::timescales::optical_time_ticks const triggerResolutionTicks
+    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
+  
+  //
+  // Triggering efficiency vs. something else
+  //
+  plots.make<TEfficiency>(
+    "EffVsEnergyInSpill",
+    "Efficiency of triggering vs. energy deposited in spill"
+      ";energy deposited in spill  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsNeutrinoEnergy",
+    "Efficiency of triggering vs. neutrino energy"
+      ";neutrino true energy  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV is not that much for NuMI, but we should be ok
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsLeptonEnergy",
+    "Efficiency of triggering vs. outgoing lepton energy"
+      ";final state lepton true energy  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0
+    );
+  
+  plots.make<TH1F>(
+    "TriggerTick",
+    "Trigger time tick"
+      ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
+    (fBeamGateOpt.second - fBeamGateOpt.first) / triggerResolutionTicks,
+    fBeamGateOpt.first.value(), fBeamGateOpt.second.value()
+    );
+  
+} // initializeEfficiencyPerTriggerPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlots::initializeEventPlots
+  (PlotSandbox& plots) const
+{
+  
+  // a variable binning for the required number of trigger primitives
+  auto [ minimumPrimBinning, minimumPrimBinningLabels ]
+    = util::ROOT::makeVariableBinningAndLabels(fMinimumPrimitives);
+  assert(minimumPrimBinning.size() == minimumPrimBinningLabels.size() + 1U);
+
+  {
+    mf::LogTrace log(fLogCategory);
+    log << "TriggerEfficiencyPlots (plots '"
+      << plots.name() << "') variable binning including the "
+      << fMinimumPrimitives.size() << " points {";
+    for (auto value: fMinimumPrimitives) log << " " << value;
+    log << " } => " << minimumPrimBinningLabels.size() << " bins: ";
+    for (auto const& [ value, label ]
+      : util::zip<1U>(minimumPrimBinning, minimumPrimBinningLabels))
+    {
+      log << " " << value << " (\"" << label << "\") =>";
+    } // for
+    log << " " << minimumPrimBinning.back();
+  } // debug output block
+
+  //
+  // Selection-related plots
+  //
+  plots.make<TH1F>(
+    "NeutrinoEnergy",
+    "True Neutrino Energy"
+      ";neutrino energy [GeV]"
+      ";events",
+    120, 0.0, 6.0 // GeV
+  );
+  plots.make<TH1F>(
+    "EnergyInSpill",
+    "Energy deposited during the beam gate opening"
+      ";energy deposited in spill [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1I>(
+    "InteractionType",
+    "Interaction type"
+      ";Interaction Type"
+      ";events",
+    200, 999.5, 1199.5
+    );
+  plots.make<TH1F>(
+    "LeptonEnergy",
+    "Energy of outgoing lepton"
+      ";deposited energy  [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0
+    );
+  plots.make<TH2F>(
+    "InteractionVertexYZ",
+    "Vertex of triggered interaction"
+      ";Z [ / 20 cm ]"
+      ";Y [ / 5 cm ]",
+    120, -1200., +1200.,
+    100,  -250.,  +250.
+    );
+  
+} // icarus::trigger::TriggerEfficiencyPlots::initializeEventPlots()
 
 
 //------------------------------------------------------------------------------
@@ -2169,6 +2246,23 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
+  
+  class HistGetter { // helper, since this seems "popular"
+    PlotSandbox const& plots;
+    
+      public:
+    HistGetter(PlotSandbox const& plots): plots(plots) {}
+    
+    PlotSandbox const& box() const { return plots; }
+    
+    TH1& Hist(std::string const& name) const { return plots.demand<TH1>(name); }
+    TH2& Hist2D(std::string const& name) const { return plots.demand<TH2>(name); }
+    TEfficiency& Eff(std::string const& name) const
+      { return plots.demand<TEfficiency>(name); }
+    
+  }; // class HistGetter
+  
+  
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
     if (fired && (lastMinCount.second < minCount)) {
@@ -2197,52 +2291,65 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     // go through all the plot categories this event qualifies for
     for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
       
-      auto getEff = [&plotSet](std::string const& name)
-        { return plotSet.use<TEfficiency>(name); };
-      auto getHist2D = [&plotSet](std::string const& name)
-        { return plotSet.use<TH2>(name); };
-      auto getHist = [&plotSet](std::string const& name)
-        { return plotSet.use<TH1>(name); };
-      
-      // returns a 1D histogram from the proper subset: triggered or not
-      PlotSandbox const& trigHists
-        = *(plotSet.findSandbox(minCountStr)
-        ->findSandbox(fired? "triggering": "nontriggering"));
-      auto getTrigHist = [&trigHists](std::string const& name)
-        { return trigHists.use<TH1>(name); };
-      auto getTrigHist2D = [&trigHists](std::string const& name)
-        { return trigHists.use<TH2>(name); };
+      HistGetter const get { plotSet };
       
       // simple efficiency
-      getEff("Eff"s)->Fill(fired, minCount);
-
+      get.Eff("Eff"s).Fill(fired, minCount);
+      
       // trigger time (if any)
       if (fired) {
-        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first);
+        get.Hist2D("TriggerTick"s).Fill(minCount, lastMinCount.first);
         if (minCount == 1) {
           for (auto point : eventInfo.fVertices) {
-            getHist2D("NeutrinoVertexYZ"s)->Fill(point.Z(), point.Y());
+            get.Hist2D("InteractionVertexYZ"s).Fill(point.Z(), point.Y());
           }
         }
       }
       
-      // plotting split for triggering/not triggering events
-      getTrigHist("EnergyInSpill"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-      if (eventInfo.isNeutrino()) {
-        getTrigHist("NeutrinoEnergy"s)->Fill(double(eventInfo.NeutrinoEnergy()));
-        getTrigHist("InteractionType"s)->Fill(eventInfo.InteractionType());
-        getTrigHist("LeptonEnergy"s)->Fill(double(eventInfo.LeptonEnergy()));
+      //
+      // plotting specific to this trigger definition
+      //
+      
+      HistGetter const getTrigEff { plotSet.demandSandbox(minCountStr) };
+      
+      // efficiency plots
+      getTrigEff.Eff("EffVsEnergyInSpill").Fill
+        (fired, double(eventInfo.DepositedEnergyInSpill()));
+      getTrigEff.Eff("EffVsNeutrinoEnergy").Fill
+        (fired, double(eventInfo.NeutrinoEnergy()));
+      getTrigEff.Eff("EffVsLeptonEnergy").Fill
+        (fired, double(eventInfo.LeptonEnergy()));
+      if (fired) {
+        getTrigEff.Hist("TriggerTick"s).Fill(lastMinCount.first);
       }
-      TH2* vertexHist = getTrigHist2D("NeutrinoVertexYZ"s);
-      for (auto const& point: eventInfo.fVertices)
-        vertexHist->Fill(point.Z(), point.Y());
 
+      
+      //
+      // plotting split for triggering/not triggering events
+      //
+      
+      HistGetter const getTrig
+        { getTrigEff.box().demandSandbox(fired? "triggering": "nontriggering") };
+      
+      getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+      if (eventInfo.isNeutrino()) {
+        getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
+        getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
+        getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+      } // if neutrino event
+      TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
+      for (auto const& point: eventInfo.fVertices)
+        vertexHist.Fill(point.Z(), point.Y());
+      
+
+      //
       // non triggered events
-      if (fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
-        getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-        getHist("NeutrinoEnergy_NoTrig"s)->Fill(double(eventInfo.NeutrinoEnergy()));
-        getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
-        getHist("LeptonEnergy_NoTrig"s)->Fill(double(eventInfo.LeptonEnergy()));
+      //
+      if (!fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
+        get.Hist("EnergyInSpill_NoTrig"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+        get.Hist("NeutrinoEnergy_NoTrig"s).Fill(double(eventInfo.NeutrinoEnergy()));
+        get.Hist("InteractionType_NoTrig"s).Fill(eventInfo.InteractionType());
+        get.Hist("LeptonEnergy_NoTrig"s).Fill(double(eventInfo.LeptonEnergy()));
         //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
       }
 
@@ -2255,16 +2362,24 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    * the same value is plotted in all plot sets.
    * 
    */
-  for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
-    auto getHist = [&plotSet](std::string const& name)
-      { return plotSet.use<TH1>(name); };
+  for (PlotSandbox const& plotSet: plotSets) {
     
-    // selection-related plots:
-    getHist("EnergyInSpill"s)
-      ->Fill(double(eventInfo.DepositedEnergyInSpill()));
+    HistGetter const get(plotSet);
     
     // number of primitives
-    getHist("NPrimitives"s)->Fill(maxPrimitives.second);
+    get.Hist("NPrimitives"s).Fill(maxPrimitives.second);
+    
+    // selection-related plots:
+    get.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+    
+    if (eventInfo.isNeutrino()) {
+      get.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
+      get.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
+      get.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+    } // if neutrino event
+    TH2& vertexHist = get.Hist2D("InteractionVertexYZ"s);
+    for (auto const& point: eventInfo.fVertices)
+      vertexHist.Fill(point.Z(), point.Y());
     
   } // for 
 
