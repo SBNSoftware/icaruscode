@@ -1,0 +1,90 @@
+#
+# File:    makeslidingwindowtriggerplots_icarus.fcl
+# Purpose: Runs `icarus::trigger::SlidingWindowTriggerEfficiencyPlots` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 2, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * sliding window discriminated waveforms (with threshold)
+#
+
+#include "services_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: SlideTrgPlots
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  analyzers: {
+  
+    triggerplots: {
+      
+      module_type: SlidingWindowTriggerEfficiencyPlots
+      
+      TriggerGatesTag: trigslidewindow
+      
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      
+      # minimum number of trigger primitives required for the trigger to fire
+      Patterns: [
+        {
+          inMainWindow:     3
+          inOppositeWindow: 1
+        },
+        {
+          inMainWindow:     3
+          inOppositeWindow: 3
+        }
+      ] # Patterns
+      
+      
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # message facility stream
+      LogCategory: "SlidingWindowTriggerEfficiencyPlots"
+      
+    } # triggerplots
+    
+  } # analyzers
+  
+  plots: [ triggerplots ]
+  
+  trigger_paths: []
+  end_paths: [ plots ]
+  
+} # physics
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.SlidingWindowTriggerEfficiencyPlotsLog: {
+  type:       file
+  filename:  "SlidingWindowTriggerEfficiencyPlots.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerEfficiencyPlots: { limit: -1 }
+    default:                             { limit: 0 }
+  }
+} # services.messages.destinations.SlidingWindowTriggerEfficiencyPlotsLog
+
