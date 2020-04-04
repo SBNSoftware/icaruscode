@@ -54,6 +54,18 @@ auto icarus::trigger::TriggerGateData<TK, TI>::findOpen(
 
 //------------------------------------------------------------------------------
 template <typename TK, typename TI>
+auto icarus::trigger::TriggerGateData<TK, TI>::findClose(
+  OpeningCount_t minOpening /* = 1U */,
+  ClockTick_t start /* = MinTick */, ClockTick_t end /* = MaxTick */
+) const -> ClockTick_t
+{
+  auto iStatus = findCloseStatus(minOpening, start, end);
+  return (iStatus == fGateLevel.end())? end: iStatus->tick;
+} // icarus::trigger::TriggerGateData<>::findClose()
+
+
+//------------------------------------------------------------------------------
+template <typename TK, typename TI>
 auto icarus::trigger::TriggerGateData<TK, TI>::findMaxOpen
   (ClockTick_t start /* = MinTick */, ClockTick_t end /* = MaxTick */) const
   -> ClockTick_t
@@ -635,11 +647,58 @@ auto icarus::trigger::TriggerGateData<TK, TI>::findLastStatusForTickOrThrow
 
 //------------------------------------------------------------------------------
 template <typename TK, typename TI>
+template <typename Op>
+auto icarus::trigger::TriggerGateData<TK, TI>::findStatus
+  (Op op, ClockTick_t start /* = MinTick */, ClockTick_t end /* = MaxTick */)
+  const -> status_const_iterator
+{
+  assert(!fGateLevel.empty()); // by construction we have a opening status at 0#
+  
+  // this is the status before (or at) `start` tick:
+  auto const ppStartStatus = findLastStatusFor(start);
+  
+  // if there is no status at or before `start`, no worry: we just look later;
+  // if the status is before `start`, by agreement we ignore it and start from
+  // next
+  auto iStatus = ppStartStatus
+    ? ((ppStartStatus.value()->tick >= start)
+      ? ppStartStatus.value()
+      : std::next(ppStartStatus.value())
+      )
+    : fGateLevel.begin()
+    ;
+  
+  auto const send = fGateLevel.end();
+  while (iStatus != send) {
+    if (iStatus->tick >= end) break;
+    switch (iStatus->event) {
+      case EventType::Shift:
+      case EventType::Set:
+        if (op(*iStatus)) return iStatus;
+        [[fallthrough]];
+      case EventType::Unknown:
+        break;
+    } // switch
+    ++iStatus;
+  } // while
+  return send;
+  
+} // icarus::trigger::TriggerGateData<>::findOpenStatus()
+
+
+//------------------------------------------------------------------------------
+template <typename TK, typename TI>
 auto icarus::trigger::TriggerGateData<TK, TI>::findOpenStatus(
   OpeningCount_t minOpening /* = 1U */,
   ClockTick_t start /* = MinTick */, ClockTick_t end /* = MaxTick */
 ) const -> status_const_iterator
 {
+  auto const isOpen
+    = [minOpening](Status const& status){ return status.opening >= minOpening; }
+    ;
+  return findStatus(isOpen, start, end);
+  
+#if 0
   assert(!fGateLevel.empty()); // by construction we have a opening status at 0#
   
   // this is the status before (or at) `start` tick:
@@ -670,8 +729,21 @@ auto icarus::trigger::TriggerGateData<TK, TI>::findOpenStatus(
     ++iStatus;
   } // while
   return send;
-  
+#endif // 0
 } // icarus::trigger::TriggerGateData<>::findOpenStatus()
+
+
+//------------------------------------------------------------------------------
+template <typename TK, typename TI>
+auto icarus::trigger::TriggerGateData<TK, TI>::findCloseStatus(
+  OpeningCount_t minOpening /* = 1U */,
+  ClockTick_t start /* = MinTick */, ClockTick_t end /* = MaxTick */
+) const -> status_const_iterator
+{
+  auto const isClose
+    = [minOpening](Status const& status){ return status.opening < minOpening; };
+  return findStatus(isClose, start, end);
+} // icarus::trigger::TriggerGateData<>::findCloseStatus()
 
 
 //------------------------------------------------------------------------------
