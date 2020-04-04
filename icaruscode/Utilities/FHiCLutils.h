@@ -1,5 +1,5 @@
 /**
- * @file   useranalysis/Trigger/Design/Utilities/FHiCLutils.h
+ * @file   icaruscode/Utilities/FHiCLutils.h
  * @brief  Plots to inform trigger design decisions.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   August 8, 2019
@@ -7,8 +7,8 @@
  * This library is header only.
  */
 
-#ifndef USERANALYSIS_TRIGGER_DESIGN_FHICLUTILS_H
-#define USERANALYSIS_TRIGGER_DESIGN_FHICLUTILS_H
+#ifndef ICARUSCODE_UTILITIES_FHICLUTILS_H
+#define ICARUSCODE_UTILITIES_FHICLUTILS_H
 
 // C/C++ standard libraries
 #include <vector>
@@ -207,4 +207,4 @@ T util::fhicl::getOptionalValue(Optional const& parameter, T defValue)
 //--------------------------------------------------------------------------
 
 
-#endif // USERANALYSIS_TRIGGER_DESIGN_FHICLUTILS_H
+#endif // ICARUSCODE_UTILITIES_FHICLUTILS_H
