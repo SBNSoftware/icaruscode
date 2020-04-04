@@ -154,7 +154,7 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
     // Check the concurrency 
     int max_concurrency = tbb::this_task_arena::max_concurrency();
 
-    std::cout << "     ==> concurrency: " << max_concurrency << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "     ==> concurrency: " << max_concurrency << std::endl;
 
     // Recover the vector of fhicl parameters for the ROI tools
     const fhicl::ParameterSet& decoderToolParams = pset.get<fhicl::ParameterSet>("DecoderTool");
@@ -169,26 +169,26 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
 
     // Compute the fragment offset from the channel number for the desired plane
     // Get a base channel number for the plane we want
-    std::cout << "ICARUS has " << fGeometry->Nchannels() << " in total with " << fGeometry->Views().size() << " views" << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "ICARUS has " << fGeometry->Nchannels() << " in total with " << fGeometry->Views().size() << " views" << std::endl;
 
     geo::WireID wireID(0, 0, fPlaneToSimulate, 0);
 
-    std::cout << "WireID: " << wireID << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "WireID: " << wireID << std::endl;
 
     geo::WireID firstWireID = fGeometry->GetBeginWireID(geo::PlaneID(0,0,fPlaneToSimulate));
 
-    std::cout << "From geo, first WireID: " << firstWireID << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "From geo, first WireID: " << firstWireID << std::endl;
 
     raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(wireID);
 
-    std::cout << "Channel: " << channel << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "Channel: " << channel << std::endl;
 
     for(size_t thePlane = 0; thePlane < 3; thePlane++)
     {
         geo::WireID  tempWireID(0, 0, thePlane, 0);
         geo::PlaneID tempPlaneID = tempWireID.planeID();
 
-        std::cout << "thePlane: " << thePlane << ", WireID: " << tempWireID << ", channel: " << 
+        mf::LogDebug("FilterNoiseICARUS") << "thePlane: " << thePlane << ", WireID: " << tempWireID << ", channel: " << 
         fGeometry->PlaneWireToChannel(tempWireID) << ", view: " << fGeometry->View(tempPlaneID) << std::endl;
     }
 
@@ -251,12 +251,12 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
     art::Handle<artdaq::Fragments> daq_handle;
     event.getByLabel(fFragmentsLabel, daq_handle);
 
-    std::cout << "**** Processing raw data fragments ****" << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "**** Processing raw data fragments ****" << std::endl;
 
     // Check the concurrency 
     int max_concurrency = tbb::this_task_arena::max_concurrency();
 
-    std::cout << "     ==> concurrency: " << max_concurrency << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "     ==> concurrency: " << max_concurrency << std::endl;
 
     cet::cpu_timer theClockTotal;
 
@@ -313,7 +313,7 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    std::cout << "==> FilterNoiseICARUS total time: " << totalTime << std::endl;
+    mf::LogInfo("FilterNoiseICARUS") << "==> FilterNoiseICARUS total time: " << totalTime << std::endl;
 
     return;
 }
@@ -330,8 +330,8 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
 
     art::Ptr<artdaq::Fragment> fragmentPtr(fragmentHandle, idx);
 
-    std::cout << "--> Processing fragment ID: " << fragmentPtr->fragmentID() << std::endl;
-    std::cout << "    ==> Current thread index: " << tbb::this_task_arena::current_thread_index() << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "--> Processing fragment ID: " << fragmentPtr->fragmentID() << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "    ==> Current thread index: " << tbb::this_task_arena::current_thread_index() << std::endl;
 
     // Recover pointer to the decoder needed here
     IDecoderFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
@@ -366,7 +366,7 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     if (fOutputPedestalCor)
         saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),coherentCollection,boardFragOffset);
 
-    std::cout << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
 }
 
@@ -382,7 +382,7 @@ void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat
 
     raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 
-    std::cout << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
 
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
@@ -400,7 +400,7 @@ void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat
 
     double totalTime = theClockSave.accumulated_real_time();
 
-    std::cout << "    --> done with save, time: " << totalTime << std::endl;
+    mf::LogDebug("FilterNoiseICARUS") << "    --> done with save, time: " << totalTime << std::endl;
 
     return;
 }

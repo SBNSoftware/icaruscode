@@ -531,10 +531,8 @@ sub gen_Materials()
   <element name="argon" formula="Ar" Z="18"> <atom value="39.9480"/>  </element>
   <element name="sulphur" formula="S" Z="16"> <atom value="32.065"/>  </element>
   <element name="phosphorus" formula="P" Z="15"> <atom value="30.973"/>  </element>
-  <element name="niobium" formula="Nb" Z="41"> <atom value="92.90637"/>  </element>
   <element name="copper" formula="Cu" Z="29"> <atom value="63.5463"/>  </element>
   <element name="manganese" formula="Mn" Z="25"> <atom value="54.938043"/>  </element>
-  <element name="molybdenum" formula="Mo" Z="42"> <atom value="95.951"/>  </element>
   <element name="vanadium" formula="V" Z="23"> <atom value="50.94151"/>  </element>
 
   <material name="Vacuum" formula="Vacuum">
@@ -790,16 +788,14 @@ sub gen_Materials()
   <material name="STEEL_A992">
    <D unit="g/cm3" value="7.85"/>
    <fraction n="0.0022"  ref="carbon"/>
-   <fraction n="0.0004"  ref="niobium"/>
    <fraction n="0.005"   ref="copper"/>
    <fraction n="0.01"    ref="manganese"/>
-   <fraction n="0.0014"  ref="molybdenum"/>
    <fraction n="0.0044"  ref="nickel"/>
    <fraction n="0.00034" ref="phosphorus"/>
    <fraction n="0.0039"  ref="silicon"/>
    <fraction n="0.00044" ref="sulphur"/>
    <fraction n="0.001"   ref="vanadium"/>
-   <fraction n="0.97092" ref="iron" />
+   <fraction n="0.97272" ref="iron" />
   </material>
 
 </materials>

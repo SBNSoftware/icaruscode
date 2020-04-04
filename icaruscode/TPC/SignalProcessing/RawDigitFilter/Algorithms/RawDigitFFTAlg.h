@@ -24,6 +24,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "icarus_signal_processing/WaveformTools.h"
 

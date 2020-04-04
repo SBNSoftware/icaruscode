@@ -15,6 +15,7 @@
 
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // FFT
