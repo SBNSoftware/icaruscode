@@ -72,7 +72,7 @@ char* Fragment_ID(int readout_board_ID)
       releaseTuple(tup);
     }
   }
-
+  std::cout << "length of string fragmentid: " << fragmentid << std::endl;
   char* fragment_id = new char[4];
   std::strcpy(fragment_id, ss);
   return fragment_id;
