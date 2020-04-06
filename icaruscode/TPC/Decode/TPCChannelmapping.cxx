@@ -73,7 +73,7 @@ char* Fragment_ID(int readout_board_ID)
     }
   }
 
-  char* fragment_id = new char[4];
+  char* fragment_id = new char[fragmentid];
   std::strcpy(fragment_id, ss);
   return fragment_id;
 }
