@@ -157,6 +157,12 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns whether this type of event has a known vertex.
   bool hasVertex() const { return !fVertices.empty(); }
   
+  /// Returns the number of known interaction vertices.
+  unsigned int nVertices() const { return fVertices.size(); }
+  
+  /// Returns the list of a known interaction vertex.
+  std::vector<geo::Point_t> const& Vertices() const { return fVertices; }
+  
   /// Returns whether there is an interaction within the active volume.
   bool isInActiveVolume() const { return fInActiveVolume; }
   
@@ -212,8 +218,6 @@ struct icarus::trigger::details::EventInfo_t {
   /// Adds a point to the list of interaction vertices in the event.
   void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
   
-  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -251,8 +255,8 @@ struct icarus::trigger::details::EventInfo_t {
   /// Whether the event has activity inside the active volume.
   bool fInActiveVolume { false };
   
-  //std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-  
+  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+
 }; // struct icarus::trigger::details::EventInfo_t
 
 inline std::ostream& icarus::trigger::details::operator<<
@@ -402,6 +406,10 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
  *  * `InActive` (bool): whether an interaction happened in active volume'
  *      this requires an interaction vertex (e.g. cosmic rays are out)
+ *  * `NVertices` (unsigned integer): number of interaction vertices in event
+ *  * `Vertices_` (list of points): the location of all the interaction vertices
+ *    in the event; it's a vector of GenVector 3D points (can access coordinates
+ *    as `Vertices.X()` or `Vertices.fCoordinates.fX`)
  *
  */
 struct icarus::trigger::details::EventInfoTree: public TreeHolder {
@@ -425,6 +433,8 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
   Double_t fSpillE;
   Double_t fActiveE;
   Double_t fSpillActiveE;
+  UInt_t fNVertices;
+  std::vector<geo::Point_t> fVertices; // is this ROOT tree friendly?
   
   Bool_t fInActive;
   

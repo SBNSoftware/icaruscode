@@ -171,6 +171,7 @@ icarus::trigger::details::EventInfoTree::EventInfoTree(TTree& tree)
   this->tree().Branch("ActiveE",      &fActiveE);
   this->tree().Branch("SpillActiveE", &fSpillActiveE);
   this->tree().Branch("InActive",     &fInActive);
+  this->tree().Branch("Vertices",     &fVertices);
   
 } // icarus::trigger::details::EventInfoTree::EventInfoTree()
 
@@ -191,6 +192,7 @@ void icarus::trigger::details::EventInfoTree::assignEvent
   fActiveE      = static_cast<Double_t>(info.DepositedEnergyInActiveVolume());
   fSpillActiveE = static_cast<Double_t>(info.DepositedEnergyInSpillInActiveVolume());
   fInActive     = static_cast<Bool_t>(info.isInActiveVolume());
+  fVertices     = info.Vertices();
   
 } // icarus::trigger::details::EventInfoTree::assignEvent()
 
@@ -673,7 +675,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
     getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
   } // if neutrino event
   TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
-  for (auto const& point: eventInfo.fVertices)
+  for (auto const& point: eventInfo.Vertices())
     vertexHist.Fill(point.Z(), point.Y());
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots()
