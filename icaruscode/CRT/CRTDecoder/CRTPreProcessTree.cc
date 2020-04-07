@@ -47,6 +47,10 @@ uint64_t CRTPreProcessTree::GetAbsTime(size_t ientry) const {
         return (uint64_t)fT0;
 }
 
+uint64_t CRTPreProcessTree::GetAbsTime() const {
+        return (uint64_t)fT0;
+}
+
 void    CRTPreProcessTree::Load(size_t ientry) const {
 	fTree->GetEntry(ientry);	
 }

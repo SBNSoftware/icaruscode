@@ -23,10 +23,6 @@
 #include <algorithm>
 
 // LArSoft
-#include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcore/Geometry/AuxDetGeometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/ExternalTrigger.h"
@@ -39,9 +35,12 @@
 #include "TH1D.h"
 #include "TH2D.h"
 #include "TVector3.h"
-#include "TGeoManager.h"
 
+#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTDecoder/CRTPreProcessTree.h"
+
+using std::string;
 
 namespace icarus {
 namespace crt {
@@ -72,9 +71,13 @@ namespace crt {
 
   private:
 
+   std::string fInFile;
+   float       fTimeWindow;
+   icarus::crt::CRTPreProcessTree* fAnaTree;
 
-   icarus::crt::CRTPreProcessTree* anatree;
-   
+   std::map<size_t,size_t> fEventEntryStart;
+   std::map<size_t,size_t> fEventEntryEnd;
+ 
   }; // class CRTEventProducer
 
   CRTEventProducer::CRTEventProducer(fhicl::ParameterSet const & p)
@@ -83,32 +86,108 @@ namespace crt {
   {
  
    // Call appropriate produces<>() functions here.
-    produces< std::vector<float> >();
+    produces< std::vector<icarus::crt::CRTData> >();
     
     reconfigure(p);
 
+    /*std::cout << "opening file " << fInFile << std::endl;
+    TFile fin(fInFile.c_str());
+    TTree* tree=(TTree*)fin.FindObjectAny("anaTree");
+    if(tree==nullptr) std::cout << "anaTree not found!" << std::endl;
+    fAnaTree = new icarus::crt::CRTPreProcessTree(tree);
+    std::cout << "constructed CRTPreProcessTree with " << fAnaTree->GetNEntries() << " entries" << std::endl;
+    std::cout << "earliest timestamp: " << fAnaTree->GetAbsTime(0) << std::endl;
+*/
   } // CRTEventProducer()
 
   void CRTEventProducer::reconfigure(fhicl::ParameterSet const & p)
   {
     //fCrtModuleLabel = (p.get<art::InputTag> ("CrtModuleLabel"));
-
+    fInFile = p.get<string>("infile");
+    fTimeWindow = p.get<float>("time_window");
 
   } // CRTEventProducer::reconfigure()
 
   void CRTEventProducer::beginJob()
   {
+	std::cout << "opening file " << fInFile << std::endl;
+	TFile fin(fInFile.c_str());
+	TTree* tree=(TTree*)fin.FindObjectAny("anaTree");
+	if(tree==nullptr) std::cout << "anaTree not found!" << std::endl;
+	fAnaTree = new icarus::crt::CRTPreProcessTree(tree);
 
+	std::cout << "running 'beginJob'" << std::endl;
+	size_t event=0;
+	uint64_t ti = fAnaTree->GetAbsTime(0);
+	fEventEntryStart[0] = 0;
+
+	std::cout << "time slicing tree with " << fAnaTree->GetNEntries() << " entries" << std::endl;
+
+	for(size_t ientry =0; ientry<fAnaTree->GetNEntries(); ientry++){
+		if(fAnaTree->GetAbsTime(ientry)>=ti &&
+		   fAnaTree->GetAbsTime(ientry)<ti+fTimeWindow*1.0e9)	
+			continue;
+
+		else if(fAnaTree->GetAbsTime(ientry)>=ti+fTimeWindow*1.0e9 ||
+			ientry == fAnaTree->GetNEntries()-1){
+			ti += fTimeWindow*1.0e9;
+			fEventEntryEnd[event] = ientry-1;
+			event++;
+			if (ientry < fAnaTree->GetNEntries()-1)
+				fEventEntryStart[event] = ientry;
+			
+		}
+	}
+
+	std::cout << "found " << event << " time slices" << std::endl;
+	if(fEventEntryEnd.size()!=fEventEntryStart.size())
+		std::cout << "event map start/end size mismatch!" << std::endl;
+
+	fin.Close();
+	delete fAnaTree;
 
   } // CRTEventProducer::beginJob()
  
   void CRTEventProducer::produce(art::Event & event)
   {
-    std::unique_ptr< std::vector<float> > vec( new std::vector<float>);
+    TFile fin(fInFile.c_str());
+    TTree* tree=(TTree*)fin.FindObjectAny("anaTree");
+    if(tree==nullptr) std::cout << "anaTree not found!" << std::endl;
+    fAnaTree = new icarus::crt::CRTPreProcessTree(tree);
 
-      
-    event.put(std::move(vec));
+    std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
+    std::vector<icarus::crt::CRTChannelData>  crtchandata;
 
+    size_t eveId = (size_t) event.event();
+    std::cout << "processing event " << eveId << " with " << fEventEntryEnd[eveId]+1-fEventEntryStart[eveId] << " triggers" << std::endl;
+
+    int entry=0;
+    for(size_t ientry=fEventEntryStart[eveId]; ientry<=fEventEntryEnd[eveId]; ientry++){
+	crtchandata.clear();
+	fAnaTree->Load(ientry);
+	double t0 = (double)fAnaTree->GetAbsTime();
+	for(size_t ichan=0; ichan<32; ichan++){
+		if(fAnaTree->Above(ichan)&&fAnaTree->Active(ichan)) {
+			std::vector<int> trkid={};
+			int q0 = (int)fAnaTree->PE(ichan);
+			crtchandata.push_back(icarus::crt::CRTChannelData(ichan,t0,t0,q0,trkid));
+		}//if channel active and above threshold
+	}//for channels
+
+	if(crtchandata.empty()) continue;
+
+	std::pair<int,int> tpair,macPair;
+	tpair=std::make_pair(0,0);
+	macPair=std::make_pair(0,0);
+	crtdata->push_back(icarus::crt::CRTData(eveId,fAnaTree->Mac5(),entry,t0,fAnaTree->MaxChan(),tpair,macPair,crtchandata));
+	entry++;
+
+    }//for entries in time slice
+
+    delete fAnaTree;
+    fin.Close();
+
+    event.put(std::move(crtdata));
 
   } // CRTEventProducer::produce()
 

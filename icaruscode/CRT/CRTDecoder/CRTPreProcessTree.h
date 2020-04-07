@@ -19,6 +19,7 @@ class icarus::crt::CRTPreProcessTree {
 	void      Init();
 	size_t    GetNEntries() const;
 	uint64_t  GetAbsTime(size_t ientry) const;
+	uint64_t  GetAbsTime() const;
 	void      Load(size_t ientry) const;
 	uint8_t   Mac5() const;
 	bool      IsNoise() const;
