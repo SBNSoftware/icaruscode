@@ -6,6 +6,7 @@ art_make(
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
+	
  NO_PLUGINS # WAnt different link lists for modues
  BASENAME_ONLY
  LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
@@ -104,6 +105,17 @@ art_make_library(
 
 install_headers()
 install_source()
+
+simple_plugin( BernCRTZMQAna "module"
+  art_Framework_Services_Registry
+  art_root_io_tfile_support
+  art_root_io_TFileService_service
+  #art_Framework_Services_Optional
+  #art_Framework_Services_Optional_TFileService_service
+  ${ROOT_BASIC_LIB_LIST}
+        ${ARTDAQ-CORE_UTILITIES}
+  sbndaq-artdaq-core_Overlays_Common 
+)
 
 simple_plugin( CrtNoiseMonTool "module"
   art_Framework_Services_Registry
