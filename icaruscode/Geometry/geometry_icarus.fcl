@@ -67,9 +67,12 @@ icarus_geometry_template: {
 } # icarus_geometry_template
 
 
+
 ################################################################################
+###
 ###  Single first induction plane wires (18 m)
 ###
+################################################################################
 ### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
 ### long wires on first induction plane.
 ###
@@ -198,6 +201,7 @@ icarus_single_induction_geometry_services: @local::icarus_single_induction_noove
 ###
 ###  Split first induction plane wires (9 m)
 ###
+################################################################################
 ### Complete geometry (including CRT) with two logical TPCs per drift volume and
 ### 9 meter long wires on each half of the first induction planes.
 ### This reflects the actual configuration of the ICARUS detector.
@@ -213,7 +217,28 @@ icarus_split_induction_geometry_helper: {
   service_provider: IcarusGeometryHelper
   Mapper: {
     tool_type: "ICARUSsplitInductionChannelMapSetupTool"
-  }
+  
+    WirelessChannels: {
+      
+      FirstInductionPreChannels:        0
+      FirstInductionPostChannels:      96 # 32 ghost, then 64 virtual
+      
+      # C:x S:0 (east TPC)
+      SecondInductionEvenPreChannels:  96 # 32 ghost, then 64 wireless
+      SecondInductionEvenPostChannels: 64 # 64 wireless
+      CollectionEvenPreChannels:       64 # 64 wireless
+      CollectionEvenPostChannels:      96 # 64 wireless, then 32 ghost
+  
+      # C:x S:1 (west TPC)
+      SecondInductionOddPreChannels:   64 # 64 wireless
+      SecondInductionOddPostChannels:  96 # 64 wireless, then 32 ghost
+      CollectionOddPreChannels:        96 # 32 ghost, then 64 wireless
+      CollectionOddPostChannels:       64 # 64 wireless
+    
+    } # WirelessChannels
+    
+  } # Mapper
+  
 } # icarus_split_induction_geometry_helper
 
 

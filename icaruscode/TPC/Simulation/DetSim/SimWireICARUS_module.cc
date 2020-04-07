@@ -98,11 +98,13 @@ private:
     
     void MakeADCVec(std::vector<short>& adc, icarusutil::TimeVec const& noise,
                     icarusutil::TimeVec const& charge, float ped_mean) const;
+
+    using TPCIDVec  = std::vector<geo::TPCID>;
     
     art::InputTag                fDriftEModuleLabel; ///< module making the ionization electrons
     bool                         fProcessAllTPCs;    ///< If true we process all TPCs
     unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
-    unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
+    TPCIDVec                     fTPCVec;            ///< List of TPCs to process for this instance of the module
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -179,7 +181,6 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fDriftEModuleLabel= p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
     fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs",                     false);
     fCryostat         = p.get< unsigned int        >("Cryostat",                               0);
-    fTPC              = p.get< unsigned int        >("TPC",                                    0);
     fSimDeadChannels  = p.get< bool                >("SimDeadChannels",                    false);
     fSuppressNoSignal = p.get< bool                >("SuppressNoSignal",                   false);
     fMakeHistograms   = p.get< bool                >("MakeHistograms",                     false);
@@ -189,7 +190,17 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fTestWire         = p.get< size_t              >("TestWire",                               0);
     fTestIndex        = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
     fTestCharge       = p.get< std::vector<double> >("TestCharge",         std::vector<double>());
-    
+
+    using TPCValsPair = std::pair<unsigned int, unsigned int>; // Assume cryostat, TPC 
+    using TPCValsVec  = std::vector<TPCValsPair>;
+
+    TPCValsVec tempIDVec = p.get< TPCValsVec >("TPCVec", TPCValsVec());
+
+    for(const auto& idPair : tempIDVec)
+    {
+        fTPCVec.push_back(geo::TPCID(idPair.first,idPair.second));
+    }
+
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
@@ -328,49 +339,53 @@ void SimWireICARUS::produce(art::Event& evt)
     // motherboard) then we keep all of those wires. This so we can implment noise mitigation techniques
     // with the simulation
     //
-    // So... first step is to build a map of motherboard and true information
+    
+    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
+    using ChannelPair    = std::pair<raw::ChannelID_t,raw::ChannelID_t>;
+    using ChannelPairVec = std::vector<ChannelPair>;
+
+    ChannelPairVec channelPairVec;
+   
+    for (geo::TPCID const& tpcid : fTPCVec) 
+    {
+        std::cout << "**TPCID: " << tpcid << std::endl;
+
+        for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
+        {
+            raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
+            raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
+
+            std::cout << "--Plane: " << plane.ID() << ", start channel: " << planeStartChannel << ", end channel: " << planeEndChannel << std::endl;
+
+            channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
+        } // for planes in TPC
+    }
+
+    // Ok, define the structure for the MB info....
     using MBWithSignalSet = std::set<raw::ChannelID_t>;
     
     MBWithSignalSet mbWithSignalSet;
     
-    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
-    raw::ChannelID_t firstChannel(0);
-    raw::ChannelID_t endChannel(maxChannel);
-    
-    if (!fProcessAllTPCs)
+    for(const ChannelPair& channelPair : channelPairVec)
     {
-        firstChannel = maxChannel;
-        endChannel   = 0;
-        
-        for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
+        // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
+        if (!fSuppressNoSignal)
         {
-            raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
-            
-            if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
-            
-            raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
-            
-            if (planeEndChannel > endChannel) endChannel = planeEndChannel;
+            raw::ChannelID_t firstMBIdx(channelPair.first / fNumChanPerMB);
+            raw::ChannelID_t endMBIdx(channelPair.second / fNumChanPerMB);
+        
+            for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
         }
-    }
-    
-    // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
-    if (!fSuppressNoSignal)
-    {
-        raw::ChannelID_t firstMBIdx(firstChannel / fNumChanPerMB);
-        raw::ChannelID_t endMBIdx(endChannel / fNumChanPerMB);
-        
-        for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
-    }
-    else
-    {
-        for(const auto& simChan : channels)
+        else
         {
-            if (simChan)
+            for(const auto& simChan : channels)
             {
-                raw::ChannelID_t channel = simChan->Channel();
+                if (simChan)
+                {
+                    raw::ChannelID_t channel = simChan->Channel();
                 
-                if (channel >= firstChannel && channel < endChannel) mbWithSignalSet.insert(channel/fNumChanPerMB);
+                    if (channel >= channelPair.first && channel < channelPair.second) mbWithSignalSet.insert(channel/fNumChanPerMB);
+                }
             }
         }
     }

@@ -8,12 +8,8 @@
 # Available configurations:
 #
 # * `icarus_spacecharge`: `SpaceChargeService` configuration
-# * `icarus_larfft`: `LArFFT` configuration
 #
 #
-
-#include "larfft.fcl"
-
 BEGIN_PROLOG
 
 #
@@ -34,17 +30,6 @@ icarus_spacecharge: {
     RepresentationType:     "Voxelized_TH3"
     InputFilename:          "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
 } # icarus_spacecharge
-
-
-#
-# LArFFT service configuration for ICARUS
-#
-# Use as:
-#     
-#     services.LArFFT: @local::icarus_larfft
-#
-icarus_larfft: @local::standard_larfft # from `larfft.fcl` (`lardata`)
-
 
 
 END_PROLOG

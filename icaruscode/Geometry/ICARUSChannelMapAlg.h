@@ -130,7 +130,8 @@ namespace icarus {
  * second induction or collection planes will increase them from 5600 channels
  * to whatever is requested.
  * 
- * The standard ICARUS detector configuration should include:
+ * The channel mapping configuration of the "standard" ICARUS detector should
+ * include:
  *     
  *     WirelessChannels: {
  *       
