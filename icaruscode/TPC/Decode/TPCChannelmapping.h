@@ -29,9 +29,9 @@ namespace database
     
     inline Dataset ConnectDB(const char* name, const char* url, int* error)
     {
-      Dataset dbtable;
-      dbtable =  getData(url, name, error);
-      return dbtable;
+        Dataset dbtable;
+        dbtable =  getData(url, name, error);
+        return dbtable;
     }
     
     // -------------------------------------------------
@@ -41,43 +41,41 @@ namespace database
     
     inline char* Fragment_ID(int readout_board_ID)
     {
-      int error;
-      Dataset ds = ConnectDB("icarus_hw_readoutboard", "https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev&t=readout_boards", &error);
+        int error;
+        Dataset ds = ConnectDB("icarus_hw_readoutboard", "https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev&t=readout_boards", &error);
     
-      if (error) {                                // Check for curl library errors
-        fprintf(stderr, "error code=%d\n", error);    perror("error message");
-      }
-      if (getHTTPstatus(ds) != 200) {                        // Check for HTTP error
-        fprintf(stderr, "HTTP code=%ld, message: '%s'\n", getHTTPstatus(ds), getHTTPmessage(ds));
-      }
-    
-      char ss[10];
-      int err;
-      int fragmentid;
-      int readoutboard_id;
-      int nrows =  getNtuples(ds);
-      Tuple tup;
-      for (int rows = 0; rows < nrows; rows++ ){
-        tup = getTuple(ds, rows);                                           // Get the row with double array
-        
-        if (tup != NULL) {
-          //int nc = getNfields(tup);
-          //for (i = 0; i < nc; i++) { 
-          //len = getStringValue(tup, i ,8, sizeof (ss), &err);
-          //fprintf(stderr, "[%d]: l=%d, s='%s'\n", i, len, ss); 
-          //fprintf(stderr, "[4]: v=%i\n", getStringValue(tup, i ,ss, sizeof (ss), &err));
-          // }
-          readoutboard_id =  (int)getDoubleValue(tup, 0, &err);
-          if (readoutboard_id == readout_board_ID){
-    	fragmentid = getStringValue(tup, 8 ,ss, sizeof (ss), &err);
-          }
-          releaseTuple(tup);
+        if (error) {                                // Check for curl library errors
+            fprintf(stderr, "error code=%d\n", error);    perror("error message");
         }
-      }
-      std::cout << "length of string fragmentid: " << fragmentid << std::endl;
-      char* fragment_id = new char[4];
-      std::strcpy(fragment_id, ss);
-      return fragment_id;
+        if (getHTTPstatus(ds) != 200) {                        // Check for HTTP error
+            fprintf(stderr, "HTTP code=%ld, message: '%s'\n", getHTTPstatus(ds), getHTTPmessage(ds));
+        }
+    
+        char ss[10];
+        int err;
+        int readoutboard_id;
+        int nrows =  getNtuples(ds);
+        Tuple tup;
+        for (int rows = 0; rows < nrows; rows++ ){
+            tup = getTuple(ds, rows);                                           // Get the row with double array
+        
+            if (tup != NULL) {
+                //int nc = getNfields(tup);
+                //for (i = 0; i < nc; i++) { 
+                //len = getStringValue(tup, i ,8, sizeof (ss), &err);
+                //fprintf(stderr, "[%d]: l=%d, s='%s'\n", i, len, ss); 
+                //fprintf(stderr, "[4]: v=%i\n", getStringValue(tup, i ,ss, sizeof (ss), &err));
+                // }
+                readoutboard_id =  (int)getDoubleValue(tup, 0, &err);
+                if (readoutboard_id == readout_board_ID){
+    	              getStringValue(tup, 8 ,ss, sizeof (ss), &err);
+                }
+                releaseTuple(tup);
+            }
+        }
+        char* fragment_id = new char[4];
+        std::strcpy(fragment_id, ss);
+        return fragment_id;
     }
     
     // -------------------------------------------------
@@ -88,36 +86,36 @@ namespace database
     
     inline std::vector<int> Channel_ID(int readout_board_ID)
     {
-      Tuple tu;
-      int error;
-      int err;
-      Dataset ds = ConnectDB("icarus_hardware_dev", "https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev&t=daq_channels", &error);
+        Tuple tu;
+        int error;
+       int err;
+        Dataset ds = ConnectDB("icarus_hardware_dev", "https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev&t=daq_channels", &error);
      
-      if (error) {                                // Check for curl library errors
-        fprintf(stderr, "error code=%d\n", error);    perror("error message");
-      }
-      if (getHTTPstatus(ds) != 200) {                        // Check for HTTP error
-        fprintf(stderr, "HTTP code=%ld, message: '%s'\n", getHTTPstatus(ds), getHTTPmessage(ds));
-      }
+        if (error) {                                // Check for curl library errors
+            fprintf(stderr, "error code=%d\n", error);    perror("error message");
+        }
+        if (getHTTPstatus(ds) != 200) {                        // Check for HTTP error
+            fprintf(stderr, "HTTP code=%ld, message: '%s'\n", getHTTPstatus(ds), getHTTPmessage(ds));
+        }
     
-      int channel_id;
-      std::vector<int> channelidvec;
-      int nrows =  getNtuples(ds);
-      for (int rows = 0; rows < nrows; rows++ ){
-        tu = getTuple(ds, rows);                                           // Get the row with double array 
+        int channel_id;
+        std::vector<int> channelidvec;
+        int nrows =  getNtuples(ds);
+        for (int rows = 0; rows < nrows; rows++ ){
+            tu = getTuple(ds, rows);                                           // Get the row with double array 
     
-        // If we get the names print them
-        if (tu != NULL) {                                               // If everything is OK
-          int readoutboardid = (int)getDoubleValue(tu, 2, &err);
+            // If we get the names print them
+            if (tu != NULL) {                                               // If everything is OK
+                int readoutboardid = (int)getDoubleValue(tu, 2, &err);
           
-          if (readoutboardid == readout_board_ID){
-    	channel_id = (int)getDoubleValue(tu, 0, &err);
-    	channelidvec.push_back(channel_id);
-          }
-          releaseTuple(tu);
-        } 
-      }
-      return channelidvec;
+                if (readoutboardid == readout_board_ID){
+    	              channel_id = (int)getDoubleValue(tu, 0, &err);
+    	              channelidvec.push_back(channel_id);
+                }
+                releaseTuple(tu);
+            } 
+        }
+        return channelidvec;
     }
     
     // -------------------------------------------------
