@@ -11,7 +11,6 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -395,13 +394,9 @@ namespace crt {
     , fMinMomenta(config().MinMomenta())
     , fMaxMomenta(config().MaxMomenta())
   {
-    // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    // The same for detector TDC clock services.
-    //fTimeService = lar::providerFrom<detinfo::DetectorClocksService>();
-    // Access to detector properties.
-    const detinfo::DetectorProperties* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTriggerOffset = detprop->TriggerOffset();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+    fTriggerOffset = sampling_rate(clockData);
   }
 
   void CRTSimAnalysis::FillFebMap() { //map<int,vector<pair<int,int>>>& m) {

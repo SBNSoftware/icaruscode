@@ -61,8 +61,6 @@ public:
 
 private:
 
-  const detinfo::DetectorClocks* fClock;
-
   art::InputTag fOpHitModuleLabel;
   art::InputTag fOpFlashModuleLabel0;
   art::InputTag fOpFlashModuleLabel1;
@@ -123,13 +121,11 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
   fTree->Branch("tofFlash", &fTofFlash);
   fTree->Branch("tofPe",    &fTofPe);
   fTree->Branch("tTTrig",   &fTTrig,    "tTrig/D");
-
-  fClock = lar::providerFrom<detinfo::DetectorClocksService>();
 }
 
 void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 {
-  fTTrig = fClock->TriggerTime();
+  fTTrig = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e).TriggerTime();
 
   fTCrt.clear();
   fTOp.clear();

@@ -54,7 +54,6 @@ private:
     
     // Useful services, keep copies for now (we can update during begin run periods)
     art::ServiceHandle<geo::Geometry>  fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------------

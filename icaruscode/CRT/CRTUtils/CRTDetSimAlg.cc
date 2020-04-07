@@ -6,13 +6,13 @@
 namespace icarus{
  namespace crt {
 
-    bool TimeOrderCRTData(std::pair<ChanData, AuxDetIDE> crtdat1, 
+    bool TimeOrderCRTData(std::pair<ChanData, AuxDetIDE> crtdat1,
                           std::pair<ChanData, AuxDetIDE> crtdat2) {
         return ( crtdat1.first.ts < crtdat2.first.ts );
     }//TimeOrderCRTData()
 
     //-------------------------------------------------------------------------------------------
-    //constructor 
+    //constructor
     CRTDetSimAlg::CRTDetSimAlg(fhicl::ParameterSet const & p, CLHEP::HepRandomEngine& engine) :
         fNsim_m(0), fNsim_d(0), fNsim_c(0), fNchandat_m(0), fNchandat_d(0), fNchandat_c(0),
         fNmissthr_c(0), fNmissthr_d(0), fNmissthr_m(0), fNmiss_strcoin_c(0), fNdual_m(0),
@@ -21,7 +21,7 @@ namespace icarus{
 
         this->reconfigure(p);
         fRegCounts.clear();
-	fRegions.clear();
+        fRegions.clear();
         fTaggers.clear();
     }
     //----------------------------------------------------------------------
@@ -71,7 +71,7 @@ namespace icarus{
     // this function applies trigger logic, deadtime, and close-in-time signal biasing effects. it produces the
     // "triggered data" products which make it into the event
     vector<pair<CRTData,vector<sim::AuxDetIDE>>> CRTDetSimAlg::CreateData()
-    {        
+    {
         vector<pair<CRTData, vector<AuxDetIDE>>> dataCol;
 
         if(!fHasFilledTaggers)
@@ -79,7 +79,7 @@ namespace icarus{
         if(fTaggers.size()==0)
             return dataCol;
 
-	int eve=1;
+        int eve=1;
 
         int ncombined_c=0, ncombined_m=0, ncombined_d=0; //channel signals close in time, biasing first signal entering into track and hold circuit
         int nmiss_lock_c=0, nmiss_lock_d=0, nmiss_lock_m=0; //channel signals missed due to channel already locked, but before readout (dead time)
@@ -94,7 +94,7 @@ namespace icarus{
 
         // Loop over all FEBs (key for taggers) with a hit and check coincidence requirement.
         // For each FEB, find channel providing trigger and determine if
-        //  other hits are in concidence with the trigger (keep) 
+        //  other hits are in concidence with the trigger (keep)
         //  or if hits occur during R/O (dead time) (lost)
         //  or if hits are part of a different event (keep for now)
         // First apply dead time correction, biasing effect if configured to do so.
@@ -119,7 +119,7 @@ namespace icarus{
             size_t trigIndex = 0;
             uint16_t adc[64];
 
-            //check "open" coincidence (just check if coincdence possible w/hit in both layers) 
+            //check "open" coincidence (just check if coincdence possible w/hit in both layers)
             if (trg.second.type=='c' && fApplyCoincidenceC && trg.second.layerid.size()<2) {
                 nmiss_opencoin_c++;
                 continue;
@@ -149,7 +149,7 @@ namespace icarus{
                 layerNHold.insert(trg.second.chanlayer[chanTrigData->channel]);
                 passingData.push_back(*chanTrigData);
                 passingIDE.push_back(trg.second.data[0].second);
-                ttmp = ttrig; 
+                ttmp = ttrig;
                 idetmp = passingIDE.back();
                 if(trg.second.type!='m')
                     continue;
@@ -214,7 +214,7 @@ namespace icarus{
 
                   //if no coincidence pairs found, reinitialize and move to next FEB
                   if(!minosPairFound) {
-                      if(fUltraVerbose) 
+                      if(fUltraVerbose)
                           std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
                       if(trg.second.data.size()==1) continue;
                       trigIndex++;
@@ -228,7 +228,7 @@ namespace icarus{
                       trackNHold.insert(chanTrigData->channel);
                       layerNHold.insert(trg.second.chanlayer[chanTrigData->channel]);
                       passingData.push_back(*chanTrigData);
-	      	      passingIDE.push_back(trg.second.data[trigIndex].second);
+                      passingIDE.push_back(trg.second.data[trigIndex].second);
                       nmiss_coin_m++;
                       continue;
                   }
@@ -236,14 +236,14 @@ namespace icarus{
                       istrig = true;
               }//if minos module and no pair yet found
 
-              if(fUltraVerbose) 
+              if(fUltraVerbose)
                   std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
-              if(!minosPairFound && trg.second.type=='m') 
+              if(!minosPairFound && trg.second.type=='m')
                   std::cout << "WARNING: !minosPairFound...should not see this message!" << std::endl;
 
               int adctmp = 0;
               //currently assuming layer coincidence window is same as track and hold window (FIX ME!)
-              if (i>0 && ((trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC) || 
+              if (i>0 && ((trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC) ||
                   (trg.second.type=='d' && ttmp < ttrig + fLayerCoincidenceWindowD) ||
                   (trg.second.type=='m' && ttmp < ttrig + fLayerCoincidenceWindowM)) )
               {
@@ -253,7 +253,7 @@ namespace icarus{
 
                       //channel added to vector of ChannelData for current FEB readout
                       passingData.push_back(*chanTmpData);
-	              passingIDE.push_back(idetmp);
+                      passingIDE.push_back(idetmp);
 
                       //if not m module, check to see if strip is first in time in adjacent layer w.r.t. trigger strip
                       if (layerNHold.insert(trg.second.chanlayer[chanTmpData->channel]).second
@@ -325,7 +325,7 @@ namespace icarus{
                       }
                   }
 
-                  if(passingData.size()>passingIDE.size()) 
+                  if(passingData.size()>passingIDE.size())
                       std::cout << "data/IDE size mismatch!" <<  passingData.size()-passingIDE.size() << std::endl;
                   FillAdcArr(passingData,adc);
                   dataCol.push_back(std::make_pair(
@@ -375,20 +375,20 @@ namespace icarus{
                   if( (fRegions.insert(regnum)).second) fRegCounts[regnum] = 1;
                   else fRegCounts[regnum]++;
 
-                  if(passingData.size()>passingIDE.size()) 
+                  if(passingData.size()>passingIDE.size())
                       std::cout << "data/IDE size mismatch! " << passingData.size()-passingIDE.size() << std::endl;
                   FillAdcArr(passingData,adc);
                   dataCol.push_back( std::make_pair(
                     FillCRTData(trg.first,event,ttrig,ttrig,adc),
                     passingIDE) );
-                  if (fUltraVerbose) 
+                  if (fUltraVerbose)
                       std::cout << " ...success!" << std::endl;
                   event++;
                   if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
                   if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
                   if (trg.second.type=='m') {neve_m++; nhit_m+=passingData.size(); }
 
-              }//if last event and not already written 
+              }//if last event and not already written
             }//for data entries (hits)
 
             if(fUltraVerbose) std::cout << " outside loop over FEB data entries...moving on to next FEB..." << std::endl;
@@ -452,21 +452,21 @@ namespace icarus{
           }//if any CRTData
         } //if verbose
 
-	return dataCol;
+        return dataCol;
 
     }//end CreateData()
 
     //-----------------------------------------------------------------------------
-    // intented to be called within loop over AuxDetChannels and provided the 
-    // AuxDetChannelID, AuxDetSensitiveChannelID, vector of AuxDetIDEs and 
+    // intented to be called within loop over AuxDetChannels and provided the
+    // AuxDetChannelID, AuxDetSensitiveChannelID, vector of AuxDetIDEs and
     // the number of ides from the end of the vector to include in the detector sim.
-    // handles deposited energy -> light output at SiPM (including attenuation) 
+    // handles deposited energy -> light output at SiPM (including attenuation)
     // -> PEs from the SiPM (or PMT in case of bottom CRT) with associated time stamps
-    void CRTDetSimAlg::FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
+    void CRTDetSimAlg::FillTaggers(detinfo::DetectorClocksData const& clockData,
+                                   const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
 
         art::ServiceHandle<geo::Geometry> geoService;
-        art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
-        detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
+        detinfo::ElecClock trigClock = clockData.TriggerClock();
         fHasFilledTaggers = true;
 
         const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
@@ -522,8 +522,8 @@ namespace icarus{
           }
         }
 
-        if(layid==INT_MAX) 
-            mf::LogError("CRT") 
+        if(layid==INT_MAX)
+            mf::LogError("CRT")
                 << "layid NOT SET!!!" << '\n'
                 << "   ADType: " << auxDetType << '\n'
                 << "   ADRegion: " << region;
@@ -583,7 +583,7 @@ namespace icarus{
             double npeExp0Dual = npeExpected2 * abs0;
 
             //sanity check on simulated light output
-            if(npeExp0<0||npeExp1<0||npeExp0Dual<0) 
+            if(npeExp0<0||npeExp1<0||npeExp0Dual<0)
                 mf::LogError("CRT") << "NEGATIVE PE!!!!!";
 
             // Observed PE (Poisson-fluctuated)
@@ -594,26 +594,26 @@ namespace icarus{
             // Time relative to trigger [ns], accounting for propagation delay and 'walk'
             // for the fixed-threshold discriminator
             double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-            if(tTrue<0) 
+            if(tTrue<0)
                 mf::LogError("CRTDetSim")
                   << "negative true time passed to time stamp generator!";
-            uint64_t t0 = 
+            uint64_t t0 =
               GetChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout*100);
-            uint64_t t1 = 
+            uint64_t t1 =
               GetChannelTriggerTicks(trigClock, tTrue, npe1, distToReadout*100);
-            uint64_t t0Dual = 
+            uint64_t t0Dual =
               GetChannelTriggerTicks(trigClock, tTrue, npe0Dual, distToReadout2*100);
 
             // Time relative to PPS: Random for now! (FIXME)
-            //int ppsTicks = 
+            //int ppsTicks =
             //  CLHEP::RandFlat::shootInt(&fRandEngine, trigClock.Frequency() * 1e6);
 
             // SiPM and ADC response: Npe to ADC counts
-            uint16_t q0 = 
+            uint16_t q0 =
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
-            uint16_t q1 = 
+            uint16_t q1 =
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
-            uint16_t q0Dual = 
+            uint16_t q0Dual =
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
             if(q0<0||q1<0||q0Dual<0)
@@ -749,21 +749,21 @@ namespace icarus{
               << "CRT charge q0: " << q0 << ", q1: " << q1 << '\n'
               //<< "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", dt: " << util::absDiff(t0,t1) << '\n'
               << "CRT timing: tTrue: " << tTrue << ", t0: " << t0 << ", t1: " << t1 << ", |t0-t1|: " << util::absDiff(t0,t1) << '\n'
-              //<< " recoT-trueT = " << t0-tTrue << std::endl; 
+              //<< " recoT-trueT = " << t0-tTrue << std::endl;
               << " recoT0-trueT = " << t0-tTrue << ", recoT1-trueT = " << t1-tTrue << ", recoT0Dual-trueT = " << t0Dual-tTrue << ", recoT0-recoT0Dual = " << t0-t0Dual << std::endl;
 
-        }//for AuxDetIDEs 
+        }//for AuxDetIDEs
 
     } //end FillTaggers
 
     //---------------------------------------------------------------
-    // for CERN modules only. Given position in local strip coordinates, 
+    // for CERN modules only. Given position in local strip coordinates,
     // calculate the transverse attentuation factor
     std::pair<double,double> CRTDetSimAlg::GetTransAtten(const double pos) {
         //attenuation coefficients for each fiber
         double abs0=0.0, abs1=0.0;
 
-        //coefficiencts for transverse attenuation in CERN modules 
+        //coefficiencts for transverse attenuation in CERN modules
         //from early beta-source tranverse scan data
         double at0_c = 0.682976;
         double at1_c = -0.0204477;
@@ -783,10 +783,10 @@ namespace icarus{
         double at3_l = 0.0449169;
         double at4_l = 0.00127892;
 
-        //hit between both fibers 
+        //hit between both fibers
         if ( abs(pos) <= 5.5 ) {
             abs0 = at5_c*pow(pos,5) + at4_c*pow(pos,4) + at3_c*pow(pos,3)
-                    + at2_c*pow(pos,2) + at1_c*pos + at0_c; 
+                    + at2_c*pow(pos,2) + at1_c*pos + at0_c;
             abs1 = -1*at5_c*pow(pos,5) + at4_c*pow(pos,4) - at3_c*pow(pos,3)
                     + at2_c*pow(pos,2) - at1_c*pos + at0_c;
         }
@@ -839,33 +839,33 @@ namespace icarus{
           fTDelayNorm *
             exp(-0.5 * pow((npeMean - fTDelayShift) / fTDelaySigma, 2)) +
           fTDelayOffset;
-    
+
         double tDelayRMS =
           fTDelayRMSGausNorm *
             exp(-pow(npeMean - fTDelayRMSGausShift, 2) / fTDelayRMSGausSigma) +
           fTDelayRMSExpNorm *
             exp(-(npeMean - fTDelayRMSExpShift) / fTDelayRMSExpScale);
-    
+
         double tDelay = CLHEP::RandGauss::shoot(&fRandEngine, tDelayMean, tDelayRMS);
-    
+
         // Time resolution of the interpolator
         tDelay += CLHEP::RandGauss::shoot(&fRandEngine, 0, fTResInterpolator);
-    
+
         // Propagation time
         double tProp = CLHEP::RandGauss::shoot(fPropDelay, fPropDelayError) * r;
-    
+
         double t = t0 + tProp + tDelay;
-    
+
         // Get clock ticks
-        clock.SetTime(t / 1e3);  // SetTime takes microseconds
-    
+        clock = clock.WithTime(t / 1e3);  // WithTime takes microseconds
+
         if (fUltraVerbose) mf::LogInfo("CRT")
           << "CRT TIMING: t0=" << t0
           << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
           << ", tDelay=" << tDelay << ", tDelay(interp)="
-          << tDelay << ", tProp=" << tProp << ", t=" << t 
-          << ", ticks=" << clock.Ticks() << "\n"; 
-        
+          << tDelay << ", tProp=" << tProp << ", t=" << t
+          << ", ticks=" << clock.Ticks() << "\n";
+
         return (uint64_t)t;//clock.Ticks();
     }//CRTDetSim::GetChannelTriggerTicks()
 
@@ -877,7 +877,7 @@ namespace icarus{
         fHasFilledTaggers = false;
 
         fNsim_m = 0;
-        fNsim_d = 0; 
+        fNsim_d = 0;
         fNsim_c = 0;
         fNchandat_m = 0;
         fNchandat_d = 0;
@@ -906,7 +906,7 @@ namespace icarus{
 
         return dat;
     }
- 
+
     //------------------------------------------------------------------
     ChanData CRTDetSimAlg::FillChanData(int channel, uint16_t adc, uint64_t ts) {
         ChanData dat;
@@ -930,7 +930,7 @@ namespace icarus{
        }
        return;
     }
-    
+
  }//namespace crt
 }//namespace icarus
 

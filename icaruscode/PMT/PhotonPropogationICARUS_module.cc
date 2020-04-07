@@ -73,7 +73,6 @@ private:
     
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const* fGeometry = nullptr; ///< Pointer to Geometry service.
-//    detinfo::DetectorProperties const* fDetectorProperties = nullptr; ///< Detector properties service.
     CLHEP::HepRandomEngine&  fPhotonEngine;
     
     /// We don't keep more than this number of photons per `sim::SimPhoton`.

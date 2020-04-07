@@ -207,7 +207,7 @@ namespace icarus::trigger {
   
   ApplyBeamGateClass makeApplyBeamGate(
     util::quantities::intervals::microseconds duration,
-    detinfo::DetectorClocks const& detClocks,
+    detinfo::DetectorClocksData const& clockData,
     std::string const& logCategory = "ApplyBeamGateClass"
     );
   
@@ -301,13 +301,13 @@ inline auto icarus::trigger::ApplyBeamGateClass::extractLimits
 
 inline auto icarus::trigger::makeApplyBeamGate(
   util::quantities::intervals::microseconds duration,
-  detinfo::DetectorClocks const& detClocks,
+  detinfo::DetectorClocksData const& clockData,
   std::string const& logCategory /* = "ApplyBeamGateClass" */
   ) -> ApplyBeamGateClass
 {
   return {
     duration,
-    icarus::trigger::BeamGateMaker{ detClocks }(duration),
+    icarus::trigger::BeamGateMaker{ clockData }(duration),
     logCategory
     };
 } // icarus::trigger::makeApplyBeamGate()
@@ -686,8 +686,6 @@ class icarus::trigger::MajorityTriggerSimulation
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
-  detinfo::DetectorClocks const& fDetClocks;
-  detinfo::DetectorTimings fDetTimings;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -698,8 +696,6 @@ class icarus::trigger::MajorityTriggerSimulation
   // --- BEGIN Internal variables ----------------------------------------------
   
   MajorityTriggerCombiner const fCombiner; ///< Algorithm to combine primitives.
-  
-  ApplyBeamGateClass const fBeamGate; ///< Helper holding and applying beam gate.
   
   /// Algorithm to sort trigger gates by cryostat or TPC.
   GeometryChannelSplitter fChannelSplitter;
@@ -739,6 +735,8 @@ class icarus::trigger::MajorityTriggerSimulation
    */
   TriggerInfo_t produceForThreshold(
     art::Event& event,
+    detinfo::DetectorTimings const& detTimings,
+    ApplyBeamGateClass const& beamGate,
     std::size_t const iThr, icarus::trigger::ADCCounts_t const thr
     );
   
@@ -755,7 +753,8 @@ class icarus::trigger::MajorityTriggerSimulation
    * Finally, the cryostat triggers are combined (OR) into the final trigger
    * decision, bearing as time the earliest one.
    */
-  TriggerInfo_t simulate(TriggerGates_t const& gates) const;
+  TriggerInfo_t simulate(ApplyBeamGateClass const& clockData,
+                         TriggerGates_t const& gates) const;
   
   /**
    * @brief Simulates the trigger response within a single cryostat.
@@ -768,7 +767,8 @@ class icarus::trigger::MajorityTriggerSimulation
    * configured (`MinimumPrimitives`).
    * The time is the earliest one when that requirement is met.
    */
-  TriggerInfo_t simulateCryostat(TriggerGates_t const& gates) const;
+  TriggerInfo_t simulateCryostat(ApplyBeamGateClass const& clockData,
+                                 TriggerGates_t const& gates) const;
   
   
   /**
@@ -781,7 +781,8 @@ class icarus::trigger::MajorityTriggerSimulation
    * The trigger _must_ have fired.
    */
   raw::Trigger triggerInfoToTriggerData
-    (unsigned int triggerNumber, TriggerInfo_t const& info) const;
+    (detinfo::DetectorTimings const& detTimings,
+     unsigned int triggerNumber, TriggerInfo_t const& info) const;
   
   /// Fills the plots for threshold index `iThr` with trigger information.
   void plotTriggerResponse
@@ -816,12 +817,9 @@ icarus::trigger::MajorityTriggerSimulation::MajorityTriggerSimulation
   , fLogCategory          (config().LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
-  , fDetClocks (*lar::providerFrom<detinfo::DetectorClocksService>())
-  , fDetTimings(fDetClocks)
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
   , fCombiner       (fLogCategory)
-  , fBeamGate       (makeApplyBeamGate(fBeamGateDuration, fDetClocks, fLogCategory))
   , fChannelSplitter(fGeom, fLogCategory)
   , fPlots(
      fOutputDir, "", "minimum primitives: " + std::to_string(fMinimumPrimitives)
@@ -882,11 +880,15 @@ void icarus::trigger::MajorityTriggerSimulation::produce(art::Event& event) {
   mf::LogDebug log(fLogCategory);
   log << "Event " << event.id() << ":";
   
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+  detinfo::DetectorTimings const detTimings{clockData};
+  auto const beamGate = makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory);
+
   for (auto const [ iThr, thr ]
     : util::enumerate(util::get_elements<0U>(fADCthresholds))
   ) {
     
-    TriggerInfo_t const triggerInfo = produceForThreshold(event, iThr, thr);
+    TriggerInfo_t const triggerInfo = produceForThreshold(event, detTimings, beamGate, iThr, thr);
     
     log << "\n * threshold " << thr << ": ";
     if (triggerInfo) log << "trigger at " << triggerInfo.atTick();
@@ -919,6 +921,10 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
     thresholdLabels.push_back(inputDataTag.instance());
   
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+  detinfo::DetectorTimings const detTimings{clockData};
+  auto const beamGate = makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory);
+
   //
   // Triggering efficiency vs. ADC threshold.
   //
@@ -946,19 +952,19 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), thresholdLabels);
   
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
+    { detTimings.toOpticalTicks(fTriggerTimeResolution) };
   
-  auto const& beamGateTicks = fBeamGate.tickRange();
+  auto const& beamGateTicks = beamGate.tickRange();
   auto* TrigTime = fPlots.make<TH2F>(
     "TriggerTick",
     "Trigger time tick"
       ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]"
       ";PMT discrimination threshold  [ ADC counts ]"
       ";events",
-    static_cast<int>(std::ceil(fBeamGate.lengthTicks()/triggerResolutionTicks)),
+    static_cast<int>(std::ceil(beamGate.lengthTicks()/triggerResolutionTicks)),
     beamGateTicks.first.value(),
     util::roundup
-     (beamGateTicks.first + fBeamGate.lengthTicks(), triggerResolutionTicks)
+     (beamGateTicks.first + beamGate.lengthTicks(), triggerResolutionTicks)
      .value(),
     thresholdLabels.size(), 0.0, double(thresholdLabels.size())
     );
@@ -971,6 +977,8 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
   art::Event& event,
+  detinfo::DetectorTimings const& detTimings,
+  ApplyBeamGateClass const& beamGate,
   std::size_t const iThr, icarus::trigger::ADCCounts_t const thr
 ) -> TriggerInfo_t {
   
@@ -983,7 +991,7 @@ auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
   //
   // simulate the trigger response
   //
-  TriggerInfo_t const triggerInfo = simulate(gates);
+  TriggerInfo_t const triggerInfo = simulate(beamGate, gates);
   if (triggerInfo) ++fTriggerCount[iThr]; // keep the unique count
   
   //
@@ -997,7 +1005,7 @@ auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
   auto triggers = std::make_unique<std::vector<raw::Trigger>>();
   if (triggerInfo.fired()) {
     triggers->push_back
-      (triggerInfoToTriggerData(fTriggerCount[iThr], triggerInfo));
+      (triggerInfoToTriggerData(detTimings, fTriggerCount[iThr], triggerInfo));
   } // if
   event.put(std::move(triggers), dataTag.instance());
   
@@ -1008,7 +1016,8 @@ auto icarus::trigger::MajorityTriggerSimulation::produceForThreshold(
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerSimulation::simulate
-  (TriggerGates_t const& gates) const -> TriggerInfo_t
+  (ApplyBeamGateClass const& beamGate,
+   TriggerGates_t const& gates) const -> TriggerInfo_t
 {
 
   /* 
@@ -1024,7 +1033,7 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
   TriggerInfo_t triggerInfo; // not fired by default
   for (auto const& gatesInCryo: cryoGates) {
     
-    triggerInfo.replaceIfEarlier(simulateCryostat(gatesInCryo));
+    triggerInfo.replaceIfEarlier(simulateCryostat(beamGate, gatesInCryo));
     
   } // for gates in cryostat
   
@@ -1035,7 +1044,7 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
-  (TriggerGates_t const& gates) const -> TriggerInfo_t 
+  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const -> TriggerInfo_t
 {
 
   /* 
@@ -1044,7 +1053,7 @@ auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
    * 3. compute the trigger response
    */
   
-  auto const combinedCount = fBeamGate.apply(fCombiner.combine(gates));
+  auto const combinedCount = beamGate.apply(fCombiner.combine(gates));
   
   // the first tick with enough opened gates:
   TriggerGateData_t::ClockTick_t const tick
@@ -1099,14 +1108,15 @@ void icarus::trigger::MajorityTriggerSimulation::printSummary() const {
 //------------------------------------------------------------------------------
 raw::Trigger
 icarus::trigger::MajorityTriggerSimulation::triggerInfoToTriggerData
-  (unsigned int triggerNumber, TriggerInfo_t const& info) const
+  (detinfo::DetectorTimings const& detTimings,
+   unsigned int triggerNumber, TriggerInfo_t const& info) const
 {
   assert(info.fired());
   
   return {
     triggerNumber,                                        // counter
-    double(fDetTimings.toElectronicsTime(info.atTick())), // trigger time
-    double(fDetTimings.BeamGateTime()), // beam gate in electronics time scale
+    double(detTimings.toElectronicsTime(info.atTick())), // trigger time
+    double(detTimings.BeamGateTime()), // beam gate in electronics time scale
     fBeamBits                                             // bits 
     };
   

@@ -17,7 +17,6 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "lardata/Utilities/LArFFTWPlan.h"
@@ -139,7 +138,6 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const* fDetectorProperties;   ///< Detector properties service
     const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 
     // mwang added
@@ -239,7 +237,6 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset, art
 {
 
     fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     configure(pset);
     produces<std::vector<raw::RawDigit> >();
@@ -325,7 +322,6 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
   // ... Require a valid handle
   if (digitVecHandle.isValid() && digitVecHandle->size()>0 ){
     unsigned int maxChannels	= fGeometry->Nchannels();
-    //unsigned int maxTimeSamples = fDetectorProperties->NumberTimeSamples();
 
     // .. Let's first sort the rawDigitVec
     std::vector<const raw::RawDigit*> rawDigitVec;

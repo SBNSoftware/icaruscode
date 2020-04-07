@@ -14,6 +14,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
 
 // LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/Utilities/TensorIndices.h" // util::MatrixIndices
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_time_ticks..
 #include "larcorealg/CoreUtils/zip.h"
@@ -381,6 +382,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     std::size_t const thresholdIndex,
     TriggerGatesPerCryostat_t const& gates,
     EventInfo_t const& eventInfo,
+    detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
     ) const override;
     
@@ -423,6 +425,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
   void plotResponses(
     std::size_t iThr, ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
+    detinfo::DetectorClocksData const& clockData,
     TriggerGateData_t const& combinedTrigger
     ) const;
   
@@ -614,8 +617,10 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet
   //
   // Triggering efficiency vs. requirements.
   //
+
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { helper().detTimings().toOpticalTicks(helper().triggerTimeResolution()) };
+    { helper().detTimings(clockData).toOpticalTicks(helper().triggerTimeResolution()) };
   auto const& beamGateOpt = helper().beamGateTickRange();
   auto* TrigTime = plots.make<TH2F>(
     "TriggerTick",
@@ -668,6 +673,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   std::size_t const thresholdIndex,
   TriggerGatesPerCryostat_t const& gates,
   EventInfo_t const& eventInfo,
+  detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
 ) const {
   
@@ -681,6 +687,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
    */
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
+    clockData,
     helper().applyBeamGate(combineTriggerPrimitives(gates, threshold))
     );
   
@@ -693,6 +700,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   icarus::trigger::ADCCounts_t const threshold,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
+  detinfo::DetectorClocksData const& clockData,
   TriggerGateData_t const& combinedCount
 ) const {
   
@@ -726,7 +734,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   mf::LogTrace(helper().logCategory())
     << "Max primitive count in " << threshold << ": "
     << maxPrimitives.second << " at tick " << maxPrimitives.first << " ("
-    << helper().detTimings().toElectronicsTime
+    << helper().detTimings(clockData).toElectronicsTime
       (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
     << ")"
     ;

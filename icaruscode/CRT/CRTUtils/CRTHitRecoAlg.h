@@ -1,4 +1,3 @@
-
 #ifndef CRTHITRECOALG_H_SEEN
 #define CRTHITRECOALG_H_SEEN
 ///////////////////////////////////////////////
@@ -11,14 +10,14 @@
 // framework
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "fhiclcpp/ParameterSet.h" 
-#include "art/Framework/Principal/Handle.h" 
-#include "canvas/Persistency/Common/Ptr.h" 
-#include "canvas/Persistency/Common/PtrVector.h" 
-#include "art/Framework/Services/Registry/ServiceHandle.h" 
+#include "fhiclcpp/ParameterSet.h"
+#include "art/Framework/Principal/Handle.h"
+#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Persistency/Common/PtrVector.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
-#include "art_root_io/TFileDirectory.h" 
-#include "messagefacility/MessageLogger/MessageLogger.h" 
+#include "art_root_io/TFileDirectory.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "larcorealg/CoreUtils/NumericUtils.h"
 
@@ -27,8 +26,6 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 
@@ -51,7 +48,7 @@
 #include <vector>
 #include <map>
 #include <utility>
-#include <cmath> 
+#include <cmath>
 #include <memory>
 
 // ROOT
@@ -109,9 +106,8 @@ class icarus::crt::CRTHitRecoAlg {
   //constructors
   CRTHitRecoAlg(const Config& config);
   CRTHitRecoAlg(const fhicl::ParameterSet& pset) :
-    CRTHitRecoAlg(fhicl::Table<Config>(pset, {})()) {}
-  CRTHitRecoAlg();  //default copy constructor
-  ~CRTHitRecoAlg(); //default desctructor
+    CRTHitRecoAlg{fhicl::Table<Config>{pset}()} {}
+  CRTHitRecoAlg();
 
   //configure module from fcl file
   void reconfigure(const Config& config);
@@ -125,12 +121,7 @@ class icarus::crt::CRTHitRecoAlg {
 
  private:
 
-  //pointers to services
   geo::GeometryCore const* fGeometryService;
-  detinfo::DetectorClocks const* fDetectorClocks;
-  detinfo::DetectorProperties const* fDetectorProperties;
-  detinfo::ElecClock fTrigClock;
-  map<int,vector<pair<uint8_t,int>>> fFebMap;
 
   //Params from fcl file
   bool fVerbose;          ///< print info

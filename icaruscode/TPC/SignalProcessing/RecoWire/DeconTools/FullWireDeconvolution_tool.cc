@@ -36,6 +36,7 @@ public:
     void initializeHistograms(art::TFileDirectory&)        const override;
     
     void Deconvolve(IROIFinder::Waveform const&,
+                    double samplingRate,
                     raw::ChannelID_t,
                     IROIFinder::CandidateROIVec const&,
                     recob::Wire::RegionsOfInterest_t& )    const override;
@@ -52,7 +53,6 @@ private:
     std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;                        ///< Object to handle thread safe FFT
 
     const geo::GeometryCore*                                     fGeometry           = lar::providerFrom<geo::Geometry>();
-    detinfo::DetectorProperties const*                           fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     art::ServiceHandle<icarusutil::SignalShapingICARUSService>   fSignalShaping;
 };
     
@@ -106,12 +106,14 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detProp.NumberTimeSamples());
      
     return;
 }
     
 void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        waveform,
+                                       double const samplingRate,
                                        raw::ChannelID_t                   channel,
                                        IROIFinder::CandidateROIVec const& roiVec,
                                        recob::Wire::RegionsOfInterest_t&  ROIVec) const
@@ -123,7 +125,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     size_t dataSize = waveform.size();
     
     // Make sure the deconvolution size is set correctly (this will probably be a noop after first call)
-    fSignalShaping->SetDecon(dataSize, channel);
+    fSignalShaping->SetDecon(samplingRate, dataSize, channel);
     
     // now make a buffer to contain the waveform which will be of the right size
     icarusutil::TimeVec rawAdcLessPedVec(dataSize,0.);
