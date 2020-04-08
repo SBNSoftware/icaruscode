@@ -27,8 +27,8 @@ if __name__=="__main__":
     serializeToXml    = True 
     loadFromPkl       = False 
     makeScorePlots    = True # Makes plots of BDT score for training and testing samples 
-    xmlFileName       = bdtName + '_NTrees_' + str(nTrees) + '_TreeDepth_' + str(treeDepth) + '.xml'
-    pklFileName       = bdtName + '_NTrees_' + str(nTrees) + '_TreeDepth_' + str(treeDepth) + '.pkl'
+    xmlFileName       = bdtName + '_' + str(regionOrVertex) + '_NTrees_' + str(nTrees) + '_TreeDepth_' + str(treeDepth) + '.xml'
+    pklFileName       = bdtName + '_' + str(regionOrVertex) + '_NTrees_' + str(nTrees) + '_TreeDepth_' + str(treeDepth) + '.pkl'
     
     #----------------------------------------------------------------------------------------------
 
