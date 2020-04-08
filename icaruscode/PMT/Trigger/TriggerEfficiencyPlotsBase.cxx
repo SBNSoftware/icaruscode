@@ -699,10 +699,12 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
     (fired, double(eventInfo.DepositedEnergyInSpill()));
   getTrigEff.Eff("EffVsEnergyInSpillActive"s).Fill
     (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
-  getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
-    (fired, double(eventInfo.NeutrinoEnergy()));
-  getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
-    (fired, double(eventInfo.LeptonEnergy()));
+  if (eventInfo.isNeutrino()) {
+    getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
+      (fired, double(eventInfo.NeutrinoEnergy()));
+    getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
+      (fired, double(eventInfo.LeptonEnergy()));
+  }
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
