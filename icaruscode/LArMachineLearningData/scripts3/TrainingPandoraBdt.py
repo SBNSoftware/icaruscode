@@ -3,6 +3,23 @@
 
 from PandoraBDT import *
 
+###Event features are as follows:
+#Event Showeryness
+#Event Energy
+#Event Volume
+#Longitudinality
+#Number of Hits
+#Number of Clusters
+#Number of Candidate Vertices
+
+###Vertex features (x2 for best&chosen candidates) are as follows:
+#Beam DeWeighting
+#Enery Kick
+#Local Asymmetry
+#Global Asymmetry
+#Shower Asymmetry
+#(rPhi Score - used in vertex finding)
+
 if __name__=="__main__":
 
     # Settings ------------------------------------------------------------------------------------
