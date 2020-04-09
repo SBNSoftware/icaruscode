@@ -3,7 +3,34 @@ add_subdirectory(Algorithms)
 add_subdirectory(Utilities)
 
 art_make(
-  EXCLUDE "TriggerEfficiencyPlots_module.cc"
+  EXCLUDE
+    "TriggerEfficiencyPlots_module.cc"
+    "MajorityTriggerEfficiencyPlots_module.cc"
+    "SlidingWindowTriggerEfficiencyPlots_module.cc"
+  LIB_LIBRARIES
+    icaruscode_PMT_Trigger_Utilities
+    icaruscode_PMT_Trigger_Data
+    larcore_Geometry_Geometry_service
+    lardataalg_MCDumpers
+    larcorealg_Geometry
+    lardataobj_RawData
+    nusimdata_SimulationBase
+    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+    ${ART_ROOT_IO_TFILE_SUPPORT}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_FRAMEWORK_CORE}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_PERSISTENCY_PROVENANCE}
+    ${ART_UTILITIES}
+    ${CANVAS}
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    ${CETLIB_EXCEPT}
+    ${ROOT_GENVECTOR}
+    ${ROOT_HIST}
+    ${ROOT_TREE}
+    ${ROOT_CORE}
   MODULE_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     icaruscode_PMT_Trigger_Data
@@ -46,6 +73,39 @@ simple_plugin(TriggerEfficiencyPlots module
   ${ROOT_TREE}
   ${ROOT_CORE}
   )
+
+# trigger efficiency plot modules with the same build configuration:
+foreach(TriggerEfficiencyPlotsModule
+  MajorityTriggerEfficiencyPlots
+  SlidingWindowTriggerEfficiencyPlots
+)
+
+  simple_plugin(${TriggerEfficiencyPlotsModule} module
+    icaruscode_PMT_Trigger
+    icaruscode_PMT_Trigger_Utilities
+    icaruscode_PMT_Trigger_Data
+    larcore_Geometry_Geometry_service
+    lardataalg_MCDumpers
+    larcorealg_Geometry
+    lardataobj_RawData
+    nusimdata_SimulationBase
+    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+    ${ART_ROOT_IO_TFILE_SUPPORT}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_FRAMEWORK_CORE}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${CANVAS}
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    ${CETLIB_EXCEPT}
+    ${ROOT_GENVECTOR}
+    ${ROOT_HIST}
+    ${ROOT_TREE}
+    ${ROOT_CORE}
+    )
+
+endforeach()
 
 install_headers()
 install_source()

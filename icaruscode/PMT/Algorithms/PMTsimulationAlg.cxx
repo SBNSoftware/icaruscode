@@ -18,6 +18,7 @@
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "larcorealg/CoreUtils/counter.h"
+#include "larcorealg/CoreUtils/StdUtils.h" // util::begin(), util::end()
 
 // framework libraries
 #include "cetlib_except/exception.h"
@@ -131,16 +132,14 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
 std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
   icarus::opdet::PMTsimulationAlg::simulate(sim::SimPhotons const& photons)
 {
-  // to be returned:
-  std::tuple<std::vector<raw::OpDetWaveform>, std::optional<sim::SimPhotons>>
-    result;
-  // give the return value elements nice names:
-  auto& [ waveforms, photons_used ] = result;
+  std::optional<sim::SimPhotons> photons_used;
 
-  Waveform_t waveform;
-  CreateFullWaveform(waveform, photons, photons_used);
-  CreateOpDetWaveforms(photons.OpChannel(), waveform, waveforms);
-  return result;
+  Waveform_t const waveform = CreateFullWaveform(photons, photons_used);
+
+  return {
+    CreateFixedSizeOpDetWaveforms(photons.OpChannel(), waveform),
+    std::move(photons_used)
+    };
   
 } // icarus::opdet::PMTsimulationAlg::simulate()
 
@@ -161,9 +160,9 @@ auto icarus::opdet::PMTsimulationAlg::makeGainFluctuator() const {
 
 
 //------------------------------------------------------------------------------
-void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
-							 sim::SimPhotons const& photons,
-							 std::optional<sim::SimPhotons>& photons_used)
+auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
+  (sim::SimPhotons const& photons, std::optional<sim::SimPhotons>& photons_used)
+  const -> Waveform_t
 {
 
     using namespace util::quantities::time_literals;
@@ -174,7 +173,6 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     detinfo::DetectorTimings const& timings
       = detinfo::makeDetectorTimings(fParams.timeService);
 
-    waveform.resize(fNsamples,fParams.baseline);
     tick const endSample = tick::castFrom(fNsamples);
 
     //
@@ -231,6 +229,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
     //
     // add the collected photoelectrons to the waveform
     //
+    Waveform_t waveform(fNsamples, fParams.baseline);
+    
     unsigned int nTotalPE [[gnu::unused]] = 0U; // unused if not in `debug` mode
     double nTotalEffectivePE [[gnu::unused]] = 0U; // unused if not in `debug` mode
 
@@ -286,7 +286,8 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
 
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
-
+    
+    return waveform;
   } // CreateFullWaveform()
 
   auto icarus::opdet::PMTsimulationAlg::CreateBeamGateTriggers() const
@@ -355,88 +356,113 @@ void icarus::opdet::PMTsimulationAlg::CreateFullWaveform(Waveform_t & waveform,
   }
 
 //------------------------------------------------------------------------------
-void icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms(raw::Channel_t const& opch,
-					  Waveform_t const& wvfm,
-					  std::vector<raw::OpDetWaveform>& output_opdets)
-  {
-    //std::cout << "Finding triggers in " << opch << std::endl;
+std::vector<raw::OpDetWaveform>
+icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms
+  (raw::Channel_t opChannel, Waveform_t const& waveform) const
+{
+  /*
+   * Plan:
+   * 
+   * 1. set up
+   * 2. get the trigger points of the waveform
+   * 3. define the size of data around each trigger to commit to waveforms
+   *    (also merge contiguous and overlapping intervals)
+   * 4. create the actual `raw::OpDetWaveform` objects
+   * 
+   */
+  
+  //
+  // parameters check and setup
+  //
+  
+  // not a big deal if this assertion fails, but a bit more care needs to be
+  // taken in comparisons and subtractions
+  static_assert(
+    std::is_signed_v<optical_tick::value_t>,
+    "This algorithm requires tick type to be signed."
+    );
+  
+  using namespace detinfo::timescales; // electronics_time, time_interval, ...
 
-    using namespace detinfo::timescales; // electronics_time, time_interval
+  auto const pretrigSize = optical_time_ticks::castFrom(fParams.pretrigSize());
+  auto const posttrigSize = optical_time_ticks::castFrom(fParams.posttrigSize());
+  
+  detinfo::DetectorTimings const& timings
+    = detinfo::makeDetectorTimings(fParams.timeService);
 
-    detinfo::DetectorTimings const& timings
-      = detinfo::makeDetectorTimings(fParams.timeService);
+  // first viable tick number: since this is the item index in `wvfm`, it's 0
+  optical_tick const firstTick { 0 };
 
-    electronics_time const PMTstartTime
-      = timings.TriggerTime() + time_interval{ fParams.triggerOffsetPMT };
+  // use hardware trigger time plus the configured offset as waveform start time
+  OpDetWaveformMaker_t createOpDetWaveform {
+    waveform,
+    timings.TriggerTime() + time_interval{ fParams.triggerOffsetPMT },
+    1.0 / fSampling
+    };
+  
+  //
+  // get the PMT channel triggers to consider
+  //
+  
+  // prepare the set of triggers
+  std::vector<optical_tick> const trigger_locations = FindTriggers(waveform);
+  auto const tend = trigger_locations.end();
+  
+  // find the first viable trigger
+  auto tooEarlyTrigger = [earliest = firstTick + pretrigSize](optical_tick t)
+    { return t < earliest; };
+  auto iNextTrigger
+    = std::find_if_not(trigger_locations.begin(), tend, tooEarlyTrigger);
+  
+  //
+  // collect all buffer ranges and merge them
+  //
+  using BufferRange_t = OpDetWaveformMaker_t::BufferRange_t;
+  auto makeBuffer
+    = [pretrigSize, posttrigSize](optical_tick triggerTime) -> BufferRange_t
+    { return { triggerTime - pretrigSize, triggerTime + posttrigSize }; }
+    ;
+  
+  std::vector<BufferRange_t> buffers;
+  buffers.reserve(std::distance(iNextTrigger, tend)); // worst case
+  
+  auto earliestBufferStart { firstTick };
+  while (iNextTrigger != tend) {
+    
+    BufferRange_t const buffer = makeBuffer(*iNextTrigger);
+    
+    if (buffer.first < earliestBufferStart) { // extend the previous buffer
+      assert(!buffers.empty()); // guaranteed because we skipped early triggers
+      buffers.back().second = buffer.second;
+    }
+    else buffers.emplace_back(buffer);
+    
+    earliestBufferStart = buffer.second;
+    
+    ++iNextTrigger;
+  } // while
+  
+  //
+  // turn each buffer into a waveform
+  //
+  MF_LOG_TRACE("PMTsimulationAlg")
+    << "Channel #" << opChannel << ": " << buffers.size() << " waveforms for "
+    << trigger_locations.size() << " triggers"
+    ;
+  std::vector<raw::OpDetWaveform> output_opdets;
+  for (BufferRange_t const& buffer: buffers) {
+    
+    output_opdets.push_back(createOpDetWaveform(opChannel, buffer));
+    
+  } // for buffers
+  
+  return output_opdets;
+} // icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms()
 
 
-    std::vector<optical_tick> trigger_locations = FindTriggers(wvfm);
-    auto iNextTrigger = trigger_locations.begin();
-    optical_tick nextTrigger
-      = trigger_locations.empty()
-      ? std::numeric_limits<optical_tick>::max()
-      : *iNextTrigger
-      ;
-
-    //std::cout << "Creating opdet waveforms in " << opch << std::endl;
-
-    bool in_pulse=false;
-    size_t trig_start=0,trig_stop=wvfm.size();
-
-    auto const pretrigSize = fParams.pretrigSize();
-    auto const posttrigSize = fParams.posttrigSize();
-    MF_LOG_TRACE("PMTsimulationAlg")
-      << "Channel #" << opch << ": " << trigger_locations.size() << " triggers";
-    for (std::size_t const i_t: util::counter(wvfm.size())) {
-
-      auto const thisTick = optical_tick::castFrom(i_t);
-
-      //if we are at a trigger point, open the window
-      if (thisTick == nextTrigger) {
-
-        // update the next trigger
-        nextTrigger
-          = (++iNextTrigger == trigger_locations.end())
-          ? std::numeric_limits<optical_tick>::max()
-          : *iNextTrigger
-          ;
-
-
-	//if not already in a pulse
-	if(!in_pulse){
-	  in_pulse=true;
-	  trig_start = i_t>pretrigSize ? i_t-pretrigSize : 0;
-	  trig_stop  = (wvfm.size()-1-i_t)>posttrigSize ? i_t+posttrigSize : wvfm.size();
-
-	}
-	//else, if we are already in a pulse, extend it
-	else if(in_pulse){
-	  trig_stop  = (wvfm.size()-1-i_t)>posttrigSize ? i_t+posttrigSize : wvfm.size();
-	}
-      }
-
-      //ok, now, if we are in a pulse but have reached its end, store the waveform
-      if(in_pulse && i_t==trig_stop-1){
-	// time should be absolute (on electronics time scale)
-	output_opdets.emplace_back(
-	     // start of the waveform (tick #0) in the full optical reading
-	  raw::TimeStamp_t{ PMTstartTime + trig_start/fSampling },
-				    opch,
-				    trig_stop-trig_start );
-	auto& outputWaveform = output_opdets.back().Waveform();
-	outputWaveform.reserve(trig_stop - trig_start);
-	std::transform(wvfm.begin()+trig_start,wvfm.begin()+trig_stop,
-	  std::back_inserter(outputWaveform),
-	  [](auto ADC){ return ADC.value(); }
-	  );
-	in_pulse=false;
-      }
-
-    } // for i_t (loop over waveform)
-  } // icarus::opdet::PMTsimulationAlg::CreateOpDetWaveforms()
-
-  bool icarus::opdet::PMTsimulationAlg::KicksPhotoelectron() const
-    { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; }
+// -----------------------------------------------------------------------------
+bool icarus::opdet::PMTsimulationAlg::KicksPhotoelectron() const
+  { return CLHEP::RandFlat::shoot(fParams.randomEngine) < fQE; }
 
 
 // -----------------------------------------------------------------------------

@@ -1,27 +1,27 @@
 #
-# File:    maketriggerplots_icarus.fcl
-# Purpose: Runs `icarus::trigger::MajorityTriggerEfficiencyPlots` module.
+# File:    makeslidingwindowtriggerplots_icarus.fcl
+# Purpose: Runs `icarus::trigger::SlidingWindowTriggerEfficiencyPlots` module.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
-# Date:    January 9, 2020
+# Date:    April 2, 2020
 #
 # This is a top-level configuration that can be run directly.
 # 
 # Required inputs
 # ----------------
 # 
-#  * discriminated waveforms (with threshold)
+#  * sliding window discriminated waveforms (with threshold)
 #
 
 #include "services_icarus.fcl"
 #include "trigger_icarus.fcl"
 
-process_name: TrgPlots
+process_name: SlideTrgPlots
 
 
 services: {
   
   # this provides: file service, random management (unused),
-  #                Geometry, detector properties and clocks
+  #                geometry, detector properties and clocks
   @table::icarus_basic_services
   
   # currently unused (remove the line if they start mattering):
@@ -37,21 +37,31 @@ physics: {
   
     triggerplots: {
       
-      module_type: MajorityTriggerEfficiencyPlots
+      module_type: SlidingWindowTriggerEfficiencyPlots
       
-      TriggerGatesTag: lvdsgates
+      TriggerGatesTag: trigslidewindow
       
       # select the thresholds to process (mandatory)
       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
       
       # minimum number of trigger primitives required for the trigger to fire
-      MinimumPrimitives: [ 1, 2, 3, 4, 5, 8, 12, 20, 50 ]
+      Patterns: [
+        {
+          inMainWindow:     3
+          inOppositeWindow: 1
+        },
+        {
+          inMainWindow:     3
+          inOppositeWindow: 3
+        }
+      ] # Patterns
+      
       
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
       BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
 
       # message facility stream
-      LogCategory: "MajorityTriggerEfficiencyPlots"
+      LogCategory: "SlidingWindowTriggerEfficiencyPlots"
       
     } # triggerplots
     
@@ -68,13 +78,13 @@ physics: {
 #
 # add debug output to its own file
 #
-services.message.destinations.MajorityTriggerEfficiencyPlotsLog: {
+services.message.destinations.SlidingWindowTriggerEfficiencyPlotsLog: {
   type:       file
-  filename:  "MajorityTriggerEfficiencyPlots.log"
+  filename:  "SlidingWindowTriggerEfficiencyPlots.log"
   threshold:  DEBUG
   categories: {
-    MajorityTriggerEfficiencyPlots: { limit: -1 }
-    default:                        { limit: 0 }
+    SlidingWindowTriggerEfficiencyPlots: { limit: -1 }
+    default:                             { limit: 0 }
   }
-} # services.messages.destinations.MajorityTriggerEfficiencyPlotsLog
+} # services.messages.destinations.SlidingWindowTriggerEfficiencyPlotsLog
 

@@ -172,12 +172,33 @@ class icarus::trigger::TriggerGateData {
    * @param start first tick to check _(by default, the first available one)_
    * @param end if getting to this tick, give up _(by default, to the end)_
    * @return the tick at which the gate opened, or `end` if never
+   * @see `findClose()`, `findMaxOpen()`
    * 
    * If the count is already above (or equal to) `minOpening` at the specified
    * `start` tick, the current level is ignored and only the next change which
    * keeps the gate open is reported.
    */
   ClockTick_t findOpen(
+    OpeningCount_t minOpening = 1U,
+    ClockTick_t start = MinTick, ClockTick_t end = MaxTick
+    ) const;
+  
+  /**
+   * @brief Returns the tick at which the gate closed.
+   * @param minOpening minimum count to consider the gate open (default: `1`)
+   * @param start first tick to check _(by default, the first available one)_
+   * @param end if getting to this tick, give up _(by default, to the end)_
+   * @return the tick at which the gate closed, or `end` if never
+   * @see `findOpen()`
+   * 
+   * The closing is defined as the opening count being changed to strictly below
+   * `minOpening`.
+   * 
+   * If the count is already below `minOpening` at the specified `start` tick,
+   * the current level is ignored and only the next change which
+   * keeps the gate closed is reported.
+   */
+  ClockTick_t findClose(
     OpeningCount_t minOpening = 1U,
     ClockTick_t start = MinTick, ClockTick_t end = MaxTick
     ) const;
@@ -216,13 +237,15 @@ class icarus::trigger::TriggerGateData {
   // --- BEGIN Gate opening and closing operations -----------------------------
   /// @name Gate opening and closing operations
   /// @{
+  
   /// Changes the opening to match `openingCount` at the specified time.
   void setOpeningAt(ClockTick_t tick, OpeningCount_t openingCount);
   
   /// Open this gate at the specified time (increase the opening by `count`).
   void openAt(ClockTick_t tick, OpeningDiff_t count)
     { openBetween(tick, MaxTick, count); }
-  /// Open this gate at the specified time.
+  
+  /// Open this gate at the specified time (increase the opening by 1).
   void openAt(ClockTick_t tick) { openAt(tick, 1); }
   
   /// Open this gate at specified `start` tick, and close it at `end` tick.
@@ -235,12 +258,12 @@ class icarus::trigger::TriggerGateData {
   /// Close this gate at the specified time (decrease the opening by `count`).
   void closeAt(ClockTick_t tick, OpeningDiff_t count)
     { return openAt(tick, -count); }
+  
   /// Close this gate at the specified time.
   void closeAt(ClockTick_t tick) { closeAt(tick, 1); }
   
   /// Completely close this gate at the specified time.
   void closeAllAt(ClockTick_t tick) { setOpeningAt(tick, 0U); }
-  
   
   /// @}
   // --- END Gate opening and closing operations -------------------------------
@@ -421,8 +444,19 @@ class icarus::trigger::TriggerGateData {
   /// @throw cet::exception if tick can't be handled
   status_const_iterator findLastStatusForTickOrThrow(ClockTick_t tick) const;
   
+  /// Returns an iterator to the first status for which `op(status)` is true.
+  template <typename Op>
+  status_const_iterator findStatus
+    (Op op, ClockTick_t start = MinTick, ClockTick_t end = MaxTick) const;
+
   /// Returns an iterator to the first open status (@see `findOpen()`).
   status_const_iterator findOpenStatus(
+    OpeningCount_t minOpening = 1U,
+    ClockTick_t start = MinTick, ClockTick_t end = MaxTick
+    ) const;
+
+  /// Returns an iterator to the first close status (@see `findClose()`).
+  status_const_iterator findCloseStatus(
     OpeningCount_t minOpening = 1U,
     ClockTick_t start = MinTick, ClockTick_t end = MaxTick
     ) const;

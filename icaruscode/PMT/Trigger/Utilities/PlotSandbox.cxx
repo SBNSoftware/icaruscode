@@ -126,8 +126,18 @@ auto icarus::trigger::PlotSandbox::findSandbox(std::string const& name)
   { return findSandbox(*this, name); }
 
 auto icarus::trigger::PlotSandbox::findSandbox(std::string const& name) const
-  -> PlotSandbox const* 
+  -> PlotSandbox const*
   { return findSandbox(*this, name); }
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::PlotSandbox::demandSandbox(std::string const& name)
+  -> PlotSandbox&
+  { return demandSandbox(*this, name); }
+
+auto icarus::trigger::PlotSandbox::demandSandbox(std::string const& name) const
+  -> PlotSandbox const&
+  { return demandSandbox(*this, name); }
 
 
 //------------------------------------------------------------------------------
