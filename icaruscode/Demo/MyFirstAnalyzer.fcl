@@ -1,0 +1,9 @@
+BEGIN_PROLOG
+
+myfirstanalyzer:
+{
+  module_type: "MyFirstAnalyzer"
+  HitLabel:   "gaushitTPC0" #default in module is tpc0
+}
+
+END_PROLOG

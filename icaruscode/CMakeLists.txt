@@ -14,3 +14,5 @@ add_subdirectory(TPC)
 add_subdirectory(Utilities)
 
 #add_subdirectory(LArCVImageMaker)
+
+add_subdirectory(Demo)
