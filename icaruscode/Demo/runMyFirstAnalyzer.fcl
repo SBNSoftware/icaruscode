@@ -76,4 +76,4 @@ outputs:
 
 # Overrides for individual parameters above
 # In this example, this could be a change in the TPC we're using with gaushitTPC0 to gaushitTPC1
-#physics.ana.myAnalyzer.HitLabel: "gaushitTPC1"
+#physics.analyzers.myAnalyzer.HitLabel: "gaushitTPC1"
