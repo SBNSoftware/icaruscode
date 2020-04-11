@@ -1,0 +1,50 @@
+#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "singles_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "mccheatermodules.fcl"
+#include "photpropservices.fcl"
+#include "opticaldetectormodules.fcl"
+#include "opticaldetectorservices.fcl"
+
+## You will write whatever name you want this process to be called 
+## It is important to note that the same process name cannot be called
+## twice on a ROOT file, so you may have to change this 
+
+process_name: DemoFlash
+
+
+services:
+{
+  @table::icarus_simulation_services
+}
+
+
+#This defines the input to your fcl file
+#You can start by reading in a ROOT file
+#Setting maxEvents = -1 will loop over all events in the file
+source:
+{
+  module_type: RootInput
+  maxEvents:  -1        # Number of events to create
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ 
+ ### Here you will define any analyzer modules you want to run ###
+ analyzers:
+ {
+   demoflash: { module_type: "PMTOpFlash" }
+ }
+ 
+ ana:[demoflash]
+ 
+ #end_paths is a keyword and contains the paths that do not modify the art::Event, 
+ #ie analyzers and output streams.  these all run simultaneously
+ end_paths:     [ana]
+}
