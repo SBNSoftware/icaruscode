@@ -46,13 +46,13 @@ physics:
 
       CRTDetSimLabel:  "crtdaq"
 
-      #PDGs:                   [ 0 ]
-      #MinMomenta:             [ 0 ]
-      #MaxMomenta:             [ 0 ]
+      PDGs:                   [ 0 ]
+      MinMomenta:             [ 0 ]
+      MaxMomenta:             [ 0 ]
  
-      PDGs:                     [ 13, -13 ]       #Request that the particle passing through the CRTs has a specific PDG.  You can specify multiple PDGs.  Specify 0 for any PDG
-      MinMomenta:             [ 0.1, 0.1 ] #, 0 ]    #Minimum momentum of particle(s) passing through thet CRTs.  Specify 0 to ignore min momentum.  Vector should be same length as PDG
-      MaxMomenta:             [ 10, 10 ] #, 0 ]    #Same but for maximum momentum
+      #PDGs:                     [ 11 ] #13, -13 ]       #Request that the particle passing through the CRTs has a specific PDG.  You can specify multiple PDGs.  Specify 0 for any PDG
+      #MinMomenta:             [ 0 ] #0.1, 0.1 ] #, 0 ]    #Minimum momentum of particle(s) passing through thet CRTs.  Specify 0 to ignore min momentum.  Vector should be same length as PDG
+      #MaxMomenta:             [ 0 ] #10, 10 ] #, 0 ]    #Same but for maximum momentum
 
     }
   }

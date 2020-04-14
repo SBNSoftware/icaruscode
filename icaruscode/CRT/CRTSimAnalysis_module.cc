@@ -750,10 +750,6 @@ namespace crt {
         //check momentum is within region of interest
         if ( fMinMomenta[index] != 0 && p < fMinMomenta[index]) continue;
         if ( fMaxMomenta[index] != 0 && p > fMaxMomenta[index]) continue;
-        //if ( fMinMomenta.size()==1 && fMinMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMinMomenta[0] ) continue;
-        //if ( fMaxMomenta.size()==1 && fMaxMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMaxMomenta[0] ) continue;
-        //if ( abs(fSimPDG)==11 && particle.Process()!="compt" && particle.Process()!="conv" )
-        //  continue;
 
         //count total number of muons present in event
         //if (abs(fSimPDG)==13){
@@ -813,13 +809,13 @@ namespace crt {
 	// A particle has a trajectory, consisting of a set of
 	// 4-positions and 4-mommenta.
 	fSimHits = particle.NumberTrajectoryPoints();
+	//std::cout << "particle with " << fSimHits << " trajectory points" << std::endl;
 
 	// For trajectories, as for vectors and arrays, the first
 	// point is #0, not #1.
-	const int last = fSimHits - 1;
+	const int last = fSimHits - 2;
 	const TLorentzVector& positionStart = particle.Position(0);
 	const TLorentzVector& positionEnd   = particle.Position(last);
-	//const TLorentzVector& momentumStart = particle.Momentum(0);
 	const TLorentzVector& momentumEnd   = particle.Momentum(last);
 
 	// Fill arrays with the 4-values.
@@ -860,10 +856,12 @@ namespace crt {
 
         int oldreg = -1;
 
-        MF_LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
+        //MF_LOG_DEBUG("CRT") 
+        //std::cout << "about to loop over trajectory points" << std::endl;//'\n';
 
         //loop over trajectory points
         for (unsigned int i=0; i<fSimHits; i++){
+		//std::cout << "initialize point info" << std::endl;
                 const TLorentzVector& pos = particle.Position(i); // 4-position in World coordinates
                 const TLorentzVector& posnext = particle.Position(i+1); // problem for last point???
                 const TLorentzVector& mom = particle.Momentum(i); // 4-momentum
@@ -874,20 +872,36 @@ namespace crt {
                 double entryT = -FLT_MAX;
                 bool active0 = false, active1 = false, activenext0 = false, activenext1 = false;
 
+		//std::cout << "cosmic display info" << std::endl;
+		//std::cout << "x,y.z,t: " << pos.X() << ", " << pos.Y() << ", " << pos.Z() << ", " << pos.T() << std::endl;
+		//std::cout << "px, py, pz: " << mom.Px() << ", " << mom.Py() << ", " << mom.Pz() << std::endl;
+		//std::cout << "E.P: " << mom.E() << ", " << mom.P() << std::endl;
+		//std::cout << "cosx, cosy, cosz: " << mom.Px()/mom.P() << ", " << mom.Py()/mom.P() << ", " 
+		//		<< mom.Pz()/mom.P() << std::endl;
                 // CosmicDisplay info
+                //std::vector<double> cdxyzttmp = {pos.X(),pos.Y(),pos.Z(),pos.T()};
                 fCDxyzt.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
+		//std::cout << "filled CDxyzt" << std::endl;
+		//std::vector<double> cdpetmp = {mom.Px(),mom.Py(),mom.Pz(),mom.E()};
                 fCDpe.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
+		//std::cout << "filled CDpe" << std::endl;
+		//std::vector<double> cdslopestmp = {mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()};
+		//std::cout << "filled filler for CDSlopes" << std::endl;
                 fCDSlopes.push_back({mom.Px()/mom.P(), mom.Py()/mom.P(), mom.Pz()/mom.P()});
+		//std::cout << "fill CDSlopes" << std::endl;
                 fNCD++;
 
+		//std::cout << "check if in cryostats" << std::endl;
                 // Regions info
                 // Check if trajectory points are in cryostats (active + inactve LAr ) 
                 if(cryo0.ContainsPosition(point)) {
-
+			//std::cout << "in cryo 0" << std::endl;
                         active0 = tpc00.ContainsPosition(point);
                         active1 = tpc01.ContainsPosition(point);
                         activenext0 = tpc00.ContainsPosition(pointnext);
                         activenext1 = tpc01.ContainsPosition(pointnext);
+
+			//std::cout << "old reg: " << oldreg << ", active0: " << active0 << ", active1: " << active1 <<std::endl;
 
                         // if last point was not in this cryostat or is now entering AV
                         if ( (oldreg!=10&&!active0&&!active1) || (active0&&oldreg!=5) || (active1&&oldreg!=6)) {
@@ -926,10 +940,17 @@ namespace crt {
                                     fRegRegions.push_back(10);
                                     fRegInactive++;
                                 }
+				//std::cout << "fRegEntryX: ";
+				//std::cout << fRegEntryXYZT[fNReg][0] << std::endl;
+				//std::cout << "fRegExitX:  ";
+				//std::cout << fRegExitXYZT[fNReg][0] << std::endl;
+				//std::cout << "calculate dL" << std::endl;
                                 fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
                                                     +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
                                                     +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
+				//std::cout << "calculate EDep" << std::endl;
                                 fRegEDep.push_back(fRegEntryPE[fNReg][3] - fRegExitPE[fNReg][3]);
+				//std::cout << "done" << std::endl;
                                 for (int index=0; index<3; index++) entryPos[index] = fRegEntryXYZT[fNReg][index];
                                 entryT = fRegEntryXYZT[fNReg][3];
                                 fRegOpDetID.push_back(cryo0.GetClosestOpDet(entryPos));
@@ -941,6 +962,7 @@ namespace crt {
                                 fRegOpDetXYZT.push_back({});
                                 for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
                                 fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
+				oldreg=-1;
                                 fNReg++;
                         }
                 } //if cryo0
@@ -948,6 +970,7 @@ namespace crt {
                 // if this point in the other cryostat
                 if(cryo1.ContainsPosition(point)) {
  
+			//std::cout << "in cryo 1" << std::endl;
                         //check if this or next points are in active volumes
                         active0 = tpc10.ContainsPosition(point);
                         active1 = tpc11.ContainsPosition(point);
@@ -1005,12 +1028,14 @@ namespace crt {
                                 fRegOpDetXYZT.push_back({});
                                 for (int index=0; index<3; index++) fRegOpDetXYZT[fNReg].push_back(opDetPos[index]);
                                 fRegOpDetXYZT[fNReg].push_back(entryT + fRegDistToOpDet[fNReg]*LAR_PROP_DELAY);
+				oldreg=-1;
                                 fNReg++;
                         } // if exiting from volume
                 } //if cryo1
 
         }//for trajectory points
 
+	//std::cout << "fill CosmicDisplay ntuple" << std::endl;
         fCosmicDisplayNtuple->Fill();
 
         //map module IDs to strip IDs hit by muons
@@ -1049,6 +1074,7 @@ namespace crt {
         fADExitPE.clear();
         fADMac.clear();
 
+	//std::cout << "loop over AD Channels" << std::endl;
 	// To look at the energy deposited by this particle's track,
 	// we loop over the AuxDetSimChannel objects in the event. 
 	// Note all volumes are included, not just ones with energy deps
@@ -1196,6 +1222,7 @@ namespace crt {
 	    } // For each IDE (strip hit by muon)
 	} // For each SimChannel (module)
 
+	//std::cout << "fill Simulation ntuple" << std::endl;
         // write values to tree for this event and particle
         fSimulationNtuple->Fill();
 
@@ -1370,8 +1397,9 @@ namespace crt {
 
         } // outer loop over taggers
 
-        if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
+        //if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
         //auto tmpNReg = fNReg;
+	//if(regCRTEnter.size()>0){
         for( auto it=regCRTEnter.begin(); it!=regCRTEnter.end(); it++) {
             //std::cout << "found CRT region " << it->first << std::endl;
             fRegRegions.push_back(it->first);
@@ -1394,13 +1422,14 @@ namespace crt {
             
             fNReg++; fRegCRTs++;
         }
-        //std::cout << "added " << fNReg-tmpNReg << " CRT regions to RegTree" << std::endl;
+        //std::cout << "added " << fNReg-tmpNReg << " CRT regions to RegTree" << std::endl;}
 
         //sort region tree entries by entry time
         int flag = 1;    // set flag to 1 to start first pass
         int      tempInt;
         double   tempDoub;
         
+	if(fNReg>0)
         for(int i = 1; (i <= (int)fNReg) && flag; i++)
         {
             flag = 0;
@@ -1451,17 +1480,52 @@ namespace crt {
                     flag = 1;               // indicates that a swap occurred.
                 }
             }
-        }
+        }//end of sorting loop
 
+	if(fNReg>0){
+
+        /*std::cout << "RegEvent: " << fRegEvent << std::endl;
+        std::cout << "NReg: " << fNReg << std::endl;
+        std::cout << "RegFid: " << fRegFid << std::endl;
+        std::cout << "RegActive: " << fRegActive << std::endl;
+        std::cout << "RegInactive: " << fRegInactive << std::endl;
+        std::cout << "RegCRTs: " << fRegCRTs << std::endl;;
+        std::cout << "CRTPDG: " << fRegPDG << std::endl;;
+        std::cout << "RegTrkID: " << fRegTrkID << std::endl;
+        std::cout << "RegRegions size: " << fRegRegions.size() << std::endl;
+        std::cout << "RegEDep size: " << fRegEDep.size() << std::endl;
+        std::cout << "RegDistToOpDet size: " << fRegDistToOpDet.size() << std::endl;
+        std::cout << "RegOpDetID size: " << fRegOpDetID.size() << std::endl;
+        std::cout << "RegEntryXYZT size: " << fRegEntryXYZT.size() << std::endl;
+        std::cout << "RegExitXYZT size: " << fRegExitXYZT.size() << std::endl;
+        std::cout << "RegEntryPE size: " << fRegEntryPE.size() << std::endl;
+        std::cout << "RegExitPE size: " << fRegExitPE.size() << std::endl;
+        std::cout << "RegOpDetXYZT size: " << fRegOpDetXYZT.size() << std::endl;
+        std::cout << "RegEntrySlope size: " << fRegEntrySlope.size() << std::endl;
+        std::cout << "RegExitSlope size: " << fRegExitSlope.size() << std::endl;*/
+
+	if(fRegRegions.size()!=fRegEDep.size() || fRegEDep.size()!=fRegDistToOpDet.size() ||
+		fRegEntryXYZT.size()!=fRegExitXYZT.size() || fRegEntryPE.size()!=fRegExitPE.size() ||
+		fRegEntrySlope.size()!=fRegExitSlope.size()){
+		std::cout << "regions vectors size mismatch! entry-exit->" << 
+			fRegEntryXYZT.size()-fRegExitXYZT.size() << std::endl;}
+
+	//std::cout << "filling regions ntuple" << std::endl;
         fRegionsNtuple->Fill();
+		//std::cout << "done." << std::endl;
+	}
+	//else{
+	//	std::cout << "particle didn't cross any regions of interest...on to the next" << std::endl;
+	//}
 
     } // loop over all particles in the event. 
 
+    //std::cout << "out of particle loop" << std::endl;
 
     art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
     bool isCRTDetSim = event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle);
 
-    if (isCRTDetSim)  {
+    if (isCRTDetSim && (*crtDetSimHandle).size()>0)  {
      std::cout << "about to loop over detsim entries" << std::endl;
      for ( auto const& febdat : (*crtDetSimHandle) ) {
         fDetEvent       = febdat.Event();
@@ -1529,7 +1593,7 @@ namespace crt {
     bool isCRTSimHit = event.getByLabel(fCRTSimHitProducerLabel, crtSimHitHandle);
     std::vector<int> ids;
     fNHit = 0;
-    if (isCRTSimHit) {
+    if (isCRTSimHit && (*crtSimHitHandle).size()>0) {
 
         //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
         art::FindManyP<icarus::crt::CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitProducerLabel);
