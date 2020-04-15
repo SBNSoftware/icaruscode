@@ -18,7 +18,6 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-#include "icaruscode/"
 
 class CrtOpHitMatchAnalysis;
 
