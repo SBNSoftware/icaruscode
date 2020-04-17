@@ -12,6 +12,7 @@ __all__ = [
   'justLoadICARUSgeometry',
 ]
 
+import galleryUtils
 import LArSoftUtils
 import ROOTutils
 from ROOTutils import ROOT
@@ -45,8 +46,55 @@ DefaultChannelMapping = 'ICARUSsplitInductionChannelMapSetupTool'
 ################################################################################
 ### Geometry
 ###
+def getChannelMappingConfiguration(
+  config: "ConfigurationClass object with complete job configuration",
+  registry: "ServiceRegistryClass object with the configuration of all services",
+  ) -> "configuration of channel mapping algorithm as a FHiCL parameter set":
+  
+  #
+  # Try first if there is a configuration in the geometry service configuration;
+  # this is the "default" for the future. If not, back up to
+  # ExptGeoHelperInterface service.
+  #
+  
+  serviceName = 'Geometry'
+  try: 
+    serviceConfig = config.service(serviceName) if config else registry.config(serviceName)
+  except Exception: serviceConfig = None
+  if serviceConfig and serviceConfig.has_key('ChannelMapping'):
+    mapperConfig = galleryUtils.getTableIfPresent(serviceConfig, 'ChannelMapping')
+  else:
+    serviceName = 'ExptGeoHelperInterface'
+    serviceConfig = config.service(serviceName) if config else registry.config(serviceName)
+    if serviceConfig is None:
+      raise RuntimeError("Failed to retrieve the configuration for %s service" % serviceName)
+    if serviceConfig.get(str)('service_provider') != 'IcarusGeometryHelper':
+      raise RuntimeError(
+      "{} in configuration is '{}', not IcarusGeometryHelper"
+      .format(serviceName, serviceConfig['service_provider'])
+      )
+    # if
+    mapperConfig = galleryUtils.getTableIfPresent(serviceConfig, 'Mapper')
+  # if no mapper in geometry service (or no geometry service??)
+  
+  if mapperConfig:
+    try:
+      plugin_type = mapperConfig.get(str)('tool_type')
+    except:
+      raise RuntimeError(
+        "{} service configuration of channel mapping is missing the tool_type:\n{}"
+        .format(serviceName, mapperConfig.to_indented_string("  "))
+        )
+    # try ... except
+  else: plugin_type = DefaultChannelMapping
+  
+  return plugin_type
+# getChannelMappingConfiguration()
+
+
 def loadICARUSchannelMappingClass(
   config: "ConfigurationClass object with complete job configuration",
+  registry: "ServiceRegistryClass object with the configuration of all services",
   ) -> "Class object for the proper channel mapping":
   
   #
@@ -59,25 +107,7 @@ def loadICARUSchannelMappingClass(
   #
   # 1. find out which mapping is required: known configurations
   #
-  helperConfig = config.service('ExptGeoHelperInterface')
-  if helperConfig.get(str)('service_provider') != 'IcarusGeometryHelper':
-    raise RuntimeError(
-     "ExptGeoHelperInterface in configuration is '{}', not IcarusGeometryHelper"
-     .format(helperConfig['service_provider'])
-     )
-  # if
-  if helperConfig.has_key('Mapper'):
-    try:
-      mapperConfig = helperConfig.get(ROOT.fhicl.ParameterSet)('Mapper')
-      plugin_type = mapperConfig.get(str)('tool_type')
-    except:
-      raise RuntimeError(
-        "Geometry helper configuration is missing the tool_type:\n"
-        + helperConfig.to_indented_string()
-        )
-    # try ... except
-  else: plugin_type = DefaultChannelMapping
-  
+  plugin_type = getChannelMappingConfiguration(config=config, registry=registry)
   
   #
   # 2. load the proper libraries
@@ -146,7 +176,8 @@ def loadICARUSgeometry(
   See `loadGeometry()` for the meaning of the arguments.
   """
   
-  if mappingClass is None: mappingClass = loadICARUSchannelMappingClass(config)
+  if mappingClass is None:
+    mappingClass = loadICARUSchannelMappingClass(config=config, registry=registry)
   return LArSoftUtils.loadGeometry \
     (config=config, registry=registry, mapping=mappingClass)
 # loadICARUSgeometry()
