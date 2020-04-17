@@ -140,7 +140,7 @@ class SourceCentral:
   # loadHeaderFromUPS()
 
   def load(self, relPath, extraPaths = [], force = False):
-    return (self.loadLibrary if self.isLibrary(relPath) else self.loadHeader)(relPath, extraPaths=extraPaths, force=force)
+    return (self.loadLibrary if self.isLibrary(relPath) else self.loadHeaderFromUPS)(relPath, extraPaths=extraPaths, force=force)
   # load()
   
   def isLibrary(self, path):
