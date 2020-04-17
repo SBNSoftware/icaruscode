@@ -132,7 +132,7 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      numBins      = fFilterVec.size();
     double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
-    double      maxFreq      = 1.e3 / (2. * samplingRate);      // Max frequency in MHz
+    double      maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
     double      minFreq      = maxFreq / numBins;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
     TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, minFreq, maxFreq);
