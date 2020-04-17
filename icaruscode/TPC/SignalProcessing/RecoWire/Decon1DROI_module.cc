@@ -173,15 +173,28 @@ Decon1DROI::~Decon1DROI()
 //////////////////////////////////////////////////////
 void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 {
+    // Recover the parameters
+    fDigitModuleLabel     = pset.get< std::string >   ("DigitModuleLabel", "daq");
+    fNoiseSource          = pset.get< unsigned short >("NoiseSource",          3);
+    fSaveWireWF           = pset.get< int >           ("SaveWireWF"             );
+    fMinAllowedChanStatus = pset.get< int >           ("MinAllowedChannelStatus");
+    fTruncRMSThreshold    = pset.get< float >         ("TruncRMSThreshold",    6.);
+    fTruncRMSMinFraction  = pset.get< float >         ("TruncRMSMinFraction", 0.6);
+    fOutputHistograms     = pset.get< bool  >         ("OutputHistograms",   true);
+    
     // Recover the vector of fhicl parameters for the ROI tools
     const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
     
     fROIFinderVec.resize(roiFinderTools.get_pset_names().size());
+
+    unsigned short roiPadding(std::numeric_limits<unsigned short>::max());
     
     for(const std::string& roiFinderTool : roiFinderTools.get_pset_names())
     {
         const fhicl::ParameterSet& roiFinderToolParamSet = roiFinderTools.get<fhicl::ParameterSet>(roiFinderTool);
         size_t                     planeIdx              = roiFinderToolParamSet.get<size_t>("Plane");
+
+        roiPadding = std::min(roiPadding,roiFinderToolParamSet.get< std::vector<unsigned short>>("roiLeadTrailPad")[0]);
         
         fROIFinderVec.at(planeIdx) = art::make_tool<icarus_tool::IROIFinder>(roiFinderToolParamSet);
     }
@@ -190,17 +203,14 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 
     fDeconvolution = art::make_tool<icarus_tool::IDeconvolution>(pset.get<fhicl::ParameterSet>("Deconvolution"));
     
-    // Recover the baseline tool
-    fBaseline  = art::make_tool<icarus_tool::IBaseline> (pset.get<fhicl::ParameterSet>("Baseline"));
+    // Recover the baseline tool 
+    fhicl::ParameterSet baselineParams = pset.get<fhicl::ParameterSet>("Baseline");
 
-    fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
-    fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);
-    fSaveWireWF                 = pset.get< int >           ("SaveWireWF"             );
-    fMinAllowedChanStatus       = pset.get< int >           ("MinAllowedChannelStatus");
-    fTruncRMSThreshold          = pset.get< float >         ("TruncRMSThreshold",    6.);
-    fTruncRMSMinFraction        = pset.get< float >         ("TruncRMSMinFraction", 0.6);
-    fOutputHistograms           = pset.get< bool  >         ("OutputHistograms",   true);
-    
+    // Check if we need to set the length for setting the baseline
+    if (baselineParams.has_key("MaxROILength")) baselineParams.put_or_replace("MaxROILength",size_t(roiPadding));
+
+    fBaseline  = art::make_tool<icarus_tool::IBaseline> (baselineParams);
+
     fSpillName.clear();
     
     size_t pos = fDigitModuleLabel.find(":");
