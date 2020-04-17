@@ -139,7 +139,7 @@ void SignalShapingICARUSService::init()
         }
         
         // Check to see if we want histogram output
-        if (fStoreHistograms && !fStoreHistograms)
+        if (fStoreHistograms)
         {
             art::ServiceHandle<art::TFileService> tfs;
             
