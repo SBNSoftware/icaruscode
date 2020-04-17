@@ -91,7 +91,7 @@ class RecoWireROIICARUS : public art::EDProducer
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
 
-    icarus_signal_processing::WaveformTools<float>                     fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>          fWaveformTool;
     
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
     
@@ -214,7 +214,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
 
     // Read in the digit List object(s). 
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;        
     
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);

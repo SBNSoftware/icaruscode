@@ -101,7 +101,7 @@ private:
     TH2F*                                       fDTixVDiffHist;
     TH2F*                                       fDiffVDilHist;
 
-    icarus_signal_processing::WaveformTools<float>         fWaveformTool;
+    icarus_signal_processing::WaveformTools<float> fWaveformTool;
 
     // Services
     const geo::GeometryCore*                    fGeometry = lar::providerFrom<geo::Geometry>();
