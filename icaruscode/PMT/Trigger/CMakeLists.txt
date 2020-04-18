@@ -4,6 +4,7 @@ add_subdirectory(Utilities)
 
 art_make(
   EXCLUDE
+    "MajorityTriggerSimulation_module.cc"
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
@@ -20,7 +21,6 @@ art_make(
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
     ${ART_FRAMEWORK_PRINCIPAL}
     ${ART_FRAMEWORK_CORE}
-    ${ART_FRAMEWORK_PRINCIPAL}
     ${ART_PERSISTENCY_PROVENANCE}
     ${ART_UTILITIES}
     ${CANVAS}
@@ -50,6 +50,25 @@ art_make(
     ${FHICLCPP}
   )
 
+simple_plugin(MajorityTriggerSimulation module
+  icaruscode_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Hist
+  ROOT::Core
+  )
+
 simple_plugin(TriggerEfficiencyPlots module
   icaruscode_PMT_Trigger_Utilities
   icaruscode_PMT_Trigger_Data
@@ -63,7 +82,6 @@ simple_plugin(TriggerEfficiencyPlots module
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${ART_FRAMEWORK_PRINCIPAL}
   ${ART_FRAMEWORK_CORE}
-  ${ART_FRAMEWORK_PRINCIPAL}
   ${CANVAS}
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
