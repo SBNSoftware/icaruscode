@@ -156,8 +156,9 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         // Get the truncated mean and rms
         float truncMean;
         int   nTrunc;
+        int   range;
         
-        fWaveformTool.getTruncatedMean(holder, truncMean, nTrunc);
+        fWaveformTool.getTruncatedMean(holder, truncMean, nTrunc, range);
         
         std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
 

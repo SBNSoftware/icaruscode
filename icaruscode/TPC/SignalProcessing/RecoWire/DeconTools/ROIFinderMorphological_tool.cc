@@ -228,15 +228,16 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     float truncMean;
     float nSig(2.5);
     int   nTrunc;
+    int   range;
     
     if (fUseDifference) 
     {
-        fWaveformTool.getTruncatedMean(differenceVec, truncMean, nTrunc);
+        fWaveformTool.getTruncatedMean(differenceVec, truncMean, nTrunc, range);
         fWaveformTool.getTruncatedRMS(differenceVec, nSig, fullRMS, truncRMS, nTrunc);
     }
     else                
     {
-        fWaveformTool.getTruncatedMean(dilationVec, truncMean, nTrunc);
+        fWaveformTool.getTruncatedMean(dilationVec, truncMean, nTrunc, range);
         fWaveformTool.getTruncatedRMS(dilationVec, nSig, fullRMS, truncRMS, nTrunc);
     }
     

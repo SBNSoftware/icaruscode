@@ -375,10 +375,11 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
     float truncMean;
     float nSig(2.0);  // make tight constraint
     int   nTrunc;
+    int   range;
 
     fixedWaveform.resize(waveform.size());
     
-    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
+    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc, range);
     
     // Fill histograms
     if (fOutputHistograms)
