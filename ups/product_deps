@@ -35,7 +35,7 @@ table_fragment_end
 product             version
 larsoft                   v08_50_00
 icarusutil                v08_46_00
-icarus_signal_processing  v08_47_00
+icarus_signal_processing  v08_50_00
 icarus_data               v08_44_00
 genie_xsec                v3_00_04a
 guideline_sl              v2_0_0
