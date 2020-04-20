@@ -280,6 +280,8 @@ void Decon1DROI::produce(art::Event& evt)
     {
         evt.put(std::move(wireCol), fSpillName);
         evt.put(std::move(wireDigitAssn), fSpillName);
+        fEventCount++;
+        
         return;
     }
 
