@@ -80,6 +80,7 @@ private:
     int                                         fStructuringElement;         ///< The window size
     unsigned short                              fPreROIPad;                  ///< ROI padding
     unsigned short                              fPostROIPad;                 ///< ROI padding
+    unsigned short                              fMaxPadLen;                  ///< Don't let padding be larger than this
     bool                                        fOutputHistograms;           ///< Output histograms?
     bool                                        fOutputWaveforms;            ///< Output waveforms?
 
@@ -134,6 +135,7 @@ void ROIFinderMorphological::configure(const fhicl::ParameterSet& pset)
     fMaxLengthCut          = pset.get< int                        >("MaxLengthCut"              );
     fStructuringElement    = pset.get< int                        >("StructuringElement"        );
     zin                    = pset.get< std::vector<unsigned short>>("roiLeadTrailPad"           );
+    fMaxPadLen             = pset.get< unsigned short             >("MaxPadLen",             200);
     fOutputHistograms      = pset.get< bool                       >("OutputHistograms",    false);
     fOutputWaveforms       = pset.get< bool                       >("OutputWaveforms",     false);
     
@@ -332,11 +334,16 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
             histogramMap.at(ROIHISTOGRAM)->Fill(int(roi.first),  std::max(5.*truncRMS,1.));
             histogramMap.at(ROIHISTOGRAM)->Fill(int(roi.second), std::max(5.*truncRMS,1.));
         }
+
+        // For longer than normal pulse trains we could use a bit extra padding
+        unsigned short halfROILen = (roi.second - roi.first) / 2;
+        unsigned short preROIPad  = std::min(std::max(fPreROIPad,halfROILen),fMaxPadLen);
+        unsigned short postROIPad = std::min(std::max(fPostROIPad,halfROILen),fMaxPadLen);
         
         // low ROI end
-        roi.first  = std::max(int(roi.first - fPreROIPad),0);
+        roi.first  = std::max(int(roi.first - preROIPad),0);
         // high ROI end
-        roi.second = std::min(roi.second + fPostROIPad, waveform.size() - 1);
+        roi.second = std::min(roi.second + postROIPad, waveform.size() - 1);
     }
     
     // merge overlapping (or touching) ROI's
@@ -351,7 +358,13 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
         
         for(auto& roi : roiVec)
         {
-            if (roi.first <= stopRoi + 50) stopRoi = roi.second;
+            // Should we merge roi's?
+            if (roi.first <= stopRoi + 50)
+            { 
+                // Make sure the merge gets the right start/end times
+                startRoi = std::min(startRoi,roi.first);
+                stopRoi  = std::max(stopRoi,roi.second);
+            }
             else
             {
                 tempRoiVec.push_back(CandidateROI(startRoi,stopRoi));
