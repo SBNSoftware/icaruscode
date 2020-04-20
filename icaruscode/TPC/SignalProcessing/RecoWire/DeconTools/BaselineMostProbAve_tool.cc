@@ -83,21 +83,26 @@ float BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
         // This returns back the mean value and the spread from which it was calculated
         std::pair<float,int> baseFront = GetBaseline(holder, binRange, roiStart,          roiStart + halfLen);
         std::pair<float,int> baseBack  = GetBaseline(holder, binRange, roiStop - halfLen, roiStop           );
+
+//        std::cout << "-Baseline size: " << holder.size() << ", front/back: " << baseFront.first << "/" << baseBack.first << ", ranges: " << baseFront.second << "/" << baseBack.second;
         
         // Check for a large spread between the two estimates
-        if (std::fabs(baseFront.first - baseBack.first) > 3. * deconNoise)
+        if (std::abs(baseFront.first - baseBack.first) > 1.5 * deconNoise)
         {
             // We're going to favor the front, generally, unless the spread on the back is lower
-            if (baseFront.second < 2 * baseBack.second) base = baseFront.first;
-            else                                        base = baseBack.first;
+            if (baseFront.second < 3 * baseBack.second / 2) base = baseFront.first;
+            else                                            base = baseBack.first;
         }
         else
         {
+            // Otherwise we take a weighted average between the two 
             float rangeFront = baseFront.second;
             float rangeBack  = baseBack.second;
 
             base = (baseFront.first/rangeFront + baseBack.first/rangeBack)*(rangeFront*rangeBack)/(rangeFront+rangeBack);
         }
+
+//        std::cout << ", base: " << base << std::endl;
     }
     
     return base;
