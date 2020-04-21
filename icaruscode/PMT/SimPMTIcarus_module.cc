@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Light/SimPMTIcarus_module.cc
+ * @file   icaruscode/PMT/SimPMTIcarus_module.cc
  * @see    `icarus::opdet::PMTsimulationAlg`
  * 
  * Based on `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.
@@ -47,7 +47,7 @@
 #include <optional>
 
 
-namespace opdet{
+namespace icarus::opdet {
   
   /**
    * @brief Simulates the digitization of ICARUS PMT response and trigger.
@@ -125,7 +125,7 @@ namespace opdet{
       
       fhicl::Atom<art::InputTag> inputModuleLabel {
           Name("InputModule"),
-          Comment("simulated photons to be digitised (sim::SimPhotons)")
+          Comment("simulated photons to be digitized (sim::SimPhotons)")
       };
       
       fhicl::DelegatedParameter SinglePhotonResponse {
@@ -147,17 +147,17 @@ namespace opdet{
       
       rndm::SeedAtom EfficiencySeed {
         Name("EfficiencySeed"),
-        Comment("fix the seed for stocastic photon detection efficiency")
+        Comment("fix the seed for stochastic photon detection efficiency")
         };
       
       rndm::SeedAtom DarkNoiseSeed {
         Name("DarkNoiseSeed"),
-        Comment("fix the seed for stocastic dark noise generation")
+        Comment("fix the seed for stochastic dark noise generation")
         };
       
       rndm::SeedAtom ElectronicsNoiseSeed {
         Name("ElectronicsNoiseSeed"),
-        Comment("fix the seed for stocastic electronics noise generation")
+        Comment("fix the seed for stochastic electronics noise generation")
         };
       
       fhicl::Atom<std::string> electronicsNoiseRandomEngine {
@@ -328,4 +328,4 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   
   // ---------------------------------------------------------------------------
 
-} // namespace icarus
+} // namespace icarus::opdet
