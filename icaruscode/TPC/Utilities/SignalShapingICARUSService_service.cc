@@ -251,25 +251,13 @@ double SignalShapingICARUSService::GetDeconNoise(unsigned int const channel) con
     return deconNoise;
 }
 
-int SignalShapingICARUSService::FieldResponseTOffset(unsigned int const channel) const
+int SignalShapingICARUSService::ResponseTOffset(unsigned int const channel) const
 {
     art::ServiceHandle<geo::Geometry> geom;
     
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double time_offset(0.);
-    
-    try
-    {
-        time_offset = fPlaneToResponseMap.at(planeIdx).front()->getFieldResponse()->getTOffset();
-    }
-    catch (...)
-    {
-        throw cet::exception(__FUNCTION__) << "Invalid plane ... " << planeIdx << std::endl;
-    }
 
-    auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
-    
-    return tpc_clock.Ticks(time_offset / 1.e3);
+    return fPlaneToResponseMap.at(planeIdx).front()->getTOffset();
 }
 }
 
