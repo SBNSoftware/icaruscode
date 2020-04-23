@@ -12,6 +12,11 @@
   <class name="std::vector<icarus::crt::CRTData>"/>
   <class name="art::Wrapper<std::vector<icarus::crt::CRTData> >"/>
 
+  <class name="art::Assns<icarus::crt::CRTData,sim::AuxDetSimChannel,void>"/> 
+  <class name="art::Assns<sim::AuxDetSimChannel,icarus::crt::CRTData,void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::crt::CRTData,sim::AuxDetSimChannel,void>>"/>
+  <class name="art::Wrapper<art::Assns<sim::AuxDetSimChannel,icarus::crt::CRTData,void>>"/>
+
   <class name="std::vector<pair<int,float> >"/>
   <class name="art::Wrapper<std::vector<pair<int,float> > >"/>
   <class name="std::map<uint8_t,std::vector<std::pair<int,float> > >"/>

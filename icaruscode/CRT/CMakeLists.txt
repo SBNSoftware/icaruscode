@@ -71,6 +71,7 @@ simple_plugin( CRTDetSim module
         icaruscode_CRT
         icaruscode_CRTData
         icaruscode_CRTProducts
+	icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
         ${ART_FRAMEWORK_PRINCIPAL}
