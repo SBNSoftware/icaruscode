@@ -137,7 +137,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     std::copy(waveform.begin(),waveform.end(),rawAdcLessPedVec.begin()+binOffset);
     
     // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
-    fFFT->deconvolute(rawAdcLessPedVec, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
+    fFFT->deconvolute(rawAdcLessPedVec, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
     
     std::vector<float> holder;
 
