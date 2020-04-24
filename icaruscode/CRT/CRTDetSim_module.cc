@@ -139,7 +139,8 @@ icarus::crt::CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer{p}
   this->reconfigure(p);
 
   produces< std::vector<icarus::crt::CRTData> >();
-  produces< art::Assns<icarus::crt::CRTData, sim::AuxDetSimChannel> >();
+  produces<std::vector<sim::AuxDetIDE> >();
+  produces< art::Assns<icarus::crt::CRTData, sim::AuxDetIDE> >();
 }
 
 //module producer
@@ -148,9 +149,14 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   //pointer to vector of CRT data products to be pushed to event
   std::unique_ptr<std::vector<CRTData> > triggeredCRTHits (
       new std::vector<CRTData>);
-  std::unique_ptr< art::Assns<CRTData,sim::AuxDetSimChannel> > dataAssn (
-      new art::Assns<CRTData,sim::AuxDetSimChannel> );
+  std::unique_ptr<std::vector<sim::AuxDetIDE> > ides (
+      new std::vector<sim::AuxDetIDE>);
+  std::unique_ptr< art::Assns<CRTData,sim::AuxDetIDE> > dataAssn (
+      new art::Assns<CRTData,sim::AuxDetIDE> );
   art::PtrMaker<CRTData> makeDataPtr(event);
+  art::PtrMaker<sim::AuxDetIDE> makeIDEPtr(event);
+
+  detAlg.ClearTaggers();
 
   // Services: Geometry, DetectorClocks, RandomNumberGenerator
   //art::ServiceHandle<geo::Geometry> geoService;
@@ -166,7 +172,21 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   mf::LogInfo("CRTDetSimProducer")
       <<"Number of AuxDetChannels = " << adChanList.size();
 
-  std::vector<std::pair<CRTData,std::vector<int>>> data = detAlg.CreateData(adChanList);
+  int nide=0;
+  for(auto const& adsc : adChanList) {
+
+      auto const& auxDetIDEs = adsc->AuxDetIDEs();
+      nide = auxDetIDEs.size();
+
+      for(auto const& ide : auxDetIDEs) {
+          ides->push_back(ide);
+      }
+      if(nide>0)
+          detAlg.FillTaggers(adsc->AuxDetID(), adsc->AuxDetSensitiveID(), ides, nide);
+
+  }
+
+  std::vector<std::pair<CRTData,std::vector<int>>> data = detAlg.CreateData();//adChanList);
   int nData = 0;
 
   for(auto const& dataPair : data){
@@ -176,12 +196,13 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     nData++;
   
     for(auto const& data_i : dataPair.second){
-  
-      dataAssn->addSingle(dataPtr, adChanList[data_i]);
+      art::Ptr<sim::AuxDetIDE> idePtr = makeIDEPtr(data_i);
+      dataAssn->addSingle(dataPtr, idePtr);
     }
   }
 
   event.put(std::move(triggeredCRTHits));
+  event.put(std::move(ides));
   event.put(std::move(dataAssn));
 
     mf::LogInfo("CRTDetSimProducer")
