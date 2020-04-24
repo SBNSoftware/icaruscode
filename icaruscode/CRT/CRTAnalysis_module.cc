@@ -1056,6 +1056,7 @@ namespace crt {
 	{  
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
+	    std::cout << "auxDetIDEs.size() = " << auxDetIDEs.size() << std::endl;
 
 	    // For every hit in this channel:
 	    for ( auto const& ide : auxDetIDEs )
@@ -1370,7 +1371,7 @@ namespace crt {
 
         } // outer loop over taggers
 
-        if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
+        //if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
         //auto tmpNReg = fNReg;
         for( auto it=regCRTEnter.begin(); it!=regCRTEnter.end(); it++) {
             //std::cout << "found CRT region " << it->first << std::endl;

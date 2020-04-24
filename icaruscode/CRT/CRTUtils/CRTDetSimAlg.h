@@ -47,6 +47,17 @@ namespace icarus {
  }
 }
 
+struct Tagger {
+    char type;
+    int modid;
+    std::string reg; //crt region where FEB is located
+    std::set<int> layerid; //keep track of layers hit accross whole event window
+    std::map<int,int> chanlayer; //map chan # to layer
+    std::vector<icarus::crt::CRTChannelData> data; //time and charge info for each channel > thresh
+    std::vector<int> ichan; //index of the auxDetIDE vector provided by DetSimProducer 
+};//Tagger
+
+
 class icarus::crt::CRTDetSimAlg {
 
  public:
@@ -54,11 +65,15 @@ class icarus::crt::CRTDetSimAlg {
     CRTDetSimAlg(fhicl::ParameterSet const & p, CLHEP::HepRandomEngine& fRandEngine);
     void reconfigure(fhicl::ParameterSet const & p);
 
-    vector<pair<CRTData, vector<int>>> CreateData(vector<art::Ptr<sim::AuxDetSimChannel>> channels);
+    void ClearTaggers();
+    //given a vector of AuxDetIDEs, fill a map of tagger objects with intermediate ChannelData + aux info
+    void FillTaggers(const uint32_t adid, const uint32_t adsid, const std::unique_ptr<vector<sim::AuxDetIDE>>& ides, const int nide);
+    vector<pair<CRTData, vector<int>>> CreateData();//vector<art::Ptr<sim::AuxDetSimChannel>> channels);
 
 
  private:
 
+    //fhicl configurable vars
     bool   fVerbose;
     bool   fUltraVerbose;
     double fGlobalT0Offset;    //!< Time delay fit: Gaussian normalization
@@ -94,11 +109,24 @@ class icarus::crt::CRTDetSimAlg {
     double fDeadTime; //!< Dead Time inherent in the front-end electronics
     double fBiasTime; //!< Hard cut off for follow-up hits after primary trigger to bias ADC level
 
+    //bookkeeping / stats vars
+    int fNsim_m, fNsim_d, fNsim_c; //number of strips in each subsystem with deposited energy
+    int fNchandat_m, fNchandat_d, fNchandat_c; //number of SiPM channel signals above threshold
+    int fNmissthr_c, fNmissthr_d, fNmissthr_m; //number of channel signals below threshold
+    int fNmiss_strcoin_c; //number of channel signals missed due to no fiber-fiber coincidence in a cern strip
+    int fNdual_m; //number of energy deposits producing signals above threshold at both ends of a minos strip
+
+    std::map<int,int> fRegCounts;
+    std::set<int> fRegions;
+
     CLHEP::HepRandomEngine& fRandEngine;
     std::map<int,vector<pair<int,int>>> fFebMap;
 
-    pair<double,double> GetTransAtten(double pos);
-    double GetLongAtten(double dist);
+    // A list of hit taggers, before any coincidence requirement
+    std::map<int, Tagger> fTaggers;
+
+    pair<double,double> GetTransAtten(const double pos);
+    double GetLongAtten(const double dist);
 
     /**
      * Get the channel trigger time relative to the start of the MC event.
