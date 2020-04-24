@@ -88,6 +88,17 @@ public:
         tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
 
+        tree->Branch("SimHitDeltaT0",      "std::vector<int>",   &fSimHitDeltaT0Vec);
+        tree->Branch("SimHitDeltaT1",      "std::vector<int>",   &fSimHitDeltaT1Vec);
+        tree->Branch("SimHitDeltaT2",      "std::vector<int>",   &fSimHitDeltaT2Vec);
+        tree->Branch("SimDeltaT10",        "std::vector<int>",   &fSimDelta10Vec);
+        tree->Branch("SimDeltaT11",        "std::vector<int>",   &fSimDelta21Vec);
+        tree->Branch("HitDeltaT10",        "std::vector<int>",   &fHitDelta10Vec);
+        tree->Branch("HitDeltaT11",        "std::vector<int>",   &fHitDelta21Vec);
+        tree->Branch("MaxElectronDep0",    "std::vector<float>", &fBigElecDep0Vec);
+        tree->Branch("MaxElectronDep1",    "std::vector<float>", &fBigElecDep1Vec);
+        tree->Branch("MaxElectronDep2",    "std::vector<float>", &fBigElecDep2Vec);
+
         fTree = tree;
     }
 
@@ -114,6 +125,17 @@ public:
         fNumLongHitsVec.clear();
         fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
+
+        fSimHitDeltaT0Vec.clear();
+        fSimHitDeltaT1Vec.clear();
+        fSimHitDeltaT2Vec.clear();
+        fSimDelta10Vec.clear();
+        fSimDelta21Vec.clear();
+        fHitDelta10Vec.clear();
+        fHitDelta21Vec.clear();
+        fBigElecDep0Vec.clear();
+        fBigElecDep1Vec.clear();
+        fBigElecDep2Vec.clear();
     }
 
     // Define tuple vars, make public for direct access
@@ -133,6 +155,17 @@ public:
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
+
+    std::vector<int>   fSimHitDeltaT0Vec;
+    std::vector<int>   fSimHitDeltaT1Vec;
+    std::vector<int>   fSimHitDeltaT2Vec;
+    std::vector<int>   fSimDelta10Vec;
+    std::vector<int>   fSimDelta21Vec;
+    std::vector<int>   fHitDelta10Vec;
+    std::vector<int>   fHitDelta21Vec;
+    std::vector<float> fBigElecDep0Vec;
+    std::vector<float> fBigElecDep1Vec;
+    std::vector<float> fBigElecDep2Vec;
 
 private:
     TTree* fTree;
@@ -952,25 +985,30 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                 float averagePT   = 0.;
                 float largestDelT = 0.;
                 
-                std::vector<int> numIDEsHitVec;
-                int              numIDEsSpacePoint(0);
-                int              numLongHits(0);
-                int              numIntersections(0);
+                std::vector<int>            numIDEsHitVec;
+                std::vector<int>            simHitDeltaTVec = {0,0,0};
+                std::vector<float>          hitPeakTimeVec  = {-100.,-100.,-100.};
+                std::vector<float>          bigElecDepVec   = {0.,0.,0.};
+                std::vector<unsigned short> bigTDCVec       = {0,0,0};
+                int                         numIDEsSpacePoint(0);
+                int                         numLongHits(0);
+                int                         numIntersections(0);
 
                 std::vector<RecobHitToVoxelIDMap::const_iterator> recobHitToVoxelIterVec;
 
-                std::vector<float> hitPeakTimeVec;
                 
                 // Now we can use our maps to find out if the hits making up the SpacePoint are truly related...
                 for(const auto& hitPtr : associatedHits)
                 {
                     RecobHitToVoxelIDMap::const_iterator hitToVoxelItr = recobHitToVoxelIDMap.find(hitPtr.get());
                     
-                    float  peakAmplitude = hitPtr->PeakAmplitude();
+                    float peakAmplitude = hitPtr->PeakAmplitude();
+                    float peakTime      = hitPtr->PeakTime();
+                    int   plane         = hitPtr->WireID().Plane;
                     
                     numHits++;
                     averagePH += peakAmplitude;
-                    averagePT += hitPtr->PeakTime();
+                    averagePT += peakTime;
 
                     smallestPH = std::min(peakAmplitude,smallestPH);
                     largestPH  = std::max(peakAmplitude,largestPH);
@@ -986,7 +1024,7 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                     recobHitToVoxelIterVec.push_back(hitToVoxelItr);
                     numIDEsHitVec.push_back(hitToVoxelItr->second.size());
 
-                    hitPeakTimeVec.push_back(hitPtr->PeakTime());
+                    hitPeakTimeVec[plane] = fClockService->TPCTick2TDC(peakTime);
                 }
                 
                 averagePH /= float(numHits);
@@ -1030,30 +1068,34 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                         // there are common IDEs so we can call it a real SpacePoint
                         if (!secondIntersectionVec.empty())
                         {
-                            std::cout << "==> Number intersections: " << numIDEsSpacePoint << ", times: ";
-                            for(const auto& time : hitPeakTimeVec) std::cout << fClockService->TPCTick2TDC(time) << " ";
-                            std::cout << std::endl;
-
                             for(const sim::LArVoxelID& voxelID : secondIntersectionVec)
                             {
                                 VoxelIDToPlaneTDCIDEMap::const_iterator planeToTDCToIDESetMap = voxelToPlaneTDCIDEMap.find(voxelID);
 
                                 if (planeToTDCToIDESetMap->second.size() > 2)
                                 {
-                                    numIDEsSpacePoint = secondIntersectionVec.size();
+                                    numIDEsSpacePoint += 1;
 
                                     for(const auto& planeInfoPair : planeToTDCToIDESetMap->second)
                                     {
-                                        unsigned short plane = planeInfoPair.first;
-
-                                        std::cout << "   --> Plane: " << plane << std::endl;
+                                        unsigned short plane  = planeInfoPair.first;
+                                        float          phBig  = 0.;
+                                        unsigned short tdcBig = 0;
 
                                         for(const auto& tdcIDEPair : planeInfoPair.second)
                                         {
-                                            std::cout << "       -TDC: " << tdcIDEPair.first << " ";
-                                            for(const auto& ide : tdcIDEPair.second) std::cout << "T/e:" << ide->trackID << "/" << ide->numElectrons << " ";
-                                            std::cout << std::endl;
+                                            for(const auto& ide : tdcIDEPair.second)
+                                            {
+                                                if (phBig < ide->numElectrons)
+                                                {
+                                                    phBig  = ide->numElectrons;
+                                                    tdcBig = tdcIDEPair.first;
+                                                }
+                                            } 
                                         }
+
+                                        bigElecDepVec[plane] = phBig;
+                                        bigTDCVec[plane]     = tdcBig;
                                     }
                                 }
                                 else std::cout << "   --> Not matching all three planes" << std::endl;
@@ -1063,7 +1105,7 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                         }
                     }
                 }
-                
+
                 // Fill for "all" cases
                 fHitSpacePointObj.fSPQualityVec.push_back(spQuality);
                 fHitSpacePointObj.fSPTotalChargeVec.push_back(spCharge);
@@ -1081,6 +1123,17 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                 fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
                 fHitSpacePointObj.fNumPlanesSimMatchVec.emplace_back(recobHitToVoxelIterVec.size());
                 fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
+                fHitSpacePointObj.fSimHitDeltaT0Vec.emplace_back(bigTDCVec[0] - hitPeakTimeVec[0]);
+                fHitSpacePointObj.fSimHitDeltaT1Vec.emplace_back(bigTDCVec[1] - hitPeakTimeVec[1]);
+                fHitSpacePointObj.fSimHitDeltaT2Vec.emplace_back(bigTDCVec[2] - hitPeakTimeVec[2]);
+
+                fHitSpacePointObj.fSimDelta10Vec.emplace_back(bigTDCVec[1] - bigTDCVec[0]);
+                fHitSpacePointObj.fSimDelta21Vec.emplace_back(bigTDCVec[2] - bigTDCVec[1]);
+                fHitSpacePointObj.fHitDelta10Vec.emplace_back(hitPeakTimeVec[1] - hitPeakTimeVec[0]);
+                fHitSpacePointObj.fHitDelta21Vec.emplace_back(hitPeakTimeVec[2] - hitPeakTimeVec[1]);
+                fHitSpacePointObj.fBigElecDep0Vec.emplace_back(bigElecDepVec[0]);
+                fHitSpacePointObj.fBigElecDep1Vec.emplace_back(bigElecDepVec[1]);
+                fHitSpacePointObj.fBigElecDep2Vec.emplace_back(bigElecDepVec[2]);
             }
         }
     }
