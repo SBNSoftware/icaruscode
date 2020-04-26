@@ -10,12 +10,13 @@
 #define ICARUSCODE_GEOMETRY_ICARUSCHANNELMAPALG_H
 
 // ICARUS libraries
+#include "icaruscode/Geometry/GeoObjectSorterPMTasTPC.h"
 #include "icaruscode/Geometry/details/ChannelToWireMap.h"
 #include "icaruscode/Geometry/details/GeometryObjectCollections.h"
 
 // LArSoft libraries
 #include "larcorealg/Geometry/ChannelMapAlg.h"
-#include "larcorealg/Geometry/GeoObjectSorterStandard.h"
+// #include "larcorealg/Geometry/GeoObjectSorterStandard.h"
 #include "larcorealg/Geometry/GeometryData.h"
 #include "larcorealg/Geometry/GeometryDataContainers.h"
 #include "larcorealg/Geometry/ReadoutDataContainers.h"
@@ -641,7 +642,8 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
 
   // --- BEGIN -- Sorting ------------------------------------------------------
   /// Algorithms to sort geometry elements.
-  geo::GeoObjectSorterStandard fSorter;
+//   geo::GeoObjectSorterStandard fSorter;
+  icarus::GeoObjectSorterPMTasTPC fSorter;
   
   // --- END -- Sorting --------------------------------------------------------
   
