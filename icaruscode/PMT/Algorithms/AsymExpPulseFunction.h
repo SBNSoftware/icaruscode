@@ -176,8 +176,8 @@ icarus::opdet::AsymExpPulseFunction<T>::AsymExpPulseFunction(
   , fA(fAmplitude/ExponentialDiff(fPeakTime - fRaiseTime, fRaiseTau, fFallTau))
 {
   // numerical sanity checks (for debugging only)
-  assert(std::isnormal(fA));
-  assert(std::signbit(fA) == std::signbit(fAmplitude));
+  assert(std::isnormal(fA.value()));
+  assert(std::signbit(fA.value()) == std::signbit(fAmplitude.value()));
 } // icarus::opdet::AsymExpPulseFunction<>::AsymExpPulseFunction()
 
 
