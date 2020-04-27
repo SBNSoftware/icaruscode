@@ -19,6 +19,7 @@
 
 // framework libraries
 #include "art/Utilities/ToolConfigTable.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/Atom.h"
 
 // C/C++ standard libraries
@@ -64,6 +65,11 @@ namespace phot {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
       
+      fhicl::OptionalSequence<OpDetID_t> CryostatChannelRemap {
+        Name("CryostatChannelRemap"),
+        Comment("internal library mapping (new library ID for each old one)")
+        };
+      
       // no configuration required
       fhicl::Atom<bool> DumpMapping{
         Name("DumpMapping"),
@@ -76,12 +82,8 @@ namespace phot {
     using Parameters = art::ToolConfigTable<Config>;
     
     
-    /// Constructor: ignores the configuration.
-    ICARUSPhotonMappingTransformations(Config const& config)
-      : fDumpMapping(config.DumpMapping())
-      , fGeom(lar::providerFrom<geo::Geometry>())
-      , fNOpDetChannels(fGeom? fGeom->NOpDets(): 0)
-      { prepareMappings(); }
+    /// Constructor.
+    ICARUSPhotonMappingTransformations(Config const& config);
     
     /// Constructor: ignores the configuration.
     ICARUSPhotonMappingTransformations(Parameters const& config)
@@ -271,10 +273,10 @@ namespace phot {
 
 
     void prepareGeometryMapping();
-    void prepareLibraryMappings();
+    void prepareLibraryMappings(LibraryIndexToOpDetMap const& libraryIndices);
     
     /// Extracts the necessary information for mapping from the geometry.
-    void prepareMappings();
+    void prepareMappings(LibraryIndexToOpDetMap const& libraryIndices);
     
     /// Writes the current mapping information into the console. Debug stuff.
     void dumpMapping() const;
