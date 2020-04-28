@@ -8,6 +8,9 @@
 # * `icarus_photonvisibilityservice_mapped`: configuration of
 #     `PhotonVisibilityService` using a single cryostat photon visibility
 #     library and a mapping
+# * `icarus_photonvisibilityservice_mapped_oldPMTmap`: configuration of
+#     `PhotonVisibilityService` using a single cryostat photon visibility
+#     library and a library mapping, for use with the old PMT channel mapping
 # * `icarus_photonvisibilityservice`: default configuration of
 #     `PhotonVisibilityService` used in higher level standard scripts
 #
@@ -51,6 +54,15 @@ icarus_photonvisibilityservice_direct: {
 ###  Configuration for first cryostat library and mapping to the other one
 ###
 #
+# This is the configuration expected to work correctly with the current version
+# of the software.
+# 
+# This configuration is used for:
+#  * OLD photon visibility library (20180801)
+#  * NEW PMT channel mapping
+# Since that library was compiled with the old PMT channel mapping, when using
+# the new mapping a channel remapping is required.
+#
 # Use as:
 #     
 #     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped
@@ -82,10 +94,41 @@ icarus_photonvisibilityservice_mapped: {
       
     ]
     
-    DumpMapping: true # for debugging only
-  }
+  } # Mapping
 
 } # icarus_photonvisibilityservice_mapped
+
+
+###
+###  Configuration for first cryostat library and mapping to the other one;
+###  old PMT channel mapping
+###
+#
+# This is the configuration expected to work correctly with the old PMT channel
+# mapping. The old channel mapping used with the single first induction wire
+# geometry (as opposed to the "split wire geometry").
+# In other words, when using the single wire geometry, not only the `Geometry`
+# service configuration must be changed, but also the `PhotonVisibilityService`
+# one.
+# 
+# This configuration is used for:
+#  * OLD photon visibility library (20180801)
+#  * OLD PMT channel mapping
+# Since that library was compiled with the old PMT channel mapping, when using
+# the old mapping no remapping is needed.
+#
+# Use as:
+#     
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped_oldPMTmap
+#     
+icarus_photonvisibilityservice_mapped_oldPMTmap: {
+  @table::icarus_photonvisibilityservice_direct
+  
+  Mapping: {
+    tool_type: ICARUSPhotonMappingTransformations
+  }
+
+} # icarus_photonvisibilityservice_mapped_oldPMTmap
 
 
 ###############################################################################
