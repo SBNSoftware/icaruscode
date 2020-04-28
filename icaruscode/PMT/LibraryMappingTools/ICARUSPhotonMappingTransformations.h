@@ -1,9 +1,9 @@
 /**
- * @file   icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.h
+ * @file   icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.h
  * @brief  Photon library mapping for ICARUS geometry.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   April 3, 2019
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations_tool.cc`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations_tool.cc`
  * 
  */
 

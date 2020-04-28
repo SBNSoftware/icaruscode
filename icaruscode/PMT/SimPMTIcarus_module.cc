@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Light/SimPMTIcarus_module.cc
+ * @file   icaruscode/PMT/SimPMTIcarus_module.cc
  * @see    `icarus::opdet::PMTsimulationAlg`
  * 
  * Based on `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.

@@ -1,10 +1,10 @@
 /**
- * @file   icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx
+ * @file   icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx
  * @brief  A photon mapping identity transformation: implementation.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   April 3, 2019
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.cc`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.cc`
  * 
  */
 
