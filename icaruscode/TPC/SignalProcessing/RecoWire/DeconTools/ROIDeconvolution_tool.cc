@@ -189,7 +189,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, holder.begin() + holderOffset);
         
         // Deconvolute the raw signal using the channel's nominal response
-        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
+        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
         
         // Get rid of the leading and trailing "extra" bins needed to keep the FFT happy
         if (roiStart > 0 || holderOffset > 0) std::copy(holder.begin() + holderOffset + roiStart, holder.begin() + holderOffset + roiStop, holder.begin());

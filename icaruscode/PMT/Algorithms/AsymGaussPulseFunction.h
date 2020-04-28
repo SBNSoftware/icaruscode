@@ -57,7 +57,7 @@ class icarus::opdet::AsymGaussPulseFunction
    * @param sigmaRight the standard deviation of the shape after transition
    *
    * The time parameters (`peakTime`, `sigmaLeft` and `sigmaRight`) must be
-   * measured in same unit. The `peakTime` defined the position of the shape
+   * measured in same unit. The `peakTime` defines the position of the shape
    * with respect to time 0.
    *
    */
@@ -96,7 +96,7 @@ class icarus::opdet::AsymGaussPulseFunction
   /// Returns the time of the center of the Gaussian.
   Time myPeakTime() const { return fTransitTime; }
 
-  /// Returns the amplitude of the pulse frome the baseline, including its sign.
+  /// Returns the amplitude of the pulse from the baseline, including its sign.
   ADCcount myAmplitude() const { return fAmplitude; }
 
 

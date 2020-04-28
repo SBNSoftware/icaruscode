@@ -88,6 +88,17 @@ public:
         tree->Branch("NumPlanesSimMatch",  "std::vector<int>",   &fNumPlanesSimMatchVec);
         tree->Branch("NumIntersectSet",    "std::vector<int>",   &fNumIntersectSetVec);
 
+        tree->Branch("SimHitDeltaT0",      "std::vector<int>",   &fSimHitDeltaT0Vec);
+        tree->Branch("SimHitDeltaT1",      "std::vector<int>",   &fSimHitDeltaT1Vec);
+        tree->Branch("SimHitDeltaT2",      "std::vector<int>",   &fSimHitDeltaT2Vec);
+        tree->Branch("SimDeltaT10",        "std::vector<int>",   &fSimDelta10Vec);
+        tree->Branch("SimDeltaT11",        "std::vector<int>",   &fSimDelta21Vec);
+        tree->Branch("HitDeltaT10",        "std::vector<int>",   &fHitDelta10Vec);
+        tree->Branch("HitDeltaT11",        "std::vector<int>",   &fHitDelta21Vec);
+        tree->Branch("MaxElectronDep0",    "std::vector<float>", &fBigElecDep0Vec);
+        tree->Branch("MaxElectronDep1",    "std::vector<float>", &fBigElecDep1Vec);
+        tree->Branch("MaxElectronDep2",    "std::vector<float>", &fBigElecDep2Vec);
+
         fTree = tree;
     }
 
@@ -114,6 +125,17 @@ public:
         fNumLongHitsVec.clear();
         fNumPlanesSimMatchVec.clear();
         fNumIntersectSetVec.clear();
+
+        fSimHitDeltaT0Vec.clear();
+        fSimHitDeltaT1Vec.clear();
+        fSimHitDeltaT2Vec.clear();
+        fSimDelta10Vec.clear();
+        fSimDelta21Vec.clear();
+        fHitDelta10Vec.clear();
+        fHitDelta21Vec.clear();
+        fBigElecDep0Vec.clear();
+        fBigElecDep1Vec.clear();
+        fBigElecDep2Vec.clear();
     }
 
     // Define tuple vars, make public for direct access
@@ -133,6 +155,17 @@ public:
     std::vector<int>   fNumLongHitsVec;
     std::vector<int>   fNumPlanesSimMatchVec;
     std::vector<int>   fNumIntersectSetVec;
+
+    std::vector<int>   fSimHitDeltaT0Vec;
+    std::vector<int>   fSimHitDeltaT1Vec;
+    std::vector<int>   fSimHitDeltaT2Vec;
+    std::vector<int>   fSimDelta10Vec;
+    std::vector<int>   fSimDelta21Vec;
+    std::vector<int>   fHitDelta10Vec;
+    std::vector<int>   fHitDelta21Vec;
+    std::vector<float> fBigElecDep0Vec;
+    std::vector<float> fBigElecDep1Vec;
+    std::vector<float> fBigElecDep2Vec;
 
 private:
     TTree* fTree;
@@ -329,24 +362,29 @@ private:
     };
 
     // Define structures for relating SimChannel to Voxels
-    using SimIDESet          = std::set<const sim::IDE*,ideCompare>;
-    using IDEToVoxelIDMap    = std::unordered_map<const sim::IDE*, sim::LArVoxelID>;
-    using VoxelIDToIDESetMap = std::map<sim::LArVoxelID, SimIDESet>;
-    using TDCToIDEMap        = std::map<unsigned short, SimIDESet>; // We need this one in order
-    using ChanToTDCToIDEMap  = std::map<raw::ChannelID_t, TDCToIDEMap>;
-    using VoxelIDSet         = std::set<sim::LArVoxelID>;
+    using SimIDESet                = std::set<const sim::IDE*,ideCompare>;
+    using IDEToVoxelIDMap          = std::unordered_map<const sim::IDE*, sim::LArVoxelID>;
+    using VoxelIDToIDESetMap       = std::map<sim::LArVoxelID, SimIDESet>;
+    using TDCToIDEMap              = std::map<unsigned short, SimIDESet>; // We need this one in order
+    using ChanToTDCToIDEMap        = std::map<raw::ChannelID_t, TDCToIDEMap>;
+    using VoxelIDSet               = std::set<sim::LArVoxelID>;
+
+    // And, of course, what we need is to be able to track a voxel back to the IDEs in each tick on each plane
+    using TDCToIDESetMap           = std::unordered_map<unsigned short,SimIDESet>;
+    using PlaneToTDCToIDESetMap    = std::map<unsigned short, TDCToIDESetMap>;
+    using VoxelIDToPlaneTDCIDEMap  = std::map<sim::LArVoxelID, PlaneToTDCToIDESetMap>;
 
     // The following creates a trackID mapping 
-    using TDCIDEPair             = std::pair<unsigned short, const sim::IDE*>;
-    using TickTDCIDEVec          = std::vector<TDCIDEPair>;
-    using ChanToTDCIDEMap        = std::unordered_map<raw::ChannelID_t,TickTDCIDEVec>;
-    using TrackIDChanToTDCIDEMap = std::unordered_map<int,ChanToTDCIDEMap>;
+    using TDCIDEPair               = std::pair<unsigned short, const sim::IDE*>;
+    using TickTDCIDEVec            = std::vector<TDCIDEPair>;
+    using ChanToTDCIDEMap          = std::unordered_map<raw::ChannelID_t,TickTDCIDEVec>;
+    using TrackIDChanToTDCIDEMap   = std::unordered_map<int,ChanToTDCIDEMap>;
 
     // More data structures, here we want to keep track of the start/peak/end of the charge deposit along a wire for a given track
-    using ChargeDeposit        = std::tuple<TDCIDEPair,TDCIDEPair,TDCIDEPair,float,float>;
-    using ChargeDepositVec     = std::vector<ChargeDeposit>;
-    using ChanToChargeMap      = std::map<raw::ChannelID_t,ChargeDepositVec>;
-    using TrackToChanChargeMap = std::unordered_map<int,ChanToChargeMap>;
+    using ChargeDeposit            = std::tuple<TDCIDEPair,TDCIDEPair,TDCIDEPair,float,float>;
+    using ChargeDepositVec         = std::vector<ChargeDeposit>;
+    using ChanToChargeMap          = std::map<raw::ChannelID_t,ChargeDepositVec>;
+    using TrackToChanChargeMap     = std::unordered_map<int,ChanToChargeMap>;
 
     // Define a function to map IDE's from SimChannel objects to Track IDs
     void makeTrackToChanChargeMap(const TrackIDChanToTDCIDEMap&, TrackToChanChargeMap&, float&, int&) const;
@@ -359,7 +397,7 @@ private:
 
     void matchHitSim(const HitPointerVec&, const ChanToTDCToIDEMap&, const ChargeDepositVec&, const ChanToTDCIDEMap&, const IDEToVoxelIDMap&, RecobHitToVoxelIDMap&) const;
 
-    void compareSpacePointsToSim(const art::Event&, const RecobHitToVoxelIDMap&) const;
+    void compareSpacePointsToSim(const art::Event&, const RecobHitToVoxelIDMap&, const VoxelIDToPlaneTDCIDEMap&) const;
 
     // Fcl parameters.
     std::vector<art::InputTag>  fRecobHitLabelVec;
@@ -518,23 +556,21 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     // First task is to build a map between ides and voxel ids (that we calcualate based on position)
     // and also get the reverse since it will be useful in the end.
     // At the same time should also build a mapping of ides per channel so we can do quick hit lookup
-    using SimIDESet          = std::set<const sim::IDE*,ideCompare>;
-    using IDEToVoxelIDMap    = std::unordered_map<const sim::IDE*, sim::LArVoxelID>;
-    using VoxelIDToIDESetMap = std::map<sim::LArVoxelID, SimIDESet>;
-    using TDCToIDEMap        = std::map<unsigned short, SimIDESet>; // We need this one in order
-    using ChanToTDCToIDEMap  = std::map<raw::ChannelID_t, TDCToIDEMap>;
-    using VoxelIDSet         = std::set<sim::LArVoxelID>;
-
-    IDEToVoxelIDMap    ideToVoxelIDMap;
-    VoxelIDToIDESetMap voxelIDToIDEMap;
-    ChanToTDCToIDEMap  chanToTDCToIDEMap;
-    VoxelIDSet         simChannelVoxelIDSet;
+    IDEToVoxelIDMap         ideToVoxelIDMap;
+    VoxelIDToIDESetMap      voxelIDToIDEMap;
+    ChanToTDCToIDEMap       chanToTDCToIDEMap;
+    VoxelIDSet              simChannelVoxelIDSet;
+    VoxelIDToPlaneTDCIDEMap voxelIDToPlaneTDCIDEMap;
 
     TrackIDChanToTDCIDEMap trackIDChanToTDCIDEMap;
 
     // Fill the above maps/structures
     for(const auto& simChannel : *simChannelHandle)
     {
+        raw::ChannelID_t channel = simChannel.Channel();
+
+        geo::WireID wireID = fGeometry->ChannelToWire(channel).front();
+
         for(const auto& tdcide : simChannel.TDCIDEMap())
         {
             for(const auto& ide : tdcide.second) //chanToTDCToIDEMap[simChannel.Channel()][tdcide.first] = ide;
@@ -549,6 +585,8 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
                 simChannelVoxelIDSet.insert(voxelID);
 
                 trackIDChanToTDCIDEMap[ide.trackID][simChannel.Channel()].emplace_back(tdcide.first,&ide);
+
+                voxelIDToPlaneTDCIDEMap[voxelID][wireID.Plane][tdcide.first].insert(&ide);
                 
                 if (ide.energy < std::numeric_limits<float>::epsilon()) mf::LogDebug("SpacePointAnalysis") << ">> epsilon simchan deposited energy: " << ide.energy << std::endl;
             }
@@ -581,7 +619,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     compareHitsToSim(event, chanToTDCToIDEMap, chanToChargeMapItr->second, chanToTDCIDEMap, ideToVoxelIDMap, recobHitToVoxelIDMap);
 
     // Now do the space points
-    compareSpacePointsToSim(event, recobHitToVoxelIDMap);
+    compareSpacePointsToSim(event, recobHitToVoxelIDMap, voxelIDToPlaneTDCIDEMap);
     
     // Make sure the output tuples are filled
     fHitSpacePointObj.fill();
@@ -906,7 +944,7 @@ void SpacePointAnalysis::matchHitSim(const HitPointerVec&     hitPointerVec,    
     return;
 }
 
-void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const RecobHitToVoxelIDMap& recobHitToVoxelIDMap) const
+void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const RecobHitToVoxelIDMap& recobHitToVoxelIDMap, const VoxelIDToPlaneTDCIDEMap& voxelToPlaneTDCIDEMap) const
 {
     // Armed with these maps we can now process the SpacePoints...
     if (!recobHitToVoxelIDMap.empty())
@@ -947,23 +985,30 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                 float averagePT   = 0.;
                 float largestDelT = 0.;
                 
-                std::vector<int> numIDEsHitVec;
-                int              numIDEsSpacePoint(0);
-                int              numLongHits(0);
-                int              numIntersections(0);
+                std::vector<int>            numIDEsHitVec;
+                std::vector<int>            simHitDeltaTVec = {0,0,0};
+                std::vector<float>          hitPeakTimeVec  = {-100.,-100.,-100.};
+                std::vector<float>          bigElecDepVec   = {0.,0.,0.};
+                std::vector<unsigned short> bigTDCVec       = {0,0,0};
+                int                         numIDEsSpacePoint(0);
+                int                         numLongHits(0);
+                int                         numIntersections(0);
 
                 std::vector<RecobHitToVoxelIDMap::const_iterator> recobHitToVoxelIterVec;
+
                 
                 // Now we can use our maps to find out if the hits making up the SpacePoint are truly related...
                 for(const auto& hitPtr : associatedHits)
                 {
                     RecobHitToVoxelIDMap::const_iterator hitToVoxelItr = recobHitToVoxelIDMap.find(hitPtr.get());
                     
-                    float  peakAmplitude = hitPtr->PeakAmplitude();
+                    float peakAmplitude = hitPtr->PeakAmplitude();
+                    float peakTime      = hitPtr->PeakTime();
+                    int   plane         = hitPtr->WireID().Plane;
                     
                     numHits++;
                     averagePH += peakAmplitude;
-                    averagePT += hitPtr->PeakTime();
+                    averagePT += peakTime;
 
                     smallestPH = std::min(peakAmplitude,smallestPH);
                     largestPH  = std::max(peakAmplitude,largestPH);
@@ -978,6 +1023,8 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                     
                     recobHitToVoxelIterVec.push_back(hitToVoxelItr);
                     numIDEsHitVec.push_back(hitToVoxelItr->second.size());
+
+                    hitPeakTimeVec[plane] = fClockService->TPCTick2TDC(peakTime);
                 }
                 
                 averagePH /= float(numHits);
@@ -1010,7 +1057,7 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                         std::vector<sim::LArVoxelID> secondIntersectionVec(firstIntersectionVec.size()+recobHitToVoxelIterVec[2]->second.size());
                         
                         std::vector<sim::LArVoxelID>::iterator secondIntersectionItr = std::set_intersection(firstIntersectionVec.begin(),             firstIntersectionVec.end(),
-                                                                                                             recobHitToVoxelIterVec[1]->second.begin(),recobHitToVoxelIterVec[1]->second.end(),
+                                                                                                             recobHitToVoxelIterVec[2]->second.begin(),recobHitToVoxelIterVec[2]->second.end(),
                                                                                                              secondIntersectionVec.begin());
                         
                         secondIntersectionVec.resize(secondIntersectionItr - secondIntersectionVec.begin());
@@ -1021,13 +1068,44 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                         // there are common IDEs so we can call it a real SpacePoint
                         if (!secondIntersectionVec.empty())
                         {
-                            numIDEsSpacePoint = secondIntersectionVec.size();
+                            for(const sim::LArVoxelID& voxelID : secondIntersectionVec)
+                            {
+                                VoxelIDToPlaneTDCIDEMap::const_iterator planeToTDCToIDESetMap = voxelToPlaneTDCIDEMap.find(voxelID);
+
+                                if (planeToTDCToIDESetMap->second.size() > 2)
+                                {
+                                    numIDEsSpacePoint += 1;
+
+                                    for(const auto& planeInfoPair : planeToTDCToIDESetMap->second)
+                                    {
+                                        unsigned short plane  = planeInfoPair.first;
+                                        float          phBig  = 0.;
+                                        unsigned short tdcBig = 0;
+
+                                        for(const auto& tdcIDEPair : planeInfoPair.second)
+                                        {
+                                            for(const auto& ide : tdcIDEPair.second)
+                                            {
+                                                if (phBig < ide->numElectrons)
+                                                {
+                                                    phBig  = ide->numElectrons;
+                                                    tdcBig = tdcIDEPair.first;
+                                                }
+                                            } 
+                                        }
+
+                                        bigElecDepVec[plane] = phBig;
+                                        bigTDCVec[plane]     = tdcBig;
+                                    }
+                                }
+                                else std::cout << "   --> Not matching all three planes" << std::endl;
+                            }
 
                             numIntersections++;
                         }
                     }
                 }
-                
+
                 // Fill for "all" cases
                 fHitSpacePointObj.fSPQualityVec.push_back(spQuality);
                 fHitSpacePointObj.fSPTotalChargeVec.push_back(spCharge);
@@ -1045,6 +1123,17 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                 fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
                 fHitSpacePointObj.fNumPlanesSimMatchVec.emplace_back(recobHitToVoxelIterVec.size());
                 fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
+                fHitSpacePointObj.fSimHitDeltaT0Vec.emplace_back(bigTDCVec[0] - hitPeakTimeVec[0]);
+                fHitSpacePointObj.fSimHitDeltaT1Vec.emplace_back(bigTDCVec[1] - hitPeakTimeVec[1]);
+                fHitSpacePointObj.fSimHitDeltaT2Vec.emplace_back(bigTDCVec[2] - hitPeakTimeVec[2]);
+
+                fHitSpacePointObj.fSimDelta10Vec.emplace_back(bigTDCVec[1] - bigTDCVec[0]);
+                fHitSpacePointObj.fSimDelta21Vec.emplace_back(bigTDCVec[2] - bigTDCVec[1]);
+                fHitSpacePointObj.fHitDelta10Vec.emplace_back(hitPeakTimeVec[1] - hitPeakTimeVec[0]);
+                fHitSpacePointObj.fHitDelta21Vec.emplace_back(hitPeakTimeVec[2] - hitPeakTimeVec[1]);
+                fHitSpacePointObj.fBigElecDep0Vec.emplace_back(bigElecDepVec[0]);
+                fHitSpacePointObj.fBigElecDep1Vec.emplace_back(bigElecDepVec[1]);
+                fHitSpacePointObj.fBigElecDep2Vec.emplace_back(bigElecDepVec[2]);
             }
         }
     }

@@ -348,14 +348,10 @@ void SimWireICARUS::produce(art::Event& evt)
    
     for (geo::TPCID const& tpcid : fTPCVec) 
     {
-        std::cout << "**TPCID: " << tpcid << std::endl;
-
         for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
         {
             raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
             raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
-
-            std::cout << "--Plane: " << plane.ID() << ", start channel: " << planeStartChannel << ", end channel: " << planeEndChannel << std::endl;
 
             channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
         } // for planes in TPC
@@ -420,7 +416,7 @@ void SimWireICARUS::produce(art::Event& evt)
             auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
             double shapingTime  = fSignalShapingService->GetShapingTime(channel);
             double gain         = fSignalShapingService->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-            int    timeOffset   = fSignalShapingService->FieldResponseTOffset(channel);
+            int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
             
             // Recover the response function information for this channel
             const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);

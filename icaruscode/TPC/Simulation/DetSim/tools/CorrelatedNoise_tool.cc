@@ -400,15 +400,16 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     icarusutil::SigProcPrecision nSig(3.);
     icarusutil::SigProcPrecision mean,rmsTrunc;
     int                          nTrunc;
+    int                          range;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc, range);
     fWaveformTool.getTruncatedRMS(waveNoise, nSig, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc, range);
     fWaveformTool.getTruncatedRMS(waveNoise, nSig, fCoherentNoiseRMS, rmsTrunc, nTrunc);
 
     if (fStoreHistograms)

@@ -187,7 +187,7 @@ void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
     const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
 
     // Also want the time offset for this channel
-    int timeOffset = fSignalShapingService->FieldResponseTOffset(channel);
+    int timeOffset = fSignalShapingService->ResponseTOffset(channel);
 
     // Loop over the wire range
     for(size_t wireIdx = fWireEndPoints[0]; wireIdx < maxWire; wireIdx++)

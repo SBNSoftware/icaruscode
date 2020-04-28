@@ -151,6 +151,7 @@ private:
     icarus_signal_processing::VectorFloat fFullRMSVals;
     icarus_signal_processing::VectorFloat fTruncRMSVals;
     icarus_signal_processing::VectorInt   fNumTruncBins;
+    icarus_signal_processing::VectorInt   fRangeBins;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
     const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
@@ -172,6 +173,7 @@ TPCDecoderFilter2D::TPCDecoderFilter2D(fhicl::ParameterSet const &pset)
     fFullRMSVals.clear();
     fTruncRMSVals.clear();
     fNumTruncBins.clear();
+    fRangeBins.clear();
 
     return;
 }
@@ -221,6 +223,7 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
     if (fFullRMSVals.empty())            fFullRMSVals            = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
     if (fTruncRMSVals.empty())           fTruncRMSVals           = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
     if (fNumTruncBins.empty())           fNumTruncBins           = icarus_signal_processing::VectorInt(nChannelsPerFragment);
+    if (fRangeBins.empty())              fRangeBins              = icarus_signal_processing::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
     icarus_signal_processing::Denoising            denoiser;
@@ -256,7 +259,8 @@ void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
                                                        fPedestalVals[channelOnBoard], 
                                                        fFullRMSVals[channelOnBoard], 
                                                        fTruncRMSVals[channelOnBoard], 
-                                                       fNumTruncBins[channelOnBoard]);
+                                                       fNumTruncBins[channelOnBoard],
+                                                       fRangeBins[channelOnBoard]);
         }
     }
 

@@ -51,6 +51,7 @@ public:
     const icarusutil::TimeVec&              getResponse()            const override {return fResponse;}
     const icarusutil::FrequencyVec&         getConvKernel()          const override {return fConvolutionKernel;}
     const icarusutil::FrequencyVec&         getDeconvKernel()        const override {return fDeconvolutionKernel;}
+    double                                  getTOffset()             const override {return fT0Offset;};
     
 private:
     // Calculate the response function
@@ -81,9 +82,11 @@ private:
     size_t                                            fNumberTimeSamples;
     icarusutil::TimeVec                               fResponse;
     icarusutil::FrequencyVec                          fConvolutionKernel;
-    icarusutil::FrequencyVec                          fDeconvolutionKernel;           
+    icarusutil::FrequencyVec                          fDeconvolutionKernel;  
 
-    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;                  ///< Object to handle thread safe FFT
+    double                                            fT0Offset;             ///< The overall T0 offset for the response function         
+
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;       ///< Object to handle thread safe FFT
     detinfo::DetectorProperties const*                fDetectorProperties;   ///< Detector properties service
 };
     
@@ -264,8 +267,33 @@ void Response::calculateResponse(double weight)
     std::transform(fResponse.begin(),fResponse.end(),fResponse.begin(),std::bind(std::multiplies<double>(),std::placeholders::_1,binScaleFactor));
     
     respIntegral = std::accumulate(fResponse.begin(),fResponse.end(),0.);
+
+    // Now compute the T0 offset for the response function
+    std::pair<icarusutil::TimeVec::iterator,icarusutil::TimeVec::iterator> minMaxPair = std::minmax_element(fResponse.begin(),fResponse.end());
+
+    // Calculation of the T0 offset depends on the signal type
+    int timeBin = std::distance(fResponse.begin(),minMaxPair.first);
+
+    if (fThisPlane > 1) timeBin = std::distance(fResponse.begin(),minMaxPair.second);
     
-    mf::LogInfo("Response_tool")  << "      final response integral: " << respIntegral << std::endl;
+    // Do a backwards search to find the first positive bin
+    while(1)
+    {
+        // Did we go too far?
+        if (timeBin < 0)
+            throw cet::exception("Response::configure") << "Cannot find zero-point crossover for induction response!" << std::endl;
+            
+        double content = fResponse[timeBin]; 
+        
+        if (content >= 0.) break;
+        
+        timeBin--;
+    }
+
+    // 
+    fT0Offset = -timeBin;     // Note that this value being returned is in tick units now
+    
+    mf::LogInfo("Response_tool")  << "      final response integral: " << respIntegral << ", T0Offset: " << fT0Offset << std::endl;
 
     return;
 }

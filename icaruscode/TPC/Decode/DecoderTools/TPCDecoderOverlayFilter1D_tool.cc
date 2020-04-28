@@ -154,6 +154,7 @@ private:
     icarus_signal_processing::VectorFloat fFullRMSVals;
     icarus_signal_processing::VectorFloat fTruncRMSVals;
     icarus_signal_processing::VectorInt   fNumTruncBins;
+    icarus_signal_processing::VectorInt   fRangeBins;
 
     // Overlay tool
     std::unique_ptr<IFakeParticle>        fFakeParticleTool;
@@ -179,6 +180,7 @@ TPCDecoderOverlayFilter1D::TPCDecoderOverlayFilter1D(fhicl::ParameterSet const &
     fFullRMSVals.clear();
     fTruncRMSVals.clear();
     fNumTruncBins.clear();
+    fRangeBins.clear();
 
     return;
 }
@@ -235,6 +237,7 @@ void TPCDecoderOverlayFilter1D::process_fragment(const artdaq::Fragment &fragmen
     if (fFullRMSVals.empty())      fFullRMSVals      = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
     if (fTruncRMSVals.empty())     fTruncRMSVals     = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
     if (fNumTruncBins.empty())     fNumTruncBins     = icarus_signal_processing::VectorInt(nChannelsPerFragment);
+    if (fRangeBins.empty())        fRangeBins        = icarus_signal_processing::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
     icarus_signal_processing::Denoising            denoiser;
@@ -278,7 +281,8 @@ void TPCDecoderOverlayFilter1D::process_fragment(const artdaq::Fragment &fragmen
                                                        fPedestalVals[channelOnBoard], 
                                                        fFullRMSVals[channelOnBoard], 
                                                        fTruncRMSVals[channelOnBoard], 
-                                                       fNumTruncBins[channelOnBoard]);
+                                                       fNumTruncBins[channelOnBoard],
+                                                       fRangeBins[channelOnBoard]);
         }
     }
 
