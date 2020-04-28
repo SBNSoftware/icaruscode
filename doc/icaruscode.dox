@@ -1,0 +1,48 @@
+/**
+@mainpage The ICARUS detector simulation and reconstruction software: `icaruscode` reference manual
+
+This is the documentation of the ICARUS detector simulation and reconstruction
+software, distributed in the main GIT repository `icaruscode`.
+
+This software is powered by the @ref LArSoft "LArSoft toolkit", which has its
+own documentation in Doxygen format.
+That documentation is linked by the ICARUS documentation.
+
+The documentation is automatically generated out of comments encoded in the
+source files in Doxygen format.
+
+
+
+@section ICARUSDocumentationSource Sources for ICARUS documentation
+
+ICARUS documentation is scattered in places:
+
+- [wiki][ICARUSwiki] in Redmine (https://cdcvs.fnal.gov/redmine/projects/icaruscode/wiki)
+  offers guidelines, documents procedures, and much more; it tends to go outdated though;
+- [SBN DocDB][SBNDocDB] (https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase)
+  contains plenty of information
+- reference manual (this one; [all versions: here][ICARUSDoxygenList]; [latest: here][ICARUSDoxygenLatest]) is a
+  reference guide for the use of specific ICARUS code objects.
+
+
+@section ICARUSDocumentationTopics ICARUS topics
+
+- @ref ICARUSPMTTrigger "optical detector and trigger simulation"
+- ... or browse the list of [doxygen groups](modules.html), or the [class list](classes.html)
+
+@section ICARUSversions Documentation of other `icaruscode` software versions
+
+This documentation pertains the version written above.
+Others may be available: 
+
+
+[LArSoft.org]:
+  http://www.larsoft.org
+[ICARUS wiki]:
+  https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase
+[ICARUSDoxygenList]:
+  https://icarus-exp.fnal.gov/at_work/software/doc/icaruscode/versionlist.html
+[ICARUSDoxygenLatest]:
+  https://icarus-exp.fnal.gov/at_work/software/doc/icaruscode/latest
+
+ */
