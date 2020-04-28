@@ -99,36 +99,49 @@ icarus_photonvisibilityservice_mapped: {
 } # icarus_photonvisibilityservice_mapped
 
 
+
+###############################################################################
 ###
-###  Configuration for first cryostat library and mapping to the other one;
-###  old PMT channel mapping
+### Legacy configuration
 ###
 #
-# This is the configuration expected to work correctly with the old PMT channel
-# mapping. The old channel mapping used with the single first induction wire
-# geometry (as opposed to the "split wire geometry").
-# In other words, when using the single wire geometry, not only the `Geometry`
-# service configuration must be changed, but also the `PhotonVisibilityService`
-# one.
-# 
-# This configuration is used for:
-#  * OLD photon visibility library (20180801)
-#  * OLD PMT channel mapping
-# Since that library was compiled with the old PMT channel mapping, when using
-# the old mapping no remapping is needed.
-#
+# This is the configuration used by the "standard" ICARUS job configurations
+# until icaruscode v08_50_00.
+# It is part of `icarus_legacy_services` configuration, and it should not
+# be used by itself since it requires a specific geometry and channel mapping.
 # Use as:
 #     
-#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped_oldPMTmap
+#     services: @local::icarus_legacy_services
 #     
-icarus_photonvisibilityservice_mapped_oldPMTmap: {
-  @table::icarus_photonvisibilityservice_direct
+# This configuration is almost frozen (i.e. it would be frozen except that it
+# relies on `standard_library_vuv_prop_timing_photonvisibilityservice` which
+# we are not reproducing here).
+#
+icarus_legacy_photonvisibilityservice: {
+
+  @table::standard_library_vuv_prop_timing_photonvisibilityservice
+
+  LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
+  UseCryoBoundary: false
+  
+  XMin: -395      # Was -391 in old geometry
+  XMax: -45       # Was -41  in old geometry
+  YMin: -215.2    # Was -210 in old geometry
+  YMax:  174.8    # Was -180 in old geometry
+  ZMin: -995
+  ZMax:  965
+  NX:     70
+  NY:     78
+  NZ:    392
+
+  IncludePropTime: true
   
   Mapping: {
     tool_type: ICARUSPhotonMappingTransformations
   }
 
-} # icarus_photonvisibilityservice_mapped_oldPMTmap
+} # icarus_legacy_photonvisibilityservice
+
 
 
 ###############################################################################
