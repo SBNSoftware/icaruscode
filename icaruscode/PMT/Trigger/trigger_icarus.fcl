@@ -28,6 +28,8 @@ BNB_settings: {
   batches_per_spill: 1
 
   POT_per_batch: 5e12 # to be checked
+  
+  trigger_bits: 0x10
 
 } # BNB_settings
 
@@ -40,6 +42,8 @@ NuMI_settings: {
   batches_per_spill: 6
 
   POT_per_batch: 5e12 # to be checked
+  
+  trigger_bits: 0x20
 
 } # NuMI_settings
 

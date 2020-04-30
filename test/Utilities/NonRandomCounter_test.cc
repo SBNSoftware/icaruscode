@@ -7,7 +7,7 @@
  */
 
 // Boost libraries
-#define BOOST_TEST_MODULE WaveformOperationsTest
+#define BOOST_TEST_MODULE NonRandomCounterTest
 #include <cetlib/quiet_unit_test.hpp> // BOOST_AUTO_TEST_CASE()
 #include <boost/test/test_tools.hpp> // BOOST_CHECK(), BOOST_CHECK_EQUAL()
 
@@ -58,7 +58,7 @@ void Test() {
   std::cout << "\nengine.flat() x " << numbers.size() << " => ";
   engine.showStatus();
   
-} // void Test()
+} // Test()
 
 
 //------------------------------------------------------------------------------

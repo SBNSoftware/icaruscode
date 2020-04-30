@@ -1,3 +1,5 @@
+cet_test(rounding_test USE_BOOST_UNIT)
+
 cet_test(FastAndPoorGauss_test
   LIBRARIES
     ${ROOT_MATHCORE}
@@ -6,6 +8,7 @@ cet_test(FastAndPoorGauss_test
     ${ROOT_CORE}
   USE_BOOST_UNIT
   )
+
 cet_test(SampledFunction_test USE_BOOST_UNIT)
 
 cet_test(NonRandomCounter_test

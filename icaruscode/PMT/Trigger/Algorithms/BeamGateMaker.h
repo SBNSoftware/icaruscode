@@ -16,6 +16,7 @@
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // detinfo::timescales
+#include "lardataalg/DetectorInfo/DetectorClocks.h"
 
 
 
@@ -47,16 +48,19 @@ namespace icarus::trigger {
  */
 class icarus::trigger::BeamGateMaker {
   
-  using time_interval = detinfo::timescales::time_interval;
-  
   detinfo::DetectorTimings const fDetTimings; ///< Detector timing provider.
-  
   
   /// Value used for default delay.
   static constexpr util::quantities::microsecond DefaultDelay { 0.0 };
   
   
     public:
+  
+  using time_interval = detinfo::timescales::time_interval;
+  using optical_time = detinfo::timescales::optical_time;
+  using optical_tick = detinfo::timescales::optical_tick;
+  using optical_time_ticks = detinfo::timescales::optical_time_ticks;
+  
   
   /// Constructor: uses a copy of the specified detector timing provider.
   BeamGateMaker(detinfo::DetectorTimings const& detTimings)
@@ -66,6 +70,36 @@ class icarus::trigger::BeamGateMaker {
   /// Constructor: uses the specified detector clocks service.
   BeamGateMaker(detinfo::DetectorClocks const& detClocks)
     : BeamGateMaker(detinfo::makeDetectorTimings(detClocks)) {}
+  
+  // --- BEGIN -- Start and end time -------------------------------------------
+  /// @name Start and end time
+  /// @{
+  
+  /// Time of beam gate opening, in optical time scale.
+  /// @param delay opening delay after the nominal beam gate time
+  optical_time startTime(time_interval const delay = DefaultDelay) const
+    { return fDetTimings.BeamGateTime() + delay; }
+  
+  /// Time of beam gate closure, in optical time scale.
+  optical_time endTime
+    (time_interval const duration, time_interval const delay = DefaultDelay)
+    const
+    { return startTime(delay) + duration; }
+  
+  /// Time of beam gate opening, in optical ticks.
+  /// @param delay opening delay after the nominal beam gate time
+  optical_tick startTick(time_interval const delay = DefaultDelay) const
+    { return fDetTimings.toOpticalTick(startTime(delay)); }
+  
+  /// Time of beam gate closure, in optical ticks.
+  optical_tick endTick
+    (time_interval const duration, time_interval const delay = DefaultDelay)
+    const
+    { return fDetTimings.toOpticalTick(endTime(duration, delay)); }
+  
+  /// @}
+  // --- END -- Start and end time ---------------------------------------------
+  
   
   // @{
   /**
@@ -86,10 +120,8 @@ class icarus::trigger::BeamGateMaker {
   Gate make(time_interval length, time_interval delay = DefaultDelay) const
     {
       icarus::trigger::OpticalTriggerGate beamGate;
-      beamGate.gateLevels().openFor(
-        fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + delay).value(),
-        fDetTimings.toOpticalTicks(length).value()
-        );
+      beamGate.gateLevels().openFor
+        (startTick(delay).value(), fDetTimings.toOpticalTicks(length).value());
       return beamGate;
     }
   
