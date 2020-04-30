@@ -346,7 +346,7 @@ icarus_split_induction_nooverburden_geometry_services: {
 ###
 ### Override a geometry configuration by:
 ###
-###     services: {
+###     services: {icarus_legacy_services_v08_05_00
 ###       @table::services
 ###       @table::icarus_split_induction_geometry_services
 ###     }
@@ -442,7 +442,7 @@ icarus_nooverburden_geometry: @local::icarus_nooverburden_geometry_services.Geom
 #
 # geometry configuration bundle
 #
-icarus_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+icarus_geometry_services: @local::icarus_split_induction_nooverburden_geometry_services
 
 #
 # Geometry service configuration:
