@@ -1,8 +1,8 @@
 ﻿/**
- * @file    icaruscode/Light/Algorithms/PMTsimulationAlg.cxx
+ * @file    icaruscode/PMT/Algorithms/PMTsimulationAlg.cxx
  * @brief   Algorithms for the simulation of ICARUS PMT channels.
  * @date    October 16, 2018
- * @see     `icaruscode/Light/Algorithms/PMTsimulationAlg.h`
+ * @see     `icaruscode/PMT/Algorithms/PMTsimulationAlg.h`
  *
  * Implementation file.
  */

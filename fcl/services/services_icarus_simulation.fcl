@@ -24,7 +24,7 @@
 #  (1*) icarus_g4_services
 #  (2*) icarus_detsim_services
 #
-#  (all*) icarus_simulation_services
+#  (all*) icarus_simulation_services, icarus_legacy_services_v08_05_00
 #
 # 
 # Avaialble presets:
@@ -133,5 +133,32 @@ icarus_simulation_services: {
 } # icarus_simulation_services
 
 
+################################################################################
+###  Legacy service configuration (v08_05_00)
+###
+### This set of services is required to run with data produced with icaruscode
+### v08_50_00 and earlier.
+### It includes:
+### 
+###  * single first induction wire geometry, with overburden
+###  * old PMT mapping
+###  * old photon visibility library
+### 
+### It is going to replace `icarus_simulation_services`, i.e. it includes (all*)
+### services.
+###
+
+icarus_legacy_services_v08_05_00: {
+    
+    @table::icarus_simulation_services
+    
+    @table::icarus_single_induction_overburden_geometry_services
+    
+    PhotonVisibilityService: @local::icarus_legacy_photonvisibilityservice_v08_05_00
+
+} # icarus_legacy_services_v08_05_00
+
+
+################################################################################
 
 END_PROLOG
