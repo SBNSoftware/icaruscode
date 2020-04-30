@@ -199,6 +199,7 @@ public:
         tree->Branch("Integral",          "std::vector<float>", &fIntegralHitVec);           //< Integrated charge +/- n sigma about peak center
         tree->Branch("PulseHeight",       "std::vector<float>", &fPHHitVec);                 //< Pulse height of hit
         tree->Branch("RMS",               "std::vector<float>", &fRMSHitVec);                //< RMS of hit (from fit)
+        tree->Branch("PHFraction",        "std::vector<float>", &fPHFractionVec);            //< Fraction of max pulse height this snippet
 
         tree->Branch("PulseHeightOrder",  "std::vector<int>",   &fPHOrderHitVec);            //< Local index ordered by pulse height
 
@@ -233,6 +234,7 @@ public:
         fIntegralHitVec.clear();
         fPHHitVec.clear();
         fRMSHitVec.clear();
+        fPHFractionVec.clear();
 
         fPHOrderHitVec.clear();
     }
@@ -298,6 +300,7 @@ public:
     std::vector<float> fPHHitVec;
     std::vector<float> fRMSHitVec;
 
+    std::vector<float> fPHFractionVec;
     std::vector<int>   fPHOrderHitVec;
 
 private:
@@ -798,6 +801,7 @@ void SpacePointAnalysis::matchHitSim(const HitPointerVec&     hitPointerVec,    
     using HitPeakTimeChargeVec   = std::vector<HitPeakTimeChargeTuple>;
 
     HitPeakTimeChargeVec hitPeakTimeChargeVec;
+    float                maxPulseHeight(1.);   // Don't let this be zero
 
     // If here then we are on to the next hit, so we need to process our current list
     for(const auto& hit : hitPointerVec)
@@ -811,10 +815,12 @@ void SpacePointAnalysis::matchHitSim(const HitPointerVec&     hitPointerVec,    
         int peakTDC  = fClockService->TPCTick2TDC(peakTick  - fOffsetVec[hit->WireID().Plane]);
         int endTDC   = fClockService->TPCTick2TDC(endTick   - fOffsetVec[hit->WireID().Plane]);
 
+        maxPulseHeight = std::max(maxPulseHeight,hit->PeakAmplitude());
+
         // If we have a match then this iterator gets set to the matching values
         ChargeDepositVec::const_iterator chargeMatchItr = chargeDepositVec.end();
 
-        int bestPeakDiff = std::numeric_limits<int>::max();
+        int   bestPeakDiff = std::numeric_limits<int>::max();
 
         // Match the hit (if there is one)
         for(ChargeDepositVec::const_iterator chargeInfoItr = chargeDepositVec.begin(); chargeInfoItr != chargeDepositVec.end(); chargeInfoItr++)
@@ -938,7 +944,11 @@ void SpacePointAnalysis::matchHitSim(const HitPointerVec&     hitPointerVec,    
         std::sort(hitPeakTimeChargeVec.begin(),hitPeakTimeChargeVec.end(),[](const auto& left,const auto& right){return std::get<1>(left)->PeakAmplitude() > std::get<1>(right)->PeakAmplitude();});
 
         // Now loop through
-        for(const auto& hitPeakCharge : hitPeakTimeChargeVec) hitObj.fPHOrderHitVec.emplace_back(std::get<1>(hitPeakCharge)->LocalIndex());
+        for(const auto& hitPeakCharge : hitPeakTimeChargeVec)
+        {
+            hitObj.fPHOrderHitVec.emplace_back(std::get<1>(hitPeakCharge)->LocalIndex());
+            hitObj.fPHFractionVec.emplace_back(std::get<1>(hitPeakCharge)->PeakAmplitude() / maxPulseHeight);
+        }
     }
 
     return;
