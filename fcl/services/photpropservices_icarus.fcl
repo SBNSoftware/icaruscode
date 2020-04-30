@@ -117,7 +117,7 @@ icarus_photonvisibilityservice_mapped: {
 # relies on `standard_library_vuv_prop_timing_photonvisibilityservice` which
 # we are not reproducing here).
 #
-icarus_legacy_photonvisibilityservice_v08_05_00: {
+icarus_legacy_photonvisibilityservice_v08_50_00: {
 
   @table::standard_library_vuv_prop_timing_photonvisibilityservice
 
@@ -140,7 +140,7 @@ icarus_legacy_photonvisibilityservice_v08_05_00: {
     tool_type: ICARUSPhotonMappingTransformations
   }
 
-} # icarus_legacy_photonvisibilityservice_v08_05_00
+} # icarus_legacy_photonvisibilityservice_v08_50_00
 
 
 
