@@ -253,6 +253,8 @@ double SignalShapingICARUSService::GetDeconNoise(unsigned int const channel) con
 
 int SignalShapingICARUSService::ResponseTOffset(unsigned int const channel) const
 {
+    if (!fInit) init();
+    
     art::ServiceHandle<geo::Geometry> geom;
     
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
