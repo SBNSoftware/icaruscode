@@ -100,7 +100,6 @@ public:
     // Constructor, destructor.
     SignalShapingICARUSService(const fhicl::ParameterSet& pset,
                                    art::ActivityRegistry& reg);
-    ~SignalShapingICARUSService();
     
     // Update configuration parameters.
     void                          reconfigure(const fhicl::ParameterSet& pset);
