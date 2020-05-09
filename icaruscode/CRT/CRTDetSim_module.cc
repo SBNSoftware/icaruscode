@@ -149,19 +149,17 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   //pointer to vector of CRT data products to be pushed to event
   std::unique_ptr<std::vector<CRTData> > triggeredCRTHits (
       new std::vector<CRTData>);
+  //pointer to vector of AuxDetIDE products to be pushed to event
   std::unique_ptr<std::vector<sim::AuxDetIDE> > ides (
       new std::vector<sim::AuxDetIDE>);
+  //pointer associations between CRT data products and AuxDetIDEs to be pushed to event
   std::unique_ptr< art::Assns<CRTData,sim::AuxDetIDE> > dataAssn (
       new art::Assns<CRTData,sim::AuxDetIDE> );
-  art::PtrMaker<CRTData> makeDataPtr(event);
-  art::PtrMaker<sim::AuxDetIDE> makeIDEPtr(event);
+  art::PtrMaker<CRTData> makeDataPtr(event); 
+  art::PtrMaker<sim::AuxDetIDE> makeIDEPtr(event); 
 
+  //clear detAlg member data
   detAlg.ClearTaggers();
-
-  // Services: Geometry, DetectorClocks, RandomNumberGenerator
-  //art::ServiceHandle<geo::Geometry> geoService;
-  //art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
-  //detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
 
   // Handle for (truth) AuxDetSimChannels
   art::Handle<std::vector<sim::AuxDetSimChannel> > adChanHandle;;
@@ -172,31 +170,36 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   mf::LogInfo("CRTDetSimProducer")
       <<"Number of AuxDetChannels = " << adChanList.size();
 
-  int nide=0;
+  //int nide=0;
   for(auto const& adsc : adChanList) {
 
       auto const& auxDetIDEs = adsc->AuxDetIDEs();
-      nide = auxDetIDEs.size();
+      if(auxDetIDEs.size()>0)
+          detAlg.FillTaggers(adsc->AuxDetID(), adsc->AuxDetSensitiveID(), auxDetIDEs);
 
-      for(auto const& ide : auxDetIDEs) {
-          ides->push_back(ide);
-      }
-      if(nide>0)
-          detAlg.FillTaggers(adsc->AuxDetID(), adsc->AuxDetSensitiveID(), ides, nide);
+  }//loop over AuxDetSimChannels
 
-  }
-
-  std::vector<std::pair<CRTData,std::vector<int>>> data = detAlg.CreateData();//adChanList);
-  int nData = 0;
+  //generate CRTData products, associates from filled detAlg member data
+  std::vector<std::pair<CRTData,std::vector<sim::AuxDetIDE>>> data = detAlg.CreateData();
+  int nData = 0, nsizematch=0;
 
   for(auto const& dataPair : data){
   
     triggeredCRTHits->push_back(dataPair.first);
     art::Ptr<CRTData> dataPtr = makeDataPtr(triggeredCRTHits->size()-1);
     nData++;
-  
-    for(auto const& data_i : dataPair.second){
-      art::Ptr<sim::AuxDetIDE> idePtr = makeIDEPtr(data_i);
+
+    vector<int> dataIds;
+    for(auto const& chandat : dataPair.first.ChanData())
+      for(auto const& id : chandat.TrackID())
+        dataIds.push_back(id);
+
+    if(dataIds.size()!=dataPair.second.size()) 
+      std::cout << "data - ide mismatch: " << dataIds.size()-dataPair.second.size() << std::endl;
+    else nsizematch++;
+    for(auto const& ide : dataPair.second){
+      ides->push_back(ide);
+      art::Ptr<sim::AuxDetIDE> idePtr = makeIDEPtr(ides->size()-1);
       dataAssn->addSingle(dataPtr, idePtr);
     }
   }
@@ -206,7 +209,8 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   event.put(std::move(dataAssn));
 
     mf::LogInfo("CRTDetSimProducer")
-      <<"Number of CRT data produced = "<< nData;
+      << "Number of CRT data produced = "<< nData << '\n'
+      << "NUmber of matched size IDEs = " << nsizematch;
 }
 
 DEFINE_ART_MODULE(icarus::crt::CRTDetSim)

@@ -1056,7 +1056,7 @@ namespace crt {
 	{  
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
-	    std::cout << "auxDetIDEs.size() = " << auxDetIDEs.size() << std::endl;
+	    //std::cout << "auxDetIDEs.size() = " << auxDetIDEs.size() << std::endl;
 
 	    // For every hit in this channel:
 	    for ( auto const& ide : auxDetIDEs )

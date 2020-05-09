@@ -40,6 +40,9 @@
 
 using std::vector;
 using std::pair;
+using std::map;
+using std::set;
+using std::string;
 
 namespace icarus {
  namespace crt {
@@ -50,11 +53,11 @@ namespace icarus {
 struct Tagger {
     char type;
     int modid;
-    std::string reg; //crt region where FEB is located
-    std::set<int> layerid; //keep track of layers hit accross whole event window
-    std::map<int,int> chanlayer; //map chan # to layer
-    std::vector<icarus::crt::CRTChannelData> data; //time and charge info for each channel > thresh
-    std::vector<int> ichan; //index of the auxDetIDE vector provided by DetSimProducer 
+    string reg; //crt region where FEB is located
+    set<int> layerid; //keep track of layers hit accross whole event window
+    map<int,int> chanlayer; //map chan # to layer
+    vector<pair<icarus::crt::CRTChannelData,sim::AuxDetIDE>> data; //time and charge info for each channel > thresh
+    //vector<sim::AuxDetIDE> ide; //index of the auxDetIDE vector provided by DetSimProducer 
 };//Tagger
 
 
@@ -67,8 +70,8 @@ class icarus::crt::CRTDetSimAlg {
 
     void ClearTaggers();
     //given a vector of AuxDetIDEs, fill a map of tagger objects with intermediate ChannelData + aux info
-    void FillTaggers(const uint32_t adid, const uint32_t adsid, const std::unique_ptr<vector<sim::AuxDetIDE>>& ides, const int nide);
-    vector<pair<CRTData, vector<int>>> CreateData();//vector<art::Ptr<sim::AuxDetSimChannel>> channels);
+    void FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides);
+    vector<pair<CRTData, vector<sim::AuxDetIDE>>> CreateData();//vector<art::Ptr<sim::AuxDetSimChannel>> channels);
 
 
  private:
@@ -122,11 +125,11 @@ class icarus::crt::CRTDetSimAlg {
     CLHEP::HepRandomEngine& fRandEngine;
     std::map<int,vector<pair<int,int>>> fFebMap;
 
-    // A list of hit taggers, before any coincidence requirement
+    // A list of hit taggers, before any coincidence requirement (mac5 -> tagger)
     std::map<int, Tagger> fTaggers;
 
-    pair<double,double> GetTransAtten(const double pos);
-    double GetLongAtten(const double dist);
+    pair<double,double> GetTransAtten(const double pos); //only applies to CERN modules
+    double GetLongAtten(const double dist); //MINOS model applied to all modules for now
 
     /**
      * Get the channel trigger time relative to the start of the MC event.
@@ -138,8 +141,7 @@ class icarus::crt::CRTDetSimAlg {
      * @param r Distance between the energy deposit and strip readout end [mm]
      * @return Trigger clock ticks at this true hit time
      */
-    //uint32_t
-    double GetChannelTriggerTicks(detinfo::ElecClock& clock,
+    uint32_t GetChannelTriggerTicks(detinfo::ElecClock& clock,
                                   float t0, float npeMean, float r);
 
 };

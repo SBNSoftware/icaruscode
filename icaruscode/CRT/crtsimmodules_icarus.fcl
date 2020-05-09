@@ -4,7 +4,7 @@ standard_icarus_crtsimalg:
 {
 
   Verbose:      true
-  UltraVerbose: true
+  UltraVerbose: false
 
   # Global timing offset [ns]
   # For Corsika cosmics, use -1.1ms (see corsika_icarus.fcl)

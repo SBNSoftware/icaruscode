@@ -36,5 +36,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
                            nurandom_RandomUtils_NuRandomService_service
         )
+
 install_headers()
+install_fhicl()
 install_source()

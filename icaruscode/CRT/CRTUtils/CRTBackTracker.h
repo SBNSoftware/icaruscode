@@ -76,37 +76,37 @@ class icarus::crt::CRTBackTracker {
     void Initialize(const art::Event& event);
 
     // Check that two CRT data products are the same
-    bool DataCompare(const crt::CRTData& data1, const crt::CRTData& data2);
+    bool DataCompare(const CRTData& data1, const CRTData& data2);
 
     // Check that two CRT hits are the same
-    bool HitCompare(const crt::CRTHit& hit1, const crt::CRTHit& hit2);
+    bool HitCompare(const CRTHit& hit1, const CRTHit& hit2);
 
     // Check that two CRT tracks are the same
-    bool TrackCompare(const crt::CRTTrack& track1, const crt::CRTTrack& track2);
+    bool TrackCompare(const CRTTrack& track1, const CRTTrack& track2);
 
     // Get all the true particle IDs that contributed to the CRT data product
-    std::vector<int> AllTrueIds(const art::Event& event, const crt::CRTData& data);
+    std::vector<int> AllTrueIds(const art::Event& event, const CRTData& data);
 
     // Get all the true particle IDs that contributed to the CRT hit
-    std::vector<int> AllTrueIds(const art::Event& event, const crt::CRTHit& hit);
+    std::vector<int> AllTrueIds(const art::Event& event, const CRTHit& hit);
 
     // Get all the true particle IDs that contributed to the CRT track
-    std::vector<int> AllTrueIds(const art::Event& event, const crt::CRTTrack& track);
+    std::vector<int> AllTrueIds(const art::Event& event, const CRTTrack& track);
 
     // Get the true particle ID that contributed the most energy to the CRT data product
-    int TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTData& data);
+    int TrueIdFromTotalEnergy(const art::Event& event, const CRTData& data);
 
     // Faster function - needs Initialize() to be called first
     int TrueIdFromDataId(const art::Event& event, int data_i);
 
     // Get the true particle ID that contributed the most energy to the CRT hit
-    int TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTHit& hit);
+    int TrueIdFromTotalEnergy(const art::Event& event, const CRTHit& hit);
 
     // Faster function - needs Initialize() to be called first
     int TrueIdFromHitId(const art::Event& event, int hit_i);
 
     // Get the true particle ID that contributed the most energy to the CRT track
-    int TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTTrack& track);
+    int TrueIdFromTotalEnergy(const art::Event& event, const CRTTrack& track);
 
     // Faster function - needs Initialize() to be called first
     int TrueIdFromTrackId(const art::Event& event, int track_i);

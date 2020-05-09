@@ -34,22 +34,28 @@ namespace icarus{
       fTrackTrueIds.clear();
     
       // Get a handle to the CRT data in the event
-      art::Handle< std::vector<crt::CRTData>> crtDataHandle;
-      std::vector<art::Ptr<crt::CRTData> > crtDataList;
-    
+      art::Handle< std::vector<CRTData>> crtDataHandle;
+      std::vector<art::Ptr<CRTData> > crtDataList;
+   
+      //std::cout << "CRTBackTracker::Initialize: filling CRTData ptr vector" << std::endl;
       if (event.getByLabel(fCRTDataLabel, crtDataHandle))
         art::fill_ptr_vector(crtDataList, crtDataHandle);
-    
+
+      //std::cout << "   found " << crtDataList.size() << "CRTData products" << std::endl;
+      //std::cout << "CRTBackTracker::Initialize: findManyIdes" << std::endl;
       art::FindManyP<sim::AuxDetIDE> findManyIdes(crtDataHandle, event, fCRTDataLabel);
-      std::map<art::Ptr<crt::CRTData>, int> dataPtrMap;
-    
+      std::map<art::Ptr<CRTData>, int> dataPtrMap;
+
+      //std::cout << "CRTBackTracker::Initialize: filling assn map..." << std::endl;    
       for(size_t data_i = 0; data_i < crtDataList.size(); data_i++){
     
         dataPtrMap[crtDataList[data_i]] = data_i;
     
         // Get all the true IDs from all the IDEs in the hit
         std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(data_i);
-    
+ 
+        //std::cout << "ides.size() = " << ides.size() << std::endl;
+        //if(ides.size()>0) std::cout << "CRTBackTracker::Initialize: loop over ides" << std::endl;
         for(size_t i = 0; i < ides.size(); i++){
     
           int id = ides[i]->trackID;
@@ -58,21 +64,23 @@ namespace icarus{
     
           fDataTrueIds[data_i][id] += ides[i]->energyDeposited;
         }
+        //std::cout << "done w/these ides...on to the next" << std::endl;
       }
     
-      art::Handle< std::vector<crt::CRTHit>> crtHitHandle;
-      std::vector<art::Ptr<crt::CRTHit> > crtHitList;
-    
+      //std::cout << "CRTBackTracker::Initialize: done with CRTData assn's" << std::endl;
+
+      /*art::Handle< std::vector<CRTHit>> crtHitHandle;
+      std::vector<art::Ptr<CRTHit> > crtHitList;
       if (event.getByLabel(fCRTHitLabel, crtHitHandle))
         art::fill_ptr_vector(crtHitList, crtHitHandle);
     
-      art::FindManyP<crt::CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
-      std::map<art::Ptr<crt::CRTHit>, int> hitPtrMap;
+      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
+      std::map<art::Ptr<CRTHit>, int> hitPtrMap;
     
       for(size_t hit_i = 0; hit_i < crtHitList.size(); hit_i++){
     
         hitPtrMap[crtHitList[hit_i]] = hit_i;
-        std::vector<art::Ptr<crt::CRTData>> data = findManyData.at(hit_i);
+        std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
     
         for(size_t data_i = 0; data_i < data.size(); data_i++){
     
@@ -84,17 +92,17 @@ namespace icarus{
         }
       }
     
-      art::Handle< std::vector<crt::CRTTrack>> crtTrackHandle;
-      std::vector<art::Ptr<crt::CRTTrack> > crtTrackList;
+      art::Handle< std::vector<CRTTrack>> crtTrackHandle;
+      std::vector<art::Ptr<CRTTrack> > crtTrackList;
     
       if (event.getByLabel(fCRTTrackLabel, crtTrackHandle))
         art::fill_ptr_vector(crtTrackList, crtTrackHandle);
     
-      art::FindManyP<crt::CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
+      art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
     
       for(size_t track_i = 0; track_i < crtTrackList.size(); track_i++){
     
-        std::vector<art::Ptr<crt::CRTHit>> hits = findManyHits.at(track_i);
+        std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
     
         for(size_t hit_i = 0; hit_i < hits.size(); hit_i++){
     
@@ -106,13 +114,13 @@ namespace icarus{
     
           }
         }
-      }
+      }*/
     
     }
 
     // ---------------------------------------------------------------------------------------    
     // Check that two CRT data products are the same
-    bool CRTBackTracker::DataCompare(const crt::CRTData& data1, const crt::CRTData& data2){
+    bool CRTBackTracker::DataCompare(const CRTData& data1, const CRTData& data2){
     
       if(data1.Mac5() != data2.Mac5()) return false;
       if(data1.TTrig() != data2.TTrig()) return false;
@@ -124,7 +132,7 @@ namespace icarus{
 
     // ----------------------------------------------------------------------------------------    
     // Check that two CRT hits are the same
-    bool CRTBackTracker::HitCompare(const crt::CRTHit& hit1, const crt::CRTHit& hit2){
+    bool CRTBackTracker::HitCompare(const CRTHit& hit1, const CRTHit& hit2){
     
       if(hit1.ts1_ns != hit2.ts1_ns) return false;
       if(hit1.plane != hit2.plane) return false;
@@ -141,7 +149,7 @@ namespace icarus{
 
     // -----------------------------------------------------------------------------------------    
     // Check that two CRT tracks are the same
-    bool CRTBackTracker::TrackCompare(const crt::CRTTrack& track1, const crt::CRTTrack& track2){
+    bool CRTBackTracker::TrackCompare(const CRTTrack& track1, const CRTTrack& track2){
     
       if(track1.ts1_ns != track2.ts1_ns) return false;
       if(track1.plane1 != track2.plane1) return false;
@@ -164,24 +172,30 @@ namespace icarus{
 
     // --------------------------------------------------------------------------------------------    
     // Get all the true particle IDs that contributed to the CRT data product
-    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const crt::CRTData& data){
+    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const CRTData& data){
     
       std::vector<int> ids;
     
       // Get a handle to the CRT data in the event
-      auto crtDataHandle = event.getValidHandle<std::vector<crt::CRTData>>(fCRTDataLabel);
+      auto crtDataHandle = event.getValidHandle<std::vector<CRTData>>(fCRTDataLabel);
       art::FindManyP<sim::AuxDetIDE> findManyIdes(crtDataHandle, event, fCRTDataLabel);
     
       // Find which one matches the data passed to the function
       int data_i = 0, index = 0;
-    
+   
+      int nmatch=0; 
       for(auto const& crtData : (*crtDataHandle)){
     
-        if(DataCompare(crtData, data)) data_i = index;
+        if(DataCompare(crtData, data)) {
+            data_i = index;
+            nmatch++;
+        }
     
         index++;
       }
-    
+      if(nmatch==0) std::cout << "BACKTRACKER ERROR: no matches for procided data product found!" << std::endl;
+      if(nmatch>1) std::cout << "BACKTRACKER ERROR: multiple matches for given data product found!" << std::endl;
+
       // Get all the true IDs from all the IDEs in the hit
       std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(data_i);
     
@@ -203,13 +217,13 @@ namespace icarus{
 
     // ---------------------------------------------------------------------------------------------    
     // Get all the true particle IDs that contributed to the CRT hit
-    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const crt::CRTHit& hit){
+    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const CRTHit& hit){
     
       std::vector<int> ids;
     
       // Get a handle to the CRT hits in the event
-      auto crtHitHandle = event.getValidHandle<std::vector<crt::CRTHit>>(fCRTHitLabel);
-      art::FindManyP<crt::CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
+      auto crtHitHandle = event.getValidHandle<std::vector<CRTHit>>(fCRTHitLabel);
+      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
     
       // Find which one matches the hit passed to the function
       int hit_i = 0, index = 0;
@@ -223,7 +237,7 @@ namespace icarus{
       }
     
       // Get the crt data associated to that hit and the IDEs associate to the data
-      std::vector<art::Ptr<crt::CRTData>> data = findManyData.at(hit_i);
+      std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
       art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
     
       // Get all the true IDs from all the IDEs in the hit
@@ -251,13 +265,13 @@ namespace icarus{
 
     //-----------------------------------------------------------------------------------------------    
     // Get all the true particle IDs that contributed to the CRT track
-    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const crt::CRTTrack& track){
+    std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const CRTTrack& track){
     
       std::vector<int> ids;
     
       // Get a handle to the CRT tracks in the event
-      auto crtTrackHandle = event.getValidHandle<std::vector<crt::CRTTrack>>(fCRTTrackLabel);
-      art::FindManyP<crt::CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
+      auto crtTrackHandle = event.getValidHandle<std::vector<CRTTrack>>(fCRTTrackLabel);
+      art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
     
       // Find which one matches the track passed to the function
       int track_i = 0, index = 0;
@@ -271,13 +285,13 @@ namespace icarus{
       }
     
       // Get the crt hits associated to that hit and the data associate to the hits
-      std::vector<art::Ptr<crt::CRTHit>> hits = findManyHits.at(track_i);
-      art::FindManyP<crt::CRTData> findManyData(hits, event, fCRTHitLabel);
+      std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
+      art::FindManyP<CRTData> findManyData(hits, event, fCRTHitLabel);
     
       // Get all the true IDs from all the IDEs in the track
       for(size_t i = 0; i < hits.size(); i++){
     
-        std::vector<art::Ptr<crt::CRTData>> data = findManyData.at(i);
+        std::vector<art::Ptr<CRTData>> data = findManyData.at(i);
         art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
     
         for(size_t j = 0; j < data.size(); j++){
@@ -305,12 +319,12 @@ namespace icarus{
 
     //------------------------------------------------------------------------------------------    
     // Get the true particle ID that contributed the most energy to the CRT data product
-    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTData& data){
+    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const CRTData& data){
     
       std::map<int, double> ids;
     
       // Get a handle to the CRT data in the event
-      auto crtDataHandle = event.getValidHandle<std::vector<crt::CRTData>>(fCRTDataLabel);
+      auto crtDataHandle = event.getValidHandle<std::vector<CRTData>>(fCRTDataLabel);
       art::FindManyP<sim::AuxDetIDE> findManyIdes(crtDataHandle, event, fCRTDataLabel);
     
       // Find which one matches the data passed to the function
@@ -380,13 +394,13 @@ namespace icarus{
 
     //--------------------------------------------------------------------------------------------
     // Get the true particle ID that contributed the most energy to the CRT hit
-    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTHit& hit){
+    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const CRTHit& hit){
     
       std::map<int, double> ids;
     
       // Get a handle to the CRT hits in the event
-      auto crtHitHandle = event.getValidHandle<std::vector<crt::CRTHit>>(fCRTHitLabel);
-      art::FindManyP<crt::CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
+      auto crtHitHandle = event.getValidHandle<std::vector<CRTHit>>(fCRTHitLabel);
+      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
     
       // Find which one matches the hit passed to the function
       int hit_i = 0, index = 0;
@@ -399,7 +413,7 @@ namespace icarus{
       }
     
       // Get the crt data associated to that hit and the IDEs associate to the data
-      std::vector<art::Ptr<crt::CRTData>> data = findManyData.at(hit_i);
+      std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
       art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
     
       // Get all the true IDs from all the IDEs in the hit
@@ -464,13 +478,13 @@ namespace icarus{
 
     //--------------------------------------------------------------------------------------------    
     // Get the true particle ID that contributed the most energy to the CRT track
-    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const crt::CRTTrack& track){
+    int CRTBackTracker::TrueIdFromTotalEnergy(const art::Event& event, const CRTTrack& track){
     
       std::map<int, double> ids;
     
       // Get a handle to the CRT tracks in the event
-      auto crtTrackHandle = event.getValidHandle<std::vector<crt::CRTTrack>>(fCRTTrackLabel);
-      art::FindManyP<crt::CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
+      auto crtTrackHandle = event.getValidHandle<std::vector<CRTTrack>>(fCRTTrackLabel);
+      art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
     
       // Find which one matches the track passed to the function
       int track_i = 0, index = 0;
@@ -484,13 +498,13 @@ namespace icarus{
       }
     
       // Get the crt hits associated to that hit and the data associate to the hits
-      std::vector<art::Ptr<crt::CRTHit>> hits = findManyHits.at(track_i);
-      art::FindManyP<crt::CRTData> findManyData(hits, event, fCRTHitLabel);
+      std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
+      art::FindManyP<CRTData> findManyData(hits, event, fCRTHitLabel);
     
       // Get all the true IDs from all the IDEs in the track
       for(size_t i = 0; i < hits.size(); i++){
     
-        std::vector<art::Ptr<crt::CRTData>> data = findManyData.at(i);
+        std::vector<art::Ptr<CRTData>> data = findManyData.at(i);
         art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
     
         for(size_t j = 0; j < data.size(); j++){
