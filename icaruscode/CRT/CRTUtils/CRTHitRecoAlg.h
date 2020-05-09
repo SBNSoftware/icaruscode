@@ -38,9 +38,12 @@
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/Atom.h"
 #include "cetlib/pow.h" // cet::sum_of_squares()
+
+//icaruscode includes
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 // c++
 #include <iostream>
@@ -55,6 +58,7 @@
 // ROOT
 #include "TVector3.h"
 #include "TGeoManager.h"
+
 
 namespace icarus {
 
@@ -98,17 +102,9 @@ namespace icarus {
       CRTHitRecoAlg(fhicl::Table<Config>(pset, {})()) {}
 
     CRTHitRecoAlg();
-
     ~CRTHitRecoAlg();
 
     void reconfigure(const Config& config);
-
-    void FillFEBMap(); //std::map<int,std::vector<std::pair<int,int>>> &m)
-    char MacToType(int mac);
-    int MacToRegion(int mac);
-    std::string MacToRegionName(int mac);
-    int MacToAuxDetID(int mac, int chan);
-    int ChannelToAuxDetSensitiveID(int mac, int chan);
 
     std::vector<std::pair<crt::CRTHit, std::vector<int>>> CreateCRTHits(std::vector<art::Ptr<crt::CRTData>> crtList);
 
@@ -126,7 +122,7 @@ namespace icarus {
     //const geo::AuxDetGeometry* fAuxDetGeo;
     //const geo::AuxDetGeometryCore* fAuxDetGeoCore;
 
-    static std::map<int,std::vector<std::pair<int,int>>> fFebMap;
+    std::map<int,std::vector<std::pair<int,int>>> fFebMap;
 
     //Params from fcl file
     bool fVerbose;          ///< print info

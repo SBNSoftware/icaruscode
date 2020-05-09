@@ -2,8 +2,7 @@
 
 namespace icarus {
 
-  std::map<int,std::vector<std::pair<int,int>>> CRTHitRecoAlg::fFebMap;
-
+  //----------------------------------------------------------------------
   CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
   
@@ -13,8 +12,11 @@ namespace icarus {
     fTrigClock = fDetectorClocks->TriggerClock();
     //fAuxDetGeo = &(*fAuxDetGeoService);
     //fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
+   
+    fFebMap = crt::CRTCommonUtils::GetFebMap();
   }
 
+  //---------------------------------------------------------------------
   CRTHitRecoAlg::CRTHitRecoAlg(){
     fGeometryService = lar::providerFrom<geo::Geometry>();
     fDetectorClocks = lar::providerFrom<detinfo::DetectorClocksService>();
@@ -22,13 +24,13 @@ namespace icarus {
     fTrigClock = fDetectorClocks->TriggerClock();
     //fAuxDetGeo = &(*fAuxDetGeoService);
     //fAuxDetGeoCore = fAuxDetGeo->GetProviderPtr();
+    fFebMap = crt::CRTCommonUtils::GetFebMap();
   }
 
 
-  CRTHitRecoAlg::~CRTHitRecoAlg(){
+  CRTHitRecoAlg::~CRTHitRecoAlg(){}
 
-  }
-
+  //---------------------------------------------------------------------
   void CRTHitRecoAlg::reconfigure(const Config& config){
     fUseReadoutWindow = config.UseReadoutWindow(); 
     fQPed = config.QPed();
@@ -36,7 +38,7 @@ namespace icarus {
     fPropDelay = config.PropDelay();
     return;
   }
-
+  //---------------------------------------------------------------------------------------
   std::vector<std::pair<crt::CRTHit, std::vector<int>>> CRTHitRecoAlg::CreateCRTHits(std::vector<art::Ptr<crt::CRTData>> crtList) {
 
     //std::cout << "inside CreateCRTHits" << std::endl;
@@ -59,9 +61,9 @@ namespace icarus {
 
       // all FEB entries have at least one strip hit
       int mac = crtList[febdat_i]->Mac5(); //febdat.Mac5();
-      char type = MacToType(mac);
-      int region = MacToRegion(mac);
-      std::string regionName = MacToRegionName(mac);
+      char type = crt::CRTCommonUtils::MacToType(mac);
+      int region = crt::CRTCommonUtils::MacToRegion(mac);
+      std::string regionName = crt::CRTCommonUtils::MacToRegionName(mac);
       std::pair<int,int> trigpair = crtList[febdat_i]->TrigPair(); //pair of strips that provided the trigger (for c and d mods)
       std::pair<int,int> macPair = crtList[febdat_i]->MacPair(); // pair of FEBs that provided validation (for m mods)
 
@@ -75,10 +77,10 @@ namespace icarus {
       if ((regs.insert(region)).second) regCounts[region] = 1;
       else regCounts[region]++;
 
-      int adid  = MacToAuxDetID(mac,trigpair.first); //module ID
+      int adid  = crt::CRTCommonUtils::MacToAuxDetID(mac,trigpair.first); //module ID
       //std::cout << "auxDetID: " << adid << std::endl;
       auto const& adGeo = fGeometryService->AuxDet(adid); //module
-      int adsid1 = ChannelToAuxDetSensitiveID(mac,trigpair.first); //trigger strip ID
+      int adsid1 = crt::CRTCommonUtils::ChannelToAuxDetSensitiveID(mac,trigpair.first); //trigger strip ID
       //std::cout << "auxDetSensitiveID: " << adsid1 << std::endl;
       auto const& adsGeo1 = adGeo.SensitiveVolume(adsid1); //trigger strip
 
@@ -112,7 +114,7 @@ namespace icarus {
           hitLocal[1] = 0.0;
 
           //2nd strip within the module that provided the coincidence
-          int  adsid2 = ChannelToAuxDetSensitiveID(mac,trigpair.second);
+          int  adsid2 = crt::CRTCommonUtils::ChannelToAuxDetSensitiveID(mac,trigpair.second);
           auto const& adsGeo2 = adGeo.SensitiveVolume(adsid2);
 
           adsGeo2.LocalToWorld(origin,stripPosWorld2); //fetch origin of strip in global coords
@@ -246,9 +248,9 @@ namespace icarus {
               adsGeo3.LocalToWorld(origin,stripPosWorld3);
 
               auto const& trigpair2 = crtList[febdat_j]->TrigPair();
-              int adid2  = MacToAuxDetID(mac2,trigpair2.first);
+              int adid2  = crt::CRTCommonUtils::MacToAuxDetID(mac2,trigpair2.first);
               auto const& adGeo2 = fGeometryService->AuxDet(adid2);
-              int  adsid2 = ChannelToAuxDetSensitiveID(mac2,trigpair2.first);
+              int  adsid2 = crt::CRTCommonUtils::ChannelToAuxDetSensitiveID(mac2,trigpair2.first);
               auto const& adsGeo2 = adGeo2.SensitiveVolume(adsid2);
               adsGeo2.LocalToWorld(origin,stripPosWorld2);
               auto const& adsGeo4 = adGeo2.SensitiveVolume(adsid2+1);
@@ -370,7 +372,7 @@ namespace icarus {
     return returnHits;
 
   }
-
+  //--------------------------------------------------------------------------------------------
   // Function to make filling a CRTHit a bit faster
   icarus::crt::CRTHit CRTHitRecoAlg::FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t, 
                               std::vector<std::pair<int,float>>> tpesmap, float peshit, double time0, double time1, int plane, 
@@ -399,128 +401,5 @@ namespace icarus {
 
   } // CRTHitRecoAlg::FillCrtHit()
 
-  void CRTHitRecoAlg::FillFEBMap() 
-  {
-    if(!(this->fFebMap).empty())
-        return;
-
-    std::string fullFileName;
-    cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("feb_map.txt",fullFileName);
-    std::ifstream fin;
-    fin.open(fullFileName,std::ios::in);
-    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else 
-        throw cet::exception("CRTDetSim::FillFebMap") << "Unable to find/open file 'feb_map.txt'" << std::endl;
-
-    std::vector<std::string> row;
-    std::string line, word;
-    while(getline(fin,line)) {
-
-        row.clear();
-        std::stringstream s(line);
-        int mod;
-        while (std::getline(s, word, ',')) {
-            row.push_back(word);
-        }
-
-        mod = std::stoi(row[0]);
-        (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
-        if(row.size()>3){
-            (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
-        }             
-    }
-    std::cout << "filled febMap with " << (this->fFebMap).size() << " entries" << std::endl;
-    fin.close();
-  }
-
-  int CRTHitRecoAlg::MacToRegion(int mac){
-
-      if(mac>=107 && mac<=190) return 30; //top
-      if(mac>=191 && mac<=204) return 31; //rim west
-      if(mac>=205 && mac<=218) return 32; //rim east
-      if(mac>=219 && mac<=224) return 33; //rim south
-      if(mac>=225 && mac<=230) return 34; //rim north
-      if(            mac<=12 ) return 40; //west side, south stack
-      if(mac>=13  && mac<=24 ) return 41; //west side, center stack
-      if(mac>=25  && mac<=36 ) return 42; //west side, north stack
-      if(mac>=37  && mac<=48 ) return 43; //east side, south stack
-      if(mac>=49  && mac<=60 ) return 44; //east side, center stack
-      if(mac>=61  && mac<=72 ) return 45; //east side, north stack
-      if(mac>=73  && mac<=84 ) return 46; //south
-      if(mac>=85  && mac<=92 ) return 47; //north
-      if(mac>=93 && mac<=106) return 50; //bottom
-
-      std::cout << "ERROR in CRTHitRecoAlg::MacToRegion: unknown mac address " << mac << std::endl;
-      return 0;
-  }
-
-  char CRTHitRecoAlg::MacToType(int mac) 
-  {
-
-      int reg = MacToRegion(mac);
-      if(reg>=30&&reg<40) return 'c';
-      if(reg>=40&&reg<50) return 'm';
-      if(reg==50) return 'd';
-      std::cout << "ERROR in CRTHitRecoAlg::MacToType: type not set!" << std::endl;
-      return 'e';
-  }
-
-  std::string CRTHitRecoAlg::MacToRegionName(int mac)
-  {
-      int reg = MacToRegion(mac);
-      switch(reg) {
-          case 30 : return "top";
-          case 31 : return "rimWest";
-          case 32 : return "rimEast";
-          case 33 : return "rimSouth";
-          case 34 : return "rimNorth";
-          case 40 : return "westSouth";
-          case 41 : return "westCenter";
-          case 42 : return "westNorth";
-          case 43 : return "eastSouth";
-          case 44 : return "eastCenter";
-          case 45 : return "eastNorth";
-          case 46 : return "south";
-          case 47 : return "north";
-          case 50 : return "bottom";
-      }
-      return "";
-  }
-
-  int CRTHitRecoAlg::ChannelToAuxDetSensitiveID(int mac, int chan) {
-    char type = MacToType(mac);
-    if (type=='d') return chan;
-    if (type=='c') return chan/2;
-    if (type=='m') return (chan % 10)*2;
-
-    return INT_MAX;
-  }
-
-  int CRTHitRecoAlg::MacToAuxDetID(int mac, int chan)
-  {
-      FillFEBMap();
-      char type = MacToType(mac);
-      if (type == 'e') return INT_MAX;
-
-      int pos=1;
-      if(type=='m')
-          pos = chan/10 + 1;
-
-      if((this->fFebMap).empty()) 
-          std::cout << "ERROR in CRTHitRecoAlg::MacToAuxDetID: FEBMap is empty!" << std::endl;
-
-      for(const auto&  p : this->fFebMap) {
-          if(p.second[0].first == mac && p.second[0].second==pos)
-              return (uint32_t)p.first;
-          if(p.second.size()==2)
-              if(p.second[1].first==mac && p.second[1].second==pos)
-                  return (uint32_t)p.first;
-      }
-
-
-    std::cout << "ERROR in CRTHitRecoAlg::MacToAuxDetID: auxDetID not set!" << std::endl;
-    return INT_MAX;
-  }
 
 } //end namespace icarus

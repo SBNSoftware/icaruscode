@@ -19,6 +19,11 @@ namespace icarus{
     std::string GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
     int GetAuxDetRegionNum(std::string reg);
     std::string GetRegionNameFromNum(int num);
+    int MacToRegion(int mac);
+    char MacToType(int mac);
+    std::string MacToRegionName(int mac);
+    int ChannelToAuxDetSensitiveID(int mac, int chan);
+    int MacToAuxDetID(int mac, int chan);
     std::map<int,std::vector<std::pair<int,int>>> GetFebMap();
 
   }//CRTCommonUtils
