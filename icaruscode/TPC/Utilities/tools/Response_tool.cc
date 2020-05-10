@@ -316,10 +316,10 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
     const icarusutil::TimeVec& responseVec  = fResponse;
     auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    int                        numBins      = responseVec.size();
-    double                     samplingRate = detprop->SamplingRate(); // **Sampling time in ns**
-    double                     maxFreq      = 1.e6 / (2. * samplingRate);
-    double                     minFreq      = 1.e6 / (2. * samplingRate * double(numBins));
+    double                     numBins      = responseVec.size();
+    double                     samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
+    double                     maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
+    double                     minFreq      = maxFreq / numBins;
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
     TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * samplingRate * 1.e-3);
     
@@ -332,13 +332,12 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     fFFT->getFFTPower(responseVec, powerVec);
     
-    double      freqWidth = maxFreq / (powerVec.size() - 1);
     std::string freqName  = "Response_FFTPlane_" + std::to_string(fThisPlane);
-    TProfile*   freqHist  = dir.make<TProfile>(freqName.c_str(), "Response;Frequency(MHz)", powerVec.size(), minFreq, maxFreq);
+    TProfile*   freqHist  = dir.make<TProfile>(freqName.c_str(), "Response;Frequency(kHz)", numBins/2, minFreq, 0.5*maxFreq);
     
-    for(size_t idx = 0; idx < powerVec.size(); idx++)
+    for(size_t idx = 0; idx < numBins/2; idx++)
     {
-        double freq = freqWidth * (idx + 0.5);
+        double freq = minFreq * (idx + 0.5);
         
         freqHist->Fill(freq, powerVec.at(idx), 1.);
     }
@@ -346,11 +345,11 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     const icarusutil::FrequencyVec& convKernel = fConvolutionKernel;
     
     std::string convKernelName   = "ConvKernel_" + std::to_string(fThisPlane);
-    TProfile*   fullResponseHist = dir.make<TProfile>(convKernelName.c_str(), "Convolution Kernel;Frequency(MHz)", convKernel.size(), minFreq, maxFreq);
+    TProfile*   fullResponseHist = dir.make<TProfile>(convKernelName.c_str(), "Convolution Kernel;Frequency(kHz)", numBins/2, minFreq, 0.5*maxFreq);
 
-    for(size_t idx = 0; idx < convKernel.size(); idx++)
+    for(size_t idx = 0; idx < numBins/2; idx++)
     {
-        double freq = freqWidth * (idx + 0.5);
+        double freq = minFreq * (idx + 0.5);
         
         fullResponseHist->Fill(freq, std::abs(convKernel[idx]), 1.);
     }
@@ -358,11 +357,11 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     const icarusutil::FrequencyVec& deconKernel = fDeconvolutionKernel;
     
     std::string deconName = "DeconKernel_" + std::to_string(fThisPlane);
-    TProfile*   deconHist = dir.make<TProfile>(deconName.c_str(), "Deconvolution Kernel;Frequency(MHz)", deconKernel.size(), minFreq, maxFreq);
+    TProfile*   deconHist = dir.make<TProfile>(deconName.c_str(), "Deconvolution Kernel;Frequency(kHz)", numBins/2, minFreq, 0.5*maxFreq);
     
-    for(size_t idx = 0; idx < deconKernel.size(); idx++)
+    for(size_t idx = 0; idx < numBins/2; idx++)
     {
-        double freq = freqWidth * (idx + 0.5);
+        double freq = minFreq * (idx + 0.5);
         
         deconHist->Fill(freq, std::abs(deconKernel[idx]), 1.);
     }

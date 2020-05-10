@@ -135,9 +135,9 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     double      maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
     double      minFreq      = maxFreq / numBins;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);
-    TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(MHz)", numBins, minFreq, maxFreq);
+    TProfile*   hist         = dir.make<TProfile>(histName.c_str(), "Filter;Frequency(kHz)", numBins/2, minFreq, 0.5*maxFreq);
     
-    for(int bin = 0; bin < numBins; bin++)
+    for(int bin = 0; bin < numBins/2; bin++)
     {
         double freq = bin * minFreq;
         

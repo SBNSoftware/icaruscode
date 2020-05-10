@@ -22,7 +22,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/TPC/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
 // std includes
 #include <string>

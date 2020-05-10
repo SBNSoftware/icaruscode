@@ -23,8 +23,8 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
-#include "icaruscode/TPC/Decode/DecoderTools/IFakeParticle.h"
+#include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
+#include "icaruscode/Decode/DecoderTools/IFakeParticle.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
@@ -69,6 +69,11 @@ public:
      *  @param fragment            The artdaq fragment to process
      */
     virtual void process_fragment(const artdaq::Fragment&) override;
+
+    /**
+     *  @brief Recover the channels for the processed fragment
+     */
+    const icarus_signal_processing::VectorInt  getChannelIDs()       const override {return fChannelIDVec;}
 
     /**
      *  @brief Recover the selection values
@@ -141,6 +146,7 @@ private:
     std::vector<char>                     fFilterModeVec;          //< Allowed modes for the filter
 
     // Allocate containers for noise processing
+    icarus_signal_processing::VectorInt   fChannelIDVec;
     icarus_signal_processing::ArrayBool   fSelectVals;
     icarus_signal_processing::ArrayBool   fROIVals;
     icarus_signal_processing::ArrayFloat  fRawWaveforms;

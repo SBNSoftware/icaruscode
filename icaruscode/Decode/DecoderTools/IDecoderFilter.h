@@ -46,7 +46,12 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-   virtual void process_fragment(const artdaq::Fragment& fragment) = 0; 
+    virtual void process_fragment(const artdaq::Fragment& fragment) = 0; 
+
+    /**
+     *  @brief Recover the channels for the processed fragment
+     */
+    virtual const icarus_signal_processing::VectorInt  getChannelIDs()        const = 0;
 
     /**
      *  @brief Recover the selection values
@@ -61,12 +66,12 @@ public:
     /**
      *  @brief Recover the original raw waveforms
      */
-    virtual const icarus_signal_processing::ArrayFloat getRawWaveforms() const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getRawWaveforms()      const = 0;
 
     /**
      *  @brief Recover the pedestal corrected waveforms
      */
-    virtual const icarus_signal_processing::ArrayFloat getPedCorWaveforms() const = 0;
+    virtual const icarus_signal_processing::ArrayFloat getPedCorWaveforms()   const = 0;
 
     /**
      *  @brief Recover the "intrinsic" RMS
@@ -91,17 +96,17 @@ public:
     /**
      *  @brief Recover the pedestals for each channel
      */
-    virtual const icarus_signal_processing::VectorFloat getPedestalVals() const = 0;
+    virtual const icarus_signal_processing::VectorFloat getPedestalVals()     const = 0;
 
     /**
      *  @brief Recover the full RMS before coherent noise
      */
-    virtual const icarus_signal_processing::VectorFloat getFullRMSVals()  const = 0;
+    virtual const icarus_signal_processing::VectorFloat getFullRMSVals()      const = 0;
  
     /**
      *  @brief Recover the truncated RMS noise 
      */
-    virtual const icarus_signal_processing::VectorFloat getTruncRMSVals() const = 0;
+    virtual const icarus_signal_processing::VectorFloat getTruncRMSVals()     const = 0;
 
     /**
      *  @brief Recover the number of bins after truncation

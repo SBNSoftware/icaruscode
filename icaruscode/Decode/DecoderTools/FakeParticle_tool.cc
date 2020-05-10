@@ -22,7 +22,7 @@
 
 // ICARUS package includes
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
-#include "icaruscode/TPC/Decode/DecoderTools/IFakeParticle.h"
+#include "icaruscode/Decode/DecoderTools/IFakeParticle.h"
 
 #include "icarus_signal_processing/ICARUSFFT.h"
 

@@ -23,7 +23,7 @@
 #include "artdaq-core/Data/Fragment.hh"
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/TPC/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 

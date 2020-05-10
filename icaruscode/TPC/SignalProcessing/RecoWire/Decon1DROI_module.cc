@@ -238,7 +238,7 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
         for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
         {
             fPedestalOffsetVec[planeIdx] = tfs->make<TH1F>(    Form("PedPlane_%02zu",planeIdx),            ";Pedestal Offset (ADC);", 100, -5., 5.);
-            fFullRMSVec[planeIdx]        = tfs->make<TH1F>(    Form("RMSFPlane_%02zu",planeIdx),           "Full RMS;RMS (ADC);", 100, 0., 10.);
+            fFullRMSVec[planeIdx]        = tfs->make<TH1F>(    Form("RMSFPlane_%02zu",planeIdx),           "Full RMS;RMS (ADC);", 400, 0., 40.);
             fTruncRMSVec[planeIdx]       = tfs->make<TH1F>(    Form("RMSTPlane_%02zu",planeIdx),           "Truncated RMS;RMS (ADC);", 100, 0., 10.);
             fNumTruncBinsVec[planeIdx]   = tfs->make<TH1F>(    Form("NTruncBins_%02zu",planeIdx),          ";# bins",     640, 0., 6400.);
             fPedByChanVec[planeIdx]      = tfs->make<TProfile>(Form("PedByWirePlane_%02zu",planeIdx),      ";Wire#", fGeometry->Nwires(planeIdx), 0., fGeometry->Nwires(planeIdx), -5., 5.);
@@ -385,18 +385,27 @@ float Decon1DROI::fixTheFreakingWaveform(const std::vector<float>& waveform, raw
     // Fill histograms
     if (fOutputHistograms)
     {
-        std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids;
+        try
+        {
+           wids = fGeometry->ChannelToWire(channel);
+        }
+        catch(...)
+        {
+            std::cout << "Caught exception looking up channel" << std::endl;
+            return localRMS;
+        }
     
         // Recover plane and wire in the plane
         size_t plane = wids[0].Plane;
         size_t wire  = wids[0].Wire;
         
-        float fullRMS = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
+//        float fullRMS = std::inner_product(locWaveform.begin(), locWaveform.end(), locWaveform.begin(), 0.);
         
-        fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(locWaveform.size())));
+//        fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(locWaveform.size())));
     
         fPedestalOffsetVec[plane]->Fill(newPedestal,1.);
-        fFullRMSVec[plane]->Fill(fullRMS, 1.);
+//        fFullRMSVec[plane]->Fill(fullRMS, 1.);
         fTruncRMSVec[plane]->Fill(localRMS, 1.);
         fNumTruncBinsVec[plane]->Fill(minNumBins, 1.);
         fPedByChanVec[plane]->Fill(wire, newPedestal, 1.);
@@ -435,7 +444,17 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         size_t dataSize = digitVec->Samples();
         
         // Recover the plane info
-        std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
+        std::vector<geo::WireID> wids; //    = fGeometry->ChannelToWire(channel);
+        try
+        {
+            wids = fGeometry->ChannelToWire(channel);
+        }
+        catch(...)
+        {
+            std::cout << "Not able to find channel: " << channel << std::endl;
+            return;
+        }
+        
         const geo::PlaneID&      planeID = wids[0].planeID();
 
         // vector holding uncompressed adc values
@@ -446,7 +465,16 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         
         // loop over all adc values and subtract the pedestal
         // When we have a pedestal database, can provide the digit timestamp as the third argument of GetPedestalMean
-        pedestal = fPedRetrievalAlg->PedMean(channel);
+        try
+        {
+            pedestal = fPedRetrievalAlg->PedMean(channel);
+        }
+        catch(...)
+        {
+            std::cout << "Pedestal lookup fails with channel: " << channel << std::endl;
+            return;
+        }
+        
         
         // Get the pedestal subtracted data, centered in the deconvolution vector
         std::vector<float> rawAdcLessPedVec(dataSize);
@@ -505,14 +533,16 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         // Make some histograms?
         if (fOutputHistograms)
         {
-            // First up, determine what kind of wire we have
-            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
-            const geo::PlaneID&      planeID = wids[0].planeID();
-            
             fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
             
             for(const auto& pair : candRoiVec)
                 fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
+        
+            float fullRMS = std::inner_product(deconvolvedWaveform.begin(), deconvolvedWaveform.end(), deconvolvedWaveform.begin(), 0.);
+        
+            fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(deconvolvedWaveform.size())));
+    
+            fFullRMSVec[planeID.Plane]->Fill(fullRMS, 1.);
         }
     } // end if not a bad channel
         

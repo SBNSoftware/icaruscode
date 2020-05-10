@@ -188,6 +188,8 @@ void RawDigitFilterICARUS::configure(fhicl::ParameterSet const & pset)
         const fhicl::ParameterSet& filterToolParamSet = filterTools.get<fhicl::ParameterSet>(filterTool);
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+                    
+        fFilterToolMap.at(planeIdx)->setResponse(fDetectorProperties->NumberTimeSamples(),1.,1.);
     }
 }
 
@@ -205,6 +207,11 @@ void RawDigitFilterICARUS::beginJob(art::ProcessingFrame const&)
     art::TFileDirectory dir = tfs->mkdir(Form("RawDigitFilter"));
 
     fRawDigitFilterTool->initializeHistograms(dir);
+
+    if (fDoFFTCorrection)
+    {
+        for(const auto& filterToolPair : fFilterToolMap) filterToolPair.second->outputHistograms(dir);
+    }
  
     return;
 }
@@ -274,12 +281,18 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
         // .. First set up the filters
         unsigned int halfFFTSize(fftSize/2 + 1);
-
-        for(unsigned int plne = 0; plne < 3; plne++)
+            
+        if (fDoFFTCorrection)
         {
-            fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
-            const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
-            fFilterVec[plne] = filter;
+            for(unsigned int plne = 0; plne < 3; plne++)
+            {
+                if (fFilterVec[plne].size() != fftSize)
+                {
+                    fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
+                    const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
+                    fFilterVec[plne] = filter;
+                }
+            }
         }
 
         // .. Now set up the fftw plan
@@ -490,7 +503,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
                     // The ultra high noise channels are simply zapped
                     if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))
-                    {
+                    { 
                         saveRawDigits(filteredRawDigit, channelWireVec[locWireIdx], rawDataVec, pedestal, rmsVal);
                     }
                     else

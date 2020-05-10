@@ -230,13 +230,23 @@ void ROIFinderMorphological::FindROIs(const Waveform& waveform, size_t channel, 
     
     if (fUseDifference) 
     {
+        Waveform zeroSuppressed(differenceVec.size());
+
         fWaveformTool.getTruncatedMean(differenceVec, truncMean, nTrunc, range);
-        fWaveformTool.getTruncatedRMS(differenceVec, nSig, fullRMS, truncRMS, nTrunc);
+
+        std::transform(differenceVec.begin(),differenceVec.end(),zeroSuppressed.begin(),[truncMean](auto& val){return val - truncMean;});
+
+        fWaveformTool.getTruncatedRMS(zeroSuppressed, nSig, fullRMS, truncRMS, nTrunc);
     }
     else                
     {
+        Waveform zeroSuppressed(dilationVec.size());
+
         fWaveformTool.getTruncatedMean(dilationVec, truncMean, nTrunc, range);
-        fWaveformTool.getTruncatedRMS(dilationVec, nSig, fullRMS, truncRMS, nTrunc);
+
+        std::transform(dilationVec.begin(),dilationVec.end(),zeroSuppressed.begin(),[truncMean](auto& val){return val - truncMean;});
+
+        fWaveformTool.getTruncatedRMS(zeroSuppressed, nSig, fullRMS, truncRMS, nTrunc);
     }
     
     // Calculate a threshold to use based on the truncated mand and rms...

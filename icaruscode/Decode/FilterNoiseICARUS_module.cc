@@ -46,8 +46,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/TPC/Decode/DecoderTools/IDecoderFilter.h"
-#include "icaruscode/TPC/Decode/TPCChannelmapping.h"
+#include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
 
@@ -110,7 +109,8 @@ private:
     void saveRawDigits(const icarus_signal_processing::ArrayFloat&, 
                        const icarus_signal_processing::VectorFloat&, 
                        const icarus_signal_processing::VectorFloat&,
-                       ConcurrentRawDigitCol&, size_t) const;
+                       const icarus_signal_processing::VectorInt&,
+                       ConcurrentRawDigitCol&) const;
 
     // Tools for decoding fragments depending on type
     std::vector<std::unique_ptr<IDecoderFilter>> fDecoderToolVec;      ///< Decoder tools
@@ -344,28 +344,30 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(*fragmentPtr);
 
-    size_t nBoardsPerFragment = physCrateFragment.nBoards();
-    size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
+//    size_t nBoardsPerFragment = physCrateFragment.nBoards();
+//    size_t nChannelsPerBoard  = physCrateFragment.nChannelsPerBoard();
 
     // Set base channel for both the board and the board/fragment
-    size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragmentPtr->fragmentID() + fFragmentOffset);
+//    size_t boardFragOffset    = nChannelsPerBoard * nBoardsPerFragment * (fragmentPtr->fragmentID() + fFragmentOffset);
 
     theClockProcess.stop();
 
     double totalTime = theClockProcess.accumulated_real_time();
 
     // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
-    icarus_signal_processing::VectorFloat locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
+    const icarus_signal_processing::VectorFloat  locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
+    const icarus_signal_processing::VectorInt&   channelVec = decoderTool->getChannelIDs();
+    
 
-    saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(),rawDigitCollection,boardFragOffset);
+    saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(), channelVec, rawDigitCollection);
 
     // Optionally, save the pedestal corrected RawDigits
     if (fOutputPedestalCor)
-        saveRawDigits(decoderTool->getRawWaveforms(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),rawRawDigitCollection,boardFragOffset);
+        saveRawDigits(decoderTool->getRawWaveforms(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec, rawRawDigitCollection);
 
     // Also optional is to output the coherent corrections (note there will be many fewer of these! )
     if (fOutputPedestalCor)
-        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),coherentCollection,boardFragOffset);
+        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
 
     mf::LogDebug("FilterNoiseICARUS") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
@@ -374,8 +376,8 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
 void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat&  dataArray, 
                                       const icarus_signal_processing::VectorFloat& pedestalVec,
                                       const icarus_signal_processing::VectorFloat& rmsVec,
-                                      ConcurrentRawDigitCol&            rawDigitCol, 
-                                      size_t                            channel) const
+                                      const icarus_signal_processing::VectorInt&   channelVec,
+                                      ConcurrentRawDigitCol&                       rawDigitCol) const
 {
     cet::cpu_timer theClockSave;
 
@@ -393,7 +395,7 @@ void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat
         // Need to convert from float to short int
         std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
-        ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channel++,wvfm.size(),wvfm); 
+        ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
         newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
     }//loop over channel indices
 
