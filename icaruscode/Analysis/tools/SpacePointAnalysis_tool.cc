@@ -546,7 +546,7 @@ void SpacePointAnalysis::fillHistograms(const art::Event& event) const
     art::Handle<std::vector<sim::SimEnergyDeposit>> simEnergyHandle;
     event.getByLabel(fSimEnergyProducerLabel, simEnergyHandle);
     
-    if (!simEnergyHandle.isValid() || simEnergyHandle->empty()) return;
+//    if (!simEnergyHandle.isValid() || simEnergyHandle->empty()) return;
     
     art::Handle<std::vector<simb::MCParticle>> mcParticleHandle;
     event.getByLabel(fMCParticleProducerLabel, mcParticleHandle);
@@ -959,6 +959,12 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
     // Armed with these maps we can now process the SpacePoints...
     if (!recobHitToVoxelIDMap.empty())
     {
+        // Diagnostics
+        using Triplet    = std::tuple<const recob::Hit*, const recob::Hit*, const recob::Hit*>;
+        using TripletMap = std::map<Triplet,std::vector<const recob::SpacePoint*>>;
+
+        TripletMap tripletMap;
+
         // So now we loop through the various SpacePoint sources
         for(const auto& spacePointLabel : fSpacePointLabelVec)
         {
@@ -1006,6 +1012,7 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
 
                 std::vector<RecobHitToVoxelIDMap::const_iterator> recobHitToVoxelIterVec;
 
+                std::vector<const recob::Hit*> recobHitVec(3,nullptr);
                 
                 // Now we can use our maps to find out if the hits making up the SpacePoint are truly related...
                 for(const auto& hitPtr : associatedHits)
@@ -1015,6 +1022,8 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                     float peakAmplitude = hitPtr->PeakAmplitude();
                     float peakTime      = hitPtr->PeakTime();
                     int   plane         = hitPtr->WireID().Plane;
+
+                    recobHitVec[plane] = hitPtr.get();
                     
                     numHits++;
                     averagePH += peakAmplitude;
@@ -1036,6 +1045,10 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
 
                     hitPeakTimeVec[plane] = fClockService->TPCTick2TDC(peakTime);
                 }
+
+                Triplet hitTriplet(recobHitVec[0],recobHitVec[1],recobHitVec[2]);
+
+                tripletMap[hitTriplet].emplace_back(spacePointPtr.get());
                 
                 averagePH /= float(numHits);
                 averagePT /= float(numHits);
@@ -1146,6 +1159,17 @@ void SpacePointAnalysis::compareSpacePointsToSim(const art::Event& event, const 
                 fHitSpacePointObj.fBigElecDep2Vec.emplace_back(bigElecDepVec[2]);
             }
         }
+
+        // Can we check to see if we have duplicates?
+        std::vector<int> numSpacePointVec = {0,0,0,0,0};
+        for(const auto& tripletPair : tripletMap)
+        {
+            int numSpacePoints = std::min(numSpacePointVec.size()-1,tripletPair.second.size());
+            numSpacePointVec[numSpacePoints]++;
+        }
+        std::cout << "====>> Found " << tripletMap.size() << " SpacePoints, numbers: ";
+        for(const auto& count : numSpacePointVec) std::cout << count << " ";
+        std::cout << std::endl;
     }
 
     return;
