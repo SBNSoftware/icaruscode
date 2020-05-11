@@ -4,6 +4,7 @@ include_directories( $ENV{IFDHX_FQ_DIR}/inc )
 
 add_subdirectory(CRTProducts)
 add_subdirectory(CRTUtils)
+add_subdirectory(CRTDecoder)
 
 art_make(
     EXCLUDE
@@ -163,7 +164,7 @@ simple_plugin(CRTTrackProducer module
         ${CETLIB}
 )
 
-simple_plugin( CRTAnalysis module
+simple_plugin( CRTSimAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
                         icaruscode_CRTProducts

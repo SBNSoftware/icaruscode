@@ -7,7 +7,7 @@ process_name: CRTAnalysis
 services:
 {
 
-  TFileService:           { fileName: "CRTAnalysis.root" }
+  TFileService:           { fileName: "CRTDataAnalysis.root" }
 
   TimeTracker:            {}
 
@@ -35,24 +35,16 @@ physics:
 {
   analyzers:
   {
-    CRTAnalysis: 
+    CRTDataAnalysis: 
     {
 
-      module_type:     "CRTAnalysis"
+      module_type:     "CRTDataAnalysis"
 
-      SimulationLabel: "largeant"
 
-      CRTSimHitLabel:   "crtsimhit"
+      CRTHitLabel:   "crthit"
 
-      CRTDetSimLabel:  "crtdaq"
+      CRTDAQLabel:  "eveprod"
 
-      #PDGs:                   [ 0 ]
-      #MinMomenta:             [ 0 ]
-      #MaxMomenta:             [ 0 ]
- 
-      PDGs:                     [ 13, -13 ]       #Request that the particle passing through the CRTs has a specific PDG.  You can specify multiple PDGs.  Specify 0 for any PDG
-      MinMomenta:             [ 0.1, 0.1 ] #, 0 ]    #Minimum momentum of particle(s) passing through thet CRTs.  Specify 0 to ignore min momentum.  Vector should be same length as PDG
-      MaxMomenta:             [ 10, 10 ] #, 0 ]    #Same but for maximum momentum
 
     }
   }
@@ -63,7 +55,7 @@ physics:
   # file, nor does it create any events as output. Any step names
   # listed here must match a name in the 'analyzers' section above.
 
-  analysis: [ CRTAnalysis ]
+  analysis: [ CRTDataAnalysis ]
 
   # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
   # i.e., analyzers and output streams.
