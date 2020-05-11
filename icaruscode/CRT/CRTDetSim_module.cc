@@ -204,6 +204,11 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     }
   }
 
+  std::sort(triggeredCRTHits->begin(),triggeredCRTHits->end(), 
+      [](const CRTData& d1, const CRTData& d2) {
+          return d1.TTrig() > d2.TTrig();
+      });
+
   event.put(std::move(triggeredCRTHits));
   event.put(std::move(ides));
   event.put(std::move(dataAssn));

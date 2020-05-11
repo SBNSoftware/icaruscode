@@ -1,0 +1,16 @@
+BEGIN_PROLOG
+
+standard_crttruehitrecoalg:
+{
+    UseReadoutWindow:     false  # Only reconstruct hits within readout window
+}
+
+standard_crttruehitproducer:
+{
+    module_type:          "CRTTrueHitProducer"
+    CrtModuleLabel:       "largeant"
+    HitAlg:               @local::standard_crttruehitrecoalg
+}
+
+
+END_PROLOG
