@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   fSignalShapingICARUSService_service.cc
+/// \file   SignalShapingICARUSService_service.cc
 /// \author H. Greenlee
 /// Modified by X. Qian 1/6/2015
 /// if histogram is used, inialize
@@ -44,13 +44,6 @@ SignalShapingICARUSService::SignalShapingICARUSService(const fhicl::ParameterSet
 : fInit(false)
 {
     reconfigure(pset);
-}
-
-//----------------------------------------------------------------------
-// Destructor
-SignalShapingICARUSService::~SignalShapingICARUSService()
-{
-    return;
 }
 
 //----------------------------------------------------------------------
@@ -253,6 +246,8 @@ double SignalShapingICARUSService::GetDeconNoise(unsigned int const channel) con
 
 int SignalShapingICARUSService::ResponseTOffset(unsigned int const channel) const
 {
+    if (!fInit) init();
+    
     art::ServiceHandle<geo::Geometry> geom;
     
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
