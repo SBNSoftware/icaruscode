@@ -1,6 +1,10 @@
 
 cet_enable_asserts()
 
+cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
+
+include_directories($ENV{LIBWDA_FQ_DIR}/include)
+
 art_make(
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
