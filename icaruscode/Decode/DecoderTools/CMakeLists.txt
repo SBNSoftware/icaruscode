@@ -1,8 +1,6 @@
 
 cet_enable_asserts()
 
-add_definitions(-DEIGEN_FFTW_DEFAULT)
-
 art_make(
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
