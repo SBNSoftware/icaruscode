@@ -1,7 +1,6 @@
 #include "canvas/Persistency/Common/Wrapper.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTProducts/CRTTrack.hh"

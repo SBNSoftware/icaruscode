@@ -1,12 +1,7 @@
 <lcgdict>
 
-  <class name="icarus::crt::CRTChannelData"/>
-  <class name="art::Wrapper<icarus::crt::CRTChannelData>"/>
-
   <class name="icarus::crt::CRTData"/>
   <class name="art::Wrapper<icarus::crt::CRTData>"/>
-  <class name="std::vector<icarus::crt::CRTChannelData>"/>
-  <class name="art::Wrapper<std::vector<icarus::crt::CRTChannelData> >"/>
   <class name="std::vector<icarus::crt::CRTData>"/>
   <class name="art::Wrapper<std::vector<icarus::crt::CRTData> >"/>
   <class name="art::Wrapper<std::vector<sim::AuxDetIDE>>"/>
