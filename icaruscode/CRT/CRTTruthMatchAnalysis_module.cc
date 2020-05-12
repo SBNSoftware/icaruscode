@@ -20,16 +20,20 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
-//#include "icaruscode/CRT/CRTProducts/CRTHit.h"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
 #include <vector>
+#include <map>
 
 namespace icarus{ 
  namespace crt {
     class CRTTruthMatchAnalysis;
  }
 }
+
+using std::vector;
+using std::map;
 
 class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
 public:
@@ -48,27 +52,71 @@ public:
 
 private:
 
-  art::InputTag fCRTDataLabel; 
+  art::InputTag fSimulationLabel;
+  art::InputTag fCRTTrueHitLabel;
+  art::InputTag fCRTDataLabel;
+  art::InputTag fCRTSimHitLabel;
   CRTBackTracker bt;
 };
 
 
 icarus::crt::CRTTruthMatchAnalysis::CRTTruthMatchAnalysis(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},
+    fSimulationLabel(p.get<art::InputTag>("SimulationLabel","largeant")),
+    fCRTTrueHitLabel(p.get<art::InputTag>("CRTTrueHitLabel","crttruehit")),
     fCRTDataLabel(p.get<art::InputTag>("CRTDataLabel","crtdaq")),
+    fCRTSimHitLabel(p.get<art::InputTag>("CRTSimHitLabel","crtsimhit")),
     bt(p.get<fhicl::ParameterSet>("CRTBackTrack"))
 {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
 }
 
 void icarus::crt::CRTTruthMatchAnalysis::analyze(art::Event const& e)
 {
 
-  std::cout << "initializing CRTBackTracker..." << std::endl;
+  //std::cout << "initializing BackTracker..." << std::endl;
   bt.Initialize(e);
-  std::cout << "done." << std::endl;
+  //std::cout << "done." << std::endl;
 
-  art::Handle< std::vector<CRTData> > dataHandle;
+  //std::cout << "loop over AuxDetChannels" << std::endl;
+  art::Handle< vector<sim::AuxDetSimChannel> > adscHandle;
+  vector< art::Ptr<sim::AuxDetSimChannel> > adscList;
+  if( e.getByLabel(fSimulationLabel,adscHandle) )
+      art::fill_ptr_vector(adscList,adscHandle);
+
+  map<int,bool> trueRecoedTracks;
+  for(auto const& adsc : adscList) {
+      for(auto const& ide : adsc->AuxDetIDEs()) {
+          trueRecoedTracks[ide.trackID] = false;
+      }
+  }
+
+  //std::cout << "loop over CRTTrueHits" << std::endl;
+  art::Handle< vector<CRTHit> > trueHitHandle;
+  vector< art::Ptr<CRTHit> > trueHitList;
+  if( e.getByLabel(fCRTTrueHitLabel,trueHitHandle) )
+      art::fill_ptr_vector(trueHitList,trueHitHandle);
+
+  for(auto const& hit : trueHitList) {
+      //std::cout << "fetching trackIDs from BackTracker..." << std::endl;
+      vector<int> btIds = bt.AllTrueIds(e,*hit);
+      //std::cout << "  found " << btIds.size() << std::endl;
+      for(const int id: btIds) {
+          if(trueRecoedTracks.find(id)!=trueRecoedTracks.end()) 
+              trueRecoedTracks[id] = true;
+          else
+              std::cout << "trackID from BackTracker not found in AuxDetSimChannels!" << std::endl;
+      }
+  }
+
+  //std::cout << "matching trackIDs" << std::endl;
+  size_t nmiss=0, ntot=trueRecoedTracks.size();
+  for(auto const& trk : trueRecoedTracks) {
+      if(trk.second==false) nmiss++;
+  }
+
+  std::cout << ntot-nmiss << " (" << 100.0*(ntot-nmiss)/ntot << " %) tracks matched to true hits" << std::endl;
+
+  /*art::Handle< vector<CRTData> > dataHandle;
   //std::vector< art::Ptr<CRTData> > dataList;
   e.getByLabel(fCRTDataLabel,dataHandle);
       //art::fill_ptr_vector(dataList, dataHandle);
@@ -79,7 +127,6 @@ void icarus::crt::CRTTruthMatchAnalysis::analyze(art::Event const& e)
   for(auto const& data : *dataHandle) {
 
       std::vector<int> btIds = bt.AllTrueIds(e,data);
-      if(btIds.empty()) n0bt++;
 
       std::vector<int> dataIds;
       for(auto const& chdata : data.ChanData()) {
@@ -87,16 +134,6 @@ void icarus::crt::CRTTruthMatchAnalysis::analyze(art::Event const& e)
               dataIds.push_back(id);
       }
 
-      std::sort(dataIds.begin(),dataIds.end());
-      auto last = std::unique(dataIds.begin(),dataIds.end());
-      dataIds.erase(last,dataIds.end());
-
-      if(dataIds.size()!=btIds.size()) {
-          std::cout << "ids size mismatch data - bt " << dataIds.size()-btIds.size() << std::endl;
-          std::cout << "   dataIds size = " << dataIds.size() << ", btIds size = " << btIds.size() << std::endl;
-          for(auto const& id : dataIds) std::cout << "    dataId: " << id << std::endl;
-          for(auto const& id : btIds) std::cout << "    btId:   " << id << std::endl;
-      }//if size mismatch 
       else {
           nsizematch++;
           bool pass=true;
@@ -114,11 +151,8 @@ void icarus::crt::CRTTruthMatchAnalysis::analyze(art::Event const& e)
           if(pass)
               ntracksmatch++;
       }//else size match
-  }//loop over CRTData
+  }//loop over CRTData*/
 
-  std::cout << "found " << nsizematch << " size matches" << std::endl;
-  std::cout << "found " << ntracksmatch << " track ID set matches" << std::endl;
-  std::cout << "found " << n0bt << " empty back tracker results" << std::endl;
 }
 
 DEFINE_ART_MODULE(icarus::crt::CRTTruthMatchAnalysis)

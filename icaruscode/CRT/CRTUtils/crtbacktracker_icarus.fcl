@@ -4,9 +4,11 @@ standard_crtbacktracker:
 
 {
 
+    CRTTrueHitLabel:  "crttruehit"
+
     CRTDataLabel:     "crtdaq"
 
-    CRTHitLabel:      "crthit"
+    CRTSimHitLabel:   "crthit"
 
     CRTTrackLabel:    "crttrack"
 
