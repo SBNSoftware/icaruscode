@@ -25,6 +25,9 @@ namespace anab {
     double Attenuation;
     double FracError;
 
+    double Wires;
+    double Ticks;
+
     TPCPurityInfo();
     void Print() const;
   };
