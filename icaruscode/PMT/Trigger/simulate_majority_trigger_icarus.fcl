@@ -1,0 +1,165 @@
+#
+# File:    simulate_majority_trigger_icarus.fcl
+# Purpose: Runs `icarus::trigger::MajorityTriggerSimulation` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 17, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * discriminated (LVDS) signals (with threshold)
+# 
+# Output
+# -------
+# 
+# Data products:
+#  * `majoritytrigger1:THR`, `majoritytrigger2:THR`, ...:
+#    `raw::Trigger` collections for (MajorityTriggerSimulation);
+#    the number in the instance name is the minimum requirement, while the
+#    instance name represents the discrimination threshold used for input.
+# 
+# Plots:
+#  * `majoritytrigger1`, `majoritytrigger2`: basic trigger response
+#    distributions
+#
+
+#include "services_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: MajTrg
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+majoritytriggerTemplate: {
+
+  module_type: MajorityTriggerSimulation
+
+  TriggerGatesTag: "lvdsgates"
+
+  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+  
+  ###
+  ### requirement:
+  ###
+  MinimumPrimitives: @nil # need to replace
+
+  # Beam gate:
+  # duration (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+  BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
+
+
+  # this should probably be 12 or 24 ns
+  TriggerTimeResolution: "8 ns"
+
+  # name of the category used for the output
+  LogCategory: "MajorityTrigger"
+
+} # majoritytriggerTemplate
+
+
+physics: {
+  
+  producers: {
+  
+    majoritytrigger1: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 1
+    } # majoritytrigger1
+
+    majoritytrigger2: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 2
+    } # majoritytrigger2
+
+    majoritytrigger3: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 3
+    } # majoritytrigger3
+
+    majoritytrigger4: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 4
+    } # majoritytrigger4
+
+    majoritytrigger5: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 5
+    } # majoritytrigger5
+
+    majoritytrigger8: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 8
+    } # majoritytrigger8
+
+    majoritytrigger12: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 12
+    } # majoritytrigger12
+
+    majoritytrigger20: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 20
+    } # majoritytrigger20
+
+    majoritytrigger50: {
+      @table::majoritytriggerTemplate
+      MinimumPrimitives: 50
+    } # majoritytrigger50
+
+  } # producers
+  
+  trigger: [
+    majoritytrigger1,
+    majoritytrigger2,
+    majoritytrigger3,
+    majoritytrigger4,
+    majoritytrigger5,
+    majoritytrigger8,
+    majoritytrigger12,
+    majoritytrigger20,
+    majoritytrigger50
+    ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+  
+} # outputs
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.MajorityTriggerLog: {
+  type:       file
+  filename:  "MajorityTriggerSim.log"
+  threshold:  DEBUG
+  categories: {
+    MajorityTrigger: { limit: -1 }
+    default:          { limit: 0 }
+  }
+} # services.messages.destinations.MajorityTriggerLog
+

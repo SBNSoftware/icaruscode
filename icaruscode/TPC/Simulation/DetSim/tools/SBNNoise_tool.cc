@@ -351,14 +351,15 @@ void SBNNoise::ComputeRMSs()
     double nSig(3.);
     double mean,rmsTrunc;
     int    nTrunc;
+    int    range;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc, range);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc, range);
 
     if (fStoreHistograms)
     {

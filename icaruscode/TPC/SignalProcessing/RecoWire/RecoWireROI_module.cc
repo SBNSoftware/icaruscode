@@ -431,7 +431,7 @@ void RecoWireROI::produce(art::Event& evt)
             
             // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
             // Deconvolute the raw signal using the channel's nominal response
-            fFFT->deconvolute(rawAdcLessPedVec, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.FieldResponseTOffset(channel));
+            fFFT->deconvolute(rawAdcLessPedVec, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.ResponseTOffset(channel));
             
             std::vector<float> holder;
             
@@ -636,7 +636,7 @@ void RecoWireROI::doDecon(icarusutil::TimeVec&                         holder,
                           recob::Wire::RegionsOfInterest_t&            ROIVec)
 {
     // Deconvolute the raw signal using the channel's nominal response
-    fFFT->deconvolute(holder, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.FieldResponseTOffset(channel));
+    fFFT->deconvolute(holder, fSignalServices.GetResponse(channel).getDeconvKernel(), fSignalServices.ResponseTOffset(channel));
 
     // transfer the ROIs and start bins into the vector that will be
     // put into the event

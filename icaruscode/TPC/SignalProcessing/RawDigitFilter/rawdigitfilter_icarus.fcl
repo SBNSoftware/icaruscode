@@ -65,7 +65,7 @@ icarus_rawdigitfilter:
     {
         TruncMeanFraction:     0.15
         ApplyCorSmoothing:     true
-        ApplyFFTCorrection:    true
+        ApplyFFTCorrection:    false
         FillFFTHistograms:     false
         FFTHistsWireGroup:     [256, 4000, 3840]
         FFTNumWaveHistograms:  [32,32,32]

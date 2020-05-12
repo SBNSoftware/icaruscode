@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Light/SimPMTIcarus_module.cc
+ * @file   icaruscode/PMT/SimPMTIcarus_module.cc
  * @see    `icarus::opdet::PMTsimulationAlg`
  * 
  * Based on `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.
@@ -47,7 +47,7 @@
 #include <optional>
 
 
-namespace opdet{
+namespace icarus::opdet {
   
   /**
    * @brief Simulates the digitization of ICARUS PMT response and trigger.
@@ -63,6 +63,8 @@ namespace opdet{
    * `icarus::opdet::PMTsimulationAlg` algorithm, with the following exceptions:
    * * **InputModule** (input tag): tag of the data product containing the
    *   `sim::SimPhotons` collection to be digitized;
+   * * **SinglePhotonResponse** (configuration table): configuration of the
+   *   _art_ tool delivering the single photon response function (see below);
    * * **EfficiencySeed**, **DarkNoiseSeed** and **ElectronicsNoiseSeed**
    *   (integers, optional): if specified, each number is used to seed the
    *   pertaining random engine; otherwise, the seed is assigned by
@@ -114,6 +116,30 @@ namespace opdet{
    * 
    * Three random streams are also used.
    * 
+   * 
+   * Single photon response function tool
+   * -------------------------------------
+   * 
+   * The single photon response function passed to the underlying algorithm,
+   * `icarus::opdet::PMTsimulationAlg`, is extracted from an _art_ tool.
+   * The specifications of the tool are:
+   * 
+   * * the _art_ tool class must implement the
+   *   `icarus::opdet::SinglePhotonPulseFunctionTool` interface;
+   * * the resulting function describes the signal as digitized by the PMT
+   *   readout;
+   * * the function must therefore express the level of the response as
+   *   digitized ADC count above the baseline; this level is negative if the
+   *   signal polarity is negative;
+   * * the time scale of this function has `0` as the photoelectron production
+   *   time.
+   * 
+   * These requirements imply that the tool (or the underlying function) must
+   * include electronics effects like the the time it takes to form the signal,
+   * the signal shape at PMT output, the delay and distortion of the cables and
+   * the ones of the digitization electronics, but the baseline is assumed flat
+   * at 0.
+   * 
    */
   class SimPMTIcarus : public art::EDProducer {
   public:
@@ -125,7 +151,7 @@ namespace opdet{
       
       fhicl::Atom<art::InputTag> inputModuleLabel {
           Name("InputModule"),
-          Comment("simulated photons to be digitised (sim::SimPhotons)")
+          Comment("simulated photons to be digitized (sim::SimPhotons)")
       };
       
       fhicl::DelegatedParameter SinglePhotonResponse {
@@ -147,17 +173,17 @@ namespace opdet{
       
       rndm::SeedAtom EfficiencySeed {
         Name("EfficiencySeed"),
-        Comment("fix the seed for stocastic photon detection efficiency")
+        Comment("fix the seed for stochastic photon detection efficiency")
         };
       
       rndm::SeedAtom DarkNoiseSeed {
         Name("DarkNoiseSeed"),
-        Comment("fix the seed for stocastic dark noise generation")
+        Comment("fix the seed for stochastic dark noise generation")
         };
       
       rndm::SeedAtom ElectronicsNoiseSeed {
         Name("ElectronicsNoiseSeed"),
-        Comment("fix the seed for stocastic electronics noise generation")
+        Comment("fix the seed for stochastic electronics noise generation")
         };
       
       fhicl::Atom<std::string> electronicsNoiseRandomEngine {
@@ -328,4 +354,4 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
   
   // ---------------------------------------------------------------------------
 
-} // namespace icarus
+} // namespace icarus::opdet

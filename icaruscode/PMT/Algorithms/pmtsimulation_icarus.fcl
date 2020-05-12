@@ -40,7 +40,7 @@ BEGIN_PROLOG
 # 
 # Parameters are as used since forever to at least v08_46_00.
 # 
-icarus_photoelectronresponse_standard: {
+icarus_photoelectronresponse_gaussian: {
   
   # run `lar --print-description AsymGaussPulseFunctionTool` for configuration
   tool_type: AsymGaussPulseFunctionTool
@@ -51,7 +51,41 @@ icarus_photoelectronresponse_standard: {
   MeanAmplitude:             "0.9 pC"
   ADC:                       -11.1927       #charge to adc factor
   
-} # icarus_photoelectronresponse_standard
+} # icarus_photoelectronresponse_gaussian
+
+
+#
+# Single photoelectron response with exponential rise and a fall shapes.
+# 
+# Parameters are reworked from an ICARUS trigger note (not yet released as
+# of April 2020), which come from data analysis from the BNL group.
+# 
+# In particular, raise and fall times are reported to be 1.4 and 3.2 ns for
+# the PMT, and 1.8 and 4.2 ns including the 37 m cable distortion.
+# The average gain is considered to be 7 x 10^6 (somehow lower than the nominal
+# 10^7 used below).
+# Attenuation from the cable is considered negligible.
+# 
+# The peak charge is computed starting from the charge of a photoelectron
+# (-1.6 x 10^-4 pC), multiplied by the gain (7 x 10^6). At signal peak time,
+# the current from that charge is -0.14 mA, i.e. a voltage drop on 50 ohm
+# of -7.06 mV.
+# The digitizer converts a range up to 2 volt with 14 bit, which translates into
+# about 8.192 ADC/mV and 409.6 ADC/mA.
+# In short, the peak signal is expected to be -7.06 mV, -0.14 mA, -57.86 ADC.
+# 
+icarus_photoelectronresponse_exponentials: {
+  
+  # run `lar --print-description AsymGaussPulseFunctionTool` for configuration
+  tool_type: AsymExpPulseFunctionTool
+  
+  TransitTime:               "55.1 ns"
+  RaiseTimeConstant:         "1.8 ns"
+  FallTimeConstant:          "4.2 ns"
+  PeakCurrent:               -0.14125 # mA; way more digits than meaningful
+  ADC:                       409.6  # ADC / mA
+  
+} # icarus_photoelectronresponse_exponentials
 
 
 #
@@ -78,6 +112,12 @@ icarus_photoelectronresponse_customexample: {
   } # parameters
   
 } # icarus_photoelectronresponse_standard
+
+
+#
+# pick one
+#
+icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_gaussian
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

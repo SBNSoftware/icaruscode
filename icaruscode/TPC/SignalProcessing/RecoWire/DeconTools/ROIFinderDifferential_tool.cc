@@ -189,8 +189,9 @@ void ROIFinderDifferential::FindROIs(const Waveform& waveform, size_t channel, s
     float fullRMS(0.);
     float nSig(2.5);
     int   nTrunc(0);
+    int   range(0);
     
-    fWaveformTool.getTruncatedMean(aveWaveformDeriv, truncMean, nTrunc);
+    fWaveformTool.getTruncatedMean(aveWaveformDeriv, truncMean, nTrunc, range);
     fWaveformTool.getTruncatedRMS(aveWaveformDeriv, nSig, fullRMS, truncRMS, nTrunc);
     
     // Put a floor on the value of the truncated RMS...

@@ -10,6 +10,7 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/TriggerEfficiencyPlotsBase.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
 
 // LArSoft libraries
@@ -857,13 +858,13 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
       return {};
     } // if no gates
 
-    cryoCombinedGate.push_back(helper().computeGateSum(gates));
+    cryoCombinedGate.push_back(icarus::trigger::sumGates(gates));
   } // for
 
   //
   // largest number of trigger primitives at any time for any cryostat
   //
-  return helper().computeMaxGate(cryoCombinedGate);
+  return icarus::trigger::maxGates(cryoCombinedGate);
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives()
 

@@ -1,4 +1,6 @@
 cet_make(
+  SUBDIRS
+    "details"
   LIBRARIES
     icaruscode_PMT_Trigger_Data
     icaruscode_PMT_Algorithms
@@ -8,6 +10,6 @@ cet_make(
     fhiclcpp
   )
 
-install_headers()
-install_source()
-install_fhicl()
+install_headers(SUBDIRS "details")
+install_source(SUBDIRS "details")
+install_fhicl(SUBDIRS "details")

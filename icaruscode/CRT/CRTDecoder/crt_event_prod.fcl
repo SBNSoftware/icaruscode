@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+
+crtEveProd:
+{
+	module_type: "CRTEventProducer"
+	infile: "/icarus/app/users/chilgenb/ana_icaruscode_v08_45_00/2020feb12_run03_preprocess_merge_ordered.root"
+	time_window: 100.0e-3 #time window in seconds for each art::Event
+
+}
+
+END_PROLOG

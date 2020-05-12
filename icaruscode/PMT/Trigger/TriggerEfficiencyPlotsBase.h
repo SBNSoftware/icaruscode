@@ -11,6 +11,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
+#include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
@@ -74,8 +75,6 @@ namespace icarus::trigger::details {
   struct EventInfo_t;
   
   std::ostream& operator<< (std::ostream& out, EventInfo_t const& info);
-  
-  struct TriggerInfo_t;
   
   struct TreeHolder;
   struct EventIDTree;
@@ -157,6 +156,12 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns whether this type of event has a known vertex.
   bool hasVertex() const { return !fVertices.empty(); }
   
+  /// Returns the number of known interaction vertices.
+  unsigned int nVertices() const { return fVertices.size(); }
+  
+  /// Returns the list of a known interaction vertex.
+  std::vector<geo::Point_t> const& Vertices() const { return fVertices; }
+  
   /// Returns whether there is an interaction within the active volume.
   bool isInActiveVolume() const { return fInActiveVolume; }
   
@@ -212,8 +217,6 @@ struct icarus::trigger::details::EventInfo_t {
   /// Adds a point to the list of interaction vertices in the event.
   void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
   
-  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -251,50 +254,13 @@ struct icarus::trigger::details::EventInfo_t {
   /// Whether the event has activity inside the active volume.
   bool fInActiveVolume { false };
   
-  //std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-  
+  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+
 }; // struct icarus::trigger::details::EventInfo_t
 
 inline std::ostream& icarus::trigger::details::operator<<
   (std::ostream& out, EventInfo_t const& info)
   { info.dump(out); return out; }
-
-
-//------------------------------------------------------------------------------
-struct icarus::trigger::details::TriggerInfo_t {
-  
-  struct Info_t {
-    optical_tick tick;
-  }; // Info_t
-  
-  TriggerInfo_t() = default; // no trigger
-  TriggerInfo_t(Info_t const& info): fInfo(info) {}
-  
-  /// Returns whether the trigger fired.
-  bool fired() const { return fInfo.has_value(); }
-  
-  /// Returns the full data (undefined behaviour if `!fired()`).
-  Info_t const& info() const { return fInfo.value(); }
-  
-  /// Returns the time of the trigger (undefined behaviour if `!fired()`).
-  optical_tick atTick() const { return fInfo->tick; }
-  
-  /// Returns whether there is trigger information.
-  operator bool() const { return fired(); }
-  
-  /// Returns whether there is no trigger information.
-  bool operator! () const { return !fired(); }
-  
-  /// Reinitializes the object by constructing a `Info_t` with `args`.
-  template <typename... Args>
-  void emplace(Args&&... args)
-    { fInfo.emplace(Info_t{ std::forward<Args>(args)... }); }
-  
-  
-    private:
-  std::optional<Info_t> fInfo;
-  
-}; // icarus::trigger::details::TriggerInfo_t
 
 
 // --- BEGIN -- ROOT tree helpers ----------------------------------------------
@@ -402,6 +368,10 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
  *  * `InActive` (bool): whether an interaction happened in active volume'
  *      this requires an interaction vertex (e.g. cosmic rays are out)
+ *  * `NVertices` (unsigned integer): number of interaction vertices in event
+ *  * `Vertices_` (list of points): the location of all the interaction vertices
+ *    in the event; it's a vector of GenVector 3D points (can access coordinates
+ *    as `Vertices.X()` or `Vertices.fCoordinates.fX`)
  *
  */
 struct icarus::trigger::details::EventInfoTree: public TreeHolder {
@@ -425,6 +395,8 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
   Double_t fSpillE;
   Double_t fActiveE;
   Double_t fSpillActiveE;
+  UInt_t fNVertices;
+  std::vector<geo::Point_t> fVertices; // is this ROOT tree friendly?
   
   Bool_t fInActive;
   
@@ -1499,14 +1471,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   static PlotCategories_t const DefaultPlotCategories;
   
   
-  /// Returns a gate that is `Max()` of all the specified `gates`.
-  template <typename TrigGateColl>
-  static auto computeMaxGate(TrigGateColl const& gates);
-
-  /// Returns a gate that is `Max()` of all the specified `gates`.
-  template <typename TrigGateColl>
-  static auto computeGateSum(TrigGateColl const& gates);
-
   // --- END Additional helper utilities ---------------------------------------
   
   
@@ -1525,7 +1489,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
   
-  /// Minimum number of trigger primitives for a trigger to happen.
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
   bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
@@ -1650,42 +1613,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll
     );
   return res;
 } // icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll()
-
-
-//------------------------------------------------------------------------------
-template <typename TrigGateColl>
-auto icarus::trigger::TriggerEfficiencyPlotsBase::computeMaxGate
-  (TrigGateColl const& gates)
-{
-  
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (empty(gates)) return decltype(*begin(gates)){};
-  
-  auto iGate = cbegin(gates);
-  auto const gend = cend(gates);
-  auto maxGate = *iGate;
-  while (++iGate != gend) maxGate.Max(*iGate);
-  
-  return maxGate;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::computeMaxGate()
-
-
-//------------------------------------------------------------------------------
-template <typename TrigGateColl>
-auto icarus::trigger::TriggerEfficiencyPlotsBase::computeGateSum
-  (TrigGateColl const& gates)
-{
-  
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (empty(gates)) return decltype(*begin(gates)){};
-  
-  auto iGate = cbegin(gates);
-  auto const gend = cend(gates);
-  auto maxGate = *iGate;
-  while (++iGate != gend) maxGate.Sum(*iGate);
-  
-  return maxGate;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::computeGateSum()
 
 
 //------------------------------------------------------------------------------

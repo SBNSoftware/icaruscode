@@ -1,21 +1,22 @@
 art_make( 
-          MODULE_LIBRARIES larcorealg_Geometry
+          MODULE_LIBRARIES
+                        icaruscode_Utilities
+                        larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         larsim_Simulation 
-                        nug4_ParticleNavigation lardataobj_Simulation
+                        nug4_ParticleNavigation
+                        lardataobj_Simulation
                         lardata_Utilities
                         larevt_Filters
+                        lardataalg_MCDumpers
                         lardataobj_RawData
                         lardataobj_RecoBase
-                        lardata_RecoObjects  
+                        lardata_RecoObjects
                         nusimdata_SimulationBase
-                        ${LARRECO_LIB}
-                        ${LARDATA_LIB}
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        ${ROOT_CORE}
                         art_Persistency_Common 
                         art_Persistency_Provenance 
                         art_Utilities 
@@ -23,9 +24,11 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         ${CETLIB}
+                        ${CETLIB_EXCEPT}
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
+                        ${ROOT_GENVECTOR}
                         ${ROOT_BASIC_LIB_LIST}
         )
 
