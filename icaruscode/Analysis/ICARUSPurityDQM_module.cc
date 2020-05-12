@@ -400,7 +400,7 @@ namespace icarus{
               //h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
               //h_basediff2->Fill(fabs(base_massimo_after-base_massimo_before),sigma_pedestal);
               h_rms->Fill(sigma_pedestal);
-              if (massimo>(5*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
+              if (massimo>(3*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
                 {
 		  
 		  if(cryostat==0 && tpc==0)www0->push_back(iWire);
@@ -798,7 +798,11 @@ namespace icarus{
 			Double_t ek[10000];
 			Double_t ez[10000];
 			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
-			
+
+			std::cout<<""<<std::endl;
+			std::cout<<"HERE line 802"<<std::endl;
+			std::cout<<""<<std::endl;
+
 			if(hitarea->size()>100)//prima 30
 			  {
 			    float minimo=100000;
@@ -867,6 +871,9 @@ namespace icarus{
 				    ey[k]=0.23;
 				  }
 			      }
+			    std::cout<<""<<std::endl;
+			    std::cout<<"HERE line 872"<<std::endl;
+			    std::cout<<""<<std::endl;
 			    TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
 			    //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
 			    gr31->Fit("pol1");
@@ -899,7 +906,10 @@ namespace icarus{
                                 ey[k]=error;
                               }
                           }
- 
+			std::cout<<""<<std::endl;
+			std::cout<<"HERE line 906"<<std::endl;
+			std::cout<<""<<std::endl;
+
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
                         gr32->Fit("pol1");
                   
@@ -947,6 +957,9 @@ namespace icarus{
 			purity_info.Subrun = evt.subRun();
 			purity_info.Event = evt.event();
 			purity_info.TPC = tpc_number;
+			purity_info.Wires = clusters_dw[icl];
+                        purity_info.Ticks = clusters_ds[icl];
+			
 			if(purity_info.TPC<2) purity_info.Cryostat=0;
 			else purity_info.Cryostat=1;
 			purity_info.Attenuation = slope_purity_exo*-1.;
@@ -954,8 +967,11 @@ namespace icarus{
                         //purity_info.Attenuation_2 = slope_purity_2*-1.;
                         //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
 
+			//purity_info.Wires = clusters_dw[icl];
+			//                        purity_info.Ticks = clusters_ds[icl];
+
 			if(fFillAnaTuple)
-			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Attenuation);
+			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
 
 			std::cout << "Calling after filling attenuation … " << std::endl;
 			purity_info.Print();
