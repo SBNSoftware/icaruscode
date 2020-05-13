@@ -1,0 +1,60 @@
+#
+# File:    standard_g4_icarus_edep.fcl
+# Purpose: Simulate energy depositions in liquid argon from generated events.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 13, 2020
+# Version: 1.0
+#
+# This configuration is equivalent to `standard_g4_icarus.fcl`, but it only
+# produces particles and energy depositions as output, skipping the
+# transportation of scintillation light and ionization charge to the readout.
+# 
+# See `g4_only_energydeposits.fcl` for more details.
+# 
+# 
+# Dependencies
+# =============
+#
+# This configuration is a minor customization of, and therefore depends on,
+# `standard_g4_icarus.fcl`.
+# For the configuration, the drop-in "g4_only_energydeposits.fcl" currently in
+# `icaruscode` is used.
+#
+#
+# Settings
+# =========
+#
+# The physics settings are not changed with respect to `standard_g4_icarus.fcl`.
+#
+#
+# Input
+# ======
+#
+# The input settings are not changed with respect to `standard_g4_icarus.fcl`.
+# All generated truth information (`std::vector<simb::MCTruth>`) is processed
+# through GEANT4.
+# 
+#
+# Output
+# =======
+# 
+# Naming follows `standard_g4_icarus.fcl` (likely: module is `largeant`).
+# 
+# * `std::vector<simb::MCParticle>`: particles propagated through the detector
+# * `std::vector<sim::SimEnergyDeposits>`: energy depositions in the detector
+#
+#
+# Changes
+# ========
+# 
+# 20200513 (petrillo@slac.stanford.edu) [v1.0]
+#   original version for `icaruscode` `v08_51_00`
+#
+
+#include "standard_g4_icarus.fcl"
+#include "g4_only_energydeposits.fcl"
+
+# disable the service; it does not matter much since it's lazy...
+services.PhotonVisibilityService: @erase
+
+
