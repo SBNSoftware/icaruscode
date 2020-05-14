@@ -92,7 +92,6 @@
 #include <vector>
 
 //CRT includes
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTDetSimAlg.h"
@@ -181,7 +180,7 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
 
   //generate CRTData products, associates from filled detAlg member data
   std::vector<std::pair<CRTData,std::vector<sim::AuxDetIDE>>> data = detAlg.CreateData();
-  int nData = 0, nsizematch=0;
+  int nData = 0;
 
   for(auto const& dataPair : data){
   
@@ -189,14 +188,6 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     art::Ptr<CRTData> dataPtr = makeDataPtr(triggeredCRTHits->size()-1);
     nData++;
 
-    vector<int> dataIds;
-    for(auto const& chandat : dataPair.first.ChanData())
-      for(auto const& id : chandat.TrackID())
-        dataIds.push_back(id);
-
-    if(dataIds.size()!=dataPair.second.size()) 
-      std::cout << "data - ide mismatch: " << dataIds.size()-dataPair.second.size() << std::endl;
-    else nsizematch++;
     for(auto const& ide : dataPair.second){
       ides->push_back(ide);
       art::Ptr<sim::AuxDetIDE> idePtr = makeIDEPtr(ides->size()-1);
@@ -206,7 +197,7 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
 
   std::sort(triggeredCRTHits->begin(),triggeredCRTHits->end(), 
       [](const CRTData& d1, const CRTData& d2) {
-          return d1.TTrig() > d2.TTrig();
+          return d1.fTs0 > d2.fTs0;
       });
 
   event.put(std::move(triggeredCRTHits));
@@ -214,8 +205,7 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
   event.put(std::move(dataAssn));
 
     mf::LogInfo("CRTDetSimProducer")
-      << "Number of CRT data produced = "<< nData << '\n'
-      << "NUmber of matched size IDEs = " << nsizematch;
+      << "Number of CRT data produced = "<< nData << '\n';
 }
 
 DEFINE_ART_MODULE(icarus::crt::CRTDetSim)

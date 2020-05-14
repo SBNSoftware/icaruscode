@@ -134,10 +134,13 @@ namespace icarus{
     // Check that two CRT data products are the same
     bool CRTBackTracker::DataCompare(const CRTData& data1, const CRTData& data2){
     
-      if(data1.Mac5() != data2.Mac5()) return false;
-      if(data1.TTrig() != data2.TTrig()) return false;
-      //if(data1.T1() != data2.T1()) return false;
-      //if(data1.ADC() != data2.ADC()) return false;
+      if(data1.fMac5  != data2.fMac5)  return false;
+      if(data1.fTs0   != data2.fTs0)   return false;
+      if(data1.fTs1   != data2.fTs1)   return false;
+      if(data1.fEntry != data2.fEntry) return false;
+      for(int ch=0; ch<64; ch++) {
+          if(data1.fAdc[ch] != data2.fAdc[ch]) return false;
+      }
     
       return true;
     }

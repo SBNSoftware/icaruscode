@@ -55,7 +55,6 @@
 #include <array>
 
 // CRT data products
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 
@@ -181,25 +180,14 @@ namespace crt {
     int      fDetEvent;
     int      fNChan; ///< number of channels above threshold for this front-end board readout
     int      fEntry; ///< front-end board entry number (reset for each event)
-    double      fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
-    int      fChanTrig; ///< channel which provided the trigger for this front-end board
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
-    int      fTriggerPair[2]; ///< two channels which provided the coincidence (useful for C or D modules)
-    int      fMacPair[2]; ///< two front-end boards with pairwise coincidence ( useful for M modules)
     int      fDetSubSys;
-    vector<int> fChan; ///< front-end board channel (0-31 or 0-63)
-    vector<double> fT0;///< signal time w.r.t. global event time
-    vector<double> fT1;///< signal time w.r.t. PPS
-    vector<int> fADC;///< signal amplitude
+    double   fT0;///< signal time w.r.t. global event time
+    double   fT1;///< signal time w.r.t. PPS
+    int      fADC[64];///< signal amplitude
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
-    /*int      fChan[kDetMax]; ///< front-end board channel (0-31 or 0-63)
-    double      fT0[kDetMax]; ///< signal time w.r.t. global event time
-    double      fT1[kDetMax]; ///< signal time w.r.t. PPS
-    int      fADC[kDetMax]; ///< signal amplitude
-    int      fTrackID[kDetMax]; ///< track ID of particle that produced the signal
-    int      fDetPDG[kDetMax]; */
 
     //CRT hit product vars
     int       fHitEvent;
@@ -333,17 +321,12 @@ namespace crt {
     // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDAQNtuple->Branch("channel",               &fChan);
-    fDAQNtuple->Branch("t0",                    &fT0);
-    fDAQNtuple->Branch("t1",                    &fT1);
-    fDAQNtuple->Branch("adc",                   &fADC);
+    fDAQNtuple->Branch("t0",                    &fT0,                "t0/D");
+    fDAQNtuple->Branch("t1",                    &fT1,                "t1/D");
+    fDAQNtuple->Branch("adc",                   fADC);
     fDAQNtuple->Branch("entry",                 &fEntry,             "entry/I");
     fDAQNtuple->Branch("mac5",                  &fMac5,              "mac5/I");
     fDAQNtuple->Branch("region",                &fFEBReg,            "region/I");
-    fDAQNtuple->Branch("triggerPair",           fTriggerPair,        "triggerPair[2]/I");
-    fDAQNtuple->Branch("macPair",               fMacPair,            "macPair[2]/I");
-    fDAQNtuple->Branch("chanTrig",              &fChanTrig,          "chanTrig/I");
-    fDAQNtuple->Branch("tTrig",                 &fTTrig,             "tTrig/D");
     fDAQNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
 
     // Define the branches of our SimHit n-tuple
@@ -386,33 +369,22 @@ namespace crt {
     if (isCRTDAQ)  {
      std::cout << "about to loop over detsim entries" << std::endl;
      for ( auto const& febdat : (*crtDAQHandle) ) {
-        fDetEvent       = febdat.Event();
-        fMac5           = febdat.Mac5();
-        fChanTrig       = febdat.ChanTrig();
-        fEntry          = febdat.Entry();
-        fTTrig          = febdat.TTrig();
-        pair<uint32_t,uint32_t> tmpPair = febdat.TrigPair();
-        fTriggerPair[0] = tmpPair.first;
-        fTriggerPair[1] = tmpPair.second;
-        tmpPair         = febdat.MacPair();
-        fMacPair[0]     = tmpPair.first;
-        fMacPair[1]     = tmpPair.second;
+        fDetEvent       = fEvent;
+        fMac5           = febdat.fMac5;
+        fEntry          = febdat.fEntry;
         fFEBReg         = MacToADReg(fMac5);
         fNChan = 0;
         fDetSubSys = MacToTypeCode(fMac5);
-        fChan.clear();
-        fT0.clear();
-        fT1.clear();
-        fADC.clear();
- 
-        for ( auto const chandat : febdat.ChanData()) {
-          fChan.push_back(chandat.Channel());
-          fT0.push_back(chandat.T0());
-          fT1.push_back(chandat.T1());
-          fADC.push_back(chandat.ADC());
+        fT0 = febdat.fTs0;
+        fT1 = febdat.fTs1;
 
-         fNChan++;
-        }//outer chandat loop
+        int maxchan =0;
+        if(fDetSubSys!=2) maxchan=32;
+        else maxchan = 64;
+        for(int ch=0; ch<maxchan; ch++) {
+            fADC[ch] = febdat.fAdc[ch]; 
+        } 
+
 
         fDAQNtuple->Fill();
 
