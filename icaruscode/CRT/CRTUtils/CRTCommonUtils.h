@@ -44,7 +44,10 @@ namespace icarus{
     double         LengthIDE(sim::AuxDetIDE ide);
     int            GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetSimChannel const& adsc);
     int            GetLayerID(geo::GeometryCore const* geoService, const art::Ptr<sim::AuxDetSimChannel> adsc);
+    int            GetMINOSLayerID(geo::GeometryCore const* geoService, geo::AuxDetGeo const& adgeo);
     TVector3       ChanToLocalCoords(geo::GeometryCore const* geoService, const uint8_t mac, const int chan);
+    TVector3       ChanToWorldCoords(geo::GeometryCore const* geoService, const uint8_t mac, const int chan);
+
 
   }//CRTCommonUtils
  }//namespace crt

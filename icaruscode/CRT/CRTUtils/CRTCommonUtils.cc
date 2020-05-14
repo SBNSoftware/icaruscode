@@ -328,9 +328,17 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetS
         if ( region >=40 && region <=45 ) {
             layer = ( modulePosMother[0]>0 );
         }
-        // if front or back
-        if ( region == 46 || region == 47) {
+        // if north stack
+        if ( region == 47) {
             layer = ( modulePosMother[2]> 0 );
+        }
+        // if south stack
+        if( region == 46) {
+            auto const& adsGeo = adGeo.SensitiveVolume(0);
+            if(adsGeo.Length() < 500) //is cut module?
+                layer = 1;
+            else 
+                layer = 0;
         }
     }
 
@@ -381,13 +389,71 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, const art::P
         if ( region >=40 && region <=45 ) {
             layer = ( modulePosMother[0]>0 );
         }
-        // if front or back
-        if ( region == 46 || region == 47) {
+        // if north stack
+        if ( region == 47) {
             layer = ( modulePosMother[2]> 0 );
+        }
+        // if south stack
+        if( region == 46) {
+            if(adsGeo.Length() < 500) //is cut module?
+                layer = 1;
+            else 
+                layer = 0;
         }
     }
 
     return layer;
+
+}
+
+//----------------------------------------------------------------------------------------------------------
+int CRTCommonUtils::GetMINOSLayerID(geo::GeometryCore const* geoService, geo::AuxDetGeo const& adGeo) {
+    int layer = -1;
+
+    int region = GetAuxDetRegionNum(GetAuxDetRegion(adGeo));
+    int type = ModToTypeCode(adGeo);
+    if(type!=1) {
+        mf::LogError("CRTCommonUtils") << "non-MINOS module provided to GetMINOSLayerID";
+        return layer;
+    }
+
+    std::set<string> volNames = { adGeo.TotalVolume()->GetName() };
+    vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+
+    std::string path = "";
+    for (size_t inode=0; inode<paths.at(0).size(); inode++) {
+        path += paths.at(0).at(inode)->GetName();
+        if (inode < paths.at(0).size() - 1) {
+            path += "/";
+        }
+    }
+    TGeoManager* manager = geoService->ROOTGeoManager();
+    manager->cd(path.c_str());
+    TGeoNode* nodeModule = manager->GetCurrentNode();
+    double origin[3] = {0, 0, 0};
+    double modulePosMother[3]; //position in CRT region volume
+
+    nodeModule->LocalToMaster(origin, modulePosMother);
+
+    // if east or west stacks (6 in total)
+    if ( region >=40 && region <=45 ) {
+        layer = ( modulePosMother[0]>0 );
+    }
+    // if north stack
+    if ( region == 47) {
+        layer = ( modulePosMother[2]> 0 );
+    }
+    // if south stack
+    if( region == 46) {
+        auto const& adsGeo = adGeo.SensitiveVolume(0);
+        if(adsGeo.Length() < 500) //is cut module?
+            layer = 1;
+        else
+            layer = 0;
+    }
+
+    return layer;
+
 
 }
 
@@ -408,6 +474,25 @@ TVector3 CRTCommonUtils::ChanToLocalCoords(geo::GeometryCore const* geoService, 
     adGeo.WorldToLocal(stripPosWorld,modPos);
 
     coords.SetXYZ(modPos[0],modPos[1],modPos[2]);
+    return coords;
+}
+
+//-----------------------------------------------------------------------------------------------------------
+// given mac address and mac channel, return CRT strip center in World coordinates (w.r.t. LAr active volume center)
+TVector3 CRTCommonUtils::ChanToWorldCoords(geo::GeometryCore const* geoService, uint8_t mac, int chan) {
+
+    TVector3 coords(0.,0.,0.);
+    int adid  = MacToAuxDetID(mac,chan); //CRT module ID
+    auto const& adGeo = geoService->AuxDet(adid); //CRT module
+    int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
+    auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
+
+    double origin[3] = {0,0,0};
+    double stripPosWorld[3];
+
+    adsGeo.LocalToWorld(origin,stripPosWorld);
+
+    coords.SetXYZ(stripPosWorld[0],stripPosWorld[1],stripPosWorld[2]);
     return coords;
 }
 
