@@ -73,23 +73,14 @@ class icarus::crt::CRTTrueHitRecoAlg {
     vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CreateCRTHits(vector<art::Ptr<sim::AuxDetSimChannel>> adscList);
 
     // Function to make filling a CRTHit a bit faster
-    CRTHit FillCrtHit(std::vector<uint8_t> tfeb_id, std::map<uint8_t,
-                   std::vector<std::pair<int,float>>> tpesmap, float peshit, double time0, double time1, int plane,
+    CRTHit FillCrtHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap, 
+                   float peshit, double time0, double time1, int plane,
                    double x, double ex, double y, double ey, double z, double ez, std::string tagger);
 
  private:
 
-    /*struct tagger {
-        char type;
-        int region;
-        std::set<int> layerID;
-        map<int,int> stripLayer;
-        map<int,sim::AuxDetIDE> stripIDE;
-        
-    };*/
-
     geo::GeometryCore const* fGeometryService;
-    std::map<int,std::vector<std::pair<int,int>>> fFebMap;
+    map<int,vector<pair<uint8_t,int>>> fFebMap;
 
     //config params
     bool fUseReadoutWindow;
