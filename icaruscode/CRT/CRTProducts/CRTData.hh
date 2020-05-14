@@ -1,6 +1,8 @@
 #ifndef ICCRTData_hh_
 #define ICCRTData_hh_
 
+#include <cstdint>
+
 namespace icarus {
 namespace crt {
 
@@ -10,7 +12,7 @@ namespace crt {
       uint32_t fEntry;
       uint32_t fTs0;
       uint32_t fTs1;
-      uint16_t fAdc[32];
+      uint16_t fAdc[64]; //only use indices 0-31 for C or M modules
 
       CRTData() {}
   };
