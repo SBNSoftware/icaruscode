@@ -1,6 +1,7 @@
 <lcgdict>
 
-  <class name="anab::TPCPurityInfo" ClassVersion="11">
+  <class name="anab::TPCPurityInfo" ClassVersion="12">
+   <version ClassVersion="12" checksum="2429165902"/>
    <version ClassVersion="11" checksum="3124295666"/>
    <version ClassVersion="10" checksum="3597317665"/>
   </class>
