@@ -19,28 +19,81 @@
 # Changes:
 # 20181024 (petrillo@slac.stanford.edu)
 #   detached from `opdetsim_pmt_icarus.fcl`
+# 20200212 (petrillo@slac.stanford.edu)
+#   reconnected quantum efficiency to the value in `opticalproperties_icarus.fcl`
 #
 #
+
+#include "opticalproperties_icarus.fcl"
 
 BEGIN_PROLOG
 
 ################################################################################
 ###  Configurations for `PMTsimulationAlg`
 ################################################################################
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Single photoelectron response configurations
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#
+# Single photoelectron response with a Gaussian rise and a fall shape.
+# 
+# Parameters are as used since forever to at least v08_46_00.
+# 
+icarus_photoelectronresponse_standard: {
+  
+  # run `lar --print-description AsymGaussPulseFunctionTool` for configuration
+  tool_type: AsymGaussPulseFunctionTool
+  
+  TransitTime:               "55.1 ns"
+  RaiseTime:                 "3.8 ns"
+  FallTime:                  "13.7 ns"
+  MeanAmplitude:             "0.9 pC"
+  ADC:                       -11.1927       #charge to adc factor
+  
+} # icarus_photoelectronresponse_standard
+
+
+#
+# Custom photoelectron response.
+# 
+# This is just an example for an arbitrary function shape; the example tries to
+# reproduce an `AsymGaussPulseFunction`.
+# The names of the parameters are arbitrary and their value must be numerical.
+# 
+icarus_photoelectronresponse_customexample: {
+  
+  # run `lar --print-description CustomPulseFunctionTool` for configuration
+  tool_type: CustomPulseFunctionTool
+  
+  ShapeFormula:
+    "[ADC] * [MeanAmplitude] * exp(-0.5*((x - [TransitTime])/((x < [TransitTime])? [RaiseTime]: [FallTime]))**2)"
+  PeakTime: "[TransitTime]"
+  Parameters: {
+    TransitTime:               55.1
+    RaiseTime:                 3.8
+    FallTime:                  13.7
+    MeanAmplitude:             0.9
+    ADC:                       -11.1927
+  } # parameters
+  
+} # icarus_photoelectronresponse_standard
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### Standard configuration: `icarus_pmtsimulationalg_standard`
 ###
 ###
+
 icarus_pmtsimulationalg_standard: {
 
-  TransitTime:               55.1           #ns
-  ADC:                       -11.1927       #charge to adc factor
   Baseline:                  7999.5         #in ADC
-  FallTime:                  13.7           #ns
-  RiseTime:                  3.8            #ns
-  MeanAmplitude:             0.9            #in pC
+  
+  SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
+  
   AmpNoise:                  1.0            #in ADC
-  DarkNoiseRate:             1600.0         # in Hz; from CERN test stand measurement
+  DarkNoiseRate:             "1.6 kHz"      # from CERN test stand measurement
 
   ##This is the readout window size for each "trigger" on the electronics
   ReadoutWindowSize:         2000           #ticks (if 2ns each --> 4us)
@@ -53,13 +106,13 @@ icarus_pmtsimulationalg_standard: {
   ThresholdADC:              4              #ADC counts
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
-  TriggerOffsetPMT:          -1400          #Time (us) relative to trigger that readout begins
-  ReadoutEnablePeriod:       2800           #Time (us) for which pmt readout is enabled
+  TriggerOffsetPMT:          "-1.4 ms"      #Time relative to trigger that readout begins
+  ReadoutEnablePeriod:       "2.8 ms"       #Time for which pmt readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
-  BeamGateTriggerRepPeriod:  2.0            #Repetition Period (us) for BeamGateTriggers
+  BeamGateTriggerRepPeriod:  "2.0 us"       #Repetition Period for BeamGateTriggers
   BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce
   Saturation:                300            #in number of p.e. to see saturation effects in the signal
-  QE:                        0.07           #TPB coated PMT quantum efficiency
+  QE:                        @local::icarus_opticalproperties.ScintPreScale # from opticalproperties_icarus.fcl
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   
   PMTspecs: {
@@ -84,8 +137,8 @@ icarus_pmtsimulationalg_nonoise: {
   
   @table::icarus_pmtsimulationalg_standard
   
-  AmpNoise:      0.0  # RMS in ADC counts
-  DarkNoiseRate: 0.0  # Hz
+  AmpNoise:      0.0     # RMS in ADC counts
+  DarkNoiseRate: "0 kHz"
   
   
 } # icarus_pmtsimulationalg_nonoise

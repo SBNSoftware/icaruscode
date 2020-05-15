@@ -16,7 +16,7 @@
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
-process_name: TriggerSlidingWindow
+process_name: TrgSlideWindow
 
 
 services: {

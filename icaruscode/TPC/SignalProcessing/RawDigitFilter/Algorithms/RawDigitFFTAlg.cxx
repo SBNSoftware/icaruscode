@@ -1,4 +1,3 @@
-
 #include "RawDigitFFTAlg.h"
 
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -7,20 +6,15 @@
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
-#include "icaruscode/Utilities/tools/IFilter.h"
-
-#include <Eigen/Core>
-#include <unsupported/Eigen/FFT>
+#include "icarus_signal_processing/WaveformTools.h"
+#include "icaruscode/TPC/Utilities/tools/IFilter.h"
 
 #include <cmath>
 #include <algorithm>
-#include <complex>
-
-#include "TComplex.h"
 
 namespace caldata
 {
@@ -32,7 +26,7 @@ namespace caldata
 ///
 /// pset - Fcl parameters.
 ///
-RawDigitFFTAlg::RawDigitFFTAlg(fhicl::ParameterSet const & pset)
+template <class T> RawDigitFFTAlg<T>::RawDigitFFTAlg(fhicl::ParameterSet const & pset)
 {
     reconfigure(pset);
 
@@ -42,7 +36,7 @@ RawDigitFFTAlg::RawDigitFFTAlg(fhicl::ParameterSet const & pset)
 
 //----------------------------------------------------------------------------
 /// Destructor.
-RawDigitFFTAlg::~RawDigitFFTAlg()
+template <class T> RawDigitFFTAlg<T>::~RawDigitFFTAlg()
 {}
 
 //----------------------------------------------------------------------------
@@ -52,17 +46,13 @@ RawDigitFFTAlg::~RawDigitFFTAlg()
 ///
 /// pset - Fcl parameter set.
 ///
-void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
+template <class T> void RawDigitFFTAlg<T>::reconfigure(fhicl::ParameterSet const & pset)
 {
-    fTransformViewVec = pset.get<std::vector<bool>>  ("TransformViewVec", std::vector<bool>() = {true,false,false});
-    fFillHistograms   = pset.get<bool             >  ("FillHistograms",                                      false);
-    fHistDirName      = pset.get<std::string      >  ("HistDirName",                                   "FFT_hists");
+    fTransformViewVec = pset.get<std::vector<bool>  >("TransformViewVec", std::vector<bool>() = {true,false,false});
+    fFillHistograms   = pset.get<bool               >("FillHistograms",                                      false);
+    fHistDirName      = pset.get<std::string        >("HistDirName",                                   "FFT_hists");
     fLoWireByPlane    = pset.get<std::vector<size_t>>("LoWireByPlane",               std::vector<size_t>()={0,0,0});
     fHiWireByPlane    = pset.get<std::vector<size_t>>("HiWireByPlane",         std::vector<size_t>()={100,100,100});
-
-    const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
-    
-    fWaveformTool     = art::make_tool<icarus_tool::IWaveformTool>(waveformParamSet);
     
     // Implement the tools for handling the responses
     const fhicl::ParameterSet& filterTools = pset.get<fhicl::ParameterSet>("FilterTools");
@@ -73,7 +63,7 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
-        fFilterVec[planeIdx] = std::vector<std::complex<float>>();
+        fFilterVecMap[planeIdx] = std::vector<std::complex<float>>();
     }
     
     fEigenFFT = std::make_unique<Eigen::FFT<float>>();
@@ -81,7 +71,7 @@ void RawDigitFFTAlg::reconfigure(fhicl::ParameterSet const & pset)
     
 //----------------------------------------------------------------------------
 /// Begin job method.
-void RawDigitFFTAlg::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
+template <class T> void RawDigitFFTAlg<T>::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
 {
     if (fFillHistograms)
     {
@@ -134,7 +124,7 @@ void RawDigitFFTAlg::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
     return;
 }
     
-template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVec, double minPowerThreshold) const
+template <class T> void RawDigitFFTAlg<T>::getFFTCorrection(std::vector<T>& corValVec, double minPowerThreshold) const
 {
     // This version will take FFT of input waveform and then remove bins in the time domain with a power less
     // than the threshold input above.
@@ -146,7 +136,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     
     eigenFFT.fwd(fftOutputVec, corValVec);
     
-    size_t halfFFTDataSize(fftDataSize/2);
+    size_t halfFFTDataSize(fftDataSize/2 + 1);
     
     std::vector<T> powerVec(halfFFTDataSize);
     
@@ -155,12 +145,12 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     // Want the first derivative
     std::vector<T> firstDerivVec(powerVec.size());
     
-    fWaveformTool->firstDerivative(powerVec, firstDerivVec);
+    fWaveformTool.firstDerivative(powerVec, firstDerivVec);
     
     // Find the peaks
-    icarus_tool::IWaveformTool::PeakTupleVec peakTupleVec;
+    icarus_signal_processing::WaveformTools<float>::PeakTupleVec peakTupleVec;
     
-    fWaveformTool->findPeaks(firstDerivVec.begin(),firstDerivVec.end(),peakTupleVec,minPowerThreshold,0);
+    fWaveformTool.findPeaks(firstDerivVec.begin(),firstDerivVec.end(),peakTupleVec,minPowerThreshold,0);
     
     if (!peakTupleVec.empty())
     {
@@ -178,7 +168,7 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
                     std::complex<T> interpVal = fftOutputVec[startTick] + T(tick - startTick) * slope;
                     
                     fftOutputVec[tick]                   = interpVal;
-                    fftOutputVec[fftDataSize - tick - 1] = interpVal;
+                    //fftOutputVec[fftDataSize - tick - 1] = interpVal;
                 }
             }
         }
@@ -192,10 +182,8 @@ template <class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValV
     
     return;
 }
-    
-template void RawDigitFFTAlg::getFFTCorrection<float>(std::vector<float>&, double) const;
 
-template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVec, size_t maxBin) const
+template<class T> void RawDigitFFTAlg<T>::getFFTCorrection(std::vector<T>& corValVec, size_t maxBin) const
 {
     // This version will take FFT of input waveform and then remove bins in the time domain above the
     // cutoff frequency defined by maxBin passed in above
@@ -217,7 +205,7 @@ template<class T> void RawDigitFFTAlg::getFFTCorrection(std::vector<T>& corValVe
     return;
 }
     
-void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) 
+template <class T> void RawDigitFFTAlg<T>::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) 
 {
     // Check there is something to do
     if (!fTransformViewVec.at(plane)) return;
@@ -242,8 +230,8 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
     std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, fPowerVec.begin(), [](const auto& complex){return std::abs(complex);});
 
     // Recover the filter function we are using...
-    const std::vector<TComplex>&            filter    = fFilterToolMap.at(plane)->getResponseVec();
-    const std::vector<std::complex<float>>& filterVec = fFilterVec.at(plane);;
+    const icarusutil::FrequencyVec&         filter    = fFilterToolMap.at(plane)->getResponseVec();
+    const std::vector<std::complex<float>>& filterVec = fFilterVecMap.at(plane);;
 
     // Make sure the filter has been correctly initialized
     if (filter.size() != halfFFTDataSize)
@@ -251,13 +239,17 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
         fFilterToolMap.at(plane)->setResponse(fftDataSize,1.,1.);
         
         // Set up the internal FFT vector
-        fFilterVec.at(plane).reserve(halfFFTDataSize);
-        for(auto& rootComplex : filter) fFilterVec.at(plane).emplace_back(rootComplex.Re(),rootComplex.Im());
+        fFilterVecMap.at(plane).reserve(halfFFTDataSize);
+        for(auto& complex : filter) fFilterVecMap.at(plane).emplace_back(complex);
     }
+
+    //std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
     
-    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + fFFTOutputVec.size()/2, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
+    //for(size_t idx = 0; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx - 1] = fFFTOutputVec[idx];
     
-    for(size_t idx = 0; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx - 1] = fFFTOutputVec[idx];
+    std::transform(fFFTOutputVec.begin(), fFFTOutputVec.begin() + halfFFTDataSize, filterVec.begin(), fFFTOutputVec.begin(), std::multiplies<std::complex<float>>());
+
+    for(size_t idx = 1; idx < fFFTOutputVec.size()/2; idx++) fFFTOutputVec[fFFTOutputVec.size() - idx] = fFFTOutputVec[idx];
 
     fEigenFFT->inv(fFFTInputVec, fFFTOutputVec);
 
@@ -288,7 +280,7 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
         {
             float freq = 1.e6 * float(idx)/ (sampleRate * readOutSize);
             fConvFFTPowerVec[plane]->Fill(freq, std::min(fPowerVec[idx],float(999.)), 1.);
-            fFilterFuncVec[plane]->Fill(freq, filter[idx], 1.);
+            fFilterFuncVec[plane]->Fill(freq, double(std::abs(filter[idx])), 1.);
         }
     }
     
@@ -297,6 +289,4 @@ void RawDigitFFTAlg::filterFFT(std::vector<short>& rawadc, size_t plane, size_t 
 
     return;
 }
-
-template void RawDigitFFTAlg::getFFTCorrection<float>(std::vector<float>& corValVec, size_t maxBin) const;
 }

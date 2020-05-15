@@ -212,8 +212,8 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
     };
 
   mf::LogVerbatim log(fOutputCategory);
-  log << event.id() << ": " << fTriggerGateDataTag << " has " << gates.size()
-    << " trigger gates:";
+  log << event.id() << ": '" << fTriggerGateDataTag.encode() << "' has "
+    << gates.size() << " trigger gates:";
   for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
     log << "\n[#" << iGate << "] " << gate;
     if (gateToWaveforms) {

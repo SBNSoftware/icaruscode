@@ -30,8 +30,21 @@ simple_plugin(SimPMTIcarus "module"
   )
 
 
+simple_plugin(AsymGaussPulseFunctionTool "tool"
+  icaruscode_PMT_Algorithms
+  )
+
+simple_plugin(CustomPulseFunctionTool "tool"
+  icaruscode_PMT_Algorithms
+  ROOT::Hist
+  )
+
+
 art_make(
-  EXCLUDE "SimPMTIcarus_module.cc"
+  EXCLUDE
+    "SimPMTIcarus_module.cc"
+    "AsymGaussPulseFunctionTool_tool.cc"
+    "CustomPulseFunctionTool_tool.cc"
           LIB_LIBRARIES 
             lardataobj_RawData
             lardataobj_RecoBase
@@ -49,8 +62,9 @@ art_make(
 			larevt_CalibrationDBI_Providers
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
-			icaruscode_Utilities_SignalShapingServiceICARUS_service
 			nusimdata_SimulationBase
+            nurandom_RandomUtils_NuRandomService_service
+			${CLHEP}
             ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}

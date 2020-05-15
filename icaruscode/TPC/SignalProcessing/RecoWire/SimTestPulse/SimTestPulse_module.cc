@@ -18,7 +18,6 @@
 #include "art_root_io/TFileService.h"
 //#include "art/Utilities/InputTag.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcoreobj/SummaryData/RunData.h"
 #include <memory>
@@ -160,11 +159,7 @@ void SimTestPulse::produce(art::Event & e)
     
     double xyz[3] = {0., 0., 0.};
 
-    art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
-    
-    // In case trigger simulation is run in the same job...
-    tss->preProcessEvent(e,art::ScheduleContext::invalid());
-    
+    art::ServiceHandle<detinfo::DetectorClocksService> tss;
     auto const* ts = tss->provider();
     art::ServiceHandle<geo::Geometry> geo;
     

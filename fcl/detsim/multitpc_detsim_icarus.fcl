@@ -53,19 +53,15 @@ physics:
 }
 
 #
-# For MCC1.1 we are still suppressing channels with no signal in the TPC
+# We are currently suppressing channels with no signal to save time/output space
 physics.producers.daq0.SuppressNoSignal: true
-physics.producers.daq0.Cryostat:         0
-physics.producers.daq0.TPC:              0
+physics.producers.daq0.TPCVec: [ [ 0, 0 ] ]
 physics.producers.daq1.SuppressNoSignal: true
-physics.producers.daq1.Cryostat:         0
-physics.producers.daq1.TPC:              1
+physics.producers.daq1.TPCVec: [ [ 0, 1 ] ]
 physics.producers.daq2.SuppressNoSignal: true
-physics.producers.daq2.Cryostat:         1
-physics.producers.daq2.TPC:              0
+physics.producers.daq2.TPCVec: [ [ 1, 0 ] ]
 physics.producers.daq3.SuppressNoSignal: true
-physics.producers.daq3.Cryostat:         1
-physics.producers.daq3.TPC:              1
+physics.producers.daq3.TPCVec: [ [ 1, 1 ] ]
 
 #block to define where the output goes.  if you defined a filter in the physics
 #block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}

@@ -1,0 +1,61 @@
+#include "services_icarus.fcl"
+#include "decoderDefs.fcl"
+#include "recowire_icarus.fcl"
+#include "hitfindermodules_icarus.fcl"
+
+process_name: decoder
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
+}
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+    // now also have something produce the digits and headers
+    producers:
+    {
+        daq:         @local::decodeFilterNoise
+        decon1droi:  @local::icarus_decon1droi
+        gaushit:     @local::gaus_hitfinder_icarus
+    }
+  
+    analyzers: {}
+    my_producer_modules: [daq, decon1droi, gaushit]
+    a: [rootout]
+    end_paths: [a]
+}
+
+# Use this to setup the decoder module in "diagnostics mode" - outputting RawDigits
+physics.producers.daq.OutputPedestalCor:            true
+physics.producers.daq.OutputCorrection:             true
+
+# Coherent noise subtraction grouping
+physics.producers.daq.DecoderTool.CoherentGrouping: 32
+
+# Setup for the 1D deconvolution
+physics.producers.decon1droi.DigitModuleLabel:      "daq"
+
+outputs: 
+{
+  rootout: 
+  {
+    module_type:    "RootOutput"
+    fileName:       "%ifb_%tc-%p.root"
+    outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
+  }
+}
+
