@@ -111,7 +111,7 @@ namespace icarus{
             bool minosPairFound = false, istrig=false;
             vector<ChanData> passingData; //data to be included in "readout" of FEB
             vector<AuxDetIDE> passingIDE;
-            double ttrig=0.0, ttmp=0.0;  //time stamps on trigger channel, channel considered as part of readout
+            uint64_t ttrig=0.0, ttmp=0.0;  //time stamps on trigger channel, channel considered as part of readout
             AuxDetIDE idetmp;
             size_t trigIndex = 0;
             uint16_t adc[64];
@@ -129,7 +129,7 @@ namespace icarus{
             //time order ChannalData objects in this FEB by T0
             std::sort((trg.second.data).begin(),(trg.second.data).end(),TimeOrderCRTData);
 
-            if (fUltraVerbose) std::cout << "processing data for FEB " << trg.first << " with "
+            if (fUltraVerbose) std::cout << "processing data for FEB " << (int)trg.first << " with "
                                     << trg.second.data.size() << " entries..." << '\n'
                                     << "    type: " <<  trg.second.type << '\n'
                                     << "    region: " <<  trg.second.reg << '\n'
@@ -197,7 +197,7 @@ namespace icarus{
                       //find entry within coincidence window starting with this FEB's
                       //triggering channel in coincidence candidate's FEB
                       for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
-                          double t2tmp = trg2.second.data[j].first.ts; //in us
+                          uint64_t t2tmp = trg2.second.data[j].first.ts; //in us
                           if ( util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM) {
                               minosPairFound = true;
                               break;
@@ -582,11 +582,13 @@ namespace icarus{
             // Time relative to trigger [ns], accounting for propagation delay and 'walk'
             // for the fixed-threshold discriminator
             double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-            uint32_t t0 = 
+            if(tTrue<0) mf::LogError("CRTDetSim") <<
+                "negative true time being passed to time stamp generator!";
+            uint64_t t0 = 
               GetChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout*100);
-            uint32_t t1 = 
+            uint64_t t1 = 
               GetChannelTriggerTicks(trigClock, tTrue, npe1, distToReadout*100);
-            uint32_t t0Dual = 
+            uint64_t t0Dual = 
               GetChannelTriggerTicks(trigClock, tTrue, npe0Dual, distToReadout2*100);
 
             // Time relative to PPS: Random for now! (FIXME)
@@ -720,7 +722,7 @@ namespace icarus{
               << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
               << "CRT HIT AuxDetID " <<  adid << " / AuxDetSensitiveID " << adsid << "\n"
               << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
-              << "CRT channel: " << channel0ID << " , mac5: " << mac5 << '\n'
+              << "CRT channel: " << channel0ID << " , mac5: " << (int)mac5 << '\n'
               << "CRT HIT POS (world coords) " << x << " " << y << " " << z << "\n"
               << "CRT STRIP POS (module coords) " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
               << "CRT MODULE POS (region coords) " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
@@ -815,8 +817,8 @@ namespace icarus{
     //  takes true hit time, LY(PE) observed, and intitudinal distance from readout
     //  uses 12 FHiCL configurable parameters
     //  returns simulated time in units of clock ticks
-    uint32_t CRTDetSimAlg::GetChannelTriggerTicks(detinfo::ElecClock& clock,
-                                             float t0, float npeMean, float r)
+    uint64_t CRTDetSimAlg::GetChannelTriggerTicks(detinfo::ElecClock& clock,
+                                             double t0, float npeMean, float r)
     {
         // Hit timing, with smearing and NPE dependence
         double tDelayMean =
@@ -843,13 +845,14 @@ namespace icarus{
         // Get clock ticks
         clock.SetTime(t / 1e3);  // SetTime takes microseconds
     
-        /*if (fUltraVerbose) mf::LogInfo("CRT")
+        if (fUltraVerbose) mf::LogInfo("CRT")
           << "CRT TIMING: t0=" << t0
           << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
           << ", tDelay=" << tDelay << ", tDelay(interp)="
-          << tDelay << ", tProp=" << tProp << ", t=" << t << "\n";//, ticks=" << clock.Ticks() << "\n"; 
-        */
-        return t;//clock.Ticks();
+          << tDelay << ", tProp=" << tProp << ", t=" << t 
+          << ", ticks=" << clock.Ticks() << "\n"; 
+        
+        return (uint64_t)t;//clock.Ticks();
     }//CRTDetSim::GetChannelTriggerTicks()
 
     //---------------------------------------------------------------
@@ -876,7 +879,7 @@ namespace icarus{
 
     //----------------------------------------------------------------
     // function to make fill CRTData products a bit easer
-    CRTData CRTDetSimAlg::FillCRTData(uint8_t mac, uint32_t entry, uint32_t t0, uint32_t t1, uint16_t adc[64]){
+    CRTData CRTDetSimAlg::FillCRTData(uint8_t mac, uint32_t entry, uint64_t t0, uint64_t t1, uint16_t adc[64]){
         CRTData dat;
         dat.fMac5 = mac;
         dat.fEntry = entry;
@@ -890,7 +893,7 @@ namespace icarus{
     }
  
     //------------------------------------------------------------------
-    ChanData CRTDetSimAlg::FillChanData(int channel, uint16_t adc, uint32_t ts) {
+    ChanData CRTDetSimAlg::FillChanData(int channel, uint16_t adc, uint64_t ts) {
         ChanData dat;
         dat.channel = channel;
         dat.adc = adc;

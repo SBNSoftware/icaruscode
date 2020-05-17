@@ -53,7 +53,7 @@ namespace icarus {
 struct ChanData {
     int channel;
     uint16_t adc;
-    uint32_t ts;
+    uint64_t ts;
 };//ChanData
 
 struct Tagger {
@@ -146,11 +146,11 @@ class icarus::crt::CRTDetSimAlg {
      * @param r Distance between the energy deposit and strip readout end [mm]
      * @return Trigger clock ticks at this true hit time
      */
-    uint32_t GetChannelTriggerTicks(detinfo::ElecClock& clock,
-                                  float t0, float npeMean, float r);
+    uint64_t GetChannelTriggerTicks(detinfo::ElecClock& clock,
+                                  double t0, float npeMean, float r);
 
-    CRTData  FillCRTData(uint8_t mac, uint32_t entry, uint32_t t0, uint32_t ts1, uint16_t adc[32]);
-    ChanData FillChanData(int channel, uint16_t adc, uint32_t ts);
+    CRTData  FillCRTData(uint8_t mac, uint32_t entry, uint64_t t0, uint64_t ts1, uint16_t adc[32]);
+    ChanData FillChanData(int channel, uint16_t adc, uint64_t ts);
     void FillAdcArr(const vector<ChanData>& data, uint16_t arr[32]);
 };
 
