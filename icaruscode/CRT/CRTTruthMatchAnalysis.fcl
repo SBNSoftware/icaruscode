@@ -44,7 +44,7 @@ physics:
       SimulationLabel: "largeant"
       CRTTrueHitLabel: "crttruehit"
       CRTDataLabel:    "crtdaq"
-      CRTSimHitLabel:  "crtsimhit"
+      CRTSimHitLabel:  "crthit"
 
       #OpHitModuleLabel:   "ophit"
 
