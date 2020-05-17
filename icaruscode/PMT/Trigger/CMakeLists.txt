@@ -53,6 +53,7 @@ art_make(
   )
 
 simple_plugin(MajorityTriggerSimulation module
+  icaruscode_PMT_Trigger_Algorithms
   icaruscode_PMT_Trigger_Data
   icaruscode_PMT_Trigger_Utilities
   larcore_Geometry_Geometry_service
@@ -123,6 +124,7 @@ foreach(TriggerEfficiencyPlotsModule
 )
 
   simple_plugin(${TriggerEfficiencyPlotsModule} module
+    icaruscode_PMT_Trigger_Algorithms
     icaruscode_PMT_Trigger
     icaruscode_PMT_Trigger_Utilities
     icaruscode_PMT_Trigger_Data
