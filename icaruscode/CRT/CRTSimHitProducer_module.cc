@@ -1,4 +1,4 @@
-// sbndcode includes
+// icaruscode includes
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
@@ -21,11 +21,14 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+
+// C++ includes
 #include <memory>
 #include <iostream>
 #include <map>
 #include <iterator>
 #include <algorithm>
+#include <vector>
 
 // LArSoft
 #include "lardataobj/Simulation/SimChannel.h"
@@ -129,6 +132,9 @@ namespace crt {
       <<"Number of SiPM hits = "<<crtList.size();
 
     vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
+
+    mf::LogInfo("CRTSimHitProducer")
+      << "Number of CRTHit,data indices pairs = " << crtHitPairs.size();
 
     for(auto const& crtHitPair : crtHitPairs){
 
