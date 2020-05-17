@@ -47,12 +47,15 @@ class icarus::crt::CRTBackTracker {
     struct Config {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
+      fhicl::Atom<art::InputTag> CRTTrueHitLabel {
+        Name("CRTTrueHitLabel")
+      };
       fhicl::Atom<art::InputTag> CRTDataLabel {
         Name("CRTDataLabel")
       };
 
-      fhicl::Atom<art::InputTag> CRTHitLabel {
-        Name("CRTHitLabel")
+      fhicl::Atom<art::InputTag> CRTSimHitLabel {
+        Name("CRTSimHitLabel")
       };
 
       fhicl::Atom<art::InputTag> CRTTrackLabel {
@@ -113,13 +116,15 @@ class icarus::crt::CRTBackTracker {
 
   private:
 
+    art::InputTag fCRTTrueHitLabel;
     art::InputTag fCRTDataLabel;
-    art::InputTag fCRTHitLabel;
+    art::InputTag fCRTSimHitLabel;
     art::InputTag fCRTTrackLabel;
 
     bool fRollupUnsavedIds;
+    std::map<int, std::map<int, double>> fTrueHitTrueIds;
     std::map<int, std::map<int, double>> fDataTrueIds;
-    std::map<int, std::map<int, double>> fHitTrueIds;
+    std::map<int, std::map<int, double>> fSimHitTrueIds;
     std::map<int, std::map<int, double>> fTrackTrueIds;
 
 };

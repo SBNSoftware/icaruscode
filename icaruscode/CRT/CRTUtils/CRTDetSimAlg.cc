@@ -6,9 +6,9 @@
 namespace icarus{
  namespace crt {
 
-    bool TimeOrderCRTData(std::pair<icarus::crt::CRTChannelData, sim::AuxDetIDE> crtdat1, 
-                          std::pair<icarus::crt::CRTChannelData, sim::AuxDetIDE> crtdat2) {
-        return ( crtdat1.first.T0() < crtdat2.first.T0() );
+    bool TimeOrderCRTData(std::pair<ChanData, AuxDetIDE> crtdat1, 
+                          std::pair<ChanData, AuxDetIDE> crtdat2) {
+        return ( crtdat1.first.ts < crtdat2.first.ts );
     }//TimeOrderCRTData()
 
     //-------------------------------------------------------------------------------------------
@@ -16,7 +16,7 @@ namespace icarus{
     CRTDetSimAlg::CRTDetSimAlg(fhicl::ParameterSet const & p, CLHEP::HepRandomEngine& engine) :
         fNsim_m(0), fNsim_d(0), fNsim_c(0), fNchandat_m(0), fNchandat_d(0), fNchandat_c(0),
         fNmissthr_c(0), fNmissthr_d(0), fNmissthr_m(0), fNmiss_strcoin_c(0), fNdual_m(0),
-        fRandEngine(engine), fFebMap(CRTCommonUtils::GetFebMap())
+        fHasFilledTaggers(false), fRandEngine(engine), fFebMap(CRTCommonUtils::GetFebMap())
     {
 
         this->reconfigure(p);
@@ -48,9 +48,9 @@ namespace icarus{
        fQPed = p.get<double>("QPed");
        fQSlope = p.get<double>("QSlope");
        fQRMS = p.get<double>("QRMS");
-       fQThresholdC = p.get<double>("QThresholdC");
-       fQThresholdM = p.get<double>("QThresholdM");
-       fQThresholdD = p.get<double>("QThresholdD");
+       fQThresholdC = p.get<uint16_t>("QThresholdC");
+       fQThresholdM = p.get<uint16_t>("QThresholdM");
+       fQThresholdD = p.get<uint16_t>("QThresholdD");
        fStripCoincidenceWindow = p.get<double>("StripCoincidenceWindow");
        fApplyStripCoinC = p.get<bool>("ApplyStripCoincidenceC");
        fApplyCoincidenceC = p.get<bool>("ApplyCoincidenceC");
@@ -71,11 +71,14 @@ namespace icarus{
     // this function applies trigger logic, deadtime, and close-in-time signal biasing effects. it produces the
     // "triggered data" products which make it into the event
     vector<pair<CRTData,vector<sim::AuxDetIDE>>> CRTDetSimAlg::CreateData()
-    {
-        if(fTaggers.size()==0)
-            throw cet::exception("CRTDetSimAlg") << "CreateData() called with empty taggers map!";
+    {        
+        vector<pair<CRTData, vector<AuxDetIDE>>> dataCol;
 
-        vector<pair<CRTData, vector<sim::AuxDetIDE>>> dataCol;
+        if(!fHasFilledTaggers)
+            throw cet::exception("CRTDetSimAlg") << "CreateData() called with empty taggers map!";
+        if(fTaggers.size()==0)
+            return dataCol;
+
 	int eve=1;
 
         int ncombined_c=0, ncombined_m=0, ncombined_d=0; //channel signals close in time, biasing first signal entering into track and hold circuit
@@ -98,26 +101,23 @@ namespace icarus{
         // Front-end logic: For CERN or DC modules require at least one hit in each X-X layer.
         if (fUltraVerbose) std::cout << '\n' << "about to loop over taggers (size " << fTaggers.size() << " )" << std::endl;
 
-        if(fTaggers.find(2147483647)!=fTaggers.end()) std::cout << "WARNING FOUND BAD MAC5 BEFORE ENTERING TAGGER LOOP!" << std::endl;
-
         for (auto trg : fTaggers) {
             //if(trg.second.data.size()!=trg.second.ide.size())
             //    std::cout << "WARNING DATA AND INDEX VECTOR SIZE MISMATCH!" << std::endl;
 
             event = 0;
-            icarus::crt::CRTChannelData *chanTrigData(nullptr);
-            icarus::crt::CRTChannelData *chanTmpData(nullptr);
-            std::set<int> trackNHold = {}; //set of channels close in time to triggered readout above threshold
-            std::set<int> layerNHold = {}; //layers with channels above threshold (used for checking layer-layer coincidence)
+            ChanData *chanTrigData(nullptr);
+            ChanData *chanTmpData(nullptr);
+            set<int> trackNHold = {}; //set of channels close in time to triggered readout above threshold
+            set<int> layerNHold = {}; //layers with channels above threshold (used for checking layer-layer coincidence)
             if(trg.first==INT_MAX) std::cout << "WARNING: bad mac5 found!" << std::endl;
-            std::pair<int,int> macPair = std::make_pair(trg.first,trg.first); //FEB-FEB validation pair
-            std::pair<int,int> tpair;  //pair of channels making the coincidence
             bool minosPairFound = false, istrig=false;
-            std::vector<icarus::crt::CRTChannelData> passingData; //data to be included in "readout" of FEB
-            std::vector<sim::AuxDetIDE> passingIDE;
-            double ttrig=0.0, ttmp=0.0;  //time stamps on trigger channel, channel considered as part of readout
-            sim::AuxDetIDE idetmp;
+            vector<ChanData> passingData; //data to be included in "readout" of FEB
+            vector<AuxDetIDE> passingIDE;
+            uint64_t ttrig=0.0, ttmp=0.0;  //time stamps on trigger channel, channel considered as part of readout
+            AuxDetIDE idetmp;
             size_t trigIndex = 0;
+            uint16_t adc[64];
 
             //check "open" coincidence (just check if coincdence possible w/hit in both layers) 
             if (trg.second.type=='c' && fApplyCoincidenceC && trg.second.layerid.size()<2) {
@@ -132,7 +132,7 @@ namespace icarus{
             //time order ChannalData objects in this FEB by T0
             std::sort((trg.second.data).begin(),(trg.second.data).end(),TimeOrderCRTData);
 
-            if (fUltraVerbose) std::cout << "processing data for FEB " << trg.first << " with "
+            if (fUltraVerbose) std::cout << "processing data for FEB " << (int)trg.first << " with "
                                     << trg.second.data.size() << " entries..." << '\n'
                                     << "    type: " <<  trg.second.type << '\n'
                                     << "    region: " <<  trg.second.reg << '\n'
@@ -144,10 +144,9 @@ namespace icarus{
               //get data for earliest entry
               if(i==0) {
                 chanTrigData = &(trg.second.data[0].first);
-                ttrig = chanTrigData->T0(); //time stamp [ns]
-                trackNHold.insert(chanTrigData->Channel());
-                layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
-                //tpair = std::make_pair(chanTrigData->Channel(),chanTrigData->Channel());
+                ttrig = chanTrigData->ts; //time stamp [ns]
+                trackNHold.insert(chanTrigData->channel);
+                layerNHold.insert(trg.second.chanlayer[chanTrigData->channel]);
                 passingData.push_back(*chanTrigData);
                 passingIDE.push_back(trg.second.data[0].second);
                 ttmp = ttrig; 
@@ -158,13 +157,9 @@ namespace icarus{
 
               else {
                 chanTmpData = &(trg.second.data[i].first);
-                ttmp = chanTmpData->T0();
+                ttmp = chanTmpData->ts;
                 idetmp = trg.second.data[i].second;
               }
-
-              if(i!=0 && i==trigIndex) std::cout << "WARNING: tmp index same as trig index!" << std::endl;
-              //check that time sorting works
-              if ( ttmp < ttrig ) mf::LogError("CRT") << "SORTING OF DATA PRODUCTS FAILED!!!"<< "\n";
 
               //for C and D modules only and coin. enabled, if assumed trigger channel has no coincidence
               // set trigger channel to tmp channel and try again
@@ -174,15 +169,14 @@ namespace icarus{
               {
                    trigIndex++;
                    chanTrigData = &(trg.second.data[trigIndex].first);
-                   if(chanTrigData->TrackID().size()>1) std::cout << chanTrigData->TrackID().size()  <<"extra track ids in data primitive!" << std::endl;
                    i = trigIndex; //+1
-                   ttrig = chanTrigData->T0();
+                   ttrig = chanTrigData->ts;
                    trackNHold.clear();
                    layerNHold.clear();
                    passingData.clear();
                    passingIDE.clear();
-                   trackNHold.insert(chanTrigData->Channel());
-                   layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
+                   trackNHold.insert(chanTrigData->channel);
+                   layerNHold.insert(trg.second.chanlayer[chanTrigData->channel]);
                    passingData.push_back(*chanTrigData);
                    passingIDE.push_back(trg.second.data[trigIndex].second);
                    if(trg.second.type=='c') nmiss_coin_c++;
@@ -190,14 +184,13 @@ namespace icarus{
                    continue;
               }
 
-              if(fUltraVerbose) std::cout << "checking for coincidence..." << std::endl;
+              if(fUltraVerbose)
+                  std::cout << "checking for coincidence..." << std::endl;
               //check if coincidence condtion met
               //for c and d modules, just need time stamps within tagger obj
               //for m modules, need to check coincidence with other tagger objs
               if (trg.second.type=='m' && !minosPairFound && fApplyCoincidenceM) {
                   for (auto trg2 :fTaggers) {
-
-                      if(trg2.first==INT_MAX) std::cout << "WARNING: bad mac5 found in inner tagger loop!" << std::endl;
 
                       if( trg2.second.type!='m' || //is other mod 'm' type
                         trg.second.modid == trg2.second.modid || //other mod not same as this one
@@ -205,44 +198,35 @@ namespace icarus{
                         *trg2.second.layerid.begin() == *trg.second.layerid.begin()) //modules are in adjacent layers
                           continue;
 
-                      //time sort all data for this FEB (all times for this event)
-                      std::sort((trg2.second.data).begin(),(trg2.second.data).end(),TimeOrderCRTData);
-
                       //find entry within coincidence window starting with this FEB's
                       //triggering channel in coincidence candidate's FEB
                       for ( size_t j=0; j< trg2.second.data.size(); j++ ) {
-                          double t2tmp = trg2.second.data[j].first.T0(); //in us
+                          uint64_t t2tmp = trg2.second.data[j].first.ts; //in us
                           if ( util::absDiff(t2tmp,ttrig) < fLayerCoincidenceWindowM) {
                               minosPairFound = true;
-                              macPair = std::make_pair(trg.first,trg2.first);
-                              tpair = std::make_pair(chanTrigData->Channel(),trg2.second.data[j].first.Channel());
                               break;
                           }
                       }
                       //we found a valid pair so move on to next step
-                      if (minosPairFound) {
-                          if(fUltraVerbose) std::cout << "MINOS pair found! (" << macPair.first
-                                                 << "," << macPair.second << ")" << std::endl;
+                      if (minosPairFound)
                           break;
-                      }
                   }//inner loop over febs (taggers)
 
                   //if no coincidence pairs found, reinitialize and move to next FEB
                   if(!minosPairFound) {
-                      if(fVerbose) std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
+                      if(fUltraVerbose) 
+                          std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
                       if(trg.second.data.size()==1) continue;
                       trigIndex++;
                       chanTrigData = &(trg.second.data[trigIndex].first);
-                      if(chanTrigData->TrackID().size()>1) std::cout << chanTrigData->TrackID().size()  <<" extra track ids in data primitive!" << std::endl;
                       i = trigIndex;//+1;
-                      ttrig = chanTrigData->T0();
+                      ttrig = chanTrigData->ts;
                       trackNHold.clear();
                       layerNHold.clear();
                       passingData.clear();
                       passingIDE.clear();
-                      tpair = {};
-                      trackNHold.insert(chanTrigData->Channel());
-                      layerNHold.insert(trg.second.chanlayer[chanTrigData->Channel()]);
+                      trackNHold.insert(chanTrigData->channel);
+                      layerNHold.insert(trg.second.chanlayer[chanTrigData->channel]);
                       passingData.push_back(*chanTrigData);
 	      	      passingIDE.push_back(trg.second.data[trigIndex].second);
                       nmiss_coin_m++;
@@ -252,12 +236,12 @@ namespace icarus{
                       istrig = true;
               }//if minos module and no pair yet found
 
-              if(fUltraVerbose) std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
-
-              if(!minosPairFound && trg.second.type=='m') std::cout << "WARNING: !minosPairFound...should not see this message!" << std::endl;
+              if(fUltraVerbose) 
+                  std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
+              if(!minosPairFound && trg.second.type=='m') 
+                  std::cout << "WARNING: !minosPairFound...should not see this message!" << std::endl;
 
               int adctmp = 0;
-              std::vector<int> combined_trackids;
               //currently assuming layer coincidence window is same as track and hold window (FIX ME!)
               if (i>0 && ((trg.second.type=='c' && ttmp < ttrig + fLayerCoincidenceWindowC) || 
                   (trg.second.type=='d' && ttmp < ttrig + fLayerCoincidenceWindowD) ||
@@ -265,49 +249,29 @@ namespace icarus{
               {
 
                   //if channel not locked
-                  if ((trackNHold.insert(chanTmpData->Channel())).second) {
+                  if ((trackNHold.insert(chanTmpData->channel)).second) {
 
                       //channel added to vector of ChannelData for current FEB readout
                       passingData.push_back(*chanTmpData);
 	              passingIDE.push_back(idetmp);
 
                       //if not m module, check to see if strip is first in time in adjacent layer w.r.t. trigger strip
-                      if (layerNHold.insert(trg.second.chanlayer[chanTmpData->Channel()]).second
+                      if (layerNHold.insert(trg.second.chanlayer[chanTmpData->channel]).second
                          && trg.second.type != 'm')
                       {
                           //flagging strips which produce triggering condition (layer-layer coincidence)
-                          tpair =std::make_pair(chanTrigData->Channel(),chanTmpData->Channel());
                           istrig = true;
-
-                          //make sure trigger pair strips come from adjacent layers, not same layer
-                          if (trg.second.type=='c'&&
-                            ((tpair.first<16&&tpair.second<16)||(tpair.first>15&&tpair.second>15)) )
-                              mf::LogError("CRT")<< "incorrect CERN trigger pair!!!" << '\n'
-                                                 << "  " << tpair.first << ", " << tpair.second << "\n";
-
-                          if (trg.second.type=='d'&&
-                            ((tpair.first<32&&tpair.second<32)||(tpair.first>31&&tpair.second>31)) )
-                              mf::LogError("CRT")<< "incorrect DC trigger pair!!!" << '\n'
-                                                 << "  " << tpair.first << ", " << tpair.second << "\n";
                       }
                   } //end if channel not locked
 
                   //check for signal biasing
                   else if (ttmp < ttrig + fBiasTime) {
-                      combined_trackids.clear();
                       for(size_t dat=0; dat<passingData.size(); dat++) {
-                          if(passingData[dat].Channel()!=chanTmpData->Channel())
+                          if(passingData[dat].channel!=chanTmpData->channel)
                               continue;
-                          adctmp = passingData[dat].ADC();
-                          adctmp += chanTmpData->ADC();
-                          passingData[dat].SetADC(adctmp);
-
-                          for ( auto const& ids : passingData[dat].TrackID()) {
-                              combined_trackids.push_back(ids);
-                          }
-
-                          combined_trackids.push_back(chanTmpData->TrackID()[0]);
-                          passingData[dat].SetTrackID(combined_trackids);
+                          adctmp = passingData[dat].adc;
+                          adctmp += chanTmpData->adc;
+                          passingData[dat].adc = adctmp;
                           passingIDE.push_back(idetmp);
                           break;
 
@@ -350,32 +314,22 @@ namespace icarus{
                                 << "  mac5:           " << trg.first << '\n'
                                 << "  FEB entry:      " << event << '\n'
                                 << "  trig time:      " << ttrig << '\n'
-                                << "  trig channel:   " << chanTrigData->Channel() << '\n'
-                                << "  trigger pair:    (" << tpair.first << "," << tpair.second << ")" << '\n'
-                                << "  mac pair:        (" << macPair.first << "," << macPair.second << ")" << '\n'
+                                << "  trig channel:   " << chanTrigData->channel << '\n'
                                 << "  passing data:   " << std::endl;
                       for(size_t i=0; i<passingData.size(); i++) {
                           std::cout
                                 << "     index:          " << i << '\n'
-                                << "     channel:        " << passingData[i].Channel() << '\n'
-                                << "     t0:             " << passingData[i].T0() << '\n'
-                                << "     t1:             " << passingData[i].T1() << '\n'
-                                << "     adc:            " << passingData[i].ADC() << '\n'
-                                << "     trackIDs:       " << std::endl;
-                                for(auto const& id:passingData[i].TrackID())
-                                std::cout
-                                << "         trackID:         " << id << std::endl;
+                                << "     channel:        " << passingData[i].channel << '\n'
+                                << "     t0:             " << passingData[i].ts << '\n'
+                                << "     adc:            " << passingData[i].adc << std::endl;
                       }
                   }
 
-                  if(tpair.first!=chanTrigData->Channel())
-                      std::cout << "trigChan mismatch with trigPair!" << '\n'
-                                << "  trigChan: " << chanTrigData->Channel() << ", trigPair[0]: " << tpair.first << std::endl;
-
                   if(passingData.size()>passingIDE.size()) 
                       std::cout << "data/IDE size mismatch!" <<  passingData.size()-passingIDE.size() << std::endl;
+                  FillAdcArr(passingData,adc);
                   dataCol.push_back(std::make_pair(
-                    CRTData(eve, trg.first,event,ttrig,chanTrigData->Channel(),tpair,macPair,passingData),
+                    FillCRTData(trg.first,event,ttrig,ttrig,adc),
                     passingIDE) );
 
                   if (fUltraVerbose) std::cout << " ...success!" << std::endl;
@@ -385,7 +339,6 @@ namespace icarus{
                   if (trg.second.type=='m') {neve_m++; nhit_m+=passingData.size(); } }
                   trigIndex = i;
                   ttrig = ttmp;
-                  if(chanTmpData->TrackID().size()>1) std::cout << chanTmpData->TrackID().size()  <<" extra track ids in data primitive!" << std::endl;
                   chanTrigData = chanTmpData;
                   passingData.clear();
                   passingIDE.clear();
@@ -393,9 +346,8 @@ namespace icarus{
                   layerNHold.clear();
                   passingData.push_back(*chanTrigData);
                   passingIDE.push_back(idetmp);
-                  trackNHold.insert(chanTrigData->Channel());
-                  layerNHold.insert(trg.second.chanlayer[chanTmpData->Channel()]);
-                  tpair = {};
+                  trackNHold.insert(chanTrigData->channel);
+                  layerNHold.insert(trg.second.chanlayer[chanTmpData->channel]);
                   minosPairFound = false;
                   istrig = false;
               }
@@ -408,27 +360,16 @@ namespace icarus{
                                 << "  mac5:           " << trg.first << '\n'
                                 << "  FEB entry:      " << event << '\n'
                                 << "  trig time:      " << ttrig << '\n'
-                                << "  trig channel:   " << chanTrigData->Channel() << '\n'
-                                << "  trigger pair:    (" << tpair.first << "," << tpair.second << ")" << '\n'
-                                << "  mac pair:        (" << macPair.first << "," << macPair.second << ")" << '\n'
+                                << "  trig channel:   " << chanTrigData->channel << '\n'
                                 << "  passing data:   " << std::endl;
                       for(size_t i=0; i<passingData.size(); i++) {
                           std::cout
                                 << "     index:          " << i << '\n'
-                                << "     channel:        " << passingData[i].Channel() << '\n'
-                                << "     t0:             " << passingData[i].T0() << '\n'
-                                << "     t1:             " << passingData[i].T1() << '\n'
-                                << "     adc:            " << passingData[i].ADC() << '\n'
-                                << "     trackIDs:       " << std::endl;
-                                for(auto const& id:passingData[i].TrackID())
-                                std::cout
-                                << "         trackID:         " << id << std::endl;
+                                << "     channel:        " << passingData[i].channel << '\n'
+                                << "     t0:             " << passingData[i].ts << '\n'
+                                << "     adc:            " << passingData[i].adc << std::endl;
                       }
                   }
-
-                  if(tpair.first!=chanTrigData->Channel())
-                      std::cout << "trigChan mismatch with trigPair!" << '\n'
-                                << "  trigChan: " << chanTrigData->Channel() << ", trigPair[0]: " << tpair.first << std::endl;
 
                   int regnum = CRTCommonUtils::GetAuxDetRegionNum(trg.second.reg);
                   if( (fRegions.insert(regnum)).second) fRegCounts[regnum] = 1;
@@ -436,10 +377,12 @@ namespace icarus{
 
                   if(passingData.size()>passingIDE.size()) 
                       std::cout << "data/IDE size mismatch! " << passingData.size()-passingIDE.size() << std::endl;
+                  FillAdcArr(passingData,adc);
                   dataCol.push_back( std::make_pair(
-                    CRTData(eve,trg.first,event,ttrig,chanTrigData->Channel(),tpair,macPair,passingData),
+                    FillCRTData(trg.first,event,ttrig,ttrig,adc),
                     passingIDE) );
-                  if (fUltraVerbose) std::cout << " ...success!" << std::endl;
+                  if (fUltraVerbose) 
+                      std::cout << " ...success!" << std::endl;
                   event++;
                   if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
                   if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
@@ -497,15 +440,16 @@ namespace icarus{
            << "  DC    events: " << neve_d << '\n'
            << "  Total pushes to event: " << dataCol.size() << std::endl;
 
-          std::map<int,int>::iterator it = fRegCounts.begin();
-          std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
+          if(dataCol.size()>0) {
+              std::map<int,int>::iterator it = fRegCounts.begin();
+              std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
 
-          do {
-              std::cout << CRTCommonUtils::GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
-              it++;
-          }
-          while ( it != fRegCounts.end() );
-
+              do {
+                  std::cout << CRTCommonUtils::GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
+                  it++;
+              }
+              while ( it != fRegCounts.end() );
+          }//if any CRTData
         } //if verbose
 
 	return dataCol;
@@ -523,29 +467,21 @@ namespace icarus{
         art::ServiceHandle<geo::Geometry> geoService;
         art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
         detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
+        fHasFilledTaggers = true;
 
         const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
-
-        //check stripID is consistent with number of sensitive volumes
-        if( adGeo.NSensitiveVolume() < adsid){
-            mf::LogError("CRT") << "adsID out of bounds! Skipping..." << "\n"
-                      << "   " << adGeo.Name()  << " / modID "   << adid
-                      << " / stripID " << adsid << '\n';
-        }
-
         const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
         const char auxDetType = CRTCommonUtils::GetAuxDetType(adGeo); //CRT module type (c, d, or m)
-        if (auxDetType=='e') mf::LogError("CRT") << "COULD NOT GET AD TYPE!" << '\n';
-        const std::string region = CRTCommonUtils::GetAuxDetRegion(adGeo); //CRT region
+        const string region = CRTCommonUtils::GetAuxDetRegion(adGeo); //CRT region
 
         int layid = INT_MAX; //set to 0 or 1 if layerid determined
-        int mac5=INT_MAX, mac5dual=INT_MAX; //front-end board ID, dual for MINOS modules (not cut)
+        uint8_t mac5=UINT8_MAX, mac5dual=UINT8_MAX; //front-end board ID, dual for MINOS modules (not cut)
 
         // Find the path to the strip geo node, to locate it in the hierarchy
-        std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
-        std::vector<std::vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+        set<string> volNames = { adsGeo.TotalVolume()->GetName() };
+        vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
 
-        std::string path = "";
+        string path = "";
         for (size_t inode=0; inode<paths.at(0).size(); inode++) {
           path += paths.at(0).at(inode)->GetName();
           if (inode < paths.at(0).size() - 1) {
@@ -586,9 +522,11 @@ namespace icarus{
           }
         }
 
-        if(layid==INT_MAX) mf::LogError("CRT") << "layid NOT SET!!!" << '\n'
-                                   << "   ADType: " << auxDetType << '\n'
-                                   << "   ADRegion: " << region << '\n';
+        if(layid==INT_MAX) 
+            mf::LogError("CRT") 
+                << "layid NOT SET!!!" << '\n'
+                << "   ADType: " << auxDetType << '\n'
+                << "   ADRegion: " << region;
 
         // ------------- loop over AuxDetIDEs ---------
         // Simulate the CRT response for each hit in this strip
@@ -597,10 +535,6 @@ namespace icarus{
             if (auxDetType=='c') fNsim_c++;
             if (auxDetType=='d') fNsim_d++;
             if (auxDetType=='m') fNsim_m++;
-
-            //track ID of MC paritcle depositing energy for truth matching
-            std::vector<int> trkid;
-            trkid.push_back(ide.trackID);
 
             // What is the distance from the hit (centroid of the entry
             // and exit points) to the readout end?
@@ -617,10 +551,10 @@ namespace icarus{
             if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 ||
                  abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
                  abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001)
-               mf::LogWarning("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
+               mf::LogError("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
                                   << "  AD: " << adid << " , ADS: " << adsid << '\n'
                                   << "  Local position (x,y,z): ( " << svHitPosLocal[0]
-                                  << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )" << '\n';
+                                  << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )";
 
             // The expected number of PE, using a quadratic model for the distance
             // dependence, and scaling linearly with deposited energy.
@@ -638,7 +572,7 @@ namespace icarus{
             //Attenuation factor for transverse propegation in the bulk (c modules only)
             double abs0=1.0, abs1=1.0;
             if(auxDetType=='c'){
-                std::pair<double,double> tmp = GetTransAtten(svHitPosLocal[0]);
+                pair<double,double> tmp = GetTransAtten(svHitPosLocal[0]);
                 abs0 = tmp.first;
                 abs1 = tmp.second;
             }
@@ -649,7 +583,8 @@ namespace icarus{
             double npeExp0Dual = npeExpected2 * abs0;
 
             //sanity check on simulated light output
-            if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogError("CRT") << "NEGATIVE PE!!!!!" << '\n';
+            if(npeExp0<0||npeExp1<0||npeExp0Dual<0) 
+                mf::LogError("CRT") << "NEGATIVE PE!!!!!";
 
             // Observed PE (Poisson-fluctuated)
             int npe0 = CLHEP::RandPoisson::shoot(&fRandEngine, npeExp0);
@@ -659,26 +594,30 @@ namespace icarus{
             // Time relative to trigger [ns], accounting for propagation delay and 'walk'
             // for the fixed-threshold discriminator
             double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-            double t0 = \
+            if(tTrue<0) 
+                mf::LogError("CRTDetSim")
+                  << "negative true time passed to time stamp generator!";
+            uint64_t t0 = 
               GetChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout*100);
-            double t1 = \
+            uint64_t t1 = 
               GetChannelTriggerTicks(trigClock, tTrue, npe1, distToReadout*100);
-            double t0Dual = \
+            uint64_t t0Dual = 
               GetChannelTriggerTicks(trigClock, tTrue, npe0Dual, distToReadout2*100);
 
             // Time relative to PPS: Random for now! (FIXME)
-            int ppsTicks = \
-              CLHEP::RandFlat::shootInt(&fRandEngine, trigClock.Frequency() * 1e6);
+            //int ppsTicks = 
+            //  CLHEP::RandFlat::shootInt(&fRandEngine, trigClock.Frequency() * 1e6);
 
             // SiPM and ADC response: Npe to ADC counts
-            int q0 = \
+            uint16_t q0 = 
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0, fQRMS * sqrt(npe0));
-            int q1 = \
+            uint16_t q1 = 
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe1, fQRMS * sqrt(npe1));
-            int q0Dual = \
+            uint16_t q0Dual = 
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
-            if (q0<0||q1<0||q0Dual<0) mf::LogError("CRT") << "NEGATIVE ADC!!!!!" << '\n';
+            if(q0<0||q1<0||q0Dual<0)
+                mf::LogError("CRT") << "NEGATIVE ADC!!!!!";
 
            // Adjacent channels on a strip are numbered sequentially.
             //
@@ -693,39 +632,23 @@ namespace icarus{
                     mac5 =fFebMap[adid][0].first;
                     channel0ID = 2 * adsid + 0;
                     channel1ID = 2 * adsid + 1;
-                    if(mac5<107||mac5>230)
-                        std::cout << "WARNING: mac5 out of bounds for c-type!" << std::endl;
-                    if(channel0ID<0 || channel0ID > 31 || channel1ID<0 || channel1ID>31)
-                        std::cout << "WARNING: channel out of bounds for c-type!" << std::endl;
                     break;
                 case 'd' :
                     mac5 = fFebMap[adid][0].first;
                     channel0ID = adsid;
-                    if(mac5<93||mac5>106)
-                        std::cout << "WARNING: mac5 out of bounds for d-type!" << std::endl;
-                    if(channel0ID<0 || channel0ID > 63)
-                        std::cout << "WARNING: channel out of bounds for d-type!" << std::endl;
                     break;
                 case 'm' :
                     mac5 = fFebMap[adid][0].first;
                     channel0ID = adsid/2 + 10*(fFebMap[adid][0].second-1);
-                    if(mac5<1||mac5>92)
-                        std::cout << "WARNING: mac5 out of bounds for m-type!" << std::endl;
-                    if(channel0ID<0 || channel0ID > 31)
-                        std::cout << "WARNING: channel out of bounds for m-type!" << std::endl;
                     if (fFebMap[adid].size()==2)  {
                         mac5dual = fFebMap[adid][1].first;
-                        if(mac5dual<1||mac5dual>92)
-                            std::cout << "WARNING: mac5dual out of bounds for m-type!" << std::endl;
                     }
                     break;
-
             }
 
-           if (mac5==INT_MAX) /*mf::LogError("CRT")*/ std::cout << "mac addrs not set!" << std::endl; //'\n';
+           if (mac5==UINT8_MAX) mf::LogError("CRT") << "mac addrs not set!";
 
             // Apply ADC threshold and strip-level coincidence (both fibers fire)
-            //if (auxDetType=='c' && q0 > fQThresholdC && q1 > fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) {
             if (auxDetType=='c') {
                 if ((fApplyStripCoinC && q0>fQThresholdC && q1>fQThresholdC
                     && util::absDiff(t0,t1)<fStripCoincidenceWindow)||
@@ -740,15 +663,13 @@ namespace icarus{
                     tagger.modid = adid;
                     if (q0>fQThresholdC) {
                         tagger.data.push_back(
-                          std::make_pair(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid),ide));
-                        //tagger.ide.push_back(ide);
+                          std::make_pair(FillChanData(channel0ID,q0,t0),ide));
                         fNchandat_c++;
                     }
                     else fNmissthr_c++;
                     if (q1>fQThresholdC) {
                         tagger.data.push_back(
-                          std::make_pair(icarus::crt::CRTChannelData(channel1ID,t1,ppsTicks,q1,trkid),ide));
-                        //tagger.ide.push_back(ide);
+                          std::make_pair(FillChanData(channel1ID,q1,t1),ide));
                         fNchandat_c++;
                     }
                     else fNmissthr_c++;
@@ -764,14 +685,12 @@ namespace icarus{
                     tagger.type = 'd';
                     tagger.modid = adid;
                     tagger.data.push_back(
-                      std::make_pair(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid),ide));
-                    //tagger.ide.push_back(ide);
+                      std::make_pair(FillChanData(channel0ID,q0,t0),ide));
                     fNchandat_d++;
             }//if one strip above threshold
 
             if (auxDetType=='m') {
                     if(q0 > fQThresholdM) {
-                      if(mac5>300) std::cout << "WARNING: filling tagger with bad mac5!" << std::endl;
                       Tagger& tagger = fTaggers[mac5];
                       tagger.layerid.insert(layid);
                       tagger.chanlayer[channel0ID] = layid;
@@ -779,12 +698,10 @@ namespace icarus{
                       tagger.type = 'm';
                       tagger.modid = adid;
                       tagger.data.push_back(
-                        std::make_pair(icarus::crt::CRTChannelData(channel0ID,t0,ppsTicks,q0,trkid),ide));
-                      //tagger.ide.push_back(ide);
+                        std::make_pair(FillChanData(channel0ID,q0,t0),ide));
                       fNchandat_m++;
                     }
                     if(q0Dual > fQThresholdM && fFebMap[adid].size()==2) {
-                      if(mac5dual>300) std::cout << "WARNING: filling tagger with bad mac5dual!" << std::endl;
                       Tagger& tagger = fTaggers[mac5dual];
                       tagger.layerid.insert(layid);
                       tagger.chanlayer[channel0ID] = layid;
@@ -792,8 +709,7 @@ namespace icarus{
                       tagger.type = 'm';
                       tagger.modid = adid;
                       tagger.data.push_back(
-                        std::make_pair(icarus::crt::CRTChannelData(channel0ID,t0Dual,ppsTicks,q0Dual,trkid),ide));
-                      //tagger.ide.push_back(ide);
+                        std::make_pair(FillChanData(channel0ID,q0Dual,t0Dual),ide));
                       fNchandat_m++;
                     }
                     if(q0 > fQThresholdM && q0Dual > fQThresholdM) fNdual_m++;
@@ -801,8 +717,6 @@ namespace icarus{
 
             //counting losses
             if (auxDetType == 'c') {
-                //if (q0 < fQThresholdC || q1 < fQThresholdC) nmissthr_c++;
-                //if ( util::absDiff(t0,t1) >= fStripCoincidenceWindow ) nmiss_strcoin_c++;
                 if ( fApplyStripCoinC && util::absDiff(t0,t1) >= fStripCoincidenceWindow ) fNmiss_strcoin_c++;
             }
             if (auxDetType == 'd' && q0 < fQThresholdD) fNmissthr_d++;
@@ -813,7 +727,7 @@ namespace icarus{
 
             //print detsim info (if enabled)
             if (fUltraVerbose&&
-               ( //(auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC) ||
+               (
                  (auxDetType=='c' && q0>fQThresholdC && q1>fQThresholdC && util::absDiff(t0, t1) < fStripCoincidenceWindow) ||
                  (auxDetType=='d' && q0>fQThresholdD ) ||
                  (auxDetType=='m' && (q0>fQThresholdM || q0Dual>fQThresholdM)) ))
@@ -822,7 +736,7 @@ namespace icarus{
               << "CRT HIT SENSITIVE VOL " << (adsGeo.TotalVolume())->GetName() << "\n"
               << "CRT HIT AuxDetID " <<  adid << " / AuxDetSensitiveID " << adsid << "\n"
               << "CRT module type: " << auxDetType << " , CRT region: " << region << '\n'
-              << "CRT channel: " << channel0ID << " , mac5: " << mac5 << '\n'
+              << "CRT channel: " << channel0ID << " , mac5: " << (int)mac5 << '\n'
               << "CRT HIT POS (world coords) " << x << " " << y << " " << z << "\n"
               << "CRT STRIP POS (module coords) " << svHitPosLocal[0] << " " << svHitPosLocal[1] << " " << svHitPosLocal[2] << "\n"
               << "CRT MODULE POS (region coords) " << modHitPosLocal[0] << " " << modHitPosLocal[1] << " "<< modHitPosLocal[2] << " " << "\n"
@@ -917,8 +831,8 @@ namespace icarus{
     //  takes true hit time, LY(PE) observed, and intitudinal distance from readout
     //  uses 12 FHiCL configurable parameters
     //  returns simulated time in units of clock ticks
-    uint32_t CRTDetSimAlg::GetChannelTriggerTicks(detinfo::ElecClock& clock,
-                                             float t0, float npeMean, float r)
+    uint64_t CRTDetSimAlg::GetChannelTriggerTicks(detinfo::ElecClock& clock,
+                                             double t0, float npeMean, float r)
     {
         // Hit timing, with smearing and NPE dependence
         double tDelayMean =
@@ -945,13 +859,14 @@ namespace icarus{
         // Get clock ticks
         clock.SetTime(t / 1e3);  // SetTime takes microseconds
     
-        /*if (fUltraVerbose) mf::LogInfo("CRT")
+        if (fUltraVerbose) mf::LogInfo("CRT")
           << "CRT TIMING: t0=" << t0
           << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS
           << ", tDelay=" << tDelay << ", tDelay(interp)="
-          << tDelay << ", tProp=" << tProp << ", t=" << t << "\n";//, ticks=" << clock.Ticks() << "\n"; 
-        */
-        return t;//clock.Ticks();
+          << tDelay << ", tProp=" << tProp << ", t=" << t 
+          << ", ticks=" << clock.Ticks() << "\n"; 
+        
+        return (uint64_t)t;//clock.Ticks();
     }//CRTDetSim::GetChannelTriggerTicks()
 
     //---------------------------------------------------------------
@@ -959,6 +874,7 @@ namespace icarus{
     void CRTDetSimAlg::ClearTaggers() {
 
         fTaggers.clear();
+        fHasFilledTaggers = false;
 
         fNsim_m = 0;
         fNsim_d = 0; 
@@ -974,6 +890,45 @@ namespace icarus{
 
         fRegions.clear();
         fRegCounts.clear();
+    }
+
+    //----------------------------------------------------------------
+    // function to make fill CRTData products a bit easer
+    CRTData CRTDetSimAlg::FillCRTData(uint8_t mac, uint32_t entry, uint64_t t0, uint64_t t1, uint16_t adc[64]){
+        CRTData dat;
+        dat.fMac5 = mac;
+        dat.fEntry = entry;
+        dat.fTs0 = t0;
+        dat.fTs1 = t1;
+        for(size_t chan=0; chan<64; chan++) {
+            dat.fAdc[chan] = adc[chan];
+        }
+
+        return dat;
+    }
+ 
+    //------------------------------------------------------------------
+    ChanData CRTDetSimAlg::FillChanData(int channel, uint16_t adc, uint64_t ts) {
+        ChanData dat;
+        dat.channel = channel;
+        dat.adc = adc;
+        dat.ts = ts;
+
+        return dat;
+    }
+
+    //---------------------------------------------------------------------------
+    void CRTDetSimAlg::FillAdcArr(const vector<ChanData>& data, uint16_t arr[64]) {
+       for(int chan=0; chan<64; chan++)
+           arr[chan] = 0;
+       for(auto const& dat : data) {
+           if(dat.channel<0 || dat.channel>63){
+               std::cout << "ChanData channel out of bounds!" << std::endl;
+               return;
+           }
+           arr[dat.channel] = dat.adc;
+       }
+       return;
     }
     
  }//namespace crt

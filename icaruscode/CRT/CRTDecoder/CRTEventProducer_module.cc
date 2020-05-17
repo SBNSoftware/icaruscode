@@ -37,7 +37,6 @@
 #include "TVector3.h"
 
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTDecoder/CRTPreProcessTree.h"
 
 using std::string;
@@ -156,30 +155,26 @@ namespace crt {
     fAnaTree = new icarus::crt::CRTPreProcessTree(tree);
 
     std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
-    std::vector<icarus::crt::CRTChannelData>  crtchandata;
 
     size_t eveId = (size_t) event.event();
     std::cout << "processing event " << eveId << " with " << fEventEntryEnd[eveId]+1-fEventEntryStart[eveId] << " triggers" << std::endl;
 
     int entry=0;
     for(size_t ientry=fEventEntryStart[eveId]; ientry<=fEventEntryEnd[eveId]; ientry++){
-	crtchandata.clear();
 	fAnaTree->Load(ientry);
-	double t0 = (double)fAnaTree->GetAbsTime();
+        CRTData data;
+        data.fMac5 = fAnaTree->Mac5();
+	data.fTs0 = fAnaTree->GetAbsTime();
+        data.fTs1 = data.fTs0;
 	for(size_t ichan=0; ichan<32; ichan++){
 		if(fAnaTree->Above(ichan)&&fAnaTree->Active(ichan)) {
-			std::vector<int> trkid={};
-			int q0 = (int)fAnaTree->PE(ichan);
-			crtchandata.push_back(icarus::crt::CRTChannelData(ichan,t0,t0,q0,trkid));
+	        	data.fAdc[ichan]  = fAnaTree->PE(ichan);
 		}//if channel active and above threshold
+                else
+                	data.fAdc[ichan] = 0;
 	}//for channels
 
-	if(crtchandata.empty()) continue;
-
-	std::pair<int,int> tpair,macPair;
-	tpair=std::make_pair(0,0);
-	macPair=std::make_pair(0,0);
-	crtdata->push_back(icarus::crt::CRTData(eveId,fAnaTree->Mac5(),entry,t0,fAnaTree->MaxChan(),tpair,macPair,crtchandata));
+	crtdata->push_back(data);
 	entry++;
 
     }//for entries in time slice
