@@ -56,8 +56,9 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
         char type = CRTCommonUtils::MacToType(mac);
         int region = CRTCommonUtils::MacToRegion(mac);
         CRTHit hit;
- 
-        std::cout << "found data with mac5 = " << (int)mac << ", " << string(1,type) 
+
+        if(fVerbose) 
+            std::cout << "found data with mac5 = " << (int)mac << ", " << string(1,type) 
                   << " type, region " << region << std::endl;
  
         dataIds.clear();
@@ -71,7 +72,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             if(IsEmptyHit(hit))
                 nMissC++;
             else {
-                std::cout << "CERN hit produced" << std::endl;
+                if(fVerbose)
+                    std::cout << "CERN hit produced" << std::endl;
                 dataIds.push_back(febdat_i);
                 returnHits.push_back(std::make_pair(hit,dataIds));
                 nHitC++;
@@ -84,7 +86,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             if(IsEmptyHit(hit))
                 nMissD++;
             else {
-                std::cout << "DC hit produced" << std::endl;
+                if(fVerbose)
+                    std::cout << "DC hit produced" << std::endl;
                 dataIds.push_back(febdat_i);
                 returnHits.push_back(std::make_pair(hit,dataIds));
                 nHitD++;
@@ -104,13 +107,15 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                     continue;
                 if(crtList[febdat_j]->fTs0 > crtList[febdat_i]->fTs0 + fCoinWindow) { //out of coinWindow
 
-                    std::cout << "attempting to produce MINOS hit from " << coinData.size() 
+                    if(fVerbose)
+                        std::cout << "attempting to produce MINOS hit from " << coinData.size() 
                               << " data products..." << std::endl;
                     hit = MakeSideHit(coinData);
                     if(IsEmptyHit(hit))
                         nMissM++;
                     else {
-                        std::cout << "MINOS hit produced" << std::endl;
+                        if(fVerbose)
+                            std::cout << "MINOS hit produced" << std::endl;
                         returnHits.push_back(std::make_pair(hit,dataIds));
                         nHitM++;
                     }
@@ -326,7 +331,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     double xmin=DBL_MAX, xmax = -DBL_MAX;
     std::set<int> layID;
 
-    std::cout << "makeing MINOS hit...looping over coinData..." << std::endl;
+    if(fVerbose)
+        std::cout << "makeing MINOS hit...looping over coinData..." << std::endl;
     //loop over FEBs
     for(auto const& data : coinData) {
 
@@ -392,7 +398,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     }//loop over FEBs
 
-    std::cout << "done...used " << nabove << " charge amplitudes" << std::endl;
+    if(fVerbose)
+        std::cout << "done...used " << nabove << " charge amplitudes" << std::endl;
 
     //no channels above threshold or no intermodule coincidences? return empty hit
     if(nabove==0 || layID.size()!=2)
@@ -429,7 +436,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         thit += t;
     thit*=1.0/coinData.size();
 
-    std::cout << "generating CRTHit..." << std::endl;
+    if(fVerbose)
+        std::cout << "generating CRTHit..." << std::endl;
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
