@@ -8,7 +8,9 @@ art_make(
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
+    "MakeTriggerSimulationTree_module.cc"
   LIB_LIBRARIES
+    icaruscode_PMT_Trigger_Algorithms
     icaruscode_PMT_Trigger_Utilities
     icaruscode_PMT_Trigger_Data
     larcore_Geometry_Geometry_service
@@ -88,6 +90,28 @@ simple_plugin(TriggerEfficiencyPlots module
   ${CETLIB_EXCEPT}
   ${ROOT_GENVECTOR}
   ${ROOT_HIST}
+  ${ROOT_TREE}
+  ${ROOT_CORE}
+  )
+
+simple_plugin(MakeTriggerSimulationTree module
+  icaruscode_PMT_Trigger_Algorithms
+  icaruscode_PMT_Trigger_Utilities
+  icaruscode_PMT_Trigger_Data
+  larcore_Geometry_Geometry_service
+  lardataalg_MCDumpers
+  larcorealg_Geometry
+  nusimdata_SimulationBase
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ${ROOT_GENVECTOR}
   ${ROOT_TREE}
   ${ROOT_CORE}
   )
