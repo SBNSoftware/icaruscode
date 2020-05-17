@@ -321,11 +321,11 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     double                     maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
     double                     minFreq      = maxFreq / numBins;
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
-    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * samplingRate * 1.e-3);
+    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * samplingRate);
     
     for(int bin = 0; bin < numBins; bin++)
     {
-        hist->Fill((double(bin) + 0.5) * samplingRate * 1.e-3, responseVec.at(bin), 1.);
+        hist->Fill((double(bin) + 0.5) * samplingRate, responseVec.at(bin), 1.);
     }
     
     icarusutil::TimeVec powerVec;
