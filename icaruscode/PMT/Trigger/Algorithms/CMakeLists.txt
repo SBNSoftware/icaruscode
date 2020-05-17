@@ -5,6 +5,7 @@ cet_make(
     icaruscode_PMT_Trigger_Data
     icaruscode_PMT_Algorithms
     lardataalg_DetectorInfo
+    lardataalg_MCDumpers
     lardataobj_RawData
     MF_MessageLogger
     fhiclcpp
