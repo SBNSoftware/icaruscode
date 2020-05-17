@@ -184,7 +184,8 @@ namespace icarus{
                    continue;
               }
 
-              if(fUltraVerbose) std::cout << "checking for coincidence..." << std::endl;
+              if(fUltraVerbose)
+                  std::cout << "checking for coincidence..." << std::endl;
               //check if coincidence condtion met
               //for c and d modules, just need time stamps within tagger obj
               //for m modules, need to check coincidence with other tagger objs
@@ -213,7 +214,8 @@ namespace icarus{
 
                   //if no coincidence pairs found, reinitialize and move to next FEB
                   if(!minosPairFound) {
-                      if(fVerbose) std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
+                      if(fUltraVerbose) 
+                          std::cout << "MINOS pair NOT found! Skipping to next FEB..." << std::endl;
                       if(trg.second.data.size()==1) continue;
                       trigIndex++;
                       chanTrigData = &(trg.second.data[trigIndex].first);
@@ -234,9 +236,10 @@ namespace icarus{
                       istrig = true;
               }//if minos module and no pair yet found
 
-              if(fUltraVerbose) std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
-
-              if(!minosPairFound && trg.second.type=='m') std::cout << "WARNING: !minosPairFound...should not see this message!" << std::endl;
+              if(fUltraVerbose) 
+                  std::cout << "done checking coinceidence...moving on to latency effects..." << std::endl;
+              if(!minosPairFound && trg.second.type=='m') 
+                  std::cout << "WARNING: !minosPairFound...should not see this message!" << std::endl;
 
               int adctmp = 0;
               //currently assuming layer coincidence window is same as track and hold window (FIX ME!)
@@ -378,7 +381,8 @@ namespace icarus{
                   dataCol.push_back( std::make_pair(
                     FillCRTData(trg.first,event,ttrig,ttrig,adc),
                     passingIDE) );
-                  if (fUltraVerbose) std::cout << " ...success!" << std::endl;
+                  if (fUltraVerbose) 
+                      std::cout << " ...success!" << std::endl;
                   event++;
                   if (trg.second.type=='c') {neve_c++; nhit_c+=passingData.size(); }
                   if (trg.second.type=='d') {neve_d++; nhit_d+=passingData.size(); }
@@ -436,15 +440,16 @@ namespace icarus{
            << "  DC    events: " << neve_d << '\n'
            << "  Total pushes to event: " << dataCol.size() << std::endl;
 
-          std::map<int,int>::iterator it = fRegCounts.begin();
-          std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
+          if(dataCol.size()>0) {
+              std::map<int,int>::iterator it = fRegCounts.begin();
+              std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
 
-          do {
-              std::cout << CRTCommonUtils::GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
-              it++;
-          }
-          while ( it != fRegCounts.end() );
-
+              do {
+                  std::cout << CRTCommonUtils::GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
+                  it++;
+              }
+              while ( it != fRegCounts.end() );
+          }//if any CRTData
         } //if verbose
 
 	return dataCol;
@@ -517,9 +522,11 @@ namespace icarus{
           }
         }
 
-        if(layid==INT_MAX) mf::LogError("CRT") << "layid NOT SET!!!" << '\n'
-                                   << "   ADType: " << auxDetType << '\n'
-                                   << "   ADRegion: " << region << '\n';
+        if(layid==INT_MAX) 
+            mf::LogError("CRT") 
+                << "layid NOT SET!!!" << '\n'
+                << "   ADType: " << auxDetType << '\n'
+                << "   ADRegion: " << region;
 
         // ------------- loop over AuxDetIDEs ---------
         // Simulate the CRT response for each hit in this strip
@@ -544,10 +551,10 @@ namespace icarus{
             if ( abs(svHitPosLocal[0])>adsGeo.HalfWidth1()+0.001 ||
                  abs(svHitPosLocal[1])>adsGeo.HalfHeight()+0.001 ||
                  abs(svHitPosLocal[2])>adsGeo.HalfLength()+0.001)
-               mf::LogWarning("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
+               mf::LogError("CRT") << "HIT POINT OUTSIDE OF SENSITIVE VOLUME!" << '\n'
                                   << "  AD: " << adid << " , ADS: " << adsid << '\n'
                                   << "  Local position (x,y,z): ( " << svHitPosLocal[0]
-                                  << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )" << '\n';
+                                  << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )";
 
             // The expected number of PE, using a quadratic model for the distance
             // dependence, and scaling linearly with deposited energy.
@@ -576,7 +583,8 @@ namespace icarus{
             double npeExp0Dual = npeExpected2 * abs0;
 
             //sanity check on simulated light output
-            if (npeExp0<0||npeExp1<0||npeExp0Dual<0) mf::LogError("CRT") << "NEGATIVE PE!!!!!" << '\n';
+            if(npeExp0<0||npeExp1<0||npeExp0Dual<0) 
+                mf::LogError("CRT") << "NEGATIVE PE!!!!!";
 
             // Observed PE (Poisson-fluctuated)
             int npe0 = CLHEP::RandPoisson::shoot(&fRandEngine, npeExp0);
@@ -586,8 +594,9 @@ namespace icarus{
             // Time relative to trigger [ns], accounting for propagation delay and 'walk'
             // for the fixed-threshold discriminator
             double tTrue = (ide.entryT + ide.exitT) / 2 + fGlobalT0Offset;
-            if(tTrue<0) mf::LogError("CRTDetSim") <<
-                "negative true time being passed to time stamp generator!";
+            if(tTrue<0) 
+                mf::LogError("CRTDetSim")
+                  << "negative true time passed to time stamp generator!";
             uint64_t t0 = 
               GetChannelTriggerTicks(trigClock, tTrue, npe0, distToReadout*100);
             uint64_t t1 = 
@@ -607,7 +616,8 @@ namespace icarus{
             uint16_t q0Dual = 
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
-            if (q0<0||q1<0||q0Dual<0) mf::LogError("CRT") << "NEGATIVE ADC!!!!!" << '\n';
+            if(q0<0||q1<0||q0Dual<0)
+                mf::LogError("CRT") << "NEGATIVE ADC!!!!!";
 
            // Adjacent channels on a strip are numbered sequentially.
             //

@@ -3,7 +3,7 @@ BEGIN_PROLOG
 standard_icarus_crtsimalg:
 {
 
-  Verbose:      true
+  Verbose:      false
   UltraVerbose: false
 
   # Global timing offset [ns]
