@@ -25,6 +25,8 @@ CRTTrueHitRecoAlg::~CRTTrueHitRecoAlg(){}
 //---------------------------------------------------------------------
 void CRTTrueHitRecoAlg::reconfigure(const Config& config){
   fUseReadoutWindow = config.UseReadoutWindow();
+  fEDepMin = config.EDepMin();
+  fRollupUnusedIds = config.RollupUnusedIds();
   return;
 }
 
@@ -47,6 +49,11 @@ vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
 
         for(auto const& ide : adsc->AuxDetIDEs()) {
 
+            //FIX ME: for now, ignoring negative IDs, impliment fRollupUnusedIds
+            if(/*ide.trackID>-1 &&*/ ide.energyDeposited*1000 < fEDepMin)
+                continue;
+            if(!fRollupUnusedIds && ide.energyDeposited*1000 < fEDepMin)
+                continue;
             tagger& tag = (trackTaggers[ide.trackID])[adID];
             tag.type = type;
             tag.region = region;

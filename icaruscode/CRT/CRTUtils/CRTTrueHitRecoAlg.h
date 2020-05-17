@@ -57,7 +57,14 @@ class icarus::crt::CRTTrueHitRecoAlg {
           Name("UseReadoutWindow"),
           Comment("Only reconstruct hits within readout window")
         };
-
+        fhicl::Atom<double> EDepMin {
+          Name("EDepMin"),
+          Comment("Lowest consierd deposited energy in a scintillator strip used in hit [MeV]")
+        };
+        fhicl::Atom<bool> RollupUnusedIds {
+          Name("RollupUnusedIds"),
+          Comment("merge G4-untracked trackIDs into partent track")
+        };
     };
 
     CRTTrueHitRecoAlg(const Config& config);
@@ -83,7 +90,9 @@ class icarus::crt::CRTTrueHitRecoAlg {
     map<int,vector<pair<uint8_t,int>>> fFebMap;
 
     //config params
-    bool fUseReadoutWindow;
+    bool   fUseReadoutWindow;
+    double fEDepMin;
+    bool   fRollupUnusedIds;
 
 };
 
