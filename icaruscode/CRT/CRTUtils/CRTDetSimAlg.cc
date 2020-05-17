@@ -16,7 +16,7 @@ namespace icarus{
     CRTDetSimAlg::CRTDetSimAlg(fhicl::ParameterSet const & p, CLHEP::HepRandomEngine& engine) :
         fNsim_m(0), fNsim_d(0), fNsim_c(0), fNchandat_m(0), fNchandat_d(0), fNchandat_c(0),
         fNmissthr_c(0), fNmissthr_d(0), fNmissthr_m(0), fNmiss_strcoin_c(0), fNdual_m(0),
-        fRandEngine(engine), fFebMap(CRTCommonUtils::GetFebMap())
+        fHasFilledTaggers(false), fRandEngine(engine), fFebMap(CRTCommonUtils::GetFebMap())
     {
 
         this->reconfigure(p);
@@ -71,11 +71,14 @@ namespace icarus{
     // this function applies trigger logic, deadtime, and close-in-time signal biasing effects. it produces the
     // "triggered data" products which make it into the event
     vector<pair<CRTData,vector<sim::AuxDetIDE>>> CRTDetSimAlg::CreateData()
-    {
-        if(fTaggers.size()==0)
-            throw cet::exception("CRTDetSimAlg") << "CreateData() called with empty taggers map!";
-
+    {        
         vector<pair<CRTData, vector<AuxDetIDE>>> dataCol;
+
+        if(!fHasFilledTaggers)
+            throw cet::exception("CRTDetSimAlg") << "CreateData() called with empty taggers map!";
+        if(fTaggers.size()==0)
+            return dataCol;
+
 	int eve=1;
 
         int ncombined_c=0, ncombined_m=0, ncombined_d=0; //channel signals close in time, biasing first signal entering into track and hold circuit
@@ -459,6 +462,7 @@ namespace icarus{
         art::ServiceHandle<geo::Geometry> geoService;
         art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
         detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
+        fHasFilledTaggers = true;
 
         const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
         const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
@@ -860,6 +864,7 @@ namespace icarus{
     void CRTDetSimAlg::ClearTaggers() {
 
         fTaggers.clear();
+        fHasFilledTaggers = false;
 
         fNsim_m = 0;
         fNsim_d = 0; 

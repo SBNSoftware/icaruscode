@@ -123,6 +123,7 @@ class icarus::crt::CRTDetSimAlg {
     int fNmissthr_c, fNmissthr_d, fNmissthr_m; //number of channel signals below threshold
     int fNmiss_strcoin_c; //number of channel signals missed due to no fiber-fiber coincidence in a cern strip
     int fNdual_m; //number of energy deposits producing signals above threshold at both ends of a minos strip
+    bool fHasFilledTaggers;
 
     map<int,int> fRegCounts;
     set<int> fRegions;
