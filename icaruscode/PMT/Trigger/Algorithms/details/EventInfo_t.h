@@ -95,13 +95,13 @@ struct icarus::trigger::details::EventInfo_t {
   GeV DepositedEnergyInSpillInActiveVolume() const
     { return fEnergyDepSpillActive; }
 
-  // Returns the neutrino energy [GeV]
+  /// Returns the neutrino energy [GeV]
   GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
 
-  // Returns the lepton energy [GeV]
+  /// Returns the lepton energy [GeV]
   GeV LeptonEnergy() const { return fLeptonEnergy; }
 
-  // Returns the interaction type
+  /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
   /// Returns whether this type of event has a known vertex.
@@ -132,11 +132,11 @@ struct icarus::trigger::details::EventInfo_t {
   void AddWeakNeutralCurrentInteractions(unsigned int n = 1U)
     { fInteractions[itWNC] += n; }
 
-  /// Marks the neutrino flavor
+  /// Marks the flavor of the neutrino in the first interaction.
   void SetNu_mu(bool numu) { nu_mu = numu; }
   void SetNu_e(bool nue) { nu_e = nue; }
 
-  /// Marks this event's neutrino type
+  /// Marks the neutrino type of the first interaction in the event.
   void SetNeutrinoPDG(int NU) { fNeutrinoPDG = NU; }
 
   /// Sets the total deposited energy of the event [GeV]
@@ -153,13 +153,13 @@ struct icarus::trigger::details::EventInfo_t {
   void SetDepositedEnergyInSpillInActiveVolume(GeV e)
     { fEnergyDepSpillActive = e; }
 
-  // Sets the neutrino energy.
+  /// Sets the neutrino energy.
   void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
 
-  // Sets the lepton energy.
+  /// Sets the lepton energy.
   void SetLeptonEnergy(GeV eL) { fLeptonEnergy = eL; }
 
-  // Sets the interaction type
+  /// Sets the interaction type
   void SetInteractionType(int type) { fInteractionType = type; }
 
   /// Set whether the event has relevant activity in the active volume.
