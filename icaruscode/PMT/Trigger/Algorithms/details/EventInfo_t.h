@@ -11,6 +11,7 @@
 
 
 // LArSoft libraries
+#include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
 #include "lardataalg/Utilities/quantities/energy.h" // gigaelectronvolt
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 
@@ -39,7 +40,11 @@ namespace icarus::trigger::details {
  */
 struct icarus::trigger::details::EventInfo_t {
   
+  /// @name Local type aliases
+  /// @{
   using GeV = util::quantities::gigaelectronvolt;
+  using simulation_time = detinfo::timescales::simulation_time;
+  /// @}
   
   /// Constructor. As if nobody noticed.
   EventInfo_t() { fInteractions.fill(0U); }
@@ -104,6 +109,9 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
+  /// Returns the time of the first interaction, in simulation time scale [ns]
+  simulation_time InteractionTime() const { return fInteractionTime; }
+  
   /// Returns whether this type of event has a known vertex.
   bool hasVertex() const { return !fVertices.empty(); }
   
@@ -162,11 +170,19 @@ struct icarus::trigger::details::EventInfo_t {
   /// Sets the interaction type
   void SetInteractionType(int type) { fInteractionType = type; }
 
+  /// Sets the time of the first interaction.
+  void SetInteractionTime(simulation_time time) { fInteractionTime = time; }
+  
   /// Set whether the event has relevant activity in the active volume.
   void SetInActiveVolume(bool active = true) { fInActiveVolume = active; }
   
   /// Adds a point to the list of interaction vertices in the event.
   void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
+  
+  /// Inserts a point in the specified position of the list of interaction
+  /// vertices in the event.
+  void InsertVertex(geo::Point_t const& vertex, std::size_t beforeIndex)
+    { fVertices.insert(next(begin(fVertices), beforeIndex), vertex); }
   
   /// @}
   // --- END Set interface ---------------------------------------------------
@@ -194,6 +210,8 @@ struct icarus::trigger::details::EventInfo_t {
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
+  
+  simulation_time fInteractionTime; ///< Time of the first interaction [ns]
 
   GeV fNeutrinoEnergy { 0.0 };
   GeV fLeptonEnergy { 0.0 };

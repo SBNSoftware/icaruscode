@@ -30,7 +30,7 @@ void icarus::trigger::details::EventInfo_t::dump(std::ostream& out) const {
     out << "\nThe first neutrino has E=" << NeutrinoEnergy()
       << " and becomes a lepton with E=" << LeptonEnergy()
       << " with a " << sim::TruthInteractionTypeName(InteractionType())
-      << " interaction"
+      << " interaction at " << InteractionTime()
       ;
   }
   else {

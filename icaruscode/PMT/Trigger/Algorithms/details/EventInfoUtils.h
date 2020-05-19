@@ -44,6 +44,18 @@ namespace icarus::trigger::details { class EventInfoExtractor; }
  * @brief Extracts from `event` the relevant information on the physics event.
  *
  * This returns a `EventInfo_t` object filled as completely as possible.
+ * 
+ * The `EventInfo_t` is managed so that it contains all the information about
+ * the "main" neutrino interaction. All other neutrino interactions are
+ * acknowledged but their information is not stored, with minor exceptions.
+ * Currently:
+ *   
+ * * the main interaction is the interaction happening the earliest;
+ * * the other interactions have only their location (`Vertices()`) stored in
+ *   the list; the order of the vertices in the list stays the same as the order
+ *   they are filled, with the exception of the main interaction that is always
+ *   moved in `front()` of the list. This means that _interaction vertices are
+ *   not ordered by time_ unless that is how they were fed to this object.
  *
  * This class can read any data product in the event, and is completely
  * configured at construction time via constructor arguments.
@@ -171,10 +183,29 @@ class icarus::trigger::details::EventInfoExtractor {
   /// Fills `info` record with generation information from `truth`.
   void fillGeneratorInfo(EventInfo_t& info, simb::MCTruth const& truth) const;
   
-  /// Fills `info` record with generated neutrino information from `truth`.
+  /**
+   * @brief  Fills `info` record with generated neutrino information from
+   *         `truth`.
+   * 
+   * If `info` record already contains an interaction (the "main" interaction),
+   * the interaction in `truth` becomes the new main interaction of `info`
+   * only if it is earlier than the old main interaction.
+   * Otherwise the record is updated to take note that there was yet another
+   * interaction in the event, with little-to-no information about it stored.
+   */
   void fillGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
 
+  /// Extracts information from `truth` and sets it as the "main" interaction
+  /// information. Previous information is typically overwritten.
+  void setMainGeneratorNeutrinoInfo
+    (EventInfo_t& info, simb::MCTruth const& truth) const;
+  
+  /// Adds selected information from the interaction in `truth` to `info`
+  /// record.
+  void addGeneratorNeutrinoInfo
+    (EventInfo_t& info, simb::MCTruth const& truth) const;
+    
   /// Adds the energy depositions from `energyDeposits` into `info` record.
   void addEnergyDepositionInfo(
     EventInfo_t& info, std::vector<sim::SimEnergyDeposit> const& energyDeposits
@@ -185,6 +216,13 @@ class icarus::trigger::details::EventInfoExtractor {
 
   /// Returns in which active TPC volume `point` falls in (`nullptr` if none).
   geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const;
+  
+  /// Returns the time of the neutrino interaction in `truth`.
+  ///
+  /// Undefined behaviour if the truth information does not describe a neutrino
+  /// interaction.
+  simulation_time getInteractionTime(simb::MCTruth const& truth) const;
+
 
 }; // class icarus::trigger::details::EventInfoExtractor
 

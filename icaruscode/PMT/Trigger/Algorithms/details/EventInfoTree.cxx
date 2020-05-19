@@ -24,6 +24,7 @@ icarus::trigger::details::EventInfoTree::EventInfoTree(TTree& tree)
   this->tree().Branch("CC",       &fCC);
   this->tree().Branch("NC",       &fNC);
   this->tree().Branch("IntType",  &fIntType);
+  this->tree().Branch("Time",     &fTime);
   this->tree().Branch("NuE",      &fNuE);
   this->tree().Branch("OutLeptE", &fOutLeptE);
   
@@ -45,6 +46,7 @@ void icarus::trigger::details::EventInfoTree::assignEvent
   fCC       = info.nWeakChargedCurrentInteractions();
   fNC       = info.nWeakNeutralCurrentInteractions();
   fIntType  = info.InteractionType();
+  fTime     = static_cast<Double_t>(info.InteractionTime());
   fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
   fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
 

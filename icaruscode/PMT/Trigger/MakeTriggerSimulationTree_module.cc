@@ -64,8 +64,7 @@ struct TriggerGatesInfo {
     unsigned int nOpenings = 0U;
     
     /// The time of the first opening on the channel, in simulation time [ns]
-    simulation_time firstOpenTime
-      = std::numeric_limits<simulation_time>::lowest();
+    simulation_time firstOpenTime = std::numeric_limits<simulation_time>::max();
     
   }; // struct TriggerGateInfo
   
@@ -106,7 +105,7 @@ std::ostream& operator<< (std::ostream& out, TriggerGatesInfo const& info);
  *    the number of times the gate opened;
  * * `OpeningTime` (one time per channel, based on
  *    `TriggerGateInfo::firstOpenTime`): first time that channel opened, or
- *    very large negative number (`std::numeric_limits<double>::lowest()`)
+ *    very large number (`std::numeric_limits<double>::max()`)
  *    if no opening happened at all (note that in this case the value in
  *    `TriggerGateInfo::firstOpenTime` is ignored).
  * 
@@ -453,10 +452,10 @@ void TriggerGateTree::assignTriggerGatesInfo(TriggerGatesInfo const& info) {
     
     fOpDetPos.push_back(channelInfo.center);
     fNOpenings.push_back(channelInfo.nOpenings);
-    fOpeningTime.push_back((channelInfo.nOpenings > 0)
-      ? channelInfo.firstOpenTime.value()
-      : std::numeric_limits<Double_t>::lowest())
-      ;
+    
+    // accepting the fallback value when there is no interaction
+    // (that is `max()`)
+    fOpeningTime.push_back(channelInfo.firstOpenTime.value());
     
   } // for
   
@@ -592,9 +591,11 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
     info.TriggerGates.push_back({
       gateChannelCentroid(gate), // 2.1. get centroid of associated detectors
       nOpenings,
-      fDetTimings.toSimulationTime
-        (detinfo::timescales::optical_tick{ firstOpenTick })
-        // ignored if `nOpenings == 0`
+        // users should ignore this if `nOpenings == 0`:
+      (nOpenings == 0U)
+        ? std::numeric_limits<simulation_time>::max()
+        : fDetTimings.toSimulationTime
+          (detinfo::timescales::optical_tick{ firstOpenTick })
       });
     
   } // for all gates

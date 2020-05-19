@@ -51,6 +51,27 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo
 {
   if (!truth.NeutrinoSet()) return;
   
+  simulation_time const interactionTime = getInteractionTime(truth);
+  
+  if ((info.nVertices() == 0) || (interactionTime < info.InteractionTime()))
+    setMainGeneratorNeutrinoInfo(info, truth);
+  else
+    addGeneratorNeutrinoInfo(info, truth);
+  
+} // icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo()
+
+
+// -----------------------------------------------------------------------------
+void icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo
+  (EventInfo_t& info, simb::MCTruth const& truth) const
+{
+  /*
+   * Sets the full information of the event, overwriting everything.
+   * 
+   * Except that the vertex is just inserted into the vertex list, as the
+   * first entry.
+   */
+  
   using GeV = util::quantities::gigaelectronvolt;
   
   //
@@ -61,6 +82,7 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo
   simb::MCParticle const& nu = truth.GetNeutrino().Nu();
   info.SetNeutrinoPDG(nu.PdgCode());
   info.SetInteractionType(truth.GetNeutrino().InteractionType());
+  info.SetInteractionTime(getInteractionTime(truth));
 
   info.SetNeutrinoEnergy(GeV{ nu.E() });
   info.SetLeptonEnergy(GeV{ truth.GetNeutrino().Lepton().E() });
@@ -90,12 +112,35 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo
   // of some of the particles from GENIE to detector frame;
   // trajectory is always translated:
   geo::Point_t const vertex { nu.EndX(), nu.EndY(), nu.EndZ() };
-  info.AddVertex(vertex);
+  info.InsertVertex(vertex, 0U);
   
   geo::TPCGeo const* tpc = pointInActiveTPC(vertex);
   if (tpc) info.SetInActiveVolume();
   
-} // icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo()
+} // icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo()
+
+
+// -----------------------------------------------------------------------------
+void icarus::trigger::details::EventInfoExtractor::addGeneratorNeutrinoInfo
+  (EventInfo_t& info, simb::MCTruth const& truth) const
+{
+  /*
+   * The only update to the record so far is the addition of the vertex of the
+   * interaction at the end of the current list.
+   * No information is overwritten.
+   * 
+   */
+  
+  simb::MCParticle const& nu = truth.GetNeutrino().Nu();
+  
+  // we do not trust the vertex (`GvX()`) of the neutrino particle,
+  // since GenieHelper does not translate the vertex
+  // of some of the particles from GENIE to detector frame;
+  // trajectory is always translated:
+  geo::Point_t const vertex { nu.EndX(), nu.EndY(), nu.EndZ() };
+  info.AddVertex(vertex);
+  
+} // icarus::trigger::details::EventInfoExtractor::addGeneratorNeutrinoInfo()
 
 
 // -----------------------------------------------------------------------------
@@ -159,6 +204,16 @@ icarus::trigger::details::EventInfoExtractor::pointInActiveTPC
   return
     (tpc && tpc->ActiveBoundingBox().ContainsPosition(point))? tpc: nullptr;
 } // icarus::trigger::TriggerEfficiencyPlotsBase::pointInActiveTPC()
+
+
+// -----------------------------------------------------------------------------
+auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
+  (simb::MCTruth const& truth) const -> simulation_time
+{
+  assert(truth.NeutrinoSet());
+  simb::MCParticle const& nu = truth.GetNeutrino().Nu();
+  return simulation_time{ nu.EndT() };
+} // icarus::trigger::details::EventInfoExtractor::getInteractionTime()
 
 
 // -----------------------------------------------------------------------------

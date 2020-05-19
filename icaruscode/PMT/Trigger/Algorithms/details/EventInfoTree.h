@@ -39,13 +39,14 @@ namespace icarus::trigger::details { struct EventInfoTree; }
  * event information. The tree is not `Fill()`-ed.
  *
  * The tree structure is:
- * `CC/i:NC/i:IntType:I/NuE:D/OutLeptE:D/TotE/D:SpillE/D:InActive/O`,
+ * `CC/i:NC/i:IntType/I:Time/D:NuE/D:OutLeptE/D:TotE/D:SpillE/D:InActive/O`,
  * with a single branch per element.
  *
  * Branches:
  *  * `CC` (unsigned integer): number of neutrino CC interactions in the event
  *  * `NC` (unsigned integer): number of neutrino NC interactions in the event
  *  * `IntType` (integer): code of interaction type (see `simb::int_type_`)
+ *  * `Time` (double): time of the interaction in simulation time scale
  *  * `NuE` (double): energy of the generated initial state neutrino [GeV]
  *  * `OutLeptE` (double): energy of the generated final state lepton [GeV]
  *  * `TotE` (double): total deposited energy in the event [GeV]
@@ -73,6 +74,7 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
   UInt_t fCC;
   UInt_t fNC;
   Int_t fIntType;
+  Double_t fTime;
   Double_t fNuE;
   Double_t fOutLeptE;
   Double_t fTotE;
