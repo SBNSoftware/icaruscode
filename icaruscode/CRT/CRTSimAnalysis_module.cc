@@ -59,10 +59,8 @@
 #include <array>
 
 // CRT data products
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-//#include "icaruscode/CRT/CRTUtils/CRTTruthMatchUtils.h"
 
 using std::string;
 using std::vector;
@@ -302,25 +300,14 @@ namespace crt {
     int      fDetEvent;
     int      fNChan; ///< number of channels above threshold for this front-end board readout
     int      fEntry; ///< front-end board entry number (reset for each event)
-    double      fTTrig;      ///< signal time w.r.t. global event time of primary channel providing trigger
-    int      fChanTrig; ///< channel which provided the trigger for this front-end board
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
-    int      fTriggerPair[2]; ///< two channels which provided the coincidence (useful for C or D modules)
-    int      fMacPair[2]; ///< two front-end boards with pairwise coincidence ( useful for M modules)
     int      fDetSubSys;
-    vector<int> fChan; ///< front-end board channel (0-31 or 0-63)
-    vector<double> fT0;///< signal time w.r.t. global event time
-    vector<double> fT1;///< signal time w.r.t. PPS
-    vector<int> fADC;///< signal amplitude
+    double   fT0;///< signal time w.r.t. global event time
+    double   fT1;///< signal time w.r.t. PPS
+    int      fADC[64];///< signal amplitude
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
-    /*int      fChan[kDetMax]; ///< front-end board channel (0-31 or 0-63)
-    double      fT0[kDetMax]; ///< signal time w.r.t. global event time
-    double      fT1[kDetMax]; ///< signal time w.r.t. PPS
-    int      fADC[kDetMax]; ///< signal amplitude
-    int      fTrackID[kDetMax]; ///< track ID of particle that produced the signal
-    int      fDetPDG[kDetMax]; */
 
     //CRT hit product vars
     int       fHitEvent;
@@ -563,19 +550,14 @@ namespace crt {
     // Define the branches of our DetSim n-tuple 
     fDetSimNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDetSimNtuple->Branch("channel",               &fChan);
-    fDetSimNtuple->Branch("t0",                    &fT0);
-    fDetSimNtuple->Branch("t1",                    &fT1);
-    fDetSimNtuple->Branch("adc",                   &fADC);
+    fDetSimNtuple->Branch("t0",                    &fT0,                "t0/D");
+    fDetSimNtuple->Branch("t1",                    &fT1,                "t1/D");
+    fDetSimNtuple->Branch("adc",                   fADC);
     fDetSimNtuple->Branch("trackID",               &fTrackID);
     fDetSimNtuple->Branch("detPDG",                &fDetPDG);
     fDetSimNtuple->Branch("entry",                 &fEntry,             "entry/I");
     fDetSimNtuple->Branch("mac5",                  &fMac5,              "mac5/I");
     fDetSimNtuple->Branch("region",                &fFEBReg,            "region/I");
-    fDetSimNtuple->Branch("triggerPair",           fTriggerPair,        "triggerPair[2]/I");
-    fDetSimNtuple->Branch("macPair",               fMacPair,            "macPair[2]/I");
-    fDetSimNtuple->Branch("chanTrig",              &fChanTrig,          "chanTrig/I");
-    fDetSimNtuple->Branch("tTrig",                 &fTTrig,             "tTrig/D");
     fDetSimNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
 
     // Define the branches of our SimHit n-tuple
@@ -1465,37 +1447,27 @@ namespace crt {
     if (isCRTDetSim)  {
      std::cout << "about to loop over detsim entries" << std::endl;
      for ( auto const& febdat : (*crtDetSimHandle) ) {
-        fDetEvent       = febdat.Event();
-        fMac5           = febdat.Mac5();
-        fChanTrig       = febdat.ChanTrig();
-        fEntry          = febdat.Entry();
-        fTTrig          = febdat.TTrig();
-        pair<uint32_t,uint32_t> tmpPair = febdat.TrigPair();
-        fTriggerPair[0] = tmpPair.first;
-        fTriggerPair[1] = tmpPair.second;
-        tmpPair         = febdat.MacPair();
-        fMacPair[0]     = tmpPair.first;
-        fMacPair[1]     = tmpPair.second;
+        fDetEvent       = fEvent;
+        fMac5           = febdat.fMac5;
+        fEntry          = febdat.fEntry;
         fFEBReg         = MacToADReg(fMac5);
         fNChan = 0;
         fDetSubSys = MacToTypeCode(fMac5);
-        fChan.clear();
-        fT0.clear();
-        fT1.clear();
-        fADC.clear();
+        fT0 = febdat.fTs0;
+        fT1 = febdat.fTs1;
         fTrackID.clear();
         fDetPDG.clear();
- 
-        vector<int> missedIDs;
-        for ( auto const chandat : febdat.ChanData()) {
+
+        int chmax = 0;
+        if(fDetSubSys!=2) chmax=32;
+        else chmax=64;
+        for(int ch=0; ch<chmax; ch++)
+            fADC[ch] = febdat.fAdc[ch];
+        //vector<int> missedIDs;
           //DetSim tree contains all entries (not neccessarily from muons)
-          fChan.push_back(chandat.Channel());
-          fT0.push_back(chandat.T0());
-          fT1.push_back(chandat.T1());
-          fADC.push_back(chandat.ADC());
-          fTrackID.push_back({});
-          fDetPDG.push_back({});
-          for( int trk : chandat.TrackID()) {
+          //fTrackID.push_back({});
+          //fDetPDG.push_back({});
+          /*for( int trk : chandat.TrackID()) {
               fTrackID[fNChan].push_back(trk);
               if (particleMap.find(trk) != particleMap.end() )
                   fDetPDG[fNChan].push_back(particleMap[trk]->PdgCode());
@@ -1506,15 +1478,13 @@ namespace crt {
           }
 
          fNChan++;
-        }//outer chandat loop
-
 
         if ( missedIDs.size() > 0 ) {
             std::cout 
                 << " couldn't match " << missedIDs.size() << " trackIDs from DetSim to MCParticle:" 
             << std::endl;
             for (auto const& id : missedIDs) std::cout << "  - " << id << std::endl;
-        }
+        }*/
 
         fDetSimNtuple->Fill();
 
@@ -1536,13 +1506,14 @@ namespace crt {
         art::FindManyP<icarus::crt::CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitProducerLabel);
         std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
 
-        for(auto const& dat : data){
+        //FIX ME WITH BACKTRACKER
+        /*for(auto const& dat : data){
           for(auto const& chan : dat->ChanData()){
             for(auto const& trkid : chan.TrackID()){
               ids.push_back(trkid);
             }
           }
-        }
+        }*/
 
         std::sort(ids.begin(), ids.end());
         ids.erase(std::unique(ids.begin(), ids.end()), ids.end());

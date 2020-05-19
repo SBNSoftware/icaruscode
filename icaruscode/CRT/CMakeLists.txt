@@ -12,6 +12,7 @@ art_make(
         CRTGeometryHelper_service.cc
         CRTDetSim_module.cc
         CRTSimHitProducer_module.cc
+        CRTTrueHitProducer_module.cc
         CRTTzeroProducer_module.cc
         CRTTrackProducer_module.cc
         CRTSimAnalysis_module.cc
@@ -117,6 +118,27 @@ simple_plugin( CRTSimHitProducer module
         ${CETLIB}
 )
 
+simple_plugin( CRTTrueHitProducer module
+        larcorealg_Geometry
+        icaruscode_CRT
+        icaruscode_CRTData
+        icaruscode_CRTProducts
+        icaruscode_CRTUtils
+        ${ART_FRAMEWORK_CORE}
+        ${ART_FRAMEWORK_IO_SOURCES}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+        art_Persistency_Provenance
+        canvas
+        cetlib_except
+        lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
+        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+        ${MF_MESSAGELOGGER}
+        ${MF_UTILITIES}
+        ${ROOT_BASIC_LIB_LIST}
+        ${CLHEP}
+        ${CETLIB}
+)
 
 simple_plugin(CRTTzeroProducer module
         larcorealg_Geometry

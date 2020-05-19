@@ -4,13 +4,15 @@ standard_crtbacktracker:
 
 {
 
+    CRTTrueHitLabel:  "crttruehit"
+
     CRTDataLabel:     "crtdaq"
 
-    CRTHitLabel:      "crthit"
+    CRTSimHitLabel:   "crthit"
 
     CRTTrackLabel:    "crttrack"
 
-    RollupUnsavedIds: false
+    RollupUnsavedIds: true
 
 }
 

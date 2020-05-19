@@ -34,7 +34,6 @@
 #include "TGeoNode.h"
 
 //CRT includes
-#include "icaruscode/CRT/CRTProducts/CRTChannelData.h"
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
@@ -43,6 +42,7 @@ using std::pair;
 using std::map;
 using std::set;
 using std::string;
+using sim::AuxDetIDE;
 
 namespace icarus {
  namespace crt {
@@ -50,14 +50,19 @@ namespace icarus {
  }
 }
 
+struct ChanData {
+    int channel;
+    uint16_t adc;
+    uint64_t ts;
+};//ChanData
+
 struct Tagger {
     char type;
     int modid;
     string reg; //crt region where FEB is located
     set<int> layerid; //keep track of layers hit accross whole event window
     map<int,int> chanlayer; //map chan # to layer
-    vector<pair<icarus::crt::CRTChannelData,sim::AuxDetIDE>> data; //time and charge info for each channel > thresh
-    //vector<sim::AuxDetIDE> ide; //index of the auxDetIDE vector provided by DetSimProducer 
+    vector<pair<ChanData,AuxDetIDE>> data; //time and charge info for each channel > thresh
 };//Tagger
 
 
@@ -70,8 +75,8 @@ class icarus::crt::CRTDetSimAlg {
 
     void ClearTaggers();
     //given a vector of AuxDetIDEs, fill a map of tagger objects with intermediate ChannelData + aux info
-    void FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides);
-    vector<pair<CRTData, vector<sim::AuxDetIDE>>> CreateData();//vector<art::Ptr<sim::AuxDetSimChannel>> channels);
+    void FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<AuxDetIDE>& ides);
+    vector<pair<CRTData, vector<AuxDetIDE>>> CreateData();
 
 
  private:
@@ -94,9 +99,9 @@ class icarus::crt::CRTDetSimAlg {
     double fQPed;              //!< ADC offset for the single-peak peak mean [ADC]
     double fQSlope;            //!< Slope in mean ADC / Npe [ADC]
     double fQRMS;              //!< ADC single-pe spectrum width [ADC]
-    double fQThresholdC;       //!< ADC charge threshold for CERN system [ADC]
-    double fQThresholdM;       //!< ADC charge threshold for MINOS system [ADC]
-    double fQThresholdD;       //!< ADC charge threshold for DC system [ADC]
+    uint16_t fQThresholdC;       //!< ADC charge threshold for CERN system [ADC]
+    uint16_t fQThresholdM;       //!< ADC charge threshold for MINOS system [ADC]
+    uint16_t fQThresholdD;       //!< ADC charge threshold for DC system [ADC]
     double fTResInterpolator;  //!< Interpolator time resolution [ns]
     double fPropDelay;         //!< Delay in pulse arrival time [ns/m]
     double fPropDelayError;    //!< Delay in pulse arrival time, uncertainty [ns/m]
@@ -118,15 +123,16 @@ class icarus::crt::CRTDetSimAlg {
     int fNmissthr_c, fNmissthr_d, fNmissthr_m; //number of channel signals below threshold
     int fNmiss_strcoin_c; //number of channel signals missed due to no fiber-fiber coincidence in a cern strip
     int fNdual_m; //number of energy deposits producing signals above threshold at both ends of a minos strip
+    bool fHasFilledTaggers;
 
-    std::map<int,int> fRegCounts;
-    std::set<int> fRegions;
+    map<int,int> fRegCounts;
+    set<int> fRegions;
 
     CLHEP::HepRandomEngine& fRandEngine;
-    std::map<int,vector<pair<int,int>>> fFebMap;
+    map<int,vector<pair<uint8_t,int>>> fFebMap;
 
     // A list of hit taggers, before any coincidence requirement (mac5 -> tagger)
-    std::map<int, Tagger> fTaggers;
+    map<uint8_t, Tagger> fTaggers;
 
     pair<double,double> GetTransAtten(const double pos); //only applies to CERN modules
     double GetLongAtten(const double dist); //MINOS model applied to all modules for now
@@ -141,9 +147,12 @@ class icarus::crt::CRTDetSimAlg {
      * @param r Distance between the energy deposit and strip readout end [mm]
      * @return Trigger clock ticks at this true hit time
      */
-    uint32_t GetChannelTriggerTicks(detinfo::ElecClock& clock,
-                                  float t0, float npeMean, float r);
+    uint64_t GetChannelTriggerTicks(detinfo::ElecClock& clock,
+                                  double t0, float npeMean, float r);
 
+    CRTData  FillCRTData(uint8_t mac, uint32_t entry, uint64_t t0, uint64_t ts1, uint16_t adc[32]);
+    ChanData FillChanData(int channel, uint16_t adc, uint64_t ts);
+    void FillAdcArr(const vector<ChanData>& data, uint16_t arr[32]);
 };
 
 #endif

@@ -4,128 +4,161 @@ namespace icarus{
  namespace crt{
 
     CRTBackTracker::CRTBackTracker(const Config& config){
-    
-      this->reconfigure(config);
+        this->reconfigure(config);
     }
     
-    CRTBackTracker::CRTBackTracker(){
-    }
-    
-    CRTBackTracker::~CRTBackTracker(){
-    }
+    CRTBackTracker::CRTBackTracker(){}
+    CRTBackTracker::~CRTBackTracker(){}
 
     //------------------------------------------------------------------------------    
     void CRTBackTracker::reconfigure(const Config& config){
     
-      fCRTDataLabel = config.CRTDataLabel();
-      fCRTHitLabel = config.CRTHitLabel();
-      fCRTTrackLabel = config.CRTTrackLabel();
-      fRollupUnsavedIds = config.RollupUnsavedIds();
-    
-      return;
+        fCRTTrueHitLabel = config.CRTTrueHitLabel();
+        fCRTDataLabel = config.CRTDataLabel();
+        fCRTSimHitLabel = config.CRTSimHitLabel();
+        fCRTTrackLabel = config.CRTTrackLabel();
+        fRollupUnsavedIds = config.RollupUnsavedIds();
+      
+        return;
     }
 
     //-----------------------------------------------------------------------------    
     void CRTBackTracker::Initialize(const art::Event& event){
-    
-      // Clear those data structures!
-      fDataTrueIds.clear();
-      fHitTrueIds.clear();
-      fTrackTrueIds.clear();
-    
-      // Get a handle to the CRT data in the event
-      art::Handle< std::vector<CRTData>> crtDataHandle;
-      std::vector<art::Ptr<CRTData> > crtDataList;
    
-      //std::cout << "CRTBackTracker::Initialize: filling CRTData ptr vector" << std::endl;
-      if (event.getByLabel(fCRTDataLabel, crtDataHandle))
-        art::fill_ptr_vector(crtDataList, crtDataHandle);
-
-      //std::cout << "   found " << crtDataList.size() << "CRTData products" << std::endl;
-      //std::cout << "CRTBackTracker::Initialize: findManyIdes" << std::endl;
-      art::FindManyP<sim::AuxDetIDE> findManyIdes(crtDataHandle, event, fCRTDataLabel);
-      std::map<art::Ptr<CRTData>, int> dataPtrMap;
-
-      //std::cout << "CRTBackTracker::Initialize: filling assn map..." << std::endl;    
-      for(size_t data_i = 0; data_i < crtDataList.size(); data_i++){
-    
-        dataPtrMap[crtDataList[data_i]] = data_i;
-    
-        // Get all the true IDs from all the IDEs in the hit
-        std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(data_i);
+        bool findData = false, findSimHit = false;
  
-        //std::cout << "ides.size() = " << ides.size() << std::endl;
-        //if(ides.size()>0) std::cout << "CRTBackTracker::Initialize: loop over ides" << std::endl;
-        for(size_t i = 0; i < ides.size(); i++){
-    
-          int id = ides[i]->trackID;
-    
-          if(fRollupUnsavedIds) id = std::abs(id);
-    
-          fDataTrueIds[data_i][id] += ides[i]->energyDeposited;
-        }
-        //std::cout << "done w/these ides...on to the next" << std::endl;
-      }
-    
-      //std::cout << "CRTBackTracker::Initialize: done with CRTData assn's" << std::endl;
+        // Clear those data structures!
+        fTrueHitTrueIds.clear();
+        fDataTrueIds.clear();
+        fSimHitTrueIds.clear();
+        fTrackTrueIds.clear();
+   
+        //CRTTrueHit
+        art::Handle< std::vector<CRTHit>> crtTrueHitHandle;
+        std::vector<art::Ptr<CRTHit> > crtTrueHitList;
+        if (event.getByLabel(fCRTTrueHitLabel, crtTrueHitHandle)){
+            art::fill_ptr_vector(crtTrueHitList, crtTrueHitHandle);
 
-      /*art::Handle< std::vector<CRTHit>> crtHitHandle;
-      std::vector<art::Ptr<CRTHit> > crtHitList;
-      if (event.getByLabel(fCRTHitLabel, crtHitHandle))
-        art::fill_ptr_vector(crtHitList, crtHitHandle);
-    
-      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
-      std::map<art::Ptr<CRTHit>, int> hitPtrMap;
-    
-      for(size_t hit_i = 0; hit_i < crtHitList.size(); hit_i++){
-    
-        hitPtrMap[crtHitList[hit_i]] = hit_i;
-        std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
-    
-        for(size_t data_i = 0; data_i < data.size(); data_i++){
-    
-          int dataID = dataPtrMap[data[data_i]];
-    
-          for(auto const& di : fDataTrueIds[dataID]){
-            fHitTrueIds[hit_i][di.first] += di.second;
-          }
-        }
-      }
-    
-      art::Handle< std::vector<CRTTrack>> crtTrackHandle;
-      std::vector<art::Ptr<CRTTrack> > crtTrackList;
-    
-      if (event.getByLabel(fCRTTrackLabel, crtTrackHandle))
-        art::fill_ptr_vector(crtTrackList, crtTrackHandle);
-    
-      art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
-    
-      for(size_t track_i = 0; track_i < crtTrackList.size(); track_i++){
-    
-        std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
-    
-        for(size_t hit_i = 0; hit_i < hits.size(); hit_i++){
-    
-          int hitID = hitPtrMap[hits[hit_i]];
-    
-          for(auto const& hi : fHitTrueIds[hitID]){
-    
-            fTrackTrueIds[track_i][hi.first] += hi.second;
-    
-          }
-        }
-      }*/
-    
-    }
+            art::FindManyP<sim::AuxDetIDE> findManyIdes(crtTrueHitHandle, event, fCRTTrueHitLabel);
+            std::map<art::Ptr<CRTHit>, int> trueHitPtrMap;
+
+            for(size_t hit_i = 0; hit_i < crtTrueHitList.size(); hit_i++){
+
+                trueHitPtrMap[crtTrueHitList[hit_i]] = hit_i;
+                std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(hit_i);
+
+                for(size_t i = 0; i < ides.size(); i++){
+
+                    int id = ides[i]->trackID; 
+                    if(fRollupUnsavedIds) id = std::abs(id);
+                    fTrueHitTrueIds[hit_i][id] += ides[i]->energyDeposited;
+                }
+            }
+        }//if CRTTrueHit found
+        else
+            mf::LogWarning("CRTBackTracker") << "no CRTTrueHit products found";
+ 
+        //CRTData
+        art::Handle< std::vector<CRTData>> crtDataHandle;
+        std::vector<art::Ptr<CRTData> > crtDataList;
+        std::map<art::Ptr<CRTData>, int> dataPtrMap;
+
+        if (event.getByLabel(fCRTDataLabel, crtDataHandle)) {
+            art::fill_ptr_vector(crtDataList, crtDataHandle);
+            art::FindManyP<sim::AuxDetIDE> findManyIdes(crtDataHandle, event, fCRTDataLabel);
+
+            for(size_t data_i = 0; data_i < crtDataList.size(); data_i++){
+      
+                dataPtrMap[crtDataList[data_i]] = data_i;
+                // Get all the true IDs from all the IDEs in the hit
+                std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(data_i);
+ 
+                for(size_t i = 0; i < ides.size(); i++){
+      
+                    int id = ides[i]->trackID;
+                    if(fRollupUnsavedIds) id = std::abs(id);
+                    fDataTrueIds[data_i][id] += ides[i]->energyDeposited;
+                }
+            }
+            findData = true;
+        }//if CRTData found
+        else
+            mf::LogWarning("CRTBackTracker") << "no CRTData products found";
+
+        //CRTSimHit
+        art::Handle< std::vector<CRTHit>> crtSimHitHandle;
+        std::vector<art::Ptr<CRTHit> > crtSimHitList;
+        std::map<art::Ptr<CRTHit>, int> simHitPtrMap;
+        if (event.getByLabel(fCRTSimHitLabel, crtSimHitHandle)){
+
+            if(!findData)
+                mf::LogError("CRTBackTracker") 
+                    << "no CRTData products found when some were expected (CRTSimHits found)";
+
+            art::fill_ptr_vector(crtSimHitList, crtSimHitHandle);
+            art::FindManyP<CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitLabel);
+      
+            for(size_t hit_i = 0; hit_i < crtSimHitList.size(); hit_i++){
+      
+                simHitPtrMap[crtSimHitList[hit_i]] = hit_i;
+                std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
+      
+                for(size_t data_i = 0; data_i < data.size(); data_i++){
+      
+                    int dataID = dataPtrMap[data[data_i]];
+      
+                    for(auto const& di : fDataTrueIds[dataID]){
+                        fSimHitTrueIds[hit_i][di.first] += di.second;
+                    }
+                }
+            }
+            findSimHit = true;
+        }//if CRTSimHit found
+        else
+            mf::LogWarning("CRTBackTracker") << "no CRTSimHit products found";
+      
+        //CRTTracks
+        art::Handle< std::vector<CRTTrack>> crtTrackHandle;
+        std::vector<art::Ptr<CRTTrack> > crtTrackList;
+      
+        if (event.getByLabel(fCRTTrackLabel, crtTrackHandle)) {
+
+            if(!findSimHit)
+                mf::LogError("CRTBackTracker")
+                    << "no CRTSimHit products found when some were expected (CRTTracks found)";
+
+            art::fill_ptr_vector(crtTrackList, crtTrackHandle);
+            art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
+      
+            for(size_t track_i = 0; track_i < crtTrackList.size(); track_i++){
+      
+                std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
+                for(size_t hit_i = 0; hit_i < hits.size(); hit_i++){
+      
+                    int hitID = simHitPtrMap[hits[hit_i]];
+                    for(auto const& hi : fSimHitTrueIds[hitID]){
+      
+                        fTrackTrueIds[track_i][hi.first] += hi.second;
+                    }
+                }
+            }
+        }//if CRTrack product found
+        else
+            mf::LogWarning("CRTBackTracker") << "no CRTTrack products found";
+      
+    }//Initialize
 
     // ---------------------------------------------------------------------------------------    
     // Check that two CRT data products are the same
     bool CRTBackTracker::DataCompare(const CRTData& data1, const CRTData& data2){
     
-      if(data1.Mac5() != data2.Mac5()) return false;
-      if(data1.TTrig() != data2.TTrig()) return false;
-      //if(data1.T1() != data2.T1()) return false;
-      //if(data1.ADC() != data2.ADC()) return false;
+      if(data1.fMac5  != data2.fMac5)  return false;
+      if(data1.fTs0   != data2.fTs0)   return false;
+      if(data1.fTs1   != data2.fTs1)   return false;
+      if(data1.fEntry != data2.fEntry) return false;
+      for(int ch=0; ch<64; ch++) {
+          if(data1.fAdc[ch] != data2.fAdc[ch]) return false;
+      }
     
       return true;
     }
@@ -193,8 +226,10 @@ namespace icarus{
     
         index++;
       }
-      if(nmatch==0) std::cout << "BACKTRACKER ERROR: no matches for procided data product found!" << std::endl;
-      if(nmatch>1) std::cout << "BACKTRACKER ERROR: multiple matches for given data product found!" << std::endl;
+      if(nmatch==0) 
+          mf::LogError("CRTBackTracker::AllTrueIds") << "no matches for provided CRTData product found!";
+      if(nmatch>1) 
+          mf::LogError("CRTBackTracker::AllTrueIds") << "multiple matches for given CRTData product found!";
 
       // Get all the true IDs from all the IDEs in the hit
       std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(data_i);
@@ -216,51 +251,98 @@ namespace icarus{
     }
 
     // ---------------------------------------------------------------------------------------------    
-    // Get all the true particle IDs that contributed to the CRT hit
+    // Get all the true particle IDs that contributed to the sim CRT hit
     std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const CRTHit& hit){
     
-      std::vector<int> ids;
-    
-      // Get a handle to the CRT hits in the event
-      auto crtHitHandle = event.getValidHandle<std::vector<CRTHit>>(fCRTHitLabel);
-      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
-    
-      // Find which one matches the hit passed to the function
-      int hit_i = 0, index = 0;
-    
-      for(auto const& crtHit : (*crtHitHandle)){
-    
-        if(HitCompare(crtHit, hit)) hit_i = index;
-    
-        index++;
-    
-      }
-    
-      // Get the crt data associated to that hit and the IDEs associate to the data
-      std::vector<art::Ptr<CRTData>> data = findManyData.at(hit_i);
-      art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
-    
-      // Get all the true IDs from all the IDEs in the hit
-      for(size_t i = 0; i < data.size(); i++){
-    
-        std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(i);
-    
-        for(size_t j = 0; j < ides.size(); j++){
-    
-          int id = ides[j]->trackID;
-    
-          if(fRollupUnsavedIds) id = std::abs(id);
-    
-          ids.push_back(id);
+        std::vector<int> ids;
+      
+        // Get a handle to the CRT hits in the event
+        art::Handle< std::vector<CRTHit> > crtSimHitHandle;
+        art::Handle< std::vector<CRTHit> > crtTrueHitHandle;
+ 
+        // Find which one matches the hit passed to the function
+        int hit_i = -1, tmp_hit_i = -1, index = 0;
+        bool sim=false, findsim=false, findtrue=false;      
+
+        //try to get a handle to CRTSimHits
+        if(event.getByLabel(fCRTSimHitLabel,crtSimHitHandle)) {
+            findsim = true;
+            //find vector index matching the passed CRTHit
+            for(auto const& crtHit : (*crtSimHitHandle)){
+      
+                if(HitCompare(crtHit, hit)) tmp_hit_i = index;
+                index++;
+            }
+
+            if(tmp_hit_i!=-1) {
+                hit_i = tmp_hit_i;
+                tmp_hit_i=-1;
+                sim=true;
+            }
         }
-      }
-    
-      // Remove any repeated IDs
-    
-      std::sort(ids.begin(), ids.end());
-      ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-    
-      return ids;
+
+        //try to get handle to CRTTrueHits
+        if(event.getByLabel(fCRTTrueHitLabel,crtTrueHitHandle)) {
+            findtrue = true;
+            index=0;
+            //find vector index matching the passed CRTHit
+            for(auto const& crtHit : (*crtTrueHitHandle)){
+                
+                if(HitCompare(crtHit, hit)) tmp_hit_i = index;
+                index++;
+            }
+            if(tmp_hit_i!=-1){
+                if(hit_i!=-1) {
+                    mf::LogError("CRTBackTracker::AllTrueIds") << "True/Sim CRTHit ID ambiguity!";
+                    return ids;
+                }
+                hit_i=tmp_hit_i;
+            }
+        }
+        if(hit_i==-1) {
+            mf::LogError("CRTBackTracker::AllTrueIds") << "no match for passed CRTHit found!";
+            return ids;
+        }
+        if(!findsim && !findtrue) {
+            mf::LogError("CRTBackTracker::AllTrueIds") << "no handle to CRTHits could be found!";
+            return ids;
+        }
+
+        // Get the crt data associated to that hit and the IDEs associate to the data
+        std::vector<art::Ptr<sim::AuxDetIDE>> ides;
+      
+        // Get all the true IDs from all the IDEs in the hit
+        if(sim) {
+            art::FindManyP<CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitLabel);
+            std::vector<art::Ptr<CRTData>> data;
+            data = findManyData.at(hit_i);
+            art::FindManyP<sim::AuxDetIDE> findManySimIdes(data, event, fCRTDataLabel);
+            for(size_t i = 0; i < data.size(); i++){
+      
+                ides = findManySimIdes.at(i);
+                for(size_t j = 0; j < ides.size(); j++){
+      
+                    int id = ides[j]->trackID;
+                    if(fRollupUnsavedIds) id = std::abs(id);
+                    ids.push_back(id);
+                }
+            }
+        }//if sim
+        else {
+            art::FindManyP<sim::AuxDetIDE> findManyTrueIdes(crtTrueHitHandle, event, fCRTTrueHitLabel);
+            ides = findManyTrueIdes.at(hit_i);
+            for(auto const& ide : ides) {
+                int id = ide->trackID;
+                if(fRollupUnsavedIds) id = std::abs(id);
+                ids.push_back(id);
+            }
+        }//else true
+
+        // Remove any repeated IDs
+        std::sort(ids.begin(), ids.end());
+        ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
+      
+        return ids;
     }
 
     //-----------------------------------------------------------------------------------------------    
@@ -268,42 +350,34 @@ namespace icarus{
     std::vector<int> CRTBackTracker::AllTrueIds(const art::Event& event, const CRTTrack& track){
     
       std::vector<int> ids;
-    
       // Get a handle to the CRT tracks in the event
       auto crtTrackHandle = event.getValidHandle<std::vector<CRTTrack>>(fCRTTrackLabel);
       art::FindManyP<CRTHit> findManyHits(crtTrackHandle, event, fCRTTrackLabel);
-    
       // Find which one matches the track passed to the function
       int track_i = 0, index = 0;
     
       for(auto const& crtTrack : (*crtTrackHandle)){
     
         if(TrackCompare(crtTrack, track)) track_i = index;
-    
         index++;
-    
       }
     
       // Get the crt hits associated to that hit and the data associate to the hits
       std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
-      art::FindManyP<CRTData> findManyData(hits, event, fCRTHitLabel);
+      art::FindManyP<CRTData> findManyData(hits, event, fCRTSimHitLabel);
     
       // Get all the true IDs from all the IDEs in the track
       for(size_t i = 0; i < hits.size(); i++){
     
         std::vector<art::Ptr<CRTData>> data = findManyData.at(i);
         art::FindManyP<sim::AuxDetIDE> findManyIdes(data, event, fCRTDataLabel);
-    
         for(size_t j = 0; j < data.size(); j++){
     
           std::vector<art::Ptr<sim::AuxDetIDE>> ides = findManyIdes.at(j);
-    
           for(size_t k = 0; k < ides.size(); k++){
     
             int id = ides[k]->trackID;
-    
             if(fRollupUnsavedIds) id = std::abs(id);
-    
             ids.push_back(id);
     
           }
@@ -333,7 +407,6 @@ namespace icarus{
       for(auto const& crtData : (*crtDataHandle)){
     
         if(DataCompare(crtData, data)) data_i = index;
-    
         index++;
       }
     
@@ -343,11 +416,8 @@ namespace icarus{
       for(size_t i = 0; i < ides.size(); i++){
     
         int id = ides[i]->trackID;
-    
         if(fRollupUnsavedIds) id = std::abs(id);
-    
         ids[id] += ides[i]->energyDeposited;
-    
       }
     
       // Find the true ID that contributed the most energy
@@ -360,7 +430,6 @@ namespace icarus{
     
           maxEnergy = id.second;
           trueId = id.first;
-    
         }
       }
     
@@ -380,9 +449,7 @@ namespace icarus{
           if(id.second > maxEnergy){
     
             maxEnergy = id.second;
-    
             trueId = id.first;
-    
           }
         }
     
@@ -399,8 +466,8 @@ namespace icarus{
       std::map<int, double> ids;
     
       // Get a handle to the CRT hits in the event
-      auto crtHitHandle = event.getValidHandle<std::vector<CRTHit>>(fCRTHitLabel);
-      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTHitLabel);
+      auto crtHitHandle = event.getValidHandle<std::vector<CRTHit>>(fCRTSimHitLabel);
+      art::FindManyP<CRTData> findManyData(crtHitHandle, event, fCRTSimHitLabel);
     
       // Find which one matches the hit passed to the function
       int hit_i = 0, index = 0;
@@ -408,7 +475,6 @@ namespace icarus{
       for(auto const& crtHit : (*crtHitHandle)){
     
         if(HitCompare(crtHit, hit)) hit_i = index;
-    
         index++;
       }
     
@@ -424,11 +490,8 @@ namespace icarus{
         for(size_t j = 0; j < ides.size(); j++){
     
           int id = ides[j]->trackID;
-    
           if(fRollupUnsavedIds) id = std::abs(id);
-    
           ids[id] += ides[j]->energyDeposited;
-    
         }
       }
     
@@ -453,18 +516,17 @@ namespace icarus{
     //-----------------------------------------------------------------------------------------
     int CRTBackTracker::TrueIdFromHitId(const art::Event& event, int hit_i){
     
-      if(fHitTrueIds.find(hit_i) != fHitTrueIds.end()){ 
+      if(fSimHitTrueIds.find(hit_i) != fSimHitTrueIds.end()){ 
     
         double maxEnergy = -1;
         int trueId = -99999;
     
-        for(auto &id : fHitTrueIds[hit_i]){
+        for(auto &id : fSimHitTrueIds[hit_i]){
     
           if(id.second > maxEnergy){
     
             maxEnergy = id.second;
             trueId = id.first;
-    
           }
         }
     
@@ -492,14 +554,12 @@ namespace icarus{
       for(auto const& crtTrack : (*crtTrackHandle)){
     
         if(TrackCompare(crtTrack, track)) track_i = index;
-    
         index++;
-    
       }
     
       // Get the crt hits associated to that hit and the data associate to the hits
       std::vector<art::Ptr<CRTHit>> hits = findManyHits.at(track_i);
-      art::FindManyP<CRTData> findManyData(hits, event, fCRTHitLabel);
+      art::FindManyP<CRTData> findManyData(hits, event, fCRTSimHitLabel);
     
       // Get all the true IDs from all the IDEs in the track
       for(size_t i = 0; i < hits.size(); i++){
@@ -514,11 +574,8 @@ namespace icarus{
           for(size_t k = 0; k < ides.size(); k++){
     
             int id = ides[k]->trackID;
-    
             if(fRollupUnsavedIds) id = std::abs(id);
-    
             ids[id] += ides[k]->energyDeposited;
-    
           }
         }
     
@@ -534,12 +591,10 @@ namespace icarus{
     
           maxEnergy = id.second;
           trueId = id.first;
-    
         }
       }
     
       return trueId;
-    
     }
 
     //--------------------------------------------------------------------------
@@ -556,15 +611,11 @@ namespace icarus{
           if(id.second > maxEnergy){
     
             maxEnergy = id.second;
-    
             trueId = id.first;
-    
           }
-    
         }
     
         return trueId;
-    
       }
       return -99999;
     }
