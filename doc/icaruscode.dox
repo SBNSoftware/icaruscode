@@ -21,8 +21,12 @@ ICARUS documentation is scattered in places:
   offers guidelines, documents procedures, and much more; it tends to go outdated though;
 - [SBN DocDB][SBNDocDB] (https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase)
   contains plenty of information
-- reference manual (this one; [all versions: here][ICARUSDoxygenList]; [latest: here][ICARUSDoxygenLatest]) is a
+- software reference manual (this one; [all versions: here][ICARUSDoxygenList]; [latest: here][ICARUSDoxygenLatest]) is a
   reference guide for the use of specific ICARUS code objects.
+- [ICARUS at work][ICARUSatWork] page is a hub for documentation on the detector and working groups
+- the main repository of the software is now in [GitHub] as [`icaruscode` repository][ICARUSGitHub]
+  under the [SBNSoftware] umbrella;
+  the [SBN software documentation repository][SBNwiki] is also in GitHub
 
 
 @section ICARUSDocumentationTopics ICARUS topics
@@ -44,9 +48,19 @@ Others may be available: [check the list][ICARUSDoxygenList].
   https://cdcvs.fnal.gov/redmine/projects/icaruscode/wiki
 [SBNDocDB]:
   https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase
+[ICARUSatWork]:
+  https://icarus-exp.fnal.gov
 [ICARUSDoxygenList]:
   https://icarus-exp.fnal.gov/at_work/software/doc/icaruscode/versionlist.html
 [ICARUSDoxygenLatest]:
   https://icarus-exp.fnal.gov/at_work/software/doc/icaruscode/latest
+[ICARUSGitHub]:
+  https://github.com/SBNSoftware/icaruscode
+[SBNSoftware]:
+  https://github.com/SBNSoftware
+[SBNwiki]:
+  https://github.com/SBNSoftware/SBNSoftware.github.io
+[GitHub]:
+  https://github.com
 
  */
