@@ -17,7 +17,7 @@ source files in Doxygen format.
 
 ICARUS documentation is scattered in places:
 
-- [wiki][ICARUSwiki] in Redmine (https://cdcvs.fnal.gov/redmine/projects/icaruscode/wiki)
+- [wiki][ICARUSwiki] in GitHub (old version in [Fermilab Redmine][ICARUSwikiOld])
   offers guidelines, documents procedures, and much more; it tends to go outdated though;
 - [SBN DocDB][SBNDocDB] (https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase)
   contains plenty of information
@@ -30,7 +30,7 @@ ICARUS documentation is scattered in places:
 - @ref ICARUSPMTTrigger "optical detector and trigger simulation"
 - ... or browse the list of [doxygen groups](modules.html), or the [class list](classes.html)
 
-@section ICARUSversions Documentation of other `icaruscode` software versions
+@section ICARUSversions Documentation of other icaruscode software versions
 
 This documentation pertains the version written above.
 Others may be available: [check the list][ICARUSDoxygenList].
@@ -38,7 +38,11 @@ Others may be available: [check the list][ICARUSDoxygenList].
 
 [LArSoft.org]:
   http://www.larsoft.org
-[ICARUS wiki]:
+[ICARUSwiki]:
+  https://sbnsoftware.github.io/icaruscode_wiki/Wiki
+[ICARUSwikiOld]:
+  https://cdcvs.fnal.gov/redmine/projects/icaruscode/wiki
+[SBNDocDB]:
   https://sbn-docdb.fnal.gov/cgi-bin/sso/DocumentDatabase
 [ICARUSDoxygenList]:
   https://icarus-exp.fnal.gov/at_work/software/doc/icaruscode/versionlist.html
