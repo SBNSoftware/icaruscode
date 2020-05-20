@@ -254,6 +254,14 @@ function RedmineGITremoteURL() {
 } # RedmineGITremoteURL()
 
 
+function GitHubRemoteURL() {
+  local -r RepoName="$1"
+  local -r GroupName="${2:-"$RepoName"}"
+  
+  echo "git@github.com:${GroupName}/${RepoName}.git"
+} # GitHubRemoteURL()
+
+
 function FindGitRepository() {
   
   local RepoName="$1"
