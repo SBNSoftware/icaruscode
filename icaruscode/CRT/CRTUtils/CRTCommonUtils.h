@@ -32,6 +32,7 @@ namespace icarus{
     string         GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
     int            GetAuxDetRegionNum(string reg);
     string         GetRegionNameFromNum(int num);
+    char           GetRegTypeFromRegName(string name);
     pair<uint8_t,uint8_t> ADToMac(const map<int,vector<pair<uint8_t,int>>>& febMap, uint32_t adid);
     int            MacToRegion(uint8_t mac);
     char           MacToType(uint8_t mac);

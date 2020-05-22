@@ -179,9 +179,9 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(mac);
     int adid  = CRTCommonUtils::MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = CRTCommonUtils::GetAuxDetRegion(adGeo);
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
@@ -249,9 +249,9 @@ CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(mac);
     int adid  = CRTCommonUtils::MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = CRTCommonUtils::GetAuxDetRegion(adGeo);
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
@@ -315,9 +315,9 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(coinData[0]->fMac5);
     int adid  = CRTCommonUtils::MacToAuxDetID(coinData[0]->fMac5,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = CRTCommonUtils::GetAuxDetRegion(adGeo);
 
     double hitpoint[3], hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);

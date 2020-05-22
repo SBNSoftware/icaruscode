@@ -65,7 +65,7 @@ int CRTCommonUtils::GetAuxDetRegionNum(string reg)
 }//GetAuxDetRegionNum()
 
 //---------------------------------------------------------------------------------
-std::string CRTCommonUtils::GetRegionNameFromNum(int num) {
+string CRTCommonUtils::GetRegionNameFromNum(int num) {
     switch(num) {
         case 30 :
             return "Top";
@@ -99,6 +99,27 @@ std::string CRTCommonUtils::GetRegionNameFromNum(int num) {
 
     return "Region not found!";
 }
+
+//-------------------------------------------------------------------------------------------
+char CRTCommonUtils::GetRegTypeFromRegName(string name) {
+
+    //CERN modules
+    if(name=="Top"||name=="RimWest"||name=="RimEast"||name=="RimSouth"||name=="RimNorth")
+        return 'c';
+    //MINOS modules
+    if(name=="WestSouth"||name=="WestCenter"||name=="WestNorth"||
+       name=="EastSouth"||name=="EastCenter"||name=="EastNorth"||
+       name=="North"||name=="South")
+        return 'm';
+    //DC modules
+    if(name=="Bottom")
+        return 'd';
+
+    //error
+    return 'e';
+}
+
+
 //---------------------------------------------------------------------------------------------
 //for C- and D-modules, 1 mac5 address
 //three M-modules / FEB, full-length modules read out at both ends (2 FEBs)
