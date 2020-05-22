@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+#
+# Changes:
+# 20200521 (petrillo@slac.stanford.edu) [v2.0]
+#   updated to Python 3
+#
 
 __doc__ = """
 Performs simple checks on ICARUS geometry.
 """
-__version__ = "%(prog)s 1.0"
+__version__ = "%(prog)s 2.0"
 
 import itertools
 import logging
@@ -191,10 +196,17 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
     leftWireID = ROOT.geo.WireID(leftPlane.ID(), leftWireNo)
     try:
       rightWireID = rightPlane.NearestWireID(leftEnd)
-    except ROOT.geo.InvalidWireError, e:
+    except TypeError as e:
+      logging.error(
+       "No wire on %s is close enough to %s (can't get more info, sorry)", 
+       rightPlane.ID(), leftWireID
+       )
+      misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
+      continue
+    except ROOT.geo.InvalidWireError as e:
       logging.error(
        "No wire on %s is close enough to %s (closest is %s, but would have been %s)", 
-       rightPlane.ID(), leftWire.ID(),
+       rightPlane.ID(), leftWireID,
        (e.suggestedWireID() if e.hasSuggestedWire() else "unknown"),
        (e.badWireID() if e.hasBadWire() else "unknown"),
        )
@@ -290,7 +302,7 @@ class SimpleProximityClusterer:
 def groupPlanesByX(planes, tolerance = 0.1, sortBy = None):
   xPos = lambda plane: plane.GetCenter().X()
   cluster = SimpleProximityClusterer(xPos, tolerance) # 1 mm
-  groupedByX = cluster(sorted(planes, None, xPos))
+  groupedByX = cluster(sorted(planes, key=xPos))
   if sortBy:
     if   sortBy.lower() == 'x':
       sortKey = xPos
@@ -300,7 +312,7 @@ def groupPlanesByX(planes, tolerance = 0.1, sortBy = None):
       sortKey = lambda plane: plane.GetCenter().Z()
     else:
       raise RuntimeError("Unsupported sorting requested: '%s'" % sortBy)
-    for planes in groupedByX: planes.sort(None, sortKey)
+    for planes in groupedByX: planes.sort(key=sortKey)
   # if sorting
   return groupedByX
 # groupPlanesByX()
@@ -382,6 +394,7 @@ def performGeometryChecks(argv):
   logging.basicConfig(level=logging.DEBUG - (args.debug - 1))
   
   from ICARUSservices import ServiceManager
+  import cppUtils
   import ROOT
   import ROOTutils
   
@@ -510,7 +523,7 @@ def performGeometryChecks(argv):
     for misalignedWiresOnPlane in misalignedWires:
       logging.error("%d on wires on plane around x=%g cm:",
        len(misalignedWiresOnPlane),
-       misalignedWiresOnPlane[0].GetCenter().X()
+       misalignedWiresOnPlane[0][2].GetCenter().X()
        )
       for shift, wireLid, wireL, wireRid, wireR in misalignedWiresOnPlane:
         if shift is None:
@@ -522,7 +535,7 @@ def performGeometryChecks(argv):
       # for all misaligned wire pairs
     # for
     FailureSummary.append \
-      ("Misaligned wires found on %d extended planes:" % len(misalignedWires))
+      ("Misaligned wires found on %d extended planes" % len(misalignedWires))
   else:
     logging.info("No misaligned wires detected.")
   
