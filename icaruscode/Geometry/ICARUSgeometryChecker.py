@@ -54,20 +54,22 @@ def boxID(box, default):
 
 
 # ------------------------------------------------------------------------------
-def CheckBoxOverlaps(boxes, objName = None):
-  """Returns a list of pairs of overlapping cryostats (empty if no overlap)."""
-  if objName is None: objName = boxes.__class__.__name__
+def CheckGeoObjOverlaps(objs, objName = None, extractBox = None):
+  """Returns a list of pairs of overlapping objects (empty if no overlap)."""
+  if objName is None: objName = objs.__class__.__name__
   overlaps = []
-  for (iBox1, box1), (iBox2, box2) in itertools.combinations(enumerate(boxes), 2):
+  for (iObj1, obj1), (iObj2, obj2) in itertools.combinations(enumerate(objs), 2):
+    box1 = obj1 if extractBox is None else extractBox(obj1)
+    box2 = obj2 if extractBox is None else extractBox(obj2)
     if not box2.Overlaps(box1): continue
     logging.error("%s %s (%s to %s) and %s (%s to %s) overlap!", objName,
-     boxID(box1, iBox1), box1.Min(), box1.Max(),
-     boxID(box2, iBox2), box2.Min(), box2.Max(),
+     boxID(box1, iObj1), box1.Min(), box1.Max(),
+     boxID(box2, iObj2), box2.Min(), box2.Max(),
      )
-    overlaps.append( ( box1, box2, ) )
+    overlaps.append( ( obj1, obj2, ) )
   # for boxes
   return overlaps
-# CheckBoxOverlaps()
+# CheckGeoObjOverlaps()
 
 
 # ------------------------------------------------------------------------------
@@ -413,7 +415,7 @@ def performGeometryChecks(argv):
   #
   # cryostat overlap
   #
-  overlappingCryostats = CheckBoxOverlaps(Cryostats, "cryostat")
+  overlappingCryostats = CheckGeoObjOverlaps(Cryostats, "cryostat")
   if overlappingCryostats:
     msg = "%s cryostat overlaps detected: %s." % (
      len(overlappingCryostats),
@@ -426,7 +428,7 @@ def performGeometryChecks(argv):
   #
   # TPC overlaps
   #
-  overlappingTPCs = CheckBoxOverlaps(TPCs, "TPC")
+  overlappingTPCs = CheckGeoObjOverlaps(TPCs, "TPC")
   if overlappingTPCs:
     msg = "%s TPC overlaps detected: %s." % (
      len(overlappingTPCs), ", ".join(map(GeoPairToString, overlappingTPCs)),
@@ -438,8 +440,8 @@ def performGeometryChecks(argv):
   #
   # TPC active volume overlaps
   #
-  overlappingActiveVolTPCs = CheckBoxOverlaps \
-    (map(ROOT.geo.TPCGeo.ActiveBoundingBox, TPCs), "active TPC volume")
+  overlappingActiveVolTPCs = CheckGeoObjOverlaps \
+    (TPCs, "active TPC volume", extractBox=ROOT.geo.TPCGeo.ActiveBoundingBox)
   if overlappingActiveVolTPCs:
     msg = "%s TPC active volume overlaps detected: %s." % (
      len(overlappingActiveVolTPCs),
@@ -452,8 +454,8 @@ def performGeometryChecks(argv):
   #
   # plane box overlaps
   #
-  overlappingPlanes = CheckBoxOverlaps \
-   (map(ROOT.geo.PlaneGeo.BoundingBox, Planes), "wire planes")
+  overlappingPlanes = CheckGeoObjOverlaps \
+   (Planes, "wire planes", extractBox=ROOT.geo.PlaneGeo.BoundingBox)
   if overlappingPlanes:
     logging.error("%s wire plane overlaps detected: %s.",
      len(overlappingPlanes),
