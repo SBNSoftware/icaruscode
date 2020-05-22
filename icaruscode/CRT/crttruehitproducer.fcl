@@ -3,7 +3,7 @@ BEGIN_PROLOG
 standard_crttruehitrecoalg:
 {
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
-    EDepMin:              1.9    # minimum considered energy deposited in scintillator strip [Mev]
+    EDepMin:              1.5    # minimum considered energy deposited in scintillator strip [Mev]
     RollupUnusedIds:      true   # merge G4-untracked trackIDs into the parent ID
 }
 
