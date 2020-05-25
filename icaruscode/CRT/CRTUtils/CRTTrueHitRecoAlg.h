@@ -39,7 +39,7 @@ namespace icarus {
 
 struct tagger {
     char type;
-    int region;
+    string region;
     std::set<int> layerID;
     map<int,int> stripLayer;
     map<int,sim::AuxDetIDE> stripIDE;
@@ -87,7 +87,7 @@ class icarus::crt::CRTTrueHitRecoAlg {
  private:
 
     geo::GeometryCore const* fGeometryService;
-    map<int,vector<pair<uint8_t,int>>> fFebMap;
+    CRTCommonUtils* fCrtutils;
 
     //config params
     bool   fUseReadoutWindow;

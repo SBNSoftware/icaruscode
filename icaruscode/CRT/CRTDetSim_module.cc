@@ -200,7 +200,7 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
 
         std::sort(triggeredCRTHits->begin(),triggeredCRTHits->end(), 
             [](const CRTData& d1, const CRTData& d2) {
-                return d1.fTs0 > d2.fTs0;
+                return d1.fTs0 < d2.fTs0;
             });
     }
 

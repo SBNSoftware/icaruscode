@@ -16,13 +16,14 @@ namespace icarus{
     CRTDetSimAlg::CRTDetSimAlg(fhicl::ParameterSet const & p, CLHEP::HepRandomEngine& engine) :
         fNsim_m(0), fNsim_d(0), fNsim_c(0), fNchandat_m(0), fNchandat_d(0), fNchandat_c(0),
         fNmissthr_c(0), fNmissthr_d(0), fNmissthr_m(0), fNmiss_strcoin_c(0), fNdual_m(0),
-        fHasFilledTaggers(false), fRandEngine(engine), fFebMap(CRTCommonUtils::GetFebMap())
+        fHasFilledTaggers(false), fRandEngine(engine)
     {
 
         this->reconfigure(p);
         fRegCounts.clear();
 	fRegions.clear();
         fTaggers.clear();
+        fCrtutils = new CRTCommonUtils();
     }
     //----------------------------------------------------------------------
     //getting parameter values from FHiCL (called by constructor)
@@ -304,7 +305,7 @@ namespace icarus{
               else if ( ttmp > ttrig + fDeadTime) {
 
                 if(istrig)
-                  {int regnum = CRTCommonUtils::GetAuxDetRegionNum(trg.second.reg);
+                  {int regnum = fCrtutils->AuxDetRegionNameToNum(trg.second.reg);
                   if( (fRegions.insert(regnum)).second) fRegCounts[regnum] = 1;
                   else fRegCounts[regnum]++;
 
@@ -371,7 +372,7 @@ namespace icarus{
                       }
                   }
 
-                  int regnum = CRTCommonUtils::GetAuxDetRegionNum(trg.second.reg);
+                  int regnum = fCrtutils->AuxDetRegionNameToNum(trg.second.reg);
                   if( (fRegions.insert(regnum)).second) fRegCounts[regnum] = 1;
                   else fRegCounts[regnum]++;
 
@@ -445,7 +446,7 @@ namespace icarus{
               std::cout << '\n' << "FEB events per CRT region: " << '\n' << std::endl;
 
               do {
-                  std::cout << CRTCommonUtils::GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
+                  std::cout << fCrtutils->GetRegionNameFromNum((*it).first) << ": , events: " << (*it).second << '\n' << std::endl;
                   it++;
               }
               while ( it != fRegCounts.end() );
@@ -471,8 +472,8 @@ namespace icarus{
 
         const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
         const geo::AuxDetSensitiveGeo& adsGeo = adGeo.SensitiveVolume(adsid); //pointer to strip object
-        const char auxDetType = CRTCommonUtils::GetAuxDetType(adGeo); //CRT module type (c, d, or m)
-        const string region = CRTCommonUtils::GetAuxDetRegion(adGeo); //CRT region
+        const char auxDetType = fCrtutils->GetAuxDetType(adid); //CRT module type (c, d, or m)
+        const string region = fCrtutils->GetAuxDetRegion(adid); //CRT region
 
         int layid = INT_MAX; //set to 0 or 1 if layerid determined
         uint8_t mac5=UINT8_MAX, mac5dual=UINT8_MAX; //front-end board ID, dual for MINOS modules (not cut)
@@ -626,22 +627,22 @@ namespace icarus{
             // module, and a channel number from 0 to 32.
 
             int channel0ID=0, channel1ID=0;
+            pair<uint8_t,uint8_t> macs = fCrtutils->ADToMac(adid);
+            mac5 = macs.first;
+            int changroup = fCrtutils->ADToChanGroup(adid);
 
             switch (auxDetType){
                 case 'c' :
-                    mac5 =fFebMap[adid][0].first;
                     channel0ID = 2 * adsid + 0;
                     channel1ID = 2 * adsid + 1;
                     break;
                 case 'd' :
-                    mac5 = fFebMap[adid][0].first;
                     channel0ID = adsid;
                     break;
                 case 'm' :
-                    mac5 = fFebMap[adid][0].first;
-                    channel0ID = adsid/2 + 10*(fFebMap[adid][0].second-1);
-                    if (fFebMap[adid].size()==2)  {
-                        mac5dual = fFebMap[adid][1].first;
+                    channel0ID = adsid/2 + 10*(changroup-1);
+                    if (fCrtutils->NFeb(adid)==2)  {
+                        mac5dual = macs.second;
                     }
                     break;
             }
@@ -701,7 +702,7 @@ namespace icarus{
                         std::make_pair(FillChanData(channel0ID,q0,t0),ide));
                       fNchandat_m++;
                     }
-                    if(q0Dual > fQThresholdM && fFebMap[adid].size()==2) {
+                    if(q0Dual > fQThresholdM && fCrtutils->NFeb(adid)==2) {
                       Tagger& tagger = fTaggers[mac5dual];
                       tagger.layerid.insert(layid);
                       tagger.chanlayer[channel0ID] = layid;
@@ -722,7 +723,7 @@ namespace icarus{
             if (auxDetType == 'd' && q0 < fQThresholdD) fNmissthr_d++;
             if (auxDetType == 'm') {
                 if( q0 < fQThresholdM) fNmissthr_m++;
-                if( q0Dual < fQThresholdM && fFebMap[adid].size()==2) fNmissthr_m++;
+                if( q0Dual < fQThresholdM && fCrtutils->NFeb(adid)==2) fNmissthr_m++;
             }
 
             //print detsim info (if enabled)

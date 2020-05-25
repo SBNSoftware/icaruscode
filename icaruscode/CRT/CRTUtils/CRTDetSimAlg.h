@@ -128,8 +128,8 @@ class icarus::crt::CRTDetSimAlg {
     map<int,int> fRegCounts;
     set<int> fRegions;
 
+    CRTCommonUtils* fCrtutils;
     CLHEP::HepRandomEngine& fRandEngine;
-    map<int,vector<pair<uint8_t,int>>> fFebMap;
 
     // A list of hit taggers, before any coincidence requirement (mac5 -> tagger)
     map<uint8_t, Tagger> fTaggers;
