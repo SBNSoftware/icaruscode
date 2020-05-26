@@ -8,7 +8,7 @@ standard_icarus_crtsimalg:
 
   # Global timing offset [ns]
   # For Corsika cosmics, use 1.1ms (see corsika_icarus.fcl)
-  GlobalT0Offset: 1.1e6
+  GlobalT0Offset: 1.6e6
 
   # Shape parameters for mean time delay vs. Npe
   TDelayNorm: 4125.74
