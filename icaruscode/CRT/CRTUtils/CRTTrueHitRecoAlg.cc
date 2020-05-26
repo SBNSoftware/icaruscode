@@ -27,6 +27,7 @@ void CRTTrueHitRecoAlg::reconfigure(const Config& config){
   fUseReadoutWindow = config.UseReadoutWindow();
   fEDepMin = config.EDepMin();
   fRollupUnusedIds = config.RollupUnusedIds();
+  fGlobalT0Offset = config.GlobalT0Offset();
   return;
 }
 
@@ -98,7 +99,8 @@ vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
                     }
     
                     rHit*=1.0/tag.second.stripIDE.size();                    
- 
+                    rHit.SetT(rHit.T()+fGlobalT0Offset); 
+
                     //hit position RMS
                     for ( auto const& ide : tag.second.stripIDE) {
                         //XYZTVector 
@@ -191,6 +193,7 @@ vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
             if (pairFound) {
 
                 rHit*=1.0/vide.size();
+                rHit.SetT(rHit.T()+fGlobalT0Offset);
 
                 //hit position RMS
                 for ( auto const& ide : vide) {

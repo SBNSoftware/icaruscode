@@ -65,6 +65,10 @@ class icarus::crt::CRTTrueHitRecoAlg {
           Name("RollupUnusedIds"),
           Comment("merge G4-untracked trackIDs into partent track")
         };
+        fhicl::Atom<double> GlobalT0Offset {
+          Name("GlobalT0Offset"),
+          Comment("global timing offset [ns] (needed to make all G4 times > 0")
+        };
     };
 
     CRTTrueHitRecoAlg(const Config& config);
@@ -93,6 +97,7 @@ class icarus::crt::CRTTrueHitRecoAlg {
     bool   fUseReadoutWindow;
     double fEDepMin;
     bool   fRollupUnusedIds;
+    double fGlobalT0Offset;
 
 };
 
