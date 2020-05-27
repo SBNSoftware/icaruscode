@@ -7,6 +7,7 @@ cet_make(
     lardataalg_DetectorInfo
     lardataalg_MCDumpers
     lardataobj_RawData
+    nusimdata_SimulationBase
     MF_MessageLogger
     fhiclcpp
   )
