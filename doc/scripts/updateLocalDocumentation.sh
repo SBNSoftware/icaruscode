@@ -24,6 +24,8 @@
 #
 # 20200426 (petrillo@slac.stanford.edu) [v1.0]
 #   first version in `icaruscode`; metadata version: 1
+# 20200520 (petrillo@slac.stanford.edu) [v1.1]
+#   using GitHub sources
 #
 
 # -- BEGIN -- boilerplate settings and library loading -------------------------
@@ -40,10 +42,11 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.0"
+SCRIPTVERSION="1.1"
 
 
 declare -ri MetadataVersion='1' # integral numbers please
+declare -ri GitHubExperimentGroup='SBNSoftware'
 
 
 # ------------------------------------------------------------------------------
@@ -194,8 +197,8 @@ function RunDoxygen() {
   local NewGITclone=0
   if [[ ! -r "${ExperimentCodeRepoPath}/.git" ]]; then
     local -a GitSources=(
+      $(GitHubRemoteURL "$ExperimentCodeName" "$GitHubExperimentGroup" )
       $(RedmineGITremoteURL "$ExperimentCodeName")
-      # add GITHub?
       )
     
     for GitSource in "${GitSources[@]}" ; do
