@@ -179,13 +179,17 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
   # 2. for each wire in left plane ending close to right side, pick and test
   #    the matching wire of the right plane
   #
+  
+  leftEndPos = lambda wire: \
+   wire.GetStart() if wire.GetStart().Z() > wire.GetEnd().Z() else wire.GetEnd()
+  rightEndPos = lambda wire: \
+   wire.GetStart() if wire.GetStart().Z() < wire.GetEnd().Z() else wire.GetEnd()
+  
   stats = StatCollector()
   wireNoDiff = None # offset in wire number only between matching wires
   for leftWireNo, leftWire in enumerate(leftPlane.IterateWires()):
     
-    leftEnd \
-      = leftWire.GetStart() if leftWire.GetStart().Z() > leftWire.GetEnd().Z() \
-        else leftWire.GetEnd()
+    leftEnd = leftEndPos(leftWire)
     
     # 
     # 2.1. if the wire does not end on the right edge, move on
@@ -198,23 +202,51 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
     leftWireID = ROOT.geo.WireID(leftPlane.ID(), leftWireNo)
     try:
       rightWireID = rightPlane.NearestWireID(leftEnd)
+    #except ( TypeError, ROOT.geo.InvalidWireError ) as e:
     except TypeError as e:
-      logging.error(
-       "No wire on %s is close enough to %s (can't get more info, sorry)", 
-       rightPlane.ID(), leftWireID
-       )
-      misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
-      continue
+      rightWireID = None
     except ROOT.geo.InvalidWireError as e:
+      # this branch is a placeholder, since Python 3 is not able to catch
+      # ROOT.geo.InvalidWireError (and if one is thrown, a TypeError will raise)
       logging.error(
        "No wire on %s is close enough to %s (closest is %s, but would have been %s)", 
        rightPlane.ID(), leftWireID,
        (e.suggestedWireID() if e.hasSuggestedWire() else "unknown"),
        (e.badWireID() if e.hasBadWire() else "unknown"),
        )
+      rightWireID = e.badWireID() if e.hasBadWire() else None
+      rightWireID.markInvalid()
       misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
       continue
     # try ... except no wire matched
+    if not rightWireID:
+      msg = ""
+      if rightWireID is None:
+        msg += "No wire on {} is close enough to {}" \
+         .format(rightPlane.ID(), leftWireID)
+      else: # just invalid
+        msg += "No wire on {} is close enough to {} (would have been {})" \
+         .format(rightPlane.ID(), leftWireID, rightWireID)
+      # if ... else
+      
+      wireCoord = rightPlane.WireCoordinate(leftEnd)
+      msg += "; closest would have been {} W: {}" \
+       .format(rightPlane.ID(), wireCoord)
+      
+      nearestWireID = ROOT.geo.WireID(rightPlane.ID(), int(0.5 + wireCoord)) \
+       if 0.5 + wireCoord >= 0.0 else None
+      nearestWire = None
+      if nearestWireID and rightPlane.HasWire(nearestWireID):
+        nearestWire = rightPlane.Wire(nearestWireID) 
+      if nearestWire:
+        msg += "; actual {} ends at: {}" \
+         .format(nearestWireID, rightEndPos(nearestWire))
+      
+      logging.error(msg)
+      misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
+      continue
+    #
+    
     rightWire = rightPlane.Wire(rightWireID)
     
     #
@@ -399,6 +431,10 @@ def performGeometryChecks(argv):
   import cppUtils
   import ROOT
   import ROOTutils
+  
+  # this is for a bug present in LArSoft v08_52_00 (and many other versions);
+  # the header where exception geo::InvalidWireError is defined is not included.
+  cppUtils.SourceCode.loadHeaderFromUPS("larcorealg/Geometry/Exceptions.h")
   
   global ROOT
 
