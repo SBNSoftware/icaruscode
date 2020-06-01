@@ -1,0 +1,58 @@
+BEGIN_PROLOG
+
+standard_wirecell_sigproc:
+{
+  module_type : WireCellToolkit
+  wcls_main: {
+     tool_type: WCLS
+     apps: ["Pgrapher"]
+  
+     logsinks: ["stdout"]
+     loglevels: ["debug", "pgraph:info", "glue:debug", "sigproc:debug"]
+  
+     // Libraries in which to look for WCT components
+     plugins: ["WireCellGen", "WireCellSigProc", "WireCellRoot", "WireCellPgraph", "WireCellLarsoft"]
+  
+     // The tool marshals the art::Event to these visitors before.
+     // See notes below in params.
+     inputers: ["wclsRawFrameSource"
+        // To use wclsMultiChannelNoiseDB you must also put epoch:dynamic below
+        // and you must have geo::Geometry service in your environment.
+        // ,"wclsMultiChannelNoiseDB"  
+     ]
+  
+     // or after the WCT app is run.  These names MUST be used identically in the Jsonnet
+     // fixme: https://github.com/WireCell/larwirecell/issues/3
+     //outputers: ["wclsFrameSaver:nfsaver", "wclsFrameSaver:spsaver"]
+     outputers: ["wclsFrameSaver:spsaver"]
+  
+     // This sets the "main" Jsonnet file which provides the 
+     // configuration for the Wire-Cell Toolkit components.  It is
+     // take as relative to entries in WIRECELL_PATH.
+     configs: ["pgrapher/experiment/icarus/wcls-decode-to-sig.jsonnet"]
+  
+     // Set the "external variables" required by the Jsonnet.
+     params : {
+        // This locates the input raw::RawDigit collection in the art::Event 
+        // raw_input_label: "daq"
+        raw_input_label: "simmer:daq"
+        tpc_volume_label: "" // eg "",0,1,2,3. Empty("") means all volumes
+  
+        // Set "data" vs. "sim".  The epoch below probably should follow suit.
+        reality: "data"
+        // reality: "sim"
+  
+        // if epoch is "dynamic" you MUST add
+        // "wclsMultiChannelNoiseDB" to "inputers" and must NOT
+        // add it if not "dynamic"
+        // epoch: "dynamic"
+        // epoch: "perfect"
+        epoch: "after"
+  
+        // Save output signal waveforms (recob::Wire) in "sparse" or "dense" form
+        signal_output_form: "sparse"
+     }
+  }
+}
+
+END_PROLOG
