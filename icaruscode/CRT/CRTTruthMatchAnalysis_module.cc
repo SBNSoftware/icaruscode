@@ -32,9 +32,14 @@
 //C++ includes
 #include <vector>
 #include <map>
+#include <string>
+#include <utility>
 
 //ROOT includes
 #include <TH1F.h>
+#include <TH2F.h>
+#include <TGraph.h>
+#include <TVector3.h>
 
 namespace icarus{ 
  namespace crt {
@@ -65,6 +70,8 @@ class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
  private:
 
     float GetDeltaR(art::Ptr<CRTHit> h1, art::Ptr<CRTHit> h2);
+    int GetDeltaT(art::Ptr<CRTHit> h1, art::Ptr<CRTHit> h2);
+    TVector3 HitToPosVec(art::Ptr<CRTHit> hit);
 
     art::InputTag fSimulationLabel;
     art::InputTag fCRTTrueHitLabel;
@@ -94,12 +101,17 @@ class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
     TH1F* fFebsTrue;
     TH1F* fFebsSim;
 
-    TH1F* fRres_top;
-    TH1F* fRres_rim;
-    TH1F* fRres_lat;
-    TH1F* fRres_nor;
-    TH1F* fRres_sth;
-    TH1F* fRres_bot;
+    TH1F *fRres_top, *fXres_top, *fYres_top, *fZres_top, *fTres_top;
+    TH1F *fRres_rim, *fXres_rim, *fYres_rim, *fZres_rim, *fTres_rim;
+    TH1F *fRres_lat, *fXres_lat, *fYres_lat, *fZres_lat, *fTres_lat;
+    TH1F *fRres_nor, *fXres_nor, *fYres_nor, *fZres_nor, *fTres_nor;
+    TH1F *fRres_sth, *fXres_sth, *fYres_sth, *fZres_sth, *fTres_sth;
+    TH1F *fRres_bot, *fXres_bot, *fYres_bot, *fZres_bot, *fTres_bot;
+
+    size_t        fNViews;
+    vector<TH2F*> fChargeViews;
+    vector<TGraph*> fTrueHitPoints;
+    vector<TGraph*> fSimHitPoints;
 
 };//class definition
 
@@ -120,30 +132,82 @@ void CRTTruthMatchAnalysis::beginJob()
     // histograms and n-tuples for us. 
     art::ServiceHandle<art::TFileService> tfs;
 
-    fNTrueHitMu      = tfs->make<TH1F>("hNTrueHitMu",     "Number of True Hits per #mu Track",    10,0,10);
-    fNDataMu         = tfs->make<TH1F>("hNDataMu",        "Number of FEB Triggers per #mu Track", 10,0,10);
-    fNSimHitMu       = tfs->make<TH1F>("hNSimHitMu",      "Number of Sim Hits per #mu Track",     10,0,10);
-    fNTrueSimDiffMu  = tfs->make<TH1F>("hNTrueSimDiffMu", "Number of True-Sim Hits per #mu Track",14,-6,8); 
+    fNTrueHitMu      = tfs->make<TH1F>("hNTrueHitMu",     "No. True Hits per #mu",      10,0,10);
+    fNDataMu         = tfs->make<TH1F>("hNDataMu",        "No. FEB Triggers per #mu",   10,0,10);
+    fNSimHitMu       = tfs->make<TH1F>("hNSimHitMu",      "No. Sim Hits per #mu",       10,0,10);
+    fNTrueSimDiffMu  = tfs->make<TH1F>("hNTrueSimDiffMu", "No. True-Sim Hits per #mu",  14,-6,8); 
 
-    fNTrueHitMu_top  = tfs->make<TH1F>("hNTrueHitMu_top", "Number of True Hits per #mu Track",  10,0,10);
-    fNTrueHitMu_side = tfs->make<TH1F>("hNTrueHitMu_side","Number of True Hits per #mu Track",  10,0,10);
-    fNTrueHitMu_bot  = tfs->make<TH1F>("hNTrueHitMu_bot", "Number of True Hits per #mu Track",  10,0,10);
-    fNSimHitMu_top   = tfs->make<TH1F>("hNSimHitMu_top",  "Number of Sim Hits per #mu Track",   10,0,10);
-    fNSimHitMu_side  = tfs->make<TH1F>("hNSimHitMu_side", "Number of Sim Hits per #mu Track",   10,0,10);
-    fNSimHitMu_bot   = tfs->make<TH1F>("hNSimHitMu_bot",  "Number of Sim Hits per #mu Track",   10,0,10);
+    fNTrueHitMu_top  = tfs->make<TH1F>("hNTrueHitMu_top", "No. True Hits per #mu",      10,0,10);
+    fNTrueHitMu_side = tfs->make<TH1F>("hNTrueHitMu_side","No. True Hits per #mu",      10,0,10);
+    fNTrueHitMu_bot  = tfs->make<TH1F>("hNTrueHitMu_bot", "No. True Hits per #mu",      10,0,10);
+    fNSimHitMu_top   = tfs->make<TH1F>("hNSimHitMu_top",  "No. Sim Hits per #mu",       10,0,10);
+    fNSimHitMu_side  = tfs->make<TH1F>("hNSimHitMu_side", "No. Sim Hits per #mu",       10,0,10);
+    fNSimHitMu_bot   = tfs->make<TH1F>("hNSimHitMu_bot",  "No. Sim Hits per #mu",       10,0,10);
 
-    fNRegTrue        = tfs->make<TH1F>("hNRegTrue",       "Number of True Hits per Region",     10,0,10);
-    fNRegSim         = tfs->make<TH1F>("hNRegSim",        "Number of Sim Hits per Region",      10,0,10); 
+    fNRegTrue        = tfs->make<TH1F>("hNRegTrue",       "No. True Hits per Region",   10,0,10);
+    fNRegSim         = tfs->make<TH1F>("hNRegSim",        "No. Sim Hits per Region",    10,0,10); 
 
-    fFebsTrue        = tfs->make<TH1F>("hFebsTrue",       "mac5s in true hits",               256,0,256);
-    fFebsSim         = tfs->make<TH1F>("hFebsSim",        "mac5s in sim hits",                256,0,256);
+    fFebsTrue        = tfs->make<TH1F>("hFebsTrue",       "mac5s in true hits",         300,0,300);
+    fFebsSim         = tfs->make<TH1F>("hFebsSim",        "mac5s in sim hits",          300,0,300);
 
-    fRres_top        = tfs->make<TH1F>("hRres_top",       "CRTHit Spatial Resolution: Top",     60,0,300);
-    fRres_rim        = tfs->make<TH1F>("hRres_rim",       "CRTHit Spatial Resolution: Rim",     60,0,300);
-    fRres_bot        = tfs->make<TH1F>("hRres_bot",       "CRTHit Spatial Resolution: Bottom",  60,0,300);
-    fRres_lat        = tfs->make<TH1F>("hRres_lat",       "CRTHit Spatial Resolution: East/West",  60,0,500);
-    fRres_nor        = tfs->make<TH1F>("hRres_nor",       "CRTHit Spatial Resolution: North",  60,0,500);
-    fRres_sth        = tfs->make<TH1F>("hRres_sth",       "CRTHit Spatial Resolution: South",  60,0,500);
+    art::TFileDirectory resdir = tfs->mkdir("resolution");
+    fRres_top        = resdir.make<TH1F>("hRres_top",       "CRTHit #sigma_{r}: Top",       50,0,200);
+    fRres_rim        = resdir.make<TH1F>("hRres_rim",       "CRTHit #sigma_{r}: Rim",       50,0,200);
+    fRres_bot        = resdir.make<TH1F>("hRres_bot",       "CRTHit #sigma_{r}: Bottom",    50,0,200);
+    fRres_lat        = resdir.make<TH1F>("hRres_lat",       "CRTHit #sigma_{r}: East/West", 200,0,1000);
+    fRres_nor        = resdir.make<TH1F>("hRres_nor",       "CRTHit #sigma_{r}: North",     200,0,1000);
+    fRres_sth        = resdir.make<TH1F>("hRres_sth",       "CRTHit #sigma_{r}: South",     200,0,1000);
+
+    fXres_top        = resdir.make<TH1F>("hXres_top",       "CRTHit #sigma_{x}: Top",       100,-200,200);
+    fXres_rim        = resdir.make<TH1F>("hXres_rim",       "CRTHit #sigma_{x}: Rim",       100,-200,200);
+    fXres_bot        = resdir.make<TH1F>("hXres_bot",       "CRTHit #sigma_{x}: Bottom",    100,-200,200);
+    fXres_lat        = resdir.make<TH1F>("hXres_lat",       "CRTHit #sigma_{x}: East/West", 225,-450,450);
+    fXres_nor        = resdir.make<TH1F>("hXres_nor",       "CRTHit #sigma_{x}: North",     225,-450,450);
+    fXres_sth        = resdir.make<TH1F>("hXres_sth",       "CRTHit #sigma_{x}: South",     225,-450,450);
+
+    fYres_top        = resdir.make<TH1F>("hYres_top",       "CRTHit #sigma_{y}: Top",       100,-200,200);
+    fYres_rim        = resdir.make<TH1F>("hYres_rim",       "CRTHit #sigma_{y}: Rim",       100,-200,200);
+    fYres_bot        = resdir.make<TH1F>("hYres_bot",       "CRTHit #sigma_{y}: Bottom",    100,-200,200);
+    fYres_lat        = resdir.make<TH1F>("hYres_lat",       "CRTHit #sigma_{y}: East/West", 225,-450,450);
+    fYres_nor        = resdir.make<TH1F>("hYres_nor",       "CRTHit #sigma_{y}: North",     225,-450,450);
+    fYres_sth        = resdir.make<TH1F>("hYres_sth",       "CRTHit #sigma_{y}: South",     225,-450,450);
+
+    fZres_top        = resdir.make<TH1F>("hZres_top",       "CRTHit #sigma_{z}: Top",       100,-200,200);
+    fZres_rim        = resdir.make<TH1F>("hZres_rim",       "CRTHit #sigma_{z}: Rim",       100,-200,200);
+    fZres_bot        = resdir.make<TH1F>("hZres_bot",       "CRTHit #sigma_{z}: Bottom",    100,-200,200);
+    fZres_lat        = resdir.make<TH1F>("hZres_lat",       "CRTHit #sigma_{z}: East/West", 225,-450,450);
+    fZres_nor        = resdir.make<TH1F>("hZres_nor",       "CRTHit #sigma_{z}: North",     225,-450,450);
+    fZres_sth        = resdir.make<TH1F>("hZres_sth",       "CRTHit #sigma_{z}: South",     225,-450,450);
+
+    fTres_top        = resdir.make<TH1F>("hTres_top",       "CRTHit #sigma_{t}: Top",       100,-50,50);
+    fTres_rim        = resdir.make<TH1F>("hTres_rim",       "CRTHit #sigma_{t}: Rim",       100,-50,50);
+    fTres_bot        = resdir.make<TH1F>("hTres_bot",       "CRTHit #sigma_{t}: Bottom",    100,-50,50);
+    fTres_lat        = resdir.make<TH1F>("hTres_lat",       "CRTHit #sigma_{t}: East/West", 100,-50,50);
+    fTres_nor        = resdir.make<TH1F>("hTres_nor",       "CRTHit #sigma_{t}: North",     100,-50,50);
+    fTres_sth        = resdir.make<TH1F>("hTres_sth",       "CRTHit #sigma_{t}: South",     100,-50,50);
+
+    art::TFileDirectory viewdir = tfs->mkdir("chargeview");
+
+    fNViews = 0;
+    for(int i=0; i<100; i++) {
+        std::string gnametrue = "gview_true"+std::to_string(i);
+        std::string gnamesim  = "gview_sim"+std::to_string(i);
+        std::string hname = "hview"+std::to_string(i);
+        std::string gtitletrue = "Charge View True Point "+std::to_string(i);
+        std::string gtitlesim  = "Charge View Sim Point "+std::to_string(i);
+        std::string htitle = "Charge View " + std::to_string(i);
+        fChargeViews.push_back(viewdir.make<TH2F>(hname.c_str(), htitle.c_str(),16,0,16,16,0,16));
+        fChargeViews.back()->GetXaxis()->SetTitle("X-layer channel");
+        fChargeViews.back()->GetYaxis()->SetTitle("Y-layer channel");
+        fTrueHitPoints.push_back(viewdir.makeAndRegister<TGraph>(gnametrue.c_str(),gtitletrue.c_str(),1));
+        fSimHitPoints.push_back(viewdir.makeAndRegister<TGraph>(gnamesim.c_str(),gtitlesim.c_str(),1));
+        fTrueHitPoints.back()->SetMarkerStyle(47);
+        fTrueHitPoints.back()->SetMarkerSize(10);
+        fTrueHitPoints.back()->SetMarkerColor(kRed);
+        fSimHitPoints.back()->SetMarkerStyle(8);
+        fSimHitPoints.back()->SetMarkerSize(10);
+        fSimHitPoints.back()->SetMarkerColor(kMagenta);
+    }
 
     //style options
     fNTrueHitMu->SetLineWidth(2);
@@ -163,6 +227,77 @@ void CRTTruthMatchAnalysis::beginJob()
     fNSimHitMu_top->SetLineColor(kBlue);
     fNSimHitMu_side->SetLineColor(kRed);
     fNSimHitMu_bot->SetLineColor(kGreen);
+
+    fRres_top->SetLineWidth(2);
+    fRres_rim->SetLineWidth(2);
+    fRres_bot->SetLineWidth(2);
+    fRres_lat->SetLineWidth(2);
+    fRres_nor->SetLineWidth(2);
+    fRres_sth->SetLineWidth(2);
+
+    fXres_top->SetLineWidth(2);
+    fXres_rim->SetLineWidth(2);
+    fXres_bot->SetLineWidth(2);
+    fXres_lat->SetLineWidth(2);
+    fXres_nor->SetLineWidth(2);
+    fXres_sth->SetLineWidth(2);
+
+    fYres_top->SetLineWidth(2);
+    fYres_rim->SetLineWidth(2);
+    fYres_bot->SetLineWidth(2);
+    fYres_lat->SetLineWidth(2);
+    fYres_nor->SetLineWidth(2);
+    fYres_sth->SetLineWidth(2);
+
+    fZres_top->SetLineWidth(2);
+    fZres_rim->SetLineWidth(2);
+    fZres_bot->SetLineWidth(2);
+    fZres_lat->SetLineWidth(2);
+    fZres_nor->SetLineWidth(2);
+    fZres_sth->SetLineWidth(2);
+
+    fTres_top->SetLineWidth(2);
+    fTres_rim->SetLineWidth(2);
+    fTres_bot->SetLineWidth(2);
+    fTres_lat->SetLineWidth(2);
+    fTres_nor->SetLineWidth(2);
+    fTres_sth->SetLineWidth(2);
+
+    fRres_top->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+    fRres_rim->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+    fRres_bot->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+    fRres_lat->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+    fRres_nor->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+    fRres_sth->GetXaxis()->SetTitle("#||{#vec{r_{true}} - #vec{r_{reco}}} [cm]");
+
+    fXres_top->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+    fXres_rim->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+    fXres_bot->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+    fXres_lat->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+    fXres_nor->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+    fXres_sth->GetXaxis()->SetTitle("#||{x_{true} - x_{reco}} [cm]");
+
+    fYres_top->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+    fYres_rim->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+    fYres_bot->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+    fYres_lat->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+    fYres_nor->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+    fYres_sth->GetXaxis()->SetTitle("#||{y_{true} - y_{reco}} [cm]");
+
+    fZres_top->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+    fZres_rim->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+    fZres_bot->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+    fZres_lat->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+    fZres_nor->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+    fZres_sth->GetXaxis()->SetTitle("#||{z_{true} - z_{reco}} [cm]");
+
+    fTres_top->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+    fTres_rim->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+    fTres_bot->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+    fTres_lat->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+    fTres_nor->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+    fTres_sth->GetXaxis()->SetTitle("#||{t_{true} - t_{reco}} [ns]");
+
 
 }
 
@@ -232,12 +367,9 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
 
     if( e.getByLabel(fCRTTrueHitLabel,trueHitHandle) ) {
         art::fill_ptr_vector(trueHitList,trueHitHandle);
-        //mf::LogPrint("CRTTruthMatchAnalysis") 
-        //  << "found " << trueHitList.size() << " CRTTrueHits";
 
         for(auto const& hit : trueHitList) {
-            vector<int> btIds = bt.AllTrueIds(e,*hit);
-            for(const int id: btIds) {
+            for(const int id: bt.AllTrueIds(e,*hit)) {
                 if(particleMap.find(id)==particleMap.end())
                     continue;
                 if(abs(particleMap[id]->PdgCode())!=13) //muons only
@@ -247,9 +379,6 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
         }//for CRTTrueHits
 
         ntrue = muToTrueHits.size();
-        mf::LogInfo("CRTTruthMatchAnalysis")
-          << "  found " << ntrue << " muon-associated CRTTrueHits ("
-          << 100.0*ntrue/trueHitList.size() << " %)";
     }//if CRTTrueHits
     else
         mf::LogWarning("CRTTruthMatchAnalysis") << "no CRTTrueHits found";
@@ -264,8 +393,7 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
         //  << "found " << dataList.size() << " CRTData";
 
         for(auto const& data : dataList) {
-            vector<int> btIds = bt.AllTrueIds(e,*data);
-            for(const int id: btIds) {
+            for(const int id: bt.AllTrueIds(e,*data)) {
                 if(particleMap.find(id)==particleMap.end())
                     continue;
                 if(abs(particleMap[id]->PdgCode())!=13) //muons only
@@ -284,9 +412,6 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
                 fNDataMu->Fill(muToData[trk].size());
         }
 
-        //mf::LogInfo("CRTTruthMatchAnalysis")
-        //  << "  found " << ndata << " muon-associated CRTData ("
-        //  << 100.0*ndata/dataList.size() << " %)";
     }//if data
     else
         mf::LogWarning("CRTTruthMatchAnalysis") << "no CRTData found";
@@ -297,12 +422,9 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
     map<int,vector<art::Ptr<CRTHit>>> muToSimHits;
     if( e.getByLabel(fCRTSimHitLabel,simHitHandle) ) {
         art::fill_ptr_vector(simHitList,simHitHandle);
-        //mf::LogInfo("CRTTruthMatchAnalysis")
-        //  << "found " << simHitList.size() << " CRTSimHits";
 
         for(auto const& hit : simHitList) {
-            vector<int> btIds = bt.AllTrueIds(e,*hit);
-            for(const int id: btIds) {
+            for(const int id: bt.AllTrueIds(e,*hit)) {
                 if(particleMap.find(id)==particleMap.end())
                     continue;
                 if(abs(particleMap[id]->PdgCode())!=13) //muons only
@@ -321,7 +443,8 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
 
     //====tallying matches==========
     // loop over muon IDs
-    size_t nmatch=0, nmiss=0, nmiss_track=0;
+    size_t nmatch=0, nmiss=0, nmiss_track=0, nmiss_feb=0;
+    size_t nmatch_top=0;
     for(const int trk : muIds) {
         //counters
         int ntruehit=0, nsimhit=0;
@@ -329,6 +452,7 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
         int nsim_top=0, nsim_side=0, nsim_bot=0;
         map<string,size_t> nregtrue, nregsim;
 
+        bool simhasmu = true;
         //True Hits
         if(muToTrueHits.find(trk)!=muToTrueHits.end()){
             ntruehit = muToTrueHits[trk].size();
@@ -351,26 +475,66 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
                 //Sim Hits
                 if(muToSimHits.find(trk)!=muToSimHits.end()) {
                     for(auto const& simhit : muToSimHits[trk]) {
-                        string simreg = simhit->tagger; //region
+                        std::string simreg = simhit->tagger; //region
                         if(simreg != truereg) continue; //make same region
                         if(truetype == 'c' || truetype=='d'){  
-                            if(1) {//simhit->feb_id[0] == hit->feb_id[0]){ //same mac5
+                            if(simhit->feb_id[0] == hit->feb_id[0]){ //same mac5
 
                                 if(simreg=="Top") {
                                     fRres_top->Fill(GetDeltaR(hit,simhit));
+                                    fXres_top->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_top->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_top->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_top->Fill(GetDeltaT(hit,simhit));
                                     nmatch++;
+                                    if(nmatch_top<10&&fNViews<100) {
+                                        //need way to map global back to local coords
+
+                                        TVector3 truepos = 
+                                          fCrtutils->WorldToModuleCoords(HitToPosVec(hit),fCrtutils->MacToAuxDetID(hit->feb_id[0],0));
+                                        TVector3 recopos = 
+                                          fCrtutils->WorldToModuleCoords(HitToPosVec(simhit),fCrtutils->MacToAuxDetID(hit->feb_id[0],0));
+                                        fTrueHitPoints[fNViews]->SetPoint(0,truepos.X(),truepos.Z());
+                                        fSimHitPoints[fNViews]->SetPoint(0,recopos.X(),recopos.Z());
+                                        float pesx[16], pesy[16];
+                                        for(size_t i=0; i<16; i++){pesx[i]=0.; pesy[i]=0.;}
+                                        if(simhit->pesmap.find(simhit->feb_id[0])==simhit->pesmap.end())
+                                            std::cout << "FEB not found in PEs map!" << std::endl;
+                                        for(auto const& chanpe : (*((simhit->pesmap).find(simhit->feb_id[0]))).second) {
+                                            if(chanpe.first<16) pesx[chanpe.first] = chanpe.second;
+                                            else pesy[chanpe.first-16] = chanpe.second;
+                                        }
+                                        for(size_t i=0; i<16; i++){
+                                            for(size_t j=0; j<16; j++){
+                                                fChargeViews[fNViews]->SetBinContent(i,j,pesx[i]+pesy[j]);
+                                            }
+                                        }
+                                        fNViews++;
+                                    }
+                                    nmatch_top++;     
                                 }
                                 if(simreg.find("Rim")!=string::npos){
                                     fRres_rim->Fill(GetDeltaR(hit,simhit));
+                                    fXres_rim->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_rim->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_rim->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_rim->Fill(GetDeltaT(hit,simhit));
                                     nmatch++;
                                 }
                                 if(simreg=="Bottom") {
                                     fRres_bot->Fill(GetDeltaR(hit,simhit));
+                                    fXres_bot->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_bot->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_bot->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_bot->Fill(GetDeltaT(hit,simhit));
                                     nmatch++;
                                 }
                             }
-                            else nmiss++;
-                        }
+                            else {
+                                nmiss++;
+                                nmiss_feb++;
+                            }//no feb match
+                        }//c or d type
                         else {//m type
                             bool match = false;
                             for(auto const& truefeb : hit->feb_id){
@@ -383,15 +547,34 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
                                 if(match) break;
                             }
                             if(match){
-                                if(simreg=="North") fRres_nor->Fill(GetDeltaR(hit,simhit));
-                                else if(simreg=="South") fRres_sth->Fill(GetDeltaR(hit,simhit));
-                                else fRres_lat->Fill(GetDeltaR(hit,simhit));
+                                if(simreg=="North") {
+                                    fRres_nor->Fill(GetDeltaR(hit,simhit));
+                                    fXres_nor->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_nor->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_nor->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_nor->Fill(GetDeltaT(hit,simhit));
+                                }
+                                else if(simreg=="South") {
+                                    fRres_sth->Fill(GetDeltaR(hit,simhit));
+                                    fXres_sth->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_sth->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_sth->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_sth->Fill(GetDeltaT(hit,simhit));
+                                }
+                                else {
+                                    fRres_lat->Fill(GetDeltaR(hit,simhit));
+                                    fXres_lat->Fill(hit->x_pos - simhit->x_pos);
+                                    fYres_lat->Fill(hit->y_pos - simhit->y_pos);
+                                    fZres_lat->Fill(hit->z_pos - simhit->z_pos);
+                                    fTres_lat->Fill(GetDeltaT(hit,simhit));
+                                }
                             }
                             else nmiss++;
                         }//else m type
                     }//matching sim hits
                 } //if muID trk found
-                else {
+                else if(simhasmu){
+                    simhasmu = false;
                     nmiss_track++;
                     nmiss++;
                 }
@@ -438,14 +621,24 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
 
     }//for muon IDs
 
-    std::cout << "matched true/sim hits:" << std::endl;
-    std::cout << "   matched: " << nmatch << std::endl;
-    std::cout << "   missed: "  << nmiss  << ", missing SimHits for muon track: " << nmiss_track << std::endl;
+    std::cout << "found " << '\n'
+              << " * nmu: " << nmu << '\n'
+              << " * ntrue hit: " << trueHitList.size() << " with " << ntrue << " ass'd with muons" << '\n'
+              << " * nsim hit: " << simHitList.size() << " with "  << nsim << " ass'd with muons" << '\n' 
+              << std::endl;
 
-    std::cout << "missed muons (eff.) out of " << nmu <<":" << std::endl;
-    std::cout << "  trueHit: " << nmiss_true << " (" << 1.0*(nmu-nmiss_true)/nmu << "), data: "
-              << nmiss_data << " (" << 1.0*(nmu-nmiss_data)/nmu << "), simHit: " 
-              << nmiss_sim << " (" << 1.0*(nmu-nmiss_sim)/nmu << ")" << std::endl;
+    std::cout << "matched true/sim hits:" << '\n'
+              << " * matched: " << nmatch << '\n'
+              << " * missed: "  << nmiss  << '\n'
+              << "   - SimHits missing muon track: " << nmiss_track << '\n'
+              << "   - SimHits, c or d missing FEB match: " << nmiss_feb << '\n' 
+              << std::endl;
+
+    std::cout << "missed muons (eff.):" << '\n'
+              << " * trueHit: " << nmiss_true << " (" << 1.0*(nmu-nmiss_true)/nmu << ")" << '\n'
+              << " * data: " << nmiss_data << " (" << 1.0*(nmu-nmiss_data)/nmu << ")" << '\n'
+              << " * simHit: " << nmiss_sim << " (" << 1.0*(nmu-nmiss_sim)/nmu << ")" << '\n' 
+              << std::endl;
 
 
 }
@@ -458,6 +651,19 @@ float CRTTruthMatchAnalysis::GetDeltaR(art::Ptr<CRTHit> h1, art::Ptr<CRTHit> h2)
 
     dr = sqrt(dx*dx + dy*dy + dz*dz);
     return dr;
+}
+
+
+int CRTTruthMatchAnalysis::GetDeltaT(art::Ptr<CRTHit> h1, art::Ptr<CRTHit> h2){
+    int t1 = h1->ts0_ns;
+    int t2 = h2->ts0_ns;
+    return t1-t2; 
+}
+
+TVector3 CRTTruthMatchAnalysis::HitToPosVec(art::Ptr<CRTHit> hit){
+
+    TVector3 vec(hit->x_pos,hit->y_pos,hit->z_pos);
+    return vec;
 }
 
 DEFINE_ART_MODULE(CRTTruthMatchAnalysis)
