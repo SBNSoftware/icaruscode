@@ -209,32 +209,32 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
+    float petot = 0., pemax=0.;
     int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
     TVector3 postrig;
 
     for(int chan=0; chan<32; chan++) {
 
-        if(data->fAdc[chan]<=fPEThresh) continue;
+        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+        if(pe<=fPEThresh) continue;
         nabove++;
         int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
-        petot += data->fAdc[chan];
-        pesmap[mac].push_back(std::make_pair(chan,data->fAdc[chan]));
+        petot += pe;
+        pesmap[mac].push_back(std::make_pair(chan,pe));
 
         TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //strip along z-direction
         if(adsid < 8){
-            hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+            hitpos.SetX(pe*postmp.X()+hitpos.X());
         }
         //strip along x-direction
         else {
-            hitpos.SetZ(data->fAdc[chan]*postmp.Z()+hitpos.Z());
+            hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
         }
         //identify trigger channel
-        if(data->fAdc[chan]>adc_max) {
+        if(pe>pemax) {
             adsid_max = chan;
-            adc_max = data->fAdc[chan];
+            pemax = pe;
             postrig = postmp;
         }
     }
@@ -279,32 +279,32 @@ CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
+    float petot = 0., pemax=0.;
     int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
     TVector3 postrig;
     double xmin=0.,xmax=0.;
 
     for(int chan=0; chan<64; chan++) {
 
-        if(data->fAdc[chan]<=fPEThresh) continue;
+        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+        if(pe<=fPEThresh) continue;
         nabove++;
         int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
-        petot += data->fAdc[chan];
-        pesmap[mac].push_back(std::make_pair(chan,data->fAdc[chan]));
+        petot += pe;
+        pesmap[mac].push_back(std::make_pair(chan,pe));
 
         TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //all strips along z-direction
-        hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+        hitpos.SetX(pe*postmp.X()+hitpos.X());
         if(postmp.X()<xmin)
             xmin = postmp.X();
         if(postmp.X()>xmax)
             xmax = postmp.X();
 
         //identify trigger channel
-        if(data->fAdc[chan]>adc_max) {
+        if(pe>pemax) {
             adsid_max = adsid;
-            adc_max = data->fAdc[chan];
+            pemax = pe;
             postrig = postmp;
         }
     }
@@ -345,9 +345,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     double hitpoint[3], hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
+    float petot = 0., pemax = 0.;
     int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
     TVector3 postrig;
     vector<double> ttrigs;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
@@ -366,12 +365,13 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         //loop over channels
         for(int chan=0; chan<32; chan++) {
 
-            if(data->fAdc[chan]<=fPEThresh) continue;
+            float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+            if(pe<=fPEThresh) continue;
             nabove++;
 
             int adsid = fCrtutils->ChannelToAuxDetSensitiveID(macs.back(),chan);
-            petot += data->fAdc[chan];
-            pesmap[macs.back()].push_back(std::make_pair(chan,data->fAdc[chan]));
+            petot += pe;
+            pesmap[macs.back()].push_back(std::make_pair(chan,pe));
 
             //inner or outer layer
             int layer = fCrtutils->GetMINOSLayerID(adid);
@@ -384,13 +384,13 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
             //East/West Walls (all strips along z-direction) or
             // North/South inner walls (all strips along x-direction)
             if(!(region=="South" && layer==1)) {
-                hitpos.SetY(data->fAdc[chan]*postmp.Y()+hitpos.Y());
+                hitpos.SetY(pe*postmp.Y()+hitpos.Y());
                 if(postmp.Y()<ymin)
                     ymin = postmp.Y();
                 if(postmp.Y()>ymax)
                     ymax = postmp.Y();
                 if(region!="South") {
-                    hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+                    hitpos.SetX(pe*postmp.X()+hitpos.X());
                     if(postmp.X()<xmin)
                         xmin = postmp.X();
                     if(postmp.X()>xmax)
@@ -398,23 +398,23 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
                 }
             } 
             else { //else vertical strips in South wall
-                hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+                hitpos.SetX(pe*postmp.X()+hitpos.X());
                 if(postmp.X()<xmin)
                     xmin = postmp.X();
                 if(postmp.X()>xmax)
                     xmax = postmp.X();
             }
 
-            hitpos.SetZ(data->fAdc[chan]*postmp.Z()+hitpos.Z());
+            hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
             if(postmp.X()<xmin)
                 zmin = postmp.X();
             if(postmp.X()>xmax)
                 zmax = postmp.X();
 
             //identify trigger channel
-            if(data->fAdc[chan]>adc_max) {
+            if(pe>pemax) {
                 adsid_max = adsid;
-                adc_max = data->fAdc[chan];
+                pemax = pe;
                 postrig = postmp;
             }
 
