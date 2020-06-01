@@ -79,11 +79,4 @@ icarus_recowireraw:
     DigitModuleLabel:   "daq"
 }
 
-icarus_wireassn:
-{
-    module_type: "RecoWireAssn"
-    DigitLabel:  "daq"
-    WireLabel:   "gauss"
-}
-
 END_PROLOG
