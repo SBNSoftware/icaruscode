@@ -168,9 +168,9 @@ class icarus::trigger::TriggerGateData {
   
   /**
    * @brief Returns the tick at which the gate opened.
-   * @param minOpening minimum count to consider the gate open (default: `1`)
-   * @param start first tick to check _(by default, the first available one)_
-   * @param end if getting to this tick, give up _(by default, to the end)_
+   * @param minOpening minimum count to consider the gate open _(default: `1`)_
+   * @param start first tick to check (_by default, the first available one_)
+   * @param end if getting to this tick, give up (_by default, to the end_)
    * @return the tick at which the gate opened, or `end` if never
    * @see `findClose()`, `findMaxOpen()`
    * 
