@@ -55,7 +55,7 @@ vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
             //FIX ME: for now, ignoring negative IDs, impliment fRollupUnusedIds
             if(/*ide.trackID>-1 &&*/ ide.energyDeposited*1000 < fEDepMin)
                 continue;
-            if(!fRollupUnusedIds && ide.energyDeposited*1000 < fEDepMin)
+            if(!fRollupUnusedIds && ide.trackID<0)
                 continue;
             tagger& tag = (trackTaggers[ide.trackID])[adID];
             tag.type = type;
