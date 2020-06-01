@@ -259,6 +259,10 @@ namespace crt {
     vector<int> fHitPDG;
     int       fHitStrip;
     int       fHitMod;
+    int       fNHitFeb;
+    vector<float> fHitPe;
+    float     fHitTotPe;
+    float     fHitPeRms;
 
     // truth CRT hit vars
     double    fTrueXHit; ///< reconstructed X position of CRT hit (cm)
@@ -276,7 +280,10 @@ namespace crt {
     vector<int> fTrueHitPDG;
     int       fTrueHitStrip;
     int       fTrueHitMod;
-
+    int       fTrueNHitFeb;
+    vector<float> fTrueHitPe;
+    float     fTrueHitTotPe;
+    float     fTrueHitPeRms;
 
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
@@ -478,6 +485,10 @@ namespace crt {
     fSimHitNtuple->Branch("pdg",         &fHitPDG);
     fSimHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
     fSimHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
+    fSimHitNtuple->Branch("nfeb",        &fNHitFeb,     "nfeb/I");
+    fSimHitNtuple->Branch("hitPe",       &fHitPe);
+    fSimHitNtuple->Branch("totPe",       &fHitTotPe,    "totPe/F");
+    fSimHitNtuple->Branch("rmsPe",       &fHitPeRms,    "rmsPe/F");
 
     // Define the branches of our SimTrueHit n-tuple
     fTrueCRTHitNtuple->Branch("event",       &fEvent,           "event/I");
@@ -494,9 +505,12 @@ namespace crt {
     fTrueCRTHitNtuple->Branch("subSys",      &fTrueHitSubSys,   "subSys/I");
     fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk);
     fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG);
-    fTrueCRTHitNtuple->Branch("modID",       &fHitMod,          "modID/I");
-    fTrueCRTHitNtuple->Branch("stripID",     &fHitStrip,        "stripID/I");
-
+    fTrueCRTHitNtuple->Branch("modID",       &fTrueHitMod,      "modID/I");
+    fTrueCRTHitNtuple->Branch("stripID",     &fTrueHitStrip,    "stripID/I");
+    fTrueCRTHitNtuple->Branch("nfeb",        &fTrueNHitFeb,     "nfeb/I");
+    fTrueCRTHitNtuple->Branch("hitPe",       &fTrueHitPe);
+    fTrueCRTHitNtuple->Branch("totPe",       &fTrueHitTotPe,    "totPe/F");
+    fTrueCRTHitNtuple->Branch("rmsPe",       &fTrueHitPeRms,    "rmsPe/F");
 
 }
    
@@ -1139,14 +1153,18 @@ namespace crt {
         for ( auto const& hit : crtSimHits )
         {
             fNHit++;
-            fXHit    = hit->x_pos;
-            fYHit    = hit->y_pos;
-            fZHit    = hit->z_pos;
-            fXHitErr = hit->x_err;
-            fYHitErr = hit->y_err;
-            fZHitErr = hit->z_err;
-            fT0Hit   = hit->ts0_ns;
-            fT1Hit   = hit->ts1_ns;
+            fXHit     = hit->x_pos;
+            fYHit     = hit->y_pos;
+            fZHit     = hit->z_pos;
+            fXHitErr  = hit->x_err;
+            fYHitErr  = hit->y_err;
+            fZHitErr  = hit->z_err;
+            fT0Hit    = hit->ts0_ns;
+            fT1Hit    = hit->ts1_ns;
+            fNHitFeb  = hit->feb_id.size();
+            fHitTotPe = hit->peshit;
+            fHitPeRms = 0.;
+            fHitPe.clear();
             fHitTrk.clear();
             fHitPDG.clear();
 
@@ -1161,6 +1179,14 @@ namespace crt {
                 std::cout << "could not find mac in pesmap!" << std::endl;
                 continue;
             }
+
+            for(auto const& mactopes : hit->pesmap){
+                for(auto const& chanpe : mactopes.second) {
+                    fHitPe.push_back(chanpe.second);
+                    fHitPeRms+=pow(chanpe.second-fHitTotPe,2);
+                }
+            }
+            fHitPeRms = sqrt(fHitPeRms/(fHitPe.size()-1));
 
             //loop over all track IDs
             for( int trk : bt.AllTrueIds(event,*hit)) {
@@ -1201,6 +1227,10 @@ namespace crt {
             fTrueZHitErr = hit->z_err;
             fTrueT0Hit   = hit->ts0_ns;
             fTrueT1Hit   = hit->ts1_ns;
+            fTrueNHitFeb  = hit->feb_id.size();
+            fTrueHitTotPe = hit->peshit;
+            fTrueHitPeRms = 0.;
+            fTrueHitPe.clear();
             fTrueHitTrk.clear();
             fTrueHitPDG.clear();
 
@@ -1215,6 +1245,14 @@ namespace crt {
                 std::cout << "could not find mac in pesmap!" << std::endl;
                 continue;
             }
+
+            for(auto const& mactopes : hit->pesmap){
+                for(auto const& chanpe : mactopes.second) {
+                    fTrueHitPe.push_back(chanpe.second);
+                    fTrueHitPeRms+=pow(chanpe.second-fHitTotPe,2);
+                }
+            }
+            fTrueHitPeRms = sqrt(fTrueHitPeRms/(fTrueHitPe.size()-1));
 
             //loop over all track IDs
             for( int trk : bt.AllTrueIds(event,*hit)) {
