@@ -99,6 +99,7 @@ class icarus::crt::CRTDetSimAlg {
     double fQPed;              //!< ADC offset for the single-peak peak mean [ADC]
     double fQSlope;            //!< Slope in mean ADC / Npe [ADC]
     double fQRMS;              //!< ADC single-pe spectrum width [ADC]
+    uint16_t fQMax;            //!< ADC saturation value [ADC]
     uint16_t fQThresholdC;       //!< ADC charge threshold for CERN system [ADC]
     uint16_t fQThresholdM;       //!< ADC charge threshold for MINOS system [ADC]
     uint16_t fQThresholdD;       //!< ADC charge threshold for DC system [ADC]

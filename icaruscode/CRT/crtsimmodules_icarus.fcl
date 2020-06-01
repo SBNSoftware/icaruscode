@@ -40,6 +40,7 @@ standard_icarus_crtsimalg:
   QPed: 63.6
   QSlope: 70.0
   QRMS: 10.0
+  QMax: 4080
 
   #ADC threshold (not DAC value used for discriminator)
   QThresholdC: 169 #1.5 p.e.

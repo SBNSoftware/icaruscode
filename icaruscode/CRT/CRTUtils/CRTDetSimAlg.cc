@@ -49,6 +49,7 @@ namespace icarus{
        fQPed = p.get<double>("QPed");
        fQSlope = p.get<double>("QSlope");
        fQRMS = p.get<double>("QRMS");
+       fQMax = p.get<uint16_t>("QMax");
        fQThresholdC = p.get<uint16_t>("QThresholdC");
        fQThresholdM = p.get<uint16_t>("QThresholdM");
        fQThresholdD = p.get<uint16_t>("QThresholdD");
@@ -272,6 +273,7 @@ namespace icarus{
                               continue;
                           adctmp = passingData[dat].adc;
                           adctmp += chanTmpData->adc;
+                          if(adctmp>fQMax) adctmp = fQMax;
                           passingData[dat].adc = adctmp;
                           passingIDE.push_back(idetmp);
                           break;
@@ -617,8 +619,9 @@ namespace icarus{
             uint16_t q0Dual = 
               CLHEP::RandGauss::shoot(&fRandEngine, fQPed + fQSlope * npe0Dual, fQRMS * sqrt(npe0Dual));
 
-            if(q0<0||q1<0||q0Dual<0)
-                mf::LogError("CRT") << "NEGATIVE ADC!!!!!";
+            if(q0>fQMax) q0 = fQMax;
+            if(q1>fQMax) q1 = fQMax;
+            if(q0Dual>fQMax) q0Dual = fQMax;
 
            // Adjacent channels on a strip are numbered sequentially.
             //
