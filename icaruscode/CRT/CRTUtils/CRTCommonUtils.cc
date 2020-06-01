@@ -568,4 +568,39 @@ string CRTCommonUtils::AuxDetNameToRegion(string name) {
         return region.substr(region.find("_")+1,region.length());
 }
 
+//--------------------------------------------------------------------------
+TVector3 CRTCommonUtils::WorldToModuleCoords(TVector3 point, size_t adid) {
+
+    char type = GetAuxDetType(adid);
+    auto const& adGeo = fGeoService->AuxDet(adid);
+    double world[3], local[3];
+    world[0] = point.X();
+    world[1] = point.Y();
+    world[2] = point.Z();
+
+    adGeo.WorldToLocal(world,local);
+    TVector3 localpoint(local[0],local[1],local[2]);
+
+    if(type=='c') {
+        localpoint.SetX( 8.*(localpoint.X()/adGeo.HalfWidth1()+1.));
+        localpoint.SetY(0);
+        localpoint.SetZ( 8.*(localpoint.Z()/adGeo.HalfWidth1()+1.));
+        return localpoint;
+    }
+    if(type=='m') { //needs fixing
+        localpoint.SetX(0);
+        localpoint.SetY(ADToChanGroup(adid)*10.*(localpoint.Y()/adGeo.HalfHeight()+1.));
+        localpoint.SetZ(localpoint.Z());
+        return localpoint;
+    }
+    if(type=='d') {
+        localpoint.SetX(32.5*(localpoint.X()/adGeo.HalfWidth1()+1.));
+        localpoint.SetY(0);
+        localpoint.SetZ(localpoint.Z());
+        return localpoint;
+    }
+
+    return localpoint;
+}
+
 #endif

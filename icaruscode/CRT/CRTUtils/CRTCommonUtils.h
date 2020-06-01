@@ -56,6 +56,7 @@ class icarus::crt::CRTCommonUtils {
     int            GetMINOSLayerID(size_t adid);
     TVector3       ChanToLocalCoords(const uint8_t mac, const int chan);
     TVector3       ChanToWorldCoords(const uint8_t mac, const int chan);
+    TVector3       WorldToModuleCoords(TVector3 point, size_t adid);
 
  private:
 
