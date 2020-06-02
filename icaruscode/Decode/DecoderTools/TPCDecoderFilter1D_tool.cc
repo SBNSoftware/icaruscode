@@ -222,7 +222,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     else
     {
         std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", # boards: " << std::dec << pair.second.size() << std::endl;
+//        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", # boards: " << std::dec << pair.second.size() << std::endl;
     }
 
     theClockFragmentIDs.stop();
@@ -256,6 +256,11 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     // Recover the Fragment id:
     artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragment.fragmentID();
+
+    // Massive temporary kludge for response tests
+    std::pair<unsigned int,unsigned int> remappair(0x1414,0x1402);
+
+    if (fragmentID == remappair.first) fragmentID = remappair.second;
 
     database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
 
@@ -336,7 +341,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         const database::ChannelVec& channelVec = boardItr->second;
 
         std::cout << "********************************************************************************" << std::endl;
-        std::cout << "size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
+        std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
         size_t numElems = std::min(channelVec.size(),size_t(48));
         for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
         std::cout << std::endl;

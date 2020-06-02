@@ -191,6 +191,7 @@ simple_plugin( CRTSimAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
                         icaruscode_CRTProducts
+                        icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
                         nusimdata_SimulationBase

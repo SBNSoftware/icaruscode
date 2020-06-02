@@ -1,5 +1,5 @@
 #include "services_icarus.fcl"
-
+#include "simtestpulse_ICARUS.fcl"
 #include "detsimmodules_ICARUS.fcl"
 
 # This for running icarus hit finding
@@ -29,27 +29,12 @@ physics:
 {
     analyzers:
     {
-        fakeana: { module_type: "SimTestPulseAna"
-                   HitProducer: "gaushit"
-                   WireProducer: "recowire"
-                   RawDigitProducer: "daq"
-                   FilteredDigitProducer: "rawdigitfilter"
-                   RecoTickOffset: 0
-                   NumSample: 40
-                   Verbose: false
-                 }
+        fakeana: @local::icarus_simtestanalysis
     }
 
     producers:
     {
-        triggersim:                     {  module_type: "SimTestPulse"
-                                           TriggerTime_us:  1050
-                                           SimTimeArray_us: [ 1500 ] #[1050, 1200, 1350, 1500, 1650, 1800 ]
-                                           NumElectronsArray: [ 10000 ] #[10000, 15000, 20000, 25000, 30000, 50000]
-                                           YArray_cm: [ 0 ] #[-50, -25, 0, 25, 50, 75 ]
-                                           ZArray_cm: [ 500 ] #[500, 500, 500, 500, 500, 500 ]
-                                           Verbose: false
-                                        }
+        triggersim:                     @local::icarus_simtestpulse
    
         daq:                            @local::icarus_simwire
 

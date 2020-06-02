@@ -72,10 +72,16 @@ private:
 
   TTree* fTree;
 
+  int            fEvent;
+  int            fRun;
+  int            fSubrun;
   int            fNCrtHit;
   int            fNOpHit;
   int            fNOpFlash;
-  vector<double> fTCrt;
+  vector<vector<double>> fHitXYZT;
+  vector<vector<double>> fHitXYZErr;
+  //vector<int> fHitRegion; //requires CRTCommonUtils
+  vector<float>  fHitPE;
   vector<double> fTOp;
   vector<double> fTFlash;
   vector<double> fPeFlash;
@@ -95,27 +101,21 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
     fOpFlashModuleLabel1(p.get<art::InputTag>("OpFlashModuleLabel1","opflashTPC1")),
     fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel","crtsimhit")),
     fCoinWindow(p.get<double>("CoincidenceWindow",60.0)),
-    fOpDelay(p.get<double>("OpDelay",55.1)),
-    fNCrtHit(0),
-    fNOpHit(0),
-    fNOpFlash(0),
-    fTCrt({}),
-    fTOp({}),
-    fTFlash({}),
-    fPeFlash({}),
-    fTofHit({}),
-    fTofFlash({}),
-    fTofPe({}),
-    fTTrig(DBL_MAX) {
+    fOpDelay(p.get<double>("OpDelay",55.1)) {
   // Call appropriate consumes<>() for any products to be retrieved by this module.
   
   art::ServiceHandle<art::TFileService> tfs;
 
   fTree = tfs->make<TTree>("CrtOpHitTree","CRTHit - OpHit matching analysis");
+  fTree->Branch("event",    &fEvent,    "event/I");
+  fTree->Branch("run",      &fRun,      "run/I");
+  fTree->Branch("subrun",   &fSubrun,   "subrun/I");
   fTree->Branch("nOpHit",   &fNOpHit,   "nOpHit/I");
   fTree->Branch("nOpFlash", &fNOpFlash, "nOpFlash/I");
   fTree->Branch("nCrtHit",  &fNCrtHit,  "nCrtHit/I");
-  fTree->Branch("tCrt",     &fTCrt);
+  fTree->Branch("crtXYZT",  &fHitXYZT);
+  fTree->Branch("crtXYZErr",&fHitXYZErr);
+  //fTree->Branch("crtRegion",&fHitRegion); //requires CRTCommonUtils
   fTree->Branch("tOp",      &fTOp);
   fTree->Branch("tFlash",   &fTFlash);
   fTree->Branch("peFlash",  &fPeFlash);
@@ -129,9 +129,16 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
 
 void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 {
+  fEvent  = e.id().event();
+  fRun    = e.run();
+  fSubrun = e.subRun();
+
   fTTrig = fClock->TriggerTime();
 
-  fTCrt.clear();
+  fHitXYZT.clear();
+  fHitXYZErr.clear();
+  fHitPE.clear();
+  //fHitRegion.clear(); //requires CRTCommonUtils
   fTOp.clear();
   fTFlash.clear();
   fPeFlash.clear();
@@ -178,13 +185,27 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   for(int icrt=0; icrt<fNCrtHit; icrt++){
 
       auto const& crthit = crtHitList[icrt];
-      fTCrt.push_back((int32_t)crthit->ts0_ns + 1.1e6);
+
+      vector<double> xyzt, xyzerr;
+
+      xyzt.push_back(crthit->x_pos);
+      xyzt.push_back(crthit->y_pos);
+      xyzt.push_back(crthit->z_pos);
+      xyzt.push_back((int32_t)crthit->ts0_ns + 1.1e6);
+      fHitXYZT.push_back(xyzt);
+
+      xyzerr.push_back(crthit->x_err);
+      xyzerr.push_back(crthit->y_err);
+      xyzerr.push_back(crthit->z_err);
+      fHitXYZErr.push_back(xyzerr);
+
+      fHitPE.push_back(crthit->peshit);
 
       double diff = DBL_MAX;
       int imatch=-1;
       for(int iflash=0; iflash<fNOpFlash; iflash++){
-          if(abs(fTCrt.back()-fTFlash[iflash])<abs(diff)) {
-		diff = fTCrt.back()-fTFlash[iflash];
+          if(abs(fHitXYZT.back()[3]-fTFlash[iflash])<abs(diff)) {
+		diff = fHitXYZT.back()[3]-fTFlash[iflash];
                 imatch = iflash;
           }
       }
@@ -196,18 +217,19 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
       diff = DBL_MAX;
       imatch=-1;
       for(int iophit=0; iophit<fNOpHit; iophit++) {
-          if(abs(fTCrt.back()-fTOp[iophit])<abs(diff)) {
-                diff = fTCrt.back()-fTOp[iophit];
+          if(abs(fHitXYZT.back()[3]-fTOp[iophit])<abs(diff)) {
+                diff = fHitXYZT.back()[3]-fTOp[iophit];
                 imatch = iophit;
           }
       }
       if(imatch<0) continue;
       fTofHit.push_back(diff);
       //fTofPe.push_back(fPeFlash[imatch])'
-  }
+  }//for CRTHits
 
   fTree->Fill();
-}
+
+}//analyze
 
 void CrtOpHitMatchAnalysis::beginJob()
 {

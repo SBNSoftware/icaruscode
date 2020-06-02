@@ -130,7 +130,8 @@ class icarus::crt::CRTHitRecoAlg {
   detinfo::DetectorClocks const* fDetectorClocks;
   detinfo::DetectorProperties const* fDetectorProperties;
   detinfo::ElecClock fTrigClock;
-  map<int,vector<pair<uint8_t,int>>> fFebMap;
+
+  CRTCommonUtils* fCrtutils;
 
   //Params from fcl file
   bool fVerbose;          ///< print info

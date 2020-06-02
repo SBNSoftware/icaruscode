@@ -2,6 +2,15 @@
 #
 # Ran without arguments, will publish the current Doxygen output.
 #
+#
+# Changes
+# --------
+#
+# 20200520 (petrillo@slac.stanford.edu) [v1.1]
+#   * added script argument parsing
+#   * added `--update` option
+#   * the option to remove the existing data (`CleanOutputArea`) is not enabled
+#
 
 
 # -- BEGIN -- boilerplate settings and library loading -------------------------
@@ -18,21 +27,99 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.0"
+SCRIPTVERSION="1.1"
 
 
 declare -r RepoDir="./"
 
 
 # ------------------------------------------------------------------------------
-declare Version="$1"
-declare SourceDir="$2"
+function printHelp() {
+  
+  cat <<EOH
 
-ExperimentName="$(FindExperiment)"
+Copies the documentation into the public web page storage area.
+
+Usage:  ${SCRIPTNAME}  [options]
+
+Supported options:
+--srcdocdir=SOURCEDIR [autodetect]
+    directory where the HTML documentation has been rendered
+--experiment=EXPERIMENTNAME [autodetect]
+    the name of the experiment (e.g. 'MicroBooNE')
+--codeversion=VERSION [from metadata]
+    the version of the code being documented
+--update
+    if there is already documentation for the same version, update it
+    instead of refusing to proceed; the existing directory is not removed
+    before publishing
+--version , -V
+    prints the script version and exits (hint: it's version ${SCRIPTVERSION}
+--help , -h , -?
+    prints this usage message and exits
+
+EOH
+
+} # printHelp()
+
+
+function printVersion() {
+  echo "${SCRIPTNAME} version ${SCRIPTVERSION}."
+} # printVersion()
+
+
+################################################################################
+###  Start here!
+################################################################################
+#
+# parameter parsing
+#
+declare -i NoMoreOptions
+declare -i DoVersion=0 DoHelp=0
+declare -i CleanOutputArea=0 UpdateOutputArea=0
+declare ExitWithCode
+declare Param
+for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
+  Param="${!iParam}"
+  if isFlagUnset NoMoreOptions && [[ "${Param:0:1}" == '-' ]]; then
+    case "$Param" in
+      ( '--experiment='* )         ExperimentName="${Param#--*=}" ;;
+      ( '--srcdocdir='* )          SourceDir="${Param#--*=}" ;;
+      ( '--codeversion='* )        Version="${Param#--*=}" ;;
+      ( '--update' )               UpdateOutputArea=1 ;;
+      ( '--version' | '-V' )       DoVersion=1 ;;
+      ( '--help' | '-h' | '-?' )   DoHelp=1 ;;
+      ( '-' | '--' )               NoMoreOptions=1 ;;
+      ( * )
+        ERROR "Unknown option: '${Param}'."
+        ExitWithCode=1
+    esac
+  else
+    PositionalArguments+=( "$Param" )
+  fi
+done
+
+[[ "${#PositionalArguments[@]}" -gt 0 ]] && FATAL 1 "Found ${#PositionalArguments[@]} spurious arguments on command line: ${PositionalArguments[@]}."
+
+: ${ExperimentName="$(FindExperiment)"}
 LASTFATAL "Can't detect the experiment name."
 
-declare -r ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
+: ${ExperimentCodeName:="$(ExperimentCodeProduct "$ExperimentName")"}
+LASTFATAL "Can't put together the experiment code repository name for '${ExperimentName}'."
 
+if isFlagSet DoVersion ; then
+  printVersion
+  [[ -z "$ExitWithCode" ]] && ExitWithCode=0
+fi
+if isFlagSet DoHelp ; then
+  printHelp
+  [[ -z "$ExitWithCode" ]] && ExitWithCode=0
+fi
+
+[[ -n "$ExitWithCode" ]] && exit "$ExitWithCode"
+
+
+# ------------------------------------------------------------------------------
 #
 # find the GIT repository (may contain doxygen file!)
 #
@@ -90,7 +177,17 @@ declare TransferLogFile="${LogDir:+${LogDir%/}/}transfer-${ExperimentCodeName}-$
 declare -r DestVersionsDir="${PublishBaseDir:+${PublishBaseDir%/}/}${ExperimentCodeName}"
 mkdir -p "$DestVersionsDir"
 declare -r DestDir="${DestVersionsDir}/${Version}"
-[[ -d "$DestDir" ]] && FATAL 1 "Output directory '${DestDir}' already exists: remove it first!"
+if [[ -d "$DestDir" ]]; then
+  if isFlagSet CleanOutputArea ; then
+    echo "The existing content in '${DestDir}' will be removed before proceeding."
+    rm -Rf "$DestDir"
+  elif isFlagSet UpdateOutputArea ; then
+    echo "The existing content in '${DestDir}' will be updated."
+    # no action actually needed
+  else
+    FATAL 1 "Output directory '${DestDir}' already exists: remove it first!"
+  fi
+fi
 declare -a Cmd=( rsync -av "${SourceDir%/}/" "${DestDir%/}/" ">&" "$TransferLogFile")
 
 echo "Copying the documentation content:"
