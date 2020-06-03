@@ -104,7 +104,9 @@ int galleryAnalysis(std::string const& configFile, std::vector<std::string> cons
     auto detclk = testing::setupProvider<detinfo::DetectorClocksStandard>(config.get<fhicl::ParameterSet>("services.DetectorClocksService"));
   
     // DetectorProperties setup
-    auto detp = testing::setupProvider<detinfo::DetectorPropertiesStandard>(config.get<fhicl::ParameterSet>("services.DetectorPropertiesService"), detinfo::DetectorPropertiesStandard::providers_type{geom.get(),static_cast<detinfo::LArProperties const*>(larp.get()), // TODO type cast is required until issue #18001 is solved
+    auto detp = testing::setupProvider<detinfo::DetectorPropertiesStandard>(config.get<fhicl::ParameterSet>("services.DetectorPropertiesService"),
+                                                                            detinfo::DetectorPropertiesStandard::providers_type{geom.get(),
+                                                                              static_cast<detinfo::LArProperties const*>(larp.get())}); // TODO type cast is required until issue #18001 is solved
   
     // ***************************************************************************
     // ***  SERVICE PROVIDER SETUP END    ****************************************
@@ -142,11 +144,11 @@ int galleryAnalysis(std::string const& configFile, std::vector<std::string> cons
     
     HitAnalysis::HitAnalysisAlg hitAnalysisAlg(analysisConfig.get<fhicl::ParameterSet>("hitAnalysisAlg"));
     
-    hitAnalysisAlg.setup(*geom, *detp, pHistFile.get());
+    hitAnalysisAlg.setup(*geom, pHistFile.get());
     
     MCAssociations mcAssociations(analysisConfig.get<fhicl::ParameterSet>("mcAssociations"));
-    
-    mcAssociations.setup(*geom, *detp, pHistFile.get());
+    auto const detProp = detp->DataFor(detclk->DataForJob());
+    mcAssociations.setup(*geom, detProp, pHistFile.get());
     mcAssociations.prepare();
     
     int numEvents(0);
@@ -206,4 +208,3 @@ int main(int argc, char** argv) {
 } // main()
 
 #endif // !__CLING__
-
