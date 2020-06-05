@@ -1,0 +1,15 @@
+throughgoingmuon_params:
+{
+  module_type: "ThroughgoingmuonAnalyzer"
+  RawDigitLabelVec:        ["rawdigitfilter"]
+  WireModuleLabelVec:      ["decon1droi"]
+  HitModuleLabelVec:       ["gaushit"]
+  MCParticleLabel:         "largeant"
+  SimChannelLabel:         "largeant"
+  OffsetVec:               [0,0,0]
+  #SigmaVec:                [1.,1.,1.]
+  SigmaVec:                [5.,5.,5.]	
+  MinAllowedChannelStatus: 1
+  totalelctroncut:         15000.	   
+}
+
