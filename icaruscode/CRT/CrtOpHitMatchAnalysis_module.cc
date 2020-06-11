@@ -35,6 +35,7 @@
 
 //ROOT includes
 #include "TTree.h"
+#include "TVector3.h"
 
 using std::vector;
 
@@ -83,10 +84,11 @@ private:
   //vector<int> fHitRegion; //requires CRTCommonUtils
   vector<float>  fHitPE;
   vector<double> fTOp;
-  vector<double> fTFlash;
+  vector<vector<double>> fFlashXYZT;
   vector<double> fPeFlash;
   vector<double> fTofHit;
   vector<double> fTofFlash;
+  vector<double> fMatchDist;
   vector<double> fTofPe;
   double         fTTrig;
 
@@ -117,12 +119,13 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
   fTree->Branch("crtXYZErr",&fHitXYZErr);
   //fTree->Branch("crtRegion",&fHitRegion); //requires CRTCommonUtils
   fTree->Branch("tOp",      &fTOp);
-  fTree->Branch("tFlash",   &fTFlash);
+  fTree->Branch("flashXYZT",&fFlashXYZT);
   fTree->Branch("peFlash",  &fPeFlash);
   fTree->Branch("tofHit",   &fTofHit);
   fTree->Branch("tofFlash", &fTofFlash);
   fTree->Branch("tofPe",    &fTofPe);
   fTree->Branch("tTTrig",   &fTTrig,    "tTrig/D");
+  fTree->Branch("matchDist",&fMatchDist);
 
   fClock = lar::providerFrom<detinfo::DetectorClocksService>();
 }
@@ -140,11 +143,12 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   fHitPE.clear();
   //fHitRegion.clear(); //requires CRTCommonUtils
   fTOp.clear();
-  fTFlash.clear();
+  fFlashXYZT.clear();
   fPeFlash.clear();
   fTofHit.clear();
   fTofFlash.clear();
   fTofPe.clear();
+  fMatchDist.clear();
 
   //OpHits
   art::Handle< std::vector<recob::OpHit> > opHitListHandle;
@@ -170,7 +174,12 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   fNOpFlash = opFlashList.size();
 
   for(auto const& flash : opFlashList){
-        fTFlash.push_back(flash->Time()*1e3-fOpDelay);
+        vector<double> xyzt;
+        xyzt.push_back(0.); 
+        xyzt.push_back(flash->YCenter());
+        xyzt.push_back(flash->ZCenter());
+        xyzt.push_back(flash->Time()*1e3-fOpDelay);
+        fFlashXYZT.push_back(xyzt);
         fPeFlash.push_back(flash->TotalPE());
   }
 
@@ -187,10 +196,11 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
       auto const& crthit = crtHitList[icrt];
 
       vector<double> xyzt, xyzerr;
+      TVector3 rcrt(crthit->x_pos,crthit->y_pos,crthit->z_pos);
 
-      xyzt.push_back(crthit->x_pos);
-      xyzt.push_back(crthit->y_pos);
-      xyzt.push_back(crthit->z_pos);
+      xyzt.push_back(rcrt.X());
+      xyzt.push_back(rcrt.Y());
+      xyzt.push_back(rcrt.Z());
       xyzt.push_back((int32_t)crthit->ts0_ns + 1.1e6);
       fHitXYZT.push_back(xyzt);
 
@@ -201,29 +211,37 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
       fHitPE.push_back(crthit->peshit);
 
-      double diff = DBL_MAX;
-      int imatch=-1;
-      for(int iflash=0; iflash<fNOpFlash; iflash++){
-          if(abs(fHitXYZT.back()[3]-fTFlash[iflash])<abs(diff)) {
-		diff = fHitXYZT.back()[3]-fTFlash[iflash];
-                imatch = iflash;
+      double tdiff = DBL_MAX, rdiff=DBL_MAX, peflash=DBL_MAX;
+      bool matched=false;
+      for(auto const& flash : opFlashList){
+
+          double tflash = flash->Time()*1e3-fOpDelay;
+          TVector3 rflash(0,flash->YCenter(),flash->ZCenter());
+          TVector3 vdiff = rcrt-rflash;
+          if(abs(fHitXYZT.back()[3]-tflash)<abs(tdiff)) {
+		tdiff = fHitXYZT.back()[3]-tflash;
+                rdiff = vdiff.Mag();
+                peflash = flash->TotalPE();
+                matched = true;
           }
       }
-      if(imatch>-1){
-        fTofFlash.push_back(diff);
-        fTofPe.push_back(fPeFlash[imatch]);
+      if(matched){
+        fTofFlash.push_back(tdiff);
+        fTofPe.push_back(peflash);
+        fMatchDist.push_back(rdiff);
       }
 
-      diff = DBL_MAX;
-      imatch=-1;
+      tdiff = DBL_MAX;
+      //rdiff = DBL_MAX;
+      matched=false;
       for(int iophit=0; iophit<fNOpHit; iophit++) {
-          if(abs(fHitXYZT.back()[3]-fTOp[iophit])<abs(diff)) {
-                diff = fHitXYZT.back()[3]-fTOp[iophit];
-                imatch = iophit;
+          if(abs(fHitXYZT.back()[3]-fTOp[iophit])<abs(tdiff)) {
+                tdiff = fHitXYZT.back()[3]-fTOp[iophit];
+                matched = true;
           }
       }
-      if(imatch<0) continue;
-      fTofHit.push_back(diff);
+      if(!matched) continue;
+      fTofHit.push_back(tdiff);
       //fTofPe.push_back(fPeFlash[imatch])'
   }//for CRTHits
 
