@@ -202,6 +202,10 @@ CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pai
 CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
+    if(fCrtutils->MacToType(mac)!='c')
+        mf::LogError("CRTHitRecoAlg::MakeTopHit") 
+            << "CRTUtils returned wrong type!" << '\n';
+
     map< uint8_t, vector< pair<int,float> > > pesmap;
     int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
@@ -209,9 +213,11 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0., pemax=0.;
+    float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
     int adsid_max = -1, nabove=0;
     TVector3 postrig;
+    bool findx = false, findz = false;
+    int maxx=0, maxz=0;
 
     for(int chan=0; chan<32; chan++) {
 
@@ -222,28 +228,56 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
         petot += pe;
         pesmap[mac].push_back(std::make_pair(chan,pe));
 
-        TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
+        //TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //strip along z-direction
-        if(adsid < 8){
-            hitpos.SetX(pe*postmp.X()+hitpos.X());
+        if(adsid < 8 && adsid > -1){
+            //hitpos.SetX(pe*postmp.X()+hitpos.X());
+            //hitpos.SetX(postmp.X()+hitpos.X());
+            if(pe>pemaxx){
+                pemaxx = pe;
+                maxx = adsid;
+            }
+            findx = true;   
         }
         //strip along x-direction
+        else if(adsid > -1 && adsid < 16 ){
+            //hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
+            //hitpos.SetZ(postmp.Z()+hitpos.Z());
+            if(pe > pemaxz) {
+                pemaxz = pe;
+                maxz = adsid;
+            }
+            findz = true;
+        }
         else {
-            hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
+            mf::LogError("CRTHitRecoAlg::MakeTopHit")
+                << "auxDetSensitive ID out of range!" << '\n';
         }
         //identify trigger channel
         if(pe>pemax) {
+            TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
             adsid_max = chan;
             pemax = pe;
             postrig = postmp;
         }
     }
 
+    TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,maxx*2);
+    hitpos.SetX(postmp.X());
+    postmp = fCrtutils->ChanToLocalCoords(mac,maxz*2); 
+    hitpos.SetZ(postmp.Z());
+
+    if(!findx)
+        mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing X coord." << '\n';
+    if(!findz)
+        mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing Z coord." << '\n';
+
     //no channels above threshold? return empty hit
-    if(nabove==0)
+    if(nabove==0||!findx||!findz)
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
-    hitpos*=1.0/petot; //hit position weighted by deposited charge
+    //hitpos*=1.0/petot; //hit position weighted by deposited charge
+    //hitpos*=1.0/nabove;
     hitlocal[0] = hitpos.X();
     hitlocal[1] = 0.;
     hitlocal[2] = hitpos.Z();
@@ -345,8 +379,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     double hitpoint[3], hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0., pemax = 0.;
-    int adsid_max = -1, nabove=0;
+    float petot = 0., pemax = 0., pex=0., pey=0.;
+    int adsid_max = -1, nabove=0, nx=0, ny=0;
     TVector3 postrig;
     vector<double> ttrigs;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
@@ -354,8 +388,6 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     double xmin=DBL_MAX, xmax = -DBL_MAX;
     std::set<int> layID;
 
-    //if(fVerbose)
-    //    std::cout << "makeing MINOS hit...looping over coinData..." << std::endl;
     //loop over FEBs
     for(auto const& data : coinData) {
 
@@ -375,22 +407,23 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
             //inner or outer layer
             int layer = fCrtutils->GetMINOSLayerID(adid);
-            //std::cout << "layer ID: " << layer << std::endl;
             layID.insert(layer);    
             TVector3 postmp = fCrtutils->ChanToWorldCoords(macs.back(),chan);
-            //std::cout << "(x,y,z)=" << postmp.X() << "," << postmp.Y() << "," 
-            //         << postmp.Z() << std::endl;
 
             //East/West Walls (all strips along z-direction) or
             // North/South inner walls (all strips along x-direction)
             if(!(region=="South" && layer==1)) {
                 hitpos.SetY(pe*postmp.Y()+hitpos.Y());
+                ny++;
+                pey+=pe;
                 if(postmp.Y()<ymin)
                     ymin = postmp.Y();
                 if(postmp.Y()>ymax)
                     ymax = postmp.Y();
-                if(region!="South") {
+                if(region!="South") { //region is E/W/N
                     hitpos.SetX(pe*postmp.X()+hitpos.X());
+                    nx++;
+                    pex+=pe;
                     if(postmp.X()<xmin)
                         xmin = postmp.X();
                     if(postmp.X()>xmax)
@@ -399,12 +432,15 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
             } 
             else { //else vertical strips in South wall
                 hitpos.SetX(pe*postmp.X()+hitpos.X());
+                nx++;
+                pex+=pe;
                 if(postmp.X()<xmin)
                     xmin = postmp.X();
                 if(postmp.X()>xmax)
                     xmax = postmp.X();
             }
 
+            //nz = ny
             hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
             if(postmp.X()<xmin)
                 zmin = postmp.X();
@@ -426,9 +462,6 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     }//loop over FEBs
 
-    //if(fVerbose)
-        //std::cout << "done...used " << nabove << " charge amplitudes" << std::endl;
-
     //no channels above threshold or no intermodule coincidences? return empty hit
     if(nabove==0 || layID.size()!=2) {
         if(nabove==0) std::cout << "no channels above threshold!" << std::endl;
@@ -437,7 +470,14 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     }
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
-    hitpos*=1.0/petot; //hit position weighted by deposited charge
+    if(region=="South") {
+        hitpos.SetX(hitpos.X()*1.0/pex);
+        hitpos.SetY(hitpos.Y()*1.0/pey);
+        hitpos.SetZ(hitpos.Z()*1.0/petot);
+    }
+    else
+        hitpos*=1.0/petot; //hit position weighted by deposited charge
+
     hitpoint[0] = hitpos.X();
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
