@@ -66,13 +66,13 @@ vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
         }//AuxDetIDEs
     }//AuxDetSimChannels
 
-    map <int,tagger> mTaggers; //MINOS module ID -> tagger
     int nmisscd=0, nmisspair=0;
 
     //apply logic to form hits
     //loop over trackIDs
     for (auto const& trk : trackTaggers) {
 
+        map <int,tagger> mTaggers; //MINOS module ID -> tagger
         // loop over taggers: modID->strip hit info
         for (auto const& tag : trk.second) {
     
