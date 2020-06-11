@@ -309,7 +309,7 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
     size_t nmiss_true = 0, nmiss_data = 0, nmiss_sim = 0;
 
     //Intitialize CRTBackTracker
-    bt.Initialize(e);
+    //bt.Initialize(e);
 
     //MCParticles
     art::Handle< vector<simb::MCParticle> > mcHandle;
