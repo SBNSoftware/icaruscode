@@ -183,14 +183,14 @@ namespace crt {
     int      fSimTrackID;   ///< GEANT ID of the particle being processed
     uint32_t fNAuxDet;   ///< Number of scintillator strips hit
 
-    vector<uint32_t> fAuxDetID;  ///< Global CRT module ID
-    vector<uint32_t> fAuxDetSensitiveID; ///< Strip ID in module
-    vector<double>    fADEDep; ///< Energy deposited in CRT strip (GeV)
-    vector<double>    fADdEdx; ///< average dEdx for particle traversing CRT strip
-    vector<double>    fADTrackLength; ///< Track length in CRT strip (cm)
-    vector<uint32_t> fAuxDetReg; ///< CRT region code
-    vector<uint32_t> fADMac; ///< Mac5 address of the CRT module
-    vector<uint32_t> fADType;
+    vector<uint32_t>   fAuxDetID;  ///< Global CRT module ID
+    vector<uint32_t>   fAuxDetSensitiveID; ///< Strip ID in module
+    vector<double>     fADEDep; ///< Energy deposited in CRT strip (GeV)
+    vector<double>     fADdEdx; ///< average dEdx for particle traversing CRT strip
+    vector<double>     fADTrackLength; ///< Track length in CRT strip (cm)
+    vector<uint32_t>   fAuxDetReg; ///< CRT region code
+    vector<uint32_t>   fADMac; ///< Mac5 address of the CRT module
+    vector<uint32_t>   fADType;
     vector<vector<double>>   fADEnterXYZT; ///< 4-position of entry into CRT strip
     vector<vector<double>>   fADExitXYZT; ///< 4-position of exit from CRT strip
     vector<vector<double>>   fADEnterPE; ///< 4-position of entry into CRT strip
@@ -209,7 +209,7 @@ namespace crt {
     int fMother; ///< G4 track ID of mother that directly produced this MCParticle
     int fNDaught; ///< number of daughters belonging to this MCParticle
 
-    //Regions tree vars
+    //Regions tree vars (1 track per entry)
     int      fNReg;
     int      fRegFid;
     int      fRegActive;
@@ -231,59 +231,61 @@ namespace crt {
     vector<vector<double>> fRegOpDetXYZT;
 
     //CRT data product vars
-    //static const int kDetMax = 64;
     //int      fNChan; ///< number of channels above threshold for this front-end board readout
     int      fEntry; ///< front-end board entry number (reset for each event)
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
     int      fDetSubSys;
-    double   fT0;///< signal time w.r.t. global event time
-    double   fT1;///< signal time w.r.t. PPS
+    int      fT0;///< signal time w.r.t. global event time
+    int      fT1;///< signal time w.r.t. PPS
     int      fADC[64];///< signal amplitude
+    int      fMaxAdc;
+    int      fMaxChan;
+    int      fNAbove;
     vector<int> fTrackID;///< track ID(s) of particle that produced the signal
     vector<int> fDetPDG; /// signal inducing particle(s)' PDG code
 
     // sim CRT hit product vars
-    float    fXHit; ///< reconstructed X position of CRT hit (cm)
-    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    float    fXHitErr; ///< stat error of CRT hit reco X (cm)
-    float    fYHitErr; ///< stat error of CRT hit reco Y (cm)
-    float    fZHitErr; ///< stat error of CRT hit reco Z (cm)
-    int32_t    fT0Hit; ///< hit time w.r.t. global event time
-    int32_t    fT1Hit; ///< hit time w.r.t. PPS
+    float     fXHit; ///< reconstructed X position of CRT hit (cm)
+    float     fYHit; ///< reconstructed Y position of CRT hit (cm)
+    float     fZHit; ///< reconstructed Z position of CRT hit (cm)
+    float     fXHitErr; ///< stat error of CRT hit reco X (cm)
+    float     fYHitErr; ///< stat error of CRT hit reco Y (cm)
+    float     fZHitErr; ///< stat error of CRT hit reco Z (cm)
+    float     fT0Hit; ///< hit time w.r.t. global event time
+    float     fT1Hit; ///< hit time w.r.t. PPS
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
     vector<int> fHitTrk;
     vector<int> fHitPDG;
-    int       fHitStrip;
-    int       fHitMod;
+    vector<int> fHitMod;
+    vector<int> fHitStrip;
     int       fNHitFeb;
     vector<float> fHitPe;
     float     fHitTotPe;
     float     fHitPeRms;
 
     // truth CRT hit vars
-    double    fTrueXHit; ///< reconstructed X position of CRT hit (cm)
-    double    fTrueYHit; ///< reconstructed Y position of CRT hit (cm)
-    double    fTrueZHit; ///< reconstructed Z position of CRT hit (cm)
-    double    fTrueXHitErr; ///< stat error of CRT hit reco X (cm)
-    double    fTrueYHitErr; ///< stat error of CRT hit reco Y (cm)
-    double    fTrueZHitErr; ///< stat error of CRT hit reco Z (cm)
-    double    fTrueT0Hit; ///< hit time w.r.t. global event time
-    double    fTrueT1Hit; ///< hit time w.r.t. global event time
-    int       fTrueHitReg; ///< region code of CRT hit
-    int       fTrueHitSubSys;
-    uint32_t  fTrueNHit; ///< number of CRT hits for this event
-    vector<int> fTrueHitTrk;
-    vector<int> fTrueHitPDG;
-    int       fTrueHitStrip;
-    int       fTrueHitMod;
-    int       fTrueNHitFeb;
+    float         fTrueXHit; ///< reconstructed X position of CRT hit (cm)
+    float         fTrueYHit; ///< reconstructed Y position of CRT hit (cm)
+    float         fTrueZHit; ///< reconstructed Z position of CRT hit (cm)
+    float         fTrueXHitErr; ///< stat error of CRT hit reco X (cm)
+    float         fTrueYHitErr; ///< stat error of CRT hit reco Y (cm)
+    float         fTrueZHitErr; ///< stat error of CRT hit reco Z (cm)
+    float         fTrueT0Hit; ///< hit time w.r.t. global event time
+    float         fTrueT1Hit; ///< hit time w.r.t. global event time
+    int           fTrueHitReg; ///< region code of CRT hit
+    int           fTrueHitSubSys;
+    uint32_t      fTrueNHit; ///< number of CRT hits for this event
+    vector<int>   fTrueHitTrk;
+    vector<int>   fTrueHitPDG;
+    vector<int>   fTrueHitStrip;
+    vector<int>   fTrueHitMod;
+    int           fTrueNHitFeb;
     vector<float> fTrueHitPe;
-    float     fTrueHitTotPe;
-    float     fTrueHitPeRms;
+    float         fTrueHitTotPe;
+    float         fTrueHitPeRms;
 
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
@@ -379,6 +381,8 @@ namespace crt {
 
     // Define the branches of our event display n-tuple
     fCosmicDisplayNtuple->Branch("event",             &fEvent,               "event/I");
+    fCosmicDisplayNtuple->Branch("run",               &fRun,                 "run/I");
+    fCosmicDisplayNtuple->Branch("subRun",            &fSubRun,              "subRun/I");
     fCosmicDisplayNtuple->Branch("trackID",           &fCDTrackID,           "trackID/I");
     fCosmicDisplayNtuple->Branch("nSeg",              &fNCD,                 "nSeg/I");
     fCosmicDisplayNtuple->Branch("pdg",               &fCDpdg,               "pdg/I");
@@ -389,6 +393,8 @@ namespace crt {
 
     // Define the branches of our Gen n-tuple
     fGenNtuple->Branch("event",        &fEvent,         "event/I");
+    fGenNtuple->Branch("run",          &fRun,           "run/I");
+    fGenNtuple->Branch("subRun",       &fSubRun,        "subRun/I");
     fGenNtuple->Branch("nGen",         &fNGen,          "nGen/I");
     fGenNtuple->Branch("trackID",      &fGenTrack);
     fGenNtuple->Branch("pdg",          &fGenPDG);
@@ -399,9 +405,9 @@ namespace crt {
 
     // Define the branches of our simulation n-tuple
     fSimulationNtuple->Branch("event",             &fEvent,             "event/I");
-    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
-    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subRun/I");
     fSimulationNtuple->Branch("run",               &fRun,               "run/I");
+    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subrun/I");
+    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
     fSimulationNtuple->Branch("trackID",           &fSimTrackID,        "trackID/I");
     fSimulationNtuple->Branch("pdg",               &fSimPDG,            "pdg/I");
     fSimulationNtuple->Branch("trackLength",       &fTrackLength,       "trackLenth/F");
@@ -435,6 +441,8 @@ namespace crt {
 
     //regions tree
     fRegionsNtuple->Branch("event",                &fEvent,              "event/I");
+    fRegionsNtuple->Branch("run",                  &fRun,                "run/I");
+    fRegionsNtuple->Branch("subRun",               &fSubRun,             "subRun/I");
     fRegionsNtuple->Branch("nReg",                 &fNReg,               "nReg/I");
     fRegionsNtuple->Branch("fiducial",             &fRegFid,             "fiducial/I");
     fRegionsNtuple->Branch("active",               &fRegActive,          "active/I");
@@ -457,10 +465,14 @@ namespace crt {
 
     // Define the branches of our DetSim n-tuple 
     fDetSimNtuple->Branch("event",                 &fEvent,             "event/I");
-    //fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDetSimNtuple->Branch("t0",                    &fT0,                "t0/D");
-    fDetSimNtuple->Branch("t1",                    &fT1,                "t1/D");
-    fDetSimNtuple->Branch("adc",                   fADC);
+    fDetSimNtuple->Branch("run",                   &fRun,               "run/I");
+    fDetSimNtuple->Branch("subRun",                &fSubRun,            "subRun/I");
+    fDetSimNtuple->Branch("nAbove",                &fNAbove,            "nAbove/I");
+    fDetSimNtuple->Branch("t0",                    &fT0,                "t0/I");
+    fDetSimNtuple->Branch("t1",                    &fT1,                "t1/I");
+    fDetSimNtuple->Branch("adc",                   fADC,                "adc[64]/I");
+    fDetSimNtuple->Branch("maxAdc",                &fMaxAdc,            "maxAdc/I");
+    fDetSimNtuple->Branch("maxChan",               &fMaxChan,           "maxChan/I");
     fDetSimNtuple->Branch("trackID",               &fTrackID);
     fDetSimNtuple->Branch("detPDG",                &fDetPDG);
     fDetSimNtuple->Branch("entry",                 &fEntry,             "entry/I");
@@ -470,6 +482,8 @@ namespace crt {
 
     // Define the branches of our SimHit n-tuple
     fSimHitNtuple->Branch("event",       &fEvent,       "event/I");
+    fSimHitNtuple->Branch("run",         &fRun,         "run/I");
+    fSimHitNtuple->Branch("subRun",      &fSubRun,      "subRun/I");
     fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
     fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
@@ -477,37 +491,39 @@ namespace crt {
     fSimHitNtuple->Branch("xErr",        &fXHitErr,     "xErr/F");
     fSimHitNtuple->Branch("yErr",        &fYHitErr,     "yErr/F");
     fSimHitNtuple->Branch("zErr",        &fZHitErr,     "zErr/F");
-    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
-    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
+    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/F");
+    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/F");
     fSimHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     fSimHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
     fSimHitNtuple->Branch("trackID",     &fHitTrk);
     fSimHitNtuple->Branch("pdg",         &fHitPDG);
-    fSimHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
-    fSimHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
-    fSimHitNtuple->Branch("nfeb",        &fNHitFeb,     "nfeb/I");
+    fSimHitNtuple->Branch("modID",       &fHitMod);
+    fSimHitNtuple->Branch("stripID",     &fHitStrip);
+    fSimHitNtuple->Branch("nFeb",        &fNHitFeb,     "nFeb/I");
     fSimHitNtuple->Branch("hitPe",       &fHitPe);
     fSimHitNtuple->Branch("totPe",       &fHitTotPe,    "totPe/F");
     fSimHitNtuple->Branch("rmsPe",       &fHitPeRms,    "rmsPe/F");
 
     // Define the branches of our SimTrueHit n-tuple
     fTrueCRTHitNtuple->Branch("event",       &fEvent,           "event/I");
+    fTrueCRTHitNtuple->Branch("run",         &fRun,             "run/I");
+    fTrueCRTHitNtuple->Branch("subRun",      &fSubRun,          "subRun/I");
     fTrueCRTHitNtuple->Branch("nHit",        &fTrueNHit,        "nHit/I");
-    fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/D");
-    fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/D");
-    fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/D");
-    fTrueCRTHitNtuple->Branch("xErr",        &fTrueXHitErr,     "xErr/D");
-    fTrueCRTHitNtuple->Branch("yErr",        &fTrueYHitErr,     "yErr/D");
-    fTrueCRTHitNtuple->Branch("zErr",        &fTrueZHitErr,     "zErr/D");
-    fTrueCRTHitNtuple->Branch("t0",          &fTrueT0Hit,       "t0/D");
-    fTrueCRTHitNtuple->Branch("t1",          &fTrueT1Hit,       "t1/D");
+    fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/F");
+    fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/F");
+    fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/F");
+    fTrueCRTHitNtuple->Branch("xErr",        &fTrueXHitErr,     "xErr/F");
+    fTrueCRTHitNtuple->Branch("yErr",        &fTrueYHitErr,     "yErr/F");
+    fTrueCRTHitNtuple->Branch("zErr",        &fTrueZHitErr,     "zErr/F");
+    fTrueCRTHitNtuple->Branch("t0",          &fTrueT0Hit,       "t0/F");
+    fTrueCRTHitNtuple->Branch("t1",          &fTrueT1Hit,       "t1/F");
     fTrueCRTHitNtuple->Branch("region",      &fTrueHitReg,      "region/I");
     fTrueCRTHitNtuple->Branch("subSys",      &fTrueHitSubSys,   "subSys/I");
     fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk);
     fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG);
-    fTrueCRTHitNtuple->Branch("modID",       &fTrueHitMod,      "modID/I");
-    fTrueCRTHitNtuple->Branch("stripID",     &fTrueHitStrip,    "stripID/I");
-    fTrueCRTHitNtuple->Branch("nfeb",        &fTrueNHitFeb,     "nfeb/I");
+    fTrueCRTHitNtuple->Branch("modID",       &fTrueHitMod);
+    fTrueCRTHitNtuple->Branch("stripID",     &fTrueHitStrip);
+    fTrueCRTHitNtuple->Branch("nFeb",        &fTrueNHitFeb,     "nFeb/I");
     fTrueCRTHitNtuple->Branch("hitPe",       &fTrueHitPe);
     fTrueCRTHitNtuple->Branch("totPe",       &fTrueHitTotPe,    "totPe/F");
     fTrueCRTHitNtuple->Branch("rmsPe",       &fTrueHitPeRms,    "rmsPe/F");
@@ -539,7 +555,7 @@ namespace crt {
     fSubRun = event.subRun();
 
     //CRTBackTracker matches CRTProducts to the true trackIDs
-    bt.Initialize(event);
+    //bt.Initialize(event);
 
     // Define "handle" to Generator level MCTruth objects
     art::Handle< vector<simb::MCTruth>> genHandle;
@@ -1109,29 +1125,46 @@ namespace crt {
            fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
            fT0        = data->fTs0;
            fT1        = data->fTs1;
+           fMaxAdc    = 0;
+           fMaxChan   = -1;
+           fNAbove    = 0;
            fTrackID.clear();
            fDetPDG.clear();
-
+           bool passfilter = false;
+           if(fPDGs.size()==1 && fPDGs[0]==0)
+               passfilter = true;
            //set max channel by subsystem (32 (c,m) or 64 (d))
-           int chmax = 0;
-           if(fDetSubSys!=2) chmax=32;
-           else chmax=64;
+           //int chmax = 0;
+           //if(fDetSubSys!=2) chmax=32;
+           //else chmax=64;
 
            //loop over all FEB channels
-           for(int ch=0; ch<chmax; ch++) {
+           for(int ch=0; ch<64; ch++) {
                fADC[ch] = data->fAdc[ch];
+               if(fADC[ch] > 300) fNAbove++;
+               if(fADC[ch]>fMaxAdc) {
+                   fMaxAdc  = fADC[ch];
+                   fMaxChan = ch;
+               }
                //loop over all track IDs
            }//loop over channels
            //loop over all track IDs
            for( int trk : bt.AllTrueIds(event,*data)) {
                fTrackID.push_back(trk);
-               if (particleMap.find(trk) != particleMap.end() )
+               if (particleMap.find(trk) != particleMap.end() ){
                    fDetPDG.push_back(particleMap[trk]->PdgCode());
+                   if(!passfilter)
+                       for(int const& pdg: fPDGs) {
+                           if(fDetPDG.back()==pdg) 
+                               passfilter = true;
+                       }
+               }
                else 
                    fDetPDG.push_back(INT_MAX);
            }//for trackIDs
 
-           fDetSimNtuple->Fill();
+           if(passfilter)
+               fDetSimNtuple->Fill();
 
         } //for CRT FEB events
 
@@ -1167,21 +1200,23 @@ namespace crt {
             fHitPe.clear();
             fHitTrk.clear();
             fHitPDG.clear();
+            fHitMod.clear();
+            fHitStrip.clear();
 
             uint8_t mactmp = hit->feb_id[0];
             fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
             fHitSubSys = fCrtutils->MacToTypeCode(mactmp);
 
-            if (hit->pesmap.find(mactmp)==hit->pesmap.end()) {
-                std::cout << "hitreg: " << fHitReg << std::endl;
-                std::cout << "fHitSubSys: "<< fHitSubSys << std::endl;
-                std::cout << "mactmp = " << mactmp << std::endl;
-                std::cout << "could not find mac in pesmap!" << std::endl;
-                continue;
-            }
+            bool passfilter=false;
+            if(fPDGs.size()==1 && fPDGs[0]==0)
+                passfilter = true;
 
             for(auto const& mactopes : hit->pesmap){
+                //std::cout << "SimHit with mac5 " << (int)mactopes.first << std::endl;
                 for(auto const& chanpe : mactopes.second) {
+                    //std::cout << "   chan: " << chanpe.first << std::endl;
+                    fHitMod.push_back(fCrtutils->MacToAuxDetID(mactopes.first, chanpe.first));
+                    fHitStrip.push_back(fCrtutils->ChannelToAuxDetSensitiveID(mactopes.first,chanpe.first));
                     fHitPe.push_back(chanpe.second);
                     fHitPeRms+=pow(chanpe.second-fHitTotPe,2);
                 }
@@ -1191,15 +1226,20 @@ namespace crt {
             //loop over all track IDs
             for( int trk : bt.AllTrueIds(event,*hit)) {
                 fHitTrk.push_back(trk);
-                if ( particleMap.find(trk) != particleMap.end())
+                if ( particleMap.find(trk) != particleMap.end()) {
                     fHitPDG.push_back(particleMap[trk]->PdgCode());
+                    if(!passfilter)
+                        for(int const& pdg: fPDGs) {
+                            if(fHitPDG.back()==pdg)
+                                passfilter = true;
+                        }
+                }
                 else
                     fHitPDG.push_back(INT_MAX);
             }
-            fHitMod  = fCrtutils->MacToAuxDetID(mactmp, 0);
-            fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp,0);
 
-            fSimHitNtuple->Fill();
+            if(passfilter)
+                fSimHitNtuple->Fill();
         }//for CRTHits
     }//if sim CRTHits
 
@@ -1233,21 +1273,21 @@ namespace crt {
             fTrueHitPe.clear();
             fTrueHitTrk.clear();
             fTrueHitPDG.clear();
+            fTrueHitMod.clear();
+            fTrueHitStrip.clear();
 
             uint8_t mactmp = hit->feb_id[0];
             fTrueHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
             fTrueHitSubSys = fCrtutils->MacToTypeCode(mactmp);
 
-            if (hit->pesmap.find(mactmp)==hit->pesmap.end()) {
-                std::cout << "hitreg: " << fTrueHitReg << std::endl;
-                std::cout << "fHitSubSys: "<< fTrueHitSubSys << std::endl;
-                std::cout << "mactmp = " << mactmp << std::endl;
-                std::cout << "could not find mac in pesmap!" << std::endl;
-                continue;
-            }
+            bool passfilter=false;
+            if(fPDGs.size()==1 && fPDGs[0]==0)
+                passfilter = true;
 
             for(auto const& mactopes : hit->pesmap){
                 for(auto const& chanpe : mactopes.second) {
+                    fTrueHitMod.push_back(fCrtutils->MacToAuxDetID(mactopes.first, chanpe.first));
+                    fTrueHitStrip.push_back(fCrtutils->ChannelToAuxDetSensitiveID(mactopes.first,chanpe.first));
                     fTrueHitPe.push_back(chanpe.second);
                     fTrueHitPeRms+=pow(chanpe.second-fHitTotPe,2);
                 }
@@ -1257,16 +1297,20 @@ namespace crt {
             //loop over all track IDs
             for( int trk : bt.AllTrueIds(event,*hit)) {
                 fTrueHitTrk.push_back(trk);
-                if ( particleMap.find(trk) != particleMap.end())
+                if ( particleMap.find(trk) != particleMap.end()){
                     fTrueHitPDG.push_back(particleMap[trk]->PdgCode());
+                    if(!passfilter)
+                        for(int const& pdg: fPDGs) {
+                            if(fTrueHitPDG.back()==pdg)
+                                passfilter = true;
+                        }
+                }
                 else
                     fTrueHitPDG.push_back(INT_MAX);
             }
-            //more work to be done with PEs map...for now fix at chan 0
-            fTrueHitMod  = fCrtutils->MacToAuxDetID(mactmp, 0);
-            fTrueHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp,0);
 
-            fTrueCRTHitNtuple->Fill();
+            if(passfilter)
+                fTrueCRTHitNtuple->Fill();
         }//for CRTHits
     }//if true CRTHits
 
