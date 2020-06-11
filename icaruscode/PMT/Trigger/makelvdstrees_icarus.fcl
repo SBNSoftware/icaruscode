@@ -1,0 +1,91 @@
+#
+# File:    makelvdstrees_icarus.fcl
+# Purpose: Runs `icarus::trigger::MakeTriggerSimulationTree` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 16, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * `generator` (`std::vector<simb::MCTruth>`): event generation information
+#  * `largeant:TPCActive` (`std::vector<sim::SimEnergyDeposits>`):
+#    energy deposition information 
+#  * lvdsgates (`std::vector<icarus::trigger::TriggerGateData>`): LVDS gates
+# 
+# 
+# Output
+# -------
+# 
+# In the `TFileService` output file:
+# 
+# * `treegger/Treegger` (TTree): tree is produced in the `TFileService` output
+#   file
+# 
+#
+
+#include "services_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: TrgTree
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_basic_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  analyzers: {
+  
+    treegger: {
+      
+      module_type: MakeTriggerSimulationTree
+      
+      GeneratorTags:     [ "generator" ]
+      
+      EnergyDepositTags: [ "largeant:TPCActive" ]
+      
+      TriggerGatesTag:   "lvdsgates:40"
+      
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # name of the tree being created
+      EventTreeName: "Treegger"
+      
+      # message facility stream
+      LogCategory: "MakeTriggerSimulationTree"
+      
+    } # treegger
+    
+  } # analyzers
+  
+  trees: [ treegger ]
+  
+} # physics
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.MakeTriggerSimulationTreeLog: {
+  type:       file
+  filename:  "MakeTriggerSimulationTree.log"
+  threshold:  DEBUG
+  categories: {
+    MakeTriggerSimulationTree: { limit: -1 }
+    default:                   { limit: 0 }
+  }
+} # services.messages.destinations.MakeTriggerSimulationTreeLog
+

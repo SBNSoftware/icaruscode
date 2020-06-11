@@ -1,0 +1,74 @@
+#include "services_icarus.fcl"
+#include "wcls-decode-to-sig-base.fcl"
+
+process_name: wclsdatanfsp
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
+}
+
+source: {
+   module_type: RootInput
+   saveMemoryObjectThreshold: 10485760
+
+   #inputCommands: ["drop *", "keep raw::RawDigits_*_*_*"]
+   #inputCommands: ["drop *", "keep *_*_*_Swizzler"]
+}
+
+physics :{
+   producers: {
+      wclsnfsp0 : @local::standard_wirecell_sigproc
+      wclsnfsp1 : @local::standard_wirecell_sigproc
+      wclsnfsp2 : @local::standard_wirecell_sigproc
+      wclsnfsp3 : @local::standard_wirecell_sigproc
+   }
+
+   p1 : [ wclsnfsp0, wclsnfsp1, wclsnfsp2, wclsnfsp3]
+   trigger_paths : [ p1 ]
+   
+   o1 : [ out1 ]
+   end_paths: [ o1 ]
+}
+
+physics.producers.wclsnfsp0.wcls_main.inputers: ["wclsRawFrameSource:rfsrc0"]
+physics.producers.wclsnfsp0.wcls_main.outputers: ["wclsFrameSaver:spsaver0"]
+physics.producers.wclsnfsp0.wcls_main.params.raw_input_label: "simmer:daq0"
+physics.producers.wclsnfsp0.wcls_main.params.tpc_volume_label: 0
+
+physics.producers.wclsnfsp1.wcls_main.inputers: ["wclsRawFrameSource:rfsrc1"]
+physics.producers.wclsnfsp1.wcls_main.outputers: ["wclsFrameSaver:spsaver1"]
+physics.producers.wclsnfsp1.wcls_main.params.raw_input_label: "simmer:daq1"
+physics.producers.wclsnfsp1.wcls_main.params.tpc_volume_label: 1
+
+physics.producers.wclsnfsp2.wcls_main.inputers: ["wclsRawFrameSource:rfsrc2"]
+physics.producers.wclsnfsp2.wcls_main.outputers: ["wclsFrameSaver:spsaver2"]
+physics.producers.wclsnfsp2.wcls_main.params.raw_input_label: "simmer:daq2"
+physics.producers.wclsnfsp2.wcls_main.params.tpc_volume_label: 2
+
+physics.producers.wclsnfsp3.wcls_main.inputers: ["wclsRawFrameSource:rfsrc3"]
+physics.producers.wclsnfsp3.wcls_main.outputers: ["wclsFrameSaver:spsaver3"]
+physics.producers.wclsnfsp3.wcls_main.params.raw_input_label: "simmer:daq3"
+physics.producers.wclsnfsp3.wcls_main.params.tpc_volume_label: 3
+
+outputs:{
+   out1: {
+      module_type: RootOutput
+      fileName: "%ifb_wcdecon.root"
+      #SelectEvents: [p1]
+      saveMemoryObjectThreshold: 10485760 
+
+      outputCommands :   [
+         "keep *_*_*_*"
+         // "drop *_nfspl1_raw_*",
+         // "drop *_nfspl1_threshold_*",
+         // "drop *_nfspl1_wiener_*",
+         // "drop *_nfspl1_gauss_*",
+         // "drop *_wcNoiseFilter_*_*",
+         // "drop *_daq_*_*"
+      ]
+
+   }
+}

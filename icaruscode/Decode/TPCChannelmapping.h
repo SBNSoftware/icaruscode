@@ -1,5 +1,4 @@
 // -------------------------------------------------
-// TPCChannelmapping.cxx 
 // This is the first pass to this script
 // It will improve gradually as we move on 
 // Also coding style will gradually improve.
@@ -246,6 +245,121 @@ namespace database
             } 
         }
         return channelidvec;
+    }
+
+
+    //******************* PMT Channel Mapping ***********************
+
+    //---------------------------------------------------------------
+    // The aim of this function is to build a map between the
+    // Larsoft PMT Channel ID and the physical location of PMT ID
+    //---------------------------------------------------------------
+
+    inline int PMTChannelIDFromPhysicalPMTPositionID(unsigned int pmtid)
+    {
+      const std::string  name("icarus_hw_readoutboard");
+      const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+      const std::string  dataType("pmt_placements");
+      Dataset            dataset;
+
+      // Recover the data from the database
+      int error = GetDataset(name,dburl,dataType,dataset);
+
+      // If there was an error the function above would have printed a message so bail out
+      if (error) throw(std::exception());
+
+      unsigned int PhysicalPMTPositionID;
+      unsigned int PMTChannelID;
+
+      // Loop through the data to recover the channels
+      // NOTE that we skip the first row because that is just the labels
+      for(int row = 1; row < getNtuples(dataset); row++)
+        {
+          // Recover the row
+          Tuple tuple = getTuple(dataset, row);
+
+          if (tuple != NULL)
+            {
+
+              PhysicalPMTPositionID = getLongValue(tuple, 0, &error);
+
+	      if (error) throw std::runtime_error("Encountered error when trying to read Physical PMT Position ID from database");
+
+              if (PhysicalPMTPositionID == pmtid) {
+
+                PMTChannelID = getLongValue(tuple, 17, &error);
+
+                if (error) throw std::runtime_error("Encountered error in trying to recover Larsoft PMT Channel ID from database");
+
+              }else continue;
+
+              releaseTuple(tuple);
+            }
+        }
+
+      return PMTChannelID;
+    }
+
+    //-----------------------------------------------------------------------------
+    // The aim of this function is to build a map between the
+    // Larsoft PMT Channel ID and the Digitizer channel number and Digitizer label
+    //-----------------------------------------------------------------------------
+
+    inline int PMTChannelIDFromDigitizer(std::string digitizerlabel, int digitizerchannelnumber)
+    {
+      const std::string  name("icarus_hw_readoutboard");
+      const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+      const std::string  dataType("pmt_placements");
+      Dataset            dataset;
+
+      // Recover the data from the database
+      int error = GetDataset(name,dburl,dataType,dataset);
+
+      // If there was an error the function above would have printed a message so bail out
+      if (error) throw(std::exception());
+
+      unsigned int PMTChannelID;
+
+      // Loop through the data to recover the channels
+      // NOTE that we skip the first row because that is just the labels
+      for(int row = 1; row < getNtuples(dataset); row++)
+        {
+          // Recover the row
+          Tuple tuple = getTuple(dataset, row);
+
+          if (tuple != NULL)
+            {
+              char digitizerBuffer[10];
+
+	      getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
+	      std::string digitizerLabel(digitizerBuffer, sizeof(digitizerBuffer));
+
+              int digitizerChannelNumber = getDoubleValue(tuple, 9, &error);
+
+
+              int matchedcharacter = digitizerLabel.compare(digitizerlabel);
+
+              // Not sure what I am doing wrong why 2 is coming for matchedcharacter,
+              // but I have tried a simple compare string with same name it is 0.
+              // std::string s1("EE-BOT-B");
+              // std::string s2("EE-BOT-B");
+              // int compare = s1.compare(s2);
+              // if (compare == 0) std::cout << "strings are equal" << std::endl;
+
+              if(matchedcharacter == 2 && digitizerChannelNumber == digitizerchannelnumber){
+
+                PMTChannelID = getLongValue(tuple, 17, &error);
+
+                if (error) throw std::runtime_error("Encountered error in trying to recover Larsoft PMT Channel ID from database");
+
+              }else  continue;
+
+	      releaseTuple(tuple);
+            }
+        }
+
+      return PMTChannelID;
+
     }
     
     // -------------------------------------------------

@@ -1,0 +1,75 @@
+#include "services_icarus.fcl"
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_basic_services
+}
+# explicitly set the split wire geometry 
+services.Geometry: @local::icarus_split_induction_nooverburden_geometry
+services.ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
+
+process_name: wclssim
+physics :{
+   producers: {
+      plopper : {
+        module_type : BlipMaker
+      }
+      simmer : {
+         module_type : WireCellToolkit
+         wcls_main: {
+            tool_type: WCLS
+            apps: ["Pgrapher"]
+
+            // logsinks: ["stdout"]
+            // loglevels: ["magnify:debug"]
+
+            plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
+
+            // needs to be found via your WIRECELL_PATH 
+            configs: ["pgrapher/experiment/icarus/wcls-sim-drift-simchannel.jsonnet"]
+
+
+            // Contract note: these exact "type:name" must be used to identify
+            // the configuration data structures for these components in the Jsonnet.
+
+            inputers: ["wclsSimDepoSource:electron"]
+            outputers: [
+               "wclsSimChannelSink:postdrift",
+               "wclsFrameSaver:simdigits"
+            //   ,"wclsFrameSaver:nfdigits",
+            //   "wclsFrameSaver:spsignals",
+            //   "wclsFrameSaver:spthresholds"
+            ]
+
+            // Make available parameters via Jsonnet's std.extVar()
+            params: {
+            }
+         }
+      }
+   }
+   p1 : [ plopper, simmer ]
+   outputFiles : [ out ]
+   
+   trigger_paths : [ p1 ]
+   end_paths: [ outputFiles ]
+}
+outputs: {
+   out: {
+      module_type: RootOutput
+      // fileName: "%ifb_wcsim.root"
+      fileName: "wcsim.root"
+
+      outputCommands :   [
+         // "drop *", "keep recob::Wires_*_*_*"
+         "keep *_*_*_*"
+         // "drop *_nfspl1_raw_*",
+         // "drop *_nfspl1_threshold_*",
+         // "drop *_nfspl1_wiener_*",
+         // "drop *_nfspl1_gauss_*",
+         // "drop *_wcNoiseFilter_*_*",
+         // "drop *_daq_*_*"
+      ]
+
+   }
+}
