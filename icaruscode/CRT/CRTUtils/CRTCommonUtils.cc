@@ -438,7 +438,7 @@ int CRTCommonUtils::GetMINOSLayerID(size_t adid) {
 TVector3 CRTCommonUtils::ChanToLocalCoords(uint8_t mac, int chan) {
 
     TVector3 coords(0.,0.,0.);
-    int adid  = MacToAuxDetID(mac,chan); //CRT module ID
+    size_t adid  = MacToAuxDetID(mac,chan); //CRT module ID
     auto const& adGeo = fGeoService->AuxDet(adid); //CRT module
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
@@ -478,7 +478,7 @@ TVector3 CRTCommonUtils::ChanToWorldCoords(uint8_t mac, int chan) {
 // channel subset = 1,2,or 3 (always =1 for c or d modules)
 void CRTCommonUtils::FillFebMap() {
 
-    string fullFileName;
+    string fullFileName;// = "/icarus/app/users/chilgenb/ana_icaruscode_v08_52_00/feb_map.txt";
     cet::search_path searchPath("FW_SEARCH_PATH");
     searchPath.find_file("feb_map.txt",fullFileName);
     std::ifstream fin;
@@ -492,23 +492,31 @@ void CRTCommonUtils::FillFebMap() {
 
     vector<string> row;
     string line, word;
+    //each line has pattern 
+    //  auxDetID, mac5, chan pos, '\n' (CERN, DC, cut MINOS) OR
+    //  auxDetID, mac5, chan pos, mac5', chan pos', '\n' (full length MINOS)
     while(getline(fin,line)) {
         row.clear();
         std::stringstream s(line);
-        int mod;
-        while (std::getline(s, word, ',')) {
+        while (std::getline(s, word, ',')) { //parse line
             row.push_back(word);
         }
-        mod = (size_t)std::stoi(row[0]);
-        fAuxDetIdToFeb[mod].push_back(std::make_pair((uint8_t)std::stoi(row[1]),std::stoi(row[2])));
-        fAuxDetIdToChanGroup[mod]=std::stoi(row[2]);
-        fFebToAuxDetId[(uint8_t)std::stoi(row[1])].push_back(mod);
-        if(row.size()>3) {
-            fAuxDetIdToFeb[mod].push_back(std::make_pair((uint8_t)std::stoi(row[3]),std::stoi(row[4])));
-            fFebToAuxDetId[(uint8_t)std::stoi(row[3])].push_back(mod);
-            if(fAuxDetIdToChanGroup[mod]!=std::stoi(row[4]))
+        int mod = (size_t)std::stoi(row[0]);       //auxDetID
+        uint8_t mac5 = (uint8_t)std::stoi(row[1]); //febID
+        int pos = std::stoi(row[2]);               //feb channel block
+        fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
+        fAuxDetIdToChanGroup[mod]=pos;
+        fFebToAuxDetId[mac5].push_back(mod);
+        std::cout << "mod: " << mod << ", mac: " << (int)mac5 << ", pos: " << pos;
+        if(row.size()>3) { //if dual ended readout MINOS module
+            mac5 = (uint8_t)std::stoi(row[3]);
+            fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
+            fFebToAuxDetId[mac5].push_back(mod);
+            if(pos!=std::stoi(row[4])) //feb channel block same on both febs
               std::cout << "WARNING in CRTComUtil: 2 unique chan groups for ADId!" << std::endl;
+            std::cout << ", mac: " << (int)mac5;
         }
+        std::cout << std::endl;
     }
     std::cout << "filled febMap with " << fAuxDetIdToFeb.size() << " entries" << std::endl;
     fin.close();
