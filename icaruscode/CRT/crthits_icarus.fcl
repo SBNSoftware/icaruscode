@@ -44,10 +44,10 @@ physics:
   producers:
   {
     crttruehit: @local::standard_crttruehitproducer
-    crtsimhit:  @local::standard_crtsimhitproducer
+    crthit:  @local::standard_crtsimhitproducer
   }
   # Schedule job step(s) for execution by defining the analysis module for this job.
-  reco: [ crttruehit, crtsimhit ]
+  reco: [ crttruehit, crthit ]
   stream1: [ out1 ]
   trigger_paths: [reco]
   # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
