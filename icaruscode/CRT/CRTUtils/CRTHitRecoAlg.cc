@@ -457,6 +457,7 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
         }//loop over channels
 
+        //correct trigger time for propegation delay
         auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
         ttrigs.push_back(data->fTs0 - adsGeo.HalfLength()*fPropDelay);
 
@@ -469,7 +470,7 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
     }
 
-    auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
+    //finish averaging and fill hit point array
     if(region=="South") {
         hitpos.SetX(hitpos.X()*1.0/pex);
         hitpos.SetY(hitpos.Y()*1.0/pey);
@@ -483,6 +484,7 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     hitpoint[2] = hitpos.Z();
 
     //error estimates (likely need to be revisted)
+    auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
     if(region!="North" && region!="South"){
         hitpointerr[0] = (xmax-xmin)/sqrt(12);
         hitpointerr[1] = (ymax-ymin)/sqrt(12);
@@ -501,14 +503,12 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
 
-    //time stamp
+    //time stamp averaged over all FEBs
     double thit = 0.;
     for(double const t : ttrigs)
         thit += t;
-    thit*=1.0/coinData.size();
+    thit*=1.0/ttrigs.size();
 
-    //if(fVerbose)
-    //    std::cout << "generating CRTHit..." << std::endl;
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
