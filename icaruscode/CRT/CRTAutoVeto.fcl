@@ -46,7 +46,7 @@ physics:
       #CRTDataLabel:    "crtdaq"
       CRTSimHitLabel:  "crthit"
 
-      #CRTBackTrack: @local::standard_crtbacktracker
+      CRTBackTrack: @local::standard_crtbacktracker
 
     }
   }
