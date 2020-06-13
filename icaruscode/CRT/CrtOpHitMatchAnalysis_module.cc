@@ -23,7 +23,7 @@
 //LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-
+#include "larsim/MCCheater/PhotonBackTrackerService.h"
 
 //Data product includes
 #include "lardataobj/RecoBase/OpHit.h"
@@ -132,6 +132,8 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
 
 void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 {
+  //art::ServiceHandle<cheat::PhotonBackTrackerService> pbt;
+
   fEvent  = e.id().event();
   fRun    = e.run();
   fSubrun = e.subRun();
@@ -160,6 +162,8 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
   for(auto const& ophit : opHitList){
         fTOp.push_back(ophit->PeakTime()*1e3-fOpDelay);
+        //const vector<int> ids = pbt->OpHitToEveTrackIds(ophit);
+        //std::cout << "ophit with " << ids.size() << "trackIDs" << std::endl;
   }
 
   //OpFlash
