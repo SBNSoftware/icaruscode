@@ -14,6 +14,8 @@ services:
   message:                @local::icarus_message_services_prod_debug
                           @table::icarus_basic_services
 
+  @table::icarus_backtracking_services
+
 } # services
 
 source:

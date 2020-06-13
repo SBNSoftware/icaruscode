@@ -387,6 +387,11 @@ icarus_full_reconstruction:       [ @sequence::icarus_gauss_reconstruction,
                                     @sequence::icarus_raw_reconstruction
                                   ]
 
+# Define CRT/Op reco only sequence
+icarus_crtophit_reconstruction:   [@sequence::icarus_reco_crt,
+                                   @sequence::icarus_reco_wmc_optical
+                                  ]
+
 ### Below we include overrides for the modules above
 
 ### Definitions for a single instance of the RawDigitFilter

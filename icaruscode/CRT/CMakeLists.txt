@@ -249,6 +249,7 @@ simple_plugin( CrtOpHitMatchAnalysis module
                         larcorealg_Geometry
                         nusimdata_SimulationBase
 			lardataobj_RecoBase
+                        larsim_MCCheater_PhotonBackTrackerService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
