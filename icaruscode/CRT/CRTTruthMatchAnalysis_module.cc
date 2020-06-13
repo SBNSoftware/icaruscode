@@ -77,8 +77,16 @@ class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
     art::InputTag fCRTTrueHitLabel;
     art::InputTag fCRTDataLabel;
     art::InputTag fCRTSimHitLabel;
+
     CRTBackTracker bt;
     CRTCommonUtils* fCrtutils;
+
+    const float fPosmax;
+    const float fPosbinning;
+    const float fTimemax;
+    const float fTbinning;
+
+    const bool fVerbose;
 
     TH1F* fNTrueHitMu; //number of CRTTrueHits per muon track
     TH1F* fNDataMu;    //number of CRTData per muon track
@@ -108,10 +116,10 @@ class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
     TH1F *fRres_sth, *fXres_sth, *fYres_sth, *fZres_sth, *fTres_sth;
     TH1F *fRres_bot, *fXres_bot, *fYres_bot, *fZres_bot, *fTres_bot;
 
-    size_t        fNViews;
-    vector<TH2F*> fChargeViews;
-    vector<TGraph*> fTrueHitPoints;
-    vector<TGraph*> fSimHitPoints;
+    //size_t        fNViews;
+    //vector<TH2F*> fChargeViews;
+    //vector<TGraph*> fTrueHitPoints;
+    //vector<TGraph*> fSimHitPoints;
 
 };//class definition
 
@@ -123,7 +131,12 @@ CRTTruthMatchAnalysis::CRTTruthMatchAnalysis(fhicl::ParameterSet const& p)
     fCRTDataLabel(p.get<art::InputTag>("CRTDataLabel","crtdaq")),
     fCRTSimHitLabel(p.get<art::InputTag>("CRTSimHitLabel","crthit")),
     bt(p.get<fhicl::ParameterSet>("CRTBackTrack")),
-    fCrtutils(new CRTCommonUtils())
+    fCrtutils(new CRTCommonUtils()),
+    fPosmax(p.get<float>("PosMax",1000.)),
+    fPosbinning(p.get<float>("PosBinning",1.)),
+    fTimemax(p.get<float>("TimeMax",30.)),
+    fTbinning(p.get<float>("Tbinning",1.)),
+    fVerbose(p.get<bool>("Verbose",false))
 {}
 
 void CRTTruthMatchAnalysis::beginJob()
@@ -150,43 +163,54 @@ void CRTTruthMatchAnalysis::beginJob()
     fFebsTrue        = tfs->make<TH1F>("hFebsTrue",       "mac5s in true hits",         300,0,300);
     fFebsSim         = tfs->make<TH1F>("hFebsSim",        "mac5s in sim hits",          300,0,300);
 
+    const float absmax = fPosmax+0.5*fPosbinning;
+    const float absmin = -1*absmax;
+    const int nbinsabs = 2*absmax/fPosbinning;
+
+    const float rmax = fPosmax;
+    const int nbinsr = rmax/fPosbinning;
+
+    const float tmax = fTimemax+0.5*fTbinning;
+    const float tmin = -1*tmax;
+    const int nbinst = 2*tmax/fTbinning;
+
     art::TFileDirectory resdir = tfs->mkdir("resolution");
-    fRres_top        = resdir.make<TH1F>("hRres_top",       "CRTHit #sigma_{r}: Top",       50,0,200);
-    fRres_rim        = resdir.make<TH1F>("hRres_rim",       "CRTHit #sigma_{r}: Rim",       50,0,200);
-    fRres_bot        = resdir.make<TH1F>("hRres_bot",       "CRTHit #sigma_{r}: Bottom",    50,0,200);
-    fRres_lat        = resdir.make<TH1F>("hRres_lat",       "CRTHit #sigma_{r}: East/West", 200,0,1000);
-    fRres_nor        = resdir.make<TH1F>("hRres_nor",       "CRTHit #sigma_{r}: North",     200,0,1000);
-    fRres_sth        = resdir.make<TH1F>("hRres_sth",       "CRTHit #sigma_{r}: South",     200,0,1000);
+    fRres_top        = resdir.make<TH1F>("hRres_top",       "CRTHit #sigma_{r}: Top",       nbinsr,0,rmax);
+    fRres_rim        = resdir.make<TH1F>("hRres_rim",       "CRTHit #sigma_{r}: Rim",       nbinsr,0,rmax);
+    fRres_bot        = resdir.make<TH1F>("hRres_bot",       "CRTHit #sigma_{r}: Bottom",    nbinsr,0,rmax);
+    fRres_lat        = resdir.make<TH1F>("hRres_lat",       "CRTHit #sigma_{r}: East/West", nbinsr,0,rmax);
+    fRres_nor        = resdir.make<TH1F>("hRres_nor",       "CRTHit #sigma_{r}: North",     nbinsr,0,rmax);
+    fRres_sth        = resdir.make<TH1F>("hRres_sth",       "CRTHit #sigma_{r}: South",     nbinsr,0,rmax);
 
-    fXres_top        = resdir.make<TH1F>("hXres_top",       "CRTHit #sigma_{x}: Top",       100,-200,200);
-    fXres_rim        = resdir.make<TH1F>("hXres_rim",       "CRTHit #sigma_{x}: Rim",       100,-200,200);
-    fXres_bot        = resdir.make<TH1F>("hXres_bot",       "CRTHit #sigma_{x}: Bottom",    100,-200,200);
-    fXres_lat        = resdir.make<TH1F>("hXres_lat",       "CRTHit #sigma_{x}: East/West", 225,-450,450);
-    fXres_nor        = resdir.make<TH1F>("hXres_nor",       "CRTHit #sigma_{x}: North",     225,-450,450);
-    fXres_sth        = resdir.make<TH1F>("hXres_sth",       "CRTHit #sigma_{x}: South",     225,-450,450);
+    fXres_top        = resdir.make<TH1F>("hXres_top",       "CRTHit #sigma_{x}: Top",       nbinsabs,absmin,absmax);
+    fXres_rim        = resdir.make<TH1F>("hXres_rim",       "CRTHit #sigma_{x}: Rim",       nbinsabs,absmin,absmax);
+    fXres_bot        = resdir.make<TH1F>("hXres_bot",       "CRTHit #sigma_{x}: Bottom",    nbinsabs,absmin,absmax);
+    fXres_lat        = resdir.make<TH1F>("hXres_lat",       "CRTHit #sigma_{x}: East/West", nbinsabs,absmin,absmax);
+    fXres_nor        = resdir.make<TH1F>("hXres_nor",       "CRTHit #sigma_{x}: North",     nbinsabs,absmin,absmax);
+    fXres_sth        = resdir.make<TH1F>("hXres_sth",       "CRTHit #sigma_{x}: South",     nbinsabs,absmin,absmax);
 
-    fYres_top        = resdir.make<TH1F>("hYres_top",       "CRTHit #sigma_{y}: Top",       100,-200,200);
-    fYres_rim        = resdir.make<TH1F>("hYres_rim",       "CRTHit #sigma_{y}: Rim",       100,-200,200);
-    fYres_bot        = resdir.make<TH1F>("hYres_bot",       "CRTHit #sigma_{y}: Bottom",    100,-200,200);
-    fYres_lat        = resdir.make<TH1F>("hYres_lat",       "CRTHit #sigma_{y}: East/West", 225,-450,450);
-    fYres_nor        = resdir.make<TH1F>("hYres_nor",       "CRTHit #sigma_{y}: North",     225,-450,450);
-    fYres_sth        = resdir.make<TH1F>("hYres_sth",       "CRTHit #sigma_{y}: South",     225,-450,450);
+    fYres_top        = resdir.make<TH1F>("hYres_top",       "CRTHit #sigma_{y}: Top",       nbinsabs,absmin,absmax);
+    fYres_rim        = resdir.make<TH1F>("hYres_rim",       "CRTHit #sigma_{y}: Rim",       nbinsabs,absmin,absmax);
+    fYres_bot        = resdir.make<TH1F>("hYres_bot",       "CRTHit #sigma_{y}: Bottom",    nbinsabs,absmin,absmax);
+    fYres_lat        = resdir.make<TH1F>("hYres_lat",       "CRTHit #sigma_{y}: East/West", nbinsabs,absmin,absmax);
+    fYres_nor        = resdir.make<TH1F>("hYres_nor",       "CRTHit #sigma_{y}: North",     nbinsabs,absmin,absmax);
+    fYres_sth        = resdir.make<TH1F>("hYres_sth",       "CRTHit #sigma_{y}: South",     nbinsabs,absmin,absmax);
 
-    fZres_top        = resdir.make<TH1F>("hZres_top",       "CRTHit #sigma_{z}: Top",       100,-200,200);
-    fZres_rim        = resdir.make<TH1F>("hZres_rim",       "CRTHit #sigma_{z}: Rim",       100,-200,200);
-    fZres_bot        = resdir.make<TH1F>("hZres_bot",       "CRTHit #sigma_{z}: Bottom",    100,-200,200);
-    fZres_lat        = resdir.make<TH1F>("hZres_lat",       "CRTHit #sigma_{z}: East/West", 225,-450,450);
-    fZres_nor        = resdir.make<TH1F>("hZres_nor",       "CRTHit #sigma_{z}: North",     225,-450,450);
-    fZres_sth        = resdir.make<TH1F>("hZres_sth",       "CRTHit #sigma_{z}: South",     225,-450,450);
+    fZres_top        = resdir.make<TH1F>("hZres_top",       "CRTHit #sigma_{z}: Top",       nbinsabs,absmin,absmax);
+    fZres_rim        = resdir.make<TH1F>("hZres_rim",       "CRTHit #sigma_{z}: Rim",       nbinsabs,absmin,absmax);
+    fZres_bot        = resdir.make<TH1F>("hZres_bot",       "CRTHit #sigma_{z}: Bottom",    nbinsabs,absmin,absmax);
+    fZres_lat        = resdir.make<TH1F>("hZres_lat",       "CRTHit #sigma_{z}: East/West", nbinsabs,absmin,absmax);
+    fZres_nor        = resdir.make<TH1F>("hZres_nor",       "CRTHit #sigma_{z}: North",     nbinsabs,absmin,absmax);
+    fZres_sth        = resdir.make<TH1F>("hZres_sth",       "CRTHit #sigma_{z}: South",     nbinsabs,absmin,absmax);
 
-    fTres_top        = resdir.make<TH1F>("hTres_top",       "CRTHit #sigma_{t}: Top",       100,-50,50);
-    fTres_rim        = resdir.make<TH1F>("hTres_rim",       "CRTHit #sigma_{t}: Rim",       100,-50,50);
-    fTres_bot        = resdir.make<TH1F>("hTres_bot",       "CRTHit #sigma_{t}: Bottom",    100,-50,50);
-    fTres_lat        = resdir.make<TH1F>("hTres_lat",       "CRTHit #sigma_{t}: East/West", 100,-50,50);
-    fTres_nor        = resdir.make<TH1F>("hTres_nor",       "CRTHit #sigma_{t}: North",     100,-50,50);
-    fTres_sth        = resdir.make<TH1F>("hTres_sth",       "CRTHit #sigma_{t}: South",     100,-50,50);
+    fTres_top        = resdir.make<TH1F>("hTres_top",       "CRTHit #sigma_{t}: Top",       nbinst,tmin,tmax);
+    fTres_rim        = resdir.make<TH1F>("hTres_rim",       "CRTHit #sigma_{t}: Rim",       nbinst,tmin,tmax);
+    fTres_bot        = resdir.make<TH1F>("hTres_bot",       "CRTHit #sigma_{t}: Bottom",    nbinst,tmin,tmax);
+    fTres_lat        = resdir.make<TH1F>("hTres_lat",       "CRTHit #sigma_{t}: East/West", nbinst,tmin,tmax);
+    fTres_nor        = resdir.make<TH1F>("hTres_nor",       "CRTHit #sigma_{t}: North",     nbinst,tmin,tmax);
+    fTres_sth        = resdir.make<TH1F>("hTres_sth",       "CRTHit #sigma_{t}: South",     nbinst,tmin,tmax);
 
-    art::TFileDirectory viewdir = tfs->mkdir("chargeview");
+    /*art::TFileDirectory viewdir = tfs->mkdir("chargeview");
 
     fNViews = 0;
     for(int i=0; i<100; i++) {
@@ -207,7 +231,7 @@ void CRTTruthMatchAnalysis::beginJob()
         fSimHitPoints.back()->SetMarkerStyle(8);
         fSimHitPoints.back()->SetMarkerSize(10);
         fSimHitPoints.back()->SetMarkerColor(kMagenta);
-    }
+    }*/
 
     //style options
     fNTrueHitMu->SetLineWidth(2);
@@ -434,9 +458,10 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
             }//for trackIDs
         }//for CRTSimHits
 
-        mf::LogPrint("CRTTruthMatchAnalysis")
-          << "  found " << nsim << " muon-associated CRTSimHits ("
-          << 100.0*nsim/simHitList.size() << " %)";
+        if(fVerbose)
+            mf::LogPrint("CRTTruthMatchAnalysis")
+              << "  found " << nsim << " muon-associated CRTSimHits ("
+              << 100.0*nsim/simHitList.size() << " %)";
     }//if CRTSimHits
     else
         mf::LogWarning("CRTTruthMatchAnalysis") << "no CRTSimHits found";
@@ -487,7 +512,7 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
                                     fZres_top->Fill(hit->z_pos - simhit->z_pos);
                                     fTres_top->Fill(GetDeltaT(hit,simhit));
                                     nmatch++;
-                                    if(nmatch_top<10&&fNViews<100) {
+                                    /*if(nmatch_top<10&&fNViews<100) {
                                         //need way to map global back to local coords
 
                                         TVector3 truepos = 
@@ -510,7 +535,7 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
                                             }
                                         }
                                         fNViews++;
-                                    }
+                                    }*/
                                     nmatch_top++;     
                                 }
                                 if(simreg.find("Rim")!=string::npos){
@@ -621,25 +646,26 @@ void CRTTruthMatchAnalysis::analyze(art::Event const& e)
 
     }//for muon IDs
 
-    std::cout << "found " << '\n'
-              << " * nmu: " << nmu << '\n'
-              << " * ntrue hit: " << trueHitList.size() << " with " << ntrue << " ass'd with muons" << '\n'
-              << " * nsim hit: " << simHitList.size() << " with "  << nsim << " ass'd with muons" << '\n' 
-              << std::endl;
+    if(fVerbose) {
+        std::cout << "found " << '\n'
+                  << " * nmu: " << nmu << '\n'
+                  << " * ntrue hit: " << trueHitList.size() << " with " << ntrue << " ass'd with muons" << '\n'
+                  << " * nsim hit: " << simHitList.size() << " with "  << nsim << " ass'd with muons" << '\n' 
+                  << std::endl;
 
-    std::cout << "matched true/sim hits:" << '\n'
-              << " * matched: " << nmatch << '\n'
-              << " * missed: "  << nmiss  << '\n'
-              << "   - SimHits missing muon track: " << nmiss_track << '\n'
-              << "   - SimHits, c or d missing FEB match: " << nmiss_feb << '\n' 
-              << std::endl;
+        std::cout << "matched true/sim hits:" << '\n'
+                  << " * matched: " << nmatch << '\n'
+                  << " * missed: "  << nmiss  << '\n'
+                  << "   - SimHits missing muon track: " << nmiss_track << '\n'
+                  << "   - SimHits, c or d missing FEB match: " << nmiss_feb << '\n' 
+                  << std::endl;
 
-    std::cout << "missed muons (eff.):" << '\n'
-              << " * trueHit: " << nmiss_true << " (" << 1.0*(nmu-nmiss_true)/nmu << ")" << '\n'
-              << " * data: " << nmiss_data << " (" << 1.0*(nmu-nmiss_data)/nmu << ")" << '\n'
-              << " * simHit: " << nmiss_sim << " (" << 1.0*(nmu-nmiss_sim)/nmu << ")" << '\n' 
-              << std::endl;
-
+        std::cout << "missed muons (eff.):" << '\n'
+                  << " * trueHit: " << nmiss_true << " (" << 1.0*(nmu-nmiss_true)/nmu << ")" << '\n'
+                  << " * data: " << nmiss_data << " (" << 1.0*(nmu-nmiss_data)/nmu << ")" << '\n'
+                  << " * simHit: " << nmiss_sim << " (" << 1.0*(nmu-nmiss_sim)/nmu << ")" << '\n' 
+                  << std::endl;
+    }
 
 }
 
