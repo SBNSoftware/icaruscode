@@ -31,7 +31,7 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fUseReadoutWindow = config.UseReadoutWindow(); 
     fQPed = config.QPed();
     fQSlope = config.QSlope();
-    
+    fPropDelay = config.PropDelay(); 
     fPEThresh = config.PEThresh();
     fCoinWindow = config.CoinWindow();
     return;
@@ -285,9 +285,9 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
     if(adsid_max<8)
-        thit -= (adsGeo.HalfLength() - hitpos.Z() )*fPropDelay;
+        thit -= hitpos.Z()*fPropDelay;
     else
-        thit -= (adsGeo.HalfLength() - hitpos.X() )*fPropDelay;
+        thit -= hitpos.X()*fPropDelay;
 
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
@@ -382,7 +382,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     float petot = 0., pemax = 0., pex=0., pey=0.;
     int adsid_max = -1, nabove=0, nx=0, ny=0;
     TVector3 postrig;
-    vector<double> ttrigs;
+    //map<int,vector<double>> ttrigs;
+    vector<int> ttrigs;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
     double ymin=DBL_MAX, ymax = -DBL_MAX;
     double xmin=DBL_MAX, xmax = -DBL_MAX;
@@ -458,7 +459,9 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         }//loop over channels
 
         //correct trigger time for propegation delay
-        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
+        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger stripi
+        
+       // ttrigs[layer].push_back(data->fTs0);// - adsGeo.HalfLength()*fPropDelay);
         ttrigs.push_back(data->fTs0 - adsGeo.HalfLength()*fPropDelay);
 
     }//loop over FEBs
@@ -483,12 +486,22 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
 
+    //time stamp averaged over all FEBs
+    double thit = 0.;//, thit_0 = 0., thit_1 = 0.;
+    //for(double const t : ttrigs[0]) 
+    //    thit_0 += t;
+    for(double const t : ttrigs)
+        thit += t;
+    //thit_0
+    thit*=1.0/ttrigs.size();
+
     //error estimates (likely need to be revisted)
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
     if(region!="North" && region!="South"){
         hitpointerr[0] = (xmax-xmin)/sqrt(12);
         hitpointerr[1] = (ymax-ymin)/sqrt(12);
         hitpointerr[2] = adsGeo.Length()/sqrt(12);
+        //thit=(thit_0
     }
 
     if(region=="North"){
@@ -502,12 +515,6 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         hitpointerr[1] = adsGeo.HalfWidth1()*2/sqrt(12);
         hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
-
-    //time stamp averaged over all FEBs
-    double thit = 0.;
-    for(double const t : ttrigs)
-        thit += t;
-    thit*=1.0/ttrigs.size();
 
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
