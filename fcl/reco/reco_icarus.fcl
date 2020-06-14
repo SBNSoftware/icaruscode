@@ -177,7 +177,7 @@ icarus_reco_producers:
   mcassociationsICARUSCryo1:      @local::standard_mcparticlehitmatching
 
   ## crt producers
-  crtsimhit:                      @local::standard_crtsimhitproducer
+  crthit:                         @local::standard_crtsimhitproducer
 }
 
 icarus_reco_filters:
@@ -340,7 +340,7 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crtsimhit #,
+icarus_reco_crt:                  [ crthit #,
                                     #crttzero ]
                                     #crtsimtrack 
                                   ]
