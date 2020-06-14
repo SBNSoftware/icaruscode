@@ -24,6 +24,7 @@
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 
+#include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
 
@@ -177,6 +178,7 @@ icarus_reco_producers:
   mcassociationsICARUSCryo1:      @local::standard_mcparticlehitmatching
 
   ## crt producers
+  crttruehit:                     @local::standard_crttruehitproducer
   crthit:                         @local::standard_crtsimhitproducer
 }
 
@@ -340,7 +342,8 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crthit #,
+icarus_reco_crt:                  [ crttruehit,
+                                    crthit #,
                                     #crttzero ]
                                     #crtsimtrack 
                                   ]
