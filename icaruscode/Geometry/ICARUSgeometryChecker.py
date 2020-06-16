@@ -169,6 +169,14 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
   #
   # 1. determine the sides
   #
+  leftMinY = min(
+   min(wire.GetStart().Y(), wire.GetEnd().Y())
+   for wire in leftPlane.IterateWires()
+   )
+  leftMaxY = max(
+   max(wire.GetStart().Y(), wire.GetEnd().Y())
+   for wire in leftPlane.IterateWires()
+   )
   leftMaxZ = max(
    max(wire.GetStart().Z(), wire.GetEnd().Z())
    for wire in leftPlane.IterateWires()
@@ -182,7 +190,7 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
   
   leftEndPos = lambda wire: \
    wire.GetStart() if wire.GetStart().Z() > wire.GetEnd().Z() else wire.GetEnd()
-  rightEndPos = lambda wire: \
+  rightStartPos = lambda wire: \
    wire.GetStart() if wire.GetStart().Z() < wire.GetEnd().Z() else wire.GetEnd()
   
   stats = StatCollector()
@@ -192,9 +200,12 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
     leftEnd = leftEndPos(leftWire)
     
     # 
-    # 2.1. if the wire does not end on the right edge, move on
+    # 2.1. if the wire does not end on the right edge, move on;
+    #      if the wire ends on a corner, also move on
     # 
     if abs(leftEnd.Z() - leftMaxZ) > 0.01: continue
+    if abs(leftEnd.Y() - leftMaxY) < 0.01 or abs(leftEnd.Y() - leftMinY) < 0.01:
+      continue
     
     #
     # 2.2. find the closest wire on the left 
@@ -240,7 +251,7 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
         nearestWire = rightPlane.Wire(nearestWireID) 
       if nearestWire:
         msg += "; actual {} ends at: {}" \
-         .format(nearestWireID, rightEndPos(nearestWire))
+         .format(nearestWireID, rightStartPos(nearestWire))
       
       logging.error(msg)
       misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
@@ -250,7 +261,7 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
     rightWire = rightPlane.Wire(rightWireID)
     
     #
-    # 2.3. check the distance of that wire from this one
+    # 2.3. check the projected distance of that wire from this one
     #
     shift = leftWire.DistanceFrom(rightWire)
     stats.add(shift)
@@ -267,13 +278,62 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
        )
     # if too far
     
+    #
+    # 2.5. check that wires touch
+    #
+    d = (leftEndPos(leftWire) - rightStartPos(rightWire)).Mag()
+    if d > tolerance:
+      logging.debug(
+        "Distance of wire %s (%s) from the matched wire %s (%s): %g",
+        leftWireID, leftEndPos(leftWire),
+        rightWireID, rightStartPos(rightWire),
+        d
+        )
+      # find which is the wire physically closest to leftWire
+      closestWireID, d_min = rightWireID, d
+      testWireID = rightWireID
+      while testWireID.Wire > 0:
+        testWireID.Wire -= 1
+        testWire = rightPlane.Wire(testWireID)
+        test_d = (leftEndPos(leftWire) - rightStartPos(testWire)).Mag()
+        logging.debug("Distance from %s (%s): %g", testWireID, rightStartPos(testWire), test_d)
+        if test_d >= d_min: break
+        closestWireID, d_min = testWireID, test_d
+      # while
+      testWireID = rightWireID
+      LastWireNo = rightPlane.Nwires() - 1
+      while testWireID.Wire < LastWireNo:
+        testWireID.Wire += 1
+        testWire = rightPlane.Wire(testWireID)
+        test_d = (leftEndPos(leftWire) - rightStartPos(testWire)).Mag()
+        logging.debug("Distance from %s (%s): %g", testWireID, rightStartPos(testWire), test_d)
+        if test_d >= d_min: break
+        closestWireID, d_min = testWireID, test_d
+      # while
+      
+      logging.error(
+       "Wire %s ends at %s, the matched wire %s starts at %s, %g cm away.",
+       leftWireID, leftEndPos(leftWire),
+       rightWireID, rightStartPos(rightWire),
+       d
+       )
+      if closestWireID != rightWireID:
+        logging.error(
+         " => the closest wire is actually %s starting at %s, %g cm away",
+         closestWireID, rightPlane.Wire(closestWireID), d_min
+         )
+      # if
+    # if too far
+    
   # for
   
-  logging.debug("Shift for %d wires between %s and %s: %g +/- %g cm",
-   stats.entries(), leftPlane.ID(), rightPlane.ID(),
-   stats.average(), stats.RMS(),
-   )
-  
+  if stats.entries() > 0:
+    logging.debug("Shift for %d wires between %s and %s: %g +/- %g cm",
+     stats.entries(), leftPlane.ID(), rightPlane.ID(),
+     stats.average(), stats.RMS(),
+     )
+  else:
+    logging.debug("No  wire shift statistics collected.")
   return misalignedWires
 # checkPlaneWireAlignment()
 
@@ -391,8 +451,9 @@ class StatCollector:
   def sumSq(self): return self.wx2
   def average(self): return self.wx / self.w if self.w else None
   def averageSq(self): return self.wx2 / self.w if self.w else None
-  def variance(self): return self.averageSq() - self.average()**2
-  def RMS(self): return self.variance() ** 0.5
+  def variance(self):
+    return self.averageSq() - self.average()**2 if self.w else None
+  def RMS(self): return self.variance() ** 0.5 if self.w else None
 # class StatCollector
 
 
