@@ -19,6 +19,7 @@ defaultqual e17
 fcldir  product_dir job
 gdmldir product_dir gdml
 fwdir   product_dir scripts
+wpdir   product_dir wire-cell-cfg
 
 # table fragment to set FW_SEARCH_PATH needed
 # to find gdml files:
