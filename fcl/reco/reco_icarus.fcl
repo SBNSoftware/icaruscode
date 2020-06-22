@@ -84,8 +84,14 @@ icarus_reco_producers:
   gaushitTPC1:                    @local::gaus_hitfinder_icarus
   gaushitTPC2:                    @local::gaus_hitfinder_icarus
   gaushitTPC3:                    @local::gaus_hitfinder_icarus
+ 
+  mixedhit:                      @local::mixed_hitfinder
+  mixedHitTPC0:                  @local::mixed_hitfinder
+  mixedHitTPC1:                  @local::mixed_hitfinder
+  mixedHitTPC2:                  @local::mixed_hitfinder
+  mixedHitTPC3:                  @local::mixed_hitfinder
 
-  icarushit:                      @local::icarus_hitfinder
+ icarushit:                      @local::icarus_hitfinder
   icarusHitTPC0:                  @local::icarus_hitfinder
   icarusHitTPC1:                  @local::icarus_hitfinder
   icarusHitTPC2:                  @local::icarus_hitfinder
@@ -228,6 +234,26 @@ icarus_reco_SigProcTPC3Gauss:     [ rawDigitFilterTPC3,
                                     decon1DroiTPC3,
                                     gaushitTPC3 ]
 
+icarus_reco_signalprocessingmixed: [ rawdigitfilter,
+                                    decon1droi,
+                                    icarushit ]
+
+icarus_reco_SigProcTPC0Mixed:     [ rawDigitFilterTPC0,
+                                    decon1DroiTPC0,
+                                    mixedHitTPC0 ]
+
+icarus_reco_SigProcTPC1Mixed:     [ rawDigitFilterTPC1,
+                                    decon1DroiTPC1,
+                                    mixedHitTPC1 ]
+
+icarus_reco_SigProcTPC2Mixed:     [ rawDigitFilterTPC2,
+                                    decon1DroiTPC2,
+                                    mixedHitTPC2 ]
+
+icarus_reco_SigProcTPC3Mixed:     [ rawDigitFilterTPC3,
+                                    decon1DroiTPC3,
+                                    mixedHitTPC3 ]
+
 icarus_reco_signalprocessingraw:  [ recowireraw,
                                     icarushit]
 
@@ -332,6 +358,19 @@ icarus_reco_raw_Cryo1:            [ @sequence::icarus_reco_SigProcTPC2Raw,
                                     hitMergerCryo1,
                                     @sequence::icarus_reco_pandoraICARUSCryo1 ]
 
+icarus_reco_mixed_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Mixed,
+                                    @sequence::icarus_reco_SigProcTPC1Mixed
+                                    #,hitMergerCryo0,
+                                    #@sequence::icarus_reco_pandoraICARUSCryo0
+ ]
+
+icarus_reco_mixed_Cryo1:            [ @sequence::icarus_reco_SigProcTPC2Mixed,
+                                    @sequence::icarus_reco_SigProcTPC3Mixed
+                                    #,hitMergerCryo1,
+                                    #@sequence::icarus_reco_pandoraICARUSCryo1 
+]
+
+
 icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
 icarus_reco_mcrecoGausMulti:      [ mcassociationsGausCryo0,
                                     mcassociationsGausCryo1 ]
@@ -380,11 +419,36 @@ icarus_raw_MultiTPCRecon:         [ @sequence::icarus_reco_raw_Cryo0,
                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                     @sequence::icarus_reco_mcrecoICARUSMulti,
                                     @sequence::icarus_reco_crt
+#@sequence::icarus_reco_calorimetry
                                   ]
+#icarus_rawfast_TPC0recon:         [ @sequence::icarus_reco_raw_Cryo0,
+#                                    @sequence::icarus_reco_raw_Cryo1,
+#                                    #@sequence::icarus_reco_trajclusterICARUS,
+#                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
+#                                    @sequence::icarus_reco_mcrecoICARUSMulti,
+#                                    @sequence::icarus_reco_crt
+#@sequence::icarus_reco_calorimetry
+#                                  ]
+icarus_mixed_reconstruction:        [ @sequence::icarus_reco_signalprocessingmixed,
+                                    @sequence::icarus_reco_pandoraICARUS,
+                                    #@sequence::icarus_reco_trajclusterICARUS,
+                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                    @sequence::icarus_reco_mcrecoICARUS,
+                                    @sequence::icarus_reco_crt
+                                  ]
+icarus_mixed_MultiTPCRecon:         [ @sequence::icarus_reco_mixed_Cryo0,
+                                    @sequence::icarus_reco_mixed_Cryo1,
+                                    #@sequence::icarus_reco_trajclusterICARUS,
+                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                    @sequence::icarus_reco_mcrecoICARUSMulti,
+                                    @sequence::icarus_reco_crt
+                                  ]
+
 
 # Define the full reconstruction sequence
 icarus_full_reconstruction:       [ @sequence::icarus_gauss_reconstruction,
-                                    @sequence::icarus_raw_reconstruction
+                                    @sequence::icarus_raw_reconstruction,
+@sequence::icarus_mixed_reconstruction
                                   ]
 
 ### Below we include overrides for the modules above
@@ -442,6 +506,15 @@ icarus_reco_producers.gaushitTPC1.CalDataModuleLabel:                           
 icarus_reco_producers.gaushitTPC2.CalDataModuleLabel:                                          "decon1DroiTPC2"
 icarus_reco_producers.gaushitTPC3.CalDataModuleLabel:                                          "decon1DroiTPC3"
     
+### Definitions for a single instance of the hit finding    
+icarus_reco_producers.mixedhit.CalDataModuleLabel:                                              "decon1Droi"
+    
+### Definitions for instances by TPC    
+icarus_reco_producers.mixedHitTPC0.CalDataModuleLabel:                                          "decon1DroiTPC0"
+icarus_reco_producers.mixedHitTPC1.CalDataModuleLabel:                                          "decon1DroiTPC1"
+icarus_reco_producers.mixedHitTPC2.CalDataModuleLabel:                                          "decon1DroiTPC2"
+icarus_reco_producers.mixedHitTPC3.CalDataModuleLabel:                                          "decon1DroiTPC3"
+
 icarus_reco_producers.gaushitsel.HitProducerLabel:                                             "gaushit"
 
 ### Need to define hitmerger for the raw hit finding when done by TPC
