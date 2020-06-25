@@ -1,0 +1,8 @@
+#include "photpropservices_icarus.fcl"
+#include "standard_g4_icarus.fcl"
+
+services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
+services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+
+physics.simulate: [ rns, largeant ]
