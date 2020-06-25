@@ -14,6 +14,7 @@ services:
   @table::icarus_basic_services
   @table::icarus_wirecalibration_services
   @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
+  SpaceChargeService: @local::icarus_spacecharge
 }
 
 #source is a root file

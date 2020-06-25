@@ -15,6 +15,7 @@
 #include "mcsfitproducer_standard.fcl"
 
 #include "calorimetry_icarus.fcl"
+#include "particleid_icarus.fcl"
 
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
@@ -26,12 +27,15 @@
 
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
+#include "correctionservices_icarus.fcl"
 
 BEGIN_PROLOG
 
 icarus_reco_services:
 {
    @table::icarus_basic_services
+   # include the space charge!
+   SpaceChargeService: @local::icarus_spacecharge
 }
 
 ### This is the complete list of all producers! ###
@@ -127,6 +131,14 @@ icarus_reco_producers:
   pandoraICARUSCryo1:             @local::icarus_pandora
   pandoraTrackICARUSCryo1:        @local::icarus_pandoraTrackCreation
   pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
+
+  # pandora CALO and PID
+  pandoraGausCalo:		  @local::icarus_calomc
+  pandoraGausPid:		  @local::icarus_chi2pid
+  pandoraGausCaloCryo0:		  @local::icarus_calomc
+  pandoraGausPidCryo0:		  @local::icarus_chi2pid
+  pandoraGausCaloCryo1:		  @local::icarus_calomc
+  pandoraGausPidCryo1:		  @local::icarus_chi2pid
 
   ### PM algorithm for pandora
   pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
@@ -613,4 +625,19 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:           
 icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                            ["hitMergerCryo1"]
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
 
+# point the pandora CALO modules to pandora output
+icarus_reco_producers.pandoraGausCalo.TrackModuleLabel: "pandoraTrackGaus"
+icarus_reco_producers.pandoraGausCalo.SpacePointModuleLabel: "pandoraGaus"
+icarus_reco_producers.pandoraGausPid.TrackModuleLabel: "pandoraTrackGaus"
+icarus_reco_producers.pandoraGausPid.CalorimetryModuleLabel: "pandoraGausCalo"
+
+icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
+icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0"
+icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
+icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel: "pandoraGausCaloCryo0"
+
+icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
+icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1"
+icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
+icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel: "pandoraGausCaloCryo1"
 END_PROLOG
