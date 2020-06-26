@@ -133,8 +133,6 @@ icarus_reco_producers:
   pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
   # pandora CALO and PID
-  pandoraGausCalo:		  @local::icarus_calomc
-  pandoraGausPid:		  @local::icarus_chi2pid
   pandoraGausCaloCryo0:		  @local::icarus_calomc
   pandoraGausPidCryo0:		  @local::icarus_chi2pid
   pandoraGausCaloCryo1:		  @local::icarus_calomc
@@ -626,11 +624,6 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:             
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
 
 # point the pandora CALO modules to pandora output
-icarus_reco_producers.pandoraGausCalo.TrackModuleLabel: "pandoraTrackGaus"
-icarus_reco_producers.pandoraGausCalo.SpacePointModuleLabel: "pandoraGaus"
-icarus_reco_producers.pandoraGausPid.TrackModuleLabel: "pandoraTrackGaus"
-icarus_reco_producers.pandoraGausPid.CalorimetryModuleLabel: "pandoraGausCalo"
-
 icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
