@@ -1,3 +1,38 @@
+# File: prodcorsika_proton_intime_icarus.fcl
+# Purpose: generation of "intime-cosmic" monte-carlo -- events where a cosmic triggers the beam spill
+# Author: Gray Putnam (grayputnam@uchicago.edu)
+# Date: June 26, 2020
+#
+# Generates events with cosmic rays in-time with the beam spill.
+#
+# This generation is done in three stages: 
+#
+# First, corsika is run (in proton mode) in an unbiased way to populate 
+# the TPC with cosmic rays.
+#
+# Second, a filter (GenInTimeSorter) is run to ensure that at least 
+# one particle enters the TPC in a window around (minT, maxT). This
+# window  is chosen so that any particle which could possibly deposit
+# light on a photon detector in-time with the beam is passed. 
+#
+# Third, G4 is run on only those in-time particles and a filter 
+# (FilterSimPhotonTime) is run which removes events which have fewer
+# than MinTotalEnergy of energy of in-time photon depositions (in units of eV). 
+#
+# Comments:
+# -These filters by themselves do not constitute a trigger emulation and
+# a reco-based trigger emulator should be run downstream. One should
+# take care to ensure that the two filters do not remove events that
+# would be passed by the trigger simulation.
+#
+# -This file runs G4 only on the "intime" set of particles. One __must__
+# run G4 using the "intime_g4_icarus.fcl" configuration to ensure that
+# G4 is run consistently only on the "outtime" particles downstream.
+#
+# -In general, this config will filter out a large percentage of the
+# generated corsika events. One should test what percentage of events 
+# do not pass the filtering in order to tune how many to generate
+
 #include "corsika_icarus.fcl"
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
