@@ -6,7 +6,8 @@ BEGIN_PROLOG
 # a small buffer at the end (~0.1ms).
 #
 # Also make sure that the cosmic sample time starts one full drift window 
-# plus the g4 rise time (~1.2ms) before the TPC readout starts (-0.34ms)
+# plus the g4 rise time (~1.2ms) before the TPC readout starts (-0.34ms);
+# also needs to cover the PMT readout window (-1 ms to +1 ms)
 #
 # Thus, run from -1.5ms -> 1.3ms
 
