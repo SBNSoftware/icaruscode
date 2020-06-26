@@ -65,7 +65,7 @@ physics:
 
  producers:
  {
-   cosmgen: @local::icarus_corsika_p
+   generator: @local::icarus_corsika_p
    larg4intime: @local::icarus_largeant
    rns:       { module_type: "RandomNumberSaver" }
  }
@@ -101,7 +101,7 @@ physics:
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below 
- simulate: [ rns, cosmgen, GenInTimeSorter, larg4intime, timefilter ] 
+ simulate: [ rns, generator, GenInTimeSorter, larg4intime, timefilter ] 
 
 
  #define the output stream, there could be more than one if using filters 
@@ -124,8 +124,8 @@ outputs:
  }
 }
 
-#physics.producers.cosmgen.EnergyThreshold: 2.e-1
-physics.producers.cosmgen.SubBoxLength: "subboxLength 60 "
+#physics.producers.generator.EnergyThreshold: 2.e-1
+physics.producers.generator.SubBoxLength: "subboxLength 60 "
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]
