@@ -37,8 +37,6 @@
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
-#include "photpropservices_icarus.fcl"
-
 
 process_name: CosmicsCorsikaCMCGenAndG4InTime
 
@@ -108,14 +106,6 @@ physics:
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
-
- #trigger_paths is a keyword and contains the paths that modify the art::event, 
- #ie filters and producers
- trigger_paths: [simulate] 
-
- #end_paths is a keyword and contains the paths that do not modify the art::Event, 
- #ie analyzers and output streams.  these all run simultaneously
- end_paths:     [stream1]  
 }
 
 #block to define where the output goes.  if you defined a filter in the physics
@@ -139,6 +129,3 @@ physics.producers.cosmgen.SubBoxLength: "subboxLength 60 "
 services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
 physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]
-
-# set Photon Visibility to mapped library (better memory usage)
-services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
