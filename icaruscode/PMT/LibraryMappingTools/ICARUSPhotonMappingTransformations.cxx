@@ -91,7 +91,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
   geo::Length_t const C1startX = fGeom->Cryostat(1U).MinX();
   if (C0endX > C1startX) {
     throw std::runtime_error(
-      "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+      "phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping(): "
       "C:0 ends at x=" + std::to_string(C0endX)
       + ", C:1 starts at x=" + std::to_string(C1startX)
       + "... this algorithm does not understand this geometry."
@@ -162,7 +162,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
     auto const& channelRange = opDetChannelRangeByCryostat[cid.Cryostat];
     if (!channelRange.has_data()) {
       throw std::runtime_error(
-        "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+        "phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings(): "
         + cid.toString() + " ends up with no optical channels??"
         );
     }
@@ -170,7 +170,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
     auto const nChannels = channelRange.max() + 1 - channelRange.min();
     if ((unsigned int) nChannels != cryo.NOpDet()) {
       throw std::runtime_error(
-        "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+        "phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings(): "
         + cid.toString() + " expected to have "
         + std::to_string(cryo.NOpDet()) + " optical channels, we end up with "
         + std::to_string(nChannels) + " ("

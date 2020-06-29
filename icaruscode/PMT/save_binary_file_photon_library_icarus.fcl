@@ -1,0 +1,36 @@
+#
+# File:    save_binary_file_photon_library_icarus.fcl
+# Purpose: Saves the photon library into a binary file.
+#
+# The configuration used to select the photon library is the default ICARUS one.
+# This job sucks a lot of memory, and it's better run from a directory in a
+# local disk.
+#
+
+#include "services_icarus.fcl"
+#include "photpropservices_icarus.fcl"
+
+process_name: SavePhotLib
+
+services: {
+  
+  @table::icarus_art_services
+  
+  @table::icarus_geometry_services
+  
+  PhotonVisibilityService: {
+    
+    @table::icarus_photonvisibilityservice
+    
+    PreloadLibrary:             true # allow loading even with no event
+    SaveVisibilityAsBinaryFile: "PhotonLibrary/PhotonLibrary-20180801.dat"
+    
+  } # PhotonVisibilityService
+  
+} # services
+
+source: {
+  module_type: EmptyEvent
+  maxEvents: 0
+}
+
