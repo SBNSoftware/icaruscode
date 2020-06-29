@@ -238,21 +238,13 @@ icarus_reco_signalprocessingmixed: [ rawdigitfilter,
                                     decon1droi,
                                     icarushit ]
 
-icarus_reco_SigProcTPC0Mixed:     [ rawDigitFilterTPC0,
-                                    decon1DroiTPC0,
-                                    mixedHitTPC0 ]
+icarus_reco_SigProcTPC0Mixed:     [mixedHitTPC0 ]
 
-icarus_reco_SigProcTPC1Mixed:     [ rawDigitFilterTPC1,
-                                    decon1DroiTPC1,
-                                    mixedHitTPC1 ]
+icarus_reco_SigProcTPC1Mixed:     [ mixedHitTPC1 ]
 
-icarus_reco_SigProcTPC2Mixed:     [ rawDigitFilterTPC2,
-                                    decon1DroiTPC2,
-                                    mixedHitTPC2 ]
+icarus_reco_SigProcTPC2Mixed:     [mixedHitTPC2 ]
 
-icarus_reco_SigProcTPC3Mixed:     [ rawDigitFilterTPC3,
-                                    decon1DroiTPC3,
-                                    mixedHitTPC3 ]
+icarus_reco_SigProcTPC3Mixed:     [  mixedHitTPC3 ]
 
 icarus_reco_signalprocessingraw:  [ recowireraw,
                                     icarushit]

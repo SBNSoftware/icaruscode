@@ -5,7 +5,7 @@ BEGIN_PROLOG
 icarus_detproperties:                           @local::standard_detproperties
 icarus_detproperties.ElectronsToADC:            1.208041e-3     # in ADC/e; 6241.5 electrons = 1fC
 icarus_detproperties.Temperature:               87.5
-icarus_detproperties.Electronlifetime:          9600 
+icarus_detproperties.Electronlifetime:          10000
 icarus_detproperties.Efield:                    [0.5,0.733,0.933 ] #kV/cm to first,second,third wire planes
  
 icarus_detproperties.SternheimerA:              0.1956           # Ar Sternheimer parameter a.

@@ -83,7 +83,7 @@ fastCloning: false
 }
 }
 services.SpaceChargeService: @local::icarus_spacecharge
-#services.DetectorPropertiesService.Electronlifetime: 2000
+services.DetectorPropertiesService.Electronlifetime: 10000
 
 physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
 
