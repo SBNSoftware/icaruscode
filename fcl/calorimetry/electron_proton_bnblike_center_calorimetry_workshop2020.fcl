@@ -1,0 +1,13 @@
+#include "prodsingle_electron_proton_bnblike_center_forward.fcl"
+
+process_name: SinglesGen
+
+services:
+{
+@table::services
+@table::icarus_legacy_services_v08_50_00
+}
+
+
+services.Geometry: @local::icarus_single_induction_nooverburden_geometry
+services.ExpGeoHelperInterface: @local::icarus_single_induction_geometry_helper
