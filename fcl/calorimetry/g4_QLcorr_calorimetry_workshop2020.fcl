@@ -25,4 +25,4 @@ services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_vo
 
 services.LArG4Parameters.IonAndScintCalculator: "Correlated"
 services.LArPropertiesService.ScintByParticleType: true
-
+ervices.LArPropertiesService.ScintPreScale: 1.0
