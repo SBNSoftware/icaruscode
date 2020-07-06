@@ -1,10 +1,10 @@
 /**
- * @file   icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations_tool.cc
+ * @file   icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations_tool.cc
  * @brief  A photon mapping identity transformation: toolification.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   April 3, 2019
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
- *         `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
+ *         `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx`
  * 
  * Note that the separation of the code into a implementation and a tool part
  * is not because of factorization to have art-independent code, but because

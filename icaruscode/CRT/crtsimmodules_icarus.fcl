@@ -1,17 +1,14 @@
 BEGIN_PROLOG
 
-icarus_crtsim:
+standard_icarus_crtsimalg:
 {
-  module_type: "icaruscode/CRT/CRTDetSim"
 
-  Verbose: false
+  Verbose:      false
   UltraVerbose: false
 
-  G4ModuleLabel: "largeant"
-
   # Global timing offset [ns]
-  # For Corsika cosmics, use -1.1ms (see corsika_icarus.fcl)
-  GlobalT0Offset: -1.1e6 
+  # For Corsika cosmics, use 1.1ms (see corsika_icarus.fcl)
+  GlobalT0Offset: 1.1e6
 
   # Shape parameters for mean time delay vs. Npe
   TDelayNorm: 4125.74
@@ -19,7 +16,7 @@ icarus_crtsim:
   TDelaySigma: 90.392
   TDelayOffset: -1.525
 
-  # Shape parameters for time delay RMS vs. Npe  
+  # Shape parameters for time delay RMS vs. Npe
   TDelayRMSGausNorm: 2.09138
   TDelayRMSGausShift: 7.23993
   TDelayRMSGausSigma: 170.027
@@ -77,6 +74,15 @@ icarus_crtsim:
   # for now, adc signals are merged
   BiasTime: 50.0
 
+}
+
+icarus_crtsim:
+{
+  module_type: "icaruscode/CRT/CRTDetSim"
+
+  G4ModuleLabel: "largeant"
+
+  DetSimAlg: @local::standard_icarus_crtsimalg
 }
 
 END_PROLOG

@@ -1,0 +1,84 @@
+#
+# File:    g4_only_energydeposits.fcl
+# Purpose: Drop in configuration to set LArG4 to simulate only energy deposits.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 13, 2020
+# Version: 1.0
+#
+# This configuration can be used as drop-in to instruct LArSoft to produce
+# only energy depositions during GEANT4 runs.
+# This is achieved via `LArG4Parameters` service configuration.
+# 
+# This configuration produces particles and energy depositions as output,
+# skipping the transportation of scintillation light and ionization charge to
+# the readout. It is tailored around the way the `LArG4Parameters` is used in
+# LArSoft module `LegacyLArG4`.
+# 
+# The `LegacyLArG4` module simulates the energy depositions as a spin off of
+# the processing of scintillation light. For that reason this configuration
+# leaves the simulation of the scintillation light enabled (and the charge
+# as well, since they go together), but it does not perform the transportation
+# of the light to the photodetectors.
+# 
+# Example: to run only energy depositions with a base configuration
+# `cosmics_g4_icarus_volCryostat.fcl`, have a job configuration like:
+#     
+#     #include "cosmics_g4_icarus_volCryostat.fcl"
+#     
+#     #include "g4_only_energydeposits.fcl"
+#     
+# Note that small saving can be achieved by disabling the services that are
+# not needed. For example, if space charge maps are not used:
+#     
+#     services.SpaceChargeService: @erase
+#     
+# can be added to the configuration file.
+# 
+# 
+# Dependencies
+# =============
+#
+# This configuration does not directly depend on any specific configuration,
+# but it requires the service `PhotonVisibilityService` to have been already
+# configured.
+#
+#
+# Settings
+# =========
+#
+# TPC charge and light propagation are not performed.
+# The simulation of the auxiliary detectors is not disabled, including both
+# energy deposition and readout.
+#
+#
+# Input
+# ======
+#
+# No specific input is required.
+# 
+#
+# Output
+# =======
+# 
+# No specific output is produced.
+# 
+#
+# Changes
+# ========
+# 
+# 20200513 (petrillo@slac.stanford.edu) [v1.0]
+#   original version for `icaruscode` `v08_51_00`
+#
+
+services.LArG4Parameters: {
+  @table::services.LArG4Parameters
+  
+  # "disabling wire planes" seems to affect the way GEANT4 performs the
+  # simulation, maybe not imposing a short stepping
+  # (two orders of magnitude fewer energy depositions, in count)
+  DisableWireplanes:     false
+  FillSimEnergyDeposits: true
+  NoElectronPropagation: true
+  NoPhotonPropagation:   true
+
+} # services.LArG4Parameters

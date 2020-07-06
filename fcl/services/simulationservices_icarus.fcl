@@ -7,24 +7,24 @@ BEGIN_PROLOG
 # Configuration for LArG4Parameters service
 #
 # Use as:
-#     
+#
 #     service.LArG4Parmeters: @local::icarus_largeantparameters
-#     
+#
 #
 icarus_largeantparameters: {
-    
+
     OpticalSimVerbosity:      0       #verbosity of optical simulation, soon to be depricated
     ParticleKineticEnergyCut: 0.01e-3  #in GeV
     StoreTrajectories:        true
     VisualizationEnergyCut:   10.e-3  #depricated, in GeV
     VisualizeNeutrals:        false   #depricated
     UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
-    ModifyProtonCut:          false   #Whether to modify the default proton cut 
+    ModifyProtonCut:          false   #Whether to modify the default proton cut
     NewProtonCut:             0.0     #new ProtonCut value, ModifyProtonCut must be set to set new value
     KeepEMShowerDaughters:    true    #save secondary, tertiary, etc particles in EM showers
-    LongitudinalDiffusion:    6.2e-9  #in cm^2/ns
-    TransverseDiffusion:      16.3e-9 #in cm^2/ns
-    ElectronClusterSize:      20.0   #number of ionization electrons to drift in a unit
+    LongitudinalDiffusion:    4.0e-9  #in cm^2/ns
+    TransverseDiffusion:      8.8e-9  #in cm^2/ns
+    ElectronClusterSize:      20.0    #number of ionization electrons to drift in a unit
     MinNumberOfElCluster:     0       #minimum number of electron clusters
     UseCustomPhysics:         true    # use the `EnabledPhysics` list of processes:
     EnabledPhysics:           [ "Em", "SynchrotronAndGN", "Ion", "Hadron",
@@ -71,7 +71,7 @@ icarus_largeantparameters: {
 # ICARUS LArVoxelCalculator service configuration.
 #
 # Use as:
-#     
+#
 #     services.LArVoxelCalculator: @local::icarus_larvoxelcalculator
 #
 #

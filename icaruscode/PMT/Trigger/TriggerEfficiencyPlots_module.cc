@@ -142,6 +142,13 @@ struct EventInfo_t {
   /// Returns the total energy deposited in the detector during beam [GeV]
   GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
 
+  /// Returns the energy deposited in the active volume during the event [GeV]
+  GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
+  
+  /// Returns the energy deposited in the active volume during the beam [GeV]
+  GeV DepositedEnergyInSpillInActiveVolume() const
+    { return fEnergyDepSpillActive; }
+
   // Returns the neutrino energy [GeV]
   GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
 
@@ -186,6 +193,14 @@ struct EventInfo_t {
   /// Sets the energy of the event deposited during beam gate [GeV]
   void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
 
+  /// Sets the total deposited energy of the event in active volume [GeV]
+  void SetDepositedEnergyInActiveVolume(GeV e) { fEnergyDepActive = e; }
+
+  /// Sets the energy of the event deposited during beam gate in active volume
+  /// [GeV]
+  void SetDepositedEnergyInActiveVolumeInSpill(GeV e)
+    { fEnergyDepSpillActive = e; }
+
   // Sets the neutrino energy.
   void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
 
@@ -201,6 +216,8 @@ struct EventInfo_t {
   /// Adds a point to the list of interaction vertices in the event.
   void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
   
+  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -225,7 +242,10 @@ struct EventInfo_t {
         out << " no neutrino interaction";
       }
       out << "\nTotal deposited energy: " << DepositedEnergy()
-        << ", of which in spill " << DepositedEnergyInSpill();
+        << ", of which in spill " << DepositedEnergyInSpill()
+        << ", in active volume " << DepositedEnergyInActiveVolume()
+        << ", in active volume and in spill "
+          << DepositedEnergyInSpillInActiveVolume();
       if (fVertices.empty()) {
         out << "\nNo interaction vertex found.";
       }
@@ -255,8 +275,11 @@ struct EventInfo_t {
 
   std::array<unsigned int, NInteractionTypes> fInteractions;
 
-  GeV fEnergyDepTotal { 0.0 }; ///< Total deposited energy [GeV]
-  GeV fEnergyDepSpill { 0.0 }; ///< Total deposited energy [GeV]
+  GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
+  GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
+  GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
+  /// Energy deposited in active volume in spill.
+  GeV fEnergyDepSpillActive { 0.0 };
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
@@ -271,7 +294,7 @@ struct EventInfo_t {
   /// Whether the event has activity inside the active volume.
   bool fInActiveVolume { false };
   
-  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
+  //std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
   
 }; // struct EventInfo_t
 
@@ -510,6 +533,8 @@ struct EventInfoTree: public TreeHolder {
   Double_t fOutLeptE;
   Double_t fTotE;
   Double_t fSpillE;
+  Double_t fActiveE;
+  Double_t fSpillActiveE;
   
   Bool_t fInActive;
   
@@ -817,11 +842,63 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  * current events with 15 ADC counts as PMT threshold).
  * 
  * Each set of plots, defined in
- * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`, is
- * contributed only by the events in the set category.
+ * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`
+ * (and, within, `initializeEventPlots()`
+ * and `initializeEfficiencyPerTriggerPlots()`), is contributed only by the
+ * events in the set category.
  * 
- * Some plots are specific to the trigger, and they are different according to
- * the ADC threshold:
+ * There are different "types" of plots. Some
+ * @ref TriggerEfficiencyPlots_SelectionPlots "do not depend on triggering at all",
+ * like the deposited energy distribution. Others
+ * @ref TriggerEfficiencyPlots_MultiTriggerPlots "cross different trigger definitions",
+ * like the trigger efficiency as function of trigger requirement. Others still
+ * @ref TriggerEfficiencyPlots_SingleTriggerPlots "assume a single trigger definition":
+ * this is the case of trigger efficiency plots versus energy. Finally, there are
+ * @ref TriggerEfficiencyPlots_SingleTriggerResponsePlots "plots that depend on a specific trigger definition and outcome":
+ * this is the case of all the plots including only triggering or non-triggering
+ * events.
+ * 
+ * A list of plots follows for each plot type.
+ * All the plots are always relative to a specific optical detector channel
+ * threshold (ADC) and a broad event category.
+ * 
+ * 
+ * ### Plots independent of the triggers (selection plots)
+ * 
+ * @anchor TriggerEfficiencyPlots_SelectionPlots
+ * 
+ * These plots are stored directly in a threshold/category folder:
+ * 
+ * * `EnergyInSpill`: total energy deposited in the detector during the time the
+ *   beam gate is open. It is proportional to the amount of scintillation light
+ *   in the event;
+ * * `EnergyInSpillActive`: energy deposited in the active volume of the
+ *   detector during the time the beam gate is open; the active volume is
+ *   defined as the union of all TPC drift voulmes;
+ * * plots specific to neutrino interactions (if the event is not a neutrino
+ *   interaction, it will not contribute to them); if not otherwise specified,
+ *   only the first neutrino interaction in the event is considered:
+ *     * `InteractionType`: code of the interaction type, as in
+ *       `sim::TruthInteractionTypeName`;
+ *     * `NeutrinoEnergy`: generated energy of the interacting neutrino;
+ *     * `LeptonEnergy`: generated energy of the lepton out of the _first_
+ *       neutrino interaction;
+ *     * `InteractionVertexYZ`: coordinates of the location of all interactions
+ *       in the event, in world coordinates, projected on the anode plane.
+ * 
+ * @note In fact, these plots usually do not even depend on the ADC threshold
+ *       of the optical detector channels. Nevertheless, they are stored in the
+ *       folders under specific thresholds, and they are duplicate.
+ * 
+ * 
+ * ### Plots including different trigger requirements
+ * 
+ * @anchor TriggerEfficiencyPlots_MultiTriggerPlots
+ * 
+ * These plots collect information from scenarios with different trigger
+ * requirements, but still with the same underlying optical detector channel
+ * ADC threshold.
+ * They are also stored in the threshold/category folder:
  * 
  * * `Eff`: trigger efficiency defined as number of triggered events over the
  *   total number of events, as function of the minimum number of trigger
@@ -838,12 +915,50 @@ namespace icarus::trigger { class TriggerEfficiencyPlots; }
  *   requirement, and it may not appear at all if does not fire a trigger.
  * * `NPrimitives`: the maximum number of primitives "on" at any time.
  * 
- * Some plots are independent of the ADC threshold and they have the same
- * content in each of the plot set for a given event category:
  * 
- * * `EnergyInSpill`: total energy deposited in the detector during the time the
- *   beam gate is open. It is proportional to the amount of scintillation light
- *   in the event.
+ * ### Plots depending on a specific trigger definition
+ * 
+ * @anchor TriggerEfficiencyPlots_SingleTriggerPlots
+ * 
+ * The following plots depend on the full definition of the trigger, including
+ * PMT thresholds _and_ other requirements.
+ * They are hosted each in a subfolder of the threshold/category folder, with
+ * a name encoding the requirement: `ReqXX` for trigger with minimum required
+ * primitives `XX`.
+ * 
+ * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
+ *   deposited during the beam gate;
+ * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
+ *   deposited in the TPC active volumes during the beam gate;
+ * * `EffVsNeutrinoEnergy`, `EffVsLeptonEnergy`: trigger efficiency as function
+ *   of the true energy of the first interacting neutrino, and of the outgoing
+ *   lepton in the final state of the interaction, respectively;
+ * * `TriggerTick`: time of the earliest trigger. Only triggering events
+ *   contribute.
+ * 
+ * The parameters are defined in the same way as in the
+ * @ref TriggerEfficiencyPlots_SelectionPlots "selection plots", unless stated
+ * otherwise.
+ *
+ *
+ * ### Plots depending on a specific trigger definition and response
+ *
+ * @anchor TriggerEfficiencyPlots_SingleTriggerResponsePlots
+ *
+ * These plots depend on the trigger definition, as the ones in the previous
+ * type, and on the actual trigger response.
+ * They are hosted each in a subfolder of the threshold/category/requirement
+ * folder, with a name encoding the response: `triggering` for triggering
+ * events, `nontriggering` for the others.
+ * 
+ * Their event pool is filtered to include only the events in the current
+ * category which also pass, or do not pass, the trigger requirement.
+ * 
+ * The plots are:
+ * * `EnergyInSpill`, `EnergyInSpillActive`, `InteractionType`,
+ *   `NeutrinoEnergy`,`LeptonEnergy`, `InteractionVertexYZ`:
+ *   these are defined in the same way as the
+ *   @ref TriggerEfficiencyPlots_SelectionPlots "selection plots"
  * 
  * 
  * Configuration parameters
@@ -1364,9 +1479,16 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   /// Initializes all the plot sets, one per threshold.
   void initializePlots(PlotCategories_t const& categories);
 
-  /// Initializes a single plot set (ADC threshold + category) into `plots`.
+  /// Initializes full set of plots for (ADC threshold + category) into `plots`.
   void initializePlotSet(PlotSandbox& plots) const;
 
+  /// Initializes set of plots per complete trigger definition into `plots`.
+  void initializeEfficiencyPerTriggerPlots(PlotSandbox& plots) const;
+  
+  /// Initializes a single, trigger-independent plot set into `plots`.
+  void initializeEventPlots(PlotSandbox& plots) const;
+  
+  
   /// Returns whether an event with the specified information should be included
   /// in the plots at all (it's a filter).
   bool shouldPlotEvent(EventInfo_t const& eventInfo) const;
@@ -1416,7 +1538,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const;
   
   /// Computes the trigger response from primitives with the given `threshold`.
-  TriggerGateData_t combineTriggerPrimitives(
+  std::vector<TriggerGateData_t> combineTriggerPrimitives(
     art::Event const& event,
     icarus::trigger::ADCCounts_t const threshold,
     art::InputTag const& dataTag
@@ -1430,11 +1552,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   void plotResponses(
     std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plots, EventInfo_t const& info,
-    TriggerGateData_t const& primitiveCount
+    std::vector<TriggerGateData_t> const& primitiveCounts
     ) const;
 
   /// Reads a set of input gates from the `event`.
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> ReadTriggerGates
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> ReadTriggerGates
     (art::Event const& event, art::InputTag const& dataTag) const;
   
   static std::string thrAndCatName
@@ -1443,6 +1565,11 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   static std::string thrAndCatName
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
+  
+  /// Returns a gate that is `Max()` of all the specified `gates`.
+  template <typename TrigGateColl>
+  static auto computeMaxGate(TrigGateColl const& gates);
+
   
 }; // icarus::trigger::TriggerEfficiencyPlots
 
@@ -1608,9 +1735,17 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     // 1.3. apply the beam gate on the primitives
     // 1.4. generate the trigger response
     //
-    TriggerGateData_t const primitiveCount
-      = applyBeamGate(combineTriggerPrimitives(event, threshold, dataTag));
 
+    std::vector<TriggerGateData_t> primitiveCounts;
+    std::vector<TriggerGateData_t> combinedTriggerPrimitives = combineTriggerPrimitives(event, threshold, dataTag);
+
+    for (TriggerGateData_t combinedPrimitive : (combinedTriggerPrimitives)) {
+      TriggerGateData_t const primitiveCount
+        = applyBeamGate(combinedPrimitive);
+
+      primitiveCounts.push_back(primitiveCount);
+    }
+    
     //
     // 1.5. pick the plots to be filled
     //
@@ -1622,7 +1757,7 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     }
     
     // 1.6. add the response to the appropriate plots
-    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCount);
+    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCounts);
     
   } // for thresholds
 
@@ -1755,14 +1890,37 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   //
   // Selection-related plots
   //
-  plots.make<TH1F>(
-    "EnergyInSpill",
-    "Energy eposited during the beam gate opening"
-      ";deposited energy  [ GeV ]"
-      ";events  [ / 50 MeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-    );
+  initializeEventPlots(plots);
+  
 
+  //
+  // Plots per trigger setting, split in triggering and not triggering events;
+  // the plot set is the same as the "global" one.
+  //
+  using SS_t = std::pair<std::string, std::string>;
+  std::array<SS_t, 2U> const classes {
+    SS_t{ "triggering", "triggering events" },
+    SS_t{ "nontriggering", "non-triggering events" }
+    };
+  for (auto minCount: fMinimumPrimitives) {
+    
+    std::string const minCountStr = std::to_string(minCount);
+    
+    // this defines a specific trigger, with its thresholds and settings
+    PlotSandbox& reqBox = plots.addSubSandbox
+      ("Req" + minCountStr, minCountStr + " channels required");
+    
+    initializeEfficiencyPerTriggerPlots(reqBox);
+    
+    for (auto const& [ name, desc ]: classes) {
+      
+      PlotSandbox& box = reqBox.addSubSandbox(name, desc);
+      
+      initializeEventPlots(box);
+      
+    } // for triggering requirement
+  } // for triggering classes
+  
   //
   // No trigger related plots
   //
@@ -1790,7 +1948,7 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   plots.make<TH1F>(
     "LeptonEnergy_NoTrig",
     "Energy of outgoing lepton of Non-Triggered Event"
-      ";deposited energy  [ GeV ]"
+      ";lepton generated energy  [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 
     );
@@ -1799,15 +1957,144 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlots::initializeEfficiencyPerTriggerPlots
+  (PlotSandbox& plots) const
+{
+  
+  detinfo::timescales::optical_time_ticks const triggerResolutionTicks
+    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
+  
+  //
+  // Triggering efficiency vs. something else
+  //
+  plots.make<TEfficiency>(
+    "EffVsEnergyInSpill",
+    "Efficiency of triggering vs. energy deposited in spill"
+      ";energy deposited in spill  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsEnergyInSpillActive",
+    "Efficiency of triggering vs. energy deposited in active volume"
+      ";energy deposited in active volume in spill  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsNeutrinoEnergy",
+    "Efficiency of triggering vs. neutrino energy"
+      ";neutrino true energy  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0 // 6 GeV is not that much for NuMI, but we should be ok
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsLeptonEnergy",
+    "Efficiency of triggering vs. outgoing lepton energy"
+      ";final state lepton true energy  [ GeV ]"
+      ";trigger efficiency  [ / 50 GeV ]",
+    120, 0.0, 6.0
+    );
+  
+  plots.make<TH1F>(
+    "TriggerTick",
+    "Trigger time tick"
+      ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
+    (fBeamGateOpt.second - fBeamGateOpt.first) / triggerResolutionTicks,
+    fBeamGateOpt.first.value(), fBeamGateOpt.second.value()
+    );
+  
+} // initializeEfficiencyPerTriggerPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlots::initializeEventPlots
+  (PlotSandbox& plots) const
+{
+  
+  // a variable binning for the required number of trigger primitives
+  auto [ minimumPrimBinning, minimumPrimBinningLabels ]
+    = util::ROOT::makeVariableBinningAndLabels(fMinimumPrimitives);
+  assert(minimumPrimBinning.size() == minimumPrimBinningLabels.size() + 1U);
+
+  {
+    mf::LogTrace log(fLogCategory);
+    log << "TriggerEfficiencyPlots (plots '"
+      << plots.name() << "') variable binning including the "
+      << fMinimumPrimitives.size() << " points {";
+    for (auto value: fMinimumPrimitives) log << " " << value;
+    log << " } => " << minimumPrimBinningLabels.size() << " bins: ";
+    for (auto const& [ value, label ]
+      : util::zip<1U>(minimumPrimBinning, minimumPrimBinningLabels))
+    {
+      log << " " << value << " (\"" << label << "\") =>";
+    } // for
+    log << " " << minimumPrimBinning.back();
+  } // debug output block
+
+  //
+  // Selection-related plots
+  //
+  plots.make<TH1F>(
+    "NeutrinoEnergy",
+    "True Neutrino Energy"
+      ";neutrino energy [GeV]"
+      ";events",
+    120, 0.0, 6.0 // GeV
+  );
+  plots.make<TH1F>(
+    "EnergyInSpill",
+    "Energy deposited during the beam gate opening"
+      ";energy deposited in spill [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1F>(
+    "EnergyInSpillActive",
+    "Energy deposited during the beam gate opening in active volume"
+      ";energy deposited in active volume in spill [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1I>(
+    "InteractionType",
+    "Interaction type"
+      ";Interaction Type"
+      ";events",
+    200, 999.5, 1199.5
+    );
+  plots.make<TH1F>(
+    "LeptonEnergy",
+    "Energy of outgoing lepton"
+      ";deposited energy  [ GeV ]"
+      ";events  [ / 50 MeV ]",
+    120, 0.0, 6.0
+    );
+  plots.make<TH2F>(
+    "InteractionVertexYZ",
+    "Vertex of triggered interaction"
+      ";Z [ / 20 cm ]"
+      ";Y [ / 5 cm ]",
+    120, -1200., +1200.,
+    100,  -250.,  +250.
+    );
+  
+} // icarus::trigger::TriggerEfficiencyPlots::initializeEventPlots()
+
+
+//------------------------------------------------------------------------------
 bool icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent
   (EventInfo_t const& eventInfo) const
 {
   if (fPlotOnlyActiveVolume
-    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume()
-    && eventInfo.isNeutrino()) // Only care if active volume vertex is neutrino
+    && eventInfo.hasVertex() && !eventInfo.isInActiveVolume())
   {
     return false;
   }
+  
   return true;
 } // icarus::trigger::TriggerEfficiencyPlots::shouldPlotEvent()
 
@@ -1898,6 +2185,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
   // propagation in the detector
   //
   GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
+  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 };
   
   for (art::InputTag const& edepTag: fEnergyDepositTags) {
     
@@ -1918,12 +2206,19 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
       totalEnergy += e;
       if (inSpill) inSpillEnergy += e;
       
+      if (pointInActiveTPC(edep.MidPoint())) {
+        activeEnergy += e;
+        if (inSpill) inSpillActiveEnergy += e;
+      }
+      
     } // for all energy deposits in the data product
     
   } // for all energy deposit tags
   
   info.SetDepositedEnergy(totalEnergy);
   info.SetDepositedEnergyInSpill(inSpillEnergy);
+  info.SetDepositedEnergyInActiveVolume(activeEnergy);
+  info.SetDepositedEnergyInActiveVolumeInSpill(inSpillActiveEnergy);
   
   mf::LogTrace(fLogCategory) << "Event " << event.id() << ": " << info;
   
@@ -1954,34 +2249,40 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
   art::Event const& event,
   icarus::trigger::ADCCounts_t const threshold,
   art::InputTag const& dataTag
-) const -> TriggerGateData_t {
+) const -> std::vector<TriggerGateData_t>{
 
   //
   // simple count
   //
 
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> const& gates
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> const& cryoGates
     = ReadTriggerGates(event, dataTag);
 
-  mf::LogTrace(fLogCategory)
-    << "Simulating trigger response with ADC threshold " << threshold
-    << " from '" << dataTag.encode() << "' (" << gates.size() << " primitives)";
+  std::vector<TriggerGateData_t> cryoCombinedGate;
 
-  TriggerGateData_t combinedGate;
+  for (auto const& gates: (cryoGates)) {
+    mf::LogTrace(fLogCategory)
+      << "Simulating trigger response with ADC threshold " << threshold
+      << " from '" << dataTag.encode() << "' (" << gates.size() << " primitives)";
 
-  auto itGate = gates.begin();
-  auto const gend = gates.end();
-  if (itGate == gend) { // this is unexpected...
-    mf::LogWarning(fLogCategory)
-      << "  No trigger primitive found for threshold " << threshold
-      << " ('" << dataTag.encode() << "')";
-    return {};
-  } // if no gates
+    TriggerGateData_t combinedGate;
 
-  combinedGate = *itGate;
-  while (++itGate != gend) combinedGate.Sum(*itGate);
+    auto itGate = gates.begin();
+    auto const gend = gates.end();
+    if (itGate == gend) { // this is unexpected...
+      mf::LogWarning(fLogCategory)
+        << "  No trigger primitive found for threshold " << threshold
+        << " ('" << dataTag.encode() << "')";
+      return {};
+    } // if no gates
 
-  return combinedGate;
+    combinedGate = *itGate;
+    while (++itGate != gend) combinedGate.Sum(*itGate);
+
+    cryoCombinedGate.push_back(combinedGate) ;
+  }
+
+  return cryoCombinedGate;
 } // icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives()
 
 
@@ -1995,12 +2296,31 @@ GateObject icarus::trigger::TriggerEfficiencyPlots::applyBeamGate
 
 
 //------------------------------------------------------------------------------
+// out-of-order definition, needs to be before `plotResponses()`
+template <typename TrigGateColl>
+auto icarus::trigger::TriggerEfficiencyPlots::computeMaxGate
+  (TrigGateColl const& gates)
+{
+  
+  // if `gates` is empty return a default-constructed gate of the contained type
+  if (empty(gates)) return decltype(*begin(gates)){};
+  
+  auto iGate = cbegin(gates);
+  auto const gend = cend(gates);
+  auto maxGate = *iGate;
+  while (++iGate != gend) maxGate.Max(*iGate);
+  
+  return maxGate;
+} // icarus::trigger::TriggerEfficiencyPlots::computeMaxGate()
+
+
+//------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   std::size_t iThr,
   icarus::trigger::ADCCounts_t const threshold,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
-  TriggerGateData_t const& primitiveCount
+  std::vector<TriggerGateData_t> const& primitiveCounts
 ) const {
   
   /*
@@ -2027,17 +2347,19 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
   // largest number of trigger primitives at any time
-  detinfo::DetectorTimings::optical_tick const maxPrimitiveTime
-    { primitiveCount.findMaxOpen() };
-  PrimitiveCount_t const maxPrimitives { 
-    maxPrimitiveTime.value(),
-    primitiveCount.openingCount(maxPrimitiveTime.value())
-    };
+  assert(!primitiveCounts.empty());
+  auto const primitiveCount = computeMaxGate(primitiveCounts);
+  
+  auto const maxPrimitiveTime { primitiveCount.findMaxOpen() };
+  PrimitiveCount_t const maxPrimitives
+    { maxPrimitiveTime, primitiveCount.openingCount(maxPrimitiveTime) };
 
   mf::LogTrace(fLogCategory)
     << "Max primitive count in " << threshold << ": "
-    << maxPrimitives.second << " at tick " << maxPrimitives.first
-    << " (" << fDetTimings.toElectronicsTime(maxPrimitiveTime) << ")"
+    << maxPrimitives.second << " at tick " << maxPrimitives.first << " ("
+    << fDetTimings.toElectronicsTime
+      (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
+    << ")"
     ;
   
   /*
@@ -2049,6 +2371,23 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
+  
+  class HistGetter { // helper, since this seems "popular"
+    PlotSandbox const& plots;
+    
+      public:
+    HistGetter(PlotSandbox const& plots): plots(plots) {}
+    
+    PlotSandbox const& box() const { return plots; }
+    
+    TH1& Hist(std::string const& name) const { return plots.demand<TH1>(name); }
+    TH2& Hist2D(std::string const& name) const { return plots.demand<TH2>(name); }
+    TEfficiency& Eff(std::string const& name) const
+      { return plots.demand<TEfficiency>(name); }
+    
+  }; // class HistGetter
+  
+  
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
     if (fired && (lastMinCount.second < minCount)) {
@@ -2071,31 +2410,74 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
     // and the time of this one is in lastMinCount.first (just in case)
     
     if (fResponseTree) fResponseTree->assignResponse(iThr, iReq, fired);
-
+    
+    std::string const minCountStr { "Req" + std::to_string(minCount) };
+    
     // go through all the plot categories this event qualifies for
     for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
       
-      auto getEff = [&plotSet](std::string const& name)
-        { return plotSet.use<TEfficiency>(name); };
-      auto getHist2D = [&plotSet](std::string const& name)
-        { return plotSet.use<TH2>(name); };
-      auto getHist = [&plotSet](std::string const& name)
-        { return plotSet.use<TH1>(name); };
+      HistGetter const get { plotSet };
       
       // simple efficiency
-      getEff("Eff"s)->Fill(fired, minCount);
-
+      get.Eff("Eff"s).Fill(fired, minCount);
+      
       // trigger time (if any)
       if (fired) {
-        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first); 
+        get.Hist2D("TriggerTick"s).Fill(minCount, lastMinCount.first);
+        if (minCount == 1) {
+          for (auto point : eventInfo.fVertices) {
+            get.Hist2D("InteractionVertexYZ"s).Fill(point.Z(), point.Y());
+          }
+        }
+      }
+      
+      //
+      // plotting specific to this trigger definition
+      //
+      
+      HistGetter const getTrigEff { plotSet.demandSandbox(minCountStr) };
+      
+      // efficiency plots
+      getTrigEff.Eff("EffVsEnergyInSpill").Fill
+        (fired, double(eventInfo.DepositedEnergyInSpill()));
+      getTrigEff.Eff("EffVsEnergyInSpillActive").Fill
+        (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+      getTrigEff.Eff("EffVsNeutrinoEnergy").Fill
+        (fired, double(eventInfo.NeutrinoEnergy()));
+      getTrigEff.Eff("EffVsLeptonEnergy").Fill
+        (fired, double(eventInfo.LeptonEnergy()));
+      if (fired) {
+        getTrigEff.Hist("TriggerTick"s).Fill(lastMinCount.first);
       }
 
+      
+      //
+      // plotting split for triggering/not triggering events
+      //
+      
+      HistGetter const getTrig
+        { getTrigEff.box().demandSandbox(fired? "triggering": "nontriggering") };
+      
+      getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+      getTrig.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+      if (eventInfo.isNeutrino()) {
+        getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
+        getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
+        getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+      } // if neutrino event
+      TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
+      for (auto const& point: eventInfo.fVertices)
+        vertexHist.Fill(point.Z(), point.Y());
+      
+
+      //
       // non triggered events
+      //
       if (!fired && minCount == 1 ) { // I only am interested in events that aren't triggered when there is a low multiplicity requirement
-        getHist("EnergyInSpill_NoTrig"s)->Fill(double(eventInfo.DepositedEnergyInSpill()));
-        getHist("NeutrinoEnergy_NoTrig"s)->Fill(double(eventInfo.NeutrinoEnergy()));
-        getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
-        getHist("LeptonEnergy_NoTrig"s)->Fill(double(eventInfo.LeptonEnergy()));
+        get.Hist("EnergyInSpill_NoTrig"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+        get.Hist("NeutrinoEnergy_NoTrig"s).Fill(double(eventInfo.NeutrinoEnergy()));
+        get.Hist("InteractionType_NoTrig"s).Fill(eventInfo.InteractionType());
+        get.Hist("LeptonEnergy_NoTrig"s).Fill(double(eventInfo.LeptonEnergy()));
         //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
       }
 
@@ -2108,16 +2490,25 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
    * the same value is plotted in all plot sets.
    * 
    */
-  for (icarus::trigger::PlotSandbox const& plotSet: plotSets) {
-    auto getHist = [&plotSet](std::string const& name)
-      { return plotSet.use<TH1>(name); };
+  for (PlotSandbox const& plotSet: plotSets) {
     
-    // selection-related plots:
-    getHist("EnergyInSpill"s)
-      ->Fill(double(eventInfo.DepositedEnergyInSpill()));
+    HistGetter const get(plotSet);
     
     // number of primitives
-    getHist("NPrimitives"s)->Fill(maxPrimitives.second);
+    get.Hist("NPrimitives"s).Fill(maxPrimitives.second);
+    
+    // selection-related plots:
+    get.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+    get.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+    
+    if (eventInfo.isNeutrino()) {
+      get.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
+      get.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
+      get.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+    } // if neutrino event
+    TH2& vertexHist = get.Hist2D("InteractionVertexYZ"s);
+    for (auto const& point: eventInfo.fVertices)
+      vertexHist.Fill(point.Z(), point.Y());
     
   } // for 
 
@@ -2125,7 +2516,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
 
 
 //------------------------------------------------------------------------------
-std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>
+std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>>
 icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
   (art::Event const& event, art::InputTag const& dataTag) const
 {
@@ -2142,14 +2533,32 @@ icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates
       <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
     );
   try {
-    return icarus::trigger::FillTriggerGates
-      <icarus::trigger::MultiChannelOpticalTriggerGate>(gates, gateToWaveforms);
+    auto check = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
+    (gates, gateToWaveforms);
   }
   catch (cet::exception const& e) {
     throw cet::exception("TriggerEfficiencyPlots", "", e)
       << "Error encountered while reading data products from '"
       << dataTag.encode() << "'\n";
   }
+
+  auto allGates = icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
+  (gates, gateToWaveforms);
+
+  std::vector<geo::CryostatID> fChannelCryostat;
+
+  fChannelCryostat.reserve(fGeom.NOpChannels());
+  for (auto const opChannel: util::counter(fGeom.NOpChannels())) {
+    if (!fGeom.IsValidOpChannel(opChannel)) continue;
+    fChannelCryostat[opChannel] = fGeom.OpDetGeoFromOpChannel(opChannel).ID();
+  } // for all channels
+  
+  std::vector<std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>> gatesPerCryostat{ fGeom.Ncryostats() };
+  for (auto& gate: allGates) {
+    assert(gate.hasChannels());
+    gatesPerCryostat[fChannelCryostat[gate.channels().front()].Cryostat].push_back(std::move(gate));
+  }
+  return gatesPerCryostat;
 
 } // icarus::trigger::TriggerEfficiencyPlots::ReadTriggerGates()
 
@@ -2205,9 +2614,11 @@ EventInfoTree::EventInfoTree(TTree& tree): TreeHolder(tree) {
   this->tree().Branch("NuE",      &fNuE);
   this->tree().Branch("OutLeptE", &fOutLeptE);
   
-  this->tree().Branch("TotE",     &fTotE);
-  this->tree().Branch("SpillE",   &fSpillE);
-  this->tree().Branch("InActive", &fInActive);
+  this->tree().Branch("TotE",         &fTotE);
+  this->tree().Branch("SpillE",       &fSpillE);
+  this->tree().Branch("ActiveE",      &fActiveE);
+  this->tree().Branch("SpillActiveE", &fSpillActiveE);
+  this->tree().Branch("InActive",     &fInActive);
   
 } // EventInfoTree::EventInfoTree()
 
@@ -2221,9 +2632,11 @@ void EventInfoTree::assignEvent(EventInfo_t const& info) {
   fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
   fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
 
-  fTotE     = static_cast<Double_t>(info.DepositedEnergy());
-  fSpillE   = static_cast<Double_t>(info.DepositedEnergyInSpill());
-  fInActive = static_cast<Bool_t>(info.isInActiveVolume());
+  fTotE         = static_cast<Double_t>(info.DepositedEnergy());
+  fSpillE       = static_cast<Double_t>(info.DepositedEnergyInSpill());
+  fActiveE      = static_cast<Double_t>(info.DepositedEnergyInActiveVolume());
+  fSpillActiveE = static_cast<Double_t>(info.DepositedEnergyInSpillInActiveVolume());
+  fInActive     = static_cast<Bool_t>(info.isInActiveVolume());
   
 } // EventInfoTree::assignEvent()
 

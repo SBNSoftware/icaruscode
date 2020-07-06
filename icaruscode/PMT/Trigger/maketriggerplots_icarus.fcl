@@ -1,6 +1,6 @@
 #
 # File:    maketriggerplots_icarus.fcl
-# Purpose: Runs `icarus::trigger::TriggerEfficiencyPlots` module.
+# Purpose: Runs `icarus::trigger::MajorityTriggerEfficiencyPlots` module.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    January 9, 2020
 #
@@ -37,7 +37,7 @@ physics: {
   
     triggerplots: {
       
-      module_type: TriggerEfficiencyPlots
+      module_type: MajorityTriggerEfficiencyPlots
       
       TriggerGatesTag: lvdsgates
       
@@ -51,7 +51,7 @@ physics: {
       BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
 
       # message facility stream
-      LogCategory: "TriggerEfficiencyPlots"
+      LogCategory: "MajorityTriggerEfficiencyPlots"
       
     } # triggerplots
     
@@ -68,13 +68,13 @@ physics: {
 #
 # add debug output to its own file
 #
-services.message.destinations.TriggerEfficiencyPlotsLog: {
+services.message.destinations.MajorityTriggerEfficiencyPlotsLog: {
   type:       file
-  filename:  "TriggerEfficiencyPlots.log"
+  filename:  "MajorityTriggerEfficiencyPlots.log"
   threshold:  DEBUG
   categories: {
-    TriggerEfficiencyPlots: { limit: -1 }
-    default:                { limit: 0 }
+    MajorityTriggerEfficiencyPlots: { limit: -1 }
+    default:                        { limit: 0 }
   }
-} # services.messages.destinations.TriggerEfficiencyPlotsLog
+} # services.messages.destinations.MajorityTriggerEfficiencyPlotsLog
 

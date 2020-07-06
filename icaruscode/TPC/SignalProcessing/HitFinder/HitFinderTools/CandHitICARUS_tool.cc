@@ -22,23 +22,23 @@ class CandHitICARUS : ICandidateHitFinder
 {
 public:
     explicit CandHitICARUS(const fhicl::ParameterSet& pset);
-    
+
     ~CandHitICARUS();
-    
-    void configure(const fhicl::ParameterSet& pset) override;
-    
+
+    void configure(const fhicl::ParameterSet& pset);
+
     void findHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t&,
                            size_t,
                            size_t,
                            size_t,
                            HitCandidateVec&) const override;
-    
+
     void MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t&,
                             const HitCandidateVec&,
                             MergeHitCandidateVec&) const override;
-    
+
 private:
-    
+
     void findHitCandidates(std::vector<float>::const_iterator,
                            std::vector<float>::const_iterator,
                            size_t,
@@ -47,7 +47,7 @@ private:
 
     void expandHit(HitCandidate& h, std::vector<float> holder, HitCandidateVec how);
     void prova() {return ;}
-    
+
     int          fInd1Width;            //INITIAL WIDTH FOR INDUCTION HITFINDING.
     int              fInd2Width;            //INITIAL WIDTH FOR INDUCTION HITFINDING.
     int              fColWidth;            //INITIAL WIDTH FOR COLLECTION HITFINDING.
@@ -65,21 +65,21 @@ private:
     int              fColFall;
     float                fMinHitHeight;         //< Drop candidate hits with height less than this
     size_t               fNumInterveningTicks;  //< Number ticks between candidate hits to merge
-    
+
     const geo::GeometryCore*  fGeometry = lar::providerFrom<geo::Geometry>();
 };
-    
+
 //----------------------------------------------------------------------
 // Constructor.
 CandHitICARUS::CandHitICARUS(const fhicl::ParameterSet& pset)
 {
     configure(pset);
 }
-    
+
 CandHitICARUS::~CandHitICARUS()
 {
 }
-    
+
 void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
@@ -101,10 +101,10 @@ void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
     fColFall = pset.get< int  >("ColFall");
     fMinHitHeight        = pset.get< float  >("MinHitHeight",        1.0);
     fNumInterveningTicks = pset.get< size_t >("NumInterveningTicks", 6);
-    
+
     return;
 }
-    
+
 void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t& rangeData,
                                       size_t                                               roiStart,
                                       size_t                                               channel,
@@ -118,7 +118,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
     // We need to know the plane to look up parameters
     geo::PlaneID::PlaneID_t plane = wid.Plane;
     //int wire = wid.Wire;
-    
+
     const Waveform& waveform = rangeData.data();
 
    // if(plane==1) return;
@@ -140,13 +140,13 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
     unsigned int i;
     // Hit finding parameters
     const int rise=5;
-    
+
     double threshold=0;
     unsigned int window=0;
     int abovecut(0),fall(0);
     unsigned int width(0);
-    
-    
+
+
     // initialize parameters
     iflag=0;                // equal to one if we are within a hit candidate
     peakheight=-9999;       // last found hit maximum
@@ -163,9 +163,9 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
     localminidx=-1;
 
     // loop on the selected samples
-    
+
             //std::cout << "candhitfinderICARUS " << std::endl;
-    
+
     if(plane == 0) threshold=fInd1Threshold;
     else if(plane == 1) threshold=fInd2Threshold;
     else if(plane == 2) threshold=fColThreshold;
@@ -181,29 +181,29 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
     if(plane == 0) width=fInd1Width;
     else if(plane == 1) width=fInd2Width;
     else if(plane == 2) width=fColWidth;
-    
+
     for( i=0;i<4096;i++)
     { //2
         //std::cout << " i " << i << " waveform " << waveform[i] << std::endl;
         // skip sharp peaks
         //if(abs(waveform[i]-lastcomputedmean)>100)
         //  continue;
-        
+
         if(!iflag)
             lastcomputedmean=0;
-        
+
         if(waveform[i]-lastcomputedmean>threshold) // we're within a hit OR hit group
         { //3
             //      if(iwire==4526&&plane==2&&cryostat==0&&tpc==0)
              //   std::cout << " over threshold bin " << i << std::endl;
             iflag=1;
-            
+
             // we're in the beginning of the hit
             if(begin<0) {
-                
+
                 begin=i;     // hit starting point
             }
-            
+
             // keep peak info
             if(waveform[i]-lastcomputedmean>peakheight)
             {
@@ -215,7 +215,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
               //  std::cout << " hitcenter " << i << std::endl;
                 localbellow=0;
             }
-            
+
             // resolve close hits
             //          if(*(pf+i)-(peakheight+lastcomputedmean)<-threshold) // we're in the slope down
             if(waveform[i]-(peakheight+lastcomputedmean)<-1) // we're in the slope down
@@ -227,7 +227,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
             { //4
                 // keep local minimum as border between consecutive hits
                 if(waveform[i]<localmin) {localmin=waveform[i];localminidx=i;}
-                
+
                 // count the number of rising samples within the following n=<rise> samples
                 rising=0;
                 for(int l=0;l<rise;l++)
@@ -246,7 +246,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
                     h.stopTick=localminidx;
 
                 //std::cout << "  saving previous hit " << begin << " fin " << localminidx << std::endl;
-                    
+
                     if((h.stopTick-h.hitCenter)>=fall && h.stopTick-h.startTick>width)
                     { //6
                         h.minTick=h.startTick;
@@ -285,7 +285,7 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
                  //   if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
                    //     std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                 //expandHit(h,waveform,hits);
-                   
+
                    // if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
                      //   std::cout << "  after expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
                     h.hitSigma      = 0.5*(h.stopTick-h.startTick);
@@ -293,17 +293,17 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
                     hits.push_back(h);
                     //InsertHit(&h);
                     //  if ( typ != BasicData::ISBASICPLANE_PMT)
-                    
+
                 }
-                
+
                 peakheight=-9999;
                 begin=-1;
                 iflag=0;
                 localbellow=0;
             }
-            
+
         }
-        
+
         //keep the last mean value to which we have to come back after the hit
         if(i>=window && window) {
             if(waveform[i]-count/window>-10)
@@ -315,19 +315,19 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
             }
         }
     } //end loop on samples
-    
+
     //if we were within a hit while reaching last sample, keep it
     if(iflag==1 && h.hitHeight) //just getting out of the latest hit
     { //3
         h.startTick=begin;
         h.stopTick=i-1;
-        
+
         if((h.stopTick-h.hitCenter)>=fall && (h.stopTick-h.startTick)>width)
         {
           //  if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
 //                std::cout << "  before expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
        // expandHit(h,waveform,hits);
-          
+
   //          if(cryostat==0&&tpc==0&&plane==2&&h.iWire==2656)
     //            std::cout << "  after expand ini " << h.iniDrift << " fin " << h.finDrift << std::endl;
             h.minTick=h.startTick;
@@ -341,12 +341,12 @@ void CandHitICARUS::findHitCandidates(const recob::Wire::RegionsOfInterest_t::da
     }
   //  if(hits.size())
   //   std::cout << " wire " << wire << " found hits " << hits.size() << std::endl;
-    
-    
-    
+
+
+
     return;
 }
-  
+
 void CandHitICARUS::findHitCandidates(std::vector<float>::const_iterator startItr,
                                         std::vector<float>::const_iterator stopItr,
                                         size_t                             roiStartTick,
@@ -358,47 +358,47 @@ void CandHitICARUS::findHitCandidates(std::vector<float>::const_iterator startIt
     {
         // Find the highest peak in the range given
         auto maxItr = std::max_element(startItr, stopItr);
-        
+
         float maxValue = *maxItr;
         int   maxTime  = std::distance(startItr,maxItr);
-        
+
         if (maxValue > roiThreshold)
         {
             // backwards to find first bin for this candidate hit
             auto firstItr = std::distance(startItr,maxItr) > 2 ? maxItr - 1 : startItr;
-            
+
             while(firstItr != startItr)
             {
                 // Check for pathology where waveform goes too negative
                 if (*firstItr < -roiThreshold) break;
-                
+
                 // Check both sides of firstItr and look for min/inflection point
                 if (*firstItr < *(firstItr+1) && *firstItr <= *(firstItr-1)) break;
-                
+
                 firstItr--;
             }
-            
+
             int firstTime = std::distance(startItr,firstItr);
-            
+
             // Recursive call to find all candidate hits earlier than this peak
             findHitCandidates(startItr, firstItr + 1, roiStartTick, roiThreshold, hitCandidateVec);
-            
+
             // forwards to find last bin for this candidate hit
             auto lastItr = std::distance(maxItr,stopItr) > 2 ? maxItr + 1 : stopItr - 1;
-            
+
             while(lastItr != stopItr - 1)
             {
                 // Check for pathology where waveform goes too negative
                 if (*lastItr < -roiThreshold) break;
-                
+
                 // Check both sides of firstItr and look for min/inflection point
                 if (*lastItr <= *(lastItr+1) && *lastItr < *(lastItr-1)) break;
-                
+
                 lastItr++;
             }
-            
+
             int lastTime = std::distance(startItr,lastItr);
-            
+
             // Now save this candidate's start and max time info
             HitCandidate hitCandidate;
             hitCandidate.startTick     = roiStartTick + firstTime;
@@ -410,32 +410,32 @@ void CandHitICARUS::findHitCandidates(std::vector<float>::const_iterator startIt
             hitCandidate.hitCenter     = roiStartTick + maxTime;
             hitCandidate.hitSigma      = std::max(2.,float(lastTime - firstTime) / 6.);
             hitCandidate.hitHeight     = maxValue;
-            
+
             hitCandidateVec.push_back(hitCandidate);
-            
+
             // Recursive call to find all candidate hits later than this peak
             findHitCandidates(lastItr + 1, stopItr, roiStartTick + std::distance(startItr,lastItr + 1), roiThreshold, hitCandidateVec);
         }
     }
-    
+
     return;
 }
-  
+
 void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t& rangeData,
                                        const HitCandidateVec&                               hitCandidateVec,
                                        MergeHitCandidateVec&                                mergedHitsVec) const
 {
     // If nothing on the input end then nothing to do
     if (hitCandidateVec.empty()) return;
-    
+
     // The idea is to group hits that "touch" so they can be part of common fit, those that
     // don't "touch" are fit independently. So here we build the output vector to achieve that
     // Get a container for the hits...
     HitCandidateVec groupedHitVec;
-    
+
     // Initialize the end of the last hit which we'll set to the first input hit's stop
     size_t lastStopTick = hitCandidateVec.front().stopTick;
-    
+
     // Step through the input hit candidates and group them by proximity
     for(const auto& hitCandidate : hitCandidateVec)
     {
@@ -446,23 +446,23 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
             if (hitCandidate.startTick > lastStopTick + fNumInterveningTicks && !groupedHitVec.empty())
             {
                 mergedHitsVec.emplace_back(groupedHitVec);
-            
+
                 groupedHitVec.clear();
             }
 
             // Add the current hit to the current group
             groupedHitVec.emplace_back(hitCandidate);
-        
+
             lastStopTick = hitCandidate.stopTick;
         }
     }
-    
+
     // Check end condition
     if (!groupedHitVec.empty()) mergedHitsVec.emplace_back(groupedHitVec);
-    
+
     return;
 }
-    
+
     void CandHitICARUS::expandHit(HitCandidate& h, std::vector<float> holder, HitCandidateVec how)
     {
         // Given a hit or hit candidate <hit> expand its limits to the closest minima
@@ -470,13 +470,13 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
         int cut=1;
         int upordown;
         int found=0;
-        
+
         unsigned int first=h.startTick;
         unsigned int last =h.stopTick;
-        
+
         std::vector<HitCandidate>::iterator hiter;
         std::vector<HitCandidate> hlist;
-        
+
         // fill list of existing hits on this wire
         for(unsigned int j=0;j<how.size();j++)
         {
@@ -484,23 +484,23 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
             if(h2.hitCenter!=h.hitCenter)
                 hlist.push_back(h2);
         }
-        
-        
+
+
         // look for first sample
         while(!found)
         {
             if(first==0)
                 break;
-            
+
             for(hiter=hlist.begin();hiter!=hlist.end();hiter++)
             {
                HitCandidate h2=*hiter;
                 if(first==h2.stopTick)
                     found=1;
             }
-            
+
             if(found==1) break;
-            
+
             upordown=0;
             for(int l=0;l<nsamp/2;l++)
             {
@@ -514,7 +514,7 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
             else
                 found=1;
         }
-        
+
         // look for last sample
         found=0;
         while(!found)
@@ -524,16 +524,16 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
                 found=1;
                 break;
             }
-            
+
             for(hiter=hlist.begin();hiter!=hlist.end();hiter++)
             {
                 HitCandidate h2=*hiter;
                 if(first==h2.startTick)
                     found=1;
             }
-            
+
             if(found==1) break;
-            
+
             upordown=0;
             for(int l=0;l<nsamp/2;l++)
             {
@@ -541,13 +541,13 @@ void CandHitICARUS::MergeHitCandidates(const recob::Wire::RegionsOfInterest_t::d
                     if(holder[last+nsamp/2-l]-holder[last+nsamp/2-l-1]>0) upordown++;
                     else if(holder[last+nsamp/2-l]-holder[last+nsamp/2-l-1]<0) upordown--;
                 } }
-            
+
             if(upordown<-cut)
                 last++;
             else
                 found=1;
         }
-        
+
         h.startTick=first;
         h.stopTick=last;
     }

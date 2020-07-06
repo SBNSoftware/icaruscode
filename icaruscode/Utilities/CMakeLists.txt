@@ -3,6 +3,7 @@ art_make(
   EXCLUDE
     "SaveConfigurationIntoTFile_module.cc"
   LIB_LIBRARIES
+    ${CETLIB_EXCEPT}
     ${CLHEP}
   )
 

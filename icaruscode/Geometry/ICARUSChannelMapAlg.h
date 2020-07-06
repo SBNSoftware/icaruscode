@@ -10,12 +10,13 @@
 #define ICARUSCODE_GEOMETRY_ICARUSCHANNELMAPALG_H
 
 // ICARUS libraries
+#include "icaruscode/Geometry/GeoObjectSorterPMTasTPC.h"
 #include "icaruscode/Geometry/details/ChannelToWireMap.h"
 #include "icaruscode/Geometry/details/GeometryObjectCollections.h"
 
 // LArSoft libraries
 #include "larcorealg/Geometry/ChannelMapAlg.h"
-#include "larcorealg/Geometry/GeoObjectSorterStandard.h"
+// #include "larcorealg/Geometry/GeoObjectSorterStandard.h"
 #include "larcorealg/Geometry/GeometryData.h"
 #include "larcorealg/Geometry/GeometryDataContainers.h"
 #include "larcorealg/Geometry/ReadoutDataContainers.h"
@@ -641,19 +642,24 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
 
   // --- BEGIN -- Sorting ------------------------------------------------------
   /// Algorithms to sort geometry elements.
-  geo::GeoObjectSorterStandard fSorter;
+//   geo::GeoObjectSorterStandard fSorter;
+  icarus::GeoObjectSorterPMTasTPC fSorter;
   
   // --- END -- Sorting --------------------------------------------------------
   
+  
+  using PlaneType_t = std::size_t; ///< Type for plane type identifier.
+  
   /// Identifier for first induction plane type.
-  static constexpr std::size_t kFirstInduction [[gnu::unused]] = 0U;
+  static constexpr PlaneType_t kFirstInductionType = 0U;
   /// Identifier for second induction plane type.
-  static constexpr std::size_t kSecondInduction [[gnu::unused]] = 1U;
+  static constexpr PlaneType_t kSecondInductionType = 1U;
   /// Identifier for collection plane type.
-  static constexpr std::size_t kCollection [[gnu::unused]] = 2U;
+  static constexpr PlaneType_t kCollectionType = 2U;
   /// Identifier for unknown plane type.
-  static constexpr std::size_t kUnknownType [[gnu::unused]]
-    = std::numeric_limits<std::size_t>::max();
+  static constexpr PlaneType_t kUnknownType
+    = std::numeric_limits<PlaneType_t>::max();
+  
   
   // --- BEGIN -- Readout element information access ---------------------------
   /// @name Readout element information access
@@ -759,10 +765,10 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
    * The type of the readout plane is deduced from the type of the planes it
    * contains.
    * 
-   * The returned value is `kFirstInduction`, `kSecondInduction`, `kCollection`
-   * or `kUnknownType`.
+   * The returned value is `kFirstInductionType`, `kSecondInductionType`,
+   * `kCollectionType` or `kUnknownType`.
    */
-  std::size_t findPlaneType(readout::ROPID const& ropid) const;
+  PlaneType_t findPlaneType(readout::ROPID const& ropid) const;
 
 
   /// Returns the type of signal on the specified `channel`.
@@ -772,6 +778,11 @@ class icarus::ICARUSChannelMapAlg: public geo::ChannelMapAlg {
   
   static WirelessChannelCounts_t extractWirelessChannelParams
     (Config::WirelessChannelStruct const& params);
+  
+  
+  /// Returns the name of the specified plane type.
+  static std::string PlaneTypeName(PlaneType_t planeType);
+  
 
   
 }; // class icarus::ICARUSChannelMapAlg

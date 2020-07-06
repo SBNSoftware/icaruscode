@@ -8,6 +8,9 @@
 # * `icarus_photonvisibilityservice_mapped`: configuration of
 #     `PhotonVisibilityService` using a single cryostat photon visibility
 #     library and a mapping
+# * `icarus_photonvisibilityservice_mapped_oldPMTmap`: configuration of
+#     `PhotonVisibilityService` using a single cryostat photon visibility
+#     library and a library mapping, for use with the old PMT channel mapping
 # * `icarus_photonvisibilityservice`: default configuration of
 #     `PhotonVisibilityService` used in higher level standard scripts
 #
@@ -51,6 +54,15 @@ icarus_photonvisibilityservice_direct: {
 ###  Configuration for first cryostat library and mapping to the other one
 ###
 #
+# This is the configuration expected to work correctly with the current version
+# of the software.
+# 
+# This configuration is used for:
+#  * OLD photon visibility library (20180801)
+#  * NEW PMT channel mapping
+# Since that library was compiled with the old PMT channel mapping, when using
+# the new mapping a channel remapping is required.
+#
 # Use as:
 #     
 #     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped
@@ -60,9 +72,76 @@ icarus_photonvisibilityservice_mapped: {
   
   Mapping: {
     tool_type: ICARUSPhotonMappingTransformations
-  }
+    
+    # use this mapping only with photon visibility maps generated before
+    # v08_50_01 when using split wire geometry;
+    # it expresses that the values in the photon map for the library channel c
+    # it now should be associated to channel CryostatChannelRemap[c] instead
+    CryostatChannelRemap: [
+      
+      179,  89, 178,  88, 177,  87, 176,  86, 175,  85, 174,  84, 173,  83, 172,
+       82, 171,  81, 170,  80, 169,  79, 168,  78, 167,  77, 166,  76, 165,  75,
+      164,  74, 163,  73, 162,  72, 161,  71, 160,  70, 159,  69, 158,  68, 157,
+       67, 156,  66, 155,  65, 154,  64, 153,  63, 152,  62, 151,  61, 150,  60,
+      149,  59, 148,  58, 147,  57, 146,  56, 145,  55, 144,  54, 143,  53, 142,
+       52, 141,  51, 140,  50, 139,  49, 138,  48, 137,  47, 136,  46, 135,  45,
+      134,  44, 133,  43, 132,  42, 131,  41, 130,  40, 129,  39, 128,  38, 127,
+       37, 126,  36, 125,  35, 124,  34, 123,  33, 122,  32, 121,  31, 120,  30,
+      119,  29, 118,  28, 117,  27, 116,  26, 115,  25, 114,  24, 113,  23, 112,
+       22, 111,  21, 110,  20, 109,  19, 108,  18, 107,  17, 106,  16, 105,  15,
+      104,  14, 103,  13, 102,  12, 101,  11, 100,  10,  99,   9,  98,   8,  97,
+        7,  96,   6,  95,   5,  94,   4,  93,   3,  92,   2,  91,   1,  90,   0
+      
+    ]
+    
+  } # Mapping
 
 } # icarus_photonvisibilityservice_mapped
+
+
+
+###############################################################################
+###
+### Legacy configuration
+###
+#
+# This is the configuration used by the "standard" ICARUS job configurations
+# until icaruscode v08_50_00.
+# It is part of `icarus_legacy_services` configuration, and it should not
+# be used by itself since it requires a specific geometry and channel mapping.
+# Use as:
+#     
+#     services: @local::icarus_legacy_services
+#     
+# This configuration is almost frozen (i.e. it would be frozen except that it
+# relies on `standard_library_vuv_prop_timing_photonvisibilityservice` which
+# we are not reproducing here).
+#
+icarus_legacy_photonvisibilityservice_v08_50_00: {
+
+  @table::standard_library_vuv_prop_timing_photonvisibilityservice
+
+  LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
+  UseCryoBoundary: false
+  
+  XMin: -395      # Was -391 in old geometry
+  XMax: -45       # Was -41  in old geometry
+  YMin: -215.2    # Was -210 in old geometry
+  YMax:  174.8    # Was -180 in old geometry
+  ZMin: -995
+  ZMax:  965
+  NX:     70
+  NY:     78
+  NZ:    392
+
+  IncludePropTime: true
+  
+  Mapping: {
+    tool_type: ICARUSPhotonMappingTransformations
+  }
+
+} # icarus_legacy_photonvisibilityservice_v08_50_00
+
 
 
 ###############################################################################

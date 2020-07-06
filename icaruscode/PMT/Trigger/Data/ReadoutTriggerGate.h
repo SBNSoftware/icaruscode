@@ -110,7 +110,9 @@ class icarus::trigger::ReadoutTriggerGate
   using ChannelList_t = std::vector<ChannelID_t>;
   
   
-  /// Constructor: a closed gate with no associated waveform (`add()` them).
+  /// Constructor: a closed gate with no associated channels
+  /// @see `ReadoutTriggerGate(std::initializer_list<ChannelID_t>)`,
+  ///      `addChannel()`, `addChannels()`
   ReadoutTriggerGate() = default;
   
   ReadoutTriggerGate(ReadoutTriggerGate const&) = default;
@@ -118,6 +120,7 @@ class icarus::trigger::ReadoutTriggerGate
   ReadoutTriggerGate& operator= (ReadoutTriggerGate const&) = default;
   ReadoutTriggerGate& operator= (ReadoutTriggerGate&&) = default;
   
+  /// Constructor: a closed gate associated to the specified `channels`.
   ReadoutTriggerGate(std::initializer_list<ChannelID_t> channels);
   
   

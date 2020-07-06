@@ -52,6 +52,8 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "lardata/Utilities/LArFFTWPlan.h"
 #include "lardata/Utilities/LArFFTW.h"
 
@@ -116,9 +118,10 @@ private:
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const* fDetectorProperties;   ///< Detector properties service
-    const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
+    geo::GeometryCore const*             fGeometry;             ///< pointer to Geometry service
+    detinfo::DetectorProperties const*   fDetectorProperties;   ///< Detector properties service
+    const lariov::DetPedestalProvider&   fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
+    const lariov::ChannelStatusProvider& fChannelStatusAlg;     ///< Channel status
 
 };
 
@@ -137,7 +140,8 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset, art
                       fBinAverageAlg(pset),
                       fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),
                       fCorCorrectAlg(pset.get<fhicl::ParameterSet>("CorrelatedCorrectionAlg")),
-                      fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
+                      fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>()),
+                      fChannelStatusAlg(*lar::providerFrom<lariov::ChannelStatusService>())
 {
 
     fGeometry = lar::providerFrom<geo::Geometry>();
@@ -188,6 +192,8 @@ void RawDigitFilterICARUS::configure(fhicl::ParameterSet const & pset)
         const fhicl::ParameterSet& filterToolParamSet = filterTools.get<fhicl::ParameterSet>(filterTool);
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
+                    
+        fFilterToolMap.at(planeIdx)->setResponse(fDetectorProperties->NumberTimeSamples(),1.,1.);
     }
 }
 
@@ -205,6 +211,11 @@ void RawDigitFilterICARUS::beginJob(art::ProcessingFrame const&)
     art::TFileDirectory dir = tfs->mkdir(Form("RawDigitFilter"));
 
     fRawDigitFilterTool->initializeHistograms(dir);
+
+    if (fDoFFTCorrection)
+    {
+        for(const auto& filterToolPair : fFilterToolMap) filterToolPair.second->outputHistograms(dir);
+    }
  
     return;
 }
@@ -274,12 +285,18 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
         // .. First set up the filters
         unsigned int halfFFTSize(fftSize/2 + 1);
-
-        for(unsigned int plne = 0; plne < 3; plne++)
+            
+        if (fDoFFTCorrection)
         {
-            fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
-            const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
-            fFilterVec[plne] = filter;
+            for(unsigned int plne = 0; plne < 3; plne++)
+            {
+                if (fFilterVec[plne].size() != fftSize)
+                {
+                    fFilterToolMap.at(plne)->setResponse(fftSize,1.,1.);
+                    const icarusutil::FrequencyVec& filter = fFilterToolMap.at(plne)->getResponseVec();
+                    fFilterVec[plne] = filter;
+                }
+            }
         }
 
         // .. Now set up the fftw plan
@@ -294,21 +311,11 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
         {
             raw::ChannelID_t channel = rawDigit->Channel();
 
-            bool goodChan(true);
-
             // The below try-catch block may no longer be necessary
             // Decode the channel and make sure we have a valid one
-            std::vector<geo::WireID> wids;
-            try {
-                wids = fGeometry->ChannelToWire(channel);
-            }
-            catch(...)
-            {
-                //std::cout << "===>> Found illegal channel with id: " << channel << std::endl;
-                goodChan = false;
-            }
+            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
 
-            if (channel >= maxChannels || !goodChan) continue;
+            if (channel >= maxChannels || wids.empty()) continue;
 
             // Recover plane and wire in the plane
             unsigned int plane = wids[0].Plane;
@@ -368,7 +375,8 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
             if (fDoFFTCorrection)
             {
                 // .. Subtract the pedestal
-                double              pedestal = fPedestalRetrievalAlg.PedMean(channel);
+                double pedestal = fPedestalRetrievalAlg.PedMean(channel);
+
                 icarusutil::TimeVec holder(fftSize);
 
                 std::transform(rawadc.begin(),rawadc.end(),holder.begin(),[pedestal](const auto& val){return float(float(val) - pedestal);});
@@ -490,7 +498,7 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
 
                     // The ultra high noise channels are simply zapped
                     if (rmsVal < fRmsRejectionCutHi[plane]) // && ImAGoodWire(plane,baseWireIdx + locWireIdx))
-                    {
+                    { 
                         saveRawDigits(filteredRawDigit, channelWireVec[locWireIdx], rawDataVec, pedestal, rmsVal);
                     }
                     else

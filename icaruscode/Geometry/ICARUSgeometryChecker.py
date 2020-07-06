@@ -1,9 +1,14 @@
 #!/usr/bin/env python
+#
+# Changes:
+# 20200521 (petrillo@slac.stanford.edu) [v2.0]
+#   updated to Python 3
+#
 
 __doc__ = """
 Performs simple checks on ICARUS geometry.
 """
-__version__ = "%(prog)s 1.0"
+__version__ = "%(prog)s 2.0"
 
 import itertools
 import logging
@@ -49,20 +54,22 @@ def boxID(box, default):
 
 
 # ------------------------------------------------------------------------------
-def CheckBoxOverlaps(boxes, objName = None):
-  """Returns a list of pairs of overlapping cryostats (empty if no overlap)."""
-  if objName is None: objName = boxes.__class__.__name__
+def CheckGeoObjOverlaps(objs, objName = None, extractBox = None):
+  """Returns a list of pairs of overlapping objects (empty if no overlap)."""
+  if objName is None: objName = objs.__class__.__name__
   overlaps = []
-  for (iBox1, box1), (iBox2, box2) in itertools.combinations(enumerate(boxes), 2):
+  for (iObj1, obj1), (iObj2, obj2) in itertools.combinations(enumerate(objs), 2):
+    box1 = obj1 if extractBox is None else extractBox(obj1)
+    box2 = obj2 if extractBox is None else extractBox(obj2)
     if not box2.Overlaps(box1): continue
     logging.error("%s %s (%s to %s) and %s (%s to %s) overlap!", objName,
-     boxID(box1, iBox1), box1.Min(), box1.Max(),
-     boxID(box2, iBox2), box2.Min(), box2.Max(),
+     boxID(box1, iObj1), box1.Min(), box1.Max(),
+     boxID(box2, iObj2), box2.Min(), box2.Max(),
      )
-    overlaps.append( ( box1, box2, ) )
+    overlaps.append( ( obj1, obj2, ) )
   # for boxes
   return overlaps
-# CheckBoxOverlaps()
+# CheckGeoObjOverlaps()
 
 
 # ------------------------------------------------------------------------------
@@ -162,6 +169,14 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
   #
   # 1. determine the sides
   #
+  leftMinY = min(
+   min(wire.GetStart().Y(), wire.GetEnd().Y())
+   for wire in leftPlane.IterateWires()
+   )
+  leftMaxY = max(
+   max(wire.GetStart().Y(), wire.GetEnd().Y())
+   for wire in leftPlane.IterateWires()
+   )
   leftMaxZ = max(
    max(wire.GetStart().Z(), wire.GetEnd().Z())
    for wire in leftPlane.IterateWires()
@@ -172,18 +187,25 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
   # 2. for each wire in left plane ending close to right side, pick and test
   #    the matching wire of the right plane
   #
+  
+  leftEndPos = lambda wire: \
+   wire.GetStart() if wire.GetStart().Z() > wire.GetEnd().Z() else wire.GetEnd()
+  rightStartPos = lambda wire: \
+   wire.GetStart() if wire.GetStart().Z() < wire.GetEnd().Z() else wire.GetEnd()
+  
   stats = StatCollector()
   wireNoDiff = None # offset in wire number only between matching wires
   for leftWireNo, leftWire in enumerate(leftPlane.IterateWires()):
     
-    leftEnd \
-      = leftWire.GetStart() if leftWire.GetStart().Z() > leftWire.GetEnd().Z() \
-        else leftWire.GetEnd()
+    leftEnd = leftEndPos(leftWire)
     
     # 
-    # 2.1. if the wire does not end on the right edge, move on
+    # 2.1. if the wire does not end on the right edge, move on;
+    #      if the wire ends on a corner, also move on
     # 
     if abs(leftEnd.Z() - leftMaxZ) > 0.01: continue
+    if abs(leftEnd.Y() - leftMaxY) < 0.01 or abs(leftEnd.Y() - leftMinY) < 0.01:
+      continue
     
     #
     # 2.2. find the closest wire on the left 
@@ -191,20 +213,55 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
     leftWireID = ROOT.geo.WireID(leftPlane.ID(), leftWireNo)
     try:
       rightWireID = rightPlane.NearestWireID(leftEnd)
-    except ROOT.geo.InvalidWireError, e:
+    #except ( TypeError, ROOT.geo.InvalidWireError ) as e:
+    except TypeError as e:
+      rightWireID = None
+    except ROOT.geo.InvalidWireError as e:
+      # this branch is a placeholder, since Python 3 is not able to catch
+      # ROOT.geo.InvalidWireError (and if one is thrown, a TypeError will raise)
       logging.error(
        "No wire on %s is close enough to %s (closest is %s, but would have been %s)", 
-       rightPlane.ID(), leftWire.ID(),
+       rightPlane.ID(), leftWireID,
        (e.suggestedWireID() if e.hasSuggestedWire() else "unknown"),
        (e.badWireID() if e.hasBadWire() else "unknown"),
        )
+      rightWireID = e.badWireID() if e.hasBadWire() else None
+      rightWireID.markInvalid()
       misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
       continue
     # try ... except no wire matched
+    if not rightWireID:
+      msg = ""
+      if rightWireID is None:
+        msg += "No wire on {} is close enough to {}" \
+         .format(rightPlane.ID(), leftWireID)
+      else: # just invalid
+        msg += "No wire on {} is close enough to {} (would have been {})" \
+         .format(rightPlane.ID(), leftWireID, rightWireID)
+      # if ... else
+      
+      wireCoord = rightPlane.WireCoordinate(leftEnd)
+      msg += "; closest would have been {} W: {}" \
+       .format(rightPlane.ID(), wireCoord)
+      
+      nearestWireID = ROOT.geo.WireID(rightPlane.ID(), int(0.5 + wireCoord)) \
+       if 0.5 + wireCoord >= 0.0 else None
+      nearestWire = None
+      if nearestWireID and rightPlane.HasWire(nearestWireID):
+        nearestWire = rightPlane.Wire(nearestWireID) 
+      if nearestWire:
+        msg += "; actual {} ends at: {}" \
+         .format(nearestWireID, rightStartPos(nearestWire))
+      
+      logging.error(msg)
+      misalignedWires.append( ( None, leftWireID, leftWire, None, None, ) )
+      continue
+    #
+    
     rightWire = rightPlane.Wire(rightWireID)
     
     #
-    # 2.3. check the distance of that wire from this one
+    # 2.3. check the projected distance of that wire from this one
     #
     shift = leftWire.DistanceFrom(rightWire)
     stats.add(shift)
@@ -221,13 +278,62 @@ def checkPlaneWireAlignment(planeA, planeB, tolerance = 0.01):
        )
     # if too far
     
+    #
+    # 2.5. check that wires touch
+    #
+    d = (leftEndPos(leftWire) - rightStartPos(rightWire)).Mag()
+    if d > tolerance:
+      logging.debug(
+        "Distance of wire %s (%s) from the matched wire %s (%s): %g",
+        leftWireID, leftEndPos(leftWire),
+        rightWireID, rightStartPos(rightWire),
+        d
+        )
+      # find which is the wire physically closest to leftWire
+      closestWireID, d_min = rightWireID, d
+      testWireID = rightWireID
+      while testWireID.Wire > 0:
+        testWireID.Wire -= 1
+        testWire = rightPlane.Wire(testWireID)
+        test_d = (leftEndPos(leftWire) - rightStartPos(testWire)).Mag()
+        logging.debug("Distance from %s (%s): %g", testWireID, rightStartPos(testWire), test_d)
+        if test_d >= d_min: break
+        closestWireID, d_min = testWireID, test_d
+      # while
+      testWireID = rightWireID
+      LastWireNo = rightPlane.Nwires() - 1
+      while testWireID.Wire < LastWireNo:
+        testWireID.Wire += 1
+        testWire = rightPlane.Wire(testWireID)
+        test_d = (leftEndPos(leftWire) - rightStartPos(testWire)).Mag()
+        logging.debug("Distance from %s (%s): %g", testWireID, rightStartPos(testWire), test_d)
+        if test_d >= d_min: break
+        closestWireID, d_min = testWireID, test_d
+      # while
+      
+      logging.error(
+       "Wire %s ends at %s, the matched wire %s starts at %s, %g cm away.",
+       leftWireID, leftEndPos(leftWire),
+       rightWireID, rightStartPos(rightWire),
+       d
+       )
+      if closestWireID != rightWireID:
+        logging.error(
+         " => the closest wire is actually %s starting at %s, %g cm away",
+         closestWireID, rightPlane.Wire(closestWireID), d_min
+         )
+      # if
+    # if too far
+    
   # for
   
-  logging.debug("Shift for %d wires between %s and %s: %g +/- %g cm",
-   stats.entries(), leftPlane.ID(), rightPlane.ID(),
-   stats.average(), stats.RMS(),
-   )
-  
+  if stats.entries() > 0:
+    logging.debug("Shift for %d wires between %s and %s: %g +/- %g cm",
+     stats.entries(), leftPlane.ID(), rightPlane.ID(),
+     stats.average(), stats.RMS(),
+     )
+  else:
+    logging.debug("No  wire shift statistics collected.")
   return misalignedWires
 # checkPlaneWireAlignment()
 
@@ -290,7 +396,7 @@ class SimpleProximityClusterer:
 def groupPlanesByX(planes, tolerance = 0.1, sortBy = None):
   xPos = lambda plane: plane.GetCenter().X()
   cluster = SimpleProximityClusterer(xPos, tolerance) # 1 mm
-  groupedByX = cluster(sorted(planes, None, xPos))
+  groupedByX = cluster(sorted(planes, key=xPos))
   if sortBy:
     if   sortBy.lower() == 'x':
       sortKey = xPos
@@ -300,7 +406,7 @@ def groupPlanesByX(planes, tolerance = 0.1, sortBy = None):
       sortKey = lambda plane: plane.GetCenter().Z()
     else:
       raise RuntimeError("Unsupported sorting requested: '%s'" % sortBy)
-    for planes in groupedByX: planes.sort(None, sortKey)
+    for planes in groupedByX: planes.sort(key=sortKey)
   # if sorting
   return groupedByX
 # groupPlanesByX()
@@ -345,8 +451,9 @@ class StatCollector:
   def sumSq(self): return self.wx2
   def average(self): return self.wx / self.w if self.w else None
   def averageSq(self): return self.wx2 / self.w if self.w else None
-  def variance(self): return self.averageSq() - self.average()**2
-  def RMS(self): return self.variance() ** 0.5
+  def variance(self):
+    return self.averageSq() - self.average()**2 if self.w else None
+  def RMS(self): return self.variance() ** 0.5 if self.w else None
 # class StatCollector
 
 
@@ -382,8 +489,13 @@ def performGeometryChecks(argv):
   logging.basicConfig(level=logging.DEBUG - (args.debug - 1))
   
   from ICARUSservices import ServiceManager
+  import cppUtils
   import ROOT
   import ROOTutils
+  
+  # this is for a bug present in LArSoft v08_52_00 (and many other versions);
+  # the header where exception geo::InvalidWireError is defined is not included.
+  cppUtils.SourceCode.loadHeaderFromUPS("larcorealg/Geometry/Exceptions.h")
   
   global ROOT
 
@@ -400,7 +512,7 @@ def performGeometryChecks(argv):
   #
   # cryostat overlap
   #
-  overlappingCryostats = CheckBoxOverlaps(Cryostats, "cryostat")
+  overlappingCryostats = CheckGeoObjOverlaps(Cryostats, "cryostat")
   if overlappingCryostats:
     msg = "%s cryostat overlaps detected: %s." % (
      len(overlappingCryostats),
@@ -413,7 +525,7 @@ def performGeometryChecks(argv):
   #
   # TPC overlaps
   #
-  overlappingTPCs = CheckBoxOverlaps(TPCs, "TPC")
+  overlappingTPCs = CheckGeoObjOverlaps(TPCs, "TPC")
   if overlappingTPCs:
     msg = "%s TPC overlaps detected: %s." % (
      len(overlappingTPCs), ", ".join(map(GeoPairToString, overlappingTPCs)),
@@ -425,8 +537,8 @@ def performGeometryChecks(argv):
   #
   # TPC active volume overlaps
   #
-  overlappingActiveVolTPCs = CheckBoxOverlaps \
-    (map(ROOT.geo.TPCGeo.ActiveBoundingBox, TPCs), "active TPC volume")
+  overlappingActiveVolTPCs = CheckGeoObjOverlaps \
+    (TPCs, "active TPC volume", extractBox=ROOT.geo.TPCGeo.ActiveBoundingBox)
   if overlappingActiveVolTPCs:
     msg = "%s TPC active volume overlaps detected: %s." % (
      len(overlappingActiveVolTPCs),
@@ -439,8 +551,8 @@ def performGeometryChecks(argv):
   #
   # plane box overlaps
   #
-  overlappingPlanes = CheckBoxOverlaps \
-   (map(ROOT.geo.PlaneGeo.BoundingBox, Planes), "wire planes")
+  overlappingPlanes = CheckGeoObjOverlaps \
+   (Planes, "wire planes", extractBox=ROOT.geo.PlaneGeo.BoundingBox)
   if overlappingPlanes:
     logging.error("%s wire plane overlaps detected: %s.",
      len(overlappingPlanes),
@@ -510,7 +622,7 @@ def performGeometryChecks(argv):
     for misalignedWiresOnPlane in misalignedWires:
       logging.error("%d on wires on plane around x=%g cm:",
        len(misalignedWiresOnPlane),
-       misalignedWiresOnPlane[0].GetCenter().X()
+       misalignedWiresOnPlane[0][2].GetCenter().X()
        )
       for shift, wireLid, wireL, wireRid, wireR in misalignedWiresOnPlane:
         if shift is None:
@@ -522,7 +634,7 @@ def performGeometryChecks(argv):
       # for all misaligned wire pairs
     # for
     FailureSummary.append \
-      ("Misaligned wires found on %d extended planes:" % len(misalignedWires))
+      ("Misaligned wires found on %d extended planes" % len(misalignedWires))
   else:
     logging.info("No misaligned wires detected.")
   

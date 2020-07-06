@@ -100,7 +100,6 @@ public:
     // Constructor, destructor.
     SignalShapingICARUSService(const fhicl::ParameterSet& pset,
                                    art::ActivityRegistry& reg);
-    ~SignalShapingICARUSService();
     
     // Update configuration parameters.
     void                          reconfigure(const fhicl::ParameterSet& pset);
@@ -116,7 +115,7 @@ public:
     
     const icarus_tool::IResponse& GetResponse(size_t channel)                        const;
      
-    int                           FieldResponseTOffset(unsigned int const channel)   const;
+    int                           ResponseTOffset(unsigned int const channel)        const;
     
     void                          SetDecon(size_t fftsize, size_t channel);
     double                        GetDeconNorm() {return fDeconNorm;};

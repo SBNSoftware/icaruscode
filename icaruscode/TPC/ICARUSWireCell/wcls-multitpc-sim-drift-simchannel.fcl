@@ -1,0 +1,92 @@
+#include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_basic_services
+}
+
+process_name: wclssim
+physics :{
+   producers: {
+      plopper : {
+        module_type : BlipMaker
+      }
+      simmer : {
+         module_type : WireCellToolkit
+         wcls_main: {
+            tool_type: WCLS
+            apps: ["Pgrapher"]
+
+            // logsinks: ["stdout"]
+            // loglevels: ["magnify:debug"]
+
+            plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
+
+            // needs to be found via your WIRECELL_PATH 
+            configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
+
+
+            // Contract note: these exact "type:name" must be used to identify
+            // the configuration data structures for these components in the Jsonnet.
+
+            inputers: ["wclsSimDepoSource:electron"]
+            outputers: [
+               "wclsSimChannelSink:postdrift",
+               "wclsFrameSaver:simdigits0",
+               "wclsFrameSaver:simdigits1",
+               "wclsFrameSaver:simdigits2",
+               "wclsFrameSaver:simdigits3"
+            //   ,"wclsFrameSaver:nfdigits",
+            //   "wclsFrameSaver:spsignals",
+            //   "wclsFrameSaver:spthresholds"
+            ]
+
+            // Make available parameters via Jsonnet's std.extVar()
+            params: {
+            }
+            structs: {
+              # load values from simulationservices_icarus.fcl
+              # Longitudinal diffusion constant [cm2/ns]
+              DL: @local::icarus_largeantparameters.LongitudinalDiffusion
+
+              # Transverse diffusion constant [cm2/ns]
+              DT: @local::icarus_largeantparameters.TransverseDiffusion
+
+              # load values from services_icarus.fcl
+              # Electron lifetime [microseconds]
+              lifetime: @local::icarus_detproperties.Electronlifetime
+
+              # Electron drift speed, assumes a certain applied E-field [mm/us]
+              # driftSpeed: 1.565
+            }
+
+         }
+      }
+   }
+   p1 : [ plopper, simmer ]
+   outputFiles : [ out ]
+   
+   trigger_paths : [ p1 ]
+   end_paths: [ outputFiles ]
+}
+outputs: {
+   out: {
+      module_type: RootOutput
+      fileName: "%ifb_wcsim.root"
+      // fileName: "wcsim.root"
+
+      outputCommands :   [
+         // "drop *", "keep recob::Wires_*_*_*"
+         "keep *_*_*_*"
+         // "drop *_nfspl1_raw_*",
+         // "drop *_nfspl1_threshold_*",
+         // "drop *_nfspl1_wiener_*",
+         // "drop *_nfspl1_gauss_*",
+         // "drop *_wcNoiseFilter_*_*",
+         // "drop *_daq_*_*"
+      ]
+
+   }
+}

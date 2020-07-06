@@ -52,8 +52,8 @@ simple_plugin(ICARUSsingleInductionChannelMapSetupTool "tool"
 
 add_subdirectory(gdml)
 
-install_headers()
-install_fhicl()
-install_source()
+install_headers(SUBDIRS "details")
+install_fhicl(SUBDIRS "details")
+install_source(SUBDIRS "details")
 
 

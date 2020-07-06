@@ -1,16 +1,20 @@
 <lcgdict>
 
-  <class name="icarus::crt::CRTChannelData"/>
-  <class name="art::Wrapper<icarus::crt::CRTChannelData>"/>
-
   <class name="icarus::crt::CRTData"/>
   <class name="art::Wrapper<icarus::crt::CRTData>"/>
-  <class name="std::vector<icarus::crt::CRTChannelData>"/>
-  <class name="art::Wrapper<std::vector<icarus::crt::CRTChannelData> >"/>
-  <!--<class name="std::pair<unsigned short,unsigned short>"/>
-  <class name="art::Wrapper<std::pair<unsigned short,unsigned short>>"/>-->
   <class name="std::vector<icarus::crt::CRTData>"/>
   <class name="art::Wrapper<std::vector<icarus::crt::CRTData> >"/>
+  <class name="art::Wrapper<std::vector<sim::AuxDetIDE>>"/>
+
+  <class name="art::Assns<icarus::crt::CRTHit,sim::AuxDetIDE,void>"/>
+  <class name="art::Assns<sim::AuxDetIDE,icarus::crt::CRTHit,void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::crt::CRTHit,sim::AuxDetIDE,void> >"/>
+  <class name="art::Wrapper<art::Assns<sim::AuxDetIDE,icarus::crt::CRTHit,void> >"/>
+
+  <class name="art::Assns<icarus::crt::CRTData,sim::AuxDetIDE,void>"/> 
+  <class name="art::Assns<sim::AuxDetIDE,icarus::crt::CRTData,void>"/>
+  <class name="art::Wrapper<art::Assns<icarus::crt::CRTData,sim::AuxDetIDE,void>>"/>
+  <class name="art::Wrapper<art::Assns<sim::AuxDetIDE,icarus::crt::CRTData,void>>"/>
 
   <class name="std::vector<pair<int,float> >"/>
   <class name="art::Wrapper<std::vector<pair<int,float> > >"/>

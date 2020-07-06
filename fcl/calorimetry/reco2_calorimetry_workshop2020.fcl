@@ -1,0 +1,24 @@
+#include "services_icarus_simulation.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+
+
+process_name: McRecoRaw
+
+
+services:
+{
+@table::services
+@table::icarus_legacy_services_v08_50_00
+}
+
+
+physics.reco: [@sequence::icarus_raw_MultiTPCRecon]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+source.inputCommands: ["keep *_*_*_*" ]
+
+services.Geometry: @local::icarus_single_induction_nooverburden_geometry
+services.ExpGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+

@@ -92,6 +92,7 @@ private:
   std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
   std::vector<float>          fSigmaVec;               ///< Window size for matching to SimChannels
   int                         fMinAllowedChanStatus;   ///< Don't consider channels with lower status
+  float                       ftotalelctroncut;        ///< Threshold for electron (10k)
 
   //  double                   fElectronsToGeV;    ///< conversion factor
   // TTree variables
@@ -113,6 +114,15 @@ private:
   mutable std::vector<int>   fCryoVec;
   mutable std::vector<int>   fPlaneVec;
   mutable std::vector<int>   fWireVec;
+
+  mutable std::vector<float>   fmcpartvx;
+  mutable std::vector<float>   fmcpartvy;
+  mutable std::vector<float>   fmcpartvz;
+
+  mutable std::vector<float>   fmcpartpx;
+  mutable std::vector<float>   fmcpartpy;
+  mutable std::vector<float>   fmcpartpz;
+  mutable std::vector<float>   fmcparte;
 
   mutable std::vector<float> fTotalElectronsVec;
   mutable std::vector<float> fTotalElecEnergyVec;
@@ -209,6 +219,12 @@ private:
   mutable std::vector<float>   fHitEfficiencyVec;
   mutable std::vector<float>   fNFakeHitVec;
 
+  mutable std::vector<float>   flocx;
+  mutable std::vector<float>   flocy;
+  mutable std::vector<float>   flocz;
+
+  std::vector<TProfile*>      fHitEffvselecVec;
+
   // Implementation of required member function here.
   art::ServiceHandle< art::TFileService > tfs;
 
@@ -250,6 +266,7 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
     fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",          std::vector<int>()={0,0,0});
     fSigmaVec                 = pset.get<std::vector<float>         >("SigmaVec",           std::vector<float>()={1.,1.,1.});
     fMinAllowedChanStatus     = pset.get< int                       >("MinAllowedChannelStatus");
+    ftotalelctroncut          = pset.get<float                      >("totalelctroncut", 10000.);
 
     std::cout << "UseICARUSGeometry: " << fUseICARUSGeometry << std::endl;
     std::cout << "Read the fhicl parameters, recovering services" << std::endl;
@@ -259,6 +276,13 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
     fGeometry           = lar::providerFrom<geo::Geometry>();
     fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     fClockService       = lar::providerFrom<detinfo::DetectorClocksService>();
+
+    art::TFileDirectory dir = tfs->mkdir("histos");
+    fHitEffvselecVec.resize(fGeometry->Nplanes());
+    for(size_t plane = 0; plane < fGeometry->Nplanes(); plane++)
+      {
+	fHitEffvselecVec.at(plane)           = dir.make<TProfile>  (("HitEffvselec"    + std::to_string(plane)).c_str(), "Hit Efficiency; Total # e-",        200,  0., 200000., 0., 1.);
+      }
 
     std::cout << "Services recovered, setting up output tree" << std::endl;
 
@@ -276,6 +300,15 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
     fTree->Branch("TPCVec",            "std::vector<int>",   &fTPCVec);
     fTree->Branch("PlaneVec",          "std::vector<int>",   &fPlaneVec);
     fTree->Branch("WireVec",           "std::vector<int>",   &fWireVec);
+
+    fTree->Branch("mcpartvx",           "std::vector<float>",   &fmcpartvx);
+    fTree->Branch("mcpartvy",           "std::vector<float>",   &fmcpartvy);
+    fTree->Branch("mcpartvz",           "std::vector<float>",   &fmcpartvz);
+
+    fTree->Branch("mcpartpx",           "std::vector<float>",   &fmcpartpx);
+    fTree->Branch("mcpartpy",           "std::vector<float>",   &fmcpartpy);
+    fTree->Branch("mcpartpz",           "std::vector<float>",   &fmcpartpz);
+    fTree->Branch("mcparte",            "std::vector<float>",   &fmcparte);
 
     fTree->Branch("TotalElectronsVec", "std::vector<float>", &fTotalElectronsVec);
     fTree->Branch("TotalElecEnergyVec","std::vector<float>", &fTotalElecEnergyVec);
@@ -364,6 +397,10 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
     fTree->Branch("mctthetaxz",         "std::vector<float>", &fmctThetaXZ);
     fTree->Branch("mctthetayz",         "std::vector<float>", &fmctThetaYZ);
 
+    fTree->Branch("locx",         "std::vector<float>", &flocx);
+    fTree->Branch("locy",         "std::vector<float>", &flocy);
+    fTree->Branch("locz",         "std::vector<float>", &flocz);
+
     std::cout << "Returning" << std::endl;
     return;
 }
@@ -381,6 +418,15 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     fCryoVec.clear();
     fPlaneVec.clear();
     fWireVec.clear();
+
+    fmcpartvx.clear();
+    fmcpartvy.clear();
+    fmcpartvz.clear();
+
+    fmcpartpx.clear();
+    fmcpartpy.clear();
+    fmcpartpz.clear();
+    fmcparte.clear();
 
     fTotalElectronsVec. clear();
     fTotalElecEnergyVec.clear();
@@ -426,6 +472,10 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     fmctstartdiry.      clear();
     fmctstartdirz.      clear();
 
+    flocx.     clear();
+    flocy.     clear();
+    flocz.     clear();
+
     fmcenddirx.clear();
     fmcenddiry.clear();
     fmcenddirz.clear();
@@ -459,6 +509,9 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     fNRecobHitVec.      clear();
     fHitEfficiencyVec.  clear();
     fNFakeHitVec.       clear();
+
+    fHitEffvselecVec.   clear();
+
   //*/
   // Start by fetching some basic event information for our n-tuple.
     fEvent  = evt.id().event();
@@ -483,6 +536,11 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     if (!simChannelHandle.isValid() || simChannelHandle->empty() || 
         !simEnergyHandle.isValid()  || simEnergyHandle->empty()  ||
         !mcParticleHandle.isValid() ) return;
+
+    /*  std::cout << " Event: " << fEvent
+	      << " Run: "   << fRun
+	      << " SubRun: "<< fSubRun<< std::endl;
+    */
   
     // There are several things going on here... for each channel we have particles (track id's) depositing energy in a range to ticks
     // So... for each channel we want to build a structure that relates particles to tdc ranges and deposited energy (or electrons)
@@ -555,7 +613,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     std::vector<int> nFakeHitVec        = {0,0,0};
     std::vector<int> nSimulatedWiresVec = {0,0,0};
 
-    std::cout << "******* MC/TRACK ANALYZER EVENT " << fEvent << " *******" << std::endl;
+    std::cout << "***************** EVENT " << fEvent << " ******************" << std::endl;
     std::cout << "-- Looping over channels for hit efficiency, # MC Track IDs: " << partToChanToTDCToIDEMap.size() << std::endl;
 
     // Initiate loop over MC Track IDs <--> SimChannel information by wire and TDC
@@ -574,7 +632,8 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
           //	  fTotalElectronsVec.push_back(totalElectrons);
         if (fabs(trackPDGCode) != 13 || processName != "primary") continue;
           //      if (fabs(trackPDGCode) != 13) continue;
-          //      if (fEvent != 48) continue;
+	//if (fEvent != 44) continue;
+        std::cout << ">>>> Loop on MCParticle: " << mcParticle << ", pdg: " << trackPDGCode << ", process: " << processName << std::endl;
 
         // Let's recover the SimEnergyDeposit vector for this track
 //        PartToSimEnergyMap::iterator simEneDepItr = partToSimEnergyMap.find(partToChanInfo.first);
@@ -589,10 +648,22 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
 //        SimEnergyDepositVec& simEnergyDepositVec = simEneDepItr->second;
 
 //        std::sort(simEnergyDepositVec.begin(),simEnergyDepositVec.end(),[](const auto& left,const auto& right){return left->T() < right->T();});
+
+//        std::cout << "  -- Processing track id: " << partToChanInfo.first << ", with " << simEnergyDepositVec.size() << " SimEnergyDeposit objects" << ", # channels: " << partToChanInfo.second.size() << std::endl;
       
         fSimPDG = trackPDGCode;
         fSimTrackID = mcParticle->TrackId();
-          // Recover particle position and angle information
+
+	fmcpartvx.push_back(mcParticle->Vx());
+	fmcpartvy.push_back(mcParticle->Vy());
+	fmcpartvz.push_back(mcParticle->Vz());
+
+	fmcpartpx.push_back(mcParticle->Px());
+	fmcpartpy.push_back(mcParticle->Py());
+	fmcpartpz.push_back(mcParticle->Pz());
+	fmcparte.push_back(mcParticle->E());
+	//std::cout << "Energy: " << mcParticle->E() << std::endl;
+	// Recover particle position and angle information
         Eigen::Vector3f partStartPos(mcParticle->Vx(),mcParticle->Vy(),mcParticle->Vz());
         Eigen::Vector3f partStartDir(mcParticle->Px(),mcParticle->Py(),mcParticle->Pz());
     
@@ -605,6 +676,8 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
           // Assuming the SimChannels contain position information (currently not true for WC produced SimChannels)
           // then we want to keep a running position
         std::vector<Eigen::Vector3f> lastPositionVec = {partStartPos,partStartPos,partStartPos};
+
+        std::cout << "  *** Looping over channels, have " << partToChanInfo.second.size() << " channels" << std::endl;
 
         for(const auto& chanToTDCToIDEMap : partToChanInfo.second)
         {
@@ -650,7 +723,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
 
             Eigen::Vector3f avePosition(0.,0.,0.);
             
-            nSimulatedWiresVec[plane]++;  // Loop insures channels are unique here
+	    nSimulatedWiresVec[plane]++;  // Loop insures channels are unique here
             
             for(const auto& ideVal : tdcToIDEMap)
             {
@@ -675,11 +748,16 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
             partDirVec.normalize();
             
             lastPositionVec[plane] = avePosition;
-            
-            totalElectrons = std::min(totalElectrons, float(99900.));
-            
-            nSimChannelHitVec[plane]++;
 
+	    // std::cout << "sim wire: "<<  nSimulatedWiresVec[plane]++ << ", sim ch hit : " <<nSimChannelHitVec[plane]++ << std::endl;
+	    // Threshold for electrons
+	    if (totalElectrons > ftotalelctroncut)          nSimChannelHitVec[plane]++;
+        
+	    //  std::cout <<" total electron cut : \t" << ftotalelctroncut << std::endl;     
+	    //  totalElectrons = std::min(totalElectrons, float(99900.));
+            
+            //nSimChannelHitVec[plane]++;
+            	  //	  std::cout << "after the check --- line 469   "<< nSimChannelHitVec[plane] << std::endl; 	    
             unsigned short startTDC = tdcToIDEMap.begin()->first;
             unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
             
@@ -760,6 +838,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     		        // Note that assumption breaks down for long pulse trains but worry about that later
                 for(const auto& hit : hitIter->second)
                 {
+		  //std::cout <<" ........... sigma vector: \t " << fSigmaVec[plane] << std::endl;
                     unsigned short hitStartTick = hit->PeakTime() - fSigmaVec[plane] * hit->RMS();
                     unsigned short hitStopTick  = hit->PeakTime() + fSigmaVec[plane] * hit->RMS();
     		           	  // If hit is out of range then skip, it is not related to this particle
@@ -792,20 +871,20 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                     hitLocalIndexBest   = bestHit->LocalIndex();
                     hitGoodnessBest     = bestHit->GoodnessOfFit();
                     hitNumDegreesBest   = bestHit->DegreesOfFreedom();
-    	         		  //hitSnippetLenBest   = bestHit->EndTick() - bestHit->StartTick();
-    	         		  hitBaselineBest     = 0.;  // To do...
+		    //hitSnippetLenBest   = bestHit->EndTick() - bestHit->StartTick();
+		    hitBaselineBest     = 0.;  // To do...
              
-    	         		  nMatchedHits++;
-             
-    	         		  // Get the number of electrons
-    	         		  for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
-                    {
+		    nMatchedHits++;
+		    
+		    // Get the number of electrons
+		    for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
+		      {
                         unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec[plane]);
-             
+			
                         TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
-             
+			
                         if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second.numElectrons;
-                    }
+		      }
                     // Ok, now we need to figure out which trajectory point this hit is associated to 
                     // Use the associated IDE to get the x,y,z position for this hit
                     Eigen::Vector3f hitIDEPos(avePosition[0],avePosition[1],avePosition[2]);
@@ -835,6 +914,7 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                     if (bestMatch < std::numeric_limits<float>::max())
                     {
                         hitToMcPartToIdxMap[bestHit].push_back(MCParticleTrajIdxPair(mcParticle,matchIdx));
+                        //std::cout << "-hit " << bestHit  << " associated to MC " << mcParticle << " at point " << matchIdx << std::endl;
     
                         partDirVec = Eigen::Vector3f(mcParticle->Px(matchIdx),mcParticle->Py(matchIdx),mcParticle->Pz(matchIdx));
     
@@ -846,13 +926,14 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                 {
     	         	    //float chgRatioADC = hitSummedADCBest > 0. ? totalElectrons / hitSummedADCBest : 0.;
     	         	    //float chgRatioInt = hitIntegralBest  > 0. ? totalElectrons / hitIntegralBest  : 0.;
-                  
-                    nRecobHitVec[plane]++;
+		  if (totalElectrons > ftotalelctroncut) nRecobHitVec[plane]++;    
+		  // nRecobHitVec[plane]++;
                 }
                 else if (rejectedHit)
                 {
     	         	    //unsigned short hitStartTick = rejectedHit->PeakTime() - fSigmaVec[plane] * rejectedHit->RMS();
     	         	    //unsigned short hitStopTick  = rejectedHit->PeakTime() + fSigmaVec[plane] * rejectedHit->RMS();
+                    std::cout << "    -Rejected: " << rejectedHit->WireID().Plane << ", ph: " << rejectedHit->PeakAmplitude() << std::endl;
                 }
                 else
                 {
@@ -866,6 +947,9 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                 } // end of matched hit
             } // end of channel to hit map iterator
                 
+	    float matchHit   = std::min(nMatchedHits,1);
+	    fHitEffvselecVec[plane]->Fill(totalElectrons,   matchHit,   1.);
+
             fTPCVec.push_back(wids[0].TPC);
             fCryoVec.push_back(wids[0].Cryostat);
             fPlaneVec.push_back(wids[0].Plane);
@@ -899,11 +983,16 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
         } //end of partcle to id map info
     } // Done looping over track <--> MCParticle associations
 
+    std::cout << "-- Now starting loop over tracks" << std::endl;
+    std::cout << "-- Hit/MCParticle map size: " << hitToMcPartToIdxMap.size() << std::endl;
+
     // Let's keep track of track to MCParticle and hits. 
     using MCPartToHitVecMap = std::unordered_map<const simb::MCParticle*,std::vector<const recob::Hit*>>;
     using TrackToMCMap      = std::unordered_map<const recob::Track*, MCPartToHitVecMap>;
 
     TrackToMCMap trackToMCMap;
+
+    std::cout << "** Starting outer loop over all sets of tracks" << std::endl;
 
     // The game plan for this module is to look at recob::Tracks and objects associated to tracks
     // The first thing we need to do is match tracks to MCParticles which we can do using structures 
@@ -933,6 +1022,8 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
             // Keep track of the number of hits per MCParticle for this track
             MCPartToHitVecMap mcPartCountMap;
 
+            std::cout << "- Track idx " << trackIdx << ", ptr: " << ptrack.get() << " has " << trackHitVec.size() << " hits" << std::endl;
+
             // Loop through hits and use associations tables to relate to MCParticle
             for(const auto& hit : trackHitVec)
             {
@@ -950,12 +1041,18 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                     mcPartCountMap[nullptr].push_back(hit);
             }
 
+            std::cout << "  - associated to " << mcPartCountMap.size() << " MCParticles" << std::endl;
+
+	    for(const auto& mcPair : mcPartCountMap) 
+	      std::cout << "    - MCParticle: " << mcPair.first <<  ", # hits: " << mcPair.second.size() << std::endl;
+
             // Find the best match (simple majority logic)
             const simb::MCParticle* bestMCMatch(nullptr);
             size_t                  bestCount(0);
 
             for(const auto& pair : mcPartCountMap)
             {
+	      //std::cout << "    - MCParticle: " << pair.first <<", pdg: " << pair.first->PdgCode() << ", # hits: " << pair.second.size() << std::endl;
                 if (pair.first && pair.second.size() > bestCount)
                 {
                     bestMCMatch = pair.first;
@@ -963,237 +1060,446 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
                 }
             }
 
+	    //            std::cout << "    ==> bestMCMatch: " << bestMCMatch << ", pdg:" << bestMCMatch->PdgCode()<< ", bestCount: " << bestCount << std::endl;
+	    //std::cout << "    ==> bestMCMatch: " << bestMCMatch << ", bestCount: " << bestCount << std::endl;
+
             if (bestCount > 0)
             {
                 MCPartToHitVecMap::iterator bestItr = mcPartCountMap.find(bestMCMatch);
 
                 trackToMCMap[ptrack.get()][bestItr->first] = bestItr->second;
-            }
+
+	    }
         }
     }
 
-    fNtracks_primary = trackToMCMap.size();
+    std::cout << "====> trackToMCMap size: " << trackToMCMap.size() << std::endl;
+    //    std::cout << "====> mcPartCountMap size: " <<  MCPartToHitVecMap.size() << std::endl;
 
+    fNtracks_primary = trackToMCMap.size();
+    std::cout << "==================================================================================> " << std::endl;
     if (fNtracks_primary != 1)
         std::cout << "**> tracks associated to primary = " << fNtracks_primary << ", event: " << evt.id().event() << std::endl;
+
 
     // Go through the tracks matched to the primary
     for(const auto& trackMCPair : trackToMCMap)
     {
-        const recob::Track& track = *trackMCPair.first;
+      const recob::Track& track = *trackMCPair.first;
 
-       //	      std::cout << track.ParticleId()<< std::endl;
-        int ntraj = track.NumberTrajectoryPoints();
-         //std::cout << "ntraj: \t"<< ntraj << std::endl; 
-   
-        if(ntraj <= 0) continue;
-   
-         //	      TVector3 pos = track.Vertex<TVector3>();
-        TVector3 pos = track.Start<TVector3>();
-        TVector3 dir = track.StartDirection<TVector3>();
-        TVector3 end = track.End<TVector3>();
-        TVector3 enddir = track.EndDirection<TVector3>();
-         //    double   pstart = track.VertexMomentum();
-         //double   pend   = track.EndMomentum();		
-   
-         //	      double length   = track.Length();
-        double theta_xz = std::atan2(dir.X(), dir.Z());
-        double theta_yz = std::atan2(dir.Y(), dir.Z());
-         //	      std::cout << end.X() << "\t" << end.Y() << "\t" << end.Z()<<std::endl;
-         //	      TVector3 pos(0,2.43493,851.593);
-         //	      if(!cryo0.ContainsPosition(pos) && !cryo1.ContainsPosition(pos)) continue;
-         //	      std::cout << trackLabel << "  no.of track:\t" <<trackHandle->size() << "\t"<< ntracks_reco<< std::endl;
-          // This seems a redundant test for fit tracks? 
-        geo::Point_t trackPoint(pos.X(),pos.Y(),pos.Z());
+      //	      std::cout << track.ParticleId()<< std::endl;
+      unsigned int ntraj = track.NumberTrajectoryPoints();
+      //std::cout << "ntraj: \t"<< ntraj << std::endl; 
+      
+      if(ntraj <= 0) continue;
+      
 
-        const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(trackPoint);
+      //  const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(track.Start());
 
-        if (!tpcGeo) continue;
+      //if (!tpcGeo) continue;
 
-        frecostartx.push_back( pos.X() );
-        frecostarty.push_back( pos.Y() );
-        frecostartz.push_back( pos.Z() );
-        
-        frecoendx.push_back( end.X() );
-        frecoendy.push_back( end.Y() );
-        frecoendz.push_back( end.Z() );
-        
-        frecostartdirx.push_back( dir.X() );
-        frecostartdiry.push_back( dir.Y() );
-        frecostartdirz.push_back( dir.Z() );
-        
-        frecoenddirx.push_back( enddir.X() );
-        frecoenddiry.push_back( enddir.Y() );
-        frecoenddirz.push_back( enddir.Z() );
-        
-        fLength. push_back( track.Length() );
-        fThetaXZ.push_back( theta_xz );
-        fThetaYZ.push_back( theta_yz );
-        fTheta.  push_back( dir.Theta() );
-        fPhi.    push_back( dir.Phi() );
-    	      //		}
-    	      //std::cout << pos.X() << "\t" << pos.Y() << "\t" << pos.Z()<<std::endl;
-    	      //	std::cout << end.X() << "\t" << end.Y() << "\t" << end.Z()<<std::endl;
+      //std::cout << tpcGeo->ActiveBoundingBox().ContainsPosition(track.Start()) << std::endl;
+      //std::cout << "track length : "<< track.Length() << std::endl;
 
-        //std::cout << "-- Now starting loop over trajectory points for track " << track.ID() << std::endl;
 
-        // Now start going through the associated MCParticles, focus is on the primary for now
-        for(const auto& mcPartHitVecPair : trackMCPair.second)
+      //      const recob::tracking::Point_t& pos
+      //	      TVector3 pos = track.Vertex<TVector3>();
+      //TVector3 pos = track.Start<TVector3>();
+      //TVector3 dir = track.StartDirection<TVector3>();
+      //TVector3 end = track.End<TVector3>();
+      // TVector3 enddir = track.EndDirection<TVector3>();
+      //    double   pstart = track.VertexMomentum();
+      //double   pend   = track.EndMomentum();		
+      
+      //	      double length   = track.Length();
+      // double theta_xz = std::atan2(dir.X(), dir.Z());
+      //double theta_yz = std::atan2(dir.Y(), dir.Z());
+      //	      std::cout << end.X() << "\t" << end.Y() << "\t" << end.Z()<<std::endl;
+      //	      TVector3 pos(0,2.43493,851.593);
+      //	      if(!cryo0.ContainsPosition(pos) && !cryo1.ContainsPosition(pos)) continue;
+      //	      std::cout << trackLabel << "  no.of track:\t" <<trackHandle->size() << "\t"<< ntracks_reco<< std::endl;
+      // This seems a redundant test for fit tracks? 
+      //  geo::Point_t trackPoint(pos.X(),pos.Y(),pos.Z());
+      //      std::cout << track.X() << "\t" << track.Y() << "\t" << track.Z()<<std::endl;      
+
+      //std::cout << "Reco Track--- Before: \t" << pos.X() <<"\t"<< pos.Y() <<"\t"<< pos.Z() << std::endl;      
+      // geo::Point_t const trackPoint(track.Start());
+      //geo::Point_t const trackEndPoint(track.End());
+
+      //const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(trackPoint);
+      
+      //if (!tpcGeo) continue;
+      //if (!tpcGeo->ActiveBoundingBox().ContainsPosition(trackPoint)) continue; // out of active volume
+      //if (!tpcGeo->ActiveBoundingBox().ContainsPosition(trackEndPoint)) continue; // out of active volume
+    
+      // std::cout << "Reco Track start point : \t" << trackPoint.X() <<"\t"<< trackPoint.Y() <<"\t"<< trackPoint.Z() << std::endl;
+      
+     
+
+      //      if (tpcGeo->ActiveBoundingBox().ContainsPosition(trackPoint)) trackEndPoint = trackPoint;
+      //else break; // this means that once you are out of the active volume the first time, you are done; think if that's what you want, 
+                  //since tracks scatter a lot in LAr
+      //      std::cout << "Reco Track start point : \t" << trackPoint.X() <<"\t"<< trackPoint.Y() <<"\t"<< trackPoint.Z() << std::endl;
+      //std::cout << "Reco Track end point : \t" << trackEndPoint.X() <<"\t"<< trackEndPoint.Y() <<"\t"<< trackEndPoint.Z() << std::endl;
+      //      std::cout <<: \t" << end.X() <<"\t"<< end.Y() <<"\t"<< end.Z() << std::endl;            
+
+      //geo::Point_t  trackstartPoint ;
+      //      geo::Point_t  trackendPoint ;
+      std::vector<double> posx, posy, posz;
+      std::vector<double> dirx, diry, dirz;
+      //      const geo::CryostatID* cryo;
+      //      std::cout <<      geo::CryostatID(0)<< std::endl;
+
+	//      std::cout << "cryostat: " << cryostat << std::endl;
+      const geo::CryostatID C0id { 0 };
+      // ...
+      //std::cout << "cryostat: " << C0id << std::endl;
+      for (unsigned int i= 0; i < ntraj; i++)
+	{
+	  //geo::Point_t  trackstartPoint = track.LocationAtPoint(i);
+	  //geo::Point_t  trackendPoint = track.LocationAtPoint(i);
+	  TVector3 mom = track.MomentumVectorAtPoint<TVector3>(i);
+	  geo::Point_t trackstartPoint = track.LocationAtPoint(i);
+	  //trackendPoint = track.LocationAtPoint(i);
+	  const geo::TPCGeo* tpcGeom = fGeometry->PositionToTPCptr(trackstartPoint);
+
+	  if (!tpcGeom) continue;
+	  if (tpcGeom->ID() != C0id) continue; // point not in cryostat 0
+	  if (!tpcGeom->ActiveBoundingBox().ContainsPosition(trackstartPoint)) continue;
+	  //if (tpcGeom->ActiveBoundingBox().ContainsPosition(trackstartPoint)) trackendPoint = trackstartPoint;
+	  //else break; 
+	  posx.push_back( trackstartPoint.X() );
+	  posy.push_back( trackstartPoint.Y() );
+	  posz.push_back( trackstartPoint.Z() );
+
+	  dirx.push_back( mom.X() );
+          diry.push_back( mom.Y() );
+          dirz.push_back( mom.Z() );
+
+	  //  if(i == 10) std::cout<< "track length inside loop: "<< track.Length() << std::endl;
+	}
+
+      //std::cout << "Reco Track start point : \t" << posx.front() <<"\t"<< posy.front() <<"\t"<< posz.front() << std::endl;
+      //std::cout << "Reco Track end point : \t" << posx.back() <<"\t"<< posy.back() <<"\t"<< posz.back() << std::endl;
+      
+
+      // frecostartx.push_back( pos.X() );
+      // frecostarty.push_back( pos.Y() );
+      // frecostartz.push_back( pos.Z() );
+      
+      // frecoendx.push_back( end.X() );
+      // frecoendy.push_back( end.Y() );
+      // frecoendz.push_back( end.Z() );
+      if (!posx.empty())
+	{
+	  frecostartx.push_back( posx.front() );
+	  frecostarty.push_back( posy.front() );
+	  frecostartz.push_back( posz.front() );
+	  
+	  frecoendx.push_back( posx.back() );
+	  frecoendy.push_back( posy.back() );
+	  frecoendz.push_back( posz.back() );
+
+	  frecostartdirx.push_back( dirx.front() );
+          frecostartdiry.push_back( diry.front() );
+          frecostartdirz.push_back( dirz.front() );
+
+          frecoenddirx.push_back( dirx.back() );
+          frecoenddiry.push_back( diry.back() );
+          frecoenddirz.push_back( dirz.back() );
+
+          double theta_xz = std::atan2(dirx.front(), dirz.front());
+          double theta_yz = std::atan2(diry.front(), dirz.front());
+
+          fThetaXZ.push_back( theta_xz );
+          fThetaYZ.push_back( theta_yz );
+	}
+      //      frecostartdirx.push_back( dir.X() );
+      // frecostartdiry.push_back( dir.Y() );
+      // frecostartdirz.push_back( dir.Z() );
+      
+      // frecoenddirx.push_back( enddir.X() );
+      //frecoenddiry.push_back( enddir.Y() );
+      //frecoenddirz.push_back( enddir.Z() );
+      
+      //      fLength. push_back( track.Length() );
+      // fThetaXZ.push_back( theta_xz );
+      //fThetaYZ.push_back( theta_yz );
+
+      fLength. push_back( track.Length() );
+      fTheta.  push_back( track.Theta() );
+      fPhi.    push_back( track.Phi() );
+
+      posx.clear(); posy.clear(); posz.clear();
+      dirx.clear(); diry.clear(); dirz.clear();
+      //		}
+      //std::cout << pos.X() << "\t" << pos.Y() << "\t" << pos.Z()<<std::endl;
+      //	std::cout << end.X() << "\t" << end.Y() << "\t" << end.Z()<<std::endl;
+      
+      //std::cout << "-- Now starting loop over trajectory points for track " << track.ID() << std::endl;
+      
+      // Now start going through the associated MCParticles, focus is on the primary for now
+      for(const auto& mcPartHitVecPair : trackMCPair.second)
         {
-            const simb::MCParticle* mcParticle = mcPartHitVecPair.first;
+	  const simb::MCParticle* mcParticle = mcPartHitVecPair.first;
+	  
+	  // Skip the unassociated hits for now
+	  if (!mcParticle) continue;
+	  
 
-            // Skip the unassociated hits for now
-            if (!mcParticle) continue;
+	  geo::Point_t vtxPoint(mcParticle->Vx(), mcParticle->Vy(), mcParticle->Vz());
 
-            // Find the extreme trajectory points associated to hits for this track
-            size_t minTrajIdx = std::numeric_limits<size_t>::max();
-            size_t maxTrajIdx = 0;
+	  const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(vtxPoint);
 
-            for(const auto& hit : mcPartHitVecPair.second)
+	  if (!tpcGeo) continue;
+	  if (tpcGeo->ID() != C0id) continue; // point not in cryostat 0
+	  if (!tpcGeo->ActiveBoundingBox().ContainsPosition(vtxPoint)) continue; // out of active volume
+
+	  // Find the extreme trajectory points associated to hits for this track
+	  size_t minTrajIdx = std::numeric_limits<size_t>::max();
+	  size_t maxTrajIdx = 0;
+	  
+	  for(const auto& hit : mcPartHitVecPair.second)
             {
-                // **THIS NEEDS TO BE CHECKED **
-                // There should be only one entry for the trajectory index the way the code is set up to run now 
-                // (Only looking at the primary)
-                size_t trajIdx = hitToMcPartToIdxMap[hit].front().second;
+	      //  std::cout << " # Hit: "<< mcPartHitVecPair.second.size()<< "; Hit Index: " << &hit - &mcPartHitVecPair.second[0] << std::endl;
 
-                minTrajIdx = std::min(minTrajIdx,trajIdx);
-                maxTrajIdx = std::max(maxTrajIdx,trajIdx);
+	      geo::Point_t loc = track.LocationAtPoint(&hit - &mcPartHitVecPair.second[0]);
+
+	      //      std::cout << "location at x: " << loc.X() << " ; location at y: " << loc.Y()<< " ; location at z: " << loc.Z() << std::endl;	      
+
+	      flocx.push_back(loc.X());
+	      flocy.push_back(loc.Y());
+	      flocz.push_back(loc.Z());
+	      
+	      // **THIS NEEDS TO BE CHECKED **
+	      // There should be only one entry for the trajectory index the way the code is set up to run now 
+	      // (Only looking at the primary)
+	      size_t trajIdx = hitToMcPartToIdxMap[hit].front().second;
+	      
+	      minTrajIdx = std::min(minTrajIdx,trajIdx);
+	      maxTrajIdx = std::max(maxTrajIdx,trajIdx);
             }
           
-            //std::cout << "   # MCParticle trajectory points: " << mcParticle->NumberTrajectoryPoints() << ", max: " << maxTrajIdx << ", min: " << minTrajIdx << std::endl;
+	  //  std::cout << "   # MCParticle trajectory points: " << mcParticle->NumberTrajectoryPoints() << ", max: " << maxTrajIdx << ", min: " << minTrajIdx << std::endl;
 
-            // Fill MC info for trajectory point limits
-            TVector3 minPointDir(mcParticle->Px(minTrajIdx),mcParticle->Py(minTrajIdx),mcParticle->Pz(minTrajIdx));
-            TVector3 maxPointDir(mcParticle->Px(maxTrajIdx),mcParticle->Py(maxTrajIdx),mcParticle->Pz(maxTrajIdx));
+	  if (mcParticle->Px(maxTrajIdx) == 0 && mcParticle->Py(maxTrajIdx) == 0 && mcParticle->Pz(maxTrajIdx) == 0) maxTrajIdx -= 1;	  
+	  //if (mcParticle->Px(minTrajIdx) == 0 && mcParticle->Py(minTrajIdx) == 0 && mcParticle->Pz(minTrajIdx) == 0){minTrajIdx = minTrajIdx - 1;}	  
+	  
+	  // Fill MC info for trajectory point limits
+	 
+	  TVector3 minPointDir(mcParticle->Px(minTrajIdx),mcParticle->Py(minTrajIdx),mcParticle->Pz(minTrajIdx));
+	  TVector3 maxPointDir(mcParticle->Px(maxTrajIdx),mcParticle->Py(maxTrajIdx),mcParticle->Pz(maxTrajIdx));
+	  
+	  // Px,Py,Pz are the momentum of the track, "SetMag(1.)" is meant to normalize so you get a direction vector.
+	  // if one of the two trajectory points somehow has zero momentum, avoid those cases.
+	  if (!(maxPointDir.Mag() > 0.))  {maxTrajIdx -= 1; maxPointDir=TVector3(mcParticle->Px(maxTrajIdx),mcParticle->Py(maxTrajIdx),mcParticle->Pz(maxTrajIdx));}
+	  if (!(minPointDir.Mag() > 0.))  {minTrajIdx -= 1; minPointDir=TVector3(mcParticle->Px(minTrajIdx),mcParticle->Py(minTrajIdx),mcParticle->Pz(minTrajIdx));}
+	  //	  if (!(maxPointDir.Mag() > 0.)) maxTrajIdx -= 1;
 
-            if (!(maxPointDir.Mag() > 0.))
+	  //std:: cout << " minx: " << minPointDir.X() <<", miny: " << minPointDir.Y() <<", minz: " << minPointDir.Z() <<", minMag: " << minPointDir.Mag() 
+	  //	     << ", maxx: " << maxPointDir.X() <<", maxy: " << maxPointDir.Y() <<", maxz: " << maxPointDir.Z() <<", maxMag: " << maxPointDir.Mag() << std::endl;	  
+
+
+	  minPointDir.SetMag(1.);
+	  maxPointDir.SetMag(1.);
+
+	  fmctstartx.push_back(mcParticle->Vx(minTrajIdx));
+	  fmctstarty.push_back(mcParticle->Vy(minTrajIdx));
+	  fmctstartz.push_back(mcParticle->Vz(minTrajIdx));
+          
+	  fmctendx.push_back(mcParticle->Vx(maxTrajIdx));
+	  fmctendy.push_back(mcParticle->Vy(maxTrajIdx));
+	  fmctendz.push_back(mcParticle->Vz(maxTrajIdx));
+          
+	  fmctstartdirx.push_back(minPointDir[0]);
+	  fmctstartdiry.push_back(minPointDir[1]);
+	  fmctstartdirz.push_back(minPointDir[2]);
+          
+	  fmctenddirx.push_back(maxPointDir[0]);
+	  fmctenddiry.push_back(maxPointDir[1]);
+	  fmctenddirz.push_back(maxPointDir[2]);
+	  
+	  fmctThetaXZ.push_back( std::atan2(minPointDir.X(), minPointDir.Z()) );
+	  fmctThetaYZ.push_back( std::atan2(minPointDir.Y(), minPointDir.Z()) );
+          
+	  fmctTheta.  push_back( minPointDir.Theta() );
+	  fmctPhi.    push_back( minPointDir.Phi()   );
+
+	  //fmcstartx.push_back(mcParticle->Vx());
+	  //double earliest_time = 1e15;
+	  // TVector point;
+	  //std::cout << "Before: \t" <<partStartPos[0] <<"\t"<< partStartPos[1] <<"\t"<<  partStartPos[2] << std::endl;
+	  std::vector<double> x, y, z, t;
+	  std::vector<double> px, py, pz, e;
+	  TLorentzVector dir_start;
+	  //      std::vector<float> endx, endy, endz, endt;
+	  //int last = (int)trackIDToMCPartItr->second->NumberTrajectoryPoints() -1;
+	  //std::vector<double> vtime;
+	  for (unsigned int i=0; i<mcParticle->NumberTrajectoryPoints(); i++) 
             {
-                maxTrajIdx -= 1;
-                maxPointDir = TVector3(mcParticle->Px(maxTrajIdx),mcParticle->Py(maxTrajIdx),mcParticle->Pz(maxTrajIdx));
-            }
+	      const TLorentzVector& pos = mcParticle->Position(i); // 4-position in World coordinates
+	      const TLorentzVector& mom = mcParticle->Momentum(i); // 4-position in World coordinates
+	      //point(pos.X(),pos.Y(),pos.Z()
+	      //const double point[3] = {pos.X(),pos.Y(),pos.Z()};
 
-            minPointDir.SetMag(1.);
-            maxPointDir.SetMag(1.);
+	      //std::cout << "Mc Part--- Before: \t" << pos.X() <<"\t"<< pos.Y() <<"\t"<< pos.Z() << std::endl;      
+	      // if (mcParticle->Vx() < -894.951 && mcParticle->Vx() > 894.951) std::cout <<"---------------->>>>>>>>>>>>>>  "  << mcParticle->Vx() << std::endl;
 
-            fmctstartx.push_back(mcParticle->Vx(minTrajIdx));
-            fmctstarty.push_back(mcParticle->Vy(minTrajIdx));
-            fmctstartz.push_back(mcParticle->Vz(minTrajIdx));
-            
-            fmctendx.push_back(mcParticle->Vx(maxTrajIdx));
-            fmctendy.push_back(mcParticle->Vy(maxTrajIdx));
-            fmctendz.push_back(mcParticle->Vz(maxTrajIdx));
-            
-            fmctstartdirx.push_back(minPointDir[0]);
-            fmctstartdiry.push_back(minPointDir[1]);
-            fmctstartdirz.push_back(minPointDir[2]);
-            
-            fmctenddirx.push_back(maxPointDir[0]);
-            fmctenddiry.push_back(maxPointDir[1]);
-            fmctenddirz.push_back(maxPointDir[2]);
+	      geo::Point_t trackPoint(pos.X(),pos.Y(),pos.Z());
+	      
+	      const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(trackPoint);
+	      
+	      if (!tpcGeo) continue;
+	      if (tpcGeo->ID() != C0id) continue; // point not in cryostat 0
+	      if (!tpcGeo->ActiveBoundingBox().ContainsPosition(trackPoint)) continue; // out of active volume
 
-            fmctThetaXZ.push_back( std::atan2(minPointDir.X(), minPointDir.Z()) );
-            fmctThetaYZ.push_back( std::atan2(minPointDir.Y(), minPointDir.Z()) );
-            
-            fmctTheta.  push_back( minPointDir.Theta() );
-            fmctPhi.    push_back( minPointDir.Phi()   );
+	      //  std::cout << "McPart--- After: " << tpcGeo->ID() << " - " << pos.X() <<"\t"<< pos.Y() <<"\t"<< pos.Z() << std::endl;    
+	      //std::cout << "Mc Part--- After: \t" << pos.X() <<"\t"<< pos.Y() <<"\t"<< pos.Z() << std::endl;      
 
-            //double earliest_time = 1e15;
-            // TVector point;
-            //std::cout << "Before: \t" <<partStartPos[0] <<"\t"<< partStartPos[1] <<"\t"<<  partStartPos[2] << std::endl;
-            std::vector<double> x, y, z, t;
-            std::vector<double> px, py, pz, e;
-            TLorentzVector dir_start;
-              //      std::vector<float> endx, endy, endz, endt;
-              //int last = (int)trackIDToMCPartItr->second->NumberTrajectoryPoints() -1;
-              //std::vector<double> vtime;
-            for (unsigned int i=0; i<mcParticle->NumberTrajectoryPoints(); i++) 
-            {
-                const TLorentzVector& pos = mcParticle->Position(i); // 4-position in World coordinates
-                const TLorentzVector& mom = mcParticle->Momentum(i); // 4-position in World coordinates
-                //point(pos.X(),pos.Y(),pos.Z()
-                const double point[3] = {pos.X(),pos.Y(),pos.Z()};
-        
-                geo::Point_t trackPoint(pos.X(),pos.Y(),pos.Z());
-        
-                const geo::TPCGeo* tpcGeo = fGeometry->PositionToTPCptr(trackPoint);
-        
-                if (!tpcGeo) continue;
-        
-                x.push_back(point[0]);
-                y.push_back(point[1]);
-                z.push_back(point[2]);
-                t.push_back(pos.T());
-                
-                px.push_back(mom.X());
-                py.push_back(mom.Y());
-                pz.push_back(mom.Z());
-                e.push_back(mom.T());
-         
+	      // x.push_back(mcParticle->Vx());
+	      x.push_back(pos.X());
+	      y.push_back(pos.Y());
+	      z.push_back(pos.Z());
+	      t.push_back(pos.T());
+              
+	      px.push_back(mom.X());
+	      py.push_back(mom.Y());
+	      pz.push_back(mom.Z());
+	      e.push_back(mom.T());
+	      
             } // no. of trajectory loop
               //      for (unsigned int i =0; i< x.size(); i++){
               //std::cout << x[i] << std::endl;
               //}
-        
-            //std::cout << "   ==> filling overall MC arrays, size of x: " << x.size() << std::endl;
-        
-            // Make sure something got added
-            if (!x.empty())
-            {
-                fmcstartx.push_back(x.front());
-                fmcstarty.push_back(y.front());
-                fmcstartz.push_back(z.front());
-                
-                fmcendx.push_back(x.back());
-                fmcendy.push_back(y.back());
-                fmcendz.push_back(z.back());
-            
-                fmcstartdirx.push_back(px.front());
-                fmcstartdiry.push_back(py.front());
-                fmcstartdirz.push_back(pz.front());
-                
-                fmcenddirx.push_back(px.back());
-                fmcenddiry.push_back(py.back());
-                fmcenddirz.push_back(pz.back());
-                
-                dir_start.SetPxPyPzE(px.front(),py.front(),pz.front(),e.front());      
-                
-                fmcThetaXZ.push_back( std::atan2(px.front(), pz.front()) );
-                fmcThetaYZ.push_back( std::atan2(py.front(), pz.front()) );
-            
-                fmcTheta.  push_back( dir_start.Theta() );
-                fmcPhi.    push_back( dir_start.Phi()   );
-            }
-        } // Done with loop over MCParticles associted to this track
-    } 
+	  
+	  // std::cout << "   ==> filling overall MC arrays, size of x: " << x.size() << std::endl;
+	  //std::cout << "---- front -------- x: " << x.front() << ", y: " << y.front() << ",z: " << z.front() << std::endl;
+	  //std::cout << "---- back ---------- x: " << x.back() << ", y: " << y.back() << ",z: " << z.back() << std::endl;
 
-      //      std::cout << 
-      //      std::cout << x[0] << "\t" << y[0] << "\t" << z[0] << "\t" << 
-      //x[last] << "\t" << y[last] << "\t" << z[last] << std::endl;
+            // Make sure something got added
+	  if (!x.empty())
+            {
+	      fmcstartx.push_back(x.front());
+	      fmcstarty.push_back(y.front());
+	      fmcstartz.push_back(z.front());
+              
+	      fmcendx.push_back(x.back());
+	      fmcendy.push_back(y.back());
+	      fmcendz.push_back(z.back());
+	      
+	      fmcstartdirx.push_back(px.front());
+	      fmcstartdiry.push_back(py.front());
+	      fmcstartdirz.push_back(pz.front());
+              
+	      fmcenddirx.push_back(px.back());
+	      fmcenddiry.push_back(py.back());
+	      fmcenddirz.push_back(pz.back());
+              
+	      dir_start.SetPxPyPzE(px.front(),py.front(),pz.front(),e.front());      
+	      
+	      fmcThetaXZ.push_back( std::atan2(px.front(), pz.front()) );
+	      fmcThetaYZ.push_back( std::atan2(py.front(), pz.front()) );
+	      
+	      fmcTheta.  push_back( dir_start.Theta() );
+	      fmcPhi.    push_back( dir_start.Phi()   );
+            }
+
+	  x.clear(); y.clear(); z.clear(); t.clear();
+          px.clear(); py.clear(); pz.clear(); e.clear();
+        } // Done with loop over MCParticles associted to this track
+    }
+    
+    //    float diffex = std::min(std::abs((*recostartx)[0] - (*mcendx)[0]), std::abs((*recoendx)[0]-(*mcendx)[0]));
+    //float diffey = std::min(std::abs(frecostarty[0] - fmcendy[0]), std::abs(frecoendy[0]-fmcendy[0]));
+    // float diffez = std::min(std::abs((*recostartz)[0] - (*mcendz)[0]), std::abs((*recoendz)[0]-(*mcendz)[0]));
+    //if (diffey < 34 && diffey > 32)
+    //std::cout << diffey << std::endl;
+    /*
+    if (fNtracks_primary == 1){ 
+    if (!fmcstartx.empty()){
+      if (!frecostartx.empty()){
+	//	float diffx = std::min(std::abs(frecostartx[0] - fmcstartx[0]), std::abs(frecoendx[0]-fmcstartx[0]));
+    
+
+	float diffxer = std::abs(frecostartx[0] - fmcstartx[0]);
+	float diffyer = std::abs(frecostarty[0] - fmcstarty[0]);
+	float diffzer = std::abs(frecostartz[0] - fmcstartz[0]);
+
+	float diffxsr = std::abs(frecoendx[0] - fmcendx[0]);
+	float diffysr = std::abs(frecoendy[0] - fmcendy[0]);
+	float diffzsr = std::abs(frecoendz[0] - fmcendz[0]);
+
+	float diffdr = std::min(  std::sqrt(std::pow(diffxsr,2)+std::pow(diffysr,2)+std::pow(diffzsr,2)) , 
+				  std::sqrt(std::pow(diffxer,2)+std::pow(diffyer,2)+std::pow(diffzer,2))  );
+	if  (diffdr <= 1.04){
+	  if ( frecostartx[0] < -268.49 ||  frecostartx[0] > -171.94){
+	    std::cout <<"------> outside fiducial volume ------->mcstartx: " << fmcstartx[0] <<" ; recoendx: "
+		      << frecoendx[0] << "; mcendx: "<< fmcendx[0] <<", recostartx: "<< frecostartx[0]
+		      << ", (reco - true) startx: "<<  frecostartx[0] - fmcstartx[0] <<" ; mcstarty: " << fmcstarty[0] <<" ; recoendy: "
+                      << frecoendy[0] << "; mcendy: "<< fmcendy[0] <<", recostarty: "<< frecostarty[0]
+		      << ", (reco - true) starty: "<<  frecostarty[0] - fmcstarty[0] << " ; mcstartz: " << fmcstartz[0] <<" ; recoendz: "
+                      << frecoendz[0] << "; mcendz: "<< fmcendz[0] <<", recostartz: "<< frecostartz[0]
+                      << ", (reco - true) startz: "<<  frecostartz[0] - fmcstartz[0] << " ; checking minm: "<< diffdr << std::endl;
+	  // std::cout <<"-----------------------------> outside fiducial volume ........ mcstartx: " << (*mcstarty)[0] <<" ; recoendx: "
+	  //        << (*recoendy)[0] << "; mcendx: "<< (*mcendy)[0] <<", recostartx: "<< (*recostarty)[0]
+	  //        << ", (reco - true) startx: "<<  (*recostarty)[0] - (*mcstarty)[0] << "; checking minm: "<< diffdr << std::endl;
+	  //    std::cout <<"-----------------------------> outside fiducial volume ........ mcstartx: " << (*mcstartx)[0] <<" ; recoendx: "
+	  //  << (*recoendx)[0] << "; mcendx: "<< (*mcendx)[0] <<", recostartx: "<< (*recostartx)[0]
+	  //              << ", (reco - true) startx: "<<  (*recostartx)[0] - (*mcstartx)[0] << "; checking minm: "<< diffdr << std::endl;
+	  }
+	}
+
+	//    std::cout << "***************************************************************> everything work upto here before track loop" << std::endl;
+	//    if (!fmcstartx.empty()) //&& fmcendx[0] > 0)    
+	//      std::cout <<"........................ mcstartx: " << fmcstartx[0] <<" , mcgenerationvx: " << fmcendx[0] <<", recostartx: "<< frecoendx[0] << std::endl;
+	
+	//std::cout <<"mcstartx: " << fmcstartx[0] <<" ; recoendx: " << frecoendx[0] << "; mcendx: "<< fmcendx[0] <<", recostartx: "<< frecostartx[0] 
+	//	  << ", (reco - true) startx: "<<  frecostartx[0] - fmcstartx[0] << "; checking minm: "<< diffx << std::endl;
+	
+	//if ( frecostartx[0] < -268.49 || frecostartx[0] > -171.94){
+	//std::cout <<"-----------------------------> outside fiducial volume ........ mcstartx: " << fmcstartx[0] <<" ; recoendx: " 
+	//	    << frecoendx[0] << "; mcendx: "<< fmcendx[0] <<", recostartx: "<< frecostartx[0]
+	//	    << ", (reco - true) startx: "<<  frecostartx[0] - fmcstartx[0] << "; checking minm: "<< diffx << std::endl;
+	}
+	
+	}
+	}
+	}
+    */
+    //std::cout << x[0] << "\t" << y[0] << "\t" << z[0] << "\t" << 
+    //x[last] << "\t" << y[last] << "\t" << z[last] << std::endl;
+    
+    std::cout << "-- final quick loop to fill summary hists" << std::endl;
     
     for(size_t idx = 0; idx < fGeometry->Nplanes();idx++)
-    {
+      {
         if (nSimChannelHitVec[idx] > 10)
-        {
+	  {
             float hitEfficiency = float(nRecobHitVec[idx]) / float(nSimChannelHitVec[idx]);
-         
-            fNSimChannelHitsVec.push_back(std::min(nSimChannelHitVec[idx],1999));
-            fNRecobHitVec.push_back(std::min(nRecobHitVec[idx],1999));
+	    
+	    // fNSimChannelHitsVec.push_back(std::min(nSimChannelHitVec[idx],1999));
+            //fNRecobHitVec.push_back(std::min(nRecobHitVec[idx],1999));
+	    fNSimChannelHitsVec.push_back(nSimChannelHitVec[idx]);
+            fNRecobHitVec.push_back(nRecobHitVec[idx]);
             fNFakeHitVec.push_back(nFakeHitVec[idx]/(float)nSimulatedWiresVec[idx]);
             fHitEfficiencyVec.push_back(hitEfficiency);
-       }  
-    }
-
-
-  //  std::cout << "# wire:  \t "<< wireno << std::endl;
-  //MF_LOG_DEBUG("ThroughgoingmuonAnalyzer")
-  //<< "Event" << fEvent
-  //<< "Run: " << fRun 
-  //<< "SubRun"<< fSubRun;
-
-   fTree->Fill();  
-
-   return;
+	  }  
+      }
+    
+    
+    //  std::cout << "# wire:  \t "<< wireno << std::endl;
+    //MF_LOG_DEBUG("ThroughgoingmuonAnalyzer")
+    //<< "Event" << fEvent
+    //<< "Run: " << fRun 
+    //<< "SubRun"<< fSubRun;
+    
+    std::cout << "-- fill the tree" << std::endl;
+    
+    fTree->Fill();  
+    
+    std::cout << "-- done " << std::endl;
+    
+    return;
 }
-
 DEFINE_ART_MODULE(ThroughgoingmuonAnalyzer)
 } // end of namespace

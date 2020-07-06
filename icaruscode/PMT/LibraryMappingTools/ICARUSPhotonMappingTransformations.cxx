@@ -1,10 +1,10 @@
 /**
- * @file   icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx
+ * @file   icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.cxx
  * @brief  A photon mapping identity transformation: implementation.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   April 3, 2019
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
- * @see    `icaruscode/Light/LibraryMappingTools/ICARUSPhotonMappingTransformations.cc`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.h`
+ * @see    `icaruscode/PMT/LibraryMappingTools/ICARUSPhotonMappingTransformations.cc`
  * 
  */
 
@@ -14,6 +14,7 @@
 
 // LArSoft libraries
 #include "lardataalg/Utilities/StatCollector.h" // lar::util::MinMaxCollector<>
+#include "larcorealg/CoreUtils/enumerate.h"
 
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h" // MF_LOG_DEBUG()
@@ -21,6 +22,26 @@
 // C/C++ standard libraries
 #include <algorithm> // std::iota()
 #include <string> // std::to_string()
+#include <cassert>
+
+
+//------------------------------------------------------------------------------
+phot::ICARUSPhotonMappingTransformations::ICARUSPhotonMappingTransformations
+  (Config const& config)
+  : fDumpMapping(config.DumpMapping())
+  , fGeom(lar::providerFrom<geo::Geometry>())
+  , fNOpDetChannels(fGeom? fGeom->NOpDets(): 0)
+{
+  LibraryIndexToOpDetMap libraryIndices;
+  if (!config.CryostatChannelRemap(libraryIndices)) {
+    assert(fNOpDetChannels > 0U); // if no mapping is specified, we need to know
+    unsigned int nCryoChannels = fGeom->Cryostat(0U).NOpDet();
+    libraryIndices.resize(nCryoChannels);
+    std::iota(libraryIndices.begin(), libraryIndices.end(), 0U);
+  }
+  prepareMappings(libraryIndices);
+  
+} // phot::ICARUSPhotonMappingTransformations::ICARUSPhotonMappingTransformations()
 
 
 //------------------------------------------------------------------------------
@@ -70,7 +91,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
   geo::Length_t const C1startX = fGeom->Cryostat(1U).MinX();
   if (C0endX > C1startX) {
     throw std::runtime_error(
-      "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+      "phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping(): "
       "C:0 ends at x=" + std::to_string(C0endX)
       + ", C:1 starts at x=" + std::to_string(C1startX)
       + "... this algorithm does not understand this geometry."
@@ -90,7 +111,9 @@ void phot::ICARUSPhotonMappingTransformations::prepareGeometryMapping() {
 
   
 //------------------------------------------------------------------------------
-void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
+void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings
+  (LibraryIndexToOpDetMap const& libraryIndices)
+{
   
   /*
    * 2. library transformation
@@ -139,7 +162,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
     auto const& channelRange = opDetChannelRangeByCryostat[cid.Cryostat];
     if (!channelRange.has_data()) {
       throw std::runtime_error(
-        "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+        "phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings(): "
         + cid.toString() + " ends up with no optical channels??"
         );
     }
@@ -147,7 +170,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
     auto const nChannels = channelRange.max() + 1 - channelRange.min();
     if ((unsigned int) nChannels != cryo.NOpDet()) {
       throw std::runtime_error(
-        "phot::ICARUSPhotonMappingTransformations::prepareMappings(): "
+        "phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings(): "
         + cid.toString() + " expected to have "
         + std::to_string(cryo.NOpDet()) + " optical channels, we end up with "
         + std::to_string(nChannels) + " ("
@@ -165,7 +188,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
   
   // (2.3) fill the maps with the shift
   
-  // (2.3.1) stdstd::vector<LibraryIndexToOpDetMap> fLibraryIndexToOpDetMaps
+  // (2.3.1) std::vector<LibraryIndexToOpDetMap> fLibraryIndexToOpDetMaps
   //         mapping library index => optical detector ID
   //         indexed by cryostat number of the source
   // 
@@ -181,12 +204,19 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
     // the library is expected to have only 180 entries,
     // one per optical detector within `cryo`
     
-    auto const nFirst = fChannelShifts[cryo.ID().Cryostat];
     auto const nChannels = cryo.NOpDet();
+    if (libraryIndices.size() != nChannels) {
+      throw std::runtime_error(
+        "phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings(): "
+        "the internal mapping should cover " + std::to_string(nChannels)
+        + " channels but it covers " + std::to_string(libraryIndices.size())
+        + " instead."
+        );
+    }
     
-    LibraryIndexToOpDetMap libraryIndexToOpDetMap(nChannels);
-    std::iota
-      (libraryIndexToOpDetMap.begin(), libraryIndexToOpDetMap.end(), nFirst);
+    auto const nFirst = fChannelShifts[cryo.ID().Cryostat];
+    LibraryIndexToOpDetMap libraryIndexToOpDetMap { libraryIndices }; // copy
+    for (auto& c: libraryIndexToOpDetMap) c += nFirst;
     
     fLibraryIndexToOpDetMaps.push_back(std::move(libraryIndexToOpDetMap));
     
@@ -225,7 +255,9 @@ void phot::ICARUSPhotonMappingTransformations::prepareLibraryMappings() {
 
   
 //------------------------------------------------------------------------------
-void phot::ICARUSPhotonMappingTransformations::prepareMappings() {
+void phot::ICARUSPhotonMappingTransformations::prepareMappings
+  (LibraryIndexToOpDetMap const& libraryIndices)
+{
   
   /*
    * 1. geometry transformation:
@@ -248,7 +280,7 @@ void phot::ICARUSPhotonMappingTransformations::prepareMappings() {
   //
   // (2) library transformation
   //
-  prepareLibraryMappings();
+  prepareLibraryMappings(libraryIndices);
   
   // debug:
   if (fDumpMapping) dumpMapping();
@@ -314,13 +346,13 @@ void phot::ICARUSPhotonMappingTransformations::dumpMapping() const {
         << " entries):";
       ;
     pager = PageBreak;
-    for (std::size_t i = 0; i < libOpDetIDmap.size(); ++i) {
+    for (auto [ i, opDetID ]: util::enumerate(libOpDetIDmap)) {
       if (++pager >= PageBreak) {
         pager = 0;
         log << "\n    ";
       }
-      log << "  [" << i << "] => [" << channelIndex(libOpDetIDmap[i]) << "];";
-    }
+      log << "  [" << i << "] => [" << channelIndex(opDetID) << "];";
+    } // for
     
     // print detector to library mapping
     auto const& opDetLibMap = fOpDetToLibraryIndexMaps[c];

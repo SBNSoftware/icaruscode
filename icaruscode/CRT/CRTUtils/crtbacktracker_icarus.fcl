@@ -1,0 +1,20 @@
+BEGIN_PROLOG
+
+standard_crtbacktracker:
+
+{
+
+    CRTTrueHitLabel:  "crttruehit"
+
+    CRTDataLabel:     "crtdaq"
+
+    CRTSimHitLabel:   "crthit"
+
+    CRTTrackLabel:    "crttrack"
+
+    RollupUnsavedIds: true
+
+}
+
+END_PROLOG
+
