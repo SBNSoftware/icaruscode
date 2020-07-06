@@ -973,7 +973,7 @@ namespace icarus{
 			if(fFillAnaTuple)
 			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
 
-			std::cout << "Calling after filling attenuation … " << std::endl;
+			std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();
 			outputPtrVector->push_back(purity_info);
                         }
@@ -1048,7 +1048,6 @@ namespace icarus{
   } // produces
   
 } //end namespace
-
 
 namespace icarus{
 
