@@ -34,7 +34,7 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-larsoft                   v08_56_00
+larsoft                   v08_55_00_01
 icarusutil                v08_51_00
 icarus_signal_processing  v08_51_00
 icarus_data               v08_55_01
