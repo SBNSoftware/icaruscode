@@ -3,7 +3,7 @@
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
 parent icaruscode v08_56_00
-defaultqual e17
+defaultqual e19
 
 # These optional lines define where headers, libraries, and executables go and should
 # be used only if your product does not conform to the defaults.
@@ -51,7 +51,7 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier	larsoft		icarusutil   icarus_signal_processing   icarus_data  sbndaq_artdaq_core     genie_xsec              fftw  guideline_sl libwda notes
+qualifier	larsoft		icarusutil   icarus_signal_processing	icarus_data  sbndaq_artdaq_core     genie_xsec              fftw  guideline_sl libwda notes
 e19:debug	e19:debug	e19:debug          e19:debug               -nq-        e19:debug       G1810a0211a:k250:e1000   debug    -nq-           -nq-
 e19:prof    	e19:prof	e19:prof    	   e19:prof                -nq-        e19:prof	       G1810a0211a:k250:e1000   prof     -nq-           -nq-
 c7:debug    	c7:debug    	c7:debug    	   c7:debug                -nq-        c7:debug	       G1810a0211a:k250:e1000   debug    -nq-           -nq-
