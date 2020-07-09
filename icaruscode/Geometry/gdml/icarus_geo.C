@@ -3,21 +3,28 @@ typedef struct _drawopt {
   int         color;
 } drawopt;
 
-//void icarus_geo(TString volName="volCryostat"){
 void icarus_geo(TString volName="volWorld"){
 
 gSystem->Load("libGeom");
 gSystem->Load("libGdml");
 
-TGeoManager::Import("double.gdml");
+//TGeoManager::Import("icarus_complete_test_nowires_15jan2019.gdml"); //gdml da visualizzare
+TGeoManager::Import("icarus_complete_test_no_ovbd_9jul2020.gdml"); //gdml da visualizzare
+//TGeoManager::Import("icarus_complete_test_crt_03aug_nowires.gdml"); //gdml da visualizzare
+//TGeoManager::Import("icarus_complete_test_24sep2019_nowires.gdml"); //gdml da visualizzare
 
+//cambio colori per i volumi
 drawopt optIcarus[] = {
-   {"volWorld",     0},
+   {"volWorld",     kAzure},
    {"volDetEnclosure", kBlue},
    {"volCryostat", kOrange},
    {"volCathode", kRed},
-   {"volTPC",	kGreen},
- //  {"volPMT",	kAzure},
+   {"volTPC0",	kYellow},
+   {"volPMTPlane",	kRed},
+   {"volGaseousArgon",	kRed},
+   //{"volMech_Structure",  kGray},
+   {"volThermIns", kBlue},
+   {"volWarmVessel", kRed},
 //pmtbig elements   
 //   {"volPMTBig",	kCyan-10},
 //   {"vol_PMT_TPBCoating",	kMagenta+4},
@@ -29,17 +36,16 @@ drawopt optIcarus[] = {
 //fine pmt big elements
 //   {"volTPCWireUCommon", kAzure},
 //  {"volTPCWireVCommon", kPink},
-//   {"volTPCWireVert", kBlack},
-  // {"volTPCWireX", kAzure},
-   {"volSteelShell", kGray},
-   {"volTPCPlaneU", kMagenta},
-   {"volTPCPlaneV", kMagenta-4},
-   {"volTPCPlaneX", kMagenta-7},
+ //  {"volTPCWireYCommon", kBlack},
+ //  {"volTPCWireW", kAzure},
+//   {"volSteelShell", kGray},
+//   {"volTPCPlaneU", kMagenta},
+//   {"volTPCPlaneV", kMagenta-4},
+//   {"volTPCPlaneY", kMagenta-7},
 //  {"volTPCWireU1124", kRed},
 //  {"volTPCWireV1124", kBlue},
-//  {"volTPCWireVert", kOrange},
 {"volTPCActive",kGreen-6},
-  {0, 0}
+   {0, 0}
 };
 
 for (int i=0;; ++i) {
@@ -54,14 +60,16 @@ while (obj == next()) {
  obj->Print();
 }
 
-// gGeoManager->CheckOverlaps(0.01);
-// gGeoManager->PrintOverlaps();
-// gGeoManager->SetMaxVisNodes(70000);
+//Check Overlaps
+gGeoManager->CheckOverlaps(0.01);
+gGeoManager->PrintOverlaps();
+gGeoManager->SetMaxVisNodes(70000);
 
- gGeoManager->GetTopVolume()->Draw();
+gGeoManager->GetTopVolume()->Draw();
  //gGeoManager->FindVolumeFast(volName)->Draw();
 
- TFile *tf = new TFile("double.root", "RECREATE");
+//Save in a root file
+ TFile *tf = new TFile("icarus_geometry.root", "RECREATE");
  gGeoManager->Write();
  tf->Close();
 }
