@@ -1,0 +1,54 @@
+#include "multitpc_detsim_icarus.fcl"
+
+process_name: DetSim
+
+
+services:
+{
+@table::services
+@table::icarus_legacy_services_v08_50_00
+}
+
+
+services.Geometry: @local::icarus_single_induction_nooverburden_geometry
+services.ExpGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+
+
+physics.producers.daq0.SuppressNoSignal: false
+physics.producers.daq0.TPCVec:              [[0,0]]
+physics.producers.daq1.SuppressNoSignal: false
+physics.producers.daq2.SuppressNoSignal: false
+physics.producers.daq3.SuppressNoSignal: false
+physics.producers.daq1.TPCVec:              [[0,1]]
+physics.producers.daq2.TPCVec:              [[1,0]]
+physics.producers.daq3.TPCVec:              [[1,1]]
+
+physics.producers.daq0.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq1.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq2.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+physics.producers.daq3.NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
+
+physics.producers.daq0.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq0.NoiseGenToolVec[0].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq0.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq0.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq0.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq0.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq1.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq1.NoiseGenToolVec[0].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq1.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq1.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq1.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq1.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq2.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq2.NoiseGenToolVec[0].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq2.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq2.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq2.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq2.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq3.NoiseGenToolVec[0].Plane:             0
+physics.producers.daq3.NoiseGenToolVec[0].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq3.NoiseGenToolVec[1].Plane:             1
+physics.producers.daq3.NoiseGenToolVec[1].NoiseHistFileName: "FFTwe10.root"
+physics.producers.daq3.NoiseGenToolVec[2].Plane:             2
+physics.producers.daq3.NoiseGenToolVec[2].NoiseHistFileName: "FFTwe10.root"
