@@ -38,6 +38,7 @@
 #include <TH2F.h>
 #include <TTree.h>
 #include <TVector3.h>
+#include <TEfficiency.h>
 
 //local includes
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
@@ -94,20 +95,33 @@ class icarus::crt::CRTAutoVeto : public art::EDAnalyzer {
     CRTCommonUtils* crtutil;     //CRT related utilities 
     geo::GeometryCore const* fGeoService; //access geometry
 
+    TEfficiency* fVetoEffAV; //veto eff. vs. nu energy (vertex in AV)
+    TEfficiency* fVetoEffFV; //veto eff. vs. nu energy (vertex in FV)
+    TEfficiency* fVetoEffAV_tot;
+    TEfficiency* fVetoEffFV_tot;
+
     //tree
-    TTree* fTree; //pointer to analysis tree
-    int   fEvent; //art event number
-    int   fNumNu; //number of neutrinos in this event
-    int   fNuPDG; //neutrino PDG code
-    float fNuE;  //nu energy [GeV]
-    bool  fNuCC; //is the nu interaction CC?
-    bool  fNuAV; //was nu vertex in active volume?
-    bool  fNuFV; //was nu vertex in fiducial volume?
-    int                   fNumHit;  //number of CRTHits
-    vector<int>           fHitRegs; //region code of each hit
-    vector<vector<float>> fHitXYZT; //position/time of each hit vector<{x,y,z,t}>
-    vector<vector<int>>   fHitPDGs; //PDG code of all particles generating a CRTHit
-    vector<int>           fNHitPDGs; //number of particles contributing to CRT hit
+    TTree*                fTree;      //pointer to analysis tree
+    int                   fEvent;     //art event number
+    int                   fNumNu;     //number of neutrinos in this event
+    int                   fNuPDG;     //neutrino PDG code
+    float                 fNuE;       //nu energy [GeV]
+    bool                  fNuCC;      //is the nu interaction CC?
+    bool                  fNuAV;      //was nu vertex in active volume?
+    bool                  fNuFV;      //was nu vertex in fiducial volume?
+    vector<double>        fNuXYZT;    //nu vertex position
+    int                   fNuInt;     //nu interaction code
+    int                   fNuMode;    //nu interaction mode
+    double                fNuLepE;    //outgoing lepton energy
+    double                fNuTheta;   //angle of outgoing lepton w.r.t. beam axis
+    int                   fNHit;      //number of CRTHits
+    vector<int>           fHitRegs;   //region code of each hit
+    vector<vector<float>> fHitXYZT;   //position/time of each hit vector<{x,y,z,t}>
+    vector<vector<int>>   fHitPDGs;   //PDG code of all particles generating a CRTHit
+    vector<int>           fNHitPDGs;  //number of particles contributing to CRT hit
+    vector<int>           fHitMaxPDG; //PDG code of particle contrubuting most energy to CRTHit
+    vector<float>         fDist;      //distance between true vertex and CRTHit
+    vector<float>         fDelay;     //delay between true nu time and CRTHit time
 };//end class 
 
 
@@ -132,20 +146,35 @@ CRTAutoVeto::CRTAutoVeto(fhicl::ParameterSet const& p)
     // histograms and n-tuples for us. 
     art::ServiceHandle<art::TFileService> tfs;
 
+    Double_t bins[14] = {0.2,0.35,0.5,0.65,0.8,0.95,1.1,1.3,1.5,1.75,2.,3.,5.,10.};
+    fVetoEffAV = new TEfficiency("effAV","#nu Veto Efficiency (AV)",13,bins);
+    fVetoEffFV = new TEfficiency("effFV","#nu Veto Efficiency (FV)",13,bins);
+    fVetoEffAV_tot = new TEfficiency("effAVTot","#nu Veto Efficiency (AV)",1,0,2);
+    fVetoEffFV_tot = new TEfficiency("effFVTot","#nu Veto Efficiency (FV)",1,0,2);
+
     //Tree
     fTree  = tfs->make<TTree>("VetoTree", "auto-veto info");
-    fTree->Branch("event",   &fEvent,  "event/I");
-    fTree->Branch("numNu",   &fNumNu,  "numNu/I");
-    fTree->Branch("nuPDG",   &fNuPDG,  "nuPDG/I");
-    fTree->Branch("nuE",     &fNuE,    "nuE/F");
-    fTree->Branch("cc",      &fNuCC,   "cc/O");
-    fTree->Branch("av",      &fNuAV,   "av/O");
-    fTree->Branch("fv",      &fNuFV,   "fv/O");
-    fTree->Branch("numHit",  &fNumHit, "numHit/I");
-    fTree->Branch("hitReg",  &fHitRegs);
-    fTree->Branch("hitXYZT", &fHitXYZT);
-    fTree->Branch("hitPDG",  &fHitPDGs);
-    fTree->Branch("nHitPDG", &fNHitPDGs);
+    fTree->Branch("event",    &fEvent,  "event/I");
+    fTree->Branch("numNu",    &fNumNu,  "numNu/I");
+    fTree->Branch("nuPDG",    &fNuPDG,  "nuPDG/I");
+    fTree->Branch("nuE",      &fNuE,    "nuE/F");
+    fTree->Branch("cc",       &fNuCC,   "cc/O");
+    fTree->Branch("av",       &fNuAV,   "av/O");
+    fTree->Branch("fv",       &fNuFV,   "fv/O");
+    fTree->Branch("nuXYZT",   &fNuXYZT);
+    fTree->Branch("nuLepE",   &fNuLepE, "nuLepE/D");
+    fTree->Branch("nuTheta",  &fNuTheta,"nuTheta/D");
+    fTree->Branch("nuMode",   &fNuMode, "nuMode/I");
+    fTree->Branch("nuInt",    &fNuInt,  "nuInt/I");
+    fTree->Branch("nHit",     &fNHit,    "numHit/I");
+    fTree->Branch("hitReg",   &fHitRegs);
+    fTree->Branch("hitXYZT",  &fHitXYZT);
+    fTree->Branch("hitPDG",   &fHitPDGs);
+    fTree->Branch("nHitPDG",  &fNHitPDGs);
+    fTree->Branch("hitMaxPDG",&fHitMaxPDG);
+    fTree->Branch("dist",     &fDist);
+    fTree->Branch("delay",    &fDelay);
+
 }
 
 void CRTAutoVeto::analyze(art::Event const& ev)
@@ -164,7 +193,7 @@ void CRTAutoVeto::analyze(art::Event const& ev)
 
     fEvent = ev.id().event();  
     fNumNu = mctruths.size();
-    fNumHit = crthits.size();
+    fNHit = crthits.size();
   
     //loop over neutrinos
     for(auto const& mctruth : mctruths) {
@@ -173,12 +202,18 @@ void CRTAutoVeto::analyze(art::Event const& ev)
   
         fNuPDG = nu.Nu().PdgCode();
         fNuE   = nu.Nu().E();
-  
+        fNuMode = nu.Mode();
+        fNuInt = nu.InteractionType();
+        fNuLepE = nu.Lepton().E();
+        fNuTheta = nu.Theta();
+ 
         fNuCC = false;
         if(nu.CCNC()==0)
             fNuCC = true;
-  
-        const TVector3 point = mctruth.GetNeutrino().Nu().Position(0).Vect();
+ 
+        const TLorentzVector nuxyzt = mctruth.GetNeutrino().Nu().Position(0); 
+        const TVector3 point = nuxyzt.Vect();
+        fNuXYZT = {nuxyzt.X(), nuxyzt.Y(), nuxyzt.Z(), nuxyzt.T()};
         fNuAV = IsAV(point);
         fNuFV = false;
         if(fNuAV)
@@ -197,12 +232,15 @@ void CRTAutoVeto::analyze(art::Event const& ev)
     fHitXYZT.clear();
     fHitPDGs.clear();
     fNHitPDGs.clear();
+    fHitMaxPDG.clear();
+    fDist.clear();
+    fDelay.clear();
 
     //loop over CRTHits
     for(auto const& hit : crthits) {
-  
+       std::cout << "found hit in region, " << hit.tagger << std::endl; 
        fHitRegs.push_back(crtutil->AuxDetRegionNameToNum(hit.tagger)); 
-       fHitXYZT.push_back({hit.x_pos,hit.y_pos,hit.z_pos,(float)hit.ts0_ns});
+       fHitXYZT.push_back({hit.x_pos,hit.y_pos,hit.z_pos,(float)(hit.ts0_ns-1.6e6)});
        fHitPDGs.push_back({});
  
        int npdg=0;
@@ -212,11 +250,34 @@ void CRTAutoVeto::analyze(art::Event const& ev)
            fHitPDGs.back().push_back(particleMap[id]->PdgCode());
            npdg++;
        }
+       
        fNHitPDGs.push_back(npdg);
+       int maxid = bt->TrueIdFromTotalEnergy(ev,hit);
+       if(maxid<0 || particleMap.find(maxid)==particleMap.end())
+           fHitMaxPDG.push_back(INT_MAX);
+       else
+           fHitMaxPDG.push_back(particleMap[maxid]->PdgCode());
 
-    }
+       float dist=0.;
+       for(int i=0; i<3; i++) dist+=pow(fHitXYZT.back()[i]-fNuXYZT[i],2);
+       fDist.push_back(sqrt(dist));
+       fDelay.push_back(fHitXYZT.back()[3]-fNuXYZT[3]);
+    }//for CRTHits
 
     fTree->Fill();
+
+    //fill efficiency plots
+    if(fNuCC && fNuAV && fNumNu>0){
+        bool veto = false;
+        if(fNHit>0)
+            veto = true;
+        fVetoEffAV->Fill(veto,fNuE);
+        fVetoEffAV_tot->Fill(veto,1);
+        if(fNuFV){
+            fVetoEffFV->Fill(veto,fNuE);
+            fVetoEffFV_tot->Fill(veto,1);
+        }
+    }
 
 }//analyze
 
@@ -248,22 +309,22 @@ bool CRTAutoVeto::IsFV(TVector3 const& point) {
     geo::TPCGeo const& tpc11 = cryo1.TPC(1);
 
     if(tpc00.ContainsPosition(point)
-        && tpc00.InFiducialX(point.X(),fFidXOut,fFidXIn)
+        && tpc00.InFiducialX(point.X(),fFidXOut,0.)
         && tpc00.InFiducialY(point.Y(),fFidYBot,fFidYTop)
         && tpc00.InFiducialZ(point.Z(),fFidZUp,fFidZDown) )
         return true;
     if(tpc01.ContainsPosition(point)
-        && tpc01.InFiducialX(point.X(),fFidXOut,fFidXIn)
+        && tpc01.InFiducialX(point.X(),0.,fFidXIn)
         && tpc01.InFiducialY(point.Y(),fFidYBot,fFidYTop)
         && tpc01.InFiducialZ(point.Z(),fFidZUp,fFidZDown) )
         return true;
     if(tpc10.ContainsPosition(point)
-        && tpc10.InFiducialX(point.X(),fFidXOut,fFidXIn)
+        && tpc10.InFiducialX(point.X(),fFidXIn,0.)
         && tpc10.InFiducialY(point.Y(),fFidYBot,fFidYTop)
         && tpc10.InFiducialZ(point.Z(),fFidZUp,fFidZDown) )
         return true;
     if(tpc11.ContainsPosition(point)
-        && tpc11.InFiducialX(point.X(),fFidXIn,fFidXOut)
+        && tpc11.InFiducialX(point.X(),0.,fFidXOut)
         && tpc11.InFiducialY(point.Y(),fFidYBot,fFidYTop)
         && tpc11.InFiducialZ(point.Z(),fFidZUp,fFidZDown) )
         return true;
