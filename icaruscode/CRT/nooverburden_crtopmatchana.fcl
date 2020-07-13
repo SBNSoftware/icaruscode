@@ -10,11 +10,5 @@
 #include "CrtOpHitMatchAnalysis.fcl"
 
 # turn to overburden geometry:
-#include "use_overburden_geometry_icarus.fcl"
-
-#physics.analyzers.CRTAnalysis.OpDelay: 100. 
- physics.analyzers.CRTAnalysis.HitVelocityMax: 10000
- physics.analyzers.CRTAnalysis.HitVelocityMin: 0
- physics.analyzers.CRTAnalysis.FlashPeThresh: 0
- physics.analyzers.CRTAnalysis.HitPeThresh:   0
+#include "use_nooverburden_geometry_icarus.fcl"
 
