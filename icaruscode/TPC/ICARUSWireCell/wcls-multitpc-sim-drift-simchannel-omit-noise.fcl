@@ -25,7 +25,7 @@ physics :{
             plugins: ["WireCellPgraph", "WireCellGen","WireCellSio","WireCellRoot","WireCellLarsoft"]
 
             // needs to be found via your WIRECELL_PATH 
-            configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel.jsonnet"]
+            configs: ["pgrapher/experiment/icarus/wcls-multitpc-sim-drift-simchannel-omit-noise.jsonnet"]
 
 
             // Contract note: these exact "type:name" must be used to identify
@@ -61,7 +61,6 @@ physics :{
               # Electron drift speed, assumes a certain applied E-field [mm/us]
               # driftSpeed: 1.565
             }
-
          }
       }
    }

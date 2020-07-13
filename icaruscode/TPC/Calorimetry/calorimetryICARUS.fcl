@@ -49,8 +49,20 @@ standard_caloicarusdata:
 standard_caloicarusmc:
 {
  module_type:            "CalorimetryICARUS"
- TrackModuleLabel:       "track3d" #this must have track-spacepoint and track-hit associations
- SpacePointModuleLabel:  "spacepointfinder" #this must have spacepoint-hit associations
+ TrackModuleLabel:       "pandoraTrackGausCryo0" #this must have track-spacepoint and track-hit associations
+ SpacePointModuleLabel:  "pandoraGausCryo0" #this must have spacepoint-hit associations
+ T0ModuleLabel:          "mctrutht0"
+ UseArea:		             true
+ UseIntegral:            false
+ CorrectSCE:		         false
+ FlipTrack_dQdx:         false
+ CaloAlg:	               @local::standard_calorimetryalgmc
+}
+standard_caloicarusmcfit:
+{
+ module_type:            "CalorimetryICARUS"
+ TrackModuleLabel:       "pandoraTrackGausCryo0" #this must have track-spacepoint and track-hit associations
+ SpacePointModuleLabel:  "pandoraGausCryo0" #this must have spacepoint-hit associations
  T0ModuleLabel:          "mctrutht0"
  UseArea:		             true
  UseIntegral:            true

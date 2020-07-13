@@ -8,5 +8,6 @@ add_subdirectory(stage1)
 add_subdirectory(reco)
 add_subdirectory(services)
 add_subdirectory(utilities)
+add_subdirectory(calorimetry)
 
 install_fhicl()
