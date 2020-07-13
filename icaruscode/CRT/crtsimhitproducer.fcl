@@ -2,12 +2,12 @@ BEGIN_PROLOG
 
 standard_crtsimhitrecoalg:
 {
-    Verbose:              false  # dump runtime info
+    Verbose:              false   # dump runtime info
     QPed:                 60     # Pedestal offset [ADC]
     QSlope:               70     # Pedestal slope [ADC/photon]
     UseReadoutWindow:     false  # Only reconstruct hits within readout window
     PropDelay:            0.0523 # group velocity in WLS fiber [ns/cm]
-    PEThresh:             4.5    # PE threshold above which charge amplitudes used
+    PEThresh:             2.5    # PE threshold above which charge amplitudes used
     CoinWindow:           300    # time window for finding side CRT trigger coincidences [ns]
 }
 
