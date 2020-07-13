@@ -106,7 +106,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
     vector<size_t> unusedDataIndex;
     for(auto const& regIndices : sideRegionToIndices) {
 
-        std::cout << "searching for side CRT hits in region, " << regIndices.first << std::endl;
+        if(fVerbose) 
+            std::cout << "searching for side CRT hits in region, " << regIndices.first << std::endl;
         vector<size_t> indices = regIndices.second;
 
         for(size_t index_i=0; index_i < indices.size(); index_i++) {
@@ -114,16 +115,28 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             dataIds.clear();
             dataIds.push_back(indices[index_i]);
             vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
+
  
             //inner loop over data after data_i in time
             for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
 
-                //out of coinWindow
-                if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow) { 
+                if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
+                    mf::LogError("CRTHitRecoAlg::CreateCRTHits") <<
+                        "bad time ordering!" << '\n';
 
-                    //if(fVerbose)
-                    //    std::cout << "attempting to produce MINOS hit from " << coinData.size() 
-                    //          << " data products..." << std::endl;
+                if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
+                    coinData.push_back(crtList[indices[index_j]]);
+                    dataIds.push_back(indices[index_j]);
+                }
+
+                //out of coinWindow
+                if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow
+                   || index_j==indices.size()-1) 
+                { 
+
+                    if(fVerbose)
+                        std::cout << "attempting to produce MINOS hit from " << coinData.size() 
+                              << " data products..." << std::endl;
 
                     CRTHit hit = MakeSideHit(coinData);
 
@@ -132,8 +145,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                         nMissM++;
                     }
                     else {
-                        //if(fVerbose)
-                        //    std::cout << "MINOS hit produced" << std::endl;
+                        if(fVerbose)
+                            std::cout << "MINOS hit produced" << std::endl;
 
                         returnHits.push_back(std::make_pair(hit,dataIds));
 
@@ -142,15 +155,14 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                         else 
                             regCounts[regIndices.first]++;
 
-                        index_i = index_j-1;
                         nHitM++;
                     }
-                       
+                    index_i = index_j-1;
+                    if(index_j==indices.size()-1)
+                        index_i++;
+                    
                     break;
                 }//if jth data out of coinc window
-  
-                coinData.push_back(crtList[indices[index_j]]);
-                dataIds.push_back(indices[index_j]);
 
             }//inner loop over data
         }// outer loop over data
