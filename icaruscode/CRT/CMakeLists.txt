@@ -20,6 +20,7 @@ art_make(
 	CrtOpHitMatchAnalysis_module.cc
         CRTTruthMatchAnalysis_module.cc
         CRTAutoVeto_module.cc
+        FlashResAna_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     LIB_LIBRARIES
@@ -245,11 +246,12 @@ simple_plugin( CrtOpHitMatchAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
                         icaruscode_CRTProducts
+                        icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
                         nusimdata_SimulationBase
 			lardataobj_RecoBase
-                        larsim_MCCheater_PhotonBackTrackerService_service
+                        #larsim_MCCheater_PhotonBackTrackerService_service
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -318,6 +320,30 @@ simple_plugin( CRTAutoVeto module
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}              
 )
+
+simple_plugin( FlashResAna module
+                        larcore_Geometry_Geometry_service
+                        larcorealg_Geometry
+                        nusimdata_SimulationBase
+                        lardataobj_RecoBase
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        art_Persistency_Common
+                        art_Persistency_Provenance
+                        art_Utilities
+                        canvas
+                        ${MF_MESSAGELOGGER}
+                        ${MF_UTILITIES}
+                        cetlib cetlib_except
+                        ${ROOT_BASIC_LIB_LIST}
+                        ${ROOT_GEOM}
+                        ${ROOT_XMLIO}
+                        ${ROOT_GDML}              
+)
+
 
 install_headers()
 install_fhicl()
