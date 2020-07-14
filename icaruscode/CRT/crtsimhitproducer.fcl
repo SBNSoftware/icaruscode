@@ -13,7 +13,7 @@ standard_crtsimhitrecoalg:
 
 standard_crtsimhitproducer:
 {
-    module_type:          "CRTSimHitProducer"
+    module_type:          "icaruscode/CRT/CRTSimHitProducer"
     CrtModuleLabel:       "crtdaq"
     HitAlg:               @local::standard_crtsimhitrecoalg
 }
