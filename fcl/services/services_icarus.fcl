@@ -49,7 +49,7 @@
 #include "signalservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
-
+#include "sam_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -104,7 +104,7 @@ icarus_basic_services:
 
     RandomNumberGenerator:               {}
     NuRandomService:                     @local::per_event_NuRandomService
-    #FileCatalogMetadata:                @local::art_file_catalog_mc
+    FileCatalogMetadata:                @local::art_file_catalog_mc
 
                                          @table::icarus_geometry_services
 
@@ -135,5 +135,11 @@ icarus_wirecalibration_services: {
 
 ################################################################################
 
+icarus_prod_services: {
+                       @table::icarus_basic_services
+  FileCatalogMetadata: @local::art_file_catalog_mc
+} # icarus_prod_services
+
 END_PROLOG
+
 
