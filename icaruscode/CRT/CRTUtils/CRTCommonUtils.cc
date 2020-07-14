@@ -5,46 +5,44 @@
 
 using namespace icarus::crt;
 
+CRTCommonUtils::CRTCommonUtils() {
+    fGeoService  = lar::providerFrom<geo::Geometry>();
+    FillFebMap();
+    FillAuxDetMaps();
+}
+
 //given an AuxDetGeo object, returns name of the CRT subsystem to which it belongs
-char CRTCommonUtils::GetAuxDetType(geo::AuxDetGeo const& adgeo) {
-    string volName(adgeo.TotalVolume()->GetName());
-    if (volName.find("MINOS") != string::npos) return 'm';
-    if (volName.find("CERN")  != string::npos) return 'c';
-    if (volName.find("DC")    != string::npos) return 'd';
+char CRTCommonUtils::GetAuxDetType(size_t adid) {
+    if(fAuxDetIdToType.find(adid)==fAuxDetIdToType.end()) {
+        throw cet::exception("CRTCommonUtils::GetAuxDetType")
+          << "unknown AuxDetID passed to function";
+    }
+    return fAuxDetIdToType[adid];
+}
 
-    mf::LogError("CRT") << "AuxDetType not found!" << '\n';
-    return 'e';
-
+//------------------------------------------------------------------------------------
+int CRTCommonUtils::GetAuxDetTypeCode(size_t adid) {
+    char type = GetAuxDetType(adid);
+    switch(type){
+        case 'c': return 0;
+        case 'm': return 1;
+        case 'd': return 2;
+        default:  return -1;
+    }
 }
 
 //------------------------------------------------------------------------------------
 //given an AuxDetGeo object, returns name of the CRT region to which it belongs
-string CRTCommonUtils::GetAuxDetRegion(geo::AuxDetGeo const& adgeo) {
-    char type = GetAuxDetType(adgeo);
-    string base = "volAuxDet_", region="";
-    switch ( type ) {
-        case 'c' : base+= "CERN"; break;
-        case 'd' : base+= "DC"; break;
-        case 'm' : base+= "MINOS"; break;
+string CRTCommonUtils::GetAuxDetRegion(size_t adid) {
+    if(fAuxDetIdToRegion.find(adid)==fAuxDetIdToRegion.end()) {
+        throw cet::exception("CRTCommonUtils::GetAuxDetRegion")
+          << "unknown AuxDetID passed to function";
     }
-    base+="_module_###_";
-    string volName(adgeo.TotalVolume()->GetName());
-  
-    //module name has 2 possible formats
-    //  volAuxDet_<subsystem>_module_###_<region>
-    //  volAuxDet_<subsystem>_module_###_cut###_<region>
-  
-    region = volName.substr(base.length(),volName.length());
-    if( region.find("_")==string::npos)
-        return region;
-  
-    else
-        return region.substr(region.find("_")+1,region.length());
-  
+    return fAuxDetIdToRegion[adid];  
 }
 
 //------------------------------------------------------------------------------
-int CRTCommonUtils::GetAuxDetRegionNum(string reg)
+int CRTCommonUtils::AuxDetRegionNameToNum(string reg)
 {
     if(reg == "Top")        return 30;
     if(reg == "RimWest")    return 31;
@@ -65,7 +63,7 @@ int CRTCommonUtils::GetAuxDetRegionNum(string reg)
 }//GetAuxDetRegionNum()
 
 //---------------------------------------------------------------------------------
-std::string CRTCommonUtils::GetRegionNameFromNum(int num) {
+string CRTCommonUtils::GetRegionNameFromNum(int num) {
     switch(num) {
         case 30 :
             return "Top";
@@ -99,6 +97,38 @@ std::string CRTCommonUtils::GetRegionNameFromNum(int num) {
 
     return "Region not found!";
 }
+
+//-------------------------------------------------------------------------------------------
+char CRTCommonUtils::GetRegTypeFromRegName(string name) {
+
+    //CERN modules
+    if(name=="Top"||name=="RimWest"||name=="RimEast"||name=="RimSouth"||name=="RimNorth")
+        return 'c';
+    //MINOS modules
+    if(name=="WestSouth"||name=="WestCenter"||name=="WestNorth"||
+       name=="EastSouth"||name=="EastCenter"||name=="EastNorth"||
+       name=="North"||name=="South")
+        return 'm';
+    //DC modules
+    if(name=="Bottom")
+        return 'd';
+
+    //error
+    throw cet::exception("CRTCommonUtils::GetRegTypeFromRegName")
+          << "passed region name not recognized!" << '\n';
+}
+
+//-------------------------------------------------------------------------------------------
+int CRTCommonUtils::GetTypeCodeFromRegion(string name) {
+    char type = GetRegTypeFromRegName(name);
+    switch(type){
+        case 'c': return 0;
+        case 'm': return 1;
+        case 'd': return 2;
+        default:  return -1;
+    }
+}
+
 //---------------------------------------------------------------------------------------------
 //for C- and D-modules, 1 mac5 address
 //three M-modules / FEB, full-length modules read out at both ends (2 FEBs)
@@ -106,75 +136,72 @@ std::string CRTCommonUtils::GetRegionNameFromNum(int num) {
 //  numbering convention is module from FEB i 
 //  return pair<FEB i,FEB i> (C-, D-, Cut M- module)
 //  return pair<FEB i,FEB j> (Full-length M-modules)
-pair<uint8_t,uint8_t> CRTCommonUtils::ADToMac(const map<int,vector<pair<uint8_t,int>>>& febMap, uint32_t adid) {
+pair<uint8_t,uint8_t> CRTCommonUtils::ADToMac(size_t adid) {
 
-    for(auto const& p : febMap) {
-        if((uint32_t)p.first!=adid)
-            continue;
-        if(p.second.size()==2)
-            return std::make_pair(p.second[0].first,p.second[1].first);
-        else
-            return std::make_pair(p.second[0].first,p.second[0].first);
+    if(fAuxDetIdToFeb.find(adid)==fAuxDetIdToFeb.end()) {
+        throw cet::exception("CRTCommonUtils::ADToMac")
+          << "unknown AuxDetID passed to function";
     }
-    return std::make_pair(UINT8_MAX,UINT8_MAX);
+    vector<pair<uint8_t,int>> febs = fAuxDetIdToFeb[adid];
+    if(febs.size()==2)
+        return std::make_pair(febs[0].first,febs[1].first);
+    else
+        return std::make_pair(febs[0].first,febs[0].first);
 }
 
+//---------------------------------------------------------------------------------
+int CRTCommonUtils::ADToChanGroup(size_t adid){
+    if(fAuxDetIdToChanGroup.find(adid)==fAuxDetIdToChanGroup.end()){
+        throw cet::exception("CRTCommonUtils::ADMacToChanGroup")
+          << "unknown AuxDetID passed to function";
+    }
+    return fAuxDetIdToChanGroup[adid];
+}
+
+//-------------------------------------------------------------------------------------
+int CRTCommonUtils::NFeb(size_t adid){
+    if(fAuxDetIdToFeb.find(adid)==fAuxDetIdToFeb.end()) {
+        throw cet::exception("CRTCommonUtils::NFeb")
+          << "unknown AuxDetID passed to function";
+    }
+    return(fAuxDetIdToFeb[adid]).size();
+}
 
 //--------------------------------------------------------------------------------------
-int CRTCommonUtils::MacToRegion(uint8_t mac){
-
-    if(mac>=107 && mac<=190) return 30; //top
-    if(mac>=191 && mac<=204) return 31; //rim west
-    if(mac>=205 && mac<=218) return 32; //rim east
-    if(mac>=219 && mac<=224) return 33; //rim south
-    if(mac>=225 && mac<=230) return 34; //rim north
-    if(            mac<=12 ) return 40; //west side, south stack
-    if(mac>=13  && mac<=24 ) return 41; //west side, center stack
-    if(mac>=25  && mac<=36 ) return 42; //west side, north stack
-    if(mac>=37  && mac<=48 ) return 43; //east side, south stack
-    if(mac>=49  && mac<=60 ) return 44; //east side, center stack
-    if(mac>=61  && mac<=72 ) return 45; //east side, north stack
-    if(mac>=73  && mac<=84 ) return 46; //south
-    if(mac>=85  && mac<=92 ) return 47; //north
-    if(mac>=93 && mac<=106) return 50; //bottom
-
-    std::cout << "ERROR in CRTHitRecoAlg::MacToRegion: unknown mac address " << mac << std::endl;
-    return 0;
+string CRTCommonUtils::MacToRegion(uint8_t mac){
+    if(fFebToAuxDetId.find(mac)==fFebToAuxDetId.end()) {
+        throw cet::exception("CRTCommonUtils::MacToRegion")
+          << "unknown mac passed to function";
+    }
+    return GetAuxDetRegion(fFebToAuxDetId[mac][0]);
 }
 
 //--------------------------------------------------------------------------------------
 char CRTCommonUtils::MacToType(uint8_t mac)
-{     
-   int reg = MacToRegion(mac);
-   if(reg>=30&&reg<40) return 'c';
-   if(reg>=40&&reg<50) return 'm';
-   if(reg==50) return 'd';
-   std::cout << "ERROR in CRTHitRecoAlg::MacToType: type not set!" << std::endl;
-   return 'e';
-}
-//--------------------------------------------------------------------------------------
-
-string CRTCommonUtils::MacToRegionName(uint8_t mac)
-{
-    int reg = MacToRegion(mac);
-    switch(reg) {
-        case 30 : return "top";
-        case 31 : return "rimWest";
-        case 32 : return "rimEast";
-        case 33 : return "rimSouth";
-        case 34 : return "rimNorth";
-        case 40 : return "westSouth";
-        case 41 : return "westCenter";
-        case 42 : return "westNorth";
-        case 43 : return "eastSouth";
-        case 44 : return "eastCenter";
-        case 45 : return "eastNorth";
-        case 46 : return "south";
-        case 47 : return "north";
-        case 50 : return "bottom";
+{ 
+    if(fFebToAuxDetId.find(mac)==fFebToAuxDetId.end()) {
+        throw cet::exception("CRTCommonUtils::MacToType")
+          << "unknown mac passed to function";
     }
-    return "";
+    return GetAuxDetType(fFebToAuxDetId[mac][0]);
 }
+
+//--------------------------------------------------------------------------------------
+int CRTCommonUtils::MacToTypeCode(uint8_t mac)
+{
+    if(fFebToAuxDetId.find(mac)==fFebToAuxDetId.end()) {
+        throw cet::exception("CRTCommonUtils::MacToType")
+          << "unknown mac passed to function";
+    }
+    char type = GetAuxDetType(fFebToAuxDetId[mac][0]);
+    switch(type){
+        case 'c': return 0;
+        case 'm': return 1;
+        case 'd': return 2;
+        default:  return -1;
+    }
+}
+
 
 //--------------------------------------------------------------------------------------
 
@@ -189,76 +216,21 @@ int CRTCommonUtils::ChannelToAuxDetSensitiveID(uint8_t mac, int chan) {
 
 //--------------------------------------------------------------------------------------
 
-int CRTCommonUtils::MacToAuxDetID(uint8_t mac, int chan)
+size_t CRTCommonUtils::MacToAuxDetID(uint8_t mac, int chan)
 {
-    auto febmap = GetFebMap();
     char type = MacToType(mac);
-    if (type == 'e') return INT_MAX;
-
     int pos=1;
     if(type=='m')
         pos = chan/10 + 1;
 
-    for(const auto&  p : febmap) {
-        if(p.second[0].first == mac && p.second[0].second==pos)
-            return (uint32_t)p.first;
-        if(p.second.size()==2)
-            if(p.second[1].first==mac && p.second[1].second==pos)
-                return (uint32_t)p.first;
-    }
+     for(auto const& adid : fFebToAuxDetId[mac]) {
+         if(fAuxDetIdToChanGroup[adid]==pos)
+             return adid;
+     }
 
-    std::cout << "ERROR in CRTHitRecoAlg::MacToAuxDetID: auxDetID not set!" << std::endl;
-    return INT_MAX;
-}
-
-//-------------------------------------------------------------------------------
-int CRTCommonUtils::ModToTypeCode(geo::AuxDetGeo const& adgeo) {
-   size_t nstrips = adgeo.NSensitiveVolume();
-   if (nstrips==16) return 0; //'c'
-   if (nstrips==20) return 1; //'m'
-   if (nstrips==64) return 2; //'d'
-   return INT_MAX;
-}
-
-//--------------------------------------------------------------------------------------
-//reads a file generated by CRT geometry generation script and
-// returns a map modID->vector<pair<FEB, FEB channel subset>,+1 dual readoutfor MINOS module>
-// channel subset = 1,2,or 3 (always =1 for c or d modules)
-map<int,vector<pair<uint8_t,int>>> CRTCommonUtils::GetFebMap() {
-
-    map<int,vector<pair<uint8_t,int>>> febMap;
-
-    string fullFileName;
-    cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("feb_map.txt",fullFileName);
-    std::ifstream fin;
-    fin.open(fullFileName,std::ios::in);
-
-    if(fin.good()) 
-        std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else
-        throw cet::exception("CRTDetSim::FillFebMap") 
-          << "Unable to find/open file 'feb_map.txt'" << std::endl;
-
-    vector<string> row;
-    string line, word;
-    while(getline(fin,line)) {
-        row.clear();
-        std::stringstream s(line);
-        int mod;
-        while (std::getline(s, word, ',')) {
-            row.push_back(word);
-        }
-        mod = std::stoi(row[0]);
-        febMap[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
-        if(row.size()>3)
-            febMap[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
-    }
-    std::cout << "filled febMap with " << febMap.size() << " entries" << std::endl;
-    fin.close();
-
-    return febMap;
-
+     throw cet::exception("CRTCommonUtils::MacToAuxDetID")
+             << "AuxDetID not found!";
+  
 }
 
 //-----------------------------------------------------------------------
@@ -286,16 +258,16 @@ double CRTCommonUtils::LengthIDE(sim::AuxDetIDE ide) {
 }
 
 //----------------------------------------------------------------------
-int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetSimChannel const& adsc){
+int CRTCommonUtils::GetLayerID(sim::AuxDetSimChannel const& adsc){
     int layer = -1;
 
-    auto const& adGeo = geoService->AuxDet(adsc.AuxDetID());
+    auto const& adGeo = fGeoService->AuxDet(adsc.AuxDetID());
     auto const& adsGeo = adGeo.SensitiveVolume(adsc.AuxDetSensitiveID());
-    int region = GetAuxDetRegionNum(GetAuxDetRegion(adGeo));
-    int type = ModToTypeCode(adGeo);
+    int region = AuxDetRegionNameToNum(GetAuxDetRegion(adsc.AuxDetID()));
+    char type = GetAuxDetType(adsc.AuxDetID());
 
     std::set<string> volNames = { adsGeo.TotalVolume()->GetName() };
-    vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+    vector<vector<TGeoNode const*> > paths = fGeoService->FindAllVolumePaths(volNames);
 
     std::string path = "";
     for (size_t inode=0; inode<paths.at(0).size(); inode++) {
@@ -304,7 +276,7 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetS
             path += "/";
         }
     }
-    TGeoManager* manager = geoService->ROOTGeoManager();
+    TGeoManager* manager = fGeoService->ROOTGeoManager();
     manager->cd(path.c_str());
     TGeoNode* nodeStrip = manager->GetCurrentNode();
     TGeoNode* nodeInner = manager->GetMother(1);
@@ -319,11 +291,11 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetS
     nodeInner->LocalToMaster(stripPosMother,stripPosModule);
 
     //if 'c' or 'd' type
-    if ( type == 0 || type == 2 )
+    if ( type == 'c' || type == 'd' )
         layer = (stripPosModule[1] > 0);
 
     // if 'm' type
-    if ( type == 1 ) {
+    if ( type == 'm' ) {
         // if east or west stacks (6 in total)
         if ( region >=40 && region <=45 ) {
             layer = ( modulePosMother[0]>0 );
@@ -347,16 +319,16 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, sim::AuxDetS
 }
 
 //----------------------------------------------------------------------
-int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, const art::Ptr<sim::AuxDetSimChannel> adsc){
+int CRTCommonUtils::GetLayerID(const art::Ptr<sim::AuxDetSimChannel> adsc){
     int layer = -1;
 
-    auto const& adGeo = geoService->AuxDet(adsc->AuxDetID());
+    auto const& adGeo = fGeoService->AuxDet(adsc->AuxDetID());
     auto const& adsGeo = adGeo.SensitiveVolume(adsc->AuxDetSensitiveID());
-    int region = GetAuxDetRegionNum(GetAuxDetRegion(adGeo));
-    int type = ModToTypeCode(adGeo);
+    int region = AuxDetRegionNameToNum(GetAuxDetRegion(adsc->AuxDetID()));
+    char type = GetAuxDetType(adsc->AuxDetID());
 
     std::set<string> volNames = { adsGeo.TotalVolume()->GetName() };
-    vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+    vector<vector<TGeoNode const*> > paths = fGeoService->FindAllVolumePaths(volNames);
 
     std::string path = "";
     for (size_t inode=0; inode<paths.at(0).size(); inode++) {
@@ -365,7 +337,7 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, const art::P
             path += "/";
         }
     }
-    TGeoManager* manager = geoService->ROOTGeoManager();
+    TGeoManager* manager = fGeoService->ROOTGeoManager();
     manager->cd(path.c_str());
     TGeoNode* nodeStrip = manager->GetCurrentNode();
     TGeoNode* nodeInner = manager->GetMother(1);
@@ -380,11 +352,11 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, const art::P
     nodeInner->LocalToMaster(stripPosMother,stripPosModule);
 
     //if 'c' or 'd' type
-    if ( type == 0 || type == 2 )
+    if ( type == 'c' || type == 'd' )
         layer = (stripPosModule[1] > 0);
 
     // if 'm' type
-    if ( type == 1 ) {
+    if ( type == 'm' ) {
         // if east or west stacks (6 in total)
         if ( region >=40 && region <=45 ) {
             layer = ( modulePosMother[0]>0 );
@@ -406,19 +378,20 @@ int CRTCommonUtils::GetLayerID(geo::GeometryCore const* geoService, const art::P
 
 }
 
-//----------------------------------------------------------------------------------------------------------
-int CRTCommonUtils::GetMINOSLayerID(geo::GeometryCore const* geoService, geo::AuxDetGeo const& adGeo) {
+//--------------------------------------------------------------------------------------------------
+int CRTCommonUtils::GetMINOSLayerID(size_t adid) {
     int layer = -1;
 
-    int region = GetAuxDetRegionNum(GetAuxDetRegion(adGeo));
-    int type = ModToTypeCode(adGeo);
-    if(type!=1) {
+    int region = AuxDetRegionNameToNum(GetAuxDetRegion(adid));
+    char type = GetAuxDetType(adid);
+    auto const& adGeo = fGeoService->AuxDet(adid);
+    if(type!='m') {
         mf::LogError("CRTCommonUtils") << "non-MINOS module provided to GetMINOSLayerID";
         return layer;
     }
 
     std::set<string> volNames = { adGeo.TotalVolume()->GetName() };
-    vector<vector<TGeoNode const*> > paths = geoService->FindAllVolumePaths(volNames);
+    vector<vector<TGeoNode const*> > paths = fGeoService->FindAllVolumePaths(volNames);
 
     std::string path = "";
     for (size_t inode=0; inode<paths.at(0).size(); inode++) {
@@ -427,12 +400,11 @@ int CRTCommonUtils::GetMINOSLayerID(geo::GeometryCore const* geoService, geo::Au
             path += "/";
         }
     }
-    TGeoManager* manager = geoService->ROOTGeoManager();
+    TGeoManager* manager = fGeoService->ROOTGeoManager();
     manager->cd(path.c_str());
-    TGeoNode* nodeModule = manager->GetCurrentNode();
+    TGeoNode* nodeModule = manager->GetCurrentNode(); //Mother(2);
     double origin[3] = {0, 0, 0};
     double modulePosMother[3]; //position in CRT region volume
-
     nodeModule->LocalToMaster(origin, modulePosMother);
 
     // if east or west stacks (6 in total)
@@ -452,18 +424,22 @@ int CRTCommonUtils::GetMINOSLayerID(geo::GeometryCore const* geoService, geo::Au
             layer = 0;
     }
 
+    if(layer==-1)
+        mf::LogError("CRTCommonUtils::GetMINOSLayerID")
+           << "layer ID not set!";
+
     return layer;
 
 
 }
 
-//-----------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 // given mac address and mac channel, return CRT strip center in module coordinates (w.r.t. module center)
-TVector3 CRTCommonUtils::ChanToLocalCoords(geo::GeometryCore const* geoService, uint8_t mac, int chan) {
+TVector3 CRTCommonUtils::ChanToLocalCoords(uint8_t mac, int chan) {
 
     TVector3 coords(0.,0.,0.);
-    int adid  = MacToAuxDetID(mac,chan); //CRT module ID
-    auto const& adGeo = geoService->AuxDet(adid); //CRT module
+    size_t adid  = MacToAuxDetID(mac,chan); //CRT module ID
+    auto const& adGeo = fGeoService->AuxDet(adid); //CRT module
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
@@ -477,13 +453,13 @@ TVector3 CRTCommonUtils::ChanToLocalCoords(geo::GeometryCore const* geoService, 
     return coords;
 }
 
-//-----------------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 // given mac address and mac channel, return CRT strip center in World coordinates (w.r.t. LAr active volume center)
-TVector3 CRTCommonUtils::ChanToWorldCoords(geo::GeometryCore const* geoService, uint8_t mac, int chan) {
+TVector3 CRTCommonUtils::ChanToWorldCoords(uint8_t mac, int chan) {
 
     TVector3 coords(0.,0.,0.);
     int adid  = MacToAuxDetID(mac,chan); //CRT module ID
-    auto const& adGeo = geoService->AuxDet(adid); //CRT module
+    auto const& adGeo = fGeoService->AuxDet(adid); //CRT module
     int adsid = ChannelToAuxDetSensitiveID(mac,chan); //CRT strip ID
     auto const& adsGeo = adGeo.SensitiveVolume(adsid); //CRT strip
 
@@ -494,6 +470,145 @@ TVector3 CRTCommonUtils::ChanToWorldCoords(geo::GeometryCore const* geoService, 
 
     coords.SetXYZ(stripPosWorld[0],stripPosWorld[1],stripPosWorld[2]);
     return coords;
+}
+
+//--------------------------------------------------------------------------------------
+//reads a file generated by CRT geometry generation script and
+// fills a map modID->vector<pair<FEB, FEB channel subset>,+1 dual readoutfor MINOS module>
+// channel subset = 1,2,or 3 (always =1 for c or d modules)
+void CRTCommonUtils::FillFebMap() {
+
+    string fullFileName;// = "/icarus/app/users/chilgenb/ana_icaruscode_v08_52_00/feb_map.txt";
+    cet::search_path searchPath("FW_SEARCH_PATH");
+    searchPath.find_file("feb_map.txt",fullFileName);
+    std::ifstream fin;
+    fin.open(fullFileName,std::ios::in);
+
+    if(fin.good())
+        std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
+    else
+        throw cet::exception("CRTDetSim::FillFebMap")
+          << "Unable to find/open file 'feb_map.txt'" << std::endl;
+
+    vector<string> row;
+    string line, word;
+    //each line has pattern 
+    //  auxDetID, mac5, chan pos, '\n' (CERN, DC, cut MINOS) OR
+    //  auxDetID, mac5, chan pos, mac5', chan pos', '\n' (full length MINOS)
+    while(getline(fin,line)) {
+        row.clear();
+        std::stringstream s(line);
+        while (std::getline(s, word, ',')) { //parse line
+            row.push_back(word);
+        }
+        int mod = (size_t)std::stoi(row[0]);       //auxDetID
+        uint8_t mac5 = (uint8_t)std::stoi(row[1]); //febID
+        int pos = std::stoi(row[2]);               //feb channel block
+        fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
+        fAuxDetIdToChanGroup[mod]=pos;
+        fFebToAuxDetId[mac5].push_back(mod);
+        std::cout << "mod: " << mod << ", mac: " << (int)mac5 << ", pos: " << pos;
+        if(row.size()>3) { //if dual ended readout MINOS module
+            mac5 = (uint8_t)std::stoi(row[3]);
+            fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
+            fFebToAuxDetId[mac5].push_back(mod);
+            if(pos!=std::stoi(row[4])) //feb channel block same on both febs
+              std::cout << "WARNING in CRTComUtil: 2 unique chan groups for ADId!" << std::endl;
+            std::cout << ", mac: " << (int)mac5;
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "filled febMap with " << fAuxDetIdToFeb.size() << " entries" << std::endl;
+    fin.close();
+}
+
+//------------------------------------------------------------------------
+void CRTCommonUtils::FillAuxDetMaps() {
+
+    for(auto const& ad : fAuxDetIdToFeb){
+        auto const& adGeo = fGeoService->AuxDet(ad.first);
+
+        //AuxDetType
+        switch(adGeo.NSensitiveVolume()) {
+            case 16:
+                fAuxDetIdToType[ad.first] = 'c';
+                break;
+            case 20:
+                fAuxDetIdToType[ad.first] = 'm';
+                break;
+            case 64:
+                fAuxDetIdToType[ad.first] = 'd';
+                break;
+        }
+
+        //AuxDet region
+        string name = adGeo.TotalVolume()->GetName();
+        fNameToAuxDetId[name] = ad.first;
+        fAuxDetIdToRegion[ad.first] = AuxDetNameToRegion(name);
+    }
+
+}
+
+//--------------------------------------------------------------------
+string CRTCommonUtils::AuxDetNameToRegion(string name) {
+
+    string base("volAuxDet_");
+    const char type = fAuxDetIdToType[fNameToAuxDetId[name]];
+
+    switch( type ){
+      case 'c' : base+= "CERN"; break;
+      case 'd' : base+= "DC";   break;
+      case 'm' : base+= "MINOS"; break;
+      default  : 
+          throw cet::exception("CRTCommonUtils::Constructor::AuxDetNameToRegion")
+                << "AuxDet type not set!";
+    }
+    base+="_module_###_";
+
+    //module name has 2 possible formats
+    //  volAuxDet_<subsystem>_module_###_<region>
+    //  volAuxDet_<subsystem>_module_###_cut###_<region>
+    string region(name.substr(base.length(),name.length()));
+    if( region.find("_")==string::npos) 
+        return region;
+    
+    else 
+        return region.substr(region.find("_")+1,region.length());
+}
+
+//--------------------------------------------------------------------------
+TVector3 CRTCommonUtils::WorldToModuleCoords(TVector3 point, size_t adid) {
+
+    char type = GetAuxDetType(adid);
+    auto const& adGeo = fGeoService->AuxDet(adid);
+    double world[3], local[3];
+    world[0] = point.X();
+    world[1] = point.Y();
+    world[2] = point.Z();
+
+    adGeo.WorldToLocal(world,local);
+    TVector3 localpoint(local[0],local[1],local[2]);
+
+    if(type=='c') {
+        localpoint.SetX( 8.*(localpoint.X()/adGeo.HalfWidth1()+1.));
+        localpoint.SetY(0);
+        localpoint.SetZ( 8.*(localpoint.Z()/adGeo.HalfWidth1()+1.));
+        return localpoint;
+    }
+    if(type=='m') { //needs fixing
+        localpoint.SetX(0);
+        localpoint.SetY(ADToChanGroup(adid)*10.*(localpoint.Y()/adGeo.HalfHeight()+1.));
+        localpoint.SetZ(localpoint.Z());
+        return localpoint;
+    }
+    if(type=='d') {
+        localpoint.SetX(32.5*(localpoint.X()/adGeo.HalfWidth1()+1.));
+        localpoint.SetY(0);
+        localpoint.SetZ(localpoint.Z());
+        return localpoint;
+    }
+
+    return localpoint;
 }
 
 #endif

@@ -357,7 +357,6 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
     const icarus_signal_processing::VectorFloat  locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
     const icarus_signal_processing::VectorInt&   channelVec = decoderTool->getChannelIDs();
-    
 
     saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(), channelVec, rawDigitCollection);
 
@@ -379,31 +378,34 @@ void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat
                                       const icarus_signal_processing::VectorInt&   channelVec,
                                       ConcurrentRawDigitCol&                       rawDigitCol) const
 {
-    cet::cpu_timer theClockSave;
-
-    theClockSave.start();
-
-    raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
-
-    mf::LogDebug("FilterNoiseICARUS") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
-
-    // Loop over the channels to recover the RawDigits after filtering
-    for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+    if (!dataArray.empty())
     {
-        const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
+        cet::cpu_timer theClockSave;
 
-        // Need to convert from float to short int
-        std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+        theClockSave.start();
 
-        ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-        newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
-    }//loop over channel indices
+        raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 
-    theClockSave.stop();
+        mf::LogDebug("FilterNoiseICARUS") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
 
-    double totalTime = theClockSave.accumulated_real_time();
+        // Loop over the channels to recover the RawDigits after filtering
+        for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+        {
+            const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
 
-    mf::LogDebug("FilterNoiseICARUS") << "    --> done with save, time: " << totalTime << std::endl;
+            // Need to convert from float to short int
+            std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+            ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
+            newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
+        }//loop over channel indices
+
+        theClockSave.stop();
+
+        double totalTime = theClockSave.accumulated_real_time();
+
+        mf::LogDebug("FilterNoiseICARUS") << "    --> done with save, time: " << totalTime << std::endl;
+    }
 
     return;
 }

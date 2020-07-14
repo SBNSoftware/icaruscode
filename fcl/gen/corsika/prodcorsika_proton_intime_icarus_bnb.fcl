@@ -1,0 +1,131 @@
+# File: prodcorsika_proton_intime_icarus.fcl
+# Purpose: generation of "intime-cosmic" monte-carlo -- events where a cosmic triggers the beam spill
+# Author: Gray Putnam (grayputnam@uchicago.edu)
+# Date: June 26, 2020
+#
+# Generates events with cosmic rays in-time with the beam spill.
+#
+# This generation is done in three stages: 
+#
+# First, corsika is run (in proton mode) in an unbiased way to populate 
+# the TPC with cosmic rays.
+#
+# Second, a filter (GenInTimeSorter) is run to ensure that at least 
+# one particle enters the TPC in a window around (minT, maxT). This
+# window  is chosen so that any particle which could possibly deposit
+# light on a photon detector in-time with the beam is passed. 
+#
+# Third, G4 is run on only those in-time particles and a filter 
+# (FilterSimPhotonTime) is run which removes events which have fewer
+# than MinTotalEnergy of energy of in-time photon depositions (in units of eV). 
+#
+# Comments:
+# -These filters by themselves do not constitute a trigger emulation and
+# a reco-based trigger emulator should be run downstream. One should
+# take care to ensure that the two filters do not remove events that
+# would be passed by the trigger simulation.
+#
+# -This file runs G4 only on the "intime" set of particles. One __must__
+# run G4 using the "intime_g4_icarus.fcl" configuration to ensure that
+# G4 is run consistently only on the "outtime" particles downstream.
+#
+# -In general, this config will filter out a large percentage of the
+# generated corsika events. One should test what percentage of events 
+# do not pass the filtering in order to tune how many to generate
+
+#include "corsika_icarus.fcl"
+#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "largeantmodules_icarus.fcl"
+
+process_name: CosmicsCorsikaCMCGenAndG4InTime
+
+services:
+{
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::icarus_gen_services
+  @table::icarus_g4_services 
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ producers:
+ {
+   generator: @local::icarus_corsika_p
+   larg4intime: @local::icarus_largeant
+   rns:       { module_type: "RandomNumberSaver" }
+ }
+
+ filters:
+ {
+    GenInTimeSorter: {
+      KeepOnlyMuons: false
+      MinKE: 1e-1 # some energy threshold to produce a PE
+      MaxT: 1900 # [ns] add a little buffer on the far end of the photon time window
+      MinT: -25202 # [ns]
+      SortParticles: true
+      module_type: "FilterGenInTime"
+    }
+
+   timefilter: { 
+      module_type: "FilterSimPhotonTime"
+      SimPhotonsCollectionLabel: larg4intime
+      # Currently in overlay generation, events are generated
+      # uniformly in a window [0, 1596ns] to approximate a beam spill.
+      # Add a little width here to up that width to 2000ns
+      TimeWindows: [ [-202, 1798] ] # ns
+      MinPhotonEnergy: -1
+      # 100 PE 
+      # MinTotalEnergy: 9.7e-4 
+      # 25 PE!! That's the ticket!
+      MinTotalEnergy: 0.0002425
+      # 500?
+      # MinTotalEnergy: 0.00485
+    }
+
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below 
+ simulate: [ rns, generator, GenInTimeSorter, larg4intime, timefilter ] 
+
+
+ #define the output stream, there could be more than one if using filters 
+ stream1:  [ out1 ]
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:	"prodcorsika_intime_proton_icarus_%tc.root"
+   dataTier:    "simulated"
+   compressionLevel: 1
+   fastCloning: false
+   SelectEvents: [simulate]
+ }
+}
+
+#physics.producers.generator.EnergyThreshold: 2.e-1
+physics.producers.generator.SubBoxLength: "subboxLength 60 "
+services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+physics.producers.larg4intime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+physics.producers.larg4intime.InputLabels: [ "GenInTimeSorter:intime" ]

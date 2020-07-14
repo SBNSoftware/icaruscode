@@ -54,6 +54,13 @@ physics:
       #CoincidenceWindow: 60.0
       #OpDelay: 73.19
       CRTBackTrack: @local::standard_crtbacktracker
+
+      PosMax:     1000.0     # maximum position bin in spatial resolution histos [cm]
+      PosBinning: 1.0        # spatial resolution histos binning [cm/bin]
+      TimeMax:    30.0       # maximum time bin in temporal resolution histos [ns]
+      Tbinning:   1.0        # temporal resolution histos binning [ns/bin]
+
+      Verbose:    false      # toggle output message verbosity
     }
   }
 

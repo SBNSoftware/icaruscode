@@ -71,5 +71,18 @@ standard_caloicarusmcfit:
  CaloAlg:	               @local::standard_calorimetryalgmc
 }
 
+standard_gnocchicaloicarus:
+{
+  module_type: "GnocchiCalorimetryICARUS"
+  TrackModuleLabel: "track3d"
+  T0ModuleLabel: ""
+  AssocHitModuleLabel: ""
+  ChargeMethod: 1
+  FieldDistortion: false
+  TrackIsFieldDistortionCorrected: false
+  Cryostat: 0
+  CaloAlg: @local::standard_calorimetryalgdata
+}
+
 
 END_PROLOG
