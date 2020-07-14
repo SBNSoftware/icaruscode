@@ -353,14 +353,16 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         if (boardItr == fReadoutBoardToChannelMap.end())
         {
             std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-            std::cout << "    - board: " << board << ", boardIDVec: " << std::hex << boardIDVec[board] << ", board map size: " << fReadoutBoardToChannelMap.size() << std::endl;
+            std::cout << "    - board: " << board << ", boardIDVec: " << std::hex << boardIDVec[board] << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
             continue;
         }
 
         const database::ChannelVec& channelVec = boardItr->second;
 
+        uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
+
         std::cout << "********************************************************************************" << std::endl;
-        std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
+        std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
         //size_t numElems = std::min(channelVec.size(),size_t(48));
         //for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
 //        size_t numElems = std::min(channelVec.size(),size_t(64));
