@@ -145,6 +145,12 @@ private:
 
     std::vector<char>                     fFilterModeVec;          //< Allowed modes for the filter
 
+    using FragmentIDPair = std::pair<unsigned int, unsigned int>;
+    using FragmentIDVec  = std::vector<FragmentIDPair>;
+    using FragmentIDMap  = std::map<unsigned int, unsigned int>;
+
+    FragmentIDMap                         fFragmentIDMap;
+
     // Allocate containers for noise processing
     icarus_signal_processing::VectorInt   fChannelIDVec;
     icarus_signal_processing::ArrayBool   fSelectVals;
@@ -200,16 +206,20 @@ TPCDecoderFilter1D::~TPCDecoderFilter1D()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 {
-    fFragment_id_offset    = pset.get<uint32_t>("fragment_id_offset"    );
-    fCoherentNoiseGrouping = pset.get<size_t  >("CoherentGrouping",   64);
-    fStructuringElement    = pset.get<size_t  >("StructuringElement", 20);
-    fMorphWindow           = pset.get<size_t  >("FilterWindow",       10);
-    fThreshold             = pset.get<float   >("Threshold",         7.5);
+    fFragment_id_offset     = pset.get<uint32_t>("fragment_id_offset"    );
+    fCoherentNoiseGrouping  = pset.get<size_t  >("CoherentGrouping",   64);
+    fStructuringElement     = pset.get<size_t  >("StructuringElement", 20);
+    fMorphWindow            = pset.get<size_t  >("FilterWindow",       10);
+    fThreshold              = pset.get<float   >("Threshold",         7.5);
 
-    fFilterModeVec         = {'d','e','g'};
+    FragmentIDVec tempIDVec = pset.get< FragmentIDVec >("FragmentIDVec", FragmentIDVec());
 
-    fGeometry              = art::ServiceHandle<geo::Geometry const>{}.get();
-    fDetector              = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
+
+    fFilterModeVec          = {'d','e','g'};
+
+    fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector               = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     cet::cpu_timer theClockFragmentIDs;
 
@@ -264,19 +274,24 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
 
+    std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
+
     if (fragItr == fFragmentToReadoutMap.end())
     {
-        std::map<unsigned int, unsigned int> crateMap = {{0,0x140C}, {1,0x140E}, {2,0x1410}, {6,0x1414}, {8,0x150E}, {9,0x1510}};
+        //std::map<unsigned int, unsigned int> crateMap = {{0,0x140C}, {1,0x140E}, {2,0x1410}, {6,0x1414}, {8,0x150E}, {9,0x1510}};
 
-        if (crateMap.find(fragmentID) == crateMap.end()) //throw std::runtime_error("You can't save yourself");
+        if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
         {
             theClockTotal.stop();
+            std::cout << " **** no match found ****" << std::endl;
             return;
         }
 
-        std::cout << "No match, make one up? Have fragmentID: " << fragmentID << ", make it: " << std::hex << crateMap[fragmentID] << std::dec << std::endl;
+        std::cout << std::endl;
 
-        fragmentID = crateMap[fragmentID];
+        std::cout << "No match, make one up? Have fragmentID: " << fragmentID << ", make it: " << std::hex << fFragmentIDMap[fragmentID] << std::dec << std::endl;
+
+        fragmentID = fFragmentIDMap[fragmentID];
 
         fragItr = fFragmentToReadoutMap.find(fragmentID);
 
@@ -287,6 +302,10 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     }
 
     database::ReadoutIDVec& boardIDVec = fragItr->second;
+
+    std::cout << "   - # boards: " << boardIDVec.size() << ", boards: ";
+    for(const auto& id : boardIDVec) std::cout << id << " ";
+    std::cout << std::endl;
 
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);
@@ -322,7 +341,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
-    for(size_t board = 0; board < nBoardsPerFragment; board++)
+    for(size_t board = 0; board < boardIDVec.size(); board++)
     {
         // Keep these for a while longer as we may want to do some checking soon
 //        size_t event_number = physCrateFragment.BoardEventNumber(i_b);
@@ -342,8 +361,17 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
         std::cout << "********************************************************************************" << std::endl;
         std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
-        size_t numElems = std::min(channelVec.size(),size_t(48));
-        for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
+        //size_t numElems = std::min(channelVec.size(),size_t(48));
+        //for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
+//        size_t numElems = std::min(channelVec.size(),size_t(64));
+//        for(size_t chanIdx = 0; chanIdx < numElems; chanIdx++) 
+//        {
+//            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
+//
+//            if (widVec.empty()) std::cout << channelVec[chanIdx]  << " ";
+//
+//            std::cout << channelVec[chanIdx] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << " ";
+//        }
         std::cout << std::endl;
 
         // This is where we would recover the base channel for the board from database/module
@@ -366,7 +394,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
             // Keep track of the channel
-            fChannelIDVec[channelOnBoard] = channelVec[chanIdx];
+            fChannelIDVec[channelOnBoard] = channelVec[nChannelsPerBoard - chanIdx - 1];
 
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
@@ -377,7 +405,13 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
                                                        fTruncRMSVals[channelOnBoard], 
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
+
+            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
+
+            if (widVec.empty()) std::cout << channelVec[chanIdx]  << "=" << fFullRMSVals[channelOnBoard] << " * ";
+            else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
         }
+        std::cout << std::endl;
     }
 
     theClockPedestal.stop();
