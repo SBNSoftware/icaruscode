@@ -153,7 +153,7 @@ $TPCActive_y    =     $CommonWireLength * $SinUAngle + 0.02; #316.0;
 #print("TPCActive_x: $TPCActive_x, TPCActive_y: $TPCActive_y, TPCActive_z: $TPCActive_z ");
 
     #Reset the active length and the common wire length
-$TPCActive_z    =     $CommonWireLength * $CosUAngle + (4640 - 1) * $UWire_zpitch;
+$TPCActive_z        =    $CommonWireLength * $CosUAngle + (4640 - 1) * $UWire_zpitch - 0.000000000002;
 $TPCActiveHalf_z    =    $TPCActive_z/2; 
 
 #print(" - change with wire pitch: $UWire_zpitch to $TPCActive_z \n");
@@ -226,13 +226,16 @@ $posCat_x      =      0;
 #$TPCinCryo_y        =      0.;    
 $TPCinCryo_y        =      -$GaseousAr_y/2;
 $TPCinCryo_z        =      0.; 
-$TPCinCryo_zneg     =      -$TPCHalf_z/2 + $UpstreamLArPadding/2 ;
-$TPCinCryo_zpos     =       $TPCHalf_z/2 - $UpstreamLArPadding/2 ;
+#$TPCinCryo_zneg     =      (-$TPCHalf_z/2 + $UpstreamLArPadding/2);
+#$TPCinCryo_zpos     =      ( $TPCHalf_z/2 - $UpstreamLArPadding/2);
+
+$TPCinCryo_zneg     =      (-$TPCHalf_z/2);
+$TPCinCryo_zpos     =      ( $TPCHalf_z/2);
 
 $posTPCActive0_x     = 0.570000000000007;
 #$posTPCActive1_x     = -0.570000000000007;
 $posTPCActive_y     = 0;
-$posTPCActive_z     = 0;
+$posTPCActive_z     = $UpstreamLArPadding/2;
 
 ##################################################################
 #am ##########  Steel Mechanical Structure Parameters ############
@@ -949,29 +952,47 @@ EOF
 # The corner wires for the U plane
 if ($wires_on==1) 
 {
-#CORNER 
-    $length = $CommonWireLength;
+#FAKE CORNER 
+    $length = $CommonWireLength + $DeltaLUCorner/2;
 
    for ($i = 0; $i < $NumberCornerExtUWires; ++$i)
     {
 	 $length -= $DeltaLUCorner;
 
-	print TPC <<EOF;
-
+print TPC <<EOF;
     <tube name="TPCWireU$i"
       rmax="$TPCWireRadius"
       z="$length"
       deltaphi="360"
       aunit="deg"
       lunit="cm"/>
-
 EOF
 
 #print(" $i $length \n");
 
-   } #ends CORNER
+   } #ends FAKE CORNER
 
-   print TPC <<EOF;
+#REAL CORNER 
+    $length = $CommonWireLength;
+
+   for ($i = 0; $i < $NumberCornerUWires; ++$i)
+    {
+	 $length -= $DeltaLUCorner;
+
+print TPC <<EOF;
+    <tube name="TPCWireCornerU$i"
+      rmax="$TPCWireRadius"
+      z="$length"
+      deltaphi="360"
+      aunit="deg"
+      lunit="cm"/>
+EOF
+
+#print(" $i $length \n");
+
+    } #ends REAL CORNER
+    
+print TPC <<EOF;
     <tube name="TPCWireUCommon"
       rmax="$TPCWireRadius"
       z="$CommonWireLength"
@@ -1002,8 +1023,8 @@ EOF
 # The corner wires for the V plane
 if ($wires_on==1) 
 {
-#CORNER
-   $length = $CommonWireLength;
+# FAKE CORNER
+   $length = $CommonWireLength + $DeltaLVCorner/2;
 
     for ($i = 0; $i < $NumberCornerExtVWires; ++$i)
    {
@@ -1021,7 +1042,29 @@ EOF
 
 #print(" $i $length \n");
 
-    } #ends CORNER
+    } #ends FAKE CORNER
+
+# REAL CORNER
+   $length = $CommonWireLength;
+
+    for ($i = 0; $i < $NumberCornerVWires; ++$i)
+   {
+
+	$length -= $DeltaLVCorner;
+
+   print TPC <<EOF;
+    <tube name="TPCWireCornerV$i"
+      rmax="$TPCWireRadius"
+      z="$length"
+      deltaphi="360"
+      aunit="deg"
+      lunit="cm"/>
+EOF
+
+#print(" $i $length \n");
+
+    } #ends REAL CORNER
+
 
    print TPC <<EOF;
     <tube name="TPCWireVCommon"
@@ -1067,7 +1110,7 @@ if ($wires_on==1)
     </volume>
 EOF
 
-  # Corner U wires logical volumes
+  # Fake Corner U wires logical volumes
   for ($i = 0; $i < $NumberCornerExtUWires; ++$i)
   {
   print TPC <<EOF;
@@ -1077,8 +1120,20 @@ EOF
     </volume>
 EOF
 
-  } 
+  }
+  
+  # Real Corner U wires logical volumes
+  for ($i = 0; $i < $NumberCornerUWires; ++$i)
+  {
+  print TPC <<EOF;
+    <volume name="volTPCWireCornerU$i">
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni" />
+      <solidref ref="TPCWireCornerU$i" />
+    </volume>
+EOF
 
+  }
+  
   # Common U wire logical volume, referenced many times
   print TPC <<EOF;
     <volume name="volTPCWireUCommon">
@@ -1087,7 +1142,7 @@ EOF
     </volume>
 EOF
 
-  # Corner V wires logical volumes
+  # Fake Corner V wires logical volumes
   for ($i = 0; $i < $NumberCornerExtVWires; ++$i)
   {
   print TPC <<EOF;
@@ -1098,7 +1153,18 @@ EOF
 EOF
 
   }
+  
+  # Real Corner V wires logical volumes
+  for ($i = 0; $i < $NumberCornerVWires; ++$i)
+  {
+  print TPC <<EOF;
+    <volume name="volTPCWireCornerV$i">
+      <materialref ref="STEEL_STAINLESS_Fe7Cr2Ni" />
+      <solidref ref="TPCWireCornerV$i" />
+    </volume>
+EOF
 
+  }
   # Common V wire logical volume, referenced many times
   print TPC <<EOF;
     <volume name="volTPCWireVCommon">
@@ -1197,13 +1263,12 @@ EOF
 #CORNERS
 
     $ypos1 = $TPCActive_y/2;
-    $zpos1 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosUAngle;
+    $zpos1 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosUAngle + $UWire_zpitch - $UWire_zpitch/2 - $UWire_zpitch/2;
 
-    $ypos2 = - $TPCActive_y/2;
+    $ypos2 = -$TPCActive_y/2;
     $zpos2 = -$TPCActiveHalf_z/2;
 
-   #Positioning of 480 real U corners wires.
-
+   #Positioning of 480 real U corner wires.
    for ($i = 0; $i < $NumberCornerUWires; ++$i)
     {
 	 $ypos1 += $UWire_ypitch  ;
@@ -1216,23 +1281,21 @@ EOF
 	
 print TPC <<EOF;
       <physvol>
-        <volumeref ref="volTPCWireU$i"/>
+        <volumeref ref="volTPCWireCornerU$i"/>
         <position name="posTPCWireU$i" unit="cm" x="0" y="$ypos " z="$zpos"/>
         <rotationref ref="rPlusUAngleAboutX"/>
       </physvol>
 EOF
     }
 
-    $ypos1 = $TPCActive_y/2;
-    $zpos1 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosUAngle  + $UWire_zpitch/2;
+    $ypos1 = $TPCActive_y/2 - $UWire_ypitch + $UWire_ypitch/2;
+    $zpos1 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosUAngle + $UWire_zpitch - $UWire_zpitch/2;
 
     $ypos2 = - $TPCActive_y/2;
-    $zpos2 = -$TPCActiveHalf_z/2 + $UWire_zpitch/2;
+    $zpos2 = -$TPCActiveHalf_z/2;
     
-    #Positioning of 527 fake U corners wires.
-
-    $NumberCornerExtUWires_1 = $NumberCornerExtUWires - 1;
-    for ($i = 0; $i < $NumberCornerExtUWires_1; ++$i)
+    #Positioning of 528 fake U corners wires.
+    for ($i = 0; $i < $NumberCornerExtUWires; ++$i)
     {
       $ypos1 += $UWire_ypitch;
       $zpos2 -= $UWire_zpitch;
@@ -1254,9 +1317,8 @@ EOF
 
 
 #Common Wires
-
-    #$zpos = -($NumberCommonUWires -1)*$UWire_zpitch/2;
-   $zpos = (-$TPCActiveHalf_z +  $CommonWireLength * $CosUAngle) / 2.;
+    
+   $zpos = (-$TPCActiveHalf_z +  $CommonWireLength * $CosUAngle + $UWire_zpitch)/2. - $UWire_zpitch/2;
    #print("common wires $zpos \n");
 
     for ($i = 0; $i < $NumberCommonUWires; ++$i)
@@ -1265,7 +1327,6 @@ EOF
 print TPC <<EOF;
       <physvol>
         <volumeref ref="volTPCWireUCommon"/>
-        #<position name="posTPCWireU$i" unit="cm" x="0" y="0 " z="$zpos"/>
         <position name="posTPCWireU@{[$i+$NumberCornerUWires]}" unit="cm" x="0" y="0 " z="$zpos"/>
         <rotationref ref="rPlusUAngleAboutX"/>
       </physvol>
@@ -1309,7 +1370,7 @@ EOF
     $zpos1 = -$TPCActiveHalf_z/2;
 
     $ypos2 = -$TPCActive_y/2;
-    $zpos2 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosVAngle;
+    $zpos2 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosVAngle + $VWire_zpitch - $VWire_zpitch/2 - $VWire_zpitch/2 ;
 
    #Positioning of 480 real V corners wires.
 
@@ -1326,23 +1387,21 @@ EOF
 
 print TPC <<EOF;
       <physvol>
-        <volumeref ref="volTPCWireV$i"/>
+        <volumeref ref="volTPCWireCornerV$i"/>
         <position name="posTPCWireV$i" unit="cm" x="0" y="$ypos " z="$zpos"/>
         <rotationref ref="rMinusVAngleAboutX"/>
       </physvol>
 EOF
     }
-
-    $ypos1 = $TPCActive_y/2;
-    $zpos1 = -$TPCActiveHalf_z/2 + $VWire_zpitch/2;
+    
+    $ypos1 = $TPCActive_y/2 + $VWire_ypitch - $VWire_ypitch/2;
+    $zpos1 = -$TPCActiveHalf_z/2 + $VWire_zpitch - $VWire_zpitch/2;
     
     $ypos2 = -$TPCActive_y/2;
-    $zpos2 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosVAngle + $VWire_zpitch/2;
+    $zpos2 = -$TPCActiveHalf_z/2 + $CommonWireLength * $CosVAngle;
 
-    #Positioning of 527 fake V corners wires.
-
-    $NumberCornerExtVWires_1 = $NumberCornerExtVWires - 1;
-    for ($i = 0; $i < $NumberCornerExtVWires_1; ++$i)
+    #Positioning of 528 fake V corners wires.
+    for ($i = 0; $i < $NumberCornerExtVWires; ++$i)
     {
        $ypos1 -= $VWire_ypitch;
        $zpos2 -= $VWire_zpitch;
@@ -1365,10 +1424,9 @@ EOF
 
     } #ends CORNERS
 
-#Common Wires
+   #Common Wires
 
-   #$zpos = -($NumberCommonVWires -1)*$VWire_zpitch/2;
-   $zpos = (-$TPCActiveHalf_z +  $CommonWireLength * $CosVAngle) / 2.;
+   $zpos = (-$TPCActiveHalf_z +  $CommonWireLength * $CosVAngle + $VWire_zpitch) / 2. - $VWire_zpitch/2;
 
     for ($i = 0; $i < $NumberCommonVWires; ++$i)
     {
@@ -1376,7 +1434,6 @@ EOF
 print TPC <<EOF;
       <physvol>
         <volumeref ref="volTPCWireVCommon"/>
-        #<position name="posTPCWireV$i" unit="cm" x="0" y="0 " z="$zpos"/>
         <position name="posTPCWireV@{[$i+$NumberCornerVWires]}" unit="cm" x="0" y="0 " z="$zpos"/>
         <rotationref ref="rMinusVAngleAboutX"/>
       </physvol>
@@ -1409,20 +1466,20 @@ print TPC <<EOF;
       <solidref ref="TPC" />
       <physvol>
        <volumeref ref="volTPCPlaneY" />
-       <position name="posTPCPlaneY" unit="cm" x="$VolY_x" y="0" z="0" />
+       <position name="posTPCPlaneY" unit="cm" x="$VolY_x" y="0" z="@{[$UpstreamLArPadding/2]}" />
      </physvol>
      <physvol>
        <volumeref ref="volTPCPlaneU" />
-       <position name="posTPCPlaneU" unit="cm" x="$VolU_x" y="0" z="0" />
+       <position name="posTPCPlaneU" unit="cm" x="$VolU_x" y="0" z="@{[$UpstreamLArPadding/2]}" />
      </physvol>
      <physvol>
        <volumeref ref="volTPCPlaneV" />
-       <position name="posTPCPlaneV" unit="cm" x="$VolV_x" y="0" z="0" />
+       <position name="posTPCPlaneV" unit="cm" x="$VolV_x" y="0" z="@{[$UpstreamLArPadding/2]}" />
      </physvol>
      <physvol>
-       <volumeref ref="volTPCActive"/>
-       <positionref ref="posActiveInTPC0"/>
-     </physvol>
+     <volumeref ref="volTPCActive"/>
+     <positionref ref="posActiveInTPC0"/>
+     </physvol>	
      <physvol> 
        <volumeref ref="volRaceTrackTVolume"/>
        <positionref ref="posRaceTrackTInTPC"/>
@@ -1462,7 +1519,7 @@ sub define_RaceTrack()
   $RaceTrack_d = 3.4;  # cm race track tube diameter
   $RaceTrack_TubeThick = 0.08; #cm race track tube thick
 #  $RaceTrack_lz = 1810.0; #cm length of race track structure
-  $RaceTrack_lz = 905.0; #cm length of race track structure (half to accommodate for split wire TPC)
+  $RaceTrack_lz = 905; #cm length of race track structure (half to accommodate for split wire TPC)
 #  $RaceTrack_ly = 320.0 - 2*$RT_epsilon;  #cm length of race track tubes
   $RaceTrack_ly = 323.6201 ;  #cm height of race track structure (modified to be external to TPCActive_y
   $RaceTrack_number = 29; #number of race tracks
@@ -1496,7 +1553,7 @@ sub gen_RaceTracks{
 
 # The standard XML prefix and starting the gdml
     print RACETRACK <<EOF;
-<?xml version='1.0'?>
+    <?xml version='1.0'?>
 <gdml>
 EOF
 
@@ -1508,16 +1565,20 @@ $RTy_B=-($RaceTrack_ly - $RaceTrack_thickness )/2. + $RT_epsilon ;
 $RTx_T= ($TPC_x - $RaceTrack_pitch -$RaceTrack_width )/2. ;
 $RTx_B= $RTx_T ;
 $RTx_U= $RTx_T ;
-$RTz_U= -( $RaceTrackT_length - $RaceTrack_thickness ) / 2. - $RT_epsilon ;  
+$RTz_U= -($RaceTrackT_length - $RaceTrack_thickness)/2. - $RT_epsilon + 45 - ($RaceTrackT_length - $TPCActiveHalf_z)/2;   
 $RTx_D= $RTx_T ;
-$RTz_D= -$RTz_U ;  
+$RTz_D= -$RTz_U ;
+$RTz_T= 45 - ($RaceTrackT_length - $TPCActiveHalf_z)/2;
+$RTz_B= 45 - ($RaceTrackT_length - $TPCActiveHalf_z)/2;
+
+    
 print RACETRACK <<EOF;
 <define>
 
-   <position name="posRaceTrackTInTPC" unit="cm" x="$RTx_T" y="$RTy_T" z="0"/>
-   <position name="posRaceTrackBInTPC" unit="cm" x="$RTx_B" y="$RTy_B" z="0"/>
-   <position name="posRaceTrackUInTPC" unit="cm" x="$RTx_U" y="0"  z="$RTz_U"/>
-   <position name="posRaceTrackDInTPC" unit="cm" x="$RTx_D" y="0"  z="$RTz_D"/>
+   <position name="posRaceTrackTInTPC" unit="cm" x="$RTx_T" y="$RTy_T" z="$RTz_T"/>
+   <position name="posRaceTrackBInTPC" unit="cm" x="$RTx_B" y="$RTy_B" z="$RTz_B"/>
+   <position name="posRaceTrackUInTPC" unit="cm" x="$RTx_U" y="0" z="$RTz_U"/>
+   <position name="posRaceTrackDInTPC" unit="cm" x="$RTx_D" y="0" z="$RTz_D"/>
 
 </define>   
 <!--+++++++++++++++++++ RACETRACK Solids +++++++++++++++++++-->
