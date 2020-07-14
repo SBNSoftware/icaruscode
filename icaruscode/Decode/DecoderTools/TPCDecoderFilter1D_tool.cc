@@ -363,8 +363,15 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
         //size_t numElems = std::min(channelVec.size(),size_t(48));
         //for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
-        size_t numElems = std::min(channelVec.size(),size_t(64));
-        for(size_t chanIdx = 0; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
+//        size_t numElems = std::min(channelVec.size(),size_t(64));
+//        for(size_t chanIdx = 0; chanIdx < numElems; chanIdx++) 
+//        {
+//            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
+//
+//            if (widVec.empty()) std::cout << channelVec[chanIdx]  << " ";
+//
+//            std::cout << channelVec[chanIdx] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << " ";
+//        }
         std::cout << std::endl;
 
         // This is where we would recover the base channel for the board from database/module
@@ -387,12 +394,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
             // Keep track of the channel
-            fChannelIDVec[channelOnBoard] = channelVec[chanIdx];
-
-            if (channelVec[chanIdx] < 1152)
-            {
-                std::cout << "    **> Channel " << channelVec[chanIdx] << " for idx: " << chanIdx << std::endl;
-            }
+            fChannelIDVec[channelOnBoard] = channelVec[nChannelsPerBoard - chanIdx - 1];
 
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
@@ -403,7 +405,13 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
                                                        fTruncRMSVals[channelOnBoard], 
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
+
+            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
+
+            if (widVec.empty()) std::cout << channelVec[chanIdx]  << "=" << fFullRMSVals[channelOnBoard] << " * ";
+            else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
         }
+        std::cout << std::endl;
     }
 
     theClockPedestal.stop();
