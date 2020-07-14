@@ -52,6 +52,8 @@ detector and trigger simulation:
     * module `icarus::trigger::SlidingWindowTriggerEfficiencyPlots` saves plots
       of efficiency for triggers based on single trigger request counts within
       specific sliding windows;
+    * module `icarus::trigger::MakeTriggerSimulationTree` creates a simple ROOT
+      tree with information of each event and simulated trigger
     * module `icarus::trigger::DumpTriggerGateData` prints on console the
       content of a data product with `icarus::trigger::TriggerGateData` objects.
 
