@@ -2,6 +2,8 @@
 #include "singles.fcl"
 #include "larproperties.fcl"
 #include "magfield_larsoft.fcl"
+#include "hitalgorithms.fcl"
+#include "clustermodules.fcl"
 #include "largeantmodules.fcl"
 #include "mcreco.fcl"
 #include "services_icarus.fcl"
@@ -22,15 +24,25 @@ source:
 # Modules are grouped by type.
 physics:
 {
+ producers:{
+   purityana: { module_type: "ICARUSPurityDQM" }
+ }
+
  analyzers:
  {
-   purityana:  { module_type: "ICARUSPurityDQM" }
+   purityinfoana: { module_type: "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana"
+                    PrintInfo: true
+                  }
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
  ana: [ purityana ]
- end_paths:     [ana]  
+ trigger_paths: [ ana ]
+ outana: [ purityinfoana ]
+ stream1: [ out1 ]
+ end_paths:     [ outana ]  
 }
 
 #block to define where the output goes.  if you defined a filter in the physics
@@ -49,6 +61,8 @@ outputs:
 }
 
 
-physics.analyzers.purityana.RawModuleLabel: ["daq0", "daq1", "daq2", "daq3"]
-#physics.analyzers.purityana.module_type:    "ICARUSPurityDQM"
-physics.analyzers.purityana.ValoreTauFCL:  600000.
+physics.producers.purityana.RawModuleLabel: ["daq0", "daq1", "daq2", "daq3"]
+#physics.producers.purityana.module_type:    "ICARUSPurityDQM"
+physics.producers.purityana.ValoreTauFCL:  600000.
+physics.producers.purityana.PersistPurityInfo: false
+physics.producers.purityana.FillAnaTuple: false
