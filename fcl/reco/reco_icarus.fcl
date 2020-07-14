@@ -25,6 +25,7 @@
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
 
+#include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
 #include "correctionservices_icarus.fcl"
@@ -193,7 +194,8 @@ icarus_reco_producers:
   mcassociationsICARUSCryo1:      @local::standard_mcparticlehitmatching
 
   ## crt producers
-  crtsimhit:                      @local::standard_crtsimhitproducer
+  crttruehit:                     @local::standard_crttruehitproducer
+  crthit:                         @local::standard_crtsimhitproducer
 }
 
 icarus_reco_filters:
@@ -381,7 +383,8 @@ icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
 icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crtsimhit #,
+icarus_reco_crt:                  [ crttruehit,
+                                    crthit #,
                                     #crttzero ]
                                     #crtsimtrack 
                                   ]
@@ -451,6 +454,11 @@ icarus_mixed_MultiTPCRecon:         [ @sequence::icarus_reco_mixed_Cryo0,
 icarus_full_reconstruction:       [ @sequence::icarus_gauss_reconstruction,
                                     @sequence::icarus_raw_reconstruction,
 @sequence::icarus_mixed_reconstruction
+                                  ]
+
+# Define CRT/Op reco only sequence
+icarus_crtophit_reconstruction:   [@sequence::icarus_reco_crt,
+                                   @sequence::icarus_reco_wmc_optical
                                   ]
 
 ### Below we include overrides for the modules above
