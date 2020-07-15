@@ -59,6 +59,7 @@ using std::map;
 class icarus::crt::CRTAutoVeto : public art::EDAnalyzer {
 
  public:
+   
     explicit CRTAutoVeto(fhicl::ParameterSet const& p);
     // The compiler-generated destructor is fine for non-base
     // classes without bare pointers or other resource use.
@@ -187,7 +188,7 @@ void CRTAutoVeto::analyze(art::Event const& ev)
       *ev.getValidHandle<vector<simb::MCParticle>>(fSimLabel);
   
     auto const& crthits = //vector of CRTHits
-      *ev.getValidHandle<vector<CRTHit>>(fCRTHitLabel);
+      *ev.getValidHandle<vector<sbn::crt::CRTHit>>(fCRTHitLabel);
 
     map< int, const simb::MCParticle*> particleMap;
 

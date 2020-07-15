@@ -54,6 +54,8 @@ using std::map;
 class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
 
  public:
+    using CRTHit = sbn::crt::CRTHit;
+   
     explicit CRTTruthMatchAnalysis(fhicl::ParameterSet const& p);
     // The compiler-generated destructor is fine for non-base
     // classes without bare pointers or other resource use.

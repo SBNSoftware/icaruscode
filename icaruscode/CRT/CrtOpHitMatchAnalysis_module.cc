@@ -61,6 +61,9 @@ using namespace icarus::crt;
 
 class icarus::crt::CrtOpHitMatchAnalysis : public art::EDAnalyzer {
  public:
+
+  using CRTHit = sbn::crt::CRTHit;
+  
   explicit CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.

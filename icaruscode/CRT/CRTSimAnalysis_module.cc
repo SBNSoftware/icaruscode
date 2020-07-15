@@ -111,6 +111,8 @@ namespace crt {
   {
   public:
     
+    using CRTHit = sbn::crt::CRTHit;
+    
     // -------------------------------------------------------------------
     // -------------------------------------------------------------------
     // Standard constructor for an ART module with configuration validation;
