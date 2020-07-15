@@ -16,12 +16,12 @@
 # use cmake 3.10 or later
 cmake_minimum_required (VERSION 3.10)
 
+project(icaruscode)
+
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of icaruscode ***"
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
   "\n-- ===")
-
-project(icaruscode)
 
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
@@ -45,20 +45,20 @@ cet_set_compiler_flags(DIAGS CAUTIOUS
 cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
-find_ups_product( larcore v1_00_00 )
+find_ups_product( larcore )
 find_ups_product( larcoreobj )
-find_ups_product( lardata v1_00_00 )
+find_ups_product( lardata )
 find_ups_product( lardataobj )
-find_ups_product( larevt v1_00_00 )
-find_ups_product( larsim v1_00_00 )
-find_ups_product( larreco v1_00_00 )
-find_ups_product( larpandora v1_00_00 )
-find_ups_product( larana v1_00_00 )
-find_ups_product( larpandora v1_00_00 )
-find_ups_product( nutools v1_00_00 )
+find_ups_product( larevt )
+find_ups_product( larsim )
+find_ups_product( larreco )
+find_ups_product( larpandora )
+find_ups_product( larana )
+find_ups_product( larpandora )
+find_ups_product( nutools )
 find_ups_product( nug4 )
 find_ups_product( nurandom )
-find_ups_product( art v1_09_00 )
+find_ups_product( art )
 find_ups_product( art_root_io)
 find_ups_product( cetbuildtools v3_10_00 )
 find_ups_product( libwda )
@@ -69,6 +69,8 @@ find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_product( libwda )
+find_ups_product( sbnobj )
+find_ups_product( sbncode )
 find_ups_product( icarus_signal_processing )
 find_ups_product( icarusutil )
 find_ups_product( icarus_data )
@@ -112,7 +114,7 @@ include(UseCPack)
 
 message(STATUS
   "\n-- ==="
-  "\n-- === *** End of configuration of icaruscode ***"
+  "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
   "\n-- "
   )
