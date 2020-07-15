@@ -59,8 +59,8 @@
 #include <array>
 
 // CRT data products
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 

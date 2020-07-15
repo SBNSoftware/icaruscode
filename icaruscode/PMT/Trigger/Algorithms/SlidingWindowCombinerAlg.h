@@ -11,7 +11,7 @@
 
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // TriggerGateIndex
 
 // LArSoft libraries

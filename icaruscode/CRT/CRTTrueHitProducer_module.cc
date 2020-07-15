@@ -1,5 +1,5 @@
 // icaruscode includes
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTTrueHitRecoAlg.h"
 
 // Framework includes

@@ -75,7 +75,7 @@ simple_plugin( CRTDetSim module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
 	icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
@@ -99,7 +99,7 @@ simple_plugin( CRTSimHitProducer module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
         icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
@@ -123,7 +123,7 @@ simple_plugin( CRTTrueHitProducer module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
         icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
@@ -145,7 +145,7 @@ simple_plugin(CRTTzeroProducer module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
         ${ART_FRAMEWORK_PRINCIPAL}
@@ -168,7 +168,7 @@ simple_plugin(CRTTrackProducer module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
         icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
@@ -191,7 +191,7 @@ simple_plugin(CRTTrackProducer module
 simple_plugin( CRTSimAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
@@ -218,7 +218,7 @@ simple_plugin( CRTSimAnalysis module
 simple_plugin( CRTDataAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
                         nusimdata_SimulationBase
@@ -244,7 +244,7 @@ simple_plugin( CRTDataAnalysis module
 simple_plugin( CrtOpHitMatchAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
@@ -271,7 +271,7 @@ simple_plugin( CrtOpHitMatchAnalysis module
 simple_plugin( CRTTruthMatchAnalysis module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
@@ -297,7 +297,7 @@ simple_plugin( CRTTruthMatchAnalysis module
 simple_plugin( CRTAutoVeto module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry

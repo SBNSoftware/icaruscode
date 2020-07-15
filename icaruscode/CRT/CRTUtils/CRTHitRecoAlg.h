@@ -40,8 +40,8 @@
 #include "cetlib/pow.h" // cet::sum_of_squares()
 
 //icaruscode includes
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 // c++
@@ -72,6 +72,9 @@ namespace icarus {
 class icarus::crt::CRTHitRecoAlg {
 
  public:
+    
+  using CRTData = icarus::crt::CRTData;
+  using CRTHit = sbn::crt::CRTHit;
 
   struct Config {
     using Name = fhicl::Name;

@@ -24,8 +24,8 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 
 //icaruscode includes
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 

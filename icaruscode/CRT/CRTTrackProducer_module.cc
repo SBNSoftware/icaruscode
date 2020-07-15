@@ -23,9 +23,9 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
 #include "art/Persistency/Common/PtrMaker.h"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
-#include "icaruscode/CRT/CRTProducts/CRTTzero.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTTzero.hh"
 #include "icaruscode/CRT/CRTUtils/CRTTrackRecoAlg.h"
 #include "TTree.h"
 #include "TVector3.h"
@@ -100,10 +100,10 @@ CRTavehit fillme(uint32_t i, uint16_t j, int32_t k, uint16_t l, float a,
                  int p, std::string t);
 
 // Function to copy average hits
-CRTavehit copyme(crt::CRTHit myhit);
+CRTavehit copyme(sbn::crt::CRTHit myhit);
 
 // Function to make creating CRTTracks easier
-crt::CRTTrack shcut(CRTavehit ppA,CRTavehit ppb, uint32_t time0s,uint16_t terr);
+sbn::crt::CRTTrack shcut(CRTavehit ppA,CRTavehit ppb, uint32_t time0s,uint16_t terr);
 
 // Constructor
 CRTTrackProducer::CRTTrackProducer(fhicl::ParameterSet const & p)
@@ -118,8 +118,8 @@ CRTTrackProducer::CRTTrackProducer(fhicl::ParameterSet const & p)
   
   // Call appropriate produces<>() functions here.
   if(fStoreTrack == 1){ 
-    produces< std::vector<crt::CRTTrack>   >();
-    produces< art::Assns<crt::CRTTrack , crt::CRTHit> >();
+    produces< std::vector<sbn::crt::CRTTrack>   >();
+    produces< art::Assns<sbn::crt::CRTTrack , sbn::crt::CRTHit> >();
   } 
 
 } // CRTTrackProducer()
@@ -132,12 +132,12 @@ void CRTTrackProducer::produce(art::Event & evt)
   int nIncTrack = 0;
 
   // CRTTrack collection on this event                                                                         
-  std::unique_ptr<std::vector<crt::CRTTrack> > CRTTrackCol(new std::vector<crt::CRTTrack>);
-  std::unique_ptr< art::Assns<crt::CRTTrack, crt::CRTHit> > Trackassn( new art::Assns<crt::CRTTrack, crt::CRTHit>);
-  art::PtrMaker<crt::CRTTrack> makeTrackPtr(evt);
+  std::unique_ptr<std::vector<sbn::crt::CRTTrack> > CRTTrackCol(new std::vector<sbn::crt::CRTTrack>);
+  std::unique_ptr< art::Assns<sbn::crt::CRTTrack, sbn::crt::CRTHit> > Trackassn( new art::Assns<sbn::crt::CRTTrack, sbn::crt::CRTHit>);
+  art::PtrMaker<sbn::crt::CRTTrack> makeTrackPtr(evt);
 
   // Implementation of required member function here.
-  art::Handle< std::vector<crt::CRTHit> > rawHandle;
+  art::Handle< std::vector<sbn::crt::CRTHit> > rawHandle;
   evt.getByLabel(fDataLabelHits, rawHandle); //what is the product instance name? no BernZMQ
 
   // Check to make sure the data we asked for is valid                                                                         
@@ -151,24 +151,24 @@ void CRTTrackProducer::produce(art::Event & evt)
   if(fTrackMethodType == 4){
 
     //Get the CRT hits from the event
-    std::vector<art::Ptr<crt::CRTHit> > hitlist;
+    std::vector<art::Ptr<sbn::crt::CRTHit> > hitlist;
 
     if (evt.getByLabel(fDataLabelHits, rawHandle))
       art::fill_ptr_vector(hitlist, rawHandle);
 
-    std::map<art::Ptr<crt::CRTHit>, int> hitIds;
+    std::map<art::Ptr<sbn::crt::CRTHit>, int> hitIds;
 
     for(size_t i = 0; i<hitlist.size(); i++){
       hitIds[hitlist[i]] = i;
     }
 
-    std::vector<std::vector<art::Ptr<crt::CRTHit>>> CRTTzeroVect = trackAlg.CreateCRTTzeros(hitlist);
+    std::vector<std::vector<art::Ptr<sbn::crt::CRTHit>>> CRTTzeroVect = trackAlg.CreateCRTTzeros(hitlist);
 
     // Loop over tzeros
     for(size_t i = 0; i<CRTTzeroVect.size(); i++){
 
       //loop over hits for this tzero, sort by tagger
-      std::map<std::string, std::vector<art::Ptr<crt::CRTHit>>> hits;
+      std::map<std::string, std::vector<art::Ptr<sbn::crt::CRTHit>>> hits;
 
       for (size_t ah = 0; ah< CRTTzeroVect[i].size(); ++ah){        
 
@@ -177,12 +177,12 @@ void CRTTrackProducer::produce(art::Event & evt)
       } // loop over hits
       
       //loop over planes and calculate average hits
-      std::vector<std::pair<crt::CRTHit, std::vector<int>>> allHits;
+      std::vector<std::pair<sbn::crt::CRTHit, std::vector<int>>> allHits;
 
       for (auto &keyVal : hits){
 
         std::string ip = keyVal.first;
-        std::vector<std::pair<crt::CRTHit, std::vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
+        std::vector<std::pair<sbn::crt::CRTHit, std::vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
 
         if(fUseTopPlane && ip == "volTaggerTopHigh_0"){ 
           allHits.insert(allHits.end(), ahits.begin(), ahits.end());
@@ -194,13 +194,13 @@ void CRTTrackProducer::produce(art::Event & evt)
       }
 
       //Create tracks with hits at the same tzero
-      std::vector<std::pair<crt::CRTTrack, std::vector<int>>> trackCandidates = trackAlg.CreateTracks(allHits);
+      std::vector<std::pair<sbn::crt::CRTTrack, std::vector<int>>> trackCandidates = trackAlg.CreateTracks(allHits);
       nTrack += trackCandidates.size();
 
       for(size_t j = 0; j < trackCandidates.size(); j++){
 
         CRTTrackCol->emplace_back(trackCandidates[j].first);
-        art::Ptr<crt::CRTTrack> trackPtr = makeTrackPtr(CRTTrackCol->size()-1);
+        art::Ptr<sbn::crt::CRTTrack> trackPtr = makeTrackPtr(CRTTrackCol->size()-1);
 
         for (size_t ah = 0; ah< CRTTzeroVect[i].size(); ++ah){        
           Trackassn->addSingle(trackPtr, CRTTzeroVect[i][ah]);
@@ -216,8 +216,8 @@ void CRTTrackProducer::produce(art::Event & evt)
   //Older track reconstruction methods from MicroBooNE
   else{
     //Get list of tzeros             
-    //  std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle);
-    art::Handle< std::vector<crt::CRTTzero> > rawHandletzero;
+    //  std::vector<sbn::crt::CRTHit> const& CRTHitCollection(*rawHandle);
+    art::Handle< std::vector<sbn::crt::CRTTzero> > rawHandletzero;
     evt.getByLabel(fDataLabelTZeros, rawHandletzero); //what is the product instance name? no BernZMQ
     
     //check to make sure the data we asked for is valid                                                                            
@@ -227,11 +227,11 @@ void CRTTrackProducer::produce(art::Event & evt)
       return;
     }
     
-    std::vector<art::Ptr<crt::CRTTzero> > tzerolist;
+    std::vector<art::Ptr<sbn::crt::CRTTzero> > tzerolist;
     if (evt.getByLabel(fDataLabelTZeros,rawHandletzero))
       art::fill_ptr_vector(tzerolist, rawHandletzero);
  
-    art::FindManyP<crt::CRTHit> fmht(rawHandletzero, evt, fDataLabelTZeros);
+    art::FindManyP<sbn::crt::CRTHit> fmht(rawHandletzero, evt, fDataLabelTZeros);
  
     //loop over tzeros
     for(size_t tzIter = 0; tzIter < tzerolist.size(); ++tzIter){   
@@ -244,14 +244,14 @@ void CRTTrackProducer::produce(art::Event & evt)
       }
  
       if (np<2) continue;
-      std::vector<art::Ptr<crt::CRTHit> > hitlist=fmht.at(tzIter);
+      std::vector<art::Ptr<sbn::crt::CRTHit> > hitlist=fmht.at(tzIter);
       //for(size_t hit_i = 0; hit_i < hitlist.size(); hit
       if (fTrackMethodType==1) {
         double time_s_A = hitlist[0]->ts0_s;
  
         // find pairs of hits in different planes
         for (size_t ah = 0; ah< hitlist.size()-1; ++ah){        
-          crt::CRTHit temphit=*hitlist[ah];
+          sbn::crt::CRTHit temphit=*hitlist[ah];
           CRTavehit Ahit = copyme(temphit);
           int planeA = hitlist[ah]->plane;
  
@@ -261,7 +261,7 @@ void CRTTrackProducer::produce(art::Event & evt)
             if (planeB!=planeA && !((planeA==3&&planeB==4)||(planeA==4&&planeB==3))) {  // make a track               
               temphit=*hitlist[bh];
               CRTavehit Bhit = copyme(temphit);
-              crt::CRTTrack CRTcanTrack=shcut(Ahit,Bhit,time_s_A,0);
+              sbn::crt::CRTTrack CRTcanTrack=shcut(Ahit,Bhit,time_s_A,0);
               CRTTrackCol->emplace_back(CRTcanTrack);
             }
  
@@ -336,7 +336,7 @@ void CRTTrackProducer::produce(art::Event & evt)
  
             if (ah!=bh && !(ah==3&&bh==4)) {  // make a track               
               CRTavehit Bhit = aveHits[bh];
-              crt::CRTTrack CRTcanTrack=shcut(Ahit,Bhit,time_s_A,time_s_err);
+              sbn::crt::CRTTrack CRTcanTrack=shcut(Ahit,Bhit,time_s_A,time_s_err);
               CRTTrackCol->emplace_back(CRTcanTrack);
               nTrack++;
             }
@@ -412,7 +412,7 @@ CRTavehit fillme(uint32_t ts0_ns, uint16_t ts0_ns_err, int32_t ts1_ns, uint16_t 
 } // fillme()
 
 // Function to copy average CRT hits
-CRTavehit copyme(crt::CRTHit myhit)
+CRTavehit copyme(sbn::crt::CRTHit myhit)
 {
   CRTavehit h;
   h.ts0_ns     = myhit.ts0_ns;
@@ -432,9 +432,9 @@ CRTavehit copyme(crt::CRTHit myhit)
 } // copyme()
 
 // Function to make CRTTrack
-crt::CRTTrack shcut(CRTavehit ppA, CRTavehit ppB, uint32_t time0s, uint16_t terr)
+sbn::crt::CRTTrack shcut(CRTavehit ppA, CRTavehit ppB, uint32_t time0s, uint16_t terr)
 {
-  crt::CRTTrack newtr;
+  sbn::crt::CRTTrack newtr;
   newtr.ts0_s         = time0s;
   newtr.ts0_s_err     = terr;
   newtr.ts0_ns_h1     = ppA.ts0_ns;

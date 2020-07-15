@@ -41,7 +41,7 @@
 #include <TEfficiency.h>
 
 //local includes
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 

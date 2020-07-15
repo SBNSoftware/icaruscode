@@ -52,7 +52,7 @@
 //#include "../../MetricConfig/ConfigureRedis.hh"
 
 //purity info class
-#include "icaruscode/IcarusObj/TPCPurityInfo.hh"
+#include "sbnobj/Common/Analysis/TPCPurityInfo.hh"
 
 #include "art/Framework/Core/EDProducer.h"
 #include <TMath.h>
