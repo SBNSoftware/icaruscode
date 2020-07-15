@@ -2,7 +2,6 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 include_directories( $ENV{NURANDOM_INC} )
 include_directories( $ENV{IFDHX_FQ_DIR}/inc )
 
-add_subdirectory(CRTProducts)
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
