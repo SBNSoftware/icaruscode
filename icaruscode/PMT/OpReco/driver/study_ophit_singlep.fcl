@@ -42,16 +42,16 @@ physics:
    opdaq:    @local::icarus_simpmt_nonoise
    mcophit: @local::ICARUSMCOpHit
    rns:      { module_type: "RandomNumberSaver" }
-   ophitdebugger: @local::icarus_ophitdebugger
-   ophit:  @local::icarus_ophit
-   mcflash:       @local::ICARUSMCOpFlash
-   opflash:       @local::ICARUSSimpleFlash
+   ophitpeak:   @local::icarus_ophit
+   ophitstart:  @local::icarus_ophit
+   mcflash:     @local::ICARUSMCOpFlash
+   opflash:     @local::ICARUSSimpleFlash
  }
  analyzers: { 
      ophittuple: @local::ICARUSOpHitTuple
      opflashana: @local::ICARUSOpFlashAna
  }
- produce: [ rns, generator, largeant, opdaq, mcophit, ophit, mcflash, opflash ]
+ produce: [ rns, generator, largeant, opdaq, mcophit, ophitstart, ophitpeak, mcflash, opflash ]
  analyze: [ ophittuple, opflashana ]
  store:   [ out1 ]
  trigger_paths: [ produce ]
@@ -78,8 +78,10 @@ physics.producers.generator.SigmaThetaYZ: [ 0. ]
 physics.producers.generator.AngleDist: 1
 
 physics.producers.mcophit.SimPhotonsProducer: "largeant"
+physics.producers.ophitstart.UseStartTime: true
+physics.producers.ophitpeak.UseStartTime: false
 #physics.analyzers.ophittuple.OpDetWaveformProducer: "opdaq"
-physics.analyzers.ophittuple.OpHitProducerList: ["ophit","mcophit"]
+physics.analyzers.ophittuple.OpHitProducerList: ["ophitstart","ophitpeak","mcophit"]
 physics.analyzers.opflashana.MCOpFlashProducer: "mcflash"
 physics.analyzers.opflashana.OpFlashProducerList: ["opflash"]
 
