@@ -18,9 +18,9 @@
 //#include "cetlib/search_path.h"
 #include "cetlib/cpu_timer.h"
 #include "lardata/Utilities/AssociationUtil.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // Framework includes
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -103,6 +103,7 @@ private:
 
     // Other variables that will be shared between different methods.
     const geo::GeometryCore*           fGeometry;       // pointer to Geometry service
+    const detinfo::DetectorProperties* fDetectorProperties;
     const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 }; // class RawDigitAna
 
@@ -119,6 +120,7 @@ RawDigitAna::RawDigitAna(fhicl::ParameterSet const& parameterSet)
 
 {
     fGeometry = lar::providerFrom<geo::Geometry>();
+    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     // Read in the parameters from the .fcl file.
     this->reconfigure(parameterSet);
@@ -143,9 +145,7 @@ void RawDigitAna::beginJob()
     // The arguments to 'make<whatever>' are the same as those passed
     // to the 'whatever' constructor, provided 'whatever' is a ROOT
     // class that TFileService recognizes.
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
-    for (auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->initializeHists(clockData, detProp, tfs, "RawDigitAna");
+    for (auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->initializeHists(tfs, "RawDigitAna");
 
     // zero out the event counter
     fNumEvents = 0;
@@ -188,9 +188,6 @@ void RawDigitAna::analyze(const art::Event& event)
 
     fNumEvents++;
     
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(event, clockData);
-
     // Loop over RawDigits
     for(const auto& rawDigitLabel : fRawDigitProducerLabelVec)
     {
@@ -217,7 +214,7 @@ void RawDigitAna::analyze(const art::Event& event)
             IRawDigitHistogramTool::RawDigitPtrVec allRawDigitVec;
             art::fill_ptr_vector(allRawDigitVec, rawDigitHandle);
             
-            for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(clockData, detProp, allRawDigitVec,channelMap);
+            for(auto& rawDigitHistTool : fRawDigitHistogramToolVec) rawDigitHistTool->fillHistograms(allRawDigitVec,channelMap);
         }
     }
 

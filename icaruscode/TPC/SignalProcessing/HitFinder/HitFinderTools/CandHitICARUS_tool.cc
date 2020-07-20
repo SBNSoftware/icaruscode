@@ -9,6 +9,7 @@
 #include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 
 #include <cmath>
@@ -21,6 +22,10 @@ class CandHitICARUS : ICandidateHitFinder
 {
 public:
     explicit CandHitICARUS(const fhicl::ParameterSet& pset);
+
+    ~CandHitICARUS();
+
+    void configure(const fhicl::ParameterSet& pset);
 
     void findHitCandidates(const recob::Wire::RegionsOfInterest_t::datarange_t&,
                            size_t,
@@ -67,6 +72,15 @@ private:
 //----------------------------------------------------------------------
 // Constructor.
 CandHitICARUS::CandHitICARUS(const fhicl::ParameterSet& pset)
+{
+    configure(pset);
+}
+
+CandHitICARUS::~CandHitICARUS()
+{
+}
+
+void CandHitICARUS::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
 

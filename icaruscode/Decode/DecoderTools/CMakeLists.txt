@@ -1,3 +1,4 @@
+
 cet_enable_asserts()
 
 cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
@@ -13,7 +14,6 @@ art_make(
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
-                        lardataalg_DetectorInfo
                         larevt_Filters
                         lardataobj_RawData
                         lardata_ArtDataHelper

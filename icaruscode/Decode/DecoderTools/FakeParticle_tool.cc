@@ -65,8 +65,7 @@ public:
      *
      *  @param waveforms  The waveform container to place fake particle on
      */
-    virtual void overlayFakeParticle(detinfo::DetectorClocksData const& clockData,
-                                     ArrayFloat& waveforms) override;
+    virtual void overlayFakeParticle(ArrayFloat& waveforms) override; 
 
 private:
 
@@ -120,13 +119,12 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
     fPlaneToSimulate   = pset.get<size_t             >("PlaneToSimulate",                            2);
                                   
     fGeometry           = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector           = lar::providerFrom<detinfo::DetectorPropertiesService>();
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
     // Convert ticks in us to mm by taking the drift velocity and multiplying by the tick period
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
-    double driftVelocity = detProp.DriftVelocity() * 10.;   // should be mm/us
-    double samplingRate  = sampling_rate(clockData) / 1000.;  // sampling rate returned in ns
+    double driftVelocity = fDetector->DriftVelocity() * 10.;   // should be mm/us
+    double samplingRate  = fDetector->SamplingRate() / 1000.;  // sampling rate returned in ns
 
     fMMPerTick = driftVelocity * samplingRate;
 
@@ -169,7 +167,7 @@ void FakeParticle::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void FakeParticle::overlayFakeParticle(detinfo::DetectorClocksData const& clockData, ArrayFloat& waveforms)
+void FakeParticle::overlayFakeParticle(ArrayFloat& waveforms)
 {
     // We have assumed the input waveform array will have 576 wires... 
     // Our "range" must be contained within that. By assumption we start at wire 0, so really just need
@@ -180,7 +178,7 @@ void FakeParticle::overlayFakeParticle(detinfo::DetectorClocksData const& clockD
 //    icarusutil::TimeVec tempWaveform(waveforms[0].size(),0.);
 
     // Also recover the gain
-    float asicGain = fSignalShapingService->GetASICGain(0) * sampling_rate(clockData) / 1000.;  // something like 67.4
+    float asicGain = fSignalShapingService->GetASICGain(0) * fDetector->SamplingRate() / 1000.;  // something like 67.4
 
     // Get a base channel number for the plane we want
     raw::ChannelID_t channel = fGeometry->PlaneWireToChannel(fPlaneToSimulate, 0);

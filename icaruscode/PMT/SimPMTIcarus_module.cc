@@ -302,14 +302,12 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     auto const& pmtVector
       = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
-    auto const clockData =
-      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
     //
     // prepare the algorithm
     //
     auto PMTsimulator = makePMTsimulator(
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
-      clockData,
+      *(lar::providerFrom<detinfo::DetectorClocksService>()),
       *fSinglePhotonResponseFunc,
       fEfficiencyEngine,
       fDarkNoiseEngine,

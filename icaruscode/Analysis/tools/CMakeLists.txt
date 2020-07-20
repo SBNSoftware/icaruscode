@@ -5,7 +5,6 @@ add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 art_make( TOOL_LIBRARIES lardataobj_RecoBase
                          lardataobj_Simulation
-                         lardataalg_DetectorInfo
                          icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
                          larcorealg_Geometry
                          larcore_Geometry_Geometry_service

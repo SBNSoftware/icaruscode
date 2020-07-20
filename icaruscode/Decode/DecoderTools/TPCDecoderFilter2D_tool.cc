@@ -18,6 +18,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -65,8 +66,7 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(detinfo::DetectorClocksData const& clockData,
-                                  const artdaq::Fragment&) override;
+    virtual void process_fragment(const artdaq::Fragment&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -160,6 +160,7 @@ private:
     icarus_signal_processing::VectorInt   fRangeBins;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter2D::TPCDecoderFilter2D(fhicl::ParameterSet const &pset)
@@ -201,12 +202,12 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
     fFilterModeVec         = {'d','e','g'};
 
     fGeometry              = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector              = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     return;
 }
 
-void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
-                                          const artdaq::Fragment &fragment)
+void TPCDecoderFilter2D::process_fragment(const artdaq::Fragment &fragment)
 {
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);

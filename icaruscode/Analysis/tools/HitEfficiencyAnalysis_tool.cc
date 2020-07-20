@@ -1,3 +1,4 @@
+
 #include "icaruscode/Analysis/tools/IHitEfficiencyHistogramTool.h"
 
 #include "fhiclcpp/ParameterSet.h"
@@ -11,6 +12,7 @@
 #include "canvas/Persistency/Common/FindManyP.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -156,6 +158,8 @@ private:
     
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const detinfo::DetectorProperties* fDetectorProperties;   ///< Detector properties service
+    const detinfo::DetectorClocks*     fClockService;         ///< Detector clocks service
 };
     
 //----------------------------------------------------------------------------
@@ -168,6 +172,8 @@ private:
 HitEfficiencyAnalysis::HitEfficiencyAnalysis(fhicl::ParameterSet const & pset) : fTree(nullptr)
 {
     fGeometry           = lar::providerFrom<geo::Geometry>();
+    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    fClockService       = lar::providerFrom<detinfo::DetectorClocksService>();
     
     configure(pset);
     
@@ -340,8 +346,6 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         }
     }
 
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-
     // Loop over entries in the two producer vectors
     for(size_t tpcID = 0; tpcID < fWireProducerLabelVec.size(); tpcID++)
     {
@@ -434,8 +438,8 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
         
                 // Convert to ticks to get in same units as hits
-                unsigned short startTick = clockData.TPCTDC2Tick(startTDC) + fOffsetVec.at(plane);
-                unsigned short stopTick  = clockData.TPCTDC2Tick(stopTDC)  + fOffsetVec.at(plane);
+                unsigned short startTick = fClockService->TPCTDC2Tick(startTDC) + fOffsetVec.at(plane);
+                unsigned short stopTick  = fClockService->TPCTDC2Tick(stopTDC)  + fOffsetVec.at(plane);
                 unsigned short midTick   = (startTick + stopTick) / 2;
     
                 fSimNumTDCVec.at(plane)->Fill(stopTick - startTick, 1.);
@@ -538,7 +542,7 @@ void HitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                                 // Get the number of electrons
                                 for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
                                 {
-                                    unsigned short hitTDC = clockData.TPCTick2TDC(tick - fOffsetVec.at(plane));
+                                    unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec.at(plane));
         
                                     TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
         

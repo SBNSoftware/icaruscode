@@ -64,6 +64,7 @@ ICARUSMCOpHit::ICARUSMCOpHit(fhicl::ParameterSet const& p)
 
 void ICARUSMCOpHit::produce(art::Event& e)
 {
+  auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
   auto oph_v = std::unique_ptr<std::vector<recob::OpHit> >(new std::vector<recob::OpHit>());
 
   art::Handle< std::vector< sim::SimPhotons > > simph_h;
@@ -74,7 +75,6 @@ void ICARUSMCOpHit::produce(art::Event& e)
   }
 
   std::vector<bool> processed_v;
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   for(auto const& simph : *simph_h) {
     // Make sure channel number is unique (e.g. one sim::SimPhotons per op channel)
     size_t opch = simph.OpChannel();
@@ -92,7 +92,7 @@ void ICARUSMCOpHit::produce(art::Event& e)
     // Insert photon times into a sorted set
     std::map<double,size_t> time_m;
     for(auto const& oneph : simph) {
-      double this_time = clockData.G4ToElecTime(oneph.Time) - clockData.TriggerTime();
+      double this_time = ts->G4ToElecTime(oneph.Time) - ts->TriggerTime();
       time_m[this_time] += 1;
     }
 
@@ -104,7 +104,7 @@ void ICARUSMCOpHit::produce(art::Event& e)
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
 			 oph_time,
-                         oph_time + clockData.TriggerTime(),
+			 oph_time + ts->TriggerTime(),
 			 0, // frame
 			 1., // width
 			 pe * _spe_area, // area,
@@ -123,7 +123,7 @@ void ICARUSMCOpHit::produce(art::Event& e)
     if(in_window) {
       recob::OpHit oph(opch, 
 		       oph_time,
-                       oph_time + clockData.TriggerTime(),
+		       oph_time + ts->TriggerTime(),
 		       0, // frame
 		       1., // width
 		       pe * _spe_area, // area,

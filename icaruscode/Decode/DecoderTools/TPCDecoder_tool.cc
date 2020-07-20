@@ -18,6 +18,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -93,6 +94,7 @@ private:
     RawDigitCollectionPtr                       fRawDigitCollection;    //< The output data collection pointer
 
     const geo::Geometry*                        fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*          fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoder::TPCDecoder(fhicl::ParameterSet const &pset)
@@ -117,6 +119,7 @@ void TPCDecoder::configure(fhicl::ParameterSet const &pset)
     fFragment_id_offset = pset.get<uint32_t>("fragment_id_offset");
 
     fGeometry = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     return;
 }

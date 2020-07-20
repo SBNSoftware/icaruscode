@@ -47,7 +47,7 @@ public:
     MCAssociations(fhicl::ParameterSet const& config);
   
     void setup(const geo::GeometryCore&,
-               const detinfo::DetectorPropertiesData&,
+               const detinfo::DetectorProperties&,
                TDirectory*);
   
     void prepare();
@@ -69,7 +69,7 @@ private:
     std::string              fLocalDirName;
     
     geo::GeometryCore const*           fGeometry           = nullptr;
-    std::unique_ptr<detinfo::DetectorPropertiesData const> fDetectorProperties;
+    const detinfo::DetectorProperties* fDetectorProperties = nullptr;   ///< Detector properties service
     TDirectory*                        fDir                = nullptr;
     
     std::unique_ptr<TH1>      fNTracks;

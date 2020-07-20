@@ -10,7 +10,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "TF1.h"
 #include "TProfile.h"
@@ -71,9 +71,8 @@ void Filter::configure(const fhicl::ParameterSet& pset)
 void Filter::setResponse(size_t numBins, double correct3D, double timeScaleFctr)
 {
     // Note that here we are working in frequency space, not in the time domain...
-    // FIXME: Assumes that the job-level clock data is sufficient.
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    double      samplingRate = 1.e-3 * sampling_rate(clockData); // Note sampling rate is in ns, convert to us
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Note sampling rate is in ns, convert to us
     double      maxFreq      = 1.e3 / (2. * samplingRate);      // highest frequency in cycles/us (MHz)
     double      freqRes      = maxFreq / double(numBins/2);     // frequency resolution in cycles/us
     
@@ -130,9 +129,9 @@ void Filter::outputHistograms(art::TFileDirectory& histDir) const
     
     art::TFileDirectory dir = histDir.mkdir(dirName.c_str());
     
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    double      samplingRate = 1.e-3 * sampling_rate(clockData); // Note sampling rate is in ns, convert to us
+    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double      numBins      = fFilterVec.size();
+    double      samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
     double      maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
     double      minFreq      = maxFreq / numBins;
     std::string histName     = "FilterPlane_" + std::to_string(fPlane);

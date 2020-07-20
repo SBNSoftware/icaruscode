@@ -28,7 +28,6 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "icarus_signal_processing/WaveformTools.h"
 
-
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 
@@ -52,17 +51,13 @@ public:
 
     // Provide for reinitialization if necessary
     void reconfigure(fhicl::ParameterSet const & pset);
-    void initializeHists(detinfo::DetectorClocksData const& clockData,
-                         detinfo::DetectorPropertiesData const& detProp,
-                         art::ServiceHandle<art::TFileService>&);
+    void initializeHists(art::ServiceHandle<art::TFileService>&);
     
     void getFFTCorrection(std::vector<T>&, double) const;
     
     void getFFTCorrection(std::vector<T>&, size_t) const;
     
-    void filterFFT(detinfo::DetectorClocksData const& clockData,
-                   detinfo::DetectorPropertiesData const& detProp,
-                   std::vector<short>&, size_t, size_t, float pedestal=0.);
+    void filterFFT(std::vector<short>&, size_t, size_t, float pedestal=0.);
     
 private:
     
@@ -89,6 +84,7 @@ private:
     std::unique_ptr<Eigen::FFT<float>>                     fEigenFFT;
 
     // Useful services, keep copies for now (we can update during begin run periods)
+    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
     
 } // end caldata namespace

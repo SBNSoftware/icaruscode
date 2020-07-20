@@ -19,10 +19,6 @@
 #include "canvas/Persistency/Common/Ptr.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/Simulation/SimChannel.h"
-namespace detinfo {
-  class DetectorClocksData;
-  class DetectorPropertiesData;
-}
 
 class IRawDigitHistogramTool
 {
@@ -45,9 +41,7 @@ public:
      *  @param TFileService   handle to the TFile service
      *  @param string         subdirectory to store the hists in
      */
-    virtual void initializeHists(detinfo::DetectorClocksData const& clockData,
-                                 detinfo::DetectorPropertiesData const& detProp,
-                                 art::ServiceHandle<art::TFileService>&, const std::string&) = 0;
+    virtual void initializeHists(art::ServiceHandle<art::TFileService>&, const std::string&) = 0;
 
     /**
      *  @brief Interface for method to executve at the end of run processing
@@ -62,9 +56,7 @@ public:
     using RawDigitPtrVec = std::vector<art::Ptr<raw::RawDigit>>;
     using SimChannelMap  = std::map<raw::ChannelID_t, const sim::SimChannel*>;
     
-    virtual void fillHistograms(const detinfo::DetectorClocksData&,
-                                const detinfo::DetectorPropertiesData&,
-                                const RawDigitPtrVec&, const SimChannelMap&)  const = 0;
+    virtual void fillHistograms(const RawDigitPtrVec&, const SimChannelMap&)  const = 0;
 };
 
 #endif

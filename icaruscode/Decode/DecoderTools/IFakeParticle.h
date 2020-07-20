@@ -16,9 +16,6 @@
 
 // Algorithm includes
 #include "artdaq-core/Data/Fragment.hh"
-namespace detinfo {
-  class DetectorClocksData;
-}
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -51,8 +48,7 @@ public:
     using VectorFloat  = std::vector<float>;
     using ArrayShort   = std::vector<VectorShort>;
     using ArrayFloat   = std::vector<VectorFloat>;
-    virtual void overlayFakeParticle(detinfo::DetectorClocksData const& clockData,
-                                     ArrayFloat& waveforms) = 0;
+    virtual void overlayFakeParticle(ArrayFloat& waveforms) = 0; 
 };
 
 } // namespace daq

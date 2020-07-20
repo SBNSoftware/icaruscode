@@ -68,8 +68,7 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(detinfo::DetectorClocksData const& clockData,
-                                  const artdaq::Fragment&) override;
+    virtual void process_fragment(const artdaq::Fragment&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -167,6 +166,7 @@ private:
     std::unique_ptr<IFakeParticle>        fFakeParticleTool;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderOverlayFilter1D::TPCDecoderOverlayFilter1D(fhicl::ParameterSet const &pset)
@@ -209,14 +209,14 @@ void TPCDecoderOverlayFilter1D::configure(fhicl::ParameterSet const &pset)
     fFilterModeVec         = {'d','e','g'};
 
     fGeometry              = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector              = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     fFakeParticleTool      = art::make_tool<IFakeParticle>(pset.get<fhicl::ParameterSet>("FakeParticle"));
 
     return;
 }
 
-void TPCDecoderOverlayFilter1D::process_fragment(detinfo::DetectorClocksData const& clockData,
-                                                 const artdaq::Fragment &fragment)
+void TPCDecoderOverlayFilter1D::process_fragment(const artdaq::Fragment &fragment)
 {
     cet::cpu_timer theClockTotal;
 
@@ -301,7 +301,7 @@ void TPCDecoderOverlayFilter1D::process_fragment(detinfo::DetectorClocksData con
     theClockFake.start();
 
     // Overlay a fake particle on this array of waveforms
-    fFakeParticleTool->overlayFakeParticle(clockData, fPedCorWaveforms);
+    fFakeParticleTool->overlayFakeParticle(fPedCorWaveforms);
 
     theClockFake.stop();
 

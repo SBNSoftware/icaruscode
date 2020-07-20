@@ -2,7 +2,6 @@ cet_enable_asserts()
 
 art_make( LIB_LIBRARIES lardataobj_RecoBase
                         larcorealg_Geometry
-                        lardataalg_DetectorInfo
                         nusimdata_SimulationBase
                         canvas
                         ${MF_MESSAGELOGGER}

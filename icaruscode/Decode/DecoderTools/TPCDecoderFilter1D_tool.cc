@@ -19,6 +19,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -67,8 +68,7 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const artdaq::Fragment&) override;
+    virtual void process_fragment(const artdaq::Fragment&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -172,6 +172,7 @@ private:
     database::TPCReadoutBoardToChannelMap fReadoutBoardToChannelMap;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
@@ -216,7 +217,9 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
     fFilterModeVec          = {'d','e','g'};
+
     fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector               = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     cet::cpu_timer theClockFragmentIDs;
 
@@ -255,8 +258,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
-                                          const artdaq::Fragment &fragment)
+void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 {
     cet::cpu_timer theClockTotal;
 
