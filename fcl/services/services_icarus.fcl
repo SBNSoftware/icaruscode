@@ -49,9 +49,43 @@
 #include "signalservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
-
+#include "sam_icarus.fcl"
 
 BEGIN_PROLOG
+
+
+################################################################################
+###  icarus_art_services
+###
+#
+# A set of basic art services you never want to be without.
+# Includes:
+#  * resource monitoring (`TimeTracker`, `MemoryTracker`)
+#  * message facility, with interactive (non-debug) configuration
+# 
+# Although you may want to use different message facility service settings.
+#
+icarus_art_services: {
+
+  scheduler:   { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+
+  message:     @local::icarus_message_services_interactive # from `messages_icarus.fcl`
+
+  TimeTracker: {
+    printSummary: true
+    dbOutput: {
+      filename:  "TimingReport.db"
+      overwrite: true
+    }
+  }
+  MemoryTracker: {
+    dbOutput: {
+      filename:  "MemoryReport.db"
+      overwrite: true
+    }
+  }
+
+} # icarus_art_services
 
 
 ################################################################################
@@ -63,31 +97,14 @@ BEGIN_PROLOG
 #
 icarus_basic_services:
 {
-    scheduler:                           { defaultExceptions: false }    # Make all uncaught exceptions fatal.
-
-    message:                             @local::icarus_message_services_interactive # from `messages_icarus.fcl`
-
-    TimeTracker: {
-      printSummary: true
-      dbOutput: {
-        filename:  "TimingReport.db"
-        overwrite: true
-      }
-    }
-    MemoryTracker: {
-      dbOutput: {
-        filename:  "MemoryReport.db"
-        overwrite: true
-      }
-    }
- 
+    @table::icarus_art_services
 
     # Load the service that manages root files for histograms.
     TFileService:                        { fileName: "Supplemental-%ifb_%tc-%p.root" }
 
     RandomNumberGenerator:               {}
     NuRandomService:                     @local::per_event_NuRandomService
-    #FileCatalogMetadata:                @local::art_file_catalog_mc
+    FileCatalogMetadata:                @local::art_file_catalog_mc
 
                                          @table::icarus_geometry_services
 
@@ -118,5 +135,11 @@ icarus_wirecalibration_services: {
 
 ################################################################################
 
+icarus_prod_services: {
+                       @table::icarus_basic_services
+  FileCatalogMetadata: @local::art_file_catalog_mc
+} # icarus_prod_services
+
 END_PROLOG
+
 

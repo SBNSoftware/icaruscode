@@ -105,19 +105,22 @@ icarus_photonvisibilityservice_mapped: {
 ### Legacy configuration
 ###
 #
-# This is the configuration used by the "standard" ICARUS job configurations
-# until icaruscode v08_50_00.
-# It is part of `icarus_legacy_services` configuration, and it should not
-# be used by itself since it requires a specific geometry and channel mapping.
+# This configuration should be used with the "old" PMT channel mapping.
+# PMT channel mapping reflects the optical detector sorting.
+# This sorting was changed when moving to the split wire geometry, so that the
+# new geometry included a new TPC and PMT channel mapping.
+# For the single wire geometry, this does not apply and the old configuration
+# is needed.
 # Use as:
 #     
-#     services: @local::icarus_legacy_services
+#     services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_noPMTremapping
 #     
-# This configuration is almost frozen (i.e. it would be frozen except that it
-# relies on `standard_library_vuv_prop_timing_photonvisibilityservice` which
-# we are not reproducing here).
+# This configuration is almost self-contained (i.e. it would be self-contained
+# except that it relies on
+# `standard_library_vuv_prop_timing_photonvisibilityservice` which we are not
+# reproducing here).
 #
-icarus_legacy_photonvisibilityservice_v08_50_00: {
+icarus_photonvisibilityservice_noPMTremapping: {
 
   @table::standard_library_vuv_prop_timing_photonvisibilityservice
 
@@ -140,8 +143,23 @@ icarus_legacy_photonvisibilityservice_v08_50_00: {
     tool_type: ICARUSPhotonMappingTransformations
   }
 
-} # icarus_legacy_photonvisibilityservice_v08_50_00
+} # icarus_photonvisibilityservice_noPMTremapping
 
+
+#
+# This is the configuration used by the "standard" ICARUS job configurations
+# until icaruscode v08_50_00.
+# It is part of `icarus_legacy_services` configuration, and it should not
+# be used by itself since it requires a specific geometry and channel mapping.
+# Use as:
+#     
+#     services: @local::icarus_legacy_services
+#     
+# This configuration is almost frozen (i.e. it would be frozen except that it
+# relies on `standard_library_vuv_prop_timing_photonvisibilityservice` which
+# we are not reproducing here).
+#
+icarus_legacy_photonvisibilityservice_v08_50_00: @local::icarus_photonvisibilityservice_noPMTremapping
 
 
 ###############################################################################

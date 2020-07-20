@@ -60,6 +60,8 @@
 // CRT data products
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
+#include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
 using std::string;
 using std::vector;
@@ -67,23 +69,8 @@ using std::map;
 using std::set;
 using std::pair;
 
-//using cmath::pow;
-//using cmath::sqrt;
-
 namespace {
-  //void FillFebMap();//map<int,vector<pair<int,int>>>& m);
-  uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo); 
-  char ModToAuxDetType(geo::AuxDetGeo const& adgeo);
-  int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
   int ProcessToICode(string const& p);
-  uint32_t MacToADReg(uint32_t mac);
-  char MacToType(uint32_t mac);
-  uint32_t MacToTypeCode(uint32_t mac);
-  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid);
-  //uint32_t ADSToFEBChannel(char type, uint32_t adid, uint32_t adsid);
-  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan);
-  int ChannelToAuxDetSensitiveID(int mac, int chan);
-  int RegToTypeCode(int reg);
 
 } // local namespace
 
@@ -122,47 +109,6 @@ namespace crt {
   class CRTSimAnalysis : public art::EDAnalyzer
   {
   public:
-
-    struct Config {
-      
-      // Save some typing:
-      using Name = fhicl::Name;
-      using Comment = fhicl::Comment;
-      
-      // One Atom for each parameter
-      fhicl::Atom<art::InputTag> SimulationLabel {
-        Name("SimulationLabel"),
-        Comment("tag of the input data product with the detector simulation information")
-        };
-
-      fhicl::Atom<art::InputTag> CRTSimHitLabel {
-        Name("CRTSimHitLabel"),
-        Comment("tag of the input data product with reconstructed CRT hits")
-        };
-
-      fhicl::Atom<art::InputTag> CRTDetSimLabel {
-        Name("CRTDetSimLabel"),
-        Comment("tag of the input data product with simulated CRT hits")
-        };
-   
-      fhicl::Sequence<int> PDGs {
-        Name("PDGs"),
-        Comment("consider only these PDGs")
-        };
-
-      fhicl::Sequence<float> MinMomenta {
-        Name("MinMomenta"),
-        Comment("minimum momentum for each PDG selected")
-        };
-
-      fhicl::Sequence<float> MaxMomenta {
-        Name("MaxMomenta"),
-        Comment("maximum momentum for each PDG selected")
-        };
-
-    }; // Config
-    
-    using Parameters = art::EDAnalyzer::Table<Config>;
     
     // -------------------------------------------------------------------
     // -------------------------------------------------------------------
@@ -170,7 +116,7 @@ namespace crt {
     // we don't need a special destructor here.
 
     /// Constructor: configures the module (see the Config structure above)
-    explicit CRTSimAnalysis(Parameters const& config);
+    explicit CRTSimAnalysis(fhicl::ParameterSet const& p);
 
     virtual void beginJob() override;
     virtual void beginRun(const art::Run& run) override;
@@ -178,17 +124,14 @@ namespace crt {
 
   private:
 
-    void FillFebMap();
-
     // The parameters we'll read from the .fcl file.
     art::InputTag fSimulationProducerLabel; ///< The name of the producer that tracked simulated particles through the detector
     art::InputTag fCRTSimHitProducerLabel;        ///< The name of the producer that created hits
+    art::InputTag fCRTTrueHitProducerLabel;
     art::InputTag fCRTDetSimProducerLabel;
     vector<int> fPDGs;                       ///< PDG code of particle we'll focus on
     vector<float> fMinMomenta;
     vector<float> fMaxMomenta;
-
-    static map<int, vector<pair<int,int>>> fFebMap;
 
     // The n-tuples we'll create.
     TTree* fCosmicDisplayNtuple;  ///< for ROOT based event display
@@ -210,19 +153,12 @@ namespace crt {
     /// @name The variables that will go into the CosmicDisplay n-tuple.
     /// @{
     static const int LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
-    //static const int kMaxSeg = 4000;
-    int        fCDEvent;
     int        fCDTrackID;
     int        fNCD;
     int        fCDpdg;
-    //vector<int> fCDRegions;
-    vector<vector<double>> fCDSlopes;
-    vector<vector<double>> fCDpe;
-    vector<vector<double>> fCDxyzt;
-    //int        fCDRegions[kMaxSeg];
-    //double     fCDSlopes[kMaxSeg][3]; //direction cosines
-    //double     fCDpe[kMaxSeg][4];   //4-momentum
-    //double     fCDxyzt[kMaxSeg][4];   //4-position
+    vector<vector<double>> fCDSlopes; ///< direction cosines
+    vector<vector<double>> fCDpe;     ///< 4-momentum
+    vector<vector<double>> fCDxyzt;   ///< 4-position
     /// @}
 
     /// @name The variables that will go into the Gen n-tuple.
@@ -246,14 +182,14 @@ namespace crt {
     int      fSimTrackID;   ///< GEANT ID of the particle being processed
     uint32_t fNAuxDet;   ///< Number of scintillator strips hit
 
-    vector<uint32_t> fAuxDetID;  ///< Global CRT module ID
-    vector<uint32_t> fAuxDetSensitiveID; ///< Strip ID in module
-    vector<double>    fADEDep; ///< Energy deposited in CRT strip (GeV)
-    vector<double>    fADdEdx; ///< average dEdx for particle traversing CRT strip
-    vector<double>    fADTrackLength; ///< Track length in CRT strip (cm)
-    vector<uint32_t> fAuxDetReg; ///< CRT region code
-    vector<uint32_t> fADMac; ///< Mac5 address of the CRT module
-    vector<uint32_t> fADType;
+    vector<uint32_t>   fAuxDetID;  ///< Global CRT module ID
+    vector<uint32_t>   fAuxDetSensitiveID; ///< Strip ID in module
+    vector<double>     fADEDep; ///< Energy deposited in CRT strip (GeV)
+    vector<double>     fADdEdx; ///< average dEdx for particle traversing CRT strip
+    vector<double>     fADTrackLength; ///< Track length in CRT strip (cm)
+    vector<uint32_t>   fAuxDetReg; ///< CRT region code
+    vector<uint32_t>   fADMac; ///< Mac5 address of the CRT module
+    vector<uint32_t>   fADType;
     vector<vector<double>>   fADEnterXYZT; ///< 4-position of entry into CRT strip
     vector<vector<double>>   fADExitXYZT; ///< 4-position of exit from CRT strip
     vector<vector<double>>   fADEnterPE; ///< 4-position of entry into CRT strip
@@ -272,8 +208,7 @@ namespace crt {
     int fMother; ///< G4 track ID of mother that directly produced this MCParticle
     int fNDaught; ///< number of daughters belonging to this MCParticle
 
-    //Regions tree vars
-    int      fRegEvent;
+    //Regions tree vars (1 track per entry)
     int      fNReg;
     int      fRegFid;
     int      fRegActive;
@@ -295,56 +230,61 @@ namespace crt {
     vector<vector<double>> fRegOpDetXYZT;
 
     //CRT data product vars
-    //static const int kDetMax = 64;
-    int      fDetEvent;
-    int      fNChan; ///< number of channels above threshold for this front-end board readout
+    //int      fNChan; ///< number of channels above threshold for this front-end board readout
     int      fEntry; ///< front-end board entry number (reset for each event)
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
     int      fDetSubSys;
-    double   fT0;///< signal time w.r.t. global event time
-    double   fT1;///< signal time w.r.t. PPS
+    int      fT0;///< signal time w.r.t. global event time
+    int      fT1;///< signal time w.r.t. PPS
     int      fADC[64];///< signal amplitude
-    vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
-    vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
+    int      fMaxAdc;
+    int      fMaxChan;
+    int      fNAbove;
+    vector<int> fTrackID;///< track ID(s) of particle that produced the signal
+    vector<int> fDetPDG; /// signal inducing particle(s)' PDG code
 
-    //CRT hit product vars
-    int       fHitEvent;
-    float    fXHit; ///< reconstructed X position of CRT hit (cm)
-    float    fYHit; ///< reconstructed Y position of CRT hit (cm)
-    float    fZHit; ///< reconstructed Z position of CRT hit (cm)
-    float    fXErrHit; ///< stat error of CRT hit reco X (cm)
-    float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
-    float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    int32_t    fT0Hit; ///< hit time w.r.t. global event time
-    int32_t    fT1Hit; ///< hit time w.r.t. PPS
-    //double    fT0CorrHit;
-    //double    fT1CorrHit;
+    // sim CRT hit product vars
+    float     fXHit; ///< reconstructed X position of CRT hit (cm)
+    float     fYHit; ///< reconstructed Y position of CRT hit (cm)
+    float     fZHit; ///< reconstructed Z position of CRT hit (cm)
+    float     fXHitErr; ///< stat error of CRT hit reco X (cm)
+    float     fYHitErr; ///< stat error of CRT hit reco Y (cm)
+    float     fZHitErr; ///< stat error of CRT hit reco Z (cm)
+    float     fT0Hit; ///< hit time w.r.t. global event time
+    float     fT1Hit; ///< hit time w.r.t. PPS
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
     vector<int> fHitTrk;
     vector<int> fHitPDG;
-    int       fHitStrip;
-    int       fHitMod;
+    vector<int> fHitMod;
+    vector<int> fHitStrip;
+    int       fNHitFeb;
+    vector<float> fHitPe;
+    float     fHitTotPe;
+    float     fHitPeRms;
 
     // truth CRT hit vars
-    int       fTrueHitEvent;
-    double    fTrueXHit; ///< reconstructed X position of CRT hit (cm)
-    double    fTrueYHit; ///< reconstructed Y position of CRT hit (cm)
-    double    fTrueZHit; ///< reconstructed Z position of CRT hit (cm)
-    double    fTrueXHitErr; ///< stat error of CRT hit reco X (cm)
-    double    fTrueYHitErr; ///< stat error of CRT hit reco Y (cm)
-    double    fTrueZHitErr; ///< stat error of CRT hit reco Z (cm)
-    double    fTrueTHit; ///< hit time w.r.t. global event time
-    double    fTrueTHitErr; ///< hit time w.r.t. PPS
-    int       fTrueHitReg; ///< region code of CRT hit
-    int       fTrueHitSubSys;
-    //uint32_t fTrueNHit; ///< number of CRT hits for this event
-    int       fTrueHitTrk;
-    int       fTrueHitPDG;
-    int       fTrueHitModID[2]; // one for c or d type, 2 entries for m type
-
+    float         fTrueXHit; ///< reconstructed X position of CRT hit (cm)
+    float         fTrueYHit; ///< reconstructed Y position of CRT hit (cm)
+    float         fTrueZHit; ///< reconstructed Z position of CRT hit (cm)
+    float         fTrueXHitErr; ///< stat error of CRT hit reco X (cm)
+    float         fTrueYHitErr; ///< stat error of CRT hit reco Y (cm)
+    float         fTrueZHitErr; ///< stat error of CRT hit reco Z (cm)
+    float         fTrueT0Hit; ///< hit time w.r.t. global event time
+    float         fTrueT1Hit; ///< hit time w.r.t. global event time
+    int           fTrueHitReg; ///< region code of CRT hit
+    int           fTrueHitSubSys;
+    uint32_t      fTrueNHit; ///< number of CRT hits for this event
+    vector<int>   fTrueHitTrk;
+    vector<int>   fTrueHitPDG;
+    vector<int>   fTrueHitStrip;
+    vector<int>   fTrueHitMod;
+    int           fTrueNHitFeb;
+    vector<float> fTrueHitPe;
+    float         fTrueHitTotPe;
+    float         fTrueHitPeRms;
 
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
@@ -367,7 +307,9 @@ namespace crt {
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     int                      fTriggerOffset;     ///< (units of ticks) time of expected neutrino event
-    
+    CRTBackTracker bt;
+    CRTCommonUtils* fCrtutils;    
+
   }; // class CRTSimAnalysis
 
 
@@ -382,54 +324,22 @@ namespace crt {
   // value we need to use an operator: "config()". In the same way,
   // each element in Config is an Atom<Type>, so to access the type we
   // again use the call operator, e.g. "SimulationLabel()".
-
-  map<int,vector<pair<int,int>>> CRTSimAnalysis::fFebMap;
- 
-  CRTSimAnalysis::CRTSimAnalysis(Parameters const& config)
-    : EDAnalyzer(config)
-    , fSimulationProducerLabel(config().SimulationLabel())
-    , fCRTSimHitProducerLabel(config().CRTSimHitLabel())
-    , fCRTDetSimProducerLabel(config().CRTDetSimLabel())
-    , fPDGs(config().PDGs())
-    , fMinMomenta(config().MinMomenta())
-    , fMaxMomenta(config().MaxMomenta())
+  CRTSimAnalysis::CRTSimAnalysis(fhicl::ParameterSet const& p)
+    : EDAnalyzer{p}
+    , fSimulationProducerLabel(p.get<art::InputTag>("SimulationLabel","largeant"))
+    , fCRTSimHitProducerLabel(p.get<art::InputTag>("CRTSimHitLabel","crthit"))
+    , fCRTTrueHitProducerLabel(p.get<art::InputTag>("CRTTrueHitLabel","crttruehit"))
+    , fCRTDetSimProducerLabel(p.get<art::InputTag>("CRTDetSimLabel","crtdaq"))
+    , fPDGs(p.get<vector<int>>("PDGs"))
+    , fMinMomenta(p.get<vector<float>>("MinMomenta"))
+    , fMaxMomenta(p.get<vector<float>>("MaxMomenta"))
+    , bt(p.get<fhicl::ParameterSet>("CRTBackTrack"))
+    , fCrtutils(new CRTCommonUtils())
   {
     fGeometryService = lar::providerFrom<geo::Geometry>();
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
     fTriggerOffset = sampling_rate(clockData);
   }
-
-  void CRTSimAnalysis::FillFebMap() { //map<int,vector<pair<int,int>>>& m) {
-    if(!this->fFebMap.empty())
-        return;
-    //std::string dir = "/icarus/app/users/chilgenb/dev_areas/v08_22_00_prof/srcs/icaruscode/icaruscode/Geometry/gdml/";
-    std::string fullFileName;
-    cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("feb_map.txt",fullFileName);
-    std::ifstream fin;
-    //fin.open(dir+"feb_map.txt",std::ios::in);
-    fin.open(fullFileName,std::ios::in);
-    if(fin.good()) std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else //std::cout << "could not open file 'feb_map.txt' for reading!" << std::endl;
-        throw cet::exception("CRTSimAnalysis::FillFebMap") << "Unable to find/open file 'feb_map.txt'" << std::endl;
-    std::vector<std::string> row;
-    std::string line, word;
-    while(getline(fin,line)) {
-        row.clear();
-        std::stringstream s(line);
-        int mod;
-        while (std::getline(s, word, ',')) {
-            row.push_back(word);
-        }
-        mod = std::stoi(row[0]);
-        (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[1]),std::stoi(row[2])));
-        if(row.size()>3)
-            (this->fFebMap)[mod].push_back(std::make_pair(std::stoi(row[3]),std::stoi(row[4])));
-    }
-    std::cout << "filled febMap with " << (this->fFebMap).size() << " entries" << std::endl;
-    fin.close();
-  }
-
   
   //-----------------------------------------------------------------------
   void CRTSimAnalysis::beginJob()
@@ -465,7 +375,9 @@ namespace crt {
     fFEBMultHistD     =tfs->make<TH1F>("FEBMultM",";no. FEB triggers / #mu;",64,0,64);
 
     // Define the branches of our event display n-tuple
-    fCosmicDisplayNtuple->Branch("event",             &fCDEvent,             "event/I");
+    fCosmicDisplayNtuple->Branch("event",             &fEvent,               "event/I");
+    fCosmicDisplayNtuple->Branch("run",               &fRun,                 "run/I");
+    fCosmicDisplayNtuple->Branch("subRun",            &fSubRun,              "subRun/I");
     fCosmicDisplayNtuple->Branch("trackID",           &fCDTrackID,           "trackID/I");
     fCosmicDisplayNtuple->Branch("nSeg",              &fNCD,                 "nSeg/I");
     fCosmicDisplayNtuple->Branch("pdg",               &fCDpdg,               "pdg/I");
@@ -476,6 +388,8 @@ namespace crt {
 
     // Define the branches of our Gen n-tuple
     fGenNtuple->Branch("event",        &fEvent,         "event/I");
+    fGenNtuple->Branch("run",          &fRun,           "run/I");
+    fGenNtuple->Branch("subRun",       &fSubRun,        "subRun/I");
     fGenNtuple->Branch("nGen",         &fNGen,          "nGen/I");
     fGenNtuple->Branch("trackID",      &fGenTrack);
     fGenNtuple->Branch("pdg",          &fGenPDG);
@@ -486,9 +400,9 @@ namespace crt {
 
     // Define the branches of our simulation n-tuple
     fSimulationNtuple->Branch("event",             &fEvent,             "event/I");
-    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
-    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subRun/I");
     fSimulationNtuple->Branch("run",               &fRun,               "run/I");
+    fSimulationNtuple->Branch("subRun",            &fSubRun,            "subrun/I");
+    fSimulationNtuple->Branch("nPoints" ,          &fSimHits,           "nPoints/I");
     fSimulationNtuple->Branch("trackID",           &fSimTrackID,        "trackID/I");
     fSimulationNtuple->Branch("pdg",               &fSimPDG,            "pdg/I");
     fSimulationNtuple->Branch("trackLength",       &fTrackLength,       "trackLenth/F");
@@ -521,7 +435,9 @@ namespace crt {
     fSimulationNtuple->Branch("nDaught",           &fNDaught,           "nDaught/I");
 
     //regions tree
-    fRegionsNtuple->Branch("event",                &fRegEvent,           "event/I");
+    fRegionsNtuple->Branch("event",                &fEvent,              "event/I");
+    fRegionsNtuple->Branch("run",                  &fRun,                "run/I");
+    fRegionsNtuple->Branch("subRun",               &fSubRun,             "subRun/I");
     fRegionsNtuple->Branch("nReg",                 &fNReg,               "nReg/I");
     fRegionsNtuple->Branch("fiducial",             &fRegFid,             "fiducial/I");
     fRegionsNtuple->Branch("active",               &fRegActive,          "active/I");
@@ -543,11 +459,15 @@ namespace crt {
     fRegionsNtuple->Branch("exitSlope",            &fRegExitSlope);
 
     // Define the branches of our DetSim n-tuple 
-    fDetSimNtuple->Branch("event",                 &fDetEvent,          "event/I");
-    fDetSimNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDetSimNtuple->Branch("t0",                    &fT0,                "t0/D");
-    fDetSimNtuple->Branch("t1",                    &fT1,                "t1/D");
-    fDetSimNtuple->Branch("adc",                   fADC);
+    fDetSimNtuple->Branch("event",                 &fEvent,             "event/I");
+    fDetSimNtuple->Branch("run",                   &fRun,               "run/I");
+    fDetSimNtuple->Branch("subRun",                &fSubRun,            "subRun/I");
+    fDetSimNtuple->Branch("nAbove",                &fNAbove,            "nAbove/I");
+    fDetSimNtuple->Branch("t0",                    &fT0,                "t0/I");
+    fDetSimNtuple->Branch("t1",                    &fT1,                "t1/I");
+    fDetSimNtuple->Branch("adc",                   fADC,                "adc[64]/I");
+    fDetSimNtuple->Branch("maxAdc",                &fMaxAdc,            "maxAdc/I");
+    fDetSimNtuple->Branch("maxChan",               &fMaxChan,           "maxChan/I");
     fDetSimNtuple->Branch("trackID",               &fTrackID);
     fDetSimNtuple->Branch("detPDG",                &fDetPDG);
     fDetSimNtuple->Branch("entry",                 &fEntry,             "entry/I");
@@ -556,40 +476,52 @@ namespace crt {
     fDetSimNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
 
     // Define the branches of our SimHit n-tuple
-    fSimHitNtuple->Branch("event",       &fHitEvent,    "event/I");
+    fSimHitNtuple->Branch("event",       &fEvent,       "event/I");
+    fSimHitNtuple->Branch("run",         &fRun,         "run/I");
+    fSimHitNtuple->Branch("subRun",      &fSubRun,      "subRun/I");
     fSimHitNtuple->Branch("nHit",        &fNHit,        "nHit/I");
     fSimHitNtuple->Branch("x",           &fXHit,        "x/F");
     fSimHitNtuple->Branch("y",           &fYHit,        "y/F");
     fSimHitNtuple->Branch("z",           &fZHit,        "z/F");
-    fSimHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
-    fSimHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
-    fSimHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
-    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
-    //fSimHitNtuple->Branch("t0Corr",      &fT0CorrHit,   "t0/D");
-    //fSimHitNtuple->Branch("t1Corr",      &fT1CorrHit,   "t1/D");
+    fSimHitNtuple->Branch("xErr",        &fXHitErr,     "xErr/F");
+    fSimHitNtuple->Branch("yErr",        &fYHitErr,     "yErr/F");
+    fSimHitNtuple->Branch("zErr",        &fZHitErr,     "zErr/F");
+    fSimHitNtuple->Branch("t0",          &fT0Hit,       "t0/F");
+    fSimHitNtuple->Branch("t1",          &fT1Hit,       "t1/F");
     fSimHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     fSimHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
     fSimHitNtuple->Branch("trackID",     &fHitTrk);
     fSimHitNtuple->Branch("pdg",         &fHitPDG);
-    fSimHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
-    fSimHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
+    fSimHitNtuple->Branch("modID",       &fHitMod);
+    fSimHitNtuple->Branch("stripID",     &fHitStrip);
+    fSimHitNtuple->Branch("nFeb",        &fNHitFeb,     "nFeb/I");
+    fSimHitNtuple->Branch("hitPe",       &fHitPe);
+    fSimHitNtuple->Branch("totPe",       &fHitTotPe,    "totPe/F");
+    fSimHitNtuple->Branch("rmsPe",       &fHitPeRms,    "rmsPe/F");
 
     // Define the branches of our SimTrueHit n-tuple
-    fTrueCRTHitNtuple->Branch("event",       &fTrueHitEvent,    "event/I");
-    fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/D");
-    fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/D");
-    fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/D");
-    fTrueCRTHitNtuple->Branch("xErr",        &fTrueXHitErr,     "xErr/D");
-    fTrueCRTHitNtuple->Branch("yErr",        &fTrueYHitErr,     "yErr/D");
-    fTrueCRTHitNtuple->Branch("zErr",        &fTrueZHitErr,     "zErr/D");
-    fTrueCRTHitNtuple->Branch("t",           &fTrueTHit,        "t/D");
-    fTrueCRTHitNtuple->Branch("tErr",        &fTrueTHitErr,     "tErr/D");
+    fTrueCRTHitNtuple->Branch("event",       &fEvent,           "event/I");
+    fTrueCRTHitNtuple->Branch("run",         &fRun,             "run/I");
+    fTrueCRTHitNtuple->Branch("subRun",      &fSubRun,          "subRun/I");
+    fTrueCRTHitNtuple->Branch("nHit",        &fTrueNHit,        "nHit/I");
+    fTrueCRTHitNtuple->Branch("x",           &fTrueXHit,        "x/F");
+    fTrueCRTHitNtuple->Branch("y",           &fTrueYHit,        "y/F");
+    fTrueCRTHitNtuple->Branch("z",           &fTrueZHit,        "z/F");
+    fTrueCRTHitNtuple->Branch("xErr",        &fTrueXHitErr,     "xErr/F");
+    fTrueCRTHitNtuple->Branch("yErr",        &fTrueYHitErr,     "yErr/F");
+    fTrueCRTHitNtuple->Branch("zErr",        &fTrueZHitErr,     "zErr/F");
+    fTrueCRTHitNtuple->Branch("t0",          &fTrueT0Hit,       "t0/F");
+    fTrueCRTHitNtuple->Branch("t1",          &fTrueT1Hit,       "t1/F");
     fTrueCRTHitNtuple->Branch("region",      &fTrueHitReg,      "region/I");
     fTrueCRTHitNtuple->Branch("subSys",      &fTrueHitSubSys,   "subSys/I");
-    fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk,      "trackID/I");
-    fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG,      "pdg/I");
-    fTrueCRTHitNtuple->Branch("modID",       fTrueHitModID,     "modID[2]/I");
+    fTrueCRTHitNtuple->Branch("trackID",     &fTrueHitTrk);
+    fTrueCRTHitNtuple->Branch("pdg",         &fTrueHitPDG);
+    fTrueCRTHitNtuple->Branch("modID",       &fTrueHitMod);
+    fTrueCRTHitNtuple->Branch("stripID",     &fTrueHitStrip);
+    fTrueCRTHitNtuple->Branch("nFeb",        &fTrueNHitFeb,     "nFeb/I");
+    fTrueCRTHitNtuple->Branch("hitPe",       &fTrueHitPe);
+    fTrueCRTHitNtuple->Branch("totPe",       &fTrueHitTotPe,    "totPe/F");
+    fTrueCRTHitNtuple->Branch("rmsPe",       &fTrueHitPeRms,    "rmsPe/F");
 
 }
    
@@ -616,6 +548,9 @@ namespace crt {
     fEvent  = event.id().event(); 
     fRun    = event.run();
     fSubRun = event.subRun();
+
+    //CRTBackTracker matches CRTProducts to the true trackIDs
+    //bt.Initialize(event);
 
     // Define "handle" to Generator level MCTruth objects
     art::Handle< vector<simb::MCTruth>> genHandle;
@@ -648,11 +583,10 @@ namespace crt {
           << " Line " << __LINE__ << " in file " << __FILE__ << std::endl;
     }
 
-    FillFebMap();//febMap);
+    if((*genHandle).size()>1) 
+        throw cet::exception("CRTSimAnalysis") << "gen stage MCParticle vector has more than 1 entry!" << '\n';
 
-    if((*genHandle).size()>1) throw cet::exception("CRTSimAnalysis") << "gen stage MCParticle vector has more than 1 entry!" << std::endl;
     auto const& truth = (*genHandle)[0];   
-
     fNGen = truth.NParticles();
     fGenTrack.clear();
     fGenPDG.clear();
@@ -727,8 +661,6 @@ namespace crt {
         //check momentum is within region of interest
         if ( fMinMomenta[index] != 0 && p < fMinMomenta[index]) continue;
         if ( fMaxMomenta[index] != 0 && p > fMaxMomenta[index]) continue;
-        //if ( fMinMomenta.size()==1 && fMinMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMinMomenta[0] ) continue;
-        //if ( fMaxMomenta.size()==1 && fMaxMomenta[0]!=0 && fPDGs.size()==1 && fPDGs[0]==0 && p < fMaxMomenta[0] ) continue;
         //if ( abs(fSimPDG)==11 && particle.Process()!="compt" && particle.Process()!="conv" )
         //  continue;
 
@@ -750,7 +682,6 @@ namespace crt {
         if(fMother!=0){ //if not primary
             map<int,const simb::MCParticle*>::const_iterator it = particleMap.find(fMother);
             if(it==particleMap.end()){
-                //std::cout << "mother MCParticle object not found!" << std::endl;
                 fParentPDG=INT_MAX;
                 fParentE = FLT_MAX;
                 fProgenitor = INT_MAX;
@@ -790,6 +721,7 @@ namespace crt {
 	// A particle has a trajectory, consisting of a set of
 	// 4-positions and 4-mommenta.
 	fSimHits = particle.NumberTrajectoryPoints();
+        if(fSimHits==1) continue;
 
 	// For trajectories, as for vectors and arrays, the first
 	// point is #0, not #1.
@@ -806,7 +738,6 @@ namespace crt {
 	momentumEnd.GetXYZT( fEndPE );
         fTrackLength = ( positionEnd - positionStart ).Rho();
 
-        fCDEvent = fEvent;
         fNCD = 0;
         fCDpdg = fSimPDG;
         fCDTrackID = fSimTrackID;
@@ -815,7 +746,6 @@ namespace crt {
         fCDpe.clear();
         fCDxyzt.clear();
 
-        fRegEvent = fEvent;
         fNReg = 0;
         fRegFid = 0;
         fRegActive = 0;
@@ -836,8 +766,6 @@ namespace crt {
         fRegExitSlope.clear();
 
         int oldreg = -1;
-
-        MF_LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
 
         //loop over trajectory points
         for (unsigned int i=0; i<fSimHits; i++){
@@ -860,7 +788,6 @@ namespace crt {
                 // Regions info
                 // Check if trajectory points are in cryostats (active + inactve LAr ) 
                 if(cryo0.ContainsPosition(point)) {
-
                         active0 = tpc00.ContainsPosition(point);
                         active1 = tpc01.ContainsPosition(point);
                         activenext0 = tpc00.ContainsPosition(pointnext);
@@ -880,6 +807,9 @@ namespace crt {
                         if (!cryo0.ContainsPosition(pointnext) || (oldreg==10&&(activenext0||activenext1))
                             || i==fSimHits-1
                             || (active0 && !activenext0) || (active1&&!activenext1) ){
+
+                                if (!cryo0.ContainsPosition(pointnext))
+                                    oldreg=-1;
 
                                 fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
                                 fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
@@ -903,6 +833,9 @@ namespace crt {
                                     fRegRegions.push_back(10);
                                     fRegInactive++;
                                 }
+                                if(fRegExitXYZT.size()!=fRegEntryXYZT.size())
+                                    std::cout << "entry/exit point size mismatch! " << 
+                                              fRegEntryXYZT.size() << " vs. " << fRegExitXYZT.size() << std::endl;
                                 fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
                                                     +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
                                                     +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
@@ -924,7 +857,6 @@ namespace crt {
 
                 // if this point in the other cryostat
                 if(cryo1.ContainsPosition(point)) {
- 
                         //check if this or next points are in active volumes
                         active0 = tpc10.ContainsPosition(point);
                         active1 = tpc11.ContainsPosition(point);
@@ -944,6 +876,9 @@ namespace crt {
                         if (!cryo1.ContainsPosition(pointnext) || (oldreg==12&&(activenext0||activenext1))
                             || i==fSimHits-1
                             || (active0 && !activenext0) || (active1&&!activenext1) ){
+
+                                if (!cryo1.ContainsPosition(pointnext))
+                                    oldreg=-1;
 
                                 fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
                                 fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
@@ -999,19 +934,6 @@ namespace crt {
         map< int, vector<double> > regCRTEnter, regCRTExit, regCRTEnterPE, regCRTExitPE;
 
         //reinitialize ADChannel vars
-	fNAuxDet = 0;
-
-        struct tagger {
-            char type;
-            int region;
-            std::set<int> layerID;
-            std::map<int,int> stripLayer;
-            std::pair<int,int> modPair;
-            std::map<int,std::vector<double>> xyzt;
-        };
-           
-        std::map<int,tagger> taggers;    
-
         fNAuxDet = 0;
         fADType.clear();
         fAuxDetReg.clear();
@@ -1030,10 +952,9 @@ namespace crt {
 	// we loop over the AuxDetSimChannel objects in the event. 
 	// Note all volumes are included, not just ones with energy deps
 	for ( auto const& channel : (*auxDetSimChannelHandle) )
-	{  
+	{
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
-	    //std::cout << "auxDetIDEs.size() = " << auxDetIDEs.size() << std::endl;
 
 	    // For every hit in this channel:
 	    for ( auto const& ide : auxDetIDEs )
@@ -1043,87 +964,26 @@ namespace crt {
 		    if ( ide.trackID != fSimTrackID ) continue;
 		    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
 
-                    tagger& tag = taggers[channel.AuxDetID()];
-                    auto const& adGeo = fGeometryService->AuxDet(channel.AuxDetID());
-                    tag.type = ModToAuxDetType(adGeo);
-                    tag.region = GetAuxDetRegion(adGeo);
-                    auto const& adsGeo = adGeo.SensitiveVolume(channel.AuxDetSensitiveID());
-
-                    std::set<std::string> volNames = { adsGeo.TotalVolume()->GetName() };
-                    std::vector<std::vector<TGeoNode const*> > paths = fGeometryService->FindAllVolumePaths(volNames);
-
-                    std::string path = "";
-                    for (size_t inode=0; inode<paths.at(0).size(); inode++) {
-                        path += paths.at(0).at(inode)->GetName();
-                        if (inode < paths.at(0).size() - 1) {
-                            path += "/";
-                        }
-                    }
-                    TGeoManager* manager = fGeometryService->ROOTGeoManager();
-                    manager->cd(path.c_str());
-                    TGeoNode* nodeStrip = manager->GetCurrentNode();
-                    TGeoNode* nodeInner = manager->GetMother(1);
-                    TGeoNode* nodeModule = manager->GetMother(2);
-                    double origin[3] = {0, 0, 0};
-                    int layid = 0.5*INT_MAX; //set to 0 or 1 if layerid determined
-                    //int mac5=LONG_MAX;
-                    // Module position in parent (tagger) frame
-                    double modulePosMother[3]; //position in CRT region volume
-                    nodeModule->LocalToMaster(origin, modulePosMother);
-
-                    // strip position in module frame
-                    double stripPosMother[3];
-                    double stripPosModule[3];
-                    nodeStrip->LocalToMaster(origin, stripPosMother);
-                    nodeInner->LocalToMaster(stripPosMother,stripPosModule);
-
-                    //fADType[fNAuxDet] = ModToTypeCode(adGeo);
-                    //fAuxDetReg[fNAuxDet] = GetAuxDetRegion(adGeo);
-                    fADType.push_back(ModToTypeCode(adGeo));
-                    fAuxDetReg.push_back(GetAuxDetRegion(adGeo));
-
-                    if ( fADType[fNAuxDet] == 0 || fADType[fNAuxDet] == 2 )
-                        layid = (stripPosModule[1] > 0);
-
-                    // if 'm' type
-                    if ( fADType[fNAuxDet] == 1 ) {
-                        // if east or west stacks (6 in total)
-                        if ( fAuxDetReg[fNAuxDet] >=40 && fAuxDetReg[fNAuxDet] <=45 ) {
-                            layid = ( modulePosMother[0]>0 );
-                        }
-                        // if front or back
-                        if ( fAuxDetReg[fNAuxDet] == 46 || fAuxDetReg[fNAuxDet] == 47) {
-                            layid = ( modulePosMother[2]> 0 );
-                        }
-                    }
+                    size_t adid = channel.AuxDetID();
+                    //size_t adsid = channel.AuxDetSensitiveID();
+                    fADType.push_back(fCrtutils->GetAuxDetTypeCode(adid));
+                    fAuxDetReg.push_back(
+                       fCrtutils->AuxDetRegionNameToNum(fCrtutils->GetAuxDetRegion(adid)));
 
                     // What is the distance from the hit (centroid of the entry
                     // and exit points) to the readout end?
-                    double trueX = (ide.entryX + ide.exitX) / 2.0;
+                    /*double trueX = (ide.entryX + ide.exitX) / 2.0;
                     double trueY = (ide.entryY + ide.exitY) / 2.0;
                     double trueZ = (ide.entryZ + ide.exitZ) / 2.0;
-                    double trueT = (ide.entryT + ide.exitT) / 2.0;
-                    double world[3] = {trueX, trueY, trueZ};
-                    double svHitPosLocal[3];
-                    double modHitPosLocal[3];
-                    adsGeo.WorldToLocal(world, svHitPosLocal); //position in strip frame  (origin at center)
-                    adGeo.WorldToLocal(world, modHitPosLocal); //position in module frame (origin at center)
-
-                    if (trueX==0) {
-                              std::cout << "hit in " << tag.type << "-module " << channel.AuxDetID() << ", strip "
-                              << channel.AuxDetSensitiveID() << ", in layer " << layid << '\n'
-                              << "  x: " << trueX << ", y: " << trueY << ", z: " << trueZ 
-                              << ", t: " << trueT << std::endl;
-                    }
-
-                    tag.layerID.insert(layid);
-                    tag.stripLayer[channel.AuxDetSensitiveID()] = layid;
-                    std::vector<double>& truePos = tag.xyzt[channel.AuxDetSensitiveID()];
-                    truePos.push_back(trueX);
-                    truePos.push_back(trueY);
-                    truePos.push_back(trueZ);
-                    truePos.push_back(trueT);
-                    //tag.modPair = std::make_pair(channel.AuxDetID(),channel.AuxDetID());
+                    //double trueT = (ide.entryT + ide.exitT) / 2.0;
+                    double pos[3] = {trueX,trueY,trueZ};
+                    size_t chanad, chanads;
+                    int32_t adchan = fGeometryService->PositionToAuxDetChannel(pos,chanad,chanads);
+                    std::cout << "retrieved AuxDetChannel from position (" << trueX << ", " << trueY
+                              << ", " << trueZ << ")" << '\n'
+                              << "   true AuxDetID, AuxDetSensitiveID: " << adid << ", " << adsid << '\n'
+                              << "   from map-> chan, adid, adsid: " << adchan << ", " << chanad
+                              << ", " << chanads << std::endl;*/
 
                     //calculate track length in strip
 		    double dx = ide.entryX-ide.exitX;
@@ -1131,7 +991,6 @@ namespace crt {
 		    double dz = ide.entryZ-ide.exitZ;
                     double adlength = sqrt(dx*dx+dy*dy+dz*dz);
                     if ( adlength < 0.0001)  continue;
-
 
                     fADTrackLength.push_back(adlength);
                     fADEDep.push_back(ide.energyDeposited);
@@ -1145,7 +1004,7 @@ namespace crt {
                     fADExitPE.push_back({ide.exitMomentumX,ide.exitMomentumY,ide.exitMomentumZ,pmag});
                     fADEnterPE.push_back({fADExitPE[fNAuxDet][0]+pmag/3,fADExitPE[fNAuxDet][1]+pmag/3,
                                           fADExitPE[fNAuxDet][2]+pmag/3,pmag+ide.energyDeposited});
-                    fADMac.push_back(ADToMac(this->fFebMap, channel.AuxDetID()).first);
+                    fADMac.push_back(fCrtutils->ADToMac(channel.AuxDetID()).first);
 
                     if (regCRTEnter.find(fAuxDetReg[fNAuxDet])!=regCRTEnter.end()) {
                         if (regCRTEnter[fAuxDetReg[fNAuxDet]][3] > ide.entryT) {
@@ -1177,179 +1036,6 @@ namespace crt {
         // write values to tree for this event and particle
         fSimulationNtuple->Fill();
 
-        fTrueHitEvent = fEvent;
-        fTrueHitTrk = fSimTrackID;
-        fTrueHitPDG = fSimPDG;
-        map <int,tagger> mTaggers;
-
-        // loop over taggers: modID->strip hit info
-        for (auto const& tag : taggers) {
-
-            fTrueXHit = 0;
-            fTrueYHit = 0;
-            fTrueZHit = 0;
-            fTrueTHit = 0;
-            fTrueXHitErr = 0;
-            fTrueYHitErr = 0;
-            fTrueZHitErr = 0;
-            fTrueTHitErr = 0;
-            fTrueHitModID[0] = tag.first;
-            fTrueHitModID[1] = tag.first;
-            fTrueHitReg = tag.second.region;
-            if (tag.second.type == 'c') fTrueHitSubSys = 0;
-            if (tag.second.type == 'd') fTrueHitSubSys = 2;
-            std::vector<double> xhits, yhits, zhits, thits;
-
-            // if c or d type module
-            if (tag.second.type=='c' || tag.second.type=='d') {
-                // if "X-Y" coincidence
-                if (tag.second.layerID.size()>1) {
-                    // loop over module strips map: stripID->pos 4-vec
-                    for (auto const& strip : tag.second.xyzt) {
-                        if (strip.second[0] == 0
-                         && strip.second[1] == 0
-                         && strip.second[2] == 0)
-                           continue;
-
-                        xhits.push_back(strip.second[0]);
-                        yhits.push_back(strip.second[1]);
-                        zhits.push_back(strip.second[2]);
-                        thits.push_back(strip.second[3]);
-                    }
-                    if (xhits.size()==0) continue;
-
-                    for ( size_t i=0; i<xhits.size(); i++) {
-                        fTrueXHit+=xhits[i];
-                        fTrueYHit+=yhits[i];
-                        fTrueZHit+=zhits[i];
-                        fTrueTHit+=thits[i];
-                    }
-                    
-                    fTrueXHit *= 1.0/tag.second.xyzt.size();
-                    fTrueYHit *= 1.0/tag.second.xyzt.size();
-                    fTrueZHit *= 1.0/tag.second.xyzt.size();
-                    fTrueTHit *= 1.0/tag.second.xyzt.size();
-                      
-                    for ( size_t i=0; i<xhits.size(); i++) {
-                        fTrueXHitErr += pow(xhits[i]-fTrueXHit,2);
-                        fTrueYHitErr += pow(yhits[i]-fTrueYHit,2);
-                        fTrueZHitErr += pow(zhits[i]-fTrueZHit,2);
-                        fTrueTHitErr += pow(thits[i]-fTrueTHit,2);
-                    }
-
-                    fTrueXHitErr = sqrt(fTrueXHitErr/(xhits.size()-1));
-                    fTrueYHitErr = sqrt(fTrueYHitErr/(yhits.size()-1));
-                    fTrueZHitErr = sqrt(fTrueZHitErr/(zhits.size()-1));
-                    fTrueTHitErr = sqrt(fTrueTHitErr/(thits.size()-1));
-           
-                } //if coincidence
-                else continue;
-
-                fTrueCRTHitNtuple->Fill();
-
-            }//if c or d type
-
-            if ( tag.second.type=='m' ) {
-                mTaggers[tag.first] = tag.second;
-            }
-
-        } //loop over taggers
-
-        set <int> mPairs;
-        int nmisspair = 0;
-        for (auto const& tag : mTaggers) {
-
-            fTrueXHit = 0;
-            fTrueYHit = 0;
-            fTrueZHit = 0;
-            fTrueTHit = 0;
-            fTrueXHitErr = 0;
-            fTrueYHitErr = 0;
-            fTrueZHitErr = 0;
-            fTrueTHitErr = 0;
-            fTrueHitModID[0] = tag.first;
-            fTrueHitModID[1] = tag.first;
-            fTrueHitReg = tag.second.region;
-            fTrueHitSubSys = 1;
-            std::vector<double> xhits, yhits, zhits, thits;
-            bool pairFound = false;
-
-            if (mPairs.find(tag.first) != mPairs.end()) continue;
-            for (auto const& tag2 : mTaggers) {
-                if (tag.first != tag2.first &&
-                  mPairs.find(tag2.first) == mPairs.end() &&
-                  tag.second.region == tag2.second.region &&
-                  tag.second.layerID != tag2.second.layerID ) {
-
-                    mPairs.insert(tag.first);
-                    mPairs.insert(tag2.first);
-                    fTrueHitModID[0] = tag.first;
-                    fTrueHitModID[1] = tag2.first;
-
-                    // loop over module strips map: stripID->pos 4-vec
-                    for (auto const& strip : tag.second.xyzt) {
-                        if (strip.second[0] == 0
-                         && strip.second[1] == 0
-                         && strip.second[2] == 0)
-                           continue;
-
-                        xhits.push_back(strip.second[0]);
-                        yhits.push_back(strip.second[1]);
-                        zhits.push_back(strip.second[2]);
-                        thits.push_back(strip.second[3]);
-                    }// for xyzt in first tagger (module)
-
-                    for (auto const& strip : tag2.second.xyzt) {
-                        if (strip.second[0] == 0
-                         && strip.second[1] == 0
-                         && strip.second[2] == 0)
-                           continue;
-
-                        xhits.push_back(strip.second[0]);
-                        yhits.push_back(strip.second[1]);
-                        zhits.push_back(strip.second[2]);
-                        thits.push_back(strip.second[3]);
-                    }// for xyzt in second tagger (module)
-
-
-                    for ( size_t i=0; i<xhits.size(); i++) {
-                        fTrueXHit+=xhits[i];
-                        fTrueYHit+=yhits[i];
-                        fTrueZHit+=zhits[i];
-                        fTrueTHit+=thits[i];
-                    } // sum together x,y,z,t values repectively
-
-                    //get the centroid
-                    fTrueXHit *= 1.0/xhits.size();
-                    fTrueYHit *= 1.0/yhits.size();
-                    fTrueZHit *= 1.0/zhits.size();
-                    fTrueTHit *= 1.0/thits.size();
-
-                    // calculate rms of hit distrubution
-                    for ( size_t i=0; i<xhits.size(); i++) {
-                        fTrueXHitErr += pow(xhits[i]-fTrueXHit,2);
-                        fTrueYHitErr += pow(yhits[i]-fTrueYHit,2);
-                        fTrueZHitErr += pow(zhits[i]-fTrueZHit,2);
-                        fTrueTHitErr += pow(thits[i]-fTrueTHit,2);
-                    }
-
-                    fTrueXHitErr = sqrt(fTrueXHitErr/(xhits.size()-1));
-                    fTrueYHitErr = sqrt(fTrueYHitErr/(yhits.size()-1));
-                    fTrueZHitErr = sqrt(fTrueZHitErr/(zhits.size()-1));
-                    fTrueTHitErr = sqrt(fTrueTHitErr/(thits.size()-1));
- 
-                    pairFound = true;             
-                    break; // first tagger is matched so break from loop
-                }//if match found
-            }//inner loop over taggers
-
-            if (pairFound) fTrueCRTHitNtuple->Fill();
-            else nmisspair++;
-
-        } // outer loop over taggers
-
-        //if (nmisspair>0) std::cout << "missed " << nmisspair << " tagger pairs in trueHit reco for M mods" << std::endl;
-        //auto tmpNReg = fNReg;
         for( auto it=regCRTEnter.begin(); it!=regCRTEnter.end(); it++) {
             //std::cout << "found CRT region " << it->first << std::endl;
             fRegRegions.push_back(it->first);
@@ -1372,10 +1058,9 @@ namespace crt {
             
             fNReg++; fRegCRTs++;
         }
-        //std::cout << "added " << fNReg-tmpNReg << " CRT regions to RegTree" << std::endl;
 
         //sort region tree entries by entry time
-        int flag = 1;    // set flag to 1 to start first pass
+        int      flag = 1;    // set flag to 1 to start first pass
         int      tempInt;
         double   tempDoub;
         
@@ -1435,138 +1120,216 @@ namespace crt {
 
     } // loop over all particles in the event. 
 
+    //CRTData
+    art::Handle<vector<CRTData>> crtDetSimHandle;
+    if (event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle))  {
 
-    art::Handle<vector<icarus::crt::CRTData>> crtDetSimHandle;
-    bool isCRTDetSim = event.getByLabel(fCRTDetSimProducerLabel, crtDetSimHandle);
+        vector<art::Ptr<CRTData>> febdata;
+        art::fill_ptr_vector(febdata,crtDetSimHandle);
+        mf::LogPrint("CRTSimAnalysis") << "found " << febdata.size() << " CRTData" << '\n';
 
-    if (isCRTDetSim)  {
-     std::cout << "about to loop over detsim entries" << std::endl;
-     for ( auto const& febdat : (*crtDetSimHandle) ) {
-        fDetEvent       = fEvent;
-        fMac5           = febdat.fMac5;
-        fEntry          = febdat.fEntry;
-        fFEBReg         = MacToADReg(fMac5);
-        fNChan = 0;
-        fDetSubSys = MacToTypeCode(fMac5);
-        fT0 = febdat.fTs0;
-        fT1 = febdat.fTs1;
-        fTrackID.clear();
-        fDetPDG.clear();
+        for ( auto const& data : febdata ) {
+           fMac5      = data->fMac5;
+           fEntry     = data->fEntry;
+           fFEBReg    = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
+           fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
+           fT0        = data->fTs0;
+           fT1        = data->fTs1;
+           fMaxAdc    = 0;
+           fMaxChan   = -1;
+           fNAbove    = 0;
+           fTrackID.clear();
+           fDetPDG.clear();
+           bool passfilter = false;
+           if(fPDGs.size()==1 && fPDGs[0]==0)
+               passfilter = true;
+           //set max channel by subsystem (32 (c,m) or 64 (d))
+           //int chmax = 0;
+           //if(fDetSubSys!=2) chmax=32;
+           //else chmax=64;
 
-        int chmax = 0;
-        if(fDetSubSys!=2) chmax=32;
-        else chmax=64;
-        for(int ch=0; ch<chmax; ch++)
-            fADC[ch] = febdat.fAdc[ch];
-        //vector<int> missedIDs;
-          //DetSim tree contains all entries (not neccessarily from muons)
-          //fTrackID.push_back({});
-          //fDetPDG.push_back({});
-          /*for( int trk : chandat.TrackID()) {
-              fTrackID[fNChan].push_back(trk);
-              if (particleMap.find(trk) != particleMap.end() )
-                  fDetPDG[fNChan].push_back(particleMap[trk]->PdgCode());
-              else {
-                  fDetPDG[fNChan].push_back(0);
-                  missedIDs.push_back(trk);
-              }
-          }
+           //loop over all FEB channels
+           for(int ch=0; ch<64; ch++) {
+               fADC[ch] = data->fAdc[ch];
+               if(fADC[ch] > 300) fNAbove++;
+               if(fADC[ch]>fMaxAdc) {
+                   fMaxAdc  = fADC[ch];
+                   fMaxChan = ch;
+               }
+               //loop over all track IDs
+           }//loop over channels
+           //loop over all track IDs
+           for( int trk : bt.AllTrueIds(event,*data)) {
+               fTrackID.push_back(trk);
+               if (particleMap.find(trk) != particleMap.end() ){
+                   fDetPDG.push_back(particleMap[trk]->PdgCode());
+                   if(!passfilter)
+                       for(int const& pdg: fPDGs) {
+                           if(fDetPDG.back()==pdg) 
+                               passfilter = true;
+                       }
+               }
+               else 
+                   fDetPDG.push_back(INT_MAX);
+           }//for trackIDs
 
-         fNChan++;
+           if(passfilter)
+               fDetSimNtuple->Fill();
 
-        if ( missedIDs.size() > 0 ) {
-            std::cout 
-                << " couldn't match " << missedIDs.size() << " trackIDs from DetSim to MCParticle:" 
-            << std::endl;
-            for (auto const& id : missedIDs) std::cout << "  - " << id << std::endl;
-        }*/
-
-        fDetSimNtuple->Fill();
-
-     } //for CRT FEB events
+        } //for CRT FEB events
 
     }//if crtdetsim products present
 
-    else std::cout << "CRTData products not found! (expected if gen/G4 step)" << std::endl;
+    else 
+        mf::LogWarning("CRTSimAnalysis") << "CRTData products not found! (expected if gen/G4 step)" << '\n';
 
-    art::Handle<std::vector<icarus::crt::CRTHit>> crtSimHitHandle;
-    //std::vector<art::Ptr<icarus::crt::CRTHit>> crtSimHits;
-    
-    bool isCRTSimHit = event.getByLabel(fCRTSimHitProducerLabel, crtSimHitHandle);
-    std::vector<int> ids;
+
+    //simulted CRTHits
+    art::Handle<vector<CRTHit>> crtSimHitHandle;
     fNHit = 0;
-    if (isCRTSimHit) {
+    if (event.getByLabel(fCRTSimHitProducerLabel, crtSimHitHandle)) {
 
-        //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
-        art::FindManyP<icarus::crt::CRTData> findManyData(crtSimHitHandle, event, fCRTSimHitProducerLabel);
-        std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
+        vector<art::Ptr<CRTHit>> crtSimHits;
+        art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
 
-        //FIX ME WITH BACKTRACKER
-        /*for(auto const& dat : data){
-          for(auto const& chan : dat->ChanData()){
-            for(auto const& trkid : chan.TrackID()){
-              ids.push_back(trkid);
-            }
-          }
-        }*/
-
-        std::sort(ids.begin(), ids.end());
-        ids.erase(std::unique(ids.begin(), ids.end()), ids.end());
-
-        //auto trks = icarus::CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,0);
-
-        std::cout << "looping over sim hits..." << std::endl;
-        for ( auto const& hit : *crtSimHitHandle )
+        mf::LogPrint("CRTSimAnalysis") << "found " << crtSimHits.size() << " sim CRTHits" << '\n';
+        for ( auto const& hit : crtSimHits )
         {
             fNHit++;
-            fHitEvent = fEvent;
-            fXHit    = hit.x_pos;
-            fYHit    = hit.y_pos;
-            fZHit    = hit.z_pos;
-            fXErrHit = hit.x_err;
-            fYErrHit = hit.y_err;
-            fZErrHit = hit.z_err;
-            fT0Hit   = hit.ts0_ns;
-            fT1Hit   = hit.ts1_ns;
-            //fT0CorrHit = hit.T0Corr();
-            //fT1CorrHit = hit.T1Corr();
-
-            int mactmp = hit.feb_id[0];
-            fHitReg  = MacToADReg(mactmp);
-            fHitSubSys = RegToTypeCode(fHitReg);
-
-            auto ittmp = hit.pesmap.find(mactmp);
-            if (ittmp==hit.pesmap.end()) {
-                std::cout << "hitreg: " << fHitReg << std::endl;
-                std::cout << "fHitSubSys: "<< fHitSubSys << std::endl;
-                std::cout << "mactmp = " << mactmp << std::endl;
-                std::cout << "could not find mac in pesmap!" << std::endl;
-                continue;
-            }
-            int chantmp = (*ittmp).second[0].first;
-
-            //auto trks = CRTTruthMatchUtils::AllTrueIds(crtSimHitHandle,event,fCRTSimHitProducerLabel,fNHit-1);//hit.TrackID();
+            fXHit     = hit->x_pos;
+            fYHit     = hit->y_pos;
+            fZHit     = hit->z_pos;
+            fXHitErr  = hit->x_err;
+            fYHitErr  = hit->y_err;
+            fZHitErr  = hit->z_err;
+            fT0Hit    = hit->ts0_ns;
+            fT1Hit    = hit->ts1_ns;
+            fNHitFeb  = hit->feb_id.size();
+            fHitTotPe = hit->peshit;
+            fHitPeRms = 0.;
+            fHitPe.clear();
             fHitTrk.clear();
             fHitPDG.clear();
-            for ( auto i=ids.begin(); i!=ids.end(); i++ ) {   
-                fHitTrk.push_back(*i);
-                if ( particleMap.find(fHitTrk.back()) != particleMap.end())
-                    fHitPDG.push_back(particleMap[fHitTrk.back()]->PdgCode());
+            fHitMod.clear();
+            fHitStrip.clear();
+
+            uint8_t mactmp = hit->feb_id[0];
+            fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+            fHitSubSys = fCrtutils->MacToTypeCode(mactmp);
+
+            bool passfilter=false;
+            if(fPDGs.size()==1 && fPDGs[0]==0)
+                passfilter = true;
+
+            for(auto const& mactopes : hit->pesmap){
+                //std::cout << "SimHit with mac5 " << (int)mactopes.first << std::endl;
+                for(auto const& chanpe : mactopes.second) {
+                    //std::cout << "   chan: " << chanpe.first << std::endl;
+                    fHitMod.push_back(fCrtutils->MacToAuxDetID(mactopes.first, chanpe.first));
+                    fHitStrip.push_back(fCrtutils->ChannelToAuxDetSensitiveID(mactopes.first,chanpe.first));
+                    fHitPe.push_back(chanpe.second);
+                    fHitPeRms+=pow(chanpe.second-fHitTotPe,2);
+                }
+            }
+            fHitPeRms = sqrt(fHitPeRms/(fHitPe.size()-1));
+
+            //loop over all track IDs
+            for( int trk : bt.AllTrueIds(event,*hit)) {
+                fHitTrk.push_back(trk);
+                if ( particleMap.find(trk) != particleMap.end()) {
+                    fHitPDG.push_back(particleMap[trk]->PdgCode());
+                    if(!passfilter)
+                        for(int const& pdg: fPDGs) {
+                            if(fHitPDG.back()==pdg)
+                                passfilter = true;
+                        }
+                }
                 else
                     fHitPDG.push_back(INT_MAX);
             }
-            fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
-            fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
 
-            fSimHitNtuple->Fill();
-        }//for CRT Hits
-    }//if CRT Hits
+            if(passfilter)
+                fSimHitNtuple->Fill();
+        }//for CRTHits
+    }//if sim CRTHits
 
-    else std::cout << "CRTHit products not found! (expected if gen/G4/detsim step)" << std::endl;
+    else 
+        mf::LogWarning("CRTSimAnalysis") 
+            << "CRTHit products not found! (expected if gen/G4/detsim step)" << '\n';
+
+    //true CRTHits
+    art::Handle<vector<CRTHit>> crtTrueHitHandle;
+    fTrueNHit = 0;
+    if (event.getByLabel(fCRTTrueHitProducerLabel, crtTrueHitHandle)) {
+
+        vector<art::Ptr<CRTHit>> crtTrueHits;
+        art::fill_ptr_vector(crtTrueHits,crtTrueHitHandle);
+
+        mf::LogPrint("CRTSimAnalysis") << "found " << crtTrueHits.size() << " true CRTHits" << '\n';
+        for ( auto const& hit : crtTrueHits )
+        {
+            fTrueNHit++;
+            fTrueXHit    = hit->x_pos;
+            fTrueYHit    = hit->y_pos;
+            fTrueZHit    = hit->z_pos;
+            fTrueXHitErr = hit->x_err;
+            fTrueYHitErr = hit->y_err;
+            fTrueZHitErr = hit->z_err;
+            fTrueT0Hit   = hit->ts0_ns;
+            fTrueT1Hit   = hit->ts1_ns;
+            fTrueNHitFeb  = hit->feb_id.size();
+            fTrueHitTotPe = hit->peshit;
+            fTrueHitPeRms = 0.;
+            fTrueHitPe.clear();
+            fTrueHitTrk.clear();
+            fTrueHitPDG.clear();
+            fTrueHitMod.clear();
+            fTrueHitStrip.clear();
+
+            uint8_t mactmp = hit->feb_id[0];
+            fTrueHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+            fTrueHitSubSys = fCrtutils->MacToTypeCode(mactmp);
+
+            bool passfilter=false;
+            if(fPDGs.size()==1 && fPDGs[0]==0)
+                passfilter = true;
+
+            for(auto const& mactopes : hit->pesmap){
+                for(auto const& chanpe : mactopes.second) {
+                    fTrueHitMod.push_back(fCrtutils->MacToAuxDetID(mactopes.first, chanpe.first));
+                    fTrueHitStrip.push_back(fCrtutils->ChannelToAuxDetSensitiveID(mactopes.first,chanpe.first));
+                    fTrueHitPe.push_back(chanpe.second);
+                    fTrueHitPeRms+=pow(chanpe.second-fHitTotPe,2);
+                }
+            }
+            fTrueHitPeRms = sqrt(fTrueHitPeRms/(fTrueHitPe.size()-1));
+
+            //loop over all track IDs
+            for( int trk : bt.AllTrueIds(event,*hit)) {
+                fTrueHitTrk.push_back(trk);
+                if ( particleMap.find(trk) != particleMap.end()){
+                    fTrueHitPDG.push_back(particleMap[trk]->PdgCode());
+                    if(!passfilter)
+                        for(int const& pdg: fPDGs) {
+                            if(fTrueHitPDG.back()==pdg)
+                                passfilter = true;
+                        }
+                }
+                else
+                    fTrueHitPDG.push_back(INT_MAX);
+            }
+
+            if(passfilter)
+                fTrueCRTHitNtuple->Fill();
+        }//for CRTHits
+    }//if true CRTHits
+
+    else
+        mf::LogWarning("CRTSimAnalysis") << "true CRTHit products not found" << '\n';
+
 
 
   } // CRTSimAnalysis::analyze()
-  
   
   DEFINE_ART_MODULE(CRTSimAnalysis)
 
@@ -1576,64 +1339,6 @@ namespace crt {
 
 // Back to our local namespace.
 namespace {
-
-  char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
-    size_t nstrips = adgeo.NSensitiveVolume();
-    if (nstrips==16) return 'c'; 
-    if (nstrips==20) return 'm';
-    if (nstrips==64) return 'd';
-    return 'e';
-  }
-
-  uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo) {
-    size_t nstrips = adgeo.NSensitiveVolume();
-    if (nstrips==16) return 0; //'c'
-    if (nstrips==20) return 1; //'m'
-    if (nstrips==64) return 2; //'d'
-    return UINT32_MAX;
-  }
-
-  int GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
-  {
-    char type = ModToAuxDetType(adgeo);
-    std::string base = "volAuxDet_";
-    switch ( type ) {
-      case 'c' : base+= "CERN"; break;
-      case 'd' : base+= "DC"; break;
-      case 'm' : base+= "MINOS"; break;
-      case 'e' :
-          std::cout << "error in GetAuxDetRegion: type error" << std::endl;
-          return INT_MAX;
-    }
-    base+="_module_###_";
-    std::string volName(adgeo.TotalVolume()->GetName());
-
-    //module name has 2 possible formats
-    //  volAuxDet_<subsystem>_module_###_<region>
-    //  volAuxDet_<subsystem>_module_###_cut###_<region>
-
-    std::string reg = volName.substr(base.length(),volName.length());
-    if( reg.find("_")!=std::string::npos)
-        reg = reg.substr(reg.find("_")+1,reg.length());
-
-    if(reg == "Top")        return 30;
-    if(reg == "RimWest")    return 31;
-    if(reg == "RimEast")    return 32;
-    if(reg == "RimSouth")   return 33;
-    if(reg == "RimNorth")   return 34;
-    if(reg == "WestSouth")  return 40;
-    if(reg == "WestCenter") return 41;
-    if(reg == "WestNorth")  return 42;
-    if(reg == "EastSouth")  return 43;
-    if(reg == "EastCenter") return 44;
-    if(reg == "EastNorth")  return 45;
-    if(reg == "South")      return 46;
-    if(reg == "North")      return 47;
-    if(reg == "Bottom")     return 50;
-
-    return INT_MAX;
-  }
-
 
   int ProcessToICode(string const& p)
   {
@@ -1671,125 +1376,6 @@ namespace {
 
     return icode;
 
-  }
-
-  uint32_t MacToADReg(uint32_t mac) {
-
-      if(mac>=107 && mac<=190) return 30; //top
-      if(mac>=191 && mac<=204) return 31; //rim west
-      if(mac>=205 && mac<=218) return 32; //rim east
-      if(mac>=219 && mac<=224) return 33; //rim south
-      if(mac>=225 && mac<=230) return 34; //rim north
-      if(            mac<=12 ) return 40; //west side, south stack
-      if(mac>=13  && mac<=24 ) return 41; //west side, center stack
-      if(mac>=25  && mac<=36 ) return 42; //west side, north stack
-      if(mac>=37  && mac<=48 ) return 43; //east side, south stack
-      if(mac>=49  && mac<=60 ) return 44; //east side, center stack
-      if(mac>=61  && mac<=72 ) return 45; //east side, north stack
-      if(mac>=73  && mac<=84 ) return 46; //south
-      if(mac>=85  && mac<=92 ) return 47; //north
-      if(mac>=93 && mac<=106) return 50; //bottom
-
-      return 0;
-  }
-
-  char MacToType(uint32_t mac) {
-
-      uint32_t reg = MacToADReg(mac);
-
-      if( reg>29 && reg<40 )
-        return 'c';
-      if( reg>39 && reg<50 )
-        return 'm';
-      if( reg==50 )
-        return 'd';
-
-      return 'e';
-  }
-
-  uint32_t MacToTypeCode(uint32_t mac) {
-
-      char reg = MacToType(mac);
-
-      if(reg=='c')
-        return 0; //'c';
-      if(reg=='m')
-        return 1; //'m';
-      if(reg=='d')
-        return 2; //'d';
-
-      return UINT32_MAX;//'e';
-  }
-
-  //for C- and D-modules, mac address is same as AD ID
-  //three M-modules / FEB, each modules readout at both ends
-  //  numbering convention is module from FEB i 
-  //  is readout on the opposite end by FEB i+50
-  //  return FEB i
-  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid) {
-      for(auto const& p : febMap) {
-          if((uint32_t)p.first!=adid)
-              continue;
-          if(p.second.size()==2)
-              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[1].first);
-          else
-              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[0].first);
-      }
-      return std::make_pair(UINT32_MAX,UINT32_MAX);
-  }
-
-  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan){
-      char type = MacToType(mac);
-      int pos=1;
-      if(type=='m')
-          pos = chan/10 + 1;
-
-      for(auto const& p : febMap) {
-          if(p.second[0].first == mac && p.second[0].second==pos)
-              return (uint32_t)p.first;
-          if(p.second.size()==2)
-              if(p.second[1].first==mac && p.second[1].second==pos)
-                  return (uint32_t)p.first;
-      }
-
-    return INT_MAX;
-  }
-
-  int ChannelToAuxDetSensitiveID(int mac, int chan) {
-    int type = MacToTypeCode(mac);
-    if (type==2) return chan; //d
-    if (type==0) return chan/2; //c
-    if (type==1) return (chan % 10)*2; //m
-
-    return INT_MAX;
-  }
-
-
-  // for C-modules, 2 channels per strip, return lowest val chan
-  // for M-modules, 2 strips per channel, readout at both ends
-  // fir D-modules, 1 channel per strip, adsid same as channel
-  /*uint32_t ADSToFEBChannel (char type, uint32_t adid, uint32_t adsid) {
-
-      switch (type){
-          case 'c' :
-              return 2*adsid;
-          case 'd' :
-              return adsid;
-          case 'm' :
-              return adsid/2 + 10*(adid % 3);
-      }
-      return UINT32_MAX;
-  }*/
-
-  int RegToTypeCode(int reg){
-      if(reg>=30&&reg<40)
-          return 0;
-      if(reg>=40&&reg<50)
-          return 1;
-      if(reg==50)
-          return 2;
-      std::cout << "ERROR in RegToTypeCode: unknown reg code!" << std::endl;
-      return -1;
   }
 
 }//local namespace

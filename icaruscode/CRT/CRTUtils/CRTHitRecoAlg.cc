@@ -7,11 +7,13 @@ CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
 
     fGeometryService = lar::providerFrom<geo::Geometry>();
+    fCrtutils = new CRTCommonUtils();
 }
 
 //---------------------------------------------------------------------
 CRTHitRecoAlg::CRTHitRecoAlg(){
     fGeometryService = lar::providerFrom<geo::Geometry>();
+    fCrtutils = new CRTCommonUtils();
 }
 
 
@@ -21,7 +23,7 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fUseReadoutWindow = config.UseReadoutWindow();
     fQPed = config.QPed();
     fQSlope = config.QSlope();
-    fPropDelay = config.PropDelay();
+    fPropDelay = config.PropDelay(); 
     fPEThresh = config.PEThresh();
     fCoinWindow = config.CoinWindow();
     return;
@@ -43,8 +45,9 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
     for (size_t febdat_i=0; febdat_i<crtList.size(); febdat_i++) {
 
         uint8_t mac = crtList[febdat_i]->fMac5;
-        char type = CRTCommonUtils::MacToType(mac);
-        int region = CRTCommonUtils::MacToRegion(mac);
+        int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
+        string region = fCrtutils->GetAuxDetRegion(adid);
+        char type = fCrtutils->GetAuxDetType(adid);
         CRTHit hit;
 
         if(fVerbose)
@@ -62,10 +65,13 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             if(IsEmptyHit(hit))
                 nMissC++;
             else {
-                if(fVerbose)
-                    std::cout << "CERN hit produced" << std::endl;
+                //if(fVerbose)
+                //    std::cout << "CERN hit produced" << std::endl;
                 dataIds.push_back(febdat_i);
                 returnHits.push_back(std::make_pair(hit,dataIds));
+                if ((regs.insert(region)).second) regCounts[region] = 1;
+                else regCounts[region]++;
+
                 nHitC++;
             }
         }
@@ -76,10 +82,13 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             if(IsEmptyHit(hit))
                 nMissD++;
             else {
-                if(fVerbose)
-                    std::cout << "DC hit produced" << std::endl;
+                //if(fVerbose)
+                //    std::cout << "DC hit produced" << std::endl;
                 dataIds.push_back(febdat_i);
                 returnHits.push_back(std::make_pair(hit,dataIds));
+                if ((regs.insert(region)).second) regCounts[region] = 1;
+                else regCounts[region]++;
+
                 nHitD++;
             }
         }
@@ -100,13 +109,24 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                     if(fVerbose)
                         std::cout << "attempting to produce MINOS hit from " << coinData.size()
                               << " data products..." << std::endl;
-                    hit = MakeSideHit(coinData);
-                    if(IsEmptyHit(hit))
+
+                    CRTHit hit = MakeSideHit(coinData);
+
+                    if(IsEmptyHit(hit)){
+                        unusedDataIndex.push_back(indices[index_i]);
                         nMissM++;
+                    }
                     else {
                         if(fVerbose)
                             std::cout << "MINOS hit produced" << std::endl;
+
                         returnHits.push_back(std::make_pair(hit,dataIds));
+
+                        if ((regs.insert(regIndices.first)).second) 
+                            regCounts[regIndices.first] = 1;
+                        else 
+                            regCounts[regIndices.first]++;
+
                         nHitM++;
                     }
 
@@ -124,9 +144,9 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
 
     if(fVerbose) {
           mf::LogInfo("CRT") << returnHits.size() << " CRT hits produced!" << '\n'
-              << "  nHitC: " << nHitC << " , nHitD: " << nHitD << " , nHitM: " << nHitM << '\n'
-              << "    " << nMissC << " CRT hits missed!" << '\n';
-          std::map<int,int>::iterator cts = regCounts.begin();
+              << "  nHitC: " << nHitC  << " , nHitD: " << nHitD  << " , nHitM: " << nHitM  << '\n'
+              << "  nMisC: " << nMissC << " , nMisD: " << nMissD << " , nMisM: " << nMissM << '\n';
+          auto cts = regCounts.begin();
           mf::LogInfo("CRT") << " CRT Hits by region" << '\n';
           while (cts != regCounts.end()) {
               mf::LogInfo("CRT") << "reg: " << (*cts).first << " , hits: " << (*cts).second << '\n';
@@ -168,48 +188,82 @@ CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pai
 CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
+    if(fCrtutils->MacToType(mac)!='c')
+        mf::LogError("CRTHitRecoAlg::MakeTopHit") 
+            << "CRTUtils returned wrong type!" << '\n';
+
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(mac);
-    int adid  = CRTCommonUtils::MacToAuxDetID(mac,0); //module ID
+    int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = fCrtutils->GetAuxDetRegion(adid);
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
+    float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
     int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
     TVector3 postrig;
+    bool findx = false, findz = false;
+    int maxx=0, maxz=0;
 
     for(int chan=0; chan<32; chan++) {
 
-        if(data->fAdc[chan]<=fPEThresh) continue;
+        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+        if(pe<=fPEThresh) continue;
         nabove++;
-        int adsid = CRTCommonUtils::ChannelToAuxDetSensitiveID(mac,chan);
-        petot += data->fAdc[chan];
-        pesmap[mac].push_back(std::make_pair(chan,data->fAdc[chan]));
+        int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
+        petot += pe;
+        pesmap[mac].push_back(std::make_pair(chan,pe));
 
-        TVector3 postmp = CRTCommonUtils::ChanToLocalCoords(fGeometryService,mac,chan);
+        //TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //strip along z-direction
-        if(adsid < 8){
-            hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+        if(adsid < 8 && adsid > -1){
+            //hitpos.SetX(pe*postmp.X()+hitpos.X());
+            //hitpos.SetX(postmp.X()+hitpos.X());
+            if(pe>pemaxx){
+                pemaxx = pe;
+                maxx = adsid;
+            }
+            findx = true;   
         }
         //strip along x-direction
+        else if(adsid > -1 && adsid < 16 ){
+            //hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
+            //hitpos.SetZ(postmp.Z()+hitpos.Z());
+            if(pe > pemaxz) {
+                pemaxz = pe;
+                maxz = adsid;
+            }
+            findz = true;
+        }
         else {
-            hitpos.SetZ(data->fAdc[chan]*postmp.Z()+hitpos.Z());
+            mf::LogError("CRTHitRecoAlg::MakeTopHit")
+                << "auxDetSensitive ID out of range!" << '\n';
         }
         //identify trigger channel
-        if(data->fAdc[chan]>adc_max) {
+        if(pe>pemax) {
+            TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
             adsid_max = chan;
-            adc_max = data->fAdc[chan];
+            pemax = pe;
             postrig = postmp;
         }
     }
 
+    TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,maxx*2);
+    hitpos.SetX(postmp.X());
+    postmp = fCrtutils->ChanToLocalCoords(mac,maxz*2); 
+    hitpos.SetZ(postmp.Z());
+
+    if(!findx)
+        mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing X coord." << '\n';
+    if(!findz)
+        mf::LogWarning("CRTHitRecoAlg::MakeTopHit") << " no interlayer coincidence found! Missing Z coord." << '\n';
+
     //no channels above threshold? return empty hit
-    if(nabove==0)
+    if(nabove==0||!findx||!findz)
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
 
-    hitpos*=1.0/petot; //hit position weighted by deposited charge
+    //hitpos*=1.0/petot; //hit position weighted by deposited charge
+    //hitpos*=1.0/nabove;
     hitlocal[0] = hitpos.X();
     hitlocal[1] = 0.;
     hitlocal[2] = hitpos.Z();
@@ -217,9 +271,9 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
     if(adsid_max<8)
-        thit -= (adsGeo.HalfLength() - hitpos.Z() )*fPropDelay;
+        thit -= hitpos.Z()*fPropDelay;
     else
-        thit -= (adsGeo.HalfLength() - hitpos.X() )*fPropDelay;
+        thit -= hitpos.X()*fPropDelay;
 
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
@@ -239,38 +293,38 @@ CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(mac);
-    int adid  = CRTCommonUtils::MacToAuxDetID(mac,0); //module ID
+    int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = fCrtutils->GetAuxDetRegion(adid);
 
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
+    float petot = 0., pemax=0.;
     int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
     TVector3 postrig;
     double xmin=0.,xmax=0.;
 
     for(int chan=0; chan<64; chan++) {
 
-        if(data->fAdc[chan]<=fPEThresh) continue;
+        float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+        if(pe<=fPEThresh) continue;
         nabove++;
-        int adsid = CRTCommonUtils::ChannelToAuxDetSensitiveID(mac,chan);
-        petot += data->fAdc[chan];
-        pesmap[mac].push_back(std::make_pair(chan,data->fAdc[chan]));
+        int adsid = fCrtutils->ChannelToAuxDetSensitiveID(mac,chan);
+        petot += pe;
+        pesmap[mac].push_back(std::make_pair(chan,pe));
 
-        TVector3 postmp = CRTCommonUtils::ChanToLocalCoords(fGeometryService,mac,chan);
+        TVector3 postmp = fCrtutils->ChanToLocalCoords(mac,chan);
         //all strips along z-direction
-        hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+        hitpos.SetX(pe*postmp.X()+hitpos.X());
         if(postmp.X()<xmin)
             xmin = postmp.X();
         if(postmp.X()>xmax)
             xmax = postmp.X();
 
         //identify trigger channel
-        if(data->fAdc[chan]>adc_max) {
+        if(pe>pemax) {
             adsid_max = adsid;
-            adc_max = data->fAdc[chan];
+            pemax = pe;
             postrig = postmp;
         }
     }
@@ -305,38 +359,38 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
-    string region = CRTCommonUtils::MacToRegionName(coinData[0]->fMac5);
-    int adid  = CRTCommonUtils::MacToAuxDetID(coinData[0]->fMac5,0); //module ID
+    int adid  = fCrtutils->MacToAuxDetID(coinData[0]->fMac5,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
+    string region = fCrtutils->GetAuxDetRegion(adid);
 
     double hitpoint[3], hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
-    float petot = 0.;
-    int adsid_max = -1, nabove=0;
-    uint16_t adc_max = 0;
+    float petot = 0., pemax = 0., pex=0., pey=0.;
+    int adsid_max = -1, nabove=0, nx=0, ny=0;
     TVector3 postrig;
-    vector<double> ttrigs;
+    //map<int,vector<double>> ttrigs;
+    vector<int> ttrigs;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
     double ymin=DBL_MAX, ymax = -DBL_MAX;
     double xmin=DBL_MAX, xmax = -DBL_MAX;
     std::set<int> layID;
 
-    if(fVerbose)
-        std::cout << "makeing MINOS hit...looping over coinData..." << std::endl;
     //loop over FEBs
     for(auto const& data : coinData) {
 
         macs.push_back(data->fMac5);
+        adid  = fCrtutils->MacToAuxDetID(macs.back(),0);
 
         //loop over channels
         for(int chan=0; chan<32; chan++) {
 
-            if(data->fAdc[chan]<=fPEThresh) continue;
+            float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+            if(pe<=fPEThresh) continue;
             nabove++;
 
-            int adsid = CRTCommonUtils::ChannelToAuxDetSensitiveID(macs.back(),chan);
-            petot += data->fAdc[chan];
-            pesmap[macs.back()].push_back(std::make_pair(chan,data->fAdc[chan]));
+            int adsid = fCrtutils->ChannelToAuxDetSensitiveID(macs.back(),chan);
+            petot += pe;
+            pesmap[macs.back()].push_back(std::make_pair(chan,pe));
 
             //inner or outer layer
             int layer = CRTCommonUtils::GetMINOSLayerID(fGeometryService,adGeo);
@@ -346,13 +400,17 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
             //East/West Walls (all strips along z-direction) or
             // North/South inner walls (all strips along x-direction)
             if(!(region=="South" && layer==1)) {
-                hitpos.SetY(data->fAdc[chan]*postmp.Y()+hitpos.Y());
+                hitpos.SetY(pe*postmp.Y()+hitpos.Y());
+                ny++;
+                pey+=pe;
                 if(postmp.Y()<ymin)
                     ymin = postmp.Y();
                 if(postmp.Y()>ymax)
                     ymax = postmp.Y();
-                if(region!="South") {
-                    hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+                if(region!="South") { //region is E/W/N
+                    hitpos.SetX(pe*postmp.X()+hitpos.X());
+                    nx++;
+                    pex+=pe;
                     if(postmp.X()<xmin)
                         xmin = postmp.X();
                     if(postmp.X()>xmax)
@@ -360,52 +418,76 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
                 }
             }
             else { //else vertical strips in South wall
-                hitpos.SetX(data->fAdc[chan]*postmp.X()+hitpos.X());
+                hitpos.SetX(pe*postmp.X()+hitpos.X());
+                nx++;
+                pex+=pe;
                 if(postmp.X()<xmin)
                     xmin = postmp.X();
                 if(postmp.X()>xmax)
                     xmax = postmp.X();
             }
 
-            hitpos.SetZ(data->fAdc[chan]*postmp.Z()+hitpos.Z());
+            //nz = ny
+            hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
             if(postmp.X()<xmin)
                 zmin = postmp.X();
             if(postmp.X()>xmax)
                 zmax = postmp.X();
 
             //identify trigger channel
-            if(data->fAdc[chan]>adc_max) {
+            if(pe>pemax) {
                 adsid_max = adsid;
-                adc_max = data->fAdc[chan];
+                pemax = pe;
                 postrig = postmp;
             }
 
 
         }//loop over channels
 
-        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
+        //correct trigger time for propegation delay
+        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger stripi
+        
+       // ttrigs[layer].push_back(data->fTs0);// - adsGeo.HalfLength()*fPropDelay);
         ttrigs.push_back(data->fTs0 - adsGeo.HalfLength()*fPropDelay);
 
     }//loop over FEBs
 
-    if(fVerbose)
-        std::cout << "done...used " << nabove << " charge amplitudes" << std::endl;
-
     //no channels above threshold or no intermodule coincidences? return empty hit
-    if(nabove==0 || layID.size()!=2)
+    if(nabove==0 || layID.size()!=2) {
+        if(nabove==0) std::cout << "no channels above threshold!" << std::endl;
+        if(layID.size()<2) std::cout << "no coincidence found" << std::endl;
         return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
+    }
 
-    auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
-    hitpos*=1.0/petot; //hit position weighted by deposited charge
+    //finish averaging and fill hit point array
+    if(region=="South") {
+        hitpos.SetX(hitpos.X()*1.0/pex);
+        hitpos.SetY(hitpos.Y()*1.0/pey);
+        hitpos.SetZ(hitpos.Z()*1.0/petot);
+    }
+    else
+        hitpos*=1.0/petot; //hit position weighted by deposited charge
+
     hitpoint[0] = hitpos.X();
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
 
+    //time stamp averaged over all FEBs
+    double thit = 0.;//, thit_0 = 0., thit_1 = 0.;
+    //for(double const t : ttrigs[0]) 
+    //    thit_0 += t;
+    for(double const t : ttrigs)
+        thit += t;
+    //thit_0
+    thit*=1.0/ttrigs.size();
+
     //error estimates (likely need to be revisted)
+    auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
     if(region!="North" && region!="South"){
         hitpointerr[0] = (xmax-xmin)/sqrt(12);
         hitpointerr[1] = (ymax-ymin)/sqrt(12);
         hitpointerr[2] = adsGeo.Length()/sqrt(12);
+        //thit=(thit_0
     }
 
     if(region=="North"){
@@ -420,14 +502,6 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
 
-    //time stamp
-    double thit = 0.;
-    for(double const t : ttrigs)
-        thit += t;
-    thit*=1.0/coinData.size();
-
-    if(fVerbose)
-        std::cout << "generating CRTHit..." << std::endl;
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);

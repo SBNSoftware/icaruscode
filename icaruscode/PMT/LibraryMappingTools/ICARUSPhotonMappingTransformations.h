@@ -212,7 +212,7 @@ namespace phot {
      */
     virtual std::size_t libraryMappingSize
       (geo::Point_t const& location) const override
-      { return opDetsToLibraryIndicesImpl(location).size();}
+      { return libraryIndicesToOpDets(location).size();}
     
     
     /// @}

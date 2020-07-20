@@ -97,6 +97,7 @@
 #include "icaruscode/CRT/CRTUtils/CRTDetSimAlg.h"
 
 using std::string;
+using std::vector;
 
 namespace icarus {
  namespace crt {
@@ -137,20 +138,20 @@ icarus::crt::CRTDetSim::CRTDetSim(fhicl::ParameterSet const & p) : EDProducer{p}
 {
     this->reconfigure(p);
 
-    produces< std::vector<icarus::crt::CRTData> >();
-    produces<std::vector<sim::AuxDetIDE> >();
-    produces< art::Assns<icarus::crt::CRTData, sim::AuxDetIDE> >();
+    produces< vector<CRTData> >();
+    produces< vector<sim::AuxDetIDE> >();
+    produces< art::Assns<CRTData, sim::AuxDetIDE> >();
 }
 
 //module producer
 void icarus::crt::CRTDetSim::produce(art::Event& event) {
 
     //pointer to vector of CRT data products to be pushed to event
-    std::unique_ptr<std::vector<CRTData> > triggeredCRTHits (
-        new std::vector<CRTData>);
+    std::unique_ptr< vector<CRTData> > triggeredCRTHits (
+        new vector<CRTData>);
     //pointer to vector of AuxDetIDE products to be pushed to event
-    std::unique_ptr<std::vector<sim::AuxDetIDE> > ides (
-        new std::vector<sim::AuxDetIDE>);
+    std::unique_ptr< vector<sim::AuxDetIDE> > ides (
+        new vector<sim::AuxDetIDE>);
     //pointer associations between CRT data products and AuxDetIDEs to be pushed to event
     std::unique_ptr< art::Assns<CRTData,sim::AuxDetIDE> > dataAssn (
         new art::Assns<CRTData,sim::AuxDetIDE> );
@@ -161,8 +162,8 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     detAlg.ClearTaggers();
 
     // Handle for (truth) AuxDetSimChannels
-    art::Handle<std::vector<sim::AuxDetSimChannel> > adChanHandle;;
-    std::vector< art::Ptr<sim::AuxDetSimChannel> > adChanList;
+    art::Handle< vector<sim::AuxDetSimChannel> > adChanHandle;;
+    vector< art::Ptr<sim::AuxDetSimChannel> > adChanList;
     if (event.getByLabel(fG4ModuleLabel, adChanHandle) )
         art::fill_ptr_vector(adChanList, adChanHandle);
 
@@ -184,7 +185,13 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     //generate CRTData products, associates from filled detAlg member data
     int nData = 0;
     if(nide>0) {
-        std::vector<std::pair<CRTData,std::vector<sim::AuxDetIDE>>> data = detAlg.CreateData();
+        vector<std::pair<CRTData,vector<sim::AuxDetIDE>>> data = detAlg.CreateData();
+        //time sort CRT data (ascending)
+        std::sort(data.begin(),data.end(),
+            [](const std::pair<CRTData,vector<sim::AuxDetIDE>>& d1, 
+               const std::pair<CRTData,vector<sim::AuxDetIDE>>& d2) {
+                return d1.first.fTs0 < d2.first.fTs0;
+            });
 
         for(auto const& dataPair : data){
 

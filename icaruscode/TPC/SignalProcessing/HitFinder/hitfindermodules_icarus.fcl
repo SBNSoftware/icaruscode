@@ -21,8 +21,26 @@ icarus_hitfinder:
   MaxWidthMult:  3.
   FittingRange:  35
   IntegratingRange: 10
+InvertInd1:   1
 }
+mixed_hitfinder:
+{
+  module_type:         "ICARUSHitFinder"
+  CalDataModuleLabel: "decon1droi"
 
+  ThetaAngle:         0
+  #PeakFitter:           @local::peakfitter_ICARUS
+  CandidateHits:        @local::candhitfinder_ICARUS
+  MaxMultiHit:          3                # maximum hits for multi fit
+  Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
+  LongPulseWidth:       [ 16, 16, 16]      # max widths for hits in long pulse trains
+  LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
+  MinWidth:      1.
+  MaxWidthMult:  3.
+  FittingRange:  35
+  IntegratingRange: 10
+InvertInd1:  0
+}
 icarus_hitselector:
 {
   module_type:             "HitSelector"

@@ -14,7 +14,7 @@
 #include <cmath>
 #include <limits> // std::numeric_limits<>
 
-#include "larreco/Calorimetry/CalorimetryAlg.h"
+#include "icaruscode/TPC/Calorimetry/Algorithms/CalorimetryIcarusAlg.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
@@ -107,7 +107,7 @@ private:
   bool fSCE;
   bool fFlipTrack_dQdx;                  //flip track direction if significant rise of dQ/dx at the track start
   std::optional<double> fNotOnTrackZcut; ///< Exclude trajectory points with _z_ lower than this [cm]
-  CalorimetryAlg caloAlg;
+  CalorimetryIcarusAlg caloAlg;
 
   int fnsps;
   std::vector<int> fwire;
@@ -138,7 +138,7 @@ calo::CalorimetryICARUS::CalorimetryICARUS(fhicl::ParameterSet const &pset)
       fFlipTrack_dQdx(pset.get<bool>("FlipTrack_dQdx", true)),
       caloAlg(pset.get<fhicl::ParameterSet>("CaloAlg"))
 {
-
+//std::cout <<" initializing calorimetry... " << std::endl;
   if (pset.has_key("NotOnTrackZcut"))
     fNotOnTrackZcut = pset.get<double>("NotOnTrackZcut");
 
@@ -151,12 +151,16 @@ void calo::CalorimetryICARUS::produce(art::Event &evt)
 {
   auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
+  //std::cout <<" producing calorimetry... " << std::endl;
+  std::cout << " useintegral " << fUseIntegral << std::endl;
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   art::Handle<std::vector<recob::Track>> trackListHandle;
   std::vector<art::Ptr<recob::Track>> tracklist;
   if (evt.getByLabel(fTrackModuleLabel, trackListHandle))
     art::fill_ptr_vector(tracklist, trackListHandle);
+
+//std::cout << " track list size " << tracklist.size() << std::endl;
 
   // Get Geometry
   art::ServiceHandle<geo::Geometry const> geom;
@@ -368,9 +372,12 @@ void calo::CalorimetryICARUS::produce(art::Event &evt)
         double charge = allHits[hits[ipl][ihit]]->PeakAmplitude();
         if (fUseArea) 
         {
+       //   std::cout << " integral " << allHits[hits[ipl][ihit]]->Integral() << std::endl;
+//std::cout << " sumadc " << allHits[hits[ipl][ihit]]->SummedADC() << std::endl;
           if (fUseIntegral) charge = allHits[hits[ipl][ihit]]->Integral();
           else              charge = allHits[hits[ipl][ihit]]->SummedADC();
         }
+//std::cout << " ipl " << ipl << " ihit " << ihit << " charge " << charge << std::endl;
         //get 3d coordinate and track pitch for the current hit
         //not all hits are associated with space points, the method uses neighboring spacepts to interpolate
         double xyz3d[3];
@@ -473,8 +480,11 @@ void calo::CalorimetryICARUS::produce(art::Event &evt)
         double MIPs = charge;
         double dQdx = MIPs / pitch;
         double dEdx = 0;
-        if (fUseArea)
-          dEdx = caloAlg.dEdx_AREA(clockData, detProp, *allHits[hits[ipl][ihit]], pitch, T0);
+        if (fUseArea) {
+                   if(fUseIntegral) dEdx = caloAlg.dEdx_AREA(clockData, detProp, *allHits[hits[ipl][ihit]], pitch, T0);
+else dEdx = caloAlg.dEdx_SUMADC(allHits[hits[ipl][ihit]], pitch, T0);
+//std::cout << " ipl " << ipl << " ihit " << ihit << " charge " << charge << std::endl;
+}
         else
           dEdx = caloAlg.dEdx_AMP(clockData, detProp, *allHits[hits[ipl][ihit]], pitch, T0);
 

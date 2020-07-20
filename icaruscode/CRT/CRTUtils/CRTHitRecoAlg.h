@@ -1,11 +1,11 @@
 #ifndef CRTHITRECOALG_H_SEEN
 #define CRTHITRECOALG_H_SEEN
-///////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
 // CRTHitRecoAlg.h
 //
 // Functions for CRT hit reconstruction
-// T Brooks (tbrooks@fnal.gov), November 2018
-///////////////////////////////////////////////
+// Chris Hilgenberg (Chris.Hilgenberg@colostate.edu), June 2020
+////////////////////////////////////////////////////////////////////
 
 // framework
 #include "art/Framework/Principal/Event.h"
@@ -122,6 +122,11 @@ class icarus::crt::CRTHitRecoAlg {
  private:
 
   geo::GeometryCore const* fGeometryService;
+  detinfo::DetectorClocks const* fDetectorClocks;
+  detinfo::DetectorProperties const* fDetectorProperties;
+  detinfo::ElecClock fTrigClock;
+
+  CRTCommonUtils* fCrtutils;
 
   //Params from fcl file
   bool fVerbose;          ///< print info
