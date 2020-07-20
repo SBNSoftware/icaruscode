@@ -8,6 +8,7 @@ art_make(
                            lardata_Utilities
                            larevt_Filters
                            lardataobj_RawData
+                           lardataalg_DetectorInfo
                            icaruscode_TPC_Utilities_SignalShapingICARUSService_service
 		           larevt_CalibrationDBI_Providers
                            nurandom_RandomUtils_NuRandomService_service

@@ -145,7 +145,7 @@ private:
     
     // Useful services, keep copies for now (we can update during begin run periods)
     art::ServiceHandle<geo::Geometry>  fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
+   ///< Detector properties service
     const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
 

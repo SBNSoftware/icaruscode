@@ -16,6 +16,7 @@ art_make(
             larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities
+            lardataalg_DetectorInfo
             larevt_Filters
             lardataobj_RawData
             larevt_CalibrationDBI_IOVData
@@ -44,4 +45,3 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
-

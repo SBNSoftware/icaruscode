@@ -14,12 +14,12 @@
 ///   produced by G4 stage. The trackID is used for truth matching.
 /// Simulated CRT data products are intended to match the known
 ///   front-end electronics behavior and basic DAQ format anticipated.
-///   Each hit strip is assigned a channel and associated with 
+///   Each hit strip is assigned a channel and associated with
 //      1) T0 - hit time relative to t0 (beam signal)
 //      2) T1 - hit time relative to PPS from GPS
 //      3) ADC from hit
 ///   Effects included are
-///     * time 
+///     * time
 ///         - light propegation delay in scintillator and WLS fiber
 ///         - smearing in the arrival time at the SiPM due to scattering
 ///         - amplitude dependant smearing due to the discriminator
@@ -37,10 +37,10 @@
 ///               propegation distances respectively and a simple exponential model
 ///         - for the attenuated light arriving at the SiPM, correct for counting
 ///               statistics sampling from Poisson
-///         - convert N photons seen by SiPM into ADCs using known pedestal and 
-///               gain values for each channel (assumed all the same for now) 
+///         - convert N photons seen by SiPM into ADCs using known pedestal and
+///               gain values for each channel (assumed all the same for now)
 ///               ADC_i = gain_i * nphotons + ped_i
-///         - smear ADC using guasian with ADC_i as mean and 
+///         - smear ADC using guasian with ADC_i as mean and
 ///               width = width_pedestal+sqrt(nphotons)
 ///     * front-end electonics deadtime
 ///         - sort vector of data products by time (T0)
@@ -52,7 +52,7 @@
 ///         - for each channel in the readout window with an entry above threshold,
 ///            the data (charge and time) is added the "track and hold list"
 ///         - channels in track and hold do not accept new data during the readout window
-///         - after the readout window has passed, no channels can receive data until the 
+///         - after the readout window has passed, no channels can receive data until the
 ///           (FHiCL congifurable) deadtime has passed. Channels are then reset and
 ///           the front-end board is again able to trigger
 ///
@@ -88,7 +88,7 @@
 #include <memory>
 #include <string>
 #include <utility>
-#include <map> 
+#include <map>
 #include <vector>
 
 //CRT includes
@@ -104,21 +104,21 @@ namespace icarus {
     class CRTDetSim;
  }
 }
-       
+
 class icarus::crt::CRTDetSim : public art::EDProducer {
 
  public:
     explicit CRTDetSim(fhicl::ParameterSet const & p);
-    
+
     CRTDetSim(CRTDetSim const &) = delete;
     CRTDetSim(CRTDetSim &&) = delete;
     CRTDetSim& operator = (CRTDetSim const &) = delete;
     CRTDetSim& operator = (CRTDetSim &&) = delete;
     void reconfigure(fhicl::ParameterSet const & p);
-    
+
     void produce(art::Event & e) override;
     string fG4ModuleLabel;
-    
+
  private:
 
     CLHEP::HepRandomEngine& fRandEngine;
@@ -155,8 +155,8 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
     //pointer associations between CRT data products and AuxDetIDEs to be pushed to event
     std::unique_ptr< art::Assns<CRTData,sim::AuxDetIDE> > dataAssn (
         new art::Assns<CRTData,sim::AuxDetIDE> );
-    art::PtrMaker<CRTData> makeDataPtr(event); 
-    art::PtrMaker<sim::AuxDetIDE> makeIDEPtr(event); 
+    art::PtrMaker<CRTData> makeDataPtr(event);
+    art::PtrMaker<sim::AuxDetIDE> makeIDEPtr(event);
 
     //clear detAlg member data
     detAlg.ClearTaggers();
@@ -171,12 +171,13 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
         <<"Number of AuxDetChannels = " << adChanList.size();
 
     int nide=0;
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
     for(auto const& adsc : adChanList) {
 
         auto const& auxDetIDEs = adsc->AuxDetIDEs();
         if(auxDetIDEs.size()>0) {
             nide++;
-            detAlg.FillTaggers(adsc->AuxDetID(), adsc->AuxDetSensitiveID(), auxDetIDEs);
+            detAlg.FillTaggers(clockData, adsc->AuxDetID(), adsc->AuxDetSensitiveID(), auxDetIDEs);
         }
 
     }//loop over AuxDetSimChannels
@@ -193,7 +194,7 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
             });
 
         for(auto const& dataPair : data){
-        
+
           triggeredCRTHits->push_back(dataPair.first);
           art::Ptr<CRTData> dataPtr = makeDataPtr(triggeredCRTHits->size()-1);
           nData++;
@@ -205,6 +206,10 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
           }
         }
 
+        std::sort(triggeredCRTHits->begin(),triggeredCRTHits->end(),
+            [](const CRTData& d1, const CRTData& d2) {
+                return d1.fTs0 > d2.fTs0;
+            });
     }
 
     if(nData==0)

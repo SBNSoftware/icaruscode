@@ -15,6 +15,7 @@
 #include "icaruscode/Utilities/sortBy.h" // also icarus::util::sortCollBy()
 
 // LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/Utilities/TensorIndices.h" // util::MatrixIndices
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_time_ticks..
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -643,6 +644,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     std::size_t const thresholdIndex,
     TriggerGatesPerCryostat_t const& gates,
     EventInfo_t const& eventInfo,
+    detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
     ) const override;
     
@@ -1163,8 +1165,9 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   //
   // Triggering efficiency vs. requirements.
   //
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { helper().detTimings().toOpticalTicks(helper().triggerTimeResolution()) };
+    { helper().detTimings(clockData).toOpticalTicks(helper().triggerTimeResolution()) };
   auto const& beamGateOpt = helper().beamGateTickRange();
   auto* TrigTime = plots.make<TH2F>(
     "TriggerTick",
@@ -1304,6 +1307,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   std::size_t const thresholdIndex,
   TriggerGatesPerCryostat_t const& gates,
   EventInfo_t const& eventInfo,
+  detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
 ) const {
   
@@ -1371,7 +1375,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
         << "Pattern '" << pattern.tag() << "' on window #" << iWindow
         << " (threshold: " << threshold
         << ") fired at tick " << windowResponse.atTick() << " ("
-        << helper().detTimings().toElectronicsTime
+        << helper().detTimings(clockData).toElectronicsTime
           (detinfo::DetectorTimings::optical_tick{ windowResponse.atTick() })
         << ")"
         ;

@@ -35,6 +35,7 @@ namespace icarus_tool
         
         // Find the ROI's
         virtual void Deconvolve(IROIFinder::Waveform const&,
+                                double samplingRate,
                                 raw::ChannelID_t,
                                 IROIFinder::CandidateROIVec const&,
                                 recob::Wire::RegionsOfInterest_t& ) const = 0;

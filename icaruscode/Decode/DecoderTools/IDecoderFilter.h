@@ -1,7 +1,7 @@
 /**
  *  @file   IDecoderFilter.h
  *
- *  @brief  This provides an art tool interface definition for tools which "decode" artdaq 
+ *  @brief  This provides an art tool interface definition for tools which "decode" artdaq
  *          fragments into LArSoft data objects
  *
  *  @author usher@slac.stanford.edu
@@ -16,6 +16,9 @@
 
 // Algorithm includes
 #include "artdaq-core/Data/Fragment.hh"
+namespace detinfo {
+  class DetectorClocksData;
+}
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
 
@@ -46,7 +49,8 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(const artdaq::Fragment& fragment) = 0; 
+    virtual void process_fragment(detinfo::DetectorClocksData const& clockData,
+                                  const artdaq::Fragment& fragment) = 0;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -102,9 +106,9 @@ public:
      *  @brief Recover the full RMS before coherent noise
      */
     virtual const icarus_signal_processing::VectorFloat getFullRMSVals()      const = 0;
- 
+
     /**
-     *  @brief Recover the truncated RMS noise 
+     *  @brief Recover the truncated RMS noise
      */
     virtual const icarus_signal_processing::VectorFloat getTruncRMSVals()     const = 0;
 
@@ -112,7 +116,7 @@ public:
      *  @brief Recover the number of bins after truncation
      */
     virtual const icarus_signal_processing::VectorInt   getNumTruncBins() const = 0;
- 
+
 };
 
 } // namespace lar_cluster3d
