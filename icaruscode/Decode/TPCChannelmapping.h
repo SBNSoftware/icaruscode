@@ -115,7 +115,10 @@ namespace database
     //-----------------------------------------------------
     
     using ChannelVec                  = std::vector<unsigned int>;
-    using TPCReadoutBoardToChannelMap = std::map<unsigned int, ChannelVec>;
+    using SlotChannelVecPair          = std::pair<unsigned int, ChannelVec>;
+    using TPCReadoutBoardToChannelMap = std::map<unsigned int, SlotChannelVecPair>;
+
+    const unsigned int CHANNELSPERBOARD = 64;
 
     inline int BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap)
     {
@@ -138,15 +141,29 @@ namespace database
 
             if (tuple != NULL)
             {
-                unsigned int readoutBoardID = getLongValue(tuple, 2, &error);
+                unsigned int readoutBoardID   = getLongValue(tuple, 2, &error);
 
                 if (error) throw std::runtime_error("Encountered error when trying to read Board ReadoutID");
+
+                if (rbChanMap.find(readoutBoardID) == rbChanMap.end())
+                {
+                    unsigned int readoutBoardSlot = getLongValue(tuple, 4, &error);
+
+                    if (error) throw std::runtime_error("Encountered error when trying to read Board Readout slot");
+
+                    rbChanMap[readoutBoardID].first = readoutBoardSlot;
+                    rbChanMap[readoutBoardID].second.resize(CHANNELSPERBOARD);
+                }
+
+                unsigned int channelNum = getLongValue(tuple, 5, &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to read channel number");
 
                 unsigned int channelID = getLongValue(tuple, 0, &error);
 
                 if (error) throw std::runtime_error("Encountered error when recovering the channel ID list");
 
-                rbChanMap[readoutBoardID].emplace_back(channelID);
+                rbChanMap[readoutBoardID].second[channelNum] = channelID;
             }
         }
 
