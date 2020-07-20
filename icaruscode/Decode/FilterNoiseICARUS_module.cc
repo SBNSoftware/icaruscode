@@ -40,7 +40,6 @@
 #include "tbb/concurrent_vector.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "lardataobj/RawData/RawDigit.h"
 
@@ -130,7 +129,6 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                     fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const*           fDetectorProperties;   ///< Detector properties service
 };
 
 DEFINE_ART_MODULE(FilterNoiseICARUS)
@@ -146,9 +144,7 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
                       art::ReplicatedProducer(pset, frame),
                       fNumEvent(0)
 {
-
     fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     configure(pset);
 
