@@ -40,7 +40,7 @@
 #include "tbb/concurrent_vector.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+
 #include "lardataobj/RawData/RawDigit.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
@@ -72,9 +72,7 @@ public:
     using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
 
     // Function to do the work
-    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>,
-                               detinfo::DetectorClocksData const& clockData,
-                               ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
+    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
 
 private:
  
@@ -83,13 +81,11 @@ private:
     public:
         multiThreadFragmentProcessing(FilterNoiseICARUS const&        parent,
                                       art::Handle<artdaq::Fragments>& fragmentsHandle, 
-                                      detinfo::DetectorClocksData const& clockData,
                                       ConcurrentRawDigitCol&          rawDigitCollection,
                                       ConcurrentRawDigitCol&          rawRawDigitCollection,
                                       ConcurrentRawDigitCol&          coherentCollection)
             : fFilterNoiseICARUS(parent),
               fFragmentsHandle(fragmentsHandle),
-              fClockData{clockData},
               fRawDigitCollection(rawDigitCollection),
               fRawRawDigitCollection(rawRawDigitCollection),
               fCoherentCollection(coherentCollection)
@@ -98,12 +94,11 @@ private:
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fClockData, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
+                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
         }
     private:
         const FilterNoiseICARUS&        fFilterNoiseICARUS;
         art::Handle<artdaq::Fragments>& fFragmentsHandle;
-        detinfo::DetectorClocksData const& fClockData;
         ConcurrentRawDigitCol&          fRawDigitCollection;
         ConcurrentRawDigitCol&          fRawRawDigitCollection;
         ConcurrentRawDigitCol&          fCoherentCollection;
@@ -149,7 +144,6 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
                       art::ReplicatedProducer(pset, frame),
                       fNumEvent(0)
 {
-
     fGeometry = lar::providerFrom<geo::Geometry>();
 
     configure(pset);
@@ -269,11 +263,9 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
     ConcurrentRawDigitCol concurrentRawRawDigits;
     ConcurrentRawDigitCol coherentRawDigits;
 
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
     // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
     multiThreadFragmentProcessing fragmentProcessing(*this, 
                                                      daq_handle, 
-                                                     clockData,
                                                      concurrentRawDigits, 
                                                      concurrentRawRawDigits,
                                                      coherentRawDigits);
@@ -325,7 +317,6 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
 
 void FilterNoiseICARUS::processSingleFragment(size_t                         idx, 
                                               art::Handle<artdaq::Fragments> fragmentHandle,
-                                              detinfo::DetectorClocksData const& clockData,
                                               ConcurrentRawDigitCol&         rawDigitCollection,
                                               ConcurrentRawDigitCol&         rawRawDigitCollection,
                                               ConcurrentRawDigitCol&         coherentCollection) const
@@ -343,7 +334,7 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     IDecoderFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
-    decoderTool->process_fragment(clockData, *fragmentPtr);
+    decoderTool->process_fragment(*fragmentPtr);
 
     // Useful numerology
     // convert fragment to Nevis fragment

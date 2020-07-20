@@ -104,7 +104,7 @@ icarus_basic_services:
 
     RandomNumberGenerator:               {}
     NuRandomService:                     @local::per_event_NuRandomService
-    FileCatalogMetadata:                @local::art_file_catalog_mc
+    FileCatalogMetadata:                 @local::art_file_catalog_mc
 
                                          @table::icarus_geometry_services
 
