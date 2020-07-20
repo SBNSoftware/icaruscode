@@ -472,7 +472,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         }
         catch(...)
         {
-            mf::LogDebug("Decon1DROI_module") << "Pedestal lookup fails with channel: " << channel << std::endl;
+            std::cout << "Pedestal lookup fails with channel: " << channel << std::endl;
             return;
         }
         
