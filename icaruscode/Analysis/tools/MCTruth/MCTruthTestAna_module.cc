@@ -34,7 +34,6 @@
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/PFParticle.h"
@@ -44,6 +43,7 @@
 
 #include "cetlib/cpu_timer.h"
 #include "lardata/Utilities/AssociationUtil.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 
@@ -126,6 +126,7 @@ private:
 
     // Other variables that will be shared between different methods.
     const geo::GeometryCore*                 fGeometry;       // pointer to Geometry service
+    const detinfo::DetectorProperties*       fDetectorProperties;
 }; // class MCTruthTestAna
 
 
@@ -140,6 +141,7 @@ MCTruthTestAna::MCTruthTestAna(fhicl::ParameterSet const& parameterSet)
 
 {
     fGeometry           = lar::providerFrom<geo::Geometry>();
+    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     // Read in the parameters from the .fcl file.
     this->reconfigure(parameterSet);
@@ -218,7 +220,6 @@ void MCTruthTestAna::analyze(const art::Event& event)
     art::Handle<std::vector<recob::Hit> > hitHandle;
     event.getByLabel(fHitProducerLabel, hitHandle);
 
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
     if (hitHandle.isValid())
     {
         int nTotalMisMatches(0);
@@ -229,8 +230,8 @@ void MCTruthTestAna::analyze(const art::Event& event)
             int nIDEMisMatches(0);
             
             // Check the claimed parentage of the current hit
-            std::vector<sim::TrackIDE> trackIDEVec = fMCTruthMatching->HitToTrackID(clockData, hit);
-            std::vector<sim::TrackIDE> btTrkIDEVec = backTracker->HitToTrackIDEs(clockData, hit);
+            std::vector<sim::TrackIDE> trackIDEVec = fMCTruthMatching->HitToTrackID(hit);
+            std::vector<sim::TrackIDE> btTrkIDEVec = backTracker->HitToTrackIDEs(hit);
             
             int deltaIDs = int(btTrkIDEVec.size()) - int(trackIDEVec.size());
             
@@ -296,8 +297,8 @@ void MCTruthTestAna::analyze(const art::Event& event)
             
             std::vector<art::Ptr<recob::Hit>> trackHitVec = hitTrackAssns.at(track.key());
             
-            std::set<int> trackIDSet = fMCTruthMatching->GetSetOfTrackIDs(clockData, trackHitVec);
-            std::set<int> btTrkIDSet = backTracker->GetSetOfTrackIds(clockData, trackHitVec);
+            std::set<int> trackIDSet = fMCTruthMatching->GetSetOfTrackIDs(trackHitVec);
+            std::set<int> btTrkIDSet = backTracker->GetSetOfTrackIds(trackHitVec);
             
             // Check for case were we might have negative track IDs from the BackTracker
             if (btTrkIDSet.size() > trackIDSet.size())
@@ -325,7 +326,7 @@ void MCTruthTestAna::analyze(const art::Event& event)
 
             for(const auto& tkID : btTrkIDVec)
             {
-                std::vector<art::Ptr<recob::Hit>> hitVec = backTracker->TrackIdToHits_Ps(clockData, tkID, hitPtrVector);
+                std::vector<art::Ptr<recob::Hit>> hitVec = backTracker->TrackIdToHits_Ps(tkID, hitPtrVector);
                 trkHitVecVec.push_back(hitVec);
             }
             // Apply majority logic - we declare the MCParticle with the most hits to be the "winner"
@@ -345,8 +346,8 @@ void MCTruthTestAna::analyze(const art::Event& event)
             
             std::set<int> mcTrackIdxSet = {bestMCTrackID};
             
-            double btTrkEffic = backTracker->HitCollectionEfficiency(clockData, mcTrackIdxSet, trackHitVec, bestMCTrackHitVec, geo::k3D);
-            double trackEffic = fMCTruthMatching->HitCollectionEfficiency(clockData, mcTrackIdxSet, trackHitVec, bestMCTrackHitVec, geo::k3D);
+            double btTrkEffic = backTracker->HitCollectionEfficiency(mcTrackIdxSet, trackHitVec, bestMCTrackHitVec, geo::k3D);
+            double trackEffic = fMCTruthMatching->HitCollectionEfficiency(mcTrackIdxSet, trackHitVec, bestMCTrackHitVec, geo::k3D);
             
             if (btTrkEffic != trackEffic)
             {
@@ -358,8 +359,8 @@ void MCTruthTestAna::analyze(const art::Event& event)
             fAssocEfficiencyHist->Fill(std::min(1.01,trackEffic), 1.);
             fEfficiencyCompHist->Fill(std::min(1.01,btTrkEffic), std::min(1.01,trackEffic), 1.);
             
-            double btTrkPurity = backTracker->HitCollectionPurity(clockData, mcTrackIdxSet, trackHitVec);
-            double trackPurity = fMCTruthMatching->HitCollectionPurity(clockData, mcTrackIdxSet, trackHitVec);
+            double btTrkPurity = backTracker->HitCollectionPurity(mcTrackIdxSet, trackHitVec);
+            double trackPurity = fMCTruthMatching->HitCollectionPurity(mcTrackIdxSet, trackHitVec);
             
             if (btTrkPurity != trackPurity)
             {
@@ -388,3 +389,4 @@ void MCTruthTestAna::endJob()
 // This macro has to be defined for this module to be invoked from a
 // .fcl file; see MCTruthTestAna.fcl for more information.
 DEFINE_ART_MODULE(MCTruthTestAna)
+

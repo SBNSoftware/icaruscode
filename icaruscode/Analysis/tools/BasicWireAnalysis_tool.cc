@@ -1,3 +1,4 @@
+
 #include "icaruscode/Analysis/tools/IWireHistogramTool.h"
 
 #include "fhiclcpp/ParameterSet.h"
@@ -10,6 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
@@ -151,6 +153,7 @@ private:
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore&                fGeometry;             ///< pointer to Geometry service
     icarusutil::SignalShapingICARUSService& fSignalServices;       ///< The signal shaping service
+    const detinfo::DetectorProperties*      fDetectorProperties;   ///< Detector properties service
     const lariov::DetPedestalProvider&      fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
     
@@ -166,6 +169,8 @@ BasicWireAnalysis::BasicWireAnalysis(fhicl::ParameterSet const & pset) :
     fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
+    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    
     configure(pset);
     
     // Report.

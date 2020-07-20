@@ -1,3 +1,4 @@
+
 #include "icaruscode/Analysis/tools/IHitHistogramTool.h"
 
 #include "fhiclcpp/ParameterSet.h"
@@ -9,6 +10,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "lardataobj/RecoBase/Hit.h"
 
@@ -128,6 +130,7 @@ private:
     
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
+    const detinfo::DetectorProperties* fDetectorProperties;   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------------
@@ -140,6 +143,7 @@ private:
 BasicHitAnalysis::BasicHitAnalysis(fhicl::ParameterSet const & pset)
 {
     fGeometry           = lar::providerFrom<geo::Geometry>();
+    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
     configure(pset);
     

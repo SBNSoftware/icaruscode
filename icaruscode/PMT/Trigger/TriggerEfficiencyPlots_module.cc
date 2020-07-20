@@ -1438,6 +1438,8 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
+  detinfo::DetectorClocks const& fDetClocks;
+  detinfo::DetectorTimings fDetTimings;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -1446,6 +1448,9 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
   
   // --- BEGIN Internal variables ----------------------------------------------
+  
+  /// Gate representing the time we expect light from beam interactions.
+  icarus::trigger::OpticalTriggerGate const fBeamGate;
   
   /// Beam gate start and stop tick in optical detector scale.
   std::pair
@@ -1472,13 +1477,13 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
 
 
   /// Initializes all the plot sets, one per threshold.
-  void initializePlots(detinfo::DetectorClocksData const& clockData, PlotCategories_t const& categories);
+  void initializePlots(PlotCategories_t const& categories);
 
   /// Initializes full set of plots for (ADC threshold + category) into `plots`.
-  void initializePlotSet(detinfo::DetectorClocksData const& clockData, PlotSandbox& plots) const;
+  void initializePlotSet(PlotSandbox& plots) const;
 
   /// Initializes set of plots per complete trigger definition into `plots`.
-  void initializeEfficiencyPerTriggerPlots(detinfo::DetectorClocksData const& clockData, PlotSandbox& plots) const;
+  void initializeEfficiencyPerTriggerPlots(PlotSandbox& plots) const;
   
   /// Initializes a single, trigger-independent plot set into `plots`.
   void initializeEventPlots(PlotSandbox& plots) const;
@@ -1523,7 +1528,7 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
    * and read in `extractEventInfo()` to be used within it.
    *
    */
-  EventInfo_t extractEventInfo(art::Event const& event, detinfo::DetectorClocksData const& clockData) const;
+  EventInfo_t extractEventInfo(art::Event const& event) const;
   
   /// Returns the TPC `point` is within, `nullptr` if none.
   geo::TPCGeo const* pointInTPC(geo::Point_t const& point) const;
@@ -1539,10 +1544,13 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
     art::InputTag const& dataTag
     ) const;
 
+  /// Applies the beam gate coincidence to the specified trigger primitive.
+  template <typename GateObject>
+  GateObject applyBeamGate(GateObject gate) const;
+
   /// Adds all the `responses` (one per threshold) to the plots.
   void plotResponses(
     std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
-    detinfo::DetectorTimings const& detTimings,
     PlotSandboxRefs_t const& plots, EventInfo_t const& info,
     std::vector<TriggerGateData_t> const& primitiveCounts
     ) const;
@@ -1585,8 +1593,20 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   , fLogCategory          (config().LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
+  , fDetClocks (*lar::providerFrom<detinfo::DetectorClocksService>())
+  , fDetTimings(fDetClocks)
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // cached
+  , fBeamGate(icarus::trigger::BeamGateMaker{ fDetClocks }(fBeamGateDuration))
+  , fBeamGateOpt(
+      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime()),
+      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + fBeamGateDuration)
+    )
+  , fBeamGateSim(
+      fDetTimings.toSimulationTime(fBeamGateOpt.first),
+      fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
+        + fBeamGateDuration
+    )
 {
   //
   // more complex parameter parsing
@@ -1640,19 +1660,15 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   //
   // initialization of plots and plot categories
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-  detinfo::DetectorTimings const detTimings{clockData};
-  auto const beam_gate_opt = std::make_pair(detTimings.toOpticalTick(detTimings.BeamGateTime()),
-                                            detTimings.toOpticalTick(detTimings.BeamGateTime() + fBeamGateDuration));
-  auto const beam_gate_sim = std::make_pair(detTimings.toSimulationTime(beam_gate_opt.first),
-                                            detTimings.toSimulationTime(beam_gate_opt.second));
-  initializePlots(clockData, ::PlotCategories);
+  initializePlots(::PlotCategories);
+
   {
     mf::LogInfo log(fLogCategory);
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << beam_gate_sim.first << " -- " << beam_gate_sim.second;
+    log << "\nBeam gate is " << fBeamGate << " (" << fBeamGateSim.first
+      << " -- " << fBeamGateSim.second << ")";
   } // local block
 
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()
@@ -1678,9 +1694,7 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
   //
   // 1. find out the features of the event and the categories it belongs to
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-  detinfo::DetectorTimings const detTimings{clockData};
-  EventInfo_t const eventInfo = extractEventInfo(event, clockData);
+  EventInfo_t const eventInfo = extractEventInfo(event);
   
   bool const bPlot = shouldPlotEvent(eventInfo);
   if (bPlot) ++nPlottedEvents;
@@ -1709,9 +1723,6 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
   //
   // 2. for each threshold:
   //
-  /// Gate representing the time we expect light from beam interactions.
-  auto const beam_gate = icarus::trigger::BeamGateMaker{clockData}(fBeamGateDuration);
-
   for (auto&& [ iThr, thrPair, thrPlots ]
     : util::enumerate(fADCthresholds, fThresholdPlots)
   ) {
@@ -1730,7 +1741,7 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
 
     for (TriggerGateData_t combinedPrimitive : (combinedTriggerPrimitives)) {
       TriggerGateData_t const primitiveCount
-        = combinedPrimitive.Mul(beam_gate);
+        = applyBeamGate(combinedPrimitive);
 
       primitiveCounts.push_back(primitiveCount);
     }
@@ -1746,7 +1757,7 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
     }
     
     // 1.6. add the response to the appropriate plots
-    plotResponses(iThr, threshold, detTimings, selectedPlots, eventInfo, primitiveCounts);
+    plotResponses(iThr, threshold, selectedPlots, eventInfo, primitiveCounts);
     
   } // for thresholds
 
@@ -1771,7 +1782,7 @@ void icarus::trigger::TriggerEfficiencyPlots::endJob() {
 
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::initializePlots
-  (detinfo::DetectorClocksData const& clockData, PlotCategories_t const& categories)
+  (PlotCategories_t const& categories)
 {
   using namespace std::string_literals;
   
@@ -1790,7 +1801,7 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlots
         category.description()
         );
       
-      initializePlotSet(clockData, plots);
+      initializePlotSet(plots);
     }
     fThresholdPlots.push_back(std::move(thrPlots));
   } // for thresholds
@@ -1806,7 +1817,7 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlots
 
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
-  (detinfo::DetectorClocksData const& clockData, PlotSandbox& plots) const
+  (PlotSandbox& plots) const
 {
   
   // a variable binning for the required number of trigger primitives
@@ -1832,11 +1843,8 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   //
   // Triggering efficiency vs. threshold.
   //
-  detinfo::DetectorTimings const detTimings{clockData};
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { detTimings.toOpticalTicks(fTriggerTimeResolution) };
-  auto const beam_gate_opt = std::make_pair(detTimings.toOpticalTick(detTimings.BeamGateTime()),
-                                            detTimings.toOpticalTick(detTimings.BeamGateTime() + fBeamGateDuration));
+    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
   auto* TrigTime = plots.make<TH2F>(
     "TriggerTick",
     "Trigger time tick"
@@ -1844,8 +1852,8 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
       ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
     minimumPrimBinning.size() - 1U, minimumPrimBinning.data(),
 //    fMinimumPrimitives.back(), 0, fMinimumPrimitives.back() + 1
-    (beam_gate_opt.second - beam_gate_opt.first) / triggerResolutionTicks,
-    beam_gate_opt.first.value(), beam_gate_opt.second.value()
+    (fBeamGateOpt.second - fBeamGateOpt.first) / triggerResolutionTicks,
+    fBeamGateOpt.first.value(), fBeamGateOpt.second.value()
     );
   
   util::ROOT::applyAxisLabels(TrigTime->GetXaxis(), minimumPrimBinningLabels);
@@ -1902,7 +1910,7 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
     PlotSandbox& reqBox = plots.addSubSandbox
       ("Req" + minCountStr, minCountStr + " channels required");
     
-    initializeEfficiencyPerTriggerPlots(clockData, reqBox);
+    initializeEfficiencyPerTriggerPlots(reqBox);
     
     for (auto const& [ name, desc ]: classes) {
       
@@ -1950,14 +1958,12 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
 
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlots::initializeEfficiencyPerTriggerPlots
-  (detinfo::DetectorClocksData const& clockData, PlotSandbox& plots) const
+  (PlotSandbox& plots) const
 {
-  detinfo::DetectorTimings const detTimings{clockData};
-  detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { detTimings.toOpticalTicks(fTriggerTimeResolution) };
   
-  auto const beam_gate_opt = std::make_pair(detTimings.toOpticalTick(detTimings.BeamGateTime()),
-                                            detTimings.toOpticalTick(detTimings.BeamGateTime() + fBeamGateDuration));
+  detinfo::timescales::optical_time_ticks const triggerResolutionTicks
+    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
+  
   //
   // Triggering efficiency vs. something else
   //
@@ -1997,8 +2003,8 @@ void icarus::trigger::TriggerEfficiencyPlots::initializeEfficiencyPerTriggerPlot
     "TriggerTick",
     "Trigger time tick"
       ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
-    (beam_gate_opt.second - beam_gate_opt.first) / triggerResolutionTicks,
-    beam_gate_opt.first.value(), beam_gate_opt.second.value()
+    (fBeamGateOpt.second - fBeamGateOpt.first) / triggerResolutionTicks,
+    fBeamGateOpt.first.value(), fBeamGateOpt.second.value()
     );
   
 } // initializeEfficiencyPerTriggerPlots()
@@ -2110,7 +2116,7 @@ icarus::trigger::TriggerEfficiencyPlots::selectPlotCategories
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
-  (art::Event const& event, detinfo::DetectorClocksData const& clockData) const -> EventInfo_t
+  (art::Event const& event) const -> EventInfo_t
 {
   
   EventInfo_t info;
@@ -2181,11 +2187,6 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
   GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
   GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 };
   
-  detinfo::DetectorTimings const detTimings{clockData};
-  auto const beam_gate_opt = std::make_pair(detTimings.toOpticalTick(detTimings.BeamGateTime()),
-                                            detTimings.toOpticalTick(detTimings.BeamGateTime() + fBeamGateDuration));
-  auto const beam_gate_sim = std::make_pair(detTimings.toSimulationTime(beam_gate_opt.first),
-                                            detTimings.toSimulationTime(beam_gate_opt.second));
   for (art::InputTag const& edepTag: fEnergyDepositTags) {
     
     auto const& energyDeposits
@@ -2200,7 +2201,7 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
       
       detinfo::timescales::simulation_time const t { edep.Time() };
       bool const inSpill
-        = (t >= beam_gate_sim.first) && (t <= beam_gate_sim.second);
+        = (t >= fBeamGateSim.first) && (t <= fBeamGateSim.second);
       
       totalEnergy += e;
       if (inSpill) inSpillEnergy += e;
@@ -2286,6 +2287,15 @@ auto icarus::trigger::TriggerEfficiencyPlots::combineTriggerPrimitives(
 
 
 //------------------------------------------------------------------------------
+template <typename GateObject>
+GateObject icarus::trigger::TriggerEfficiencyPlots::applyBeamGate
+  (GateObject gate) const
+{
+  return std::move(gate.Mul(fBeamGate));
+} // icarus::trigger::TriggerEfficiencyPlots::applyBeamGate()
+
+
+//------------------------------------------------------------------------------
 // out-of-order definition, needs to be before `plotResponses()`
 template <typename TrigGateColl>
 auto icarus::trigger::TriggerEfficiencyPlots::computeMaxGate
@@ -2308,7 +2318,6 @@ auto icarus::trigger::TriggerEfficiencyPlots::computeMaxGate
 void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   std::size_t iThr,
   icarus::trigger::ADCCounts_t const threshold,
-  detinfo::DetectorTimings const& detTimings,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   std::vector<TriggerGateData_t> const& primitiveCounts
@@ -2348,7 +2357,7 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
   mf::LogTrace(fLogCategory)
     << "Max primitive count in " << threshold << ": "
     << maxPrimitives.second << " at tick " << maxPrimitives.first << " ("
-    << detTimings.toElectronicsTime
+    << fDetTimings.toElectronicsTime
       (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
     << ")"
     ;

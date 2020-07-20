@@ -36,16 +36,16 @@ class IResponse
 {
 public:
     virtual ~IResponse() noexcept = default;
-
+    
     /**
      *  @brief Setup routines
      *
      *  @param output                the object containting the art output
      *  @param clusHitPairVector     List of 3D hits to output as "extreme" space points
      */
-    virtual void configure(const fhicl::ParameterSet& pset)   = 0;
-    virtual void setResponse(double sampling_rate, double weight) = 0; // rate in ns
-    virtual void outputHistograms(double sampling_rate, art::TFileDirectory&) const = 0;
+    virtual void                                    configure(const fhicl::ParameterSet& pset)   = 0;
+    virtual void                                    setResponse(double weight)                   = 0;
+    virtual void                                    outputHistograms(art::TFileDirectory&) const = 0;
 
     /**
      *  @brief Return the plane these functions represent

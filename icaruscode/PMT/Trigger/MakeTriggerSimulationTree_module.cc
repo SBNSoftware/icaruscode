@@ -297,7 +297,6 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   // --- BEGIN Setup variables -------------------------------------------------
   
   geo::GeometryCore const& fGeom;
-  detinfo::DetectorClocksData fDetClocks;
   detinfo::DetectorTimings fDetTimings;
   
   // --- END Setup variables ---------------------------------------------------
@@ -476,8 +475,7 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   , fLogCategory(config().LogCategory())
   // setup
   , fGeom(*lar::providerFrom<geo::Geometry>())
-  , fDetClocks(art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob())
-  , fDetTimings(fDetClocks)
+  , fDetTimings(*lar::providerFrom<detinfo::DetectorClocksService>())
   // other data
   , fBeamGate(
       icarus::trigger::BeamGateMaker{ fDetTimings }

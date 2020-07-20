@@ -33,6 +33,7 @@
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -98,6 +99,7 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     art::ServiceHandle<geo::Geometry>            fGeometry;             ///< pointer to Geometry service
+    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
 
 } // end caldata namespace

@@ -122,15 +122,13 @@ void SignalShapingICARUSService::init()
         // ICARUS response and filter functions.
         art::ServiceHandle<geo::Geometry> geo;
 
-        auto const samplingRate = sampling_rate(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob());
-
         // Get the normalization from the field response for the collection plane
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
         double weight   = 1. / integral;
         
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
         {
-          fPlaneToResponseMap[planeIdx].front().get()->setResponse(samplingRate, weight);
+            fPlaneToResponseMap[planeIdx].front().get()->setResponse(weight);                
         }
         
         // Check to see if we want histogram output
@@ -145,7 +143,7 @@ void SignalShapingICARUSService::init()
             art::TFileDirectory dir = tfs->mkdir("SignalShaping");
             
             // Loop through response tools first
-            for(const auto& response: fPlaneToResponseMap) response.second.front().get()->outputHistograms(samplingRate, dir);
+            for(const auto& response: fPlaneToResponseMap) response.second.front().get()->outputHistograms(dir);
 
         }
 
@@ -155,8 +153,7 @@ void SignalShapingICARUSService::init()
     return;
 }
 
-void SignalShapingICARUSService::SetDecon(double const samplingRate,
-                                          size_t fftsize, size_t channel)
+void SignalShapingICARUSService::SetDecon(size_t fftsize, size_t channel)
 {
     art::ServiceHandle<geo::Geometry> geo;
     
@@ -168,7 +165,7 @@ void SignalShapingICARUSService::SetDecon(double const samplingRate,
     
     for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
     {
-        fPlaneToResponseMap.at(planeIdx).front()->setResponse(samplingRate, weight);
+        fPlaneToResponseMap.at(planeIdx).front()->setResponse(weight);
     }
 }
 

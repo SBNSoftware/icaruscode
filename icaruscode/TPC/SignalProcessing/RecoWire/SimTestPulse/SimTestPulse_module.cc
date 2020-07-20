@@ -93,8 +93,9 @@ SimTestPulse::SimTestPulse(fhicl::ParameterSet const & p)
     produces< std::vector<raw::Trigger> >();
     produces< sumdata::RunData, art::InRun >();
     
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    fTriggerTime = clockData.TriggerTime();
+    auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
+    
+    fTriggerTime = ts->TriggerTime();
 
 //    fTriggerTime    = p.get< double>              ("TriggerTime_us");
     fSimTime_v      = p.get< std::vector<double> >("SimTimeArray_us");
@@ -158,7 +159,8 @@ void SimTestPulse::produce(art::Event & e)
     
     double xyz[3] = {0., 0., 0.};
 
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
+    art::ServiceHandle<detinfo::DetectorClocksService> tss;
+    auto const* ts = tss->provider();
     art::ServiceHandle<geo::Geometry> geo;
     
     fPlane0Channel_v.clear();
@@ -174,8 +176,8 @@ void SimTestPulse::produce(art::Event & e)
 
     for(size_t index=0; index < fSimTime_v.size(); ++index) {
         
-        int tdc = fSimTime_v[index] / clockData.TPCClock().TickPeriod();
-        fTick_v.push_back(clockData.TPCTDC2Tick(tdc));
+        int tdc = fSimTime_v[index] / ts->TPCClock().TickPeriod();
+        fTick_v.push_back(ts->TPCTDC2Tick(tdc));
         
         if(fVerbose)
             std::cout << "[BUFFOON!] Charge injection id " << index << " @ TDC=" << tdc
@@ -194,7 +196,7 @@ void SimTestPulse::produce(art::Event & e)
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
         pulse_record.num_electrons = fNumElectrons_v[index];
-        pulse_record.tick = clockData.TPCTDC2Tick(tdc);
+        pulse_record.tick = ts->TPCTDC2Tick(tdc);
         for(size_t plane=0; plane<3; ++plane) {
             auto channel = geo->NearestChannel(xyz,plane);
             auto wire = geo->ChannelToWire(channel).front().Wire;

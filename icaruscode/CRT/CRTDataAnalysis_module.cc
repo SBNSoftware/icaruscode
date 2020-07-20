@@ -1,8 +1,8 @@
 /**
  * @file   CRTDataAnalysis_module.cc
- * @brief  Access CRT data and reco products and compare to MCTruth info
+ * @brief  Access CRT data and reco products and compare to MCTruth info 
  * @author Chris Hilgenberg (Chris.Hilgenberg@colostate.edu)
- *
+ * 
  * The last revision of this code was done in October 2018 with LArSoft v07_06_01.
  */
 
@@ -10,6 +10,7 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -65,7 +66,7 @@ using std::pair;
 
 
 namespace {
-  //uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo);
+  //uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo); 
   //char ModToAuxDetType(geo::AuxDetGeo const& adgeo);
   //int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
   uint32_t MacToADReg(uint32_t mac);
@@ -87,7 +88,7 @@ namespace crt {
   // class definition
   /**
    * @brief Example analyzer
-   *
+   * 
    * This class extracts information from the generated and reconstructed
    * particles.
    *
@@ -95,16 +96,16 @@ namespace crt {
    * - PDG ID (flavor) of all particles
    * - momentum of the primary particles selected to have a specific PDG ID
    * - length of the selected particle trajectory
-   *
+   * 
    * It also produces two ROOT trees.
    *
    * The first ROOT tree contains information on the simulated
    * particles, including "dEdx", a binned histogram of collected
    * charge as function of track range.
-   *
+   * 
    * Configuration parameters
    * =========================
-   *
+   * 
    * - *SimulationLabel* (string, default: "largeant"): tag of the input data
    *   product with the detector simulation information (typically an instance
    *   of the LArG4 module)
@@ -115,11 +116,11 @@ namespace crt {
   public:
 
     struct Config {
-
+      
       // Save some typing:
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
-
+      
 
       fhicl::Atom<art::InputTag> CRTHitLabel {
         Name("CRTHitLabel"),
@@ -130,12 +131,12 @@ namespace crt {
         Name("CRTDAQLabel"),
         Comment("tag of the input data product with calibrated CRT data")
         };
-
+   
 
     }; // Config
-
+    
     using Parameters = art::EDAnalyzer::Table<Config>;
-
+    
     // -------------------------------------------------------------------
     // -------------------------------------------------------------------
     // Standard constructor for an ART module with configuration validation;
@@ -162,7 +163,7 @@ namespace crt {
     TTree* fDAQNtuple;
     TTree* fHitNtuple;
 
-    // The comment lines with the @ symbols define groups in doxygen.
+    // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
     /// @{
     int fEvent;        ///< number of the event being processed
@@ -216,18 +217,18 @@ namespace crt {
     //uint32_t fNmuTagD;     //N muon tracks producing >0 CRT triggers in D-subsystem
     //uint32_t fNmuTagTot;
     TH1F* fChanMultHistC;  //N FEB channels > threshold / muon track
-    TH1F* fChanMultHistM;
+    TH1F* fChanMultHistM;  
     TH1F* fChanMultHistD;
     TH1F* fFEBMultHistC;   //N FEBs w/trigger / muon track
     TH1F* fFEBMultHistM;
     TH1F* fFEBMultHistD;
 
     /// @}
-
+    
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     int                      fTriggerOffset;     ///< (units of ticks) time of expected neutrino event
-
+    
   }; // class CRTDataAnalysis
 
 
@@ -237,14 +238,14 @@ namespace crt {
 
   //-----------------------------------------------------------------------
   // Constructor
-  //
+  // 
   // Note that config is a Table<Config>, and to access the Config
   // value we need to use an operator: "config()". In the same way,
   // each element in Config is an Atom<Type>, so to access the type we
   // again use the call operator, e.g. "SimulationLabel()".
 
   map<int,vector<pair<int,int>>> CRTDataAnalysis::fFebMap;
-
+ 
   CRTDataAnalysis::CRTDataAnalysis(Parameters const& config)
     : EDAnalyzer(config)
     , fCRTHitProducerLabel(config().CRTHitLabel())
@@ -253,12 +254,13 @@ namespace crt {
     // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
     // The same for detector TDC clock services.
+    //fTimeService = lar::providerFrom<detinfo::DetectorClocksService>();
     // Access to detector properties.
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-    fTriggerOffset = trigger_offset(clockData);
+    const detinfo::DetectorProperties* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    fTriggerOffset = detprop->TriggerOffset();
   }
 
-  void CRTDataAnalysis::FillFebMap() {
+  void CRTDataAnalysis::FillFebMap() { 
     if(!this->fFebMap.empty())
         return;
     std::string fullFileName;
@@ -287,14 +289,14 @@ namespace crt {
     fin.close();
   }
 
-
+  
   //-----------------------------------------------------------------------
   void CRTDataAnalysis::beginJob()
   {
     std::cout << " starting analysis job" << std::endl;
 
     // Access ART's TFileService, which will handle creating and writing
-    // histograms and n-tuples for us.
+    // histograms and n-tuples for us. 
     art::ServiceHandle<art::TFileService> tfs;
 
     // Define our n-tuples
@@ -316,7 +318,7 @@ namespace crt {
     fFEBMultHistM     =tfs->make<TH1F>("FEBMultD",";no. FEB triggers / #mu;",64,0,64);
     fFEBMultHistD     =tfs->make<TH1F>("FEBMultM",";no. FEB triggers / #mu;",64,0,64);
 
-    // Define the branches of our DetSim n-tuple
+    // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
     fDAQNtuple->Branch("t0",                    &fT0,                "t0/D");
@@ -338,24 +340,24 @@ namespace crt {
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
-    fHitNtuple->Branch("region",      &fHitReg,      "region/I");
+    fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
     fHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
     fHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
 
 }
-
+   
   void CRTDataAnalysis::beginRun(const art::Run& /*run*/)
   {
   }
 
   //-----------------------------------------------------------------------
-  void CRTDataAnalysis::analyze(const art::Event& event)
+  void CRTDataAnalysis::analyze(const art::Event& event) 
   {
     MF_LOG_DEBUG("CRT") << "beginning analyis" << '\n';
 
     // Start by fetching some basic event information for our n-tuple.
-    fEvent  = event.id().event();
+    fEvent  = event.id().event(); 
     fRun    = event.run();
     fSubRun = event.subRun();
 
@@ -380,8 +382,8 @@ namespace crt {
         if(fDetSubSys!=2) maxchan=32;
         else maxchan = 64;
         for(int ch=0; ch<maxchan; ch++) {
-            fADC[ch] = febdat.fAdc[ch];
-        }
+            fADC[ch] = febdat.fAdc[ch]; 
+        } 
 
 
         fDAQNtuple->Fill();
@@ -390,11 +392,11 @@ namespace crt {
 
     }//if crtdetsim products present
 
-    else
-        throw cet::exception("CRTSimAnalysis") << "CRTDAQ products not found!" << std::endl;
+    else 
+	throw cet::exception("CRTSimAnalysis") << "CRTDAQ products not found!" << std::endl;
 
     art::Handle<std::vector<icarus::crt::CRTHit>> crtHitHandle;
-
+    
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
     std::vector<int> ids;
     fNHit = 0;
@@ -443,8 +445,8 @@ namespace crt {
 
 
   } // CRTDataAnalysis::analyze()
-
-
+  
+  
   DEFINE_ART_MODULE(CRTDataAnalysis)
 
 } // namespace crt
@@ -456,7 +458,7 @@ namespace {
 
   /*char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
     size_t nstrips = adgeo.NSensitiveVolume();
-    if (nstrips==16) return 'c';
+    if (nstrips==16) return 'c'; 
     if (nstrips==20) return 'm';
     if (nstrips==64) return 'd';
     return 'e';
@@ -561,7 +563,7 @@ namespace {
 
   //for C- and D-modules, mac address is same as AD ID
   //three M-modules / FEB, each modules readout at both ends
-  //  numbering convention is module from FEB i
+  //  numbering convention is module from FEB i 
   //  is readout on the opposite end by FEB i+50
   //  return FEB i
   /*std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid) {

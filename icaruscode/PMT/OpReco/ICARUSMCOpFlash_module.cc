@@ -98,6 +98,7 @@ ICARUSMCOpFlash::ICARUSMCOpFlash(fhicl::ParameterSet const& p)
 
 void ICARUSMCOpFlash::produce(art::Event& e)
 {
+  auto const ts = lar::providerFrom<detinfo::DetectorClocksService>();
   auto const geop = lar::providerFrom<geo::Geometry>();
   auto opf_v = std::unique_ptr<std::vector<recob::OpFlash> >(new std::vector<recob::OpFlash>());
 
@@ -115,13 +116,12 @@ void ICARUSMCOpFlash::produce(art::Event& e)
     throw std::exception();
   }
 
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
   std::set<double> flash_time_s;
   for(auto const& mct : *mct_h) {
     for(int i=0; i<mct.NParticles(); ++i) {
       auto const& part = mct.GetParticle(i);
       if( (int)(part.StatusCode()) != 1 ) continue;
-      double flash_time = clockData.G4ToElecTime(part.T()) - clockData.TriggerTime();
+      double flash_time = ts->G4ToElecTime(part.T()) - ts->TriggerTime();
       flash_time_s.insert(flash_time);
     }
   }
@@ -161,7 +161,7 @@ void ICARUSMCOpFlash::produce(art::Event& e)
     if(pe_total < 0. && !_store_empty_flash) continue;
     double y,z,ywidth,zwidth;
     GetFlashLocation(pe_v,y,z,ywidth,zwidth);
-    recob::OpFlash f(flash_time, _merge_period, flash_time + clockData.TriggerTime(), 0,
+    recob::OpFlash f(flash_time, _merge_period, flash_time + ts->TriggerTime(), 0,
 		     pe_v, false, 0, 0, 0, 0, 0, 0);
     opf_v->emplace_back(std::move(f));
   }

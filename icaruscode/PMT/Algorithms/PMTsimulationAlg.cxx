@@ -84,7 +84,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   (ConfigurationParameters_t const& config)
   : fParams(config)
   , fQE(fParams.QEbase / fParams.larProp->ScintPreScale())
-  , fSampling(fParams.clockData->OpticalClock().Frequency())
+  , fSampling(fParams.timeService->OpticalClock().Frequency())
   , fNsamples(fParams.readoutEnablePeriod * fSampling) // us * MHz cancels out
   , wsp(
     *(fParams.pulseFunction),
@@ -171,7 +171,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     using namespace detinfo::timescales;
 
     detinfo::DetectorTimings const& timings
-      = detinfo::makeDetectorTimings(fParams.clockData);
+      = detinfo::makeDetectorTimings(fParams.timeService);
 
     tick const endSample = tick::castFrom(fNsamples);
 
@@ -297,7 +297,7 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
     using detinfo::timescales::trigger_time;
 
     detinfo::DetectorTimings const& timings
-      = detinfo::makeDetectorTimings(fParams.clockData);
+      = detinfo::makeDetectorTimings(fParams.timeService);
 
     std::vector<optical_tick> trigger_locations;
     trigger_locations.reserve(fParams.beamGateTriggerNReps);
@@ -388,7 +388,7 @@ icarus::opdet::PMTsimulationAlg::CreateFixedSizeOpDetWaveforms
   auto const posttrigSize = optical_time_ticks::castFrom(fParams.posttrigSize());
   
   detinfo::DetectorTimings const& timings
-    = detinfo::makeDetectorTimings(fParams.clockData);
+    = detinfo::makeDetectorTimings(fParams.timeService);
 
   // first viable tick number: since this is the item index in `wvfm`, it's 0
   optical_tick const firstTick { 0 };
@@ -712,7 +712,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
 std::unique_ptr<icarus::opdet::PMTsimulationAlg>
 icarus::opdet::PMTsimulationAlgMaker::operator()(
   detinfo::LArProperties const& larProp,
-  detinfo::DetectorClocksData const& clockData,
+  detinfo::DetectorClocks const& detClocks,
   SinglePhotonResponseFunc_t const& SPRfunction,
   CLHEP::HepRandomEngine& mainRandomEngine,
   CLHEP::HepRandomEngine& darkNoiseRandomEngine,
@@ -721,7 +721,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
   ) const
 {
   return std::make_unique<PMTsimulationAlg>(makeParams(
-    larProp, clockData,
+    larProp, detClocks,
     SPRfunction,
     mainRandomEngine, darkNoiseRandomEngine, elecNoiseRandomEngine,
     trackSelectedPhotons
@@ -733,7 +733,7 @@ icarus::opdet::PMTsimulationAlgMaker::operator()(
 //-----------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   detinfo::LArProperties const& larProp,
-  detinfo::DetectorClocksData const& clockData,
+  detinfo::DetectorClocks const& detClocks,
   SinglePhotonResponseFunc_t const& SPRfunction,
   CLHEP::HepRandomEngine& mainRandomEngine,
   CLHEP::HepRandomEngine& darkNoiseRandomEngine,
@@ -752,7 +752,7 @@ auto icarus::opdet::PMTsimulationAlgMaker::makeParams(
   // set up parameters
   //
   params.larProp = &larProp;
-  params.clockData = &clockData;
+  params.timeService = &detClocks;
 
   params.pulseFunction = &SPRfunction;
 

@@ -97,8 +97,9 @@ SimTestPulseWire::SimTestPulseWire(fhicl::ParameterSet const & p)
     produces< std::vector<raw::Trigger> >();
     produces< sumdata::RunData, art::InRun >();
     
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob();
-    fTriggerTime = clockData.TriggerTime();
+    auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
+    
+    fTriggerTime = ts->TriggerTime();
 
     // Assume 3 planes
     fWiresByPlaneVec.resize(3);
@@ -171,7 +172,8 @@ void SimTestPulseWire::produce(art::Event & e)
     
     double xyz[3] = {0., 0., 0.};
 
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
+    art::ServiceHandle<detinfo::DetectorClocksService> tss;
+    auto const* ts = tss->provider();
     art::ServiceHandle<geo::Geometry> geo;
 
     for(size_t idx = 0; idx < fPlaneChannelVec.size(); idx++)
@@ -187,8 +189,8 @@ void SimTestPulseWire::produce(art::Event & e)
 
     for(size_t index=0; index < fSimTime_v.size(); ++index) {
         
-        int tdc = fSimTime_v[index] / clockData.TPCClock().TickPeriod();
-        fTick_v.push_back(clockData.TPCTDC2Tick(tdc));
+        int tdc = fSimTime_v[index] / ts->TPCClock().TickPeriod();
+        fTick_v.push_back(ts->TPCTDC2Tick(tdc));
         
         if(fVerbose)
             std::cout << "[BUFFOON!] Charge injection id " << index << " @ TDC=" << tdc
@@ -204,7 +206,7 @@ void SimTestPulseWire::produce(art::Event & e)
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
         pulse_record.num_electrons = fNumElectrons_v[index];
-        pulse_record.tick = clockData.TPCTDC2Tick(tdc);
+        pulse_record.tick = ts->TPCTDC2Tick(tdc);
 
         for(size_t plane=0; plane<3; ++plane) 
         {

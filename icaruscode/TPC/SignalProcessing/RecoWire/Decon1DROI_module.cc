@@ -41,7 +41,6 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -498,8 +497,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size()));
         
         // Do the deconvolution on the full waveform
-        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-        fDeconvolution->Deconvolve(rawAdcLessPedVec, sampling_rate(clockData), channel, deconROIVec, deconVec);
+        fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, deconROIVec, deconVec);
         
         // Recover the deconvolved waveform
         const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();

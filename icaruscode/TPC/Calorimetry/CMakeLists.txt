@@ -7,7 +7,6 @@ art_make( MODULE_LIBRARIES
            larreco_Calorimetry
            lardataobj_RecoBase
            lardata_ArtDataHelper
-           lardataalg_DetectorInfo
            larcorealg_Geometry
            lardataobj_AnalysisBase
            ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -26,3 +25,4 @@ art_make( MODULE_LIBRARIES
 install_headers()
 install_fhicl()
 install_source()
+

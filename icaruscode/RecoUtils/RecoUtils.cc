@@ -1,11 +1,10 @@
 #include "RecoUtils.h"
 
-int RecoUtils::TrueParticleID(const detinfo::DetectorClocksData& clockData,
-                              const art::Ptr<recob::Hit>& hit) {
+int RecoUtils::TrueParticleID(const art::Ptr<recob::Hit>& hit) {
   double particleEnergy = 0;
   int likelyTrackID = 0;
   art::ServiceHandle<cheat::BackTrackerService> bt;
-  std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackIDEs(clockData, hit);
+  std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackIDEs(hit);
   for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
     if (trackIDs.at(idIt).energy > particleEnergy) {
       particleEnergy = trackIDs.at(idIt).energy;
@@ -16,13 +15,12 @@ int RecoUtils::TrueParticleID(const detinfo::DetectorClocksData& clockData,
 }
 
 
-int RecoUtils::TrueParticleIDFromTotalTrueEnergy(const detinfo::DetectorClocksData& clockData,
-                                                 const std::vector<art::Ptr<recob::Hit> >& hits) {
+int RecoUtils::TrueParticleIDFromTotalTrueEnergy(const std::vector<art::Ptr<recob::Hit> >& hits) {
   art::ServiceHandle<cheat::BackTrackerService> bt;
   std::map<int,double> trackIDToEDepMap;
   for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
     art::Ptr<recob::Hit> hit = *hitIt;
-    std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackIDEs(clockData, hit);
+    std::vector<sim::TrackIDE> trackIDs = bt->HitToTrackIDEs(hit);
     for (unsigned int idIt = 0; idIt < trackIDs.size(); ++idIt) {
       trackIDToEDepMap[trackIDs[idIt].trackID] += trackIDs[idIt].energy;
     }
@@ -45,13 +43,12 @@ int RecoUtils::TrueParticleIDFromTotalTrueEnergy(const detinfo::DetectorClocksDa
 
 
 
-int RecoUtils::TrueParticleIDFromTotalRecoCharge(const detinfo::DetectorClocksData& clockData,
-                                                 const std::vector<art::Ptr<recob::Hit> >& hits) {
+int RecoUtils::TrueParticleIDFromTotalRecoCharge(const std::vector<art::Ptr<recob::Hit> >& hits) {
   // Make a map of the tracks which are associated with this object and the charge each contributes
   std::map<int,double> trackMap;
   for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
     art::Ptr<recob::Hit> hit = *hitIt;
-    int trackID = TrueParticleID(clockData, hit);
+    int trackID = TrueParticleID(hit);
     trackMap[trackID] += hit->Integral();
   }
 
@@ -69,13 +66,12 @@ int RecoUtils::TrueParticleIDFromTotalRecoCharge(const detinfo::DetectorClocksDa
 
 
 
-int RecoUtils::TrueParticleIDFromTotalRecoHits(const detinfo::DetectorClocksData& clockData,
-                                               const std::vector<art::Ptr<recob::Hit> >& hits) {
+int RecoUtils::TrueParticleIDFromTotalRecoHits(const std::vector<art::Ptr<recob::Hit> >& hits) {
   // Make a map of the tracks which are associated with this object and the number of hits they are the primary contributor to
   std::map<int,int> trackMap;
   for (std::vector<art::Ptr<recob::Hit> >::const_iterator hitIt = hits.begin(); hitIt != hits.end(); ++hitIt) {
     art::Ptr<recob::Hit> hit = *hitIt;
-    int trackID = TrueParticleID(clockData, hit);
+    int trackID = TrueParticleID(hit);
     trackMap[trackID]++;
   }
 

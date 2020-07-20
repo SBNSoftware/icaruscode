@@ -66,19 +66,19 @@
 
 //------------------------------------------------------------------------------
 namespace icarus::trigger {
-
+  
   using namespace util::quantities::time_literals; // ""_ns ...
-
-  class TriggerEfficiencyPlotsBase;
-
+  
+  class TriggerEfficiencyPlotsBase; 
+  
 } // icarus::trigger
 
 
 //------------------------------------------------------------------------------
 namespace icarus::trigger::details {
-
+  
   struct PlotInfoTree;
-
+    
 } // namespace icarus::trigger::details
 
 
@@ -127,28 +127,28 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * @brief Helper class to produce plots about trigger simulation and trigger
  *        efficiency.
  * @see icarus::trigger::MajorityTriggerEfficiencyPlots
- *
+ * 
  * This helper class provides the foundation for writing a module producing sets
  * of plots based on trigger primitives given in input.
- *
+ * 
  * The following documentation mainly deals with the most standard configuration
  * and operations in ICARUS. Modules made with this helper and the modules
  * upstream of them in data processing have quite some knobs that can be
  * manipulated to test unorthodox configurations.
- *
+ * 
  * An example of module implemented with this class is
  * `icarus::trigger::MajorityTriggerEfficiencyPlots`.
- *
- *
+ * 
+ * 
  * Overview of trigger simulation steps
  * =====================================
- *
+ * 
  * This simulation only trigger primitives derived from the optical detector
  * via hardware (V1730B boards).
  * The trigger simulation branches from the standard simulation of optical
  * detector waveforms (`icarus::SimPMTIcarus` module).
  * From there, multiple steps are needed.
- *
+ * 
  * 1. Produce single-PMT-channel discriminated waveforms: the discrimination
  *    threshold can be chosen ("ADC threshold" or just "threshold" in the
  *    following), and the result is one binary discriminated waveform that
@@ -168,10 +168,10 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *    This step can be performed with the module `icarus::trigger::LVDSgates`.
  * 3. Simulate the trigger logic based on the trigger primitives _(see below)_.
  *    This usually includes the requirement of coincidence with the beam gate.
- *
+ * 
  * Trigger logic may be complex, being implemented in a FPGA.
  * Many options are available, including:
- *
+ * 
  * * coincidence of a minimum number of trigger primitives: the event is trigger
  *   if at least _N_ trigger primitives are on at the same time;
  * * sliding window: primitives are grouped depending on their location, and
@@ -183,14 +183,14 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *   etc. Sliding windows can be obtained from further processing of the LVDS
  *   trigger primitives, for example with the module
  *   `icarus::trigger::SlidingWindowTrigger`.
- *
+ * 
  * This class is expected to support modules implementing different trigger
  * logics.
- *
- *
+ * 
+ * 
  * Data objects for discriminated waveforms
  * -----------------------------------------
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_Data
  *
  * A discriminated waveform is the information whether the level of a waveform
@@ -199,14 +199,14 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * based on a single threshold, or with multiple levels.
  * Also the numerical _addition_ of two binary discriminated waveforms
  * yields a multi-level waveform (in fact, three levels -- `0`, `1` and `2`).
- *
+ * 
  * We represent this data in the forms of "events": an event is a change of
  * level happening at a certain time. The class holding this information,
  * `icarus::trigger::TriggerGateData`, covers the whole time, starting with a
  * ground level `0`. The next event will be a "opening" that increases the
  * level, usually to `1`. Other changing events may follow, and typically the
  * last one will bring the level back to `0`.
- *
+ * 
  * This information is joined by a list of _channel numbers_ in order to
  * represent a discriminated waveform e.g. from the optical detector.
  * There may be one or more channels associated to a discriminated waveform,
@@ -226,18 +226,18 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * channels. ICARUS specifies a data type for each of these quantities, and
  * the resulting `icarus::trigger::ReadoutTriggerGate` class instance is called
  * `icarus::trigger::OpticalTriggerGateData_t`.
- *
+ * 
  * @note The class `icarus::trigger::OpticalTriggerGateData_t` is the one that
  *       gets written to disk in the _art_ ROOT files.
  *       That is not a class by itself, but rather an alias of
  *       `icarus::trigger::ReadoutTriggerGate`, and many coding tools will call
  *       it in the latter way.
- *
+ * 
  * The class `icarus::trigger::OpticalTriggerGate` is currently the most
  * commonly used in the code. It adds to the information of
  * `icarus::trigger::ReadoutTriggerGate`, from which it derives, a list of
  * optical waveforms (`raw::OpDetWaveform`) it originates from.
- *
+ * 
  * Finally, the classes `icarus::trigger::SingleChannelOpticalTriggerGate` and
  * `icarus::trigger::MultiChannelOpticalTriggerGate` do not add any information
  * to the `icarus::trigger::OpticalTriggerGate` they derive from, but they
@@ -245,7 +245,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * channel or from multiple channels, respectively (for example, the former
  * provides a `channel()` method returning a single channel identifier, while
  * the latter provides a `channels()` method returning a list of channels).
- *
+ * 
  * These three higher level classes, `icarus::trigger::OpticalTriggerGate` and
  * derivatives, _can't be directly saved_ in _art_ ROOT files.
  * There are utilities available in
@@ -254,13 +254,13 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * plus a collection of _art_ associations (for writing), and the other way
  * around (for reading). The module `icarus::trigger::LVDSgates` uses both sides
  * and can be used as an illustration of the functionality.
- *
+ * 
  * A module is provided, called `icarus::trigger::DumpTriggerGateData`, which
  * dumps on screen or on text file the information from a collection of
  * discriminated waveforms in a (sort-of) human readable format.
  * An example configuration for this module is provided in `icaruscode`, called
  * `dump_triggergatedata_icarus.fcl`.
- *
+ * 
  * The main functions to manipulate the trigger gates are defined in the very
  * base class, `icarus::trigger::TriggerGateData`: these allow e.g. to find
  * events and query the level at a given time.
@@ -268,53 +268,53 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * `icarus::trigger::TriggerGateData` and replicated in the higher levels:
  * the combination of trigger gates by sum (`OR`), multiplication (_AND_),
  * minimum and maximum value.
- *
+ * 
  * @note Combining a multi-level gate via `Min()` with a binary gate results
  *       into a binary gate which is logic AND of the two gates.
- *
- *
+ * 
+ * 
  * On the terminology
  * -------------------
- *
+ * 
  * In this documentation, the "discriminated waveforms" are sometimes called
  * "trigger gates" and sometimes "trigger primitives".
  * Although these concepts are, strictly, different, usually the difference
  * does not affect the meaning and they end up being exchanged carelessly.
- *
- *
+ * 
+ * 
  * Trigger logic algorithm
  * ========================
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_Algorithm
- *
+ * 
  * The trigger logic algorithm is completely absent from this helper, and it is
  * entirely delegated to the derived classes (`simulateAndPlot()`). There are
  * nevertheless a lot of functions that may help to process the input trigger
  * primitives and fill some standard plots. Many of them are listed in the
  * documentation of `simulateAndPlot()`.
- *
- *
+ * 
+ * 
  * Event categories
  * =================
- *
+ * 
  * Each event is assigned to a set of categories, and its information
  * contributes to the plots of all those categories.
  * The categories are passed to the helper in the `initializePlots()` call to
  * create all the plots to be filled later.
  * A default list of categories is provided as `DefaultPlotCategories`.
- *
- *
+ * 
+ * 
  * Module usage
  * =============
- *
+ * 
  * The following aspects are common to all modules based on this helper.
- *
- *
+ * 
+ * 
  * Input data products
  * --------------------
- *
+ * 
  * This module uses the following data products as input:
- *
+ * 
  * * trigger primitives:
  *     * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
  *       `TriggerGatesTag` and `Thresholds`): full sets of discriminated
@@ -333,35 +333,35 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *     * `std::vector<sim::SimEnergyDeposit>`: energy deposited in the active
  *       liquid argon volume (from `EnergyDepositTags`); it is used to
  *       quantify the energy available to be detected in the event.
- *
- *
+ * 
+ * 
  * Output plots
  * -------------
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_Plots
- *
+ * 
  * The module produces a standard set of plots for each configured ADC threshold
  * and for each event category.
  * The plots are saved via _art_ service `TFileService` in a ROOT file and they
  * are organized in nested ROOT directories under the module label directory
  * which is assigned by _art_:
- *
+ * 
  * * `Thr###` (outer level) describes the ADC threshold on the discriminated
  *   waveforms: the threshold is `###` from the baseline;
  * * `\<Category\>` (inner level) describes the category of events included in
  *   the plots (e.g. `All`, `NuCC`; see `PlotCategories`).
- *
+ * 
  * Each of the inner ROOT directories contains a full set of plots, whose name
  * is the standard plot name followed by its event category and threshold
  * (e.g. `Eff_NuCC_Thr15` for the trigger efficiency plot on neutrino charged
  * current events with 15 ADC counts as PMT threshold).
- *
+ * 
  * Each set of plots, defined in
  * `icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()`
  * (and, within, `initializeEventPlots()`
  * and `initializeEfficiencyPerTriggerPlots()`), is contributed only by the
  * events in the set category.
- *
+ * 
  * There are different "types" of plots. Some
  * @ref TriggerEfficiencyPlotsBase_SelectionPlots "do not depend on triggering at all",
  * like the deposited energy distribution. Others
@@ -372,18 +372,18 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * @ref TriggerEfficiencyPlotsBase_SingleTriggerResponsePlots "plots that depend on a specific trigger definition and outcome":
  * this is the case of all the plots including only triggering or non-triggering
  * events.
- *
+ * 
  * A list of plots follows for each plot type.
  * All the plots are always relative to a specific optical detector channel
  * threshold (ADC) and a broad event category.
- *
- *
+ * 
+ * 
  * ### Plots independent of the triggers (selection plots)
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_SelectionPlots
- *
+ * 
  * These plots are stored directly in a threshold/category folder:
- *
+ * 
  * * `EnergyInSpill`: total energy deposited in the detector during the time the
  *   beam gate is open. It is proportional to the amount of scintillation light
  *   in the event;
@@ -400,16 +400,16 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *       neutrino interaction;
  *     * `InteractionVertexYZ`: coordinates of the location of all interactions
  *       in the event, in world coordinates, projected on the anode plane.
- *
+ * 
  * @note In fact, these plots usually do not even depend on the ADC threshold
  *       of the optical detector channels. Nevertheless, they are stored in the
  *       folders under specific thresholds, and they are duplicate.
- *
- *
+ * 
+ * 
  * ### Plots including different trigger requirements
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_MultiTriggerPlots
- *
+ * 
  * These plots collect information from scenarios with different trigger
  * requirements, but still with the same underlying optical detector channel
  * ADC threshold.
@@ -422,28 +422,28 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * {
  *   // (inherited)
  *   helper().TriggerEfficiencyPlotsBase::initializePlotSet(plots, settings);
- *
+ *   
  *   // ... add more plot definitions, e.g.
  *   plots.make<TEfficiency>(
  *     "Eff",
  *     "Efficiency of triggering;requested primitives;trigger efficiency",
  *     settings.size(), 0, settings.size()
  *     );
- *
+ *   
  * } // MyTriggerEfficiencyPlots::initializePlotSet()
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- *
- *
+ * 
+ * 
  * ### Plots depending on a specific trigger definition
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_SingleTriggerPlots
- *
+ * 
  * The following plots depend on the full definition of the trigger, including
  * PMT thresholds _and_ other requirements.
  * They are hosted each in a subfolder of the threshold/category folder, with
  * a name encoding the requirement: `ReqXX` for trigger with minimum required
  * primitives `XX`.
- *
+ * 
  * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
  *   deposited during the beam gate;
  * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
@@ -453,7 +453,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *   lepton in the final state of the interaction, respectively;
  * * `TriggerTick`: time of the earliest trigger. Only triggering events
  *   contribute.
- *
+ * 
  * The parameters are defined in the same way as in the
  * @ref TriggerEfficiencyPlotsBase_SelectionPlots "selection plots", unless stated
  * otherwise.
@@ -468,25 +468,25 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * They are hosted each in a subfolder of the threshold/category/requirement
  * folder, with a name encoding the response: `triggering` for triggering
  * events, `nontriggering` for the others.
- *
+ * 
  * Their event pool is filtered to include only the events in the current
  * category which also pass, or do not pass, the trigger requirement.
- *
+ * 
  * The plots are:
  * * `EnergyInSpill`, `EnergyInSpillActive`, `InteractionType`,
  *   `NeutrinoEnergy`,`LeptonEnergy`, `InteractionVertexYZ`:
  *   these are defined in the same way as the
  *   @ref TriggerEfficiencyPlotsBase_SelectionPlots "selection plots"
- *
- *
+ * 
+ * 
  * Configuration parameters
  * =========================
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_Configuration
- *
+ * 
  * A terse description of the parameters is printed by running
  * `lar --print-description TriggerEfficiencyPlots`.
- *
+ * 
  * * `TriggerGatesTag` (string, mandatory): name of the module
  *     instance which produced the trigger primitives to be used as input;
  *     it must not include any instance name, as the instance names will be
@@ -523,13 +523,13 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *     determined by `LogCategory` parameter;
  * * `LogCategory` (string, default `TriggerEfficiencyPlots`): name of category
  *     used to stream messages from this module into message facility.
- *
+ * 
  * An example job configuration is provided as `maketriggerplots_icarus.fcl`.
- *
- *
+ * 
+ * 
  * Technical description of the module
  * ====================================
- *
+ * 
  * The modules based on this helper read
  * @ref TriggerEfficiencyPlotsBase_Data "trigger gate data products" from
  * different ADC thresholds, and for each threahold they combine the data into a
@@ -538,7 +538,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *
  * All the input sets (each with its own ADC treshold) are treated independently
  * from each other.
- *
+ * 
  * Each event is assigned to event categories. These categories do not depend on
  * trigger definition nor primitives. For example, a electron neutrino neutral
  * current interaction event would be assigned to the neutral current neutrino
@@ -568,7 +568,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *
  * Organization of the plots
  * --------------------------
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_OrganizationOfPlots
  *
  * Plots are written on disk via the standard _art_ service `TFileService`,
@@ -632,7 +632,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *
  *
  * ### About plot sandboxes
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_PlotSandboxes
  *
  * For the sake of this module, a plot sandbox is an object similar to a ROOT
@@ -647,7 +647,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *
  * Adding an event category
  * -------------------------
- *
+ * 
  * @anchor TriggerEfficiencyPlotsBase_AddingCategory
  *
  * Event categories are specified to `initializePlots()` call: each category is
@@ -673,7 +673,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *
  * Usage of the helper
  * ====================
- *
+ * 
  * An example of how to turn this helper class in a full blown _art_ module is
  * `icarus::trigger::MajorityTriggerEfficiencyPlots`.
  *
@@ -753,10 +753,10 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *       adding a _-N_ uniform level, flooring on level 0 and (if needed) maxing
  *       on level 1.
  *
- *
+ * 
  * Code style: quantities with units
  * ==================================
- *
+ * 
  * To avoid issues with missing or wrong conversions, this code often uses
  * LArSoft quantities library. A variable with a `Quantity` type is represented
  * with a specific unit (e.g. microseconds) and can undergo only limited
@@ -772,7 +772,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * time the beam gate opens, while you can double the beam gate _duration_)
  * and it can't be added to another point (the difference between two points
  * is an interval).
- *
+ * 
  * To avoid mistakes in the conversion between different time scales, the
  * LArSoft utility library `detinfo::DetectorTimings` is used, which is a
  * wrapper of `DetectorClocks` service provider that makes the interface to
@@ -781,23 +781,23 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * at trigger time) into optical detector readout ticks, and vice versa.
  * The values returned by this library have encoded in them which time scale
  * they belong to, and in which unit they are measured.
- *
+ * 
  */
 class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   // no serviceable part for anyone except derived classes
-
+  
     protected:
-
+  
   using microseconds = util::quantities::intervals::microseconds;
   using nanoseconds = util::quantities::intervals::nanoseconds;
 
   // --- BEGIN Configuration ---------------------------------------------------
   struct Config {
-
+    
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
-
+    
     fhicl::Sequence<art::InputTag> GeneratorTags {
       Name("GeneratorTags"),
       Comment("labels of the event generators"),
@@ -836,14 +836,14 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       Comment("resolution of trigger in time"),
       8_ns
       };
-
+    
     fhicl::Atom<bool> PlotOnlyActiveVolume {
       Name("PlotOnlyActiveVolume"),
       Comment
         ("only events within TPC active volume are plot (if that makes sense)"),
       true
       };
-
+    
     fhicl::OptionalAtom<std::string> EventTreeName {
       Name("EventTreeName"),
       Comment("name of a ROOT tree where to store event-by-event information")
@@ -867,8 +867,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   using EventInfo_t = details::EventInfo_t; // type alias
   using TriggerInfo_t = details::TriggerInfo_t; // type alias
-
-
+  
+  
   // --- BEGIN Constructors ----------------------------------------------------
 
   /// Constructor; requires a configuration and module's `consumesCollector()`.
@@ -882,70 +882,70 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   /// Fills the plots. Also extracts the information to fill them with.
   void process(art::Event const& event);
-
+  
   /// Prints end-of-job summaries.
   void printSummary() const;
-
+  
   // --- END Framework hooks ---------------------------------------------------
-
-
+  
+  
   // --- BEGIN Helper interface ------------------------------------------------
   //
   // Mediated access to private stuff.
   //
-
+  
   /// Returns the name of the log category.
   std::string const& logCategory() const { return fLogCategory; }
-
+  
   /// Returns a pointer to the tree where event information is written.
   TTree* eventTree() { return fIDTree? &(fIDTree->tree()): nullptr; }
-
+  
   /// Returns the number of configured PMT thresholds.
   std::size_t nADCthresholds() const { return fADCthresholds.size(); }
-
+  
   /// Returns a iterable sequence of all configured PMT thresholds.
   auto ADCthresholds() const { return util::get_elements<0U>(fADCthresholds); }
-
+  
   /// Returns the ADC threshold value for PMT threshold index `iThr`.
   /// @throws std::out_of_range if `iThr` is not a valid threshold index
   /// @see `nADCthresholds()`
   icarus::trigger::ADCCounts_t ADCthreshold(std::size_t iThr) const
     { return next(fADCthresholds.begin(), iThr)->first; }
-
+  
   /// Returns the detector geometry service provider.
   geo::GeometryCore const& geometry() const { return fGeom; }
-
+  
   /// Returns the detector timings helper.
-  detinfo::DetectorTimings detTimings(detinfo::DetectorClocksData const& clockData) const { return detinfo::DetectorTimings{clockData}; }
-
+  detinfo::DetectorTimings const& detTimings() const { return fDetTimings; }
+  
   /// Returns the resolution of trigger timing clock [ns]
   nanoseconds triggerTimeResolution() const { return fTriggerTimeResolution; }
-
+  
   /// Returns the first and after-last tick of the beam gate in optical scale.
   std::pair
     <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>
     const&
     beamGateTickRange() const { return fBeamGateOpt; }
-
+  
   // --- END Helper interface --------------------------------------------------
-
-
+  
+  
   using PlotSandbox = icarus::trigger::PlotSandbox; ///< Import type.
-
+  
   /// List of references to plot sandboxes.
   using PlotSandboxRefs_t
     = std::vector<std::reference_wrapper<PlotSandbox const>>;
-
-
+  
+  
   //----------------------------------------------------------------------------
   class PlotCategory {
-
+    
       public:
-
+    
     /// Type of test function.
     using QualifyFunc_t = std::function<bool(EventInfo_t const&)>;
-
-
+    
+    
     /// Constructor from category name and test function.
     PlotCategory(
       std::string name, std::string descr = {},
@@ -953,76 +953,76 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       )
       : fName(std::move(name)), fDescr(std::move(descr)), fTest(std::move(test))
       {}
-
+    
     /// Returns the name of the category.
     std::string const& name() const { return fName; }
-
+    
     /// Returns the description of the category.
     std::string const& description() const { return fDescr; }
-
+    
     /// Returns whether the event belong to this category.
     bool test(EventInfo_t const& info) const { return fTest(info); }
-
+    
     operator std::string() const { return name(); }
     bool operator() (EventInfo_t const& info) const { return test(info); }
-
+    
       private:
-
+    
     std::string fName;
     std::string fDescr;
     QualifyFunc_t fTest;
-
+    
   }; // class PlotCategory
   using PlotCategories_t = std::vector<PlotCategory>;
 
-
+  
   //----------------------------------------------------------------------------
 
   class HistGetter { // helper, since this seems "popular"
     PlotSandbox const& plots;
-
+    
       public:
     HistGetter(PlotSandbox const& plots): plots(plots) {}
-
+    
     PlotSandbox const& box() const { return plots; }
-
+    
     TH1& Hist(std::string const& name) const { return plots.demand<TH1>(name); }
     TH2& Hist2D(std::string const& name) const { return plots.demand<TH2>(name); }
     TEfficiency& Eff(std::string const& name) const
       { return plots.demand<TEfficiency>(name); }
-
+    
   }; // class HistGetter
-
+  
   //----------------------------------------------------------------------------
-
+  
   /// Generic description of trigger settings.
   struct SettingsInfo_t {
-
+    
     std::size_t index;       ///< Settings unique index.
     std::string tag;         ///< A tag of the settings (for object names).
     std::string description; ///< A description of the settings (for plots).
-
+    
     SettingsInfo_t() = default;
     SettingsInfo_t(std::size_t index, std::string tag, std::string descr)
       : index(index), tag(tag), description(descr) {}
-
+    
   }; // SettingsInfo_t
-
+  
   /// Type of trigger gate extracted from the input event.
   using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
-
+  
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
 
   /// Type of lists of gates, one list per cryostat (outer index: cryostat no).
   using TriggerGatesPerCryostat_t = std::vector<TriggerGates_t>;
-
+  
   /// Type of gate data without channel information.
   using TriggerGateData_t = InputTriggerGate_t::GateData_t;
-
-
+  
+  
   // --- BEGIN Customization interface -----------------------------------------
-
+  
   /// Initializes all the plot sets, one per PMT threshold.
   virtual void initializePlots
     (PlotCategories_t categories, std::vector<SettingsInfo_t> const& settings);
@@ -1037,50 +1037,50 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   /// Initializes set of plots per complete trigger definition into `plots`.
   virtual void initializeEfficiencyPerTriggerPlots(PlotSandbox& plots) const;
-
+  
   /// Initializes a single, trigger-independent plot set into `plots`.
   virtual void initializeEventPlots(PlotSandbox& plots) const;
-
+  
   /// Returns whether an event with the specified information should be included
   /// in the plots at all (it's a filter).
   virtual bool shouldPlotEvent(EventInfo_t const& eventInfo) const;
-
+  
   /**
    * @brief Simulates all triggers for a trigger setting and plots the results.
    * @param thresholdIndex the index of the PMT threshold of input primitives
    * @param gates the trigger primitives used to simulate the trigger response
    * @param eventInfo general information about the event being simulated
    * @param selectedPlots list of boxes containing plots to be filled
-   *
+   * 
    * This pure virtual function is the core of the customization of this class.
    * The `simulateAndPlot()` method is expected to:
-   *
+   * 
    * 1. combine the trigger primitives
    * 2. apply the beam gate
    * 3. generate the trigger response
    * 4. fill all plots
-   *
+   * 
    * **for each trigger setting**.
    * Note that this helper class has no knowledge of those settings: how many
    * they are, what they mean, which are their parameters. It is
    * `simulateAndPlot()` task to properly process all of them _at once_, i.e.
    * within a single call.
-   *
+   * 
    * Big deal! The second and fourth step (application of beam gate and plots
    * filling) have some helpers in this same class:
-   *
+   * 
    * * `applyBeamGateToAll()` can easily apply the beam gate at the right time
    *   (the right time is chosen by the implementation of `simulateAndPlot()`);
    * * filling of standard plots is performed with `fillAllEfficiencyPlots()`,
    *   `fillEfficiencyPlots()` and `fillEventPlots()`, which can be used as such
    *   or be customized for more plots.
-   *
+   * 
    * Combination of primitive can be helped with
    * `icarus::trigger::TriggerGateData`
-   *
+   * 
    * All plots must have already been initialized via `initializePlots()` and
    * its helpers.
-   *
+   * 
    * The method is required to perform the simulation of the trigger primitives
    * specified in input. These primitives are provided in  `gates` as many
    * collections, one per cryostat. While this interface splits the primitives
@@ -1088,35 +1088,34 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
    * information, e.g. performing an independent simulation per cryostat and
    * then combining them all, or just merging back the two collections and
    * treating the two cryostats as a single entity.
-   *
+   * 
    * The input trigger primitives are extracted from PMT waveforms with a
    * certain PMT threshold, which is documented by its index `thresholdIndex`;
    * the threshold value can be obtained from `ADCthreshold(thresholdIndex)`,
    * and in the future more information may become available as well.
-   *
+   * 
    * Plots will need information from the event being simulated: that
    * information is precooked, extracted from the event and stored in
    * `eventInfo`. If more information is needed, `EventInfo_t` needs to be
    * updated in this helper, as no way is provided to perform that customization
    * in the derived class.
-   *
+   * 
    * It is expected that all PMT thresholds and all trigger settings
-   *
+   * 
    * settings identified
    * by the specified `settings` index. This helper class does not know the
    * definition of any trigger, and it is expected that settings are tracked by
-   * the derived classes and each is associated to an index.
-   *
+   * the derived classes and each is associated to an index. 
+   * 
    */
   virtual void simulateAndPlot(
     std::size_t const thresholdIndex,
     TriggerGatesPerCryostat_t const& gates,
     EventInfo_t const& eventInfo,
-    detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
     ) const = 0;
-
-
+  
+  
   /// Fills the plots (`initializeEventPlots()`) with info from `eventInfo`.
   virtual void fillEventPlots
     (EventInfo_t const& eventInfo, PlotSandbox const& plots) const;
@@ -1136,12 +1135,12 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     TriggerInfo_t const& triggerInfo,
     PlotSandbox const& plots
     ) const;
-
+  
   // --- END Customization interface -------------------------------------------
-
-
+  
+  
   // --- BEGIN Additional helper utilities -------------------------------------
-
+  
   /// Applies the beam gate coincidence to the specified trigger primitive.
   template <typename GateObject>
   GateObject applyBeamGate(GateObject gate) const;
@@ -1149,64 +1148,63 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Applies the beam gate coincidence to all trigger primitives in `gates`.
   template <typename GateColl, typename GateObj = typename GateColl::value_type>
   std::vector<GateObj> applyBeamGateToAll(GateColl const& gates) const;
-
-
+  
+  
   // documentation at definition:
   static PlotCategories_t const DefaultPlotCategories;
-
-
+  
+  
   // --- END Additional helper utilities ---------------------------------------
-
-
+  
+  
     private:
-
+  
   // --- BEGIN Configuration variables -----------------------------------------
-
+  
   std::vector<art::InputTag> fGeneratorTags; ///< Generator data product tags.
   art::InputTag fDetectorParticleTag; ///< Input simulated particles.
   /// Energy deposition data product tags.
   std::vector<art::InputTag> fEnergyDepositTags;
-
+  
   /// ADC thresholds to read, and the input tag connected to their data.
   std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
-
+  
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
-
+  
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
-
+  
   bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
-
+  
   /// Message facility stream category for output.
   std::string const fLogCategory;
 
   std::string fLogEventDetails; ///< Steam where to print event info.
-
-
+  
+  
   /// Plot categories (via `initializePlots()`).
   PlotCategories_t fPlotCategories;
-
+  
   // --- END Configuration variables -------------------------------------------
 
 
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
+  detinfo::DetectorClocks const& fDetClocks;
+  detinfo::DetectorTimings fDetTimings;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
 
   // --- END Service variables -------------------------------------------------
 
-
+  
   // --- BEGIN Internal variables ----------------------------------------------
-  /// Detector clocks information that applies for the entire job.
-  detinfo::DetectorClocksData const fDetClocks;
-  detinfo::DetectorTimings const fDetTimings;
-
+  
   /// Gate representing the time we expect light from beam interactions.
   icarus::trigger::OpticalTriggerGate const fBeamGate;
-
+  
   /// Beam gate start and stop tick in optical detector scale.
   std::pair
     <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>
@@ -1216,13 +1214,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   std::pair
     <detinfo::timescales::simulation_time, detinfo::timescales::simulation_time>
     const fBeamGateSim;
-
+  
   /// Helper to extract information from the event.
   details::EventInfoExtractor const fEventInfoExtractor;
 
   /// ID of cryostat where each optical detector channel (vector index) is.
   std::vector<geo::CryostatID> const fChannelCryostat;
-
+  
   /// All plots, one set per ADC threshold.
   std::vector<PlotSandbox> fThresholdPlots;
 
@@ -1231,7 +1229,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   std::unique_ptr<details::PlotInfoTree> fPlotTree; ///< Handler of ROOT tree output.
   std::unique_ptr<details::EventInfoTree> fEventTree; ///< Handler of ROOT tree output.
 
-
+  
   std::atomic<unsigned int> nEvents { 0U }; ///< Count of seen events.
   std::atomic<unsigned int> nPlottedEvents { 0U }; ///< Count of plotted events.
 
@@ -1244,32 +1242,32 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   /// Returns the TPC `point` is within, `nullptr` if none.
   geo::TPCGeo const* pointInTPC(geo::Point_t const& point) const;
-
+  
   /// Returns in which TPC `point` is within the _active volume_ of;
   /// `nullptr` if none.
   geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const;
-
+  
   /// Reads a set of input gates from the `event`
   /// @return trigger gates, converted into `InputTriggerGate_t`
   TriggerGates_t readTriggerGates
     (art::Event const& event, art::InputTag const& dataTag) const;
-
+  
   /// Moves the data in `gates` in a collection of gates by cryostat.
   TriggerGatesPerCryostat_t splitByCryostat(TriggerGates_t&& gates) const;
-
-
+  
+  
   /// Fills and returns a map of cryostat ID for each optical detector channel.
   static std::vector<geo::CryostatID> makeChannelCryostatMap
     (geo::GeometryCore const& geom);
-
+  
   static std::string thrAndCatName
     (std::string const& boxName, std::string const& category)
     { return boxName + "_" + category; }
   static std::string thrAndCatName
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
-
-
+  
+  
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
 
 
@@ -1294,7 +1292,7 @@ std::vector<GateObj>
 icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll
   (GateColl const& gates) const
 {
-
+  
   std::vector<GateObj> res;
   std::transform(
     gates.begin(), gates.end(), std::back_inserter(res),
