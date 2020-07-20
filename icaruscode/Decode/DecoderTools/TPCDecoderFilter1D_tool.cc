@@ -142,6 +142,7 @@ private:
     size_t                                fStructuringElement;     //< Structuring element for morphological filter
     size_t                                fMorphWindow;            //< Window for filter
     float                                 fThreshold;              //< Threshold to apply for saving signal
+    bool                                  fDiagnosticOutput;       //< If true will spew endless messages to output
 
     std::vector<char>                     fFilterModeVec;          //< Allowed modes for the filter
 
@@ -211,6 +212,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fStructuringElement     = pset.get<size_t  >("StructuringElement", 20);
     fMorphWindow            = pset.get<size_t  >("FilterWindow",       10);
     fThreshold              = pset.get<float   >("Threshold",         7.5);
+    fDiagnosticOutput       = pset.get<bool    >("DiagnosticOutput", false);
 
     FragmentIDVec tempIDVec = pset.get< FragmentIDVec >("FragmentIDVec", FragmentIDVec());
 
@@ -227,12 +229,12 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
     if (database::BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
     {
-        std::cout << "Trouble in River City" << std::endl;
+        throw cet::exception("TPCDecoderFilter1D") << "Cannot recover the Fragment ID channel map from the database \n";
     }
-    else
+    else if (fDiagnosticOutput)
     {
         std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-//        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", # boards: " << std::dec << pair.second.size() << std::endl;
+        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", # boards: " << std::dec << pair.second.size() << std::endl;
     }
 
     theClockFragmentIDs.stop();
@@ -246,14 +248,14 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     if (database::BuildTPCReadoutBoardToChannelMap(fReadoutBoardToChannelMap))
     {
         std::cout << "******* FAILED TO CONFIGURE CHANNEL MAP ********" << std::endl;
-        throw std::runtime_error("POS didn't read the F'ing database again");
+        throw cet::exception("TPCDecoderFilter1D") << "POS didn't read the F'ing database again \n";
     }
 
     theClockReadoutIDs.stop();
 
     double readoutIDsTime = theClockReadoutIDs.accumulated_real_time();
 
-    std::cout << "==> FragmentID map time: " << fragmentIDsTime << ", Readout IDs time: " << readoutIDsTime << std::endl;
+    if (fDiagnosticOutput) std::cout << "==> FragmentID map time: " << fragmentIDsTime << ", Readout IDs time: " << readoutIDsTime << std::endl;
 
     return;
 }
@@ -264,49 +266,6 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     theClockTotal.start();
 
-    // Recover the Fragment id:
-    artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragment.fragmentID();
-
-    // Massive temporary kludge for response tests
-    std::pair<unsigned int,unsigned int> remappair(0x1414,0x1402);
-
-    if (fragmentID == remappair.first) fragmentID = remappair.second;
-
-    database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
-
-    std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
-
-    if (fragItr == fFragmentToReadoutMap.end())
-    {
-        //std::map<unsigned int, unsigned int> crateMap = {{0,0x140C}, {1,0x140E}, {2,0x1410}, {6,0x1414}, {8,0x150E}, {9,0x1510}};
-
-        if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
-        {
-            theClockTotal.stop();
-            std::cout << " **** no match found ****" << std::endl;
-            return;
-        }
-
-        std::cout << std::endl;
-
-        std::cout << "No match, make one up? Have fragmentID: " << fragmentID << ", make it: " << std::hex << fFragmentIDMap[fragmentID] << std::dec << std::endl;
-
-        fragmentID = fFragmentIDMap[fragmentID];
-
-        fragItr = fFragmentToReadoutMap.find(fragmentID);
-
-        if (fragItr == fFragmentToReadoutMap.end())
-        {
-            std::cout << "WTF? This really can't happen, right?" << std::endl;
-        }
-    }
-
-    database::ReadoutIDVec& boardIDVec = fragItr->second;
-
-    std::cout << "   - # boards: " << boardIDVec.size() << ", boards: ";
-    for(const auto& id : boardIDVec) std::cout << id << " ";
-    std::cout << std::endl;
-
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);
     
@@ -314,6 +273,70 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     size_t nChannelsPerBoard    = physCrateFragment.nChannelsPerBoard();
     size_t nChannelsPerFragment = nBoardsPerFragment * nChannelsPerBoard;
     size_t nSamplesPerChannel   = physCrateFragment.nSamplesPerChannel();
+
+    // Recover the Fragment id:
+    artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragment.fragmentID();
+
+    database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
+
+    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
+
+    if (fragItr == fFragmentToReadoutMap.end())
+    {
+        if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
+        {
+            theClockTotal.stop();
+            if (fDiagnosticOutput) std::cout << " **** no match found ****" << std::endl;
+
+            return;
+        }
+
+        if (fDiagnosticOutput) std::cout << "No match, use fhicl list? Have fragmentID: " << fragmentID << ", make it: " << std::hex << fFragmentIDMap[fragmentID] << std::dec << std::endl;
+
+        fragmentID = fFragmentIDMap[fragmentID];
+
+        fragItr = fFragmentToReadoutMap.find(fragmentID);
+
+        if (fragItr == fFragmentToReadoutMap.end())
+        {
+            if (fDiagnosticOutput) std::cout << "WTF? This really can't happen, right?" << std::endl;
+            return;
+        }
+    }
+
+//    database::ReadoutIDVec& boardIDVec = fragItr->second;
+
+    // Get the board ids for this fragment
+    database::ReadoutIDVec boardIDVec(nBoardsPerFragment);
+
+    // Note we want these to be in "slot" order...
+    for(const auto& boardID : fragItr->second)
+    {
+        // Look up the channels associated to this board
+        database::TPCReadoutBoardToChannelMap::const_iterator boardItr = fReadoutBoardToChannelMap.find(boardID);
+
+        if (boardItr == fReadoutBoardToChannelMap.end())
+        {
+            if (fDiagnosticOutput)
+            {
+                std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
+                std::cout << "    - boardID: " << std::hex << boardID << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
+            }
+
+            return;
+        }
+
+        unsigned int boardSlot = boardItr->second.first;
+
+        boardIDVec[boardSlot] = boardID;
+    }
+
+    if (fDiagnosticOutput)
+    {
+        std::cout << "   - # boards: " << boardIDVec.size() << ", boards: ";
+        for(const auto& id : boardIDVec) std::cout << id << " ";
+        std::cout << std::endl;
+    }
 
     if (fSelectVals.empty())       fSelectVals       = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
     if (fROIVals.empty())          fROIVals          = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
@@ -352,17 +375,23 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
         if (boardItr == fReadoutBoardToChannelMap.end())
         {
-            std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-            std::cout << "    - board: " << board << ", boardIDVec: " << std::hex << boardIDVec[board] << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
+            if (fDiagnosticOutput)
+            {
+                std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
+                std::cout << "    - board: " << board << ", boardIDVec: " << std::hex << boardIDVec[board] << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
+            }
+
             continue;
         }
 
-        const database::ChannelVec& channelVec = boardItr->second;
+        const database::ChannelVec& channelVec = boardItr->second.second;
 
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
-        std::cout << "********************************************************************************" << std::endl;
-        std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
+        if (fDiagnosticOutput)
+        {
+            std::cout << "********************************************************************************" << std::endl;
+            std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
         //size_t numElems = std::min(channelVec.size(),size_t(48));
         //for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
 //        size_t numElems = std::min(channelVec.size(),size_t(64));
@@ -374,7 +403,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 //
 //            std::cout << channelVec[chanIdx] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << " ";
 //        }
-        std::cout << std::endl;
+            std::cout << std::endl;
+        }
 
         // This is where we would recover the base channel for the board from database/module
         size_t boardOffset = nChannelsPerBoard * board;
@@ -396,7 +426,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
             // Keep track of the channel
-            fChannelIDVec[channelOnBoard] = channelVec[nChannelsPerBoard - chanIdx - 1];
+            fChannelIDVec[channelOnBoard] = channelVec[chanIdx];
 
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
@@ -410,10 +440,13 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
             std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
 
-            if (widVec.empty()) std::cout << channelVec[chanIdx]  << "=" << fFullRMSVals[channelOnBoard] << " * ";
-            else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
+            if (fDiagnosticOutput)
+            {
+                if (widVec.empty()) std::cout << channelVec[chanIdx]  << "=" << fFullRMSVals[channelOnBoard] << " * ";
+                else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
+            }
         }
-        std::cout << std::endl;
+        if (fDiagnosticOutput) std::cout << std::endl;
     }
 
     theClockPedestal.stop();
