@@ -762,8 +762,6 @@
     <!-- basically a statement of the origin in the detector coordinate system
          has the corresponding value in the beam coordinate system -->
     <!-- XML config must have already set the rotation matrix -->
-    <!-- uboone with numi beam - this puts uboone origin at miniboone origin
-         close enough for now -->
     <beampos> ( 0.0, 0.0, 0.0 ) = (4.8195, 79.5800, 794.3955)</beampos>
     <!-- the value above is a middle point between
          point1 = (8.718, 79.043, 785.190) [m], and
