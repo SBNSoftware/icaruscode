@@ -39,29 +39,16 @@ physics:
     end_paths: [a]
 }
 
-# Leaving the following here for example purposes only, will be removed
-# in future releases
-#services.ExptGeoHelperInterface: @local::icarus_single_induction_geometry_helper
-#services.Geometry.GDML: "icarus_single_no_overburden.gdml"
-#services.Geometry.ROOT: "icarus_single_no_overburden.gdml"
-
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.FirstInductionPreChannels:       0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.FirstInductionPostChannels:      0
-
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.SecondInductionEvenPreChannels:  0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.SecondInductionEvenPostChannels: 0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.CollectionEvenPreChannels:       0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.CollectionEvenPostChannels:      0
-
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.SecondInductionOddPreChannels:   0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.SecondInductionOddPostChannels:  0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.CollectionOddPreChannels:        0
-#services.ExptGeoHelperInterface.Mapper.WirelessChannels.CollectionOddPostChannels:       0
+# turn off the sam metadata for testing
+services.FileCatalogMetadata: {}
 
 # Use this to setup the decoder module
 physics.producers.daq.OutputPedestalCor:                                        true
 physics.producers.daq.OutputCorrection:                                         true
 physics.producers.daq.DecoderTool.CoherentGrouping:                             32
+#physics.producers.daq.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+physics.producers.daq.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daq.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
 
 # Setup for the 1D deconvolution
 physics.producers.decon1droi.DigitModuleLabel:                                  "daq"
