@@ -1,0 +1,65 @@
+#include "services_icarus.fcl"
+#include "decoderDefs.fcl"
+#include "recowire_icarus.fcl"
+#include "hitfindermodules_icarus.fcl"
+
+process_name: decode
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
+}
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+    // now also have something produce the digits and headers
+    producers:
+    {
+        daqTPC:      @local::decodeTPC
+        daqPMT:      @local::decodePMT
+        decon1droi:  @local::icarus_decon1droi
+        gaushit:     @local::gaus_hitfinder_icarus
+    }
+  
+    analyzers: {}
+    my_producer_modules: [daqTPC, daqPMT, decon1droi, gaushit]
+    a: [rootout]
+    end_paths: [a]
+}
+
+# turn off the sam metadata for testing
+services.FileCatalogMetadata: {}
+
+# Use this to setup the decoder module
+physics.producers.daqTPC.OutputPedestalCor:                                        true
+physics.producers.daqTPC.OutputCorrection:                                         true
+physics.producers.daqTPC.DecoderTool.CoherentGrouping:                             32
+#physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
+
+# Setup for the 1D deconvolution
+physics.producers.decon1droi.DigitModuleLabel:                                  "daqTPC"
+
+outputs: {
+  rootout: {
+    module_type: "RootOutput"
+    fileName: "%ifb_%tc-%p.root"
+  }
+}
+
+# Drop the artdaq format files on output
+outputs.routout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
