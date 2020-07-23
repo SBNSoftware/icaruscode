@@ -281,6 +281,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
 
+//    if (fragmentID != 0x1404) return;
+
     if (fragItr == fFragmentToReadoutMap.end())
     {
         if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
