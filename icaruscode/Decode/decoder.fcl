@@ -2,6 +2,7 @@
 #include "decoderDefs.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
 
 process_name: decode
 
@@ -32,8 +33,9 @@ physics:
         daqPMT:      @local::decodePMT
         decon1droi:  @local::icarus_decon1droi
         gaushit:     @local::gaus_hitfinder_icarus
+        ophit:       @local::icarus_ophit
     }
-  
+
     analyzers: {}
     my_producer_modules: [daqTPC, daqPMT, decon1droi, gaushit]
     a: [rootout]
@@ -47,12 +49,40 @@ services.FileCatalogMetadata: {}
 physics.producers.daqTPC.OutputPedestalCor:                                        true
 physics.producers.daqTPC.OutputCorrection:                                         true
 physics.producers.daqTPC.DecoderTool.CoherentGrouping:                             32
-#physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
-physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
 #physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
 
 # Setup for the 1D deconvolution
-physics.producers.decon1droi.DigitModuleLabel:                                  "daqTPC"
+physics.producers.decon1droi.DigitModuleLabel:                                      "daqTPC"
+
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.NumSigma:          4.0
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.roiLeadTrailPad:  [30,30]
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1.NumSigma:          4.0
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1.roiLeadTrailPad:  [30,30]
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2.NumSigma:          4.0
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2.roiLeadTrailPad:  [30,30]
+
+#physics.producers.decon1droi.OutputHistograms:                                      true
+#physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.OutputHistograms: true
+#physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.OutputWaveforms:  true
+#physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1.OutputHistograms: true
+#physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1.OutputWaveforms:  true
+#physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2.OutputHistograms: true
+##physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2.OutputWaveforms:  true
+
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:       4.0
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:       4.0
+physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:       4.0
+
+#physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0.OutputHistograms:    true
+#physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane1.OutputHistograms:    true
+#physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane2.OutputHistograms:    true
+
+
+physics.producers.ophit.InputModule: "daqPMT"
+physics.producers.ophit.InputLabels: []
+
 
 outputs: {
   rootout: {
