@@ -74,15 +74,17 @@ DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(fhicl::ParameterSet const & params): ar
 
 void DaqDecoderICARUSPMT::produce(art::Event & event)
 {
-    // Recover the data fragments for the PMT 
-    auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
-    
     // storage for waveform
     fDecoderTool->initializeDataProducts();
 
-    // storage for header info
-   // std::unique_ptr<std::vector<tpcAnalysis::HeaderData>> header_collection(new std::vector<tpcAnalysis::HeaderData>);
-    for (auto const &rawFrag: *daq_handle)  fDecoderTool->process_fragment(rawFrag);
+    // Recover the data fragments for the PMT 
+    auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
+    
+    // Make sure data available
+    if (daq_handle.isValid() && daq_handle->size() > 0)
+    {
+        for (auto const &rawFrag: *daq_handle)  fDecoderTool->process_fragment(rawFrag);
+    }
 
     fDecoderTool->outputDataProducts(event);
 
