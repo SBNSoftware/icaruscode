@@ -24,6 +24,7 @@ decodeTPC: {
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
                     FragmentsLabel:     "daq:CAENV1730"
+                    DecoderTool:        @local::PMTDecoderTool
 }
 
 END_PROLOG
