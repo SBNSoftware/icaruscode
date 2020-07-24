@@ -369,10 +369,10 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                         i
 }
 
 void DaqDecoderICARUSTPC::saveRawDigits(const icarus_signal_processing::ArrayFloat&  dataArray, 
-                                      const icarus_signal_processing::VectorFloat& pedestalVec,
-                                      const icarus_signal_processing::VectorFloat& rmsVec,
-                                      const icarus_signal_processing::VectorInt&   channelVec,
-                                      ConcurrentRawDigitCol&                       rawDigitCol) const
+                                        const icarus_signal_processing::VectorFloat& pedestalVec,
+                                        const icarus_signal_processing::VectorFloat& rmsVec,
+                                        const icarus_signal_processing::VectorInt&   channelVec,
+                                        ConcurrentRawDigitCol&                       rawDigitCol) const
 {
     if (!dataArray.empty())
     {
@@ -387,6 +387,9 @@ void DaqDecoderICARUSTPC::saveRawDigits(const icarus_signal_processing::ArrayFlo
         // Loop over the channels to recover the RawDigits after filtering
         for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
         {
+            // Protect against case where there was no readout 
+            if (channelVec[chanIdx] < 0) continue;
+
             const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
 
             // Need to convert from float to short int

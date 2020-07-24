@@ -271,8 +271,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     
     size_t nBoardsPerFragment   = physCrateFragment.nBoards();
     size_t nChannelsPerBoard    = physCrateFragment.nChannelsPerBoard();
-    size_t nChannelsPerFragment = nBoardsPerFragment * nChannelsPerBoard;
     size_t nSamplesPerChannel   = physCrateFragment.nSamplesPerChannel();
+//    size_t nChannelsPerFragment = nBoardsPerFragment * nChannelsPerBoard;
 
     // Recover the Fragment id:
     artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragment.fragmentID();
@@ -311,7 +311,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 //    database::ReadoutIDVec& boardIDVec = fragItr->second;
 
     // Get the board ids for this fragment
-    database::ReadoutIDVec boardIDVec(nBoardsPerFragment);
+    database::ReadoutIDVec boardIDVec(fragItr->second.size());
 
     // Note we want these to be in "slot" order...
     for(const auto& boardID : fragItr->second)
@@ -342,21 +342,24 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         std::cout << std::endl;
     }
 
-    if (fSelectVals.empty())       fSelectVals       = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
-    if (fROIVals.empty())          fROIVals          = icarus_signal_processing::ArrayBool(nChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
-    if (fRawWaveforms.empty())     fRawWaveforms     = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fPedCorWaveforms.empty())  fPedCorWaveforms  = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fIntrinsicRMS.empty())     fIntrinsicRMS     = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fCorrectedMedians.empty()) fCorrectedMedians = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fWaveLessCoherent.empty()) fWaveLessCoherent = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fMorphedWaveforms.empty()) fMorphedWaveforms = icarus_signal_processing::ArrayFloat(nChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    // Make sure these always get defined to be as large as can be
+    const size_t maxChannelsPerFragment(576);
 
-    if (fChannelIDVec.empty())     fChannelIDVec     = icarus_signal_processing::VectorInt(nChannelsPerFragment);
-    if (fPedestalVals.empty())     fPedestalVals     = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
-    if (fFullRMSVals.empty())      fFullRMSVals      = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
-    if (fTruncRMSVals.empty())     fTruncRMSVals     = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
-    if (fNumTruncBins.empty())     fNumTruncBins     = icarus_signal_processing::VectorInt(nChannelsPerFragment);
-    if (fRangeBins.empty())        fRangeBins        = icarus_signal_processing::VectorInt(nChannelsPerFragment);
+    if (fSelectVals.empty())       fSelectVals       = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fROIVals.empty())          fROIVals          = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fRawWaveforms.empty())     fRawWaveforms     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fPedCorWaveforms.empty())  fPedCorWaveforms  = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fIntrinsicRMS.empty())     fIntrinsicRMS     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fCorrectedMedians.empty()) fCorrectedMedians = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fWaveLessCoherent.empty()) fWaveLessCoherent = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fMorphedWaveforms.empty()) fMorphedWaveforms = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+
+    if (fChannelIDVec.empty())     fChannelIDVec     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
+    if (fPedestalVals.empty())     fPedestalVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fFullRMSVals.empty())      fFullRMSVals      = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fTruncRMSVals.empty())     fTruncRMSVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fNumTruncBins.empty())     fNumTruncBins     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
+    if (fRangeBins.empty())        fRangeBins        = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
 
     // Allocate the de-noising object
     icarus_signal_processing::Denoising            denoiser;
@@ -370,10 +373,6 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     // and store into vectors useful for the next steps
     for(size_t board = 0; board < boardIDVec.size(); board++)
     {
-        // Keep these for a while longer as we may want to do some checking soon
-//        size_t event_number = physCrateFragment.BoardEventNumber(i_b);
-//        size_t timestamp    = physCrateFragment.BoardTimeStamp(board);
-
         // Look up the channels associated to this board
         database::TPCReadoutBoardToChannelMap::const_iterator boardItr = fReadoutBoardToChannelMap.find(boardIDVec[board]);
 
@@ -396,17 +395,6 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
         {
             std::cout << "********************************************************************************" << std::endl;
             std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
-        //size_t numElems = std::min(channelVec.size(),size_t(48));
-        //for(size_t chanIdx = 16; chanIdx < numElems; chanIdx++) std::cout << channelVec[chanIdx] << " ";
-//        size_t numElems = std::min(channelVec.size(),size_t(64));
-//        for(size_t chanIdx = 0; chanIdx < numElems; chanIdx++) 
-//        {
-//            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
-//
-//            if (widVec.empty()) std::cout << channelVec[chanIdx]  << " ";
-//
-//            std::cout << channelVec[chanIdx] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << " ";
-//        }
             std::cout << std::endl;
         }
 
@@ -451,6 +439,12 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             }
         }
         if (fDiagnosticOutput) std::cout << std::endl;
+    }
+
+    // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment
+    if (boardIDVec.size() < 9)
+    {
+        std::fill(fChannelIDVec.begin() + boardIDVec.size() * nChannelsPerBoard, fChannelIDVec.end(), -1);
     }
 
     theClockPedestal.stop();
