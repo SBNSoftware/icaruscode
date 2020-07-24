@@ -77,13 +77,21 @@ void DaqDecoderICARUSPMT::produce(art::Event & event)
     // storage for waveform
     fDecoderTool->initializeDataProducts();
 
-    // Recover the data fragments for the PMT 
-    auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
-    
-    // Make sure data available
-    if (daq_handle.isValid() && daq_handle->size() > 0)
+    // Protect for runs with no PMT info
+    try
     {
-        for (auto const &rawFrag: *daq_handle)  fDecoderTool->process_fragment(rawFrag);
+        // Recover the data fragments for the PMT 
+        auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
+    
+        // Make sure data available
+        if (daq_handle.isValid() && daq_handle->size() > 0)
+        {
+            for (auto const &rawFrag: *daq_handle)  fDecoderTool->process_fragment(rawFrag);
+        }
+    }
+    catch(...)
+    {
+        std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode" << std::endl;
     }
 
     fDecoderTool->outputDataProducts(event);
