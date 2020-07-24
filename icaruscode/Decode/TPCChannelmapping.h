@@ -309,8 +309,8 @@ namespace database
         digitizerToFragmentMap["EE-BOT-B"] = 22;
         digitizerToFragmentMap["EE-BOT-C"] = 23;
 
-        std::cout << "PMT local map has " << digitizerToFragmentMap.size() << " rows" << std::endl;
-        for(const auto& mapPair : digitizerToFragmentMap) std::cout << "  - label: " << mapPair.first << ", fragment: " << mapPair.second << ", size: " << mapPair.first.size() << std::endl;
+//        std::cout << "PMT local map has " << digitizerToFragmentMap.size() << " rows" << std::endl;
+//        for(const auto& mapPair : digitizerToFragmentMap) std::cout << "  - label: " << mapPair.first << ", fragment: " << mapPair.second << ", size: " << mapPair.first.size() << std::endl;
 
         // Recover the information from the database on the mapping 
         const std::string  name("icarus_hw_readoutboard");
@@ -352,7 +352,7 @@ namespace database
 
                 if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
 
-                std::cout << "  >> Searching " << digitizerToFragmentMap.size() << " rows for " << digitizerLabel << ", size; " << digitizerLabel.size() << std::endl;
+//                std::cout << "  >> Searching " << digitizerToFragmentMap.size() << " rows for " << digitizerLabel << ", size; " << digitizerLabel.size() << std::endl;
 
                 // Do we have corresponence?
                 if (digitizerToFragmentMap.find(digitizerLabel) == digitizerToFragmentMap.end())
