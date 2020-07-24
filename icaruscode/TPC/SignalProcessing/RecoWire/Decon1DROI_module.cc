@@ -136,7 +136,7 @@ class Decon1DROI : public art::EDProducer
     std::unique_ptr<icarus_tool::IDeconvolution>               fDeconvolution;
     std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
 
-    icarus_signal_processing::WaveformTools<float>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>             fWaveformTool;
 
     const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();

@@ -3,7 +3,7 @@
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 
-process_name: decoder
+process_name: decode
 
 services:
 {
@@ -28,13 +28,14 @@ physics:
     // now also have something produce the digits and headers
     producers:
     {
-        daq:         @local::decodeFilterNoise
+        daqTPC:      @local::decodeTPC
+        daqPMT:      @local::decodePMT
         decon1droi:  @local::icarus_decon1droi
         gaushit:     @local::gaus_hitfinder_icarus
     }
   
     analyzers: {}
-    my_producer_modules: [daq, decon1droi, gaushit]
+    my_producer_modules: [daqTPC, daqPMT, decon1droi, gaushit]
     a: [rootout]
     end_paths: [a]
 }
@@ -43,15 +44,15 @@ physics:
 services.FileCatalogMetadata: {}
 
 # Use this to setup the decoder module
-physics.producers.daq.OutputPedestalCor:                                        true
-physics.producers.daq.OutputCorrection:                                         true
-physics.producers.daq.DecoderTool.CoherentGrouping:                             32
-#physics.producers.daq.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
-physics.producers.daq.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
-#physics.producers.daq.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
+physics.producers.daqTPC.OutputPedestalCor:                                        true
+physics.producers.daqTPC.OutputCorrection:                                         true
+physics.producers.daqTPC.DecoderTool.CoherentGrouping:                             32
+#physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
 
 # Setup for the 1D deconvolution
-physics.producers.decon1droi.DigitModuleLabel:                                  "daq"
+physics.producers.decon1droi.DigitModuleLabel:                                  "daqTPC"
 
 outputs: {
   rootout: {

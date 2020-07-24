@@ -19,6 +19,7 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -172,6 +173,7 @@ private:
     database::TPCReadoutBoardToChannelMap fReadoutBoardToChannelMap;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
@@ -217,7 +219,9 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
     fFilterModeVec          = {'d','e','g'};
+
     fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
+    fDetector               = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     cet::cpu_timer theClockFragmentIDs;
 
@@ -275,7 +279,9 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
 
-    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
+    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << " ";
+
+//    if (fragmentID != 0x1404) return;
 
     if (fragItr == fFragmentToReadoutMap.end())
     {
@@ -299,6 +305,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             return;
         }
     }
+
+    if (fDiagnosticOutput) std::cout << std::endl;
 
 //    database::ReadoutIDVec& boardIDVec = fragItr->second;
 
@@ -464,17 +472,23 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     theClockDenoise.start();
 
     // One last task to remove remaining offsets from th coherent corrected waveforms
-    for(auto& waveform : fWaveLessCoherent)
+    for(size_t idx = 0; idx < fWaveLessCoherent.size(); idx++)
     {
         // Final pedestal correction to remove last offsets
         float cohPedestal;
         int   numTrunc;
         int   range;
 
+        // waveform
+        icarus_signal_processing::VectorFloat& waveform = fWaveLessCoherent[idx];
+
         waveformTools.getTruncatedMean(waveform, cohPedestal, numTrunc, range);
 
         // Do the pedestal correction
         std::transform(waveform.begin(),waveform.end(),waveform.begin(),std::bind(std::minus<float>(),std::placeholders::_1,cohPedestal));
+
+        // Update the pedestal
+        fPedestalVals[idx] += cohPedestal;
     }
 
     theClockDenoise.stop();

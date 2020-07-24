@@ -53,4 +53,8 @@ TPCDecoderOverlayFilter2DTool: {
     FakeParticle:       @local::FakeParticleTool
 }
 
+PMTDecoderTool: {
+    tool_type:          PMTDecoder
+}
+
 END_PROLOG
