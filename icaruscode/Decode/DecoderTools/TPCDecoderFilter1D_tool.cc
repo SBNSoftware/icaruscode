@@ -472,17 +472,23 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     theClockDenoise.start();
 
     // One last task to remove remaining offsets from th coherent corrected waveforms
-    for(auto& waveform : fWaveLessCoherent)
+    for(size_t idx = 0; idx < fWaveLessCoherent.size(); idx++)
     {
         // Final pedestal correction to remove last offsets
         float cohPedestal;
         int   numTrunc;
         int   range;
 
+        // waveform
+        icarus_signal_processing::VectorFloat& waveform = fWaveLessCoherent[idx];
+
         waveformTools.getTruncatedMean(waveform, cohPedestal, numTrunc, range);
 
         // Do the pedestal correction
         std::transform(waveform.begin(),waveform.end(),waveform.begin(),std::bind(std::minus<float>(),std::placeholders::_1,cohPedestal));
+
+        // Update the pedestal
+        fPedestalVals[idx] += cohPedestal;
     }
 
     theClockDenoise.stop();
