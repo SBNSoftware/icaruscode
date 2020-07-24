@@ -167,8 +167,11 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 
     size_t boardId = nChannelsPerBoard * fragment_id;
 
-    std::cout << "----> Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
-    std::cout << "      size: " << ev_size_quad_bytes << ", data size: " << data_size_double_bytes << ", samples/channel: " << nSamplesPerChannel << ", time: " << time_tag << std::endl;
+    if (fDiagnosticOutput)
+    {
+        std::cout << "----> Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
+        std::cout << "      size: " << ev_size_quad_bytes << ", data size: " << data_size_double_bytes << ", samples/channel: " << nSamplesPerChannel << ", time: " << time_tag << std::endl;
+    }
 
     const uint16_t* data_begin = reinterpret_cast<const uint16_t*>(artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
     const uint16_t* value_ptr  =  data_begin;
@@ -205,7 +208,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     }
     else std::cout << "*** could not find channel information for fragment: " << fragment_id << std::endl;
 
-    std::cout << "      - size of output collection: " << fOpDetWaveformCollection->size() << std::endl;
+    if (fDiagnosticOutput) std::cout << "      - size of output collection: " << fOpDetWaveformCollection->size() << std::endl;
 
     return;
 }

@@ -279,7 +279,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
 
-    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << fragmentID << " ";
+    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << " ";
 
 //    if (fragmentID != 0x1404) return;
 
@@ -305,6 +305,8 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             return;
         }
     }
+
+    if (fDiagnosticOutput) std::cout << std::endl;
 
 //    database::ReadoutIDVec& boardIDVec = fragItr->second;
 
