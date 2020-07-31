@@ -39,12 +39,12 @@ SCRIPTVERSION="1.0"
 # these numbers describe the (rounded) volume of the default ICARUS geometry
 # in `icaruscode` `v08_60_00`.
 #
-declare XMin=" -420" # cm
-declare XMax="  -20" # cm
-declare YMin=" -235" # cm
-declare YMax="  195" # cm
-declare ZMin="-1005" # cm
-declare ZMax=" 1005" # cm
+declare XMin="-405" # cm
+declare XMax=" -35" # cm
+declare YMin="-215" # cm
+declare YMax=" 170" # cm
+declare ZMin="-985" # cm
+declare ZMax=" 985" # cm
 
 declare Step="5" # cm
 declare XStep="$Step"
@@ -60,7 +60,7 @@ declare -i PhotonsPerVoxel=1000000
 declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v08_60_00"}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
-declare -ir VoxelsPerJob=2000 # estimate: 1'/ 1M photons
+declare -ir VoxelsPerJob=1850 # estimate: 1'/ 1M photons
 
 declare -r DefaultUserOutputDir="/pnfs/icarus/scratch/user/${USER}/jobOutput"
 declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYMMDD
