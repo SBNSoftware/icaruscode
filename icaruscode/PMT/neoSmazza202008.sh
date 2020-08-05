@@ -33,11 +33,11 @@ SCRIPTVERSION="1.0"
 # physics configuration: geometry and number of voxels (and voxels per job);
 # current implementation uses bash to do the math: round to integers!
 # 
-# The current code (v08_60_00) can autodetect the size of the volume,
+# The current code (v08_61_00) can autodetect the size of the volume,
 # but it would make precise numbers; here we prefer to have round numbers and
 # potentially miss a bit of the volume close to the cryostat border;
 # these numbers describe the (rounded) volume of the default ICARUS geometry
-# in `icaruscode` `v08_60_00`.
+# in `icaruscode` `v08_61_00`.
 #
 declare XMin="-405" # cm
 declare XMax=" -35" # cm
@@ -57,7 +57,7 @@ declare -i PhotonsPerVoxel=1000000
 # Job configuration for the generation in a few voxels (template):
 # icaruscode version and FHiCL name
 #
-declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v08_60_00"}"
+declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v08_61_00"}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
 declare -ir VoxelsPerJob=1850 # estimate: 1'/ 1M photons
