@@ -75,17 +75,17 @@ gaus_hitfinder_icarus.LongPulseWidth:                                           
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
 
