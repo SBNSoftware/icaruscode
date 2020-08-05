@@ -413,7 +413,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             icarus_signal_processing::VectorFloat& rawDataVec = fRawWaveforms[channelOnBoard];
 
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
-                rawDataVec[tick] = dataBlock[chanIdx + tick * nChannelsPerBoard];
+                rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
 
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
@@ -455,6 +455,19 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     theClockDenoise.start();
 
+    // Let's just try something here...
+//    icarus_signal_processing::ArrayFloat inputWaveforms = fPedCorWaveforms;
+//
+//    for(size_t groupSize = 64; groupSize > 16; groupSize /= 2)
+//    {
+//        // Run the coherent filter
+//        denoiser.removeCoherentNoise1D(fWaveLessCoherent,inputWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
+//                                       fFilterModeVec[0],groupSize,fStructuringElement,fMorphWindow,fThreshold);
+//
+//        inputWaveforms = fWaveLessCoherent;
+//    }
+    
+
     // Run the coherent filter
     denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedCorWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
                                    fFilterModeVec[0],fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
@@ -478,11 +491,10 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
         waveformTools.getTruncatedMean(waveform, cohPedestal, numTrunc, range);
 
+        if (fDiagnosticOutput) std::cout << "**> channel: " << fChannelIDVec[idx] << ", numTrunc: " << numTrunc << ", range: " << range << ", orig ped: " << fPedestalVals[idx] << ", new: " << cohPedestal << std::endl;
+
         // Do the pedestal correction
         std::transform(waveform.begin(),waveform.end(),waveform.begin(),std::bind(std::minus<float>(),std::placeholders::_1,cohPedestal));
-
-        // Update the pedestal
-        fPedestalVals[idx] += cohPedestal;
     }
 
     theClockDenoise.stop();
