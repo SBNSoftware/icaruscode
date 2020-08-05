@@ -119,6 +119,7 @@ private:
     std::vector<int>            fOffsetVec;              ///< Allow offsets for each plane
     std::vector<float>          fSigmaVec;               ///< Window size for matching to SimChannels
     int                         fMinAllowedChanStatus;   ///< Don't consider channels with lower status
+    float                       fSimChannelMinEnergy;
 
     // Pointers to the histograms we'll create.
     std::vector<TH1F*>          fTotalElectronsHistVec;
@@ -237,6 +238,7 @@ void TrackHitEfficiencyAnalysis::configure(fhicl::ParameterSet const & pset)
     fOffsetVec                = pset.get<std::vector<int>           >("OffsetVec",          std::vector<int>()={0,0,0});
     fSigmaVec                 = pset.get<std::vector<float>         >("SigmaVec",           std::vector<float>()={1.,1.,1.});
     fMinAllowedChanStatus     = pset.get< int                       >("MinAllowedChannelStatus");
+    fSimChannelMinEnergy      = pset.get<float                      >("SimChannelMinEnergy", std::numeric_limits<float>::epsilon());
 }
 
 //----------------------------------------------------------------------------
@@ -414,18 +416,30 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
     // There are several things going on here... for each channel we have particles (track id's) depositing energy in a range to ticks
     // So... for each channel we want to build a structure that relates particles to tdc ranges and deposited energy (or electrons)
     // Here is a complicated structure:
-    using TDCToIDEMap             = std::map<unsigned short, sim::IDE>; // We need this one in order
-    using ChanToTDCToIDEMap       = std::map<raw::ChannelID_t, TDCToIDEMap>;
-    using PartToChanToTDCToIDEMap = std::unordered_map<int, ChanToTDCToIDEMap>;
+//    using TDCToIDEMap             = std::map<unsigned short, sim::IDE>; // We need this one in order
+//    using ChanToTDCToIDEMap       = std::map<raw::ChannelID_t, TDCToIDEMap>;
+    using TDCIDEPair              = std::pair<unsigned short, const sim::IDE*>;
+    using TickTDCIDEVec           = std::vector<TDCIDEPair>;
+    using ChanToTDCIDEMap         = std::unordered_map<raw::ChannelID_t,TickTDCIDEVec>;
+    using PartToChanToTDCToIDEMap = std::unordered_map<int, ChanToTDCIDEMap>;
     
     PartToChanToTDCToIDEMap partToChanToTDCToIDEMap;
     
     // Build out the above data structure
     for(const auto& simChannel : *simChannelHandle)
     {
+        raw::ChannelID_t channel = simChannel.Channel();
+
         for(const auto& tdcide : simChannel.TDCIDEMap())
         {
-            for(const auto& ide : tdcide.second) partToChanToTDCToIDEMap[ide.trackID][simChannel.Channel()][tdcide.first] = ide;
+            for(const auto& ide : tdcide.second) //chanToTDCToIDEMap[simChannel.Channel()][tdcide.first] = ide;
+            {
+                if (ide.energy < fSimChannelMinEnergy) continue;
+                
+                partToChanToTDCToIDEMap[ide.trackID][channel].emplace_back(tdcide.first,&ide);
+                
+                if (ide.energy < std::numeric_limits<float>::epsilon()) mf::LogDebug("SpacePointAnalysis") << ">> epsilon simchan deposited energy: " << ide.energy << std::endl;
+            }
         }
     }
     
@@ -561,12 +575,15 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                 //            }
             }
         
-            TDCToIDEMap    tdcToIDEMap = chanToTDCToIDEMap.second;
+            TickTDCIDEVec  tdcToIDEVec = chanToTDCToIDEMap.second;
             float          totalElectrons(0.);
             float          maxElectrons(0.);
             unsigned short maxElectronsTDC(0);
             int            nMatchedWires(0);
             int            nMatchedHits(0);
+
+            // Make sure the vector is time ordered
+            std::sort(tdcToIDEVec.begin(),tdcToIDEVec.end(),[](const auto& left, const auto& right){return left.first < right.first;});
         
             // The below try-catch block may no longer be necessary
             // Decode the channel and make sure we have a valid one
@@ -581,22 +598,26 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
             if(wire!=lastwire) nSimulatedWiresVec[plane]++;
             lastwire=wire;
     
-            for(const auto& ideVal : tdcToIDEMap)
+            for(const auto& tdcIdePair : tdcToIDEVec)
             {
-                totalElectrons += ideVal.second.numElectrons;
+                const sim::IDE* ide = tdcIdePair.second;
+
+                if (trackPDGCode != ide->trackID) continue;
+
+                totalElectrons += ide->numElectrons;
         
-                if (maxElectrons < ideVal.second.numElectrons)
+                if (maxElectrons < ide->numElectrons)
                 {
-                    maxElectrons    = ideVal.second.numElectrons;
-                    maxElectronsTDC = ideVal.first;
+                    maxElectrons    = ide->numElectrons;
+                    maxElectronsTDC = tdcIdePair.first;
                 }
         
-                avePosition += Eigen::Vector3f(ideVal.second.x,ideVal.second.y,ideVal.second.z);
+                avePosition += Eigen::Vector3f(ide->x,ide->y,ide->z);
             }
         
             // Get local track direction by using the average position of deposited charge as the current position
             // and then subtracting the last position
-            avePosition /= float(tdcToIDEMap.size());
+            avePosition /= float(tdcToIDEVec.size());
         
             Eigen::Vector3f partDirVec = avePosition - lastPositionVec[plane];
         
@@ -618,8 +639,8 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
         
             nSimChannelHitVec[plane]++;
     
-            unsigned short startTDC = tdcToIDEMap.begin()->first;
-            unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
+            unsigned short startTDC = tdcToIDEVec.begin()->first;
+            unsigned short stopTDC  = tdcToIDEVec.rbegin()->first;
 
             // Convert to ticks to get in same units as hits
             unsigned short startTick = fClockService->TPCTDC2Tick(startTDC)        + fOffsetVec[plane];
@@ -698,8 +719,8 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                             // If hit is out of range then skip, it is not related to this particle
                             if (hitStartTick > stopTick || hitStopTick < startTick)
                             {
-                                 nFakeHitVec[plane]++;
-                                 rejectedHit = hit;
+                                nFakeHitVec[plane]++;
+                                rejectedHit = hit;
                                 continue;
                             }
                     
@@ -732,13 +753,18 @@ void TrackHitEfficiencyAnalysis::fillHistograms(const art::Event& event) const
                             nMatchedHits++;
                     
                             // Get the number of electrons
-                            for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
+                            for(int tickIdx = 0; tickIdx < int(tdcToIDEVec.size()); tickIdx++)
                             {
-                                unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec[plane]);
-                    
-                                TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
-                    
-                                if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second.numElectrons;
+                                // We might be done? 
+                                if (tickIdx > hitStopTickBest - hitStartTickBest) break;
+
+                                // Convert to TDC
+                                unsigned short hitTDC = fClockService->TPCTick2TDC(hitStartTickBest + tickIdx - fOffsetVec[plane]);
+
+                                if (hitTDC >= tdcToIDEVec[tickIdx].first)
+                                {
+                                    if (tdcToIDEVec[tickIdx].second->trackID == trackPDGCode) nElectronsTotalBest += tdcToIDEVec[tickIdx].second->numElectrons;
+                                }
                             }
                         }
         
