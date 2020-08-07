@@ -37,7 +37,7 @@ physics:
     }
 
     analyzers: {}
-    my_producer_modules: [daqTPC, daqPMT, decon1droi, gaushit]
+    my_producer_modules: [daqTPC, daqPMT, decon1droi, gaushit, ophit]
     a: [rootout]
     end_paths: [a]
 }

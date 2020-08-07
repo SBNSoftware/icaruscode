@@ -1,0 +1,59 @@
+#include "services_icarus.fcl"
+#include "decoderDefs.fcl"
+#include "recowire_icarus.fcl"
+#include "hitfindermodules_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+
+process_name: decode
+
+services:
+{
+   TFileService:            { }
+                             @table::icarus_calibration_services
+                             @table::icarus_wirecalibration_services
+}
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+physics:
+{
+    // now also have something produce the digits and headers
+    producers:
+    {
+        daqPMT:      @local::decodePMT
+        ophit:       @local::icarus_ophit
+    }
+
+    analyzers: {}
+    my_producer_modules: [daqPMT, ophit]
+    a: [rootout]
+    end_paths: [a]
+}
+
+# turn off the sam metadata for testing
+services.FileCatalogMetadata: {}
+
+
+
+physics.producers.ophit.InputModule: "daqPMT"
+physics.producers.ophit.InputLabels: []
+
+
+outputs: {
+  rootout: {
+    module_type: "RootOutput"
+    fileName: "%ifb_%tc-%p.root"
+  }
+}
+
+# Drop the artdaq format files on output
+outputs.rootout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
