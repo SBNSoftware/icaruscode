@@ -3,7 +3,20 @@
  * @brief   ROOT macro for `MergePhotonLibrary()` function.
  * @author  Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date    August 1, 2018
- * @version 1.0
+ * @version 2
+ * 
+ * Changes
+ * --------
+ * 
+ * * version 4:
+ *     * added special metadata with the input pattern used to run this script
+ * 
+ * * version 3:
+ *     * added check on the voxel list
+ * 
+ * * version 2:
+ *     * added support for metadata
+ * 
  */
 /// 
 /// Real life example:
@@ -25,27 +38,301 @@
 #include "TFile.h"
 #include "TDirectory.h"
 #include "TChain.h"
+#include "TChainElement.h"
+#include "TObjArray.h"
 #include "TTree.h"
 #include "TBranch.h"
 #include "TNamed.h"
 #include "TStopwatch.h"
+#include "RooInt.h"
+#include "RooDouble.h"
 
 // C/C++ libraries
 #include <iostream>
+#include <set>
 #include <string>
+#include <vector>
 #include <memory> // std::make_unique()
+#include <utility> // std::pair
+#include <cassert>
+
+
+static unsigned int ScriptVersion = 2;
 
 
 class TgDirectoryGuard {
   TDirectory* pOldDir = nullptr;
     public:
   TgDirectoryGuard(): pOldDir(gDirectory) {}
+  TgDirectoryGuard(TDirectory& newDir): TgDirectoryGuard() { newDir.cd(); }
   ~TgDirectoryGuard() { if (pOldDir) pOldDir->cd(); gDirectory = pOldDir; }
 }; // classTgDirectoryGuard
 
 
+/// Structure containing all supported metadata.
+struct MetadataSet_t {
+  std::map<std::string, std::unique_ptr<TNamed>> index;
+}; // MetadataSet_t;
+
+
+template <typename Stream>
+void printMetadataValue(Stream& out, TNamed const& obj) {
+  
+  if (dynamic_cast<RooInt const*>(&obj)) {
+    out << Int_t(static_cast<RooInt const&>(obj));
+  }
+  else if (dynamic_cast<RooDouble const*>(&obj)) {
+    out << Double_t(static_cast<RooDouble const&>(obj));
+  }
+  else {
+    out << obj.GetTitle();
+  }
+  
+} // printMetadataValue()
+
+
+template <typename Stream>
+void dumpMetadata(Stream& out, MetadataSet_t const& metadata) {
+  
+  out << "Metadata contains " << metadata.index.size() << " values:";
+  for (auto const& [ name, obj ]: metadata.index) {
+    
+    out << "\n  '" << obj->GetName() << "': ";
+    printMetadataValue(out, *obj);
+    if (name != obj->GetName()) out << " (as \"" << name << "\")";
+    
+  }
+  out << std::endl;
+  
+} // dumpMetadata()
+
+
+
 /// Returns a string with the name of the specified compression algorithm.
 std::string CompressionAlgorithmName(ROOT::ECompressionAlgorithm algo);
+
+
+/// Removes the last element from the specified path.
+std::string ROOTdirectoryOf(std::string const& ROOTobjectPath) {
+  
+  auto const iSep = ROOTobjectPath.rfind('/');
+  return (iSep == std::string::npos)
+    ? std::string{}: ROOTobjectPath.substr(0, iSep);
+  
+} // ROOTdirectoryOf()
+
+
+/**
+ * @brief Returns the path of the tree object for all trees in the `chain`.
+ * @param chain the ROOT tree chain to extract source paths from
+ * @return a list of pairs: file name `first`, tree path in ROOT `second`
+ */
+std::vector<std::pair<std::string, std::string>> extractSourceFilePathsFromChain
+  (TChain const& chain)
+{
+  std::vector<std::pair<std::string, std::string>> paths;
+  paths.reserve(chain.GetListOfFiles()->GetEntries());
+  for (TObject const* pObj: *(chain.GetListOfFiles())) {
+    auto const& elem = dynamic_cast<TChainElement const&>(*pObj);
+    
+    // this is documented in `TChain::AddFile()` (ROOT 6.20)
+    std::string treePath = elem.GetName();
+    std::string filePath = elem.GetTitle();
+    
+    paths.emplace_back(filePath, treePath);
+  } // for files
+  
+  return paths;
+} // extractSourceFilePathsFromChain()
+
+
+/// Returns the list of metadata contained in the specified ROOT directory.
+MetadataSet_t extractMetadata(TDirectory& dir) {
+  MetadataSet_t metadata;
+  
+  for (auto obj: *(dir.GetListOfKeys())) {
+    
+    auto& key = dynamic_cast<TKey&>(*obj);
+    
+    std::string const className = key.GetClassName();
+    
+    TClass const* ROOTclass = TClass::GetClass(className.c_str());
+    if (!ROOTclass) {
+      // this is not considered an error
+      std::cerr
+        << "WARNING: in '" << dir.GetPath() << "': object '" << key.GetName()
+        << "' is of type '" << className << "' unknown to ROOT."
+        << std::endl;
+      continue;
+    }
+    if (!ROOTclass->InheritsFrom(TNamed::Class())) {
+      std::cerr << "WARNING: in '" << dir.GetPath() << "': object '"
+        << key.GetName() << "' of type '" << className
+        << "' is not supported metadata."
+        << std::endl;
+      continue;
+    }
+    
+    if (ROOTclass->InheritsFrom(TTree::Class())) continue; // photon library?
+    
+    metadata.index[key.GetName()] = std::unique_ptr<TNamed>
+      { static_cast<TNamed*>(key.ReadObject<TNamed>()->Clone()) };
+    
+  } // for
+  
+//   std::cout << "Collected metadata:\n";
+//   dumpMetadata(std::cout, metadata);
+  
+  return metadata;
+} // extractMetadata()
+
+
+/// Returns a pair of `TFile` and `TDirectory` from the specified path.
+std::pair<std::unique_ptr<TFile>, TDirectory*> openROOTdirectory(
+  std::string const& filePath, std::string const& dirPath,
+  std::string const& mode = "READ"
+) {
+  auto file = std::make_unique<TFile>(filePath.c_str(), mode.c_str());
+  if (!file || !file->IsOpen()) return { nullptr, nullptr };
+  
+  TDirectory* const dir
+    = dirPath.empty()? file.get(): file->GetDirectory(dirPath.c_str());
+  
+  return { std::move(file), dir };
+  
+} // openROOTdirectory()
+
+
+/**
+ * @brief Merges the metadata from `src` into `dest`
+ * @return the number of encountered errors (`0` means success)
+ */
+unsigned int MergeMetadata(
+  MetadataSet_t& dest, MetadataSet_t const& src, std::string const& srcName
+) {
+  
+  unsigned int nErrors = 0U;
+  
+  for (auto const& [ key, obj ]: src.index) {
+    
+    auto iDest = dest.index.find(key);
+    if (iDest == dest.index.end()) {
+      /*
+      std::cout
+        << "New metadata element '" << key << "' (integral) found in '"
+        << srcName << "'." << std::endl;
+      */
+      dest.index.emplace
+        (key, std::unique_ptr<TNamed>{ static_cast<TNamed*>(obj->Clone()) });
+    }
+    else {
+      
+      if (obj->InheritsFrom(RooInt::Class())) {
+        
+        auto const value = Int_t(static_cast<RooInt const&>(*obj));
+        auto const metaValue
+          = Int_t(static_cast<RooInt const&>(*(iDest->second)));
+        if (metaValue != value) {
+          std::cerr << "ERROR: metadata '" << key << "' (RooInt) from '"
+            << srcName << "' has value " << value << " incompatible with "
+            << metaValue << " from the previous input."
+            << std::endl;
+          ++nErrors;
+          continue;
+        }
+      }
+      else if (obj->InheritsFrom(RooDouble::Class())) {
+        
+        auto const value = Double_t(static_cast<RooDouble const&>(*obj));
+        auto const metaValue
+          = Double_t(static_cast<RooDouble const&>(*(iDest->second)));
+        if (metaValue != value) {
+          std::cerr << "ERROR: metadata '" << key << "' (RooDouble) from '"
+            << srcName << "' has value " << value << " incompatible with "
+            << metaValue << " from the previous input."
+            << std::endl;
+        }
+      }
+      else {
+        
+        std::string const value = obj->GetTitle();
+        std::string const metaValue = iDest->second->GetTitle();
+        if (metaValue != value) {
+          std::cerr << "ERROR: metadata '" << key << "' from '"
+            << srcName << "' has value '" << value << "' incompatible with '"
+            << metaValue << "' from the previous input."
+            << std::endl;
+        }
+      }
+      
+    }
+    
+  } // for all metadata
+  
+  return nErrors;
+} // MergeMetadata()
+
+
+/// Writes the content of the specified `metadata` into ROOT output directory.
+void writeMetadata(MetadataSet_t const& metadata, TDirectory& outDir) {
+  
+  TgDirectoryGuard dirChanger(outDir);
+  for (auto const& [ key, value ]: metadata.index) {
+    value->Write();
+  } // for integral metadata
+  std::cout << metadata.index.size() << " metadata entries written into '"
+    << outDir.GetPath() << "'." << std::endl;
+  
+  dumpMetadata(std::cout, metadata);
+  
+} // writeMetadata()
+
+
+/**
+ * @brief Extracts and copies metadata from the input files of `tree` chain.
+ * @param tree the chain of trees that made input of the photon library
+ * @param outFile the ROOT directory where to write the metadata information
+ * @return the collected metadata
+ */
+MetadataSet_t CollectMetadata(TChain& tree) {
+  
+  std::cout << "Parsing the tree chain for metadata..." << std::endl;
+  
+  auto const& sourceList = extractSourceFilePathsFromChain(tree);
+  std::cout << "   ... extracted " << sourceList.size() << " sources"
+    << std::endl;
+  
+  unsigned int nErrors = 0U;
+  
+  //
+  // collect and merge
+  //
+  
+  // do not try to be overly generic...
+  MetadataSet_t globalMetadata;
+  
+  for (auto const& [ filePath, objPath ]: sourceList) {
+    
+    auto&& [ sourceFile, sourceDir ]
+      = openROOTdirectory(filePath, ROOTdirectoryOf(objPath));
+    if (!sourceDir) {
+      std::cerr << "Failed to open '" << filePath << "/" << objPath << "'"
+        << std::endl;
+      ++nErrors;
+      continue;
+    }
+    
+    MetadataSet_t sourceMetadata = extractMetadata(*sourceDir);
+    
+    nErrors += MergeMetadata
+      (globalMetadata, sourceMetadata, sourceDir->GetPath());
+    
+  } // for
+  
+  return globalMetadata;
+  
+} // CollectMetadata()
+
 
 
 /**
@@ -130,6 +417,8 @@ int MergePhotonLibrary(
   
   // protect the global state that ROOT so much loves
   TgDirectoryGuard gDirectoryGuard;
+  
+  unsigned int nErrors = 0U;
   
   //
   // parse the name
@@ -226,11 +515,18 @@ int MergePhotonLibrary(
   pDestTree->Write();
   
   //
+  // deal with metadata; errors are not "fatal"
+  //
+  
+  MetadataSet_t metadata = CollectMetadata(*pSourceTree);
+  writeMetadata(metadata, *pDestDir);
+
+  //
   // close and go
   //
   pFDest->Close();
   
-  return 0;
+  return (nErrors == 0U)? 0: 1;
   
 } // MergePhotonLibrary()
 
