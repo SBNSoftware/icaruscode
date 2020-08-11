@@ -8,9 +8,6 @@
  * Changes
  * --------
  * 
- * * version 4:
- *     * added special metadata with the input pattern used to run this script
- * 
  * * version 3:
  *     * added check on the voxel list
  * 
@@ -57,7 +54,8 @@
 #include <cassert>
 
 
-static unsigned int ScriptVersion = 2;
+static std::string const ScriptName { "MergePhotonLibrary.C" };
+static unsigned int const ScriptVersion { 3 };
 
 
 class TgDirectoryGuard {
@@ -334,6 +332,116 @@ MetadataSet_t CollectMetadata(TChain& tree) {
 } // CollectMetadata()
 
 
+/// Extracts the number of expected voxels from the metadata.
+unsigned int extractNVoxels(MetadataSet_t const& metadata) {
+  
+  auto readInt = [&md = metadata.index](std::string const& key)
+    {
+      auto const iMeta = md.find(key);
+      if (iMeta == md.end()) return 0;
+      auto metaObj = dynamic_cast<RooInt const*>(iMeta->second.get());
+      return metaObj? int(Int_t(*metaObj)): 0;
+    };
+  
+  int NVoxels = readInt("NVoxels");
+  if (NVoxels <= 0) {
+    NVoxels = readInt("NDivX") * readInt("NDivY") * readInt("NDivZ");
+  }
+  return NVoxels;
+  
+} // extractNVoxels()
+
+
+
+/// Extracts the list of voxels from the library and reports any missing ones.
+/// @return the number of voxels known to be missing
+unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata) {
+  
+  /*
+   * first collect all the observed voxel numbers (one by one!),
+   * then sort them and find, count and report any gap
+   */
+  TStopwatch timer;
+  
+  //
+  // collect the number of all voxels in the library (automatically sorted)
+  //
+  auto const nEntries = tree.GetEntriesFast();
+  std::cout << "Extracting the list of voxels from " << nEntries
+    << " entries in the merged photon library..." << std::endl;
+  std::set<int> voxelsFound;
+  
+  std::string const VoxelBranchName = "Voxel";
+  
+  Int_t branchVoxel = -1;
+  tree.SetBranchStatus("*", false);
+  tree.SetBranchStatus(VoxelBranchName.c_str(), true);
+  tree.SetBranchAddress(VoxelBranchName.c_str(), &branchVoxel);
+  Long64_t iEntry = 0;
+  timer.Start();
+  while (tree.GetEntry(iEntry++) > 0) voxelsFound.insert(branchVoxel);
+  timer.Stop();
+  if (iEntry != nEntries) {
+    std::cerr << "ERROR: " << nEntries << " entries expected in the tree, but "
+      << iEntry << " were read." << std::endl;
+  }
+  else {
+    std::cout << nEntries << " entries read from the tree in "
+      << timer.RealTime() << " seconds." << std::endl;
+  }
+  
+  //
+  // find the gaps; if no metadata is provided, missing voxels at the end might
+  // pass undetected
+  //
+  int NExpectedVoxels = extractNVoxels(metadata);
+  if (NExpectedVoxels > 0)
+    std::cout << NExpectedVoxels << " voxels are expected." << std::endl;
+  else
+    std::cout << "The total number of voxels is not known." << std::endl;    
+  
+  unsigned int nMissingVoxels = 0U;
+  unsigned int nMissingBlocks = 0U;
+  int firstMissing = 0;
+  for (int const voxel: voxelsFound) {
+    
+    if (voxel == firstMissing) { // not actually missing...
+      ++firstMissing;
+      continue;
+    }
+    else {
+      auto const missingInBlock
+        = static_cast<unsigned int>(voxel - firstMissing);
+      std::cerr << "Missing voxels: " << firstMissing;
+      if (firstMissing < voxel)
+        std::cerr << " to " << (voxel - 1) << " (" << missingInBlock << ")";
+      std::cerr << std::endl;
+      nMissingVoxels += missingInBlock;
+      ++nMissingBlocks;
+    }
+    firstMissing = voxel + 1;
+  } // for
+  if (firstMissing < NExpectedVoxels) {
+    auto const missingInBlock
+      = static_cast<unsigned int>(NExpectedVoxels - firstMissing);
+    std::cerr << "Missing voxels: " << firstMissing;
+    if (firstMissing < NExpectedVoxels) {
+      std::cerr << " to " << (NExpectedVoxels - 1)
+        << " (" << missingInBlock << ")";
+    }
+    std::cerr << std::endl;
+    nMissingVoxels += missingInBlock;
+    ++nMissingBlocks;
+  }
+  
+  if (nMissingVoxels > 0U) {
+    std::cerr << " => " << nMissingVoxels << " voxels missing in "
+      << nMissingBlocks << " blocks!" << std::endl;
+  }
+  
+  return nMissingVoxels;
+} // voxelCheck()
+
 
 /**
  * @brief Collects data trees and puts together a photon library tree.
@@ -469,6 +577,9 @@ int MergePhotonLibrary(
   pDate->Write();
   auto pSource = new TNamed("Source", pattern.c_str());
   pSource->Write();
+
+  TNamed{ "MergerProgram", ScriptName.c_str() }.Write();
+  TNamed{ "MergerVersion", std::to_string(ScriptVersion).c_str() }.Write();
   
   //
   // clone the tree
@@ -491,8 +602,8 @@ int MergePhotonLibrary(
   pDestTree->CopyEntries(pSourceTree);
   timer.Stop();
   
-  std::cout << pDestTree->GetEntries() << " entries transferred in " << timer.RealTime()
-    << " seconds; compression factors:" << std::endl;
+  std::cout << pDestTree->GetEntries() << " entries transferred in "
+    << timer.RealTime() << " seconds; compression factors:" << std::endl;
   for (TObject* pObj: *(pDestTree->GetListOfBranches())) {
     TBranch* pBranch = static_cast<TBranch*>(pObj);
     auto const branchSize = pBranch->GetTotBytes();
@@ -518,9 +629,21 @@ int MergePhotonLibrary(
   // deal with metadata; errors are not "fatal"
   //
   
+  
+  timer.Start();
   MetadataSet_t metadata = CollectMetadata(*pSourceTree);
   writeMetadata(metadata, *pDestDir);
-
+  timer.Stop();
+  
+  std::cout << "Metadata extracted in " << timer.RealTime() << " seconds."
+    << std::endl;
+  
+  //
+  // collect the list of voxels
+  //
+  unsigned int nMissingVoxels = voxelCheck(*pDestTree, metadata);
+  if (nMissingVoxels > 0U) ++nErrors;
+  
   //
   // close and go
   //
