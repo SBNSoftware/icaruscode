@@ -1,6 +1,6 @@
 #!//usr/bin/env bash
 #
-#
+# Run with `--help` for terse help (or see `PrintHelp()` function below).
 #
 
 SCRIPTNAME="$(basename "$0")"
@@ -24,6 +24,10 @@ Checks the exit code of each of the jobs from the specified XML files.
 The XML files are listed in the file pointed by the \`XMLfileList\` argument.
 
 Usage:  ${SCRIPTNAME}  XMLfileList
+
+The jobs must have already been checked with \`project.py --check\` (but the
+check may have reported failure because the check on no-input, no-ROOT-output
+jobs is not well supported).
 
 EOH
 } # PrintHelp()
