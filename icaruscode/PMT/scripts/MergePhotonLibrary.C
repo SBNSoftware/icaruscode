@@ -7,6 +7,10 @@
  * Changes
  * --------
  * 
+ * * version 5:
+ *     * missing voxel check reports as errors only blocks larger than
+ *       `MinMissingVoxelBlockReport`
+ * 
  * * version 4:
  *     * support file lists
  * 
@@ -81,7 +85,9 @@
 
 // -----------------------------------------------------------------------------
 static std::string const ScriptName { "MergePhotonLibrary.C" };
-static unsigned int const ScriptVersion { 4 };
+static unsigned int const ScriptVersion { 5 };
+
+static unsigned int MinMissingVoxelBlockReport = 10U;
 
 
 // -----------------------------------------------------------------------------
@@ -174,7 +180,8 @@ unsigned int extractNVoxels(MetadataSet_t const& metadata);
 
 /// Extracts the list of voxels from the library and reports any missing ones.
 /// @return the number of voxels known to be missing
-unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata);
+unsigned int voxelCheck
+  (TTree& tree, MetadataSet_t const& metadata, unsigned int minBlockSize = 1U);
 
 
 /// Adds to a `tree` chain all the files matching a pattern (matching by ROOT).
@@ -391,10 +398,12 @@ int MergePhotonLibrary(
     << std::endl;
   
   //
-  // collect the list of voxels
+  // collect the list of voxels;
+  // report missing blocks only if 10-voxel or larger
   //
-  unsigned int nMissingVoxels = voxelCheck(*pDestTree, metadata);
-  if (nMissingVoxels > 0U) ErrorCode = 4;
+  unsigned int const nLargeMissingBlocks
+    = voxelCheck(*pDestTree, metadata, MinMissingVoxelBlockReport);
+  if (nLargeMissingBlocks > 0U) ErrorCode = 4;
   
   //
   // close and go
@@ -690,7 +699,10 @@ unsigned int extractNVoxels(MetadataSet_t const& metadata) {
 
 
 // -----------------------------------------------------------------------------
-unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata) {
+unsigned int voxelCheck(
+  TTree& tree, MetadataSet_t const& metadata,
+  unsigned int minBlockSize /* = 1U */
+) {
   
   /*
    * first collect all the observed voxel numbers (one by one!),
@@ -737,6 +749,7 @@ unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata) {
   
   unsigned int nMissingVoxels = 0U;
   unsigned int nMissingBlocks = 0U;
+  unsigned int nLargeMissingBlocks = 0U;
   int firstMissing = 0;
   for (int const voxel: voxelsFound) {
     
@@ -747,10 +760,13 @@ unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata) {
     else {
       auto const missingInBlock
         = static_cast<unsigned int>(voxel - firstMissing);
-      std::cerr << "Missing voxels: " << firstMissing;
-      if (missingInBlock > 1)
-        std::cerr << " to " << (voxel - 1) << " (" << missingInBlock << ")";
-      std::cerr << std::endl;
+      if (missingInBlock >= minBlockSize) {
+        std::cerr << "Missing voxels: " << firstMissing;
+        if (missingInBlock > 1)
+          std::cerr << " to " << (voxel - 1) << " (" << missingInBlock << ")";
+        std::cerr << std::endl;
+        ++nLargeMissingBlocks;
+      }
       nMissingVoxels += missingInBlock;
       ++nMissingBlocks;
     }
@@ -759,22 +775,26 @@ unsigned int voxelCheck(TTree& tree, MetadataSet_t const& metadata) {
   if (firstMissing < NExpectedVoxels) {
     auto const missingInBlock
       = static_cast<unsigned int>(NExpectedVoxels - firstMissing);
-    std::cerr << "Missing voxels: " << firstMissing;
-    if (missingInBlock > 1) {
-      std::cerr << " to " << (NExpectedVoxels - 1)
-        << " (" << missingInBlock << ")";
+    if (missingInBlock >= minBlockSize) {
+      std::cerr << "Missing voxels: " << firstMissing;
+      if (missingInBlock > 1) {
+        std::cerr << " to " << (NExpectedVoxels - 1)
+          << " (" << missingInBlock << ")";
+      }
+      std::cerr << std::endl;
+      ++nLargeMissingBlocks;
     }
-    std::cerr << std::endl;
     nMissingVoxels += missingInBlock;
     ++nMissingBlocks;
   }
   
   if (nMissingVoxels > 0U) {
     std::cerr << " => " << nMissingVoxels << " voxels missing in "
-      << nMissingBlocks << " blocks!" << std::endl;
+      << nMissingBlocks << " blocks (" << nLargeMissingBlocks
+      << " blocks at least " << minBlockSize << " voxel big)!" << std::endl;
   }
   
-  return nMissingVoxels;
+  return nLargeMissingBlocks;
 } // voxelCheck()
 
 
