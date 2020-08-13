@@ -22,7 +22,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.0"
+SCRIPTVERSION="1.1"
 
 
 ################################################################################
@@ -62,7 +62,7 @@ declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
 declare -ir VoxelsPerJob=1850 # estimate: 1'/ 1M photons
 
-declare -r DefaultUserOutputDir="/pnfs/icarus/scratch/user/${USER}/jobOutput"
+declare -r DefaultUserOutputDir="/pnfs/icarus/scratch/users/${USER}/jobOutput"
 declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYMMDD
 
 #
@@ -71,7 +71,7 @@ declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYM
 declare -r Qualifiers="${MRB_QUALS:-"e19:prof"}" # default: GCC 8.2.0
 declare -r ExecutionNodeOS='SL7' # Scientific Linux [Fermi] 7
 declare    ExpectedJobTime='48h'
-declare -r ExpectedMemoryUsage='2000MB'
+declare -r ExpectedMemoryUsage='2000'
 declare -r GeneratorLabel='generator'
 
 #
