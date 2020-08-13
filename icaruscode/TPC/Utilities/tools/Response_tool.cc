@@ -184,6 +184,9 @@ void Response::calculateResponse(double weight)
     // First of all set the field response
     fFieldResponse->setResponse(weight, f3DCorrection, fTimeScaleFactor);
 
+    // What kind of response? (0= first induction, 1= middle induction, 2= collection)
+    size_t responseType = fFieldResponse->getResponseType();
+
     // handle the electronics response for this plane
     fElectronicsResponse->setResponse(fFieldResponse->getResponseVec().size(), fFieldResponse->getBinWidth());
     
@@ -274,14 +277,14 @@ void Response::calculateResponse(double weight)
     // Calculation of the T0 offset depends on the signal type
     int timeBin = std::distance(fResponse.begin(),minMaxPair.first);
 
-    if (fThisPlane > 1) timeBin = std::distance(fResponse.begin(),minMaxPair.second);
+    if (responseType == 2) timeBin = std::distance(fResponse.begin(),minMaxPair.second);
     
     // Do a backwards search to find the first positive bin
     while(1)
     {
         // Did we go too far?
         if (timeBin < 0)
-            throw cet::exception("Response::configure") << "Cannot find zero-point crossover for induction response!" << std::endl;
+            throw cet::exception("Response::configure") << "Cannot find zero-point crossover for induction response! ResponseType: " << responseType << ", plane: " << fThisPlane << std::endl;
             
         double content = fResponse[timeBin]; 
         

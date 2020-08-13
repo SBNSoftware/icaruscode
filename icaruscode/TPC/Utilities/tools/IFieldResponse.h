@@ -33,6 +33,7 @@ namespace icarus_tool
         virtual void outputHistograms(art::TFileDirectory&)                       const = 0;
         
         virtual size_t                          getPlane()                        const = 0;
+        virtual size_t                          getResponseType()                 const = 0;
         virtual size_t                          getNumBins()                      const = 0;
         virtual double                          getBinCenter(int bin)             const = 0;
         virtual double                          getBinContent(int bin)            const = 0;
