@@ -1,21 +1,31 @@
-#include "showertools.fcl"
-#include "showerfindermodules.fcl"  
+#include "pandorashowertools.fcl"
+#include "pandorashowermodules.fcl"
 
 BEGIN_PROLOG
 
-ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajectorypointdirection
+ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajpointdirection
 ShowerTrackTrajectoryPointDirection.PFParticleModuleLabel:      "pandoraGausCryo0"
 
-ShowerSmartTrackTrajectoryPointDirection:                       @local::showersmarttracktrajectorypointdirection
+ShowerSmartTrackTrajectoryPointDirection:                       @local::showertrackcolineartrajpointdirection
 ShowerSmartTrackTrajectoryPointDirection.PFParticleModuleLabel: "pandoraGausCryo0"
 
 Shower2DLinearRegressionTrackHitFinder:                         @local::shower2Dlinearregressiontrackhitfinder 
 Shower2DLinearRegressionTrackHitFinder.PFParticleModuleLabel:   "pandoraGausCryo0"
 
-ShowerSlidingStandardCalodEdx:                                  @local::showerslidingstandardcalodedx
+ShowerSlidingStandardCalodEdx:                                  @local::showertrajpointdedx
 ShowerSlidingStandardCalodEdx.PFParticleModuleLabel:            "pandoraGausCryo0"
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshower_stan:                                        @local::standard_tracs_shower
+standard_sbnshower_stan:                                        @local::standard_pandoraModularShowerCreation
+
+# The PMA Track Fit is no more, replaced with Pandora Sliding Fit but otherwise have set it to the old "defaults"
+standard_sbndshower_stan.ShowerTools: [
+				        @local::showerpfpvertexstartposition,
+					@local::showerpcadirection,
+					@local::showerlinearenergy,
+					@local::shower3dcylindertrackhitfinder,
+					@local::showerpandoraslidingfittrackfinder,
+					@local::showerunidirectiondedx
+                                      ]
 
 END_PROLOG
