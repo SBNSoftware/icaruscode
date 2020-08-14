@@ -18,7 +18,6 @@ ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_c
 
 standard_sbnshower_stan:                                        @local::standard_pandoraModularShowerCreation
 
-# The PMA Track Fit is no more, replaced with Pandora Sliding Fit but otherwise have set it to the old "defaults"
 standard_sbndshower_stan.ShowerTools: [
 				        @local::showerpfpvertexstartposition,
 					@local::showerpcadirection,
