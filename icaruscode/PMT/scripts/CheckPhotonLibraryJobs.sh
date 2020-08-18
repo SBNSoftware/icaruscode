@@ -17,17 +17,29 @@ function FATAL() {
 } # FATAL()
 
 
+function isFlagSet() {
+  local VarName="$1"
+  [[ -n "${!VarName//0}" ]]
+} # isFlagSet()
+
+
 # ------------------------------------------------------------------------------
 function PrintHelp() {
   cat <<EOH
 Checks the exit code of each of the jobs from the specified XML files.
 The XML files are listed in the file pointed by the \`XMLfileList\` argument.
 
-Usage:  ${SCRIPTNAME}  XMLfileList
+Usage:  ${SCRIPTNAME}  [options]  XMLfileList
 
 The jobs must have already been checked with \`project.py --check\` (but the
 check may have reported failure because the check on no-input, no-ROOT-output
 jobs is not well supported).
+
+
+Options:
+
+--help , -h , -?
+    prints these usage instructions
 
 EOH
 } # PrintHelp()
@@ -109,12 +121,39 @@ function ProcessXMLfile() {
 ### argument parser
 ###
 
-if [[ $# -lt 1 ]]; then
+declare -i DoHelp=0
+declare -i NoMoreOptions=0
+declare -a Arguments
+for (( iParam = 1 ; iParam <= $#; ++iParam )); do
+  Param="${!iParam}"
+  if isFlagSet NoMoreOptions || [[ "${Param:0:1}" != "-" ]]; then
+    Arguments+=( "$Param" )
+  else
+    case "$Param" in
+      ( '--help' | '-h' | '-?' ) DoHelp=1 ;;
+      ( '--' | '-' ) NoMoreOptions=1 ;;
+      ( * )
+        FATAL 1 "Unsupported option #${iParam} ('${Param}'); run with \`--help\` for usage instructions."
+        ;;
+    esac
+  fi
+done
+
+if isFlagSet DoHelp ; then
+  echo
   PrintHelp
   exit 0
 fi
 
-XMLfileList="$1"
+
+[[ ${#Arguments[@]} == 0 ]] && FATAL 1 "The name of XML file list is mandatory; run with \`--help\` for usage instructions."
+
+XMLfileList="${Arguments[0]}"
+
+if [[ ${#Arguments[@]} -gt 1 ]]; then
+  FATAL 1 "Arguments not supported: ${Arguments[@]}."
+fi
+
 
 
 ###
