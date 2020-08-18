@@ -346,7 +346,7 @@ namespace icarus{
 	    float massimo=0;
 	    float quale_sample_massimo;
 	    
-	    if (plane==2) {
+	    if (plane==0) {
               TH1F *h111 = new TH1F("h111","delta aree",20000,0,0);
               for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
                 {
@@ -400,7 +400,7 @@ namespace icarus{
               //h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
               //h_basediff2->Fill(fabs(base_massimo_after-base_massimo_before),sigma_pedestal);
               h_rms->Fill(sigma_pedestal);
-              if (massimo>(3*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
+              if (massimo>(5*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
                 {
 		  
 		  if(cryostat==0 && tpc==0)www0->push_back(iWire);
@@ -952,6 +952,8 @@ namespace icarus{
 			  }
 		        if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5 && fabs(slope_purity_exo)<0.01)
                         {	
+
+			  
 			anab::TPCPurityInfo purity_info;
 			purity_info.Run = evt.run();
 			purity_info.Subrun = evt.subRun();
@@ -962,7 +964,17 @@ namespace icarus{
 			
 			if(purity_info.TPC<2) purity_info.Cryostat=0;
 			else purity_info.Cryostat=1;
-			purity_info.Attenuation = slope_purity_exo*-1.;
+			// near/far from cathode tracks                                                                                        
+
+			  if((clusters_dw[icl]< 200)&&(clusters_ds[icl]>2250)){
+			    purity_info.AttenuationNEAR = slope_purity_exo*-1.;
+			  }
+			  else purity_info.AttenuationNEAR = 0;
+			  if((clusters_dw[icl]> 600)&&(clusters_ds[icl]<1250)){
+                            purity_info.AttenuationFAR = slope_purity_exo*-1.;
+                          }
+			  else purity_info.AttenuationFAR = 0;
+       			purity_info.Attenuation = slope_purity_exo*-1.;
 			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
                         //purity_info.Attenuation_2 = slope_purity_2*-1.;
                         //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
@@ -971,7 +983,7 @@ namespace icarus{
 			//                        purity_info.Ticks = clusters_ds[icl];
 
 			if(fFillAnaTuple)
-			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
+			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.AttenuationNEAR,purity_info.AttenuationFAR,purity_info.Attenuation);
 
 			std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();
