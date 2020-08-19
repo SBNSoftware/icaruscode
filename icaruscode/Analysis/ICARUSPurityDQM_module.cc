@@ -118,6 +118,7 @@ namespace icarus {
     float fValoretaufcl; 
     int fcryofcl;
     int fplanefcl;
+    int fthresholdfcl;
     bool fPersistPurityInfo;
     
     TNtuple* purityTuple;
@@ -138,6 +139,7 @@ namespace icarus{
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
     , fcryofcl              (pset.get< int >         ("CryostatFCL"))
     , fplanefcl             (pset.get< int >         ("PlaneFCL"))
+    , fthresholdfcl         (pset.get< int >         ("ThresholdFCL"))
     , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",false))
     , fFillAnaTuple         (pset.get< bool  >       ("FillAnaTuple",false))
   {
@@ -406,7 +408,7 @@ namespace icarus{
               //h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
               //h_basediff2->Fill(fabs(base_massimo_after-base_massimo_before),sigma_pedestal);
               h_rms->Fill(sigma_pedestal);
-              if (massimo>(5*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
+              if (massimo>(fthresholdfcl*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
                 {
 		  /*
 		  if(cryostat==0 && tpc==0)www0->push_back(iWire);
