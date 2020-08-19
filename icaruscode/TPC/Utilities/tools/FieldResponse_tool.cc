@@ -36,6 +36,7 @@ public:
     void outputHistograms(art::TFileDirectory&)            const override;
     
     size_t                          getPlane()             const override;
+    size_t                          getResponseType()      const override;
     size_t                          getNumBins()           const override;
     double                          getBinCenter(int bin)  const override;
     double                          getBinContent(int bin) const override;
@@ -58,6 +59,7 @@ private:
     
     // Member variables from the fhicl file
     size_t                   fThisPlane;
+    size_t                   fResponseType;
     geo::SigType_t           fSignalType;
     std::string              fFieldResponseFileName;
     std::string              fFieldResponseFileVersion;
@@ -93,6 +95,7 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
     fThisPlane                = pset.get< size_t      >("Plane");
+    fResponseType             = pset.get< size_t      >("ResponseType");
     fSignalType               = pset.get< size_t      >("SignalType") == 0 ? geo::kInduction : geo::kCollection;
     fFieldResponseFileName    = pset.get< std::string >("FieldResponseFileName");
     fFieldResponseFileVersion = pset.get< std::string >("FieldResponseFileVersion");
@@ -101,11 +104,14 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     fTimeCorrectionFactor     = pset.get< double      >("TimeCorrectionFactor");
     
     // Recover the input field response histogram
-    std::string fileName = fFieldResponseFileName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
+//    std::string fileName = fFieldResponseFileName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
+    std::string fileName = fFieldResponseFileName + "_vw" + numberToString(fResponseType) + "_" + fFieldResponseFileVersion + ".root";
     
     std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
 
+    std::cout << "************************** Field Response Plane " << fThisPlane << " type: " << fResponseType << " *****************************" << std::endl;
+    std::cout << "FileName: " << fullFileName << std::endl;
 
     if (!searchPath.find_file(fileName, fullFileName))
         throw cet::exception("FieldResponse::configure") << "Can't find input file: '" << fileName << "'\n";
@@ -115,7 +121,10 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     if (!inputFile.IsOpen())
         throw cet::exception("FieldResponse::configure") << "Unable to open input file: " << fileName << std::endl;
     
-    std::string histName = fFieldResponseHistName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
+//    std::string histName = fFieldResponseHistName + "_vw" + numberToString(fThisPlane) + "_" + fFieldResponseFileVersion + ".root";
+    std::string histName = fFieldResponseHistName + "_vw" + numberToString(fResponseType) + "_" + fFieldResponseFileVersion + ".root";
+
+    std::cout << "HistFile: " << histName << std::endl;
     
     fFieldResponseHist = (TH1D*)((TH1D*)inputFile.Get(histName.c_str()))->Clone();
     
@@ -127,14 +136,17 @@ void FieldResponse::configure(const fhicl::ParameterSet& pset)
     int binOfInterest = fFieldResponseHist->GetMinimumBin();
     
     // For collection planes it is as simple as finding the maximum bin
-    if (fSignalType == geo::kCollection) binOfInterest = fFieldResponseHist->GetMaximumBin();
+    if (fSignalType == geo::kCollection) binOfInterest = fFieldResponseHist->GetMaximumBin(); 
     
     // Do a backwards search to find the first positive bin
     while(1)
     {
         // Did we go too far?
         if (binOfInterest < 0)
-            throw cet::exception("FieldResponse::configure") << "Cannot find zero-point crossover for induction response!" << std::endl;
+        {
+            std::cout << "Cannot find zero-point crossover for induction response! Plane:" << fThisPlane << ", signal type: " << fSignalType << ", response type: " << fResponseType << std::endl;
+            throw cet::exception("FieldResponse::configure") << "Cannot find zero-point crossover for induction response! Plane:" << fThisPlane << ", signal type: " << fSignalType << ", response type: " << fResponseType << std::endl;
+        }
             
         double content = fFieldResponseHist->GetBinContent(binOfInterest);
         
@@ -271,6 +283,14 @@ size_t FieldResponse::getPlane() const
         throw cet::exception("FieldResponse::getPlane") << "Attempting to access plane info when tool is invalid state" << std::endl;
     
     return fThisPlane;
+}
+    
+size_t FieldResponse::getResponseType() const
+{
+    if (!fIsValid)
+        throw cet::exception("FieldResponse::getResponseType") << "Attempting to access response info when tool is invalid state" << std::endl;
+    
+    return fResponseType;
 }
     
 size_t FieldResponse::getNumBins() const
