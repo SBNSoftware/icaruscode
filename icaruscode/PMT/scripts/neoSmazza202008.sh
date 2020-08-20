@@ -18,11 +18,24 @@
 #
 # Each job fills one voxel per event
 # (i.e. a job with 10 events is going to fill 10 jobs).
-#
+# 
+# 
+# Run instructions
+# -----------------
+# 
+# The script can and should run without arguments. For debugging purposes,
+# the following arguments are accepted:
+# 
+#   neoSmazza.sh  [BaseOutputDir] [CampaignTag] [ScriptOutputDir]
+# 
+# * `BaseOutputDir` is the directory where job output will be copied;
+# * `CampaignTag` is a reference tag for the production (default: today date);
+# * `ScriptOutputDir` is the directory where scripts and configuration are
+#     stored (same as `BaseOutputDir` by default)
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.1"
+SCRIPTVERSION="1.3"
 
 
 ################################################################################
@@ -33,11 +46,11 @@ SCRIPTVERSION="1.1"
 # physics configuration: geometry and number of voxels (and voxels per job);
 # current implementation uses bash to do the math: round to integers!
 # 
-# The current code (v08_61_00) can autodetect the size of the volume,
+# The current code (v09_00_00) can autodetect the size of the volume,
 # but it would make precise numbers; here we prefer to have round numbers and
 # potentially miss a bit of the volume close to the cryostat border;
 # these numbers describe the (rounded) volume of the default ICARUS geometry
-# in `icaruscode` `v08_61_00`.
+# in `icaruscode` `v09_00_00`.
 #
 declare XMin="-405" # cm
 declare XMax=" -35" # cm
@@ -57,7 +70,7 @@ declare -i PhotonsPerVoxel=1000000
 # Job configuration for the generation in a few voxels (template):
 # icaruscode version and FHiCL name
 #
-declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v08_61_00"}"
+declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v09_00_00"}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
 declare -ir VoxelsPerJob=1850 # estimate: 1'/ 1M photons
@@ -70,7 +83,7 @@ declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYM
 #
 declare -r Qualifiers="${MRB_QUALS:-"e19:prof"}" # default: GCC 8.2.0
 declare -r ExecutionNodeOS='SL7' # Scientific Linux [Fermi] 7
-declare    ExpectedJobTime='48h'
+declare    ExpectedJobTime='72h'
 declare -r ExpectedMemoryUsage='2000'
 declare -r GeneratorLabel='generator'
 
@@ -78,7 +91,11 @@ declare -r GeneratorLabel='generator'
 # TEST settings
 #
 if [[ "${THISISATEST:-0}" != "0" ]]; then
-  PhotonsPerVoxel=10000
+  if [[ "$THISISATEST" == 1 ]]; then
+    PhotonsPerVoxel=10000
+  else
+    PhotonsPerVoxel="$THISISATEST"
+  fi
   ExpectedJobTime='8h'
 fi
 
@@ -92,11 +109,12 @@ SubmitScriptName="${ReferenceBaseName}-submit.sh"
 
 CampaignTag="${2:-"${DefaultCampaignTag}"}"
 BaseOutputDir="${1:-"${DefaultUserOutputDir}/${ReferenceBaseName}/${CampaignTag}"}"
+ScriptOutputDir="${3:-${BaseOutputDir}}"
 BaseJobOutputDir="${BaseOutputDir%/}/output"
-FHiCLdir="${BaseOutputDir%/}/fcl"
-XMLdir="${BaseOutputDir%/}/xml"
-XMLlistPath="${BaseOutputDir%/}/${XMLlistName}"
-SubmitScriptPath="${BaseOutputDir%/}/${SubmitScriptName}"
+FHiCLdir="${ScriptOutputDir%/}/fcl"
+XMLdir="${ScriptOutputDir%/}/xml"
+XMLlistPath="${ScriptOutputDir%/}/${XMLlistName}"
+SubmitScriptPath="${ScriptOutputDir%/}/${SubmitScriptName}"
 
 StageName='LibraryBuild'
 
@@ -205,14 +223,24 @@ function FHiCLtoXMLname() {
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function CreateFHiCL() {
-  
   local TemplateFHiCL="$1"
   local FirstVoxel="$2"
   local NVoxels="$3"
+  local ConfigurationFileName="$4"
+  local JobTag="$5"
+  
+  local ConfigurationFileBaseName
+  if [[ -n "$ConfigurationFileName" ]]; then
+    ConfigurationFileBaseName="$(basename "${ConfigurationFileName%.fcl}")"
+    cat <<EOH
+#
+# File: ${ConfigurationFileName}
+EOH
+  fi
   
   cat <<EOF
 #
-#  Configuration file for ${NVoxels} voxels starting from ${FirstVoxel}
+#  Configuration file for ${NVoxels} voxels starting from ${FirstVoxel}${JobTag:+" (${JobTag})"}
 #
 #  Template configuration file: '${TemplateFHiCL}'
 #  
@@ -259,7 +287,7 @@ physics.producers.${GeneratorLabel}: {
 } # physics.producers.${GeneratorLabel}
 
 source.maxEvents: ${NVoxels}
-
+${ConfigurationFileBaseName:+"services.TFileService.fileName: '${ConfigurationFileBaseName}-PhotonLibraryData.root'"}
 
 # ------------------------------------------------------------------------------
 
@@ -274,6 +302,7 @@ function CreateXML() {
   local -r JobOutputDir="$1"
   local -r JobConfiguration="$2"
   local -i NVoxels="$3"
+  local JobTag="$4"
   
   local -r JobConfigurationName="$(basename "$JobConfiguration")"
   local -r JobConfigurationDir="$(dirname "$JobConfiguration")"
@@ -289,7 +318,7 @@ function CreateXML() {
 <!ENTITY release      "${ProductionVersion}" >
 <!ENTITY file_type    "mc"        >
 <!ENTITY run_type     "physics"   >
-<!ENTITY name         "${ReferenceBaseName}" >
+<!ENTITY name         "${ReferenceBaseName}${JobTag:+"-${JobTag}"}" >
 <!ENTITY output_base_name "${JobOutputDir}" >
 <!ENTITY qualifiers   "${Qualifiers}"  >
 ]>
@@ -308,7 +337,6 @@ function CreateXML() {
     <resource>DEDICATED,OPPORTUNISTIC</resource>
     <cpu>1</cpu>
     <memory>${ExpectedMemoryUsage}</memory>
-    <jobsub>--expected-lifetime ${ExpectedJobTime}</jobsub>
 
     <!-- LArSoft information -->
     <larsoft>
@@ -327,6 +355,10 @@ function CreateXML() {
       <workdir>&output_base_name;/log</workdir>
       <numjobs>1</numjobs>
       <datatier>generated</datatier>
+      
+      <jobsub>--expected-lifetime ${ExpectedJobTime}</jobsub>
+      
+      <TFileName>&name;-PhotonLibraryData.root</TFileName>
       
       <!-- analysis job, i.e. do not look for a art ROOT file -->
       <ana>1</ana>
@@ -376,6 +408,11 @@ Job configuration
 Job name:          '${ReferenceBaseName}'
 Campaign tag:      '${CampaignTag}'
 Output directory:  '${BaseOutputDir}'
+EOM
+
+[[ "$BaseOutputDir" != "$ScriptOutputDir" ]] && echo "Script directory:  '${ScriptOutputDir}'"
+
+cat <<EOM
 
 XML file list:     '${XMLlistPath}'
 Submission script: '${SubmitScriptPath}'
@@ -452,8 +489,8 @@ while [[ $FirstVoxel -lt $TotalVoxels ]]; do
   
   # dCache also does not support overwriting with redirection...
   rm -f "$JobConfigurationFile" "$JobConfigurationXML"
-  CreateFHiCL "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" > "$JobConfigurationFile"
-  CreateXML "$JobOutputDir" "$JobConfigurationFile" "$JobVoxels" > "$JobConfigurationXML"
+  CreateFHiCL  "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" "$JobConfigurationFileName" "$JobTag" > "$JobConfigurationFile"
+  CreateXML "$JobOutputDir" "$JobConfigurationFile" "$JobVoxels" "$JobTag" > "$JobConfigurationXML"
   
   echo "$JobConfigurationXML" >> "$XMLlistTempFile"
   
@@ -477,7 +514,9 @@ echo "Execution of ${NJobs} commands completed (\${nErrors} errors)."
 [[ \$nErrors == 0 ]]
 EOF
 
+mkdir -p "$(dirname "$XMLlistPath")"
 mv "$XMLlistTempFile" "$XMLlistPath"
+mkdir -p "$(dirname "$SubmitScriptPath")"
 mv "$SubmitTempFile" "$SubmitScriptPath"
 chmod a+x "$SubmitScriptPath"
 
@@ -485,38 +524,7 @@ chmod a+x "$SubmitScriptPath"
 [[ $FirstVoxel == $TotalVoxels ]] || FATAL 1 "Stop everything!! there should be ${TotalVoxels} in total, but we covered ${FirstVoxel}!!"
 [[ $iJob == $NJobs ]] || FATAL 1 "Stop everything!! there should be ${NJobs} in total, but we created ${iJob}!!"
 
-Pager "$iJob" "$NJobs" '20'
-
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-exit
-echo -n "Let's start the empty analisys  "
-     Init
-     QUANTI=-1
-     PASSO=784
-     while [ $QUANTI -lt 2340 ] ; do
-	 echo $REC0 
-         QUANTI=`expr $QUANTI + 1`
-         #FirstVoxel=`expr $QUANTI * $PASSO `
-         FirstVoxel=$(( QUANTI * PASSO ))
-         RIQUANTI=`expr $QUANTI + 1`
-         LastVoxel=$(( RIQUANTI * PASSO))
-         echo $QUANTI $FirstVoxel $LastVoxel
-	 RunNames
-	 echo processing event for $OUT0 $OUT1
-         cp -pvi icarus_prodsingle_buildopticallibrary.fcl test_job.fcl
-         echo "physics.producers.generator.FirstVoxel: $FirstVoxel" >> test_job.fcl
-         echo "physics.producers.generator.LastVoxel: $LastVoxel" >> test_job.fcl
-	 mv -vf test_job.fcl $OUT1
-	 CreateXML
-	 mv -vf build_library.xml $OUT0 
-         echo "project.py --xml " $OUT0 " --stage Lib --submit " >> lancio_processi.sh
-         echo Now sleeping 1 second
-         sleep $DELTAT
-     done
- echo DONE
-
+Pager "$iJob" "$NJobs" '20' # complete paging output
 
 
 ################################################################################
