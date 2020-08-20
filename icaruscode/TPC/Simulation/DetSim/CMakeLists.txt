@@ -41,6 +41,7 @@ simple_plugin(SimWireICARUS "module"
                            larsim_Simulation 
                            nug4_ParticleNavigation lardataobj_Simulation
                            lardata_Utilities
+                           lardataalg_DetectorInfo
                            larevt_Filters
                            lardataobj_RawData
                            icaruscode_TPC_Utilities_SignalShapingICARUSService_service

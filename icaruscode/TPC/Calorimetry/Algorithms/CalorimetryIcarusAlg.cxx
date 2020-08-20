@@ -22,8 +22,6 @@ namespace calo{
   CalorimetryIcarusAlg::CalorimetryIcarusAlg(const Config& config)
   {
      this->reconfigure(config);
-
-     detprop = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->provider();
   }
 
   //--------------------------------------------------------------------
@@ -48,90 +46,112 @@ namespace calo{
   //------------------------------------------------------------------------------------//
   // Functions to calculate the dEdX based on the AMPLITUDE of the pulse
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AMP(art::Ptr< recob::Hit >  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                                        detinfo::DetectorPropertiesData const& detProp,
+                                        art::Ptr< recob::Hit >  hit, double pitch, double T0) const
   {
-    return dEdx_AMP(hit->PeakAmplitude()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
+    return dEdx_AMP(clockData, detProp, hit->PeakAmplitude()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AMP(recob::Hit const&  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                                        detinfo::DetectorPropertiesData const& detProp,
+                                        recob::Hit const&  hit, double pitch, double T0) const
   {
-    return dEdx_AMP(hit.PeakAmplitude()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
+    return dEdx_AMP(clockData, detProp, hit.PeakAmplitude()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
   }
 
   ///\todo The plane argument should really be for a view instead
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AMP(double dQ, double time, double pitch, unsigned int plane, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                                        detinfo::DetectorPropertiesData const& detProp,
+                                        double dQ, double time, double pitch, unsigned int plane, double T0) const
   {
     double dQdx   = dQ/pitch;           // in ADC/cm
-    return dEdx_AMP(dQdx, time, plane, T0);
+    return dEdx_AMP(clockData, detProp, dQdx, time, plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AMP(double dQdx,double time, unsigned int plane, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                                        detinfo::DetectorPropertiesData const& detProp,
+                                        double dQdx,double time, unsigned int plane, double T0) const
   {
     double fADCtoEl=1.;
 
     fADCtoEl = fCalAmpConstants[plane];
 
     double dQdx_e = dQdx/fADCtoEl;  // Conversion from ADC/cm to e/cm
-    return dEdx_from_dQdx_e(dQdx_e,time, T0);
+    return dEdx_from_dQdx_e(clockData, detProp, dQdx_e,time, T0);
   }
 
   //------------------------------------------------------------------------------------//
   // Functions to calculate the dEdX based on the AREA of the pulse
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AREA(art::Ptr< recob::Hit >  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                                         detinfo::DetectorPropertiesData const& detProp,
+                                         art::Ptr< recob::Hit >  hit, double pitch, double T0) const
   {
-    return dEdx_AREA(hit->Integral()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
+    return dEdx_AREA(clockData, detProp, hit->Integral()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AREA(recob::Hit const&  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                                         detinfo::DetectorPropertiesData const& detProp,
+                                         recob::Hit const&  hit, double pitch, double T0) const
   {
-    return dEdx_AREA(hit.Integral()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
+    return dEdx_AREA(clockData, detProp, hit.Integral()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
   }
  //------------------------------------------------------------------------------------//
   // Functions to calculate the dEdX based on the AREA of the pulse
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_SUMADC(art::Ptr< recob::Hit >  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_SUMADC(detinfo::DetectorClocksData const& clockData,
+                                           detinfo::DetectorPropertiesData const& detProp,
+                                           art::Ptr< recob::Hit >  hit, double pitch, double T0) const
   {
-    return dEdx_AREA(hit->SummedADC()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
+    return dEdx_AREA(clockData, detProp, hit->SummedADC()/pitch, hit->PeakTime(), hit->WireID().Plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_SUMADC(recob::Hit const&  hit, double pitch, double T0) const
+  double CalorimetryIcarusAlg::dEdx_SUMADC(detinfo::DetectorClocksData const& clockData,
+                                           detinfo::DetectorPropertiesData const& detProp,
+                                           recob::Hit const&  hit, double pitch, double T0) const
   {
-    return dEdx_AREA(hit.SummedADC()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
+    return dEdx_AREA(clockData, detProp, hit.SummedADC()/pitch, hit.PeakTime(), hit.WireID().Plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AREA(double dQ,double time, double pitch, unsigned int plane, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                                         detinfo::DetectorPropertiesData const& detProp,
+                                         double dQ,double time, double pitch, unsigned int plane, double T0) const
   {
     double dQdx   = dQ/pitch;           // in ADC/cm
-    return dEdx_AREA(dQdx, time, plane, T0);
+    return dEdx_AREA(clockData, detProp, dQdx, time, plane, T0);
   }
 
   // ----------------------------------------------------------------------------------//
-  double CalorimetryIcarusAlg::dEdx_AREA(double dQdx,double time, unsigned int plane, double T0) const
+  double CalorimetryIcarusAlg::dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                                         detinfo::DetectorPropertiesData const& detProp,
+                                         double dQdx,double time, unsigned int plane, double T0) const
   {
     double fADCtoEl=1.;
 
     fADCtoEl = fCalAreaConstants[plane];
 
     double dQdx_e = dQdx/fADCtoEl;  // Conversion from ADC/cm to e/cm
-    return dEdx_from_dQdx_e(dQdx_e, time, T0);
+    return dEdx_from_dQdx_e(clockData, detProp, dQdx_e, time, T0);
   }
 
   // ----------------- apply Lifetime and recombination correction.  -----------------//
-  double CalorimetryIcarusAlg::dEdx_from_dQdx_e(double dQdx_e, double time, double T0) const
+  double CalorimetryIcarusAlg::dEdx_from_dQdx_e(detinfo::DetectorClocksData const& clockData,
+                                                detinfo::DetectorPropertiesData const& detProp,
+                                                double dQdx_e, double time, double T0) const
   {
     if (fDoLifeTimeCorrection)
-      dQdx_e *= LifetimeCorrection(time, T0);   // Lifetime Correction (dQdx_e in e/cm)
+      dQdx_e *= LifetimeCorrection(clockData, detProp, time, T0);   // Lifetime Correction (dQdx_e in e/cm)
     if(fUseModBox) {
-      return detprop->ModBoxCorrection(dQdx_e);
+      return detProp.ModBoxCorrection(dQdx_e);
     } else {
-      return detprop->BirksCorrection(dQdx_e);
+      return detProp.BirksCorrection(dQdx_e);
     }
   }
 
@@ -139,19 +159,21 @@ namespace calo{
   //------------------------------------------------------------------------------------//
   // for the time being copying from Calorimetry.cxx - should be decided where to keep it.
   // ----------------------------------------------------------------------------------//
-  double calo::CalorimetryIcarusAlg::LifetimeCorrection(double time, double T0) const
+  double calo::CalorimetryIcarusAlg::LifetimeCorrection(detinfo::DetectorClocksData const& clockData,
+                                                        detinfo::DetectorPropertiesData const& detProp,
+                                                        double time, double T0) const
   {
     float t = time;
 
-    double timetick = detprop->SamplingRate()*1.e-3;    //time sample in microsec
-    double presamplings = detprop->TriggerOffset();
+    double timetick = sampling_rate(clockData)*1.e-3;    //time sample in microsec
+    double presamplings = trigger_offset(clockData);
 
     t -= presamplings;
     time = t * timetick - T0*1e-3;  //  (in microsec)
 
     if (fLifeTimeForm==0){
       //Exponential form
-      double tau = detprop->ElectronLifetime();
+      double tau = detProp.ElectronLifetime();
 
       double correction = exp(time/tau);
       return correction;

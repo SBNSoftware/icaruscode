@@ -465,11 +465,11 @@ namespace icarus{
     // the number of ides from the end of the vector to include in the detector sim.
     // handles deposited energy -> light output at SiPM (including attenuation) 
     // -> PEs from the SiPM (or PMT in case of bottom CRT) with associated time stamps
-    void CRTDetSimAlg::FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
+    void CRTDetSimAlg::FillTaggers(detinfo::DetectorClocksData const& clockData,
+                                   const uint32_t adid, const uint32_t adsid, const vector<sim::AuxDetIDE>& ides) {
 
         art::ServiceHandle<geo::Geometry> geoService;
-        art::ServiceHandle<detinfo::DetectorClocksService> detClocks;
-        detinfo::ElecClock trigClock = detClocks->provider()->TriggerClock();
+        detinfo::ElecClock trigClock = clockData.TriggerClock();
         fHasFilledTaggers = true;
 
         const geo::AuxDetGeo& adGeo = geoService->AuxDet(adid); //pointer to module object
@@ -861,8 +861,8 @@ namespace icarus{
         double t = t0 + tProp + tDelay;
     
         // Get clock ticks
-        clock.SetTime(t / 1e3);  // SetTime takes microseconds
-    
+        clock = clock.WithTime(t / 1e3);  // WithTime takes microseconds
+
         if (fUltraVerbose) mf::LogInfo("CRT")
           << "CRT TIMING: t0=" << t0
           << ", tDelayMean=" << tDelayMean << ", tDelayRMS=" << tDelayRMS

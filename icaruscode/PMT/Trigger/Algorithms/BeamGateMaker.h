@@ -16,7 +16,7 @@
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // detinfo::timescales
-#include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 
 
 
@@ -68,8 +68,8 @@ class icarus::trigger::BeamGateMaker {
     {}
   
   /// Constructor: uses the specified detector clocks service.
-  BeamGateMaker(detinfo::DetectorClocks const& detClocks)
-    : BeamGateMaker(detinfo::makeDetectorTimings(detClocks)) {}
+  BeamGateMaker(detinfo::DetectorClocksData const& clockData)
+    : BeamGateMaker(detinfo::makeDetectorTimings(clockData)) {}
   
   // --- BEGIN -- Start and end time -------------------------------------------
   /// @name Start and end time

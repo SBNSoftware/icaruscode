@@ -12,6 +12,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "larcore/Geometry/Geometry.h"
 
 #include "art/Utilities/make_tool.h"
@@ -38,9 +39,9 @@ public:
     ~Response() {}
     
     void configure(const fhicl::ParameterSet& pset)   override;
-    void setResponse(double weight)                   override;
-    void outputHistograms(art::TFileDirectory&) const override;
-    
+    void setResponse(double sampling_rate, double weight) override;
+    void outputHistograms(double sampling_rate, art::TFileDirectory&) const override;
+
     size_t                                  getPlane()               const override {return fThisPlane;}
     
     const IFieldResponse*                   getFieldResponse()       const override {return fFieldResponse.get();}
@@ -55,7 +56,8 @@ public:
     
 private:
     // Calculate the response function
-    void                                    calculateResponse(double weight);
+    void                                    calculateResponse(double sampling_rate,
+                                                              double weight);
 
     // Utility routine for converting numbers to strings
     std::string                             numberToString(int number);
@@ -87,7 +89,6 @@ private:
     double                                            fT0Offset;             ///< The overall T0 offset for the response function         
 
     std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;       ///< Object to handle thread safe FFT
-    detinfo::DetectorProperties const*                fDetectorProperties;   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------
@@ -106,28 +107,28 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fDeconvPol           = pset.get<int   >("DeconvPol");
 
     fResponseHasBeenSet  = false;
-    
+
     // Build out the underlying tools we'll be using
     fFieldResponse       = art::make_tool<icarus_tool::IFieldResponse>(pset.get<fhicl::ParameterSet>("FieldResponse"));
     fElectronicsResponse = art::make_tool<icarus_tool::IElectronicsResponse>(pset.get<fhicl::ParameterSet>("ElectronicsResponse"));
     fFilter              = art::make_tool<icarus_tool::IFilter>(pset.get<fhicl::ParameterSet>("Filter"));
 
-    fDetectorProperties  = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fNumberTimeSamples   = fDetectorProperties->NumberTimeSamples();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fNumberTimeSamples   = detProp.NumberTimeSamples();
 
     // Now set up our plans for doing the convolution
     fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fNumberTimeSamples);
-    
+
     return;
 }
-    
-void Response::setResponse(double weight)
+
+  void Response::setResponse(double sampling_rate, double weight)
 {
     // If we have already done the setup then can return
     if (fResponseHasBeenSet) return;
 
     // Calculate the combined field and electronics shaping response
-    calculateResponse(weight);
+    calculateResponse(sampling_rate, weight);
 
     // Now we compute the convolution kernel which is a straigtforward operation
     fFFT->forwardFFT(fResponse, fConvolutionKernel);
@@ -179,7 +180,8 @@ void Response::setResponse(double weight)
     return;
 }
 
-void Response::calculateResponse(double weight)
+void Response::calculateResponse(double sampling_rate,
+                                 double weight)
 {
     // First of all set the field response
     fFieldResponse->setResponse(weight, f3DCorrection, fTimeScaleFactor);
@@ -223,10 +225,10 @@ void Response::calculateResponse(double weight)
                                  << "      initial response integral: " << respIntegral << std::endl;
     
     // Need two factors: 1) the detector sampling rate and 2) the response sampling rate
-    double samplingRate = fDetectorProperties->SamplingRate() * 1.e-3;    // We want this in us/bin
-    double responseRate = fFieldResponse->getBinWidth() * 1.e-3;          // We want this in us/bin
-    double rateRatio    = samplingRate / responseRate;                    // This gives the ratio of time bins for full readout to response bins
-    
+    double samplingRate = sampling_rate * 1.e-3;                 // We want this in us/bin
+    double responseRate = fFieldResponse->getBinWidth() * 1.e-3; // We want this in us/bin
+    double rateRatio    = samplingRate / responseRate;           // This gives the ratio of time bins for full readout to response bins
+
     // The idea is to step through each bin of the sampling response vector and then to
     // look up the corresponding bins in the current response vector. Since the two sample
     // rates are not the same there will be some "stretching" between the two. In addition,
@@ -301,7 +303,8 @@ void Response::calculateResponse(double weight)
     return;
 }
 
-void Response::outputHistograms(art::TFileDirectory& histDir) const
+void Response::outputHistograms(double sampling_rate,
+                                art::TFileDirectory& histDir) const
 {
     // Create a subfolder in which to place the "response" histograms
     std::string thisResponse = "ResponsesPlane_" + std::to_string(fThisPlane);
@@ -318,17 +321,16 @@ void Response::outputHistograms(art::TFileDirectory& histDir) const
     
     art::TFileDirectory        responesDir  = dir.mkdir(dirName.c_str());
     const icarusutil::TimeVec& responseVec  = fResponse;
-    auto const*                detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
     double                     numBins      = responseVec.size();
-    double                     samplingRate = 1.e-3 * detprop->SamplingRate(); // Sampling time in us
-    double                     maxFreq      = 1.e3 / samplingRate;      // Max frequency in MHz
+    double                     samplingRate = 1.e-3 * sampling_rate; // Sampling time in us
+    double                     maxFreq      = 1.e3 / samplingRate;   // Max frequency in MHz
     double                     minFreq      = maxFreq / numBins;
     std::string                histName     = "Response_Plane_" + std::to_string(fThisPlane);
-    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * samplingRate);
-    
+    TProfile*                  hist         = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", numBins, 0., numBins * sampling_rate * 1.e-3);
+
     for(int bin = 0; bin < numBins; bin++)
     {
-        hist->Fill((double(bin) + 0.5) * samplingRate, responseVec.at(bin), 1.);
+        hist->Fill((double(bin) + 0.5) * sampling_rate * 1.e-3, responseVec.at(bin), 1.);
     }
     
     icarusutil::TimeVec powerVec;

@@ -206,7 +206,7 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   
   
   // --- BEGIN Service variables -----------------------------------------------
-  
+  detinfo::DetectorClocksData fClockData;   // FIXME: this assumes that the cached clock data is valid for the whole job.
   detinfo::DetectorTimings fDetTimings;
   
   // --- END Service variables -------------------------------------------------
@@ -233,7 +233,8 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   // configuration
   , fOpDetWaveformTag(config().OpticalWaveforms())
   , fLogCategory(config().OutputCategory())
-  , fDetTimings(*lar::providerFrom<detinfo::DetectorClocksService>())
+  , fClockData{art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob()}
+  , fDetTimings{fClockData}
   , fTriggerGateBuilder
     (
       art::make_tool<icarus::trigger::TriggerGateBuilder>
