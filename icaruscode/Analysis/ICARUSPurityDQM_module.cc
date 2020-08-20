@@ -116,7 +116,9 @@ namespace icarus {
     //short fPrintLevel;
 
     float fValoretaufcl; 
-
+    int fcryofcl;
+    int fplanefcl;
+    int fthresholdfcl;
     bool fPersistPurityInfo;
     
     TNtuple* purityTuple;
@@ -135,6 +137,9 @@ namespace icarus{
     : EDProducer(pset)
     , fDigitModuleLabel     (pset.get< std::vector<art::InputTag> > ("RawModuleLabel"))
     , fValoretaufcl         (pset.get< float >       ("ValoreTauFCL"))
+    , fcryofcl              (pset.get< int >         ("CryostatFCL"))
+    , fplanefcl             (pset.get< int >         ("PlaneFCL"))
+    , fthresholdfcl         (pset.get< int >         ("ThresholdFCL"))
     , fPersistPurityInfo    (pset.get< bool  >       ("PersistPurityInfo",false))
     , fFillAnaTuple         (pset.get< bool  >       ("FillAnaTuple",false))
   {
@@ -329,7 +334,9 @@ namespace icarus{
 	    geo::WireID wid  = wids[0];
 	    // We need to know the plane to look up parameters
 	    geo::PlaneID::PlaneID_t plane = wid.Plane;
-	    size_t cryostat=wid.Cryostat;
+	    //size_t 
+	    
+	    int cryostat=wid.Cryostat;
 	    size_t tpc=wid.TPC;
 	    size_t iWire=wid.Wire;
 	    //std::cout << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
@@ -345,8 +352,9 @@ namespace icarus{
 	    //std::cout << pedestal2 << " " << fDataSize << " " << rawadc.size() << " " << sigma_pedestal << std::endl;
 	    float massimo=0;
 	    float quale_sample_massimo;
-	    
-	    if (plane==2) {
+	    //    if (plane==0) {
+	    if ((int)plane==fplanefcl && cryostat==fcryofcl){
+
               TH1F *h111 = new TH1F("h111","delta aree",20000,0,0);
               for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
                 {
@@ -400,9 +408,9 @@ namespace icarus{
               //h_basediff->Fill(fabs(base_massimo_after-base_massimo_before));
               //h_basediff2->Fill(fabs(base_massimo_after-base_massimo_before),sigma_pedestal);
               h_rms->Fill(sigma_pedestal);
-              if (massimo>(3*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
+              if (massimo>(fthresholdfcl*sigma_pedestal) && fabs(base_massimo_after-base_massimo_before)<sigma_pedestal)
                 {
-		  
+		  /*
 		  if(cryostat==0 && tpc==0)www0->push_back(iWire);
 		  if(cryostat==0 && tpc==0)sss0->push_back(quale_sample_massimo);
 		  if(cryostat==0 && tpc==0)hhh0->push_back(massimo);
@@ -427,6 +435,32 @@ namespace icarus{
 		  if(cryostat==0 && tpc==1)aaa1->push_back(areaarea);
 		  if(cryostat==1 && tpc==0)aaa2->push_back(areaarea);
 		  if(cryostat==1 && tpc==1)aaa3->push_back(areaarea);
+		  */
+		     if(tpc==0)www0->push_back(iWire);		
+		     if(tpc==0)sss0->push_back(quale_sample_massimo);
+		     if(tpc==0)hhh0->push_back(massimo);
+		     if(tpc==0)ehh0->push_back(sigma_pedestal);
+		     if(tpc==0)ccc0->push_back(-1);
+		     if(tpc==1)www1->push_back(iWire);
+		     if(tpc==1)sss1->push_back(quale_sample_massimo);
+		     if(tpc==1)hhh1->push_back(massimo);
+		     if(tpc==1)ehh1->push_back(sigma_pedestal);
+		     if(tpc==1)ccc1->push_back(-1);
+		     if(tpc==2)www2->push_back(iWire);
+		     if(tpc==2)sss2->push_back(quale_sample_massimo);
+		     if(tpc==2)hhh2->push_back(massimo);
+		     if(tpc==2)ehh2->push_back(sigma_pedestal);
+		     if(tpc==2)ccc2->push_back(-1);
+		     if(tpc==3)www3->push_back(iWire);
+		     if(tpc==3)sss3->push_back(quale_sample_massimo);
+		     if(tpc==3)hhh3->push_back(massimo);
+		     if(tpc==3)ehh3->push_back(sigma_pedestal);
+		     if(tpc==3)ccc3->push_back(-1);
+		     if(tpc==0)aaa0->push_back(areaarea);
+		     if(tpc==1)aaa1->push_back(areaarea);
+		     if(tpc==2)aaa2->push_back(areaarea);
+		     if(tpc==3)aaa3->push_back(areaarea);
+
 		  //std::cout << "MASSIMO " << massimo << " " << quale_sample_massimo << std::endl;
 		  //std::cout << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
                 }
@@ -952,6 +986,8 @@ namespace icarus{
 			  }
 		        if((fabs(error_slope_purity_2/slope_purity_2)<5) && fabs(error_slope_purity_exo/slope_purity_exo)<5 && fabs(slope_purity_exo)<0.01)
                         {	
+
+			  
 			anab::TPCPurityInfo purity_info;
 			purity_info.Run = evt.run();
 			purity_info.Subrun = evt.subRun();
@@ -960,9 +996,22 @@ namespace icarus{
 			purity_info.Wires = clusters_dw[icl];
                         purity_info.Ticks = clusters_ds[icl];
 			
-			if(purity_info.TPC<2) purity_info.Cryostat=0;
-			else purity_info.Cryostat=1;
-			purity_info.Attenuation = slope_purity_exo*-1.;
+			//if(purity_info.TPC<2) purity_info.Cryostat=0;
+			//else purity_info.Cryostat=1;
+			
+			purity_info.Cryostat=fcryofcl;
+
+			// near/far from cathode tracks                                                                                        
+
+			  if((clusters_dw[icl]< 200)&&(clusters_ds[icl]>2250)){
+			    purity_info.AttenuationNEAR = slope_purity_exo*-1.;
+			  }
+			  else purity_info.AttenuationNEAR = 0;
+			  if((clusters_dw[icl]> 600)&&(clusters_ds[icl]<1250)){
+                            purity_info.AttenuationFAR = slope_purity_exo*-1.;
+                          }
+			  else purity_info.AttenuationFAR = 0;
+       			purity_info.Attenuation = slope_purity_exo*-1.;
 			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
                         //purity_info.Attenuation_2 = slope_purity_2*-1.;
                         //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
@@ -971,7 +1020,7 @@ namespace icarus{
 			//                        purity_info.Ticks = clusters_ds[icl];
 
 			if(fFillAnaTuple)
-			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
+			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.AttenuationNEAR,purity_info.AttenuationFAR,purity_info.Attenuation);
 
 			std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();
