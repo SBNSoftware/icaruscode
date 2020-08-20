@@ -35,7 +35,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.2"
+SCRIPTVERSION="1.3"
 
 
 ################################################################################
@@ -91,7 +91,11 @@ declare -r GeneratorLabel='generator'
 # TEST settings
 #
 if [[ "${THISISATEST:-0}" != "0" ]]; then
-  PhotonsPerVoxel=10000
+  if [[ "$THISISATEST" == 1 ]]; then
+    PhotonsPerVoxel=10000
+  else
+    PhotonsPerVoxel="$THISISATEST"
+  fi
   ExpectedJobTime='8h'
 fi
 
@@ -219,11 +223,20 @@ function FHiCLtoXMLname() {
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 function CreateFHiCL() {
-  
   local TemplateFHiCL="$1"
   local FirstVoxel="$2"
   local NVoxels="$3"
-  local JobTag="$4"
+  local ConfigurationFileName="$4"
+  local JobTag="$5"
+  
+  local ConfigurationFileBaseName
+  if [[ -n "$ConfigurationFileName" ]]; then
+    ConfigurationFileBaseName="$(basename "${ConfigurationFileName%.fcl}")"
+    cat <<EOH
+#
+# File: ${ConfigurationFileName}
+EOH
+  fi
   
   cat <<EOF
 #
@@ -274,7 +287,7 @@ physics.producers.${GeneratorLabel}: {
 } # physics.producers.${GeneratorLabel}
 
 source.maxEvents: ${NVoxels}
-
+${ConfigurationFileBaseName:+"services.TFileService.fileName: '${ConfigurationFileBaseName}-PhotonLibraryData.root'"}
 
 # ------------------------------------------------------------------------------
 
@@ -344,6 +357,8 @@ function CreateXML() {
       <datatier>generated</datatier>
       
       <jobsub>--expected-lifetime ${ExpectedJobTime}</jobsub>
+      
+      <TFileName>&name;-PhotonLibraryData.root</TFileName>
       
       <!-- analysis job, i.e. do not look for a art ROOT file -->
       <ana>1</ana>
@@ -474,7 +489,7 @@ while [[ $FirstVoxel -lt $TotalVoxels ]]; do
   
   # dCache also does not support overwriting with redirection...
   rm -f "$JobConfigurationFile" "$JobConfigurationXML"
-  CreateFHiCL "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" "$JobTag" > "$JobConfigurationFile"
+  CreateFHiCL  "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" "$JobConfigurationFileName" "$JobTag" > "$JobConfigurationFile"
   CreateXML "$JobOutputDir" "$JobConfigurationFile" "$JobVoxels" "$JobTag" > "$JobConfigurationXML"
   
   echo "$JobConfigurationXML" >> "$XMLlistTempFile"
@@ -509,38 +524,7 @@ chmod a+x "$SubmitScriptPath"
 [[ $FirstVoxel == $TotalVoxels ]] || FATAL 1 "Stop everything!! there should be ${TotalVoxels} in total, but we covered ${FirstVoxel}!!"
 [[ $iJob == $NJobs ]] || FATAL 1 "Stop everything!! there should be ${NJobs} in total, but we created ${iJob}!!"
 
-Pager "$iJob" "$NJobs" '20'
-
-
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-exit
-echo -n "Let's start the empty analisys  "
-     Init
-     QUANTI=-1
-     PASSO=784
-     while [ $QUANTI -lt 2340 ] ; do
-	 echo $REC0 
-         QUANTI=`expr $QUANTI + 1`
-         #FirstVoxel=`expr $QUANTI * $PASSO `
-         FirstVoxel=$(( QUANTI * PASSO ))
-         RIQUANTI=`expr $QUANTI + 1`
-         LastVoxel=$(( RIQUANTI * PASSO))
-         echo $QUANTI $FirstVoxel $LastVoxel
-	 RunNames
-	 echo processing event for $OUT0 $OUT1
-         cp -pvi icarus_prodsingle_buildopticallibrary.fcl test_job.fcl
-         echo "physics.producers.generator.FirstVoxel: $FirstVoxel" >> test_job.fcl
-         echo "physics.producers.generator.LastVoxel: $LastVoxel" >> test_job.fcl
-	 mv -vf test_job.fcl $OUT1
-	 CreateXML
-	 mv -vf build_library.xml $OUT0 
-         echo "project.py --xml " $OUT0 " --stage Lib --submit " >> lancio_processi.sh
-         echo Now sleeping 1 second
-         sleep $DELTAT
-     done
- echo DONE
-
+Pager "$iJob" "$NJobs" '20' # complete paging output
 
 
 ################################################################################
