@@ -38,9 +38,10 @@ BEGIN_PROLOG
 ###
 ###
 icarus_rootoutput: {
-  module_type:               RootOutput
-  fileName:                 "%ifb_%tc-%p.root"
-  compressionLevel:          1
+  module_type:       RootOutput
+  fileName:         "%ifb_%tc-%p.root"
+  compressionLevel:  1
+  dataTier:         "simulated" # still parroting something I don't understand
 } # icarus_rootoutput
 
 
