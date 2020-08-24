@@ -111,7 +111,7 @@ namespace icarus {
                     // One Atom for each parameter
                     fhicl::Atom<art::InputTag> SimulationLabel {
                         Name("SimulationLabel"),
-                            Comment("tag of the input data product with the detector simulation information")
+                        Comment("tag of the input data product with the detector simulation information")
                     };
                 }; // Config
 
@@ -145,8 +145,6 @@ namespace icarus {
             TH1D *fPrimaryStartTime;
             TH1I *pdgs;
             TH1I *nGen;
-
-            TH1D *hDistance; 
 
             TH2I *pdgDaughters;
             TH2I *pdgTime;
@@ -184,14 +182,11 @@ namespace icarus {
             int fFullyContained;
             bool fill;
 
-            std::vector<int>fMotherTracks;
-            std::map<int,
-            int>genPdgTrackMap;
-            std::map<int,
-            sim::SimEnergyDeposit>depositMap;
+            std::vector<int> fMotherTracks;
+            std::map<int,int> genPdgTrackMap;
+            std::map<int,double> depositMap;
 
-            const std::map<int,
-                const char*>binToName = {
+            const std::map<int,const char*> binToName = {
                     {
                         1,
                         "neutron"
@@ -302,9 +297,7 @@ namespace icarus {
             fPrimaryStartTime = tfs->make<TH1D>("fPrimaryStartTime", "Primary Cosmic Start Time", 60, -1150000, 1150000);
 
             pdgDaughters = tfs->make<TH2I>("pdgDaughters", "Number of Daughters per Primary Cosmic", 50, 0, 200, 7, 0.5, 7.5);
-            pdgTime = tfs->make<TH2I>("pdgTime", "Length of Detector Interactions per Primary Cosmic", 300, 0, 300, 7, 0.5, 7.5);
-
-            hDistance = tfs->make<TH1D>("hDistance","Distance of Throughgoing Particles",50,0,1000);
+            pdgTime = tfs->make<TH2I>("pdgTime", "Length of Detector Interactions per Primary Cosmic", 300, 0, 1500, 7, 0.5, 7.5);
 
             pdgDaughters->GetXaxis()->SetTitle("number of daughter particles that entered a cryostat");
             pdgTime->GetXaxis()->SetTitle("interaction length in detector (ns)");
@@ -317,8 +310,8 @@ namespace icarus {
 
             // Define the branches of our simulation n-tuple
             fSingleCosmicMC->Branch("event", &fEvent, "event/I");
-            fSingleCosmicMC->Branch("entryPos", &fEntry, "entryPos[4]/F");
-            fSingleCosmicMC->Branch("exitPos", &fExit, "exitPos[4]/F");
+            fSingleCosmicMC->Branch("entryPos", &fEntry, "entryPos[4]/D");
+            fSingleCosmicMC->Branch("exitPos", &fExit, "exitPos[4]/D");
             fSingleCosmicMC->Branch("distance", &fDistance, "distance/D");
             fSingleCosmicMC->Branch("pdg", &fPDG, "pdg/I");
             fSingleCosmicMC->Branch("fullyContained", &fFullyContained, "fullyContained/I");
@@ -359,7 +352,7 @@ namespace icarus {
             }
 
             for (auto const &deposit: (*depositHandle)) {
-                depositMap.insert({deposit.TrackID(),deposit});
+                depositMap[deposit.TrackID()] += deposit.Energy();
             }
 
             totalFirstTime = 1e19;
@@ -377,9 +370,7 @@ namespace icarus {
                 lastTime = -1e19;
 
                 for (auto const &particle: (*particleHandle)) {
-                    sim::SimEnergyDeposit energyDeposit = depositMap.find(particle.TrackId())->second;
-
-                    if (particle.Mother() == motherID && energyDeposit.Energy()>.05) {
+                    if (particle.Mother() == motherID && depositMap[particle.TrackId()]>5) {
                         fNDaught++;
 
                         int fSimHits = particle.NumberTrajectoryPoints();
@@ -505,7 +496,6 @@ namespace icarus {
 
                 if (wasInCryo) {
                     fDistance = sqrt(pow((fExit[0]-fEntry[0]),2) + pow((fExit[1]-fEntry[1]),2) + pow((fExit[2]-fEntry[2]),2));
-                    hDistance -> Fill(fDistance);
                     fSingleCosmicMC->Fill();
                 }
             }
@@ -525,7 +515,6 @@ namespace icarus {
                     const double point[3] = {pos.X(),pos.Y(),pos.Z()};
 
                     if (tpc00.ContainsPosition(point) || tpc01.ContainsPosition(point) || tpc10.ContainsPosition(point) || tpc11.ContainsPosition(point)) {
-
                         fPDG = part.PdgCode();
                         fill = true;
                         wasInCryo = true;
@@ -556,7 +545,6 @@ namespace icarus {
 
                 if (wasInCryo) {
                     fDistance = sqrt(pow((fExit[0]-fEntry[0]),2) + pow((fExit[1]-fEntry[1]),2) + pow((fExit[2]-fEntry[2]),2));
-                    hDistance -> Fill(fDistance);
                     fSingleCosmicMC->Fill();
                 }
             }
