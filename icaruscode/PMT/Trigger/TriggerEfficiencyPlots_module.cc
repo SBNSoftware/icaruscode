@@ -151,6 +151,16 @@ struct EventInfo_t {
   // Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
+  // Returns the number of entering particles
+  int NEnteringParticles() const { return fNEnteringParticles; }
+
+  // Returns the number of entering particles before the beam gate
+  int NEnteringParticles_PreGate() const { return fNEnteringParticles_PreGate; }
+
+  std::vector<double> EnteringParticles_PreGate_Time() const { return fEnteringParticles_PreGate_Time; }
+
+  std::vector<double> EnteringParticles_PreGate_Energy() const { return fEnteringParticles_PreGate_Energy; }
+
   /// Returns whether this type of event has a known vertex.
   bool hasVertex() const { return !fVertices.empty(); }
   
@@ -194,6 +204,16 @@ struct EventInfo_t {
 
   // Sets the interaction type
   void SetInteractionType(int type) { fInteractionType = type; }
+
+  // Sets the number of entering particles
+  void SetNEnteringParticles( int nEnteringparticles) { fNEnteringParticles = nEnteringparticles; }
+
+  // Sets the number of entering particles before the beam gate
+  void SetNEnteringParticles_PreGate( int nEnteringparticles_pregate) { fNEnteringParticles_PreGate = nEnteringparticles_pregate; }
+
+  void SetEnteringParticles_PreGate_Time( std::vector<double> enteringparticles_pregate_time) { fEnteringParticles_PreGate_Time = enteringparticles_pregate_time; }
+
+  void SetEnteringParticles_PreGate_Energy( std::vector<double> enteringparticles_pregate_energy) { fEnteringParticles_PreGate_Energy = enteringparticles_pregate_energy; }
 
   /// Set whether the event has relevant activity in the active volume.
   void SetInActiveVolume(bool active = true) { fInActiveVolume = active; }
@@ -260,6 +280,12 @@ struct EventInfo_t {
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
+
+  int fNEnteringParticles { 0 };
+  int fNEnteringParticles_PreGate { 0 };
+
+  std::vector<double> fEnteringParticles_PreGate_Time;
+  std::vector<double> fEnteringParticles_PreGate_Energy;
 
   GeV fNeutrinoEnergy { 0.0 };
   GeV fLeptonEnergy { 0.0 };
@@ -341,14 +367,14 @@ PlotCategories_t const PlotCategories {
     },
 
   PlotCategory{
-	"All nu_mu", "nu_mu",
+  "All nu_mu", "nu_mu",
     [](EventInfo_t const& info){ return info.isNu_mu(); }
-	},
+  },
 
   PlotCategory{
-	"All nu_e", "nu_e",
+  "All nu_e", "nu_e",
     [](EventInfo_t const& info){ return info.isNu_e(); }
-	},
+  },
 
   PlotCategory{
     "NuCC", "CC",
@@ -1295,7 +1321,10 @@ class icarus::trigger::TriggerEfficiencyPlots: public art::EDAnalyzer {
   // --- BEGIN Configuration variables -----------------------------------------
   
   std::vector<art::InputTag> fGeneratorTags; ///< Generator data product tags.
-  art::InputTag fDetectorParticleTag; ///< Input simulated particles.
+  
+  ///< Input simulated particles.
+  art::InputTag fDetectorParticleTag;
+
   /// Energy deposition data product tags.
   std::vector<art::InputTag> fEnergyDepositTags;
   
@@ -1521,7 +1550,8 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
     consumes<std::vector<simb::MCTruth>>(inputTag);
   for (art::InputTag const& inputTag: fEnergyDepositTags)
     consumes<std::vector<sim::SimEnergyDeposit>>(inputTag);
-//   consumes<std::vector<simb::MCParticle>>(fDetectorParticleTag);
+
+  consumes<std::vector<simb::MCParticle>>(fDetectorParticleTag);
   
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
@@ -1757,10 +1787,41 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
   //
   plots.make<TH1F>(
     "EnergyInSpill",
-    "Energy eposited during the beam gate opening"
+    "Energy deposited during the beam gate opening"
       ";deposited energy  [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+
+  //
+  // Cosmic-related plots
+  //
+  plots.make<TH1I>(
+    "NEnteringParticles",
+    "Particles entering during the beam gate",
+    50,0,50
+    );
+
+  plots.make<TH1I>(
+    "NEnteringParticles_PreGate",
+    "Particles entering before the beam gate",
+    50,0,50
+    );
+
+  plots.make<TH1D>(
+    "EnteringParticles_Pregate_Time",
+    "Cosmic crossing time"
+    ";crossing time [ns]",
+    1000,-1000000,0
+    );
+
+  plots.make<TH2D>(
+    "ParticleTimes_PreGate",
+    "Particle energy vs particle crossing time"
+    ";deposited energy [MeV]"
+    ";particle crossing time [ns]",
+    80,0,1200,
+    1000,-1000000,0
     );
 
   //
@@ -1794,7 +1855,17 @@ void icarus::trigger::TriggerEfficiencyPlots::initializePlotSet
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 
     );
- 
+  plots.make<TH1I>(
+    "NEnteringParticles_NoTrig",
+    "Particles entering during the beam gate",
+    50,0,50
+    ); 
+
+  plots.make<TH1I>(
+    "NEnteringParticles_PreGate_NoTrig",
+    "Particles entering before the beam gate",
+    50,0,50
+    );
 } // icarus::trigger::TriggerEfficiencyPlots::initializePlotSet()
 
 
@@ -1898,7 +1969,13 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
   // propagation in the detector
   //
   GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
-  
+  int enteringParticles = 0;
+  int enteringParticles_PreGate = 0;
+  std::vector<double> enteringParticles_PreGate_Time;
+  std::vector<double> enteringParticles_PreGate_Energy;
+
+  std::map<int,double> trackIDeDep;
+
   for (art::InputTag const& edepTag: fEnergyDepositTags) {
     
     auto const& energyDeposits
@@ -1910,7 +1987,8 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
     for (sim::SimEnergyDeposit const& edep: energyDeposits) {
       
       MeV const e { edep.Energy() }; // assuming it's stored in MeV
-      
+      trackIDeDep[edep.TrackID()] += edep.Energy();
+
       detinfo::timescales::simulation_time const t { edep.Time() };
       bool const inSpill
         = (t >= fBeamGateSim.first) && (t <= fBeamGateSim.second);
@@ -1921,10 +1999,63 @@ auto icarus::trigger::TriggerEfficiencyPlots::extractEventInfo
     } // for all energy deposits in the data product
     
   } // for all energy deposit tags
+
+  auto const& mcParticles = *(event.getValidHandle<std::vector<simb::MCParticle>>(fDetectorParticleTag));
+
+  for (simb::MCParticle const& particle: mcParticles) {
+    int NSimHits = particle.NumberTrajectoryPoints();
+    double entryTime;
+    bool wasOutside = false;
+    bool enteredTPC = false;
+    bool enteredTPC_PreGate = false;
+
+    for (int i = 0; i < NSimHits; i++) {
+      const TLorentzVector &pos = particle.Position(i);
+      geo::Point_t const point {pos.X(),pos.Y(),pos.Z()};
+
+      if (!pointInTPC(point)) {
+        wasOutside = true;
+      }
+
+      if (pointInTPC(point) && wasOutside) {
+        detinfo::timescales::simulation_time const t { pos.T() };
+        detinfo::timescales::simulation_time const t_begin { pos.T() + 0.2 };
+
+        bool const inSpill = (t_begin >= fBeamGateSim.first) && (t <= fBeamGateSim.second);
+        bool const preSpill = (t < fBeamGateSim.first);
+        
+        if (inSpill) enteredTPC = true;
+        if (preSpill) {
+          enteredTPC_PreGate = true;
+          entryTime = pos.T();
+        }
+      }
+    }
+
+    int trackID = particle.TrackId();
+    double particleEdep = trackIDeDep.find(trackID)->second;
+
+    if (particleEdep > 50.0) {
+      if (enteredTPC) enteringParticles++;
+      if (enteredTPC_PreGate) {
+        enteringParticles_PreGate++;
+        enteringParticles_PreGate_Time.push_back(entryTime);
+        enteringParticles_PreGate_Energy.push_back(particleEdep);
+      } 
+    }
+  }
   
+  mf::LogTrace(fLogCategory)
+    << "Event " << event.id() << " has " << enteringParticles
+    << " crossing particles during the beam gate";
+
   info.SetDepositedEnergy(totalEnergy);
   info.SetDepositedEnergyInSpill(inSpillEnergy);
-  
+  info.SetNEnteringParticles(enteringParticles);
+  info.SetNEnteringParticles_PreGate(enteringParticles_PreGate);
+  info.SetEnteringParticles_PreGate_Time(enteringParticles_PreGate_Time);
+  info.SetEnteringParticles_PreGate_Energy(enteringParticles_PreGate_Energy);
+
   mf::LogTrace(fLogCategory) << "Event " << event.id() << ": " << info;
   
   return info;
@@ -2087,7 +2218,22 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
 
       // trigger time (if any)
       if (fired) {
-        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first); 
+        getHist2D("TriggerTick"s)->Fill(minCount, lastMinCount.first);
+        if (minCount ==1) {
+          getHist("NEnteringParticles"s)->Fill(eventInfo.NEnteringParticles());
+          if (eventInfo.NEnteringParticles() == 0) {
+            getHist("NEnteringParticles_PreGate"s)->Fill(eventInfo.NEnteringParticles_PreGate());
+
+            std::vector<double> x = eventInfo.EnteringParticles_PreGate_Energy();
+            std::vector<double> y = eventInfo.EnteringParticles_PreGate_Time();
+
+            int size = static_cast<int>(x.size());
+            for (int i = 0; i < size; i++) {
+              getHist2D("ParticleTimes_PreGate"s)->Fill(x[i],y[i]);
+              getHist("EnteringParticles_Pregate_Time"s)->Fill(y[i]);
+            }
+          }
+        } 
       }
 
       // non triggered events
@@ -2096,6 +2242,8 @@ void icarus::trigger::TriggerEfficiencyPlots::plotResponses(
         getHist("NeutrinoEnergy_NoTrig"s)->Fill(double(eventInfo.NeutrinoEnergy()));
         getHist("InteractionType_NoTrig"s)->Fill(eventInfo.InteractionType());
         getHist("LeptonEnergy_NoTrig"s)->Fill(double(eventInfo.LeptonEnergy()));
+        getHist("NEnteringParticles_NoTrig"s)->Fill(eventInfo.NEnteringParticles());
+        getHist("NEnteringParticles_PreGate_NoTrig"s)->Fill(eventInfo.NEnteringParticles_PreGate());
         //getHist("NucleonEnergy_NoTrig"s)->Fill(double(eventInfo.NucleonEnergy())); 
       }
 
