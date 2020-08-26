@@ -42,7 +42,7 @@ genie_xsec                v3_00_04a
 guideline_sl              v2_0_0
 fftw                      v3_3_8a
 libwda                    v2_28_0
-sbndaq_artdaq_core        v0_05_00_f04
+sbndaq_artdaq_core        v0_07_00_of0
 
 cetbuildtools	          v7_17_01	-	only_for_build
 end_product_list
