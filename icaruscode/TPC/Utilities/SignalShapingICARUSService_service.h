@@ -117,7 +117,7 @@ public:
      
     int                           ResponseTOffset(unsigned int const channel)        const;
     
-    void                          SetDecon(size_t fftsize, size_t channel);
+    void                          SetDecon(double samplingRate, size_t fftsize, size_t channel);
     double                        GetDeconNorm() {return fDeconNorm;};
     
     
@@ -151,5 +151,3 @@ private:
 
 DECLARE_ART_SERVICE(icarusutil::SignalShapingICARUSService, SHARED)
 #endif
-
-

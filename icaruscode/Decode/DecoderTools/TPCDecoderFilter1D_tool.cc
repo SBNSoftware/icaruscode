@@ -19,7 +19,6 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -68,7 +67,8 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(const artdaq::Fragment&) override;
+    virtual void process_fragment(detinfo::DetectorClocksData const&,
+                                  const artdaq::Fragment&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -124,9 +124,9 @@ public:
      *  @brief Recover the full RMS before coherent noise
      */
     const icarus_signal_processing::VectorFloat getFullRMSVals()      const override {return fFullRMSVals;};
- 
+
     /**
-     *  @brief Recover the truncated RMS noise 
+     *  @brief Recover the truncated RMS noise
      */
     const icarus_signal_processing::VectorFloat getTruncRMSVals()     const override {return fTruncRMSVals;};
 
@@ -162,7 +162,7 @@ private:
     icarus_signal_processing::ArrayFloat  fCorrectedMedians;
     icarus_signal_processing::ArrayFloat  fWaveLessCoherent;
     icarus_signal_processing::ArrayFloat  fMorphedWaveforms;
-         
+
     icarus_signal_processing::VectorFloat fPedestalVals;
     icarus_signal_processing::VectorFloat fFullRMSVals;
     icarus_signal_processing::VectorFloat fTruncRMSVals;
@@ -173,7 +173,6 @@ private:
     database::TPCReadoutBoardToChannelMap fReadoutBoardToChannelMap;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
-    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
@@ -207,21 +206,21 @@ TPCDecoderFilter1D::~TPCDecoderFilter1D()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 {
-    fFragment_id_offset     = pset.get<uint32_t>("fragment_id_offset"    );
-    fCoherentNoiseGrouping  = pset.get<size_t  >("CoherentGrouping",   64);
-    fStructuringElement     = pset.get<size_t  >("StructuringElement", 20);
-    fMorphWindow            = pset.get<size_t  >("FilterWindow",       10);
-    fThreshold              = pset.get<float   >("Threshold",         7.5);
-    fDiagnosticOutput       = pset.get<bool    >("DiagnosticOutput", false);
+    fFragment_id_offset     = pset.get<uint32_t         >("fragment_id_offset"    );
+    fCoherentNoiseGrouping  = pset.get<size_t           >("CoherentGrouping",   64);
+    fStructuringElement     = pset.get<size_t           >("StructuringElement", 20);
+    fMorphWindow            = pset.get<size_t           >("FilterWindow",       10);
+    fThreshold              = pset.get<float            >("Threshold",         7.5);
+    fDiagnosticOutput       = pset.get<bool             >("DiagnosticOutput", false);
+    fFilterModeVec          = pset.get<std::vector<char>>("FilterModeVec",    std::vector<char>()={'d','e','g'});
 
     FragmentIDVec tempIDVec = pset.get< FragmentIDVec >("FragmentIDVec", FragmentIDVec());
 
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
-    fFilterModeVec          = {'d','e','g'};
+ //    fFilterModeVec          = {'g','g','g'};
 
     fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
-    fDetector               = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     cet::cpu_timer theClockFragmentIDs;
 
@@ -240,7 +239,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     theClockFragmentIDs.stop();
 
     double fragmentIDsTime = theClockFragmentIDs.accumulated_real_time();
-    
+
     cet::cpu_timer theClockReadoutIDs;
 
     theClockReadoutIDs.start();
@@ -260,7 +259,8 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
+void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
+                                          const artdaq::Fragment &fragment)
 {
     cet::cpu_timer theClockTotal;
 
@@ -268,7 +268,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);
-    
+
     size_t nBoardsPerFragment   = physCrateFragment.nBoards();
     size_t nChannelsPerBoard    = physCrateFragment.nChannelsPerBoard();
     size_t nSamplesPerChannel   = physCrateFragment.nSamplesPerChannel();
@@ -424,9 +424,9 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
                                                        pedCorDataVec,
                                                        3,
-                                                       fPedestalVals[channelOnBoard], 
-                                                       fFullRMSVals[channelOnBoard], 
-                                                       fTruncRMSVals[channelOnBoard], 
+                                                       fPedestalVals[channelOnBoard],
+                                                       fFullRMSVals[channelOnBoard],
+                                                       fTruncRMSVals[channelOnBoard],
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
 
@@ -434,7 +434,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 
             if (fDiagnosticOutput)
             {
-                if (widVec.empty()) std::cout << channelVec[chanIdx]  << "=" << fFullRMSVals[channelOnBoard] << " * ";
+                if (widVec.empty()) std::cout << channelVec[chanIdx] << "/" << chanIdx  << "=" << fFullRMSVals[channelOnBoard] << " * ";
                 else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
             }
         }
@@ -466,7 +466,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
 //
 //        inputWaveforms = fWaveLessCoherent;
 //    }
-    
+
 
     // Run the coherent filter
     denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedCorWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,

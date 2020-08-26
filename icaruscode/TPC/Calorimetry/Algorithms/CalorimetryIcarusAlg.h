@@ -17,7 +17,10 @@
 #include "larcore/Geometry/Geometry.h"
 #include <vector>
 
-namespace detinfo { class DetectorProperties; }
+namespace detinfo {
+  class DetectorClocksData;
+  class DetectorPropertiesData;
+}
 
 namespace recob {
   class Hit;
@@ -72,32 +75,55 @@ namespace calo{
     void   reconfigure(const fhicl::ParameterSet& pset)
       { reconfigure(fhicl::Table<Config>(pset, {})()); }
 
-    double dEdx_AMP(art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
-    double dEdx_AMP(recob::Hit const&  hit, double pitch, double T0=0) const;
-    double dEdx_AMP(double dQ, double time, double pitch, unsigned int plane, double T0=0) const;
-    double dEdx_AMP(double dQdx,double time, unsigned int plane, double T0=0) const;
+    double dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                    detinfo::DetectorPropertiesData const& detProp,
+                    art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
+    double dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                    detinfo::DetectorPropertiesData const& detProp,
+                    recob::Hit const&  hit, double pitch, double T0=0) const;
+    double dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                    detinfo::DetectorPropertiesData const& detProp,
+                    double dQ, double time, double pitch, unsigned int plane, double T0=0) const;
+    double dEdx_AMP(detinfo::DetectorClocksData const& clockData,
+                    detinfo::DetectorPropertiesData const& detProp,
+                    double dQdx,double time, unsigned int plane, double T0=0) const;
 
-    double dEdx_AREA(art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
-    double dEdx_AREA(recob::Hit const&  hit, double pitch, double T0=0) const;
-    double dEdx_AREA(double dQ,double time, double pitch, unsigned int plane, double T0=0) const;
-    double dEdx_AREA(double dQdx,double time, unsigned int plane, double T0=0) const;
+    double dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                     detinfo::DetectorPropertiesData const& detProp,
+                     art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
+    double dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                     detinfo::DetectorPropertiesData const& detProp,
+                     recob::Hit const&  hit, double pitch, double T0=0) const;
+    double dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                     detinfo::DetectorPropertiesData const& detProp,
+                     double dQ,double time, double pitch, unsigned int plane, double T0=0) const;
+    double dEdx_AREA(detinfo::DetectorClocksData const& clockData,
+                     detinfo::DetectorPropertiesData const& detProp,
+                     double dQdx,double time, unsigned int plane, double T0=0) const;
 
-double dEdx_SUMADC(art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
-    double dEdx_SUMADC(recob::Hit const&  hit, double pitch, double T0=0) const;
+    double dEdx_SUMADC(detinfo::DetectorClocksData const& clockData,
+                       detinfo::DetectorPropertiesData const& detProp,
+                       art::Ptr< recob::Hit >  hit, double pitch, double T0=0) const;
+    double dEdx_SUMADC(detinfo::DetectorClocksData const& clockData,
+                       detinfo::DetectorPropertiesData const& detProp,
+                       recob::Hit const&  hit, double pitch, double T0=0) const;
     double ElectronsFromADCPeak(double adc, unsigned short plane) const
     { return adc / fCalAmpConstants[plane]; }
 
     double ElectronsFromADCArea(double area, unsigned short plane) const
     { return area / fCalAreaConstants[plane]; }
 
-    double LifetimeCorrection(double time, double T0=0) const;
+    double LifetimeCorrection(detinfo::DetectorClocksData const& clockData,
+                              detinfo::DetectorPropertiesData const& detProp,
+                              double time, double T0=0) const;
 
   private:
 
     art::ServiceHandle<geo::Geometry const> geom;
-    const detinfo::DetectorProperties* detprop;
 
-    double dEdx_from_dQdx_e(double dQdx_e,double time, double T0=0) const;
+    double dEdx_from_dQdx_e(detinfo::DetectorClocksData const& clockData,
+                            detinfo::DetectorPropertiesData const& detProp,
+                            double dQdx_e,double time, double T0=0) const;
 
     std::vector< double > fCalAmpConstants;
     std::vector< double > fCalAreaConstants;

@@ -19,7 +19,6 @@
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
@@ -68,7 +67,8 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(const artdaq::Fragment&) override;
+    virtual void process_fragment(detinfo::DetectorClocksData const& clockData,
+                                  const artdaq::Fragment&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -165,7 +165,6 @@ private:
     std::unique_ptr<IFakeParticle>        fFakeParticleTool;
 
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
-    const detinfo::DetectorProperties*    fDetector;              //< Pointer to the detector properties
 };
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
@@ -207,14 +206,14 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fFilterModeVec         = {'d','e','g'};
 
     fGeometry              = art::ServiceHandle<geo::Geometry const>{}.get();
-    fDetector              = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     fFakeParticleTool      = art::make_tool<IFakeParticle>(pset.get<fhicl::ParameterSet>("FakeParticle"));
 
     return;
 }
 
-void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
+void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const& clockData,
+                                          const artdaq::Fragment &fragment)
 {
     // convert fragment to Nevis fragment
     icarus::PhysCrateFragment physCrateFragment(fragment);
@@ -280,7 +279,7 @@ void TPCDecoderFilter1D::process_fragment(const artdaq::Fragment &fragment)
     }
 
     // Overlay a fake particle on this array of waveforms
-    fFakeParticleTool->overlayFakeParticle(fPedSubtractedWaveforms);
+    fFakeParticleTool->overlayFakeParticle(clockData, fPedSubtractedWaveforms);
 
     // Run the coherent filter
     denoiser.removeCoherentNoise2D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,

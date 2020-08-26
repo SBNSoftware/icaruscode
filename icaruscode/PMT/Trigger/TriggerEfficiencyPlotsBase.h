@@ -916,8 +916,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   geo::GeometryCore const& geometry() const { return fGeom; }
   
   /// Returns the detector timings helper.
-  detinfo::DetectorTimings const& detTimings() const { return fDetTimings; }
-  
+  detinfo::DetectorTimings detTimings(detinfo::DetectorClocksData const& clockData) const { return detinfo::DetectorTimings{clockData}; }
+
   /// Returns the resolution of trigger timing clock [ns]
   nanoseconds triggerTimeResolution() const { return fTriggerTimeResolution; }
   
@@ -1112,6 +1112,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     std::size_t const thresholdIndex,
     TriggerGatesPerCryostat_t const& gates,
     EventInfo_t const& eventInfo,
+    detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
     ) const = 0;
   
@@ -1191,8 +1192,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
-  detinfo::DetectorClocks const& fDetClocks;
-  detinfo::DetectorTimings fDetTimings;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -1201,7 +1200,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   
   // --- BEGIN Internal variables ----------------------------------------------
-  
+  /// Detector clocks information that applies for the entire job.
+  detinfo::DetectorClocksData const fDetClocks;
+  detinfo::DetectorTimings const fDetTimings;
+
   /// Gate representing the time we expect light from beam interactions.
   icarus::trigger::OpticalTriggerGate const fBeamGate;
   

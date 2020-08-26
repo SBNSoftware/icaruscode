@@ -41,6 +41,8 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
@@ -206,10 +208,9 @@ void RecoWireROI::reconfigure(fhicl::ParameterSet const& p)
       }
     }
 
-    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-	
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop->NumberTimeSamples());
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detProp.NumberTimeSamples());
 }
 
 //-------------------------------------------------
@@ -248,8 +249,8 @@ void RecoWireROI::produce(art::Event& evt)
     
     raw::ChannelID_t channel = raw::InvalidChannelID; // channel number
 
-    auto const* detprop      = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    double      samplingRate = detprop->SamplingRate()/1000.;
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+    double      samplingRate = sampling_rate(clockData)/1000.;
     double      deconNorm    = fSignalServices.GetDeconNorm();
 
     // We'll need to set the transform size once we get the waveform and know its size
@@ -299,7 +300,7 @@ void RecoWireROI::produce(art::Event& evt)
             //   unless the FFT vector length changes (which it shouldn't for a run)
             if (!transformSize)
             {
-                fSignalServices.SetDecon(dataSize, channel);
+                fSignalServices.SetDecon(samplingRate, dataSize, channel);
                 transformSize = dataSize;
             }
             

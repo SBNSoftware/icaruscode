@@ -49,7 +49,6 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -118,10 +117,8 @@ private:
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    geo::GeometryCore const*             fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const*   fDetectorProperties;   ///< Detector properties service
-    const lariov::DetPedestalProvider&   fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
-    const lariov::ChannelStatusProvider& fChannelStatusAlg;     ///< Channel status
+    geo::GeometryCore const*           fGeometry;             ///< pointer to Geometry service
+    const lariov::DetPedestalProvider& fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 
 };
 
@@ -140,12 +137,10 @@ RawDigitFilterICARUS::RawDigitFilterICARUS(fhicl::ParameterSet const & pset, art
                       fBinAverageAlg(pset),
                       fCharacterizationAlg(pset.get<fhicl::ParameterSet>("CharacterizationAlg")),
                       fCorCorrectAlg(pset.get<fhicl::ParameterSet>("CorrelatedCorrectionAlg")),
-                      fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>()),
-                      fChannelStatusAlg(*lar::providerFrom<lariov::ChannelStatusService>())
+                      fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
 
     fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     configure(pset);
     produces<std::vector<raw::RawDigit> >();
@@ -187,13 +182,14 @@ void RawDigitFilterICARUS::configure(fhicl::ParameterSet const & pset)
 
     // Implement the tools for handling the responses
     const fhicl::ParameterSet& filterTools = pset.get<fhicl::ParameterSet>("FilterTools");
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
     for(const std::string& filterTool : filterTools.get_pset_names())
     {
         const fhicl::ParameterSet& filterToolParamSet = filterTools.get<fhicl::ParameterSet>(filterTool);
         size_t                     planeIdx           = filterToolParamSet.get<size_t>("Plane");
         fFilterToolMap.insert(std::pair<size_t,std::unique_ptr<icarus_tool::IFilter>>(planeIdx,art::make_tool<icarus_tool::IFilter>(filterToolParamSet)));
-                    
-        fFilterToolMap.at(planeIdx)->setResponse(fDetectorProperties->NumberTimeSamples(),1.,1.);
+
+        fFilterToolMap.at(planeIdx)->setResponse(detProp.NumberTimeSamples(),1.,1.);
     }
 }
 
@@ -244,7 +240,6 @@ void RawDigitFilterICARUS::produce(art::Event & event, art::ProcessingFrame cons
     if (digitVecHandle.isValid() && digitVecHandle->size()>0 )
     {
         unsigned int maxChannels    = fGeometry->Nchannels();
-        //unsigned int maxTimeSamples = fDetectorProperties->NumberTimeSamples();
 
         // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
         // what we want to do here. So we make a vector of pointers to the input raw digits and sort them
