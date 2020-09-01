@@ -61,6 +61,7 @@
 // CRT data products
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
@@ -130,6 +131,7 @@ namespace crt {
     art::InputTag fCRTSimHitProducerLabel;        ///< The name of the producer that created hits
     art::InputTag fCRTTrueHitProducerLabel;
     art::InputTag fCRTDetSimProducerLabel;
+    art::InputTag fCRTSimTrackProducerLabel;
     vector<int> fPDGs;                       ///< PDG code of particle we'll focus on
     vector<float> fMinMomenta;
     vector<float> fMaxMomenta;
@@ -142,6 +144,7 @@ namespace crt {
     TTree* fDetSimNtuple;
     TTree* fSimHitNtuple;
     TTree* fTrueCRTHitNtuple;
+    TTree* fSimTrackNtuple;
 
     // The comment lines with the @ symbols define groups in doxygen. 
     /// @name The variables that will go into both n-tuples.
@@ -287,21 +290,20 @@ namespace crt {
     float         fTrueHitTotPe;
     float         fTrueHitPeRms;
 
-    TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
-    TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
-    TH1F* fModMultHistD;   ///< true N D-modules hit / muon track
-
-    // note that the following four variables are not used so are being commented out here
-    //uint32_t fNmuTagC;     //N muon tracks producing >0 CRT triggers in C-subsystem
-    //uint32_t fNmuTagM;     //N muon tracks producing >0 CRT triggers in M-subsystem
-    //uint32_t fNmuTagD;     //N muon tracks producing >0 CRT triggers in D-subsystem
-    //uint32_t fNmuTagTot;
-    TH1F* fChanMultHistC;  //N FEB channels > threshold / muon track
-    TH1F* fChanMultHistM;  
-    TH1F* fChanMultHistD;
-    TH1F* fFEBMultHistC;   //N FEBs w/trigger / muon track
-    TH1F* fFEBMultHistM;
-    TH1F* fFEBMultHistD;
+    //CRTSimTrack vars
+    int   fNSimTrack;     ///< number of simulated CRT tracks for this event
+    float fSimTrackPE;
+    double fSimTrackT0;
+    float fSimTrackStart[3];
+    float fSimTrackEnd[3];
+    float fSimTrackL;
+    float fSimTrackTheta;
+    float fSimTrackPhi;
+    int   fNHitSimTrack;
+    float fSimTrackHitStart[4];
+    float fSimTrackHitEnd[4];
+    int   fSimTrackRegStart;
+    int   fSimTrackRegEnd;
 
     /// @}
     
@@ -331,6 +333,7 @@ namespace crt {
     , fCRTSimHitProducerLabel(p.get<art::InputTag>("CRTSimHitLabel","crthit"))
     , fCRTTrueHitProducerLabel(p.get<art::InputTag>("CRTTrueHitLabel","crttruehit"))
     , fCRTDetSimProducerLabel(p.get<art::InputTag>("CRTDetSimLabel","crtdaq"))
+    , fCRTSimTrackProducerLabel(p.get<art::InputTag>("CRTSimTrackLabel","crttrack"))
     , fPDGs(p.get<vector<int>>("PDGs"))
     , fMinMomenta(p.get<vector<float>>("MinMomenta"))
     , fMaxMomenta(p.get<vector<float>>("MaxMomenta"))
@@ -363,21 +366,7 @@ namespace crt {
     fDetSimNtuple        = tfs->make<TTree>("DetTree",          "MyCRTDetSim");
     fSimHitNtuple        = tfs->make<TTree>("HitTree",          "MyCRTSimHit");
     fTrueCRTHitNtuple    = tfs->make<TTree>("TrueCRTHitTree",   "CRT hits from truth info");
-
-    // Construct truth matching histograms
-    //fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
-    //fStripMultHistM   = tfs->make<TH1F>("StripMultM",";no. strips hit / module / #mu;",64,0,64);
-    //fStripMultHistD   = tfs->make<TH1F>("StripMultD",";no. strips hit / module / #mu;",64,0,64);
-    fModMultHistC     = tfs->make<TH1F>("ModMultC",";no. modules hit / #mu;",10,0,10);
-    fModMultHistM     = tfs->make<TH1F>("ModMultM",";no. modules hit / #mu;",10,0,10);
-    fModMultHistD     = tfs->make<TH1F>("ModMultD",";no. modules hit / #mu;",10,0,10);
-
-    fChanMultHistC    =tfs->make<TH1F>("ChanMultC",";no. FEB channels > threshold / FEB / #mu;",64,0,64);
-    fChanMultHistM    =tfs->make<TH1F>("ChanMultD",";no. FEB channels > threshold / FEB / #mu;",64,0,64);
-    fChanMultHistD    =tfs->make<TH1F>("ChanMultM",";no. FEB channels > threshold / FEB / #mu;",64,0,64);
-    fFEBMultHistC     =tfs->make<TH1F>("FEBMultC",";no. FEB triggers / #mu;",64,0,64);
-    fFEBMultHistM     =tfs->make<TH1F>("FEBMultD",";no. FEB triggers / #mu;",64,0,64);
-    fFEBMultHistD     =tfs->make<TH1F>("FEBMultM",";no. FEB triggers / #mu;",64,0,64);
+    fSimTrackNtuple      = tfs->make<TTree>("SimTrackTree",     "Simulated CRTTracks");
 
     // Define the branches of our event display n-tuple
     fCosmicDisplayNtuple->Branch("event",             &fEvent,               "event/I");
@@ -527,6 +516,21 @@ namespace crt {
     fTrueCRTHitNtuple->Branch("hitPe",       &fTrueHitPe);
     fTrueCRTHitNtuple->Branch("totPe",       &fTrueHitTotPe,    "totPe/F");
     fTrueCRTHitNtuple->Branch("rmsPe",       &fTrueHitPeRms,    "rmsPe/F");
+
+    fSimTrackNtuple->Branch("ntrack",   &fNSimTrack,        "ntrack/I");
+    fSimTrackNtuple->Branch("pe",       &fSimTrackPE,       "pe/F");
+    fSimTrackNtuple->Branch("t",        &fSimTrackT0,       "t/D");
+    fSimTrackNtuple->Branch("start",    fSimTrackStart,     "start[3]/F");
+    fSimTrackNtuple->Branch("end",      fSimTrackEnd,       "end[3]/F");
+    fSimTrackNtuple->Branch("l",        &fSimTrackL,        "l/F");
+    fSimTrackNtuple->Branch("theta",    &fSimTrackTheta,    "theta/F");
+    fSimTrackNtuple->Branch("phi",      &fSimTrackPhi,      "phi/F");
+    fSimTrackNtuple->Branch("nhit",     &fNHitSimTrack,     "nhit/I");
+    fSimTrackNtuple->Branch("hitstart", fSimTrackHitStart,  "hitstart[4]/F");
+    fSimTrackNtuple->Branch("hitend",   fSimTrackHitEnd,    "hitend[4]/F");
+    fSimTrackNtuple->Branch("regstart", &fSimTrackRegStart, "regstart/I");
+    fSimTrackNtuple->Branch("regend",   &fSimTrackRegEnd,   "regend/I");
+
 
 }
    
@@ -1317,7 +1321,65 @@ namespace crt {
     else
         mf::LogWarning("CRTSimAnalysis") << "true CRTHit products not found" << '\n';
 
+    //CRTSimTrack
+    art::Handle<vector<CRTTrack>> crtSimTrackHandle;
+    fTrueNHit = 0;
+    if (event.getByLabel(fCRTSimTrackProducerLabel, crtSimTrackHandle)) {
 
+        vector<art::Ptr<CRTTrack>> crtTracks;
+        art::fill_ptr_vector(crtTracks,crtSimTrackHandle);
+        fNSimTrack=crtTracks.size();
+
+        art::FindManyP<CRTHit> findManyHits(
+                crtSimTrackHandle, event, fCRTSimTrackProducerLabel);
+
+        mf::LogPrint("CRTSimAnalysis") << "found " << crtTracks.size() << " sim CRTTracks" << '\n';
+        for ( size_t itrk=0; itrk<crtTracks.size(); itrk++ )
+        {
+            auto const& trk = crtTracks[itrk];
+            fSimTrackPE = trk->peshit;
+            fSimTrackT0 = (double)trk->ts0_ns;
+            fSimTrackStart[0] = trk->x1_pos;
+            fSimTrackStart[1] = trk->y1_pos;
+            fSimTrackStart[2] = trk->z1_pos;
+            fSimTrackEnd[0]   = trk->x2_pos;
+            fSimTrackEnd[1]   = trk->y2_pos; 
+            fSimTrackEnd[2]   = trk->z2_pos;
+            fSimTrackL = trk->length;
+            fSimTrackTheta = trk->thetaxy;
+            fSimTrackPhi = trk->phizy;
+
+            auto const& trkhits = findManyHits.at(itrk);
+            fNHitSimTrack = (int)trkhits.size();
+            uint32_t tstart=UINT32_MAX;
+            uint32_t tend=0;
+            size_t ihit_start=0, ihit_end=0;
+            for(size_t ihit=0; ihit<trkhits.size(); ihit++){
+                if(trkhits[ihit]->ts0_ns<tstart) {
+                    ihit_start = ihit;
+                    tstart = trkhits[ihit]->ts0_ns;
+                }
+                if(trkhits[ihit]->ts0_ns>tend){
+                    ihit_end = ihit;
+                    tend = trkhits[ihit]->ts0_ns;
+                }
+            }//for track hits
+            fSimTrackHitStart[0] = trkhits[ihit_start]->x_pos;
+            fSimTrackHitStart[1] = trkhits[ihit_start]->y_pos;
+            fSimTrackHitStart[2] = trkhits[ihit_start]->z_pos;
+            fSimTrackHitStart[3] = tstart-1.6e6;
+            fSimTrackHitEnd[0] = trkhits[ihit_end]->x_pos;
+            fSimTrackHitEnd[1] = trkhits[ihit_end]->y_pos;
+            fSimTrackHitEnd[2] = trkhits[ihit_end]->z_pos;
+            fSimTrackHitEnd[3] = tend-1.6e6;
+            fSimTrackRegStart = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_start]->tagger);
+            fSimTrackRegEnd   = fCrtutils->AuxDetRegionNameToNum(trkhits[ihit_end]->tagger);
+            
+            fSimTrackNtuple->Fill();
+        }
+    }//if tracks found
+    else
+        mf::LogWarning("CRTSimAnalysis") << "no CRTTrack products not found" << '\n';
 
   } // CRTSimAnalysis::analyze()
   

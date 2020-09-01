@@ -75,6 +75,10 @@ standard_icarus_crtsimalg:
   # for now, adc signals are merged
   BiasTime: 50.0
 
+  # Birk's quenching
+  UseBirks: true
+  Kbirks: 12.6 # cm/GeV
+
 }
 
 icarus_crtsim:

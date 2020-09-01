@@ -1,14 +1,20 @@
 #include "prodsingle_common_icarus.fcl"
 
+services: {
+       @table::services
+       @table::icarus_single_induction_overburden_geometry_services
+       #@table::icarus_single_induction_nooverburden_geometry_services
+}
+
 process_name: SinglesGen
 
 outputs.out1.fileName: "prod_muon_4GeV_down_top_crt_icarus_%tc_gen.root"
 
 physics.producers.generator.PDG: [ 13 ]            # muon
 physics.producers.generator.PosDist: 0             # Flat position dist.
-physics.producers.generator.X0: [  -290.96 ]
+physics.producers.generator.X0: [  -240.0 ]
 physics.producers.generator.Y0: [ 640.0 ]
-physics.producers.generator.Z0: [ 0.0 ]
+physics.producers.generator.Z0: [ 500.0 ]
 physics.producers.generator.T0: [ 0.0 ]
 physics.producers.generator.SigmaX: [  0.0 ]      # x = (0, 256)
 physics.producers.generator.SigmaY: [ 0.0 ]      # y = (-116.5, 116.5)
