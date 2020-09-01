@@ -233,7 +233,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     else if (fDiagnosticOutput)
     {
         std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", # boards: " << std::dec << pair.second.size() << std::endl;
+        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " << pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
     }
 
     theClockFragmentIDs.stop();
@@ -310,11 +310,14 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
 //    database::ReadoutIDVec& boardIDVec = fragItr->second;
 
+    // Recover the crate name for this fragment
+    const std::string& crateName = fragItr->second.first;
+
     // Get the board ids for this fragment
-    database::ReadoutIDVec boardIDVec(fragItr->second.size());
+    database::ReadoutIDVec boardIDVec(fragItr->second.second.size());
 
     // Note we want these to be in "slot" order...
-    for(const auto& boardID : fragItr->second)
+    for(const auto& boardID : fragItr->second.second)
     {
         // Look up the channels associated to this board
         database::TPCReadoutBoardToChannelMap::const_iterator boardItr = fReadoutBoardToChannelMap.find(boardID);
@@ -394,7 +397,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
         if (fDiagnosticOutput)
         {
             std::cout << "********************************************************************************" << std::endl;
-            std::cout << "FragmentID: " << std::hex << fragmentID << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
+            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
             std::cout << std::endl;
         }
 
