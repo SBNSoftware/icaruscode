@@ -165,11 +165,11 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   , fLogCategory          (config.LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
-  , fDetClocks (*lar::providerFrom<detinfo::DetectorClocksService>())
-  , fDetTimings(fDetClocks)
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // cached
-  , fBeamGate(icarus::trigger::BeamGateMaker{ fDetClocks }(fBeamGateDuration))
+  , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
+  , fDetTimings{fDetClocks}
+  , fBeamGate(icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration))
   , fBeamGateOpt(
       fDetTimings.toOpticalTick(fDetTimings.BeamGateTime()),
       fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + fBeamGateDuration)
@@ -239,8 +239,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << fBeamGate << " (" << fBeamGateSim.first
-      << " -- " << fBeamGateSim.second << ")";
+    log << "\nBeam gate is " << fBeamGateSim.first << " -- " << fBeamGateSim.second;
   } // local block
 
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()
@@ -296,6 +295,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   //
   // 2. for each PMT threshold:
   //
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   for (auto&& [ iThr, thrPair, thrPlots ]
     : util::enumerate(fADCthresholds, fThresholdPlots)
   ) {
@@ -327,9 +327,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
       iThr, // settings index
       cryoGates,
       eventInfo,
+      clockData,
       selectedPlots
       );
-    
+
   } // for thresholds
 
   //

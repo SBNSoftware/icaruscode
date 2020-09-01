@@ -62,6 +62,13 @@
 # the only location of the channel mapping configuration.
 #
 #
+# Changes
+# --------
+#
+# 20200709 (petrillo@slac.stanford.edu)
+#   adopted split wire geometry fixed by
+#   Alessandro Menegolli (alessandro.menegolli@unipv.it)
+#
 
 
 BEGIN_PROLOG
@@ -280,8 +287,8 @@ icarus_split_induction_overburden_geometry: {
   @table::icarus_geometry_template
 
   Name: "icarus_splitwires"
-  GDML: "icarus_complete.gdml"
-  ROOT: "icarus_complete.gdml"
+  GDML: "icarus_complete_20200709.gdml"
+  ROOT: "icarus_complete_20200709.gdml"
 
   ChannelMapping: @local::icarus_split_induction_geometry_helper.Mapper
 
@@ -320,8 +327,8 @@ icarus_split_induction_nooverburden_geometry: {
   @table::icarus_geometry_template
 
   Name: "icarus_splitwires"
-  GDML: "icarus_complete_no_overburden.gdml"
-  ROOT: "icarus_complete_no_overburden.gdml"
+  GDML: "icarus_complete_20200709_no_overburden.gdml"
+  ROOT: "icarus_complete_20200709_no_overburden.gdml"
 
   ChannelMapping: @local::icarus_split_induction_geometry_helper.Mapper
 

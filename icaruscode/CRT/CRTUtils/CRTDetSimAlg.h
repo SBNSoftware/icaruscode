@@ -7,7 +7,7 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 
 //larsoft includes
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/ElecClock.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/Geometry.h"
@@ -75,7 +75,8 @@ class icarus::crt::CRTDetSimAlg {
 
     void ClearTaggers();
     //given a vector of AuxDetIDEs, fill a map of tagger objects with intermediate ChannelData + aux info
-    void FillTaggers(const uint32_t adid, const uint32_t adsid, const vector<AuxDetIDE>& ides);
+    void FillTaggers(detinfo::DetectorClocksData const& clockData,
+                     const uint32_t adid, const uint32_t adsid, const vector<AuxDetIDE>& ides);
     vector<pair<CRTData, vector<AuxDetIDE>>> CreateData();
 
 

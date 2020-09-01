@@ -33,11 +33,11 @@ MCAssociations::MCAssociations(fhicl::ParameterSet const& config)
   {}
 
 void MCAssociations::setup(const geo::GeometryCore&           geometry,
-                           const detinfo::DetectorProperties& detectorProperties,
+                           const detinfo::DetectorPropertiesData& detectorProperties,
                            TDirectory*                        outDir)
 {
     fGeometry           = &geometry;
-    fDetectorProperties = &detectorProperties;
+    fDetectorProperties = std::make_unique<detinfo::DetectorPropertiesData const>(detectorProperties);
     fDir                = outDir->mkdir(fLocalDirName.c_str());
 }
 
@@ -119,9 +119,6 @@ void MCAssociations::doTrackHitMCAssociations(gallery::Event& event)
     // First step is to recover the MCTruth object vector...
     const auto& mcParticleHandle = event.getValidHandle<std::vector<simb::MCParticle>>(fMCTruthProducerLabel);
     
-    // We also need to recover the hit producer info
-    const auto& hitHandle = event.getValidHandle<std::vector<recob::Hit>>(fHitProducerLabel);
-    
     // Now see how many reco hits might be associated to this particle
     art::FindMany<recob::Hit, anab::BackTrackerHitMatchingData> hitsPerMCParticle(mcParticleHandle, event, fAssnsProducerLabel);
     
@@ -133,7 +130,7 @@ void MCAssociations::doTrackHitMCAssociations(gallery::Event& event)
     PartToHitVecMap partToHitVecMap;
 
     // Loop through the particles
-    for(int mcIdx = 0; mcIdx < mcParticleHandle->size(); mcIdx++)
+    for(size_t mcIdx = 0; mcIdx < mcParticleHandle->size(); mcIdx++)
     {
         try
         {
@@ -171,7 +168,7 @@ void MCAssociations::doTrackHitMCAssociations(gallery::Event& event)
     TrackToHitsVecMap      trackToHitsVecMap;
 
     // Loop through the tracks and associate via the hits to MCParticles
-    for(int trkIdx = 0; trkIdx < trackHandle->size(); trkIdx++)
+    for(size_t trkIdx = 0; trkIdx < trackHandle->size(); trkIdx++)
     {
         const recob::Track& track = trackHandle->at(trkIdx);
         
@@ -217,7 +214,7 @@ void MCAssociations::doTrackHitMCAssociations(gallery::Event& event)
         float               efficiency(0.);
         float               completeness(0.);
         float               purity(0.);
-        int                 numTrackHits(0);
+        size_t              numTrackHits(0);
         
         // Here we find the best matched track to the MCParticle.
         // Nothing exciting, most hits wins sort of thing...
@@ -270,7 +267,7 @@ void MCAssociations::doTrackHitMCAssociations(gallery::Event& event)
         fDeltaNHits->Fill(numTrackHits - int(partToHitVecMap[&primaryParticle].size()), 1.);
 
         // Loop through the particles again to histogram some secondary info...
-        for(int mcIdx = 0; mcIdx < mcParticleHandle->size(); mcIdx++)
+        for(size_t mcIdx = 0; mcIdx < mcParticleHandle->size(); mcIdx++)
         {
             try
             {
@@ -364,7 +361,7 @@ double MCAssociations::length(const simb::MCParticle& part, double dx,
                               unsigned int tpc, unsigned int cstat) const
 {
     // Need the readout window size...
-    double readOutWindowSize = fDetectorProperties->ReadOutWindowSize();
+  //    double readOutWindowSize = fDetectorProperties->ReadOutWindowSize();
     
     double result = 0.;
     TVector3 disp;

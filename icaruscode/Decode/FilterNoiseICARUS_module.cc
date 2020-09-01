@@ -40,8 +40,7 @@
 #include "tbb/concurrent_vector.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
@@ -73,19 +72,23 @@ public:
     using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
 
     // Function to do the work
-    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
+    void processSingleFragment(size_t,
+                               detinfo::DetectorClocksData const& clockData,
+                               art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
 
 private:
- 
-    class multiThreadFragmentProcessing 
+
+    class multiThreadFragmentProcessing
     {
     public:
         multiThreadFragmentProcessing(FilterNoiseICARUS const&        parent,
-                                      art::Handle<artdaq::Fragments>& fragmentsHandle, 
+                                      detinfo::DetectorClocksData const& clockData,
+                                      art::Handle<artdaq::Fragments>& fragmentsHandle,
                                       ConcurrentRawDigitCol&          rawDigitCollection,
                                       ConcurrentRawDigitCol&          rawRawDigitCollection,
                                       ConcurrentRawDigitCol&          coherentCollection)
             : fFilterNoiseICARUS(parent),
+              fClockData{clockData},
               fFragmentsHandle(fragmentsHandle),
               fRawDigitCollection(rawDigitCollection),
               fRawRawDigitCollection(rawRawDigitCollection),
@@ -95,10 +98,11 @@ private:
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fFilterNoiseICARUS.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
+                fFilterNoiseICARUS.processSingleFragment(idx, fClockData, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
         }
     private:
         const FilterNoiseICARUS&        fFilterNoiseICARUS;
+      detinfo::DetectorClocksData const& fClockData;
         art::Handle<artdaq::Fragments>& fFragmentsHandle;
         ConcurrentRawDigitCol&          fRawDigitCollection;
         ConcurrentRawDigitCol&          fRawRawDigitCollection;
@@ -130,7 +134,6 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                     fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const*           fDetectorProperties;   ///< Detector properties service
 };
 
 DEFINE_ART_MODULE(FilterNoiseICARUS)
@@ -146,9 +149,7 @@ FilterNoiseICARUS::FilterNoiseICARUS(fhicl::ParameterSet const & pset, art::Proc
                       art::ReplicatedProducer(pset, frame),
                       fNumEvent(0)
 {
-
     fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
 
     configure(pset);
 
@@ -268,9 +269,11 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
     ConcurrentRawDigitCol coherentRawDigits;
 
     // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-    multiThreadFragmentProcessing fragmentProcessing(*this, 
-                                                     daq_handle, 
-                                                     concurrentRawDigits, 
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
+    multiThreadFragmentProcessing fragmentProcessing(*this,
+                                                     clockData,
+                                                     daq_handle,
+                                                     concurrentRawDigits,
                                                      concurrentRawRawDigits,
                                                      coherentRawDigits);
 
@@ -319,7 +322,8 @@ void FilterNoiseICARUS::produce(art::Event & event, art::ProcessingFrame const&)
     return;
 }
 
-void FilterNoiseICARUS::processSingleFragment(size_t                         idx, 
+void FilterNoiseICARUS::processSingleFragment(size_t                         idx,
+                                              detinfo::DetectorClocksData const& clockData,
                                               art::Handle<artdaq::Fragments> fragmentHandle,
                                               ConcurrentRawDigitCol&         rawDigitCollection,
                                               ConcurrentRawDigitCol&         rawRawDigitCollection,
@@ -338,7 +342,7 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     IDecoderFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
-    decoderTool->process_fragment(*fragmentPtr);
+    decoderTool->process_fragment(clockData, *fragmentPtr);
 
     // Useful numerology
     // convert fragment to Nevis fragment
@@ -357,7 +361,6 @@ void FilterNoiseICARUS::processSingleFragment(size_t                         idx
     // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
     const icarus_signal_processing::VectorFloat  locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
     const icarus_signal_processing::VectorInt&   channelVec = decoderTool->getChannelIDs();
-    
 
     saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(), channelVec, rawDigitCollection);
 
@@ -379,31 +382,34 @@ void FilterNoiseICARUS::saveRawDigits(const icarus_signal_processing::ArrayFloat
                                       const icarus_signal_processing::VectorInt&   channelVec,
                                       ConcurrentRawDigitCol&                       rawDigitCol) const
 {
-    cet::cpu_timer theClockSave;
-
-    theClockSave.start();
-
-    raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
-
-    mf::LogDebug("FilterNoiseICARUS") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
-
-    // Loop over the channels to recover the RawDigits after filtering
-    for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+    if (!dataArray.empty())
     {
-        const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
+        cet::cpu_timer theClockSave;
 
-        // Need to convert from float to short int
-        std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+        theClockSave.start();
 
-        ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
-        newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
-    }//loop over channel indices
+        raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 
-    theClockSave.stop();
+        mf::LogDebug("FilterNoiseICARUS") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
 
-    double totalTime = theClockSave.accumulated_real_time();
+        // Loop over the channels to recover the RawDigits after filtering
+        for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+        {
+            const icarus_signal_processing::VectorFloat& dataVec = dataArray[chanIdx];
 
-    mf::LogDebug("FilterNoiseICARUS") << "    --> done with save, time: " << totalTime << std::endl;
+            // Need to convert from float to short int
+            std::transform(dataVec.begin(),dataVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+
+            ConcurrentRawDigitCol::iterator newObjItr = rawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
+            newObjItr->SetPedestal(pedestalVec[chanIdx],rmsVec[chanIdx]);
+        }//loop over channel indices
+
+        theClockSave.stop();
+
+        double totalTime = theClockSave.accumulated_real_time();
+
+        mf::LogDebug("FilterNoiseICARUS") << "    --> done with save, time: " << totalTime << std::endl;
+    }
 
     return;
 }

@@ -1,4 +1,3 @@
-
 #include "icaruscode/Analysis/tools/IRawDigitHistogramTool.h"
 
 #include "fhiclcpp/ParameterSet.h"
@@ -12,6 +11,7 @@
 
 #include "larcore/Geometry/Geometry.h"
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
+#include "lardataalg/DetectorInfo/DetectorClocks.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
@@ -75,7 +75,9 @@ public:
      *  @param TFileService   handle to the TFile service
      *  @param string         subdirectory to store the hists in
      */
-    void initializeHists(art::ServiceHandle<art::TFileService>&, const std::string&) override;
+    void initializeHists(detinfo::DetectorClocksData const& clockData,
+                         detinfo::DetectorPropertiesData const& detProp,
+                         art::ServiceHandle<art::TFileService>&, const std::string&) override;
     
     /**
      *  @brief Interface for method to executve at the end of run processing
@@ -87,10 +89,15 @@ public:
     /**
      *  @brief Interface for filling histograms
      */
-    void fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec&, const IRawDigitHistogramTool::SimChannelMap&) const override;
+    void fillHistograms(const detinfo::DetectorClocksData& clockData,
+                        const detinfo::DetectorPropertiesData& detProp,
+                        const IRawDigitHistogramTool::RawDigitPtrVec&,
+                        const IRawDigitHistogramTool::SimChannelMap&) const override;
     
 private:
-    void filterFFT(std::vector<short>&, raw::ChannelID_t, size_t, size_t, float, bool) const;
+    void filterFFT(const detinfo::DetectorClocksData& clockData,
+                   const detinfo::DetectorPropertiesData& detProp,
+                   std::vector<short>&, raw::ChannelID_t, size_t, size_t, float, bool) const;
 
     // Fcl parameters.
     std::vector<size_t>                  fLoWireByPlane;    ///< Low wire for individual wire histograms
@@ -131,7 +138,6 @@ private:
     // Useful services, keep copies for now (we can update during begin run periods)
     const geo::GeometryCore&                 fGeometry;             ///< pointer to Geometry service
     icarusutil::SignalShapingICARUSService&  fSignalServices;       ///< The signal shaping service
-    const detinfo::DetectorProperties*       fDetectorProperties;   ///< Detector properties service
     const lariov::DetPedestalProvider&       fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
     
@@ -148,10 +154,9 @@ BasicRawDigitAnalysis::BasicRawDigitAnalysis(fhicl::ParameterSet const & pset) :
     fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-
     // Now set up our plans for doing the convolution
-    int numberTimeSamples = fDetectorProperties->NumberTimeSamples();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    int numberTimeSamples = detProp.NumberTimeSamples();
 
     fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numberTimeSamples);
     
@@ -185,7 +190,9 @@ void BasicRawDigitAnalysis::configure(fhicl::ParameterSet const & pset)
 
 //----------------------------------------------------------------------------
 /// Begin job method.
-void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService>& tfs, const std::string& dirName)
+void BasicRawDigitAnalysis::initializeHists(detinfo::DetectorClocksData const& clockData,
+                                            detinfo::DetectorPropertiesData const& detProp,
+                                            art::ServiceHandle<art::TFileService>& tfs, const std::string& dirName)
 {
     // Make a directory for these histograms
     art::TFileDirectory dir = tfs->mkdir(dirName.c_str());
@@ -195,8 +202,8 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     // is drawn.
     
     // hijack hists here
-    double sampleRate  = fDetectorProperties->SamplingRate();
-    double readOutSize = fDetectorProperties->ReadOutWindowSize();
+    double sampleRate  = sampling_rate(clockData);
+    double readOutSize = detProp.ReadOutWindowSize();
     double maxFreq     = 1.e6 / (2. * sampleRate);
     size_t numSamples  = readOutSize / 2;
     
@@ -314,7 +321,9 @@ void BasicRawDigitAnalysis::initializeHists(art::ServiceHandle<art::TFileService
     return;
 }
     
-void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec,
+void BasicRawDigitAnalysis::fillHistograms(const detinfo::DetectorClocksData& clockData,
+                                           const detinfo::DetectorPropertiesData& detProp,
+                                           const IRawDigitHistogramTool::RawDigitPtrVec& rawDigitPtrVec,
                                            const IRawDigitHistogramTool::SimChannelMap&  channelMap) const
 {
     // Sadly, the RawDigits come to us in an unsorted condition which is not optimal for
@@ -407,7 +416,7 @@ void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigi
         // Recover the database version of the pedestal
         float pedestal = fPedestalRetrievalAlg.PedMean(channel);
         
-        filterFFT(rawadc, channel, plane, wire, pedestal, hasSignal);
+        filterFFT(clockData, detProp, rawadc, channel, plane, wire, pedestal, hasSignal);
         
         // Only rest if no signal on wire
         if (!hasSignal)
@@ -438,10 +447,14 @@ void BasicRawDigitAnalysis::fillHistograms(const IRawDigitHistogramTool::RawDigi
     return;
 }
     
-void BasicRawDigitAnalysis::filterFFT(std::vector<short>& rawadc, raw::ChannelID_t channel, size_t plane, size_t wire, float pedestal, bool hasSignal) const
+void BasicRawDigitAnalysis::filterFFT(detinfo::DetectorClocksData const& clockData,
+                                      detinfo::DetectorPropertiesData const& detProp,
+                                      std::vector<short>& rawadc,
+                                      raw::ChannelID_t channel,
+                                      size_t plane, size_t wire, float pedestal, bool hasSignal) const
 {
-    double sampleRate  = fDetectorProperties->SamplingRate();
-    double readOutSize = fDetectorProperties->ReadOutWindowSize();
+    double sampleRate  = sampling_rate(clockData);
+    double readOutSize = detProp.ReadOutWindowSize();
     //       double binSize     = sampleFreq / readOutSize;
     
     // Step one is to setup and then get the FFT transform of the input waveform

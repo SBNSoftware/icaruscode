@@ -1,4 +1,5 @@
 #include "services_icarus.fcl"
+#include "simulationservices_icarus.fcl"
 
 services:
 {
@@ -45,6 +46,22 @@ physics :{
             // Make available parameters via Jsonnet's std.extVar()
             params: {
             }
+            structs: {
+              # load values from simulationservices_icarus.fcl
+              # Longitudinal diffusion constant [cm2/ns]
+              DL: @local::icarus_largeantparameters.LongitudinalDiffusion
+
+              # Transverse diffusion constant [cm2/ns]
+              DT: @local::icarus_largeantparameters.TransverseDiffusion
+
+              # load values from services_icarus.fcl
+              # Electron lifetime [microseconds]
+              lifetime: @local::icarus_detproperties.Electronlifetime
+
+              # Electron drift speed, assumes a certain applied E-field [mm/us]
+              # driftSpeed: 1.565
+            }
+
          }
       }
    }

@@ -115,7 +115,10 @@ namespace database
     //-----------------------------------------------------
     
     using ChannelVec                  = std::vector<unsigned int>;
-    using TPCReadoutBoardToChannelMap = std::map<unsigned int, ChannelVec>;
+    using SlotChannelVecPair          = std::pair<unsigned int, ChannelVec>;
+    using TPCReadoutBoardToChannelMap = std::map<unsigned int, SlotChannelVecPair>;
+
+    const unsigned int CHANNELSPERBOARD = 64;
 
     inline int BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap)
     {
@@ -138,15 +141,29 @@ namespace database
 
             if (tuple != NULL)
             {
-                unsigned int readoutBoardID = getLongValue(tuple, 2, &error);
+                unsigned int readoutBoardID   = getLongValue(tuple, 2, &error);
 
                 if (error) throw std::runtime_error("Encountered error when trying to read Board ReadoutID");
+
+                if (rbChanMap.find(readoutBoardID) == rbChanMap.end())
+                {
+                    unsigned int readoutBoardSlot = getLongValue(tuple, 4, &error);
+
+                    if (error) throw std::runtime_error("Encountered error when trying to read Board Readout slot");
+
+                    rbChanMap[readoutBoardID].first = readoutBoardSlot;
+                    rbChanMap[readoutBoardID].second.resize(CHANNELSPERBOARD);
+                }
+
+                unsigned int channelNum = getLongValue(tuple, 5, &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to read channel number");
 
                 unsigned int channelID = getLongValue(tuple, 0, &error);
 
                 if (error) throw std::runtime_error("Encountered error when recovering the channel ID list");
 
-                rbChanMap[readoutBoardID].emplace_back(channelID);
+                rbChanMap[readoutBoardID].second[channelNum] = channelID;
             }
         }
 
@@ -249,6 +266,110 @@ namespace database
 
 
     //******************* PMT Channel Mapping ***********************
+
+    // Ultimately, we want to map between Fragment IDs and a pair of numbers - the channel in the fragment and the LArSoft channel ID
+    using DigitizerChannelChannelIDPair    = std::pair<size_t,size_t>;
+    using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
+    using FragmentToDigitizerChannelMap    = std::map<size_t,DigitizerChannelChannelIDPairVec>;
+
+    inline int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap)
+    {
+        // clearing is cleansing
+        fragmentToDigitizerChannelMap.clear();
+
+        // We need a mapping between a fragmentID and the digitizer label which will be available in the database
+        using DigitizerToFragmentMap = std::map<std::string,size_t>;
+
+        DigitizerToFragmentMap digitizerToFragmentMap;
+
+        // At the time of writing the database does not contain the fragment IDs, it contains the digitizer name... sigh... so we build a map here
+        // Build the fragment ID to digitizer map by hand
+        digitizerToFragmentMap["WW-TOP-A"] = 0;
+        digitizerToFragmentMap["WW-TOP-B"] = 1;
+        digitizerToFragmentMap["WW-TOP-C"] = 2;
+        digitizerToFragmentMap["WW-BOT-A"] = 3;
+        digitizerToFragmentMap["WW-BOT-B"] = 4;
+        digitizerToFragmentMap["WW-BOT-C"] = 5;
+        digitizerToFragmentMap["WE-TOP-A"] = 6;
+        digitizerToFragmentMap["WE-TOP-B"] = 7;
+        digitizerToFragmentMap["WE-TOP-C"] = 8;
+        digitizerToFragmentMap["WE-BOT-A"] = 9;
+        digitizerToFragmentMap["WE-BOT-B"] = 10;
+        digitizerToFragmentMap["WE-BOT-C"] = 11;
+        digitizerToFragmentMap["EW-TOP-A"] = 12;
+        digitizerToFragmentMap["EW-TOP-B"] = 13;
+        digitizerToFragmentMap["EW-TOP-C"] = 14;
+        digitizerToFragmentMap["EW-BOT-A"] = 15;
+        digitizerToFragmentMap["EW-BOT-B"] = 16;
+        digitizerToFragmentMap["EW-BOT-C"] = 17;
+        digitizerToFragmentMap["EE-TOP-A"] = 18;
+        digitizerToFragmentMap["EE-TOP-B"] = 19;
+        digitizerToFragmentMap["EE-TOP-C"] = 20;
+        digitizerToFragmentMap["EE-BOT-A"] = 21;
+        digitizerToFragmentMap["EE-BOT-B"] = 22;
+        digitizerToFragmentMap["EE-BOT-C"] = 23;
+
+//        std::cout << "PMT local map has " << digitizerToFragmentMap.size() << " rows" << std::endl;
+//        for(const auto& mapPair : digitizerToFragmentMap) std::cout << "  - label: " << mapPair.first << ", fragment: " << mapPair.second << ", size: " << mapPair.first.size() << std::endl;
+
+        // Recover the information from the database on the mapping 
+        const std::string  name("icarus_hw_readoutboard");
+        const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+        const std::string  dataType("pmt_placements");
+        Dataset            dataset;
+
+        // Recover the data from the database
+        int error = GetDataset(name,dburl,dataType,dataset);
+
+        // If there was an error the function above would have printed a message so bail out
+        if (error) throw(std::exception());
+
+        // Ok, now we can start extracting the information
+        // We do this by looping through the database and building the map from that
+        for(int row = 1; row < getNtuples(dataset); row++)
+        {
+            // Recover the row
+            Tuple tuple = getTuple(dataset, row);
+
+            if (tuple != NULL)
+            {
+                char digitizerBuffer[10];
+
+                // Recover the digitizer label first 
+	            getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer label");
+
+	            std::string digitizerLabel(digitizerBuffer, 8); //sizeof(digitizerBuffer));
+
+                // Now recover the digitizer channel number
+                unsigned int digitizerChannelNo = getLongValue(tuple, 9, &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to recover the PMT digitizer channel number");
+
+                // Finally, get the LArsoft channel ID
+                unsigned int channelID = getLongValue(tuple, 17, &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
+
+//                std::cout << "  >> Searching " << digitizerToFragmentMap.size() << " rows for " << digitizerLabel << ", size; " << digitizerLabel.size() << std::endl;
+
+                // Do we have corresponence?
+                if (digitizerToFragmentMap.find(digitizerLabel) == digitizerToFragmentMap.end())
+                {
+                    std::cout << "No match in map for label: " << digitizerLabel << std::endl;
+                    throw std::runtime_error("Could not find fragment ID corresponding to digitizer label");
+                }
+
+                // Fill the map
+                fragmentToDigitizerChannelMap[digitizerToFragmentMap[digitizerLabel]].emplace_back(digitizerChannelNo,channelID);
+
+                releaseTuple(tuple);
+            }
+        }
+
+        return error;
+    }
 
     //---------------------------------------------------------------
     // The aim of this function is to build a map between the

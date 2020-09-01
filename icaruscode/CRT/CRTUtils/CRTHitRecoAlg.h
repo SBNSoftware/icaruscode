@@ -1,4 +1,3 @@
-
 #ifndef CRTHITRECOALG_H_SEEN
 #define CRTHITRECOALG_H_SEEN
 ////////////////////////////////////////////////////////////////////
@@ -27,8 +26,6 @@
 #include "lardataobj/RecoBase/Track.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 
@@ -109,9 +106,8 @@ class icarus::crt::CRTHitRecoAlg {
   //constructors
   CRTHitRecoAlg(const Config& config);
   CRTHitRecoAlg(const fhicl::ParameterSet& pset) :
-    CRTHitRecoAlg(fhicl::Table<Config>(pset, {})()) {}
-  CRTHitRecoAlg();  //default copy constructor
-  ~CRTHitRecoAlg(); //default desctructor
+    CRTHitRecoAlg{fhicl::Table<Config>{pset}()} {}
+  CRTHitRecoAlg();
 
   //configure module from fcl file
   void reconfigure(const Config& config);
@@ -125,11 +121,7 @@ class icarus::crt::CRTHitRecoAlg {
 
  private:
 
-  //pointers to services
   geo::GeometryCore const* fGeometryService;
-  detinfo::DetectorClocks const* fDetectorClocks;
-  detinfo::DetectorProperties const* fDetectorProperties;
-  detinfo::ElecClock fTrigClock;
 
   CRTCommonUtils* fCrtutils;
 

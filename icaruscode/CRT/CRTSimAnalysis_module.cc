@@ -11,7 +11,6 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -340,13 +339,9 @@ namespace crt {
     , bt(p.get<fhicl::ParameterSet>("CRTBackTrack"))
     , fCrtutils(new CRTCommonUtils())
   {
-    // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    // The same for detector TDC clock services.
-    //fTimeService = lar::providerFrom<detinfo::DetectorClocksService>();
-    // Access to detector properties.
-    const detinfo::DetectorProperties* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTriggerOffset = detprop->TriggerOffset();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+    fTriggerOffset = sampling_rate(clockData);
   }
   
   //-----------------------------------------------------------------------
@@ -730,6 +725,7 @@ namespace crt {
 	// A particle has a trajectory, consisting of a set of
 	// 4-positions and 4-mommenta.
 	fSimHits = particle.NumberTrajectoryPoints();
+        if(fSimHits==1) continue;
 
 	// For trajectories, as for vectors and arrays, the first
 	// point is #0, not #1.
@@ -775,8 +771,6 @@ namespace crt {
 
         int oldreg = -1;
 
-        MF_LOG_DEBUG("CRT") << "about to loop over trajectory points" << '\n';
-
         //loop over trajectory points
         for (unsigned int i=0; i<fSimHits; i++){
                 const TLorentzVector& pos = particle.Position(i); // 4-position in World coordinates
@@ -798,7 +792,6 @@ namespace crt {
                 // Regions info
                 // Check if trajectory points are in cryostats (active + inactve LAr ) 
                 if(cryo0.ContainsPosition(point)) {
-
                         active0 = tpc00.ContainsPosition(point);
                         active1 = tpc01.ContainsPosition(point);
                         activenext0 = tpc00.ContainsPosition(pointnext);
@@ -818,6 +811,9 @@ namespace crt {
                         if (!cryo0.ContainsPosition(pointnext) || (oldreg==10&&(activenext0||activenext1))
                             || i==fSimHits-1
                             || (active0 && !activenext0) || (active1&&!activenext1) ){
+
+                                if (!cryo0.ContainsPosition(pointnext))
+                                    oldreg=-1;
 
                                 fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
                                 fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
@@ -841,6 +837,9 @@ namespace crt {
                                     fRegRegions.push_back(10);
                                     fRegInactive++;
                                 }
+                                if(fRegExitXYZT.size()!=fRegEntryXYZT.size())
+                                    std::cout << "entry/exit point size mismatch! " << 
+                                              fRegEntryXYZT.size() << " vs. " << fRegExitXYZT.size() << std::endl;
                                 fRegdL.push_back(sqrt(pow(fRegExitXYZT[fNReg][0]-fRegEntryXYZT[fNReg][0],2)
                                                     +pow(fRegExitXYZT[fNReg][1]-fRegEntryXYZT[fNReg][1],2)
                                                     +pow(fRegExitXYZT[fNReg][2]-fRegEntryXYZT[fNReg][2],2)));
@@ -862,7 +861,6 @@ namespace crt {
 
                 // if this point in the other cryostat
                 if(cryo1.ContainsPosition(point)) {
- 
                         //check if this or next points are in active volumes
                         active0 = tpc10.ContainsPosition(point);
                         active1 = tpc11.ContainsPosition(point);
@@ -882,6 +880,9 @@ namespace crt {
                         if (!cryo1.ContainsPosition(pointnext) || (oldreg==12&&(activenext0||activenext1))
                             || i==fSimHits-1
                             || (active0 && !activenext0) || (active1&&!activenext1) ){
+
+                                if (!cryo1.ContainsPosition(pointnext))
+                                    oldreg=-1;
 
                                 fRegExitXYZT.push_back({pos.X(),pos.Y(),pos.Z(),pos.T()});
                                 fRegExitPE.push_back({mom.Px(),mom.Py(),mom.Pz(),mom.E()});
@@ -955,7 +956,7 @@ namespace crt {
 	// we loop over the AuxDetSimChannel objects in the event. 
 	// Note all volumes are included, not just ones with energy deps
 	for ( auto const& channel : (*auxDetSimChannelHandle) )
-	{  
+	{
 	    // Get vector of hits in this AuxDet channel
 	    auto const& auxDetIDEs = channel.AuxDetIDEs();
 
@@ -968,16 +969,25 @@ namespace crt {
 		    if ( ide.energyDeposited * 1.0e6 < 50 ) continue; 
 
                     size_t adid = channel.AuxDetID();
+                    //size_t adsid = channel.AuxDetSensitiveID();
                     fADType.push_back(fCrtutils->GetAuxDetTypeCode(adid));
                     fAuxDetReg.push_back(
                        fCrtutils->AuxDetRegionNameToNum(fCrtutils->GetAuxDetRegion(adid)));
 
                     // What is the distance from the hit (centroid of the entry
                     // and exit points) to the readout end?
-                    //double trueX = (ide.entryX + ide.exitX) / 2.0;
-                    //double trueY = (ide.entryY + ide.exitY) / 2.0;
-                    //double trueZ = (ide.entryZ + ide.exitZ) / 2.0;
+                    /*double trueX = (ide.entryX + ide.exitX) / 2.0;
+                    double trueY = (ide.entryY + ide.exitY) / 2.0;
+                    double trueZ = (ide.entryZ + ide.exitZ) / 2.0;
                     //double trueT = (ide.entryT + ide.exitT) / 2.0;
+                    double pos[3] = {trueX,trueY,trueZ};
+                    size_t chanad, chanads;
+                    int32_t adchan = fGeometryService->PositionToAuxDetChannel(pos,chanad,chanads);
+                    std::cout << "retrieved AuxDetChannel from position (" << trueX << ", " << trueY
+                              << ", " << trueZ << ")" << '\n'
+                              << "   true AuxDetID, AuxDetSensitiveID: " << adid << ", " << adsid << '\n'
+                              << "   from map-> chan, adid, adsid: " << adchan << ", " << chanad
+                              << ", " << chanads << std::endl;*/
 
                     //calculate track length in strip
 		    double dx = ide.entryX-ide.exitX;

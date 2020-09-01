@@ -21,8 +21,26 @@ icarus_hitfinder:
   MaxWidthMult:  3.
   FittingRange:  35
   IntegratingRange: 10
+InvertInd1:   1
 }
+mixed_hitfinder:
+{
+  module_type:         "ICARUSHitFinder"
+  CalDataModuleLabel: "decon1droi"
 
+  ThetaAngle:         0
+  #PeakFitter:           @local::peakfitter_ICARUS
+  CandidateHits:        @local::candhitfinder_ICARUS
+  MaxMultiHit:          3                # maximum hits for multi fit
+  Chi2NDF:              10.              # maximum Chisquared / NDF allowed for a hit to be saved (Set very high by default)
+  LongPulseWidth:       [ 16, 16, 16]      # max widths for hits in long pulse trains
+  LongMaxHits:          [  10,  10,  10]      # max number hits in long pulse trains
+  MinWidth:      1.
+  MaxWidthMult:  3.
+  FittingRange:  35
+  IntegratingRange: 10
+InvertInd1:  0
+}
 icarus_hitselector:
 {
   module_type:             "HitSelector"
@@ -57,17 +75,17 @@ gaus_hitfinder_icarus.LongPulseWidth:                                           
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.Plane:                  0
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane0.DilationThreshold:      8
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.Plane:                  1
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane1.DilationThreshold:      8
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2:                        @local::candhitfinder_morphological
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.Plane:                  2
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaTicks:          4
-gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          1.5
+gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.MinDeltaPeaks:          2.5
 gaus_hitfinder_icarus.HitFinderToolVec.CandidateHitsPlane2.DilationThreshold:      8
 
 

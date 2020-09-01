@@ -12,7 +12,6 @@
 # turn to overburden geometry:
 #include "use_overburden_geometry_icarus.fcl"
 
-
 #physics.analyzers.CRTAnalysis.CoincidenceWindow: 40.0
 # physics.analyzers.CRTAnalysis.HitVelocityMax: 10000
 # physics.analyzers.CRTAnalysis.HitVelocityMin: 0

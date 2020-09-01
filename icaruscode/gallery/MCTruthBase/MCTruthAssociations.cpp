@@ -38,12 +38,10 @@ MCTruthAssociations::MCTruthAssociations(const fhicl::ParameterSet& config)
 void MCTruthAssociations::setup(const HitParticleAssociationsVec&  partToHitAssnsVec,
                                 const MCParticleVec&               mcPartVec,
                                 const MCTruthAssns&                truthToPartAssns,
-                                const geo::GeometryCore&           geometry,
-                                const detinfo::DetectorProperties& detectorProperties)
+                                const geo::GeometryCore&           geometry)
 {
     // Keep track of input services
     fGeometry           = &geometry;
-    fDetectorProperties = &detectorProperties;
     
     fHitPartAssnsVec.clear();
     
@@ -555,7 +553,8 @@ double MCTruthAssociations::length(const recob::Track* track) const
 
 // Length of MC particle.
 //----------------------------------------------------------------------------
-double MCTruthAssociations::length(const simb::MCParticle& part, double dx,
+double MCTruthAssociations::length(const detinfo::DetectorPropertiesData& detProp,
+                                   const simb::MCParticle& part, double dx,
                                    TVector3& start, TVector3& end, TVector3& startmom, TVector3& endmom,
                                    unsigned int tpc, unsigned int cstat) const
 {
@@ -567,7 +566,7 @@ double MCTruthAssociations::length(const simb::MCParticle& part, double dx,
     double zmin = -0.1;
     double zmax = fGeometry->DetLength() + 0.1;
     
-    double readOutWindowSize = fDetectorProperties->ReadOutWindowSize();
+    double readOutWindowSize = detProp.ReadOutWindowSize();
     
     double result = 0.;
     TVector3 disp;
@@ -594,7 +593,7 @@ double MCTruthAssociations::length(const simb::MCParticle& part, double dx,
            pos.Z() <= zmax)
         {
             pos[0] += dx;
-            double ticks = fDetectorProperties->ConvertXToTicks(pos[0], 0, 0, 0);
+            double ticks = detProp.ConvertXToTicks(pos[0], 0, 0, 0);
             
             if(ticks >= 0. && ticks < readOutWindowSize)
             {
@@ -620,4 +619,3 @@ double MCTruthAssociations::length(const simb::MCParticle& part, double dx,
 }
     
 } // end of namespace
-

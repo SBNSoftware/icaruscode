@@ -25,15 +25,15 @@ icarus_detectorclocks: {
 
     TrigModuleName:    ""
     InheritClockConfig: true
-    G4RefTime:        -1.15e3  # G4 time [us] where electronics clock counting start
+    G4RefTime:        -1.5e3  # G4 time [us] where electronics clock counting start
     TriggerOffsetTPC: -0.340e3 # Time offset for TPC readout start time w.r.t. trigger [us]
     FramePeriod:       1638.4  # Frame period [us]; 4096 * 400 ns
     ClockSpeedTPC:     2.5     # TPC clock speed in MHz;
     ClockSpeedOptical: 500     # Optical clock speed in MHz
     ClockSpeedTrigger: 16      # Trigger clock speed in MHz
     ClockSpeedExternal:31.25   # External clock speed in MHz
-    DefaultTrigTime:   1.15e3  # Default trigger time in electronics clock [us]
-    DefaultBeamTime:   1.15e3  # Default beam gate time in electronics clock [us]
+    DefaultTrigTime:   1.5e3  # Default trigger time in electronics clock [us]
+    DefaultBeamTime:   1.5e3  # Default beam gate time in electronics clock [us]
     
 } # icarus_detectorclocks
 

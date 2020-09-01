@@ -71,7 +71,9 @@ template <class T> void RawDigitFFTAlg<T>::reconfigure(fhicl::ParameterSet const
     
 //----------------------------------------------------------------------------
 /// Begin job method.
-template <class T> void RawDigitFFTAlg<T>::initializeHists(art::ServiceHandle<art::TFileService>& tfs)
+template <class T> void RawDigitFFTAlg<T>::initializeHists(detinfo::DetectorClocksData const& clockData,
+                                                           detinfo::DetectorPropertiesData const& detProp,
+                                                           art::ServiceHandle<art::TFileService>& tfs)
 {
     if (fFillHistograms)
     {
@@ -80,8 +82,8 @@ template <class T> void RawDigitFFTAlg<T>::initializeHists(art::ServiceHandle<ar
         // is drawn.
         
         // hijack hists here
-        double sampleRate  = fDetectorProperties->SamplingRate();
-        double readOutSize = fDetectorProperties->ReadOutWindowSize();
+        double sampleRate  = sampling_rate(clockData);
+        double readOutSize = detProp.ReadOutWindowSize();
         double maxFreq     = 1.e6 / (2. * sampleRate);
         double minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
         int    numSamples  = readOutSize / 2;
@@ -205,15 +207,17 @@ template<class T> void RawDigitFFTAlg<T>::getFFTCorrection(std::vector<T>& corVa
     return;
 }
     
-template <class T> void RawDigitFFTAlg<T>::filterFFT(std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal) 
+template <class T> void RawDigitFFTAlg<T>::filterFFT(detinfo::DetectorClocksData const& clockData,
+                                                     detinfo::DetectorPropertiesData const& detProp,
+                                                     std::vector<short>& rawadc, size_t plane, size_t wire, float pedestal)
 {
     // Check there is something to do
     if (!fTransformViewVec.at(plane)) return;
     
     // Step one is to setup and then get the FFT transform of the input waveform
     size_t const fftDataSize = rawadc.size();
-    double sampleRate  = fDetectorProperties->SamplingRate();
-    double readOutSize = fDetectorProperties->ReadOutWindowSize();
+    double sampleRate  = sampling_rate(clockData);
+    double readOutSize = detProp.ReadOutWindowSize();
     
     if (fFFTInputVec.size() != fftDataSize) fFFTInputVec.resize(fftDataSize, 0.);
     

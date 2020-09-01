@@ -12,3 +12,4 @@
 # turn to no-overburden geometry:
 #include "use_nooverburden_geometry_icarus.fcl"
 
+services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_noPMTremapping

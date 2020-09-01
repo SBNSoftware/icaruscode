@@ -7,23 +7,15 @@ CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
   
     fGeometryService  = lar::providerFrom<geo::Geometry>();
-    fDetectorClocks   = lar::providerFrom<detinfo::DetectorClocksService>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTrigClock = fDetectorClocks->TriggerClock();
     fCrtutils = new CRTCommonUtils();
 }
 
 //---------------------------------------------------------------------
 CRTHitRecoAlg::CRTHitRecoAlg(){
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    fDetectorClocks = lar::providerFrom<detinfo::DetectorClocksService>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTrigClock = fDetectorClocks->TriggerClock();
     fCrtutils = new CRTCommonUtils();
 }
 
-
-CRTHitRecoAlg::~CRTHitRecoAlg(){}
 
 //---------------------------------------------------------------------
 void CRTHitRecoAlg::reconfigure(const Config& config){
@@ -31,7 +23,7 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fUseReadoutWindow = config.UseReadoutWindow(); 
     fQPed = config.QPed();
     fQSlope = config.QSlope();
-    
+    fPropDelay = config.PropDelay(); 
     fPEThresh = config.PEThresh();
     fCoinWindow = config.CoinWindow();
     return;
@@ -106,7 +98,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
     vector<size_t> unusedDataIndex;
     for(auto const& regIndices : sideRegionToIndices) {
 
-        std::cout << "searching for side CRT hits in region, " << regIndices.first << std::endl;
+        if(fVerbose) 
+            std::cout << "searching for side CRT hits in region, " << regIndices.first << std::endl;
         vector<size_t> indices = regIndices.second;
 
         for(size_t index_i=0; index_i < indices.size(); index_i++) {
@@ -114,16 +107,28 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
             dataIds.clear();
             dataIds.push_back(indices[index_i]);
             vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
+
  
             //inner loop over data after data_i in time
             for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
 
-                //out of coinWindow
-                if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow) { 
+                if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
+                    mf::LogError("CRTHitRecoAlg::CreateCRTHits") <<
+                        "bad time ordering!" << '\n';
 
-                    //if(fVerbose)
-                    //    std::cout << "attempting to produce MINOS hit from " << coinData.size() 
-                    //          << " data products..." << std::endl;
+                if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
+                    coinData.push_back(crtList[indices[index_j]]);
+                    dataIds.push_back(indices[index_j]);
+                }
+
+                //out of coinWindow
+                if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow
+                   || index_j==indices.size()-1) 
+                { 
+
+                    if(fVerbose)
+                        std::cout << "attempting to produce MINOS hit from " << coinData.size() 
+                              << " data products..." << std::endl;
 
                     CRTHit hit = MakeSideHit(coinData);
 
@@ -132,8 +137,8 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                         nMissM++;
                     }
                     else {
-                        //if(fVerbose)
-                        //    std::cout << "MINOS hit produced" << std::endl;
+                        if(fVerbose)
+                            std::cout << "MINOS hit produced" << std::endl;
 
                         returnHits.push_back(std::make_pair(hit,dataIds));
 
@@ -142,15 +147,14 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
                         else 
                             regCounts[regIndices.first]++;
 
-                        index_i = index_j-1;
                         nHitM++;
                     }
-                       
+                    index_i = index_j-1;
+                    if(index_j==indices.size()-1)
+                        index_i++;
+                    
                     break;
                 }//if jth data out of coinc window
-  
-                coinData.push_back(crtList[indices[index_j]]);
-                dataIds.push_back(indices[index_j]);
 
             }//inner loop over data
         }// outer loop over data
@@ -285,9 +289,9 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
     if(adsid_max<8)
-        thit -= (adsGeo.HalfLength() - hitpos.Z() )*fPropDelay;
+        thit -= hitpos.Z()*fPropDelay;
     else
-        thit -= (adsGeo.HalfLength() - hitpos.X() )*fPropDelay;
+        thit -= hitpos.X()*fPropDelay;
 
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
@@ -382,7 +386,8 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     float petot = 0., pemax = 0., pex=0., pey=0.;
     int adsid_max = -1, nabove=0, nx=0, ny=0;
     TVector3 postrig;
-    vector<double> ttrigs;
+    //map<int,vector<double>> ttrigs;
+    vector<int> ttrigs;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
     double ymin=DBL_MAX, ymax = -DBL_MAX;
     double xmin=DBL_MAX, xmax = -DBL_MAX;
@@ -458,7 +463,9 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         }//loop over channels
 
         //correct trigger time for propegation delay
-        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
+        auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger stripi
+        
+       // ttrigs[layer].push_back(data->fTs0);// - adsGeo.HalfLength()*fPropDelay);
         ttrigs.push_back(data->fTs0 - adsGeo.HalfLength()*fPropDelay);
 
     }//loop over FEBs
@@ -483,12 +490,22 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
 
+    //time stamp averaged over all FEBs
+    double thit = 0.;//, thit_0 = 0., thit_1 = 0.;
+    //for(double const t : ttrigs[0]) 
+    //    thit_0 += t;
+    for(double const t : ttrigs)
+        thit += t;
+    //thit_0
+    thit*=1.0/ttrigs.size();
+
     //error estimates (likely need to be revisted)
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max);
     if(region!="North" && region!="South"){
         hitpointerr[0] = (xmax-xmin)/sqrt(12);
         hitpointerr[1] = (ymax-ymin)/sqrt(12);
         hitpointerr[2] = adsGeo.Length()/sqrt(12);
+        //thit=(thit_0
     }
 
     if(region=="North"){
@@ -502,12 +519,6 @@ CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
         hitpointerr[1] = adsGeo.HalfWidth1()*2/sqrt(12);
         hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
-
-    //time stamp averaged over all FEBs
-    double thit = 0.;
-    for(double const t : ttrigs)
-        thit += t;
-    thit*=1.0/ttrigs.size();
 
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],

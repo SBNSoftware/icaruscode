@@ -16,6 +16,9 @@
 
 // Algorithm includes
 #include "artdaq-core/Data/Fragment.hh"
+namespace detinfo {
+  class DetectorClocksData;
+}
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
 
@@ -46,7 +49,8 @@ public:
      *
      *  @param fragment            The artdaq fragment to process
      */
-    virtual void process_fragment(const artdaq::Fragment& fragment) = 0; 
+    virtual void process_fragment(detinfo::DetectorClocksData const& clockData,
+                                  const artdaq::Fragment& fragment) = 0;
 
     /**
      *  @brief Recover the channels for the processed fragment

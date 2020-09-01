@@ -17,4 +17,3 @@
  #physics.analyzers.CRTAnalysis.HitVelocityMin: 0
  #physics.analyzers.CRTAnalysis.FlashPeThresh: 0
  #physics.analyzers.CRTAnalysis.HitPeThresh:   0
-

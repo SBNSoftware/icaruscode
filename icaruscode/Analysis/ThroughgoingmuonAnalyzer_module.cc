@@ -31,7 +31,6 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/CryostatGeo.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -237,8 +236,6 @@ private:
 
   // Useful services, keep copies for now (we can update during begin run periods)
   const geo::GeometryCore*           fGeometry;             ///< pointer to Geometry service
-  const detinfo::DetectorProperties* fDetectorProperties;   ///< Detector properties service
-  const detinfo::DetectorClocks*     fClockService;         ///< Detector clocks service
 
   // Get geometry.
   //  art::ServiceHandle<geo::Geometry> geom;
@@ -274,8 +271,6 @@ ThroughgoingmuonAnalyzer::ThroughgoingmuonAnalyzer(fhicl::ParameterSet const& ps
   //  fHitProducerLabelVec      = pset.get< std::vector<art::InputTag>>("HitModuleLabelVec",  std::vector<art::InputTag>() = {"gauss"});
 
     fGeometry           = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fClockService       = lar::providerFrom<detinfo::DetectorClocksService>();
 
     art::TFileDirectory dir = tfs->mkdir("histos");
     fHitEffvselecVec.resize(fGeometry->Nplanes());
@@ -616,6 +611,8 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
     std::cout << "***************** EVENT " << fEvent << " ******************" << std::endl;
     std::cout << "-- Looping over channels for hit efficiency, # MC Track IDs: " << partToChanToTDCToIDEMap.size() << std::endl;
 
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+
     // Initiate loop over MC Track IDs <--> SimChannel information by wire and TDC
     for(const auto& partToChanInfo : partToChanToTDCToIDEMap)
     {
@@ -762,9 +759,9 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
             unsigned short stopTDC  = tdcToIDEMap.rbegin()->first;
             
             	  // Convert to ticks to get in same units as hits
-            unsigned short startTick = fClockService->TPCTDC2Tick(startTDC)        + fOffsetVec[plane];
-            unsigned short stopTick  = fClockService->TPCTDC2Tick(stopTDC)         + fOffsetVec[plane];
-            unsigned short maxETick  = fClockService->TPCTDC2Tick(maxElectronsTDC) + fOffsetVec[plane];
+            unsigned short startTick = clockData.TPCTDC2Tick(startTDC)        + fOffsetVec[plane];
+            unsigned short stopTick  = clockData.TPCTDC2Tick(stopTDC)         + fOffsetVec[plane];
+            unsigned short maxETick  = clockData.TPCTDC2Tick(maxElectronsTDC) + fOffsetVec[plane];
     
     	      //fSimNumTDCVec[plane]->Fill(stopTick - startTick, 1.);
     	      //fSimNumTDCVec[plane]->Fill(stopTick - startTick, 1.);
@@ -874,13 +871,11 @@ void ThroughgoingmuonAnalyzer::analyze(art::Event const& evt)
 		    //hitSnippetLenBest   = bestHit->EndTick() - bestHit->StartTick();
 		    hitBaselineBest     = 0.;  // To do...
              
-		    nMatchedHits++;
-		    
-		    // Get the number of electrons
-		    for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
-		      {
-                        unsigned short hitTDC = fClockService->TPCTick2TDC(tick - fOffsetVec[plane]);
-			
+    	         		  // Get the number of electrons
+    	         		  for(unsigned short tick = hitStartTickBest; tick <= hitStopTickBest; tick++)
+                    {
+                        unsigned short hitTDC = clockData.TPCTick2TDC(tick - fOffsetVec[plane]);
+             
                         TDCToIDEMap::iterator ideIterator = tdcToIDEMap.find(hitTDC);
 			
                         if (ideIterator != tdcToIDEMap.end()) nElectronsTotalBest += ideIterator->second.numElectrons;

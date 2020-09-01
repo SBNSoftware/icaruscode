@@ -17,6 +17,7 @@ art_make(
                         lardata_Utilities
                         larevt_Filters
                         lardataobj_RawData
+                        lardataalg_DetectorInfo
                         larevt_CalibrationDBI_IOVData
                         larevt_CalibrationDBI_Providers
                         lardataobj_RecoBase

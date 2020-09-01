@@ -19,11 +19,14 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "canvas/Persistency/Common/FindManyP.h"
 
 //LArSoft includes
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larsim/MCCheater/PhotonBackTrackerService.h"
+#include "larcorealg/Geometry/GeometryCore.h"
+#include "larcore/Geometry/Geometry.h"
+//#include "larsim/MCCheater/PhotonBackTrackerService.h"
 
 //Data product includes
 #include "nusimdata/SimulationBase/MCGeneratorInfo.h"
@@ -38,17 +41,25 @@
 
 //C++ includes
 #include <vector>
+#include <map>
 
 //ROOT includes
 #include "TTree.h"
 #include "TVector3.h"
 
 using std::vector;
+using std::map;
 
-class CrtOpHitMatchAnalysis;
+namespace icarus {
+ namespace crt {
+    class CrtOpHitMatchAnalysis;
+ }
+}
 
-class CrtOpHitMatchAnalysis : public art::EDAnalyzer {
-public:
+using namespace icarus::crt;
+
+class icarus::crt::CrtOpHitMatchAnalysis : public art::EDAnalyzer {
+ public:
   explicit CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
@@ -62,19 +73,21 @@ public:
   // Required functions.
   void analyze(art::Event const& e) override;
 
-  // Selected optional functions.
-  void beginJob() override;
-  void endJob() override;
+ private:
 
-private:
+  const double LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
 
   bool HitCompare(const art::Ptr<CRTHit>& h1, const art::Ptr<CRTHit>& h2);
   void ClearVecs();
   //const detinfo::DetectorClocks* fClock;
 
+  art::InputTag fGenLabel;
+  art::InputTag fSimLabel;
   art::InputTag fOpHitModuleLabel;
   art::InputTag fOpFlashModuleLabel0;
   art::InputTag fOpFlashModuleLabel1;
+  art::InputTag fOpFlashModuleLabel2;
+  art::InputTag fOpFlashModuleLabel3;
   art::InputTag fCrtHitModuleLabel;
   art::InputTag fCrtTrackModuleLabel;
 
@@ -158,6 +171,8 @@ private:
 
 CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
   : EDAnalyzer{p} ,
+    fGenLabel(p.get<art::InputTag>("GenLabel","generator")),
+    fSimLabel(p.get<art::InputTag>("SimLabel","largeant")),
     fOpHitModuleLabel(p.get<art::InputTag>("OpHitModuleLabel","ophit")),
     fOpFlashModuleLabel0(p.get<art::InputTag>("OpFlashModuleLabel0","opflashTPC0")),
     fOpFlashModuleLabel1(p.get<art::InputTag>("OpFlashModuleLabel1","opflashTPC1")),
@@ -166,9 +181,25 @@ CrtOpHitMatchAnalysis::CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p)
     fCrtHitModuleLabel(p.get<art::InputTag>("CrtHitModuleLabel","crthit")),
     fCrtTrackModuleLabel(p.get<art::InputTag>("CrtTrackModuleLabel","crttrack")),
     fCoinWindow(p.get<double>("CoincidenceWindow",60.0)),
-    fOpDelay(p.get<double>("OpDelay",55.1)) {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
-  
+    fOpDelay(p.get<double>("OpDelay",55.1)),
+    fCrtDelay(p.get<double>("CrtDelay",1.6e6)),
+    fFlashPeThresh(p.get<int>("FlashPeThresh",9000)),
+    fHitPeThresh(p.get<int>("HitPeThresh",700)),
+    fFlashVelocity(p.get<double>("FlashVelocityThresh",-40.)),
+    fFlashZOffset(p.get<double>("FlashZOffset",0.)),
+    fHitVelocityMax(p.get<double>("HitVelocityMax",20.)),
+    fHitVelocityMin(p.get<double>("HitVelocityMin",1.)),
+    bt(new CRTBackTracker(p.get<fhicl::ParameterSet>("CRTBackTrack"))),
+    crtutil(new CRTCommonUtils())
+{
+  fFlashLabels[0] = fOpFlashModuleLabel0;
+  fFlashLabels[1] = fOpFlashModuleLabel1;
+  fFlashLabels[2] = fOpFlashModuleLabel2;
+  fFlashLabels[3] = fOpFlashModuleLabel3;
+
+  // Get a pointer to the geometry service provider.
+  fGeometryService = lar::providerFrom<geo::Geometry>();  
+
   art::ServiceHandle<art::TFileService> tfs;
 
   fMatchTree = tfs->make<TTree>("matchTree","CRTHit - OpHit/Flash matching analysis");
@@ -282,49 +313,16 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
           fNuXYZT[i] = DBL_MAX;
   }
 
-  fEvent  = e.id().event();
-  fRun    = e.run();
-  fSubrun = e.subRun();
+  auto const& simparticles = //vector of MCParticles from G4
+    *e.getValidHandle<vector<simb::MCParticle>>(fSimLabel);
 
-  fTTrig = fClock->TriggerTime();
+  //loop over G4 tracks
+  map<int,const simb::MCParticle*> particleMap;
+  for(auto const& particle : simparticles){
 
       particleMap[particle.TrackId()] = &particle;
 
   }//G4 tracks
-
-  //SimPhotons
-  /*art::Handle< std::vector<sim::SimPhotons>> photHandle;
-  std::vector< art::Ptr<sim::SimPhotons> >   photList;
-  if( e.getByLabel(fPhotLabel, photHandle) )
-      art::fill_ptr_vector(photList, photHandle);
-
-  fNPhot = photList.size();
-
-  for(auto const& phot : photList){
-      fPhotChan.push_back(phot->OpChannel());
-      fNPhotChan.push_back(phot->size());
-      double pos[3];
-      fGeometryService->OpDetGeoFromOpChannel(phot->OpChannel()).GetCenter(pos);
-      for(size_t i=0; i<phot->size(); i++) {
-          vector<double> xyz = {pos[0],pos[1],pos[2],phot->at(i).Time};
-          fPhotPos.push_back(xyz);
-      }
-  }
-
-  fPhotTree->Fill();*/
-
-  //OpDet waveforms
-  /*art::Handle< std::vector<raw::OpDetWaveform> > wfHandle;
-  std::vector< art::Ptr<raw::OpDetWaveform> > wfList;
-  if( e.getByLabel(fWFLabel,wfHandle) )
-      art::fill_ptr_vector(wfList, wfHandle);
-
-  fNWFs = wfList.size();
-  for(auto const& wf : wfList){
-      fWFChans.push_back(wf->ChannelNumber());
-      fWFTime.push_back(wf->TimeStamp());
-  }
-  fWFTree->Fill();*/
 
   //OpHits
   art::Handle< std::vector<recob::OpHit> > opHitListHandle;
@@ -332,8 +330,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   if( e.getByLabel(fOpHitModuleLabel,opHitListHandle) )
       art::fill_ptr_vector(opHitList, opHitListHandle);
 
-  fNOpHit = opHitList.size();
-
+  fNHit = opHitList.size();
   for(auto const& ophit : opHitList){
         double t = ophit->PeakTime()*1e3-fOpDelay;
         fHitPE.push_back(ophit->PE());
@@ -344,25 +341,65 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
         fHitXYZT.push_back(xyzt);
   }
 
+  fHitTree->Fill();
+
   //OpFlash
-  art::Handle< std::vector<recob::OpFlash> > opFlashListHandle0;
-  art::Handle< std::vector<recob::OpFlash> > opFlashListHandle1;
-  std::vector< art::Ptr<recob::OpFlash> >    opFlashList;
-  if( e.getByLabel(fOpFlashModuleLabel0,opFlashListHandle0) )
-      art::fill_ptr_vector(opFlashList, opFlashListHandle0);
-  if( e.getByLabel(fOpFlashModuleLabel1,opFlashListHandle1) )
-      art::fill_ptr_vector(opFlashList, opFlashListHandle1);
+  map<int, art::Handle< std::vector<recob::OpFlash> > > flashHandles;
+  std::map<int,std::vector< art::Ptr<recob::OpFlash> >> opFlashLists;
+  fNFlash = 0;
+  for(int i=0; i<4; i++) {
+      if( e.getByLabel(fFlashLabels[i],flashHandles[i]) )
+          art::fill_ptr_vector(opFlashLists[i], flashHandles[i]);
+  }
 
-  fNOpFlash = opFlashList.size();
+  for(auto const& flashList : opFlashLists) {
+      fNFlash +=  flashList.second.size();
 
-  for(auto const& flash : opFlashList){
-        vector<double> xyzt;
-        xyzt.push_back(0.); 
-        xyzt.push_back(flash->YCenter());
-        xyzt.push_back(flash->ZCenter());
-        xyzt.push_back(flash->Time()*1e3-fOpDelay);
-        fFlashXYZT.push_back(xyzt);
-        fPeFlash.push_back(flash->TotalPE());
+      for(size_t iflash=0; iflash<flashList.second.size(); iflash++) { 
+           auto const& flash = flashList.second[iflash];
+
+            vector<double> xyzt;
+            xyzt.push_back(0.); 
+            xyzt.push_back(flash->YCenter());
+            xyzt.push_back(flash->ZCenter());
+            xyzt.push_back(flash->Time()*1e3-fOpDelay);
+            fFlashXYZT.push_back(xyzt);
+            fFlashPE.push_back(flash->TotalPE());
+            fFlashTPC.push_back(flashList.first);
+            auto const& pes = flash->PEs();
+            fFlashNHit.push_back(pes.size());
+            fFlashMeanPE.push_back(fFlashPE.back()/fFlashNHit.back());
+            double rms2=0.;
+            for(auto const& pe : pes)
+                rms2 += pow((pe-fFlashMeanPE.back()),2);
+            rms2*=1.0/(fFlashNHit.back()-1);
+            fFlashRmsPE.push_back(sqrt(rms2));
+            vector<double> delta = {0., flash->YWidth(),flash->ZWidth(),flash->TimeWidth()};
+            fFlashDelta.push_back(delta);
+
+            /*vector<art::Ptr<recob::OpHit>> hits = findManyHits.at(iflash);
+            for(auto const& hit : hits) {
+                double tPmt = hit->PeakTime()*1.e3-fOpDelay;
+                if( tPmt < flashHitT) {
+                    flashHitT = tPmt;
+                    flashHitPE = hit->PE();
+
+                    //FlashHit position/time
+                    geo::OpDetGeo const& opDet = cryo0.OpDet(hit->OpChannel());
+                    double pos[3];
+                    opDet.GetCenter(pos);
+                    flashHitxyzt.clear();
+                    for(int i=0; i<3; i++) flashHitxyzt.push_back(pos[i]);
+                    flashHitxyzt.push_back(flashHitT);
+
+                    //FlashHit distance
+                    TVector3 rflashHit(pos[0],pos[1],pos[2]);
+                    TVector3 vdiffHit = rcrt-rflashHit;
+                    flashHitDiff = vdiffHit.Mag();
+                }
+            }//loop over flash hits*/
+
+      }
   }
 
   fFlashTree->Fill();
@@ -394,16 +431,14 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
 
 
   //CRTHits
-  art::Handle< std::vector<icarus::crt::CRTHit> > crtHitListHandle;
-  std::vector< art::Ptr<icarus::crt::CRTHit> >    crtHitList;
+  art::Handle< std::vector<CRTHit> > crtHitListHandle;
+  std::vector< art::Ptr<CRTHit> >    crtHitList;
   if( e.getByLabel(fCrtHitModuleLabel,crtHitListHandle))
       art::fill_ptr_vector(crtHitList, crtHitListHandle);
 
-  fNCrtHit = crtHitList.size();
+  fNCrt = crtHitList.size();
 
-  for(int icrt=0; icrt<fNCrtHit; icrt++){
-
-      auto const& crthit = crtHitList[icrt];
+  for(auto const& crt : crtHitList){
 
       bool trackfilt=false;
       for(auto const& trkhits: trackhits){
@@ -419,7 +454,7 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
       fTrackFilt.push_back(trackfilt);
 
       vector<double> xyzt, xyzerr;
-      TVector3 rcrt(crthit->x_pos,crthit->y_pos,crthit->z_pos);
+      TVector3 rcrt(crt->x_pos,crt->y_pos,crt->z_pos);
 
       xyzt.push_back(rcrt.X());
       xyzt.push_back(rcrt.Y());
@@ -473,25 +508,6 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
                   }//if AV
               }//if IV
               if(!firstAV && cryo1.ContainsPosition(point)){
-                  firstIV=true;
-                  if( !firstAV && (tpc10.ContainsPosition(point) ||
-                      tpc11.ContainsPosition(point)) ) {
-                      double opDetPos[3];
-                      (cryo1.OpDet(cryo1.GetClosestOpDet(point))).GetCenter(opDetPos);
-                      double ddirect = sqrt(pow(opDetPos[0]-rcrt.X(),2)
-                                          + pow(opDetPos[1]-rcrt.Y(),2)
-                                          + pow(opDetPos[2]-rcrt.Z(),2));
-                      double dprop = sqrt(pow(opDetPos[0]-pos[0],2)
-                                        + pow(opDetPos[1]-pos[1],2)
-                                        + pow(opDetPos[2]-pos[2],2));
-                      double tprop = pos.T() + dprop*LAR_PROP_DELAY;
-                      fTrueDist.push_back(ddirect);
-                      fTrueTOF.push_back(tcrt-tprop);
-                      firstIV=false;
-                      firstAV=true;
-                      firstFV=true;
-                  }
-              }
               if(firstAV) break;
           }//for traj points
       }
@@ -624,20 +640,20 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
           xyzt.clear();
           for(int i=0; i<4; i++) xyzt.push_back(DBL_MAX);
       }
-      if(!matched) continue;
+
+      fMatchHit.push_back(matched);
       fTofHit.push_back(tdiff);
-      //fTofPe.push_back(fPeFlash[imatch])'
+      fTofPeHit.push_back(peflash);
+      fTofXYZTHit.push_back(xyzt);
+      fDistHit.push_back(rdiff);
+      fTofTpcHit.push_back(matchtpc);
   }//for CRTHits
 
-  fTree->Fill();
+  fMatchTree->Fill();
 
 }//analyze
 
-void CrtOpHitMatchAnalysis::beginJob()
-{
-}
-
-void CrtOpHitMatchAnalysis::endJob()
+void CrtOpHitMatchAnalysis::ClearVecs()
 {
     //matchTree
     fCrtXYZT.clear();
