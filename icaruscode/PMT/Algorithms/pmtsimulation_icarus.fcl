@@ -117,7 +117,7 @@ icarus_photoelectronresponse_customexample: {
 #
 # pick one
 #
-icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_gaussian
+icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_exponentials
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
