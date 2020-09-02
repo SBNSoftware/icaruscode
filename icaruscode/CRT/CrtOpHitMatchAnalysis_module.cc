@@ -508,6 +508,28 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
                   }//if AV
               }//if IV
               if(!firstAV && cryo1.ContainsPosition(point)){
+                  if(!firstAV && (tpc10.ContainsPosition(point) ||
+                     tpc11.ContainsPosition(point)) ) {
+                      double opDetPos[3];
+                      (cryo1.OpDet(cryo0.GetClosestOpDet(point))).GetCenter(opDetPos);
+                      double ddirect = sqrt(pow(opDetPos[0]-rcrt.X(),2)
+                                          + pow(opDetPos[1]-rcrt.Y(),2)
+                                          + pow(opDetPos[2]-rcrt.Z(),2));
+                      double dprop = sqrt(pow(opDetPos[0]-pos[0],2)
+                                        + pow(opDetPos[1]-pos[1],2)
+                                        + pow(opDetPos[2]-pos[2],2));
+                      double tprop = pos.T() + dprop*LAR_PROP_DELAY;
+                      fTrueDist.push_back(ddirect);
+                      fTrueTOF.push_back(tcrt-tprop);
+                      vector<double> tmp1 = {pos.X(),pos.Y(),pos.Z(),pos.T()};
+                      vector<double> tmp2 = {opDetPos[0],opDetPos[1],opDetPos[2],tprop};
+                      fEnterXYZT.push_back(tmp1);
+                      fPMTXYZT.push_back(tmp2);
+                      firstIV = false;
+                      firstAV = true;
+                      firstFV = true;
+                  }//if AV
+              }//if IV
               if(firstAV) break;
           }//for traj points
       }
@@ -592,6 +614,17 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
           peflash = DBL_MAX;
           for(int i=0; i<4; i++) xyzt.push_back(DBL_MAX);
       }
+
+      fMatchFlash.push_back(matched);
+      fTofFlash.push_back(tdiff);
+      fTofPeFlash.push_back(peflash);
+      fTofXYZTFlash.push_back(xyzt);
+      fDistFlash.push_back(rdiff);
+      fTofTpcFlash.push_back(matchtpc);
+      fTofFlashHit.push_back(tcrt-flashHitT);
+      fTofPeFlashHit.push_back(flashHitPE);
+      fTofXYZTFlashHit.push_back(flashHitxyzt);
+      fDistFlashHit.push_back(flashHitDiff);
 
       // -- match OpHits to CRTHits -- 
       tdiff = DBL_MAX;
