@@ -132,7 +132,7 @@ icarus_pmtsimulationalg_standard: {
   
   SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
   
-  AmpNoise:                  1.0            #in ADC
+  AmpNoise:                  3.0            # in ADC; temporary value, see SBN DocDB 19187
   DarkNoiseRate:             "1.6 kHz"      # from CERN test stand measurement
 
   ##This is the readout window size for each "trigger" on the electronics
