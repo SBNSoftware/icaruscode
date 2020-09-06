@@ -196,6 +196,7 @@ icarus_reco_producers:
   ## crt producers
   crttruehit:                     @local::standard_crttruehitproducer
   crthit:                         @local::standard_crtsimhitproducer
+  crttrack:                       @local::standard_crttrackproducer
 }
 
 icarus_reco_filters:
@@ -384,9 +385,9 @@ icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
                                     mcassociationsICARUSCryo1 ]
 
 icarus_reco_crt:                  [ crttruehit,
-                                    crthit #,
+                                    crthit,
                                     #crttzero ]
-                                    #crtsimtrack 
+                                    crttrack 
                                   ]
 
 # Define what would be the first pass reconstructon (the "gauss" recon)
@@ -694,4 +695,5 @@ icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCr
 icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel: "pandoraGausCaloCryo1"
+
 END_PROLOG

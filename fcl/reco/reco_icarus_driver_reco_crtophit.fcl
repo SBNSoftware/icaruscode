@@ -2,6 +2,7 @@
 
 process_name: McRecoCrtOpHit
 
+physics.producers.ophit.UseStartTime: true
 physics.reco: [@sequence::icarus_crtophit_reconstruction]
 physics.trigger_paths: [ reco ]
 outputs.out1.fileName: "%ifb_%tc-%p.root"

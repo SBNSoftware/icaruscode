@@ -18,10 +18,11 @@ art_make(
         CRTTrackProducer_module.cc
         CRTSimAnalysis_module.cc
         CRTDataAnalysis_module.cc
-              CrtOpHitMatchAnalysis_module.cc
+        CrtOpHitMatchAnalysis_module.cc
         CRTTruthMatchAnalysis_module.cc
         CRTAutoVeto_module.cc
         FlashResAna_module.cc
+        PhotBackground_module.cc
     LIBRARY_NAME
         icaruscode_CRTData
     LIB_LIBRARIES
@@ -279,6 +280,24 @@ simple_plugin( FlashResAna module
                         ${ROOT_GDML}              
 )
 
+simple_plugin( PhotBackground module
+                        larcore_Geometry_Geometry_service
+                        larcorealg_Geometry
+                        nusimdata_SimulationBase
+                        icaruscode_CRTData
+                        icaruscode_CRT
+                        icaruscode_CRTProducts
+                        icaruscode_CRTUtils
+                        ${ART_FRAMEWORK_CORE}
+                        ${ART_FRAMEWORK_PRINCIPAL}
+                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                        ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                        art_Persistency_Common
+                        art_Persistency_Provenance
+                        art_Utilities
+                        ${ROOT_BASIC_LIB_LIST}
+)
 
 install_headers()
 install_fhicl()

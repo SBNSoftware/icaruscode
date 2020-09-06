@@ -10,7 +10,7 @@ standard_crttrackalg:
 standard_crttrackproducer:
 {
     module_type:        "icaruscode/CRT/CRTTrackProducer"
-    DataLabelHits:      "crtsimhit"    # CRTHit producer module name
+    DataLabelHits:      "crthit"    # CRTHit producer module name
     DataLabelTZeros:    "crttzero"  # CRTTzero producer module name
     TrackMethodType:    4           # method 1 = all, method 2 = ave, method 3 = pure, method 4 = top plane (sbnd)
     StoreTrack:         1           # Produce CRTTracks
