@@ -165,9 +165,11 @@ void RawDigitCorrelatedCorrectionAlg::removeCorrelatedNoise(RawDigitAdcIdxPair& 
                 adcValuesVec.push_back(float(wireToRawDigitVecMap.at(wireAdcItr.first)[sampleIdx]) - truncMeanWireVec[wireIdx]);
             }
 
-            float medianValue = getMedian(adcValuesVec, float(-10000.));
+//            float medianValue = getMedian(adcValuesVec, float(-10000.));
+            float aveValue    = std::accumulate(adcValuesVec.begin(),adcValuesVec.end(),0.) / float(adcValuesVec.size());
 
-            corValVec[sampleIdx] = medianValue;
+//            corValVec[sampleIdx] = medianValue;
+            corValVec[sampleIdx] = aveValue;
         }
 
         // Try to eliminate any real outliers

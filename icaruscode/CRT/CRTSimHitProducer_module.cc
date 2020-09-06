@@ -1,4 +1,4 @@
-// sbndcode includes
+// icaruscode includes
 #include "icaruscode/CRT/CRTProducts/CRTData.hh"
 #include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
@@ -21,11 +21,14 @@
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+
+// C++ includes
 #include <memory>
 #include <iostream>
 #include <map>
 #include <iterator>
 #include <algorithm>
+#include <vector>
 
 // LArSoft
 #include "lardataobj/Simulation/SimChannel.h"
@@ -33,9 +36,6 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/Geometry/AuxDetGeometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "larcorealg/Geometry/PlaneGeo.h"
-#include "larcorealg/Geometry/WireGeo.h"
-#include "lardataobj/RecoBase/OpFlash.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -52,7 +52,10 @@
 #include "TVector3.h"
 #include "TGeoManager.h"
 
+using std::vector;
+
 namespace icarus {
+namespace crt {
 
   class CRTSimHitProducer : public art::EDProducer {
   public:
@@ -92,8 +95,8 @@ namespace icarus {
   {
  
    // Call appropriate produces<>() functions here.
-    produces< std::vector<crt::CRTHit> >();
-    produces< art::Assns<crt::CRTHit , crt::CRTData> >();
+    produces< vector<CRTHit> >();
+    produces< art::Assns<CRTHit, CRTData> >();
     
     reconfigure(p);
 
@@ -112,15 +115,15 @@ namespace icarus {
   void CRTSimHitProducer::produce(art::Event & event)
   {
 
-    std::unique_ptr< std::vector<crt::CRTHit> > CRTHitcol( new std::vector<crt::CRTHit>);
-    std::unique_ptr< art::Assns<crt::CRTHit, crt::CRTData> > Hitassn( new art::Assns<crt::CRTHit, crt::CRTData>);
+    std::unique_ptr< vector<CRTHit> > CRTHitcol( new vector<CRTHit>);
+    std::unique_ptr< art::Assns<CRTHit, CRTData> > Hitassn( new art::Assns<CRTHit, CRTData>);
     art::PtrMaker<crt::CRTHit> makeHitPtr(event);
 
     int nHits = 0;
 
     // Retrieve list of CRT hits
-    art::Handle< std::vector<crt::CRTData>> crtListHandle;
-    std::vector<art::Ptr<crt::CRTData> > crtList;
+    art::Handle< std::vector<CRTData>> crtListHandle;
+    vector<art::Ptr<CRTData> > crtList;
 
     if (event.getByLabel(fCrtModuleLabel, crtListHandle))
       art::fill_ptr_vector(crtList, crtListHandle);
@@ -128,12 +131,15 @@ namespace icarus {
     mf::LogInfo("CRTSimHitProducer")
       <<"Number of SiPM hits = "<<crtList.size();
 
-    std::vector<std::pair<crt::CRTHit, std::vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
+    vector<std::pair<CRTHit, vector<int>>> crtHitPairs = hitAlg.CreateCRTHits(crtList);
+
+    mf::LogInfo("CRTSimHitProducer")
+      << "Number of CRTHit,data indices pairs = " << crtHitPairs.size();
 
     for(auto const& crtHitPair : crtHitPairs){
 
       CRTHitcol->push_back(crtHitPair.first);
-      art::Ptr<crt::CRTHit> hitPtr = makeHitPtr(CRTHitcol->size()-1);
+      art::Ptr<CRTHit> hitPtr = makeHitPtr(CRTHitcol->size()-1);
       nHits++;
 
       for(auto const& data_i : crtHitPair.second){
@@ -157,4 +163,5 @@ namespace icarus {
 
   DEFINE_ART_MODULE(CRTSimHitProducer)
 
+}
 } //end namespace

@@ -1,5 +1,5 @@
 ////////////////////////////////////////////////////////////////////////
-/// \file   fSignalShapingICARUSService_service.cc
+/// \file   SignalShapingICARUSService_service.cc
 /// \author H. Greenlee
 /// Modified by X. Qian 1/6/2015
 /// if histogram is used, inialize
@@ -44,13 +44,6 @@ SignalShapingICARUSService::SignalShapingICARUSService(const fhicl::ParameterSet
 : fInit(false)
 {
     reconfigure(pset);
-}
-
-//----------------------------------------------------------------------
-// Destructor
-SignalShapingICARUSService::~SignalShapingICARUSService()
-{
-    return;
 }
 
 //----------------------------------------------------------------------
@@ -129,17 +122,19 @@ void SignalShapingICARUSService::init()
         // ICARUS response and filter functions.
         art::ServiceHandle<geo::Geometry> geo;
 
+        auto const samplingRate = sampling_rate(art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob());
+
         // Get the normalization from the field response for the collection plane
         double integral = fPlaneToResponseMap.at(fPlaneForNormalization).front().get()->getFieldResponse()->getIntegral();
         double weight   = 1. / integral;
         
         for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
         {
-            fPlaneToResponseMap[planeIdx].front().get()->setResponse(weight);                
+          fPlaneToResponseMap[planeIdx].front().get()->setResponse(samplingRate, weight);
         }
         
         // Check to see if we want histogram output
-        if (fStoreHistograms && !fStoreHistograms)
+        if (fStoreHistograms)
         {
             art::ServiceHandle<art::TFileService> tfs;
             
@@ -150,7 +145,7 @@ void SignalShapingICARUSService::init()
             art::TFileDirectory dir = tfs->mkdir("SignalShaping");
             
             // Loop through response tools first
-            for(const auto& response: fPlaneToResponseMap) response.second.front().get()->outputHistograms(dir);
+            for(const auto& response: fPlaneToResponseMap) response.second.front().get()->outputHistograms(samplingRate, dir);
 
         }
 
@@ -160,7 +155,8 @@ void SignalShapingICARUSService::init()
     return;
 }
 
-void SignalShapingICARUSService::SetDecon(size_t fftsize, size_t channel)
+void SignalShapingICARUSService::SetDecon(double const samplingRate,
+                                          size_t fftsize, size_t channel)
 {
     art::ServiceHandle<geo::Geometry> geo;
     
@@ -172,7 +168,7 @@ void SignalShapingICARUSService::SetDecon(size_t fftsize, size_t channel)
     
     for(size_t planeIdx = 0; planeIdx < geo->Nplanes(); planeIdx++)
     {
-        fPlaneToResponseMap.at(planeIdx).front()->setResponse(weight);
+        fPlaneToResponseMap.at(planeIdx).front()->setResponse(samplingRate, weight);
     }
 }
 
@@ -251,25 +247,15 @@ double SignalShapingICARUSService::GetDeconNoise(unsigned int const channel) con
     return deconNoise;
 }
 
-int SignalShapingICARUSService::FieldResponseTOffset(unsigned int const channel) const
+int SignalShapingICARUSService::ResponseTOffset(unsigned int const channel) const
 {
+    if (!fInit) init();
+    
     art::ServiceHandle<geo::Geometry> geom;
     
     size_t planeIdx = geom->ChannelToWire(channel)[0].Plane;
-    double time_offset(0.);
-    
-    try
-    {
-        time_offset = fPlaneToResponseMap.at(planeIdx).front()->getFieldResponse()->getTOffset();
-    }
-    catch (...)
-    {
-        throw cet::exception(__FUNCTION__) << "Invalid plane ... " << planeIdx << std::endl;
-    }
 
-    auto tpc_clock = lar::providerFrom<detinfo::DetectorClocksService>()->TPCClock();
-    
-    return tpc_clock.Ticks(time_offset / 1.e3);
+    return fPlaneToResponseMap.at(planeIdx).front()->getTOffset();
 }
 }
 

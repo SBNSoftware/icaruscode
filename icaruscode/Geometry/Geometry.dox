@@ -1,0 +1,5 @@
+/**
+ * @namespace icarus::geo
+ * @brief Detector geometry algorithms for ICARUS.
+ */
+

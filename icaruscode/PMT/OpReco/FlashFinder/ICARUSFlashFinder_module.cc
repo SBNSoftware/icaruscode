@@ -145,12 +145,12 @@ void ICARUSFlashFinder::GetFlashLocation(std::vector<double> pePerOpChannel,
   double sumy = 0., sumz = 0., sumy2 = 0., sumz2 = 0.;
 
   for (unsigned int opch = 0; opch < pePerOpChannel.size(); opch++) {
-
+  /*
     if (opch > 31 && opch < 200){
       //  std::cout << "Ignoring channel " << opch << " as it's not a real channel" << std::endl;                                                                                             
       continue;
     }
-
+  */
     // Get physical detector location for this opChannel
     double PMTxyz[3];
     ::pmtana::OpDetCenterFromOpChannel(opch, PMTxyz);

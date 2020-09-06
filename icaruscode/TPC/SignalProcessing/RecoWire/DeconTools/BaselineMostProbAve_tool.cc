@@ -80,17 +80,29 @@ float BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec& holder,
         size_t halfLen    = std::min(fMaxROILength,roiLen/2);
         size_t roiStop    = roiStart + roiLen;
         
+        // This returns back the mean value and the spread from which it was calculated
         std::pair<float,int> baseFront = GetBaseline(holder, binRange, roiStart,          roiStart + halfLen);
         std::pair<float,int> baseBack  = GetBaseline(holder, binRange, roiStop - halfLen, roiStop           );
+
+//        std::cout << "-Baseline size: " << holder.size() << ", front/back: " << baseFront.first << "/" << baseBack.first << ", ranges: " << baseFront.second << "/" << baseBack.second;
         
-        if (std::fabs(baseFront.first - baseBack.first) > 3. * deconNoise)
+        // Check for a large spread between the two estimates
+        if (std::abs(baseFront.first - baseBack.first) > 1.5 * deconNoise)
         {
-            if      (baseFront.second > 3 * baseBack.second  / 2) base = baseFront.first;
-            else if (baseBack.second  > 3 * baseFront.second / 2) base = baseBack.first;
-            else                                                  base = std::max(baseFront.first,baseBack.first);
+            // We're going to favor the front, generally, unless the spread on the back is lower
+            if (baseFront.second < 3 * baseBack.second / 2) base = baseFront.first;
+            else                                            base = baseBack.first;
         }
         else
-            base = (baseFront.first*baseFront.second + baseBack.first*baseBack.second)/float(baseFront.second+baseBack.second);
+        {
+            // Otherwise we take a weighted average between the two 
+            float rangeFront = baseFront.second;
+            float rangeBack  = baseBack.second;
+
+            base = (baseFront.first/rangeFront + baseBack.first/rangeBack)*(rangeFront*rangeBack)/(rangeFront+rangeBack);
+        }
+
+//        std::cout << ", base: " << base << std::endl;
     }
     
     return base;
@@ -102,6 +114,7 @@ std::pair<float,int> BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec&
                                                       size_t                     roiStop) const
 {
     std::pair<double,int> base(0.,1);
+    int                   nTrunc;
     
     if (roiStop > roiStart)
     {
@@ -110,7 +123,7 @@ std::pair<float,int> BaselineMostProbAve::GetBaseline(const icarusutil::TimeVec&
         
         std::copy(holder.begin() + roiStart,holder.begin() + roiStop,temp.begin());
         
-        fWaveformTool.getTruncatedMean(temp, base.first, base.second);
+        fWaveformTool.getTruncatedMean(temp, base.first, nTrunc, base.second);
     }
     
     return base;

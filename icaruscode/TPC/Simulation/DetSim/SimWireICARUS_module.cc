@@ -10,17 +10,6 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-/**
- * If defined, a hack to make sure DetectorClocksService knows about the new
- * hardware trigger time is enabled.
- * This is violating art/LArSoft recommended practices, and it is not even
- * useful in ICARUS where the
- * @ref DetectorClocksElectronicsStartTime "electronics time start"
- * is _determined_ by the hardware trigger.
- */
-#undef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-
-
 // C/C++ standard library
 #include <stdexcept> // std::range_error
 #include <vector>
@@ -64,9 +53,6 @@
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-#include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
-#endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "lardataobj/Simulation/sim.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -214,10 +200,8 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
 
     //detector properties information
-    //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    
-    fNTimeSamples = detprop->NumberTimeSamples();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fNTimeSamples = detProp.NumberTimeSamples();
     
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
@@ -276,14 +260,7 @@ void SimWireICARUS::produce(art::Event& evt)
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
-#ifdef ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-    // In case trigger simulation is run in the same job...
-    // FIXME:  You should not be calling preProcessEvent
-    art::ServiceHandle<detinfo::DetectorClocksServiceStandard>()
-      ->preProcessEvent(evt,art::ScheduleContext::invalid());
-#endif // ICARUSCODE_SIMWIREICARUS_TRIGGERTIMEHACK
-
-    auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
@@ -329,7 +306,7 @@ void SimWireICARUS::produce(art::Event& evt)
     if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
     
     //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
     
     // Let the tools know to update to the next event
     for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
@@ -348,14 +325,10 @@ void SimWireICARUS::produce(art::Event& evt)
    
     for (geo::TPCID const& tpcid : fTPCVec) 
     {
-        std::cout << "**TPCID: " << tpcid << std::endl;
-
         for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
         {
             raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
             raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
-
-            std::cout << "--Plane: " << plane.ID() << ", start channel: " << planeStartChannel << ", end channel: " << planeEndChannel << std::endl;
 
             channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
         } // for planes in TPC
@@ -419,8 +392,8 @@ void SimWireICARUS::produce(art::Event& evt)
             double noise_factor(0.);
             auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
             double shapingTime  = fSignalShapingService->GetShapingTime(channel);
-            double gain         = fSignalShapingService->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-            int    timeOffset   = fSignalShapingService->FieldResponseTOffset(channel);
+            double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+            int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
             
             // Recover the response function information for this channel
             const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
@@ -443,6 +416,7 @@ void SimWireICARUS::produce(art::Event& evt)
             fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
                                                 noisetmp,
+                                                detProp,
                                                 noise_factor,
                                                 channel);
             
@@ -457,7 +431,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 // loop over the tdcs and grab the number of electrons for each
                 for(size_t tick = 0; tick < fNTimeSamples; tick++)
                 {
-                    int tdc = ts->TPCTick2TDC(tick);
+                    int tdc = clockData.TPCTick2TDC(tick);
                     
                     // continue if tdc < 0
                     if( tdc < 0 ) continue;

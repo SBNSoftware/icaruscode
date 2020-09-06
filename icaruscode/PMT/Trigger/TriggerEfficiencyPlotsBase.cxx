@@ -22,7 +22,6 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // optical_time_ticks..
 #include "lardataalg/DetectorInfo/DetectorClocks.h"
-#include "lardataalg/MCDumpers/MCDumperUtils.h" // sim::TruthInteractionTypeName
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 #include "larcorealg/CoreUtils/zip.h"
@@ -66,74 +65,6 @@
 
 
 //------------------------------------------------------------------------------
-//--- icarus::trigger::details::EventIDTree
-//------------------------------------------------------------------------------
-void icarus::trigger::details::EventInfo_t::dump(std::ostream& out) const {
-  out << "Event contains:";
-  if (isNeutrino()) {
-    if (nWeakChargedCurrentInteractions())
-      out << " " << nWeakChargedCurrentInteractions() << " CC";
-    if (nWeakNeutralCurrentInteractions())
-      out << " " << nWeakNeutralCurrentInteractions() << " NC";
-    if (isNu_mu()) out << " nu_mu";
-    if (isNu_e()) out << " nu_e";
-    out << "\nThe first neutrino has E=" << NeutrinoEnergy()
-      << " and becomes a lepton with E=" << LeptonEnergy()
-      << " with a " << sim::TruthInteractionTypeName(InteractionType())
-      << " interaction"
-      ;
-  }
-  else {
-    out << " no neutrino interaction";
-  }
-  out << "\nTotal deposited energy: " << DepositedEnergy()
-    << ", of which in spill " << DepositedEnergyInSpill()
-    << ", in active volume " << DepositedEnergyInActiveVolume()
-    << ", in active volume and in spill "
-      << DepositedEnergyInSpillInActiveVolume();
-  if (fVertices.empty()) {
-    out << "\nNo interaction vertex found.";
-  }
-  else {
-    auto iVertex = fVertices.begin();
-    auto const vend = fVertices.end();
-    out
-      << "\n" << fVertices.size() << " interaction vertices: " << *iVertex;
-    while (++iVertex != vend) out << "; " << *iVertex;
-    out << ".";
-  }
-  out << "\nThe event is" << (isInActiveVolume()? "": " NOT")
-    << " marked as in the active volume of the detector.";
-  out << "\n";
-  out.flush();
-} // icarus::trigger::details::EventInfo_t::dump()
-
-
-//------------------------------------------------------------------------------
-//--- icarus::trigger::details::EventIDTree
-//------------------------------------------------------------------------------
-icarus::trigger::details::EventIDTree::EventIDTree(TTree& tree)
-  : TreeHolder(tree)
-{
-
-  this->tree().Branch("RunNo", &fRunNo);
-  this->tree().Branch("SubRunNo", &fSubRunNo);
-  this->tree().Branch("EventNo", &fEventNo);
-
-} // icarus::trigger::details::EventIDTree::EventIDTree()
-
-
-//------------------------------------------------------------------------------
-void icarus::trigger::details::EventIDTree::assignID(art::EventID const& id) {
-
-  fRunNo = id.run();
-  fSubRunNo = id.subRun();
-  fEventNo = id.event();
-
-} // icarus::trigger::details::EventIDTree::assignID()
-
-
-//------------------------------------------------------------------------------
 //--- icarus::trigger::details::PlotInfoTree
 //------------------------------------------------------------------------------
 icarus::trigger::details::PlotInfoTree::PlotInfoTree(TTree& tree)
@@ -151,48 +82,6 @@ void icarus::trigger::details::PlotInfoTree::assign(bool inPlots) {
   fInPlots = static_cast<Bool_t>(inPlots);
 
 } // icarus::trigger::details::PlotInfoTree::assignEvent()
-
-
-//------------------------------------------------------------------------------
-//--- icarus::trigger::details::EventInfoTree
-//------------------------------------------------------------------------------
-icarus::trigger::details::EventInfoTree::EventInfoTree(TTree& tree)
-  : TreeHolder(tree)
-{
-
-  this->tree().Branch("CC",       &fCC);
-  this->tree().Branch("NC",       &fNC);
-  this->tree().Branch("IntType",  &fIntType);
-  this->tree().Branch("NuE",      &fNuE);
-  this->tree().Branch("OutLeptE", &fOutLeptE);
-  
-  this->tree().Branch("TotE",         &fTotE);
-  this->tree().Branch("SpillE",       &fSpillE);
-  this->tree().Branch("ActiveE",      &fActiveE);
-  this->tree().Branch("SpillActiveE", &fSpillActiveE);
-  this->tree().Branch("InActive",     &fInActive);
-  
-} // icarus::trigger::details::EventInfoTree::EventInfoTree()
-
-
-//------------------------------------------------------------------------------
-void icarus::trigger::details::EventInfoTree::assignEvent
-  (EventInfo_t const& info)
-{
-
-  fCC       = info.nWeakChargedCurrentInteractions();
-  fNC       = info.nWeakNeutralCurrentInteractions();
-  fIntType  = info.InteractionType();
-  fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
-  fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
-
-  fTotE         = static_cast<Double_t>(info.DepositedEnergy());
-  fSpillE       = static_cast<Double_t>(info.DepositedEnergyInSpill());
-  fActiveE      = static_cast<Double_t>(info.DepositedEnergyInActiveVolume());
-  fSpillActiveE = static_cast<Double_t>(info.DepositedEnergyInSpillInActiveVolume());
-  fInActive     = static_cast<Bool_t>(info.isInActiveVolume());
-  
-} // icarus::trigger::details::EventInfoTree::assignEvent()
 
 
 //------------------------------------------------------------------------------
@@ -269,20 +158,18 @@ icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories {
 icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   (Config const& config, art::ConsumesCollector& consumer)
   // configuration
-  : fGeneratorTags        (config.GeneratorTags())
-  , fDetectorParticleTag  (config.DetectorParticleTag())
-  , fEnergyDepositTags    (config.EnergyDepositTags())
+  : fDetectorParticleTag  (config.DetectorParticleTag())
   , fBeamGateDuration     (config.BeamGateDuration())
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
   , fLogCategory          (config.LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
-  , fDetClocks (*lar::providerFrom<detinfo::DetectorClocksService>())
-  , fDetTimings(fDetClocks)
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // cached
-  , fBeamGate(icarus::trigger::BeamGateMaker{ fDetClocks }(fBeamGateDuration))
+  , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
+  , fDetTimings{fDetClocks}
+  , fBeamGate(icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration))
   , fBeamGateOpt(
       fDetTimings.toOpticalTick(fDetTimings.BeamGateTime()),
       fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + fBeamGateDuration)
@@ -291,6 +178,14 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       fDetTimings.toSimulationTime(fBeamGateOpt.first),
       fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
         + fBeamGateDuration
+    )
+  ,fEventInfoExtractor(
+      config.GeneratorTags(),     // truthTags
+      config.EnergyDepositTags(), // edepTags
+      fBeamGateSim,               // inSpillTimes
+      fGeom,                      // geom
+      fLogCategory,               // logCategory
+      consumer                    // consumesCollector
     )
   , fChannelCryostat(makeChannelCryostatMap(fGeom))
 {
@@ -344,8 +239,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << fBeamGate << " (" << fBeamGateSim.first
-      << " -- " << fBeamGateSim.second << ")";
+    log << "\nBeam gate is " << fBeamGateSim.first << " -- " << fBeamGateSim.second;
   } // local block
 
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()
@@ -372,12 +266,12 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   //
   // 1. find out the features of the event and the categories it belongs to
   //
-  EventInfo_t const eventInfo = extractEventInfo(event);
+  EventInfo_t const eventInfo = fEventInfoExtractor(event);
   
   bool const bPlot = shouldPlotEvent(eventInfo);
   if (bPlot) ++nPlottedEvents;
   
-  if (fIDTree) fIDTree->assignEvent(event);
+  if (fIDTree) fIDTree->assignID(event.id());
   if (fPlotTree) fPlotTree->assign(bPlot);
   if (fEventTree) fEventTree->assignEvent(eventInfo);
   
@@ -401,6 +295,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   //
   // 2. for each PMT threshold:
   //
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   for (auto&& [ iThr, thrPair, thrPlots ]
     : util::enumerate(fADCthresholds, fThresholdPlots)
   ) {
@@ -432,9 +327,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
       iThr, // settings index
       cryoGates,
       eventInfo,
+      clockData,
       selectedPlots
       );
-    
+
   } // for thresholds
 
   //
@@ -673,7 +569,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
     getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
   } // if neutrino event
   TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
-  for (auto const& point: eventInfo.fVertices)
+  for (auto const& point: eventInfo.Vertices())
     vertexHist.Fill(point.Z(), point.Y());
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots()
@@ -697,10 +593,12 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
     (fired, double(eventInfo.DepositedEnergyInSpill()));
   getTrigEff.Eff("EffVsEnergyInSpillActive"s).Fill
     (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
-  getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
-    (fired, double(eventInfo.NeutrinoEnergy()));
-  getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
-    (fired, double(eventInfo.LeptonEnergy()));
+  if (eventInfo.isNeutrino()) {
+    getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
+      (fired, double(eventInfo.NeutrinoEnergy()));
+    getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
+      (fired, double(eventInfo.LeptonEnergy()));
+  }
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
@@ -729,121 +627,6 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::TriggerEfficiencyPlotsBase::extractEventInfo
-  (art::Event const& event) const -> EventInfo_t
-{
-  
-  using MeV = util::quantities::megaelectronvolt;
-  using GeV = util::quantities::gigaelectronvolt;
-  
-  EventInfo_t info;
-  
-  //
-  // generator information
-  //
-  for (art::InputTag const& inputTag: fGeneratorTags) {
-  
-    auto const& truthRecords
-      = *(event.getValidHandle<std::vector<simb::MCTruth>>(inputTag));
-    
-    for (simb::MCTruth const& truth: truthRecords) {
-      
-      if (truth.NeutrinoSet()) {
-        //
-        // interaction flavor (nu_mu, nu_e)
-        // interaction type (CC, NC)
-        //
-
-        simb::MCParticle const& nu = truth.GetNeutrino().Nu();
-        info.SetNeutrinoPDG(nu.PdgCode());
-        info.SetInteractionType(truth.GetNeutrino().InteractionType());
-
-        info.SetNeutrinoEnergy(GeV{ nu.E() });
-        info.SetLeptonEnergy(GeV{ truth.GetNeutrino().Lepton().E() });
-        //info.SetNucleonEnergy(truth.GetNeutrino().HitNuc().E());
-
-        switch (nu.PdgCode()) {
-          case 14:
-          case -14:
-            info.SetNu_mu(true);
-            break;
-          case 12:
-          case -12:
-            info.SetNu_e(true);
-            break;
-        }
-
-        switch (truth.GetNeutrino().CCNC()) {
-          case simb::kCC: info.AddWeakChargedCurrentInteractions(); break;
-          case simb::kNC: info.AddWeakNeutralCurrentInteractions(); break;
-          default:
-            mf::LogWarning(fLogCategory)
-              << "Event " << event.id() << " has unexpected NC/CC flag ("
-              << truth.GetNeutrino().CCNC() << ")";
-        } // switch   
-        
-        // we do not trust the vertex (`GvX()`) of the neutrino particle,
-        // since GenieHelper does not translate the vertex
-        // of some of the particles from GENIE to detector frame;
-        // trajectory is always translated:
-        geo::Point_t const vertex { nu.EndX(), nu.EndY(), nu.EndZ() };
-        info.AddVertex(vertex);
-        
-        geo::TPCGeo const* tpc = pointInActiveTPC(vertex);
-        if (tpc) info.SetInActiveVolume();
-        
-      } // if neutrino event
-      
-    } // for truth records
-    
-  } // for generators
-  
-  //
-  // propagation in the detector
-  //
-  GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
-  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 };
-  
-  for (art::InputTag const& edepTag: fEnergyDepositTags) {
-    
-    auto const& energyDeposits
-      = *(event.getValidHandle<std::vector<sim::SimEnergyDeposit>>(edepTag));
-    mf::LogTrace(fLogCategory)
-      << "Event " << event.id() << " has " << energyDeposits.size()
-      << " energy deposits recorded in '" << edepTag.encode() << "'";
-    
-    for (sim::SimEnergyDeposit const& edep: energyDeposits) {
-      
-      MeV const e { edep.Energy() }; // assuming it's stored in MeV
-      
-      detinfo::timescales::simulation_time const t { edep.Time() };
-      bool const inSpill
-        = (t >= fBeamGateSim.first) && (t <= fBeamGateSim.second);
-      
-      totalEnergy += e;
-      if (inSpill) inSpillEnergy += e;
-      
-      if (pointInActiveTPC(edep.MidPoint())) {
-        activeEnergy += e;
-        if (inSpill) inSpillActiveEnergy += e;
-      }
-      
-    } // for all energy deposits in the data product
-    
-  } // for all energy deposit tags
-  
-  info.SetDepositedEnergy(totalEnergy);
-  info.SetDepositedEnergyInSpill(inSpillEnergy);
-  info.SetDepositedEnergyInActiveVolume(activeEnergy);
-  info.SetDepositedEnergyInActiveVolumeInSpill(inSpillActiveEnergy);
-  
-  mf::LogTrace(fLogCategory) << "Event " << event.id() << ": " << info;
-  
-  return info;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::extractEventInfo()
-
-
-//------------------------------------------------------------------------------
 std::vector<std::string>
 icarus::trigger::TriggerEfficiencyPlotsBase::selectPlotCategories
   (EventInfo_t const& info, PlotCategories_t const& categories) const
@@ -856,24 +639,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::selectPlotCategories
   return selected;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::selectPlotCategories()
-
-
-//------------------------------------------------------------------------------
-geo::TPCGeo const* icarus::trigger::TriggerEfficiencyPlotsBase::pointInTPC
-  (geo::Point_t const& point) const
-{
-  return fGeom.PositionToTPCptr(point);
-} // icarus::trigger::TriggerEfficiencyPlotsBase::pointInTPC()
-
-
-//------------------------------------------------------------------------------
-geo::TPCGeo const* icarus::trigger::TriggerEfficiencyPlotsBase::pointInActiveTPC
-  (geo::Point_t const& point) const
-{
-  geo::TPCGeo const* tpc = pointInTPC(point);
-  return
-    (tpc && tpc->ActiveBoundingBox().ContainsPosition(point))? tpc: nullptr;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::pointInActiveTPC()
 
 
 //------------------------------------------------------------------------------

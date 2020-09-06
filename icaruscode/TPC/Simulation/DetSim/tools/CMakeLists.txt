@@ -10,6 +10,7 @@ art_make(
 			              lardataobj_RecoBase
 			              larcore_Geometry_Geometry_service
 			              lardata_Utilities
+                                      lardataalg_DetectorInfo
 			              nurandom_RandomUtils_NuRandomService_service
                           ${ICARUS_FFTW_LIBRARIES}
   			              ${ART_FRAMEWORK_CORE}

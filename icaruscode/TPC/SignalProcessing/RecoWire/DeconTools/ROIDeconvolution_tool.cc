@@ -35,6 +35,7 @@ public:
     void initializeHistograms(art::TFileDirectory&)        const override;
     
     void Deconvolve(const IROIFinder::Waveform&,
+                    double samplingRate,
                     raw::ChannelID_t,
                     IROIFinder::CandidateROIVec const&,
                     recob::Wire::RegionsOfInterest_t& )    const override;
@@ -108,14 +109,14 @@ void ROIDeconvolution::configure(const fhicl::ParameterSet& pset)
     // Get signal shaping service.
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop->NumberTimeSamples());
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detProp.NumberTimeSamples());
     
     return;
 }
 void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
+                                  double const                       samplingRate,
                                   raw::ChannelID_t                   channel,
                                   IROIFinder::CandidateROIVec const& roiVec,
                                   recob::Wire::RegionsOfInterest_t&  ROIVec) const
@@ -139,7 +140,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         }
         
         // In theory, most ROI's are around the same size so this should mostly be a noop
-        fSignalShaping->SetDecon(deconSize, channel);
+        fSignalShaping->SetDecon(samplingRate, deconSize, channel);
         
         deconSize = fFFTSize;
         
@@ -189,7 +190,7 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, holder.begin() + holderOffset);
         
         // Deconvolute the raw signal using the channel's nominal response
-        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
+        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
         
         // Get rid of the leading and trailing "extra" bins needed to keep the FFT happy
         if (roiStart > 0 || holderOffset > 0) std::copy(holder.begin() + holderOffset + roiStart, holder.begin() + holderOffset + roiStop, holder.begin());

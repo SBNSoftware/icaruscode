@@ -31,6 +31,7 @@
 
 // C/C++ libraries
 #include <vector>
+#include <array>
 #include <set>
 #include <algorithm> // std::transform(), std::find()
 #include <utility> // std::move()
@@ -482,10 +483,12 @@ void icarus::ICARUSChannelMapAlg::fillChannelToWireMap
         mf::LogTrace log("ICARUSChannelMapAlg");
         
         readout::ROPID const rid { sid, r };
-        log << "ROP: " << rid;
+        auto const planeType = findPlaneType(rid);
+        log << "ROP: " << rid
+          << " (plane type: " << PlaneTypeName(planeType) << ")";
         
         auto const& WirelessChannelCounts
-          = TPCsetChannelCounts.at(findPlaneType(rid));
+          = TPCsetChannelCounts.at(planeType);
         
         PlaneColl_t const& planes = ROPplanes(rid);
         log << " (" << planes.size() << " planes):";
@@ -588,8 +591,8 @@ void icarus::ICARUSChannelMapAlg::buildReadoutPlanes
 
 
 // -----------------------------------------------------------------------------
-std::size_t icarus::ICARUSChannelMapAlg::findPlaneType
-  (readout::ROPID const& rid) const
+auto icarus::ICARUSChannelMapAlg::findPlaneType(readout::ROPID const& rid) const
+  -> PlaneType_t
 {
   /*
    * This implementation is very fragile, relying on the fact that the first
@@ -598,10 +601,17 @@ std::size_t icarus::ICARUSChannelMapAlg::findPlaneType
    * are `kCollectionType`. This assumption is not checked anywhere.
    * 
    */
+  constexpr std::array PlaneTypes = { // let's C++ figure out type and size
+    kFirstInductionType,  // P:0
+    kSecondInductionType, // P:1
+    kCollectionType       // P:2
+  };
+  
   PlaneColl_t const& planes = ROPplanes(rid);
-  return planes.empty()
-    ? std::numeric_limits<std::size_t>::max()
-    : static_cast<std::size_t>(planes.front()->ID().Plane);
+  if (planes.empty()) return kUnknownType;
+  if (auto const planeNo = planes.front()->ID().Plane; planeNo < PlaneTypes.size())
+    return PlaneTypes[planeNo];
+  else return kUnknownType;
   
 } // icarus::ICARUSChannelMapAlg::findPlaneType()
 
@@ -611,42 +621,23 @@ geo::SigType_t icarus::ICARUSChannelMapAlg::SignalTypeForChannelImpl
   (raw::ChannelID_t const channel) const
 {
   /*
-   * The current mapping algorithm groups the wire planes by _x_, starting from
-   * the lowest ones.
-   * In a cathode-in-the-middle geometry, this makes the wire planes with higher
-   * number, which are farther from the cathode, to be picked first.
-   * 
-   * The same algorithm assigns the first readout plane to the lowest number.
-   * Since the first readout plane contains the first wire plane group, and that
-   * is the farthest from the cathode and has the largest number, the first
-   * readout plane, with number C:0 S:0 R:0, is assigned to a group pf planes
-   * including the likes of C:0 T:0 P:2.
-   * 
-   * Without bothering explicitly with coordinates, those assumptions mean that
-   * the ROPs with the lowest number (R:0) and the planes with the highest (P:2)
-   * are the farthest from the cathode, and they are therefore the collection
-   * planes, while all others are induction planes.
-   * 
-   * We have the choice of which of the two facts to rely upon.
-   * The readout one is somehow more fragile because it relies on one more
-   * convention (the assignment of readout plane numbers to plane groups) that
-   * may change without the rest being affected.
-   * On the other end, it's faster to implement because the access to the
-   * ROP from the channel number is more direct, and the number to compare to
-   * is always `0` instead of the actual number of planes minus one.
-   * Here we go the latter way.
+   * We rely on the accuracy of `findPlaneType()` (which is admittedly less than
+   * great) to assign signal type accordingly.
    */
   
   icarus::details::ChannelToWireMap::ChannelsInROPStruct const* channelInfo
     = fChannelToWireMap.find(channel);
+  if (!channelInfo) return geo::kMysteryType;
   
-  return channelInfo?
-    ((channelInfo->ropid.ROP == 0)
-      ? geo::kCollection
-      : geo::kInduction
-    )
-    : geo::kMysteryType
-    ;
+  switch (findPlaneType(channelInfo->ropid)) {
+    case kFirstInductionType:
+    case kSecondInductionType:
+      return geo::kInduction;
+    case kCollectionType:
+      return geo::kCollection;
+    default:
+      return geo::kMysteryType;
+  } // switch
   
 } // icarus::ICARUSChannelMapAlg::SignalTypeForChannelImpl()
 
@@ -689,6 +680,22 @@ auto icarus::ICARUSChannelMapAlg::extractWirelessChannelParams
     };
   
 } // icarus::ICARUSChannelMapAlg::extractWirelessChannelParams()
+
+
+// ----------------------------------------------------------------------------
+std::string icarus::ICARUSChannelMapAlg::PlaneTypeName(PlaneType_t planeType) {
+  
+  using namespace std::string_literals;
+  switch (planeType) {
+    case kFirstInductionType:  return "first induction"s;
+    case kSecondInductionType: return "second induction"s;
+    case kCollectionType:      return "collection induction"s;
+    case kUnknownType:         return "unknown"s;
+    default:
+      return "unsupported ("s + std::to_string(planeType) + ")"s;
+  } // switch
+  
+} // icarus::ICARUSChannelMapAlg::PlaneTypeName()
 
 
 // ----------------------------------------------------------------------------

@@ -11,6 +11,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "cetlib_except/exception.h"
 #include "larcore/CoreUtils/ServiceUtil.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "art_root_io/TFileService.h"
 
@@ -50,6 +51,7 @@ public:
     void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
                        icarusutil::TimeVec& noise,
+                       detinfo::DetectorPropertiesData const&,
                        double noise_factor,
                        unsigned int wire) override;
     
@@ -103,9 +105,6 @@ private:
     
     // Keep instance of the eigen FFT
     Eigen::FFT<double>                          fEigenFFT;
-    
-    // Useful services, keep copies for now (we can update during begin run periods)
-    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------
@@ -142,7 +141,8 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
     fCorrAmpHistogramName   = pset.get< std::string >("CorrAmpHistogramName");
     
     // Initialize the work vector
-    fNoiseFrequencyVec.resize(fDetectorProperties->NumberTimeSamples(),std::complex<float>(0.,0.));
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fNoiseFrequencyVec.resize(detProp.NumberTimeSamples(),std::complex<float>(0.,0.));
 
     // Set up to input the histogram with the overall noise spectrum
     std::string fullFileName;
@@ -201,8 +201,9 @@ void CorrelatedNoise::configure(const fhicl::ParameterSet& pset)
         // Make a directory for these histograms
         art::TFileDirectory dir = histDirectory->mkdir(Form("CorNoisePlane%1zu",fPlane));
         
-        float sampleRate  = fDetectorProperties->SamplingRate();
-        float readOutSize = fDetectorProperties->ReadOutWindowSize();
+        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+        float sampleRate  = sampling_rate(clockData);
+        float readOutSize = detProp.ReadOutWindowSize();
         float maxFreq     = 1.e6 / (2. * sampleRate);
         float minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
         int   numSamples  = readOutSize / 2;
@@ -228,6 +229,7 @@ void CorrelatedNoise::nextEvent()
 void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
                                     icarusutil::TimeVec&    noise,
+                                    detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
                                     unsigned int            channel)
 {
@@ -372,13 +374,15 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     fCoherentNoiseVec.clear();
     fCoherentNoiseVec.resize(peakVec.size(),0.);
     
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+    auto const samplingRate = sampling_rate(clockData);
     for(size_t idx = 0; idx < peakVec.size(); idx++)
     {
         if (peakVec[idx] > threshold) fCoherentNoiseVec[idx] = peakVec[idx];
         
         if (fStoreHistograms)
         {
-            float freq = 1.e6 * float(idx)/ (2. * fDetectorProperties->SamplingRate() * fCoherentNoiseVec.size());
+            float freq = 1.e6 * float(idx)/ (2. * samplingRate * fCoherentNoiseVec.size());
             
             fInputNoiseHist->Fill(freq,fNoiseHistVec.at(idx),1.);
             fMedianNoiseHist->Fill(freq,fIncoherentNoiseVec.at(idx),1.);
@@ -400,15 +404,16 @@ void CorrelatedNoise::SelectContinuousSpectrum()
     icarusutil::SigProcPrecision nSig(3.);
     icarusutil::SigProcPrecision mean,rmsTrunc;
     int                          nTrunc;
+    int                          range;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc, range);
     fWaveformTool.getTruncatedRMS(waveNoise, nSig, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc);
+    fWaveformTool.getTruncatedMean(waveNoise, mean, nTrunc, range);
     fWaveformTool.getTruncatedRMS(waveNoise, nSig, fCoherentNoiseRMS, rmsTrunc, nTrunc);
 
     if (fStoreHistograms)

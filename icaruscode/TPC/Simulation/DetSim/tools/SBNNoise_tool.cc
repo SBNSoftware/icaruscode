@@ -51,6 +51,7 @@ public:
     void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                        CLHEP::HepRandomEngine& cornoise_engine,
                        icarusutil::TimeVec& noise,
+                       detinfo::DetectorPropertiesData const&,
                        double noise_factor,
                        unsigned int wire) override;
     
@@ -112,8 +113,6 @@ float totalRMS;
     // Keep instance of the eigen FFT
     Eigen::FFT<double>                          fEigenFFT;
     
-    // Useful services, keep copies for now (we can update during begin run periods)
-    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
     
 //----------------------------------------------------------------------
@@ -149,7 +148,9 @@ void SBNNoise::configure(const fhicl::ParameterSet& pset)
     fUncorrelatedRMSHistoName  = pset.get< std::string >("UncorrelatedRMSHistoName");
     fTotalRMSHistoName         = pset.get< std::string >("TotalRMSHistoName");
     // Initialize the work vector
-    fNoiseFrequencyVec.resize(fDetectorProperties->NumberTimeSamples(),std::complex<float>(0.,0.));
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
+    fNoiseFrequencyVec.resize(detProp.NumberTimeSamples(),std::complex<float>(0.,0.));
 
     // Set up to input the histogram with the overall noise spectrum
     std::string fullFileName;
@@ -210,8 +211,8 @@ std::cout << " after filling vectors " << std::endl;
         // Make a directory for these histograms
         art::TFileDirectory dir = histDirectory->mkdir(Form("CorNoisePlane%1zu",fPlane));
         
-        float sampleRate  = fDetectorProperties->SamplingRate();
-        float readOutSize = fDetectorProperties->ReadOutWindowSize();
+        float sampleRate  = sampling_rate(clockData);
+        float readOutSize = detProp.ReadOutWindowSize();
         float maxFreq     = 1.e6 / (2. * sampleRate);
         float minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
         int   numSamples  = readOutSize / 2;
@@ -237,6 +238,7 @@ void SBNNoise::nextEvent()
 void SBNNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     CLHEP::HepRandomEngine& engine_corr,
                                     icarusutil::TimeVec&     noise,
+                             detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
                                     unsigned int            channel)
 {
@@ -351,14 +353,15 @@ void SBNNoise::ComputeRMSs()
     double nSig(3.);
     double mean,rmsTrunc;
     int    nTrunc;
+    int    range;
     
     // Use the waveform tool to recover the full rms
-    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fIncoherentNoiseRMS, rmsTrunc, nTrunc, range);
     
     // Do the same for the coherent term
     GenNoise(randGenFunc, fCoherentNoiseVec, waveNoise, scaleFactor);
     
-    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc);
+    fWaveformTool.getTruncatedMeanRMS(waveNoise, nSig, mean, fCoherentNoiseRMS, rmsTrunc, nTrunc, range);
 
     if (fStoreHistograms)
     {

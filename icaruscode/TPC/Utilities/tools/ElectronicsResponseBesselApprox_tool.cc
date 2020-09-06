@@ -105,7 +105,7 @@ void ElectronicsResponseBesselApprox::setResponse(size_t numBins, double binWidt
     
     for(size_t timeIdx = 0; timeIdx < numBins; timeIdx++)
     {
-        double binTime = double(timeIdx) * fBinWidth - fTimeOffset;
+        double binTime = (double(timeIdx) + 0.5) * fBinWidth - fTimeOffset;
         double funcArg = 0.;
         
         if (binTime >= 0.) funcArg = binTime / fASICShapingTime;
@@ -157,12 +157,14 @@ void ElectronicsResponseBesselApprox::outputHistograms(art::TFileDirectory& hist
     
     TProfile* hist = dir.make<TProfile>(histName.c_str(), "Response;Time(us)", fElectronicsResponseBesselApproxVec.size(), 0., hiEdge);
     
-    for(size_t idx = 0; idx < fElectronicsResponseBesselApproxVec.size(); idx++) hist->Fill(idx * fBinWidth, fElectronicsResponseBesselApproxVec.at(idx), 1.);
-    
+    for(size_t idx = 0; idx < fElectronicsResponseBesselApproxVec.size(); idx++) hist->Fill((double(idx)+0.5) * fBinWidth, fElectronicsResponseBesselApproxVec.at(idx), 1.);
+   
     // Get the FFT of the response
-    icarusutil::TimeVec powerVec;
+    size_t halfFFTDataSize(fElectronicsResponseBesselApproxVec.size()/2);
+
+    std::vector<double> powerVec(halfFFTDataSize);
     
-    fFFT->getFFTPower(fElectronicsResponseBesselApproxVec, powerVec);
+    std::transform(fElectronicsResponseBesselApproxVec.begin(), fElectronicsResponseBesselApproxVec.begin() + halfFFTDataSize, powerVec.begin(), [](const auto& val){return std::abs(val);});
     
     // Now we can plot this...
     double maxFreq   = 0.5 / fBinWidth;   // binWidth will be in us, maxFreq will be units of MHz

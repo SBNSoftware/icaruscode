@@ -41,6 +41,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -91,7 +92,7 @@ class RecoWireROIICARUS : public art::EDProducer
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
 
-    icarus_signal_processing::WaveformTools<float>                     fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>          fWaveformTool;
     
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
     
@@ -214,7 +215,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
 
     // Read in the digit List object(s). 
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;        
     
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
@@ -230,6 +231,8 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     
     const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+    double const samplingRate = sampling_rate(clockData);
     // loop over all wires
     wirecol->reserve(digitVecHandle->size());
     for(size_t rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter)
@@ -290,7 +293,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             fROIFinderVec.at(planeID.Plane)->FindROIs(rawAdcLessPedVec, channel, fEventCount, raw_noise, candRoiVec);
             
             // Do the deconvolution
-            fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, candRoiVec, ROIVec);
+            fDeconvolution->Deconvolve(rawAdcLessPedVec, samplingRate, channel, candRoiVec, ROIVec);
             
             // Make some histograms?
             if (fOutputHistograms)
@@ -375,10 +378,11 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
     float truncMean;
     float nSig(2.0);  // make tight constraint
     int   nTrunc;
+    int   range;
 
     fixedWaveform.resize(waveform.size());
     
-    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
+    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc, range);
     
     // Fill histograms
     if (fOutputHistograms)

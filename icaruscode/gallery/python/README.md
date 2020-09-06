@@ -1,6 +1,12 @@
-% ICARUS and LArSoft utilities for interface with Python
-% Gianluca Petrillo (petrillo@slac.stanford.edu)
-% June 23, 2019
+# ICARUS and LArSoft utilities for interface with Python {#ICARUS_Python_README}
+
+| Topic:          | ICARUS/LArSoft code via Python                 |
+| --------------- | ---------------------------------------------- |
+| Type:           | Python general documentation                   |
+| Author:         | Gianluca Petrillo (petrillo@slac.stanford.edu) |
+| Created on:     | June 23, 2019                                  |
+| Version:        | 1.0                                            |
+
 
 This document describes the utilities provided in `icaruscode` to facilitate the
 use of LArSoft and ICARUS-specific code developed for _art_/_gallery_ into
@@ -16,9 +22,9 @@ Format of this document
 ------------------------
 
 This file (`README.md`) is written in a dialect of [Markdown] format that is
-compatible with [`pandoc`][pandoc]. The format is designed to br readable as
-plain text: in that case, the reader will find all the links to external
-resources at the end of the document.
+compatible with [`pandoc`][pandoc] and [Doxygen]. The format is designed to be
+readable as plain text: in that case, the reader will find all the links to
+external resources at the end of the document.
 The program `pandoc` allows to render this file in other formats. For example,
 to render it into Portable Document Format:
     
@@ -574,5 +580,7 @@ get there is to set up `larsoftobj`:
 
 
 [Markdown]: https://daringfireball.net/projects/markdown
+[Doxygen]: http://www.doxygen.nl
 [pandoc]: https://pandoc.org/MANUAL.html
 [LArRel]: https://cdcvs.fnal.gov/redmine/projects/larsoft/wiki/LArSoft_release_list
+

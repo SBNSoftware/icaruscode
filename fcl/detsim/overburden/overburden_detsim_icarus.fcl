@@ -11,4 +11,3 @@
 
 # turn to overburden geometry:
 #include "use_overburden_geometry_icarus.fcl"
-

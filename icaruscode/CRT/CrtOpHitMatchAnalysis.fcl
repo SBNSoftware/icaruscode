@@ -1,6 +1,7 @@
 
 #include "services_icarus.fcl"
 #include "services_icarus_simulation.fcl"
+#include "crtbacktracker_icarus.fcl"
 
 process_name: CRTAnalysis
 
@@ -13,6 +14,8 @@ services:
 
   message:                @local::icarus_message_services_prod_debug
                           @table::icarus_basic_services
+
+  #@table::icarus_backtracking_services
 
 } # services
 
@@ -42,15 +45,23 @@ physics:
 
       #SimulationLabel:   "largeant"
 
-      CrtHitModuleLabel:  "crtsimhit"
+      CrtHitModuleLabel:  "crthit"
 
       OpHitModuleLabel:   "ophit"
 
       OpFlashModuleLabel0: "opflashTPC0"
       OpFlashModuleLabel1: "opflashTPC1"
+      OpFlashModuleLabel2: "opflashTPC2"
+      OpFlashModuleLabel3: "opflashTPC3"
 
-      CoincidenceWindow: 60.0
-      OpDelay: 73.19
+      FlashPeThresh: 2000.0
+      HitPeThresh:   100.0
+      CoincidenceWindow: 80.0
+      OpDelay: 43.0
+      HitVelocityMax: 15.0
+      HitVelocityMin: 2.0
+
+      CRTBackTrack: @local::standard_crtbacktracker
     }
   }
 

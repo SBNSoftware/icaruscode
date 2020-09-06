@@ -25,7 +25,20 @@
 
 namespace icarus::trigger {
 
-  // ---------------------------------------------------------------------------
+  /// --- BEGIN -- Gate operations ---------------------------------------------
+  /**
+   * @name Gate operations
+   *
+   * Currently the following operations are supported:
+   * 
+   * * discrimination against a threshold: `discriminate()`;
+   * * sum of trigger gates: `sumGates()`, `sumGatesSequence()`;
+   * * maximum of trigger gates: `maxGates()`, `maxGatesSequence()`.
+   *
+   * Operations on more than one gate can take a sequence (begin and end
+   * iterators), a collection or an arbitrary number of gates.
+   */
+  /// @{
 
   /**
    * @brief Returns a discriminated version of `gate`.
@@ -60,13 +73,130 @@ namespace icarus::trigger {
     typename GateObj::OpeningCount_t fail = 0U
     );
   
-  // ---------------------------------------------------------------------------
+  
+  // --- BEGIN -- Gate operations: sum  ----------------------------------------
+  
+  /**
+   * @brief Sums a sequence of gates.
+   * @tparam BIter type of iterator to the gates to add
+   * @tparam EIter type of iterator past-the-end of the sequence of gates to add
+   * @param begin iterator to the first gate to add
+   * @param end iterator past-the-last gate to add
+   * @return a new gate sum of all the specified ones
+   * @see `sumGates()`
+   * 
+   * All gates from the first on are summed.
+   * The returned gate has the same type as the first gate.
+   */
+  template <typename BIter, typename EIter>
+  auto sumGatesSequence(BIter const begin, EIter const end);
 
+
+  /**
+   * @brief Sums all the gates in a collection.
+   * @tparam GateColl type of collection of gates
+   * @param gates the collection of gates to sum
+   * @return a new gate sum of all the `gates`
+   * @see `sumGatesSequence()`
+   * 
+   * All gates from the first on are summed.
+   * The returned gate has the same type as the gates in the collection.
+   */
+  template <typename GateColl>
+  auto sumGates(GateColl const& gates);
+
+
+  /**
+   * @brief Sums all the specified gates.
+   * @tparam AGate type of the first gate to sum; it determines the return type
+   * @tparam BGate type of the second gate to sum
+   * @tparam OGates type of other gates to sum
+   * @param A first gate to be summed
+   * @param B second gate to be summed
+   * @param others other gates to be summed
+   * @return a new gate sum of all the argument gates, of the same type as `A`
+   * @see `sumGatesSequence()`
+   * 
+   * All arguments are combined in the sum of the gates.
+   * The returned gate has the same type as the first gate.
+   * 
+   * @note There must be _at least two_ gates in the arguments.
+   */
+  template <typename AGate, typename BGate, typename... OTrigGates>
+  auto sumGates(AGate A, BGate const& B, OTrigGates const&... others);
+  
+  
+  /// --- END -- Gate operations: sum ------------------------------------------
+  
+  
+  // --- BEGIN -- Gate operations: max  ----------------------------------------
+  
+  /**
+   * @brief Computes the gate with the maximum opening of a sequence of gates.
+   * @tparam BIter type of iterator to the gates to add
+   * @tparam EIter type of iterator past-the-end of the sequence of gates to add
+   * @param begin iterator to the first gate to add
+   * @param end iterator past-the-last gate to add
+   * @return a new gate maximum of all the specified ones
+   * @see `maxGates()`
+   * 
+   * For each tick, the maximum opening among all the gates in the sequence is
+   * picked.
+   * The returned gate has the same type as the first gate.
+   */
+  template <typename BIter, typename EIter>
+  auto maxGatesSequence(BIter const begin, EIter const end);
+
+
+  /**
+   * @brief Computes the gate with the maximum opening of gates from collection.
+   * @tparam GateColl type of collection of gates
+   * @param gates the collection of gates to sum
+   * @return a new gate maximum of all the `gates`
+   * @see `maxGatesSequence()`
+   * 
+   * For each tick, the maximum opening among all the gates in the collection is
+   * picked.
+   * The returned gate has the same type as the gates in the collection.
+   */
+  template <typename GateColl>
+  auto maxGates(GateColl const& gates);
+
+
+  /**
+   * @brief Computes the gate with the maximum opening of the specified gates.
+   * @tparam AGate type of the first gate; it determines the return type
+   * @tparam BGate type of the second gate
+   * @tparam OGates type of other gates
+   * @param A first gate
+   * @param B second gate
+   * @param others other gates
+   * @return a new gate maximum of all the argument gates, of same type as `A`
+   * @see `maxGatesSequence()`
+   * 
+   * For each tick, the maximum opening among all the specified gates is picked.
+   * The returned gate has the same type as the first gate.
+   * 
+   * @note There must be _at least two_ gates in the arguments.
+   */
+  template <typename AGate, typename BGate, typename... OTrigGates>
+  auto maxGates(AGate A, BGate const& B, OTrigGates const&... others);
+  
+  
+  /// --- END -- Gate operations: sum ------------------------------------------
+  
+  
+  /// @}
+  /// --- END -- Gate operations -----------------------------------------------
+  
+  
 } // namespace icarus::trigger
 
 
-// -----------------------------------------------------------------------------
-// ---  template implementation
+// =============================================================================
+// ===  template implementation
+// =============================================================================
+// ---  Discriminate
 // -----------------------------------------------------------------------------
 template <typename GateObj>
 GateObj icarus::trigger::discriminate(
@@ -120,5 +250,82 @@ GateObj icarus::trigger::discriminate(
 
 
 // -----------------------------------------------------------------------------
+// ---  Sum
+// -----------------------------------------------------------------------------
+template <typename BIter, typename EIter>
+auto icarus::trigger::sumGatesSequence(BIter const begin, EIter const end) {
+  
+  // if `gates` is empty return a default-constructed gate of the contained type
+  if (begin == end) return decltype(*begin){};
+  
+  auto iGate = begin;
+  auto resGate = *iGate;
+  while (++iGate != end) resGate.Sum(*iGate);
+  
+  return resGate;
+  
+} // icarus::trigger::sumGatesSequence()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateColl>
+auto icarus::trigger::sumGates(GateColl const& gates)
+  { return sumGatesSequence(begin(gates), end(gates)); }
+
+
+// -----------------------------------------------------------------------------
+template <typename AGate, typename BGate, typename... OGates>
+auto icarus::trigger::sumGates(AGate A, BGate const& B, OGates const&... others)
+{
+  if constexpr(sizeof...(others) == 0U) { // only two operands: end of recursion
+    A.Sum(B); // A is already a copy...
+    return A;
+  }
+  else {
+    return sumGates(sumGates(A, B), others...);
+  }
+} // icarus::trigger::sumGates()
+
+
+// -----------------------------------------------------------------------------
+// ---  Max
+// -----------------------------------------------------------------------------
+template <typename BIter, typename EIter>
+auto icarus::trigger::maxGatesSequence(BIter const begin, EIter const end) {
+  
+  // if `gates` is empty return a default-constructed gate of the contained type
+  if (begin == end) return decltype(*begin){};
+  
+  auto iGate = begin;
+  auto resGate = *iGate;
+  while (++iGate != end) resGate.Max(*iGate);
+  
+  return resGate;
+  
+} // icarus::trigger::maxGatesSequence()
+
+
+// -----------------------------------------------------------------------------
+template <typename GateColl>
+auto icarus::trigger::maxGates(GateColl const& gates)
+  { return maxGatesSequence(begin(gates), end(gates)); }
+
+
+// -----------------------------------------------------------------------------
+template <typename AGate, typename BGate, typename... OGates>
+auto icarus::trigger::maxGates(AGate A, BGate const& B, OGates const&... others)
+{
+  if constexpr(sizeof...(others) == 0U) { // only two operands: end of recursion
+    A.Max(B); // A is already a copy...
+    return A;
+  }
+  else {
+    return maxGates(maxGates(A, B), others...);
+  }
+} // icarus::trigger::maxGates()
+
+
+// -----------------------------------------------------------------------------
+
 
 #endif // ICARUSCODE_PMT_TRIGGER_UTILITIES_TRIGGERGATEOPERATIONS_H

@@ -51,6 +51,24 @@
 # Since the documentation is often not updated, check the definitions below
 # to see which are the current defaults.
 #
+#
+# Notes
+# ------
+# 
+# A special policy in ICARUS is to have a copy of the channel mapping algorithm
+# configuration in the `Geometry` service configuration.
+# This is required by the off-art geometry loading utilities in ICARUS.
+# One day LArSoft will also support something like that and that will become
+# the only location of the channel mapping configuration.
+#
+#
+# Changes
+# --------
+#
+# 20200709 (petrillo@slac.stanford.edu)
+#   adopted split wire geometry fixed by
+#   Alessandro Menegolli (alessandro.menegolli@unipv.it)
+#
 
 
 BEGIN_PROLOG
@@ -117,6 +135,8 @@ icarus_single_induction_overburden_geometry: {
   GDML: "icarus_single_complete.gdml"
   ROOT: "icarus_single_complete.gdml"
 
+  ChannelMapping: @local::icarus_single_induction_geometry_helper.Mapper
+
 } # icarus_single_induction_overburden_geometry
 
 
@@ -156,6 +176,8 @@ icarus_single_induction_nooverburden_geometry: {
   Name: "icarus"
   GDML: "icarus_single_complete_no_overburden.gdml"
   ROOT: "icarus_single_complete_no_overburden.gdml"
+
+  ChannelMapping: @local::icarus_single_induction_geometry_helper.Mapper
 
 } # icarus_single_induction_nooverburden_geometry
 
@@ -265,8 +287,10 @@ icarus_split_induction_overburden_geometry: {
   @table::icarus_geometry_template
 
   Name: "icarus_splitwires"
-  GDML: "icarus_complete.gdml"
-  ROOT: "icarus_complete.gdml"
+  GDML: "icarus_complete_20200709.gdml"
+  ROOT: "icarus_complete_20200709.gdml"
+
+  ChannelMapping: @local::icarus_split_induction_geometry_helper.Mapper
 
 } # icarus_split_induction_overburden_geometry
 
@@ -303,8 +327,10 @@ icarus_split_induction_nooverburden_geometry: {
   @table::icarus_geometry_template
 
   Name: "icarus_splitwires"
-  GDML: "icarus_complete_no_overburden.gdml"
-  ROOT: "icarus_complete_no_overburden.gdml"
+  GDML: "icarus_complete_20200709_no_overburden.gdml"
+  ROOT: "icarus_complete_20200709_no_overburden.gdml"
+
+  ChannelMapping: @local::icarus_split_induction_geometry_helper.Mapper
 
 } # icarus_split_induction_nooverburden_geometry
 
@@ -327,7 +353,7 @@ icarus_split_induction_nooverburden_geometry_services: {
 ###
 ### Override a geometry configuration by:
 ###
-###     services: {
+###     services: {icarus_legacy_services_v08_05_00
 ###       @table::services
 ###       @table::icarus_split_induction_geometry_services
 ###     }
@@ -423,7 +449,7 @@ icarus_nooverburden_geometry: @local::icarus_nooverburden_geometry_services.Geom
 #
 # geometry configuration bundle
 #
-icarus_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+icarus_geometry_services: @local::icarus_split_induction_nooverburden_geometry_services
 
 #
 # Geometry service configuration:

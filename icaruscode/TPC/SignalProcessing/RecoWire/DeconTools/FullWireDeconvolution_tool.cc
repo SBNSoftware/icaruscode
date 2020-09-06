@@ -36,6 +36,7 @@ public:
     void initializeHistograms(art::TFileDirectory&)        const override;
     
     void Deconvolve(IROIFinder::Waveform const&,
+                    double samplingRate,
                     raw::ChannelID_t,
                     IROIFinder::CandidateROIVec const&,
                     recob::Wire::RegionsOfInterest_t& )    const override;
@@ -43,17 +44,16 @@ public:
 private:
     
     // Member variables from the fhicl file
-    bool                                                       fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
-    std::string                                                fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
-    std::map<unsigned int, float>                              fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
+    bool                                                         fDodQdxCalib;                ///< Do we apply wire-by-wire calibration?
+    std::string                                                  fdQdxCalibFileName;          ///< Text file for constants to do wire-by-wire calibration
+    std::map<unsigned int, float>                                fdQdxCalib;                  ///< Map to do wire-by-wire calibration, key is channel
 
-    icarus_signal_processing::WaveformTools<float>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>               fWaveformTool;
 
-    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>          fFFT;                        ///< Object to handle thread safe FFT
+    std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;                        ///< Object to handle thread safe FFT
 
-    const geo::GeometryCore*                                   fGeometry           = lar::providerFrom<geo::Geometry>();
-    detinfo::DetectorProperties const*                         fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    art::ServiceHandle<icarusutil::SignalShapingICARUSService> fSignalShaping;
+    const geo::GeometryCore*                                     fGeometry           = lar::providerFrom<geo::Geometry>();
+    art::ServiceHandle<icarusutil::SignalShapingICARUSService>   fSignalShaping;
 };
     
 //----------------------------------------------------------------------
@@ -106,12 +106,14 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
     fSignalShaping = art::ServiceHandle<icarusutil::SignalShapingICARUSService>();
 
     // Now set up our plans for doing the convolution
-    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fDetectorProperties->NumberTimeSamples());
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detProp.NumberTimeSamples());
      
     return;
 }
     
 void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        waveform,
+                                       double const samplingRate,
                                        raw::ChannelID_t                   channel,
                                        IROIFinder::CandidateROIVec const& roiVec,
                                        recob::Wire::RegionsOfInterest_t&  ROIVec) const
@@ -123,7 +125,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     size_t dataSize = waveform.size();
     
     // Make sure the deconvolution size is set correctly (this will probably be a noop after first call)
-    fSignalShaping->SetDecon(dataSize, channel);
+    fSignalShaping->SetDecon(samplingRate, dataSize, channel);
     
     // now make a buffer to contain the waveform which will be of the right size
     icarusutil::TimeVec rawAdcLessPedVec(dataSize,0.);
@@ -137,7 +139,7 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
     std::copy(waveform.begin(),waveform.end(),rawAdcLessPedVec.begin()+binOffset);
     
     // Strategy is to run deconvolution on the entire channel and then pick out the ROI's we found above
-    fFFT->deconvolute(rawAdcLessPedVec, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->FieldResponseTOffset(channel));
+    fFFT->deconvolute(rawAdcLessPedVec, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
     
     std::vector<float> holder;
 
@@ -156,8 +158,9 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         // Get the truncated mean and rms
         float truncMean;
         int   nTrunc;
+        int   range;
         
-        fWaveformTool.getTruncatedMean(holder, truncMean, nTrunc);
+        fWaveformTool.getTruncatedMean(holder, truncMean, nTrunc, range);
         
         std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
 

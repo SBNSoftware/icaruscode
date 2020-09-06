@@ -68,6 +68,7 @@ find_ups_product( fftw )
 find_ups_boost( v1_53_0 )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
+find_ups_product( libwda )
 find_ups_product( icarus_signal_processing )
 find_ups_product( icarusutil )
 find_ups_product( icarus_data )
@@ -95,6 +96,7 @@ include(BuildPlugins)
 # ADD SOURCE CODE SUBDIRECTORIES HERE
 add_subdirectory(icaruscode)
 add_subdirectory(scripts)
+add_subdirectory(doc)
 
 # subdirectory for test code
 add_subdirectory(test)

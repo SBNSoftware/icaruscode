@@ -25,7 +25,7 @@ BEGIN_PROLOG
 icarus_opticalproperties: {
     
     ScintYield:     24000  # 24000 ph/MeV assume 500 mV/cm
-    ScintPreScale:  0.07   # 24000 ph/MeV QE is 7%
+    ScintPreScale:  0.121  # see JINST 13 (2018) 12, P12020
                            # MUST match between g4 and detsim
     # ScintPreScale:  0.0093   # DocDB 4914, @MToups
 

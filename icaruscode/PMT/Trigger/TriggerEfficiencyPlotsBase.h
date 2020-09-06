@@ -11,6 +11,12 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
+#include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoTree.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/EventIDTree.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
@@ -71,276 +77,12 @@ namespace icarus::trigger {
 //------------------------------------------------------------------------------
 namespace icarus::trigger::details {
   
-  struct EventInfo_t;
-  
-  std::ostream& operator<< (std::ostream& out, EventInfo_t const& info);
-  
-  struct TriggerInfo_t;
-  
-  struct TreeHolder;
-  struct EventIDTree;
   struct PlotInfoTree;
-  struct EventInfoTree;
     
 } // namespace icarus::trigger::details
 
 
-//------------------------------------------------------------------------------
-/// Information about the event.
-struct icarus::trigger::details::EventInfo_t {
-  
-  using GeV = util::quantities::gigaelectronvolt;
-  
-  /// Constructor. As if nobody noticed.
-  EventInfo_t() { fInteractions.fill(0U); }
-  
-  // --- BEGIN Query interface -----------------------------------------------
-  /// @name Query interface
-  /// @{
-
-  /// Returns the number of weak charged current interactions in the event.
-  unsigned int nWeakChargedCurrentInteractions() const
-    { return fInteractions[itWCC]; }
-
-  /// Returns the number of weak neutral current interactions in the event.
-  unsigned int nWeakNeutralCurrentInteractions() const
-    { return fInteractions[itWNC]; }
-
-  /// Returns the number of weak current interactions in the event.
-  unsigned int nWeakCurrentInteractions() const
-    {
-      return
-        nWeakChargedCurrentInteractions() + nWeakNeutralCurrentInteractions();
-    }
-
-  /// Returns whether the event is generated as a neutrino CC interaction.
-  bool isWeakChargedCurrent() const
-    { return nWeakChargedCurrentInteractions() > 0U; }
-
-  /// Returns whether the event is generated as a neutrino NC interaction.
-  bool isWeakNeutralCurrent() const
-    { return nWeakNeutralCurrentInteractions() > 0U; }
-
-  /// Returns whether the event is generated as a neutrino interaction.
-  bool isNeutrino() const
-    { return isWeakChargedCurrent() || isWeakNeutralCurrent(); }
-  
-  /// Returns which neutrino flavor is present in an event
-  bool isNu_mu() const { return nu_mu; }
-  bool isNu_e() const { return nu_e; }
-
-  /// Returns the neutrino PDG code
-  int NeutrinoPDG() const { return fNeutrinoPDG; }
-
-  /// Returns the total energy deposited in the detector during the event [GeV]
-  GeV DepositedEnergy() const { return fEnergyDepTotal; }
-  
-  /// Returns the total energy deposited in the detector during beam [GeV]
-  GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
-
-  /// Returns the energy deposited in the active volume during the event [GeV]
-  GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
-  
-  /// Returns the energy deposited in the active volume during the beam [GeV]
-  GeV DepositedEnergyInSpillInActiveVolume() const
-    { return fEnergyDepSpillActive; }
-
-  // Returns the neutrino energy [GeV]
-  GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
-
-  // Returns the lepton energy [GeV]
-  GeV LeptonEnergy() const { return fLeptonEnergy; }
-
-  // Returns the interaction type
-  int InteractionType() const { return fInteractionType; }
-
-  /// Returns whether this type of event has a known vertex.
-  bool hasVertex() const { return !fVertices.empty(); }
-  
-  /// Returns whether there is an interaction within the active volume.
-  bool isInActiveVolume() const { return fInActiveVolume; }
-  
-  /// @}
-  // --- END Query interface -------------------------------------------------
-
-
-  // --- BEGIN Set interface -------------------------------------------------
-  /// @name Set interface
-  /// @{
-
-  /// Marks this event as including _n_ more weak charged current interactions.
-  void AddWeakChargedCurrentInteractions(unsigned int n = 1U)
-    { fInteractions[itWCC] += n; }
-
-  /// Marks this event as including _n_ more weak neutral current interactions.
-  void AddWeakNeutralCurrentInteractions(unsigned int n = 1U)
-    { fInteractions[itWNC] += n; }
-
-  /// Marks the neutrino flavor
-  void SetNu_mu(bool numu) { nu_mu = numu; }
-  void SetNu_e(bool nue) { nu_e = nue; }
-
-  /// Marks this event's neutrino type
-  void SetNeutrinoPDG(int NU) { fNeutrinoPDG = NU; }
-
-  /// Sets the total deposited energy of the event [GeV]
-  void SetDepositedEnergy(GeV e) { fEnergyDepTotal = e; }
-
-  /// Sets the energy of the event deposited during beam gate [GeV]
-  void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
-
-  /// Sets the total deposited energy of the event in active volume [GeV]
-  void SetDepositedEnergyInActiveVolume(GeV e) { fEnergyDepActive = e; }
-
-  /// Sets the energy of the event deposited during beam gate in active volume
-  /// [GeV]
-  void SetDepositedEnergyInActiveVolumeInSpill(GeV e)
-    { fEnergyDepSpillActive = e; }
-
-  // Sets the neutrino energy.
-  void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
-
-  // Sets the lepton energy.
-  void SetLeptonEnergy(GeV eL) { fLeptonEnergy = eL; }
-
-  // Sets the interaction type
-  void SetInteractionType(int type) { fInteractionType = type; }
-
-  /// Set whether the event has relevant activity in the active volume.
-  void SetInActiveVolume(bool active = true) { fInActiveVolume = active; }
-  
-  /// Adds a point to the list of interaction vertices in the event.
-  void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
-  
-  std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-
-  /// @}
-  // --- END Set interface ---------------------------------------------------
-
-  /// Prints the content of the object into a stream.
-  void dump(std::ostream& out) const;
-
-    private:
-
-  // --- BEGIN interaction type constants ------------------------------------
-  
-  static constexpr std::size_t itWCC { 0U }; ///< Charged weak current.
-  static constexpr std::size_t itWNC { 1U }; ///< Neutral weak current.
-  static constexpr std::size_t NInteractionTypes { 2U };
-
-  // --- END interaction type constants --------------------------------------
-
-  std::array<unsigned int, NInteractionTypes> fInteractions;
-
-  GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
-  GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
-  GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
-  /// Energy deposited in active volume in spill.
-  GeV fEnergyDepSpillActive { 0.0 };
-
-  int fNeutrinoPDG { 0 };
-  int fInteractionType { 0 };
-
-  GeV fNeutrinoEnergy { 0.0 };
-  GeV fLeptonEnergy { 0.0 };
-  //GeV fNucleonEnergy { 0.0 };
-  
-  bool nu_mu { false };
-  bool nu_e { false };
-  
-  /// Whether the event has activity inside the active volume.
-  bool fInActiveVolume { false };
-  
-  //std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
-  
-}; // struct icarus::trigger::details::EventInfo_t
-
-inline std::ostream& icarus::trigger::details::operator<<
-  (std::ostream& out, EventInfo_t const& info)
-  { info.dump(out); return out; }
-
-
-//------------------------------------------------------------------------------
-struct icarus::trigger::details::TriggerInfo_t {
-  
-  struct Info_t {
-    optical_tick tick;
-  }; // Info_t
-  
-  TriggerInfo_t() = default; // no trigger
-  TriggerInfo_t(Info_t const& info): fInfo(info) {}
-  
-  /// Returns whether the trigger fired.
-  bool fired() const { return fInfo.has_value(); }
-  
-  /// Returns the full data (undefined behaviour if `!fired()`).
-  Info_t const& info() const { return fInfo.value(); }
-  
-  /// Returns the time of the trigger (undefined behaviour if `!fired()`).
-  optical_tick atTick() const { return fInfo->tick; }
-  
-  /// Returns whether there is trigger information.
-  operator bool() const { return fired(); }
-  
-  /// Returns whether there is no trigger information.
-  bool operator! () const { return !fired(); }
-  
-  /// Reinitializes the object by constructing a `Info_t` with `args`.
-  template <typename... Args>
-  void emplace(Args&&... args)
-    { fInfo.emplace(Info_t{ std::forward<Args>(args)... }); }
-  
-  
-    private:
-  std::optional<Info_t> fInfo;
-  
-}; // icarus::trigger::details::TriggerInfo_t
-
-
 // --- BEGIN -- ROOT tree helpers ----------------------------------------------
-struct icarus::trigger::details::TreeHolder {
-
-  TreeHolder() = default;
-  TreeHolder(TTree& tree): fTree(&tree) {}
-
-  TTree& tree() { return *fTree; }
-  TTree const& tree() const { return *fTree; }
-
-    private:
-  TTree* fTree = nullptr;
-
-}; // struct TreeHolder
-
-
-/**
- * @brief Class managing the serialization of event ID in a simple ROOT tree.
- *
- * The tree is supplied by the caller.
- * This object will create the proper branches into the tree and assign
- * addresses to them. Then it will assume they will stay assigned.
- *
- * On `assignEvent()`, the branch addresses are assigned the values from the
- * event ID. The tree is not `Fill()`-ed.
- *
- * The tree structure is: `Run/i:SubRun/i:Event/i`, with a single branch per
- * element.
- */
-struct icarus::trigger::details::EventIDTree: public TreeHolder {
-
-  /// Creates the required branches and assigns addresses to them.
-  EventIDTree(TTree& tree);
-
-  /// Fills the information of the specified event.
-  void assignID(art::EventID const& id);
-  void assignEvent(art::Event const& event) { assignID(event.id()); }
-
-  UInt_t fRunNo;
-  UInt_t fSubRunNo;
-  UInt_t fEventNo;
-
-}; // struct icarus::trigger::details::EventIDTree
-
-
 /**
  * @brief Class managing the serialization of plot information in a simple ROOT
  *        tree.
@@ -375,60 +117,6 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
   Bool_t fInPlots;
 
 }; // struct icarus::trigger::details::PlotInfoTree
-
-
-/**
- * @brief Class managing the serialization of event information in a simple ROOT
- *        tree.
- *
- * The tree is supplied by the caller.
- * This object will create the proper branches into the tree and assign
- * addresses to them. Then it will assume they will stay assigned.
- *
- * On `assignEvent()`, the branch addresses are assigned the values from the
- * event information. The tree is not `Fill()`-ed.
- *
- * The tree structure is:
- * `CC/i:NC/i:IntType:I/NuE:D/OutLeptE:D/TotE/D:SpillE/D:InActive/O`,
- * with a single branch per element.
- *
- * Branches:
- *  * `CC` (unsigned integer): number of neutrino CC interactions in the event
- *  * `NC` (unsigned integer): number of neutrino NC interactions in the event
- *  * `IntType` (integer): code of interaction type (see `simb::int_type_`)
- *  * `NuE` (double): energy of the generated initial state neutrino [GeV]
- *  * `OutLeptE` (double): energy of the generated final state lepton [GeV]
- *  * `TotE` (double): total deposited energy in the event [GeV]
- *  * `SpillE` (double): total deposited energy during the beam gate [GeV]
- *  * `InActive` (bool): whether an interaction happened in active volume'
- *      this requires an interaction vertex (e.g. cosmic rays are out)
- *
- */
-struct icarus::trigger::details::EventInfoTree: public TreeHolder {
-
-  /// Creates the required branches and assigns addresses to them.
-  EventInfoTree(TTree& tree);
-
-  /**
-   * @brief Fills the information of the specified event.
-   * @param info event information to fill the tree with
-   * @param inPlots whether this event is plotted (as opposed to filtered out)
-   */
-  void assignEvent(EventInfo_t const& info);
-
-  UInt_t fCC;
-  UInt_t fNC;
-  Int_t fIntType;
-  Double_t fNuE;
-  Double_t fOutLeptE;
-  Double_t fTotE;
-  Double_t fSpillE;
-  Double_t fActiveE;
-  Double_t fSpillActiveE;
-  
-  Bool_t fInActive;
-  
-}; // struct icarus::trigger::details::EventInfoTree
 
 
 // --- END -- ROOT tree helpers ------------------------------------------------
@@ -1228,8 +916,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   geo::GeometryCore const& geometry() const { return fGeom; }
   
   /// Returns the detector timings helper.
-  detinfo::DetectorTimings const& detTimings() const { return fDetTimings; }
-  
+  detinfo::DetectorTimings detTimings(detinfo::DetectorClocksData const& clockData) const { return detinfo::DetectorTimings{clockData}; }
+
   /// Returns the resolution of trigger timing clock [ns]
   nanoseconds triggerTimeResolution() const { return fTriggerTimeResolution; }
   
@@ -1424,6 +1112,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     std::size_t const thresholdIndex,
     TriggerGatesPerCryostat_t const& gates,
     EventInfo_t const& eventInfo,
+    detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
     ) const = 0;
   
@@ -1447,39 +1136,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     TriggerInfo_t const& triggerInfo,
     PlotSandbox const& plots
     ) const;
-
-
-  /**
-   * @brief Extracts from `event` the relevant information on the physics event.
-   *
-   * This returns a `EventInfo_t` object filled as completely as possible.
-   * The result is used in the context of
-   * @ref TriggerEfficiencyPlots_AddingCategory "assigning the `event` to categories".
-   *
-   * This method can read any data product in the event, and has access to the
-   * module configuration. If information is needed from a data product that
-   * is not read yet, the following actions are needed:
-   *
-   * 1. decide the input tag of the data product(s) to be read; this is usually
-   *    delegated to the user via module configuration (see `Config` structure);
-   * 2. the required input tags need to be stored into `TriggerEfficiencyPlots`
-   *    object;
-   * 3. _art_ needs to be informed of the intention of reading the data products
-   *    via `consumes()` or equivalent calls, in `TriggerEfficiencyPlots`
-   *    constructor;
-   * 4. the data product can be read with the usual means in this method.
-   *
-   * For an example of this procedure, see how the configuration parameter
-   * `DetectorParticleTag` is treated: read by `Config::DetectorParticleTag`,
-   * stored in `fDetectorParticleTag`, declared as "consumed" in
-   * `TriggerEfficiencyPlots` constructor. Likewise a known list of data
-   * products can be used: see `GeneratorTags` parameter, read by the sequence
-   * `Config::GeneratorTags`, stored in the class field `fGeneratorTags`,
-   * declared as "consumed" in a loop in `TriggerEfficiencyPlots` constructor,
-   * and read in `extractEventInfo()` to be used within it.
-   *
-   */
-  virtual EventInfo_t extractEventInfo(art::Event const& event) const;
   
   // --- END Customization interface -------------------------------------------
   
@@ -1499,14 +1155,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   static PlotCategories_t const DefaultPlotCategories;
   
   
-  /// Returns a gate that is `Max()` of all the specified `gates`.
-  template <typename TrigGateColl>
-  static auto computeMaxGate(TrigGateColl const& gates);
-
-  /// Returns a gate that is `Max()` of all the specified `gates`.
-  template <typename TrigGateColl>
-  static auto computeGateSum(TrigGateColl const& gates);
-
   // --- END Additional helper utilities ---------------------------------------
   
   
@@ -1525,7 +1173,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
   
-  /// Minimum number of trigger primitives for a trigger to happen.
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
   bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
@@ -1545,8 +1192,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   // --- BEGIN Service variables -----------------------------------------------
 
   geo::GeometryCore const& fGeom;
-  detinfo::DetectorClocks const& fDetClocks;
-  detinfo::DetectorTimings fDetTimings;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -1555,7 +1200,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   
   // --- BEGIN Internal variables ----------------------------------------------
-  
+  /// Detector clocks information that applies for the entire job.
+  detinfo::DetectorClocksData const fDetClocks;
+  detinfo::DetectorTimings const fDetTimings;
+
   /// Gate representing the time we expect light from beam interactions.
   icarus::trigger::OpticalTriggerGate const fBeamGate;
   
@@ -1568,6 +1216,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   std::pair
     <detinfo::timescales::simulation_time, detinfo::timescales::simulation_time>
     const fBeamGateSim;
+  
+  /// Helper to extract information from the event.
+  details::EventInfoExtractor const fEventInfoExtractor;
 
   /// ID of cryostat where each optical detector channel (vector index) is.
   std::vector<geo::CryostatID> const fChannelCryostat;
@@ -1579,6 +1230,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   std::unique_ptr<details::EventIDTree> fIDTree;
   std::unique_ptr<details::PlotInfoTree> fPlotTree; ///< Handler of ROOT tree output.
   std::unique_ptr<details::EventInfoTree> fEventTree; ///< Handler of ROOT tree output.
+
   
   std::atomic<unsigned int> nEvents { 0U }; ///< Count of seen events.
   std::atomic<unsigned int> nPlottedEvents { 0U }; ///< Count of plotted events.
@@ -1650,42 +1302,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll
     );
   return res;
 } // icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll()
-
-
-//------------------------------------------------------------------------------
-template <typename TrigGateColl>
-auto icarus::trigger::TriggerEfficiencyPlotsBase::computeMaxGate
-  (TrigGateColl const& gates)
-{
-  
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (empty(gates)) return decltype(*begin(gates)){};
-  
-  auto iGate = cbegin(gates);
-  auto const gend = cend(gates);
-  auto maxGate = *iGate;
-  while (++iGate != gend) maxGate.Max(*iGate);
-  
-  return maxGate;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::computeMaxGate()
-
-
-//------------------------------------------------------------------------------
-template <typename TrigGateColl>
-auto icarus::trigger::TriggerEfficiencyPlotsBase::computeGateSum
-  (TrigGateColl const& gates)
-{
-  
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (empty(gates)) return decltype(*begin(gates)){};
-  
-  auto iGate = cbegin(gates);
-  auto const gend = cend(gates);
-  auto maxGate = *iGate;
-  while (++iGate != gend) maxGate.Sum(*iGate);
-  
-  return maxGate;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::computeGateSum()
 
 
 //------------------------------------------------------------------------------

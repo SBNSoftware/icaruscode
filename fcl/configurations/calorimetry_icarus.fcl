@@ -1,37 +1,8 @@
-#include "calorimetry.fcl"
+#include "calorimetryICARUS.fcl"
 
 BEGIN_PROLOG
 
-icarus_calorimetryalgdata:	@local::standard_calorimetryalgdata
-icarus_calorimetryalgmc:	@local::standard_calorimetryalgmc
-
-#icarus_calorimetryalgmc.CalAmpConstants: [ 6.8906513e-3, 6.8906513e-3,6.8906513e-3 ] # Temporarily leaving all
-# planes same. Will need to change after calibration is done.
-#New constants derived using muon MC - T. Yang 11/27/13
-#icarus_calorimetryalgmc.CalAmpConstants: [ 3.641e-3, 3.613e-3, 7.198e-3 ] # Temporarily leaving all
-#New constats derived using muon MC, MC Challenge S2013.10.21; based on analysis of minimum ionizing muons - A. Schukraft 03/03/14
-#icarus_calorimetryalgmc.CalAmpConstants: [ 2.677e-3, 2.804e-3, 5.716e-3 ]
-#Pulse height constants for MCC5. - A. Schukraft 08/06/14
-#icarus_calorimetryalgmc.CalAmpConstants: [ 9.573e-4, 6.868e-4, 1.382e-3 ]
-#Pulse height constants for pre-MCC6. - T. Yang 3/5/15
-icarus_calorimetryalgmc.CalAmpConstants: [9.200e-4, 1.062e-3, 1.084e-03]
-#Area constants based on MCC4. - A. Schukraft 07/21/14
-#icarus_calorimetryalgmc.CalAreaConstants: [ 1.2093e-2, 1.2831e-2, 2.934e-2 ]
-#Area constants for MCC5. - A. Schukraft 08/07/14
-#icarus_calorimetryalgmc.CalAreaConstants: [ 7.488e-3, 5.110e-3, 1.008e-2 ]
-#Area constants for pre-MCC6. - T. Yang 3/5/15
-#icarus_calorimetryalgmc.CalAreaConstants: [ 5.198e-3, 5.247e-3, 5.562e-3 ]
-#area constants tuned with mean for for MCC6 v04_02_00 - A. Schukraft 3/9/15
-#icarus_calorimetryalgmc.CalAreaConstants: [ 5.0347e-3, 5.2214e-3, 5.3751e-3 ]
-#area constants tuned with mean for for MCC6 v04_03_02 - A. Schukraft 3/9/15
-#icarus_calorimetryalgmc.CalAreaConstants: [ 5.0142e-3, 5.1605e-3, 5.4354e-3 ]
-#area constants tuned with mean for MCC7 - T. Yang 4/7/16
-icarus_calorimetryalgmc.CalAreaConstants: [5.029e-3, 5.088e-3, 5.183e-3]
-# calibration constants tuned from real data muon MIP. 03/02/16 
-icarus_calorimetryalgdata.CalAreaConstants: [ 7.93e-3, 5.98e-3, 7.8e-3 ]
-#uncomment the following line when database constants are ready. T. Yang 10/15/16
-#icarus_calorimetryalgdata.CaloLifeTimeForm: 1
-icarus_calodata:                  @local::standard_calodata
+icarus_calodata:                  @local::standard_caloicarusdata
 icarus_calodata.CaloAlg:          @local::icarus_calorimetryalgdata
 
 icarus_calomc:                    @local::standard_calomc
@@ -45,9 +16,6 @@ icarus_generalcalomc:
  TrackModuleLabel:       "track3d"
  CaloAlg:	         @local::icarus_calorimetryalgmc
 }
-
-icarus_beziercalorimetry:         @local::standard_beziercalorimetry
-icarus_beziercalorimetry.CaloAlg: @local::icarus_calorimetryalgmc
 
 icarus_trackcalorimetryalg:                @local::standard_trackcalorimetryalg
 icarus_trackcalorimetryalg.CalorimetryAlg: @local::icarus_calorimetryalgmc
