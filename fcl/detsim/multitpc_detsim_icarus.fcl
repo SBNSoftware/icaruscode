@@ -1,81 +1,25 @@
-#include "services_icarus_simulation.fcl"
-#include "detsimmodules_ICARUS.fcl"
-#include "opdetsim_pmt_icarus.fcl"
-#include "crtsimmodules_icarus.fcl"
+#include "standard_detsim_icarus.fcl"
 
-process_name: DetSim
+# replace the single `daq` with four
+physics.producers: {
+  
+  @table::physics.producers
+  
+  daq0: @local::physics.producers.daq
+  daq1: @local::physics.producers.daq
+  daq2: @local::physics.producers.daq
+  daq3: @local::physics.producers.daq
+  daq:  @erase
 
-services:
-{
-  #FileCatalogMetadata:  @local::art_file_catalog_mc
-  @table::icarus_detsim_services
 }
+physics.simulate: [ rns, opdaq, daq0, daq1, daq2, daq3, crtdaq ]
 
-#source is now a root file
-source:
-{
-  module_type: RootInput
-  saveMemoryObjectThreshold: 0
-}
-
-# Define and configure some modules to do work on each event.
-# First modules are defined; they are scheduled later.
-# Modules are grouped by type.
-physics:
-{
-
- producers:
- {
-   crtdaq:         @local::icarus_crtsim
-   #opdaq:          @local::icarus_simpmt
-   opdaq:          @local::icarus_simpmt_nonoise #turn off the noise so it runs more quickly
-   daq0:           @local::icarus_simwire
-   daq1:           @local::icarus_simwire
-   daq2:           @local::icarus_simwire
-   daq3:           @local::icarus_simwire
-   rns:            { module_type: "RandomNumberSaver" }
- }
- 
- #define the producer and filter modules for this path, order matters, 
- #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, opdaq, daq0, daq1, daq2, daq3, crtdaq ]
- 
- #define the output stream, there could be more than one if using filters 
- stream1:  [ out1 ]
-
- #trigger_paths is a keyword and contains the paths that modify the art::event, 
- #ie filters and producers
- trigger_paths: [ simulate ] 
-
- #end_paths is a keyword and contains the paths that do not modify the art::Event, 
- #ie analyzers and output streams.  these all run simultaneously
- end_paths:     [stream1]  
-}
 
 #
-# We are currently suppressing channels with no signal to save time/output space
-physics.producers.daq0.SuppressNoSignal: true
+# point each of the SimWire instances to a different TPC set
+#
 physics.producers.daq0.TPCVec: [ [0, 0], [0, 1] ]
-physics.producers.daq1.SuppressNoSignal: true
-physics.producers.daq1.TPCVec: [ [0, 2], [0, 3 ] ]
-physics.producers.daq2.SuppressNoSignal: true
+physics.producers.daq1.TPCVec: [ [0, 2], [0, 3] ]
 physics.producers.daq2.TPCVec: [ [1, 0], [1, 1] ]
-physics.producers.daq3.SuppressNoSignal: true
 physics.producers.daq3.TPCVec: [ [1, 2], [1, 3] ]
-
-#block to define where the output goes.  if you defined a filter in the physics
-#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
-#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
-outputs:
-{
- out1:
- {
-   module_type: RootOutput
-   fileName:    "%ifb_%tc-%p.root"
-   dataTier:    "detector-simulated"
-   saveMemoryObjectThreshold: 0
-   compressionLevel: 1
-   fastCloning: false
- }
-}
 
