@@ -169,6 +169,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // configuration
   : fDetectorParticleTag  (config.DetectorParticleTag())
   , fBeamGateDuration     (config.BeamGateDuration())
+  , fBeamGateStart        (config.BeamGateStart())
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
   , fLogCategory          (config.LogCategory())
@@ -178,15 +179,18 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
   , fDetTimings{fDetClocks}
-  , fBeamGate(icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration))
+  , fBeamGate(
+    icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration, fBeamGateStart)
+    )
   , fBeamGateOpt(
-      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime()),
-      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + fBeamGateDuration)
+      fDetTimings.toOpticalTick
+        (fDetTimings.BeamGateTime() + fBeamGateStart),
+      fDetTimings.toOpticalTick
+        (fDetTimings.BeamGateTime() + fBeamGateStart + fBeamGateDuration)
     )
   , fBeamGateSim(
       fDetTimings.toSimulationTime(fBeamGateOpt.first),
-      fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
-        + fBeamGateDuration
+      fDetTimings.toSimulationTime(fBeamGateOpt.second)
     )
   ,fEventInfoExtractor(
       config.GeneratorTags(),     // truthTags

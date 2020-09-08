@@ -512,6 +512,9 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
  *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
  *     `trigger_icarus.fcl`);
+ * * `BeamGateStart` (time, default: `0_us`): how long after the
+ * *   @ref DetectorClocksBeamGateOpening "nominal beam gate opening time"
+ *     the actual beam gate opens at;
  * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
  *     trigger primitives;
  * * `EventTreeName` (optional string): if specified, a simple ROOT tree is
@@ -829,6 +832,12 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     fhicl::Atom<microseconds> BeamGateDuration {
       Name("BeamGateDuration"),
       Comment("length of time interval when optical triggers are accepted")
+      };
+
+    fhicl::Atom<microseconds> BeamGateStart {
+      Name("BeamGateStart"),
+      Comment("open the beam gate this long after the nominal beam gate time"),
+      microseconds{ 0.0 }
       };
 
     fhicl::Atom<nanoseconds> TriggerTimeResolution {
@@ -1172,6 +1181,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
+  
+  /// Start of the beam gate with respect to `BeamGate()`.
+  microseconds fBeamGateStart;
   
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
