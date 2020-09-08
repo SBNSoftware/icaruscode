@@ -149,6 +149,15 @@ icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories {
   PlotCategory{
     "NuNC_e", "NC_e",
     [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_e()); }
+    },
+
+  PlotCategory{
+    "NoActivity", "no energy deposited in active volume during beam gate",
+    [](EventInfo_t const& info)
+      {
+        using namespace util::quantities::energy_literals;
+        return info.DepositedEnergyInSpillInActiveVolume() == 0.0_GeV;
+      }
     }
 
 }; // icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories[]
