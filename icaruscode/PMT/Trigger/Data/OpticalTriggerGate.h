@@ -69,6 +69,7 @@ class icarus::trigger::OpticalTriggerGate
   /// Type for gate data access.
   using GateData_t = OpticalTriggerGateData_t;
   
+  using ChannelID_t = GateData_t::ChannelID_t; ///< Type of channel identifier.
   
   /// Constructor: a closed gate with no associated waveform (`add()` them).
   OpticalTriggerGate() = default;
@@ -83,6 +84,9 @@ class icarus::trigger::OpticalTriggerGate
     : GateData_t({ waveform.ChannelNumber() })
     , fWaveforms({ &waveform })
     {}
+
+  /// Constructor: a closed gate for the specified channel.
+  OpticalTriggerGate(ChannelID_t channel): GateData_t{ channel } {}
 
 
   /// Adds another waveform to the gate (unless it has already been added).

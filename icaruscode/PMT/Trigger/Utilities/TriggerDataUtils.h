@@ -377,21 +377,19 @@ icarus::trigger::transformIntoOpticalTriggerGate(Gates&& gates) {
   // create objects for the data products
   //
   std::vector<TriggerGateData_t> gateData;
-  art::Assns<TriggerGateData_t, raw::OpDetWaveform> gateToWaveforms;
 
   for (auto& gate: gates) {
-
-    if (gate.waveforms().empty()) {
-      // special case: no waveforms, no gate... we actually don't even know
-      // which channel, but we assume it's the next one
-
-      gateData.emplace_back(); // empty vector, no associations
-
-      continue;
-    }
-
+    assert(gate.hasChannels());
+    
     // we steal the data from the gate
     gateData.push_back(std::move(gate.gateLevels()));
+    
+    // now we add all channels;
+    // the cast is a cheat for objects like `SingleChannelOpticalTriggerGate`
+    // which hide the `channels()` method
+    auto& newGate = gateData.back();
+    for (auto channel: static_cast<TriggerGateData_t const&>(gate).channels())
+      newGate.addChannel(channel);
 
   } // for all channels
 
@@ -436,9 +434,8 @@ icarus::trigger::transformIntoOpticalTriggerGate(
 
     // pointer to the gate data we have just added:
     art::Ptr<TriggerGateData_t> const& gatePtr = makeGatePtr(iGate);
-
     for (raw::OpDetWaveform const* waveform: gate.waveforms()) {
-
+      
       gateToWaveforms.addSingle(gatePtr, opDetWavePtrs.at(waveform));
 
     } // for waveforms
