@@ -475,22 +475,46 @@ std::vector<GateObject> icarus::trigger::FillTriggerGates(
       if (iGateToWaveform->first.key() != iGate) break;
       ++iGateToWaveform;
     } // while
-    if (iFirstWaveform == iGateToWaveform) {
-      throw cet::exception("FillTriggerGates")
-        << " Could not find any waveform associated to trigger gate #" << iGate
-        << "\n";
+    
+    typename GateData_t::ChannelID_t firstChannel;
+    
+    if constexpr(icarus::trigger::isReadoutTriggerGate_v<decltype(gate)>) {
+      assert(gate.hasChannels());
+      firstChannel = *(begin(gate.channels()));
     }
-
-    // NOTE we do not control that all waveforms come from the same channel
-    GateData_t gateData(*(iFirstWaveform->second)); // add the first waveform
+    else {
+      // input has no channels, and we need to set at least one
+      // (by requirement; the object could live without); but...
+      if (iFirstWaveform == iGateToWaveform) {
+        throw cet::exception("FillTriggerGates")
+          << " Could not find any waveform associated to trigger gate #" << iGate
+          << ", needed to assign it channel numbers.\n";
+      }
+      firstChannel = iFirstWaveform->second->ChannelNumber();
+    }
+    
+    /*
+     * this is quite crazy code attempting to serve many different objects;
+     * the constructor that at this time all these objects share takes a single
+     * channel number, and we use it here;
+     * copy constructors are complicate (work only as in `base = derived` and
+     * most often we go the other way around here).
+     * The effect of the assignment below is also not so-well defined,
+     * but it is guaranteed to copy the gate data; it _might_ copy channels too,
+     * which at this point we do not consider harmful.
+     */
+    GateData_t gateData(firstChannel);
+    
+    gateData = gate; // copy data and possibly more
+    
+    // add all the waveforms; this also registers their channels,
+    // and skips duplicate waveforms (and channels)
     auto iEndWaveform = iFirstWaveform;
-    while (++iEndWaveform != iGateToWaveform) // add the other waveforms
-      gateData.add(*(iEndWaveform->second));
-
-    gateData = gate; // copy the gate data from the data product
+    while (iEndWaveform != iGateToWaveform)
+      gateData.add(*(iEndWaveform++)->second);
 
     allGates.push_back(std::move(gateData));
-
+    
   } // for gates
 
   return allGates;
