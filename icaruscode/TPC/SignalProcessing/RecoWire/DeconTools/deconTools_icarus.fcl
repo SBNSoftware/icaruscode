@@ -64,7 +64,7 @@ icarus_baselinestandard:
 
 icarus_baselinemostprobave:
 {
-    tool_type:    BaselineMostProbAve
+    tool_type:    "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/BaselineMostProbAve"
     MaxROILength: 100
 }
 
