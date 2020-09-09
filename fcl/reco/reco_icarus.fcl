@@ -10,7 +10,7 @@
 #include "hitfindermodules_icarus.fcl"
 #include "cluster_icarus.fcl"
 #include "trackfindermodules_icarus.fcl"
-##include "showerfindermodules_icarus.fcl"  
+#include "showerfindermodules_icarus.fcl"
 #include "mcsfitproducer_icarus.fcl"
 #include "mcsfitproducer_standard.fcl"
 
@@ -157,9 +157,9 @@ icarus_reco_producers:
   pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
 
   ## Shower finding modules
-  #SBNShowerGaus:                  @local::standard_sbnshower_stan
-  #SBNShowerGausCryo0:             @local::standard_sbnshower_stan
-  #SBNShowerGausCryo1:             @local::standard_sbnshower_stan
+  SBNShowerGaus:                  @local::standard_sbnshower_stan
+  SBNShowerGausCryo0:             @local::standard_sbnshower_stan
+  SBNShowerGausCryo1:             @local::standard_sbnshower_stan
 
 
   ## MCS modules
@@ -344,14 +344,14 @@ icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
                                     @sequence::icarus_reco_cluster3DCryo0,
-                                    @sequence::icarus_reco_pandoraGausCryo0]
-#                                    SBNShowerGausCryo0 ]
+                                    @sequence::icarus_reco_pandoraGausCryo0,
+                                    SBNShowerGausCryo0 ]
 
 icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
                                     @sequence::icarus_reco_SigProcTPC3Gauss,
                                     @sequence::icarus_reco_cluster3DCryo1,
-                                    @sequence::icarus_reco_pandoraGausCryo1]
-#                                    SBNShowerGausCryo1 ]
+                                    @sequence::icarus_reco_pandoraGausCryo1,
+                                    SBNShowerGausCryo1 ]
 
 icarus_reco_raw_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Raw,
                                     @sequence::icarus_reco_SigProcTPC1Raw,
@@ -396,7 +396,7 @@ icarus_gauss_reconstruction:      [ @sequence::icarus_reco_signalprocessinggaus,
                                     @sequence::icarus_reco_pandoraGaus,
                                     #@sequence::icarus_reco_trajclusterGaus,
                                     #@sequence::icarus_reco_pmAlgTrackerGaus,
-#                                    SBNShowerGaus,
+                                    SBNShowerGaus,
                                     @sequence::icarus_reco_mcrecoGaus,
                                     @sequence::icarus_reco_wmc_optical
                                   ]
