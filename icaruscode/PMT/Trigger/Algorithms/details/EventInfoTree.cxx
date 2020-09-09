@@ -28,12 +28,14 @@ icarus::trigger::details::EventInfoTree::EventInfoTree(TTree& tree)
   this->tree().Branch("NuE",      &fNuE);
   this->tree().Branch("OutLeptE", &fOutLeptE);
   
-  this->tree().Branch("TotE",         &fTotE);
-  this->tree().Branch("SpillE",       &fSpillE);
-  this->tree().Branch("ActiveE",      &fActiveE);
-  this->tree().Branch("SpillActiveE", &fSpillActiveE);
-  this->tree().Branch("InActive",     &fInActive);
-  this->tree().Branch("Vertices",     &fVertices);
+  this->tree().Branch("TotE",            &fTotE);
+  this->tree().Branch("SpillE",          &fSpillE);
+  this->tree().Branch("PreSpillE",       &fPreSpillE);
+  this->tree().Branch("ActiveE",         &fActiveE);
+  this->tree().Branch("SpillActiveE",    &fSpillActiveE);
+  this->tree().Branch("PreSpillActiveE", &fPreSpillActiveE);
+  this->tree().Branch("InActive",        &fInActive);
+  this->tree().Branch("Vertices",        &fVertices);
   
 } // icarus::trigger::details::EventInfoTree::EventInfoTree()
 
@@ -52,8 +54,11 @@ void icarus::trigger::details::EventInfoTree::assignEvent
 
   fTotE         = static_cast<Double_t>(info.DepositedEnergy());
   fSpillE       = static_cast<Double_t>(info.DepositedEnergyInSpill());
+  fPreSpillE    = static_cast<Double_t>(info.DepositedEnergyInPreSpill());
   fActiveE      = static_cast<Double_t>(info.DepositedEnergyInActiveVolume());
   fSpillActiveE = static_cast<Double_t>(info.DepositedEnergyInSpillInActiveVolume());
+  fPreSpillActiveE
+    = static_cast<Double_t>(info.DepositedEnergyInPreSpillInActiveVolume());
   fInActive     = static_cast<Bool_t>(info.isInActiveVolume());
   fVertices     = info.Vertices();
   

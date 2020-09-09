@@ -515,6 +515,16 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * * `BeamGateStart` (time, default: `0_us`): how long after the
  * *   @ref DetectorClocksBeamGateOpening "nominal beam gate opening time"
  *     the actual beam gate opens at;
+ * * `PreSpillWindow` (time, default: `10_us`): a pre-spill window is defined
+ *     to observe the activity before the beam gate that might leak into the
+ *     latter; this parameter regulates how long that window last; its position
+ *     can be tweaked with the `PreSpillWindowGap` parameter;
+ * * `PreSpillWindowGap` (time, default: `0_us`): the delay from the _end_ of
+ *     the pre-spill window and the start of the beam gate (`BeamGateStart`);
+ *     by default, the pre-spill window immediately precedes the beam gate;
+ *     negative values of the gap allow the pre-spill window to overlap
+ *     (or to be after) the beam gate; the duration of the pre-spill window is
+ *     set via `PreSpillWindow` parameter;
  * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
  *     trigger primitives;
  * * `EventTreeName` (optional string): if specified, a simple ROOT tree is
@@ -837,6 +847,18 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     fhicl::Atom<microseconds> BeamGateStart {
       Name("BeamGateStart"),
       Comment("open the beam gate this long after the nominal beam gate time"),
+      microseconds{ 0.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindow {
+      Name("PreSpillWindow"),
+      Comment("duration of the pre-spill window"),
+      microseconds{ 10.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindowGap {
+      Name("PreSpillWindowGap"),
+      Comment("gap from the end of pre-spill window to the start of beam gate"),
       microseconds{ 0.0 }
       };
 
@@ -1219,15 +1241,28 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Gate representing the time we expect light from beam interactions.
   icarus::trigger::OpticalTriggerGate const fBeamGate;
   
+  /// Gate representing the pre-spill window.
+  icarus::trigger::OpticalTriggerGate const fPreSpillWindow;
+  
   /// Beam gate start and stop tick in optical detector scale.
   std::pair
     <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>
     const fBeamGateOpt;
 
+  /// Pre-spill start and stop tick in optical detector scale.
+  std::pair
+    <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>
+    const fPreSpillWindowOpt;
+
   /// Beam gate start and stop time in simulation scale.
   std::pair
     <detinfo::timescales::simulation_time, detinfo::timescales::simulation_time>
     const fBeamGateSim;
+  
+  /// Pre-spill window start and stop time in simulation scale.
+  std::pair
+    <detinfo::timescales::simulation_time, detinfo::timescales::simulation_time>
+    const fPreSpillWindowSim;
   
   /// Helper to extract information from the event.
   details::EventInfoExtractor const fEventInfoExtractor;

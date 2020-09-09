@@ -182,20 +182,41 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   , fBeamGate(
     icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration, fBeamGateStart)
     )
+  // TODO simplify this ridiculous proliferation of gates
+  , fPreSpillWindow(
+      icarus::trigger::BeamGateMaker{fDetClocks}(
+        config.PreSpillWindow(),
+        fBeamGateStart - config.PreSpillWindowGap() - config.PreSpillWindow()
+      )
+    )
   , fBeamGateOpt(
       fDetTimings.toOpticalTick
         (fDetTimings.BeamGateTime() + fBeamGateStart),
       fDetTimings.toOpticalTick
         (fDetTimings.BeamGateTime() + fBeamGateStart + fBeamGateDuration)
     )
+  , fPreSpillWindowOpt(
+      fDetTimings.toOpticalTick(
+        fDetTimings.BeamGateTime() + fBeamGateStart - config.PreSpillWindowGap()
+        - config.PreSpillWindow()
+      ),
+      fDetTimings.toOpticalTick(
+        fDetTimings.BeamGateTime() + fBeamGateStart - config.PreSpillWindowGap()
+      )
+    )
   , fBeamGateSim(
       fDetTimings.toSimulationTime(fBeamGateOpt.first),
       fDetTimings.toSimulationTime(fBeamGateOpt.second)
+    )
+  , fPreSpillWindowSim(
+      fDetTimings.toSimulationTime(fPreSpillWindowOpt.first),
+      fDetTimings.toSimulationTime(fPreSpillWindowOpt.second)
     )
   ,fEventInfoExtractor(
       config.GeneratorTags(),     // truthTags
       config.EnergyDepositTags(), // edepTags
       fBeamGateSim,               // inSpillTimes
+      fPreSpillWindowSim,         // inPreSpillTimes
       fGeom,                      // geom
       fLogCategory,               // logCategory
       consumer                    // consumesCollector
@@ -450,6 +471,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
     { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
   
+  auto const PreSpillDuration
+    = fPreSpillWindowSim.second - fPreSpillWindowSim.first;
+  
   //
   // Triggering efficiency vs. something else
   //
@@ -467,6 +491,28 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
       ";energy deposited in active volume in spill  [ GeV ]"
       ";trigger efficiency  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsEnergyInPreSpill",
+    (
+      "Efficiency of triggering vs. energy deposited in pre-spill ("
+      + to_string(PreSpillDuration) + ")"
+      ";energy deposited in pre-spill  [ GeV ]"
+      ";trigger efficiency  [ / 100 MeV ]"
+    ).c_str(),
+    120, 0.0, 12.0
+    );
+  
+  plots.make<TEfficiency>(
+    "EffVsEnergyInPreSpillActive",
+    (
+      "Efficiency of triggering vs. energy deposited in active volume"
+        " (pre-spill: " + to_string(PreSpillDuration) + ")"
+        ";energy deposited in active volume in pre-spill  [ GeV ]"
+        ";trigger efficiency  [ / 100 MeV ]"
+    ).c_str(),
+    120, 0.0, 12.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
   
   plots.make<TEfficiency>(
@@ -501,6 +547,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
   (PlotSandbox& plots) const
 {
   
+  auto const BeamGateDuration = fBeamGateSim.second - fBeamGateSim.first;
+  auto const PreSpillDuration
+    = fPreSpillWindowSim.second - fPreSpillWindowSim.first;
+  
   //
   // Selection-related plots
   //
@@ -519,11 +569,41 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
   plots.make<TH1F>(
+    "EnergyInPreSpill",
+    (
+      "Energy deposited during the pre-spill window ("
+        + to_string(PreSpillDuration) + ")"
+      ";energy deposited in pre-spill [ GeV ]"
+      ";events  [ / 100 MeV ]"
+    ).c_str(),
+    120, 0.0, 12.0
+    );
+  plots.make<TH1F>(
     "EnergyInSpillActive",
     "Energy deposited during the beam gate opening in active volume"
       ";energy deposited in active volume in spill [ GeV ]"
       ";events  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+    );
+  plots.make<TH1F>(
+    "EnergyInPreSpillActive",
+    (
+      "Energy deposited in active volume during the pre-spill window ("
+        + to_string(PreSpillDuration) + ")"
+      ";energy deposited in active volume in pre-spill [ GeV ]"
+      ";events  [ / 100 MeV ]"
+    ).c_str(),
+    120, 0.0, 12.0
+    );
+  plots.make<TH2F>(
+    "EnergyInPreSpillVsSpillActive",
+    (
+      "Energy deposited in active volume" 
+      ";energy in spill window (" + to_string(BeamGateDuration) + ")  [ GeV ]"
+      ";energy in pre-spill window (" + to_string(PreSpillDuration)
+        + ")  [ GeV ]"
+    ).c_str(),
+    120, 0.0, 6.0, 120, 0.0, 12.0
     );
   plots.make<TH1I>(
     "InteractionType",
@@ -576,6 +656,14 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
   
   getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
   getTrig.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+  getTrig.Hist("EnergyInPreSpill"s)
+    .Fill(double(eventInfo.DepositedEnergyInPreSpill()));
+  getTrig.Hist("EnergyInPreSpillActive"s)
+    .Fill(double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
+  getTrig.Hist2D("EnergyInPreSpillVsSpillActive"s).Fill(
+    double(eventInfo.DepositedEnergyInSpillInActiveVolume()),
+    double(eventInfo.DepositedEnergyInPreSpillInActiveVolume())
+    );
   if (eventInfo.isNeutrino()) {
     getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
     getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
@@ -604,8 +692,12 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   // efficiency plots
   getTrigEff.Eff("EffVsEnergyInSpill"s).Fill
     (fired, double(eventInfo.DepositedEnergyInSpill()));
+  getTrigEff.Eff("EffVsEnergyInPreSpill"s).Fill
+    (fired, double(eventInfo.DepositedEnergyInPreSpill()));
   getTrigEff.Eff("EffVsEnergyInSpillActive"s).Fill
     (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+  getTrigEff.Eff("EffVsEnergyInPreSpillActive"s).Fill
+    (fired, double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
   if (eventInfo.isNeutrino()) {
     getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
       (fired, double(eventInfo.NeutrinoEnergy()));

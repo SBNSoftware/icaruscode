@@ -37,10 +37,12 @@ void icarus::trigger::details::EventInfo_t::dump(std::ostream& out) const {
     out << " no neutrino interaction";
   }
   out << "\nTotal deposited energy: " << DepositedEnergy()
-    << ", of which in spill " << DepositedEnergyInSpill()
+    << ", of which in spill/pre-spill " << DepositedEnergyInSpill()
+      << " / " << DepositedEnergyInPreSpill()
     << ", in active volume " << DepositedEnergyInActiveVolume()
-    << ", in active volume and in spill "
-      << DepositedEnergyInSpillInActiveVolume();
+    << ", in active volume and in spill/pre-spill "
+      << DepositedEnergyInSpillInActiveVolume()
+      << " / " << DepositedEnergyInPreSpillInActiveVolume();
   if (fVertices.empty()) {
     out << "\nNo interaction vertex found.";
   }

@@ -37,6 +37,10 @@ namespace icarus::trigger::details {
  *
  * This is intended as a record for transferring relevant event information
  * between object.
+ * 
+ * The exact definition of the quantities is deferred to the user
+ * (e.g. when and how long the beam and pre-spill windows are, the definition
+ * of active volume, etc.).
  */
 struct icarus::trigger::details::EventInfo_t {
   
@@ -93,12 +97,21 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns the total energy deposited in the detector during beam [GeV]
   GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
 
+  /// Returns the total energy deposited in the detector in the pre-spill window
+  /// [GeV]
+  GeV DepositedEnergyInPreSpill() const { return fEnergyDepPreSpill; }
+
   /// Returns the energy deposited in the active volume during the event [GeV]
   GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
   
   /// Returns the energy deposited in the active volume during the beam [GeV]
   GeV DepositedEnergyInSpillInActiveVolume() const
     { return fEnergyDepSpillActive; }
+
+  /// Returns the energy deposited in the active volume during the pre-spill
+  /// window [GeV]
+  GeV DepositedEnergyInPreSpillInActiveVolume() const
+    { return fEnergyDepPreSpillActive; }
 
   /// Returns the neutrino energy [GeV]
   GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
@@ -153,6 +166,9 @@ struct icarus::trigger::details::EventInfo_t {
   /// Sets the energy of the event deposited during beam gate [GeV]
   void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
 
+  /// Sets the energy of the event deposited during pre-spill window [GeV]
+  void SetDepositedEnergyInPreSpill(GeV e) { fEnergyDepPreSpill = e; }
+
   /// Sets the total deposited energy of the event in active volume [GeV]
   void SetDepositedEnergyInActiveVolume(GeV e) { fEnergyDepActive = e; }
 
@@ -160,6 +176,11 @@ struct icarus::trigger::details::EventInfo_t {
   /// [GeV]
   void SetDepositedEnergyInSpillInActiveVolume(GeV e)
     { fEnergyDepSpillActive = e; }
+
+  /// Sets the energy of the event deposited during pre-spill window in active
+  /// volume [GeV]
+  void SetDepositedEnergyInPreSpillInActiveVolume(GeV e)
+    { fEnergyDepPreSpillActive = e; }
 
   /// Sets the neutrino energy.
   void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
@@ -204,9 +225,12 @@ struct icarus::trigger::details::EventInfo_t {
 
   GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
   GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
+  GeV fEnergyDepPreSpill    { 0.0 }; ///< Energy deposited in pre-spill.
   GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
   /// Energy deposited in active volume in spill.
   GeV fEnergyDepSpillActive { 0.0 };
+  /// Energy deposited in active volume in pre-spill window.
+  GeV fEnergyDepPreSpillActive { 0.0 };
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
