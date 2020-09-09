@@ -457,7 +457,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     "EffVsEnergyInSpill",
     "Efficiency of triggering vs. energy deposited in spill"
       ";energy deposited in spill  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
+      ";trigger efficiency  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
   
@@ -465,7 +465,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     "EffVsEnergyInSpillActive",
     "Efficiency of triggering vs. energy deposited in active volume"
       ";energy deposited in active volume in spill  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
+      ";trigger efficiency  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
     );
   
@@ -473,7 +473,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     "EffVsNeutrinoEnergy",
     "Efficiency of triggering vs. neutrino energy"
       ";neutrino true energy  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
+      ";trigger efficiency  [ / 50 MeV ]",
     120, 0.0, 6.0 // 6 GeV is not that much for NuMI, but we should be ok
     );
   
@@ -481,7 +481,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     "EffVsLeptonEnergy",
     "Efficiency of triggering vs. outgoing lepton energy"
       ";final state lepton true energy  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
+      ";trigger efficiency  [ / 50 MeV ]",
     120, 0.0, 6.0
     );
   
