@@ -138,6 +138,7 @@ public:
 private:
 
     uint32_t                              fFragment_id_offset;     //< Allow offset for id
+    float                                 fSigmaForTruncation;     //< Selection cut for truncated rms calculation
     size_t                                fCoherentNoiseGrouping;  //< # channels in common for coherent noise
     size_t                                fStructuringElement;     //< Structuring element for morphological filter
     size_t                                fMorphWindow;            //< Window for filter
@@ -206,11 +207,12 @@ TPCDecoderFilter1D::~TPCDecoderFilter1D()
 //------------------------------------------------------------------------------------------------------------------------------------------
 void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 {
-    fFragment_id_offset     = pset.get<uint32_t         >("fragment_id_offset"    );
-    fCoherentNoiseGrouping  = pset.get<size_t           >("CoherentGrouping",   64);
-    fStructuringElement     = pset.get<size_t           >("StructuringElement", 20);
-    fMorphWindow            = pset.get<size_t           >("FilterWindow",       10);
-    fThreshold              = pset.get<float            >("Threshold",         7.5);
+    fFragment_id_offset     = pset.get<uint32_t         >("fragment_id_offset"     );
+    fSigmaForTruncation     = pset.get<float            >("NSigmaForTrucation", 3.5);
+    fCoherentNoiseGrouping  = pset.get<size_t           >("CoherentGrouping",    64);
+    fStructuringElement     = pset.get<size_t           >("StructuringElement",  20);
+    fMorphWindow            = pset.get<size_t           >("FilterWindow",        10);
+    fThreshold              = pset.get<float            >("Threshold",          7.5);
     fDiagnosticOutput       = pset.get<bool             >("DiagnosticOutput", false);
     fFilterModeVec          = pset.get<std::vector<char>>("FilterModeVec",    std::vector<char>()={'d','e','g'});
 
@@ -281,8 +283,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
     if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << " ";
 
-//    if (fragmentID != 0x1404) return;
-
+    // If fragment ID not in map then we might have a special configuration which has been input via fhicl
     if (fragItr == fFragmentToReadoutMap.end())
     {
         if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
@@ -307,8 +308,6 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     }
 
     if (fDiagnosticOutput) std::cout << std::endl;
-
-//    database::ReadoutIDVec& boardIDVec = fragItr->second;
 
     // Recover the crate name for this fragment
     const std::string& crateName = fragItr->second.first;
@@ -426,7 +425,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
                                                        pedCorDataVec,
-                                                       3,
+                                                       fSigmaForTruncation,
                                                        fPedestalVals[channelOnBoard],
                                                        fFullRMSVals[channelOnBoard],
                                                        fTruncRMSVals[channelOnBoard],
@@ -461,7 +460,9 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     // Let's just try something here...
 //    icarus_signal_processing::ArrayFloat inputWaveforms = fPedCorWaveforms;
 //
-//    for(size_t groupSize = 64; groupSize > 16; groupSize /= 2)
+//    for(size_t groupSize = 64; groupSize > 16; groupSize /= 2)//    database::ReadoutIDVec& boardIDVec = fragItr->second;
+
+
 //    {
 //        // Run the coherent filter
 //        denoiser.removeCoherentNoise1D(fWaveLessCoherent,inputWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
