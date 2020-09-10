@@ -51,10 +51,11 @@ icarus_detectorclocks: {
 icarus_detectorclocks_data_notiming: {
     @table::icarus_detectorclocks
 
-    G4RefTime:         0.0   # G4 time [us] where electronics clock counting start
-    TriggerOffsetTPC:  0.0   # Time offset for TPC readout start time w.r.t. trigger [us]
-    DefaultTrigTime:   0.0   # Default trigger time in electronics clock [us]
-    DefaultBeamTime:   0.0   # Default beam gate time in electronics clock [us]
+    InheritClockConfig: false
+    G4RefTime:              0.0   # G4 time [us] where electronics clock counting start
+    TriggerOffsetTPC:       0.0   # Time offset for TPC readout start time w.r.t. trigger [us]
+    DefaultTrigTime:        0.0   # Default trigger time in electronics clock [us]
+    DefaultBeamTime:        0.0   # Default beam gate time in electronics clock [us]
     
 } # icarus_detectorclocks_data_notiming
 
