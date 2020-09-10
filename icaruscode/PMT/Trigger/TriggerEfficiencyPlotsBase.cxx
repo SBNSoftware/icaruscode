@@ -212,7 +212,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       fDetTimings.toSimulationTime(fPreSpillWindowOpt.first),
       fDetTimings.toSimulationTime(fPreSpillWindowOpt.second)
     )
-  ,fEventInfoExtractor(
+  , fEventInfoExtractor(
       config.GeneratorTags(),     // truthTags
       config.EnergyDepositTags(), // edepTags
       fBeamGateSim,               // inSpillTimes
@@ -253,13 +253,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // input data declaration
   //
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // event information
-  for (art::InputTag const& inputTag: fGeneratorTags)
-    consumer.consumes<std::vector<simb::MCTruth>>(inputTag);
-  for (art::InputTag const& inputTag: fEnergyDepositTags)
-    consumer.consumes<std::vector<sim::SimEnergyDeposit>>(inputTag);
-//   consumes<std::vector<simb::MCParticle>>(fDetectorParticleTag);
   
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {

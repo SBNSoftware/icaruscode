@@ -1193,10 +1193,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   // --- BEGIN Configuration variables -----------------------------------------
   
-  std::vector<art::InputTag> fGeneratorTags; ///< Generator data product tags.
   art::InputTag fDetectorParticleTag; ///< Input simulated particles.
-  /// Energy deposition data product tags.
-  std::vector<art::InputTag> fEnergyDepositTags;
   
   /// ADC thresholds to read, and the input tag connected to their data.
   std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
