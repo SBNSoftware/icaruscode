@@ -68,8 +68,14 @@ namespace icarus::trigger::details { struct EventInfoTree; }
  */
 struct icarus::trigger::details::EventInfoTree: public TreeHolder {
 
-  /// Creates the required branches and assigns addresses to them.
-  EventInfoTree(TTree& tree);
+  /**
+   * @brief Creates the required branches and assigns addresses to them.
+   * @param tree the tree to be filled
+   * @param fillGen (default: `true`) create and fill generator info branches
+   * @param fillEdep (default: `true`) create and fill energy deposition
+   *                 branches
+   */
+  EventInfoTree(TTree& tree, bool fillGen = true, bool fillEDep = true);
 
   /**
    * @brief Fills the information of the specified event.
@@ -78,6 +84,9 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
    */
   void assignEvent(EventInfo_t const& info);
 
+  bool const fDoGen = true;
+  bool const fDoEDep = true;
+  
   UInt_t fCC;
   UInt_t fNC;
   Int_t fIntType;

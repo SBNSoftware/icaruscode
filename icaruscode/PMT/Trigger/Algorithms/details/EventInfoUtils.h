@@ -158,6 +158,12 @@ class icarus::trigger::details::EventInfoExtractor {
     
   // @}
   
+  /// Returns whether we are extracting any generator information.
+  bool hasGenerated() const { return !fGeneratorTags.empty(); }
+  
+  /// Returns whether we are extracting any energy deposition information.
+  bool hasEDep() const { return !fEnergyDepositTags.empty(); }
+  
     private:
   
   // --- BEGIN -- Configuration variables --------------------------------------
