@@ -27,6 +27,8 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
+#include "icarus_signal_processing/Morph1D.h"
+#include "icarus_signal_processing/MorphologicalFunctions1D.h"
 
 // std includes
 #include <string>
@@ -137,43 +139,46 @@ public:
 
 private:
 
-    uint32_t                              fFragment_id_offset;     //< Allow offset for id
-    float                                 fSigmaForTruncation;     //< Selection cut for truncated rms calculation
-    size_t                                fCoherentNoiseGrouping;  //< # channels in common for coherent noise
-    size_t                                fStructuringElement;     //< Structuring element for morphological filter
-    size_t                                fMorphWindow;            //< Window for filter
-    float                                 fThreshold;              //< Threshold to apply for saving signal
-    bool                                  fDiagnosticOutput;       //< If true will spew endless messages to output
-
-    std::vector<char>                     fFilterModeVec;          //< Allowed modes for the filter
+    uint32_t                                    fFragment_id_offset;     //< Allow offset for id
+    float                                       fSigmaForTruncation;     //< Selection cut for truncated rms calculation
+    size_t                                      fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    size_t                                      fStructuringElement;     //< Structuring element for morphological filter
+    size_t                                      fMorphWindow;            //< Window for filter
+    float                                       fThreshold;              //< Threshold to apply for saving signal
+    bool                                        fDiagnosticOutput;       //< If true will spew endless messages to output
+      
+    std::vector<char>                           fFilterModeVec;          //< Allowed modes for the filter
 
     using FragmentIDPair = std::pair<unsigned int, unsigned int>;
     using FragmentIDVec  = std::vector<FragmentIDPair>;
     using FragmentIDMap  = std::map<unsigned int, unsigned int>;
 
-    FragmentIDMap                         fFragmentIDMap;
+    FragmentIDMap                               fFragmentIDMap;
 
     // Allocate containers for noise processing
-    icarus_signal_processing::VectorInt   fChannelIDVec;
-    icarus_signal_processing::ArrayBool   fSelectVals;
-    icarus_signal_processing::ArrayBool   fROIVals;
-    icarus_signal_processing::ArrayFloat  fRawWaveforms;
-    icarus_signal_processing::ArrayFloat  fPedCorWaveforms;
-    icarus_signal_processing::ArrayFloat  fIntrinsicRMS;
-    icarus_signal_processing::ArrayFloat  fCorrectedMedians;
-    icarus_signal_processing::ArrayFloat  fWaveLessCoherent;
-    icarus_signal_processing::ArrayFloat  fMorphedWaveforms;
+    icarus_signal_processing::VectorInt         fChannelIDVec;
+    icarus_signal_processing::ArrayBool         fSelectVals;
+    icarus_signal_processing::ArrayBool         fROIVals;
+    icarus_signal_processing::ArrayFloat        fRawWaveforms;
+    icarus_signal_processing::ArrayFloat        fPedCorWaveforms;
+    icarus_signal_processing::ArrayFloat        fIntrinsicRMS;
+    icarus_signal_processing::ArrayFloat        fCorrectedMedians;
+    icarus_signal_processing::ArrayFloat        fWaveLessCoherent;
+    icarus_signal_processing::ArrayFloat        fMorphedWaveforms;
+      
+    icarus_signal_processing::VectorFloat       fPedestalVals;
+    icarus_signal_processing::VectorFloat       fFullRMSVals;
+    icarus_signal_processing::VectorFloat       fTruncRMSVals;
+    icarus_signal_processing::VectorInt         fNumTruncBins;
+    icarus_signal_processing::VectorInt         fRangeBins;
+      
+    database::TPCFragmentIDToReadoutIDMap       fFragmentToReadoutMap;
+      
+    database::TPCReadoutBoardToChannelMap       fReadoutBoardToChannelMap;
 
-    icarus_signal_processing::VectorFloat fPedestalVals;
-    icarus_signal_processing::VectorFloat fFullRMSVals;
-    icarus_signal_processing::VectorFloat fTruncRMSVals;
-    icarus_signal_processing::VectorInt   fNumTruncBins;
-    icarus_signal_processing::VectorInt   fRangeBins;
-
-    database::TPCFragmentIDToReadoutIDMap fFragmentToReadoutMap;
-    database::TPCReadoutBoardToChannelMap fReadoutBoardToChannelMap;
-
-    const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
+    icarus_signal_processing::FilterFunctionVec fFilterFunctionVec;
+    
+    const geo::Geometry*                        fGeometry;              //< pointer to the Geometry service
 };
 
 TPCDecoderFilter1D::TPCDecoderFilter1D(fhicl::ParameterSet const &pset)
@@ -347,22 +352,24 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     // Make sure these always get defined to be as large as can be
     const size_t maxChannelsPerFragment(576);
 
-    if (fSelectVals.empty())       fSelectVals       = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
-    if (fROIVals.empty())          fROIVals          = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
-    if (fRawWaveforms.empty())     fRawWaveforms     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fPedCorWaveforms.empty())  fPedCorWaveforms  = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fIntrinsicRMS.empty())     fIntrinsicRMS     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fCorrectedMedians.empty()) fCorrectedMedians = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fWaveLessCoherent.empty()) fWaveLessCoherent = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
-    if (fMorphedWaveforms.empty()) fMorphedWaveforms = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fSelectVals.empty())        fSelectVals       = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fROIVals.empty())           fROIVals          = icarus_signal_processing::ArrayBool(maxChannelsPerFragment,  icarus_signal_processing::VectorBool(nSamplesPerChannel));
+    if (fRawWaveforms.empty())      fRawWaveforms     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fPedCorWaveforms.empty())   fPedCorWaveforms  = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fIntrinsicRMS.empty())      fIntrinsicRMS     = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fCorrectedMedians.empty())  fCorrectedMedians = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fWaveLessCoherent.empty())  fWaveLessCoherent = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
+    if (fMorphedWaveforms.empty())  fMorphedWaveforms = icarus_signal_processing::ArrayFloat(maxChannelsPerFragment, icarus_signal_processing::VectorFloat(nSamplesPerChannel));
 
-    if (fChannelIDVec.empty())     fChannelIDVec     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
-    if (fPedestalVals.empty())     fPedestalVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
-    if (fFullRMSVals.empty())      fFullRMSVals      = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
-    if (fTruncRMSVals.empty())     fTruncRMSVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
-    if (fNumTruncBins.empty())     fNumTruncBins     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
-    if (fRangeBins.empty())        fRangeBins        = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
+    if (fChannelIDVec.empty())      fChannelIDVec     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
+    if (fPedestalVals.empty())      fPedestalVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fFullRMSVals.empty())       fFullRMSVals      = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fTruncRMSVals.empty())      fTruncRMSVals     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fNumTruncBins.empty())      fNumTruncBins     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
+    if (fRangeBins.empty())         fRangeBins        = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
 
+    if (fFilterFunctionVec.empty()) fFilterFunctionVec.resize(maxChannelsPerFragment);
+   
     // Allocate the de-noising object
     icarus_signal_processing::Denoising            denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
@@ -389,14 +396,14 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             continue;
         }
 
-        const database::ChannelVec& channelVec = boardItr->second.second;
+        const database::ChannelPlanePairVec& channelPlanePairVec = boardItr->second.second;
 
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
         if (fDiagnosticOutput)
         {
             std::cout << "********************************************************************************" << std::endl;
-            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelVec.size() << "/" << nChannelsPerBoard << ", ";
+            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard << ", ";
             std::cout << std::endl;
         }
 
@@ -420,7 +427,38 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[channelOnBoard];
 
             // Keep track of the channel
-            fChannelIDVec[channelOnBoard] = channelVec[chanIdx];
+            fChannelIDVec[channelOnBoard] = channelPlanePairVec[chanIdx].first;
+
+            // Handle the filter function to use for this channel
+            unsigned int plane = channelPlanePairVec[chanIdx].second;
+
+            if (plane > 2)
+            {
+                std::cout << "*** COMPLETELY SCREWUP YOU IMBECILE! plane is " << plane << " for chanIdx " << chanIdx << std::endl;
+                continue;
+            }
+
+            switch(fFilterModeVec[plane])
+            {
+                case 'd' :
+                    fFilterFunctionVec[channelOnBoard] = std::make_unique<icarus_signal_processing::Dilation1D>(fStructuringElement);
+                    break;
+                case 'e' :
+                    fFilterFunctionVec[channelOnBoard] = std::make_unique<icarus_signal_processing::Erosion1D>(fStructuringElement);
+                    break;
+                case 'g' :
+                    fFilterFunctionVec[channelOnBoard] = std::make_unique<icarus_signal_processing::Gradient1D>(fStructuringElement);
+                    break;
+                case 'a' :
+                    fFilterFunctionVec[channelOnBoard] = std::make_unique<icarus_signal_processing::Average1D>(fStructuringElement);
+                    break;
+                case 'm' :
+                    fFilterFunctionVec[channelOnBoard] = std::make_unique<icarus_signal_processing::Median1D>(fStructuringElement);
+                    break;
+                default:
+                    std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCDecoderFilter1D" << std::endl;
+                    break;
+            }
 
             // Now determine the pedestal and correct for it
             waveformTools.getPedestalCorrectedWaveform(rawDataVec,
@@ -432,15 +470,29 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                                                        fNumTruncBins[channelOnBoard],
                                                        fRangeBins[channelOnBoard]);
 
-            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelVec[chanIdx]);
+            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelPlanePairVec[chanIdx].first);
 
             if (fDiagnosticOutput)
             {
-                if (widVec.empty()) std::cout << channelVec[chanIdx] << "/" << chanIdx  << "=" << fFullRMSVals[channelOnBoard] << " * ";
+                if (widVec.empty()) std::cout << channelPlanePairVec[chanIdx].first << "/" << chanIdx  << "=" << fFullRMSVals[channelOnBoard] << " * ";
                 else std::cout << fChannelIDVec[channelOnBoard] << "-" << widVec[0].Cryostat << "/" << widVec[0].TPC << "/" << widVec[0].Plane << "/" << widVec[0].Wire << "=" << fFullRMSVals[channelOnBoard] << " * ";
             }
         }
         if (fDiagnosticOutput) std::cout << std::endl;
+    
+        // Run the coherent filter
+        denoiser.removeCoherentNoise1D(fWaveLessCoherent.begin()  + boardOffset,
+                                       fPedCorWaveforms.begin()   + boardOffset,
+                                       fMorphedWaveforms.begin()  + boardOffset,
+                                       fIntrinsicRMS.begin()      + boardOffset,
+                                       fSelectVals.begin()        + boardOffset,
+                                       fROIVals.begin()           + boardOffset,
+                                       fCorrectedMedians.begin()  + boardOffset,
+                                       fFilterFunctionVec.begin() + boardOffset,
+                                       nChannelsPerBoard,
+                                       fCoherentNoiseGrouping,
+                                       fMorphWindow,
+                                       fThreshold);
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment
@@ -472,9 +524,9 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 //    }
 
 
-    // Run the coherent filter
-    denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedCorWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
-                                   fFilterModeVec[0],fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
+//    // Run the coherent filter
+//    denoiser.removeCoherentNoise1D(fWaveLessCoherent.begin(),fPedCorWaveforms.begin(),fMorphedWaveforms.begin(),fIntrinsicRMS.begin(),fSelectVals.begin(),fROIVals.begin(),fCorrectedMedians.begin(),
+//                                   fFilterFunctionVec.begin(),fPedCorWaveforms.size(),fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
 
     theClockDenoise.stop();
 

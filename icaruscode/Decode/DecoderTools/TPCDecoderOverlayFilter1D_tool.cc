@@ -312,8 +312,8 @@ void TPCDecoderOverlayFilter1D::process_fragment(detinfo::DetectorClocksData con
     theClockDenoise.start();
 
     // Run the coherent filter
-    denoiser.removeCoherentNoise1D(fWaveLessCoherent,fPedCorWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
-                                   fFilterModeVec[0],fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
+//    denoiser.removeCoherentNoise1D(fWaveLessCoherent.begin(),fPedCorWaveforms.begin(),fMorphedWaveforms.begin(),fIntrinsicRMS.begin(),fSelectVals.begin(),fROIVals.begin(),fCorrectedMedians.begin(),
+//                                   fFilterModeVec[0],fPedCorWaveforms.size(),fCoherentNoiseGrouping,fStructuringElement,fMorphWindow,fThreshold);
 
     theClockDenoise.stop();
 
