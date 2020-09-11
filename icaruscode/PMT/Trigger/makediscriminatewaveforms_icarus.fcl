@@ -15,6 +15,7 @@
 # Required services
 # ------------------
 # 
+#  * Geometry (DiscriminatePMTwaveforms; may be avoided by setting `NChannels: 360`)
 #  * DetectorClocksService (DiscriminatePMTwaveforms)
 #
 
@@ -33,7 +34,7 @@ services: {
   @table::icarus_basic_services
   
   # currently unused (remove the line if they start mattering):
-  Geometry:                  @erase
+#  Geometry:                  @erase
   LArPropertiesService:      @erase
   DetectorPropertiesService: @erase
   

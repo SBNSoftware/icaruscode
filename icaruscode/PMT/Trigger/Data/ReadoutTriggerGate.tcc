@@ -14,6 +14,7 @@
 #include <string> // std::to_string()
 #include <algorithm> // std::unique(), std::lower_bound(), std::sort()...
 #include <iterator> // std::next()
+#include <type_traits> // std::is_base_of_v, std::enable_if_t, std::decay_t
 
 
 // make "sure" this header is not included directly
@@ -283,6 +284,30 @@ std::ostream& icarus::trigger::operator<< (
   out << "] " << gate.gateLevels();
   return out;
 } // icarus::trigger::operator<< (icarus::trigger::ReadoutTriggerGate)
+
+
+//------------------------------------------------------------------------------
+namespace icarus::trigger {
+  
+  namespace details {
+    
+    template <typename Gate, typename = void>
+    struct isReadoutTriggerGateImpl: std::false_type {};
+    
+    
+    template <typename Gate>
+    struct isReadoutTriggerGateImpl
+      <Gate, std::enable_if_t<std::is_base_of_v<ReadoutTriggerGateTag, Gate>>>
+      : std::true_type {};
+    
+  } // namespace details
+  
+  template <typename Gate>
+  struct isReadoutTriggerGate
+    : details::isReadoutTriggerGateImpl<std::decay_t<Gate>>
+  {};
+  
+} // namespace icarus::trigger
 
 
 //------------------------------------------------------------------------------

@@ -91,6 +91,7 @@ class icarus::trigger::details::EventInfoExtractor {
     * @param truthTags list of truth information data products to be read
     * @param edepTags list of energy deposition data products to be read
     * @param inSpillTimes start and end of spill, in simulation time
+    * @param inPreSpillTimes start and end of pre-spill, in simulation time
     * @param geom LArSoft geometry service provider
     * @param logCategory name of message facility stream to sent messages to
     * @see `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
@@ -103,6 +104,7 @@ class icarus::trigger::details::EventInfoExtractor {
     std::vector<art::InputTag> truthTags,
     std::vector<art::InputTag> edepTags,
     TimeSpan_t inSpillTimes,
+    TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
     std::string logCategory = "EventInfoExtractor"
     );
@@ -130,6 +132,7 @@ class icarus::trigger::details::EventInfoExtractor {
     std::vector<art::InputTag> const& truthTags,
     std::vector<art::InputTag> const& edepTags,
     TimeSpan_t inSpillTimes,
+    TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
     std::string const& logCategory,
     ConsumesColl& consumesCollector
@@ -155,6 +158,12 @@ class icarus::trigger::details::EventInfoExtractor {
     
   // @}
   
+  /// Returns whether we are extracting any generator information.
+  bool hasGenerated() const { return !fGeneratorTags.empty(); }
+  
+  /// Returns whether we are extracting any energy deposition information.
+  bool hasEDep() const { return !fEnergyDepositTags.empty(); }
+  
     private:
   
   // --- BEGIN -- Configuration variables --------------------------------------
@@ -176,6 +185,9 @@ class icarus::trigger::details::EventInfoExtractor {
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
   
   TimeSpan_t const fInSpillTimes; ///< Start and stop time for "in spill" label.
+  
+  /// Start and stop time for "pre-spill" label.
+  TimeSpan_t const fInPreSpillTimes;
   
   // --- END -- Set up  --------------------------------------------------------
   
@@ -235,11 +247,14 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> const& truthTags,
   std::vector<art::InputTag> const& edepTags,
   TimeSpan_t inSpillTimes,
+  TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
   std::string const& logCategory,
   ConsumesColl& consumesCollector
   )
-  : EventInfoExtractor(truthTags, edepTags, inSpillTimes, geom, logCategory)
+  : EventInfoExtractor{
+      truthTags, edepTags, inSpillTimes, inPreSpillTimes, geom, logCategory
+    }
 {
   
   for (art::InputTag const& inputTag: fGeneratorTags)

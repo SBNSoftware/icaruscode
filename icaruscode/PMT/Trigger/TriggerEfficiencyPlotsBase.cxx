@@ -65,6 +65,33 @@
 
 
 //------------------------------------------------------------------------------
+namespace {
+  
+  struct TimeRangeConverter {
+    
+    TimeRangeConverter(detinfo::DetectorTimings const& detTimings)
+      : fDetTimings(detTimings) {}
+    
+    template <typename DestTime, typename SrcTime>
+    DestTime toTime(SrcTime const& time) const
+      { return fDetTimings.toTimeScale<DestTime>(time); }
+
+    template <typename DestTime, typename SrcTime>
+    std::pair<DestTime, DestTime> toTime
+      (std::pair<SrcTime, SrcTime> const& times) const
+      {
+        return
+          { toTime<DestTime>(times.first), toTime<DestTime>(times.second) };
+      }
+
+      private:
+    detinfo::DetectorTimings const& fDetTimings;
+    
+  }; // struct TimeRangeConverter
+  
+} // local namespace
+
+//------------------------------------------------------------------------------
 //--- icarus::trigger::details::PlotInfoTree
 //------------------------------------------------------------------------------
 icarus::trigger::details::PlotInfoTree::PlotInfoTree(TTree& tree)
@@ -86,6 +113,25 @@ void icarus::trigger::details::PlotInfoTree::assign(bool inPlots) {
 
 //------------------------------------------------------------------------------
 //--- icarus::trigger::TriggerEfficiencyPlotsBase
+//------------------------------------------------------------------------------
+icarus::trigger::TriggerEfficiencyPlotsBase::GateRange::GateRange(
+  microseconds duration, microseconds delay,
+  detinfo::DetectorTimings const& detTimings
+  )
+  : fGate(icarus::trigger::BeamGateMaker{detTimings}(duration, delay))
+  , fRangeSim
+    {
+      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay),
+      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay + duration)
+    }
+  , fRangeOpt
+    {
+      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay),
+      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay + duration)
+    }
+{} // icarus::trigger::TriggerEfficiencyPlotsBase::GateRange::GateRange()
+
+
 //------------------------------------------------------------------------------
 /**
  * @brief List of event categories.
@@ -113,42 +159,58 @@ icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories {
 
   PlotCategory{
     "All nu_mu", "nu_mu",
-    [](EventInfo_t const& info){ return info.isNu_mu(); }
+    [](EventInfo_t const& info){ return info.hasGenerated() && info.isNu_mu(); }
   },
 
   PlotCategory{
     "All nu_e", "nu_e",
-    [](EventInfo_t const& info){ return info.isNu_e(); }
+    [](EventInfo_t const& info){ return info.hasGenerated() && info.isNu_e(); }
   },
 
   PlotCategory{
     "NuCC", "CC",
-    [](EventInfo_t const& info){ return info.isWeakChargedCurrent(); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakChargedCurrent(); }
     },
 
   PlotCategory{
     "NuCC_mu", "CC_mu",
-    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_mu()); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakChargedCurrent() && info.isNu_mu(); }
     },
 
   PlotCategory{
     "NuCC_e", "CC_e",
-    [](EventInfo_t const& info){ return (info.isWeakChargedCurrent() & info.isNu_e()); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakChargedCurrent() && info.isNu_e(); }
     },
 
   PlotCategory{
     "NuNC", "NC",
-    [](EventInfo_t const& info){ return info.isWeakNeutralCurrent(); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakNeutralCurrent(); }
     },
 
   PlotCategory{
     "NuNC_mu", "NC_mu",
-    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_mu()); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakNeutralCurrent() && info.isNu_mu(); }
     },
 
   PlotCategory{
     "NuNC_e", "NC_e",
-    [](EventInfo_t const& info){ return (info.isWeakNeutralCurrent() & info.isNu_e()); }
+    [](EventInfo_t const& info)
+      { return info.hasGenerated() && info.isWeakNeutralCurrent() && info.isNu_e(); }
+    },
+
+  PlotCategory{
+    "NoActivity", "no energy deposited in active volume during beam gate",
+    [](EventInfo_t const& info)
+      {
+        using namespace util::quantities::energy_literals;
+        return info.hasDepEnergy()
+          && (info.DepositedEnergyInSpillInActiveVolume() == 0.0_GeV);
+      }
     }
 
 }; // icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories[]
@@ -160,6 +222,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // configuration
   : fDetectorParticleTag  (config.DetectorParticleTag())
   , fBeamGateDuration     (config.BeamGateDuration())
+  , fBeamGateStart        (config.BeamGateStart())
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
   , fLogCategory          (config.LogCategory())
@@ -169,23 +232,20 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
   , fDetTimings{fDetClocks}
-  , fBeamGate(icarus::trigger::BeamGateMaker{fDetClocks}(fBeamGateDuration))
-  , fBeamGateOpt(
-      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime()),
-      fDetTimings.toOpticalTick(fDetTimings.BeamGateTime() + fBeamGateDuration)
-    )
-  , fBeamGateSim(
-      fDetTimings.toSimulationTime(fBeamGateOpt.first),
-      fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
-        + fBeamGateDuration
-    )
-  ,fEventInfoExtractor(
-      config.GeneratorTags(),     // truthTags
-      config.EnergyDepositTags(), // edepTags
-      fBeamGateSim,               // inSpillTimes
-      fGeom,                      // geom
-      fLogCategory,               // logCategory
-      consumer                    // consumesCollector
+  , fBeamGate{ fBeamGateDuration, fBeamGateStart, fDetTimings }
+  , fPreSpillWindow{
+      fBeamGateStart - config.PreSpillWindowGap() - config.PreSpillWindow(),
+      fBeamGateStart - config.PreSpillWindowGap(),
+      fDetTimings
+      }
+  , fEventInfoExtractor(
+      config.GeneratorTags(),              // truthTags
+      config.EnergyDepositTags(),          // edepTags
+      fBeamGate.asSimulationRange(),       // inSpillTimes
+      fPreSpillWindow.asSimulationRange(), // inPreSpillTimes
+      fGeom,                               // geom
+      fLogCategory,                        // logCategory
+      consumer                             // consumesCollector
     )
   , fChannelCryostat(makeChannelCryostatMap(fGeom))
 {
@@ -205,12 +265,14 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   }
 
   if (config.EventTreeName.hasValue()) {
+    
     std::string treeName;
     config.EventTreeName(treeName);
 
     fIDTree = std::make_unique<details::EventIDTree>
       (*(fOutputDir.make<TTree>(treeName.c_str(), "Event information")));
-    fEventTree = std::make_unique<details::EventInfoTree>(fIDTree->tree());
+    fEventTree = std::make_unique<details::EventInfoTree>
+      (fIDTree->tree(), useGen(), useEDep());
     fPlotTree = std::make_unique<details::PlotInfoTree>(fIDTree->tree());
 
   } // if make tree
@@ -219,13 +281,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // input data declaration
   //
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
-
-  // event information
-  for (art::InputTag const& inputTag: fGeneratorTags)
-    consumer.consumes<std::vector<simb::MCTruth>>(inputTag);
-  for (art::InputTag const& inputTag: fEnergyDepositTags)
-    consumer.consumes<std::vector<sim::SimEnergyDeposit>>(inputTag);
-//   consumes<std::vector<simb::MCParticle>>(fDetectorParticleTag);
   
   // trigger primitives
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
@@ -239,9 +294,25 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << fBeamGateSim.first << " -- " << fBeamGateSim.second;
+    log << "\nBeam gate is " << fBeamGate.asSimulationRange();
   } // local block
-
+  
+  mf::LogTrace(fLogCategory)
+    << "Beam gate:"
+    << "\n - electronics time: " << fBeamGate.asGate()
+    << "\n - simulation time: " << fBeamGate.asSimulationRange()
+    << "\n - optical ticks: " << fBeamGate.asOptTickRange()
+    ;
+  
+  if (!useGen()) {
+    mf::LogVerbatim(fLogCategory)
+      << "Generation information will not be produced.";
+  }
+  if (!useEDep()) {
+    mf::LogVerbatim(fLogCategory)
+      << "Energy deposition information will not be produced.";
+  }
+  
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()
 
 
@@ -437,47 +508,75 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
     { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
   
+  auto const PreSpillDuration = fPreSpillWindow.asSimulationRange().duration();
   //
   // Triggering efficiency vs. something else
   //
-  plots.make<TEfficiency>(
-    "EffVsEnergyInSpill",
-    "Efficiency of triggering vs. energy deposited in spill"
-      ";energy deposited in spill  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-    );
+  if (useEDep()) {
+    plots.make<TEfficiency>(
+      "EffVsEnergyInSpill",
+      "Efficiency of triggering vs. energy deposited in spill"
+        ";energy deposited in spill  [ GeV ]"
+        ";trigger efficiency  [ / 50 MeV ]",
+      120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+      );
+    
+    plots.make<TEfficiency>(
+      "EffVsEnergyInSpillActive",
+      "Efficiency of triggering vs. energy deposited in active volume"
+        ";energy deposited in active volume in spill  [ GeV ]"
+        ";trigger efficiency  [ / 50 MeV ]",
+      120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+      );
+    
+    plots.make<TEfficiency>(
+      "EffVsEnergyInPreSpill",
+      (
+        "Efficiency of triggering vs. energy deposited in pre-spill ("
+        + to_string(PreSpillDuration) + ")"
+        ";energy deposited in pre-spill  [ GeV ]"
+        ";trigger efficiency  [ / 100 MeV ]"
+      ).c_str(),
+      120, 0.0, 12.0
+      );
+    
+    plots.make<TEfficiency>(
+      "EffVsEnergyInPreSpillActive",
+      (
+        "Efficiency of triggering vs. energy deposited in active volume"
+          " (pre-spill: " + to_string(PreSpillDuration) + ")"
+          ";energy deposited in active volume in pre-spill  [ GeV ]"
+          ";trigger efficiency  [ / 100 MeV ]"
+      ).c_str(),
+      120, 0.0, 12.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+      );
+  } // if plots with deposited energy
   
-  plots.make<TEfficiency>(
-    "EffVsEnergyInSpillActive",
-    "Efficiency of triggering vs. energy deposited in active volume"
-      ";energy deposited in active volume in spill  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-    );
+  if (useGen()) {
+    plots.make<TEfficiency>(
+      "EffVsNeutrinoEnergy",
+      "Efficiency of triggering vs. neutrino energy"
+        ";neutrino true energy  [ GeV ]"
+        ";trigger efficiency  [ / 50 MeV ]",
+      120, 0.0, 6.0 // 6 GeV is not that much for NuMI, but we should be ok
+      );
+    
+    plots.make<TEfficiency>(
+      "EffVsLeptonEnergy",
+      "Efficiency of triggering vs. outgoing lepton energy"
+        ";final state lepton true energy  [ GeV ]"
+        ";trigger efficiency  [ / 50 MeV ]",
+      120, 0.0, 6.0
+      );
+  } // if plots with generated info
   
-  plots.make<TEfficiency>(
-    "EffVsNeutrinoEnergy",
-    "Efficiency of triggering vs. neutrino energy"
-      ";neutrino true energy  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
-    120, 0.0, 6.0 // 6 GeV is not that much for NuMI, but we should be ok
-    );
-  
-  plots.make<TEfficiency>(
-    "EffVsLeptonEnergy",
-    "Efficiency of triggering vs. outgoing lepton energy"
-      ";final state lepton true energy  [ GeV ]"
-      ";trigger efficiency  [ / 50 GeV ]",
-    120, 0.0, 6.0
-    );
-  
+  auto const& beamGateOpt = fBeamGate.asOptTickRange();
   plots.make<TH1F>(
     "TriggerTick",
     "Trigger time tick"
       ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
-    (fBeamGateOpt.second - fBeamGateOpt.first) / triggerResolutionTicks,
-    fBeamGateOpt.first.value(), fBeamGateOpt.second.value()
+    beamGateOpt.duration() / triggerResolutionTicks,
+    beamGateOpt.start().value(), beamGateOpt.end().value()
     );
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots()
@@ -488,52 +587,93 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
   (PlotSandbox& plots) const
 {
   
+  auto const BeamGateDuration = fBeamGate.asSimulationRange().duration();
+  auto const PreSpillDuration = fPreSpillWindow.asSimulationRange().duration();
+  
   //
   // Selection-related plots
   //
-  plots.make<TH1F>(
-    "NeutrinoEnergy",
-    "True Neutrino Energy"
-      ";neutrino energy [GeV]"
-      ";events",
-    120, 0.0, 6.0 // GeV
-  );
-  plots.make<TH1F>(
-    "EnergyInSpill",
-    "Energy deposited during the beam gate opening"
-      ";energy deposited in spill [ GeV ]"
-      ";events  [ / 50 MeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+  if (useGen()) {
+    plots.make<TH1F>(
+      "NeutrinoEnergy",
+      "True Neutrino Energy"
+        ";neutrino energy [GeV]"
+        ";events",
+      120, 0.0, 6.0 // GeV
     );
-  plots.make<TH1F>(
-    "EnergyInSpillActive",
-    "Energy deposited during the beam gate opening in active volume"
-      ";energy deposited in active volume in spill [ GeV ]"
-      ";events  [ / 50 MeV ]",
-    120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
-    );
-  plots.make<TH1I>(
-    "InteractionType",
-    "Interaction type"
-      ";Interaction Type"
-      ";events",
-    200, 999.5, 1199.5
-    );
-  plots.make<TH1F>(
-    "LeptonEnergy",
-    "Energy of outgoing lepton"
-      ";deposited energy  [ GeV ]"
-      ";events  [ / 50 MeV ]",
-    120, 0.0, 6.0
-    );
-  plots.make<TH2F>(
-    "InteractionVertexYZ",
-    "Vertex of triggered interaction"
-      ";beam direction (z)  [ / 20 cm ]"
-      ";vertical direction (y)  [ / 5 cm ]",
-    120, -1200., +1200.,
-    100,  -250.,  +250.
-    );
+  }
+  
+  if (useEDep()) {
+    plots.make<TH1F>(
+      "EnergyInSpill",
+      "Energy deposited during the beam gate opening"
+        ";energy deposited in spill [ GeV ]"
+        ";events  [ / 50 MeV ]",
+      120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+      );
+    plots.make<TH1F>(
+      "EnergyInPreSpill",
+      (
+        "Energy deposited during the pre-spill window ("
+          + to_string(PreSpillDuration) + ")"
+        ";energy deposited in pre-spill [ GeV ]"
+        ";events  [ / 100 MeV ]"
+      ).c_str(),
+      120, 0.0, 12.0
+      );
+    plots.make<TH1F>(
+      "EnergyInSpillActive",
+      "Energy deposited during the beam gate opening in active volume"
+        ";energy deposited in active volume in spill [ GeV ]"
+        ";events  [ / 50 MeV ]",
+      120, 0.0, 6.0 // 6 GeV should be enough for a MIP crossing 20 m of detector
+      );
+    plots.make<TH1F>(
+      "EnergyInPreSpillActive",
+      (
+        "Energy deposited in active volume during the pre-spill window ("
+          + to_string(PreSpillDuration) + ")"
+        ";energy deposited in active volume in pre-spill [ GeV ]"
+        ";events  [ / 100 MeV ]"
+      ).c_str(),
+      120, 0.0, 12.0
+      );
+    plots.make<TH2F>(
+      "EnergyInPreSpillVsSpillActive",
+      (
+        "Energy deposited in active volume" 
+        ";energy in spill window (" + to_string(BeamGateDuration) + ")  [ GeV ]"
+        ";energy in pre-spill window (" + to_string(PreSpillDuration)
+          + ")  [ GeV ]"
+      ).c_str(),
+      120, 0.0, 6.0, 120, 0.0, 12.0
+      );
+  } // if use energy deposition
+  
+  if (useGen()) {
+    plots.make<TH1I>(
+      "InteractionType",
+      "Interaction type"
+        ";Interaction Type"
+        ";events",
+      200, 999.5, 1199.5
+      );
+    plots.make<TH1F>(
+      "LeptonEnergy",
+      "Energy of outgoing lepton"
+        ";deposited energy  [ GeV ]"
+        ";events  [ / 50 MeV ]",
+      120, 0.0, 6.0
+      );
+    plots.make<TH2F>(
+      "InteractionVertexYZ",
+      "Vertex of triggered interaction"
+        ";beam direction (z)  [ / 20 cm ]"
+        ";vertical direction (y)  [ / 5 cm ]",
+      120, -1200., +1200.,
+      100,  -250.,  +250.
+      );
+  } // if generated information
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots()
 
@@ -561,16 +701,30 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
   
   HistGetter const getTrig { plots };
   
-  getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
-  getTrig.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
-  if (eventInfo.isNeutrino()) {
-    getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
-    getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
-    getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
-  } // if neutrino event
-  TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
-  for (auto const& point: eventInfo.Vertices())
-    vertexHist.Fill(point.Z(), point.Y());
+  if (useEDep()) {
+    assert(eventInfo.hasDepEnergy());
+    getTrig.Hist("EnergyInSpill"s).Fill(double(eventInfo.DepositedEnergyInSpill()));
+    getTrig.Hist("EnergyInSpillActive"s).Fill(double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+    getTrig.Hist("EnergyInPreSpill"s)
+      .Fill(double(eventInfo.DepositedEnergyInPreSpill()));
+    getTrig.Hist("EnergyInPreSpillActive"s)
+      .Fill(double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
+    getTrig.Hist2D("EnergyInPreSpillVsSpillActive"s).Fill(
+      double(eventInfo.DepositedEnergyInSpillInActiveVolume()),
+      double(eventInfo.DepositedEnergyInPreSpillInActiveVolume())
+      );
+  }
+  if (useGen()) {
+    assert(eventInfo.hasGenerated());
+    if (eventInfo.isNeutrino()) {
+      getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
+      getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
+      getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+    } // if neutrino event
+    TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
+    for (auto const& point: eventInfo.Vertices())
+      vertexHist.Fill(point.Z(), point.Y());
+  } // if use generated information
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots()
 
@@ -589,16 +743,24 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   bool const fired = triggerInfo.fired();
   
   // efficiency plots
-  getTrigEff.Eff("EffVsEnergyInSpill"s).Fill
-    (fired, double(eventInfo.DepositedEnergyInSpill()));
-  getTrigEff.Eff("EffVsEnergyInSpillActive"s).Fill
-    (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
-  if (eventInfo.isNeutrino()) {
-    getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
-      (fired, double(eventInfo.NeutrinoEnergy()));
-    getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
-      (fired, double(eventInfo.LeptonEnergy()));
-  }
+  if (useEDep()) {
+    getTrigEff.Eff("EffVsEnergyInSpill"s).Fill
+      (fired, double(eventInfo.DepositedEnergyInSpill()));
+    getTrigEff.Eff("EffVsEnergyInPreSpill"s).Fill
+      (fired, double(eventInfo.DepositedEnergyInPreSpill()));
+    getTrigEff.Eff("EffVsEnergyInSpillActive"s).Fill
+      (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
+    getTrigEff.Eff("EffVsEnergyInPreSpillActive"s).Fill
+      (fired, double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
+  } // if use energy deposits
+  if (useGen()) {
+    if (eventInfo.isNeutrino()) {
+      getTrigEff.Eff("EffVsNeutrinoEnergy"s).Fill
+        (fired, double(eventInfo.NeutrinoEnergy()));
+      getTrigEff.Eff("EffVsLeptonEnergy"s).Fill
+        (fired, double(eventInfo.LeptonEnergy()));
+    }
+  } // if use generated information
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());

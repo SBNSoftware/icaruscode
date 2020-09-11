@@ -244,6 +244,24 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
       Comment("length of time interval when optical triggers are accepted")
       };
 
+    fhicl::Atom<microseconds> BeamGateStart {
+      Name("BeamGateStart"),
+      Comment("open the beam gate this long after the nominal beam gate time"),
+      microseconds{ 0.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindow {
+      Name("PreSpillWindow"),
+      Comment("duration of the pre-spill window"),
+      microseconds{ 10.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindowGap {
+      Name("PreSpillWindowGap"),
+      Comment("gap from the end of pre-spill window to the start of beam gate"),
+      microseconds{ 0.0 }
+      };
+
     fhicl::Atom<std::string> EventTreeName {
       Name("EventTreeName"),
       Comment("name of the ROOT tree"),
@@ -310,6 +328,9 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   
   /// Beam gate start and stop time in simulation scale.
   std::pair<simulation_time, simulation_time> const fBeamGateSim;
+  
+  /// Pre-spill window start and stop time in simulation scale.
+  std::pair<simulation_time, simulation_time> const fPreSpillWindowSim;
   
   /// Main ROOT tree: event ID.
   details::EventIDTree fIDTree;
@@ -481,12 +502,22 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   // other data
   , fBeamGate(
       icarus::trigger::BeamGateMaker{ fDetTimings }
-        .make(config().BeamGateDuration())
+        .make(config().BeamGateDuration(), config().BeamGateStart())
       )
   , fBeamGateSim(
-    fDetTimings.toSimulationTime(fDetTimings.BeamGateTime()),
-    fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
-      + config().BeamGateDuration()
+      fDetTimings.toSimulationTime(fDetTimings.BeamGateTime()),
+      fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
+        + config().BeamGateDuration()
+    )
+  , fPreSpillWindowSim(
+      fDetTimings.toSimulationTime(
+        fDetTimings.BeamGateTime() + config().BeamGateStart()
+          - config().PreSpillWindowGap() - config().PreSpillWindow()
+      ),
+      fDetTimings.toSimulationTime(
+        fDetTimings.BeamGateTime() + config().BeamGateStart()
+          - config().PreSpillWindowGap()
+      )
     )
   , fIDTree(*(art::ServiceHandle<art::TFileService>()
       ->make<TTree>(config().EventTreeName().c_str(), "Event information")
@@ -497,6 +528,7 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
     config().GeneratorTags(),              // truthTags
     config().EnergyDepositTags(),          // edepTags
     fBeamGateSim,                          // inSpillTimes
+    fPreSpillWindowSim,                    // inPreSpillTimes
     fGeom,                                 // geom
     fLogCategory,                          // logCategory
     consumesCollector()                    // consumesCollector

@@ -67,7 +67,7 @@ physics: {
       module_type:  DumpTriggerGateData
       
       # specify the input tag of the raw::OpDetWaveform producer
-      TriggerGateDataTag: "discrimopdaq:60"
+      TriggerGateDataTag: "discrimopdaq:100"
       
       # output category ("TriggerGateDataTag" by default), useful for filtering (see above)
       OutputCategory: "DumpTriggerGateData"
