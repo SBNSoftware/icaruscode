@@ -33,7 +33,7 @@ icarus_differentialroifinder_2.Plane: 2
 
 icarus_morphologicalroifinder:
 {
-    tool_type:           ROIFinderMorphological
+    tool_type:           "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/ROIFinderMorphological"
     Plane:               0
     UseDifference:       true
     NumSigma:            2.0         # Number sigma for threshold
@@ -64,7 +64,7 @@ icarus_baselinestandard:
 
 icarus_baselinemostprobave:
 {
-    tool_type:    BaselineMostProbAve
+    tool_type:    "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/BaselineMostProbAve"
     MaxROILength: 100
 }
 
