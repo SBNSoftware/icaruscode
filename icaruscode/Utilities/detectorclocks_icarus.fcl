@@ -5,6 +5,7 @@
 # Available configurations:
 #
 # * `icarus_detectorclocks`: standard ICARUS configuration
+# * `icarus_detectorclocks+data_notiming`: readout all at the same time
 #
 #
 
@@ -36,6 +37,27 @@ icarus_detectorclocks: {
     DefaultBeamTime:   1.5e3  # Default beam gate time in electronics clock [us]
     
 } # icarus_detectorclocks
+
+
+# ##############################################################################
+#
+# Data read out all at the same time
+#
+# Use as:
+#     
+#     services.DetectorClocksService: @local::icarus_detectorclocks_data_notiming
+#     
+#
+icarus_detectorclocks_data_notiming: {
+    @table::icarus_detectorclocks
+
+    InheritClockConfig: false
+    G4RefTime:              0.0   # G4 time [us] where electronics clock counting start
+    TriggerOffsetTPC:       0.0   # Time offset for TPC readout start time w.r.t. trigger [us]
+    DefaultTrigTime:        0.0   # Default trigger time in electronics clock [us]
+    DefaultBeamTime:        0.0   # Default beam gate time in electronics clock [us]
+    
+} # icarus_detectorclocks_data_notiming
 
 #
 #

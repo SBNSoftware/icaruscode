@@ -86,17 +86,17 @@ void icarus::trigger::PMTverticalSlicingAlg::appendSlices(
   //
   // 2. group PMT in each plane by width coordinate (cluster by width direction)
   //
-  unsigned int NClusteredPMTs = 0U;
+  unsigned int NClusteredPMTs [[gnu::unused]] = 0U;
   for (auto const& PMTplane: PMTplanes) {
     slices.push_back(clusterPMTby(PMTplane, clusterDir));
 
     // BEGIN debug
     auto const& planeSlices = slices.back();
-    NClusteredPMTs += planeSlices.size();
     mf::LogTrace log { fLogCategory };
     log << PMTplane.size() << " PMTs in the plane grouped into "
       << planeSlices.size() << " towers in direction " << clusterDir << ":";
     for (auto&& [ iSlice, slice ]: util::enumerate(planeSlices)) {
+      NClusteredPMTs += slice.size();
       log << "\n [#" << iSlice << "] " << slice.size() << " PMT:";
       for (geo::OpDetGeo const* opDet: slice) log << " <" << opDet->ID() << ">";
     } // for planeSlices
