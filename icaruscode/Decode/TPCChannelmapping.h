@@ -226,8 +226,9 @@ namespace database
     // be a map of readout ID to a vector of channels
     //-----------------------------------------------------
     
-    using ChannelVec                  = std::vector<unsigned int>;
-    using SlotChannelVecPair          = std::pair<unsigned int, ChannelVec>;
+    using ChannelPlanePair            = std::pair<unsigned int, unsigned int>;
+    using ChannelPlanePairVec         = std::vector<ChannelPlanePair>;
+    using SlotChannelVecPair          = std::pair<unsigned int, ChannelPlanePairVec>;
     using TPCReadoutBoardToChannelMap = std::map<unsigned int, SlotChannelVecPair>;
 
     const unsigned int CHANNELSPERBOARD = 64;
@@ -245,8 +246,8 @@ namespace database
         // If there was an error the function above would have printed a message so bail out
         if (error) throw std::runtime_error("Encountered error accessing the database with GetDataset");
 
-        // Loop through the data to recover the channels
-        for(int row = 0; row < getNtuples(dataset); row++)
+        // Loop through the data to recover the channels, making sure to skip the first (header) row
+        for(int row = 1; row < getNtuples(dataset); row++)
         {
             // Recover the row
             Tuple tuple = getTuple(dataset, row);
@@ -275,7 +276,25 @@ namespace database
 
                 if (error) throw std::runtime_error("Encountered error when recovering the channel ID list");
 
-                rbChanMap[readoutBoardID].second[channelNum] = channelID;
+                // Recover the plane identifier 
+                char fragmentBuffer[16];
+
+                getStringValue(tuple, 10, fragmentBuffer, sizeof(fragmentBuffer), &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to read plane type");
+
+                // Make sure lower case... (sigh...)
+                for(size_t charIdx = 0; charIdx < sizeof(fragmentBuffer); charIdx++) fragmentBuffer[charIdx] = tolower(fragmentBuffer[charIdx]);
+
+                unsigned int plane(3);
+
+                if      (strstr(fragmentBuffer,"collection"))  plane = 2;
+                else if (strstr(fragmentBuffer,"induction 2")) plane = 1;
+                else if (strstr(fragmentBuffer,"induction 1")) plane = 0;
+
+                if (plane > 2) std::cout << "YIKES!!! Plane is " << plane << " for channel " << channelID << " with type " << std::string(fragmentBuffer) << std::endl;
+
+                rbChanMap[readoutBoardID].second[channelNum] = ChannelPlanePair(channelID,plane);
             }
         }
 
