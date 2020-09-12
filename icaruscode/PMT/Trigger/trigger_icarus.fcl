@@ -72,7 +72,7 @@ NuMI_settings: {
 icarus_triggergate_basic: {
   
   # waveform baseline [ADC counts]
-  Baseline: 8000
+#  Baseline: 8000
   
   # thresholds for channel trigger gate opening [ADC counts]
   # roughly equivalent to the amplitudes of

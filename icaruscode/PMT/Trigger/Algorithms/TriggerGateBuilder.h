@@ -14,6 +14,7 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
 #include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -26,6 +27,7 @@
 
 // C/C++ standard libraries
 #include <vector>
+#include <tuple>
 #include <algorithm> // std::count_if()
 #include <functional> // std::mem_fn()
 #include <optional>
@@ -39,11 +41,52 @@ namespace icarus::trigger {
   // declarations
   //
   
+  struct WaveformWithBaseline;
+  
   class TriggerGateBuilder;
   
   // ---------------------------------------------------------------------------
   
 } // namespace icarus::trigger
+
+
+//------------------------------------------------------------------------------
+/// Object to carry around waveform ant its baseline.
+struct icarus::trigger::WaveformWithBaseline
+  : std::tuple<raw::OpDetWaveform const*, icarus::WaveformBaseline const*>
+{
+  
+  using Waveform_t = raw::OpDetWaveform;
+  using Baseline_t = icarus::WaveformBaseline;
+  using Base_t = std::tuple<Waveform_t const*, Baseline_t const*>;
+  
+  using Base_t::Base_t; // inherit constructors
+  
+  /// Returns a reference to the waveform.
+  Waveform_t const& waveform() const { return *waveformPtr(); }
+  
+  /// Returns a reference to the waveform baseline.
+  Baseline_t const& baseline() const { return *baselinePtr(); }
+  
+  /// Returns a pointer to the waveform.
+  Waveform_t const* waveformPtr() const
+    { return std::get<Waveform_t const*>(*this); }
+  
+  /// Returns a pointer to the waveform baseline.
+  Baseline_t const* baselinePtr() const
+    { return std::get<Baseline_t const*>(*this); }
+  
+  /// Returns whether the baseline is available for this waveform.
+  bool hasBaseline() const { return baselinePtr() != nullptr; }
+  
+  
+  // questionable practices...
+  operator Waveform_t const& () const { return waveform(); }
+  operator Waveform_t const* () const { return waveformPtr(); }
+  operator Baseline_t const& () const { return baseline(); }
+  operator Baseline_t const* () const { return baselinePtr(); }
+  
+}; // struct icarus::trigger::WaveformWithBaseline
 
 
 //------------------------------------------------------------------------------
@@ -60,6 +103,7 @@ class icarus::trigger::TriggerGateBuilder {
     public:
   
   // --- BEGIN Data types ------------------------------------------------------
+  
   /// Container of logical gates for all triggering channels for a threshold.
   class TriggerGates {
     
@@ -119,12 +163,6 @@ class icarus::trigger::TriggerGateBuilder {
     using Comment = fhicl::Comment;
     
     
-    fhicl::Atom<ADCCounts_t::value_t> Baseline {
-      Name("Baseline"),
-      Comment("the baseline level, fixed for all channels [ADC counts]"),
-      0 // default: null baseline (!)
-      };
-    
     fhicl::Sequence<ADCCounts_t::value_t> ChannelThresholds {
       Name("ChannelThresholds"),
       Comment("triggering thresholds [ADC counts]")
@@ -147,14 +185,11 @@ class icarus::trigger::TriggerGateBuilder {
   
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
   virtual std::vector<TriggerGates> build
-    (std::vector<raw::OpDetWaveform> const& waveforms) const = 0;
+    (std::vector<WaveformWithBaseline> const& waveforms) const = 0;
   
   /// Returns all the configured thresholds.
   std::vector<ADCCounts_t> const& channelThresholds() const
     { return fChannelThresholds; }
-  
-  /// Returns the assumed waveform baseline [ADC counts].
-  ADCCounts_t baseline() const { return fBaseline; }
   
   /// Returns the number of configured thresholds.
   std::size_t nChannelThresholds() const { return channelThresholds().size(); }
@@ -172,12 +207,6 @@ class icarus::trigger::TriggerGateBuilder {
   /// Returns a detector timings object.
   detinfo::DetectorTimings const& detTimings() const { return *fDetTimings; }
   
-  /// Returns the absolute thresholds,
-  /// in the same order as `channelThresholds()`.
-  std::vector<ADCCounts_t> const& absoluteThresholds() const
-    { return fAbsoluteThresholds; }
-  
-  
   /// Creates an empty TriggerGates object for each threshold;
   /// thresholds are kept relative.
   std::vector<TriggerGates> prepareAllGates() const;
@@ -186,7 +215,6 @@ class icarus::trigger::TriggerGateBuilder {
     private:
   
   // --- BEGIN Configuration parameters ----------------------------------------
-  ADCCounts_t fBaseline; ///< The baseline for all channels.
   
   /// All single channel thresholds, sorted in increasing order.
   std::vector<ADCCounts_t> fChannelThresholds;
@@ -200,18 +228,6 @@ class icarus::trigger::TriggerGateBuilder {
   std::optional<detinfo::DetectorTimings> fDetTimings;
   
   // --- END Setup -------------------------------------------------------------
-  
-  
-  // --- BEGIN Cache -----------------------------------------------------------
-  
-  /// Trigger thresholds in absolute ADC counts.
-  std::vector<ADCCounts_t> fAbsoluteThresholds;
-  
-  // --- END Cache -------------------------------------------------------------
-  
-  
-  /// Converts the thresholds from relative to baseline to absolute.
-  std::vector<ADCCounts_t> makeAbsoluteThresholds() const;
   
   
 }; // class icarus::trigger::TriggerGateBuilder

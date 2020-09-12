@@ -12,6 +12,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
+#include "icaruscode/PMT/Data/WaveformBaseline.h"
 #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
@@ -35,6 +36,7 @@
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
+#include "cetlib_except/exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
@@ -149,6 +151,19 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
       "opdaq" // tradition demands
       };
     
+    /* // TODO
+    fhicl::Atom<art::InputTag> Baselines {
+      Name("Baselines"),
+      Comment("label of input waveform baselines (parallel to the waveforms)")
+      };
+    */
+      
+    fhicl::Atom<float> Baseline {
+      Name("Baseline"),
+      Comment("constant baseline for all waveforms, in ADC counts"),
+      0.0f
+      };
+    
     fhicl::DelegatedParameter TriggerGateBuilder_ {
       Name("TriggerGateBuilder"),
       Comment
@@ -204,10 +219,13 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   // --- BEGIN Configuration variables -----------------------------------------
   
   art::InputTag const fOpDetWaveformTag; ///< Input optical waveform tag.
+  art::InputTag const fBaselineTag; ///< Input waveform baseline tag.
   
   unsigned int const fNOpDetChannels; ///< Number of optical detector channels.
   
   std::string const fLogCategory; ///< Category name for the console output stream.
+  
+  float fBaseline;
   
   /// Thresholds selected for saving, and their instance name.
   std::map<icarus::trigger::ADCCounts_t, std::string> fSelectedThresholds;
@@ -268,7 +286,10 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   , fOpDetWaveformTag(config().OpticalWaveforms())
   , fNOpDetChannels(getNOpDetChannels(config().NChannels))
   , fLogCategory(config().OutputCategory())
-  , fClockData{art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob()}
+//  , fBaselineTag(config().Baselines()) // TODO
+  , fBaseline(config().Baseline())
+  , fClockData
+      {art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob()}
   , fDetTimings{fClockData}
   , fTriggerGateBuilder
     (
@@ -358,13 +379,38 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
     = util::mapDataProductPointers(event, waveformHandle);
   
   //
+  // retrieve the baseline information TODO
+  //
+//   auto const& baselines
+//     = event.getByLabel<std::vector<icarus::WaveformBaseline>>(fBaselineTag);
+  // mock-up
+  std::vector<icarus::WaveformBaseline> baselines;
+  baselines.resize(waveforms.size(), icarus::WaveformBaseline{ fBaseline });
+  
+  //
+  // provide each waveform with additional information: baseline
+  //
+  if (baselines.size() != waveforms.size()) {
+    throw cet::exception("DiscriminatePMTwaveforms")
+      << "Incompatible baseline information for the waveforms: "
+      << waveforms.size() << " waveforms (" << fOpDetWaveformTag.encode()
+      << ") for " << baselines.size() << " baselines (" << fBaselineTag.encode()
+      << ")!\n";
+  }
+  std::vector<icarus::trigger::WaveformWithBaseline> waveformInfo;
+  waveformInfo.reserve(waveforms.size());
+  for (auto const& [ waveform, baseline ]: util::zip(waveforms, baselines))
+    waveformInfo.emplace_back(&waveform, &baseline);
+  
+  
+  //
   // define channel-level trigger gate openings as function on threshold
   //
   
   // this is a collection where each entry (of type `TriggerGates`) contains
   // the complete set of trigger gates for an event.
   std::vector<icarus::trigger::TriggerGateBuilder::TriggerGates> const&
-    triggerGatesByThreshold = fTriggerGateBuilder->build(waveforms);
+    triggerGatesByThreshold = fTriggerGateBuilder->build(waveformInfo);
   
   { // nameless block
     mf::LogTrace log(fLogCategory);

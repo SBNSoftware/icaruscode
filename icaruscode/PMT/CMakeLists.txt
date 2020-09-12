@@ -1,3 +1,4 @@
+add_subdirectory(Data)
 add_subdirectory(OpticalTools)
 add_subdirectory(OpReco)
 add_subdirectory(Algorithms)
