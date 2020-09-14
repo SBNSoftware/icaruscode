@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+  Scintillation: {
+    module_type: "ICARUSScintillation"
+    OpDetWaveformProducer: "daqPMT"
+    OpHitProducer: "ophit"
+
+  }
+
+END_PROLOG

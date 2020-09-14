@@ -1,0 +1,15 @@
+#include "opticaldetectormodules.fcl"
+#include "hitfindermodules_icarus.fcl"
+
+BEGIN_PROLOG
+
+waveformdump: {
+
+     module_type: Waveformdump
+     InputModule: "daqPMT"
+     HitAlgoPset: @local::standard_algo_slidingwindow
+     PedAlgoPset: @local::standard_algo_pedestal_rollingmean
+
+}
+
+END_PROLOG
