@@ -370,7 +370,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    * primitive requirement in `MinimumPrimitives`:
    * 
    * 1. combine the trigger primitives: `combineTriggerPrimitives()`;
-   * 2. apply the beam gate: `applyBeamGateToAll()` on the combined primitives;
+   * 2. apply the beam gate: `applyBeamGate()` on the combined primitives;
    * 3. generate the trigger response: in `plotResponses()`;
    * 4. fill all plots: also in in `plotResponses()`.
    * 
@@ -681,7 +681,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
 
   /* 
    * 1. combine the trigger primitives (`combineTriggerPrimitives()`)
-   * 2. apply the beam gate on the combination (`applyBeamGateToAll()`)
+   * 2. apply the beam gate on the combination (`applyBeamGate()`)
    * 3. and compute the trigger response (`plotResponses()`)
    * 4. fill plots with the result (also `plotResponses()`)
    */

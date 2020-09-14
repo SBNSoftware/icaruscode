@@ -7,6 +7,7 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
@@ -1640,19 +1641,19 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
   //
   // initialization of plots and plot categories
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-  detinfo::DetectorTimings const detTimings{clockData};
-  auto const beam_gate_opt = std::make_pair(detTimings.toOpticalTick(detTimings.BeamGateTime()),
-                                            detTimings.toOpticalTick(detTimings.BeamGateTime() + fBeamGateDuration));
-  auto const beam_gate_sim = std::make_pair(detTimings.toSimulationTime(beam_gate_opt.first),
-                                            detTimings.toSimulationTime(beam_gate_opt.second));
+  auto const clockData
+    = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+  
   initializePlots(clockData, ::PlotCategories);
   {
     mf::LogInfo log(fLogCategory);
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << beam_gate_sim.first << " -- " << beam_gate_sim.second;
+    
+    auto const beamGate = icarus::trigger::makeBeamGateStruct
+      (detinfo::DetectorTimings{clockData}, fBeamGateDuration);
+    log << "\nBeam gate is " << beamGate.asSimulationRange();
   } // local block
 
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()

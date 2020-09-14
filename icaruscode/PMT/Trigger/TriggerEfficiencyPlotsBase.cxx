@@ -112,27 +112,6 @@ void icarus::trigger::details::PlotInfoTree::assign(bool inPlots) {
 
 
 //------------------------------------------------------------------------------
-//--- icarus::trigger::TriggerEfficiencyPlotsBase
-//------------------------------------------------------------------------------
-icarus::trigger::TriggerEfficiencyPlotsBase::GateRange::GateRange(
-  microseconds duration, microseconds delay,
-  detinfo::DetectorTimings const& detTimings
-  )
-  : fGate(icarus::trigger::BeamGateMaker{detTimings}(duration, delay))
-  , fRangeSim
-    {
-      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay),
-      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay + duration)
-    }
-  , fRangeOpt
-    {
-      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay),
-      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay + duration)
-    }
-{} // icarus::trigger::TriggerEfficiencyPlotsBase::GateRange::GateRange()
-
-
-//------------------------------------------------------------------------------
 /**
  * @brief List of event categories.
  * 
@@ -232,11 +211,16 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
   , fDetTimings{fDetClocks}
-  , fBeamGate{ fBeamGateDuration, fBeamGateStart, fDetTimings }
+  , fBeamGate{
+      icarus::trigger::makeBeamGateStruct
+        (fDetTimings, fBeamGateDuration, fBeamGateStart)
+      }
   , fPreSpillWindow{
-      fBeamGateStart - config.PreSpillWindowGap() - config.PreSpillWindow(),
-      fBeamGateStart - config.PreSpillWindowGap(),
-      fDetTimings
+      icarus::trigger::makeBeamGateStruct(
+        fDetTimings,
+        fBeamGateStart - config.PreSpillWindowGap() - config.PreSpillWindow(),
+        fBeamGateStart - config.PreSpillWindowGap()
+        )
       }
   , fEventInfoExtractor(
       config.GeneratorTags(),              // truthTags
@@ -366,7 +350,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   //
   // 2. for each PMT threshold:
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+  auto const clockData
+   = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   for (auto&& [ iThr, thrPair, thrPlots ]
     : util::enumerate(fADCthresholds, fThresholdPlots)
   ) {
