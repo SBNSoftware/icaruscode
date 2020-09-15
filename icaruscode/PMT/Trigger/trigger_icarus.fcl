@@ -75,7 +75,10 @@ icarus_triggergate_basic: {
   Baseline: 8000
   
   # thresholds for channel trigger gate opening [ADC counts]
-  ChannelThresholds: [ 5, 15, 25, 40, 60, 100, 150 ]
+  # roughly equivalent to the amplitudes of
+  # [ 0.5, 1.0, 1.5, 2.5, 4.0, 6.0, 10.0, 15.0 ] photoelectrons or
+  # [ 3.5, 6, 10, 12, 16, 24, 37, 70, 100 ] mV
+  ChannelThresholds: [ 30, 50, 80, 100, 130, 200, 330, 550, 830 ]
   
 } # icarus_triggergate_basic
 

@@ -17,6 +17,7 @@ TPCDecoderTool: {
 TPCDecoderFilter1DTool: {
     tool_type:          TPCDecoderFilter1D
     fragment_id_offset: 0
+    NSigmaForTrucation: 3.5
     CoherentGrouping:   64
     StructuringElement: 20
     FilterWindow:       10

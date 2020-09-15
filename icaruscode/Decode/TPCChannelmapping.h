@@ -54,7 +54,8 @@ namespace database
     //-----------------------------------------------------
 
     using ReadoutIDVec                = std::vector<unsigned int>;
-    using TPCFragmentIDToReadoutIDMap = std::map<unsigned int, ReadoutIDVec>;
+    using CrateNameReadoutIDPair      = std::pair<std::string,ReadoutIDVec>;
+    using TPCFragmentIDToReadoutIDMap = std::map<unsigned int, CrateNameReadoutIDPair>;
 
     inline int BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap& fragmentBoardMap)
     {
@@ -66,6 +67,108 @@ namespace database
 
         // Recover the data from the database
         int error = GetDataset(name,dburl,dataType,dataset);
+
+        // Include a by hand mapping of fragement ID to crate
+        using FlangeIDToCrateMap = std::map<size_t,std::string>;
+
+        FlangeIDToCrateMap flangeIDToCrateMap;
+
+        flangeIDToCrateMap[19]  = "WW01T";
+        flangeIDToCrateMap[68]  = "WW01M";
+        flangeIDToCrateMap[41]  = "WW01B";
+        flangeIDToCrateMap[11]  = "WW02";
+        flangeIDToCrateMap[17]  = "WW03";
+        flangeIDToCrateMap[36]  = "WW04";
+        flangeIDToCrateMap[18]  = "WW05";
+        flangeIDToCrateMap[58]  = "WW06";
+        flangeIDToCrateMap[71]  = "WW07";
+        flangeIDToCrateMap[14]  = "WW08";
+        flangeIDToCrateMap[25]  = "WW09";
+        flangeIDToCrateMap[34]  = "WW10";
+        flangeIDToCrateMap[67]  = "WW11";
+        flangeIDToCrateMap[33]  = "WW12";
+        flangeIDToCrateMap[87]  = "WW13";
+        flangeIDToCrateMap[10]  = "WW14";
+        flangeIDToCrateMap[59]  = "WW15";
+        flangeIDToCrateMap[95]  = "WW16";
+        flangeIDToCrateMap[22]  = "WW17";
+        flangeIDToCrateMap[91]  = "WW18";
+        flangeIDToCrateMap[61]  = "WW19";
+        flangeIDToCrateMap[55]  = "WW20T";
+        flangeIDToCrateMap[97]  = "WW20M";
+        flangeIDToCrateMap[100] = "WW20B";
+        flangeIDToCrateMap[83]  = "WE01T";
+        flangeIDToCrateMap[85]  = "WE01M";
+        flangeIDToCrateMap[7]   = "WE01B";
+        flangeIDToCrateMap[80]  = "WE02";
+        flangeIDToCrateMap[52]  = "WE03";
+        flangeIDToCrateMap[32]  = "WE04";
+        flangeIDToCrateMap[70]  = "WE05";
+        flangeIDToCrateMap[74]  = "WE06";
+        flangeIDToCrateMap[46]  = "WE07";
+        flangeIDToCrateMap[81]  = "WE08";
+        flangeIDToCrateMap[63]  = "WE09";
+        flangeIDToCrateMap[30]  = "WE10";
+        flangeIDToCrateMap[51]  = "WE11";
+        flangeIDToCrateMap[90]  = "WE12";
+        flangeIDToCrateMap[23]  = "WE13";
+        flangeIDToCrateMap[93]  = "WE14";
+        flangeIDToCrateMap[92]  = "WE15";
+        flangeIDToCrateMap[88]  = "WE16";
+        flangeIDToCrateMap[73]  = "WE17";
+        flangeIDToCrateMap[1]   = "WE18";
+        flangeIDToCrateMap[66]  = "WE19";
+        flangeIDToCrateMap[48]  = "WE20T";
+        flangeIDToCrateMap[13]  = "WE20M";
+        flangeIDToCrateMap[56]  = "WE20B";
+        flangeIDToCrateMap[94]  = "EW01T";
+        flangeIDToCrateMap[77]  = "EW01M";
+        flangeIDToCrateMap[72]  = "EW01B";
+        flangeIDToCrateMap[65]  = "EW02";
+        flangeIDToCrateMap[4]   = "EW03";
+        flangeIDToCrateMap[89]  = "EW04";
+        flangeIDToCrateMap[37]  = "EW05";
+        flangeIDToCrateMap[76]  = "EW06";
+        flangeIDToCrateMap[49]  = "EW07";
+        flangeIDToCrateMap[60]  = "EW08";
+        flangeIDToCrateMap[21]  = "EW09";
+        flangeIDToCrateMap[6]   = "EW10";
+        flangeIDToCrateMap[62]  = "EW11";
+        flangeIDToCrateMap[2]   = "EW12";
+        flangeIDToCrateMap[29]  = "EW13";
+        flangeIDToCrateMap[44]  = "EW14";
+        flangeIDToCrateMap[9]   = "EW15";
+        flangeIDToCrateMap[31]  = "EW16";
+        flangeIDToCrateMap[98]  = "EW17";
+        flangeIDToCrateMap[38]  = "EW18";
+        flangeIDToCrateMap[99]  = "EW19";
+        flangeIDToCrateMap[53]  = "EW20T";
+        flangeIDToCrateMap[82]  = "EW20M";
+        flangeIDToCrateMap[35]  = "EW20B";
+        flangeIDToCrateMap[96]  = "EE01T";
+        flangeIDToCrateMap[28]  = "EE01M";
+        flangeIDToCrateMap[16]  = "EE01T";
+        flangeIDToCrateMap[69]  = "EE02";
+        flangeIDToCrateMap[20]  = "EE02";
+        flangeIDToCrateMap[79]  = "EE02";
+        flangeIDToCrateMap[50]  = "EE02";
+        flangeIDToCrateMap[45]  = "EE02";
+        flangeIDToCrateMap[84]  = "EE02";
+        flangeIDToCrateMap[42]  = "EE02";
+        flangeIDToCrateMap[39]  = "EE02";
+        flangeIDToCrateMap[26]  = "EE02";
+        flangeIDToCrateMap[64]  = "EE02";
+        flangeIDToCrateMap[43]  = "EE02";
+        flangeIDToCrateMap[47]  = "EE02";
+        flangeIDToCrateMap[15]  = "EE02";
+        flangeIDToCrateMap[3]   = "EE02";
+        flangeIDToCrateMap[27]  = "EE02";
+        flangeIDToCrateMap[24]  = "EE02";
+        flangeIDToCrateMap[40]  = "EE02";
+        flangeIDToCrateMap[75]  = "EE02";
+        flangeIDToCrateMap[86]  = "EE20T";
+        flangeIDToCrateMap[54]  = "EE20M";
+        flangeIDToCrateMap[8]   = "EE20B";
 
         // If there was an error the function above would have printed a message so bail out
         if (error) throw(std::exception());
@@ -93,11 +196,20 @@ namespace database
 
                 if (!(fragmentID & tpcIdentifier)) continue;
 
+                if (fragmentBoardMap.find(fragmentID) == fragmentBoardMap.end())
+                {
+                    unsigned int flangeID = getLongValue(tuple, 1, &error);
+
+                    if (error) throw std::runtime_error("Encountered error in trying to recover Board Flange ID from database");
+
+                    fragmentBoardMap[fragmentID].first = flangeIDToCrateMap[flangeID];
+                }
+
                 unsigned int readoutID = getLongValue(tuple, 0, &error);
 
                 if (error) throw std::runtime_error("Encountered error in trying to recover Board ReadoutID from database");
 
-                fragmentBoardMap[fragmentID].emplace_back(readoutID);
+                fragmentBoardMap[fragmentID].second.emplace_back(readoutID);
 
                 releaseTuple(tuple);
             }
@@ -114,8 +226,9 @@ namespace database
     // be a map of readout ID to a vector of channels
     //-----------------------------------------------------
     
-    using ChannelVec                  = std::vector<unsigned int>;
-    using SlotChannelVecPair          = std::pair<unsigned int, ChannelVec>;
+    using ChannelPlanePair            = std::pair<unsigned int, unsigned int>;
+    using ChannelPlanePairVec         = std::vector<ChannelPlanePair>;
+    using SlotChannelVecPair          = std::pair<unsigned int, ChannelPlanePairVec>;
     using TPCReadoutBoardToChannelMap = std::map<unsigned int, SlotChannelVecPair>;
 
     const unsigned int CHANNELSPERBOARD = 64;
@@ -133,8 +246,8 @@ namespace database
         // If there was an error the function above would have printed a message so bail out
         if (error) throw std::runtime_error("Encountered error accessing the database with GetDataset");
 
-        // Loop through the data to recover the channels
-        for(int row = 0; row < getNtuples(dataset); row++)
+        // Loop through the data to recover the channels, making sure to skip the first (header) row
+        for(int row = 1; row < getNtuples(dataset); row++)
         {
             // Recover the row
             Tuple tuple = getTuple(dataset, row);
@@ -163,7 +276,25 @@ namespace database
 
                 if (error) throw std::runtime_error("Encountered error when recovering the channel ID list");
 
-                rbChanMap[readoutBoardID].second[channelNum] = channelID;
+                // Recover the plane identifier 
+                char fragmentBuffer[16];
+
+                getStringValue(tuple, 10, fragmentBuffer, sizeof(fragmentBuffer), &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to read plane type");
+
+                // Make sure lower case... (sigh...)
+                for(size_t charIdx = 0; charIdx < sizeof(fragmentBuffer); charIdx++) fragmentBuffer[charIdx] = tolower(fragmentBuffer[charIdx]);
+
+                unsigned int plane(3);
+
+                if      (strstr(fragmentBuffer,"collection"))  plane = 2;
+                else if (strstr(fragmentBuffer,"induction 2")) plane = 1;
+                else if (strstr(fragmentBuffer,"induction 1")) plane = 0;
+
+                if (plane > 2) std::cout << "YIKES!!! Plane is " << plane << " for channel " << channelID << " with type " << std::string(fragmentBuffer) << std::endl;
+
+                rbChanMap[readoutBoardID].second[channelNum] = ChannelPlanePair(channelID,plane);
             }
         }
 
@@ -342,6 +473,11 @@ namespace database
 
 	            std::string digitizerLabel(digitizerBuffer, 8); //sizeof(digitizerBuffer));
 
+                // Recover the fragment id
+                unsigned fragmentID = getLongValue(tuple, 16, &error);
+
+                if (error) throw std::runtime_error("Encountered error when trying to recover the PMT fragment id");
+
                 // Now recover the digitizer channel number
                 unsigned int digitizerChannelNo = getLongValue(tuple, 9, &error);
 
@@ -362,7 +498,7 @@ namespace database
                 }
 
                 // Fill the map
-                fragmentToDigitizerChannelMap[digitizerToFragmentMap[digitizerLabel]].emplace_back(digitizerChannelNo,channelID);
+                fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID);
 
                 releaseTuple(tuple);
             }

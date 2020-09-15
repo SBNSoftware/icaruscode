@@ -66,6 +66,8 @@ namespace icarus{
        //fAbsLenEffD = p.get<double>("AbsLenEffD");
        fDeadTime = p.get<double>("DeadTime");
        fBiasTime = p.get<double>("BiasTime");
+       fUseBirks = p.get<bool>("UseBirks");
+       fKbirks   = p.get<double>("Kbirks");
     }//CRTDetSim::reconfigure()
 
     //-------------------------------------------------------------------------------------------------------------
@@ -559,6 +561,10 @@ namespace icarus{
                                   << "  Local position (x,y,z): ( " << svHitPosLocal[0]
                                   << " , " << svHitPosLocal[1] << " , " << svHitPosLocal[2] << " )";
 
+            //calculate Birks' correction factor
+            double dl = sqrt(pow(ide.entryX-ide.exitX,2)+pow(ide.entryY-ide.exitY,2)+pow(ide.entryZ-ide.exitZ,2));
+            double birksCorr = 1./(1+fKbirks*ide.energyDeposited/dl);
+
             // The expected number of PE, using a quadratic model for the distance
             // dependence, and scaling linearly with deposited energy.
             double qr = fUseEdep ? ide.energyDeposited / fQ0 : 1.0;
@@ -580,10 +586,17 @@ namespace icarus{
                 abs1 = tmp.second;
             }
 
-            //most probable # photons arriving at SiPM
+            //# photons arriving at SiPM
             double npeExp0 = npeExpected * abs0;;
             double npeExp1 = npeExpected * abs1;
             double npeExp0Dual = npeExpected2 * abs0;
+
+            //apply Birks' quenching if requested
+            if(fUseBirks){
+                npeExp0 *= birksCorr;
+                npeExp1 *= birksCorr;
+                npeExp0Dual *= birksCorr;
+            }
 
             //sanity check on simulated light output
             if(npeExp0<0||npeExp1<0||npeExp0Dual<0) 
