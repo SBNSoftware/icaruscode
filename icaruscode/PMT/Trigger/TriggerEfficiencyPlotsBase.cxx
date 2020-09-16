@@ -15,6 +15,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -63,33 +64,6 @@
 #include <memory> // std::make_unique()
 #include <utility> // std::pair<>, std::move()
 
-
-//------------------------------------------------------------------------------
-namespace {
-  
-  struct TimeRangeConverter {
-    
-    TimeRangeConverter(detinfo::DetectorTimings const& detTimings)
-      : fDetTimings(detTimings) {}
-    
-    template <typename DestTime, typename SrcTime>
-    DestTime toTime(SrcTime const& time) const
-      { return fDetTimings.toTimeScale<DestTime>(time); }
-
-    template <typename DestTime, typename SrcTime>
-    std::pair<DestTime, DestTime> toTime
-      (std::pair<SrcTime, SrcTime> const& times) const
-      {
-        return
-          { toTime<DestTime>(times.first), toTime<DestTime>(times.second) };
-      }
-
-      private:
-    detinfo::DetectorTimings const& fDetTimings;
-    
-  }; // struct TimeRangeConverter
-  
-} // local namespace
 
 //------------------------------------------------------------------------------
 //--- icarus::trigger::details::PlotInfoTree
@@ -202,6 +176,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   : fDetectorParticleTag  (config.DetectorParticleTag())
   , fBeamGateDuration     (config.BeamGateDuration())
   , fBeamGateStart        (config.BeamGateStart())
+  , fPreSpillWindow       (config.PreSpillWindow())
+  , fPreSpillStart
+      (fBeamGateStart - config.PreSpillWindowGap() - fPreSpillWindow)
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
   , fLogCategory          (config.LogCategory())
@@ -209,24 +186,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   , fGeom      (*lar::providerFrom<geo::Geometry>())
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // cached
-  , fDetClocks{art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob()}
-  , fDetTimings{fDetClocks}
-  , fBeamGate{
-      icarus::trigger::makeBeamGateStruct
-        (fDetTimings, fBeamGateDuration, fBeamGateStart)
-      }
-  , fPreSpillWindow{
-      icarus::trigger::makeBeamGateStruct(
-        fDetTimings,
-        fBeamGateStart - config.PreSpillWindowGap() - config.PreSpillWindow(),
-        fBeamGateStart - config.PreSpillWindowGap()
-        )
-      }
-  , fEventInfoExtractor(
+  , fEventInfoExtractorMaker(
       config.GeneratorTags(),              // truthTags
       config.EnergyDepositTags(),          // edepTags
-      fBeamGate.asSimulationRange(),       // inSpillTimes
-      fPreSpillWindow.asSimulationRange(), // inPreSpillTimes
       fGeom,                               // geom
       fLogCategory,                        // logCategory
       consumer                             // consumesCollector
@@ -278,15 +240,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
-    log << "\nBeam gate is " << fBeamGate.asSimulationRange();
+    
   } // local block
   
-  mf::LogTrace(fLogCategory)
-    << "Beam gate:"
-    << "\n - electronics time: " << fBeamGate.asGate()
-    << "\n - simulation time: " << fBeamGate.asSimulationRange()
-    << "\n - optical ticks: " << fBeamGate.asOptTickRange()
-    ;
   
   if (!useGen()) {
     mf::LogVerbatim(fLogCategory)
@@ -321,7 +277,18 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   //
   // 1. find out the features of the event and the categories it belongs to
   //
-  EventInfo_t const eventInfo = fEventInfoExtractor(event);
+  
+  auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack(&event);
+  
+  if (auto oldGate = fBeamGateChangeCheck(beamGate); oldGate) {
+    mf::LogWarning(fLogCategory)
+      << "Beam gate has changed from " << oldGate->asOptTickRange()
+      << " to " << beamGate.asOptTickRange() << " (optical tick)!";
+  }
+  
+  EventInfo_t const eventInfo = fEventInfoExtractorMaker
+    (beamGate.asSimulationRange(), preSpillWindow.asSimulationRange())(event);
+
   
   bool const bPlot = shouldPlotEvent(eventInfo);
   if (bPlot) ++nPlottedEvents;
@@ -413,6 +380,28 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
 {
   using namespace std::string_literals;
   
+  auto const beamGate = icarus::trigger::makeBeamGateStruct
+    (icarus::ns::util::makeDetTimings(), fBeamGateDuration, fBeamGateStart);
+
+  fBeamGateChangeCheck(beamGate);
+  
+  {
+    mf::LogTrace(fLogCategory)
+      << "Beam gate:"
+      << "\n - electronics time: " << beamGate.asGate()
+      << "\n - simulation time: " << beamGate.asSimulationRange()
+      << "\n - optical ticks: " << beamGate.asOptTickRange()
+      ;
+    
+    mf::LogInfo log(fLogCategory);
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
+    for (auto const& [ threshold, dataTag ]: fADCthresholds)
+      log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
+    log << "\nBeam gate for plots is " << beamGate.asSimulationRange();
+    
+  } // local block
+  
+  
   fPlotCategories = std::move(categories);
   
   for (icarus::trigger::ADCCounts_t const threshold
@@ -490,10 +479,13 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
   (PlotSandbox& plots) const
 {
   
+  auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack();
+
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { fDetTimings.toOpticalTicks(fTriggerTimeResolution) };
+    { detTimings.toOpticalTicks(fTriggerTimeResolution) };
   
-  auto const PreSpillDuration = fPreSpillWindow.asSimulationRange().duration();
+  auto const PreSpillDuration = preSpillWindow.asSimulationRange().duration();
+  
   //
   // Triggering efficiency vs. something else
   //
@@ -555,7 +547,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
       );
   } // if plots with generated info
   
-  auto const& beamGateOpt = fBeamGate.asOptTickRange();
+  auto const& beamGateOpt = beamGate.asOptTickRange();
   plots.make<TH1F>(
     "TriggerTick",
     "Trigger time tick"
@@ -572,8 +564,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
   (PlotSandbox& plots) const
 {
   
-  auto const BeamGateDuration = fBeamGate.asSimulationRange().duration();
-  auto const PreSpillDuration = fPreSpillWindow.asSimulationRange().duration();
+  auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack();
+  
+  auto const BeamGateDuration = beamGate.asSimulationRange().duration();
+  auto const PreSpillDuration = preSpillWindow.asSimulationRange().duration();
   
   //
   // Selection-related plots
@@ -771,6 +765,22 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
     );
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerEfficiencyPlotsBase::makeGatePack
+  (art::Event const* event /* = nullptr */) const -> GatePack_t
+{
+  auto const detTimings = icarus::ns::util::makeDetTimings(event);
+  return GatePack_t{
+    detTimings,
+    icarus::trigger::makeBeamGateStruct
+      (detTimings, fBeamGateDuration, fBeamGateStart),
+    icarus::trigger::makeBeamGateStruct
+      (detTimings, fPreSpillStart, fPreSpillStart + fPreSpillWindow)
+    };
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::makeGatePack()
 
 
 //------------------------------------------------------------------------------

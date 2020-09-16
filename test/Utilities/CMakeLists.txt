@@ -1,4 +1,5 @@
 cet_test(rounding_test USE_BOOST_UNIT)
+cet_test(ChangeMonitor_test USE_BOOST_UNIT)
 
 cet_test(FastAndPoorGauss_test
   LIBRARIES

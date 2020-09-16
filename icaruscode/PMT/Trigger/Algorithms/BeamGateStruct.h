@@ -101,9 +101,20 @@ struct icarus::trigger::BeamGateStruct {
   TimeRange<optical_tick> const& asOptTickRange() const
     { return fRangeOpt; }
   
+  /// Returns the time duration of the gate in the specified time unit.
+  template <typename Time = microseconds>
+  Time duration() const { return { asSimulationRange().duration() }; }
+  
   /// @}
   // --- END -- Access ---------------------------------------------------------
   
+  //@{
+  /// Comparison operators.
+  bool operator== (BeamGateStruct const& other) const
+    { return asGate() == other.asGate(); }
+  bool operator!= (BeamGateStruct const& other) const
+    { return asGate() != other.asGate(); }
+  //@}
   
     private:
   // so far, we cache everything (but not the timings helper)

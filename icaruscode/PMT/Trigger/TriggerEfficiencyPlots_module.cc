@@ -1653,7 +1653,7 @@ icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots
     
     auto const beamGate = icarus::trigger::makeBeamGateStruct
       (detinfo::DetectorTimings{clockData}, fBeamGateDuration);
-    log << "\nBeam gate is " << beamGate.asSimulationRange();
+    log << "\nBeam gate used for plot ranges: " << beamGate.asSimulationRange();
   } // local block
 
 } // icarus::trigger::TriggerEfficiencyPlots::TriggerEfficiencyPlots()
@@ -1679,7 +1679,8 @@ void icarus::trigger::TriggerEfficiencyPlots::analyze(art::Event const& event) {
   //
   // 1. find out the features of the event and the categories it belongs to
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+  auto const clockData
+   = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   detinfo::DetectorTimings const detTimings{clockData};
   EventInfo_t const eventInfo = extractEventInfo(event, clockData);
   

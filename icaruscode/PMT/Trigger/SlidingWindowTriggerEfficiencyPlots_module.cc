@@ -1165,17 +1165,19 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   //
   // Triggering efficiency vs. requirements.
   //
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+  auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack();
   detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { helper().detTimings(clockData).toOpticalTicks(helper().triggerTimeResolution()) };
-  auto const& beamGateOpt = helper().beamGateTickRange();
+    { detTimings.toOpticalTicks(helper().triggerTimeResolution()) };
+  
+  auto const& beamGateOpt = beamGate.asOptTickRange();
+  
   auto* TrigTime = plots.make<TH2F>(
     "TriggerTick",
     "Trigger time tick"
       ";window pattern"
       ";optical time tick [ /" + util::to_string(triggerResolutionTicks) + " ]",
     fPatterns.size(), 0.0, double(fPatterns.size()),
-    (beamGateOpt.second - beamGateOpt.first) / triggerResolutionTicks,
+    beamGateOpt.duration() / triggerResolutionTicks,
     beamGateOpt.first.value(), beamGateOpt.second.value()
     );
   
@@ -1312,7 +1314,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
 ) const {
   
   auto const threshold = helper().ADCthreshold(thresholdIndex);
-
   
   /*
    * 0.   initialize or verify the topology of the input
@@ -1331,13 +1332,15 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   //
   if (!initializeTopologicalMaps(gates)) verifyTopologicalMap(gates);
   
+  auto const& beamGate = helper().makeMyBeamGate(clockData);
+  
   //
   // 1. apply the beam gate to each input gate
   //    (it's ok to lose provenance information since we have the map)
   //
   TriggerGates_t inBeamGates;
   for (auto const& cryoGates: gates)
-    appendCollection(inBeamGates, helper().applyBeamGateToAll(cryoGates));
+    appendCollection(inBeamGates, beamGate.applyToAll(cryoGates));
   
   // --- BEGIN DEBUG -----------------------------------------------------------
   {
@@ -1375,7 +1378,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
         << "Pattern '" << pattern.tag() << "' on window #" << iWindow
         << " (threshold: " << threshold
         << ") fired at tick " << windowResponse.atTick() << " ("
-        << helper().detTimings(clockData).toElectronicsTime
+        << detinfo::DetectorTimings(clockData).toElectronicsTime
           (detinfo::DetectorTimings::optical_tick{ windowResponse.atTick() })
         << ")"
         ;

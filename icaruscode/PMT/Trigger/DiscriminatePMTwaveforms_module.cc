@@ -219,23 +219,23 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   // --- BEGIN Configuration variables -----------------------------------------
   
   art::InputTag const fOpDetWaveformTag; ///< Input optical waveform tag.
-  art::InputTag const fBaselineTag; ///< Input waveform baseline tag.
+  
+  ///< Input waveform baseline tag.
+  std::optional<art::InputTag> const fBaselineTag;
+  
+  std::optional<float> const fBaseline; ///< A constant baseline level.
   
   unsigned int const fNOpDetChannels; ///< Number of optical detector channels.
   
-  std::string const fLogCategory; ///< Category name for the console output stream.
-  
-  float fBaseline;
-  
   /// Thresholds selected for saving, and their instance name.
   std::map<icarus::trigger::ADCCounts_t, std::string> fSelectedThresholds;
+  
+  std::string const fLogCategory; ///< Category name for the console output stream.
   
   // --- END Configuration variables -------------------------------------------
   
   
   // --- BEGIN Service variables -----------------------------------------------
-  detinfo::DetectorClocksData fClockData;   // FIXME: this assumes that the cached clock data is valid for the whole job.
-  detinfo::DetectorTimings fDetTimings;
   
   // --- END Service variables -------------------------------------------------
   
@@ -288,9 +288,6 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   , fLogCategory(config().OutputCategory())
 //  , fBaselineTag(config().Baselines()) // TODO
   , fBaseline(config().Baseline())
-  , fClockData
-      {art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob()}
-  , fDetTimings{fClockData}
   , fTriggerGateBuilder
     (
       art::make_tool<icarus::trigger::TriggerGateBuilder>
@@ -356,16 +353,20 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
 //------------------------------------------------------------------------------
 void icarus::trigger::DiscriminatePMTwaveforms::beginJob() {
   
-  //
-  // set up the algorithm to create the trigger gates
-  //
-  fTriggerGateBuilder->setup(fDetTimings);
-  
 } // icarus::trigger::DiscriminatePMTwaveforms::beginJob()
 
 
 //------------------------------------------------------------------------------
 void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
+  
+  //
+  // set up the algorithm to create the trigger gates
+  //
+  fTriggerGateBuilder->resetup(
+    detinfo::DetectorTimings{
+      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event)
+      }
+    );
   
   //
   // fetch input

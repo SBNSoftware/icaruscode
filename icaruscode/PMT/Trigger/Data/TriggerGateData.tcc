@@ -583,6 +583,24 @@ auto icarus::trigger::TriggerGateData<TK, TI>::SymmetricCombination(
 
 //------------------------------------------------------------------------------
 template <typename TK, typename TI>
+bool icarus::trigger::TriggerGateData<TK, TI>::operator ==
+  (TriggerGateData const& other) const
+{
+  return fGateLevel == other.fGateLevel;
+} // bool icarus::trigger::TriggerGateData<>::operator==
+
+
+//------------------------------------------------------------------------------
+template <typename TK, typename TI>
+bool icarus::trigger::TriggerGateData<TK, TI>::operator !=
+  (TriggerGateData const& other) const
+{
+  return fGateLevel != other.fGateLevel;
+} // bool icarus::trigger::TriggerGateData<>::operator==
+
+
+//------------------------------------------------------------------------------
+template <typename TK, typename TI>
 auto icarus::trigger::TriggerGateData<TK, TI>::findLastStatusFor
   (ClockTick_t tick) -> std::optional<status_iterator>
 {

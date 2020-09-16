@@ -183,6 +183,13 @@ class icarus::trigger::TriggerGateBuilder {
   /// Algorithm setup.
   virtual void setup(detinfo::DetectorTimings const& timings);
   
+  /// Algorithm reset. It will require a new setup before using it again.
+  virtual void reset() {}
+  
+  /// Resets and sets up.
+  virtual void resetup(detinfo::DetectorTimings const& timings)
+    { reset(); setup(timings); }
+  
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
   virtual std::vector<TriggerGates> build
     (std::vector<WaveformWithBaseline> const& waveforms) const = 0;
