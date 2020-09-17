@@ -19,7 +19,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icaruscode/Utilities/mfLoggingClass.h"
-#include "icaruscode/Utilities/ChangeMonitor.h"
+#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icaruscode/Utilities/rounding.h" // icarus::ns::util::roundup()
 
 // LArSoft libraries
@@ -486,7 +486,7 @@ class icarus::trigger::MajorityTriggerSimulation
   
   // TODO this is not multithread-safe, needs a mutex
   /// Functor returning whether a gate has changed.
-  icarus::ns::util::ChangeMonitor<icarus::trigger::ApplyBeamGateClass>
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::ApplyBeamGateClass>
     fGateChangeCheck;
 
   // --- END Internal variables ------------------------------------------------

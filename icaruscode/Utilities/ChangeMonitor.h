@@ -10,6 +10,7 @@
 
 
 // C/C++ standard libraries
+#include <mutex>
 #include <optional>
 #include <utility> // std::move()
 #include <functional> // std::equal_to<>
@@ -77,7 +78,8 @@ namespace icarus::ns::util {
    * * must be _CopyConstructible_
    * * must be _EqualityComparable_ (if `Comp` is default)
    * 
-   * @note This implementation is not thread-safe.
+   * @note This implementation is not thread-safe. For a thread-safe
+   *       change monitor, see `icarus::ns::util::ThreadSafeChangeMonitor`.
    */
   template <typename T, typename Comp = std::equal_to<T>>
   struct ChangeMonitor {
@@ -140,6 +142,67 @@ namespace icarus::ns::util {
   // Deduction guide: a single parameter is always a reference value.
   template <typename T>
   ChangeMonitor(T const&) -> ChangeMonitor<T>;
+  
+  
+  // ---------------------------------------------------------------------------
+  /**
+   * @brief Helper to check if an object has changed. Thread-safe.
+   * @tparam T type of the object
+   * @tparam Comp type of the comparison between `T` objects
+   * 
+   * This class operates like `ChangeMonitor`, but it is made thread-safe by
+   * the use of a mutex.
+   * 
+   * @note This class is actually only _partially_ thread-safe:
+   *       the member `reference()` is effectively not, since it returns a
+   *       reference that can be then modified by another thread while accessed
+   *       (read only) by another.
+   */
+  template <typename T, typename Comp = std::equal_to<T>>
+  class ThreadSafeChangeMonitor: public ChangeMonitor<T, Comp> {
+    
+    using Base_t = ChangeMonitor<T, Comp>;
+    using Data_t = typename Base_t::Data_t;
+    
+    mutable std::mutex fLock;
+    
+      public:
+    
+    // inherit constructors too
+    using ChangeMonitor<T, Comp>::ChangeMonitor;
+    
+    
+    /**
+     * @brief Returns the old object if different from `newObj`.
+     * @param currentObj the current object value
+     * @return the old reference if different from `currentObj`, or no value
+     * @see `ChangeMonitor::update()`
+     * 
+     * See `ChangeMonitor::update()` for details.
+     */
+    std::optional<Data_t> update(Data_t const& currentObj)
+      { std::lock_guard lg { fLock }; return Base_t::update(currentObj); }
+    
+    /// As `update()`.
+    std::optional<Data_t> operator() (Data_t const& currentObj)
+      { return update(currentObj); }
+    
+    /// Returns whether a reference value is present.
+    bool hasReference() const
+      { std::lock_guard lg { fLock }; return Base_t::hasReference(); }
+    
+    /// Returns the reference value; undefined if `hasReference()` is `false`.
+    /// @note While the method is thread-safe, it returns a reference to a
+    ///       mutable object.
+    Data_t const& reference() const
+      { std::lock_guard lg { fLock }; return Base_t::reference(); }
+    
+  }; // ThreadSafeChangeMonitor
+  
+  
+  // Deduction guide: a single parameter is always a reference value.
+  template <typename T>
+  ThreadSafeChangeMonitor(T const&) -> ThreadSafeChangeMonitor<T>;
   
   // ---------------------------------------------------------------------------
   

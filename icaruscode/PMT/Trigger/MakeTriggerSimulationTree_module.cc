@@ -15,7 +15,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
-#include "icaruscode/Utilities/ChangeMonitor.h"
+#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -350,7 +350,7 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   details::EventInfoExtractorMaker const fEventInfoExtractorMaker;
   
   /// Functor returning whether a gate has changed.
-  icarus::ns::util::ChangeMonitor<icarus::trigger::BeamGateStruct>
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::BeamGateStruct>
     fBeamGateChangeCheck;
 
   // --- END Internal variables ------------------------------------------------

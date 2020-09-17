@@ -83,6 +83,48 @@ void documentationTest() {
 
 
 //------------------------------------------------------------------------------
+void ThreadSafeChangeMonitor_documentationTest() {
+  
+  // same test as ChangeMonitor_documentationTest()
+  
+  icarus::ns::util::ThreadSafeChangeMonitor<int> monitor;
+  BOOST_CHECK(!monitor.hasReference());
+  
+  // first check just establishes the reference
+  int var = 0;
+  auto&& res1 = monitor(var); // this is also a `update()`, which returns no value
+  BOOST_CHECK(!res1);
+  BOOST_CHECK(monitor.hasReference());
+  BOOST_CHECK_EQUAL(monitor.reference(), var);
+  
+  // reference is 0, new value is 1: a change is detected
+  auto&& res2 = monitor(1);
+  BOOST_CHECK(res2);
+  BOOST_CHECK_EQUAL(res2.value(), 0);
+  BOOST_CHECK(monitor.hasReference());
+  BOOST_CHECK_EQUAL(monitor.reference(), 1);
+  
+  var = 5; // this does not change the monitoring
+  // reference is now 1, new value is 1: no change is detected
+  auto&& res3 = monitor(1);
+  BOOST_CHECK(!res3);
+  BOOST_CHECK(monitor.hasReference());
+  BOOST_CHECK_EQUAL(monitor.reference(), 1);
+  
+  bool detected = false;
+  if (auto prevVal = monitor(2); prevVal) {
+    detected = true;
+    BOOST_CHECK(prevVal);
+    BOOST_CHECK_EQUAL(prevVal.value(), 1);
+    BOOST_CHECK(monitor.hasReference());
+    BOOST_CHECK_EQUAL(monitor.reference(), 2);
+  }
+  BOOST_CHECK(detected);
+ 
+} // ThreadSafeChangeMonitor_documentationTest()
+
+
+//------------------------------------------------------------------------------
 //---  The tests
 //---
 BOOST_AUTO_TEST_CASE( ChangeMonitorTestCase ) {
@@ -90,5 +132,12 @@ BOOST_AUTO_TEST_CASE( ChangeMonitorTestCase ) {
   documentationTest();
   
 } // BOOST_AUTO_TEST_CASE( ChangeMonitorTestCase )
+
+
+BOOST_AUTO_TEST_CASE( ThreadSafeChangeMonitorTestCase ) {
+  
+  ThreadSafeChangeMonitor_documentationTest();
+  
+} // BOOST_AUTO_TEST_CASE( ThreadSafeChangeMonitorTestCase )
 
 

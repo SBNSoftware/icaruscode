@@ -22,7 +22,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
-#include "icaruscode/Utilities/ChangeMonitor.h"
+#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -1285,7 +1285,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   std::atomic<unsigned int> nPlottedEvents { 0U }; ///< Count of plotted events.
 
   /// Functor returning whether a gate has changed.
-  icarus::ns::util::ChangeMonitor<icarus::trigger::BeamGateStruct>
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::BeamGateStruct>
     fBeamGateChangeCheck;
 
   // --- END Internal variables ------------------------------------------------
