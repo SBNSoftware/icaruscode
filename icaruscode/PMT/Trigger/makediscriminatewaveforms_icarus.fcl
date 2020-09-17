@@ -47,12 +47,31 @@ physics: {
   
   producers: {
     
+    pmtbaselines: {
+
+      module_type: PMTWaveformBaselines
+
+      # label of input digitized optical waveform data product
+      OpticalWaveforms: "opdaq"
+
+      # produce plots on the extracted baseline
+      PlotBaselines: true  # default
+      
+      # tag of the module output to console via message facility
+      OutputCategory: "PMTWaveformBaselines"  # default
+
+    } # pmtbaselines
+
+
     discrimopdaq: {
       
       module_type: DiscriminatePMTwaveforms
       
       # input optical waveform data product tag:
       OpticalWaveforms: "opdaq"
+      
+      # baseline data product
+      Baselines: pmtbaselines
       
       #
       # choosing the discrimination algorithm: fixed length gates
@@ -71,12 +90,9 @@ physics: {
   } # producers
   
   
-  opdet: [ discrimopdaq ]
+  opdet: [ pmtbaselines, discrimopdaq ]
   
   output: [ rootoutput ]
-  
-  trigger_paths: [ opdet ]
-  end_paths: [ output ]
   
 } # physics
 

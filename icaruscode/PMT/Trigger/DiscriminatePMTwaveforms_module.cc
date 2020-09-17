@@ -14,6 +14,7 @@
 #include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
 #include "icaruscode/PMT/Data/WaveformBaseline.h"
 #include "icaruscode/Utilities/DataProductPointerMap.h"
+#include "icaruscode/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -116,6 +117,8 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  * 
  * * `OpticalWaveforms` (input tag): the data product containing all optical
  *   detector waveforms
+ * * `Baselines` (input tag): the data product containing one baseline per
+ *   waveform in data product (from `OpticalWaveforms`)
  * * `TriggerGateBuilder` (tool configuration): configuration of the _art_ tool
  *   used to discriminate the optional waveforms; the tool interface is
  *   `icarus::trigger::TriggerGateBuilder`.
@@ -151,17 +154,14 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
       "opdaq" // tradition demands
       };
     
-    /* // TODO
-    fhicl::Atom<art::InputTag> Baselines {
+    fhicl::OptionalAtom<art::InputTag> Baselines {
       Name("Baselines"),
       Comment("label of input waveform baselines (parallel to the waveforms)")
       };
-    */
-      
-    fhicl::Atom<float> Baseline {
+    
+    fhicl::OptionalAtom<float> Baseline {
       Name("Baseline"),
-      Comment("constant baseline for all waveforms, in ADC counts"),
-      0.0f
+      Comment("constant baseline for all waveforms, in ADC counts")
       };
     
     fhicl::DelegatedParameter TriggerGateBuilder_ {
@@ -284,10 +284,10 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   : art::EDProducer(config)
   // configuration
   , fOpDetWaveformTag(config().OpticalWaveforms())
+  , fBaselineTag(util::fhicl::getOptionalValue(config().Baselines))
+  , fBaseline(util::fhicl::getOptionalValue(config().Baseline))
   , fNOpDetChannels(getNOpDetChannels(config().NChannels))
   , fLogCategory(config().OutputCategory())
-//  , fBaselineTag(config().Baselines()) // TODO
-  , fBaseline(config().Baseline())
   , fTriggerGateBuilder
     (
       art::make_tool<icarus::trigger::TriggerGateBuilder>
@@ -297,6 +297,17 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   //
   // optional configuration parameters
   //
+  if (fBaseline && fBaselineTag) {
+    throw art::Exception(art::errors::Configuration)
+      << "Both `Baselines` ('" << fBaselineTag->encode()
+      << "') and `Baseline` (" << *fBaseline
+      << ") parameters specified, but they are exclusive!\n";
+  }
+  if (!fBaseline && !fBaselineTag) {
+    throw art::Exception(art::errors::Configuration)
+      << "Either `Baselines` or `Baseline` parameters is required.\n";
+  }
+  
   std::vector<raw::ADC_Count_t> selectedThresholds;
   if (!config().SelectThresholds(selectedThresholds)) {
     std::vector<ADCCounts_t> const& allThresholds
@@ -380,27 +391,34 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
     = util::mapDataProductPointers(event, waveformHandle);
   
   //
-  // retrieve the baseline information TODO
+  // retrieve the baseline information
   //
-//   auto const& baselines
-//     = event.getByLabel<std::vector<icarus::WaveformBaseline>>(fBaselineTag);
-  // mock-up
-  std::vector<icarus::WaveformBaseline> baselines;
-  baselines.resize(waveforms.size(), icarus::WaveformBaseline{ fBaseline });
+  std::vector<icarus::WaveformBaseline> fixedBaselines;
+  std::vector<icarus::WaveformBaseline> const* baselines = nullptr;
+  if (fBaselineTag) {
+    baselines =
+      &(event.getByLabel<std::vector<icarus::WaveformBaseline>>(*fBaselineTag));
+  }
+  else {
+    fixedBaselines.resize
+      (waveforms.size(), icarus::WaveformBaseline{ *fBaseline });
+    baselines = &fixedBaselines;
+  }
   
   //
   // provide each waveform with additional information: baseline
   //
-  if (baselines.size() != waveforms.size()) {
+  if (baselines->size() != waveforms.size()) {
+    assert(fBaselineTag);
     throw cet::exception("DiscriminatePMTwaveforms")
       << "Incompatible baseline information for the waveforms: "
       << waveforms.size() << " waveforms (" << fOpDetWaveformTag.encode()
-      << ") for " << baselines.size() << " baselines (" << fBaselineTag.encode()
-      << ")!\n";
+      << ") for " << baselines->size() << " baselines ("
+      << fBaselineTag->encode() << ")!\n";
   }
   std::vector<icarus::trigger::WaveformWithBaseline> waveformInfo;
   waveformInfo.reserve(waveforms.size());
-  for (auto const& [ waveform, baseline ]: util::zip(waveforms, baselines))
+  for (auto const& [ waveform, baseline ]: util::zip(waveforms, *baselines))
     waveformInfo.emplace_back(&waveform, &baseline);
   
   
