@@ -193,8 +193,9 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         {
             size_t         digitizerChannel = digitizerChannelPair.first;
             raw::Channel_t channelID        = digitizerChannelPair.second;
-
-            ch_offset = digitizerChannel * nSamplesPerChannel;
+	    
+	    // Actual mapping is from 0 to 15 with 15 active channel and a last inactive channel. Database mapping has channels numbered from 1 to 15 without the spare channel. Subtract 1 to find the correct association
+            ch_offset = (digitizerChannel-1) * nSamplesPerChannel;
 
             for(size_t i_t=0; i_t < nSamplesPerChannel; ++i_t)
             {
