@@ -40,7 +40,7 @@
 #include "tbb/concurrent_vector.h"
 
 #include "larcore/Geometry/Geometry.h"
-
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
@@ -72,19 +72,23 @@ public:
     using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
 
     // Function to do the work
-    void processSingleFragment(size_t, art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
+    void processSingleFragment(size_t,
+                               detinfo::DetectorClocksData const& clockData,
+                               art::Handle<artdaq::Fragments>, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&, ConcurrentRawDigitCol&) const;
 
 private:
- 
-    class multiThreadFragmentProcessing 
+
+    class multiThreadFragmentProcessing
     {
     public:
         multiThreadFragmentProcessing(DaqDecoderICARUSTPC const&        parent,
-                                      art::Handle<artdaq::Fragments>& fragmentsHandle, 
+                                      detinfo::DetectorClocksData const& clockData,
+                                      art::Handle<artdaq::Fragments>& fragmentsHandle,
                                       ConcurrentRawDigitCol&          rawDigitCollection,
                                       ConcurrentRawDigitCol&          rawRawDigitCollection,
                                       ConcurrentRawDigitCol&          coherentCollection)
             : fDaqDecoderICARUSTPC(parent),
+              fClockData{clockData},
               fFragmentsHandle(fragmentsHandle),
               fRawDigitCollection(rawDigitCollection),
               fRawRawDigitCollection(rawRawDigitCollection),
@@ -94,10 +98,11 @@ private:
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fDaqDecoderICARUSTPC.processSingleFragment(idx, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
+              fDaqDecoderICARUSTPC.processSingleFragment(idx, fClockData, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
         }
     private:
         const DaqDecoderICARUSTPC&        fDaqDecoderICARUSTPC;
+        detinfo::DetectorClocksData const& fClockData;
         art::Handle<artdaq::Fragments>& fFragmentsHandle;
         ConcurrentRawDigitCol&          fRawDigitCollection;
         ConcurrentRawDigitCol&          fRawRawDigitCollection;
@@ -264,9 +269,11 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
     ConcurrentRawDigitCol coherentRawDigits;
 
     // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-    multiThreadFragmentProcessing fragmentProcessing(*this, 
-                                                     daq_handle, 
-                                                     concurrentRawDigits, 
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
+    multiThreadFragmentProcessing fragmentProcessing(*this,
+                                                     clockData,
+                                                     daq_handle,
+                                                     concurrentRawDigits,
                                                      concurrentRawRawDigits,
                                                      coherentRawDigits);
 
@@ -315,11 +322,12 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
     return;
 }
 
-void DaqDecoderICARUSTPC::processSingleFragment(size_t                         idx, 
-                                              art::Handle<artdaq::Fragments> fragmentHandle,
-                                              ConcurrentRawDigitCol&         rawDigitCollection,
-                                              ConcurrentRawDigitCol&         rawRawDigitCollection,
-                                              ConcurrentRawDigitCol&         coherentCollection) const
+void DaqDecoderICARUSTPC::processSingleFragment(size_t                             idx,
+                                                detinfo::DetectorClocksData const& clockData,
+                                                art::Handle<artdaq::Fragments>     fragmentHandle,
+                                                ConcurrentRawDigitCol&             rawDigitCollection,
+                                                ConcurrentRawDigitCol&             rawRawDigitCollection,
+                                                ConcurrentRawDigitCol&             coherentCollection) const
 {
     cet::cpu_timer theClockProcess;
 
@@ -334,7 +342,7 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                         i
     IDecoderFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
-    decoderTool->process_fragment(*fragmentPtr);
+    decoderTool->process_fragment(clockData, *fragmentPtr);
 
     // Useful numerology
     // convert fragment to Nevis fragment

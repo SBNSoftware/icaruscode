@@ -1,21 +1,26 @@
-#include "showertools.fcl"
-#include "showerfindermodules.fcl"  
+#include "pandorashowertools.fcl"
+#include "pandorashowermodules.fcl"
 
 BEGIN_PROLOG
 
-ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajectorypointdirection
-ShowerTrackTrajectoryPointDirection.PFParticleModuleLabel:      "pandoraGausCryo0"
+ShowerTrackTrajectoryPointDirection:                            @local::showertracktrajpointdirection
 
-ShowerSmartTrackTrajectoryPointDirection:                       @local::showersmarttracktrajectorypointdirection
-ShowerSmartTrackTrajectoryPointDirection.PFParticleModuleLabel: "pandoraGausCryo0"
+ShowerSmartTrackTrajectoryPointDirection:                       @local::showertrackcolineartrajpointdirection
 
 Shower2DLinearRegressionTrackHitFinder:                         @local::shower2Dlinearregressiontrackhitfinder 
-Shower2DLinearRegressionTrackHitFinder.PFParticleModuleLabel:   "pandoraGausCryo0"
 
-ShowerSlidingStandardCalodEdx:                                  @local::showerslidingstandardcalodedx
-ShowerSlidingStandardCalodEdx.PFParticleModuleLabel:            "pandoraGausCryo0"
+ShowerSlidingStandardCalodEdx:                                  @local::showertrajpointdedx
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshower_stan:                                        @local::standard_tracs_shower
+standard_sbnshower_stan:                                        @local::standard_pandoraModularShowerCreation
+
+standard_sbndshower_stan.ShowerTools: [
+				        @local::showerpfpvertexstartposition,
+					@local::showerpcadirection,
+					@local::showerlinearenergy,
+					@local::shower3dcylindertrackhitfinder,
+					@local::showerpandoraslidingfittrackfinder,
+					@local::showerunidirectiondedx
+                                      ]
 
 END_PROLOG

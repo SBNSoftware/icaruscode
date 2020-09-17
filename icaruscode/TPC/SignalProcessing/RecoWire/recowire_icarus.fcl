@@ -45,6 +45,11 @@ icarus_decon1droi:
     Baseline:                   @local::icarus_baselinemostprobave
 }
 
+# Override the NumSigma here so we can adjust per plane
+icarus_decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.NumSigma: 3.0
+icarus_decon1droi.ROIFinderToolVec.ROIFinderToolPlane1.NumSigma: 3.5
+icarus_decon1droi.ROIFinderToolVec.ROIFinderToolPlane2.NumSigma: 3.0
+
 icarus_recowireroiicarus:
 {
     module_type:                "RecoWireROIICARUS"

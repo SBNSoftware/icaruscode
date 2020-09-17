@@ -182,7 +182,7 @@ icarus::trigger::OpticalTriggerGate::SymmetricCombination(
 bool icarus::trigger::OpticalTriggerGate::add
   (raw::OpDetWaveform const& waveform)
 {
-  // insertion keeps the list ordered and the elemets unique
+  // insertion keeps the list ordered and the elements unique
   auto const& insertionPoint = std::lower_bound
     (fWaveforms.begin(), fWaveforms.end(), &waveform, ::OpDetWaveformComp());
   if ((insertionPoint != fWaveforms.end()) && (*insertionPoint == &waveform))

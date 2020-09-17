@@ -5,6 +5,7 @@ FieldResponseTool:
 {
     tool_type:                FieldResponse
     Plane:                    0
+    ResponseType:             0
     SignalType:               0
     FieldResponseFileName:    "t600_response"
     FieldResponseFileVersion: "v0.0"
@@ -92,12 +93,14 @@ icarus_signalshapingservice.ResponseTools.ResponsePlane0.Filter.Plane:          
 
 icarus_signalshapingservice.ResponseTools.ResponsePlane1.Plane:                       1
 icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.Plane:         1
+icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.ResponseType:  1
 icarus_signalshapingservice.ResponseTools.ResponsePlane1.FieldResponse.SignalType:    0
 icarus_signalshapingservice.ResponseTools.ResponsePlane1.ElectronicsResponse.Plane:   1
 icarus_signalshapingservice.ResponseTools.ResponsePlane1.Filter.Plane:                1
 
 icarus_signalshapingservice.ResponseTools.ResponsePlane2.Plane:                       2
 icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.Plane:         2
+icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.ResponseType:  2
 icarus_signalshapingservice.ResponseTools.ResponsePlane2.FieldResponse.SignalType:    1
 icarus_signalshapingservice.ResponseTools.ResponsePlane2.ElectronicsResponse.Plane:   2
 icarus_signalshapingservice.ResponseTools.ResponsePlane2.Filter.Plane:                2

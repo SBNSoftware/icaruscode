@@ -7,23 +7,15 @@ CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
   
     fGeometryService  = lar::providerFrom<geo::Geometry>();
-    fDetectorClocks   = lar::providerFrom<detinfo::DetectorClocksService>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTrigClock = fDetectorClocks->TriggerClock();
     fCrtutils = new CRTCommonUtils();
 }
 
 //---------------------------------------------------------------------
 CRTHitRecoAlg::CRTHitRecoAlg(){
     fGeometryService = lar::providerFrom<geo::Geometry>();
-    fDetectorClocks = lar::providerFrom<detinfo::DetectorClocksService>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTrigClock = fDetectorClocks->TriggerClock();
     fCrtutils = new CRTCommonUtils();
 }
 
-
-CRTHitRecoAlg::~CRTHitRecoAlg(){}
 
 //---------------------------------------------------------------------
 void CRTHitRecoAlg::reconfigure(const Config& config){

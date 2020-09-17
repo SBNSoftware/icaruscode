@@ -16,12 +16,12 @@
 # use cmake 3.10 or later
 cmake_minimum_required (VERSION 3.10)
 
+project(icaruscode)
+
 message(STATUS
   "\n-- ============================================================================="
-  "\n-- === *** Start of configuration of icaruscode ***"
+  "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
   "\n-- ===")
-
-project(icaruscode)
 
 # cetbuildtools contains our cmake modules
 SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )

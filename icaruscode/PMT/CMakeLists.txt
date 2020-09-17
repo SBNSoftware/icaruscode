@@ -96,3 +96,5 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
+install_scripts(SUBDIRS scripts)
+

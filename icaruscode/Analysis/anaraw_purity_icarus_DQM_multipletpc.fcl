@@ -25,7 +25,7 @@ source:
 physics:
 {
  producers:{
-   purityana: { module_type: "ICARUSPurityDQM" }
+   purityana: @local::standard_clusterana
  }
 
  analyzers:
@@ -61,8 +61,14 @@ outputs:
 }
 
 
-physics.producers.purityana.RawModuleLabel: ["daq0", "daq1", "daq2", "daq3"]
-#physics.producers.purityana.module_type:    "ICARUSPurityDQM"
+physics.producers.purityana.RawModuleLabel: ["daqTPC"] 
+physics.producers.purityana.module_type:    "ICARUSPurityDQM"
 physics.producers.purityana.ValoreTauFCL:  600000.
+physics.producers.purityana.CryostatFCL: 0
+physics.producers.purityana.PlaneFCL: 0
+physics.producers.purityana.ThresholdFCL: 5
 physics.producers.purityana.PersistPurityInfo: false
 physics.producers.purityana.FillAnaTuple: false
+
+services.MemoryTracker: @erase
+services.TimeTracker: @erase

@@ -12,7 +12,7 @@
 
 // LArSoft libraries
 #include "larcorealg/Geometry/GeometryCore.h"
-#include "lardataalg/DetectorInfo/DetectorProperties.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/RecoBase/Track.h"
@@ -22,6 +22,9 @@
 //#include "lardataobj/Simulation/SimChannel.h"   // need this for TrackIDE definition
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/FindOneP.h"
+namespace detinfo {
+  class DetectorPropertiesData;
+}
 
 // nutools
 #include "icaruscode/gallery/MCTruthBase/MCTruthParticleList.h"
@@ -67,8 +70,7 @@ public:
     void setup(const HitParticleAssociationsVec&,
                const MCParticleVec&,
                const MCTruthAssns&,
-               const geo::GeometryCore&,
-               const detinfo::DetectorProperties&);
+               const geo::GeometryCore&);
     
     const MCTruthParticleList& getParticleList() const;
 
@@ -159,7 +161,8 @@ private:
 
     int    calculateEvdID(int) const;
     double length(const recob::Track*) const;
-    double length(const simb::MCParticle& part, double dx,
+    double length(const detinfo::DetectorPropertiesData& detProp,
+                  const simb::MCParticle& part, double dx,
                   TVector3& start, TVector3& end, TVector3& startmom, TVector3& endmom,
                   unsigned int tpc = 0, unsigned int cstat = 0) const;
     
@@ -174,7 +177,7 @@ private:
                                                                ///< based on hit collections
 
     geo::GeometryCore const*           fGeometry           = nullptr;
-    const detinfo::DetectorProperties* fDetectorProperties = nullptr;   ///< Detector properties service
+
 }; // class MCTruthAssociations
     
 }  // End of namespace

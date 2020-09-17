@@ -171,12 +171,13 @@ void icarus::crt::CRTDetSim::produce(art::Event& event) {
         <<"Number of AuxDetChannels = " << adChanList.size();
 
     int nide=0;
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
     for(auto const& adsc : adChanList) {
 
         auto const& auxDetIDEs = adsc->AuxDetIDEs();
         if(auxDetIDEs.size()>0) {
             nide++;
-            detAlg.FillTaggers(adsc->AuxDetID(), adsc->AuxDetSensitiveID(), auxDetIDEs);
+            detAlg.FillTaggers(clockData, adsc->AuxDetID(), adsc->AuxDetSensitiveID(), auxDetIDEs);
         }
 
     }//loop over AuxDetSimChannels

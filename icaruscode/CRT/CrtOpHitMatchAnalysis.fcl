@@ -55,9 +55,9 @@ physics:
       OpFlashModuleLabel3: "opflashTPC3"
 
       FlashPeThresh: 2000.0
-      HitPeThresh:   10.0
-      CoincidenceWindow: 60.0
-      OpDelay: 55.1
+      HitPeThresh:   100.0
+      CoincidenceWindow: 80.0
+      OpDelay: 43.0
       HitVelocityMax: 15.0
       HitVelocityMin: 2.0
 

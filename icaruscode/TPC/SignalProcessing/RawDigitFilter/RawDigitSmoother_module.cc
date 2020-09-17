@@ -30,7 +30,6 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 
@@ -89,7 +88,6 @@ private:
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*             fGeometry;             ///< pointer to Geometry service
-    detinfo::DetectorProperties const*   fDetectorProperties;   ///< Detector properties service
     const lariov::DetPedestalProvider&   fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
 
@@ -109,7 +107,6 @@ RawDigitSmoother::RawDigitSmoother(fhicl::ParameterSet const & pset) : EDProduce
 {
     
     fGeometry = lar::providerFrom<geo::Geometry>();
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
     
     configure(pset);
     produces<std::vector<raw::RawDigit>>("erosion");

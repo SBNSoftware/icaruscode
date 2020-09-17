@@ -1,0 +1,70 @@
+
+#include "services_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "crtbacktracker_icarus.fcl"
+
+process_name: BgndAna
+
+services:
+{
+  TFileService:           { fileName: "PhotBackgroundAna.root" }
+  TimeTracker:            {}
+  message:                @local::icarus_message_services_prod_debug
+                          @table::icarus_basic_services
+} # services
+
+source:
+{
+  module_type: RootInput
+
+  # Number of events to analyze; "-1" means all of the events in the input
+  # file. You can override this value with the "-n" option on the command line. 
+  maxEvents:  -1 
+
+  # I've commented this out, but if you want to include the name of
+  # an art::Event input file in a script, here's how you do it.
+  # fileNames: ["myinput.root"]
+}
+
+outputs:{}
+
+physics:
+{
+  analyzers:
+  {
+    PhotAna: 
+    {
+
+      module_type:        "PhotBackground"
+
+      #SimulationLabel:   "largeant"
+
+      #CrtHitModuleLabel:  "crthit"
+
+      #OpHitModuleLabel:   "ophit"
+
+      #OpFlashModuleLabel0: "opflashTPC0"
+      #OpFlashModuleLabel1: "opflashTPC1"
+     # #OpFlashModuleLabel2: "opflashTPC2"
+      #OpFlashModuleLabel3: "opflashTPC3"
+
+      #CoincidenceWindow: 60.0
+      #OpDelay: 0.0 #73.2
+      CRTBackTrack: @local::standard_crtbacktracker
+    }
+  }
+
+  # Schedule job step(s) for execution by defining the analysis module
+  # for this job. An 'analysis' module (as opposed to a 'producer' or
+  # a 'filter') does not alter the contents of events in the input
+  # file, nor does it create any events as output. Any step names
+  # listed here must match a name in the 'analyzers' section above.
+
+  analysis: [ PhotAna ]
+
+  # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
+  # i.e., analyzers and output streams.
+
+  end_paths: [ analysis ]
+}
+

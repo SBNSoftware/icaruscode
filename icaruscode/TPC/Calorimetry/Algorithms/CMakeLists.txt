@@ -13,6 +13,7 @@ art_make(
                           lardataobj_RawData
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
+                          lardataalg_DetectorInfo
                           lardataobj_RecoBase
                           icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                           ${ICARUS_FFTW_LIBRARIES}
