@@ -96,7 +96,7 @@ icarus_reco_producers:
   mixedHitTPC2:                  @local::mixed_hitfinder
   mixedHitTPC3:                  @local::mixed_hitfinder
 
- icarushit:                      @local::icarus_hitfinder
+  icarushit:                      @local::icarus_hitfinder
   icarusHitTPC0:                  @local::icarus_hitfinder
   icarusHitTPC1:                  @local::icarus_hitfinder
   icarusHitTPC2:                  @local::icarus_hitfinder
