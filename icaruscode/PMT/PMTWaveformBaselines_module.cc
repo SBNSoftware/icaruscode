@@ -189,31 +189,19 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
 //------------------------------------------------------------------------------
 namespace {
   
-  /// Custom allocator: does not initialise. This is not for general use!
-  // picked from:
-  // https://stackoverflow.com/questions/21028299/is-this-behavior-of-vectorresizesize-type-n-under-c11-and-boost-container
-  template <typename T>
-  struct no_init_alloc: std::allocator<T> {
-    using std::allocator<T>::allocator;
-    template <class U, class... Args> void construct(U*, Args&&...) {}
-  }; // no_init_alloc
-  
   /// Extracts the median of the collection between the specified iterators.
   template <typename BIter, typename EIter>
   auto median(BIter begin, EIter end) {
     
     using value_type = typename BIter::value_type;
     
-    auto const n = std::distance(begin, end); // number of data elements
-    assert(n > 0);
+    std::vector<value_type> data{ begin, end };
+    assert(!data.empty());
     
-    // add `1` before halving to include the middle element if `n` is odd;
-    // we use a special allocator to avoid pointless initialization
-    // (content is immediately overwritten)
-    std::vector<value_type, no_init_alloc<value_type>> sorted((n + 1) / 2);
-    std::partial_sort_copy(begin, end, sorted.begin(), sorted.end());
+    auto const middle = data.begin() + data.size() / 2;
+    std::nth_element(data.begin(), middle, data.end());
     
-    return sorted.back();
+    return *middle;
     
   } // median()
   
