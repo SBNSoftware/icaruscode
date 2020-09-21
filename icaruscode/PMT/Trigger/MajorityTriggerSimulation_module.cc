@@ -7,6 +7,7 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Algorithms/ApplyBeamGate.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
@@ -16,7 +17,10 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
-#include "icaruscode/Utilities/rounding.h" // util::roundup()
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icaruscode/Utilities/mfLoggingClass.h"
+#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icaruscode/Utilities/rounding.h" // icarus::ns::util::roundup()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -40,7 +44,6 @@
 
 // framework libraries
 #include "art_root_io/TFileService.h"
-#include "art_root_io/TFileService.h"
 #include "art_root_io/TFileDirectory.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Core/EDProducer.h"
@@ -58,12 +61,14 @@
 #include "TH2F.h"
 
 // C/C++ standard libraries
+#include <ostream>
 #include <algorithm> // std::fill()
 #include <map>
 #include <vector>
 #include <memory> // std::make_unique()
 #include <string>
 #include <atomic>
+#include <optional>
 #ifdef __cpp_lib_source_location
 #  include <source_location>
 #endif //  __cpp_lib_source_location
@@ -80,249 +85,18 @@ using namespace util::quantities::time_literals;
 // TODO Sort this mess
 
 //------------------------------------------------------------------------------
-namespace util { class mfLoggingClass; }
-
-/**
- * @brief Helper for logging classes.
- * 
- * A derived class can utilize the member functions of this class for easier
- * tracking of the boilerplate category:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * struct Algorithm: private util::mfLoggingClass {
- * 
- *   Algorithm(): util::mfLoggingClass("Algorithm") {}
- * 
- *   double compute() const
- *     {
- *        mfLogInfo() << "Starting computation()";
- *        return 0.0;
- *     }
- *   
- * }; // class Algorithm
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * 
- */
-class util::mfLoggingClass {
-  
-  std::string fLogCategory; ///< Logging category string used for the messages.
-  
-    public:
-  
-  /// Constructor: initializes with the specified log category.
-  mfLoggingClass(std::string const& logCategory): fLogCategory(logCategory) {}
-  
-  /// Returns the logging category string for this object.
-  std::string logCategory() const { return fLogCategory; }
-  
-  /// Returns this object (as a logging class object).
-  mfLoggingClass const& loggingClass() const { return *this; }
-  
-  // --- BEGIN -- Access to temporary loggers ----------------------------------
-  /**
-   * @name Access to temporary loggers
-   * 
-   * These methods return a temporary logger for fast logging:
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-   * mfLogError() << "That was not a smart thing to do!";
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   * 
-   * The returned log can also be made a bit less temporary if some more complex
-   * output is required:
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-   * if (!reasons.empty()) {
-   *   auto log = mfLogError();
-   *   log << "That was not a smart thing to do, for "
-   *     << size(reasons) << " reasons:";
-   *   for (auto const& [ iReason, reason ]: util::enumerate(reasons))
-   *     log << "\n " << (iReason+1) << ": " << reason;
-   * } // if
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   * 
-   * The `file` and `lineNumber` argument are optional and passed directly to
-   * the logger on construction. If specified, they provide information about
-   * the location of the message source:
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-   * mfLogError(__FILE__, __LINE__) << "That was not a smart thing to do!";
-   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   * 
-   * @note With C++20 it will be possible to extend the implementation to
-   *       allow for automatic detection of the call location.
-   */
-  /// @{
-  
-  /// Returns a mf::LogError() stream for logging.
-  mf::LogError mfLogError
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogWarning() stream for logging.
-  mf::LogWarning mfLogWarning
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogProblem() stream for logging.
-  mf::LogProblem mfLogProblem
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogInfo() stream for logging.
-  mf::LogInfo mfLogInfo
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogVerbatim() stream for logging.
-  mf::LogVerbatim mfLogVerbatim
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogDebug() stream for logging.
-  mf::LogDebug mfLogDebug
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-  /// Returns a mf::LogTrace() stream for logging.
-  mf::LogTrace mfLogTrace
-    (std::string const& file = {}, int const lineNumber = 0) const
-    { return { logCategory(), file, lineNumber }; }
-  
-#ifdef __cpp_lib_source_location
-  
-  /// Returns a mf::LogDebug() with information about the calling location.
-  mf::LogDebug mfLogDebugLine
-    (std::source_location const loc = std::source_location::current()) const
-    { return { logCategory(), loc.file_name(), loc.line_number() }; }
-  
-#endif // __cpp_lib_source_location
-  
-  /// @}
-  // --- END -- Access to temporary loggers ------------------------------------
-  
-}; // class mfLoggingClass
-
-
-//------------------------------------------------------------------------------
-namespace icarus::trigger {
-  
-  class ApplyBeamGateClass;
-  
-  ApplyBeamGateClass makeApplyBeamGate(
-    util::quantities::intervals::microseconds duration,
-    detinfo::DetectorClocksData const& clockData,
-    std::string const& logCategory = "ApplyBeamGateClass"
-    );
-  
-} // namespace icarus::trigger
-
-/**
- * @brief Helper applying a beam gate to any gate.
- * 
- * The gate starts from `detinfo::DetectorClocks::BeamGateTime()` and has length
- * specified on construction.
- * 
- * The assumption that the optical tick clock starts with the electronics time
- * is used.
- * 
- * TODO Move this to `BeamGateMaker.h`
- */
-class icarus::trigger::ApplyBeamGateClass: protected util::mfLoggingClass {
-
-    public:
-  // @{
-  /// Type aliases
-  using microseconds = util::quantities::intervals::microseconds;
-  using optical_tick = detinfo::timescales::optical_tick;
-  using optical_time_ticks = detinfo::timescales::optical_time_ticks;
-  // @}
-  
-  /// Constructor: gets the gate (in optical ticks) and its duration (in time).
-  ApplyBeamGateClass(
-    microseconds duration,
-    icarus::trigger::OpticalTriggerGate gate,
-    std::string const& logCategory = "ApplyBeamGateClass"
-    )
-    : util::mfLoggingClass(logCategory)
-    , fDuration(duration)
-    , fGate(std::move(gate))
-    , fTickRange(extractLimits(fGate))
-    {}
-  
-  /// Returns the beam gate as a `icarus::trigger::OpticalTriggerGate`.
-  icarus::trigger::OpticalTriggerGate const& gate() const { return fGate; }
-  
-  /// Returns the beam gate as the specified gate type `Gate`.
-  template <typename Gate>
-  Gate gateAs() const { return { gate() }; }
-  
-  /// Returns a copy of `gate` in AND with this beam gate.
-  template <typename Gate>
-  Gate apply(Gate gate) const { return gate.Mul(fGate); }
-  
-  
-  /// Returns the range of the beam gate as start and stop tick.
-  std::pair<optical_tick, optical_tick> tickRange() const { return fTickRange; }
-  
-  /// Returns the length of the gate (in time units).
-  microseconds length() const { return fDuration; }
-
-  /// Returns the length of the gate (in time units).
-  optical_time_ticks lengthTicks() const
-    { return fTickRange.second - fTickRange.first; }
-
-  
-    private:
-  
-  /// Duration of the gate during with global optical triggers are accepted.
-  microseconds const fDuration;
-  
-  icarus::trigger::OpticalTriggerGate const fGate;
-  
-  /// Beam gate start and stop tick in optical detector scale.
-  std::pair<optical_tick, optical_tick> const fTickRange;
-  
-  
-  /// Returns the first opening time and the first closing time of the `gate`.
-  static std::pair<optical_tick, optical_tick>
-    extractLimits(icarus::trigger::OpticalTriggerGate const& gate);
-  
-}; // class icarus::trigger::ApplyBeamGateClass
-
-
-inline auto icarus::trigger::ApplyBeamGateClass::extractLimits
-  (icarus::trigger::OpticalTriggerGate const& gate)
-  -> std::pair<optical_tick, optical_tick> 
-{ 
-  auto const s = gate.findOpen(1U);
-  return {
-    optical_tick::castFrom(s), optical_tick::castFrom(gate.findClose(1U, s))
-  };
-  
-} // icarus::trigger::ApplyBeamGateClass::extractLimits()
-
-
-inline auto icarus::trigger::makeApplyBeamGate(
-  util::quantities::intervals::microseconds duration,
-  detinfo::DetectorClocksData const& clockData,
-  std::string const& logCategory /* = "ApplyBeamGateClass" */
-  ) -> ApplyBeamGateClass
-{
-  return {
-    duration,
-    icarus::trigger::BeamGateMaker{ clockData }(duration),
-    logCategory
-    };
-} // icarus::trigger::makeApplyBeamGate()
-
-//------------------------------------------------------------------------------
 namespace icarus::trigger { class MajorityTriggerCombiner; }
 
 /// Combines a group of trigger gates for majority trigger. Glorified `Sum()`.
-class icarus::trigger::MajorityTriggerCombiner: protected util::mfLoggingClass {
+class icarus::trigger::MajorityTriggerCombiner
+  : protected icarus::ns::util::mfLoggingClass
+{
   
     public:
   
   MajorityTriggerCombiner
     (std::string const& logCategory = "MajorityTriggerCombiner")
-    : util::mfLoggingClass(logCategory) {}
+    : icarus::ns::util::mfLoggingClass(logCategory) {}
   
   /// Combines all the gates (by cryostat) in a single majority gate.
   template <typename GateObj>
@@ -339,13 +113,15 @@ class icarus::trigger::MajorityTriggerCombiner: protected util::mfLoggingClass {
 namespace icarus::trigger { class CryostatTriggerCombiner; }
 
 /// Combines cryostat triggers via OR. Glorified `Max()`.
-class icarus::trigger::CryostatTriggerCombiner: protected util::mfLoggingClass {
+class icarus::trigger::CryostatTriggerCombiner
+  : protected icarus::ns::util::mfLoggingClass
+{
   
     public:
   
   CryostatTriggerCombiner
     (std::string const& logCategory = "CryostatTriggerCombiner")
-    : util::mfLoggingClass(logCategory) {}
+    : icarus::ns::util::mfLoggingClass(logCategory) {}
   
   /// Combines all the gates (by cryostat) in a single majority gate.
   template <typename GateObj>
@@ -362,7 +138,9 @@ namespace icarus::trigger { class GeometryChannelSplitter; }
 
 
 /// Combines cryostat triggers via OR. Glorified `Max()`.
-class icarus::trigger::GeometryChannelSplitter: protected util::mfLoggingClass {
+class icarus::trigger::GeometryChannelSplitter
+  : protected icarus::ns::util::mfLoggingClass
+{
   
     public:
   
@@ -396,7 +174,7 @@ icarus::trigger::GeometryChannelSplitter::GeometryChannelSplitter(
   geo::GeometryCore const& geom,
   std::string const& logCategory /* = "GeometryChannelSplitter" */
   )
-  : util::mfLoggingClass(logCategory)
+  : icarus::ns::util::mfLoggingClass(logCategory)
   , fNCryostats(geom.Ncryostats())
   , fChannelCryostat(makeChannelCryostatMap(geom))
 {}
@@ -438,8 +216,6 @@ auto icarus::trigger::GeometryChannelSplitter::makeChannelCryostatMap
   return channelCryostatMap;
   
 } // icarus::trigger::GeometryChannelSplitter::makeChannelCryostatMap()
-
-
 
 
 //------------------------------------------------------------------------------
@@ -706,6 +482,12 @@ class icarus::trigger::MajorityTriggerSimulation
   ///< Count of fired triggers, per threshold.
   std::vector<std::atomic<unsigned int>> fTriggerCount;
   std::atomic<unsigned int> fTotalEvents { 0U }; ///< Count of fired triggers.
+  
+  
+  // TODO this is not multithread-safe, needs a mutex
+  /// Functor returning whether a gate has changed.
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::ApplyBeamGateClass>
+    fGateChangeCheck;
 
   // --- END Internal variables ------------------------------------------------
   
@@ -791,6 +573,22 @@ class icarus::trigger::MajorityTriggerSimulation
   
   /// Prints the summary of fired triggers on screen.
   void printSummary() const;
+  
+  
+  //@{ 
+  /// Shortcut to create an `ApplyBeamGate` with the current configuration.
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (art::Event const* event = nullptr) const
+    {
+      return makeApplyBeamGate(
+        fBeamGateDuration,
+        icarus::ns::util::makeDetClockData(event),
+        fLogCategory
+        );
+    }
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (art::Event const& event) const { return makeMyBeamGate(&event); }
+  //@}
   
   
   /// Reads a set of input gates from the `event`
@@ -880,9 +678,16 @@ void icarus::trigger::MajorityTriggerSimulation::produce(art::Event& event) {
   mf::LogDebug log(fLogCategory);
   log << "Event " << event.id() << ":";
   
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+  auto const clockData
+    = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
   detinfo::DetectorTimings const detTimings{clockData};
-  auto const beamGate = makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory);
+  auto const beamGate = makeMyBeamGate(event);
+
+  if (auto oldGate = fGateChangeCheck(beamGate); oldGate) {
+    mf::LogWarning(fLogCategory)
+      << "Beam gate has changed from " << *oldGate << " to " << beamGate << "!";
+  }
+
 
   for (auto const [ iThr, thr ]
     : util::enumerate(util::get_elements<0U>(fADCthresholds))
@@ -921,9 +726,13 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
     thresholdLabels.push_back(inputDataTag.instance());
   
-  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
-  detinfo::DetectorTimings const detTimings{clockData};
-  auto const beamGate = makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory);
+  auto const beamGate = makeMyBeamGate();
+  fGateChangeCheck(beamGate);
+  mf::LogInfo(fLogCategory)
+    << "Beam gate for plots: " << beamGate.asSimulationTime()
+    << " (simulation time), " << beamGate.tickRange()
+    << " (optical ticks)"
+    ;
 
   //
   // Triggering efficiency vs. ADC threshold.
@@ -951,8 +760,9 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
   util::ROOT::applyAxisLabels
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), thresholdLabels);
   
-  detinfo::timescales::optical_time_ticks const triggerResolutionTicks
-    { detTimings.toOpticalTicks(fTriggerTimeResolution) };
+  detinfo::timescales::optical_time_ticks const triggerResolutionTicks{
+    icarus::ns::util::makeDetTimings().toOpticalTicks(fTriggerTimeResolution)
+    };
   
   auto const& beamGateTicks = beamGate.tickRange();
   auto* TrigTime = fPlots.make<TH2F>(
@@ -962,9 +772,9 @@ void icarus::trigger::MajorityTriggerSimulation::initializePlots() {
       ";PMT discrimination threshold  [ ADC counts ]"
       ";events",
     static_cast<int>(std::ceil(beamGate.lengthTicks()/triggerResolutionTicks)),
-    beamGateTicks.first.value(),
-    util::roundup
-     (beamGateTicks.first + beamGate.lengthTicks(), triggerResolutionTicks)
+    beamGateTicks.start().value(),
+    icarus::ns::util::roundup
+     (beamGateTicks.start() + beamGate.lengthTicks(), triggerResolutionTicks)
      .value(),
     thresholdLabels.size(), 0.0, double(thresholdLabels.size())
     );
@@ -1044,7 +854,8 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
-  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const -> TriggerInfo_t
+  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const
+  -> TriggerInfo_t
 {
 
   /* 

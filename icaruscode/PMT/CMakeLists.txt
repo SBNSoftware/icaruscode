@@ -1,3 +1,4 @@
+add_subdirectory(Data)
 add_subdirectory(OpticalTools)
 add_subdirectory(OpReco)
 add_subdirectory(Algorithms)
@@ -29,6 +30,14 @@ simple_plugin(SimPMTIcarus "module"
   ${Boost_SYSTEM_LIBRARY}
   )
 
+simple_plugin(PMTWaveformBaselines "module"
+  icaruscode_PMT_Algorithms
+  icaruscode_PMT_Data
+  lardataobj_RawData
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  )
+
 
 simple_plugin(AsymGaussPulseFunctionTool "tool"
   icaruscode_PMT_Algorithms
@@ -47,6 +56,7 @@ simple_plugin(CustomPulseFunctionTool "tool"
 art_make(
   EXCLUDE
     "SimPMTIcarus_module.cc"
+    "PMTWaveformBaselines_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
     "AsymExpPulseFunctionTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"

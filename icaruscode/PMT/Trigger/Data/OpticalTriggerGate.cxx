@@ -179,6 +179,24 @@ icarus::trigger::OpticalTriggerGate::SymmetricCombination(
 
 
 //------------------------------------------------------------------------------
+bool icarus::trigger::OpticalTriggerGate::operator==
+  (OpticalTriggerGate const& other) const
+{
+  return
+    (gateLevels() == other.gateLevels()) && (waveforms() == other.waveforms());
+} // icarus::trigger::OpticalTriggerGate::operator==()
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::OpticalTriggerGate::operator!=
+  (OpticalTriggerGate const& other) const
+{
+  return
+    (gateLevels() != other.gateLevels()) || (waveforms() != other.waveforms());
+} // icarus::trigger::OpticalTriggerGate::operator==()
+
+
+//------------------------------------------------------------------------------
 bool icarus::trigger::OpticalTriggerGate::add
   (raw::OpDetWaveform const& waveform)
 {

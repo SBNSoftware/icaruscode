@@ -16,7 +16,7 @@
 
 
 // ---------------------------------------------------------------------------
-namespace util {
+namespace icarus::ns::util {
   
   template <typename T, typename U>
   constexpr T rounddown(T const value, U const quantum, T const offset = T{});
@@ -24,7 +24,7 @@ namespace util {
   template <typename T, typename U>
   constexpr T roundup(T const value, U const quantum, T const offset = T{});
   
-} // namespace util
+} // namespace icarus::ns::util
 
 
 // ---------------------------------------------------------------------------
@@ -42,8 +42,8 @@ namespace util {
  * `offset`.
  * Examples:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * std::cout << util::rounddown(23.0, 2.5)
- *   << "\n" << util::rounddown(23.0, 2.5, 1.0)
+ * std::cout << icarus::ns::util::rounddown(23.0, 2.5)
+ *   << "\n" << icarus::ns::util::rounddown(23.0, 2.5, 1.0)
  *   << std::endl;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * will print `22.5` and `21`.
@@ -64,12 +64,12 @@ namespace util {
  * 
  */
 template <typename T, typename U>
-constexpr T util::rounddown
+constexpr T icarus::ns::util::rounddown
   (T const value, U const quantum, T const offset /* = T{} */)
 {
   return
     static_cast<T>(offset + quantum * std::floor((value - offset) / quantum));
-} // util::rounddown()
+} // icarus::ns::util::rounddown()
 
 
 /**
@@ -86,8 +86,8 @@ constexpr T util::rounddown
  * `offset`.
  * Examples:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
- * std::cout << util::roundup(23.0, 2.5)
- *   << "\n" << util::roundup(23.0, 2.5, 1.0)
+ * std::cout << icarus::ns::util::roundup(23.0, 2.5)
+ *   << "\n" << icarus::ns::util::roundup(23.0, 2.5, 1.0)
  *   << std::endl;
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * will print `25` and `23.5`.
@@ -108,12 +108,12 @@ constexpr T util::rounddown
  * 
  */
 template <typename T, typename U>
-constexpr T util::roundup
+constexpr T icarus::ns::util::roundup
   (T const value, U const quantum, T const offset /* = T{} */)
 {
   T const rounded = rounddown(value, quantum, offset);
   return (rounded < value)? static_cast<T>(rounded + quantum): rounded;
-} // util::roundup()
+} // icarus::ns::util::roundup()
 
 
 // ---------------------------------------------------------------------------
