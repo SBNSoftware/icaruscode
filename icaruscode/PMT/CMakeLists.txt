@@ -4,6 +4,7 @@ add_subdirectory(Algorithms)
 add_subdirectory(LibraryMappingTools)
 add_subdirectory(Trigger)
 add_subdirectory(Decode)
+add_subdirectory(Calo)
 
 # Removing AVX instructions because assuming the grid nodes
 # being less than 6 year old proved to be pretentious.

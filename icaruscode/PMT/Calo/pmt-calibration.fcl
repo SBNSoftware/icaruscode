@@ -1,0 +1,13 @@
+#include "waveform.fcl"
+
+BEGIN_PROLOG
+
+pmt_chargeana_icarus:
+{
+  module_type: 	PMTChargeAna
+  InputModule: "daq"
+  FilterNoise: false
+  WaveformAnalysis : @local::waveformana_icarus
+}
+
+END_PROLOG

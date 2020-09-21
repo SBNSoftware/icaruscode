@@ -1,0 +1,34 @@
+BEGIN_PROLOG
+
+waveformana_icarus:
+{
+
+  ####### Basic signal processing  #############################################
+  SamplingPeriod: 2.0
+  NSamplesBaseline: 200
+
+  ####### Noise removal strategy  ##############################################
+  NoiseWindowSize: 600
+  NoiseReverse: false
+  NoiseThreshold: 300
+
+  ####### Paramteters for the integration  #####################################
+  IntegralStartBin: 950
+  IntegrationWindow: 50
+  TriggerTime: [ 1910, 1950 ]  # The actual trigger time window where the main laser pulse is expected to arrive (in ns)
+
+  ####### Parameters for the pulse finder  #####################################
+  PulseFindingThreshold: 3.0  # Threshold given in number of RMS above the baseline width
+  PulseFindingSigma: 5.0     # Width of the pulse for the TSpectrum search
+  PulseFindingCounts: 5       # Minimum number of counts above the threshold around a found peak to declare a pulse ( this condition removes single-spiked pulses )
+  DoFit: true                 # Choose to fit a pulse
+  FitRange: [ 8, 12 ]        # fit range around t peak in ns [ min, max ]
+
+  ###### Threshold pulse finder ################################################
+  StartADCThreshold : 20
+  EndADCThreshold : 10
+
+
+}
+
+END_PROLOG
