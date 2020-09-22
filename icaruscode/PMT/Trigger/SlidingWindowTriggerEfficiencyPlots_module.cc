@@ -1210,8 +1210,6 @@ bool icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializeTopological
   if (!force && fWindowMap) return false;
   
   // extract the channel numbers from the windows
-  using ChannelsInWindow_t = std::vector<raw::Channel_t>;
-  
   // [cryostat][window index in cryostat] => list of channels in window
   details::WindowChannelsPerCryostat_t channels;
   channels.reserve(gates.size());
