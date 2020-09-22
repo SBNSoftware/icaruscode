@@ -228,3 +228,32 @@ auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
 
 
 // -----------------------------------------------------------------------------
+// --- icarus::trigger::details::EventInfoExtractorMaker
+// -----------------------------------------------------------------------------
+icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
+  std::vector<art::InputTag> truthTags,
+  std::vector<art::InputTag> edepTags,
+  geo::GeometryCore const& geom,
+  std::string logCategory
+  )
+  : fGeneratorTags(std::move(truthTags))
+  , fEnergyDepositTags(std::move(edepTags))
+  , fLogCategory(std::move(logCategory))
+  , fGeom(geom)
+  {}
+
+
+// -----------------------------------------------------------------------------
+icarus::trigger::details::EventInfoExtractor
+icarus::trigger::details::EventInfoExtractorMaker::make
+  (TimeSpan_t inSpillTimes, TimeSpan_t inPreSpillTimes) const
+{
+  return EventInfoExtractor{
+    fGeneratorTags, fEnergyDepositTags,
+    inSpillTimes, inPreSpillTimes,
+    fGeom, fLogCategory
+    };
+} // icarus::trigger::details::EventInfoExtractorMaker::make()
+
+
+// -----------------------------------------------------------------------------

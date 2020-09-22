@@ -115,8 +115,7 @@ icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
 //--- icarus::trigger::TriggerGateBuilder
 //------------------------------------------------------------------------------
 icarus::trigger::TriggerGateBuilder::TriggerGateBuilder(Config const& config)
-  : fBaseline(config.Baseline())
-  , fChannelThresholds(FHiCLsequenceWrapper(config.ChannelThresholds()))
+  : fChannelThresholds(FHiCLsequenceWrapper(config.ChannelThresholds()))
 {
   std::sort(fChannelThresholds.begin(), fChannelThresholds.end());
   
@@ -137,24 +136,7 @@ void icarus::trigger::TriggerGateBuilder::setup
   (detinfo::DetectorTimings const& timings)
 {
   fDetTimings = timings;
-  fAbsoluteThresholds = makeAbsoluteThresholds();
 } // icarus::trigger::TriggerGateBuilder::setup()
-  
-
-//------------------------------------------------------------------------------
-std::vector<icarus::trigger::ADCCounts_t>
-icarus::trigger::TriggerGateBuilder::makeAbsoluteThresholds() const
-{
-  using ops
-    = icarus::waveform_operations::NegativePolarityOperations<ADCCounts_t>;
-  std::vector<ADCCounts_t> absoluteThresholds;
-  absoluteThresholds.reserve(nChannelThresholds());
-  std::transform(channelThresholds().begin(), channelThresholds().end(),
-    std::back_inserter(absoluteThresholds),
-    [this](ADCCounts_t threshold){ return ops::shiftBy(baseline(), threshold); }
-    );
-  return absoluteThresholds;
-} // icarus::trigger::TriggerGateBuilder::makeAbsoluteThresholds()
 
 
 //------------------------------------------------------------------------------

@@ -46,7 +46,7 @@ physics:
 services.FileCatalogMetadata: {}
 
 # Use this to setup the decoder module
-physics.producers.daqTPC.OutputPedestalCor:                                        true
+physics.producers.daqTPC.OutputRawWaveform:                                        true
 physics.producers.daqTPC.OutputCorrection:                                         true
 physics.producers.daqTPC.DecoderTool.CoherentGrouping:                             32
 physics.producers.daqTPC.DecoderTool.FragmentIDVec:                                [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]

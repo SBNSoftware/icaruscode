@@ -60,6 +60,20 @@ namespace icarus::trigger {
         : event(event), tick(tick), opening(opening)
         {}
       
+      /// Comparison: are all fields matching?
+      bool operator== (TriggerGateStatus const& other) const
+        {
+          return (event == other.event)
+            && (tick == other.tick) && (opening == other.opening);
+        }
+      
+      /// Comparison: is any field not matching?
+      bool operator!= (TriggerGateStatus const& other) const
+        {
+          return (event != other.event)
+            || (tick != other.tick) || (opening != other.opening);
+        }
+      
     }; // struct TriggerGateStatus
     
     
@@ -382,6 +396,11 @@ class icarus::trigger::TriggerGateData {
   /// @}
   // --- END Combination operations --------------------------------------------
   
+
+  // standard comparison operators: all must be the same
+  bool operator== (TriggerGateData const&) const;
+  bool operator!= (TriggerGateData const&) const;
+
     protected:
   
   // --- BEGIN Gate data types -------------------------------------------------

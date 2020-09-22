@@ -88,7 +88,7 @@ class icarus::trigger::ManagedTriggerGateBuilder
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
   template <typename GateMgr>
   std::vector<TriggerGates> unifiedBuild
-    (GateMgr&& gateManager, std::vector<raw::OpDetWaveform> const& waveforms)
+    (GateMgr&& gateManager, std::vector<WaveformWithBaseline> const& waveforms)
     const;
   
   /// Computes the gates for all the waveforms in one optical channel.
