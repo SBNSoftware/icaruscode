@@ -232,8 +232,6 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
- //    fFilterModeVec          = {'g','g','g'};
-
     fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
 
     cet::cpu_timer theClockFragmentIDs;
@@ -273,11 +271,11 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
 //    std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
 //    std::vector<double> highPassCutoff = {12., 12., 2.};
-//    std::vector<std::pair<double,double>> windowSigma  = {{1.5,25.}, {2.0,25.}, {0.5,25.}};
-//    std::vector<std::pair<double,double>> windowSigma  = {{1.5,10.}, {2.0,10.}, {0.5,10.}};
-//    std::vector<std::pair<double,double>> windowCutoff = {{8.,200.}, {8.,200.}, {4.0,200.}};
-    std::vector<std::pair<double,double>> windowSigma  = {{1.5,10.}, {1.5,10.}, {2.0,10.}};
-    std::vector<std::pair<double,double>> windowCutoff = {{8.,200.}, {8.,200.}, {3.0,200.}};
+//  So we build a filter kernel for convolution with the waveform working in "tick" space. 
+//  For translation, each "tick" is approximately 0.61 kHz... the frequency response functions all
+//  are essentially zero by 500 kHz which is like 800 "ticks". 
+    std::vector<std::pair<double,double>> windowSigma  = {{1.5,20.}, {1.5,20.}, {2.0,20.}};
+    std::vector<std::pair<double,double>> windowCutoff = {{8.,800.}, {8.,800.}, {3.0,800.}};
 
 //    fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
     fFFTFilter = std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma, windowCutoff);
@@ -496,32 +494,6 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
             // Convolve with a filter function
             (*fFFTFilter)(pedCorDataVec, plane);
-
-            // Kludges-r-us... go back through and look for baseline offsets that can be result of large charge deposits 
-//            float mean(0.);
-//            int   nTrunc, range;
-//
-//            waveformTools.getTruncatedMean(pedCorDataVec, mean, nTrunc, range);
-            float waveMedian(0.);
-
-//            waveformTools.getMedian(pedCorDataVec, waveMedian);
-
-            if (std::abs(waveMedian) > 2.)
-            {
-                std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channelPlanePairVec[chanIdx].first);
-                float mean(0.);
-                int   nTrunc, range;
-    
-                waveformTools.getTruncatedMean(pedCorDataVec, mean, nTrunc, range);
-
-//                float waveMedian(0.);
-//
-//                waveformTools.getMedian(pedCorDataVec, waveMedian);
-
-                int thisWire = widVec.empty() ? -1 : widVec[0].Wire;
-                std::cout << "==> Out of Range, plane: " << plane << ", wire: " << thisWire << ", mean: " << mean << ", median: " << waveMedian << ", nTrunc: " << nTrunc << ", range: " << range << std::endl;
-                std::transform(pedCorDataVec.begin(),pedCorDataVec.end(),pedCorDataVec.begin(),std::bind(std::minus<float>(),std::placeholders::_1,waveMedian));
-            }
 
             if (fDiagnosticOutput)
             {
