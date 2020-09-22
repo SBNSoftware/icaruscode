@@ -15,8 +15,8 @@ decodeFilterNoise: {
 decodeTPC: {
                     module_type:        DaqDecoderICARUSTPC
                     FragmentsLabel:     "daq:PHYSCRATEDATA"
-                    OutputPedestalCor:  false
-                    OutputPedestalPath: "RAW"
+                    OutputRawWaveform:  false
+                    OutputRawWavePath:  "RAW"
                     DiagnosticOutput:   false
                     DecoderTool:        @local::TPCDecoderFilter1DTool
 }

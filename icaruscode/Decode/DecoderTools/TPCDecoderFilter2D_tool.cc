@@ -159,6 +159,8 @@ private:
     icarus_signal_processing::VectorInt   fNumTruncBins;
     icarus_signal_processing::VectorInt   fRangeBins;
 
+    icarus_signal_processing::VectorFloat fThresholdVec;
+
     const geo::Geometry*                  fGeometry;              //< pointer to the Geometry service
 };
 
@@ -230,6 +232,8 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.empty())           fNumTruncBins           = icarus_signal_processing::VectorInt(nChannelsPerFragment);
     if (fRangeBins.empty())              fRangeBins              = icarus_signal_processing::VectorInt(nChannelsPerFragment);
 
+    if (fThresholdVec.empty())           fThresholdVec           = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
+
     // Allocate the de-noising object
     icarus_signal_processing::Denoising            denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
@@ -254,6 +258,8 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
 
             icarus_signal_processing::VectorFloat& dataVec = fPedSubtractedWaveforms[channelOnBoard];
 
+            fThresholdVec[channelOnBoard] = fThreshold;
+
             for(size_t tick = 0; tick < nSamplesPerChannel; tick++)
                 dataVec[tick] = dataBlock[chanIdx + tick * nChannelsPerBoard];
 
@@ -271,8 +277,8 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
 
     // Run the coherent filter
     denoiser.removeCoherentNoise2D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
-                                   fFilterModeVec[2],fCoherentNoiseGrouping,fStructuringElement[0],fStructuringElement[1],
-                                   fMorphWindow,fThreshold);
+                                   fThresholdVec, fFilterModeVec[2],fCoherentNoiseGrouping,fStructuringElement[0],fStructuringElement[1],
+                                   fMorphWindow);
 
     return;
 }

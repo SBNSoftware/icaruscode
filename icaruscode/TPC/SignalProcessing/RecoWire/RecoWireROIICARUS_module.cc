@@ -72,7 +72,7 @@ class RecoWireROIICARUS : public art::EDProducer
     
   private:
     // It seems there are pedestal shifts that need correcting
-    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&) const;
+    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&);
     
     float getTruncatedRMS(const std::vector<float>&) const;
     
@@ -370,7 +370,7 @@ float RecoWireROIICARUS::getTruncatedRMS(const std::vector<float>& waveform) con
     return truncRms;
 }
     
-float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform) const
+float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform)
 {
     // Get the truncated mean and rms
     float fullRMS;
