@@ -1,0 +1,45 @@
+#
+# File:    run_trigger_gate_simulation_icarus_plotsonly.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    April 4, 2020
+# Version: 1.0
+#
+# This is a reduced version of `run_trigger_gate_simulation_icarus.fcl`
+# which does not save art ROOT events nor most of the logs.
+#
+# Output
+# -------
+#
+# Plot files, and the smallest amonf the logs.
+#
+#
+# Changes
+# --------
+# 
+# 20200404 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version, based on `run_trigger_gate_simulation_icarus.fcl` v. 2.1
+#
+
+#include "run_trigger_gate_simulation_icarus.fcl"
+
+#
+# no art ROOT event output
+#
+physics.end_paths: [ plotsAND, plotsOR ]
+outputs: @erase
+
+#
+# drop most logs
+#
+services.message.destinations.TriggerThresholdLog: @erase
+services.message.destinations.LVDSANDLog: @erase
+# services.message.destinations.SlidingWindowANDLog: @erase
+services.message.destinations.LVDSORLog: @erase
+# services.message.destinations.SlidingWindowORLog: @erase
+
+# services.message.destinations.SingleANDplotsLog: @erase
+# services.message.destinations.SingleORplotsLog: @erase
+# services.message.destinations.SlidingANDplotsLog: @erase
+# services.message.destinations.SlidingORplotsLog: @erase
+

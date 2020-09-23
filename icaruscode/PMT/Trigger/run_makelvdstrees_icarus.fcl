@@ -1,0 +1,3 @@
+#include "makelvdstrees_icarus.fcl"
+
+physics.analyzers.treegger.TriggerGatesTag: "lvdsgatesOR:40"

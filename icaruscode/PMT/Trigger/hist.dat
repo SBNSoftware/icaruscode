@@ -1,0 +1,1000 @@
+   10  ls
+   11  python formatPlots.py --module effSingleOR Supplemental-simulation_genie_icarus_bnb_DetSim_20200131T104150-Trigger.root --output ORout.root
+   12  vi formatPlots.py 
+   13  cd ../../
+   14  ls
+   15  cd my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigger/
+   16  ls
+   17  vi run_trigger_gate_simulation_icarus.fcl 
+   18  vi makediscriminatewaveforms_icarus.fcl 
+   19  vi trigger_icarus.fcl 
+   20  history
+   21  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/bnb/out/27558257_0/simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim.root
+   22  ls
+   23  ls -l
+   24  mv Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger.root ../../../../../../../optical/scripts/
+   25  cd ../../../../../../../optical/scripts/
+   26  ls
+   27  mv Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger.root Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger_300.root
+   28  ls
+   29  python formatPlots.py --module effSingleOR Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger_300.root --output ORout300.root
+   30  python formatPlots.py --module effSingleAND Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger_300.root --output ANDout300.root
+   31  ls
+   32  exit
+   33  ls
+   34  cd /icarus/app/users/mbabicz/
+   35  ls
+   36  cd my_dev_areas/
+   37  ls
+   38  cd v08_41_00_prof/
+   39  ls
+   40  cd srcs/
+   41  ls
+   42  source setup_larsoft_env_icarus.sh 
+   43  cd ../../../../
+   44  ls
+   45  cd mbabicz/
+   46  ls
+   47  cd optical/scripts/
+   48  ls
+   49  vi formatPlots.py 
+   50  ls
+   51  root -l Bnb_100ns_DetSim_20200304T130509-Trigger.root 
+   52  cd ../../my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigge
+   53  ls
+   54  vi trigger_icarus.fcl 
+   55  history
+   56  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/bnb/out/27558257_0/simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim.root
+   57  ls -l
+   58  mv Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200305T103840-Trigger.root 150ns_bnb_DetSim_20200305T103840-Trigger.root
+   59  mv 150ns_bnb_DetSim_20200305T103840-Trigger.root ../../../../../../../optical/scripts/
+   60  ls
+   61  cd ../../../../../
+   62  ls
+   63  cd ..
+   64  ls
+   65  cd ..
+   66  ls
+   67  cd optical/scripts/
+   68* 
+   69  python formatPlots.py --module effSingleAND Supplemental-simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d0e6a53c6_20200110T212856-G4_20200111T194202-DetSim_20200303T162129-Trigger_300.root --output ANDout300.root
+   70  python formatPlots.py --module effSingleAND 150ns_bnb_DetSim_20200305T103840-Trigger.root --output ANDout150.root
+   71  python formatPlots.py --module effSingleOR 150ns_bnb_DetSim_20200305T103840-Trigger.root --output ORout150.root
+   72  ls
+   73  root -l 150ns_bnb_DetSim_20200305T103840-Trigger.root 
+   74  cd ../../my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigger/
+   75  ls
+   76  mkdir sim
+   77  ls
+   78  mv simulation*.root sim
+   79  ls
+   80  ls Data/
+   81  ls
+   82  clear
+   83  history
+   84* 
+   85  ar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/bnb/out/27558257_0/simulation_genie_icarus_bnb_20200110T205631-GenGenie_9bb9ae51-f43c-43b5-b99c-3c8d
+   86  history
+   87  exit
+   88  logout
+   89  cd /icarus/app/users/mbabicz/
+   90* 
+   91  cd my_dev_areas/v08_41_00_prof/srcs/
+   92  source setup_larsoft_env_icarus.sh 
+   93  ls
+   94  cd icaruscode/icaruscode/
+   95* 
+   96  cd /icarus/app/users/
+   97  cd mbabicz/my_dev_areas/v08_41_00_prof/
+   98  ls
+   99  cd srcs/
+  100  ls
+  101  source setup_larsoft_env_icarus.sh 
+  102  cd icaruscode/icaruscode/PMT/Trigger/
+  103  ls
+  104  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/cosmics/out/28638758_10/single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim.root 
+  105  ls -l
+  106  mv Supplemental-single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200309T085405-Trigger.root Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085405-Trigger.root
+  107  ls -l
+  108* 
+  109  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/cosmics/out/28638758_10/single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim.root 
+  110  ls
+  111  ls -l
+  112  mv Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085405-Trigger.root Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085405-Trigger_10us.root 
+  113  mv Supplemental-single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200309T085643-Trigger.root Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root
+  114  ls
+  115  mv Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085*.root ../../../../../../../optical/scripts/
+  116  cd ../../../../../../../optical/scripts/
+  117  ls
+  118  ls -l
+  119  mv ANDout1*.root outputs/
+  120  ls
+  121  mv Bnb_100ns_DetSim_20200304T130509-Trigger.root inputs/
+  122  ls
+  123  mv ORout1*.root outputs/
+  124  ls
+  125  mv 10us_bnb.root inputs/
+  126  mv 150ns_*.root outputs/
+  127  ls
+  128  vi how_to.txt 
+  129  python formatPlots.py --module effSingleAND Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root --output AND_100ns_corsika.root
+  130  python formatPlots.py --module effSingleOR Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root --output OR_100ns_corsika.root
+  131  ls
+  132  vi formatPlots.py 
+  133  python formatPlots.py --module effSingleOR Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root --output OR_100ns_corsika.root
+  134  rm OR_100ns_corsika.root 
+  135  python formatPlots.py --module effSingleOR Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root --output OR_100ns_corsika.root
+  136  root -l Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085643-Trigger_100ns.root 
+  137  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigger/
+  138* 
+  139  vi trigger_icarus.fcl 
+  140* 
+  141  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/
+  142* 
+  143  cd build_slf7.x86_64/
+  144  ls
+  145  cd icaruscode/
+  146* 
+  147  cd icaruscode/PMT/Trigger/
+  148  make install
+  149  ls
+  150  cd ../../../../
+  151  ls
+  152  cd ..
+  153  ls
+  154  cd srcs/icaruscode/icaruscode/PMT/Trigger/
+  155* 
+  156  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/cosmics/out/28638758_10/single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim.root 
+  157  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/bnb/out/27558257_1/simulation_genie_icarus_bnb_20200110T205709-GenGenie_35c1efec-4f16-4477-92bf-57ed616211bd_20200110T212808-G4_20200111T194151-DetSim.root 
+  158  ls /pnfs/icarus/persistent/users/rhowell/poms/v08_39_00/detsim/argon/
+  159  root -l /pnfs/icarus/persistent/users/rhowell/poms/v08_39_00/detsim/argon/argon39.root 
+  160  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_39_00/detsim/argon/argon39.root
+  161  ls -l
+  162  mv Supplemental-simulation_genie_icarus_bnb_20200110T205709-GenGenie_35c1efec-4f16-4477-92bf-57ed616211bd_20200110T212808-G4_20200111T194151-DetSim_20200309T152722-Trigger.root Simulation_genie_icarus_bnb_DetSim_20200309T152722-Trigger.root 
+  163  mv Simulation_genie_icarus_bnb_DetSim_20200309T152722-Trigger.root Simulation_genie_icarus_bnb_DetSim_20200309T152722-Trigger_gate_150ns.root 
+  164  ls -l
+  165  mv Supplemental-single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200309T152539-Trigger.root Single_corsika_icarus_DetSim_20200309T152539-Trigger_150ns.root
+  166  ls
+  167  .q
+  168  exit
+  169  cd /icarus/app/users/mbabicz/my_dev_areas/
+  170  cd v08_41_00_prof/srcs/
+  171  source setup_larsoft_env_icarus.sh 
+  172  ls
+  173  cd icaruscode/icaruscode/PMT/Trigger/
+  174  ls -l
+  175  mv Supplemental-argon39_20200309T215605-Trigger.root Argon39_20200309T215605-Trigger_150ns.root
+  176  mv Argon39_20200309T215605-Trigger_150ns.root ../../../../../../../optical/scripts/
+  177  rm Supplemental-argon39_20200309T153927-Trigger.root 
+  178  ls
+  179  ls -l
+  180  rm simulation_genie_icarus_bnb_20200110T2*.root
+  181  rm single_corsika_icarus_*.root
+  182  ls
+  183  ls -l
+  184  rm Supplemental-single_corsika_icarus_76ddffbf-7831-4cdc-8686-9452be44df20_20200211T203623-G4_20200211T222649-DetSim_20200306T174149-Trigger.root 
+  185  ls
+  186  ls -l
+  187* 
+  188  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/bnb/out/27558257_1/simulation_genie_icarus_bnb_20200110T205709-GenGenie_35c1efec-4f16-4477-92bf-57ed616211bd_20200110T212808-G4_20200111T194151-DetSim.root 
+  189  lar -c run_trigger_gate_simulation_icarus.fcl -s /pnfs/icarus/persistent/users/rhowell/poms/v08_37_00/detsim/cosmics/out/28638758_10/single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim.root 
+  190  ls -l
+  191  mv Supplemental-simulation_genie_icarus_bnb_20200110T205709-GenGenie_35c1efec-4f16-4477-92bf-57ed616211bd_20200110T212808-G4_20200111T194151-DetSim_20200310T103058-Trigger.root Bnb_DetSim_20200310T103058-Trigger_150ns.root 
+  192  ls
+  193  ls -l
+  194  exit
+  195  ls
+  196  exit
+  197  cd /icarus/app/users/mbabicz/
+  198  cd my_dev_areas/v08_41_00_prof/
+  199  ls
+  200  cd srcs/
+  201  source setup_larsoft_env_icarus.sh 
+  202  cd icaruscode/icaruscode/PMT/Trigger/
+  203  ls
+  204  ls -l
+  205  mv Supplemental-single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200310T103206-Trigger.root Single_corsika_icarus_DetSim_20200310T103206-Trigger_150ns.root 
+  206  ls
+  207  ls -l
+  208  mv Single_corsika_icarus_DetSim_20200310T103206-Trigger_150ns.root ../../../../../../../optical/trigger/
+  209  mv Bnb_DetSim_20200310T103058-Trigger_150ns.root ../../../../../../../optical/trigger/
+  210  ls -l
+  211  rm single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200310T103206-Trigger.roo
+  212  rm single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200310T103206-Trigger.root 
+  213  ls
+  214  rm simulation_genie_icarus_bnb_20200110T205709-GenGenie_35c1efec-4f16-4477-92bf-57ed616211bd_20200110T212808-G4_20200111T194151-DetSim_20200310T103058-Trigger.root 
+  215  ls
+  216  ls -l
+  217  cd ../../../../../../../optical/trigger/
+  218  ls
+  219  ls ..
+  220  mv *.root ../scripts/
+  221  ls
+  222  cd ..
+  223  ls
+  224  cd scripts/
+  225  ls
+  226  rm Single_corsika_icarus_G4_20200211T223326-DetSim_20200309T085*.root
+  227  ls
+  228  ls -l
+  229  rm OR_100ns_corsika.root 
+  230  rm AND_100ns_corsika.root 
+  231  ls
+  232  ls inputs/
+  233  cd inputs/
+  234  ls -l
+  235  rm Supplemental-simulation_genie_icarus_bnb_*.root
+  236  ls
+  237  rm Bnb_100ns_DetSim_20200304T130509-Trigger.root 
+  238  rm 10us_bnb.root 
+  239  ls -l
+  240  mkdir 150ns
+  241  cd ..
+  242  ls
+  243  ls outputs/
+  244  cd outputs/
+  245  ls
+  246  rm *.root
+  247  ls
+  248  mkdir 150ns
+  249  cd ..
+  250  ls
+  251  ls -l
+  252  vi how_to.txt 
+  253  python formatPlots.py --module effSingleAND Bnb_DetSim_20200310T103058-Trigger_150ns.root --output BNB_effSingleAND_150ns.root
+  254  python formatPlots.py --module effSingleOR Bnb_DetSim_20200310T103058-Trigger_150ns.root --output BNB_effSingleOR_150ns.root
+  255  python formatPlots.py --module effSingleOR Argon39_20200309T215605-Trigger_150ns.root --output Ar39_effSingleOR_150ns.root
+  256  python formatPlots.py --module effSingleAND Argon39_20200309T215605-Trigger_150ns.root --output Ar39_effSingleAND_150ns.root
+  257  python formatPlots.py --module effSingleAND Single_corsika_icarus_DetSim_20200310T103206-Trigger_150ns.root --output Cosmics_effSingleAND_150ns.root
+  258  python formatPlots.py --module effSingleOR Single_corsika_icarus_DetSim_20200310T103206-Trigger_150ns.root --output Cosmics_effSingleOR_150ns.root
+  259  ls
+  260  mv Ar39_effSingle*.root outputs/150ns/
+  261  ls
+  262  mv BNB_effSingle*.root outputs/150ns/
+  263  ls
+  264  mv Cosmics_effSingle*.root outputs/150ns/
+  265  ls
+  266  mv *.root inputs/150ns/
+  267  ls
+  268  cd ../../my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigger/
+  269  ls
+  270  vi trigger_icarus.fcl 
+  271  cd ../../
+  272  ls
+  273  cd ..
+  274  ls
+  275  cd ..
+  276  ls
+  277  cd ..
+  278  ls
+  279  cd build_slf7.x86_64/
+  280  ls
+  281  cd icaruscode/icaruscode/PMT/Trigger/
+  282  ls
+  283  make install
+  284  cd ../../../../../../../optical/scripts/outputs/
+  285  ls
+  286  exit
+  287  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  288  ls
+  289  source setup_larsoft_env_icarus.sh 
+  290  ls -l
+  291  cd ../../../my_dev_areas/
+  292  ls
+  293  cd ..
+  294  ls
+  295  cd optical/scripts/
+  296  ls
+  297  ls outputs/
+  298  cd outputs/
+  299  mkdir 100ns
+  300  ls
+  301  pwd
+  302  cd ..
+  303  ls
+  304  history
+  305  ls -l
+  306  mv Bnb_G4_20200111T194151-DetSim_20200311T094255-Trigger_100ns.root inputs/
+  307  mv Argon39_20200311T095427-Trigger_100ns.root inputs/
+  308  mv Single_corsika_icarus_DetSim_20200311T093016-Trigger_100ns.root inputs/
+  309  ls -l
+  310  exit
+  311  cd /icarus/app/users/mbabicz/
+  312  cd my_dev_areas/v08_41_00_prof/srcs/
+  313  source setup_larsoft_env_icarus.sh 
+  314  ls -l
+  315  cd icaruscode/icaruscode/PMT/Trigger/
+  316  ls
+  317  vi trigger_icarus.fcl 
+  318  cd ../../../../../build_slf7.x86_64/
+  319  cd icaruscode/icaruscode/PMT/Trigger/
+  320  make install
+  321  exit
+  322  ls
+  323  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/
+  324  ls
+  325  cd srcs/
+  326  ls
+  327  source setup_larsoft_env_icarus.sh 
+  328  ls
+  329  cd ../..
+  330  ls
+  331  cd ..
+  332  ls
+  333  cd optical/scripts/inputs/
+  334  ls
+  335  cd 150ns/
+  336  ls
+  337  root -l Bnb_DetSim_20200310T103058-Trigger_150ns.root 
+  338  ls
+  339  cd ..
+  340  ls
+  341  cd ..
+  342  ls
+  343  pwd
+  344  mkdir noise_analysis
+  345  cd noise_analysis/
+  346  vi noise_ana.cc
+  347  exit
+  348  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  349  ls
+  350  source setup_larsoft_env_icarus.sh 
+  351  ls
+  352  cd ../../../
+  353  ls
+  354  cd optical/scripts/
+  355  ls
+  356  vi how_to.txt 
+  357  ls outputs/
+  358  ls outputs/150ns/
+  359  cd outputs/150ns/
+  360  mkdir separated
+  361  mkdir alltogether
+  362  ls
+  363  mv *.root alltogether/
+  364  ls
+  365  cd ../..
+  366  ls
+  367  mv *multiple_plots.root outputs/150ns/separated/
+  368  ls
+  369  ls outputs/100ns/
+  370  cd outputs/100ns/
+  371  mkdir separated
+  372  mkdir alltogether
+  373  ls
+  374  cd ..
+  375  ls
+  376  cd ..
+  377  ls
+  378  mv *100ns.root outputs/100ns/alltogether/
+  379  ls
+  380  pwd
+  381  ls
+  382  python formatPlotsMulti.py --module effSingleAND inputs/Bnb_G4_20200111T194151-DetSim_20200311T094255-Trigger_100ns.root --output BNB_effSingleAND_100ns_multiple_plots.root -R --outputmode RECREATE
+  383  python formatPlotsMulti.py --module effSingleOR inputs/Bnb_G4_20200111T194151-DetSim_20200311T094255-Trigger_100ns.root --output BNB_effSingleOR_100ns_multiple_plots.root -R --outputmode RECREATE
+  384  python formatPlotsMulti.py --module effSingleOR inputs/Single_corsika_icarus_DetSim_20200311T093016-Trigger_100ns.root --output Cosmics_effSingleOR_100ns_multiple_plots.root -R --outputmode RECREATE
+  385  python formatPlotsMulti.py --module effSingleAND inputs/Single_corsika_icarus_DetSim_20200311T093016-Trigger_100ns.root --output Cosmics_effSingleAND_100ns_multiple_plots.root -R --outputmode RECREATE
+  386  python formatPlotsMulti.py --module effSingleAND inputs/Argon39_20200311T095427-Trigger_100ns.root --output Ar39_effSingleAND_100ns_multiple_plots.root -R --outputmode RECREATE
+  387  python formatPlotsMulti.py --module effSingleOR inputs/Argon39_20200311T095427-Trigger_100ns.root --output Ar39_effSingleOR_100ns_multiple_plots.root -R --outputmode RECREATE
+  388  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  389  source setup_larsoft_env_icarus.sh 
+  390  cd icaruscode/icaruscode/PMT/Trigger/
+  391  ls
+  392  ls -l
+  393  mv Supplemental-simulation_genie_icarus_bnb_20200110T210129-GenGenie_d8eef9ea-5a12-413b-bd99-3c5858bfc642_20200110T213925-G4_20200111T194429-DetSim_20200318T121042-Trigger.root icarus_bnb_DetSim_20200318T121042-Trigger_alltheevents.root 
+  394  mv icarus_bnb_DetSim_20200318T121042-Trigger_alltheevents.root ../../../../../../../optical/scripts/
+  395  cd ../../../../../../../optical/scripts/
+  396  ls
+  397  vi how_to.txt 
+  398  python formatPlots.py --module effSingleAND icarus_bnb_DetSim_20200318T121042-Trigger_alltheevents.root --output BNB_effSingleAND_150ns_all_events.root
+  399  vi ../../my_dev_areas/v08_41_00_prof/srcs/icaruscode/icaruscode/PMT/Trigger/trigger_icarus.fcl 
+  400  ls
+  401  mv BNB_effSingleAND_150ns_all_events.root BNB_effSingleAND_150ns_or_200ns_all_events.root 
+  402  cd ../../my_dev_areas/v08_41_00_prof/
+  403  ls
+  404  cd build_slf7.x86_64/icaruscode/icaruscode/PMT/Trigger/
+  405  make install
+  406  cd ../../../../../srcs/icaruscode/icaruscode/PMT/
+  407  exit
+  408  cd /icarus/app/users/mbabicz/my_dev_areas/
+  409  ls
+  410  cd v08_41_00_prof/
+  411  ls
+  412  cd srcs/
+  413  source setup_larsoft_env_icarus.sh 
+  414  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  415  source setup_larsoft_env_icarus.sh 
+  416  ls
+  417  cd icaruscode/icaruscode/PMT/Trigger/
+  418  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  419  source setup_larsoft_env_icarus.sh 
+  420  cd icaruscode/icaruscode/PMT/Trigger/
+  421  ls
+  422  lar -c run_trigger_gate_simulation_icarus.fcl -S files.list 
+  423  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs
+  424  source setup_larsoft_env_icarus.sh 
+  425  cd icaruscode/icaruscode/PMT/Trigger/
+  426* 
+  427  cp /icarus/data/users/rhowell/trigger/plots_bnb/files.list .
+  428  ls
+  429  lar -c run_trigger_gate_simulation_icarus.fcl -S files.list 
+  430  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  431  source setup_larsoft_env_icarus.sh 
+  432  ls
+  433  cd icaruscode/icaruscode/PMT/Trigger/
+  434  ls
+  435  vi trigger_icarus.fcl 
+  436* 
+  437  mv Supplemental-simulation_genie_icarus_bnb_20200110T210129-GenGenie_d8eef9ea-5a12-413b-bd99-3c5858bfc642_20200110T213925-G4_20200111T194429-DetSim_20200318T125955-Trigger.root BNB_DetSim_Trigger_100ns_allevents.root 
+  438  mv BNB_DetSim_Trigger_100ns_allevents.root ../../../../../../../optical/scripts/
+  439  cd ../../../../../../../optical/scripts/
+  440  ls
+  441  vi how_to.txt 
+  442  python formatPlots.py --module effSingleAND BNB_DetSim_Trigger_100ns_allevents.root --output BNB_effSingleAND_100ns_all_the_events.root
+  443  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  444  source setup_larsoft_env_icarus.sh 
+  445  vi setup_larsoft_env_icarus.sh 
+  446  cd ../..
+  447  ls
+  448  cd ..
+  449  ls
+  450  cd LArSOFTTutorial/
+  451  ls
+  452  mkdir my_dev_area && cd my_dev_area
+  453* 
+  454  mrb newDev -v v08_41_00 -q e19:prof
+  455  source /icarus/app/users/mbabicz/LArSOFTTutorial/my_dev_area/localProducts_icaruscode_v08_41_00_e19_prof/setup
+  456  cd srcs/
+  457  mrb gitCheckout -t v08_41_00 icaruscode
+  458  git flow feature start mababicz_tutorial_analyzer
+  459  pwd
+  460* 
+  461  git flow feature start mababicz_tutorial_analyzer
+  462  mkdir TutorialAnalyzer
+  463  cd ..
+  464  ls
+  465  vi CMakeLists.txt 
+  466  pwd
+  467  cd icaruscode/
+  468  ls
+  469  cd TutorialAnalyzer/
+  470  cd ..
+  471  ls
+  472  vi CMakeLists.txt 
+  473  cd TutorialAnalyzer/
+  474  ls
+  475  cetskelgen analyzer TutorialAnalyzer
+  476  vi TutorialAnalyzer_module.cc 
+  477  cd ..
+  478  ls
+  479  mrb i -j4
+  480  pwd
+  481  mrb i -j4
+  482  pwd
+  483  cd ../../../build_slf7.x86_64/
+  484  ls
+  485  mrbsetenv
+  486  pwd
+  487  cd ../
+  488  ls
+  489  cd srcs/icaruscode/icaruscode/
+  490  ls
+  491  mrb i -j4
+  492  ls
+  493  vi CMakeLists.txt 
+  494  exit
+  495  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  496  source setup_larsoft_env_icarus.sh 
+  497  ls
+  498  cd ..
+  499  ls
+  500  cd ..
+  501  ls
+  502  cd ..
+  503  ls
+  504  mkdir LArSOFTTutorial
+  505  cd La
+  506  cd LArSOFTTutorial/
+  507  lar -n 100 -c prodgenie_bnb_nu_cosmic_icarus.fcl
+  508  lar -n 100 -c simulation_genie_icarus_bnb.fcl
+  509  ls
+  510  vi errors.log 
+  511  cd /icarus/app/users/mbabicz/LArSOFTTutorial/
+  512  ls
+  513  cd my_dev_area/
+  514  ls
+  515  cd srcs/
+  516  ls
+  517  cd ..
+  518  ls
+  519  cd ..
+  520  ls
+  521  cd ..
+  522  ls
+  523  cd my_dev_areas/v08_41_00_prof/srcs/
+  524  source setup_larsoft_env_icarus.sh 
+  525  cd ../../../
+  526  ls
+  527  cd LArSOFTTutorial/
+  528  ls
+  529  cd my_dev_area/
+  530  ls
+  531  cd srcs/
+  532  ls
+  533  cd icaruscode/icaruscode/
+  534  ls
+  535  mrb i =j4
+  536  mrb i -j4
+  537  ls
+  538  cd TutorialAnalyzer/
+  539  ls
+  540  vi run.fcl
+  541  lar -c run.fcl ../../../../../Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root 
+  542  lar -c run.fcl ../../../../../Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root out.root
+  543  lar -c run.fcl ../../../../../simulation_genie_icarus_bnb_20200323T170805-GenGenie.root out.root
+  544  lar -c run.fcl ../../../../../Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root 
+  545  ls
+  546  cd ..
+  547  ls
+  548  mrb i -j4
+  549  ls
+  550  cd TutorialAnalyzer/
+  551  ls
+  552  vi run.fcl 
+  553  lar -c run.fcl ../../../../../Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root 
+  554  vi run.fcl 
+  555  ls
+  556  vi TutorialAnalyzer_module.cc
+  557  cd ..
+  558  vi CMakeLists.txt 
+  559  ls
+  560  mrb i -j4
+  561  ls
+  562  cd TutorialAnalyzer/
+  563  ls
+  564  cp ../../../../../Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root .
+  565  ls
+  566  lar -c run.fcl Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root 
+  567  vi run.fcl 
+  568  cd ..
+  569  ls
+  570  cd PMT/Trigger/
+  571  vi trigger_icarus.fcl 
+  572  cd ../..
+  573  ls
+  574  cd TutorialAnalyzer/
+  575  ls
+  576  vi run.fcl 
+  577  lar -c run.fcl Supplemental-simulation_genie_icarus_bnb_20200323T170805-GenGenie.root 
+  578  ls
+  579  vi run.fcl 
+  580  vi TutorialAnalyzer_module.cc 
+  581  vi run.fcl 
+  582  cd ..
+  583  vi CMakeLists.txt 
+  584  exit
+  585  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  586  source setup_larsoft_env_icarus.sh 
+  587  pwd
+  588  cd icaruscode/icaruscode/
+  589  ls /icarus/data/users/rhowell/trigger/
+  590  ls /icarus/data/users/rhowell/trigger/plots_argon/
+  591  ls /icarus/data/users/rhowell/trigger/plots_cosmics_CORSIKA/
+  592  cp /icarus/data/users/rhowell/trigger/plots_cosmics_CORSIKA/files.list
+  593  ls
+  594  cd PMT/Trigger/
+  595  ls
+  596  mkdir cosmics
+  597  cd cosmics/
+  598  cp /icarus/data/users/rhowell/trigger/plots_cosmics_CORSIKA/files.list .
+  599  ls
+  600  mv files.list files_cosmics.list 
+  601  cd ..
+  602  ls -l
+  603  vi files.list 
+  604  mv files.list files_BNB.list 
+  605  ls
+  606  rm simulation_genie_icarus_bnb_20200110T2*.root
+  607  ls -l
+  608  mv cosmics/files_cosmics.list .
+  609  ls
+  610  lar -c run_trigger_gate_simulation_icarus.fcl -S files_cosmics.list 
+  611  exit
+  612  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/
+  613  ls
+  614  cd srcs/
+  615  source setup_larsoft_env_icarus.sh 
+  616  pwd
+  617  cd icaruscode/icaruscode/PMT/Trigger/
+  618  ls
+  619  vi trigger_icarus.fcl 
+  620  history
+  621  ls /icarus/data/users/rhowell/trigger/plots_bnb/
+  622  vi /icarus/data/users/rhowell/trigger/plots_bnb/files-xrootd.list 
+  623  ls -l /icarus/data/users/rhowell/trigger/
+  624  cd /icarus/app/users/mbabicz/
+  625  cd my_dev_areas/v08_41_00_prof/srcs/
+  626  ls
+  627  source setup_larsoft_env_icarus.sh 
+  628  ls
+  629  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  630  source setup_larsoft_env_icarus.sh 
+  631  ls
+  632  cd icaruscode/icaruscode/PMT/Trigger/
+  633  ls
+  634  ls -l
+  635  history
+  636   cp /icarus/data/users/rhowell/trigger/plots_cosmics_CORSIKA/files-xrootd.list .
+  637  rm Simulation_genie_icarus_bnb_DetSim_20200309T152722-Trigger_gate_150ns.root 
+  638  rm Single_corsika_icarus_DetSim_20200309T152539-Trigger_150ns.root 
+  639  rm single_corsika_icarus_f84b61e6-14dc-43c2-b5f5-fdfb6a37657d_20200211T204924-G4_20200211T223326-DetSim_20200311T093016-Trigger.root 
+  640  ls -l
+  641  rm argon39_20200311T095427-Trigger.root 
+  642  ls -l
+  643  vi files-xrootd.list 
+  644  rm files-xrootd.list 
+  645   cp /icarus/data/users/rhowell/trigger/plots_cosmics_CORSIKA/files-xrootd.list .
+  646  ls
+  647  rm RootOutput-424f-49e8-1d4e-f1fd.root 
+  648  rm RootOutput-8ad2-15ae-cf9b-62ad.root 
+  649  ls -l
+  650  ls sim/
+  651  rm -r sim/
+  652  ls
+  653  lar -c run_trigger_gate_simulation_icarus.fcl -S files_cosmics.list 
+  654  lar -c run_trigger_gate_simulation_icarus.fcl -S files-xrootd.list 
+  655  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/srcs/
+  656  source setup_larsoft_env_icarus.sh 
+  657  ls
+  658  cd icaruscode/icaruscode/PMT/Trigger/
+  659  ls
+  660  lar -c run_trigger_gate_simulation_icarus.fcl -S files_cosmics.list 
+  661  lar -c run_trigger_gate_simulation_icarus.fcl -S /pnfs/icarus/persistent/users/petrillo/data/trigger/20200306/v08_44_00/filelists/prodcorsika_nooverburden_icarus-opdet-xrootd.filelist
+  662  cd /icarus/app/users/mbabicz/
+  663  quota -s
+  664  cd /icarus/app/users/mbabicz/my_dev_areas/v08_41_00_prof/
+  665  ls
+  666  ls /uscmst1b_scratch/lpc1/3DayLifetime/mababicz
+  667  ls
+  668  cd /icarus/app/users/mbabicz/
+  669  ls
+  670  cd /icarus/app/users/mbabicz/
+  671  ls
+  672  ls WORK
+  673  ls dev_areas
+  674  rm -r dev_areas
+  675  ls
+  676  rm -r WORK
+  677  ls
+  678  ls WORK_2
+  679  rm -r WORK_2/
+  680  cd /icarus/app/users/mbabicz/
+  681  ls
+  682  ls optical/
+  683  ls optical/myanalysis/
+  684  cd /icarus/app/users/mbabicz/
+  685  ls
+  686  history
+  687  ls
+  688  cd my_dev_areas/
+  689  ls
+  690  cd ..
+  691  ls
+  692  vi make_newDev.sh 
+  693  ls
+  694  cd my_dev_areas/
+  695  ls
+  696  cd v08_41_00_prof/
+  697  ls
+  698  ls srcs/
+  699  vi srcs/setup_larsoft_env_icarus.sh 
+  700  ls
+  701  cd ..
+  702  ls
+  703  cd ..
+  704  ls
+  705  vi make_newDev.sh 
+  706  exit
+  707  cd /icarus/app/users/mbabicz/
+  708  ls
+  709  vi make_newDev.sh 
+  710  vi m.txt
+  711  exit
+  712  cd /icarus/app/users/mbabicz/
+  713  vi make_newDev.sh 
+  714  exit
+  715  cd /icarus/app/users/mbabicz/
+  716  ls
+  717  vi make_newDev.sh 
+  718  exit
+  719  cd /icarus/app/users/mbabicz/
+  720  ls
+  721  cd my_dev_areas/
+  722  ls
+  723  cd v08_50_00_prof/
+  724  ls
+  725  cd build_slf6.x86_64/
+  726  mrbsetenv
+  727  cd ..
+  728  ls
+  729  cd ..
+  730  ls
+  731  vi ../make_newDev.sh 
+  732  /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
+  733  source /cvmfs/icarus.opensciencegrid.org/products/icarus/setup_icarus.sh
+  734  vi ../make_newDev.sh 
+  735  ls
+  736  cd v08_50_00_prof/
+  737  source ./localProducts_icaruscode_v08_50_00_e19_prof/setup 
+  738  ls
+  739  cd build_slf6.x86_64/
+  740  mrbsetenv 
+  741  vi ../../../make_newDev.sh 
+  742  mrb i -j4
+  743  ls
+  744  cd ..
+  745  ls
+  746  cd build_slf6.x86_64/
+  747  mrbsetenv 
+  748  mrb i -j4
+  749  pwd
+  750  exit
+  751  cd /icarus/app/users/mbabicz/my_dev_areas/
+  752  ls
+  753  cp v08_41_00_prof/srcs/setup_larsoft_env_icarus.sh v08_50_00_prof/srcs/
+  754  ls
+  755  rm -r v08_34_00_prof/
+  756  y
+  757  ls
+  758  cp v08_41_00_prof/srcs/setup_larsoft_env_icarus.sh v08_50_00_prof/srcs/
+  759  cd v08_50_00_prof/
+  760  ls
+  761  cd srcs/
+  762  ls
+  763  vi setup_larsoft_env_icarus.sh 
+  764  source setup_larsoft_env_icarus.sh 
+  765  cd ../build_slf6.x86_64/
+  766  mrbsetenv
+  767  mrb i -j4
+  768  ls
+  769  cd ..
+  770  ls
+  771  cd ..
+  772  ls
+  773  vi ../make_newDev.sh 
+  774  source ../make_newDev.sh 
+  775  ls
+  776  pwd
+  777  cd ..
+  778  ls
+  779  cd build_slf6.x86_64/
+  780  mrbsetenv 
+  781  vi ../../../make_newDev.sh 
+  782  pwd
+  783  cd ../srcs/
+  784  mrb gitCheckout icaruscode  
+  785  mrbsetenv
+  786  cd ../build_slf6.x86_64/
+  787  ls
+  788  mrb z
+  789  mrbsetenv
+  790  mrb install -j4
+  791  pwd
+  792  ls
+  793  cd icaruscode-v08_50_00 
+  794  mrbsetenv
+  795  cd ..
+  796  ls
+  797  cd srcs/
+  798  ls
+  799  ls icaruscode/
+  800  source setup_larsoft_env_icarus.sh 
+  801  mrb install -j4
+  802  mrbsetenv
+  803  ls
+  804  cd /icarus/app/users/mbabicz/
+  805  ls
+  806  ls LArSOFTTutorial/
+  807  ls LArSOFTTutorial/my_dev_area/
+  808  rm -r LArSOFTTutorial/
+  809  ls
+  810  source make_newDev.sh 
+  811  cd /icarus/app/users/mbabicz/my_dev_areas/v08_50_00_prof/build_slf6.x86_64/
+  812  mrbsetenv
+  813  ls
+  814  mrbsetenv
+  815  mrb z
+  816  mrbsetenv
+  817  mrb i =j16
+  818  exit
+  819  history
+  820  cd /icarus/app/users/mbabicz/my_dev_areas/
+  821  cd /icarus/app/users/mbabicz/
+  822  vi make_newDev.sh 
+  823  ls -l
+  824  vi make_newDev.sh 
+  825  emacs make_newDev.sh 
+  826  gedit make_newDev.sh 
+  827  ls
+  828  rm m.txt 
+  829  ls dev_areas_2020/
+  830  rm -r dev_areas_2020/
+  831  ls
+  832  rm -r dev_areas_2020/
+  833  ls
+  834  vi make_newDev.sh 
+  835  quota -s
+  836  cd /icarus/app/users/mbabicz/
+  837  ls
+  838  vi make_newDev.sh 
+  839  source make_newDev.sh 
+  840  cd /icarus/app/users/mbabicz/
+  841  ls
+  842  source make_newDev.sh 
+  843  pwd
+  844  cd ../build_slf7.x86_64/
+  845  mrb z
+  846  mrbsetenv
+  847  vi ../../../make_newDev.sh 
+  848  mrb i -j16
+  849  ls
+  850  pwd
+  851  mrb z
+  852  exit
+  853  ls
+  854  ls my_dev_area/
+  855  rm -r my_dev_area/
+  856  rm MemoryReport.db 
+  857  ls
+  858  rm TimingReport.db 
+  859  ls ICARUS/
+  860  rm -r ICARUS/
+  861  ls
+  862  cd /icarus/app/users/mbabicz/
+  863  ls
+  864  ls my_dev_areas/
+  865  cd my_dev_areas/
+  866  rm -r v08_50_00_prof/
+  867  ls
+  868  cd /icarus/app/users/mbabicz/
+  869  ls
+  870  cd my_dev_areas/
+  871  ls
+  872  cp v08_41_00_prof/srcs/setup_larsoft_env_icarus.sh v08_50_00_prof/srcs/
+  873  vi v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  874  cd v08_50_00_prof/
+  875  cd srcs/
+  876  source setup_larsoft_env_icarus.sh 
+  877  cd ../build_slf7.x86_64/
+  878  history
+  879  mrb i -j16
+  880  ls
+  881  cd ..
+  882  ls
+  883  cd ..
+  884  ls
+  885  cd ..
+  886  ls
+  887  ls numioffaxis/
+  888  ls optical/
+  889  ls trigger/
+  890  ls trigger/bnb/
+  891  ls WORK_3/
+  892  ls WORK_3/srcs/
+  893  ls WORK_3/srcs/sbncode/
+  894  rm -r WORK_3/
+  895  ls
+  896  cd my_dev_areas/
+  897  ls
+  898  cd v08_50_00_prof/
+  899  cd build_slf7.x86_64/
+  900  mrb z
+  901  mrbsetenv
+  902  mrb i -j16
+  903  mrb z
+  904  mrbsetenv
+  905  mrb i -j16
+  906  cd /icarus/app/users/mbabicz/
+  907  cd my_dev_areas/
+  908  ls
+  909  cd v08_50_00_prof/
+  910  ls
+  911  cd srcs/
+  912  ls
+  913  source setup_larsoft_env_icarus.sh 
+  914  ls
+  915  cd icaruscode/icaruscode/
+  916  ls
+  917  cd PMT/
+  918  ls
+  919  cd /icarus/app/users/mbabicz/
+  920  cd my_dev_areas/v08_50_00_prof/
+  921  ls
+  922  source srcs/setup_larsoft_env_icarus.sh 
+  923  cd build_slf7.x86_64/
+  924  mrb z
+  925  mrbsetenv 
+  926  mrb i -j16
+  927  quota -s
+  928  ls [100%] Built target icaruscode_CRT_CRTSimHitProducer_module
+  929  [100%] Linking CXX shared library ../../lib/libicaruscode_CRT_CRTTrackProducer_module.so
+  930  P??: final close failed: Disk quota exceeded
+  931  collect2: error: ld returned 1 exit status
+  932  make[2]: *** [icaruscode/lib/libicaruscode_CRT_CRTTrackProducer_module.so] Error 1
+  933  make[1]: *** [icaruscode/icaruscode/CRT/CMakeFiles/icaruscode_CRT_CRTTrackProducer_module.dir/all] Error 2
+  934  make: *** [all] Error 2
+  935  ------------------------------------
+  936  ERROR: Stage install / package failed.
+  937  ------------------------------------
+  938  ls
+  939  quota -s
+  940  cd /icarus/app/users/mbabicz/
+  941  ls
+  942  cd my_dev_areas/
+  943  source v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  944  cd /pnfs/icarus/persistent/users/
+  945  ls
+  946  cd mbabicz/
+  947  ls
+  948  cd poms/
+  949  ls
+  950  ls v08_37_00/
+  951  ls v08_37_00/gen/
+  952  ls v08_37_00/gen/bnb/
+  953  ls
+  954  mkdir v08_50_00
+  955  ls
+  956  cd v08_50_00/
+  957  cd /icarus/app/users/mbabicz/
+  958  ls
+  959  ls gridscripts/
+  960  cd gridscripts/
+  961  vi bnb.xml 
+  962  vi /icarus/app/users/rhowell/gridscripts/bnb.xml
+  963  pwd
+  964  ls
+  965  project.py --xml bnb.xml --stage gen --submit
+  966  projectgui.py bnb.xml &
+  967  vi ../my_dev_areas/v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  968  source ../my_dev_areas/v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  969  vi ../my_dev_areas/v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  970  vi bnb.xml 
+  971  source ../my_dev_areas/v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  972  exit
+  973  cd /icarus/app/users/mbabicz/my_dev_areas/
+  974  source v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  975  vi v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh 
+  976  exit
+  977  cd /icarus/app/users/mbabicz/
+  978  ls
+  979  cd my_dev_areas/
+  980  ls
+  981  cd v08_50_00_prof/
+  982  ls
+  983  cd srcs/
+  984  source setup_larsoft_env_icarus.sh 
+  985  ls
+  986  cd ..
+  987  ls
+  988  cd ..
+  989  ls
+  990  cd ..
+  991  ls
+  992  vi make_newDev.sh 
+  993  exit
+  994  source /icarus/app/users/mbabicz/
+  995  ls
+  996  cd /icarus/app/users/mbabicz
+  997  ls
+  998  source make_newDev.sh 
+  999  pwd
+ 1000  ls
+ 1001  cp ../../v08_50_00_prof/srcs/setup_larsoft_env_icarus.sh .
+ 1002  vi setup_larsoft_env_icarus.sh 
+ 1003  cd icaruscode/icaruscode/PMT/Trigger/
+ 1004  ls -l
+ 1005  vi Trigger.dox 
+ 1006  history
+ 1007  history < hist.dat
+ 1008  ls
+ 1009  history > hist.dat

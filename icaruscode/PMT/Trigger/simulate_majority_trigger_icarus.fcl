@@ -62,8 +62,8 @@ majoritytriggerTemplate: {
   # duration (BNB: 1.6 us; NuMI: 9.5 us)
   BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
   BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
-
-
+ # BeamGateDuration: @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+ # BeamBits:         @local::NuMI_settings.trigger_bits   # from trigger_icarus.fcl
   # this should probably be 12 or 24 ns
   TriggerTimeResolution: "8 ns"
 

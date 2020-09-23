@@ -82,7 +82,7 @@ physics: {
       
       # select which thresholds to save (the algorithm *must* provide them!);
       # omitted: save all thresholds that the algorithm provides
-    #  SelectThresholds: [ 5, 15 ]
+      SelectThresholds: [ 5, 40 ]
       
       
     } # discrimopdaq

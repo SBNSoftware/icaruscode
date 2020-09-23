@@ -1,0 +1,80 @@
+#
+# File:     standard_opdetsim_icarus.fcl
+# Purpose:  Runs digitization of the optical simulation.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     October 15, 2018
+# Version:  1.1
+#
+# Uses the "official" configuration including noise.
+#
+# 
+# Changes
+# --------
+#
+# 20181015 (petrillo@slac.stanford.edu) [v1.0]
+#   original version
+# 20190701 (petrillo@slac.stanford.edu) [v1.1]
+#   services explicitly selected
+#
+
+#include "services_icarus.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+
+process_name: OpDetSim
+
+services: {
+  # from `services_icarus.fcl`
+  message:               @local::icarus_basic_services.message
+  TimeTracker:           @local::icarus_basic_services.TimeTracker
+  MemoryTracker:         @local::icarus_basic_services.MemoryTracker
+  RandomNumberGenerator: @local::icarus_basic_services.RandomNumberGenerator
+  
+  NuRandomService:       @local::icarus_basic_services.NuRandomService
+
+  LArPropertiesService:  @local::icarus_basic_services.LArPropertiesService
+  DetectorClocksService: @local::icarus_basic_services.DetectorClocksService
+  
+} # services
+
+
+# source specification is omitted, expected input file/list from command line
+
+physics: {
+  producers: {
+    opdaq:          @local::icarus_simpmt
+  }
+  
+  simulate: [ opdaq ]
+  write:    [ stream ]
+  
+  trigger_paths: [ simulate ]
+  end_paths:     [ write ]
+}
+
+outputs: {
+  stream: {
+    module_type: RootOutput
+    
+    fileName: "%ifb_%p-%tc.root"
+    
+  } # stream
+} # outputs
+
+
+#
+# debugging
+#
+# services.message.destinations.LogDebugFile: {
+#   
+#   threshold: "DEBUG"
+#   type: "file"
+#   filename: "PMTsimulationAlg.log"
+#   append: false
+#   categories: {
+#     SimPMTIcarus:     { limit: -1 }
+#     PMTsimulationAlg: { limit: -1 }
+#     default:          { limit:  0 }
+#   }
+# 
+# } # services.message.destinations.LogDebugFile
+# 
