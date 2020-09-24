@@ -39,7 +39,7 @@ NuMI_settings: {
 
   spill_duration: "9.5 us"
 
-  batches_per_spill: 6
+  batches_per_spill: 12
 
   POT_per_batch: 5e12 # to be checked
   
