@@ -48,6 +48,8 @@ services: {
 
 services.TFileService.fileName: "Supplemental-photonlibrary_builder_icarus_%tc-%p.root"
 
+services.Geometry.DisableWiresInG4: false # we need to account for wire shadow
+
 services.LArG4Parameters: { # customization
   
   @table::services.LArG4Parameters

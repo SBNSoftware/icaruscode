@@ -46,6 +46,18 @@ icarus_opticalproperties: {
     
     EnableCerenkovLight: false # Cerenkov light OFF by default
     
+    # reflectivities stolen from SBND (sbndcode v09_00_00); removed until Redmine issue #25016 is resolved
+    # their wires are "Copper_Beryllium_alloy25", ours are "copper"; I am pretending they are the same [GP]
+#    ReflectiveSurfaceEnergies:     [ 1.77, 2.0675, 2.481, 2.819, 2.953, 3.1807, 3.54, 4.135, 4.962, 5.39, 7., 15. ]
+#    ReflectiveSurfaceNames:        [ "STEEL_STAINLESS_Fe7Cr2Ni", "copper", "G10", "vm2000", "ALUMINUM_Al" ]
+#    ReflectiveSurfaceReflectances: [
+#      [ 0.66, 0.64, 0.62, 0.60, 0.59, 0.57, 0.53, 0.47, 0.39, 0.36, 0.27, 0.25 ],         # STEEL_STAINLESS_Fe7Cr2Ni
+#      [ 0.902, 0.841, 0.464, 0.379, 0.345, 0.299, 0.287, 0.264, 0.337, 0.3, 0.0, 0.0 ],   # copper
+#      [ 0.393, 0.405, 0.404, 0.352, 0.323, 0.243, 0.127, 0.065, 0.068, 0.068, 0.0, 0.0 ], # "G10"
+#      [ 0.93, 0.93, 0.93, 0.93, 0.93, 0.93, 0.1, 0.1, 0.7, 0.3, 0.0, 0.0 ],               # "vm2000"
+#      [ 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.47, 0.39, 0.36, 0.27, 0.25 ]                 # "ALUMINUM_Al"
+#    ]
+
 } # icarus_opticalproperties
 
 END_PROLOG
