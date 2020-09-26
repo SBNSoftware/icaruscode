@@ -2,9 +2,17 @@
 
 BEGIN_PROLOG
 
+pmt_dump_icarus:
+{
+  module_type: 	PMTDump
+  InputModule: "daq"
+  FilterNoise: false
+  WaveformAnalysis : @local::waveformana_icarus
+}
+
 pmt_chargeana_icarus:
 {
-  module_type: 	PMTChargeAna
+  module_type: 	PMTCalibration
   InputModule: "daq"
   FilterNoise: false
   WaveformAnalysis : @local::waveformana_icarus

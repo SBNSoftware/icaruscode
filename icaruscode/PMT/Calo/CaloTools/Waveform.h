@@ -110,6 +110,7 @@ namespace pmtcalo
         Pulse getIntegral();
         std::vector<Pulse> findPulses();
         void resetPulse(Pulse &pulse);
+        float getTotalCharge();
 
       private:
 

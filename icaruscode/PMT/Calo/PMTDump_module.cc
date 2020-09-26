@@ -7,6 +7,7 @@
 //
 //  mailto:ascarpell@bnl.gov
 ////////////////////////////////////////////////////////////////////////
+
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
@@ -69,19 +70,16 @@ private:
   int m_run;
   int m_subrun;
   int m_event;
+  int m_channel_id;
+  float m_baseline;
+  float m_rms;
+  float m_total_charge;
 
-
-  TTree *m_charge_ttree;
-  //TTree *m_time_ttree;
+  TTree *m_wfrm_ttree;
   TTree *m_geo_ttree;
 
-  std::vector<float> *m_channel_id = NULL;
-  std::vector<float> *m_baseline = NULL;
-  std::vector<float> *m_rms = NULL;
-  std::vector<float> *m_peak_time = NULL;
-  std::vector<float> *m_amplitude = NULL;
-  std::vector<float> *m_integral = NULL;
-  std::vector<float> *m_total_charge = NULL;
+  std::vector<double> *m_waveforom = NULL;
+  std::vector<double> *m_ticks = NULL;
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -112,19 +110,17 @@ void pmtcalo::PMTCalibration::beginJob()
 {
 
   //For direct light calibration and timing
-  m_charge_ttree = tfs->make<TTree>("chargetree","tree for pmt charge");
+  m_wfrm_ttree = tfs->make<TTree>("wfrm","tree for pmt charge");
 
-  m_charge_ttree->Branch("run", &m_run, "run/I" );
-  m_charge_ttree->Branch("subrun", &m_subrun, "subrun/I" );
-  m_charge_ttree->Branch("event", &m_event, "event/I" );
-  m_charge_ttree->Branch("channel_id", &m_channel_id );
-  m_charge_ttree->Branch("baseline", &m_baseline );
-  m_charge_ttree->Branch("rms", &m_rms );
-  m_charge_ttree->Branch("peak_time", &m_peak_time );
-  m_charge_ttree->Branch("amplitude", &m_amplitude );
-  m_charge_ttree->Branch("integral", &m_integral );
-  m_charge_ttree->Branch("total_charge", &m_total_charge );
-
+  m_wfrm_ttree->Branch("run", &m_run, "run/I" );
+  m_wfrm_ttree->Branch("subrun", &m_subrun, "subrun/I" );
+  m_wfrm_ttree->Branch("event", &m_event, "event/I" );
+  m_wfrm_ttree->Branch("channel_id", &m_channel_id, "channel_id/I");
+  m_wfrm_ttree->Branch("baseline", &m_baseline, "baseline/F");
+  m_wfrm_ttree->Branch("rms", &m_rms, "rms/F" );
+  m_wfrm_ttree->Branch("total_charge", &m_total_charge, "total_charge/F" );
+  m_wfrm_ttree->Branch("waveforom", &m_waveforom );
+  m_wfrm_ttree->Branch("ticks", &m_ticks );
 
   m_geo_ttree = tfs->make<TTree>("geotree","tree with detector geo info");
 
@@ -196,32 +192,32 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
    for( auto const& raw_waveform : (*rawHandle) )
    {
 
-     // Without the correct mapping, we need to set the association with
-     // the digitizer id by hand (in future this will be moved to the decoder)
-     m_channel_id->push_back( raw_waveform.ChannelNumber() );
+     m_channel_id = raw_waveform.ChannelNumber();
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
 
-     auto pulse = myWaveformAna->getIntegral();
+     m_baseline = myWaveformAna->getBaselineMean();
+     m_rms = myWaveformAna->getBaselineWidth();
+     m_total_charge = myWaveformAna->getTotalCharge();
 
-     m_baseline->push_back( myWaveformAna->getBaselineMean() );
-     m_rms->push_back( myWaveformAna->getBaselineWidth() );
-     m_peak_time->push_back( pulse.time_peak );
-     m_amplitude->push_back( pulse.amplitude );
-     m_integral->push_back( pulse.integral );
-     m_total_charge->push_back( myWaveformAna->getTotalCharge() );
+     for( auto _adc : myWaveformAna->getWaveform() ){
+       m_waveforom->push_back( _adc );
+     }
+
+     m_ticks->resize(m_waveforom->size());
+     for(size_t i=0; i<m_waveforom->size(); i++){
+       m_ticks->at(i) = i*2.0; // in ns
+     }
+
+     m_wfrm_ttree->Fill();
+
 
      // Prepare for the next event
      myWaveformAna->clean();
+     clean();
 
    } // end loop over pmt channels
-
-   m_charge_ttree->Fill();
-
-   // Cancel the arrays
-   clean();
-
 
 } // end analyze
 
@@ -230,13 +226,8 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
 void pmtcalo::PMTCalibration::clean(){
 
-  m_channel_id->clear();
-  m_baseline->clear();
-  m_rms->clear();
-  m_peak_time->clear();
-  m_amplitude->clear();
-  m_integral->clear();
-  m_total_charge->clear();
+  m_waveforom->clear();
+  m_ticks->clear();
 
 }
 

@@ -31,7 +31,7 @@ namespace pmtcalo
 
     // Baseline removal
     m_sampling_period = pset.get<double>("SamplingPeriod");
-    n_sample_baseline = pset.get<int>("NSamplesBaseline");
+    n_sample_baseline = pset.get<unsigned int>("NSamplesBaseline");
 
     // Noise removal
     window_size = pset.get<int>("NoiseWindowSize");
@@ -102,13 +102,13 @@ namespace pmtcalo
 
     // Calculate the baseline as the mean values
     double tmpmean=0;
-    for(int t=0; t<n_sample_baseline; t++){
+    for(size_t t=0; t<n_sample_baseline; t++){
       tmpmean += m_waveform.at(t);
     }
     tmpmean /= n_sample_baseline;
 
     // Calculate the stdev of the baseline
-    for(int t=0; t<n_sample_baseline; t++){
+    for(size_t t=0; t<n_sample_baseline; t++){
       width += pow(m_waveform.at(t)-tmpmean, 2);
     }
     width = sqrt( width / (n_sample_baseline-1) );
