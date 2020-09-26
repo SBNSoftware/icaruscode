@@ -444,7 +444,7 @@ namespace database
 //        for(const auto& mapPair : digitizerToFragmentMap) std::cout << "  - label: " << mapPair.first << ", fragment: " << mapPair.second << ", size: " << mapPair.first.size() << std::endl;
 
         // Recover the information from the database on the mapping 
-        const std::string  name("icarus_hw_readoutboard");
+        const std::string  name("Pmt_placement");
         const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
         const std::string  dataType("pmt_placements");
         Dataset            dataset;
@@ -474,7 +474,7 @@ namespace database
 	            std::string digitizerLabel(digitizerBuffer, 8); //sizeof(digitizerBuffer));
 
                 // Recover the fragment id
-                unsigned fragmentID = getLongValue(tuple, 16, &error);
+                unsigned fragmentID = getLongValue(tuple, 18, &error);
 
                 if (error) throw std::runtime_error("Encountered error when trying to recover the PMT fragment id");
 
@@ -489,6 +489,7 @@ namespace database
                 if (error) throw std::runtime_error("Encountered error when trying to recover the PMT channel ID");
 
 //                std::cout << "  >> Searching " << digitizerToFragmentMap.size() << " rows for " << digitizerLabel << ", size; " << digitizerLabel.size() << std::endl;
+//                std::cout << "     fragmentID: " << fragmentID << ", digitizerChannelNo: " << digitizerChannelNo << ", channelID: " << channelID << std::endl;
 
                 // Do we have corresponence?
                 if (digitizerToFragmentMap.find(digitizerLabel) == digitizerToFragmentMap.end())
@@ -540,7 +541,7 @@ namespace database
 
               PhysicalPMTPositionID = getLongValue(tuple, 0, &error);
 
-	      if (error) throw std::runtime_error("Encountered error when trying to read Physical PMT Position ID from database");
+	          if (error) throw std::runtime_error("Encountered error when trying to read Physical PMT Position ID from database");
 
               if (PhysicalPMTPositionID == pmtid) {
 
@@ -588,8 +589,8 @@ namespace database
             {
               char digitizerBuffer[10];
 
-	      getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
-	      std::string digitizerLabel(digitizerBuffer, sizeof(digitizerBuffer));
+	          getStringValue(tuple, 8, digitizerBuffer, sizeof(digitizerBuffer), &error);
+	          std::string digitizerLabel(digitizerBuffer, sizeof(digitizerBuffer));
 
               int digitizerChannelNumber = getDoubleValue(tuple, 9, &error);
 

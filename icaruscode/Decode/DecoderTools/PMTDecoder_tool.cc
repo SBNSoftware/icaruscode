@@ -207,7 +207,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
             fOpDetWaveformCollection->emplace_back(time_tag, channelID, wvfm);
         } 
     }
-    else std::cout << "*** could not find channel information for fragment: " << fragment_id << std::endl;
+    else std::cout << "*** PMT could not find channel information for fragment: " << fragment_id << std::endl;
 
     if (fDiagnosticOutput) std::cout << "      - size of output collection: " << fOpDetWaveformCollection->size() << std::endl;
 

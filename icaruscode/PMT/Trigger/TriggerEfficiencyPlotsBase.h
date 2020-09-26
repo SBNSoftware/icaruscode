@@ -10,6 +10,8 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Algorithms/ApplyBeamGate.h"
+#include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoTree.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventIDTree.h"
@@ -19,6 +21,8 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
+#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -902,15 +906,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   using EventInfo_t = details::EventInfo_t; // type alias
   using TriggerInfo_t = details::TriggerInfo_t; // type alias
   
-  /// Utility class expressing a time range.
-  template <typename Time>
-  struct TimeRange: std::pair<Time, Time> {
-    using std::pair<Time, Time>::pair;
-    auto start() const { return this->first; }
-    auto end() const { return this->second; }
-    auto duration() const { return end() - start(); }
-  }; // TimeRange
-  
   
   // --- BEGIN Constructors ----------------------------------------------------
 
@@ -944,10 +939,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   TTree* eventTree() { return fIDTree? &(fIDTree->tree()): nullptr; }
   
   /// Returns whether we are using and filling generator information.
-  bool useGen() const { return fEventInfoExtractor.hasGenerated(); }
+  bool useGen() const { return fEventInfoExtractorMaker.hasGenerated(); }
   
   /// Returns whether we are using and filling energy deposition information.
-  bool useEDep() const { return fEventInfoExtractor.hasEDep(); }
+  bool useEDep() const { return fEventInfoExtractorMaker.hasEDep(); }
   
   /// Returns the number of configured PMT thresholds.
   std::size_t nADCthresholds() const { return fADCthresholds.size(); }
@@ -964,17 +959,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Returns the detector geometry service provider.
   geo::GeometryCore const& geometry() const { return fGeom; }
   
-  /// Returns the detector timings helper.
-  detinfo::DetectorTimings detTimings(detinfo::DetectorClocksData const& clockData) const { return detinfo::DetectorTimings{clockData}; }
-
   /// Returns the resolution of trigger timing clock [ns]
   nanoseconds triggerTimeResolution() const { return fTriggerTimeResolution; }
-  
-  /// Returns the first and after-last tick of the beam gate in optical scale.
-  std::pair
-    <detinfo::timescales::optical_tick, detinfo::timescales::optical_tick>
-    const&
-    beamGateTickRange() const { return fBeamGate.asOptTickRange(); }
   
   // --- END Helper interface --------------------------------------------------
   
@@ -1070,6 +1056,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   using TriggerGateData_t = InputTriggerGate_t::GateData_t;
   
   
+  /// A collection of useful beam gates. Make one with `makeGatePack()`.
+  struct GatePack_t {
+    detinfo::DetectorTimings detTimings;
+    icarus::trigger::BeamGateStruct beamGate;
+    icarus::trigger::BeamGateStruct preSpillWindow;
+  }; // GatePack_t
+  
   // --- BEGIN Customization interface -----------------------------------------
   
   /// Initializes all the plot sets, one per PMT threshold.
@@ -1118,8 +1111,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
    * Big deal! The second and fourth step (application of beam gate and plots
    * filling) have some helpers in this same class:
    * 
-   * * `applyBeamGateToAll()` can easily apply the beam gate at the right time
-   *   (the right time is chosen by the implementation of `simulateAndPlot()`);
+   * * `ApplyBeamGateClass::applyToAll()` can easily apply the beam gate at the
+   *   right time (the right time is chosen by the implementation of
+   *   `simulateAndPlot()`); an `ApplyBeamGateClass` object is obtained with
+   *   `makeMyBeamGate()`;
    * * filling of standard plots is performed with `fillAllEfficiencyPlots()`,
    *   `fillEfficiencyPlots()` and `fillEventPlots()`, which can be used as such
    *   or be customized for more plots.
@@ -1191,13 +1186,30 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   // --- BEGIN Additional helper utilities -------------------------------------
   
-  /// Applies the beam gate coincidence to the specified trigger primitive.
-  template <typename GateObject>
-  GateObject applyBeamGate(GateObject gate) const;
-
-  /// Applies the beam gate coincidence to all trigger primitives in `gates`.
-  template <typename GateColl, typename GateObj = typename GateColl::value_type>
-  std::vector<GateObj> applyBeamGateToAll(GateColl const& gates) const;
+  /**
+   * @brief Creates a `GatePack_t` from the specified event
+   * @param event the event to extract beam for (if `nullptr`, uses job info(
+   * @return a set of relevant gates
+   * 
+   * Use it C++17-fancy!
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack(&event);
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * (the arguments are mapped to the `GatePack_t` members by position).
+   */
+  GatePack_t makeGatePack(art::Event const* event = nullptr) const;
+  
+  //@{ 
+  /// Shortcut to create an `ApplyBeamGate` with the current configuration.
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (detinfo::DetectorClocksData const& clockData) const
+    { return makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory); }
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (art::Event const* event = nullptr) const
+    { return makeMyBeamGate(icarus::ns::util::makeDetClockData(event)); }
+  icarus::trigger::ApplyBeamGateClass makeMyBeamGate
+    (art::Event const& event) const { return makeMyBeamGate(&event); }
+  //@}
   
   
   // documentation at definition:
@@ -1208,42 +1220,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   
     private:
-  
-  struct GateRange {
-    
-    using electronics_time = detinfo::timescales::electronics_time;
-    using simulation_time = detinfo::timescales::simulation_time;
-    using optical_tick = detinfo::timescales::optical_tick;
-    
-    /// Constructor: a gate with specified `duration` starting after a `delay`
-    /// from the nominal beam gate start (`BeamGateTime()`).
-    GateRange(
-      microseconds duration, microseconds delay,
-      detinfo::DetectorTimings const& detTimings
-      );
-    
-    /// Returns the gate as an OpticalTriggerGate (electronics time).
-    icarus::trigger::OpticalTriggerGate const& asGate() const { return fGate; }
-    
-    /// Returns the gate as start/stop pair in simulation time scale.
-    TimeRange<simulation_time> const& asSimulationRange() const
-      { return fRangeSim; }
-    
-    /// Returns the gate as start/stop pair in optical ticks.
-    TimeRange<optical_tick> const& asOptTickRange() const
-      { return fRangeOpt; }
-    
-      private:
-    // so far, we cache everything (but not the timings helper)
-    
-    icarus::trigger::OpticalTriggerGate const fGate;
-    
-    TimeRange<simulation_time> fRangeSim;
-    
-    TimeRange<optical_tick> fRangeOpt;
-    
-  }; // struct GateRange
-  
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -1257,6 +1233,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /// Start of the beam gate with respect to `BeamGate()`.
   microseconds fBeamGateStart;
+  
+  microseconds fPreSpillWindow; ///< Duration of the pre-spill gate.
+  
+  microseconds fPreSpillStart; ///< Start of the pre-spill gate.
   
   nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
@@ -1285,19 +1265,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
   
   // --- BEGIN Internal variables ----------------------------------------------
-  /// Detector clocks information that applies for the entire job.
-  detinfo::DetectorClocksData const fDetClocks;
-  detinfo::DetectorTimings const fDetTimings;
-
-  /// Gate representing the time we expect light from beam interactions.
-  GateRange const fBeamGate;
-  
-  /// Gate representing the pre-spill window.
-  GateRange const fPreSpillWindow;
   
   /// Helper to extract information from the event.
-  details::EventInfoExtractor const fEventInfoExtractor;
-
+  details::EventInfoExtractorMaker const fEventInfoExtractorMaker;
+  
   /// ID of cryostat where each optical detector channel (vector index) is.
   std::vector<geo::CryostatID> const fChannelCryostat;
   
@@ -1312,6 +1283,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   std::atomic<unsigned int> nEvents { 0U }; ///< Count of seen events.
   std::atomic<unsigned int> nPlottedEvents { 0U }; ///< Count of plotted events.
+
+  /// Functor returning whether a gate has changed.
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::BeamGateStruct>
+    fBeamGateChangeCheck;
 
   // --- END Internal variables ------------------------------------------------
 
@@ -1349,54 +1324,6 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
-
-
-
-//==============================================================================
-//=== template implementation
-//==============================================================================
-//--- icarus::trigger::TriggerEfficiencyPlotsBase
-//------------------------------------------------------------------------------
-namespace icarus::trigger {
-  
-  template <typename Time>
-  std::ostream& operator<< (
-    std::ostream& out,
-    TriggerEfficiencyPlotsBase::TimeRange<Time> const& range
-    )
-  {
-    out << range.start() << " -- " << range.end()
-      << " (duration: " << range.duration();
-    return out;
-  } // operator<< (TriggerEfficiencyPlotsBase::TimeRange<>)
-  
-} // namespace icarus::trigger
-
-
-//------------------------------------------------------------------------------
-template <typename GateObject>
-GateObject icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGate
-  (GateObject gate) const
-{
-  return std::move(gate.Mul(fBeamGate.asGate()));
-} // icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGate()
-
-
-//------------------------------------------------------------------------------
-template
-  <typename GateColl, typename GateObj /* = typename GateColl::value_type */>
-std::vector<GateObj>
-icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll
-  (GateColl const& gates) const
-{
-  
-  std::vector<GateObj> res;
-  std::transform(
-    gates.begin(), gates.end(), std::back_inserter(res),
-    [this](GateObj const& gate){ return applyBeamGate(gate); }
-    );
-  return res;
-} // icarus::trigger::TriggerEfficiencyPlotsBase::applyBeamGateToAll()
 
 
 //------------------------------------------------------------------------------

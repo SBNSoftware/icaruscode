@@ -268,6 +268,26 @@ icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>::Symmetri
 
 //------------------------------------------------------------------------------
 template <typename Tick, typename TickInterval, typename ChannelIDType>
+bool icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>::operator==
+  (ReadoutTriggerGate const& other) const
+{
+  return
+    (gateLevels() == other.gateLevels()) && (channels() == other.channels());
+} // icarus::trigger::ReadoutTriggerGate<>::operator==()
+
+
+//------------------------------------------------------------------------------
+template <typename Tick, typename TickInterval, typename ChannelIDType>
+bool icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>::operator!=
+  (ReadoutTriggerGate const& other) const
+{
+  return
+    (gateLevels() != other.gateLevels()) || (channels() != other.channels());
+} // icarus::trigger::ReadoutTriggerGate<>::operator!=()
+
+
+//------------------------------------------------------------------------------
+template <typename Tick, typename TickInterval, typename ChannelIDType>
 std::ostream& icarus::trigger::operator<< (
   std::ostream& out,
   icarus::trigger::ReadoutTriggerGate<Tick, TickInterval, ChannelIDType> const& gate

@@ -21,7 +21,7 @@ TPCDecoderFilter1DTool: {
     CoherentGrouping:   64
     StructuringElement: 20
     FilterWindow:       10
-    Threshold:          7.5
+    Threshold:          [7.5, 5.0, 5.0]
     FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]
 }
 

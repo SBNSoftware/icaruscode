@@ -227,6 +227,9 @@ class icarus::trigger::OpticalTriggerGate
   /// @}
   // --- END Combination operations --------------------------------------------
   
+  // standard comparison operators: all must be the same
+  bool operator== (OpticalTriggerGate const&) const;
+  bool operator!= (OpticalTriggerGate const&) const;
   
     protected:
   // we allow some manipulation by the derived classes

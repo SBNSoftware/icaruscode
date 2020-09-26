@@ -81,12 +81,12 @@ private:
     class multiThreadFragmentProcessing
     {
     public:
-        multiThreadFragmentProcessing(DaqDecoderICARUSTPC const&        parent,
+        multiThreadFragmentProcessing(DaqDecoderICARUSTPC const&         parent,
                                       detinfo::DetectorClocksData const& clockData,
-                                      art::Handle<artdaq::Fragments>& fragmentsHandle,
-                                      ConcurrentRawDigitCol&          rawDigitCollection,
-                                      ConcurrentRawDigitCol&          rawRawDigitCollection,
-                                      ConcurrentRawDigitCol&          coherentCollection)
+                                      art::Handle<artdaq::Fragments>&    fragmentsHandle,
+                                      ConcurrentRawDigitCol&             rawDigitCollection,
+                                      ConcurrentRawDigitCol&             rawRawDigitCollection,
+                                      ConcurrentRawDigitCol&             coherentCollection)
             : fDaqDecoderICARUSTPC(parent),
               fClockData{clockData},
               fFragmentsHandle(fragmentsHandle),
@@ -101,12 +101,12 @@ private:
               fDaqDecoderICARUSTPC.processSingleFragment(idx, fClockData, fFragmentsHandle, fRawDigitCollection, fRawRawDigitCollection, fCoherentCollection);
         }
     private:
-        const DaqDecoderICARUSTPC&        fDaqDecoderICARUSTPC;
+        const DaqDecoderICARUSTPC&         fDaqDecoderICARUSTPC;
         detinfo::DetectorClocksData const& fClockData;
-        art::Handle<artdaq::Fragments>& fFragmentsHandle;
-        ConcurrentRawDigitCol&          fRawDigitCollection;
-        ConcurrentRawDigitCol&          fRawRawDigitCollection;
-        ConcurrentRawDigitCol&          fCoherentCollection;
+        art::Handle<artdaq::Fragments>&    fFragmentsHandle;
+        ConcurrentRawDigitCol&             fRawDigitCollection;
+        ConcurrentRawDigitCol&             fRawRawDigitCollection;
+        ConcurrentRawDigitCol&             fCoherentCollection;
     };
 
     // Function to save our RawDigits
@@ -121,9 +121,9 @@ private:
 
     // Fcl parameters.
     art::InputTag                                fFragmentsLabel;      ///< The input artdaq fragment label
-    bool                                         fOutputPedestalCor;   ///< Should we output pedestal corrected (not noise filtered)?
+    bool                                         fOutputRawWaveform;   ///< Should we output pedestal corrected (not noise filtered)?
     bool                                         fOutputCorrection;    ///< Should we output the coherent noise correction vectors?
-    std::string                                  fOutputPedCorPath;    ///< Path to assign to the output if asked for
+    std::string                                  fOutputRawWavePath;   ///< Path to assign to the output if asked for
     std::string                                  fOutputCoherentPath;  ///< Path to assign to the output if asked for
     unsigned int                                 fPlaneToSimulate;     ///< Use to get fragment offset
 
@@ -198,8 +198,8 @@ DaqDecoderICARUSTPC::DaqDecoderICARUSTPC(fhicl::ParameterSet const & pset, art::
 
     produces<std::vector<raw::RawDigit>>();
 
-    if (fOutputPedestalCor)
-        produces<std::vector<raw::RawDigit>>(fOutputPedCorPath);
+    if (fOutputRawWaveform)
+        produces<std::vector<raw::RawDigit>>(fOutputRawWavePath);
 
     if (fOutputCorrection)
         produces<std::vector<raw::RawDigit>>(fOutputCoherentPath);
@@ -223,9 +223,9 @@ DaqDecoderICARUSTPC::~DaqDecoderICARUSTPC()
 void DaqDecoderICARUSTPC::configure(fhicl::ParameterSet const & pset)
 {
     fFragmentsLabel     = pset.get<art::InputTag>("FragmentsLabel",    "daq:PHYSCRATEDATA");
-    fOutputPedestalCor  = pset.get<bool         >("OutputPedestalCor",               false);
+    fOutputRawWaveform  = pset.get<bool         >("OutputRawWaveform",               false);
     fOutputCorrection   = pset.get<bool         >("OutputCorrection",                false);
-    fOutputPedCorPath   = pset.get<std::string  >("OutputPedCorPath",                "RAW");
+    fOutputRawWavePath  = pset.get<std::string  >("OutputRawWavePath",               "RAW");
     fOutputCoherentPath = pset.get<std::string  >("OutputCoherentPath",              "Cor");
     fPlaneToSimulate    = pset.get<unsigned int >("PlaneToSimulate",                     2);
 }
@@ -289,16 +289,17 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
     // Now transfer ownership to the event store
     event.put(std::move(rawDigitCollection));
 
-    if (fOutputPedestalCor)
+    if (fOutputRawWaveform)
     {
         // Copy the raw digits from the concurrent vector to our output vector
         RawDigitCollectionPtr rawRawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawRawDigits.begin()), 
                                                                                                    std::move_iterator(concurrentRawRawDigits.end()));
+
         // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
         std::sort(rawRawDigitCollection->begin(),rawRawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
 
         // Now transfer ownership to the event store
-        event.put(std::move(rawRawDigitCollection),fOutputPedCorPath);
+        event.put(std::move(rawRawDigitCollection),fOutputRawWavePath);
     }
 
     if (fOutputCorrection)
@@ -306,6 +307,7 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
         // Copy the raw digits from the concurrent vector to our output vector
         RawDigitCollectionPtr coherentCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(coherentRawDigits.begin()), 
                                                                                                 std::move_iterator(coherentRawDigits.end()));
+
         // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
         std::sort(coherentCollection->begin(),coherentCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
 
@@ -364,12 +366,12 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                          
 
     saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(), channelVec, rawDigitCollection);
 
-    // Optionally, save the pedestal corrected RawDigits
-    if (fOutputPedestalCor)
+    // Optionally, save the raw RawDigits
+    if (fOutputRawWaveform)
         saveRawDigits(decoderTool->getRawWaveforms(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec, rawRawDigitCollection);
 
     // Also optional is to output the coherent corrections (note there will be many fewer of these! )
-    if (fOutputPedestalCor)
+    if (fOutputCorrection)
         saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
 
     mf::LogDebug("DaqDecoderICARUSTPC") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
