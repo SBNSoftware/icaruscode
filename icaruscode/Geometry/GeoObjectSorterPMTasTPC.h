@@ -108,6 +108,13 @@ class icarus::GeoObjectSorterPMTasTPC: public geo::GeoObjectSorterStandard {
     { fPMTsorter.sort(opDets); }
   
   
+  /// Custom ICARUS sorting of CRT.
+  virtual void SortAuxDets(std::vector<geo::AuxDetGeo>& adgeo) const override;
+  
+  /// Custom ICARUS sorting of CRT submodules.
+  virtual void SortAuxDetSensitive
+    (std::vector<geo::AuxDetSensitiveGeo> & adsgeo) const override;
+  
     private:
   
   PMTsorter_t fPMTsorter; ///< PMT sorting algorithm.
