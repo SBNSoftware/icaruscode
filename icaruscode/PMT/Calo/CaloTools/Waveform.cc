@@ -30,7 +30,6 @@ namespace pmtcalo
   {
 
     // Baseline removal
-    m_sampling_period = pset.get<double>("SamplingPeriod");
     n_sample_baseline = pset.get<unsigned int>("NSamplesBaseline");
 
     // Noise removal
@@ -41,16 +40,11 @@ namespace pmtcalo
     // Charge integration and start time
     m_startbin = pset.get<int>("IntegralStartBin");
     m_nbins = pset.get<int>("IntegrationWindow");
-    //m_trigger_time = pset.get<std::vector<double>>("TriggerTime");
-    //m_pulsethreshold = pset.get<double>( "PulseFindingThreshold");
-    //m_pulsesigma = pset.get<double>("PulseFindingSigma");
-    //m_min_pulsecounts = pset.get<int>("PulseFindingCounts");
-    //m_dofit = pset.get<bool>("DoFit");
-    //m_fitrange = pset.get<std::vector<double>>("FitRange");
 
-    // Simple thresholds for multiple pulse finder
-    //m_start_adc_thres = pset.get<double>("StartADCThreshold");
-    //m_end_adc_thres = pset.get<double>("EndADCThreshold");
+    // Fit
+    m_dofit = pset.get<bool>("DoFit");
+    m_pulsethreshold = pset.get<double>( "PulseThreshold");
+    m_fitrange = pset.get<std::vector<double>>("FitRange");
 
   }
 
@@ -236,92 +230,73 @@ namespace pmtcalo
 
       void Waveform::resetPulse(Waveform::Pulse &pulse)
       {
-        pulse.start_time = 0;
+        // Basic pulse quantities
+        //pulse.start_time = 0; // Start time calculated from the amplitude
         pulse.end_time=0;
         pulse.time_peak = 0;
         pulse.width = 0;
         pulse.amplitude = 0;
         pulse.integral = 0;
-        //pulse.fit_start_time = 0;
-        //pulse.error_start_time = 0;
-        //pulse.fit_sigma = 0;
-        //pulse.error_sigma = 0;
-        //pulse.fit_mu = 0;
-        //pulse.error_mu = 0;
-        //pulse.fit_amplitude = 0;
-        //pulse.error_amplitude = 0;
-        //pulse.chi2 = 0;
-        //pulse.ndf = 0;
-        //pulse.fitstatus = 999;
+
+        // Fitted quantities
+        pulse.fit_start_time = 0; // Start time calculated with the fit
+        pulse.error_start_time = 0;
+        pulse.fit_sigma = 0;
+        pulse.error_sigma = 0;
+        pulse.fit_mu = 0;
+        pulse.error_mu = 0;
+        pulse.fit_amplitude = 0;
+        pulse.error_amplitude = 0;
+        pulse.chi2 = -1;
+        pulse.ndf = -1;
+        pulse.fitstatus = -1; // O:good, >0: bad,  < 0: not working
       }
 
 
     //--------------------------------------------------------------------------
 
-    /*
+
     Waveform::Pulse Waveform::getLaserPulse() {
 
+      // Signal integral over the fixed time window given by m_startbin and
+      // lasting for m_nbins;
+      //
+      // Of this pulse it is always caluclated the charge integrated over
+      // the given m_nbins interval, the maximum, the position at maximum
+      //
+      // if m_dofit is set to true:
+      //  1) An exp gauss function is fitted to the pulse
+      //  2) A limit on the peak amplutude is configurable to skip waveform under
+      //     the selected threshold
+      //  3) the fit is perfomed in a rage around the maximum, controlled my
+      //     the m_fitrange parameter
+      //  4) Fit paramters, errors, chi2, ndf, and covergence flag are returned
 
-      //Signal integral over a fixed time window: used for direct light
-      //calibration if do fit is true, a fit is performed to find the t0
+      // Now we create the pulse and we fill in the basic information
+      Pulse temp_pulse = this->getIntegral();
 
+      // Now we perform the fit and add the new information
+      if( m_dofit && (m_pulsethreshold < temp_pulse.amplitude) ) {
 
+        double t_min = temp_pulse.time_peak - m_fitrange[0]; // in ns
+        double t_max = temp_pulse.time_peak + m_fitrange[1]; // in ns
 
-      Waveform::Pulse temp_pulse;
-
-      double charge=0.0;
-      for( int i = m_startbin; i<m_startbin+m_nbins; i++ ) {
-        charge += m_waveform.at(i);
-      }
-
-      std::vector<Waveform::Pulse> pulses;
-      for( auto & pulse : this->findPulses()) {
-        if( (pulse.time_peak > m_trigger_time[0]) && (pulse.time_peak < m_trigger_time[1]) ) {
-          pulses.push_back( pulse );
+        if( t_min < m_startbin*m_sampling_period
+                            || t_max > (m_startbin+m_nbins)*m_sampling_period ){
+            t_min = m_startbin*m_sampling_period;
+            t_max = (m_startbin+m_nbins)*m_sampling_period;
         }
-      }
 
-
-      // If pulses are not found, just return the integration window
-      if( pulses.size() == 0 ) {
-
-        temp_pulse.start_time = 0;
-        temp_pulse.time_peak = 0;
-        temp_pulse.width = 0;
-        temp_pulse.amplitude = 0;
-        temp_pulse.integral = charge * adc_to_pC;
-
-        return temp_pulse;
-      }
-
-      // Sort pulses cronologically and choose the first
-      Waveform::Pulse laserPulse;
-
-      if( pulses.size() > 1 ){
-        std::sort( pulses.begin(), pulses.end(),
-              []( Waveform::Pulse & a, Waveform::Pulse & b ) -> bool {
-                          return a.start_time > b.start_time;
-              } );
-      }
-
-      temp_pulse = pulses.at(0);
-
-      // Now we add the fit information
-      if( m_dofit ) {
-
-        auto m_wave = this->makeWaveformHist();
-
-        double t_min = temp_pulse.time_peak - m_fitrange[0];
-        double t_max = temp_pulse.time_peak + m_fitrange[1];
+        // Crop the area around the pulse of the waveform and return a TH1D
+        TH1D* h_pulse = this->makeWaveformHist();
 
         char funcname[100]; sprintf(funcname, "func_pulse_direct");
 
         PulseShapeFunction_ExpGaus function_obj;
         TF1* func = new TF1(funcname, function_obj, t_min, t_max, 4);
         func->SetParNames("t0","#mu","#sigma","a");
-        func->SetParameters(temp_pulse.time_peak - 5, 2, 0.1,
-                      2.0*m_wave->Integral( int((t_min)/2), int((t_max)/2) ));
-        int status = m_wave->Fit(funcname,"RQN","",t_min, t_max);
+        func->SetParameters(temp_pulse.time_peak - 5, 2, 0.1, 2.0*h_pulse->Integral() );
+        int status = h_pulse->Fit(funcname,"RQN","",t_min, t_max);
 
         // Refit two more times with the latest version of the parameters
         double par[5];
@@ -330,37 +305,38 @@ namespace pmtcalo
             par[j] = func->GetParameter(j);
             func->SetParameter(j,par[j]);
           }
-          status = m_wave->Fit(funcname,"RQN","",t_min, t_max);
+          status = h_pulse->Fit(funcname,"RQN","",t_min, t_max);
         }
 
         //If the fit status is ok we calculated the rising time as the time
         // when the fitted function has value 10% of its max
-
         double first_spe_time = -999;
         double dt=-999;
 
+        // TODO -> this should be transformed into a function
         if( status ==0 ) {
-
-          //No point in doing that if fit is garbage
+	  
+	  double t_start = m_startbin*m_sampling_period;
+	  double t_end = (m_startbin+m_nbins)*m_sampling_period;
 
           int npoints = 5000; // should grant decent resolution
-          dt = (m_trigger_time[1]-m_trigger_time[0])/npoints;
+          dt = (t_end-t_start)/npoints;
           double max=0.0;
           for(int i=0; i<npoints; i++){
-            double t=m_trigger_time[0] + dt*i;
+            double t=t_start + dt*i;
             if(max < func->Eval(t) ){ max = func->Eval(t); };
           }
 
           double startval = 0.1 * max;
           for(int i=0; i<npoints; i++){
-            double t=m_trigger_time[0] + dt*i;
+            double t=t_start + dt*i;
             if(startval < func->Eval(t) ){ first_spe_time = t; break; };
           }
         }
 
         // Save the fit paramteters to the pulse object
         temp_pulse.fit_start_time = first_spe_time;
-        temp_pulse.error_start_time = dt; // TODO: if needed should use the par errors
+        temp_pulse.error_start_time = dt; // TODO: need a correct error propagation
         temp_pulse.fit_mu = func->GetParameter(1);
         temp_pulse.error_mu = func->GetParError(1);
         temp_pulse.fit_sigma = func->GetParameter(2);
@@ -371,13 +347,13 @@ namespace pmtcalo
         temp_pulse.ndf = func->GetNDF();
         temp_pulse.fitstatus = status;
 
+        delete h_pulse;
+
       }
 
-        return temp_pulse;
-
+      return temp_pulse;
 
     }
-    */
 
 
       //------------------------------------------------------------------------
@@ -404,7 +380,7 @@ namespace pmtcalo
         Pulse temp_pulse;
 
         temp_pulse.time_peak = t_peak;
-        temp_pulse.amplitude = amp * 0.122 ;
+        temp_pulse.amplitude = amp * adc_to_mV ; // in mV
         temp_pulse.integral = charge * adc_to_pC;
 
         return temp_pulse;
@@ -426,8 +402,23 @@ namespace pmtcalo
 
       }
 
+    //--------------------------------------------------------------------------
 
-    //------------------------------------------------------------------------
+    TH1D *Waveform::makeWaveformHist(){
+
+      double tstart = m_startbin*m_sampling_period;
+      double tend = (m_startbin+m_nbins)*m_sampling_period;
+      TH1D *m_wave = new TH1D( "","", tstart, tend, m_nbins );
+
+      for( int bin=m_startbin; bin<m_startbin+m_nbins; bin++ ){
+        m_wave->Fill( bin*m_sampling_period, m_waveform[bin] );
+      }
+
+      return m_wave;
+
+    }
+
+    //--------------------------------------------------------------------------
 
 
     void Waveform::clean()

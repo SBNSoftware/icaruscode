@@ -53,16 +53,16 @@ namespace pmtcalo
 
         struct Pulse
         {
-          // Pulse characteristics
-          double start_time = 0;
+          //Base pulse quantities
+          //double start_time = 0; // Start time calculated from the amplitude
           double end_time=0;
           double time_peak = 0;
           double width = 0;
           double amplitude = 0;
           double integral = 0;
 
-          // Fit paramteters
-          double fit_start_time = 0;
+          // fitted quantities
+          double fit_start_time = 0; // Start time calculated with the fit
           double error_start_time = 0;
           double fit_sigma = 0;
           double error_sigma = 0;
@@ -70,9 +70,9 @@ namespace pmtcalo
           double error_mu = 0;
           double fit_amplitude = 0;
           double error_amplitude = 0;
-          double chi2 = 0;
-          double ndf = 0;
-          double fitstatus = 999;
+          double chi2 = -1;
+          double ndf = -1;
+          double fitstatus = -1; // O:good, >0: bad,  < 0: not working
         };
 
         typedef raw::OpDetWaveform Rawdigits_t;
@@ -99,6 +99,7 @@ namespace pmtcalo
         void removeBaseline();
         bool isValidWaveform();
         void clean();
+        TH1D* makeWaveformHist();
 
         // Noise removal
         Complex_t doFFT(Waveform_t m_time_domain);
@@ -108,40 +109,37 @@ namespace pmtcalo
         // Pulse and charge analysis
         Pulse getLaserPulse();
         Pulse getIntegral();
-        std::vector<Pulse> findPulses();
         void resetPulse(Pulse &pulse);
         float getTotalCharge();
 
       private:
 
-        TH1D *m_wave;
-
-        int m_startbin;
-        int m_nbins;
+        size_t m_nsamples;
         std::vector<double> m_trigger_time;
-        double adc_to_pC = 0.122*2.0*0.02; // TODO: make it configurable
-        double m_sampling_period; // in ns
-
-        size_t window_size;
-        bool reverse;
-        float threshold;
-
-        double m_pulsethreshold;
-        double m_pulsesigma;
-        int m_min_pulsecounts;
-        bool m_dofit;
-        std::vector<double> m_fitrange;
+        double adc_to_mV = 0.122;
+        double adc_to_pC = adc_to_mV*2.0*0.02; 
+        double m_sampling_period = 2.0; // in ns
 
         Rawdigits_t m_raw_waveform;
         Waveform_t m_waveform;
 
-        size_t m_nsamples;
+        // Laser pulse
+        int m_startbin;
+        int m_nbins;
+
+        bool m_dofit;
+        double m_pulsethreshold; // in mV
+        std::vector<double> m_fitrange;
+
+        // Noise RMS
         size_t n_sample_baseline;
         double m_baseline_mean;
         double m_baseline_width;
 
-        double m_start_adc_thres;
-        double m_end_adc_thres;
+        // Noise filter
+        size_t window_size;
+        bool reverse;
+        float threshold;
 
       };
 }

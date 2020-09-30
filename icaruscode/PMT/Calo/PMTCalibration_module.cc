@@ -71,7 +71,7 @@ private:
   int m_event;
 
 
-  TTree *m_charge_ttree;
+  TTree *m_pulse_ttree;
   //TTree *m_time_ttree;
   TTree *m_geo_ttree;
 
@@ -82,6 +82,19 @@ private:
   std::vector<float> *m_amplitude = NULL;
   std::vector<float> *m_integral = NULL;
   std::vector<float> *m_total_charge = NULL;
+
+  // fitted quantities
+  std::vector<float> *m_fit_start_time = NULL;
+  std::vector<float> *m_error_start_time = NULL;
+  std::vector<float> *m_fit_sigma = NULL;
+  std::vector<float> *m_error_sigma = NULL;
+  std::vector<float> *m_fit_mu = NULL;
+  std::vector<float> *m_error_mu = NULL;
+  std::vector<float> *m_fit_amplitude = NULL;
+  std::vector<float> *m_error_amplitude = NULL;
+  std::vector<float> *m_chi2 = NULL;
+  std::vector<float> *m_ndf = NULL;
+  std::vector<float> *m_fitstatus = NULL; // O:good, >0: bad,  < 0: not working
 
   art::ServiceHandle<art::TFileService> tfs;
 
@@ -112,18 +125,29 @@ void pmtcalo::PMTCalibration::beginJob()
 {
 
   //For direct light calibration and timing
-  m_charge_ttree = tfs->make<TTree>("chargetree","tree for pmt charge");
+  m_pulse_ttree = tfs->make<TTree>("pulsetree","tree with laser pulse characterization");
 
-  m_charge_ttree->Branch("run", &m_run, "run/I" );
-  m_charge_ttree->Branch("subrun", &m_subrun, "subrun/I" );
-  m_charge_ttree->Branch("event", &m_event, "event/I" );
-  m_charge_ttree->Branch("channel_id", &m_channel_id );
-  m_charge_ttree->Branch("baseline", &m_baseline );
-  m_charge_ttree->Branch("rms", &m_rms );
-  m_charge_ttree->Branch("peak_time", &m_peak_time );
-  m_charge_ttree->Branch("amplitude", &m_amplitude );
-  m_charge_ttree->Branch("integral", &m_integral );
-  m_charge_ttree->Branch("total_charge", &m_total_charge );
+  m_pulse_ttree->Branch("run", &m_run, "run/I" );
+  m_pulse_ttree->Branch("subrun", &m_subrun, "subrun/I" );
+  m_pulse_ttree->Branch("event", &m_event, "event/I" );
+  m_pulse_ttree->Branch("channel_id", &m_channel_id );
+  m_pulse_ttree->Branch("baseline", &m_baseline );
+  m_pulse_ttree->Branch("rms", &m_rms );
+  m_pulse_ttree->Branch("peak_time", &m_peak_time );
+  m_pulse_ttree->Branch("amplitude", &m_amplitude );
+  m_pulse_ttree->Branch("integral", &m_integral );
+  m_pulse_ttree->Branch("total_charge", &m_total_charge );
+  m_pulse_ttree->Branch("fit_start_time", &m_fit_start_time );
+  m_pulse_ttree->Branch("error_start_time", &m_error_start_time );
+  m_pulse_ttree->Branch("fit_sigma", &m_fit_sigma);
+  m_pulse_ttree->Branch("error_sigma", &m_error_sigma);
+  m_pulse_ttree->Branch("fit_mu", &m_fit_mu);
+  m_pulse_ttree->Branch("error_mu", &m_error_mu);
+  m_pulse_ttree->Branch("fit_amplitude", &m_fit_amplitude);
+  m_pulse_ttree->Branch("error_amplitude", &m_error_amplitude);
+  m_pulse_ttree->Branch("chi2", &m_chi2);
+  m_pulse_ttree->Branch("ndf", &m_ndf);
+  m_pulse_ttree->Branch("fitstatus", &m_fitstatus);
 
 
   m_geo_ttree = tfs->make<TTree>("geotree","tree with detector geo info");
@@ -176,7 +200,7 @@ void pmtcalo::PMTCalibration::respondToOpenInputFile(const art::FileBlock& fb)
  {
 
    m_run = sr.id().run();
-    m_subrun = pmtcalo::fileProgNumber(m_filename);
+   m_subrun = 0;//pmtcalo::fileProgNumber(m_filename);
 
   } // end beginSubRun
 
@@ -192,6 +216,8 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
    art::Handle< std::vector< raw::OpDetWaveform > > rawHandle;
    event.getByLabel(m_data_label, rawHandle);
 
+   //std::cout << "===> Found " << rawHandle->size() << " OpDetWaveform in event: " << m_event << std::endl;
+
    // There is a valid handle per channel
    for( auto const& raw_waveform : (*rawHandle) )
    {
@@ -203,7 +229,7 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
 
-     auto pulse = myWaveformAna->getIntegral();
+     auto pulse = myWaveformAna->getLaserPulse();
 
      m_baseline->push_back( myWaveformAna->getBaselineMean() );
      m_rms->push_back( myWaveformAna->getBaselineWidth() );
@@ -212,12 +238,24 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      m_integral->push_back( pulse.integral );
      m_total_charge->push_back( myWaveformAna->getTotalCharge() );
 
+     m_fit_start_time->push_back(pulse.fit_start_time);
+     m_error_start_time->push_back(pulse.error_start_time);
+     m_fit_sigma->push_back(pulse.fit_sigma);
+     m_error_sigma->push_back(pulse.error_sigma);
+     m_fit_mu->push_back(pulse.fit_mu);
+     m_error_mu->push_back(pulse.error_mu);
+     m_fit_amplitude->push_back(pulse.fit_amplitude);
+     m_error_amplitude->push_back(pulse.error_amplitude);
+     m_chi2->push_back(pulse.chi2);
+     m_ndf->push_back(pulse.ndf);
+     m_fitstatus->push_back(pulse.fitstatus);
+
      // Prepare for the next event
      myWaveformAna->clean();
 
    } // end loop over pmt channels
 
-   m_charge_ttree->Fill();
+   m_pulse_ttree->Fill();
 
    // Cancel the arrays
    clean();
