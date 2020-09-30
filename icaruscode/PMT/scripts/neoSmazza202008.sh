@@ -83,7 +83,7 @@ declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYM
 #
 declare -r Qualifiers="${MRB_QUALS:-"e19:prof"}" # default: GCC 8.2.0
 declare -r ExecutionNodeOS='SL7' # Scientific Linux [Fermi] 7
-declare    ExpectedJobTime='96h'
+declare    ExpectedJobTime='168h' # 7 days; meh.
 declare -r ExpectedMemoryUsage='2000'
 declare -r GeneratorLabel='generator'
 
