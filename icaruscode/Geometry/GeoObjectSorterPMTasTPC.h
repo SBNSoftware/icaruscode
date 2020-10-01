@@ -1,6 +1,6 @@
 /**
  * @file icaruscode/Geometry/GeoObjectSorterPMTasTPC.h
- * @brief  Geometry obect sorter with PMT following TPC wire order.
+ * @brief  Geometry object sorter with PMT following TPC wire order.
  * @date   April 26, 2020
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @see    icaruscode/Geometry/GeoObjectSorterPMTasTPC.cxx
@@ -9,6 +9,9 @@
 #ifndef ICARUSCODE_GEOMETRY_GEOOBJECTSORTERPMTASTPC_H
 #define ICARUSCODE_GEOMETRY_GEOOBJECTSORTERPMTASTPC_H
 
+// ICARUS libraries
+#include "icaruscode/Geometry/details/PMTsorting.h" // icarus::PMTsorterStandard
+
 // LArSoft libraries
 #include "larcorealg/Geometry/GeoObjectSorterStandard.h"
 #include "larcorealg/Geometry/OpDetGeo.h"
@@ -16,6 +19,7 @@
 #include "larcorealg/CoreUtils/span.h" // util::span
 
 // framework libraries
+#include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/ParameterSet.h"
 
 // C/C++ standard libraries
@@ -31,7 +35,8 @@ namespace icarus { class GeoObjectSorterPMTasTPC; }
  * This class sorts the elements of the LArSoft detector description.
  * The TPC elements are sorted according to the "standard" algorithm
  * (`geo::GeoObjectSorterStandard`). The PMT are arranged so that their channels
- * mimic the order of the TPC channels.
+ * mimic the order of the TPC channels (delegated to `icarus::PMTsorter`
+ * algorithm).
  * 
  * The algorithm for assigning channels to the wires follows the criteria:
  * 
@@ -64,61 +69,24 @@ namespace icarus { class GeoObjectSorterPMTasTPC; }
  * (`geo::GeoObjectSorterStandard`), this sorter supports the following
  * parameters:
  * 
- * * `ToleranceX`, `ToleranceY`, `ToleranceZ` (double, default: `1.0`):
- *   rounding used for sorting optical detector position, in centimeters;
- *   if the coordinate of two optical detectors are closer than the tolerance
- *   for that coordinate (absolute), they two detectors are considered to be at
- *   the same position in that coordinate
- *   (note that the default value is very generous).
+ * * `OpDetSorter` (configuration table; default: empty): configures the
+ *   PMT sorter object (see `icarus::PMTsorter` for details)
  * 
  */
 class icarus::GeoObjectSorterPMTasTPC: public geo::GeoObjectSorterStandard {
   
-  /// List of optical detector pointers for sorting.
-  using OpDetList_t = std::vector<geo::OpDetGeo>;
+  /// The sorting algorithm we use.
+  using PMTsorter_t = icarus::PMTsorterStandard;
   
-  /// Part of list of optical detector pointers for sorting.
-  using OpDetSpan_t = util::span<OpDetList_t::iterator>;
+  using PMTsorterConfigTable = fhicl::Table<PMTsorter_t::Config>;
   
     public:
-  
-  /*
-  // not using configuration validation
-  // because we could not pass the configuration to the base class
-  
-  struct Config {
-    
-    using Name = fhicl::Name;
-    using Comment = fhicl::Comment;
-    
-    fhicl::Atom<double> ToleranceX {
-      Name("ToleranceX"),
-      Comment("tolerance when sorting optical detectors on x coordinate [cm]"),
-      1.0 // default
-      };
-    
-    fhicl::Atom<double> ToleranceY {
-      Name("ToleranceY"),
-      Comment("tolerance when sorting optical detectors on x coordinate [cm]"),
-      1.0 // default
-      };
-    
-    fhicl::Atom<double> ToleranceZ {
-      Name("ToleranceZ"),
-      Comment("tolerance when sorting optical detectors on x coordinate [cm]"),
-      1.0 // default
-      };
-    
-  }; // Config
-  */
-  
   
   /// Constructor: passes the configuration to the base class.
   GeoObjectSorterPMTasTPC(fhicl::ParameterSet const& pset)
     : geo::GeoObjectSorterStandard(pset)
-    , fSmallerCenterX{ pset.get("ToleranceX", 1.0) }
-    , fSmallerCenterY{ pset.get("ToleranceY", 1.0) }
-    , fSmallerCenterZ{ pset.get("ToleranceZ", 1.0) }
+    , fPMTsorter
+      (PMTsorterConfigTable{ pset.get("OpDetSorter", fhicl::ParameterSet{}) }())
     {}
   
   
@@ -136,45 +104,20 @@ class icarus::GeoObjectSorterPMTasTPC: public geo::GeoObjectSorterStandard {
    * @note The current implementation is very sensitive to rounding errors!
    * 
    */
-  virtual void SortOpDets(std::vector<geo::OpDetGeo>& opDets) const override;
+  virtual void SortOpDets(std::vector<geo::OpDetGeo>& opDets) const override
+    { fPMTsorter.sort(opDets); }
   
+  
+  /// Custom ICARUS sorting of CRT.
+  virtual void SortAuxDets(std::vector<geo::AuxDetGeo>& adgeo) const override;
+  
+  /// Custom ICARUS sorting of CRT submodules.
+  virtual void SortAuxDetSensitive
+    (std::vector<geo::AuxDetSensitiveGeo> & adsgeo) const override;
   
     private:
   
-  /// `geo::OpDetGeo` comparer according to one coordinate of their center.
-  /// Accomodates for some tolerance.
-  template <double (geo::Point_t::*Coord)() const>
-  struct OpDetGeoCenterCoordComparer {
-    
-    /// Object used for comparison; includes a tolerance.
-    lar::util::RealComparisons<double> const fCmp;
-    
-    /// Constructor: fixes the tolerance for the comparison.
-    OpDetGeoCenterCoordComparer(double tol = 0.0): fCmp(tol) {}
-    
-    /// Returns whether `A` has a center coordinate `Coord` smaller than `B`.
-    bool operator() (geo::OpDetGeo const& A, geo::OpDetGeo const& B) const
-      {
-        return fCmp.strictlySmaller
-            ((A.GetCenter().*Coord)(), (B.GetCenter().*Coord)());
-      }
-    
-  }; // OpDetGeoCenterCoordComparer
-  
-  
-  /// Sorting criterium according to _x_ coordinate of `geo::OpDetGeo` center.
-  OpDetGeoCenterCoordComparer<&geo::Point_t::X> const fSmallerCenterX;
-  
-  /// Sorting criterium according to _y_ coordinate of `geo::OpDetGeo` center.
-  OpDetGeoCenterCoordComparer<&geo::Point_t::Y> const fSmallerCenterY;
-  
-  /// Sorting criterium according to _z_ coordinate of `geo::OpDetGeo` center.
-  OpDetGeoCenterCoordComparer<&geo::Point_t::Z> const fSmallerCenterZ;
-  
-  
-  /// Sorts the `geo::OpDetGeo` assuming they belong to the same plane.
-  void sortOpDetsInPlane(OpDetSpan_t const& opDets) const;
-  
+  PMTsorter_t fPMTsorter; ///< PMT sorting algorithm.
   
 }; // icarus::GeoObjectSorterPMTasTPC
 
