@@ -157,9 +157,9 @@ icarus_reco_producers:
   pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
 
   ## Shower finding modules
-  SBNShowerGaus:                  @local::standard_sbnshower_stan
-  SBNShowerGausCryo0:             @local::standard_sbnshower_stan
-  SBNShowerGausCryo1:             @local::standard_sbnshower_stan
+  SBNShowerGaus:                  @local::standard_sbnshower_stan #@local::intermediate_sbnshower
+  SBNShowerGausCryo0:             @local::standard_sbnshower_stan #@local::intermediate_sbnshower
+  SBNShowerGausCryo1:             @local::standard_sbnshower_stan #@local::intermediate_sbnshower
 
 
   ## MCS modules
