@@ -29,6 +29,8 @@
 #include "art/Framework/Core/EDProducer.h" // include the proper bit of the framework
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art_root_io/TFileService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
+#include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 
 
 // LArSoft includes
@@ -66,6 +68,7 @@ namespace recowireraw {
     std::string  fDigitModuleLabel;  ///< module that made digits
     TH1F* fWireRMS;
 
+    const lariov::ChannelStatusProvider* fChannelFilter  = lar::providerFrom<lariov::ChannelStatusService>();
 
   protected: 
     
@@ -152,8 +155,35 @@ namespace recowireraw{
       
             art::Ptr<raw::RawDigit> digitVec(digitVecHandle, rdIter);
             channel = digitVec->Channel();
+    
+            // The following test is meant to be temporary until the "correct" solution is implemented
+            if (!fChannelFilter->IsPresent(channel)) continue;
+
             std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+
+            if (wids.empty()) continue;
+            
             geo::WireID wid = wids[0];
+
+            if (!geom->HasTPC(wid))
+            {
+                std::cout << "-- Channel " << channel << " has C/T/P/W: " << wid.Cryostat << "/" << wid.TPC << "/" << wid.Plane << "/" << wid.Wire << " and is being rejected" << std::endl;
+                continue;
+            }
+
+            if (!geom->HasWire(wid))
+            {
+                std::cout << "-- Channel " << channel << " has Wire: " << wid.Wire << " and is being skipped" << std::endl;
+                continue;
+            }
+
+            if (wid.Wire > 6000)
+            {
+                std::cout << "*************************************************************************************************" << std::endl;
+                std::cout << "*** Channel " <<channel << " has Wire: " << wid.Wire << " but pass the HasWire test... rejecting here" << std::endl;
+                std::cout << "*************************************************************************************************" << std::endl;
+                continue;
+            }
 //          std::cout << " cryo " << wid.Cryostat << " TPC " << wid.TPC << " view " << wid.Plane << " wire " << wid.Wire << std::endl;
             holder.resize(dataSize);
       
