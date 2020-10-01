@@ -164,27 +164,7 @@ namespace recowireraw{
             if (wids.empty()) continue;
             
             geo::WireID wid = wids[0];
-
-            if (!geom->HasTPC(wid))
-            {
-                std::cout << "-- Channel " << channel << " has C/T/P/W: " << wid.Cryostat << "/" << wid.TPC << "/" << wid.Plane << "/" << wid.Wire << " and is being rejected" << std::endl;
-                continue;
-            }
-
-            if (!geom->HasWire(wid))
-            {
-                std::cout << "-- Channel " << channel << " has Wire: " << wid.Wire << " and is being skipped" << std::endl;
-                continue;
-            }
-
-            if (wid.Wire > 6000)
-            {
-                std::cout << "*************************************************************************************************" << std::endl;
-                std::cout << "*** Channel " <<channel << " has Wire: " << wid.Wire << " but pass the HasWire test... rejecting here" << std::endl;
-                std::cout << "*************************************************************************************************" << std::endl;
-                continue;
-            }
-//          std::cout << " cryo " << wid.Cryostat << " TPC " << wid.TPC << " view " << wid.Plane << " wire " << wid.Wire << std::endl;
+            
             holder.resize(dataSize);
       
             // uncompress the data
