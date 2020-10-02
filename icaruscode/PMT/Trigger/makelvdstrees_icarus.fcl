@@ -28,6 +28,21 @@
 #include "services_icarus.fcl"
 #include "trigger_icarus.fcl"
 
+
+BEGIN_PROLOG
+
+# centralized configuration for beam gate and pre-spill windows
+gates_config: {
+  
+  # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+  
+} # gates_config
+
+END_PROLOG
+
+
+
 process_name: TrgTree
 
 
@@ -46,20 +61,38 @@ services: {
 
 physics: {
   
-  analyzers: {
+  producers: {
+    
+    # --------------------------------------------------------------------------
+    edepsums: {
+      
+      module_type: ExtractEnergyDepositionSummary
+      
+      @table::gates_config # see above
+      
+    } # edepsums
+    
+    # --------------------------------------------------------------------------
+    
+  } # producers
   
+  
+  analyzers: {
+    
+    # --------------------------------------------------------------------------
     treegger: {
       
       module_type: MakeTriggerSimulationTree
       
       GeneratorTags:     [ "generator" ]
       
-      EnergyDepositTags: [ "largeant:TPCActive" ]
+      # use the summary data product instead of the original energy deposits
+      # EnergyDepositTags: [ "largeant:TPCActive" ]
+      EnergyDepositSummaryTag: edepsums
       
-      TriggerGatesTag:   "lvdsgates:40"
+      TriggerGatesTag:   "lvdsgates:130"
       
-      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
-      BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+      @table::gates_config # see above
 
       # name of the tree being created
       EventTreeName: "Treegger"
@@ -69,8 +102,11 @@ physics: {
       
     } # treegger
     
+    # --------------------------------------------------------------------------
+    
   } # analyzers
   
+  prep:  [ edepsums ]
   trees: [ treegger ]
   
 } # physics

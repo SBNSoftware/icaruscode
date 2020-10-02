@@ -35,7 +35,9 @@
 #include "art/Framework/Principal/Event.h"
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 
 // ROOT libraries
@@ -192,6 +194,9 @@ namespace icarus::trigger { class MakeTriggerSimulationTree; }
  * * `EnergyDepositTags`
  *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
  *     data products with energy depositions;
+ * * `EnergyDepositSummaryTag` (input tag): alternative to `EnergyDepositTags`,
+ *     uses energy deposition information from a summary data product instead
+ *     of extracting the information;
  * * `TriggerGatesTag` (string, mandatory): name of the module
  *     instance which produced the trigger primitives to be used as input.
  *     The typical trigger primitives used as input may be LVDS discriminated
@@ -202,8 +207,14 @@ namespace icarus::trigger { class MakeTriggerSimulationTree; }
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
  *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
  *     `trigger_icarus.fcl`);
+ * * `BeamGateStart` (time, default: 0 &micro;s): open the beam gate this long
+ *      after the nominal beam gate time;
+ * * `PreSpillWindow` (time, default: 10 &micro;s): duration of the pre-spill
+ *      window;
+ * * `PreSpillWindowGap` (time, default: 0 &micro;s): gap from the end of
+ *      pre-spill window to the start of beam gate;
  * * `EventTreeName` (string, default: "Treegger"): the name of the ROOT tree
- *     being written on disk.
+ *     being written on disk;
  * * `LogCategory` (string, default `MakeTriggerSimulationTree`): name of
  *     category used to stream messages from this module into message facility.
  * 
@@ -231,10 +242,14 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
       std::vector<art::InputTag>{ "generator" }
       };
 
-    fhicl::Sequence<art::InputTag> EnergyDepositTags {
+    fhicl::OptionalSequence<art::InputTag> EnergyDepositTags {
       Name("EnergyDepositTags"),
-      Comment("label of energy deposition data product(s) in the detector"),
-      std::vector<art::InputTag>{ "largeant:TPCActive" }
+      Comment("label of energy deposition data product(s) in the detector")
+      };
+
+    fhicl::OptionalAtom<art::InputTag> EnergyDepositSummaryTag {
+      Name("EnergyDepositSummaryTag"),
+      Comment("label of energy deposition summary data product")
       };
 
     fhicl::Atom<std::string> TriggerGatesTag {
@@ -395,6 +410,12 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
     (icarus::trigger::OpticalTriggerGateData_t const& gate) const;
   
   
+  /// Creates a `EdepTags_t` from two optional parameters.
+  static icarus::trigger::details::EventInfoExtractor::EdepTags_t makeEdepTag(
+    fhicl::OptionalSequence<art::InputTag> const& EnergyDepositTags,
+    fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+    );
+  
 }; // icarus::trigger::MakeTriggerSimulationTree
 
 
@@ -516,7 +537,8 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   , fTriggerGateTree(fIDTree.tree())
   , fEventInfoExtractorMaker(
     config().GeneratorTags(),              // truthTags
-    config().EnergyDepositTags(),          // edepTags
+    makeEdepTag(config().EnergyDepositTags, config().EnergyDepositSummaryTag),
+                                           // edepTags
     fGeom,                                 // geom
     fLogCategory,                          // logCategory
     consumesCollector()                    // consumesCollector
@@ -681,6 +703,39 @@ geo::Point_t icarus::trigger::MakeTriggerSimulationTree::gateChannelCentroid
   return centroid.middlePoint();
   
 } // icarus::trigger::MakeTriggerSimulationTree::gateChannelCentroid()
+
+
+//------------------------------------------------------------------------------
+icarus::trigger::details::EventInfoExtractor::EdepTags_t
+icarus::trigger::MakeTriggerSimulationTree::makeEdepTag(
+  fhicl::OptionalSequence<art::InputTag> const& EnergyDepositTags,
+  fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+) {
+  
+  if (EnergyDepositSummaryTag.hasValue()) {
+    if (EnergyDepositTags.hasValue()) {
+      throw art::Exception(art::errors::Configuration)
+        << "MakeTriggerSimulationTree: "
+        << "both EnergyDepositTags and EnergyDepositSummaryTag "
+        << "have been specified, but they are exclusive: @erase one.\n";
+    }
+    
+    art::InputTag tag;
+    EnergyDepositSummaryTag(tag);
+    return { 
+      icarus::trigger::details::EventInfoExtractor::SimEnergyDepositSummaryInputTag
+        { tag }
+      };
+  }
+  else {
+    
+    std::vector<art::InputTag> tags;
+    if (!EnergyDepositTags(tags)) tags.push_back("largeant:TPCActive");
+    return { std::move(tags) };
+    
+  }
+  
+} // icarus::trigger::MakeTriggerSimulationTree::makeEdepTag()
 
 
 //------------------------------------------------------------------------------
