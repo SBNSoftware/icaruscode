@@ -68,6 +68,8 @@
 # 20200709 (petrillo@slac.stanford.edu)
 #   adopted split wire geometry fixed by
 #   Alessandro Menegolli (alessandro.menegolli@unipv.it)
+# 20201004 (petrillo@slac.stanford.edu)
+#   updated all default configurations to point to split wire geometry
 #
 
 
@@ -376,7 +378,7 @@ icarus_split_induction_geometry_services: @local::icarus_split_induction_nooverb
 ###
 ### Default ICARUS geometry configuration
 ###
-### Complete geometry (including CRT) with one TPC per drift volume and 18 meter
+### Complete geometry (including CRT) with two TPC per drift volume and 9 meter
 ### long wires on first induction plane.
 ### Options are avaialble for the presence of overburden; the geometry global
 ### default includes a choice for that option: see `icarus_geometry_services`.
@@ -386,7 +388,7 @@ icarus_split_induction_geometry_services: @local::icarus_split_induction_nooverb
 ### Default configuration with with 3 meter deep concrete overburden
 ### (`icarus_overburden_geometry_services`).
 ###
-### This default currently points to the single wire geometry.
+### This default currently points to the split wire geometry.
 ###
 ### Override a geometry configuration by:
 ###
@@ -401,7 +403,7 @@ icarus_split_induction_geometry_services: @local::icarus_split_induction_nooverb
 # Geometry service configuration:
 #
 
-icarus_overburden_geometry_services: @local::icarus_single_induction_overburden_geometry_services
+icarus_overburden_geometry_services: @local::icarus_split_induction_overburden_geometry_services
 
 icarus_overburden_geometry: @local::icarus_overburden_geometry_services.Geometry
 
@@ -410,7 +412,7 @@ icarus_overburden_geometry: @local::icarus_overburden_geometry_services.Geometry
 ### Default configuration with no concrete overburden
 ### (`icarus_nooverburden_geometry_services`).
 ###
-### This default currently points to the single wire geometry.
+### This default currently points to the split wire geometry.
 ###
 ### Override a geometry configuration by:
 ###
@@ -425,7 +427,7 @@ icarus_overburden_geometry: @local::icarus_overburden_geometry_services.Geometry
 # Geometry service configuration:
 #
 
-icarus_nooverburden_geometry_services: @local::icarus_single_induction_nooverburden_geometry_services
+icarus_nooverburden_geometry_services: @local::icarus_split_induction_nooverburden_geometry_services
 
 icarus_nooverburden_geometry: @local::icarus_nooverburden_geometry_services.Geometry
 
@@ -434,8 +436,8 @@ icarus_nooverburden_geometry: @local::icarus_nooverburden_geometry_services.Geom
 ### Default ICARUS geometry configuration
 ### (`icarus_geometry_services`)
 ###
-### This configuration includes no overburden and long first induction wires
-### (18 m) as of now.
+### This configuration includes no overburden and split first induction wires
+### (9 m) as of now.
 ###
 ### Override a geometry configuration by:
 ###

@@ -3,7 +3,7 @@
 # Purpose: Configuration drop in to use the no-overburden geometry.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    February 19, 2020
-# Version: 1.0
+# Version: 1.1
 #
 # Usage
 # ======
@@ -24,14 +24,16 @@
 # Changes:
 # 20200219 (petrillo@slac.stanford.edu) [v1.0]
 #   original version
+# 20201004 (petrillo@slac.stanford.edu) [v1.1]
+#   updated to split wire geometry
 #
 
 #
 # override the geometry configuration with the one
-# `icarus_single_induction_nooverburden_geometry_services`
+# `icarus_split_induction_nooverburden_geometry_services`
 # defined in `geometry_icarus.fcl` (which must have been already included)
 #
 services: {
   @table::services
-  @table::icarus_single_induction_nooverburden_geometry_services
+  @table::icarus_split_induction_nooverburden_geometry_services
 } # services
