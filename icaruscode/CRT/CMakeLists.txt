@@ -144,7 +144,6 @@ simple_plugin(CRTTrackProducer module
               icaruscode_CRT
               icaruscode_CRTData
               sbnobj_Common_CRT
-              icaruscode_CRTProducts
               icaruscode_CRTUtils
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
               lardataalg_DetectorInfo
@@ -161,7 +160,6 @@ simple_plugin(CRTSimAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
               sbnobj_Common_CRT
-              icaruscode_CRTProducts
               icaruscode_CRTUtils
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
@@ -181,7 +179,6 @@ simple_plugin(CRTDataAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
               sbnobj_Common_CRT
-              icaruscode_CRTProducts
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
               nusimdata_SimulationBase
@@ -288,7 +285,7 @@ simple_plugin( PhotBackground module
                         nusimdata_SimulationBase
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}

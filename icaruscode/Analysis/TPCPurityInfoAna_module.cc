@@ -69,7 +69,7 @@ void ana::TPCPurityInfoAna::beginJob()
   // get access to the TFile service
   art::ServiceHandle<art::TFileService> tfs;
 
-  fPurityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:subrun:ev:cryo:tpc:wires:ticks:attNear:attFar:att:err");
+  fPurityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:subrun:ev:cryo:tpc:wires:ticks:att:err");
 
 }
 void ana::TPCPurityInfoAna::analyze(art::Event const& e)
@@ -91,7 +91,7 @@ void ana::TPCPurityInfoAna::analyze(art::Event const& e)
   
   for(auto const& pinfo : purityInfoVec){
     if(fPrintInfo) pinfo.Print();
-    fPurityTuple->Fill(e.run(),e.subRun(),e.event(),pinfo.Cryostat,pinfo.TPC,pinfo.Wires,pinfo.Ticks,pinfo.AttenuationNEAR,pinfo.AttenuationFAR,pinfo.Attenuation,pinfo.FracError);
+    fPurityTuple->Fill(e.run(),e.subRun(),e.event(),pinfo.Cryostat,pinfo.TPC,pinfo.Wires,pinfo.Ticks,pinfo.Attenuation,pinfo.FracError);
   }
 
 

@@ -408,8 +408,8 @@ void CrtOpHitMatchAnalysis::analyze(art::Event const& e)
   fFlashTree->Fill();
 
   //CRTracks
-  art::Handle< std::vector<CRTTrack> > crtTrackListHandle;
-  std::vector< art::Ptr<CRTTrack> >    crtTrackList;
+  art::Handle< std::vector<sbn::crt::CRTTrack> > crtTrackListHandle;
+  std::vector< art::Ptr<sbn::crt::CRTTrack> >    crtTrackList;
   if( e.getByLabel(fCrtTrackModuleLabel,crtTrackListHandle))
       art::fill_ptr_vector(crtTrackList, crtTrackListHandle);
 

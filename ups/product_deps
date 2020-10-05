@@ -44,7 +44,7 @@ guideline_sl              v2_0_0
 libwda                    v2_28_0
 sbndaq_artdaq_core        v0_07_00_of0
 
-cetbuildtools	          v7_17_01	-	only_for_build
+cetbuildtools	          v7_15_01	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
