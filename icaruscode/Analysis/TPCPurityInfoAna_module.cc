@@ -18,7 +18,7 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 //purity info class
-#include "icaruscode/IcarusObj/TPCPurityInfo.hh"
+#include "sbnobj/Common/Analysis/TPCPurityInfo.hh"
 
 //output to ntuple
 #include "art_root_io/TFileService.h"

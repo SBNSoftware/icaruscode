@@ -34,8 +34,8 @@
 #include "nusimdata/SimulationBase/MCParticle.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
@@ -60,6 +60,9 @@ using namespace icarus::crt;
 
 class icarus::crt::CrtOpHitMatchAnalysis : public art::EDAnalyzer {
  public:
+
+  using CRTHit = sbn::crt::CRTHit;
+  
   explicit CrtOpHitMatchAnalysis(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.

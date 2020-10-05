@@ -164,7 +164,7 @@ simple_plugin( CRTEventProducer "module"
   #${ROOT_BASIC_LIB_LIST}
   CRT_PREPROCESS_TREE
   #CRT_CAL_TREE
-  icaruscode_CRTProducts
+  sbnobj_Common_CRT
 )
 
 install_fhicl()

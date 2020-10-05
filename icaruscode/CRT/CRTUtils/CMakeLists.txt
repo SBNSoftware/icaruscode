@@ -31,7 +31,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ROOT_BASIC_LIB_LIST}
                            ${Boost_SYSTEM_LIBRARY}
                            icaruscode_CRT
-                           icaruscode_CRTProducts
+                           sbnobj_Common_CRT
                            icaruscode_CRTData
                            lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
                            nurandom_RandomUtils_NuRandomService_service

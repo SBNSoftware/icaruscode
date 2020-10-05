@@ -34,8 +34,8 @@
 #include "fhiclcpp/types/Table.h"
 #include "fhiclcpp/types/Atom.h"
 #include "cetlib/pow.h" // cet::sum_of_squares()
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
-#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTHitRecoAlg.h"
 
 // c++
@@ -94,24 +94,24 @@ namespace crt{
 
     void reconfigure(const Config& config);
 
-    vector<vector<art::Ptr<CRTHit>>> CreateCRTTzeros(vector<art::Ptr<CRTHit>>);
+    vector<vector<art::Ptr<sbn::crt::CRTHit>>> CreateCRTTzeros(vector<art::Ptr<sbn::crt::CRTHit>>);
 
     // Function to make creating CRTTracks easier
-    CRTTrack FillCrtTrack(CRTHit hit1, CRTHit hit2, bool complete);
+    sbn::crt::CRTTrack FillCrtTrack(sbn::crt::CRTHit hit1, sbn::crt::CRTHit hit2, bool complete);
 
     // Function to average hits within a certain distance of each other
-    vector<pair<CRTHit, vector<int>>> AverageHits(vector<art::Ptr<CRTHit>> hits, map<art::Ptr<CRTHit>, int> hitIds);
-    vector<CRTHit> AverageHits(vector<art::Ptr<CRTHit>> hits);
+    vector<pair<sbn::crt::CRTHit, vector<int>>> AverageHits(vector<art::Ptr<sbn::crt::CRTHit>> hits, map<art::Ptr<sbn::crt::CRTHit>, int> hitIds);
+    vector<sbn::crt::CRTHit> AverageHits(vector<art::Ptr<sbn::crt::CRTHit>> hits);
 
     // Take a list of hits and find average parameters
-    CRTHit DoAverage(vector<art::Ptr<CRTHit>> hits);
+    sbn::crt::CRTHit DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> hits);
 
     // Create CRTTracks from list of hits
-    vector<pair<CRTTrack, vector<int>>> CreateTracks(vector<pair<CRTHit, vector<int>>> hits);
-    vector<CRTTrack> CreateTracks(vector<CRTHit> hits);
+    vector<pair<sbn::crt::CRTTrack, vector<int>>> CreateTracks(vector<pair<sbn::crt::CRTHit, vector<int>>> hits);
+    vector<sbn::crt::CRTTrack> CreateTracks(vector<sbn::crt::CRTHit> hits);
 
     // Calculate the tagger crossing point of CRTTrack candidate
-    TVector3 CrossPoint(CRTHit hit, TVector3 start, TVector3 diff);
+    TVector3 CrossPoint(sbn::crt::CRTHit hit, TVector3 start, TVector3 diff);
 
   private:
 

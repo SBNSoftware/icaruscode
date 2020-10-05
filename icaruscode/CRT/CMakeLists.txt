@@ -2,7 +2,6 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 include_directories( $ENV{NURANDOM_INC} )
 include_directories( $ENV{IFDHX_FQ_DIR}/inc )
 
-add_subdirectory(CRTProducts)
 add_subdirectory(CRTUtils)
 add_subdirectory(CRTDecoder)
 
@@ -72,7 +71,7 @@ simple_plugin(CRTDetSim module
               larcorealg_Geometry
               icaruscode_CRT
               icaruscode_CRTData
-              icaruscode_CRTProducts
+              sbnobj_Common_CRT
               icaruscode_CRTUtils
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
               lardataalg_DetectorInfo
@@ -89,7 +88,7 @@ simple_plugin(CRTSimHitProducer module
               larcorealg_Geometry
               icaruscode_CRT
               icaruscode_CRTData
-              icaruscode_CRTProducts
+              sbnobj_Common_CRT
               icaruscode_CRTUtils
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
               lardataalg_DetectorInfo
@@ -106,7 +105,7 @@ simple_plugin( CRTTrueHitProducer module
         larcorealg_Geometry
         icaruscode_CRT
         icaruscode_CRTData
-        icaruscode_CRTProducts
+        sbnobj_Common_CRT
         icaruscode_CRTUtils
         ${ART_FRAMEWORK_CORE}
         ${ART_FRAMEWORK_IO_SOURCES}
@@ -128,7 +127,7 @@ simple_plugin(CRTTzeroProducer module
               larcorealg_Geometry
               icaruscode_CRT
               icaruscode_CRTData
-              icaruscode_CRTProducts
+              sbnobj_Common_CRT
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
               lardataalg_DetectorInfo
               nurandom_RandomUtils_NuRandomService_service
@@ -144,6 +143,7 @@ simple_plugin(CRTTrackProducer module
               larcorealg_Geometry
               icaruscode_CRT
               icaruscode_CRTData
+              sbnobj_Common_CRT
               icaruscode_CRTProducts
               icaruscode_CRTUtils
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}
@@ -160,6 +160,7 @@ simple_plugin(CRTTrackProducer module
 simple_plugin(CRTSimAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
+              sbnobj_Common_CRT
               icaruscode_CRTProducts
               icaruscode_CRTUtils
               larcore_Geometry_Geometry_service
@@ -179,6 +180,7 @@ simple_plugin(CRTSimAnalysis module
 simple_plugin(CRTDataAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
+              sbnobj_Common_CRT
               icaruscode_CRTProducts
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
@@ -197,7 +199,7 @@ simple_plugin(CRTDataAnalysis module
 simple_plugin(CrtOpHitMatchAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
-              icaruscode_CRTProducts
+              sbnobj_Common_CRT
               icaruscode_CRTUtils
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
@@ -215,7 +217,7 @@ simple_plugin(CrtOpHitMatchAnalysis module
 simple_plugin(CRTTruthMatchAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
-              icaruscode_CRTProducts
+              sbnobj_Common_CRT
               icaruscode_CRTUtils
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
@@ -234,7 +236,7 @@ simple_plugin(CRTTruthMatchAnalysis module
 simple_plugin( CRTAutoVeto module
                         icaruscode_CRTData
                         icaruscode_CRT
-                        icaruscode_CRTProducts
+                        sbnobj_Common_CRT
                         icaruscode_CRTUtils
                         larcore_Geometry_Geometry_service
                         larcorealg_Geometry
