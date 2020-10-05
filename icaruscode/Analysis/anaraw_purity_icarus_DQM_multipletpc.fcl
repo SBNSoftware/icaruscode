@@ -65,8 +65,8 @@ physics.producers.purityana.RawModuleLabel: ["daqTPC"]
 physics.producers.purityana.module_type:    "ICARUSPurityDQM"
 physics.producers.purityana.ValoreTauFCL:  600000.
 physics.producers.purityana.CryostatFCL: 0
-physics.producers.purityana.PlaneFCL: 0
-physics.producers.purityana.ThresholdFCL: 5
+physics.producers.purityana.PlaneFCL: 2
+physics.producers.purityana.ThresholdFCL: 3
 physics.producers.purityana.PersistPurityInfo: false
 physics.producers.purityana.FillAnaTuple: false
 
