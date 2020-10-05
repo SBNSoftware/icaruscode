@@ -60,6 +60,9 @@ class icarus::trigger::SingleChannelOpticalTriggerGate
     : Base_t(waveform)
     {}
   
+  /// Constructor: a closed gate for the specified channel.
+  SingleChannelOpticalTriggerGate(ChannelID_t channel): Base_t(channel) {}
+
   SingleChannelOpticalTriggerGate
     (SingleChannelOpticalTriggerGate const&) = default;
   SingleChannelOpticalTriggerGate

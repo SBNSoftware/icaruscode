@@ -118,6 +118,8 @@ class icarus::crt::CRTDetSimAlg {
     bool   fUseEdep;  //!< Use the true G4 energy deposited, assume mip if false.
     double fDeadTime; //!< Dead Time inherent in the front-end electronics
     double fBiasTime; //!< Hard cut off for follow-up hits after primary trigger to bias ADC level
+    bool   fUseBirks; //!< Whether or not to apply Birks' quenching to light output
+    double fKbirks;   //!< Birks' constant [cm/MeV]
 
     //bookkeeping / stats vars
     int fNsim_m, fNsim_d, fNsim_c; //number of strips in each subsystem with deposited energy

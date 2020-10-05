@@ -30,6 +30,7 @@
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTData,icarus::crt::CRTHit,void> >"/>
   <class name="art::Wrapper<art::Assns<icarus::crt::CRTHit,icarus::crt::CRTData,void> >"/>
 
+  <class name="icarus::crt::CRTTrack"/>
   <class name="art::Wrapper<icarus::crt::CRTTrack>"/>
   <class name="std::vector<icarus::crt::CRTTrack>"/>
   <class name="art::Wrapper<std::vector<icarus::crt::CRTTrack>>"/>

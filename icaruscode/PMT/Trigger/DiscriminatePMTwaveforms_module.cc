@@ -16,6 +16,7 @@
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities_fhicl.h" // for ADCCounts_t parameters
@@ -36,6 +37,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/OptionalSequence.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -153,6 +155,11 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
         ("parameters for generating trigger gates from optical channel output")
       };
     
+    fhicl::OptionalAtom<unsigned int> NChannels {
+      Name("NChannels"),
+      Comment("minimum number of channels to provide (default: all)")
+      };
+    
     fhicl::Atom<std::string> OutputCategory {
       Name("OutputCategory"),
       Comment("tag of the module output to console via message facility"),
@@ -196,8 +203,11 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   
   // --- BEGIN Configuration variables -----------------------------------------
   
-  art::InputTag fOpDetWaveformTag; ///< Input optical waveform tag.
-  std::string fLogCategory; ///< Category name for the console output stream.
+  art::InputTag const fOpDetWaveformTag; ///< Input optical waveform tag.
+  
+  unsigned int const fNOpDetChannels; ///< Number of optical detector channels.
+  
+  std::string const fLogCategory; ///< Category name for the console output stream.
   
   /// Thresholds selected for saving, and their instance name.
   std::map<icarus::trigger::ADCCounts_t, std::string> fSelectedThresholds;
@@ -219,7 +229,31 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   
   // --- END Algorithms --------------------------------------------------------
   
+  
+  /**
+   * @brief Creates a collection with one gate per channel and no gaps.
+   * @param gates the trigger gates to be put in the collection
+   * @return a collection with with one gate per channel and no gaps
+   * 
+   * The returned collection includes one gate per channel, and at least
+   * `fNOpDetChannels` channels (more if there are channels with higher number
+   * than that).
+   * For each channel, a gate is set in the item of the collection with index
+   * the channel ID (i.e. the first gate in the collection will be the one for
+   * channel `0`, the next the one for channel `1` and so on).
+   * The `gates` specified in the argument are _moved_ to the proper item in the
+   * returned collection. The other gates are assigned the proper channel number
+   * but are closed gates and associated with no waveform.
+   */
+  icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t fillChannelGaps
+    (icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t gates) const;
+  
+  /// Fetches the optical detector count from geometry unless in `param`.
+  static unsigned int getNOpDetChannels
+    (fhicl::OptionalAtom<unsigned int> const& param);
+  
 }; // icarus::trigger::DiscriminatePMTwaveforms
+
 
 
 //------------------------------------------------------------------------------
@@ -232,6 +266,7 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   : art::EDProducer(config)
   // configuration
   , fOpDetWaveformTag(config().OpticalWaveforms())
+  , fNOpDetChannels(getNOpDetChannels(config().NChannels))
   , fLogCategory(config().OutputCategory())
   , fClockData{art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob()}
   , fDetTimings{fClockData}
@@ -358,12 +393,12 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
     
     std::string const& instanceName = iThr->second;
     art::PtrMaker<TriggerGateData_t> const makeGatePtr(event, instanceName);
-
+    
     //
     // reformat the results for the threshold
     //
     auto thresholdData = icarus::trigger::transformIntoOpticalTriggerGate
-      (std::move(gates).gates(), makeGatePtr, opDetWavePtrs);
+      (fillChannelGaps(std::move(gates).gates()), makeGatePtr, opDetWavePtrs);
 
     //
     // move the reformatted data into the event
@@ -382,6 +417,59 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   } // for all extracted thresholds
   
 } // icarus::trigger::DiscriminatePMTwaveforms::produce()
+
+
+//------------------------------------------------------------------------------
+icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t
+icarus::trigger::DiscriminatePMTwaveforms::fillChannelGaps
+  (icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t gates) const
+{
+  
+  using GateDataColl_t
+    = icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t;
+  using Gate_t = GateDataColl_t::value_type; // SingleChannelOpticalTriggerGate
+  
+  //
+  // fill a map channel -> gate (missing channels have a nullptr gate)
+  //
+  std::vector<Gate_t const*> gateMap(fNOpDetChannels, nullptr);
+  for (Gate_t const& gate: gates) {
+    assert(gate.hasChannels());
+    
+    auto const channel = gate.channel();
+    if (static_cast<std::size_t>(channel) >= gateMap.size())
+      gateMap.resize(channel + 1U, nullptr);
+    gateMap[channel] = &gate;
+    
+  } // for all gates
+  
+  //
+  // fill
+  //
+  GateDataColl_t allGates;
+  allGates.reserve(gateMap.size());
+  for (auto const& [ channelNo, gate ]: util::enumerate(gateMap)) {
+    
+    if (gate) {
+      assert(gate->channel() == channelNo);
+      allGates.push_back(std::move(*gate));
+    }
+    else allGates.emplace_back(Gate_t::ChannelID_t(channelNo));
+    
+  } // for
+  
+  return allGates;
+} // icarus::trigger::DiscriminatePMTwaveforms::fillChannelGaps()
+
+
+//------------------------------------------------------------------------------
+unsigned int icarus::trigger::DiscriminatePMTwaveforms::getNOpDetChannels
+  (fhicl::OptionalAtom<unsigned int> const& param)
+{
+  unsigned int nChannels;
+  return
+    param(nChannels)? nChannels: lar::providerFrom<geo::Geometry>()->NOpDets();
+} // icarus::trigger::DiscriminatePMTwaveforms::getNOpDetChannels()
 
 
 //------------------------------------------------------------------------------

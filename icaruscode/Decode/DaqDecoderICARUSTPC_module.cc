@@ -322,12 +322,12 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
     return;
 }
 
-void DaqDecoderICARUSTPC::processSingleFragment(size_t                         idx,
+void DaqDecoderICARUSTPC::processSingleFragment(size_t                             idx,
                                                 detinfo::DetectorClocksData const& clockData,
-                                              art::Handle<artdaq::Fragments> fragmentHandle,
-                                              ConcurrentRawDigitCol&         rawDigitCollection,
-                                              ConcurrentRawDigitCol&         rawRawDigitCollection,
-                                              ConcurrentRawDigitCol&         coherentCollection) const
+                                                art::Handle<artdaq::Fragments>     fragmentHandle,
+                                                ConcurrentRawDigitCol&             rawDigitCollection,
+                                                ConcurrentRawDigitCol&             rawRawDigitCollection,
+                                                ConcurrentRawDigitCol&             coherentCollection) const
 {
     cet::cpu_timer theClockProcess;
 

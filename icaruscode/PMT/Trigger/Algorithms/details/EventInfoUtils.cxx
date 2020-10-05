@@ -23,6 +23,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> truthTags,
   std::vector<art::InputTag> edepTags,
   TimeSpan_t inSpillTimes,
+  TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
   std::string logCategory
   )
@@ -31,6 +32,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
   , fInSpillTimes(std::move(inSpillTimes))
+  , fInPreSpillTimes(std::move(inPreSpillTimes))
 {
 } // icarus::trigger::details::EventInfoExtractor::EventInfoExtractor()
 
@@ -154,8 +156,9 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
   //
   // propagation in the detector
   //
-  GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 };
-  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 };
+  GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 }, inPreSpillEnergy { 0.0 };
+  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 },
+    inPreSpillActiveEnergy { 0.0 };
   
   for (sim::SimEnergyDeposit const& edep: energyDeposits) {
     
@@ -164,13 +167,17 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
     detinfo::timescales::simulation_time const t { edep.Time() };
     bool const inSpill
       = (t >= fInSpillTimes.first) && (t <= fInSpillTimes.second);
+    bool const inPreSpill
+      = (t >= fInPreSpillTimes.first) && (t <= fInPreSpillTimes.second);
     
     totalEnergy += e;
     if (inSpill) inSpillEnergy += e;
+    if (inPreSpill) inPreSpillEnergy += e;
     
     if (pointInActiveTPC(edep.MidPoint())) {
       activeEnergy += e;
       if (inSpill) inSpillActiveEnergy += e;
+      if (inPreSpill) inPreSpillActiveEnergy += e;
     }
     
   } // for all energy deposits in the data product
@@ -179,10 +186,14 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
     (info.DepositedEnergy() + totalEnergy);
   info.SetDepositedEnergyInSpill
     (info.DepositedEnergyInSpill() + inSpillEnergy);
+  info.SetDepositedEnergyInPreSpill
+    (info.DepositedEnergyInPreSpill() + inPreSpillEnergy);
   info.SetDepositedEnergyInActiveVolume
     (info.DepositedEnergyInActiveVolume() + activeEnergy);
   info.SetDepositedEnergyInSpillInActiveVolume
     (info.DepositedEnergyInSpillInActiveVolume() + inSpillActiveEnergy);
+  info.SetDepositedEnergyInPreSpillInActiveVolume
+    (info.DepositedEnergyInPreSpillInActiveVolume() + inPreSpillActiveEnergy);
   
 } // icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo()
 

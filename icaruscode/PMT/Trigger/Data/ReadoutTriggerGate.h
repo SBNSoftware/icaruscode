@@ -32,6 +32,10 @@
 // declarations
 //
 namespace icarus::trigger {
+  
+  /// All `ReadoutTriggerGate` template instances derive from this tag.
+  struct ReadoutTriggerGateTag {};
+  
   template <typename Tick, typename TickInterval, typename ChannelIDType>
   class ReadoutTriggerGate;
   
@@ -64,6 +68,14 @@ namespace icarus::trigger {
   
   // --- END Exceptions --------------------------------------------------------
   
+  /// Type traits: `Gate` type derives from a `ReadoutTriggerGate` instance.
+  template <typename Gate>
+  struct isReadoutTriggerGate;
+  
+  /// Flag: `true` if `Gate` type derives from a `ReadoutTriggerGate` instance.
+  template <typename Gate>
+  constexpr bool isReadoutTriggerGate_v = isReadoutTriggerGate<Gate>::value;
+  
 } // namespace icarus::trigger
 
 
@@ -89,6 +101,7 @@ namespace icarus::trigger {
 template <typename Tick, typename TickInterval, typename ChannelIDType>
 class icarus::trigger::ReadoutTriggerGate
   : public icarus::trigger::TriggerGateData<Tick, TickInterval>
+  , public ReadoutTriggerGateTag
 {
   /// Type of the base class.
   using Base_t = icarus::trigger::TriggerGateData<Tick, TickInterval>;
