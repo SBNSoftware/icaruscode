@@ -73,6 +73,7 @@ find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_product( libwda )
 find_ups_product( icarus_signal_processing )
+find_ups_product( icarusalg )
 find_ups_product( icarusutil )
 find_ups_product( icarus_data )
 
