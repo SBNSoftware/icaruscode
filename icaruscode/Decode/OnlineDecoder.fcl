@@ -1,0 +1,207 @@
+#include "simple_channel_info.fcl"
+#include "redis_connection.fcl"
+#include "decoderDefs.fcl"
+#include "services_icarus.fcl"
+BEGIN_PROLOG
+analysis_config: {
+  // producer of digits and header info
+  raw_digit_producers: [daq]
+  raw_digit_instance: RAW
+  header_producer: ""
+  // channel info
+  channel_info: {
+    n_channels: 55296 # ALL crates
+    collection_channels: [[0,55296]] # no signal -- plane is arbitrary
+    induction_channels: []
+  }
+  // standard analysis config
+  threshold_calc: 3
+  threshold_sigma: 5
+  noise_range_sampling: 1
+  n_smoothing_samples: 1
+  baseline_calc: 2
+  n_mode_skip: 3
+  use_planes: false
+  refine_baseline: false
+  // turn on for analysis information printed out on stdin
+  verbose: false
+  // turn on for timing information printed out on stdin
+  timing: false
+  // turn on to save waveform in output ChannelData
+  fill_waveforms: false
+  // turn on to output ReducedChannelData objects instead of
+  // ChannelData (will throw out waveform and FFT info)
+  reduce_data: false
+  // number of headers per event provided by input (will be ignored if value is negative)
+  // 10 for SBND
+  n_headers: -1
+  // Change tick period to be 0.4 for ICARUS
+  tick_period: 0.4
+}
+END_PROLOG
+physics:
+{
+  // now also have something produce the digits and headers
+  producers:
+  {
+    daq: @local::decodeTPC
+  }
+  filters:
+  {
+    prescale10: { module_type: "Prescaler"
+    		    prescaleFactor: 10
+ 		    		      prescaleOffset: 0
+				      		       }
+    prescale100: { module_type: "Prescaler"
+                  prescaleFactor: 100
+                  prescaleOffset: 0
+                 }
+  }
+  analyzers:
+  {
+    Meta: {
+      module_type: ReportMetadata
+      RedisKey: eventmetaTPC
+      SelectEvents: [pscale10_events]
+    }
+    OnlineAnalysisRawData: {
+      module_type: OnlineAnalysis
+      @table::analysis_config
+      send_metrics: false
+      send_waveforms: true
+      send_ffts: true
+      fft_name: fft
+      waveform_name: waveform
+      fft_per_channel: true # calculate FFT's
+      wait_period: -1 # s
+      send_time_avg_ffts: true
+      n_evt_fft_avg: 100
+      n_evt_send_rawdata: 100
+      // send_correlation_matrix: true
+      // correlation_matrix_name: correlation
+      // n_correlation_matrix_samples: 100
+      SelectEvents: [pscale10_events]
+    }
+    OnlineAnalysis:
+     {
+      module_type: OnlineAnalysis
+      group_name: tpc_channel
+      @table::analysis_config
+      #SelectEvents: [pscale_event]
+      SelectEvents: [pscale10_events]
+      metrics: {
+#      graphite: {
+#        level:5
+#     	metricPluginType: "graphite"
+#     	reporting_interval: 10.0
+#     	host:"192.168.191.18"
+#     	port:2003
+#     	namespace:"icarus.om."
+#      }
+        redis_metric_archive: {
+          level: 3
+          metricPluginType: "redis"
+          reporting_interval: 60.0 # 60s
+          verbose: true
+          // need to add postfix otherwise this metric sender and the other one will collide
+          redis_key_postfix: ":archiving"
+	    send_zeros: false
+        }
+      }
+      metric_config: {
+        streams: [archiving]
+        groups: {
+	  tpc_channel:[[0,5760]] # 8 crates
+        }
+        metrics: {
+          rms: {
+            units: ADC
+            #title: "TPC wire %(instance)s rms"
+            display_range: [0, 10]
+          }
+	    filtered_rms: {
+            units: ADC
+            #title: "TPC wire %(instance)s rms"
+            display_range: [0, 10]
+          }
+          baseline: {
+            units: ADC
+            #title: "TPC wire %(instance)s baseline"
+            display_range: [1990, 2040]
+          }
+          next_channel_dnoise: {
+            #title: "TPC wire %(instance)s next channel dnoise"
+            display_range: [0.2, 1.2]
+          }
+          mean_peak_height: {
+            units: ADC
+            #title: "TPC wire %(instance)s mean peak height"
+            display_range: [0, 50]
+          }
+          occupancy: {
+            #title: "TPC wire %(instance)s occupancy"
+            display_range: [0., 1.]
+          }
+      	  }
+      }
+    }
+    OnlineAnalysisDenoised:
+     {
+      module_type: OnlineAnalysis
+      group_name: tpc_channel
+      @table::analysis_config
+      raw_digit_instance: ""
+      #SelectEvents: [pscale_event]
+      SelectEvents: [pscale10_events]
+      metric_prefix: filtered_
+      send_peakheight: false
+      send_baseline: false
+      send_occupancy: false
+      send_dnoise: false
+     }
+  }
+  #all_events: [ daq ]
+  #pscale_event: [ prescale10, daq ]
+  pscale10_events: [ prescale10, daq ]
+  pscale_event: [ prescale100, daq ]
+  trigger_paths: [ pscale10_events, pscale_event ] # BH: COMMENT PSCALE_EVENT TO TURN OFF OUTPUT FILE
+  a: [ OnlineAnalysis, OnlineAnalysisDenoised, OnlineAnalysisRawData, Meta ]
+  decoded_stream: [decodedout] # BH: COMMENT THIS LINE TO TURN OFF OUTPUT FILE
+  end_paths: [ a, decoded_stream ] # BH: COMMENT DECODED_STREAM TO TURN OFF OUTPUT FILE
+}
+services:
+{
+  RedisConnection: @local::redis_connection
+  @table::icarus_calibration_services
+  @table::icarus_wirecalibration_services
+}
+services.RedisConnection.host: "icarus-db01.fnal.gov"
+services.NuRandomService: @erase
+services.MemoryTracker: @erase
+services.TimeTracker: @erase
+source:
+{
+  module_type: RootInput
+}
+outputs:
+{
+  decodedout:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc-decoded.root"
+    dataTier:    "raw"
+    compressionLevel: 1
+    SelectEvents: [pscale_event]
+  }
+}
+# Use this to setup the decoder module
+physics.producers.daq.OutputPedestalCor:              true
+physics.producers.daq.OutputRawWaveform:              true
+physics.producers.daq.OutputCorrection:               false
+physics.producers.daq.DecoderTool.CoherentGrouping:   32
+physics.producers.daq.DecoderTool.StructuringElement: 16
+physics.producers.daq.DecoderTool.Threshold:          [5.0, 4.0, 4.5]
+physics.producers.daq.DecoderTool.FragmentIDVec:      [ [4,0x1210], [5,0x1214], [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daq.DecoderTool.FragmentIDVec:      [ [14,0x1110], [15,0x1116], [16,0x1114], [17,0x1112] ]
+#physics.producers.daq.DecoderTool.DiagnosticOutput:   true  # This turns on lots of diagnostic messages... LOTS
+process_name: TPCANALYSIS
