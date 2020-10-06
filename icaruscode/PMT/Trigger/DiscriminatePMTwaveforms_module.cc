@@ -13,8 +13,8 @@
 #include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
 #include "icaruscode/PMT/Data/WaveformBaseline.h"
-#include "icaruscode/Utilities/DataProductPointerMap.h"
-#include "icaruscode/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
+#include "icarusalg/Utilities/DataProductPointerMap.h"
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"

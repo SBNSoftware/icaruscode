@@ -17,10 +17,10 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
-#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
-#include "icaruscode/Utilities/mfLoggingClass.h"
-#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
-#include "icaruscode/Utilities/rounding.h" // icarus::ns::util::roundup()
+#include "icarusalg/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/mfLoggingClass.h"
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"

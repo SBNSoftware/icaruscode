@@ -15,7 +15,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
-#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
+#include "icarusalg/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
