@@ -285,9 +285,23 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const& clo
     // Overlay a fake particle on this array of waveforms
     fFakeParticleTool->overlayFakeParticle(clockData, fPedSubtractedWaveforms);
 
+    // Filter function
+    std::unique_ptr<icarus_signal_processing::IMorphologicalFunctions2D> filterFunctionPtr 
+        = std::make_unique<icarus_signal_processing::Gradient2D>(fStructuringElement[0],fStructuringElement[1]);
+
     // Run the coherent filter
-    denoiser.removeCoherentNoise2D(fWaveLessCoherent,fPedSubtractedWaveforms,fMorphedWaveforms,fIntrinsicRMS,fSelectVals,fROIVals,fCorrectedMedians,
-                                   fThresholdVec, fFilterModeVec[2],fCoherentNoiseGrouping,fStructuringElement[0],fStructuringElement[1],fMorphWindow);
+    denoiser.removeCoherentNoise2D(fWaveLessCoherent.begin(),
+                                   fPedSubtractedWaveforms.begin(),
+                                   fMorphedWaveforms.begin(),
+                                   fIntrinsicRMS.begin(),
+                                   fSelectVals.begin(),
+                                   fROIVals.begin(),
+                                   fCorrectedMedians.begin(),
+                                   filterFunctionPtr.get(),
+                                   fThresholdVec.begin(), 
+                                   fPedSubtractedWaveforms.size(),
+                                   fCoherentNoiseGrouping,
+                                   fMorphWindow);
 
     return;
 }
