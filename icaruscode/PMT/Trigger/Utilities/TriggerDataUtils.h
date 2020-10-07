@@ -9,7 +9,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
-#include "icarusalg/Utilities/DataProductPointerMap.h"
+#include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/enumerate.h"

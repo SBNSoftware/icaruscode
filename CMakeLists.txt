@@ -116,7 +116,7 @@ include(UseCPack)
 
 message(STATUS
   "\n-- ==="
-  "\n-- === *** End of configuration of icaruscode ***"
+  "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
   "\n-- "
   )
