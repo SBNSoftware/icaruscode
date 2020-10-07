@@ -21,7 +21,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
-#include "icarusalg/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
