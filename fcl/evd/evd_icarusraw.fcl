@@ -1,5 +1,4 @@
 #include "evdservices_icarus.fcl"
-#include "services_common_icarus.fcl"
 
 process_name: EvdIcarus
 
