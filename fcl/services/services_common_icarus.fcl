@@ -1,5 +1,5 @@
 #
-# File:    services_icarus.fcl
+# File:    services_common_icarus.fcl
 # Purpose: presets for service configurations for non-simulation jobs.
 #
 # The configuration presets can be used as a starting point, with more services added,
@@ -65,7 +65,7 @@ icarus_art_services: {
 
   scheduler:   { defaultExceptions: false }    # Make all uncaught exceptions fatal.
 
-#  message:     @local::icarus_message_services_interactive # from `messages_icarus.fcl`
+  message:     @local::services_basic_icarus.message # from `services_basic_icarus.fcl`
 
   TimeTracker: {
     printSummary: true
@@ -85,6 +85,20 @@ icarus_art_services: {
 
 
 ################################################################################
+###  icarus_random_services
+###
+#
+# Standard ICARUS configuration of random number related services.
+#
+icarus_random_services:
+{
+    RandomNumberGenerator:               {}
+    NuRandomService:                     @local::per_event_NuRandomService
+
+} # icarus_random_services
+
+
+################################################################################
 ###  icarus_common_services
 ###
 #
@@ -98,11 +112,11 @@ icarus_common_services:
     # Load the service that manages root files for histograms.
     TFileService:                        { fileName: "Supplemental-%ifb_%tc-%p.root" }
 
-    RandomNumberGenerator:               {}
-    NuRandomService:                     @local::per_event_NuRandomService
     FileCatalogMetadata:                 @local::art_file_catalog_mc
 
-                                         @table::icarus_common_services
+                                         @table::icarus_random_services
+
+                                         @table::icarus_basic_services
 
 } # icarus_common_services
 
