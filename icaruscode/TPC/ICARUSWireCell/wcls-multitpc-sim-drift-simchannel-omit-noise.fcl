@@ -1,10 +1,10 @@
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "simulationservices_icarus.fcl"
 
 services:
 {
    TFileService:            { }
-                             @table::icarus_basic_services
+                             @table::icarus_common_services
 }
 
 process_name: wclssim
@@ -54,7 +54,7 @@ physics :{
               # Transverse diffusion constant [cm2/ns]
               DT: @local::icarus_largeantparameters.TransverseDiffusion
 
-              # load values from services_icarus.fcl
+              # load values from services_common_icarus.fcl
               # Electron lifetime [microseconds]
               lifetime: @local::icarus_detproperties.Electronlifetime
 

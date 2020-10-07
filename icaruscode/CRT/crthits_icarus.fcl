@@ -12,7 +12,7 @@ services:
   # Load the service that manages root files for histograms.
   TFileService:           { fileName: "crthitproducer_hist.root" }
   message:                 @local::icarus_message_services_prod_debug
-                           @table::icarus_basic_services
+                           @table::icarus_common_services
 } # services
 
 # The 'source' section tells the script to expect an input file with art::Event records.

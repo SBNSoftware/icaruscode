@@ -25,7 +25,7 @@
 #    distributions
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
@@ -36,7 +36,7 @@ services: {
   
   # this provides: file service, random management (unused),
   #                Geometry, detector properties and clocks
-  @table::icarus_basic_services
+  @table::icarus_common_services
   
   # currently unused (remove the line if they start mattering):
   LArPropertiesService:      @erase

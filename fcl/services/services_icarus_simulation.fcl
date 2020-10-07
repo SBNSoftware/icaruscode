@@ -35,7 +35,7 @@
 
 #include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "signalservices_icarus.fcl"
 #include "photpropservices_icarus.fcl"

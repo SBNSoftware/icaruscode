@@ -1,7 +1,7 @@
 #include "simple_channel_info.fcl"
 #include "redis_connection.fcl"
 #include "decoderDefs.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 BEGIN_PROLOG
 analysis_config: {
   // producer of digits and header info

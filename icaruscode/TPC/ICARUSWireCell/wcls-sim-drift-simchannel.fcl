@@ -1,9 +1,9 @@
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 
 services:
 {
    TFileService:            { }
-                             @table::icarus_basic_services
+                             @table::icarus_common_services
 }
 # explicitly set the split wire geometry 
 services.Geometry: @local::icarus_split_induction_nooverburden_geometry

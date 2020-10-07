@@ -13,14 +13,14 @@
 #   first version
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "radiological_model_icarus.fcl"
 
 process_name: BackgroundGen
 
 services: {
   
-  @table::icarus_basic_services # from services_icarus.fcl
+  @table::icarus_common_services # from services_common_icarus.fcl
   
 } # services
 

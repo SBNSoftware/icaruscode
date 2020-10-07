@@ -1,5 +1,5 @@
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "crtbacktracker_icarus.fcl"
 
@@ -13,7 +13,7 @@ services:
   TimeTracker:            {}
 
   message:                @local::icarus_message_services_prod_debug
-                          @table::icarus_basic_services
+                          @table::icarus_common_services
 
   #@table::icarus_backtracking_services
 

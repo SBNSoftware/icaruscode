@@ -65,7 +65,7 @@ icarus_art_services: {
 
   scheduler:   { defaultExceptions: false }    # Make all uncaught exceptions fatal.
 
-  message:     @local::services_basic_icarus.message # from `services_basic_icarus.fcl`
+  message:     @local::icarus_basic_services.message # from `services_basic_icarus.fcl`
 
   TimeTracker: {
     printSummary: true
