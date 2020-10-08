@@ -57,8 +57,8 @@
     There are different possible workflows currently supported
      A. raw data analysis
        1. convert raw data files into ntuples
-       2. Uses single analyzer module: BernCRTZMQAna_module.cc
-       3. Run with "lar -c analyze_BernCRTZMQ.fcl -s data.artroot -T ntuple.root"
+       2. Uses single analyzer module: BernCRTAna_module.cc
+       3. Run with "lar -c analyze_BernCRT.fcl -s data.artroot -T ntuple.root"
      B. noise monitoring and analysis
        1. sepecialized version of (A) for data where SiPM HV is off
        2. Uses single analyzer module: CrtNoiseMonTool_module.cc
