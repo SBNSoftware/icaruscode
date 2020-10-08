@@ -1,14 +1,8 @@
 cet_enable_asserts()
 
 art_make(
-          MODULE_LIBRARIES
-                        sbndaq-artdaq-core_Overlays_ICARUS 
-                        artdaq-core_Utilities
-                        larcorealg_Geometry
-                        larcore_Geometry_Geometry_service
+          SERVICE_LIBRARIES
                         lardata_Utilities
-                        larevt_Filters
-                        lardataobj_RawData
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
                         ${LIBWDA}
@@ -31,8 +25,4 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
-
-# Add our tools directory
-add_subdirectory(DecoderTools)
-add_subdirectory(ChannelMapping)
 

@@ -25,7 +25,7 @@
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
-#include "icaruscode/Decode/TPCChannelmapping.h"
+#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
 
 // std includes
 #include <string>
