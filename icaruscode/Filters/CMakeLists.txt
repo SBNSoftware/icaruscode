@@ -1,6 +1,6 @@
 art_make( 
           MODULE_LIBRARIES
-                        icaruscode_Utilities
+                        icarusalg_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         larsim_Simulation 

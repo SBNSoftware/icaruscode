@@ -20,7 +20,7 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
 #include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
-#include "icaruscode/Utilities/WaveformOperations.h"
+#include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

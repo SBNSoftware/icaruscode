@@ -77,6 +77,7 @@ find_ups_product( libwda )
 find_ups_product( sbnobj )
 find_ups_product( sbncode )
 find_ups_product( icarus_signal_processing )
+find_ups_product( icarusalg )
 find_ups_product( icarusutil )
 find_ups_product( icarus_data )
 

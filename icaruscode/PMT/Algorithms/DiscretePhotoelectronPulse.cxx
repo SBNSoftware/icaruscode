@@ -9,7 +9,7 @@
 
 // library header
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
-#include "icaruscode/Utilities/WaveformOperations.h"
+#include "icarusalg/Utilities/WaveformOperations.h"
 
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"

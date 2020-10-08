@@ -5,6 +5,7 @@ art_make(
   LIB_LIBRARIES 
     larcorealg_Geometry
     lardataobj_RawData
+    icarusalg_Utilities
 #    lardataobj_RecoBase
 #    lardata_Utilities
 #    larcorealg_Geometry
