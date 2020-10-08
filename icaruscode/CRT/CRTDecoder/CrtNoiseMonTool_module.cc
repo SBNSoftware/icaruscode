@@ -54,6 +54,7 @@ private:
   std::map<uint8_t,std::vector<float>> macToRate;
   std::map<uint8_t,std::vector<uint64_t>> macToRateTime;
 
+  //AA: this list will need to be updated (and perhaps moved to a separate file)
   const uint8_t macsWestIn[6]   = {21,19,17,22,23,24};
   const uint8_t macsWestOut[6]  = {13,11,10,14,15,16};
   const uint8_t macsNorthIn[4]  = {7,6,3,1};
@@ -148,7 +149,7 @@ void icarus::crt::CrtNoiseMonTool::analyze_fragment(artdaq::Fragment & frag) {
   const double dt = (md->this_poll_start() - md->last_poll_start())*1.0e-9; //interval between consecutive events [s]
   const float rate = 1.0e-3*md->feb_events_per_poll()/dt; //poll averaged event rate [kHz]
 
-  if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) return;
+  if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) return; //avoid processing the same poll multiple times (they all have the same 
   macToRateTime[mac5].push_back(runtime);
   macToRate[mac5].push_back(rate);
 
