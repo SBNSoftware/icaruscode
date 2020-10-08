@@ -148,6 +148,7 @@ simple_plugin( CrtCalAnalysis "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
   CRT_CAL
 )
 

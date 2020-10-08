@@ -32,6 +32,8 @@ physics:
 
    crtCalAna: {
      module_type: CrtCalAnalysis
+
+#AA: perhaps we need to rethink this logic. In the data files we will typically have CRT data from all the walls
      #mac5: [1,3,6,7] #north inner
      #mac5: [4,5,8,9] #north outer
      #mac5: [10,11,13,14,15,16] #west outer

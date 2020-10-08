@@ -18,8 +18,10 @@
 #include "canvas/Utilities/Exception.h"
 
 //local includes
-#include "sbndaq-artdaq-core/Overlays/Common/BernCRTZMQFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/Common/BernCRTFragment.hh"
 #include "artdaq-core/Data/Fragment.hh"
+#include "artdaq-core/Data/ContainerFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 #include "icaruscode/CRT/CRTDecoder/CrtCal.h"
 
 //ROOT includes
@@ -78,10 +80,11 @@ public:
 
 
 private:
+  void analyze_fragment(artdaq::Fragment &);
 
   art::ServiceHandle<art::TFileService> tfs;
 
-  vector<uint8_t> macs;
+  vector<uint8_t> macs; 
   map<uint8_t,vector<TH1F*>*> macToHistos;
   TTree* calTree;
 
@@ -121,7 +124,6 @@ private:
 icarus::crt::CrtCalAnalyzer::CrtCalAnalyzer(Parameters const& config)
   : EDAnalyzer(config) , macs(config().Mac())
 {
-  //macs = {1,3,6,7}; 
   fMac5 = 0;
   for(int i=0; i<(int)macs.size(); i++){
       macToHistos[macs[i]] = new vector<TH1F*>();
@@ -206,39 +208,48 @@ void icarus::crt::CrtCalAnalyzer::beginJob(){
 
 }
 
-void icarus::crt::CrtCalAnalyzer::analyze(art::Event const & evt)
-{
+void icarus::crt::CrtCalAnalyzer::analyze_fragment(artdaq::Fragment & frag) {
 
-  //we get a 'handle' to the fragments in the event
-  //this will act like a pointer to a vector of artdaq fragments
-  art::Handle< std::vector<artdaq::Fragment> > rawFragHandle;
+  sbndaq::BernCRTFragment bern_fragment(frag);
+  sbndaq::BernCRTEvent const* bevt = bern_fragment.eventdata();
+
+  fMac5     = bevt->MAC5();
   
-  //we fill the handle by getting the right data according to the label
-  //the module label will be 'daq', while the instance label (second argument) matches the type of fragment
-  evt.getByLabel("daq","BERNCRTZMQ", rawFragHandle);
+  if(macToHistos.find(fMac5) == macToHistos.end()) return;
+  
+  for(int ch=0; ch<32; ch++) {
+    macToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
+  }
 
-  //this checks to make sure it's ok
-  if (!rawFragHandle.isValid()) return;
-
-
-  for (size_t idx = 0; idx < rawFragHandle->size(); ++idx) { // loop over the fragments of an event
-
-    const auto& frag((*rawFragHandle)[idx]); // use this fragment as a reference to the same data
-
-    //this applies the 'overlay' to the fragment, to tell it to treat it like a BernCRTZMQ fragment
-    sbndaq::BernCRTZMQFragment bern_fragment(frag);
-    
-    //event data
-    sbndaq::BernCRTZMQEvent const* bevt = bern_fragment.eventdata();
-
-    fMac5     = bevt->MAC5();
-
-    for(int ch=0; ch<32; ch++) {
-	macToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
-    }
-
-  }//end loop over fragments
 }//end analyze
+
+void icarus::crt::CrtCalAnalyzer::analyze(art::Event const & evt)
+{ 
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  evt.getManyByType(fragmentHandles); 
+  for (auto handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
+    
+    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
+      //Container fragment
+      for (auto cont : *handle) { 
+        artdaq::ContainerFragment contf(cont);
+        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
+          continue; 
+        for (size_t ii = 0; ii < contf.block_count(); ++ii)
+          analyze_fragment(*contf[ii].get());
+      }
+    }
+    else {
+      //normal fragment
+      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
+      for (auto frag : *handle)
+        analyze_fragment(frag);
+    }
+  }
+} //analyze
+
 
 void icarus::crt::CrtCalAnalyzer::endJob(){
 
