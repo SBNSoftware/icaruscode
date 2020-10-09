@@ -12,7 +12,7 @@
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
-#include "icaruscode/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/Utilities/NestedIterator.h" // lar::double_fwd_const_iterator

@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v09_05_00
+parent icaruscode v09_06_00
 defaultqual e19
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -34,12 +34,12 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-larsoft                   v09_05_00
+larsoft                   v09_06_00
+icarusalg                 v09_06_00
 icarusutil                v09_01_00
-icarus_signal_processing  v09_04_01
+icarus_signal_processing  v09_06_00
 icarus_data               v09_01_00
 genie_xsec                v3_00_04a
-guideline_sl              v2_0_0
 fftw                      v3_3_8a
 libwda                    v2_28_0
 sbndaq_artdaq_core        v0_07_00_of0
@@ -51,13 +51,13 @@ end_product_list
 # We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier	larsoft	   icarusutil   icarus_signal_processing   icarus_data  sbndaq_artdaq_core   genie_xsec         fftw  guideline_sl libwda notes
-e19:debug	e19:debug  e19:debug    e19:debug                  -nq-         e19:debug      G1810a0211a:k250:e1000   debug    -nq-           -nq-
-e19:opt		e19:opt	   e19:opt      e19:opt                    -nq-         e19:opt	       G1810a0211a:k250:e1000   opt      -nq-           -nq-
-e19:prof    	e19:prof   e19:prof     e19:prof                   -nq-         e19:prof       G1810a0211a:k250:e1000   prof     -nq-           -nq-
-c7:debug    	c7:debug   c7:debug     c7:debug                   -nq-         c7:debug       G1810a0211a:k250:e1000   debug    -nq-           -nq-
-c7:opt      	c7:opt     c7:opt       c7:opt                     -nq-         c7:opt	       G1810a0211a:k250:e1000   opt      -nq-           -nq-
-c7:prof     	c7:prof    c7:prof      c7:prof                    -nq-         c7:prof	       G1810a0211a:k250:e1000   prof     -nq-           -nq-
+qualifier	larsoft	   icarusalg   icarusutil   icarus_signal_processing   icarus_data  sbndaq_artdaq_core   genie_xsec         fftw   libwda notes
+e19:debug	e19:debug  e19:debug    e19:debug    e19:debug                  -nq-         e19:debug      G1810a0211a:k250:e1000   debug       -nq-
+e19:opt		e19:opt	   e19:opt      e19:opt      e19:opt                    -nq-         e19:opt	    G1810a0211a:k250:e1000   opt         -nq-
+e19:prof    e19:prof   e19:prof     e19:prof     e19:prof                   -nq-         e19:prof       G1810a0211a:k250:e1000   prof        -nq-
+c7:debug    c7:debug   c7:debug     c7:debug     c7:debug                   -nq-         c7:debug       G1810a0211a:k250:e1000   debug       -nq-
+c7:opt      c7:opt     c7:opt       c7:opt       c7:opt                     -nq-         c7:opt	        G1810a0211a:k250:e1000   opt         -nq-
+c7:prof     c7:prof    c7:prof      c7:prof      c7:prof                    -nq-         c7:prof	    G1810a0211a:k250:e1000   prof        -nq-
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

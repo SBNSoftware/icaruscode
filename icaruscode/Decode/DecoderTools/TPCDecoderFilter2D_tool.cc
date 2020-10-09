@@ -23,12 +23,10 @@
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
-#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/Morph1D.h"
-#include "icarus_signal_processing/MorphologicalFunctions1D.h"
 #include "icarus_signal_processing/FFTFilterFunctions.h"
 
 // std includes
@@ -176,12 +174,9 @@ private:
     icarus_signal_processing::VectorFloat       fThresholdVec;
 
     std::vector<unsigned int>                   fPlaneVec;
-      
-    database::TPCFragmentIDToReadoutIDMap       fFragmentToReadoutMap;
-      
-    database::TPCReadoutBoardToChannelMap       fReadoutBoardToChannelMap;
     
     const geo::Geometry*                        fGeometry;              //< pointer to the Geometry service
+    const icarusDB::IICARUSChannelMap*          fChannelMap;
 
     // Keep track of the FFT 
     std::unique_ptr<icarus_signal_processing::IFFTFilterFunction> fFFTFilter; ///< Object to handle thread safe FFT
@@ -233,41 +228,7 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
     for(const auto& idPair : tempIDVec) fFragmentIDMap[idPair.first] = idPair.second;
 
     fGeometry               = art::ServiceHandle<geo::Geometry const>{}.get();
-
-    cet::cpu_timer theClockFragmentIDs;
-
-    theClockFragmentIDs.start();
-
-    if (database::BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
-    {
-        throw cet::exception("TPCDecoderFilter2D") << "Cannot recover the Fragment ID channel map from the database \n";
-    }
-    else if (fDiagnosticOutput)
-    {
-        std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " << pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
-    }
-
-    theClockFragmentIDs.stop();
-
-    double fragmentIDsTime = theClockFragmentIDs.accumulated_real_time();
-
-    cet::cpu_timer theClockReadoutIDs;
-
-    theClockReadoutIDs.start();
-
-    if (database::BuildTPCReadoutBoardToChannelMap(fReadoutBoardToChannelMap))
-    {
-        std::cout << "******* FAILED TO CONFIGURE CHANNEL MAP ********" << std::endl;
-        throw cet::exception("TPCDecoderFilter2D") << "POS didn't read the F'ing database again \n";
-    }
-
-    theClockReadoutIDs.stop();
-
-    double readoutIDsTime = theClockReadoutIDs.accumulated_real_time();
-
-
-    if (fDiagnosticOutput) std::cout << "==> FragmentID map time: " << fragmentIDsTime << ", Readout IDs time: " << readoutIDsTime << std::endl;
+    fChannelMap             = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
 //    std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
 //    std::vector<double> highPassCutoff = {12., 12., 2.};
@@ -301,12 +262,10 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
     // Recover the Fragment id:
     artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragment.fragmentID();
 
-    database::TPCFragmentIDToReadoutIDMap::iterator fragItr = fFragmentToReadoutMap.find(fragmentID);
-
     if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << " ";
 
-    // If fragment ID not in map then we might have a special configuration which has been input via fhicl
-    if (fragItr == fFragmentToReadoutMap.end())
+    // Look for special case of diagnostic running
+    if (!fChannelMap->hasFragmentID(fragmentID))
     {
         if (fFragmentIDMap.find(fragmentID) == fFragmentIDMap.end()) //throw std::runtime_error("You can't save yourself");
         {
@@ -320,41 +279,40 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
 
         fragmentID = fFragmentIDMap[fragmentID];
 
-        fragItr = fFragmentToReadoutMap.find(fragmentID);
-
-        if (fragItr == fFragmentToReadoutMap.end())
+        if (!fChannelMap->hasFragmentID(fragmentID))
         {
             if (fDiagnosticOutput) std::cout << "WTF? This really can't happen, right?" << std::endl;
             return;
         }
+
     }
 
     if (fDiagnosticOutput) std::cout << std::endl;
 
     // Recover the crate name for this fragment
-    const std::string& crateName = fragItr->second.first;
+    const std::string& crateName = fChannelMap->getCrateName(fragmentID);
 
     // Get the board ids for this fragment
-    database::ReadoutIDVec boardIDVec(fragItr->second.second.size());
+    const icarusDB::ReadoutIDVec& readoutIDVec = fChannelMap->getReadoutBoardVec(fragmentID);
+
+    icarusDB::ReadoutIDVec boardIDVec(readoutIDVec.size());
 
     // Note we want these to be in "slot" order...
-    for(const auto& boardID : fragItr->second.second)
+    for(const auto& boardID : readoutIDVec)
     {
         // Look up the channels associated to this board
-        database::TPCReadoutBoardToChannelMap::const_iterator boardItr = fReadoutBoardToChannelMap.find(boardID);
-
-        if (boardItr == fReadoutBoardToChannelMap.end())
+        if (!fChannelMap->hasBoardID(boardID))
         {
             if (fDiagnosticOutput)
             {
                 std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-                std::cout << "    - boardID: " << std::hex << boardID << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
+                std::cout << "    - boardID: " << std::hex << boardID << ", board map size: " << readoutIDVec.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
             }
 
             return;
         }
 
-        unsigned int boardSlot = boardItr->second.first;
+        unsigned int boardSlot = fChannelMap->getBoardSlot(boardID);
 
         boardIDVec[boardSlot] = boardID;
     }
@@ -401,21 +359,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
     // and store into vectors useful for the next steps
     for(size_t board = 0; board < boardIDVec.size(); board++)
     {
-        // Look up the channels associated to this board
-        database::TPCReadoutBoardToChannelMap::const_iterator boardItr = fReadoutBoardToChannelMap.find(boardIDVec[board]);
-
-        if (boardItr == fReadoutBoardToChannelMap.end())
-        {
-            if (fDiagnosticOutput)
-            {
-                std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-                std::cout << "    - board: " << board << ", boardIDVec: " << std::hex << boardIDVec[board] << ", board map size: " << fReadoutBoardToChannelMap.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
-            }
-
-            continue;
-        }
-
-        const database::ChannelPlanePairVec& channelPlanePairVec = boardItr->second.second;
+        const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[board]);
 
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
@@ -532,18 +476,18 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                 }
 
                 // Run the coherent filter
-                denoiser.removeCoherentNoise2D(fWaveLessCoherent.begin()  + boardOffset + startChannel,
-                                               fPedCorWaveforms.begin()   + boardOffset + startChannel,
-                                               fMorphedWaveforms.begin()  + boardOffset + startChannel,
-                                               fIntrinsicRMS.begin()      + boardOffset + startChannel,
-                                               fSelectVals.begin()        + boardOffset + startChannel,
-                                               fROIVals.begin()           + boardOffset + startChannel,
-                                               fCorrectedMedians.begin()  + boardOffset + startChannel,
-                                               filterFunctionPtr.get(),
-                                               fThresholdVec.begin()      + boardOffset + startChannel,
-                                               deltaChannels,
-                                               fCoherentNoiseGrouping,
-                                               fMorphWindow);
+                denoiser.removeCoherentNoiseHough(fWaveLessCoherent.begin()  + boardOffset + startChannel,
+                                                  fPedCorWaveforms.begin()   + boardOffset + startChannel,
+                                                  fMorphedWaveforms.begin()  + boardOffset + startChannel,
+                                                  fIntrinsicRMS.begin()      + boardOffset + startChannel,
+                                                  fSelectVals.begin()        + boardOffset + startChannel,
+                                                  fROIVals.begin()           + boardOffset + startChannel,
+                                                  fCorrectedMedians.begin()  + boardOffset + startChannel,
+                                                  filterFunctionPtr.get(),
+                                                  fThresholdVec.begin()      + boardOffset + startChannel,
+                                                  deltaChannels,
+                                                  fCoherentNoiseGrouping,
+                                                  fMorphWindow);
 
                     }
 

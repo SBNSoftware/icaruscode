@@ -9,7 +9,7 @@
  */
 
 // ICARUS libraries
-#include "icaruscode/Geometry/ICARUSChannelMapAlg.h"
+#include "icarusalg/Geometry/ICARUSChannelMapAlg.h"
 
 // LArSoft libraries
 #include "larcore/Geometry/ChannelMapSetupTool.h"

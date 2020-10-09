@@ -1,4 +1,4 @@
-# File: prodcorsika_proton_intime_icarus.fcl
+# File: prodcorsika_proton_intime_icarus_bnb.fcl
 # Purpose: generation of "intime-cosmic" monte-carlo -- events where a cosmic triggers the beam spill
 # Author: Gray Putnam (grayputnam@uchicago.edu)
 # Date: June 26, 2020
@@ -34,7 +34,7 @@
 # do not pass the filtering in order to tune how many to generate
 
 #include "corsika_icarus.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 
@@ -76,7 +76,8 @@ physics:
       KeepOnlyMuons: false
       MinKE: 1e-1 # some energy threshold to produce a PE
       MaxT: 1900 # [ns] add a little buffer on the far end of the photon time window
-      MinT: -25202 # [ns]
+      #MinT: -25202 # [ns]
+      MinT: -200 # [ns] Change: filter to only allow muons starting at the beam spill (with a small buffer)
       SortParticles: true
       module_type: "FilterGenInTime"
     }
@@ -116,7 +117,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:	"prodcorsika_intime_proton_icarus_%tc.root"
+   fileName:	"prodcorsika_intime_proton_icarus_bnb_%tc.root"
    dataTier:    "simulated"
    compressionLevel: 1
    fastCloning: false

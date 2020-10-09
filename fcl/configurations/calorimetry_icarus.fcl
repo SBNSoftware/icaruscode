@@ -14,7 +14,7 @@ icarus_generalcalomc:
 {
  module_type:            "GeneralCalorimetry"
  TrackModuleLabel:       "track3d"
- CaloAlg:	         @local::icarus_calorimetryalgmc
+ CaloAlg:	             @local::icarus_calorimetryalgmc
 }
 
 icarus_trackcalorimetryalg:                @local::standard_trackcalorimetryalg

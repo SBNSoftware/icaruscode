@@ -35,7 +35,7 @@
 
 #include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
 #include "signalservices_icarus.fcl"
 #include "photpropservices_icarus.fcl"
@@ -49,7 +49,7 @@ BEGIN_PROLOG
 # Define icarus_gen_services ... (0)
 icarus_gen_services: {
   
-  @table::icarus_basic_services
+  @table::icarus_common_services
   
 }
 
@@ -57,7 +57,7 @@ icarus_gen_services: {
 # this is mostly a helper
 icarus_simulation_basic_services: {
   
-    @table::icarus_basic_services
+    @table::icarus_common_services
 
     LArG4Parameters:                       @local::icarus_largeantparameters
     LArVoxelCalculator:                    @local::icarus_larvoxelcalculator

@@ -13,7 +13,7 @@
 
 // // ICARUS libraries
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
-#include "icaruscode/Utilities/SampledFunction.h"
+#include "icarusalg/Utilities/SampledFunction.h"
 
 // LArSoft libraries
 #include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
