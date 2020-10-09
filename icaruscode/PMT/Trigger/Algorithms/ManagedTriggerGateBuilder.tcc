@@ -212,6 +212,11 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       //
       if (ppLowerThreshold && (relSample < **ppLowerThreshold)) {
         
+        MF_LOG_TRACE(details::TriggerGateDebugLog)
+          << "Sample " << sample << " (" << relSample << " on "
+          << waveOps.baseline() << ") leaving thresholds at "
+          << waveformTickStart << " + " << optical_time_ticks{ iSample };
+        
         do { // we keep opening gates at increasing thresholds
           
           // if there is an lower threshold, there must also be a open gate!
@@ -221,8 +226,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
           (--nextGateToOpen)->belowThresholdAt
             (waveformTickStart + optical_time_ticks{ iSample });
           
-//           MF_LOG_TRACE(details::TriggerGateDebugLog)
-//              << "  => decreasing threshold " << **ppLowerThreshold;
+          MF_LOG_TRACE(details::TriggerGateDebugLog)
+            << "  => decreasing threshold " << **ppLowerThreshold;
           
           if (*ppLowerThreshold == tbegin) { // was this the bottom threshold?
             ppLowerThreshold = std::nullopt;
@@ -244,22 +249,24 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       //
       else if (ppUpperThreshold && (relSample >= **ppUpperThreshold)) {
         
+        MF_LOG_TRACE(details::TriggerGateDebugLog)
+          << "Sample " << sample << " (" << relSample << " on "
+          << waveOps.baseline() << ") passing thresholds at "
+          << waveformTickStart << " + " << optical_time_ticks{ iSample };
+        
         do { // we keep opening gates at increasing thresholds
+          
+          // note that it is not guaranteed that gates at lower thresholds are
+          // still open (that depends on the builder implementation)
           
           // if there is an upper threshold, there must also be a closed gate!
           assert(nextGateToOpen != channelGates.end());
           
           MF_LOG_TRACE(details::TriggerGateDebugLog)
-            << "Opening thr=" << (**ppUpperThreshold)
-            << " at " << waveformTickStart
-            << " + " << optical_time_ticks{ iSample };
-          
+            << "Opening thr=" << (**ppUpperThreshold);
           
           (nextGateToOpen++)->aboveThresholdAt
             (waveformTickStart + optical_time_ticks{ iSample });
-          
-//           MF_LOG_TRACE(details::TriggerGateDebugLog)
-//             << "  => opening threshold " << **ppUpperThreshold;
           
           if (++*ppUpperThreshold == tend) { // was this the top threshold?
             ppUpperThreshold = std::nullopt;
