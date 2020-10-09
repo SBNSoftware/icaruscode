@@ -30,6 +30,7 @@ void icarus::trigger::details::EventInfo_t::dump(std::ostream& out) const {
       if (isNu_e()) out << " nu_e";
       out << "\nThe first neutrino has E=" << NeutrinoEnergy()
         << " and becomes a lepton with E=" << LeptonEnergy()
+        << " and lepton angle with Theta=" << LeptonAngle()
         << " with a " << sim::TruthInteractionTypeName(InteractionType())
         << " interaction at " << InteractionTime()
         ;

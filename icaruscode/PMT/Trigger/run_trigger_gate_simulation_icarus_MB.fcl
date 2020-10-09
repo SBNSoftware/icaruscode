@@ -422,7 +422,7 @@ outputs: {
       "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
       "keep sim::SimEnergyDeposits_largeant_*_G4", #drop this one
     #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
-    #  "keep *_opdaq_*_DetSim",
+      "keep *_opdaq_*_DetSim",
       "keep *_*_*_Trigger",
       "drop longlonguinticarus::trigger::ReadoutTriggerGateraw::OpDetWaveformvoidart::Assns_*_*_Trigger"
       ]

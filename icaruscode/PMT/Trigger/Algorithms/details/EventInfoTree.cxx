@@ -28,6 +28,7 @@ icarus::trigger::details::EventInfoTree::EventInfoTree
     this->tree().Branch("Time",     &fTime);
     this->tree().Branch("NuE",      &fNuE);
     this->tree().Branch("OutLeptE", &fOutLeptE);
+    this->tree().Branch("OutLeptAngle", &fOutLeptAngle);
 //  this->tree().Branch("IsNu_mu", &fIsNu_mu);
 //  this->tree().Branch("IsNu_e", &fIsNu_e);
   } // if generated
@@ -61,6 +62,7 @@ void icarus::trigger::details::EventInfoTree::assignEvent
     fTime     = static_cast<Double_t>(info.InteractionTime());
     fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
     fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
+    fOutLeptAngle = info.LeptonAngle();
  // fIsNu_mu = static_cast<Bool_t>(info.isNu_mu());
  // fIsNu_e = static_cast<Bool_t>(info.isNu_e());
 

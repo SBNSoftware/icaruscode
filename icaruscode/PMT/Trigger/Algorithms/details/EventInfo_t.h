@@ -104,6 +104,9 @@ struct icarus::trigger::details::EventInfo_t {
 
   /// Returns the lepton energy [GeV]
   GeV LeptonEnergy() const { return fLeptonEnergy; }
+  
+  /// Returns angle between incoming and outgoing leptons, in radians
+  double LeptonAngle() const { return fLeptonAngle; }
 
   /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
@@ -190,6 +193,9 @@ struct icarus::trigger::details::EventInfo_t {
   /// Sets the lepton energy.
   void SetLeptonEnergy(GeV eL) { setGen(); fLeptonEnergy = eL; }
 
+  /// Sets the lepton angle.
+  void SetLeptonAngle(double aL) { fLeptonAngle = aL; }
+  
   /// Sets the interaction type
   void SetInteractionType(int type) { setGen(); fInteractionType = type; }
 
@@ -263,6 +269,8 @@ struct icarus::trigger::details::EventInfo_t {
   GeV fNeutrinoEnergy { 0.0 };
   GeV fLeptonEnergy { 0.0 };
   //GeV fNucleonEnergy { 0.0 };
+
+  double fLeptonAngle { 0.0 };
   
   bool nu_mu { false };
   bool nu_e { false };

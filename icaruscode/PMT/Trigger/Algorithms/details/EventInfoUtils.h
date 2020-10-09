@@ -190,6 +190,7 @@ class icarus::trigger::details::EventInfoExtractor {
   // --- BEGIN -- Set up  ------------------------------------------------------
   
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
+
   
   TimeSpan_t const fInSpillTimes; ///< Start and stop time for "in spill" label.
   
@@ -214,22 +215,27 @@ class icarus::trigger::details::EventInfoExtractor {
    */
   void fillGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-
+  void fillGeneratorCosmicInfo
+    (EventInfo_t& info, simb::MCTruth const& truth) const;
   /// Extracts information from `truth` and sets it as the "main" interaction
   /// information. Previous information is typically overwritten.
   void setMainGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-  
+  void setMainGeneratorCosmicInfo 
+    (EventInfo_t& info, simb::MCTruth const& truth) const;
+
   /// Adds selected information from the interaction in `truth` to `info`
   /// record.
   void addGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-    
+  void addGeneratorCosmicInfo
+    (EventInfo_t& info, simb::MCTruth const& truth) const;
+ 
   /// Adds the energy depositions from `energyDeposits` into `info` record.
   void addEnergyDepositionInfo(
     EventInfo_t& info, std::vector<sim::SimEnergyDeposit> const& energyDeposits
     ) const;
-
+  bool interceptsTPCActiveVolume(const TLorentzVector& starPos, const TLorentzVector& endPos) const;
   /// Returns in which TPC volume `point` falls in (`nullptr` if none).
   geo::TPCGeo const* pointInTPC(geo::Point_t const& point) const;
 
@@ -338,7 +344,11 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
 {
   
   EventInfo_t info;
-  
+ 
+
+   auto const& particles 
+     = event.template getByLabel<std::vector<simb::MCParticle>>(art::InputTag{"largeant"}); 
+
   //
   // generator information
   //
@@ -393,6 +403,8 @@ void icarus::trigger::details::EventInfoExtractor::declareConsumables(
       (inputTag);
   }
   
+consumesCollector.template consumes<std::vector<simb::MCParticle>>(art::InputTag{"largeant"});
+consumesCollector.template consumes<std::vector<sim::SimPhotons>>(art::InputTag{"largeant"});
 } // icarus::trigger::details::EventInfoExtractor::declareConsumables()
 
 
