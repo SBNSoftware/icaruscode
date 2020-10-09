@@ -1,0 +1,151 @@
+#
+# File:    services_common_icarus.fcl
+# Purpose: presets for service configurations for non-simulation jobs.
+#
+# The configuration presets can be used as a starting point, with more services added,
+# some removed, and some configuration amended or rewritten.
+# A complete example of these cases:
+#     
+#     services: {
+#         
+#         @table::icarus_common_services  # include all ICARUS basic services
+#         
+#         # rewrite the configuration of a service:
+#         messages: @local::icarus_message_services_prod
+#         
+#         # rewrite the configuration of a service explicitly:
+#         TFileService: {
+#           fileName: "TreeFile.root"
+#         }
+#
+#         # add a set of services
+#         @table::icarus_backtracking_services
+#         
+#         # remove a service
+#         TimeTracker: @erase
+#         
+#     } # services
+#
+#     # amend a single configuration parameter of a service
+#     services.NuRandomService.policy: "random"
+#     
+#
+# Available configurations:
+#
+# * `icarus_common_services`: minimal set of art + LArSoft services
+# * `icarus_wirecalibration_services`: for signal processing and TPC wire signal
+#      calibration
+#
+#
+
+#include "seedservice.fcl"
+#include "magfield_larsoft.fcl"
+
+#include "services_basic_icarus.fcl"
+#include "signalservices_icarus.fcl"
+#include "correctionservices_icarus.fcl"
+#include "calibrationservices_icarus.fcl"
+#include "sam_icarus.fcl"
+
+BEGIN_PROLOG
+
+
+################################################################################
+###  icarus_art_services
+###
+#
+# A set of basic art services you never want to be without.
+# Includes:
+#  * resource monitoring (`TimeTracker`, `MemoryTracker`)
+#  * message facility, with interactive (non-debug) configuration
+# 
+# Although you may want to use different message facility service settings.
+#
+icarus_art_services: {
+
+  scheduler:   { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+
+  message:     @local::icarus_basic_services.message # from `services_basic_icarus.fcl`
+
+  TimeTracker: {
+    printSummary: true
+    dbOutput: {
+      filename:  "TimingReport.db"
+      overwrite: true
+    }
+  }
+  MemoryTracker: {
+    dbOutput: {
+      filename:  "MemoryReport.db"
+      overwrite: true
+    }
+  }
+
+} # icarus_art_services
+
+
+################################################################################
+###  icarus_random_services
+###
+#
+# Standard ICARUS configuration of random number related services.
+#
+icarus_random_services:
+{
+    RandomNumberGenerator:               {}
+    NuRandomService:                     @local::per_event_NuRandomService
+
+} # icarus_random_services
+
+
+################################################################################
+###  icarus_common_services
+###
+#
+# Standard ICARUS configuration of common services, including message service,
+# art services, geometry and properties, but not calibration services.
+#
+icarus_common_services:
+{
+    @table::icarus_art_services
+
+    # Load the service that manages root files for histograms.
+    TFileService:                        { fileName: "Supplemental-%ifb_%tc-%p.root" }
+
+    FileCatalogMetadata:                 @local::art_file_catalog_mc
+
+                                         @table::icarus_random_services
+
+                                         @table::icarus_basic_services
+
+} # icarus_common_services
+
+
+################################################################################
+###  icarus_wirecalibration_services
+###
+#
+# Standard ICARUS configuration of services required for wire signal calibration
+# (usually the first step of reconstruction).
+#
+icarus_wirecalibration_services: {
+    
+                                    @table::icarus_common_services
+    
+    SignalShapingICARUSService:     @local::icarus_signalshapingservice
+    
+                                    @table::icarus_calibration_services
+    
+} # icarus_wirecalibration_services
+
+
+################################################################################
+
+icarus_prod_services: {
+                       @table::icarus_common_services
+  FileCatalogMetadata: @local::art_file_catalog_mc
+} # icarus_prod_services
+
+END_PROLOG
+
+

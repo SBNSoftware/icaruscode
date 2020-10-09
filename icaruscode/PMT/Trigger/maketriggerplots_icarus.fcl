@@ -12,7 +12,7 @@
 #  * discriminated waveforms (with threshold)
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "trigger_icarus.fcl"
 
 process_name: TrgPlots
@@ -22,7 +22,7 @@ services: {
   
   # this provides: file service, random management (unused),
   #                Geometry, detector properties and clocks
-  @table::icarus_basic_services
+  @table::icarus_common_services
   
   # currently unused (remove the line if they start mattering):
   LArPropertiesService:      @erase

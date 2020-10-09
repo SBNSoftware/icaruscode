@@ -1,5 +1,6 @@
 #include "pandorashowertools.fcl"
 #include "pandorashowermodules.fcl"
+#include "calorimetryICARUS.fcl"
 
 BEGIN_PROLOG
 

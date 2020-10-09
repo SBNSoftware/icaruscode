@@ -1,6 +1,6 @@
 #include "icaruscode/Analysis/tools/MCTruth/IMCTruthMatching.h"
 
-#include "icaruscode/gallery/MCTruthBase/MCTruthAssociations.h"
+#include "icarusalg/gallery/MCTruthBase/MCTruthAssociations.h"
 
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Utilities/ToolMacros.h"

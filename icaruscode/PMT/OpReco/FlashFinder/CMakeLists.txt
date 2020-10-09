@@ -2,7 +2,7 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 art_make( 
 	  LIB_LIBRARIES
-		   icaruscode_Geometry
+		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}
@@ -29,7 +29,7 @@ art_make(
 		   ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
 		   icaruscode_PMT_OpReco_FlashFinder
-		   icaruscode_Geometry
+		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}

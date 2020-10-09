@@ -22,7 +22,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
-#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"

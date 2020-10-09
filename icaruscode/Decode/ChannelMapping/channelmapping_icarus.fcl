@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+
+icarus_channelmappinggservice:
+{
+    service_provider: ICARUSChannelMap
+    DiagnosticOutput: true
+}
+
+END_PROLOG

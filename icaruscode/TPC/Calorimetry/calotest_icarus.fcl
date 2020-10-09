@@ -7,7 +7,7 @@
 #include "largeantmodules.fcl"
 #include "genie_icarus.fcl"
 #include "mcreco.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 #include "calorimetry_icarus.fcl"
 #include "correctionservices_icarus.fcl"
@@ -26,7 +26,7 @@ services:
     MemoryTracker:         { ignoreTotal: 1 } # default is one
     RandomNumberGenerator: {} #ART native random number generator
     #FileCatalogMetadata:  @local::art_file_catalog_mc
-    @table::icarus_basic_services
+    @table::icarus_common_services
     @table::icarus_wirecalibration_services
     @table::icarus_backtracking_services
     @table::icarus_single_induction_nooverburden_geometry_services

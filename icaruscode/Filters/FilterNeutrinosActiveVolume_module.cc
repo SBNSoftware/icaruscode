@@ -15,7 +15,7 @@
 
 
 // ICARUS libraries
-#include "icaruscode/Utilities/WeakCurrentType.h"
+#include "icarusalg/Utilities/WeakCurrentType.h"
 
 // LArSoft libraries
 #include "larcore/Geometry/Geometry.h"
