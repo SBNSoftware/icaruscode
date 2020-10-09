@@ -39,7 +39,7 @@ icarus_photonvisibilityservice_direct: {
   
   @table::photon_propagation_timing_icarus # from photon_propogation_timing_icarus.fcl
   
-  LibraryFile:      "PhotonLibrary/PhotonLibrary-20200816.root"
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20200925.root"
   UseCryoBoundary:  false
   DoNotLoadLibrary: false
   
@@ -66,7 +66,7 @@ icarus_photonvisibilityservice_direct: {
 # This is the configuration expected to work correctly with the current version
 # of the software.
 # 
-# This configuration is used for photon visibility library: 20200816.
+# This configuration is used for photon visibility library: 20200925.
 # The "mapped" in the name refers to the mapping from the first cryostat to
 # the second one.
 #
