@@ -80,6 +80,9 @@ namespace icarus::waveform_operations {
       /// @name Operations relative to the baseline
       /// @{
 
+      /// Returns the current baseline.
+      Sample_t baseline() const { return fBaseline; }
+      
       /// Shift (addition) of an offset `shift` to the baseline.
       constexpr Sample_t shiftFromBaseline(Sample_t shift) const
         { return shiftBy(fBaseline, shift); }
