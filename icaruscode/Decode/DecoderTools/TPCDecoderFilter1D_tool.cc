@@ -23,7 +23,6 @@
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
-#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
