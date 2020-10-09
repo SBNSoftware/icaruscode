@@ -161,6 +161,7 @@ simple_plugin( AnaProducer "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
   CRT_RAW_TREE
