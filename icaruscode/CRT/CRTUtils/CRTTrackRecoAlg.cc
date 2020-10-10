@@ -31,10 +31,10 @@ void CRTTrackRecoAlg::reconfigure(const Config& config){
 
 }
 
-std::vector<std::vector<art::Ptr<sbn::crt::CRTHit>>> CRTTrackRecoAlg::CreateCRTTzeros(std::vector<art::Ptr<sbn::crt::CRTHit>> hits)
+vector<vector<art::Ptr<CRTHit>>> CRTTrackRecoAlg::CreateCRTTzeros(vector<art::Ptr<CRTHit>> hits)
 {
 
-  std::vector<std::vector<art::Ptr<sbn::crt::CRTHit>>> crtTzeroVect;
+  vector<vector<art::Ptr<CRTHit>>> crtTzeroVect;
   int iflag[2000] = {};
 
   // Sort CRTHits by time
@@ -43,9 +43,10 @@ std::vector<std::vector<art::Ptr<sbn::crt::CRTHit>>> CRTTrackRecoAlg::CreateCRTT
 
   // Loop over crt hits
   for(size_t i = 0; i<hits.size(); i++){
+
       //if hit unused
       if(iflag[i] == 0){
-	vector<art::Ptr<sbn::crt::CRTHit>> crtTzero;
+          vector<art::Ptr<CRTHit>> crtTzero;
           double time_ns_A = hits[i]->ts0_ns;
           iflag[i]=1;
           crtTzero.push_back(hits[i]);
@@ -73,9 +74,9 @@ std::vector<std::vector<art::Ptr<sbn::crt::CRTHit>>> CRTTrackRecoAlg::CreateCRTT
 }//CRTTrackRecoAlg::CreateCRTTzeros
 
 // Function to make creating CRTTracks easier
-sbn::crt::CRTTrack CRTTrackRecoAlg::FillCrtTrack(sbn::crt::CRTHit hit1, sbn::crt::CRTHit hit2, bool complete)
+CRTTrack CRTTrackRecoAlg::FillCrtTrack(CRTHit hit1, CRTHit hit2, bool complete)
 {
-  sbn::crt::CRTTrack newtr;
+  CRTTrack newtr;
   newtr.ts0_s         = (hit1.ts0_s + hit2.ts0_s)/2.;
   newtr.ts0_s_err     = (uint32_t)((hit1.ts0_s - hit2.ts0_s)/2.);
   newtr.ts0_ns_h1     = hit1.ts0_ns;
@@ -114,11 +115,11 @@ sbn::crt::CRTTrack CRTTrackRecoAlg::FillCrtTrack(sbn::crt::CRTHit hit1, sbn::crt
 } // CRTTrackRecoAlg::FillCrtTrack()
 
 // Function to average hits within a certain distance of each other w/associations
-vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<sbn::crt::CRTHit>> hits, map<art::Ptr<sbn::crt::CRTHit>, int> hitIds)
+vector<pair<CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<CRTHit>> hits, map<art::Ptr<CRTHit>, int> hitIds)
 {
-    vector<pair<sbn::crt::CRTHit, vector<int>>> returnHits;
-    vector<art::Ptr<sbn::crt::CRTHit>> aveHits;
-    vector<art::Ptr<sbn::crt::CRTHit>> spareHits;
+    vector<pair<CRTHit, vector<int>>> returnHits;
+    vector<art::Ptr<crt::CRTHit>> aveHits;
+    vector<art::Ptr<crt::CRTHit>> spareHits;
 
     //if we have CRTHits
     if (hits.size()>0){
@@ -145,7 +146,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<
             }
         }
 
-        sbn::crt::CRTHit aveHit = DoAverage(aveHits);
+        CRTHit aveHit = DoAverage(aveHits);
         vector<int> ids;
         for(size_t i = 0; i < aveHits.size(); i++){
             ids.push_back(hitIds[aveHits[i]]);
@@ -154,7 +155,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<
         returnHits.push_back(std::make_pair(aveHit, ids));
 
         //Do this recursively
-        vector<pair<sbn::crt::CRTHit, vector<int>>> moreHits = AverageHits(spareHits, hitIds);
+        vector<pair<CRTHit, vector<int>>> moreHits = AverageHits(spareHits, hitIds);
         returnHits.insert(returnHits.end(), moreHits.begin(), moreHits.end());
 
         return returnHits;
@@ -167,11 +168,11 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<
 } // CRTTrackRecoAlg::AverageHits()
 
 //average clustered CRTHits together (w/o keeping associations)
-vector<sbn::crt::CRTHit> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<sbn::crt::CRTHit>> hits)
+vector<CRTHit> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<CRTHit>> hits)
 {
-    vector<sbn::crt::CRTHit> returnHits;
-    vector<art::Ptr<sbn::crt::CRTHit>> aveHits;
-    vector<art::Ptr<sbn::crt::CRTHit>> spareHits;
+    vector<CRTHit> returnHits;
+    vector<art::Ptr<CRTHit>> aveHits;
+    vector<art::Ptr<CRTHit>> spareHits;
 
     if (hits.size()>0){
         // loop over size of tx
@@ -194,11 +195,11 @@ vector<sbn::crt::CRTHit> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<sbn::crt::
                 spareHits.push_back(hits[i]);
             }
         }
-        sbn::crt::CRTHit aveHit = DoAverage(aveHits);
+        CRTHit aveHit = DoAverage(aveHits);
         returnHits.push_back(aveHit);
 
         //Do this recursively
-        vector<sbn::crt::CRTHit> moreHits = AverageHits(spareHits);
+        vector<CRTHit> moreHits = AverageHits(spareHits);
         returnHits.insert(returnHits.end(), moreHits.begin(), moreHits.end());
 
         return returnHits;
@@ -210,7 +211,7 @@ vector<sbn::crt::CRTHit> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<sbn::crt::
 } // CRTTrackRecoAlg::AverageHits()
   
 // Take a list of hits and find average parameters
-sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> hits)
+CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<CRTHit>> hits)
 {
   // Initialize values
   std::string tagger = hits[0]->tagger;
@@ -243,7 +244,7 @@ sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> h
   }
 
   // Create a hit
-  sbn::crt::CRTHit crtHit = hitAlg.FillCRTHit(hits[0]->feb_id, hits[0]->pesmap, hits[0]->peshit, 
+  CRTHit crtHit = hitAlg.FillCRTHit(hits[0]->feb_id, hits[0]->pesmap, hits[0]->peshit, 
                                   (ts0_ns/nhits)*1e-3, (ts1_ns/nhits)*1e-3, 0, xpos/nhits, (xmax-xmin)/2,
                                   ypos/nhits, (ymax-ymin)/2., zpos/nhits, (zmax-zmin)/2., tagger);
   return crtHit;
@@ -251,9 +252,9 @@ sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> h
 } // CRTTrackRecoAlg::DoAverage()
 
 // Function to create tracks from tzero hit collections
-vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vector<pair<sbn::crt::CRTHit, vector<int>>> hits)
+vector<pair<CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vector<pair<CRTHit, vector<int>>> hits)
 {
-    vector<pair<sbn::crt::CRTTrack, vector<int>>> returnTracks;
+    vector<pair<CRTTrack, vector<int>>> returnTracks;
 
     //Store list of hit pairs with distance between them
     vector<pair<pair<size_t, size_t>, double>> hitPairDist;
@@ -262,11 +263,11 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
     //Calculate the distance between all hits on different planes
     for(size_t i = 0; i < hits.size(); i++){
 
-        sbn::crt::CRTHit hit1 = hits[i].first;
+        CRTHit hit1 = hits[i].first;
 
         for(size_t j = 0; j < hits.size(); j++){
 
-            sbn::crt::CRTHit hit2 = hits[j].first;
+            CRTHit hit2 = hits[j].first;
             pair<size_t, size_t> hitPair = std::make_pair(i, j);
             pair<size_t, size_t> rhitPair = std::make_pair(j, i);
 
@@ -295,8 +296,8 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
 
         //Make sure bottom plane hit is always hit_i
         if(hits[hit_j].first.tagger=="volTaggerBot_0") std::swap(hit_i, hit_j);
-        sbn::crt::CRTHit ihit = hits[hit_i].first;
-        sbn::crt::CRTHit jhit = hits[hit_j].first;
+        CRTHit ihit = hits[hit_i].first;
+        CRTHit jhit = hits[hit_j].first;
 
         //If the bottom plane hit is a 1D hit
         if(ihit.x_err>100. || ihit.z_err>100.){
@@ -322,7 +323,7 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
                         continue;
 
                     //Calculate the distance between the track crossing point and the true hit
-                    sbn::crt::CRTHit khit = hits[k].first;
+                    CRTHit khit = hits[k].first;
                     TVector3 mid(khit.x_pos, khit.y_pos, khit.z_pos);
                     TVector3 cross = CrossPoint(khit, start, diff);
                     double dist = (cross-mid).Mag();
@@ -367,7 +368,7 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
                     continue;
 
                 //Calculate distance to other hits not on the planes of the track hits
-		sbn::crt::CRTHit khit = hits[k].first;
+                CRTHit khit = hits[k].first;
                 TVector3 mid(khit.x_pos, khit.y_pos, khit.z_pos);
                 TVector3 cross = CrossPoint(khit, start, diff);
                 double dist = (cross-mid).Mag();
@@ -398,8 +399,8 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
         if(hits[hit_j].first.tagger=="volTaggerTopHigh_0") 
             std::swap(hit_i, hit_j);
 
-        sbn::crt::CRTHit ihit = hits[hit_i].first;
-        sbn::crt::CRTHit jhit = hits[hit_j].first;
+        CRTHit ihit = hits[hit_i].first;
+        CRTHit jhit = hits[hit_j].first;
 
         //Check no hits in track have been used
         bool used = false;
@@ -418,7 +419,7 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
         ihit.z_pos -= (1.-track.second)*ihit.z_err;
 
         //Create track
-        sbn::crt::CRTTrack crtTrack = FillCrtTrack(ihit, jhit, true);
+        CRTTrack crtTrack = FillCrtTrack(ihit, jhit, true);
 
         //If only the top two planes are hit create an incomplete/stopping track
         if(track.first.size()==2 && ihit.tagger == "volTaggerTopHigh_0" && jhit.tagger == "volTaggerTopLow_0"){ 
@@ -444,19 +445,19 @@ vector<pair<sbn::crt::CRTTrack, vector<int>>> CRTTrackRecoAlg::CreateTracks(vect
 } // CRTTrackRecoAlg::CreateTracks()
 
 //Create tracks from CRTHits
-vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit> hits)
+vector<CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<CRTHit> hits)
 {
-    vector<sbn::crt::CRTTrack> returnTracks;
+    vector<CRTTrack> returnTracks;
     //Store list of hit pairs with distance between them
     vector<pair<pair<size_t, size_t>, double>> hitPairDist;
     vector<pair<size_t, size_t>> usedPairs;
 
     //Calculate the distance between all hits on different planes
     for(size_t i = 0; i < hits.size(); i++){
-        sbn::crt::CRTHit hit1 = hits[i];
+        CRTHit hit1 = hits[i];
         for(size_t j = 0; j < hits.size(); j++){
 
-            sbn::crt::CRTHit hit2 = hits[j];
+            CRTHit hit2 = hits[j];
             pair<size_t, size_t> hitPair = std::make_pair(i, j);
             pair<size_t, size_t> rhitPair = std::make_pair(j, i);
 
@@ -487,8 +488,8 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
         if(hits[hit_j].tagger=="volTaggerBot_0") 
             std::swap(hit_i, hit_j);
 
-        sbn::crt::CRTHit ihit = hits[hit_i];
-        sbn::crt::CRTHit jhit = hits[hit_j];
+        CRTHit ihit = hits[hit_i];
+        CRTHit jhit = hits[hit_j];
 
         //If the bottom plane hit is a 1D hit
         if(ihit.x_err>100. || ihit.z_err>100.){
@@ -514,7 +515,7 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
                         continue;
 
                     //Calculate the distance between the track crossing point and the true hit
-                    sbn::crt::CRTHit khit = hits[k];
+                    CRTHit khit = hits[k];
                     TVector3 mid(khit.x_pos, khit.y_pos, khit.z_pos);
                     TVector3 cross = CrossPoint(khit, start, diff);
                     double dist = (cross-mid).Mag();
@@ -556,7 +557,7 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
                     continue;
 
                 //Calculate distance to other hits not on the planes of the track hits
-		sbn::crt::CRTHit khit = hits[k];
+                CRTHit khit = hits[k];
                 TVector3 mid(khit.x_pos, khit.y_pos, khit.z_pos);
                 TVector3 cross = CrossPoint(khit, start, diff);
                 double dist = (cross-mid).Mag();
@@ -587,8 +588,8 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
         if(hits[hit_j].tagger=="volTaggerTopHigh_0") 
             std::swap(hit_i, hit_j);
 
-        sbn::crt::CRTHit ihit = hits[hit_i];
-        sbn::crt::CRTHit jhit = hits[hit_j];
+        CRTHit ihit = hits[hit_i];
+        CRTHit jhit = hits[hit_j];
 
         //Check no hits in track have been used
         bool used = false;
@@ -605,7 +606,7 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
         ihit.z_pos -= (1.-track.second)*ihit.z_err;
 
         //Create track
-        sbn::crt::CRTTrack crtTrack = FillCrtTrack(ihit, jhit, true);
+        CRTTrack crtTrack = FillCrtTrack(ihit, jhit, true);
 
         //If only the top two planes are hit create an incomplete/stopping track
         if(track.first.size()==2 && ihit.tagger == "volTaggerTopHigh_0" && jhit.tagger == "volTaggerTopLow_0"){ 
@@ -627,7 +628,7 @@ vector<sbn::crt::CRTTrack> CRTTrackRecoAlg::CreateTracks(vector<sbn::crt::CRTHit
 } // CRTTrackRecoAlg::CreateTracks()
 
 // Function to calculate the crossing point of a track and tagger
-TVector3 CRTTrackRecoAlg::CrossPoint(sbn::crt::CRTHit hit, TVector3 start, TVector3 diff)//FIXME change to DCA
+TVector3 CRTTrackRecoAlg::CrossPoint(CRTHit hit, TVector3 start, TVector3 diff)//FIXME change to DCA
 {
     TVector3 cross;
     // Use the error to get the fixed coordinate of a tagger

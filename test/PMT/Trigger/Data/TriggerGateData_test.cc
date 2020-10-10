@@ -3,14 +3,14 @@
  * @brief  Unit test for `TriggerGateData.h` header
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   May 29, 2019
- * @see    `sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h`
+ * @see    `icaruscode/PMT/Trigger/Data/TriggerGateData.h`
  *
  * The main purpose of this test is to make sure `TriggerGateData` code is
  * compiled, since it is just a header.
  */
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
+#include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h"

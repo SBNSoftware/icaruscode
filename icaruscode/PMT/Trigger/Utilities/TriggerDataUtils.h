@@ -8,7 +8,7 @@
 
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries

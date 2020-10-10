@@ -33,7 +33,7 @@ void CRTTrueHitRecoAlg::reconfigure(const Config& config){
 
 
 //------------------------------------------------------------------------------
-vector<pair<sbn::crt::CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
+vector<pair<CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateCRTHits(
        vector<art::Ptr<sim::AuxDetSimChannel>> adscList) 
 {
     vector<pair<CRTHit,vector<sim::AuxDetIDE>>> hitCol;
@@ -226,7 +226,7 @@ vector<pair<sbn::crt::CRTHit,vector<sim::AuxDetIDE>>> CRTTrueHitRecoAlg::CreateC
 
 //--------------------------------------------------------------------------------------------
 // Function to make filling a CRTHit a bit faster
-sbn::crt::CRTHit CRTTrueHitRecoAlg::FillCrtHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap, 
+CRTHit CRTTrueHitRecoAlg::FillCrtHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap, 
                             float peshit, double time0, double time1, int plane,
                             double x, double ex, double y, double ey, double z, double ez, string tagger){
     CRTHit crtHit;

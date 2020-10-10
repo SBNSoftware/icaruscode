@@ -13,7 +13,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

@@ -2,7 +2,7 @@ cet_make(
   SUBDIRS
     "details"
   LIBRARIES
-    sbnobj_ICARUS_PMT_Trigger_Data
+    icaruscode_PMT_Trigger_Data
     icaruscode_PMT_Algorithms
     lardataalg_DetectorInfo
     lardataalg_MCDumpers

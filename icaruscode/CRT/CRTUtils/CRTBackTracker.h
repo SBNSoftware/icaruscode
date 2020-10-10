@@ -27,9 +27,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "fhiclcpp/types/Atom.h"
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
-#include "sbnobj/ICARUS/CRT/CRTData.hh"
-#include "sbnobj/Common/CRT/CRTHit.hh"
-#include "sbnobj/Common/CRT/CRTTrack.hh"
+#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 
 // c++
 #include <vector>
@@ -43,11 +43,7 @@ namespace icarus{
 class icarus::crt::CRTBackTracker {
 
   public:
-    
-    using CRTData = icarus::crt::CRTData;
-    using CRTHit = sbn::crt::CRTHit;
-    using CRTTrack = sbn::crt::CRTTrack;
-    
+
     struct Config {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
