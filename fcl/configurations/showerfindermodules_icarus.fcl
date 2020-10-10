@@ -13,96 +13,66 @@ Shower2DLinearRegressionTrackHitFinder:                         @local::shower2D
 ShowerSlidingStandardCalodEdx:                                  @local::showertrajpointdedx
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshower_stan:                                        @local::standard_pandoraModularShowerCreation
-advanced_sbnshower:                                             @local::standard_pandoraModularShowerCreation
-intermediate_sbnshower:                                         @local::standard_pandoraModularShowerCreation
+icarus_pandorashower_3dTraj:                                    @local::standard_pandoraModularShowerCreation
+icarus_pandorashower_incremental:                               @local::standard_pandoraModularShowerCreation
 
-standard_sbnshower_stan.ShowerFinderTools: [
-				        @local::showerpfpvertexstartposition,
-					@local::showerpcadirection,
-					@local::showerlinearenergy,
-					@local::shower3dcylindertrackhitfinder,
-					@local::showerpandoraslidingfittrackfinder,
-					@local::showerunidirectiondedx
-                                      ]
+# The below configurations are set up in a way that is to be used with the Pandora BDTs, especially Vertex BDT
 
-# See doc-db 19390 - tools and overrides
-advanced_sbnshower.ShowerFinderTools: [
-					@local::showerpfpvertexstartposition,
-					@local::showerpcadirection,
-    					@local::showerlinearenergy,
-    					@local::showerincrementaltrackhitfinder,
-    					@local::showerunidirectiondedx,
-    					@local::showerpandoraslidingfittrackfinder,
-    					@local::showertrajpointdedx,
-    					@local::showerbayesiantrucatingdedx,
-    					@local::showerlengthpercentile
+# "SBN Shower" - a shared set of tools with SBND.
+# NOTE: Need to check about the MinAngleToWire and CutStartPosition in SBND
+icarus_pandorashower_3dTraj.ShowerFinderTools: [
+  @local::showerpfpvertexstartposition,
+  @local::showerpcadirection,
+  @local::showerlengthpercentile,
+  @local::showernumelectronsenergy,
+  @local::shower3dcylindertrackhitfinder,
+  @local::showerunidirectiondedx,
+  @local::showerpandoraslidingfittrackfinder,
+  @local::showertrajpointdedx
 ]
 
-advanced_sbnshower.ShowerFinderTools[1].ChargeWeighted:	  true		          #defualt was changed to false for some reason, was true before.
+icarus_pandorashower_3dTraj.ShowerFinderTools[3].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[5].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:    0.26
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].CutStartPosition:  true
 
-advanced_sbnshower.ShowerFinderTools[2].Gradients:          [0.00246564, 0.00245335, 0.00247403]
-advanced_sbnshower.ShowerFinderTools[2].Intercepts:         [13.9334, 13.1386, 10.845]
-
-advanced_sbnshower.ShowerFinderTools[3].ForwardHitsOnly:            false                       #since not using Vertex BDT
-advanced_sbnshower.ShowerFinderTools[3].UseShowerDirection:         false                       #is true in default but false in fcl used in doc-db 19390
-advanced_sbnshower.ShowerFinderTools[3].MaxAverageResidual:         1.0
-advanced_sbnshower.ShowerFinderTools[3].MaxResidualDiff:            0.3
-advanced_sbnshower.ShowerFinderTools[3].NMissPoints:                9                           #turning value from doc-db 13930 into an int
-advanced_sbnshower.ShowerFinderTools[3].StartFitSize:               20                          #turning value from doc-db 13930 into an int
-advanced_sbnshower.ShowerFinderTools[3].TrackMaxAdjacentSPDistance: 5.0
-
-advanced_sbnshower.ShowerFinderTools[4].CalorimetryAlg:                  @local::icarus_calorimetryalgmc
-advanced_sbnshower.ShowerFinderTools[4].CalorimetryAlg.CalAreaConstants: [1.56e-2, 1.575e-2, 1.59e-2]    #see doc-db 18991-v2, but with the second plane using an interpolation...
-#advanced_sbnshower.ShowerFinderTools[4].dEdxTrackLength:                 0.0                            #maximizal test run apparently turned this off - not sure why, leaving as default...
-
-advanced_sbnshower.ShowerFinderTools[5].SlidingFitHalfWindow: 7     #turning value from doc-db 13930 into an int
-
-advanced_sbnshower.ShowerFinderTools[6].CalorimetryAlg:                  @local::icarus_calorimetryalgmc
-advanced_sbnshower.ShowerFinderTools[6].CalorimetryAlg.CalAreaConstants: [1.56e-2, 1.575e-2, 1.59e-2]
-advanced_sbnshower.ShowerFinderTools[6].MinAngleToWire:                  0.26                            #we used this for the tuning, ~15 degrees
-advanced_sbnshower.ShowerFinderTools[6].CutStartPosition:                true                            #is false in default but true in fcl used in doc-db 19390
-advanced_sbnshower.ShowerFinderTools[6].MaxDist:                         5.0
-advanced_sbnshower.ShowerFinderTools[6].MinDistCutOff:                   0.0
-advanced_sbnshower.ShowerFinderTools[6].dEdxTrackLength:                 2.869371600119094
-
-advanced_sbnshower.ShowerFinderTools[7].NumSeedHits:     10        #turning value from doc-db 13930 into an int
-#advanced_sbnshower.ShowerFinderTools[7].ProbSeedCut:     0.001     #formerly ProbDiff
-advanced_sbnshower.ShowerFinderTools[7].ProbDiff:        0.001
-#advanced_sbnshower.ShowerFinderTools[7].ProbPointCut:    0.0001    #formerly ProbDiffSeed
-advanced_sbnshower.ShowerFinderTools[7].ProbDiffSeed:    0.0001
-advanced_sbnshower.ShowerFinderTools[7].nSkipHits:       4         #turning value from doc-db 13930 into an int
-advanced_sbnshower.ShowerFinderTools[7].DefineBestPlane: true      #is false in default but true in fcl used in doc-db 19390
-
-# "Intermediate" settings...
-# Less advanced than the "advanced" setup above, but more customized than the more "default" one above
-# Should be similar to the one used in previous studies but with a few changes...
-intermediate_sbnshower.ShowerFinderTools: [
-                                        @local::showerpfpvertexstartposition,
-                                        @local::showerpcadirection,
-                                        @local::showerlinearenergy,
-                                        @local::shower3dcylindertrackhitfinder,
-                                        @local::showerunidirectiondedx,
-                                        @local::showerpandoraslidingfittrackfinder,
-                                        @local::showertrajpointdedx,
-                                        @local::showerlengthpercentile
+# An "experimental" configuration. Uses the incremental track hit 
+# finder and values for some parameters from the study in SBN-doc-19390
+# NOTE: specifically using version -without- the Bayes Truncating tool
+# NOTE: Some parameters very close to/at bounds that were set...
+icarus_pandorashower_incremental.ShowerFinderTools: [
+  @local::showerpfpvertexstartposition,
+  @local::showerpcadirection,
+  @local::showerlengthpercentile,
+  @local::showernumelectronsenergy,
+  @local::showerincrementaltrackhitfinder,
+  @local::showerunidirectiondedx,
+  @local::showerpandoraslidingfittrackfinder,
+  @local::showertrajpointdedx
 ]
 
-intermediate_sbnshower.ShowerFinderTools[1].ChargeWeighted:     true                    #defualt was changed to false for some reason, was true before.
+icarus_pandorashower_incremental.ShowerFinderTools[1].ChargeWeighted:            true
 
-intermediate_sbnshower.ShowerFinderTools[2].Gradients:          [0.00246564, 0.00245335, 0.00247403]
-intermediate_sbnshower.ShowerFinderTools[2].Intercepts:         [13.9334, 13.1386, 10.845]
+icarus_pandorashower_incremental.ShowerFinderTools[3].CalorimetryAlg:             @local::icarus_calorimetryalgmc
 
-intermediate_sbnshower.ShowerFinderTools[3].ForwardHitsOnly:            false                       #since not using Vertex BDT
+icarus_pandorashower_incremental.ShowerFinderTools[4].UseShowerDirection:         false          #is true in default but false in fcl used in doc-db 19390
+icarus_pandorashower_incremental.ShowerFinderTools[4].MaxAverageResidual:         1.0
+icarus_pandorashower_incremental.ShowerFinderTools[4].MaxResidualDiff:            0.3
+icarus_pandorashower_incremental.ShowerFinderTools[4].NMissPoints:                13             #turning value from doc-db 13930 into an int
+icarus_pandorashower_incremental.ShowerFinderTools[4].StartFitSize:               19             #turning value from doc-db 13930 into an int
+icarus_pandorashower_incremental.ShowerFinderTools[4].TrackMaxAdjacentSPDistance: 3.444285839721778
 
-intermediate_sbnshower.ShowerFinderTools[4].CalorimetryAlg:                  @local::icarus_calorimetryalgmc  #this tool not previously run with the "intermediate" set, but can be added
-intermediate_sbnshower.ShowerFinderTools[4].CalorimetryAlg.CalAreaConstants: [1.56e-2, 1.575e-2, 1.59e-2]     #see doc-db 18991-v2, but with the second plane using an interpolation...
+icarus_pandorashower_incremental.ShowerFinderTools[5].CalorimetryAlg:             @local::icarus_calorimetryalgmc
+icarus_pandorashower_incremental.ShowerFinderTools[5].dEdxTrackLength:            10.0
 
-intermediate_sbnshower.ShowerFinderTools[6].CalorimetryAlg:                  @local::icarus_calorimetryalgmc
-intermediate_sbnshower.ShowerFinderTools[6].CalorimetryAlg.CalAreaConstants: [1.56e-2, 1.575e-2, 1.59e-2]
-intermediate_sbnshower.ShowerFinderTools[6].MinAngleToWire:                  0.26                             #require ~15 degrees
-intermediate_sbnshower.ShowerFinderTools[6].CutStartPosition:                true                             #is false by default but we've used true before
-intermediate_sbnshower.ShowerFinderTools[6].MinDistCutOff:                   1.28
+icarus_pandorashower_incremental.ShowerFinderTools[6].SlidingFitHalfWindow:       20             #turning value from doc-db 13930 into an int
 
+icarus_pandorashower_incremental.ShowerFinderTools[7].CalorimetryAlg:             @local::icarus_calorimetryalgmc
+icarus_pandorashower_incremental.ShowerFinderTools[7].MinAngleToWire:             0.26
+icarus_pandorashower_incremental.ShowerFinderTools[7].CutStartPosition:           true
+icarus_pandorashower_incremental.ShowerFinderTools[7].MaxDist:                    1.7900692460707126
+icarus_pandorashower_incremental.ShowerFinderTools[7].MinDistCutOff:              0.9077279241610002
+icarus_pandorashower_incremental.ShowerFinderTools[7].dEdxTrackLength:            5.014080147674054
 
 END_PROLOG
