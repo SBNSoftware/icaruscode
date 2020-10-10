@@ -11,7 +11,7 @@
 #include "fhiclcpp/types/Atom.h"
 
 // icaruscode includes
-#include "sbnobj/Common/CRT/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 // C++ includes
@@ -49,8 +49,6 @@ class icarus::crt::CRTTrueHitRecoAlg {
 
  public:
 
-    using CRTHit = sbn::crt::CRTHit;
-    
     struct Config {
         using Name = fhicl::Name;
         using Comment = fhicl::Comment;

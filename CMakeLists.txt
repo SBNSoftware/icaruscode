@@ -18,8 +18,6 @@ cmake_minimum_required (VERSION 3.12...3.14 FATAL_ERROR)
 
 project(icaruscode LANGUAGES CXX)
 
-project(icaruscode)
-
 message(STATUS
   "\n-- ============================================================================="
   "\n-- === *** Start of configuration of ${PROJECT_NAME} ***"
@@ -74,8 +72,6 @@ find_ups_boost( )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_product( libwda )
-find_ups_product( sbnobj )
-find_ups_product( sbncode )
 find_ups_product( icarus_signal_processing )
 find_ups_product( icarusalg )
 find_ups_product( icarusutil )

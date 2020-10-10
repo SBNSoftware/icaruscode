@@ -23,9 +23,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
-#include "sbnobj/Common/CRT/CRTHit.hh"
-#include "sbnobj/Common/CRT/CRTTrack.hh"
-#include "sbnobj/Common/CRT/CRTTzero.hh"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTzero.hh"
 #include "TTree.h"
 #include "TH1F.h"
 #include "TH2F.h"
@@ -77,7 +77,7 @@ private:
 };
 
 void vmanip(std::vector<double> v, double* ave, double* rms);
-void set_def(sbn::crt::CRTTzero tz);
+void set_def(crt::CRTTzero tz);
 
 CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
   :
@@ -90,8 +90,8 @@ CRTTzeroProducer::CRTTzeroProducer(fhicl::ParameterSet const & p)
 {
   // Call appropriate produces<>() functions here.
   if(store_tzero_ == 1)  {
-    produces< std::vector<sbn::crt::CRTTzero>   >();
-    //produces<art::Assns<sbn::crt::CRTTzero, sbn::crt::CRTHit> >();
+    produces< std::vector<crt::CRTTzero>   >();
+    //produces<art::Assns<crt::CRTTzero, crt::CRTHit> >();
   }
 
 }
@@ -101,7 +101,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
   std::cout << "getting handle to CRTHits..." << std::endl;
 
   // Implementation of required member function here.  
-  art::Handle< std::vector<sbn::crt::CRTHit> > rawHandle;
+  art::Handle< std::vector<crt::CRTHit> > rawHandle;
   evt.getByLabel(data_label_, rawHandle);   
   //check to make sure the data we asked for is valid                                                                       
   if(!rawHandle.isValid()){
@@ -113,17 +113,17 @@ void CRTTzeroProducer::produce(art::Event & evt)
   }
   
   //get better access to the data               
-  std::vector<sbn::crt::CRTHit> const& CRTHitCollection(*rawHandle);
+  std::vector<crt::CRTHit> const& CRTHitCollection(*rawHandle);
 
   //CRTTzero collection on this event                                                              
-  std::unique_ptr<std::vector<sbn::crt::CRTTzero> > CRTTzeroCol(new std::vector<sbn::crt::CRTTzero>);
+  std::unique_ptr<std::vector<crt::CRTTzero> > CRTTzeroCol(new std::vector<crt::CRTTzero>);
   
   // Output collections  
-  //std::unique_ptr<art::Assns<sbn::crt::CRTTzero, sbn::crt::CRTHit>> outputHits(new art::Assns<sbn::crt::CRTTzero, sbn::crt::CRTHit>);
+  //std::unique_ptr<art::Assns<crt::CRTTzero, crt::CRTHit>> outputHits(new art::Assns<crt::CRTTzero, crt::CRTHit>);
   
-  //  auto outputHits    = std::make_unique<art::Assns<sbn::crt::CRTTzero, sbn::crt::CRTHit>>();
-  art::PtrMaker<sbn::crt::CRTHit> hitPtrMaker(evt, rawHandle.id());
-  art::PtrMaker<sbn::crt::CRTTzero> tzeroPtrMaker(evt);
+  //  auto outputHits    = std::make_unique<art::Assns<crt::CRTTzero, crt::CRTHit>>();
+  art::PtrMaker<crt::CRTHit> hitPtrMaker(evt, rawHandle.id());
+  art::PtrMaker<crt::CRTTzero> tzeroPtrMaker(evt);
  
   int N_CRTHits = CRTHitCollection.size();
   //int iflag[1000] = {};
@@ -139,15 +139,15 @@ void CRTTzeroProducer::produce(art::Event & evt)
   for(int  i = 0; i < N_CRTHits; i++) {//A 
     if (iflag[i]==0) {  // new tzero
       //temporary hit collection for each tzero
-      std::vector<art::Ptr<sbn::crt::CRTHit>> CRTHitCol;
-      sbn::crt::CRTHit CRTHiteventA = CRTHitCollection[i];
-      art::Ptr<sbn::crt::CRTHit> hptr = hitPtrMaker(i);
+      std::vector<art::Ptr<crt::CRTHit>> CRTHitCol;
+      crt::CRTHit CRTHiteventA = CRTHitCollection[i];
+      art::Ptr<crt::CRTHit> hptr = hitPtrMaker(i);
       CRTHitCol.push_back(hptr);
       double time_s_A = 0; //CRTHiteventA.ts0_s;
       double time_ns_A = CRTHiteventA.ts1_ns;
       iflag[i]=1;
       // create and initialize, ugly code :(
-      sbn::crt::CRTTzero CRTcanTzero;
+      crt::CRTTzero CRTcanTzero;
       CRTcanTzero.ts0_ns=0;
       CRTcanTzero.ts1_ns=0;
       for (int j=0; j<7 ;++j) { // NUMBER OF PLANES, CHANGE TO 7
@@ -163,13 +163,13 @@ void CRTTzeroProducer::produce(art::Event & evt)
       CRTcanTzero.pes[planeA]=CRTHiteventA.peshit;
       for(int j = i+1; j < N_CRTHits; j++) {//B
         if (iflag[j]==0) {
-          sbn::crt::CRTHit CRTHiteventB = CRTHitCollection[j];
+          crt::CRTHit CRTHiteventB = CRTHitCollection[j];
           //look for coincidences
           double time_s_B = 0; //CRTHiteventB.ts0_s;
           double time_ns_B = CRTHiteventB.ts1_ns;
           double time_diff = time_ns_B - time_ns_A;
           if( (time_s_A == time_s_B) && (abs(time_diff)<max_time_difference_)  ){//D
-            art::Ptr<sbn::crt::CRTHit> hptr = hitPtrMaker(j);
+            art::Ptr<crt::CRTHit> hptr = hitPtrMaker(j);
             CRTHitCol.push_back(hptr);
             planeB = CRTHiteventB.plane; 
             CRTcanTzero.nhits[planeB]+=1;
@@ -191,7 +191,7 @@ void CRTTzeroProducer::produce(art::Event & evt)
       CRTTzeroCol->push_back(CRTcanTzero);
       nTzero++;
       //associate hits to this Tzero
-      art::Ptr<sbn::crt::CRTTzero> aptz = tzeroPtrMaker(CRTTzeroCol->size()-1);
+      art::Ptr<crt::CRTTzero> aptz = tzeroPtrMaker(CRTTzeroCol->size()-1);
       std::cout << "produced " << CRTTzeroCol->size() << " CRTTzero objects" << std::endl;
       std::cout << "pointer to CRTTzero = " << aptz << std::endl;
       //util::CreateAssn(*this,evt,aptz,CRTHitCol,*outputHits);

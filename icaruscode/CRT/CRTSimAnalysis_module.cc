@@ -58,9 +58,9 @@
 #include <array>
 
 // CRT data products
-#include "sbnobj/ICARUS/CRT/CRTData.hh"
-#include "sbnobj/Common/CRT/CRTHit.hh"
-#include "sbnobj/Common/CRT/CRTTrack.hh"
+#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "icaruscode/CRT/CRTProducts/CRTTrack.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 
@@ -110,8 +110,6 @@ namespace crt {
   class CRTSimAnalysis : public art::EDAnalyzer
   {
   public:
-    
-    using CRTHit = sbn::crt::CRTHit;
     
     // -------------------------------------------------------------------
     // -------------------------------------------------------------------
@@ -1334,11 +1332,11 @@ namespace crt {
         mf::LogWarning("CRTSimAnalysis") << "true CRTHit products not found" << '\n';
 
     //CRTSimTrack
-    art::Handle<vector<sbn::crt::CRTTrack>> crtSimTrackHandle;
+    art::Handle<vector<CRTTrack>> crtSimTrackHandle;
     fTrueNHit = 0;
     if (event.getByLabel(fCRTSimTrackProducerLabel, crtSimTrackHandle)) {
 
-        vector<art::Ptr<sbn::crt::CRTTrack>> crtTracks;
+        vector<art::Ptr<CRTTrack>> crtTracks;
         art::fill_ptr_vector(crtTracks,crtSimTrackHandle);
         fNSimTrack=crtTracks.size();
 

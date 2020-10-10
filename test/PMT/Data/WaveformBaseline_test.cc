@@ -10,7 +10,7 @@
  */
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+#include "icaruscode/PMT/Data/WaveformBaseline.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries

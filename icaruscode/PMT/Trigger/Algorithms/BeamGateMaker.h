@@ -11,7 +11,7 @@
 #define ICARUSCODE_PMT_TRIGGER_ALGORITHMS_BEAMGATEMAKER_H
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"

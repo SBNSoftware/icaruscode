@@ -12,7 +12,7 @@
 // ICARUS libraries
 // #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
 
 // // LArSoft libraries

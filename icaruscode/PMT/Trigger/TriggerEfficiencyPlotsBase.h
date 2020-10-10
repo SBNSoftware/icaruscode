@@ -20,7 +20,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 

@@ -1,3 +1,4 @@
+add_subdirectory(Data)
 add_subdirectory(OpticalTools)
 add_subdirectory(OpReco)
 add_subdirectory(Algorithms)
@@ -31,7 +32,7 @@ simple_plugin(SimPMTIcarus "module"
 
 simple_plugin(PMTWaveformBaselines "module"
   icaruscode_PMT_Algorithms
-  sbnobj_ICARUS_PMT_Data
+  icaruscode_PMT_Data
   lardataobj_RawData
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}

@@ -6,7 +6,7 @@
  */
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+#include "icaruscode/PMT/Data/WaveformBaseline.h"
 // #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
