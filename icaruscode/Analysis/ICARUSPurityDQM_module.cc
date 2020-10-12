@@ -52,7 +52,7 @@
 //#include "../../MetricConfig/ConfigureRedis.hh"
 
 //purity info class
-#include "icaruscode/IcarusObj/TPCPurityInfo.hh"
+#include "sbnobj/Common/Analysis/TPCPurityInfo.hh"
 
 #include "art/Framework/Core/EDProducer.h"
 #include <TMath.h>
@@ -189,7 +189,7 @@ namespace icarus{
     //purityvalues3 = tfs->make<TH1F>("purityvalues3","purityvalues3",20000,-10,10);
 
     if(fFillAnaTuple)
-      purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:ev:tpc:att");
+      purityTuple = tfs->make<TNtuple>("purityTuple","Purity Tuple","run:subrun:ev:cryo:tpc:wires:ticks:att:err");
 
   }
   
@@ -1001,17 +1001,7 @@ namespace icarus{
 			
 			purity_info.Cryostat=fcryofcl;
 
-			// near/far from cathode tracks                                                                                        
-
-			  if((clusters_dw[icl]< 200)&&(clusters_ds[icl]>2250)){
-			    purity_info.AttenuationNEAR = slope_purity_exo*-1.;
-			  }
-			  else purity_info.AttenuationNEAR = 0;
-			  if((clusters_dw[icl]> 600)&&(clusters_ds[icl]<1250)){
-                            purity_info.AttenuationFAR = slope_purity_exo*-1.;
-                          }
-			  else purity_info.AttenuationFAR = 0;
-       			purity_info.Attenuation = slope_purity_exo*-1.;
+			purity_info.Attenuation = slope_purity_exo*-1.;
 			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
                         //purity_info.Attenuation_2 = slope_purity_2*-1.;
                         //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
@@ -1020,7 +1010,12 @@ namespace icarus{
 			//                        purity_info.Ticks = clusters_ds[icl];
 
 			if(fFillAnaTuple)
-			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.AttenuationNEAR,purity_info.AttenuationFAR,purity_info.Attenuation);
+			  purityTuple->Fill(purity_info.Run,
+					    purity_info.Event,
+					    purity_info.TPC,
+					    purity_info.Wires,
+					    purity_info.Ticks,
+					    purity_info.Attenuation);
 
 			std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();
