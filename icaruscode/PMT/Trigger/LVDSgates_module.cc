@@ -6,9 +6,9 @@
  */
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 

@@ -13,7 +13,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
-#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
