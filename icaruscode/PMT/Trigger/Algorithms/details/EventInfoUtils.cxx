@@ -21,7 +21,7 @@
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> truthTags,
-  std::vector<art::InputTag> edepTags,
+  EdepTags_t edepTags,
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
@@ -390,7 +390,7 @@ auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
-  std::vector<art::InputTag> edepTags,
+  EventInfoExtractor::EdepTags_t edepTags,
   geo::GeometryCore const& geom,
   std::string logCategory
   )

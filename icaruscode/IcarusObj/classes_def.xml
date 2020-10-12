@@ -10,4 +10,9 @@
   <class name="art::Wrapper< anab::TPCPurityInfo>"/>
   <class name="art::Wrapper< std::vector<anab::TPCPurityInfo>>"/>
 
+  <class name="icarus::SimEnergyDepositSummary" ClassVersion="10" >
+   <version ClassVersion="10" checksum="1932250066"/>
+  </class>
+  <class name="art::Wrapper<icarus::SimEnergyDepositSummary>"/>
+
 </lcgdict>

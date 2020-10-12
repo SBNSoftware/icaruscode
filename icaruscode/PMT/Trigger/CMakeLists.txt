@@ -8,6 +8,7 @@ art_make(
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
+    "ExtractEnergyDepositionSummary_module.cc"
     "MakeTriggerSimulationTree_module.cc"
   LIB_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
@@ -93,6 +94,18 @@ simple_plugin(TriggerEfficiencyPlots module
   ${ROOT_HIST}
   ${ROOT_TREE}
   ${ROOT_CORE}
+  )
+
+simple_plugin(ExtractEnergyDepositionSummary module
+  icaruscode_PMT_Trigger_Algorithms
+  icaruscode_PMT_Trigger_Utilities
+  icaruscode_PMT_Trigger_Data
+  icaruscode_IcarusObj
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_Simulation
+  nusimdata_SimulationBase
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
   )
 
 simple_plugin(MakeTriggerSimulationTree module
