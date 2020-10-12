@@ -19,7 +19,6 @@ icarus_pandorashower_incremental:                               @local::standard
 # The below configurations are set up in a way that is to be used with the Pandora BDTs, especially Vertex BDT
 
 # "SBN Shower" - a shared set of tools with SBND.
-# NOTE: Need to check about the MinAngleToWire and CutStartPosition in SBND
 icarus_pandorashower_3dTraj.ShowerFinderTools: [
   @local::showerpfpvertexstartposition,
   @local::showerpcadirection,
@@ -35,12 +34,10 @@ icarus_pandorashower_3dTraj.ShowerFinderTools[3].CalorimetryAlg:    @local::icar
 icarus_pandorashower_3dTraj.ShowerFinderTools[5].CalorimetryAlg:    @local::icarus_calorimetryalgmc
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:    @local::icarus_calorimetryalgmc
 icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:    0.26
-icarus_pandorashower_3dTraj.ShowerFinderTools[7].CutStartPosition:  true
 
 # An "experimental" configuration. Uses the incremental track hit 
 # finder and values for some parameters from the study in SBN-doc-19390
 # NOTE: specifically using version -without- the Bayes Truncating tool
-# NOTE: Some parameters very close to/at bounds that were set...
 icarus_pandorashower_incremental.ShowerFinderTools: [
   @local::showerpfpvertexstartposition,
   @local::showerpcadirection,
