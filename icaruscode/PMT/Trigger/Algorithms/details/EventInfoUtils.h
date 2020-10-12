@@ -17,6 +17,7 @@
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
 #include "lardataalg/Utilities/quantities/energy.h" // gigaelectronvolt, ...
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimPhotons.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -201,7 +202,7 @@ class icarus::trigger::details::EventInfoExtractor {
   
   
   /// Fills `info` record with generation information from `truth`.
-  void fillGeneratorInfo(EventInfo_t& info, simb::MCTruth const& truth) const;
+  void fillGeneratorInfo(EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
   
   /**
    * @brief  Fills `info` record with generated neutrino information from
@@ -216,13 +217,13 @@ class icarus::trigger::details::EventInfoExtractor {
   void fillGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
   void fillGeneratorCosmicInfo
-    (EventInfo_t& info, simb::MCTruth const& truth) const;
+    (EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
   /// Extracts information from `truth` and sets it as the "main" interaction
   /// information. Previous information is typically overwritten.
   void setMainGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
   void setMainGeneratorCosmicInfo 
-    (EventInfo_t& info, simb::MCTruth const& truth) const;
+    (EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
 
   /// Adds selected information from the interaction in `truth` to `info`
   /// record.
@@ -359,7 +360,7 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
     
     for (simb::MCTruth const& truth: truthRecords) {
       
-      fillGeneratorInfo(info, truth);
+      fillGeneratorInfo(info, truth, particles);
       
     } // for truth records
     

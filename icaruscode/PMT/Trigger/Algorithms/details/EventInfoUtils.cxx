@@ -39,12 +39,12 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
 
 // -----------------------------------------------------------------------------
 void icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo
-  (EventInfo_t& info, simb::MCTruth const& truth) const
+  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
 {
   
   std::cout << "Cosmic fillGeneratorInfo"<< std::endl;
   if (truth.NeutrinoSet()){ fillGeneratorNeutrinoInfo(info, truth);
-  } else fillGeneratorCosmicInfo(info, truth);
+  } else fillGeneratorCosmicInfo(info, truth, particles);
   
 } // icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo()
 
@@ -67,7 +67,7 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo
 // -----------------------------------------------------------------------------
 // ------------------- UPDATED for cosmics -------------------------------------
 void icarus::trigger::details::EventInfoExtractor::fillGeneratorCosmicInfo
-  (EventInfo_t& info, simb::MCTruth const& truth) const
+  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
 {
   std::cout << "Cosmic fillGeneratorCosmicInfo"<< std::endl;
   //if (truth.NeutrinoSet()) return;
@@ -75,7 +75,7 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorCosmicInfo
  // simulation_time const interactionTime = getInteractionTime(truth);
   
  // if ((info.nVertices() == 0) || (interactionTime < info.InteractionTime()))
-    setMainGeneratorCosmicInfo(info, truth);
+    setMainGeneratorCosmicInfo(info, truth, particles);
   //else
    // addGeneratorCosmicInfo(info, truth);
   
@@ -163,15 +163,13 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
    * first entry.
    */
   
-  using GeV = util::quantities::gigaelectronvolt;
   
   //
   // interaction flavor (nu_mu, nu_e)
   // interaction type (CC, NC)
   //
 
-  for (int i=0; i<truth.NParticles(); i++){
-  for (int i=0; i<particles.size(); i++){
+  for (simb::MCParticle const& particle: particles){
   //const simb::MCParticle part = truth.GetParticle(i);
   //std::cout << "Cosmic truth info for particle" << i << std::endl;
   //std::cout << part.Momentum().Print() << std::endl;
@@ -182,8 +180,8 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
    //std::cout << part.Position().X() <<std::endl;
   //std::cout << "Position info for particle" << i << std::endl;
    //part.Position().Print();
-  const TLorentzVector pos1 = particles[i].Position();
-  const TLorentzVector pos2 = particles[i].EndPosition();
+  const TLorentzVector pos1 = particle.Position();
+  const TLorentzVector pos2 = particle.EndPosition();
   bool check_0 = interceptsTPCActiveVolume(pos1, pos2);
   if(check_0){ std::cout<<"Found cosmic in the detector"<<std::endl; getchar();}
   }
