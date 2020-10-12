@@ -4,7 +4,7 @@ art_make(
       icarusalg_Geometry
       larcorealg_Geometry
       ${ART_UTILITIES}
-      ${MF_UTILITIES}
+      ${MF_MESSAGELOGGER}
       ${FHICLCPP}
       ${CETLIB}
       ${CETLIB_EXCEPT}

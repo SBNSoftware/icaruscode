@@ -4,6 +4,7 @@ art_make(
 	  LIB_LIBRARIES
 		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
+		   larcorealg_Geometry
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}
 		   canvas
@@ -21,7 +22,6 @@ art_make(
 		   art_Persistency_Provenance
 		   art_Utilities
 		   ${MF_MESSAGELOGGER}
-		   ${MF_UTILITIES}
 		   ${FHICLCPP}
 		   ${ROOT_GEOM}
 		   ${ROOT_XMLIO}
@@ -31,6 +31,7 @@ art_make(
 		   icaruscode_PMT_OpReco_FlashFinder
 		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
+		   larcorealg_Geometry
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}
 		   canvas
@@ -47,7 +48,6 @@ art_make(
 		   art_Persistency_Provenance
 		   art_Utilities
 		   ${MF_MESSAGELOGGER}
-		   ${MF_UTILITIES}
 		   ${FHICLCPP}
 		   ${ROOT_GEOM}
 		   ${ROOT_XMLIO}
