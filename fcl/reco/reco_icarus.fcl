@@ -1,4 +1,4 @@
-## 
+##
 ##  ICARUS reconstruction
 ##  modeled on standard version
 ##
@@ -90,12 +90,12 @@ icarus_reco_producers:
   gaushitTPC1:                    @local::gaus_hitfinder_icarus
   gaushitTPC2:                    @local::gaus_hitfinder_icarus
   gaushitTPC3:                    @local::gaus_hitfinder_icarus
- 
-  mixedhit:                      @local::mixed_hitfinder
-  mixedHitTPC0:                  @local::mixed_hitfinder
-  mixedHitTPC1:                  @local::mixed_hitfinder
-  mixedHitTPC2:                  @local::mixed_hitfinder
-  mixedHitTPC3:                  @local::mixed_hitfinder
+
+  mixedhit:                       @local::mixed_hitfinder
+  mixedHitTPC0:                   @local::mixed_hitfinder
+  mixedHitTPC1:                   @local::mixed_hitfinder
+  mixedHitTPC2:                   @local::mixed_hitfinder
+  mixedHitTPC3:                   @local::mixed_hitfinder
 
   icarushit:                      @local::icarus_hitfinder
   icarusHitTPC0:                  @local::icarus_hitfinder
@@ -113,7 +113,7 @@ icarus_reco_producers:
   ### trajcluster
   trajclusterGaus:                @local::icarus_trajcluster
   trajclusterICARUS:              @local::icarus_trajcluster
-   
+
   ### Cluster3D
   cluster3d:                      @local::icarus_cluster3d
   cluster3DCryo0:                 @local::icarus_cluster3d
@@ -145,13 +145,13 @@ icarus_reco_producers:
   #pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
   # pandora CALO and PID
-  pandoraGausCaloCryo0:		  @local::icarus_calomc
-  pandoraGausPidCryo0:		  @local::icarus_chi2pid
-  pandoraGausCaloCryo1:		  @local::icarus_calomc
-  pandoraGausPidCryo1:		  @local::icarus_chi2pid
+  pandoraGausCaloCryo0:		        @local::icarus_calomc
+  pandoraGausPidCryo0:		        @local::icarus_chi2pid
+  pandoraGausCaloCryo1:		        @local::icarus_calomc
+  pandoraGausPidCryo1:		        @local::icarus_chi2pid
 
-  pandoraGausSCECaloCryo0:        @local::icarus_gnewcalomc 
-  pandoraGausSCEPidCryo0:	  @local::icarus_chi2pid
+  pandoraGausSCECaloCryo0:        @local::icarus_gnewcalomc
+  pandoraGausSCEPidCryo0:	        @local::icarus_chi2pid
   pandoraGausSCECaloCryo1:        @local::icarus_gnewcalomc
   pandoraGausSCEPidCryo1:         @local::icarus_chi2pid
 
@@ -181,12 +181,12 @@ icarus_reco_producers:
   mcsICARUSGausCryo0:             @local::mcsfitproducericarus_gaus
   mcsICARUSRawCryo1:              @local::mcsfitproducericarus_raw
   mcsICARUSGausCryo1:             @local::mcsfitproducericarus_gaus
-  mcsstandardRaw:                   @local::mcsfitproducerstandard_raw
-  mcsstandardGaus:                  @local::mcsfitproducerstandard_gaus
-  mcsstandardRawCryo0:              @local::mcsfitproducerstandard_raw
-  mcsstandardGausCryo0:             @local::mcsfitproducerstandard_gaus
-  mcsstandardRawCryo1:              @local::mcsfitproducerstandard_raw
-  mcsstandardGausCryo1:             @local::mcsfitproducerstandard_gaus
+  mcsstandardRaw:                 @local::mcsfitproducerstandard_raw
+  mcsstandardGaus:                @local::mcsfitproducerstandard_gaus
+  mcsstandardRawCryo0:            @local::mcsfitproducerstandard_raw
+  mcsstandardGausCryo0:           @local::mcsfitproducerstandard_gaus
+  mcsstandardRawCryo1:            @local::mcsfitproducerstandard_raw
+  mcsstandardGausCryo1:           @local::mcsfitproducerstandard_gaus
 
   ### PM algorithm
   pmAlgTrackerGaus:               @local::icarus_pmalgtrackmaker
@@ -212,272 +212,274 @@ icarus_reco_producers:
 }
 
 icarus_reco_filters:
-{ 
+{
 }
 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
-icarus_reco_ophit:                [ophit ]
+icarus_reco_ophit:                 [ ophit ]
 
-icarus_reco_flash:                [opflashTPC0,
-                                   opflashTPC1,
-                                   opflashTPC2,
-                                   opflashTPC3 ]
+icarus_reco_flash:                 [ opflashTPC0,
+                                     opflashTPC1,
+                                     opflashTPC2,
+                                     opflashTPC3 ]
 
-icarus_mc_reco_opt:               [mcophit,
-                                   mcopflashTPC0,
-                                   mcopflashTPC1,
-                                   mcopflashTPC2,
-                                   mcopflashTPC3 ]
+icarus_mc_reco_opt:                [ mcophit,
+                                     mcopflashTPC0,
+                                     mcopflashTPC1,
+                                     mcopflashTPC2,
+                                     mcopflashTPC3 ]
 
-icarus_reco_optical:              [ @sequence::icarus_reco_ophit,
-                                    @sequence::icarus_reco_flash ]
+icarus_reco_optical:               [ @sequence::icarus_reco_ophit,
+                                     @sequence::icarus_reco_flash ]
 
-icarus_reco_wmc_optical:          [ @sequence::icarus_reco_ophit,
-                                    @sequence::icarus_reco_flash,
-                                    @sequence::icarus_mc_reco_opt ]
+icarus_reco_wmc_optical:           [ @sequence::icarus_reco_ophit,
+                                     @sequence::icarus_reco_flash,
+                                     @sequence::icarus_mc_reco_opt ]
 
-icarus_reco_signalprocessinggaus: [ rawdigitfilter,
-                                    decon1droi,
-                                    gaushit,
-                                    gaushitsel ]
+icarus_reco_signalprocessinggaus:  [ rawdigitfilter,
+                                     decon1droi,
+                                     gaushit,
+                                     gaushitsel ]
 
-icarus_reco_SigProcTPC0Gauss:     [ rawDigitFilterTPC0,
-                                    decon1DroiTPC0,
-                                    gaushitTPC0 ]
+icarus_reco_SigProcTPC0Gauss:      [ rawDigitFilterTPC0,
+                                     decon1DroiTPC0,
+                                     gaushitTPC0 ]
 
-icarus_reco_SigProcTPC1Gauss:     [ rawDigitFilterTPC1,
-                                    decon1DroiTPC1,
-                                    gaushitTPC1 ]
+icarus_reco_SigProcTPC1Gauss:      [ rawDigitFilterTPC1,
+                                     decon1DroiTPC1,
+                                     gaushitTPC1 ]
 
-icarus_reco_SigProcTPC2Gauss:     [ rawDigitFilterTPC2,
-                                    decon1DroiTPC2,
-                                    gaushitTPC2 ]
+icarus_reco_SigProcTPC2Gauss:      [ rawDigitFilterTPC2,
+                                     decon1DroiTPC2,
+                                     gaushitTPC2 ]
 
-icarus_reco_SigProcTPC3Gauss:     [ rawDigitFilterTPC3,
-                                    decon1DroiTPC3,
-                                    gaushitTPC3 ]
+icarus_reco_SigProcTPC3Gauss:      [ rawDigitFilterTPC3,
+                                     decon1DroiTPC3,
+                                     gaushitTPC3 ]
 
 icarus_reco_signalprocessingmixed: [ rawdigitfilter,
-                                    decon1droi,
-                                    icarushit ]
+                                     decon1droi,
+                                     icarushit ]
 
-icarus_reco_SigProcTPC0Mixed:     [mixedHitTPC0 ]
+icarus_reco_SigProcTPC0Mixed:      [ mixedHitTPC0 ]
 
-icarus_reco_SigProcTPC1Mixed:     [ mixedHitTPC1 ]
+icarus_reco_SigProcTPC1Mixed:      [ mixedHitTPC1 ]
 
-icarus_reco_SigProcTPC2Mixed:     [mixedHitTPC2 ]
+icarus_reco_SigProcTPC2Mixed:      [ mixedHitTPC2 ]
 
-icarus_reco_SigProcTPC3Mixed:     [  mixedHitTPC3 ]
+icarus_reco_SigProcTPC3Mixed:      [ mixedHitTPC3 ]
 
-icarus_reco_signalprocessingraw:  [ recowireraw,
-                                    icarushit]
+icarus_reco_signalprocessingraw:   [ recowireraw,
+                                     icarushit]
 
-icarus_reco_SigProcTPC0Raw:       [ recoWireRawTPC0,
-                                    icarusHitTPC0 ]
+icarus_reco_SigProcTPC0Raw:        [ recoWireRawTPC0,
+                                     icarusHitTPC0 ]
 
-icarus_reco_SigProcTPC1Raw:       [ recoWireRawTPC1,
-                                    icarusHitTPC1 ]
+icarus_reco_SigProcTPC1Raw:        [ recoWireRawTPC1,
+                                     icarusHitTPC1 ]
 
-icarus_reco_SigProcTPC2Raw:       [ recoWireRawTPC2,
-                                    icarusHitTPC2 ]
+icarus_reco_SigProcTPC2Raw:        [ recoWireRawTPC2,
+                                     icarusHitTPC2 ]
 
-icarus_reco_SigProcTPC3Raw:       [ recoWireRawTPC3,
-                                    icarusHitTPC3 ]
+icarus_reco_SigProcTPC3Raw:        [ recoWireRawTPC3,
+                                     icarusHitTPC3 ]
 
-icarus_reco_signalprocessing:     [ @sequence::icarus_reco_signalprocessinggaus,
-                                    @sequence::icarus_reco_signalprocessingraw ]
+icarus_reco_signalprocessing:      [ @sequence::icarus_reco_signalprocessinggaus,
+                                     @sequence::icarus_reco_signalprocessingraw ]
 
-icarus_reco_trajclusterGaus:      [ trajclusterGaus]
+icarus_reco_trajclusterGaus:       [ trajclusterGaus]
 
-icarus_reco_trajclusterICARUS:    [ trajclusterICARUS]
+icarus_reco_trajclusterICARUS:     [ trajclusterICARUS]
 
-icarus_reco_cluster3d:            [ cluster3d ]
+icarus_reco_cluster3d:             [ cluster3d ]
 
-icarus_reco_cluster3DCryo0:       [ cluster3DCryo0 ]
+icarus_reco_cluster3DCryo0:        [ cluster3DCryo0 ]
 
-icarus_reco_cluster3DCryo1:       [ cluster3DCryo1 ]
+icarus_reco_cluster3DCryo1:        [ cluster3DCryo1 ]
 
-icarus_reco_pmAlgTrackerGaus:     [ pmAlgTrackerGaus,
-                                    pmAlgKalmanTrackGaus]
+icarus_reco_pmAlgTrackerGaus:      [ pmAlgTrackerGaus,
+                                     pmAlgKalmanTrackGaus]
 
-icarus_reco_pmAlgTrackerICARUS:   [ pmAlgTrackerICARUS,
-                                    pmAlgKalmanTrackICARUS]
+icarus_reco_pmAlgTrackerICARUS:    [ pmAlgTrackerICARUS,
+                                     pmAlgKalmanTrackICARUS]
 
-icarus_reco_pandoraGaus:          [ pandoraGaus,
-                                    pandoraTrackGaus,
-#                                    pandoraShowerGaus,
-                                    pandoraKalmanTrackGaus
+icarus_reco_pandoraGaus:           [ pandoraGaus,
+                                     pandoraTrackGaus,
+#                                     pandoraShowerGaus,
+                                     pandoraKalmanTrackGaus
 #,                                    mcsICARUSGaus,
-#                                    mcsstandardGaus 
+#                                    mcsstandardGaus
 ]
 
-icarus_reco_pandoraGausCryo0:     [ pandoraGausCryo0,
-                                    pandoraTrackGausCryo0,
-#                                    pandoraShowerGausCryo0,
-                                    pandoraKalmanTrackGausCryo0
+icarus_reco_pandoraGausCryo0:      [ pandoraGausCryo0,
+                                     pandoraTrackGausCryo0,
+#                                     pandoraShowerGausCryo0,
+                                     pandoraKalmanTrackGausCryo0
 #,                                    mcsICARUSGausCryo0
-#                                    ,mcsstandardGausCryo0  
+#                                    ,mcsstandardGausCryo0
 ]
 
-icarus_reco_pandoraGausCryo1:     [ pandoraGausCryo1,
-                                    pandoraTrackGausCryo1,
-#                                    pandoraShowerGausCryo1,
-                                    pandoraKalmanTrackGausCryo1
+icarus_reco_pandoraGausCryo1:      [ pandoraGausCryo1,
+                                     pandoraTrackGausCryo1,
+#                                     pandoraShowerGausCryo1,
+                                     pandoraKalmanTrackGausCryo1
 #,                                    mcsICARUSGausCryo1
-#                                    ,mcsstandardGausCryo1  
+#                                    ,mcsstandardGausCryo1
 ]
 
-icarus_reco_pandoraICARUS:        [ pandoraICARUS,
-                                    pandoraTrackICARUS,
-#                                    pandoraShowerICARUS,
-                                    pandoraKalmanTrackICARUS
-#,                                  mcsICARUSRaw,
-#                                    mcsstandardRaw  
+icarus_reco_pandoraICARUS:         [ pandoraICARUS,
+                                     pandoraTrackICARUS,
+#                                     pandoraShowerICARUS,
+                                     pandoraKalmanTrackICARUS
+#,                                    mcsICARUSRaw,
+#                                     mcsstandardRaw
 ]
 
-icarus_reco_pandoraICARUSCryo0:   [ pandoraICARUSCryo0,
-                                    pandoraTrackICARUSCryo0,
-#                                    pandoraShowerICARUSCryo0,
-                                    pandoraKalmanTrackICARUSCryo0
-#,                                    mcsICARUSRawCryo0,  
-#                                    mcsstandardRawCryo0  
+icarus_reco_pandoraICARUSCryo0:    [ pandoraICARUSCryo0,
+                                     pandoraTrackICARUSCryo0,
+#                                     pandoraShowerICARUSCryo0,
+                                     pandoraKalmanTrackICARUSCryo0
+#,                                    mcsICARUSRawCryo0,
+#                                     mcsstandardRawCryo0
 ]
 
-icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
-                                    pandoraTrackICARUSCryo1,
-#                                    pandoraShowerICARUSCryo1,
-                                    pandoraKalmanTrackICARUSCryo1
-#,                                    mcsICARUSRawCryo1,  
-#                                    mcsstandardRawCryo1  
+icarus_reco_pandoraICARUSCryo1:    [ pandoraICARUSCryo1,
+                                     pandoraTrackICARUSCryo1,
+#                                     pandoraShowerICARUSCryo1,
+                                     pandoraKalmanTrackICARUSCryo1
+#,                                    mcsICARUSRawCryo1,
+#                                     mcsstandardRawCryo1
 ]
 
-icarus_reco_Gauss_SCE_Cryo0:          [ pandoraGausSCECryo0, pandoraTrackGausSCECryo0, SBNShowerGausSCECryo0, pandoraGausSCECaloCryo0, pandoraGausSCEPidCryo0]
-icarus_reco_Gauss_SCE_Cryo1:          [ pandoraGausSCECryo1, pandoraTrackGausSCECryo1, SBNShowerGausSCECryo1, pandoraGausSCECaloCryo1, pandoraGausSCEPidCryo1]
+icarus_reco_Gauss_SCE_Cryo0:       [ pandoraGausSCECryo0, pandoraTrackGausSCECryo0, SBNShowerGausSCECryo0, pandoraGausSCECaloCryo0, pandoraGausSCEPidCryo0]
+icarus_reco_Gauss_SCE_Cryo1:       [ pandoraGausSCECryo1, pandoraTrackGausSCECryo1, SBNShowerGausSCECryo1, pandoraGausSCECaloCryo1, pandoraGausSCEPidCryo1]
 
-icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
-                                    @sequence::icarus_reco_SigProcTPC1Gauss,
-                                    @sequence::icarus_reco_cluster3DCryo0,
-                                    @sequence::icarus_reco_pandoraGausCryo0,
-                                    SBNShowerGausCryo0 ]
+icarus_reco_Gauss_Cryo0:           [ @sequence::icarus_reco_SigProcTPC0Gauss,
+                                     @sequence::icarus_reco_SigProcTPC1Gauss,
+                                     @sequence::icarus_reco_cluster3DCryo0,
+                                     @sequence::icarus_reco_pandoraGausCryo0,
+                                     SBNShowerGausCryo0 ]
 
-icarus_reco_Gauss_Cryo1:          [ @sequence::icarus_reco_SigProcTPC2Gauss,
-                                    @sequence::icarus_reco_SigProcTPC3Gauss,
-                                    @sequence::icarus_reco_cluster3DCryo1,
-                                    @sequence::icarus_reco_pandoraGausCryo1,
-                                    SBNShowerGausCryo1 ]
+icarus_reco_Gauss_Cryo1:           [ @sequence::icarus_reco_SigProcTPC2Gauss,
+                                     @sequence::icarus_reco_SigProcTPC3Gauss,
+                                     @sequence::icarus_reco_cluster3DCryo1,
+                                     @sequence::icarus_reco_pandoraGausCryo1,
+                                     SBNShowerGausCryo1 ]
 
-icarus_reco_raw_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Raw,
-                                    @sequence::icarus_reco_SigProcTPC1Raw,
-                                    hitMergerCryo0,
-                                    @sequence::icarus_reco_pandoraICARUSCryo0 ]
+icarus_reco_raw_Cryo0:             [ @sequence::icarus_reco_SigProcTPC0Raw,
+                                     @sequence::icarus_reco_SigProcTPC1Raw,
+                                     hitMergerCryo0,
+                                     @sequence::icarus_reco_pandoraICARUSCryo0 ]
 
-icarus_reco_raw_Cryo1:            [ @sequence::icarus_reco_SigProcTPC2Raw,
-                                    @sequence::icarus_reco_SigProcTPC3Raw,
-                                    hitMergerCryo1,
-                                    @sequence::icarus_reco_pandoraICARUSCryo1 ]
+icarus_reco_raw_Cryo1:             [ @sequence::icarus_reco_SigProcTPC2Raw,
+                                     @sequence::icarus_reco_SigProcTPC3Raw,
+                                     hitMergerCryo1,
+                                     @sequence::icarus_reco_pandoraICARUSCryo1 ]
 
-icarus_reco_mixed_Cryo0:            [ @sequence::icarus_reco_SigProcTPC0Mixed,
-                                    @sequence::icarus_reco_SigProcTPC1Mixed
-                                    #,hitMergerCryo0,
-                                    #@sequence::icarus_reco_pandoraICARUSCryo0
- ]
+icarus_reco_mixed_Cryo0:           [ @sequence::icarus_reco_SigProcTPC0Mixed,
+                                     @sequence::icarus_reco_SigProcTPC1Mixed
+                                     #,hitMergerCryo0,
+                                     #@sequence::icarus_reco_pandoraICARUSCryo0
+                                   ]
 
-icarus_reco_mixed_Cryo1:            [ @sequence::icarus_reco_SigProcTPC2Mixed,
-                                    @sequence::icarus_reco_SigProcTPC3Mixed
-                                    #,hitMergerCryo1,
-                                    #@sequence::icarus_reco_pandoraICARUSCryo1 
-]
+icarus_reco_mixed_Cryo1:           [ @sequence::icarus_reco_SigProcTPC2Mixed,
+                                     @sequence::icarus_reco_SigProcTPC3Mixed
+                                     #,hitMergerCryo1,
+                                     #@sequence::icarus_reco_pandoraICARUSCryo1
+                                   ]
 
 
-icarus_reco_mcrecoGaus:           [ mcassociationsGaus ]
-icarus_reco_mcrecoGausMulti:      [ mcassociationsGausCryo0,
-                                    mcassociationsGausCryo1 ]
+icarus_reco_mcrecoGaus:            [ mcassociationsGaus ]
+icarus_reco_mcrecoGausMulti:       [ mcassociationsGausCryo0,
+                                     mcassociationsGausCryo1 ]
 
-icarus_reco_mcrecoICARUS:         [ mcassociationsICARUS ]
-icarus_reco_mcrecoICARUSMulti:    [ mcassociationsICARUSCryo0,
-                                    mcassociationsICARUSCryo1 ]
+icarus_reco_mcrecoICARUS:          [ mcassociationsICARUS ]
+icarus_reco_mcrecoICARUSMulti:     [ mcassociationsICARUSCryo0,
+                                     mcassociationsICARUSCryo1 ]
 
-icarus_reco_crt:                  [ crttruehit,
-                                    crthit,
-                                    #crttzero ]
-                                    crttrack 
-                                  ]
+icarus_reco_crt:                   [ crttruehit,
+                                     crthit,
+                                     #crttzero ]
+                                     crttrack ]
 
 # Define what would be the first pass reconstructon (the "gauss" recon)
-icarus_gauss_reconstruction:      [ @sequence::icarus_reco_signalprocessinggaus,
-                                    @sequence::icarus_reco_cluster3d,
-                                    @sequence::icarus_reco_pandoraGaus,
-                                    #@sequence::icarus_reco_trajclusterGaus,
-                                    #@sequence::icarus_reco_pmAlgTrackerGaus,
-                                    SBNShowerGaus,
-                                    @sequence::icarus_reco_mcrecoGaus,
-                                    @sequence::icarus_reco_wmc_optical
-                                  ]
+icarus_gauss_reconstruction:       [ @sequence::icarus_reco_signalprocessinggaus,
+                                     @sequence::icarus_reco_cluster3d,
+                                     @sequence::icarus_reco_pandoraGaus,
+                                     #@sequence::icarus_reco_trajclusterGaus,
+                                     #@sequence::icarus_reco_pmAlgTrackerGaus,
+                                     SBNShowerGaus,
+                                     @sequence::icarus_reco_mcrecoGaus,
+                                     @sequence::icarus_reco_wmc_optical
+                                   ]
 
-icarus_gauss_MultiTPCRecon:       [ @sequence::icarus_reco_Gauss_Cryo0,
-                                    @sequence::icarus_reco_Gauss_Cryo1,
-                                    #@sequence::icarus_reco_trajclusterGaus,
-                                    #@sequence::icarus_reco_pmAlgTrackerGaus,
-                                    @sequence::icarus_reco_mcrecoGausMulti,
-                                    @sequence::icarus_reco_wmc_optical
-                                  ]
+icarus_gauss_MultiTPCRecon:        [ @sequence::icarus_reco_Gauss_Cryo0,
+                                     @sequence::icarus_reco_Gauss_Cryo1,
+                                     #@sequence::icarus_reco_trajclusterGaus,
+                                     #@sequence::icarus_reco_pmAlgTrackerGaus,
+                                     @sequence::icarus_reco_mcrecoGausMulti,
+                                     @sequence::icarus_reco_wmc_optical
+                                   ]
 
-icarus_gauss_MultiTPCSCERecon: [ @sequence::icarus_reco_Gauss_SCE_Cryo0, @sequence::icarus_reco_Gauss_SCE_Cryo1]
+icarus_gauss_MultiTPCSCERecon:     [ @sequence::icarus_reco_Gauss_SCE_Cryo0, @sequence::icarus_reco_Gauss_SCE_Cryo1]
 
 # Define what would be the second pass reconstructon (the "ICARUS" recon)
 # Note this stage needs to follow the gauss stage since it uses the rawdigitfilter output
-icarus_raw_reconstruction:        [ @sequence::icarus_reco_signalprocessingraw,
-                                    @sequence::icarus_reco_pandoraICARUS,
-                                    #@sequence::icarus_reco_trajclusterICARUS,
-                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoICARUS,
-                                    @sequence::icarus_reco_crt
-                                  ]
+icarus_raw_reconstruction:         [ @sequence::icarus_reco_signalprocessingraw,
+                                     @sequence::icarus_reco_pandoraICARUS,
+                                     #@sequence::icarus_reco_trajclusterICARUS,
+                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                     @sequence::icarus_reco_mcrecoICARUS,
+                                     @sequence::icarus_reco_crt
+                                   ]
 
-icarus_raw_MultiTPCRecon:         [ @sequence::icarus_reco_raw_Cryo0,
-                                    @sequence::icarus_reco_raw_Cryo1,
-                                    #@sequence::icarus_reco_trajclusterICARUS,
-                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoICARUSMulti,
-                                    @sequence::icarus_reco_crt
-#@sequence::icarus_reco_calorimetry
-                                  ]
-#icarus_rawfast_TPC0recon:         [ @sequence::icarus_reco_raw_Cryo0,
-#                                    @sequence::icarus_reco_raw_Cryo1,
-#                                    #@sequence::icarus_reco_trajclusterICARUS,
-#                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-#                                    @sequence::icarus_reco_mcrecoICARUSMulti,
-#                                    @sequence::icarus_reco_crt
-#@sequence::icarus_reco_calorimetry
-#                                  ]
-icarus_mixed_reconstruction:        [ @sequence::icarus_reco_signalprocessingmixed,
-                                    @sequence::icarus_reco_pandoraICARUS,
-                                    #@sequence::icarus_reco_trajclusterICARUS,
-                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoICARUS,
-                                    @sequence::icarus_reco_crt
-                                  ]
-icarus_mixed_MultiTPCRecon:         [ @sequence::icarus_reco_mixed_Cryo0,
-                                    @sequence::icarus_reco_mixed_Cryo1,
-                                    #@sequence::icarus_reco_trajclusterICARUS,
-                                    #@sequence::icarus_reco_pmAlgTrackerICARUS,
-                                    @sequence::icarus_reco_mcrecoICARUSMulti,
-                                    @sequence::icarus_reco_crt
-                                  ]
+icarus_raw_MultiTPCRecon:          [ @sequence::icarus_reco_raw_Cryo0,
+                                     @sequence::icarus_reco_raw_Cryo1,
+                                     #@sequence::icarus_reco_trajclusterICARUS,
+                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                     @sequence::icarus_reco_mcrecoICARUSMulti,
+                                     @sequence::icarus_reco_crt
+                                     #@sequence::icarus_reco_calorimetry
+                                   ]
+
+#icarus_rawfast_TPC0recon:          [ @sequence::icarus_reco_raw_Cryo0,
+#                                     @sequence::icarus_reco_raw_Cryo1,
+#                                     #@sequence::icarus_reco_trajclusterICARUS,
+#                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
+#                                     @sequence::icarus_reco_mcrecoICARUSMulti,
+#                                     @sequence::icarus_reco_crt
+#                                     @sequence::icarus_reco_calorimetry
+#                                   ]
+
+icarus_mixed_reconstruction:       [ @sequence::icarus_reco_signalprocessingmixed,
+                                     @sequence::icarus_reco_pandoraICARUS,
+                                     #@sequence::icarus_reco_trajclusterICARUS,
+                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                     @sequence::icarus_reco_mcrecoICARUS,
+                                     @sequence::icarus_reco_crt
+                                   ]
+
+icarus_mixed_MultiTPCRecon:        [ @sequence::icarus_reco_mixed_Cryo0,
+                                     @sequence::icarus_reco_mixed_Cryo1,
+                                     #@sequence::icarus_reco_trajclusterICARUS,
+                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
+                                     @sequence::icarus_reco_mcrecoICARUSMulti,
+                                     @sequence::icarus_reco_crt
+                                   ]
 
 
 # Define the full reconstruction sequence
-icarus_full_reconstruction:       [ @sequence::icarus_gauss_reconstruction,
-                                    @sequence::icarus_raw_reconstruction,
-@sequence::icarus_mixed_reconstruction
-                                  ]
+icarus_full_reconstruction:        [ @sequence::icarus_gauss_reconstruction,
+                                     @sequence::icarus_raw_reconstruction,
+                                     @sequence::icarus_mixed_reconstruction
+                                   ]
 
 # Define CRT/Op reco only sequence
-icarus_crtophit_reconstruction:   [@sequence::icarus_reco_crt,
-                                   @sequence::icarus_reco_wmc_optical
-                                  ]
+icarus_crtophit_reconstruction:    [ @sequence::icarus_reco_crt,
+                                     @sequence::icarus_reco_wmc_optical
+                                   ]
 
 ### Below we include overrides for the modules above
 
@@ -511,33 +513,33 @@ icarus_reco_producers.rawDigitFilterTPC3.FFTAlg.FillHistograms:                 
 
 ### Definitions for a single instance of the deconvolution
 icarus_reco_producers.decon1droi.DigitModuleLabel:                                             "rawdigitfilter"
-    
-### Definitions for instances by TPC    
+
+### Definitions for instances by TPC
 icarus_reco_producers.decon1DroiTPC0.DigitModuleLabel:                                         "rawDigitFilterTPC0"
 icarus_reco_producers.decon1DroiTPC1.DigitModuleLabel:                                         "rawDigitFilterTPC1"
 icarus_reco_producers.decon1DroiTPC2.DigitModuleLabel:                                         "rawDigitFilterTPC2"
 icarus_reco_producers.decon1DroiTPC3.DigitModuleLabel:                                         "rawDigitFilterTPC3"
-    
+
 icarus_reco_producers.recowireraw.DigitModuleLabel:                                            "rawdigitfilter"
-    
+
 icarus_reco_producers.recoWireRawTPC0.DigitModuleLabel:                                        "rawDigitFilterTPC0"
 icarus_reco_producers.recoWireRawTPC1.DigitModuleLabel:                                        "rawDigitFilterTPC1"
 icarus_reco_producers.recoWireRawTPC2.DigitModuleLabel:                                        "rawDigitFilterTPC2"
 icarus_reco_producers.recoWireRawTPC3.DigitModuleLabel:                                        "rawDigitFilterTPC3"
-    
-### Definitions for a single instance of the hit finding    
+
+### Definitions for a single instance of the hit finding
 icarus_reco_producers.gaushit.CalDataModuleLabel:                                              "decon1droi"
-    
-### Definitions for instances by TPC    
+
+### Definitions for instances by TPC
 icarus_reco_producers.gaushitTPC0.CalDataModuleLabel:                                          "decon1DroiTPC0"
 icarus_reco_producers.gaushitTPC1.CalDataModuleLabel:                                          "decon1DroiTPC1"
 icarus_reco_producers.gaushitTPC2.CalDataModuleLabel:                                          "decon1DroiTPC2"
 icarus_reco_producers.gaushitTPC3.CalDataModuleLabel:                                          "decon1DroiTPC3"
-    
-### Definitions for a single instance of the hit finding    
+
+### Definitions for a single instance of the hit finding
 icarus_reco_producers.mixedhit.CalDataModuleLabel:                                              "decon1Droi"
-    
-### Definitions for instances by TPC    
+
+### Definitions for instances by TPC
 icarus_reco_producers.mixedHitTPC0.CalDataModuleLabel:                                          "decon1DroiTPC0"
 icarus_reco_producers.mixedHitTPC1.CalDataModuleLabel:                                          "decon1DroiTPC1"
 icarus_reco_producers.mixedHitTPC2.CalDataModuleLabel:                                          "decon1DroiTPC2"
@@ -548,25 +550,25 @@ icarus_reco_producers.gaushitsel.HitProducerLabel:                              
 ### Need to define hitmerger for the raw hit finding when done by TPC
 icarus_reco_producers.hitMergerCryo0.hitProducerLabelVec:                                      ["icarusHitTPC0","icarusHitTPC1"]
 icarus_reco_producers.hitMergerCryo1.hitProducerLabelVec:                                      ["icarusHitTPC2","icarusHitTPC3"]
-    
-## Standard 3D hit building    
+
+## Standard 3D hit building
 icarus_reco_producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
-    
-## Definitions for running the 3D clustering by Cryostat    
+
+## Definitions for running the 3D clustering by Cryostat
 icarus_reco_producers.cluster3DCryo0.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPC0", "gaushitTPC1"]
 icarus_reco_producers.cluster3DCryo1.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPC2", "gaushitTPC3"]
-    
+
 icarus_reco_producers.icarushit.CalDataModuleLabel:                                            "recowireraw"
-    
+
 icarus_reco_producers.icarusHitTPC0.CalDataModuleLabel:                                        "recoWireRawTPC0"
 icarus_reco_producers.icarusHitTPC1.CalDataModuleLabel:                                        "recoWireRawTPC1"
 icarus_reco_producers.icarusHitTPC2.CalDataModuleLabel:                                        "recoWireRawTPC2"
 icarus_reco_producers.icarusHitTPC3.CalDataModuleLabel:                                        "recoWireRawTPC3"
-    
-### Need to define hitmerger for the raw hit finding when done by TPC    
+
+### Need to define hitmerger for the raw hit finding when done by TPC
 icarus_reco_producers.hitMergerCryo0.HitProducerLabelVec:                                      ["icarusHitTPC0","icarusHitTPC1"]
 icarus_reco_producers.hitMergerCryo1.HitProducerLabelVec:                                      ["icarusHitTPC2","icarusHitTPC3"]
-    
+
 icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                     "cluster3d"
 
 ### Definitions for a single pandora instance
@@ -580,8 +582,8 @@ icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:             
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                             ""
 icarus_reco_producers.pandoraKalmanTrackGaus.options.trackFromPF:                              false
 icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:                             false
-    
-### Definitions for a pandora by cryostat    
+
+### Definitions for a pandora by cryostat
 icarus_reco_producers.pandoraGausCryo0.HitFinderModuleLabel:                                   "cluster3DCryo0"
 icarus_reco_producers.pandoraTrackGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
 icarus_reco_producers.pandoraShowerGausCryo0.PFParticleLabel:                                  "pandoraGausCryo0"
@@ -595,21 +597,21 @@ icarus_reco_producers.pandoraKalmanTrackGausCryo0.options.showerFromPF:         
 
 # Configure the SCE corrections
 # For now: always assume t = 0
-icarus_reco_producers.pandoraGausSCECryo0.T0Labels: []
-icarus_reco_producers.pandoraGausSCECryo0.T0LabelsCorrectT0: []
-icarus_reco_producers.pandoraGausSCECryo0.CorrectNoT0Tag: true
-icarus_reco_producers.pandoraGausSCECryo0.PFPLabel:						"pandoraGausCryo0"
-icarus_reco_producers.pandoraGausSCECryo0.TrackLabel:						"pandoraTrackGausCryo0"
+icarus_reco_producers.pandoraGausSCECryo0.T0Labels:                                            []
+icarus_reco_producers.pandoraGausSCECryo0.T0LabelsCorrectT0:                                   []
+icarus_reco_producers.pandoraGausSCECryo0.CorrectNoT0Tag:                                      true
+icarus_reco_producers.pandoraGausSCECryo0.PFPLabel:						                                 "pandoraGausCryo0"
+icarus_reco_producers.pandoraGausSCECryo0.TrackLabel:						                               "pandoraTrackGausCryo0"
 
-icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                 "pandoraGausCryo0"
+icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausCryo0"
 
-icarus_reco_producers.pandoraGausSCECryo1.T0Labels: []
-icarus_reco_producers.pandoraGausSCECryo1.T0LabelsCorrectT0: []
-icarus_reco_producers.pandoraGausSCECryo1.CorrectNoT0Tag: true
-icarus_reco_producers.pandoraGausSCECryo1.PFPLabel:						"pandoraGausCryo1"
-icarus_reco_producers.pandoraGausSCECryo1.TrackLabel:						"pandoraTrackGausCryo1"
+icarus_reco_producers.pandoraGausSCECryo1.T0Labels:                                            []
+icarus_reco_producers.pandoraGausSCECryo1.T0LabelsCorrectT0:                                   []
+icarus_reco_producers.pandoraGausSCECryo1.CorrectNoT0Tag:                                      true
+icarus_reco_producers.pandoraGausSCECryo1.PFPLabel:						                                 "pandoraGausCryo1"
+icarus_reco_producers.pandoraGausSCECryo1.TrackLabel:						                               "pandoraTrackGausCryo1"
 
-icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                   "pandoraGausCryo1"
+icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausCryo1"
 
 icarus_reco_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
 icarus_reco_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
@@ -621,18 +623,18 @@ icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputs.inputCaloLabel:        
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputs.inputPidLabel:                        ""
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.options.trackFromPF:                         false
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.options.showerFromPF:                        false
-    
+
 icarus_reco_producers.pmAlgTrackerGaus.HitModuleLabel:                                         "trajclusterGaus"
 icarus_reco_producers.pmAlgTrackerGaus.WireModuleLabel:                                        "decon1droi"
 icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                                     "trajclusterGaus"
-    
+
 icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
-             
+
 icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
-    
-### Definitions for a single instance of trajCluster    
+
+### Definitions for a single instance of trajCluster
 icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:                   "icarushit"
-         
+
 ### Definitions for a single pandora instance
 icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                                      "icarushit"
 icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                                      "pandoraICARUS"
@@ -656,7 +658,7 @@ icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputCaloLabel:      
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPidLabel:                      ""
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.options.trackFromPF:                       false
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.options.showerFromPF:                      false
-     
+
 icarus_reco_producers.pandoraICARUSCryo1.HitFinderModuleLabel:                                 "hitMergerCryo1"
 icarus_reco_producers.pandoraTrackICARUSCryo1.PFParticleLabel:                                 "pandoraICARUSCryo1"
 icarus_reco_producers.pandoraShowerICARUSCryo1.PFParticleLabel:                                "pandoraICARUSCryo1"
@@ -703,14 +705,14 @@ icarus_reco_producers.mcsstandardRawCryo0.inputs.inputLabel:                    
 icarus_reco_producers.mcsstandardRawCryo1.inputs.inputLabel:                                   "pandoraTrackICARUSCryo1"
 icarus_reco_producers.mcsstandardGausCryo0.inputs.inputLabel:                                  "pandoraTrackGausCryo0"
 icarus_reco_producers.mcsstandardGausCryo1.inputs.inputLabel:                                  "pandoraTrackGausCryo1"
-     
-### Definitions for single instance of PM algorithm     
+
+### Definitions for single instance of PM algorithm
 icarus_reco_producers.pmAlgTrackerICARUS.HitModuleLabel:                                       "trajclusterICARUS"
 icarus_reco_producers.pmAlgTrackerICARUS.WireModuleLabel:                                      "recowireraw"
 icarus_reco_producers.pmAlgTrackerICARUS.ClusterModuleLabel:                                   "trajclusterICARUS"
-              
+
 icarus_reco_producers.pmAlgKalmanTrackICARUS.inputs.inputPFParticleLabel:                      "pmAlgTrackerICARUS"
-              
+
 icarus_reco_producers.mcassociationsGaus.TrackModuleLabel:                                     "pandoraTrackGaus"
 icarus_reco_producers.mcassociationsGaus.HitModuleLabel:                                       ["gaushit"]
 icarus_reco_producers.mcassociationsGaus.makeT0Assns:                                          false
@@ -720,7 +722,7 @@ icarus_reco_producers.mcassociationsGausCryo0.makeT0Assns:                      
 icarus_reco_producers.mcassociationsGausCryo1.TrackModuleLabel:                                "pandoraTrackGausCryo1"
 icarus_reco_producers.mcassociationsGausCryo1.HitModuleLabel:                                  ["cluster3DCryo1"]
 icarus_reco_producers.mcassociationsGausCryo1.makeT0Assns:                                     false
-     
+
 icarus_reco_producers.mcassociationsICARUS.TrackModuleLabel:                                   "pandoraTrackICARUS"
 icarus_reco_producers.mcassociationsICARUS.HitModuleLabel:                                     ["icarushit"]
 icarus_reco_producers.mcassociationsICARUS.makeT0Assns:                                        false
@@ -732,31 +734,31 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:             
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
 
 # point the pandora CALO modules to pandora output
-icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel: "pandoraTrackGausCryo0"
-icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel: "pandoraGausCryo0"
-icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
-icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel: "pandoraGausCaloCryo0"
+icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel:                                   "pandoraTrackGausCryo0"
+icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel:                              "pandoraGausCryo0"
+icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:                                    "pandoraTrackGausCryo0"
+icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel:                              "pandoraGausCaloCryo0"
 
-icarus_reco_producers.pandoraGausSCECaloCryo0.TrackModuleLabel: "pandoraTrackGausSCECryo0"
-icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortion: true
-icarus_reco_producers.pandoraGausSCECaloCryo0.TrackIsFieldDistortionCorrected: true
-icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortionEfield: true
-icarus_reco_producers.pandoraGausSCEPidCryo0.TrackModuleLabel:  "pandoraTrackGausSCECryo0"
-icarus_reco_producers.pandoraGausSCEPidCryo0.CalorimetryModuleLabel: "pandoraGausSCECaloCryo0"
+icarus_reco_producers.pandoraGausSCECaloCryo0.TrackModuleLabel:                                "pandoraTrackGausSCECryo0"
+icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortion:                                 true
+icarus_reco_producers.pandoraGausSCECaloCryo0.TrackIsFieldDistortionCorrected:                 true
+icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortionEfield:                           true
+icarus_reco_producers.pandoraGausSCEPidCryo0.TrackModuleLabel:                                 "pandoraTrackGausSCECryo0"
+icarus_reco_producers.pandoraGausSCEPidCryo0.CalorimetryModuleLabel:                           "pandoraGausSCECaloCryo0"
 
 
-icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
-icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1"
-icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
-icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel: "pandoraGausCaloCryo1"
+icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel:                                   "pandoraTrackGausCryo1"
+icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel:                              "pandoraGausCryo1"
+icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel:                                    "pandoraTrackGausCryo1"
+icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel:                              "pandoraGausCaloCryo1"
 
-icarus_reco_producers.pandoraGausSCECaloCryo1.TrackModuleLabel: "pandoraTrackGausSCECryo1"
-icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortion: true
-icarus_reco_producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected: true
-icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortionEfield: true
-icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat: 1
+icarus_reco_producers.pandoraGausSCECaloCryo1.TrackModuleLabel:                                "pandoraTrackGausSCECryo1"
+icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortion:                                 true
+icarus_reco_producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected:                 true
+icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortionEfield:                           true
+icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat:                                        1
 
-icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:  "pandoraTrackGausSCECryo1"
-icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel: "pandoraGausSCECaloCryo1"
+icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:                                 "pandoraTrackGausSCECryo1"
+icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel:                           "pandoraGausSCECaloCryo1"
 
 END_PROLOG
