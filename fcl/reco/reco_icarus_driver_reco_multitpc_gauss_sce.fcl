@@ -1,0 +1,14 @@
+#include "reco_icarus_driver_common.fcl"
+
+process_name: McRecoGauss
+
+physics.reco: [@sequence::icarus_gauss_MultiTPCRecon, @sequence::icarus_gauss_MultiTPCSCERecon]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+source.inputCommands: ["keep *_*_*_*", "drop *_*_*_McReco*" ]
+
+services.SpaceChargeService.EnableSimSpatialSCE: true
+services.SpaceChargeService.EnableSimEfieldSCE: true
+services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
+services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root'

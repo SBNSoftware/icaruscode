@@ -73,7 +73,7 @@ standard_caloicarusmcfit:
 
 standard_gnocchicaloicarus:
 {
-  module_type: "GnocchiCalorimetryICARUS"
+  module_type: "GnocchiCalorimetry"
   TrackModuleLabel: "track3d"
   T0ModuleLabel: ""
   AssocHitModuleLabel: ""

@@ -36,7 +36,7 @@
 #include "TH2D.h"
 #include "TVector3.h"
 
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTDecoder/CRTPreProcessTree.h"
 
 using std::string;
