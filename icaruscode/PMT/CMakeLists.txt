@@ -108,5 +108,6 @@ install_scripts(
   SUBDIRS scripts
   EXTRAS
     "scripts/MergePhotonLibrary.C"
+    "scripts/RecompressROOTtrees.C"
   )
 
