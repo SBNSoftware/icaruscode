@@ -29,6 +29,7 @@
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
 #include "correctionservices_icarus.fcl"
+#include "scecorrections.fcl"
 
 BEGIN_PROLOG
 
@@ -123,10 +124,14 @@ icarus_reco_producers:
   pandoraTrackGaus:               @local::icarus_pandoraTrackCreation
   #pandoraShowerGaus:              @local::icarus_pandoraShowerCreation
   pandoraGausCryo0:               @local::icarus_pandora
+  pandoraGausSCECryo0:            @local::scecorrection
   pandoraTrackGausCryo0:          @local::icarus_pandoraTrackCreation
+  pandoraTrackGausSCECryo0:       @local::icarus_pandoraTrackCreation
   #pandoraShowerGausCryo0:         @local::icarus_pandoraShowerCreation
   pandoraGausCryo1:               @local::icarus_pandora
+  pandoraGausSCECryo1:            @local::scecorrection
   pandoraTrackGausCryo1:          @local::icarus_pandoraTrackCreation
+  pandoraTrackGausSCECryo1:       @local::icarus_pandoraTrackCreation
   #pandoraShowerGausCryo1:         @local::icarus_pandoraShowerCreation
 
   pandoraICARUS:                  @local::icarus_pandora
@@ -145,6 +150,11 @@ icarus_reco_producers:
   pandoraGausCaloCryo1:		  @local::icarus_calomc
   pandoraGausPidCryo1:		  @local::icarus_chi2pid
 
+  pandoraGausSCECaloCryo0:        @local::icarus_gnewcalomc 
+  pandoraGausSCEPidCryo0:	  @local::icarus_chi2pid
+  pandoraGausSCECaloCryo1:        @local::icarus_gnewcalomc
+  pandoraGausSCEPidCryo1:         @local::icarus_chi2pid
+
   ### PM algorithm for pandora
   pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
 
@@ -161,6 +171,8 @@ icarus_reco_producers:
   SBNShowerGausCryo0:             @local::standard_sbnshower_stan #@local::intermediate_sbnshower
   SBNShowerGausCryo1:             @local::standard_sbnshower_stan #@local::intermediate_sbnshower
 
+  SBNShowerGausSCECryo0:          @local::standard_sbnshower_stan
+  SBNShowerGausSCECryo1:          @local::standard_sbnshower_stan
 
   ## MCS modules
   mcsICARUSRaw:                   @local::mcsfitproducericarus_raw
@@ -341,6 +353,9 @@ icarus_reco_pandoraICARUSCryo1:   [ pandoraICARUSCryo1,
 #                                    mcsstandardRawCryo1  
 ]
 
+icarus_reco_Gauss_SCE_Cryo0:          [ pandoraGausSCECryo0, pandoraTrackGausSCECryo0, SBNShowerGausSCECryo0, pandoraGausSCECaloCryo0, pandoraGausSCEPidCryo0]
+icarus_reco_Gauss_SCE_Cryo1:          [ pandoraGausSCECryo1, pandoraTrackGausSCECryo1, SBNShowerGausSCECryo1, pandoraGausSCECaloCryo1, pandoraGausSCEPidCryo1]
+
 icarus_reco_Gauss_Cryo0:          [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                     @sequence::icarus_reco_SigProcTPC1Gauss,
                                     @sequence::icarus_reco_cluster3DCryo0,
@@ -408,6 +423,8 @@ icarus_gauss_MultiTPCRecon:       [ @sequence::icarus_reco_Gauss_Cryo0,
                                     @sequence::icarus_reco_mcrecoGausMulti,
                                     @sequence::icarus_reco_wmc_optical
                                   ]
+
+icarus_gauss_MultiTPCSCERecon: [ @sequence::icarus_reco_Gauss_SCE_Cryo0, @sequence::icarus_reco_Gauss_SCE_Cryo1]
 
 # Define what would be the second pass reconstructon (the "ICARUS" recon)
 # Note this stage needs to follow the gauss stage since it uses the rawdigitfilter output
@@ -576,6 +593,24 @@ icarus_reco_producers.pandoraKalmanTrackGausCryo0.inputs.inputPidLabel:         
 icarus_reco_producers.pandoraKalmanTrackGausCryo0.options.trackFromPF:                         false
 icarus_reco_producers.pandoraKalmanTrackGausCryo0.options.showerFromPF:                        false
 
+# Configure the SCE corrections
+# For now: always assume t = 0
+icarus_reco_producers.pandoraGausSCECryo0.T0Labels: []
+icarus_reco_producers.pandoraGausSCECryo0.T0LabelsCorrectT0: []
+icarus_reco_producers.pandoraGausSCECryo0.CorrectNoT0Tag: true
+icarus_reco_producers.pandoraGausSCECryo0.PFPLabel:						"pandoraGausCryo0"
+icarus_reco_producers.pandoraGausSCECryo0.TrackLabel:						"pandoraTrackGausCryo0"
+
+icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                 "pandoraGausCryo0"
+
+icarus_reco_producers.pandoraGausSCECryo1.T0Labels: []
+icarus_reco_producers.pandoraGausSCECryo1.T0LabelsCorrectT0: []
+icarus_reco_producers.pandoraGausSCECryo1.CorrectNoT0Tag: true
+icarus_reco_producers.pandoraGausSCECryo1.PFPLabel:						"pandoraGausCryo1"
+icarus_reco_producers.pandoraGausSCECryo1.TrackLabel:						"pandoraTrackGausCryo1"
+
+icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                   "pandoraGausCryo1"
+
 icarus_reco_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
 icarus_reco_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
 icarus_reco_producers.pandoraShowerGausCryo1.PFParticleLabel:                                  "pandoraGausCryo1"
@@ -648,6 +683,17 @@ icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[2].Intercepts:       
 icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg:                  @local::standard_calorimetryalgmc
 icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
 
+icarus_reco_producers.SBNShowerGausSCECryo0.PFParticleLabel:                                      "pandoraGausSCECryo0"
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[2].Gradients:                       [0.00155644,0.00173915,0.00153631]
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[2].Intercepts:                      [5.92931,-2.13307,5.19711]
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[5].CalorimetryAlg:                  @local::standard_calorimetryalgmc
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+icarus_reco_producers.SBNShowerGausSCECryo1.PFParticleLabel:                                      "pandoraGausSCECryo1"
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[2].Gradients:                       [0.00155644,0.00173915,0.00153631]
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[2].Intercepts:                      [5.92931,-2.13307,5.19711]
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[5].CalorimetryAlg:                  @local::standard_calorimetryalgmc
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+
 ### Definitions for MCS modules for cryostat-level reconstruction by cryostat
 icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                                     "pandoraTrackICARUSCryo0"
 icarus_reco_producers.mcsICARUSRawCryo1.inputs.inputLabel:                                     "pandoraTrackICARUSCryo1"
@@ -691,9 +737,26 @@ icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel: "pandoraGausCr
 icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:  "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel: "pandoraGausCaloCryo0"
 
+icarus_reco_producers.pandoraGausSCECaloCryo0.TrackModuleLabel: "pandoraTrackGausSCECryo0"
+icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortion: true
+icarus_reco_producers.pandoraGausSCECaloCryo0.TrackIsFieldDistortionCorrected: true
+icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortionEfield: true
+icarus_reco_producers.pandoraGausSCEPidCryo0.TrackModuleLabel:  "pandoraTrackGausSCECryo0"
+icarus_reco_producers.pandoraGausSCEPidCryo0.CalorimetryModuleLabel: "pandoraGausSCECaloCryo0"
+
+
 icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel: "pandoraGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel: "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel: "pandoraGausCaloCryo1"
+
+icarus_reco_producers.pandoraGausSCECaloCryo1.TrackModuleLabel: "pandoraTrackGausSCECryo1"
+icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortion: true
+icarus_reco_producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected: true
+icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortionEfield: true
+icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat: 1
+
+icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:  "pandoraTrackGausSCECryo1"
+icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel: "pandoraGausSCECaloCryo1"
 
 END_PROLOG
