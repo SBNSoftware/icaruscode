@@ -686,14 +686,26 @@ icarus_reco_producers.SBNShowerGausCryo0.PFParticleLabel:                       
 icarus_reco_producers.SBNShowerGausCryo1.PFParticleLabel:                                      "pandoraGausCryo1"
 
 icarus_reco_producers.SBNShowerGausSCECryo0.PFParticleLabel:                                   "pandoraGausSCECryo0"
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[7].SCECorrectEField:             true
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[7].SCECorrectPitch:	       true
+icarus_reco_producers.SBNShowerGausSCECryo0.ShowerFinderTools[7].SCEInputCorrected:	       true
 icarus_reco_producers.SBNShowerGausSCECryo1.PFParticleLabel:                                   "pandoraGausSCECryo1"
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[7].SCECorrectEField:             true
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[7].SCECorrectPitch:              true
+icarus_reco_producers.SBNShowerGausSCECryo1.ShowerFinderTools[7].SCEInputCorrected:            true
 
-icarus_reco_producers.SBNShowerTestGaus.PFParticleLabel:                                           "pandoraGaus"
-icarus_reco_producers.SBNShowerTestGausCryo0.PFParticleLabel:                                      "pandoraGausCryo0"
-icarus_reco_producers.SBNShowerTestGausCryo1.PFParticleLabel:                                      "pandoraGausCryo1"
+icarus_reco_producers.SBNShowerTestGaus.PFParticleLabel:                                        "pandoraGaus"
+icarus_reco_producers.SBNShowerTestGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
+icarus_reco_producers.SBNShowerTestGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
 
-icarus_reco_producers.SBNShowerTestGausSCECryo0.PFParticleLabel:                                   "pandoraGausSCECryo0"
-icarus_reco_producers.SBNShowerTestGausSCECryo1.PFParticleLabel:                                   "pandoraGausSCECryo1"
+icarus_reco_producers.SBNShowerTestGausSCECryo0.PFParticleLabel:                                "pandoraGausSCECryo0"
+icarus_reco_producers.SBNShowerTestGausSCECryo0.ShowerFinderTools[7].SCECorrectEField:          true
+icarus_reco_producers.SBNShowerTestGausSCECryo0.ShowerFinderTools[7].SCECorrectPitch:           true
+icarus_reco_producers.SBNShowerTestGausSCECryo0.ShowerFinderTools[7].SCEInputCorrected:         true
+icarus_reco_producers.SBNShowerTestGausSCECryo1.PFParticleLabel:                                "pandoraGausSCECryo1"
+icarus_reco_producers.SBNShowerTestGausSCECryo1.ShowerFinderTools[7].SCECorrectEField:          true
+icarus_reco_producers.SBNShowerTestGausSCECryo1.ShowerFinderTools[7].SCECorrectPitch:           true
+icarus_reco_producers.SBNShowerTestGausSCECryo1.ShowerFinderTools[7].SCEInputCorrected:         true
 
 ### Definitions for MCS modules for cryostat-level reconstruction by cryostat
 icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                                     "pandoraTrackICARUSCryo0"
