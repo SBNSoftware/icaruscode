@@ -94,9 +94,9 @@ services.DetectorPropertiesService.Electronlifetime: 10000
 #physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
 #physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
 #calorimetry constants from I. Ginnett (docdb18991) - Lariat method:
-physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.59e-2, 1.35e-2, 1.56e-2 ]
-physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.59e-2, 1.35e-2, 1.56e-2 ]
-physics.producers.gnocchiCal.CaloAlg.CalAreaConstants: [ 1.59e-2, 1.35e-2, 1.56e-2 ]
+physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
+physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
+physics.producers.gnocchiCal.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 
 physics.producers.gnocchiCal.TrackModuleLabel:      "pandoraTrackGausCryo0"
 

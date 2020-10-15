@@ -424,8 +424,8 @@ icarus_raw_MultiTPCRecon:         [ @sequence::icarus_reco_raw_Cryo0,
                                     #@sequence::icarus_reco_trajclusterICARUS,
                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                     @sequence::icarus_reco_mcrecoICARUSMulti,
-                                    @sequence::icarus_reco_crt
-#@sequence::icarus_reco_calorimetry
+                                    @sequence::icarus_reco_crt,
+@sequence::icarus_reco_calorimetry
                                   ]
 #icarus_rawfast_TPC0recon:         [ @sequence::icarus_reco_raw_Cryo0,
 #                                    @sequence::icarus_reco_raw_Cryo1,
@@ -641,12 +641,12 @@ icarus_reco_producers.SBNShowerGausCryo0.PFParticleLabel:                       
 icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[2].Gradients:                       [0.00155644,0.00173915,0.00153631]
 icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[2].Intercepts:                      [5.92931,-2.13307,5.19711]
 icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[5].CalorimetryAlg:                  @local::standard_calorimetryalgmc
-icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+#icarus_reco_producers.SBNShowerGausCryo0.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 icarus_reco_producers.SBNShowerGausCryo1.PFParticleLabel:                                      "pandoraGausCryo1"
 icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[2].Gradients:                       [0.00155644,0.00173915,0.00153631]
 icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[2].Intercepts:                      [5.92931,-2.13307,5.19711]
 icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg:                  @local::standard_calorimetryalgmc
-icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.4815e-2, 1.4815e-2, 1.4815e-2 ]
+#icarus_reco_producers.SBNShowerGausCryo1.ShowerFinderTools[5].CalorimetryAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 
 ### Definitions for MCS modules for cryostat-level reconstruction by cryostat
 icarus_reco_producers.mcsICARUSRawCryo0.inputs.inputLabel:                                     "pandoraTrackICARUSCryo0"
