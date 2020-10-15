@@ -134,13 +134,13 @@ icarus_reco_producers:
   pandoraTrackGausSCECryo1:       @local::icarus_pandoraTrackCreation
   #pandoraShowerGausCryo1:         @local::icarus_pandoraShowerCreation
 
-  pandoraICARUS:                  @local::icarus_pandora
+  pandoraICARUS:                  @local::icarus_pandora_rawicarus
   pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
   #pandoraShowerICARUS:            @local::icarus_pandoraShowerCreation
-  pandoraICARUSCryo0:             @local::icarus_pandora
+  pandoraICARUSCryo0:             @local::icarus_pandora_rawicarus
   pandoraTrackICARUSCryo0:        @local::icarus_pandoraTrackCreation
   #pandoraShowerICARUSCryo0:       @local::icarus_pandoraShowerCreation
-  pandoraICARUSCryo1:             @local::icarus_pandora
+  pandoraICARUSCryo1:             @local::icarus_pandora_rawicarus
   pandoraTrackICARUSCryo1:        @local::icarus_pandoraTrackCreation
   #pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
