@@ -51,12 +51,12 @@ physics:
         calorimetry:    @local::standard_caloicarusmc
         calorimetryFit: @local::standard_caloicarusmcfit
         gnocchiCal:     @local::standard_gnocchicaloicarus
-        gnocchiCalFit:  @local::standard_gnocchicaloicarus
+        
     }
 
     #define the producer and filter modules for this path, order matters,
     #filters reject all following items.  see lines starting physics.producers below
-    reco: [ calorimetry , calorimetryFit, gnocchiCal, gnocchiCalFit]
+    reco: [ calorimetry , calorimetryFit, gnocchiCal]
 
     #define the output stream, there could be more than one if using filters
     stream1:  [ out1 ]
@@ -90,13 +90,13 @@ outputs:
 
 services.SpaceChargeService: @local::icarus_spacecharge
 services.DetectorPropertiesService.Electronlifetime: 10000
+#calorimetry constants from I. Ginnett (docdb18991) - Lariat method:
+physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 
-physics.producers.calorimetry.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
-
-physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.46e-2, 1.46e-2, 1.46e-2 ]
+physics.producers.calorimetryfit.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 
 physics.producers.gnocchiCal.TrackModuleLabel:      "pandoraTrackGausCryo0"
+physics.producers.gnocchiCal.CaloAlg.CalAreaConstants: [ 1.56e-2, 1.35e-2, 1.59e-2 ]
 
-physics.producers.gnocchiCalFit.TrackModuleLabel:      "pandoraKalmanTrackGausCryo0"
 
 
