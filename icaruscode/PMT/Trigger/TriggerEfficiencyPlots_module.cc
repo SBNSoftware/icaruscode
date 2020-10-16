@@ -12,7 +12,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
