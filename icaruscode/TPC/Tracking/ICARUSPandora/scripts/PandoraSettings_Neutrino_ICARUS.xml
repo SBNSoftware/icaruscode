@@ -2,7 +2,7 @@
   <!-- Output list management -->
   <!-- GLOBAL SETTINGS -->
   <IsMonitoringEnabled>true</IsMonitoringEnabled>
-  <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
+  <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
   <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
   <!-- ALGORITHM SETTINGS -->
