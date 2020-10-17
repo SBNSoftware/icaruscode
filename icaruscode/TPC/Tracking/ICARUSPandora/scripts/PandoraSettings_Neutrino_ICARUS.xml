@@ -2,7 +2,7 @@
   <!-- Output list management -->
   <!-- GLOBAL SETTINGS -->
   <IsMonitoringEnabled>true</IsMonitoringEnabled>
-  <ShouldDisplayAlgorithmInfo>false</ShouldDisplayAlgorithmInfo>
+  <ShouldDisplayAlgorithmInfo>true</ShouldDisplayAlgorithmInfo>
   <SingleHitTypeClusteringMode>true</SingleHitTypeClusteringMode>
 
   <!-- ALGORITHM SETTINGS -->
@@ -94,7 +94,7 @@
     <InputClusterListNames>ClustersU ClustersV ClustersW</InputClusterListNames>
     <OutputVertexListName>NeutrinoVertices3D</OutputVertexListName>
     <ReplaceCurrentVertexList>true</ReplaceCurrentVertexList>
-    <MvaFileName>PandoraBdt_v08_33_00_SBND.xml</MvaFileName>
+    <MvaFileName>PandoraBdt_v08_43_00_ICARUS_vertex_bnb.xml</MvaFileName>
     <RegionMvaName>VertexBDTRegion</RegionMvaName>
     <VertexMvaName>VertexBDTVertex</VertexMvaName>
     <FeatureTools>
