@@ -1,0 +1,12 @@
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+physics.reco: [@sequence::icarus_stage0_single]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+
+# Drop the artdaq format files on output
+outputs.rootout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
+
