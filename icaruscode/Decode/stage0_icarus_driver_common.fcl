@@ -1,4 +1,4 @@
-## 
+##
 ##  Shared art job configuartions for ICARUS reco
 ##
 #include "stage0_icarus_defs.fcl"
@@ -11,8 +11,7 @@ services:
 {
   TFileService:           { }
   IICARUSChannelMap:      @local::icarus_channelmappinggservice
-                          @table::icarus_calibration_services
-                          @table::icarus_wirecalibration_services
+                          @table::icarus_wirecalibration_minimum_services
 }
 
 #source is a root file
@@ -35,14 +34,14 @@ physics:
  }
 
  filters:
- { 
+ {
      @table::icarus_reco_filters
  }
 
  #reco sequence and trigger_paths to be defined elsewhere
 
  stream1:  [ out1 ]
- end_paths:     [stream1]  
+ end_paths:     [stream1]
 
 }
 
@@ -64,7 +63,7 @@ outputs:
 ### See https://cdcvs.fnal.gov/redmine/projects/messagefacility/wiki for details
 services.message.destinations :
 {
-  STDCOUT: 
+  STDCOUT:
   {
      type:      "cout"      #tells the message service to output this destination to cout
      threshold: "WARNING"   #tells the message service that this destination applies to WARNING and higher level messages
