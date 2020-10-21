@@ -29,6 +29,8 @@ icarus::trigger::details::EventInfoTree::EventInfoTree
     this->tree().Branch("NuE",      &fNuE);
     this->tree().Branch("OutLeptE", &fOutLeptE);
     this->tree().Branch("OutLeptAngle", &fOutLeptAngle);
+    this->tree().Branch("MuonsInterc", &fMuons);
+    this->tree().Branch("MuonMomentum", &fMomentum);
 //  this->tree().Branch("IsNu_mu", &fIsNu_mu);
 //  this->tree().Branch("IsNu_e", &fIsNu_e);
   } // if generated
@@ -46,7 +48,8 @@ icarus::trigger::details::EventInfoTree::EventInfoTree
     this->tree().Branch("InActive",        &fInActive);
     this->tree().Branch("Vertices",        &fVertices);
   } // if generated
-  
+ 
+ 
 } // icarus::trigger::details::EventInfoTree::EventInfoTree()
 
 
@@ -62,7 +65,9 @@ void icarus::trigger::details::EventInfoTree::assignEvent
     fTime     = static_cast<Double_t>(info.InteractionTime());
     fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
     fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
-    fOutLeptAngle = info.LeptonAngle();
+    fOutLeptAngle = static_cast<Double_t>(info.LeptonAngle());
+    fMuons = static_cast<Int_t>(info.MuonsInterceptingDetector());
+    fMomentum = static_cast<Double_t>(info.MuonMomentum());
  // fIsNu_mu = static_cast<Bool_t>(info.isNu_mu());
  // fIsNu_e = static_cast<Bool_t>(info.isNu_e());
 

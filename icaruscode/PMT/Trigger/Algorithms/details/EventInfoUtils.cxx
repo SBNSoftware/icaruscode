@@ -42,7 +42,6 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo
   (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
 {
   
-  std::cout << "Cosmic fillGeneratorInfo"<< std::endl;
   if (truth.NeutrinoSet()){ fillGeneratorNeutrinoInfo(info, truth);
   } else fillGeneratorCosmicInfo(info, truth, particles);
   
@@ -162,29 +161,64 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
    * Except that the vertex is just inserted into the vertex list, as the
    * first entry.
    */
+
   
+  // How many cosmics:
+  int AllCosmics = 0; 
+  int CosmicsThatCorssed = 0; 
+  
+  std::vector< double > Momentums {0.0};
+ 
   
   //
   // interaction flavor (nu_mu, nu_e)
   // interaction type (CC, NC)
-  //
+  
+  
+  //Scanning through all the particles:
 
   for (simb::MCParticle const& particle: particles){
-  //const simb::MCParticle part = truth.GetParticle(i);
-  //std::cout << "Cosmic truth info for particle" << i << std::endl;
-  //std::cout << part.Momentum().Print() << std::endl;
-   //part.Momentum().Print();
-  //std::cout << "PDG info for particle" << i << std::endl;
-   //std::cout << part.PdgCode() << std::endl;
-  //std::cout << "Position info for particle" << i << std::endl;
-   //std::cout << part.Position().X() <<std::endl;
-  //std::cout << "Position info for particle" << i << std::endl;
-   //part.Position().Print();
-  const TLorentzVector pos1 = particle.Position();
-  const TLorentzVector pos2 = particle.EndPosition();
-  bool check_0 = interceptsTPCActiveVolume(pos1, pos2);
-  if(check_0){ std::cout<<"Found cosmic in the detector"<<std::endl; getchar();}
+
+    bool check_0 = false;
+  //muons:
+    if(particle.PdgCode()==13 || particle.PdgCode()==-13){ 
+       AllCosmics++;  
+       const TLorentzVector pos1 = particle.Position();
+       const TLorentzVector pos2 = particle.EndPosition();
+       check_0 = interceptsTPCActiveVolume(pos1, pos2);
+       if(check_0){ 
+          CosmicsThatCorssed++; //std::cout<<"Found cosmic in the detector"<<std::endl;
+  	  //info.SetLeptonAngle(double{ particle.Theta() });
+ 	 Momentums.push_back(particle.Momentum().Vect().Mag());
+         //std::cout<<"Momentum magn: "<<particle.Momentum().Vect().Mag()<<std::endl;
+       }
+   //other particles:
+    }else if(particle.PdgCode()!=14 || particle.PdgCode()!=-14){  
+             const TLorentzVector pos1 = particle.Position();
+             const TLorentzVector pos2 = particle.EndPosition();
+             check_0 = interceptsTPCActiveVolume(pos1, pos2);
+             if(check_0){ 
+                //std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
+                //std::cout<<"Momentum: ";  particle.Momentum().Print();
+                //std::cout<<"StarPos: "; particle.Position().Print();
+                //std::cout<<"EndPos: ";particle.EndPosition().Print();
+             }
+           }
   }
+
+ std::cout<<"Number of all the cosmic muons in this event: "<<AllCosmics<<std::endl;
+ std::cout<<"Number of the cosmic muons that intercepted the detecor in this event: "<<CosmicsThatCorssed<<std::endl;
+ info.SetMuonsInterceptingDetector(int{CosmicsThatCorssed});
+ 
+if(CosmicsThatCorssed){
+std::vector<double>::iterator maxMom = std::max_element(Momentums.begin(), Momentums.end());
+info.SetMuonMomentum(double{*maxMom});} else info.SetMuonMomentum(double{0.0});
+
+std::cout<<"What's in the vector: "<<std::endl;
+for(auto i : Momentums){
+std::cout<<i<<std::endl;
+}
+Momentums.clear();
 
 
 //bool a =  interceptsTPCActiveVolume();
@@ -213,32 +247,18 @@ void icarus::trigger::details::EventInfoExtractor::addGeneratorNeutrinoInfo
   info.AddVertex(vertex);
   
 } // icarus::trigger::details::EventInfoExtractor::addGeneratorNeutrinoInfo()
-void icarus::trigger::details::EventInfoExtractor::addGeneratorCosmicInfo
-  (EventInfo_t& info, simb::MCTruth const& truth) const
+/*void icarus::trigger::details::EventInfoExtractor::addGeneratorCosmicInfo
+  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
 {
-  std::cout << "Cosmic addGeneratorCosmicInfo" << std::endl;
-  /*
-   * The only update to the record so far is the addition of the vertex of the
-   * interaction at the end of the current list.
-   * No information is overwritten.
-   * 
-   */
-  for (int i=0; i<truth.NParticles(); i++){
+ // std::cout << "Cosmic addGeneratorCosmicInfo" << std::endl;
+for (simb::MCParticle const& particle: particles){
   const simb::MCParticle part = truth.GetParticle(i);
  // std::cout << "Cosmic truth info for particle" << i << std::endl;
   //part.Momentum().Print();// << std::endl;
   }
-  //simb::MCParticle const& nu = truth.GetNeutrino().Nu();
-  
-  // we do not trust the vertex (`GvX()`) of the neutrino particle,
-  // since GenieHelper does not translate the vertex
-  // of some of the particles from GENIE to detector frame;
-  // trajectory is always translated:
- // geo::Point_t const vertex { nu.EndX(), nu.EndY(), nu.EndZ() };
- // info.AddVertex(vertex);
   
 } // icarus::trigger::details::EventInfoExtractor::addGeneratorNeutrinoInfo()
-
+*/
 
 // -----------------------------------------------------------------------------
 void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
@@ -312,6 +332,7 @@ if (endPos.X() > tpcMinX && endPos.X() < tpcMaxX &&
     endPos.Y() > tpcMinY && endPos.Y() < tpcMaxY &&
     endPos.Z() > tpcMinZ && endPos.Z() < tpcMaxZ) 
     {//Hit = endPos; 
+    std::cout<<"Particle ended in TPC"<<std::endl;
     return true;}
 
 
@@ -338,7 +359,7 @@ return true;
 
 }else if((zmu_ybot <= tpcMaxZ && zmu_ybot >= tpcMinZ) && ( xmu_ybot >= tpcMinX && xmu_ybot <= tpcMaxX)){
 
-std::cout << "Save this cosmic" << std::endl;
+std::cout << "Save this cosmic 2" << std::endl;
 return true;
 
 } else { 
@@ -351,7 +372,7 @@ return false;
 
   //geo::Point_t const starPos { particle.Position().X(), particle.Position().Y(), particle.Position().Z() };
   //geo::Point_t const endPos { particle.EndX(), particle.EndY(), particle.EndZ() };
-  
+std::cout<<"End of the intercept code"<<std::endl;  
 return false;
 
 }

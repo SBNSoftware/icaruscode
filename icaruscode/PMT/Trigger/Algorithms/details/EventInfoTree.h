@@ -94,6 +94,8 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
   Double_t fNuE;
   Double_t fOutLeptE;
   Double_t fOutLeptAngle;
+  Int_t fMuons;
+  Double_t fMomentum;
 //  Bool_t fIsNu_mu;
 // Bool_t fIsNu_e;
   Double_t fTotE;

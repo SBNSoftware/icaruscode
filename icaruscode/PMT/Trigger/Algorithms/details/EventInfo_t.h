@@ -107,7 +107,14 @@ struct icarus::trigger::details::EventInfo_t {
   
   /// Returns angle between incoming and outgoing leptons, in radians
   double LeptonAngle() const { return fLeptonAngle; }
+ 
+  /// Returns number of muons intercepting the detector
+  int MuonsInterceptingDetector() const { return fMuons; }
 
+  /// Returns momentum of the muon intercepting the detector 
+  //(if many muons, it takes the maximum momentum)
+  double MuonMomentum() const { return fMomentum; }
+ 
   /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
@@ -195,6 +202,12 @@ struct icarus::trigger::details::EventInfo_t {
 
   /// Sets the lepton angle.
   void SetLeptonAngle(double aL) { fLeptonAngle = aL; }
+
+  /// Sets the number of muons intercepting the detector.
+  void SetMuonsInterceptingDetector(int nMu ) { fMuons = nMu; }
+  
+  /// Sets the max momentum of the muon intercepting the detector.
+  void SetMuonMomentum(double mMu ) { fMomentum = mMu; }
   
   /// Sets the interaction type
   void SetInteractionType(int type) { setGen(); fInteractionType = type; }
@@ -271,6 +284,9 @@ struct icarus::trigger::details::EventInfo_t {
   //GeV fNucleonEnergy { 0.0 };
 
   double fLeptonAngle { 0.0 };
+  int fMuons{ 0 }; 
+  double fMomentum{ 0.0 };
+   
   
   bool nu_mu { false };
   bool nu_e { false };

@@ -90,7 +90,7 @@ physics: {
       # EnergyDepositTags: [ "largeant:TPCActive" ]
       EnergyDepositSummaryTag: edepsums
       
-      TriggerGatesTag:   "lvdsgates:130"
+      TriggerGatesTag:   "lvdsgates:200"
       
       @table::gates_config # see above
 

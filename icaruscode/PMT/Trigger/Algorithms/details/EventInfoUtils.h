@@ -279,8 +279,8 @@ class icarus::trigger::details::EventInfoExtractor {
   /// record.
   void addGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-  void addGeneratorCosmicInfo
-    (EventInfo_t& info, simb::MCTruth const& truth) const;
+  //void addGeneratorCosmicInfo
+    //(EventInfo_t& info, simb::MCTruth const& truth) const;
  
   /// Adds the energy depositions from `energyDeposits` into `info` record.
   void addEnergyDepositionInfo(

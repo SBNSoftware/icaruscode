@@ -81,12 +81,19 @@
 # :   original version
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
 BEGIN_PROLOG
 
+gates_config: {
+  
+  # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+  #BeamGateDuration:  @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+  
+} # gates_config
 # settings to plot efficiency under the requirement of this number of LVDS
 # trigger primitives to be firing during beam time
 MinimumSingleTriggerPrimitives: [ 1, 2, 3, 4, 5, 8, 12, 20, 50 ]
@@ -146,7 +153,7 @@ services: {
 
   # this provides: file service, random management (unused),
   #                Geometry, detector properties and clocks
-  @table::icarus_basic_services
+  @table::icarus_common_services
 
   # currently unused (remove the line if they start mattering):
   LArPropertiesService:      @erase
@@ -161,6 +168,30 @@ physics: {
   producers: {
 
     # --------------------------------------------------------------------------
+    edepsums: {
+      
+      module_type: ExtractEnergyDepositionSummary
+      
+      @table::gates_config # see above
+      
+    } # edepsums
+    # --------------------------------------------------------------------------
+    pmtbaselines: {
+
+      module_type: PMTWaveformBaselines
+
+      # label of input digitized optical waveform data product
+      OpticalWaveforms: "opdaq"
+
+      # produce plots on the extracted baseline
+      PlotBaselines: true  # default
+      
+      # tag of the module output to console via message facility
+      OutputCategory: "PMTWaveformBaselines"  # default
+
+    } # pmtbaselines
+
+    # --------------------------------------------------------------------------
     discrimopdaq: {
 
       module_type: DiscriminatePMTwaveforms
@@ -168,6 +199,8 @@ physics: {
       # input optical waveform data product tag:
       OpticalWaveforms: "opdaq"
 
+      # baseline data product
+      Baselines: pmtbaselines
       #
       # choosing the discrimination algorithm: fixed length gates
       #
@@ -390,8 +423,8 @@ physics: {
   } # analyzers
 
 
-  triggerAND:  [ discrimopdaq, lvdsgatesAND, trigslidewindowAND ]
-  triggerOR: [ discrimopdaq, lvdsgatesOR,  trigslidewindowOR  ]
+  triggerAND:  [ edepsums, pmtbaselines, discrimopdaq, lvdsgatesAND, trigslidewindowAND ]
+  triggerOR: [ edepsums, pmtbaselines, discrimopdaq, lvdsgatesOR,  trigslidewindowOR  ]
   
   plotsAND: [ effSingleAND, effSlidingAND ]
   plotsOR:  [ effSingleOR, effSlidingOR  ]
@@ -418,9 +451,10 @@ outputs: {
       "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*", 
       "keep simb::GTruths_*_*_*",
       "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*", 
-    #  "keep simb::MCParticles_largeant__G4",
+      "keep simb::MCParticles_largeant__G4",
       "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
       "keep sim::SimEnergyDeposits_largeant_*_G4", #drop this one
+    #  std::vector<sim::SimEnergyDeposit>
     #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
       "keep *_opdaq_*_DetSim",
       "keep *_*_*_Trigger",
