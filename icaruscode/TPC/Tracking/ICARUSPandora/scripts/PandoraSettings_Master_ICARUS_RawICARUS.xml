@@ -23,7 +23,7 @@
 
     <algorithm type = "LArMaster">
         <CRSettingsFile>PandoraSettings_Cosmic_Standard.xml</CRSettingsFile>
-        <NuSettingsFile>PandoraSettings_Neutrino_ICARUS.xml</NuSettingsFile>
+        <NuSettingsFile>PandoraSettings_Neutrino_Standard.xml</NuSettingsFile>
         <SlicingSettingsFile>PandoraSettings_Slicing_Standard.xml</SlicingSettingsFile>
         <StitchingTools>
             <tool type = "LArStitchingCosmicRayMerging"><ThreeDStitchingMode>true</ThreeDStitchingMode></tool>
@@ -33,12 +33,10 @@
             <tool type = "LArCosmicRayTagging"/>
         </CosmicRayTaggingTools>
         <SliceIdTools>
-	    <tool type = "LArBdtNeutrinoId">
-                <MvaFileName>PandoraBdt_v08_33_00_SBND.xml</MvaFileName>
-		<MvaName>NeutrinoId</MvaName>
-		<MinimumNeutrinoProbability>0</MinimumNeutrinoProbability>
-		<MaximumNeutrinos>999</MaximumNeutrinos>
-	    </tool>
+            <tool type = "LArSimpleNeutrinoId">
+                <SelectOnlyFirstSliceNeutrinos>false</SelectOnlyFirstSliceNeutrinos>
+                <SelectAllNeutrinos>true</SelectAllNeutrinos>
+            </tool>
         </SliceIdTools>
         <InputHitListName>Input</InputHitListName>
         <InputMCParticleListName>Input</InputMCParticleListName>

@@ -232,13 +232,15 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
 
 //    std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
 //    std::vector<double> highPassCutoff = {12., 12., 2.};
+//    std::vector<double> highPassCutoff = {0., 0., 0.};
+//    fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
+
 //  So we build a filter kernel for convolution with the waveform working in "tick" space. 
 //  For translation, each "tick" is approximately 0.61 kHz... the frequency response functions all
 //  are essentially zero by 500 kHz which is like 800 "ticks". 
     std::vector<std::pair<double,double>> windowSigma  = {{1.5,20.}, {1.5,20.}, {2.0,20.}};
     std::vector<std::pair<double,double>> windowCutoff = {{8.,800.}, {8.,800.}, {3.0,800.}};
 
-//    fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
     fFFTFilter = std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma, windowCutoff);
 
     return;

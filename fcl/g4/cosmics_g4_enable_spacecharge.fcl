@@ -1,0 +1,5 @@
+#include "g4_enable_spacecharge.fcl"
+
+services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+

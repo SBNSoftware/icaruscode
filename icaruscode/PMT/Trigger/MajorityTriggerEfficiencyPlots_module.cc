@@ -11,7 +11,7 @@
 #include "icaruscode/PMT/Trigger/TriggerEfficiencyPlotsBase.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
-#include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"

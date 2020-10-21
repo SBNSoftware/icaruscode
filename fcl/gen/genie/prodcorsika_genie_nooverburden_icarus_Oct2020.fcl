@@ -1,0 +1,7 @@
+#include "prodcorsika_genie_standard_icarus.fcl"
+
+process_name: GenGenieCorsika
+
+outputs.out1.fileName: "prodcorsika_genie_BNBnu_icarus_%tc_gen.root"
+physics.producers.generator.TopVolume:  "volCryostat"
+#physics.producers.generator.GenFlavors: [ 14, -14 ]
