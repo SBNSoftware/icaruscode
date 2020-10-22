@@ -296,7 +296,7 @@ icarus::crt::AnaProducer::AnaProducer(Parameters const& config)
   fLostfpga = 0;
   fTs0 = 0;
   fTs1 = 0;
-  fAdc[32] = 0;
+  for(int i=0; i<32; ++i) fAdc[i] = 0;
   fCoinc = 0;
   fRun_start_time = 0;
   fThis_poll_start = 0;

@@ -19,7 +19,7 @@
 #include <iosfwd> // std::ostream
 #include <string>
 #include <utility> // std::move()
-
+#include <sstream>
 
 // -----------------------------------------------------------------------------
 namespace icarus::opdet {

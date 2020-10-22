@@ -185,7 +185,7 @@ void BasicRawDigitAnalysis::configure(fhicl::ParameterSet const & pset)
     fFFTFitFuncVec  = pset.get<std::vector<std::string>>        ("FFTFunctionVec",             std::vector<std::string>()={"1","1","1"});
     fParameterVec   = pset.get<std::vector<std::vector<double>>>("FFTFuncParamsVec", std::vector<std::vector<double>>() = {{1},{1},{1}});
 
-    const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
+    //const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
 }
 
 //----------------------------------------------------------------------------

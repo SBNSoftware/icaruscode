@@ -114,7 +114,7 @@ namespace icarus{
             ChanData *chanTmpData(nullptr);
             set<int> trackNHold = {}; //set of channels close in time to triggered readout above threshold
             set<int> layerNHold = {}; //layers with channels above threshold (used for checking layer-layer coincidence)
-            if(trg.first==INT_MAX) std::cout << "WARNING: bad mac5 found!" << std::endl;
+            if((int)trg.first==INT_MAX) std::cout << "WARNING: bad mac5 found!" << std::endl;
             bool minosPairFound = false, istrig=false;
             vector<ChanData> passingData; //data to be included in "readout" of FEB
             vector<AuxDetIDE> passingIDE;
