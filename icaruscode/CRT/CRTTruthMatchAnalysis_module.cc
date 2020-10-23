@@ -98,9 +98,9 @@ class icarus::crt::CRTTruthMatchAnalysis : public art::EDAnalyzer {
     TH1F* fNTrueHitMu_top;
     TH1F* fNTrueHitMu_side;
     TH1F* fNTrueHitMu_bot;
-    TH1F* fNDataMu_top;
-    TH1F* fNDataMu_side;
-    TH1F* fNDataMu_bot;
+//     TH1F* fNDataMu_top;
+//     TH1F* fNDataMu_side;
+//     TH1F* fNDataMu_bot;
     TH1F* fNSimHitMu_top;
     TH1F* fNSimHitMu_side;
     TH1F* fNSimHitMu_bot;

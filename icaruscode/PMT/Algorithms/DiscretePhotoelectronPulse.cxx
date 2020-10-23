@@ -36,8 +36,14 @@ auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
   // the two functions (lambda) are of different type, so they are being wrapped
   // in the common `std::function` type
 
+  // FIXME Clang 7.0.0 can't figure out the parameters of std::function
+  // (GCC 8.2 can): specifying them explicitly...
   auto const isBelowThreshold = (pulseShape.polarity() == +1)
+#if defined(__clang__) && (__clang_major__ < 8)
+    ? std::function<bool(nanoseconds, ADCcount)>(
+#else // not Clang <8
     ? std::function(
+#endif // defined(__clang__) && (__clang_major__ < 8)
       [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
         {
           return
@@ -46,7 +52,11 @@ auto icarus::opdet::DiscretePhotoelectronPulse::sampleShape(
             ;
         }
       )
+#if defined(__clang__) && (__clang_major__ < 8)
+    : std::function<bool(nanoseconds, ADCcount)>(
+#else // not Clang <8
     : std::function(
+#endif // defined(__clang__) && (__clang_major__ < 8)
       [baseline=pulseShape.baseline(), threshold](nanoseconds, ADCcount s)
         {
           return

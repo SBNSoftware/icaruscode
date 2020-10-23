@@ -256,8 +256,10 @@ class icarus::trigger::details::EventInfoExtractor {
 
 // -----------------------------------------------------------------------------
 /// A helper class creating a `EventInfoExtractor` with a specific setup.
-struct icarus::trigger::details::EventInfoExtractorMaker {
-
+class icarus::trigger::details::EventInfoExtractorMaker {
+  
+    public:
+  
   using TimeSpan_t = EventInfoExtractor::TimeSpan_t;
   
   /// Constructor: stores parameters for construction of `EventInfoExtractor`.

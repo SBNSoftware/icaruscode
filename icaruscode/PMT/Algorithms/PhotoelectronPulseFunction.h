@@ -50,7 +50,9 @@ class icarus::opdet::PhotoelectronPulseFunction {
   using ADCcount = util::quantities::counts_f;
 
   using Time = T; ///< Type of time being used.
-
+  
+  
+  virtual ~PhotoelectronPulseFunction() = default;
 
   /**
     * @brief Evaluates the pulse at the given time.
