@@ -59,6 +59,8 @@ struct icarus::opdet::SinglePhotonPulseFunctionTool {
     = icarus::opdet::PhotoelectronPulseFunction<nanoseconds>;
   
   
+  virtual ~SinglePhotonPulseFunctionTool() = default;
+  
   /**
    * @brief Returns an instance of the pulse function.
    * 
@@ -98,7 +100,7 @@ inline auto icarus::opdet::SinglePhotonPulseFunctionTool::getPulseFunction()
 {
   auto ptr = doGetPulseFunction();
   assert(ptr);
-  return std::move(ptr);
+  return ptr;
 } // icarus::opdet::SinglePhotonPulseFunctionTool::getPulseFunction() &&
 
 
