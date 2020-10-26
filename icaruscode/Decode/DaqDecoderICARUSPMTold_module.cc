@@ -83,8 +83,9 @@ private:
     art::InputTag _tag;
     Config        _config;
     // keeping track of incrementing numbers
-    uint32_t      _last_event_number;
-    uint32_t      _last_trig_frame_number;
+    // commented out while unused
+    //uint32_t      _last_event_number;
+    //uint32_t      _last_trig_frame_number;
 };
 
 
@@ -93,9 +94,9 @@ DEFINE_ART_MODULE(daq::DaqDecoderIcarusPMTold)
 DaqDecoderIcarusPMTold::DaqDecoderIcarusPMTold(fhicl::ParameterSet const & param): 
     art::EDProducer{param},
     _tag(param.get<art::InputTag>("FragmentsLabel", "daq:CAENV1730")),
-    _config(param),
-    _last_event_number(0),
-    _last_trig_frame_number(0)
+    _config(param)//,
+    //_last_event_number(0),
+    //_last_trig_frame_number(0)
 {
   
     // produce stuff

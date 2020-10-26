@@ -25,7 +25,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 //local includes
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 #include "icaruscode/CRT/CRTUtils/CRTBackTracker.h"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
@@ -135,9 +135,9 @@ void PhotBackground::analyze(art::Event const& e)
     vector<const simb::MCParticle*> photList;
 
     //true CRT hits
-    art::Handle< vector<crt::CRTHit> > trueHitHandle;
-    vector< art::Ptr<crt::CRTHit> > trueHitList;
-    map<int,vector<art::Ptr<crt::CRTHit>>> muToTrueHits;
+    art::Handle< vector<sbn::crt::CRTHit> > trueHitHandle;
+    vector< art::Ptr<sbn::crt::CRTHit> > trueHitList;
+    map<int,vector<art::Ptr<sbn::crt::CRTHit>>> muToTrueHits;
 
     if( e.getByLabel("crttruehit",trueHitHandle) ) 
         art::fill_ptr_vector(trueHitList,trueHitHandle);

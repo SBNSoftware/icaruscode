@@ -18,8 +18,8 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
-#include "icaruscode/Utilities/SampledFunction.h"
-#include "icaruscode/Utilities/FastAndPoorGauss.h"
+#include "icarusalg/Utilities/SampledFunction.h"
+#include "icarusalg/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"

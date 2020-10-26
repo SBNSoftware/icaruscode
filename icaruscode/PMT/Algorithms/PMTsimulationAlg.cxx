@@ -12,7 +12,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Algorithms/AsymGaussPulseFunction.h"
-#include "icaruscode/Utilities/WaveformOperations.h"
+#include "icarusalg/Utilities/WaveformOperations.h"
 
 
 // LArSoft libraries

@@ -13,7 +13,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
-#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -47,6 +47,10 @@ namespace icarus::trigger {
  * The allowed customization includes what to do when a threshold is crossed
  * in a gate.
  * 
+ * Note that actions are performed only when the sample crosses a threshold.
+ * The algorithm keeps track at each time of which are the thresholds enclosing
+ * the signal level, and if the level crosses one of them, the gates associated
+ * to those thresholds, and only them, are offered a chance to react.
  */
 class icarus::trigger::ManagedTriggerGateBuilder
   : public icarus::trigger::TriggerGateBuilder

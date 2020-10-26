@@ -21,6 +21,8 @@
 
 
 #include "photpropservices.fcl"
+#include "photon_propogation_timing_icarus.fcl"
+
 
 BEGIN_PROLOG
 
@@ -34,24 +36,26 @@ BEGIN_PROLOG
 #     
 #
 icarus_photonvisibilityservice_direct: {
-    @table::standard_library_vuv_prop_timing_photonvisibilityservice
+  
+  @table::photon_propagation_timing_icarus # from photon_propogation_timing_icarus.fcl
+  
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20200925.root"
+  UseCryoBoundary:  false
+  DoNotLoadLibrary: false
+  
+  # this stuff is also included in the metadata
+  XMin: -405.0  # cm
+  XMax:  -35.0  # cm
+  YMin: -215.0  # cm
+  YMax:  170.0  # cm
+  ZMin: -985.0  # cm
+  ZMax:  985.0  # cm
+  NX:     74
+  NY:     77
+  NZ:    394
 
-    LibraryFile:     "PhotonLibrary/PhotonLibrary-20200816.root"
-    UseCryoBoundary: false
-    
-    # this stuff is also included in the metadata
-    XMin: -405.0  # cm
-    XMax:  -35.0  # cm
-    YMin: -215.0  # cm
-    YMax:  170.0  # cm
-    ZMin: -985.0  # cm
-    ZMax:  985.0  # cm
-    NX:     74
-    NY:     77
-    NZ:    394
-
-    IncludePropTime: true
-    
+  IncludePropTime: true
+  
 } # icarus_photonvisibilityservice_direct
 
 
@@ -62,7 +66,7 @@ icarus_photonvisibilityservice_direct: {
 # This is the configuration expected to work correctly with the current version
 # of the software.
 # 
-# This configuration is used for photon visibility library: 20200816.
+# This configuration is used for photon visibility library: 20200925.
 # The "mapped" in the name refers to the mapping from the first cryostat to
 # the second one.
 #
@@ -163,7 +167,7 @@ icarus_legacy_photonvisibilityservice_v08_50_00: @local::icarus_photonvisibility
 # reproducing here).
 #
 icarus_photonvisibilityservice_2018: {
-  @table::standard_library_vuv_prop_timing_photonvisibilityservice
+  @table::standard_library_vuv_prop_timing_photonvisibilityservice # TODO copy the old configuration from LArSoft into ICARUS and refer it here
 
   LibraryFile:     "PhotonLibrary/PhotonLibrary-20180801.root"
   UseCryoBoundary: false

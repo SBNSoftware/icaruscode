@@ -1,5 +1,6 @@
 #include "pandorashowertools.fcl"
 #include "pandorashowermodules.fcl"
+#include "calorimetryICARUS.fcl"
 
 BEGIN_PROLOG
 
@@ -12,15 +13,63 @@ Shower2DLinearRegressionTrackHitFinder:                         @local::shower2D
 ShowerSlidingStandardCalodEdx:                                  @local::showertrajpointdedx
 ShowerSlidingStandardCalodEdx.CalorimetryAlg:                   @local::icarus_calorimetryalgmc
 
-standard_sbnshower_stan:                                        @local::standard_pandoraModularShowerCreation
+icarus_pandorashower_3dTraj:                                    @local::standard_pandoraModularShowerCreation
+icarus_pandorashower_incremental:                               @local::standard_pandoraModularShowerCreation
 
-standard_sbndshower_stan.ShowerTools: [
-				        @local::showerpfpvertexstartposition,
-					@local::showerpcadirection,
-					@local::showerlinearenergy,
-					@local::shower3dcylindertrackhitfinder,
-					@local::showerpandoraslidingfittrackfinder,
-					@local::showerunidirectiondedx
-                                      ]
+# The below configurations are set up in a way that is to be used with the Pandora BDTs, especially Vertex BDT
+
+# "SBN Shower" - a shared set of tools with SBND.
+icarus_pandorashower_3dTraj.ShowerFinderTools: [
+  @local::showerpfpvertexstartposition,
+  @local::showerpcadirection,
+  @local::showerlengthpercentile,
+  @local::showernumelectronsenergy,
+  @local::shower3dcylindertrackhitfinder,
+  @local::showerunidirectiondedx,
+  @local::showerpandoraslidingfittrackfinder,
+  @local::showertrajpointdedx
+]
+
+icarus_pandorashower_3dTraj.ShowerFinderTools[3].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[5].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].CalorimetryAlg:    @local::icarus_calorimetryalgmc
+icarus_pandorashower_3dTraj.ShowerFinderTools[7].MinAngleToWire:    0.26
+
+# An "experimental" configuration. Uses the incremental track hit 
+# finder and values for some parameters from the study in SBN-doc-19390
+# NOTE: specifically using version -without- the Bayes Truncating tool
+icarus_pandorashower_incremental.ShowerFinderTools: [
+  @local::showerpfpvertexstartposition,
+  @local::showerpcadirection,
+  @local::showerlengthpercentile,
+  @local::showernumelectronsenergy,
+  @local::showerincrementaltrackhitfinder,
+  @local::showerunidirectiondedx,
+  @local::showerpandoraslidingfittrackfinder,
+  @local::showertrajpointdedx
+]
+
+icarus_pandorashower_incremental.ShowerFinderTools[1].ChargeWeighted:            true
+
+icarus_pandorashower_incremental.ShowerFinderTools[3].CalorimetryAlg:             @local::icarus_calorimetryalgmc
+
+icarus_pandorashower_incremental.ShowerFinderTools[4].UseShowerDirection:         false          #is true in default but false in fcl used in doc-db 19390
+icarus_pandorashower_incremental.ShowerFinderTools[4].MaxAverageResidual:         1.0
+icarus_pandorashower_incremental.ShowerFinderTools[4].MaxResidualDiff:            0.3
+icarus_pandorashower_incremental.ShowerFinderTools[4].NMissPoints:                13             #turning value from doc-db 13930 into an int
+icarus_pandorashower_incremental.ShowerFinderTools[4].StartFitSize:               19             #turning value from doc-db 13930 into an int
+icarus_pandorashower_incremental.ShowerFinderTools[4].TrackMaxAdjacentSPDistance: 3.444285839721778
+
+icarus_pandorashower_incremental.ShowerFinderTools[5].CalorimetryAlg:             @local::icarus_calorimetryalgmc
+icarus_pandorashower_incremental.ShowerFinderTools[5].dEdxTrackLength:            10.0
+
+icarus_pandorashower_incremental.ShowerFinderTools[6].SlidingFitHalfWindow:       20             #turning value from doc-db 13930 into an int
+
+icarus_pandorashower_incremental.ShowerFinderTools[7].CalorimetryAlg:             @local::icarus_calorimetryalgmc
+icarus_pandorashower_incremental.ShowerFinderTools[7].MinAngleToWire:             0.26
+icarus_pandorashower_incremental.ShowerFinderTools[7].CutStartPosition:           true
+icarus_pandorashower_incremental.ShowerFinderTools[7].MaxDist:                    1.7900692460707126
+icarus_pandorashower_incremental.ShowerFinderTools[7].MinDistCutOff:              0.9077279241610002
+icarus_pandorashower_incremental.ShowerFinderTools[7].dEdxTrackLength:            5.014080147674054
 
 END_PROLOG

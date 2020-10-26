@@ -5,7 +5,7 @@ declare -r SCRIPTVERSION="1.0"
 
 # script configuration
 declare -r SubdirName='overburden'
-declare -r DropInConfigurationName='use_no_overburden_geometry_icarus.fcl'
+declare -r DropInConfigurationName='use_nooverburden_geometry_icarus.fcl'
 
 
 # ------------------------------------------------------------------------------

@@ -8,7 +8,7 @@
 
 // library header
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
-#include "icaruscode/Utilities/SimpleClustering.h" // util::clusterBy()
+#include "icarusalg/Utilities/SimpleClustering.h" // util::clusterBy()
 
 // LArSoft libraries
 #include "larcorealg/Geometry/CryostatGeo.h"

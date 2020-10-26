@@ -11,16 +11,16 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
-#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
-#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
-#include "icaruscode/Utilities/mfLoggingClass.h"
-#include "icaruscode/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
-#include "icaruscode/Utilities/rounding.h" // icarus::ns::util::roundup()
+#include "icarusalg/Utilities/mfLoggingClass.h"
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"

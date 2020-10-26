@@ -39,7 +39,7 @@
 #   adapted to the new version of `FilterNeutrinosActiveVolume` module
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "FilterNeutrinoActive.fcl"
 #include "rootoutput_icarus.fcl"
 
@@ -48,7 +48,7 @@ process_name: GenGenieFilter
 
 services: {
   
-  @table::icarus_basic_services # from `services_icarus.fcl`
+  @table::icarus_common_services # from `services_common_icarus.fcl`
   
   # remove the services we do not need (i.e. most)
   TFileService:              @erase

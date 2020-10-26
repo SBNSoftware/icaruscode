@@ -1,11 +1,4 @@
 
-art_make(
-  EXCLUDE
-    "SaveConfigurationIntoTFile_module.cc"
-  LIB_LIBRARIES
-    ${CETLIB_EXCEPT}
-    ${CLHEP}
-  )
 
 simple_plugin(SaveConfigurationIntoTFile "module"
               ${ART_ROOT_IO_TFILESERVICE_SERVICE}

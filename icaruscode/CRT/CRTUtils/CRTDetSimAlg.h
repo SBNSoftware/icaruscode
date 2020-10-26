@@ -34,7 +34,7 @@
 #include "TGeoNode.h"
 
 //CRT includes
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 using std::vector;

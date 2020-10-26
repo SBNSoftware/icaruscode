@@ -1,4 +1,3 @@
-add_subdirectory(Data)
 add_subdirectory(OpticalTools)
 add_subdirectory(OpReco)
 add_subdirectory(Algorithms)
@@ -34,7 +33,7 @@ simple_plugin(SimPMTIcarus "module"
 
 simple_plugin(PMTWaveformBaselines "module"
   icaruscode_PMT_Algorithms
-  icaruscode_PMT_Data
+  sbnobj_ICARUS_PMT_Data
   lardataobj_RawData
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -107,5 +106,10 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
-install_scripts(SUBDIRS scripts)
+install_scripts(
+  SUBDIRS scripts
+  EXTRAS
+    "scripts/MergePhotonLibrary.C"
+    "scripts/RecompressROOTtrees.C"
+  )
 

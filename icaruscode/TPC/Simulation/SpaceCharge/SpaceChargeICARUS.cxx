@@ -237,7 +237,7 @@ void spacecharge::SpaceChargeICARUS::fixCoords(double* xx, double* yy, double* z
   //handle the edge cases by projecting SCE corrections onto boundaries
   //using tpcid to disambiguate hits that cross cathode due to SCE
   //need to do some fancy flipping of the TPC ids as well because the use of abs()
-  if (xx < 0) { *tpcid = abs(*tpcid - 1); }
+  if (*xx < 0) { *tpcid = abs(*tpcid - 1); }
   *xx = abs(*xx);
   if(*xx<71.94){*xx=71.94;}
   if(*xx>368.49){*xx=368.489;}

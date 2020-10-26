@@ -728,7 +728,7 @@ unsigned int voxelCheck(
   timer.Start();
   while (tree.GetEntry(iEntry++) > 0) voxelsFound.insert(branchVoxel);
   timer.Stop();
-  if (iEntry != nEntries) {
+  if (--iEntry != nEntries) {
     std::cerr << "ERROR: " << nEntries << " entries expected in the tree, but "
       << iEntry << " were read." << std::endl;
   }

@@ -11,8 +11,8 @@
 #include "icaruscode/PMT/Trigger/TriggerEfficiencyPlotsBase.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
-#include "icaruscode/PMT/Trigger/Utilities/ROOTutils.h" // util::ROOT
-#include "icaruscode/Utilities/sortBy.h" // also icarus::util::sortCollBy()
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/sortBy.h" // also icarus::util::sortCollBy()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"

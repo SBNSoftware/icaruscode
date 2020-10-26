@@ -25,7 +25,7 @@
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
-#include "icaruscode/Decode/TPCChannelmapping.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 // std includes
 #include <string>
@@ -90,14 +90,14 @@ public:
 
 private:
 
-    bool                                     fDiagnosticOutput;       //< If true will spew endless messages to output
+    bool                               fDiagnosticOutput;       //< If true will spew endless messages to output
 
     using OpDetWaveformCollection    = std::vector<raw::OpDetWaveform>;
     using OpDetWaveformCollectionPtr = std::unique_ptr<OpDetWaveformCollection>;
 
-    OpDetWaveformCollectionPtr              fOpDetWaveformCollection;  //< The output data collection pointer
-    database::FragmentToDigitizerChannelMap fFragmentToDigitizerMap;   //< Channel mapping from daq to LArSoft
-    const geo::Geometry*                    fGeometry;                 //< pointer to the Geometry service
+    OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  //< The output data collection pointer
+    const geo::Geometry*               fGeometry;                 //< pointer to the Geometry service
+    const icarusDB::IICARUSChannelMap* fChannelMap;
 };
 
 PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
@@ -121,18 +121,8 @@ void PMTDecoder::configure(fhicl::ParameterSet const &pset)
 {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
 
-    fGeometry = art::ServiceHandle<geo::Geometry const>{}.get();
-
-    // Do the channel mapping initialization
-    if (database::BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
-    {
-        throw cet::exception("PMTDecoder") << "Cannot recover the Fragment ID channel map from the database \n";
-    }
-    else if (fDiagnosticOutput)
-    {
-        std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
-        for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " << std::dec << pair.second.size() << std::endl;
-    }
+    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
+    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
     return;
 }
@@ -171,7 +161,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 
     if (fDiagnosticOutput)
     {
-        std::cout << "----> Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
+        std::cout << "----> PMT Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
         std::cout << "      size: " << ev_size_quad_bytes << ", data size: " << data_size_double_bytes << ", samples/channel: " << nSamplesPerChannel << ", time: " << time_tag << std::endl;
     }
 
@@ -184,9 +174,9 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     time_tag = 0;
 
     // Recover the information for this fragment
-    if (fFragmentToDigitizerMap.find(fragment_id) != fFragmentToDigitizerMap.end())
+    if (fChannelMap->hasPMTDigitizerID(fragment_id))
     {
-        const database::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fFragmentToDigitizerMap[fragment_id];
+        const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fChannelMap->getChannelIDPairVec(fragment_id);
 
         // Allocate the vector outside the loop just since we'll resuse it over and over...
         std::vector<uint16_t> wvfm(nSamplesPerChannel);

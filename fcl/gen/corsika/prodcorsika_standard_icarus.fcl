@@ -1,5 +1,5 @@
 #include "corsika_icarus.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 
 process_name: GenCorsika
@@ -62,10 +62,5 @@ outputs:
    fastCloning: false
  }
 }
-
-#services.Geometry.GDML: "test_27Sep.gdml"
-#services.Geometry.ROOT: "test_27Sep.gdml"
-#physics.producers.generator.EnergyThreshold: 2.e-1
-physics.producers.generator.SubBoxLength: "subboxLength 60 "
 
 services.TFileService.fileName: "Supplemental-prodcorsika_standard_icarus_%tc-%p.root"
