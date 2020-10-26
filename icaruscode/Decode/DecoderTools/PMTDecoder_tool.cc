@@ -2,7 +2,7 @@
  *  @file   PMTDecoder_tool.cc
  *
  *  @brief  This tool provides "standard" 3D hits built (by this tool) from 2D hits
- * 
+ *
  *  This code provided by Andrea Scarpelli
  *
  */
@@ -83,7 +83,7 @@ public:
 
     /**
      *  @brief Output the data products to the event store
-     * 
+     *
      *  @param event The event store objects
      */
     virtual void outputDataProducts(art::Event& event) override;
@@ -163,7 +163,9 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     uint32_t data_size_double_bytes     = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
     uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
 
-    raw::TimeStamp_t time_tag =  header.triggerTimeTag;
+    // [ ascarpel: replace the triggerTimeTag with the fragment time temporarly ]
+    //raw::TimeStamp_t time_tag =  header.triggerTimeTag;
+    raw::TimeStamp_t time_tag = metafrag.timeStampSec;
 
     size_t boardId = nChannelsPerBoard * fragment_id;
 
@@ -178,7 +180,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     uint16_t        value      = 0;
     size_t          ch_offset  = 0;
 
-    // Temporary? 
+    // Temporary?
     time_tag = 0;
 
     // Recover the information for this fragment
@@ -186,14 +188,14 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     {
         const database::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fFragmentToDigitizerMap[fragment_id];
 
-        // Allocate the vector outside the loop just since we'll resuse it over and over... 
+        // Allocate the vector outside the loop just since we'll resuse it over and over...
         std::vector<uint16_t> wvfm(nSamplesPerChannel);
 
         for(const auto& digitizerChannelPair : digitizerChannelVec)
         {
             size_t         digitizerChannel = digitizerChannelPair.first;
             raw::Channel_t channelID        = digitizerChannelPair.second;
-	    
+
 	    // Actual mapping is from 0 to 15 with 15 active channel and a last inactive channel. Database mapping has channels numbered from 1 to 15 without the spare channel. Subtract 1 to find the correct association
             ch_offset = (digitizerChannel-1) * nSamplesPerChannel;
 
@@ -205,7 +207,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
             }
 
             fOpDetWaveformCollection->emplace_back(time_tag, channelID, wvfm);
-        } 
+        }
     }
     else std::cout << "*** PMT could not find channel information for fragment: " << fragment_id << std::endl;
 

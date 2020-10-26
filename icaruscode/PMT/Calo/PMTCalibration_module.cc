@@ -48,7 +48,7 @@ public:
   PMTCalibration& operator=(PMTCalibration const&) = delete;
   PMTCalibration& operator=(PMTCalibration&&) = delete;
 
-  virtual void respondToOpenInputFile(const art::FileBlock& fb) override;
+  //virtual void respondToOpenInputFile(const art::FileBlock& fb) override;
   virtual void beginJob() override;
   virtual void beginSubRun(const art::SubRun &sr) override;
 
@@ -63,17 +63,11 @@ private:
   std::string m_channel_dbase;
   bool m_filter_noise;
   fhicl::ParameterSet m_waveform_config;
-  std::string m_filename;
-
 
   int m_run;
-  int m_subrun;
   int m_event;
 
-
   TTree *m_pulse_ttree;
-  //TTree *m_time_ttree;
-  TTree *m_geo_ttree;
 
   std::vector<float> *m_channel_id = NULL;
   std::vector<float> *m_baseline = NULL;
@@ -82,6 +76,7 @@ private:
   std::vector<float> *m_amplitude = NULL;
   std::vector<float> *m_integral = NULL;
   std::vector<float> *m_total_charge = NULL;
+  std::vector<float> *m_fragment_timestamp = NULL;
 
   // fitted quantities
   std::vector<float> *m_fit_start_time = NULL;
@@ -128,7 +123,7 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree = tfs->make<TTree>("pulsetree","tree with laser pulse characterization");
 
   m_pulse_ttree->Branch("run", &m_run, "run/I" );
-  m_pulse_ttree->Branch("subrun", &m_subrun, "subrun/I" );
+  //m_pulse_ttree->Branch("subrun", &m_subrun, "subrun/I" );
   m_pulse_ttree->Branch("event", &m_event, "event/I" );
   m_pulse_ttree->Branch("channel_id", &m_channel_id );
   m_pulse_ttree->Branch("baseline", &m_baseline );
@@ -137,6 +132,8 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("amplitude", &m_amplitude );
   m_pulse_ttree->Branch("integral", &m_integral );
   m_pulse_ttree->Branch("total_charge", &m_total_charge );
+  m_pulse_ttree->Branch("m_fragment_timestamp", &m_fragment_timestamp );
+
   m_pulse_ttree->Branch("fit_start_time", &m_fit_start_time );
   m_pulse_ttree->Branch("error_start_time", &m_error_start_time );
   m_pulse_ttree->Branch("fit_sigma", &m_fit_sigma);
@@ -149,7 +146,7 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("ndf", &m_ndf);
   m_pulse_ttree->Branch("fitstatus", &m_fitstatus);
 
-
+  /*
   m_geo_ttree = tfs->make<TTree>("geotree","tree with detector geo info");
 
   std::vector<double> pmtX, pmtY, pmtZ;
@@ -182,16 +179,17 @@ void pmtcalo::PMTCalibration::beginJob()
   m_geo_ttree->Branch("maxY",&maxY);
   m_geo_ttree->Branch("maxZ",&maxZ);
   m_geo_ttree->Fill();
-
+  */
 }
 
 //------------------------------------------------------------------------------
 
-
+/*
 void pmtcalo::PMTCalibration::respondToOpenInputFile(const art::FileBlock& fb)
 {
   m_filename = fb.fileName();
 }
+*/
 
 //------------------------------------------------------------------------------
 
@@ -200,7 +198,7 @@ void pmtcalo::PMTCalibration::respondToOpenInputFile(const art::FileBlock& fb)
  {
 
    m_run = sr.id().run();
-   m_subrun = 0;//pmtcalo::fileProgNumber(m_filename);
+   //m_subrun = 0;//pmtcalo::fileProgNumber(m_filename);
 
   } // end beginSubRun
 
@@ -216,8 +214,6 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
    art::Handle< std::vector< raw::OpDetWaveform > > rawHandle;
    event.getByLabel(m_data_label, rawHandle);
 
-   //std::cout << "===> Found " << rawHandle->size() << " OpDetWaveform in event: " << m_event << std::endl;
-
    // There is a valid handle per channel
    for( auto const& raw_waveform : (*rawHandle) )
    {
@@ -225,11 +221,12 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      // Without the correct mapping, we need to set the association with
      // the digitizer id by hand (in future this will be moved to the decoder)
      m_channel_id->push_back( raw_waveform.ChannelNumber() );
+     m_fragment_timestamp->push_back( raw_waveform.TimeStamp() );
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
 
-     auto pulse = myWaveformAna->getLaserPulse();
+     auto pulse = myWaveformAna->getIntegral();
 
      m_baseline->push_back( myWaveformAna->getBaselineMean() );
      m_rms->push_back( myWaveformAna->getBaselineWidth() );
@@ -275,6 +272,19 @@ void pmtcalo::PMTCalibration::clean(){
   m_amplitude->clear();
   m_integral->clear();
   m_total_charge->clear();
+  m_fragment_timestamp->clear();
+
+  m_fit_start_time->clear();
+  m_error_start_time->clear();
+  m_fit_sigma->clear();
+  m_error_sigma->clear();
+  m_fit_mu->clear();
+  m_error_mu->clear();
+  m_fit_amplitude->clear();
+  m_error_amplitude->clear();
+  m_chi2->clear();
+  m_ndf->clear();
+  m_fitstatus->clear();
 
 }
 

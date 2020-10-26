@@ -154,7 +154,7 @@ void pmtcalo::PMTCalibration::beginJob()
   m_geo_ttree->Branch("maxY",&maxY);
   m_geo_ttree->Branch("maxZ",&maxZ);
   m_geo_ttree->Fill();
-
+ 
 }
 
 //------------------------------------------------------------------------------
@@ -172,7 +172,7 @@ void pmtcalo::PMTCalibration::respondToOpenInputFile(const art::FileBlock& fb)
  {
 
    m_run = sr.id().run();
-    m_subrun = pmtcalo::fileProgNumber(m_filename);
+   m_subrun = -1; //pmtcalo::fileProgNumber(m_filename);
 
   } // end beginSubRun
 
