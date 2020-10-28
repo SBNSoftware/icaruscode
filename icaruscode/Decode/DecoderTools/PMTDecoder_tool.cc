@@ -171,7 +171,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     size_t          ch_offset  = 0;
 
     // Temporary?
-    time_tag = 0;
+    //time_tag = 0;
 
     // Recover the information for this fragment
     if (fChannelMap->hasPMTDigitizerID(fragment_id))
