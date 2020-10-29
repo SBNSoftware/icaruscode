@@ -16,6 +16,14 @@
 #include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
+#include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
+#include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
+#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Data/TriggerGateData.h"
+#include "icaruscode/PMT/Data/WaveformBaseline.h"
+#include "icaruscode/Utilities/DataProductPointerMap.h"
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -26,6 +34,9 @@
 #include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
+#include "lardataalg/Utilities/quantities_fhicl.h" // for ADCCounts_t parameters
+#include "lardataobj/RawData/OpDetWaveform.h"
+#include "larcorealg/CoreUtils/values.h" // util::const_values()
 
 // framework libraries
 #include "art_root_io/TFileService.h"
@@ -70,6 +81,8 @@ struct TriggerGatesInfo {
     
     /// The time of the first opening on the channel, in simulation time [ns]
     simulation_time firstOpenTime = std::numeric_limits<simulation_time>::max();
+
+    double Amplitude; 
     
   }; // struct TriggerGateInfo
   
@@ -130,8 +143,9 @@ struct TriggerGateTree: public icarus::trigger::details::TreeHolder {
   UInt_t fNChannels; ///< Number of channels.
   
   std::vector<geo::Point_t> fOpDetPos; ///< Coordinates of the optical detector.
-  std::vector<UInt_t> fNOpenings; ///< Number of openings (`0` if never open).
+  std::vector<UInt_t> fNOpenings; ///< Number of openings (`0` if never opens).
   std::vector<Double_t> fOpeningTime; ///< Time of first opening.
+  std::vector<Double_t> fAmplitude; ///< PMT amplitude.
   
   /// Internal check: all branch buffers have the same size.
   void checkSizes() const;
@@ -257,6 +271,39 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
       Comment("label of the input trigger gate data product (no instance name)")
       };
 
+    
+    fhicl::Atom<art::InputTag> OpticalWaveforms{
+      Name("OpticalWaveforms"),
+      Comment("label of input digitized optical waveform data product"),
+      "opdaq" // tradition demands
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> Baselines {
+      Name("Baselines"),
+      Comment("label of input waveform baselines (parallel to the waveforms)")
+      };
+    
+    fhicl::OptionalAtom<float> Baseline {
+      Name("Baseline"),
+      Comment("constant baseline for all waveforms, in ADC counts")
+      };
+    
+    
+    fhicl::OptionalAtom<unsigned int> NChannels {
+      Name("NChannels"),
+      Comment("minimum number of channels to provide (default: all)")
+      };
+    
+    fhicl::Atom<std::string> OutputCategory {
+      Name("OutputCategory"),
+      Comment("tag of the module output to console via message facility"),
+      "DiscriminatePMTwaveforms"
+      };
+    
+    fhicl::OptionalSequence<raw::ADC_Count_t> SelectThresholds {
+      Name("SelectThresholds"),
+      Comment("thresholds to save (default: all those produced by algorithm)")
+      };
     fhicl::Atom<microseconds> BeamGateDuration {
       Name("BeamGateDuration"),
       Comment("length of time interval when optical triggers are accepted")
@@ -334,6 +381,20 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   
   /// Tag for optical trigger gate data product.
   art::InputTag fTriggerGatesTag;
+ 
+ 
+  // --- PMT AMPLITUDE Configuration variables -----------------------------------------
+  art::InputTag const fOpDetWaveformTag; ///< Input optical waveform tag.
+  
+  ///< Input waveform baseline tag.
+  std::optional<art::InputTag> const fBaselineTag;
+  
+  std::optional<float> const fBaseline; ///< A constant baseline level.
+  
+ // unsigned int const fNOpDetChannels; ///< Number of optical detector channels.
+  
+  /// Thresholds selected for saving, and their instance name.
+  std::map<icarus::trigger::ADCCounts_t, std::string> fSelectedThresholds;
   
   std::string fLogCategory; ///< Name of output stream for message facility.
   
@@ -398,7 +459,8 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
    *        (as defined in `nOpenings`) happens; the time is in
    *        @ref DetectorClocksSimulationTime "simulation time scale"; if there
    *        was no opening during the beam gate (`nOpenings` zero), the value
-   *        is undefined.
+   *        is undefined;
+   *      * 'TriggerGateInfo::Amplitude': the amplitude of the PMT
    * 
    */
   TriggerGatesInfo extractTriggerInfo(art::Event const& event) const;
@@ -460,6 +522,7 @@ TriggerGateTree::TriggerGateTree(TTree& tree)
   this->tree().Branch("OpDetPos",    &fOpDetPos);
   this->tree().Branch("NOpenings",   &fNOpenings);
   this->tree().Branch("OpeningTime", &fOpeningTime);
+  this->tree().Branch("Amplitude",   &fAmplitude);
   
 } // TriggerGateTree::TriggerGateTree()
 
@@ -484,6 +547,11 @@ void TriggerGateTree::checkSizes() const {
       << ": Internal error: unexpected buffer size (" << fOpeningTime.size()
       << ") : fOpeningTime\n";
   }
+  if (!checkSize(fAmplitude)) {
+    throw cet::exception("TriggerGateTree") << __func__
+      << ": Internal error: unexpected buffer size (" << fAmplitude.size()
+      << ") : fOpeningTime\n";
+  }
   
 } // TriggerGateTree::checkSizes()
 
@@ -495,6 +563,7 @@ void TriggerGateTree::assignTriggerGatesInfo(TriggerGatesInfo const& info) {
   fOpDetPos.clear();
   fNOpenings.clear();
   fOpeningTime.clear();
+  fAmplitude.clear();
   for
     (auto const& [ iChannel, channelInfo ]: util::enumerate(info.TriggerGates))
   {
@@ -505,7 +574,7 @@ void TriggerGateTree::assignTriggerGatesInfo(TriggerGatesInfo const& info) {
     // accepting the fallback value when there is no interaction
     // (that is `max()`)
     fOpeningTime.push_back(channelInfo.firstOpenTime.value());
-    
+    fAmplitude.push_back(channelInfo.Amplitude); 
   } // for
   
   checkSizes();
@@ -526,6 +595,10 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   , fPreSpillStart
       (fBeamGateStart - config().PreSpillWindowGap() - fPreSpillWindow)
   , fTriggerGatesTag(config().TriggerGatesTag())
+  , fOpDetWaveformTag(config().OpticalWaveforms())
+  , fBaselineTag(util::fhicl::getOptionalValue(config().Baselines))
+  , fBaseline(util::fhicl::getOptionalValue(config().Baseline))
+  //, fNOpDetChannels(getNOpDetChannels(config().NChannels))
   , fLogCategory(config().LogCategory())
   // setup
   , fGeom(*lar::providerFrom<geo::Geometry>())
@@ -553,6 +626,10 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
       << "\n";
   }
   
+  //
+  // declaration of input
+  //
+  consumes<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
   
 } // icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree()
 
@@ -604,6 +681,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
    *   1. get centroid of associated detectors
    *   2. find and convert to `simulation_time` the first opening
    *   3. find the number of openings
+   *   4. find the amplitude
    *   4. fill the information
    * 
    */
@@ -654,7 +732,72 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
       openTick = beamAndGate.findOpen(1U, openTick);
     } // while
     if (nOpenings > 0) ++nOpenChannels;
+    //
+    //2.35 if found openings>0 get the waveform amplitude
+    //
+    //
+
+  auto const& waveforms
+  = event.getByLabel<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
+  //
+  // retrieve the baseline information
+  //
+  std::vector<icarus::WaveformBaseline> fixedBaselines;
+  std::vector<icarus::WaveformBaseline> const* baselines = nullptr;
+  if (fBaselineTag) {
+    baselines =
+      &(event.getByLabel<std::vector<icarus::WaveformBaseline>>(*fBaselineTag));
+  }
+  else {
+    fixedBaselines.resize
+      (waveforms.size(), icarus::WaveformBaseline{ *fBaseline });
+    baselines = &fixedBaselines;
+  }
+  
+  //
+  // provide each waveform with additional information: baseline
+  //
+  if (baselines->size() != waveforms.size()) {
+    assert(fBaselineTag);
+    throw cet::exception("DiscriminatePMTwaveforms")
+      << "Incompatible baseline information for the waveforms: "
+      << waveforms.size() << " waveforms (" << fOpDetWaveformTag.encode()
+      << ") for " << baselines->size() << " baselines ("
+      << fBaselineTag->encode() << ")!\n";
+  }
+  std::vector<icarus::trigger::WaveformWithBaseline> waveformInfo;
+  waveformInfo.reserve(waveforms.size());
+  std::vector<double> WaveformAndBaseline;
+
+  for (auto const& [ waveform, baseline ]: util::zip(waveforms, *baselines)){
+    //waveformInfo.emplace_back(&waveform, &baseline);
+    for(auto const& w:waveform){
+	WaveformAndBaseline.push_back(w - baseline.baseline());
+}
+ }
+
+std::vector<double> pmtAmplitudes;
+
+   if (nOpenings > 0){
+   auto minAmplitudes = std::min_element(WaveformAndBaseline.begin(), WaveformAndBaseline.end());
+   double a = static_cast<double>(minAmplitudes[0]);
+   pmtAmplitudes.push_back(a);
+ 
+//for(auto const& wf:waveformInfo){
+
+//now wf is the type of const icarus::trigger::WaveformWithBaseline
+
+//std::cout<<wf<<std::endl;
+
+//std::vector<auto> waveformAndBaseline; 
+
+/*for(auto const& v : wf.waveform())
+WaveformAndBaseline.push_back(v - wf.baseline());
+std::min(waveformAndBaseline.cbegin(), waveformAndBaseline.waveform.cend()); */
+} else pmtAmplitudes.push_back(0.0);
     
+   auto minAmplitude = std::min_element(pmtAmplitudes.begin(), pmtAmplitudes.end());
+   double amplitude = static_cast<double>(minAmplitude[0]); 
     //
     // 2.4. fill the information
     //
@@ -663,9 +806,11 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
       nOpenings,
         // users should ignore this if `nOpenings == 0`:
       (nOpenings == 0U)
-        ? std::numeric_limits<simulation_time>::max()
+        ? std::numeric_limits<simulation_time>::max() //std::numeric_limits<T>::max Returns the maximum finite value representable by the 
+						      //numeric type T. Meaningful for all bounded types.
         : detTimings.toSimulationTime
-          (detinfo::timescales::optical_tick{ firstOpenTick })
+          (detinfo::timescales::optical_tick{ firstOpenTick }),
+       amplitude
       });
     
   } // for all gates

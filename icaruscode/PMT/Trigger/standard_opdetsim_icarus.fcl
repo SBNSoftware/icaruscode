@@ -23,7 +23,7 @@
 process_name: OpDetSim
 
 services: {
-  # from `services_common_icarus.fcl`
+  # from `services_icarus.fcl`
   message:               @local::icarus_common_services.message
   TimeTracker:           @local::icarus_common_services.TimeTracker
   MemoryTracker:         @local::icarus_common_services.MemoryTracker
@@ -60,21 +60,22 @@ outputs: {
   } # stream
 } # outputs
 
+physics.producers.opdaq.SinglePhotonResponse: @local::icarus_photoelectronresponse_exponentials
 
 #
 # debugging
 #
-# services.message.destinations.LogDebugFile: {
-#   
-#   threshold: "DEBUG"
-#   type: "file"
-#   filename: "PMTsimulationAlg.log"
-#   append: false
-#   categories: {
-#     SimPMTIcarus:     { limit: -1 }
-#     PMTsimulationAlg: { limit: -1 }
-#     default:          { limit:  0 }
-#   }
-# 
-# } # services.message.destinations.LogDebugFile
-# 
+services.message.destinations.LogDebugFile: {
+  
+  threshold: "DEBUG"
+  type: "file"
+  filename: "PMTsimulationAlg.log"
+  append: false
+  categories: {
+    SimPMTIcarus:     { limit: -1 }
+    PMTsimulationAlg: { limit: -1 }
+    default:          { limit:  0 }
+  }
+
+} # services.message.destinations.LogDebugFile
+

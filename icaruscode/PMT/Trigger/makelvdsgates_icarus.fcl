@@ -49,7 +49,7 @@ physics: {
       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
       
       # combination mode: disable, input1, input2, AND, OR.
-      CombinationMode: "AND"
+      CombinationMode: "OR"
 
       # use the standard ICARUS pairing
       ChannelPairing: @local::icarus_trigger_channel_pairings
