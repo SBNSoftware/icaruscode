@@ -35,6 +35,13 @@ namespace icarus::trigger {
   
   ApplyBeamGateClass makeApplyBeamGate(
     util::quantities::intervals::microseconds duration,
+    util::quantities::intervals::microseconds delay,
+    detinfo::DetectorClocksData const& clockData,
+    std::string const& logCategory = "ApplyBeamGateClass"
+    );
+  
+  ApplyBeamGateClass makeApplyBeamGate(
+    util::quantities::intervals::microseconds duration,
     detinfo::DetectorClocksData const& clockData,
     std::string const& logCategory = "ApplyBeamGateClass"
     );
@@ -47,8 +54,8 @@ namespace icarus::trigger {
 /**
  * @brief Helper applying a beam gate to any gate.
  * 
- * The gate starts from `detinfo::DetectorClocks::BeamGateTime()` and has length
- * specified on construction.
+ * The gate starts from `detinfo::DetectorClocks::BeamGateTime()` (with an
+ * optional delay) and has length specified on construction.
  * 
  * The assumption that the optical tick clock starts with the electronics time
  * is used.
@@ -124,16 +131,29 @@ class icarus::trigger::ApplyBeamGateClass
 // -----------------------------------------------------------------------------
 inline auto icarus::trigger::makeApplyBeamGate(
   ::util::quantities::intervals::microseconds duration,
+  ::util::quantities::intervals::microseconds delay,
   detinfo::DetectorClocksData const& clockData,
   std::string const& logCategory /* = "ApplyBeamGateClass" */
   ) -> ApplyBeamGateClass
 {
   return {
     icarus::trigger::makeBeamGateStruct
-      (detinfo::DetectorTimings{ clockData }, duration),
+      (detinfo::DetectorTimings{ clockData }, duration, delay),
     logCategory
     };
 } // icarus::trigger::makeApplyBeamGate()
+
+
+// -----------------------------------------------------------------------------
+inline auto icarus::trigger::makeApplyBeamGate(
+  ::util::quantities::intervals::microseconds duration,
+  detinfo::DetectorClocksData const& clockData,
+  std::string const& logCategory /* = "ApplyBeamGateClass" */
+  ) -> ApplyBeamGateClass
+  {
+    using namespace util::quantities::time_literals;
+    return makeApplyBeamGate(duration, 0.0_us, clockData, logCategory);
+  }
 
 
 // -----------------------------------------------------------------------------

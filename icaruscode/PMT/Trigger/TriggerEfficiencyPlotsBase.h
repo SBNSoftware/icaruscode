@@ -1203,7 +1203,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Shortcut to create an `ApplyBeamGate` with the current configuration.
   icarus::trigger::ApplyBeamGateClass makeMyBeamGate
     (detinfo::DetectorClocksData const& clockData) const
-    { return makeApplyBeamGate(fBeamGateDuration, clockData, fLogCategory); }
+    {
+      return makeApplyBeamGate
+        (fBeamGateDuration, fBeamGateStart, clockData, fLogCategory); 
+    }
   icarus::trigger::ApplyBeamGateClass makeMyBeamGate
     (art::Event const* event = nullptr) const
     { return makeMyBeamGate(icarus::ns::util::makeDetClockData(event)); }
