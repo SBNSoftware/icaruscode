@@ -35,7 +35,7 @@ table_fragment_end
 
 product             version
 sbncode                   v09_09_00
-icarusalg                 v09_08_00
+icarusalg                 v09_09_00
 icarusutil                v09_07_00
 icarus_signal_processing  v09_09_00
 icarus_data               v09_09_00
