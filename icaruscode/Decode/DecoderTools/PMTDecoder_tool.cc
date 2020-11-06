@@ -154,8 +154,8 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
 
     // [ ascarpel: replace the triggerTimeTag with the fragment time temporarly ]
-    //raw::TimeStamp_t time_tag =  header.triggerTimeTag;
-    raw::TimeStamp_t time_tag = metafrag.timeStampSec;
+    raw::TimeStamp_t time_tag =  header.triggerTimeTag;
+    //raw::TimeStamp_t time_tag = 0.0; //metafrag.timeStampSec;
 
     size_t boardId = nChannelsPerBoard * fragment_id;
 
@@ -171,7 +171,7 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     size_t          ch_offset  = 0;
 
     // Temporary?
-    //time_tag = 0;
+    time_tag = 0;
 
     // Recover the information for this fragment
     if (fChannelMap->hasPMTDigitizerID(fragment_id))

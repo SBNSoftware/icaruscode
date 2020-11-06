@@ -18,4 +18,11 @@ pmt_chargeana_icarus:
   WaveformAnalysis : @local::waveformana_icarus
 }
 
+pmt_pulseana_icarus:
+{
+  module_type: 	PMTPulseAna
+  DecoderModule: "daqPMT"
+  OpHitModule: "ophit"
+}
+
 END_PROLOG
