@@ -1,7 +1,6 @@
 
 icarus_simple_flashmatch_0: {
   module_type: FlashPredict
-  # Detector: "ICARUS"
   Cryostat: 0
   OpHitProducer: "ophit"
   BeamWindowStart: -0.2 # us
