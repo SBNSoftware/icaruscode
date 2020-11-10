@@ -19,6 +19,10 @@ icarus_simple_flashmatch_0: {
   MinFlashPE: 0.
   ThresholdTerm: 30.
 
+  PDMapAlg: {
+    tool_type: PDMapAlgSimple
+  }
+
   # ICARUS specific
   PandoraProducer: "pandoraGausCryo0"
   TrackProducer: "pandoraTrackGausCryo0"
