@@ -1,0 +1,45 @@
+#
+# File:    makelvdstrees_icarus_data.fcl
+# Purpose: Runs `icarus::trigger::MakeTriggerSimulationTree` module on data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    November 11, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# This is a modification of `makelvdstrees_icarus.fcl` removing the
+# configuration specific to detector simulation.
+#
+# 
+# Required inputs
+# ----------------
+# 
+#  * lvdsgates (`std::vector<icarus::trigger::TriggerGateData>`): LVDS gates
+# 
+# 
+# Output
+# -------
+# 
+# In the `TFileService` output file:
+# 
+# * `treegger/Treegger` (TTree): tree is produced in the `TFileService` output
+#   file
+# 
+#
+
+#include "makelvdstrees_icarus.fcl"
+
+# no generation information (it's data!)
+physics.analyzers.treegger.GeneratorTags: [ ]
+
+# no particles in the detector (it's still data!)
+physics.analyzers.treegger.ParticleTag: ""
+
+# no energy deposition information (have we mentioned this is data?)
+physics.producers.edepsums: @erase
+physics.analyzers.treegger.EnergyDepositSummaryTag: @erase
+physics.analyzers.treegger.EnergyDepositTags: [ ]
+
+physics.prep: @erase
+
+# ... and our waveforms are called:
+physics.analyzers.treegger.OpticalWaveforms: daqPMT

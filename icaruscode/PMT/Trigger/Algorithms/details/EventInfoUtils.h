@@ -119,6 +119,7 @@ class icarus::trigger::details::EventInfoExtractor {
   /**
    * @brief Constructor: configures the object.
    * @param truthTags list of truth information data products to be read
+   * @param particleTag particle list data products to be read (empty for none)
    * @param edepTags list of energy deposition data products to be read
    * @param inSpillTimes start and end of spill, in simulation time
    * @param inPreSpillTimes start and end of pre-spill, in simulation time
@@ -138,6 +139,7 @@ class icarus::trigger::details::EventInfoExtractor {
    */
   EventInfoExtractor(
     std::vector<art::InputTag> truthTags,
+    art::InputTag particleTag,
     EdepTags_t edepTags,
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
@@ -149,6 +151,7 @@ class icarus::trigger::details::EventInfoExtractor {
    * @brief Constructor: configures, and declares consuming data product.
    * @tparam ConsumesColl type with `art::ConsumesCollector` interface
    * @param truthTags list of truth information data products to be read
+   * @param particleTag particle list data products to be read (empty for none)
    * @param edepTags list of energy deposition data products to be read
    * @param inSpillTimes start and end of spill, in simulation time
    * @param inPreSpillTimes start and end of pre-spill, in simulation time
@@ -168,6 +171,7 @@ class icarus::trigger::details::EventInfoExtractor {
   template <typename ConsumesColl>
   EventInfoExtractor(
     std::vector<art::InputTag> truthTags,
+    art::InputTag particleTag,
     EdepTags_t edepTags,
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
@@ -199,6 +203,9 @@ class icarus::trigger::details::EventInfoExtractor {
   /// Returns whether we are extracting any generator information.
   bool hasGenerated() const { return !fGeneratorTags.empty(); }
   
+  /// Returns whether we are extracting any information about particles in LAr.
+  bool hasParticles() const { return !fParticleTag.empty(); }
+  
   /// Returns whether we are extracting any energy deposition information.
   bool hasEDep() const { return isEDepSpecified(fEnergyDepositTags); }
   
@@ -226,6 +233,9 @@ class icarus::trigger::details::EventInfoExtractor {
   /// List of truth data product tags (`std::vector<simb::MCTruth>`).
   std::vector<art::InputTag> const fGeneratorTags;
   
+  /// Tag of the particle data product (`std::vector<simb::MCParticle>`).
+  art::InputTag const fParticleTag;
+  
   /// Input tag for energy deposition product(s); may be a summary or a list
   /// of LArSoft data products.
   EdepTags_t fEnergyDepositTags;
@@ -252,7 +262,11 @@ class icarus::trigger::details::EventInfoExtractor {
     { return isEDepSummaryTag(fEnergyDepositTags); }
   
   /// Fills `info` record with generation information from `truth`.
-  void fillGeneratorInfo(EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
+  void fillGeneratorInfo(
+    EventInfo_t& info,
+    simb::MCTruth const& truth,
+    std::vector<simb::MCParticle> const* particles
+    ) const;
   
   /**
    * @brief  Fills `info` record with generated neutrino information from
@@ -266,14 +280,20 @@ class icarus::trigger::details::EventInfoExtractor {
    */
   void fillGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-  void fillGeneratorCosmicInfo
-    (EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
+  void fillGeneratorCosmicInfo(
+    EventInfo_t& info,
+    simb::MCTruth const& truth,
+    std::vector<simb::MCParticle> const* particles
+    ) const;
   /// Extracts information from `truth` and sets it as the "main" interaction
   /// information. Previous information is typically overwritten.
   void setMainGeneratorNeutrinoInfo
     (EventInfo_t& info, simb::MCTruth const& truth) const;
-  void setMainGeneratorCosmicInfo 
-    (EventInfo_t& info, simb::MCTruth const& truth, const std::vector<simb::MCParticle>& particles) const;
+  void setMainGeneratorCosmicInfo(
+    EventInfo_t& info,
+    simb::MCTruth const& truth,
+    std::vector<simb::MCParticle> const* particles
+    ) const;
 
   /// Adds selected information from the interaction in `truth` to `info`
   /// record.
@@ -305,6 +325,7 @@ class icarus::trigger::details::EventInfoExtractor {
   static void declareConsumables(
     ConsumesColl& consumesCollector,
     std::vector<art::InputTag> const& truthTags,
+    art::InputTag const& particleTag,
     EdepTags_t const& edepTags
     );
 
@@ -320,6 +341,7 @@ struct icarus::trigger::details::EventInfoExtractorMaker {
   /// Constructor: stores parameters for construction of `EventInfoExtractor`.
   EventInfoExtractorMaker(
     std::vector<art::InputTag> truthTags,
+    art::InputTag particleTag,
     EventInfoExtractor::EdepTags_t edepTags,
     geo::GeometryCore const& geom,
     std::string logCategory
@@ -330,6 +352,7 @@ struct icarus::trigger::details::EventInfoExtractorMaker {
   template <typename ConsumesColl>
   EventInfoExtractorMaker(
     std::vector<art::InputTag> truthTags,
+    art::InputTag particleTag,
     EventInfoExtractor::EdepTags_t edepTags,
     geo::GeometryCore const& geom,
     std::string logCategory,
@@ -351,6 +374,9 @@ struct icarus::trigger::details::EventInfoExtractorMaker {
   /// Returns whether we are extracting any generator information.
   bool hasGenerated() const { return !fGeneratorTags.empty(); }
   
+  /// Returns whether we are extracting any information about particles in LAr.
+  bool hasParticles() const { return !fParticleTag.empty(); }
+  
   /// Returns whether we are extracting any energy deposition information.
   bool hasEDep() const
     { return EventInfoExtractor::isEDepSpecified(fEnergyDepositTags); }
@@ -359,6 +385,7 @@ struct icarus::trigger::details::EventInfoExtractorMaker {
     private:
   
   std::vector<art::InputTag> const fGeneratorTags;
+  art::InputTag const fParticleTag;
   EventInfoExtractor::EdepTags_t const fEnergyDepositTags;
   std::string const fLogCategory;
   geo::GeometryCore const& fGeom;
@@ -393,6 +420,7 @@ bool icarus::trigger::details::EventInfoExtractor::isEDepListTag
 template <typename ConsumesColl>
 icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> truthTags,
+  art::InputTag particleTag,
   EdepTags_t edepTags,
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
@@ -401,11 +429,12 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   ConsumesColl& consumesCollector
   )
   : EventInfoExtractor{
-      std::move(truthTags), std::move(edepTags),
+      std::move(truthTags), std::move(particleTag), std::move(edepTags),
       inSpillTimes, inPreSpillTimes, geom, std::move(logCategory)
     }
 {
-  declareConsumables(consumesCollector, fGeneratorTags, fEnergyDepositTags);
+  declareConsumables
+    (consumesCollector, fGeneratorTags, fParticleTag, fEnergyDepositTags);
 } // icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(coll)
 
 
@@ -416,10 +445,12 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
 {
   
   EventInfo_t info;
- 
-
-   auto const& particles 
-     = event.template getByLabel<std::vector<simb::MCParticle>>(art::InputTag{"largeant"}); 
+  
+  auto const* particles
+    = fParticleTag.empty()
+    ? nullptr
+    : event.template getPointerByLabel<std::vector<simb::MCParticle>>(fParticleTag)
+    ; 
 
   //
   // generator information
@@ -496,6 +527,7 @@ template <typename ConsumesColl>
 void icarus::trigger::details::EventInfoExtractor::declareConsumables(
   ConsumesColl& consumesCollector,
   std::vector<art::InputTag> const& truthTags,
+  art::InputTag const& particleTag,
   EdepTags_t const& edepTags
   )
 {
@@ -523,8 +555,13 @@ void icarus::trigger::details::EventInfoExtractor::declareConsumables(
     }
   }
   
-consumesCollector.template consumes<std::vector<simb::MCParticle>>(art::InputTag{"largeant"});
-consumesCollector.template consumes<std::vector<sim::SimPhotons>>(art::InputTag{"largeant"});
+  if (!particleTag.empty()) {
+    consumesCollector
+      .template consumes<std::vector<simb::MCParticle>>(particleTag);
+    consumesCollector
+      .template consumes<std::vector<sim::SimPhotons>>(particleTag);
+  }
+  
 } // icarus::trigger::details::EventInfoExtractor::declareConsumables()
 
 
@@ -534,16 +571,20 @@ consumesCollector.template consumes<std::vector<sim::SimPhotons>>(art::InputTag{
 template <typename ConsumesColl>
 icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
+  art::InputTag particleTag,
   EventInfoExtractor::EdepTags_t edepTags,
   geo::GeometryCore const& geom,
   std::string logCategory,
   ConsumesColl& consumesCollector
   )
-  : EventInfoExtractorMaker
-    (std::move(truthTags), std::move(edepTags), geom, std::move(logCategory))
+  : EventInfoExtractorMaker(
+      std::move(truthTags), std::move(particleTag), std::move(edepTags),
+      geom,
+      std::move(logCategory)
+    )
 {
   EventInfoExtractor::declareConsumables
-    (consumesCollector, fGeneratorTags, fEnergyDepositTags);
+    (consumesCollector, fGeneratorTags, fParticleTag, fEnergyDepositTags);
 } // icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker()
 
 

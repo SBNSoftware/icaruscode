@@ -188,6 +188,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fEventInfoExtractorMaker(
       config.GeneratorTags(),              // truthTags
+      {},                                  // particleTag: none
       config.EnergyDepositTags(),          // edepTags
       fGeom,                               // geom
       fLogCategory,                        // logCategory
