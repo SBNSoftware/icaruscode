@@ -241,6 +241,7 @@ icarus::trigger::ExtractEnergyDepositionSummary::ExtractEnergyDepositionSummary
   // algorithms
   , fEventInfoExtractorMaker(
     {},                                    // truthTags: none
+    {},                                    // particleTag: none
     { config().EnergyDepositTags() },      // edepTags
     fGeom,                                 // geom
     fLogCategory,                          // logCategory

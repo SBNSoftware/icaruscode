@@ -21,6 +21,7 @@
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> truthTags,
+  art::InputTag particleTag,
   EdepTags_t edepTags,
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
@@ -28,6 +29,7 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::string logCategory
   )
   : fGeneratorTags(std::move(truthTags))
+  , fParticleTag(std::move(particleTag))
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
@@ -38,8 +40,11 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
 
 
 // -----------------------------------------------------------------------------
-void icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo
-  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
+void icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo(
+  EventInfo_t& info,
+  simb::MCTruth const& truth,
+  std::vector<simb::MCParticle> const* particles
+  ) const
 {
   
   if (truth.NeutrinoSet()){ fillGeneratorNeutrinoInfo(info, truth);
@@ -65,9 +70,12 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorNeutrinoInfo
 
 // -----------------------------------------------------------------------------
 // ------------------- UPDATED for cosmics -------------------------------------
-void icarus::trigger::details::EventInfoExtractor::fillGeneratorCosmicInfo
-  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
-{
+void icarus::trigger::details::EventInfoExtractor::fillGeneratorCosmicInfo(
+  EventInfo_t& info,
+  simb::MCTruth const& truth,
+  std::vector<simb::MCParticle> const* particles
+) const {
+  
   std::cout << "Cosmic fillGeneratorCosmicInfo"<< std::endl;
   //if (truth.NeutrinoSet()) return;
   
@@ -151,9 +159,11 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo
 
 // -----------------------------------------------------------------------------
 // ------------------- UPDATED for cosmics -------------------------------------
-void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
-  (EventInfo_t& info, simb::MCTruth const& truth, std::vector<simb::MCParticle> const& particles) const
-{
+void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
+  EventInfo_t& info,
+  simb::MCTruth const&,
+  std::vector<simb::MCParticle> const* particles
+) const {
  // std::cout << "Cosmic setMainGeneratorCosmicInfo"<< std::endl;
   /*
    * Sets the full information of the event, overwriting everything.
@@ -177,7 +187,7 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
   
   //Scanning through all the particles:
 
-  for (simb::MCParticle const& particle: particles){
+  if (particles) for (simb::MCParticle const& particle: *particles){
 
     bool check_0 = false;
   //muons:
@@ -204,7 +214,7 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo
                 //std::cout<<"EndPos: ";particle.EndPosition().Print();
              }
            }
-  }
+  } // if for
 
  std::cout<<"Number of all the cosmic muons in this event: "<<AllCosmics<<std::endl;
  std::cout<<"Number of the cosmic muons that intercepted the detecor in this event: "<<CosmicsThatCorssed<<std::endl;
@@ -411,11 +421,13 @@ auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
+  art::InputTag particleTag,
   EventInfoExtractor::EdepTags_t edepTags,
   geo::GeometryCore const& geom,
   std::string logCategory
   )
   : fGeneratorTags(std::move(truthTags))
+  , fParticleTag(std::move(particleTag))
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
@@ -428,7 +440,7 @@ icarus::trigger::details::EventInfoExtractorMaker::make
   (TimeSpan_t inSpillTimes, TimeSpan_t inPreSpillTimes) const
 {
   return EventInfoExtractor{
-    fGeneratorTags, fEnergyDepositTags,
+    fGeneratorTags, fParticleTag, fEnergyDepositTags,
     inSpillTimes, inPreSpillTimes,
     fGeom, fLogCategory
     };
