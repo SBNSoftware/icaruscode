@@ -107,8 +107,10 @@ TTree* fTree;
 
 ////////////////////////////////// Variable in th tree//////////////////////////////
 
+int run;
+int subrun;
 int event;
-
+int nparticles = 0;
 int event_type;
 
 int gt_0;
@@ -200,6 +202,8 @@ std::vector<sim::SimChannel> const& charge   = *(evt.getValidHandle<std::vector<
 
 ////////////////////////////////// Event number//////////////////////////////
 
+run = evt.id().run();
+subrun = evt.id().subRun();
 event = evt.id().event();
 
 std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
@@ -210,7 +214,17 @@ evt.getManyByType(type);
       std::vector<const simb::MCParticle*> particleVec;
       if (particleVecHandle.isValid())
       {
-          for(size_t idx = 0; idx < particleVecHandle->size(); idx++) particleVec.push_back(&particleVecHandle->at(idx)); //
+        for(size_t idx = 0; idx < particleVecHandle->size(); idx++)
+        {
+            const simb::MCParticle* particle = &particleVecHandle->at(idx);
+            particleVec.push_back(particle); //
+
+            // Count cosmics in the event
+            if( particle->Mother() == 0 ){
+                nparticles++;
+            }
+
+        }
       }
     art::Handle< std::vector<recob::Track> > trackVecHandle;
     evt.getByLabel("pandoraTrackICARUSCryo0", trackVecHandle);//at the moment I am calling here directly a particular kind of track: this should be generalized, putting the label of the track type in the fhicl...
@@ -593,6 +607,8 @@ firstphoton_zp_expected_v3[ijk+factor]=(zp);
 
 
 fTree->Fill();
+
+nparticles=0;
     std::cout << " after filling " << fTree << std::endl;
 }
 
@@ -603,7 +619,10 @@ void icarus::PMTStartCalibTime::beginJob()
 art::ServiceHandle<art::TFileService> tfs;
 fTree = tfs->make<TTree>("lighttree","tree for the light response");
 
+fTree->Branch("run",&run,"run/I");
+fTree->Branch("subrun",&subrun,"subrun/I");
 fTree->Branch("event",&event,"event/I");
+fTree->Branch("nparticles",&nparticles,"nparticles/I");
 fTree->Branch("event_type",&event_type,"event_type/I");
 fTree->Branch("gt_0",&gt_0,"gt_0/I");
 fTree->Branch("gt_1",&gt_1,"gt_1/I");
@@ -619,6 +638,8 @@ fTree->Branch("total_coll_photons",&total_coll_photons,"total_coll_photons/F");
 fTree->Branch("photons_colleted",&photons_collected,("photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("QE_photons_colleted",&QE_photons_collected,("QE_photons_collected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time",&firstphoton_time,("firstphoton_time[" + std::to_string(nPMTs) + "]/F").c_str());
+fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+
 fTree->Branch("firstphoton_time_expected",&firstphoton_time_expected,("firstphoton_time_expected[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time_expected_r",&firstphoton_time_expected_r,("firstphoton_time_expected_r[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_tp_expected",&firstphoton_tp_expected,("firstphoton_tp_expected[" + std::to_string(nPMTs) + "]/F").c_str());
@@ -645,6 +666,8 @@ fTree->Branch("firstphoton_time_expected_v3",&firstphoton_time_expected_v3,("fir
 fTree->Branch("firstphoton_time_expected_d2",&firstphoton_time_expected_d2,("firstphoton_time_expected_d2[" + std::to_string(nPMTs) + "]/F").c_str());
 fTree->Branch("firstphoton_time_expected_d3",&firstphoton_time_expected_d3,("firstphoton_time_expected_d3[" + std::to_string(nPMTs) + "]/F").c_str());
 //fTree->Branch("photon_time",&photon_time,"photon_time[360][10000]/F");
+
+
 fTree->Branch("vertex_x",&vertex_x,"vertex_x/D");
 fTree->Branch("vertex_y",&vertex_y,"vertex_y/D");
 fTree->Branch("vertex_z",&vertex_z,"vertex_z/D");
