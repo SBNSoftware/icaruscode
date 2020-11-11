@@ -278,7 +278,6 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
       Name("TriggerGatesTag"),
       Comment("label of the input trigger gate data product (no instance name)")
       };
-
     
     fhicl::Atom<art::InputTag> OpticalWaveforms{
       Name("OpticalWaveforms"),

@@ -47,8 +47,8 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo(
   ) const
 {
   
-  if (truth.NeutrinoSet()){ fillGeneratorNeutrinoInfo(info, truth);
-  } else fillGeneratorCosmicInfo(info, truth, particles);
+  if (truth.NeutrinoSet()) fillGeneratorNeutrinoInfo(info, truth);
+  else fillGeneratorCosmicInfo(info, truth, particles);
   
 } // icarus::trigger::details::EventInfoExtractor::fillGeneratorInfo()
 
@@ -175,7 +175,7 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
   
   // How many cosmics:
   int AllCosmics = 0; 
-  int CosmicsThatCorssed = 0; 
+  int CosmicsThatCrossed = 0; 
   
   std::vector< double > Momentums {0.0};
  
@@ -197,7 +197,7 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
        const TLorentzVector pos2 = particle.EndPosition();
        check_0 = interceptsTPCActiveVolume(pos1, pos2);
        if(check_0){ 
-          CosmicsThatCorssed++; //std::cout<<"Found cosmic in the detector"<<std::endl;
+          CosmicsThatCrossed++; //std::cout<<"Found cosmic in the detector"<<std::endl;
   	  //info.SetLeptonAngle(double{ particle.Theta() });
  	 Momentums.push_back(particle.Momentum().Vect().Mag());
          //std::cout<<"Momentum magn: "<<particle.Momentum().Vect().Mag()<<std::endl;
@@ -217,10 +217,10 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
   } // if for
 
  std::cout<<"Number of all the cosmic muons in this event: "<<AllCosmics<<std::endl;
- std::cout<<"Number of the cosmic muons that intercepted the detecor in this event: "<<CosmicsThatCorssed<<std::endl;
- info.SetMuonsInterceptingDetector(int{CosmicsThatCorssed});
+ std::cout<<"Number of the cosmic muons that intercepted the detector in this event: "<<CosmicsThatCrossed<<std::endl;
+ info.SetMuonsInterceptingDetector(int{CosmicsThatCrossed});
  
-if(CosmicsThatCorssed){
+if(CosmicsThatCrossed){
 std::vector<double>::iterator maxMom = std::max_element(Momentums.begin(), Momentums.end());
 info.SetMuonMomentum(double{*maxMom});} else info.SetMuonMomentum(double{0.0});
 
