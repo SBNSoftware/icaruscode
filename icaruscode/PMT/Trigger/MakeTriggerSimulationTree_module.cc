@@ -626,14 +626,6 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
     )
 {
   
-  if (config().GeneratorTags().empty()) {
-    throw art::Exception(art::errors::Configuration)
-      << "No event generator data product specified (`"
-        << config().GeneratorTags.name() << "`)."
-      << "\nEvent generation information is mandatory."
-      << "\n";
-  }
-  
   //
   // declaration of input
   //
