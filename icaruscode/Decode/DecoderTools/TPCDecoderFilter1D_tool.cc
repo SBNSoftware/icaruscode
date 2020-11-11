@@ -144,6 +144,7 @@ private:
     size_t                                      fStructuringElement;     //< Structuring element for morphological filter
     size_t                                      fMorphWindow;            //< Window for filter
     std::vector<float>                          fThreshold;              //< Threshold to apply for saving signal
+    bool                                        fUseFFTFilter;           //< Turn on/off the use of the FFT filter
     bool                                        fDiagnosticOutput;       //< If true will spew endless messages to output
       
     std::vector<char>                           fFilterModeVec;          //< Allowed modes for the filter
@@ -220,6 +221,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fStructuringElement    = pset.get<size_t            >("StructuringElement",   20);
     fMorphWindow           = pset.get<size_t            >("FilterWindow",         10);
     fThreshold             = pset.get<std::vector<float>>("Threshold",           std::vector<float>()={5.0,3.5,3.5});
+    fUseFFTFilter          = pset.get<bool              >("UseFFTFilter",        true);
     fDiagnosticOutput      = pset.get<bool              >("DiagnosticOutput",    false);
     fFilterModeVec         = pset.get<std::vector<char> >("FilterModeVec",       std::vector<char>()={'g','g','d'}); //{'d','e','g'});
 
@@ -230,18 +232,23 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
-//    std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
-//    std::vector<double> highPassCutoff = {12., 12., 2.};
-//    std::vector<double> highPassCutoff = {0., 0., 0.};
-//    fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
+    fFFTFilter.reset();
 
-//  So we build a filter kernel for convolution with the waveform working in "tick" space. 
-//  For translation, each "tick" is approximately 0.61 kHz... the frequency response functions all
-//  are essentially zero by 500 kHz which is like 800 "ticks". 
-    std::vector<std::pair<double,double>> windowSigma  = {{1.5,20.}, {1.5,20.}, {2.0,20.}};
-    std::vector<std::pair<double,double>> windowCutoff = {{8.,800.}, {8.,800.}, {3.0,800.}};
+    if (fUseFFTFilter)
+    {
+//        std::vector<double> highPassSigma = {3.5, 3.5, 0.5};
+//        std::vector<double> highPassCutoff = {12., 12., 2.};
+//        std::vector<double> highPassCutoff = {0., 0., 0.};
+//        fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
 
-    fFFTFilter = std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma, windowCutoff);
+//      So we build a filter kernel for convolution with the waveform working in "tick" space. 
+//      For translation, each "tick" is approximately 0.61 kHz... the frequency response functions all
+//      are essentially zero by 500 kHz which is like 800 "ticks". 
+        std::vector<std::pair<double,double>> windowSigma  = {{1.5,20.}, {1.5,20.}, {2.0,20.}};
+        std::vector<std::pair<double,double>> windowCutoff = {{8.,800.}, {8.,800.}, {3.0,800.}};
+
+        fFFTFilter = std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma, windowCutoff);
+    }
 
     return;
 }
@@ -439,7 +446,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                                                        fRangeBins[channelOnBoard]);
 
             // Convolve with a filter function
-            (*fFFTFilter)(pedCorDataVec, plane);
+            if (fUseFFTFilter) (*fFFTFilter)(pedCorDataVec, plane);
 
             if (fDiagnosticOutput)
             {

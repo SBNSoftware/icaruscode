@@ -56,6 +56,21 @@ icarus_morphologicalroifinder_0.Plane:           0
 icarus_morphologicalroifinder_1.Plane:           1
 icarus_morphologicalroifinder_2.Plane:           2
 
+icarus_noproifinder:
+{
+    tool_type:       ROIFinderNOP
+    Plane:           0
+    roiLeadTrailPad: [ 2000, 2000 ] # number of bins to pad both ends of the ROIs
+}
+
+icarus_noproifinder_0: @local::icarus_noproifinder
+icarus_noproifinder_1: @local::icarus_noproifinder
+icarus_noproifinder_2: @local::icarus_noproifinder
+
+icarus_noproifinder_0.Plane: 0
+icarus_noproifinder_1.Plane: 1
+icarus_noproifinder_2.Plane: 2
+
 icarus_baselinestandard:
 {
     tool_type: BaselineStandard
