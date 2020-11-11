@@ -177,7 +177,7 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
   int AllCosmics = 0; 
   int CosmicsThatCrossed = 0; 
   
-  std::vector< double > Momentums {0.0};
+  std::vector< double > Momentums;
  
   
   //
@@ -221,14 +221,15 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
  info.SetMuonsInterceptingDetector(int{CosmicsThatCrossed});
  
 if(CosmicsThatCrossed){
-std::vector<double>::iterator maxMom = std::max_element(Momentums.begin(), Momentums.end());
-info.SetMuonMomentum(double{*maxMom});} else info.SetMuonMomentum(double{0.0});
+  info.SetMuonMomentum(Momentums.empty()
+    ? 0.0: *std::max_element(Momentums.begin(), Momentums.end())
+    );
+} else info.SetMuonMomentum(double{0.0});
 
 std::cout<<"What's in the vector: "<<std::endl;
 for(auto i : Momentums){
 std::cout<<i<<std::endl;
 }
-Momentums.clear();
 
 
 //bool a =  interceptsTPCActiveVolume();
