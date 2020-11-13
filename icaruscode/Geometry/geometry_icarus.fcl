@@ -147,6 +147,7 @@ icarus_single_induction_overburden_geometry_services: {
 
   Geometry:               @local::icarus_single_induction_overburden_geometry
   ExptGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+  GeometryConfigurationWriter: {}
 
 } # icarus_single_induction_overburden_geometry_services
 
@@ -188,6 +189,7 @@ icarus_single_induction_nooverburden_geometry_services: {
 
   Geometry:               @local::icarus_single_induction_nooverburden_geometry
   ExptGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+  GeometryConfigurationWriter: {}
 
 } # icarus_single_induction_nooverburden_geometry_services
 
@@ -301,6 +303,7 @@ icarus_split_induction_overburden_geometry_services: {
 
   Geometry:               @local::icarus_split_induction_overburden_geometry
   ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
+  GeometryConfigurationWriter: {}
 
 } # icarus_split_induction_overburden_geometry_services
 
@@ -341,6 +344,7 @@ icarus_split_induction_nooverburden_geometry_services: {
 
   Geometry:               @local::icarus_split_induction_nooverburden_geometry
   ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
+  GeometryConfigurationWriter: {}
 
 } # icarus_split_induction_nooverburden_geometry_services
 
