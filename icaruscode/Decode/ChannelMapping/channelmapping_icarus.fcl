@@ -15,7 +15,7 @@ icarus_channelmappinggservice:
 {
     service_provider:   ICARUSChannelMap
     DiagnosticOutput:   true
-    ChannelMappingTool: @local::ChannelMappingPostGres
+    ChannelMappingTool: @local::ChannelMappingSQLite
 }
 
 END_PROLOG
