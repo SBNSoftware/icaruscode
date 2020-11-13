@@ -49,6 +49,7 @@ physics: {
 outputs: {
   rootoutput: {
     module_type:  RootOutput
-    fileName:    "prodbackground_Ar39_icarus_%p-%tc.root"
+    fileName:    "prodbackground_Ar39_icarus_%tc-%p.root"
+    dataTier:    "simulated"
   } # rootoutput
 } # outputs
