@@ -1,5 +1,4 @@
-## #include "services_icarus.fcl"
-#include "services_icarus_simulation.fcl"
+#include "services_common_icarus.fcl"
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
@@ -10,12 +9,7 @@ process_name: FlashMatch
 services:{
   TFileService: { fileName: "flashmatch_icarus.root" }
   @table::icarus_basic_services
-  @table::icarus_simulation_services
   message:                         @local::icarus_message_services
-  # FileCatalogMetadata:             @local::icarus_file_catalog_mc
-  #                                  @table::icarus_services
-  # AuxDetExptGeoHelperInterface: { service_provider: "sbndcode/CRT/CRTGeometryHelper" }
-  # AuxDetGeometry: { @table::sbnd_geo_source }
 }
 
 
