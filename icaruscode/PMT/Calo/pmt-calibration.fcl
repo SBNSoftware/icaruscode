@@ -25,4 +25,12 @@ pmt_pulseana_icarus:
   OpHitModule: "ophit"
 }
 
+pmt_flashana_icarus:
+{
+  module_type:  PMTFlashAna
+  DecoderModulesList: ["daqPMT"]
+  OpHitModulesList: ["ophit"]
+  OpFlashModulesList: ["SimpleFlash"]
+}
+
 END_PROLOG

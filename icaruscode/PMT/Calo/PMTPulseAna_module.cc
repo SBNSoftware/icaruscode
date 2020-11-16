@@ -67,8 +67,8 @@ private:
   int m_run;
   int m_subrun;
   int m_event;
-  int m_channel_id;
-
+  
+  std::vector<int>   *m_channel_id = NULL;
   std::vector<float> *m_tstart = NULL;
   std::vector<float> *m_tmax = NULL;
   std::vector<float> *m_amplitude = NULL;
@@ -102,7 +102,7 @@ void pmtcalo::PMTPulseAna::beginJob()
   m_ophit_ttree->Branch("run", &m_run, "run/I" );
   m_ophit_ttree->Branch("subrun", &m_subrun, "subrun/I" );
   m_ophit_ttree->Branch("event", &m_event, "event/I" );
-  m_ophit_ttree->Branch("channel_id", &m_channel_id, "channel_id/I" );
+  m_ophit_ttree->Branch("channel_id", &m_channel_id);
   m_ophit_ttree->Branch("tstart", &m_tstart );
   m_ophit_ttree->Branch("tmax", &m_tmax );
   m_ophit_ttree->Branch("amplitude", &m_amplitude );
@@ -198,10 +198,11 @@ void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
    for( auto const& raw_waveform : (*rawHandle) )
    {
 
-     m_channel_id = raw_waveform.ChannelNumber();
+     int channel = raw_waveform.ChannelNumber();
 
-     for( const recob::OpHit& ophit : ophitch[m_channel_id])
+     for( const recob::OpHit& ophit : ophitch[channel])
      {
+      m_channel_id->push_back( channel );
       m_total_charge->push_back( _getTotalCharge( raw_waveform ) );
       m_tstart->push_back( ophit.PeakTimeAbs() );
       m_tmax->push_back( ophit.PeakTime() ); // << TODO FIXME
@@ -209,12 +210,11 @@ void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
       m_amplitude->push_back( ophit.Amplitude() );
     }
 
-    m_ophit_ttree->Fill();
-
-    clean();
-
    } // end loop over pmt channels
 
+   m_ophit_ttree->Fill();
+   
+   clean();
 
    ophitch.clear();
   
@@ -225,7 +225,7 @@ void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
 
 void pmtcalo::PMTPulseAna::clean(){
 
-
+  m_channel_id->clear();
   m_tstart->clear();
   m_tmax->clear();
   m_amplitude->clear();
