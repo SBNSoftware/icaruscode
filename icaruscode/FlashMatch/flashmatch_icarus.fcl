@@ -47,11 +47,9 @@ icarus_simple_flashmatch_0: {
   rr_up: 200.
 }
 
-# icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
-# icarus_simple_flashmatch_1.Cryostat: 1
-# icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
-# icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryo1
-# icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
-# icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1
-
-
+icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
+icarus_simple_flashmatch_1.Cryostat: 1
+icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
+icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryo1
+icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
+icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1

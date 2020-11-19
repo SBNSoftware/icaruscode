@@ -20,11 +20,10 @@ source:{
 physics: {
   producers: {
     fmatchCryo0: @local::icarus_simple_flashmatch_0
-    # fmatchCryo1: @local::icarus_simple_flashmatch_1
+    fmatchCryo1: @local::icarus_simple_flashmatch_1
   }
 
-  # reco: [fmatchCryo0, fmatchCryo1]
-  reco: [fmatchCryo0]
+  reco: [fmatchCryo0, fmatchCryo1]
   stream: [out]
   end_paths: [stream]
 }
@@ -41,5 +40,5 @@ outputs: {
 }
 
 # override variables
-physics.producers.fmatchCryo0.ThresholdTerm: 10.
+# physics.producers.fmatchCryo0.ThresholdTerm: 10.
 # physics.producers.fmatchCryo0.InputFileName: "FlashMatch/fm_metrics_sbnd.root"
