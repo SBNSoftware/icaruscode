@@ -2,7 +2,7 @@
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
-#include "flashmatch_icarus.fcl"
+#include "flashmatch_simple_icarus.fcl"
 
 process_name: FlashMatch
 
