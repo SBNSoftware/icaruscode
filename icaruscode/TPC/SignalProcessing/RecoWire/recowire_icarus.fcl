@@ -84,4 +84,10 @@ icarus_recowireraw:
     DigitModuleLabel:   "daq"
 }
 
+icarus_roifinder:
+{
+    module_type:     ROIFinder
+    WireModuleLabel: "decon1droi"
+}
+
 END_PROLOG
