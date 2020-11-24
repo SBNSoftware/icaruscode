@@ -41,6 +41,8 @@
 
 //Data product includes
 #include "sbnobj/Common/CRT/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 //C++ Includes
 #include <vector>
@@ -195,7 +197,7 @@ ana::RecoEfficencyFinder::RecoEfficencyFinder(fhicl::ParameterSet const & pset)
   fCRTModuleLabel        (pset.get<art::InputTag>("CRTModuleLabel")),
   fLArGeantModuleLabel   (pset.get<art::InputTag>("LArGeantModuleLabel")),
   fMinRecoEnergyCut      (pset.get<float>        ("MinRecoEnergyCut")),
-  fIsTrueNu              (pset.get<bool>         ("IsTrueNu",false)), // true for nu case, false for cosmics
+  fIsTrueNu              (pset.get<bool>         ("IsTrueNu",true)), 
   fUseFlashMatch         (pset.get<bool>         ("UseFlashMatch",false)),
   fFlashMatchLabel       (pset.get<art::InputTag>("FlashMatchLabel",""))
 {
@@ -367,6 +369,8 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
   std::vector<art::Ptr<sbn::crt::CRTHit> > crthits;
   if(evt.getByLabel(fCRTModuleLabel,crthitHandle)){
     art::fill_ptr_vector(crthits,crthitHandle);
+    std::cout << "  TEST crthits size = " << crthits.size() << std::endl; //GM
+
   }
 
 
@@ -1133,10 +1137,15 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
     } // end if statement on fIsTrueNu
 
     int hitsinbeam = 0;
+//      std::cout << "TEST TEST CRT part" << std::endl; //GM
+
     for( auto const& thiscrthit : crthits ){
+//      std::cout << "TEST TEST number of crthits = " << crthits.size() << std::endl; //GM
+
 //      float crt_time_in_us = thiscrthit->ts1_ns/1000. ;
       float crt_time_in_us = thiscrthit->ts0_ns/1000. - 1.6E3;   ///Chris
 //      float crt_time_in_us = thiscrthit->ts0_ns/1000.; 
+
       crt_time_branch.at(neutrino_iter).push_back(crt_time_in_us); ////GM
 
       if( crt_time_in_us > 0 && crt_time_in_us < 1.6 ) hitsinbeam+=1;
