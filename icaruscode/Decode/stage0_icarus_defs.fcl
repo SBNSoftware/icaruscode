@@ -9,6 +9,7 @@
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
+#include "wcls-decode-to-sig-base.fcl"
 
 BEGIN_PROLOG
 
@@ -37,6 +38,13 @@ icarus_stage0_producers:
   recoWireRawTPC2:                @local::icarus_recowireraw
   recoWireRawTPC3:                @local::icarus_recowireraw
 
+  ### wire-cell decon producers
+  decon2droi:                     @local::standard_wirecell_sigproc
+  decon2DroiTPC0:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC1:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC2:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC3:                 @local::standard_wirecell_sigproc
+
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder_icarus
   gaushitTPC0:                    @local::gaus_hitfinder_icarus
@@ -64,6 +72,7 @@ icarus_reco_filters:
 icarus_stage0_single:              [ daqTPC,
                                      daqPMT,
                                      decon1droi,
+                                     decon2droi,
                                      gaushit
                                    ]
 
@@ -93,6 +102,11 @@ icarus_stage0_producers.daqTPC3.FragmentsLabel:                                 
 
 ### Set up for single deconvolution
 icarus_stage0_producers.decon1droi.DigitModuleLabel:                                           "daqTPC"
+
+icarus_stage0_producers.decon2droi.wcls_main.inputers:                                         ["wclsRawFrameSource:rfsrc0"]
+icarus_stage0_producers.decon2droi.wcls_main.outputers:                                        ["wclsFrameSaver:spsaver0"]
+icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
+icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
 
 ### Set up for multiple TPC readout
 icarus_stage0_producers.decon1DroiTPC0.DigitModuleLabel:                                       "daqTPC0"
