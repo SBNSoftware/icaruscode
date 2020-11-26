@@ -1,0 +1,609 @@
+
+#
+# File:    run_trigger_gate_simulation_icarus.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    December 18, 2019
+# Version: 2.2
+#
+# This is a top-level configuration that can be run directly.
+#
+# The steps are:
+#
+#  * pmtbaselines (PMTWaveformBaselines): computes baselines for all PMT
+#      waveforms
+#  * discrimopdaq (DiscriminatePMTwaveforms): from each PMT extracts a gate
+#      signal according to each of the configured thresholds;
+#      for each threshold all gates are stored in their own data product
+#  * lvdsgatesAND (LVDSgates): pairs each of the discriminated waveforms above
+#      to reproduce the 192 hardware channels from PMT feeding the trigger;
+#      the pairing is performed as an AND of the two gates in the pair;
+#  * lvdsgatesOR (LVDSgates): pairs each of the discriminated waveforms above
+#      to reproduce the 192 hardware channels from PMT feeding the trigger
+#      the pairing is performed as an OR of the two gates in the pair;
+#  * trigslidewindowOR (SlidingWindowTrigger): applies a sliding window of 30
+#      PMT with 50% overlap (5 windows per TPC), using the OR paired output
+#      from LVDS simulation;
+#  * trigslidewindowAND (SlidingWindowTrigger): applies a sliding window of 30
+#      PMT with 50% overlap (5 windows per TPC), using the AND paired output
+#      from LVDS simulation;
+#  * effSingleOR (MajorityTriggerEfficiencyPlots): produces plots of efficiency
+#      of a trigger requiring at least 1, 2, 3, etc. LVDS trigger primitives to
+#      be present at the same time and in coincidence with a 1.6 us beam gate;
+#  * effSingleAND (MajorityTriggerEfficiencyPlots): produces plots of efficiency
+#      of a trigger requiring at least 1, 2, 3, etc. LVDS trigger primitives to
+#      be present at the same time and in coincidence with a 1.6 us beam gate;
+#  * effSlidingOR (SlidingWindowTriggerEfficiencyPlots): produces plots of
+#      efficiency of a trigger requiring patterns of sliding window triggers,
+#      with minimum LVDS trigger primitives in each sliding window, to be
+#      present at the same time and in coincidence with a 1.6 us beam gate;
+#  * effSlidingAND (SlidingWindowTriggerEfficiencyPlots): produces plots of
+#      efficiency of a trigger requiring patterns of sliding window triggers,
+#      with minimum LVDS trigger primitives in each sliding window, to be
+#      present at the same time and in coincidence with a 1.6 us beam gate;
+#
+# Output
+# -------
+#
+# The two `LVDSgates` module instances produce each multiple sets of trigger
+# gates that can be used for trigger study.
+#
+# In addition, debugging log files are produced (settings are at the bottom).
+# 
+# Only selected data product from the input file are retained in the output,
+# in addition to all the ones produced by this job:
+#  * all standard products from event generation
+#  * particle propagated in argon by GEANT4 simulation
+#  * optical detector waveforms
+#
+#
+# Required inputs
+# ----------------
+#
+#  * simulated optical detector readout: `opdaq`
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService (DiscriminatePMTwaveforms)
+#  * DetectorClocksService (most/all modules)
+#  * TFileService (TriggerEfficiencyPlots)
+#
+#
+# Changes
+# --------
+# 
+# 20200917 (petrillo@slac.stanford.edu) [v2.2]
+# :   added baseline extraction
+# 
+# 20200403 (petrillo@slac.stanford.edu) [v2.1]
+# :   fixed the labels of the trigger and end paths
+# 
+# 20200403 (petrillo@slac.stanford.edu) [v2.0]
+# :   added sliding window trigger plots
+# 
+# 20191218 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version
+#
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+BEGIN_PROLOG
+gates_config: {
+  
+  # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+  #BeamGateDuration:  @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+  
+} # gates_config
+
+# settings to plot efficiency under the requirement of this number of LVDS
+# trigger primitives to be firing during beam time
+MinimumSingleTriggerPrimitives: [ 1, 2, 3, 4, 5, 8, 12, 20, 50 ]
+
+# settings for plotting efficiency under patterns of sliding window triggers
+# firing during beam time
+SlidingWindowTriggerPatterns: [
+  {
+    inMainWindow:     2
+    inOppositeWindow: 1
+  },
+  {
+    inMainWindow:     2
+    inOppositeWindow: 2
+  },
+  {
+    inMainWindow:     3
+  },
+  {
+    inMainWindow:     4
+  },
+  {
+    inMainWindow:     5
+  },
+  {
+    inMainWindow:     3
+    inOppositeWindow: 1
+  },
+  {
+    inMainWindow:     4
+    inOppositeWindow: 1
+  },
+  {
+    inMainWindow:     5
+    inOppositeWindow: 2
+  },
+  {
+    inMainWindow:     3
+    inOppositeWindow: 3
+  },
+  {
+    inMainWindow:     5
+    inOppositeWindow: 3
+  },
+  {
+    inMainWindow:     5
+    inOppositeWindow: 5
+  }
+] # SlidingWindowTriggerPatterns
+
+END_PROLOG
+
+process_name: Trigger
+
+
+services: {
+
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+
+} # services
+
+
+physics: {
+
+  producers: {
+    # --------------------------------------------------------------------------
+    edepsums: {
+      
+      module_type: ExtractEnergyDepositionSummary
+      
+      @table::gates_config # see above
+      
+    } # edepsums
+    # --------------------------------------------------------------------------
+
+    # --------------------------------------------------------------------------
+    pmtbaselines: {
+
+      module_type: PMTWaveformBaselines
+
+      # label of input digitized optical waveform data product
+      OpticalWaveforms: "opdaq"
+
+      # produce plots on the extracted baseline
+      PlotBaselines: true  # default
+      
+      # tag of the module output to console via message facility
+      OutputCategory: "PMTWaveformBaselines"  # default
+
+    } # pmtbaselines
+
+
+    # --------------------------------------------------------------------------
+    discrimopdaq: {
+
+      module_type: DiscriminatePMTwaveforms
+
+      # input optical waveform data product tag:
+      OpticalWaveforms: "opdaq"
+
+      # PMT baselines
+      # Baselines: "pmtbaselines" # from data products
+      Baseline: 8000
+      
+      #
+      # choosing the discrimination algorithm: fixed length gates
+      #
+      # TriggerGateBuilder: @local::icarus_dynamictriggergate
+      TriggerGateBuilder: @local::icarus_fixedtriggergate # from trigger_icarus.fcl
+
+
+      # select which thresholds to save (the algorithm *must* provide them!);
+      # omitted: save all thresholds that the algorithm provides
+    #  SelectThresholds: [ 5, 15 ]
+
+      # message facility stream
+      OutputCategory: "DiscriminatePMTwaveforms"
+
+    } # discrimopdaq
+
+
+    # --------------------------------------------------------------------------
+    lvdsgatesAND: {
+
+      module_type: LVDSgates
+
+      TriggerGatesTag: discrimopdaq
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # CombinationMode: mostly either "AND" or "OR"
+      CombinationMode: "AND"
+
+      # use the standard ICARUS pairing
+      ChannelPairing: @local::icarus_trigger_channel_pairings
+
+      # message facility stream
+      LogCategory: "LVDSgatesAND"
+
+    } # lvdsgatesAND
+
+
+    # --------------------------------------------------------------------------
+    #trigslidewindowAND: {
+
+    #  module_type: SlidingWindowTrigger
+
+    #  TriggerGatesTag: "lvdsgatesAND"
+
+    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+    #  WindowSize: 15
+
+      # number of optical channel used as offset for sliding window [as WindowSize]
+      # Stride: 15
+
+      # name of the category used for the output
+    #  LogCategory: "SlidingWindowTriggerAND"
+
+    #} # trigslidewindowAND
+
+
+    # --------------------------------------------------------------------------
+    lvdsgatesOR: {
+
+      module_type: LVDSgates
+
+      TriggerGatesTag: discrimopdaq
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # CombinationMode: mostly either "AND" or "OR"
+      CombinationMode: "OR"
+
+      # use the standard ICARUS pairing
+      ChannelPairing: @local::icarus_trigger_channel_pairings
+
+      # message facility stream
+      LogCategory: "LVDSgatesOR"
+
+    } # lvdsgatesOR
+
+
+    # --------------------------------------------------------------------------
+    #trigslidewindowOR: {
+
+    #  module_type: SlidingWindowTrigger
+
+     # TriggerGatesTag: "lvdsgatesOR"
+
+    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+    #  WindowSize: 15
+
+      # number of optical channel used as offset for sliding window [as WindowSize]
+      # Stride: 15
+
+      # name of the category used for the output
+    #  LogCategory: "SlidingWindowTriggerOR"
+
+    #} # trigslidewindowOR
+
+
+    # --------------------------------------------------------------------------
+
+  } # producers
+
+
+  analyzers: {
+
+    # --------------------------------------------------------------------------
+    effSingleAND: {
+
+      module_type: MajorityTriggerEfficiencyPlots
+
+      TriggerGatesTag: lvdsgatesAND
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # minimum number of trigger primitives required for the trigger to fire
+      MinimumPrimitives: @local::MinimumSingleTriggerPrimitives
+
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # write event information in a simple for further investigation
+      #EventTreeName: "EventsSingleAND"
+
+      # dump event information on screen (same stream as the rest)
+      EventDetailsLogCategory: ""
+      
+      # message facility stream
+      LogCategory: "MajorityTriggerEfficiencyPlotsAND"
+
+    } # effSingleAND
+
+    effSingleOR: {
+
+      module_type: MajorityTriggerEfficiencyPlots
+
+      TriggerGatesTag: lvdsgatesOR
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # minimum number of trigger primitives required for the trigger to fire
+      MinimumPrimitives: @local::MinimumSingleTriggerPrimitives
+
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # write event information in a simple tree for further investigation (disabled)
+      # EventTreeName: "EventsSingleOR"
+
+      # dump event information on screen (disabled)
+      # EventDetailsLogCategory: ""
+      
+      # message facility stream
+      LogCategory: "MajorityTriggerEfficiencyPlotsOR"
+
+    } # effSingleOR
+    
+    
+    # --------------------------------------------------------------------------
+    #effSlidingAND: {
+
+    #  module_type: SlidingWindowTriggerEfficiencyPlots
+
+     # TriggerGatesTag: trigslidewindowAND
+
+      # select the thresholds to process (mandatory)
+     # Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # sliding window patterns to be simulated
+    #  Patterns: @local::SlidingWindowTriggerPatterns
+
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+     # BeamGateDuration: @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+
+      # write event information in a simple tree for further investigation
+     # EventTreeName: "EventsSlidingAND"
+
+      # dump event information on screen (same stream as the rest)
+     # EventDetailsLogCategory: ""
+      
+      # message facility stream
+      #LogCategory: "SlidingWindowTriggerEfficiencyPlotsAND"
+
+    #} # effSlidingAND
+
+    #effSlidingOR: {
+
+     # module_type: SlidingWindowTriggerEfficiencyPlots
+
+     # TriggerGatesTag: trigslidewindowOR
+
+      # select the thresholds to process (mandatory)
+    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+
+      # sliding window patterns to be simulated
+    #  Patterns: @local::SlidingWindowTriggerPatterns
+
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+     # BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # write event information in a simple tree for further investigation (disabled)
+      # EventTreeName: "EventsSlidingOR"
+
+      # dump event information on screen (disabled)
+      # EventDetailsLogCategory: ""
+      
+      # message facility stream
+     # LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
+
+    #} # effSlidingOR
+    # --------------------------------------------------------------------------
+
+  } # analyzers
+
+
+  triggerAND:  [ edepsums, pmtbaselines, discrimopdaq, lvdsgatesAND ]#, trigslidewindowAND ]
+  triggerOR: [ edepsums, pmtbaselines, discrimopdaq, lvdsgatesOR ]#,  trigslidewindowOR  ]
+  
+  plotsAND: [ effSingleAND ]#, effSlidingAND ]
+  plotsOR:  [ effSingleOR ]#, effSlidingOR  ]
+
+  output: [ rootoutput ]
+
+  trigger_paths: [ triggerAND, triggerOR ]
+  end_paths: [ plotsAND, plotsOR, output ]
+
+} # physics
+
+
+outputs: {
+
+  rootoutput: {
+    
+    @table::icarus_rootoutput # from rootoutput_icarus.fcl
+    
+    # each entry is "class_label_instance_process"
+    outputCommands: [
+      "drop *",
+      "keep simb::MCTruths_*_*_*",
+      "keep simb::MCFluxs_*_*_*",
+      "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*", 
+      "keep simb::GTruths_*_*_*",
+      "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*", 
+      "keep simb::MCParticles_largeant__G4",
+      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
+      "keep sim::SimEnergyDeposits_largeant_*_G4", #drop this one
+    #  std::vector<sim::SimEnergyDeposit>
+    #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
+      "keep *_opdaq_*_DetSim",
+      "keep *_*_*_Trigger",
+      "drop longlonguinticarus::trigger::ReadoutTriggerGateraw::OpDetWaveformvoidart::Assns_*_*_Trigger"
+      ]
+  } # rootoutput
+  
+} # outputs
+
+
+# ------------------------------------------------------------------------------
+# add debug output to its own file
+#
+services.message.destinations.TriggerThresholdLog: {
+  type:       file
+  filename:  "TriggerThresholds.log"
+  threshold:  DEBUG
+  categories: {
+    DiscriminatePMTwaveforms: { limit: -1 }
+    default: { limit: 0 }
+  }
+} # services.messages.destinations.TriggerThresholdLog
+
+services.message.destinations.LVDSANDLog: {
+  type:       file
+  filename:  "LVDS-AND.log"
+  threshold:  DEBUG
+  categories: {
+    LVDSgatesAND: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.LVDSANDLog
+
+#services.message.destinations.SlidingWindowANDLog: {
+#  type:       file
+ # filename:  "SlidingWindowTrigger-AND.log"
+ # threshold:  DEBUG
+#  categories: {
+#    SlidingWindowTriggerAND: { limit: -1 }
+ #   default:   { limit: 0 }
+ # }
+#} # services.messages.destinations.SlidingWindowANDLog
+
+services.message.destinations.LVDSORLog: {
+  type:       file
+  filename:  "LVDS-OR.log"
+  threshold:  DEBUG
+  categories: {
+    LVDSgatesOR: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.LVDSORLog
+
+#services.message.destinations.SlidingWindowORLog: {
+#  type:       file
+#  filename:  "SlidingWindowTrigger-OR.log"
+ # threshold:  DEBUG
+ # categories: {
+ #   SlidingWindowTriggerOR: { limit: -1 }
+ #   default:   { limit: 0 }
+ # }
+#} # services.messages.destinations.SlidingWindowORLog
+
+
+services.message.destinations.SingleANDplotsLog: {
+  type:       file
+  filename:  "MajorityTriggerEfficiency_Count_Plots-AND.log"
+  threshold:  DEBUG
+  categories: {
+    MajorityTriggerEfficiencyPlotsAND: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.SingleANDplotsLog
+
+services.message.destinations.SingleORplotsLog: {
+  type:       file
+  filename:  "MajorityTriggerEfficiency_Count_Plots-OR.log"
+  threshold:  DEBUG
+  categories: {
+    MajorityTriggerEfficiencyPlotsOR: { limit: -1 }
+    default:                          { limit: 0 }
+  }
+} # services.messages.destinations.SingleORplotsLog
+
+#services.message.destinations.SlidingANDplotsLog: {
+ # type:       file
+ # filename:  "SlidingWindowTriggerEfficiency_Count_Plots-AND.log"
+ # threshold:  DEBUG
+ # categories: {
+ #   SlidingWindowTriggerEfficiencyPlotsAND: { limit: -1 }
+ #   default:                                { limit: 0 }
+ # }
+#} # services.messages.destinations.SlidingANDplotsLog
+
+#services.message.destinations.SlidingORplotsLog: {
+ # type:       file
+ # filename:  "SlidingWindowTriggerEfficiency_Count_Plots-OR.log"
+ # threshold:  DEBUG
+ # categories: {
+ #   SlidingWindowTriggerEfficiencyPlotsOR: { limit: -1 }
+ #   default:                               { limit: 0 }
+ # }
+#} # services.messages.destinations.SlidingORplotsLog
+
+#services.Geometry: @local::icarus_single_induction_nooverburden_geometry
+#services.ExptGeoHelperInterface:
+#@local::icarus_single_induction_geometry_helper
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+# ------------------------------------------------------------------------------
+# The "trigger builder" algorithm performs the discrimination and generates the
+# gates.
+#
+
+# Each time the waveform is beyond the set ADC threshold, a gate is opened for
+# a certain time, that is the duration in microseconds set here:
+
+# physics.producers.discrimopdaq.TriggerGateBuilder.GateDuration: @local::icarus_fixedtriggergate.GateDuration
+
+# For studying the trigger efficiency, different thresholds must be considered;
+# thresholds, in ADC counts from the baseline, are set here:
+
+# physics.producers.discrimopdaq.TriggerGateBuilder.ChannelThresholds: @local::icarus_fixedtriggergate.ChannelThresholds
+
+
+# ------------------------------------------------------------------------------
+# Channels are combined in pairs. Pairing is fixed by cabling the PMT readout
+# boards to the PMTs. Some channels are special and are left alone.
+#
+# When changing these settings here, always change both lvdsgatesAND and
+# lvdsgatesOR.
+#
+# The pattern is set here:
+#
+# physics.producers.lvdsgatesAND.ChannelPairing: @local::icarus_trigger_channel_pairings
+# physics.producers.lvdsgatesOR.ChannelPairing: @local::icarus_trigger_channel_pairings
+
+# ------------------------------------------------------------------------------
