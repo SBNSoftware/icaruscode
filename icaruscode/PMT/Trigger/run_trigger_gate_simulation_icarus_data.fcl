@@ -1,0 +1,51 @@
+#
+# File:    run_trigger_gate_simulation_icarus_data.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    September 10, 2020
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# It is an adaption of `run_trigger_gate_simulation_icarus.fcl`.
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20200910 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `run_trigger_gate_simulation_icarus.fcl` v2.1
+#
+
+#include "run_trigger_gate_simulation_icarus.fcl"
+
+
+services.DetectorClocksService: @local::icarus_detectorclocks_data_notiming # from services_common_icarus.fcl
+
+physics.prep: [ ]
+
+#physics.trigger_paths: [ triggerAND, triggerOR ]
+
+physics.producers.pmtbaselines.OpticalWaveforms: "daqPMT"
+physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
+# use the baseline from `pmtbaselines` instead of the fixed value
+physics.producers.discrimopdaq.Baseline: @erase
+physics.producers.discrimopdaq.Baselines: "pmtbaselines"
+
+physics.analyzers.effSingleAND.GeneratorTags: []
+physics.analyzers.effSingleAND.EnergyDeposits: []
+
+physics.analyzers.effSingleOR.GeneratorTags: []
+physics.analyzers.effSingleOR.EnergyDeposits: []
+
+physics.analyzers.effSlidingAND.GeneratorTags: []
+physics.analyzers.effSlidingAND.EnergyDeposits: []
+
+physics.analyzers.effSlidingOR.GeneratorTags: []
+physics.analyzers.effSlidingOR.EnergyDeposits: []
+
