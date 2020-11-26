@@ -3,14 +3,12 @@
 # Purpose: Runs a chain to simulate ICARUS trigger primitives.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    December 18, 2019
-# Version: 2.2
+# Version: 2.1
 #
 # This is a top-level configuration that can be run directly.
 #
 # The steps are:
 #
-#  * pmtbaselines (PMTWaveformBaselines): computes baselines for all PMT
-#      waveforms
 #  * discrimopdaq (DiscriminatePMTwaveforms): from each PMT extracts a gate
 #      signal according to each of the configured thresholds;
 #      for each threshold all gates are stored in their own data product
@@ -72,9 +70,6 @@
 #
 # Changes
 # --------
-# 
-# 20200917 (petrillo@slac.stanford.edu) [v2.2]
-# :   added baseline extraction
 # 
 # 20200403 (petrillo@slac.stanford.edu) [v2.1]
 # :   fixed the labels of the trigger and end paths
@@ -166,36 +161,13 @@ physics: {
   producers: {
 
     # --------------------------------------------------------------------------
-    pmtbaselines: {
-
-      module_type: PMTWaveformBaselines
-
-      # label of input digitized optical waveform data product
-      OpticalWaveforms: "daqPMT"
-      #OpticalWaveforms: "opdaq"
-
-      # produce plots on the extracted baseline
-      PlotBaselines: true  # default
-      
-      # tag of the module output to console via message facility
-      OutputCategory: "PMTWaveformBaselines"  # default
-
-    } # pmtbaselines
-
-
-    # --------------------------------------------------------------------------
     discrimopdaq: {
 
       module_type: DiscriminatePMTwaveforms
 
       # input optical waveform data product tag:
-      OpticalWaveforms: "daqPMT"  #enable for real data
-      #OpticalWaveforms: "opdaq"
+      OpticalWaveforms: "opdaq"
 
-      # PMT baselines
-      # Baselines: "pmtbaselines" # from data products
-      Baseline: 8000
-      
       #
       # choosing the discrimination algorithm: fixed length gates
       #
@@ -236,23 +208,23 @@ physics: {
 
 
     # --------------------------------------------------------------------------
-    #trigslidewindowAND: {
+    trigslidewindowAND: {
 
-    #  module_type: SlidingWindowTrigger
+      module_type: SlidingWindowTrigger
 
-    #  TriggerGatesTag: "lvdsgatesAND"
+      TriggerGatesTag: "lvdsgatesAND"
 
-    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
-    #  WindowSize: 15
+      WindowSize: 15
 
       # number of optical channel used as offset for sliding window [as WindowSize]
       # Stride: 15
 
       # name of the category used for the output
-    #  LogCategory: "SlidingWindowTriggerAND"
+      LogCategory: "SlidingWindowTriggerAND"
 
-    #} # trigslidewindowAND
+    } # trigslidewindowAND
 
 
     # --------------------------------------------------------------------------
@@ -278,23 +250,23 @@ physics: {
 
 
     # --------------------------------------------------------------------------
-    #trigslidewindowOR: {
+    trigslidewindowOR: {
 
-    #  module_type: SlidingWindowTrigger
+      module_type: SlidingWindowTrigger
 
-     # TriggerGatesTag: "lvdsgatesOR"
+      TriggerGatesTag: "lvdsgatesOR"
 
-    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
-    #  WindowSize: 15
+      WindowSize: 15
 
       # number of optical channel used as offset for sliding window [as WindowSize]
       # Stride: 15
 
       # name of the category used for the output
-    #  LogCategory: "SlidingWindowTriggerOR"
+      LogCategory: "SlidingWindowTriggerOR"
 
-    #} # trigslidewindowOR
+    } # trigslidewindowOR
 
 
     # --------------------------------------------------------------------------
@@ -319,9 +291,9 @@ physics: {
 
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
       BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
-
-      # write event information in a simple for further investigation
-      #EventTreeName: "EventsSingleAND"
+      #BeamGateDuration:	@local::NuMI_settings.spill_duration
+      # write event information in a simple tree for further investigation
+      EventTreeName: "EventsSingleAND"
 
       # dump event information on screen (same stream as the rest)
       EventDetailsLogCategory: ""
@@ -359,46 +331,46 @@ physics: {
     
     
     # --------------------------------------------------------------------------
-    #effSlidingAND: {
+    effSlidingAND: {
 
-    #  module_type: SlidingWindowTriggerEfficiencyPlots
+      module_type: SlidingWindowTriggerEfficiencyPlots
 
-     # TriggerGatesTag: trigslidewindowAND
+      TriggerGatesTag: trigslidewindowAND
 
       # select the thresholds to process (mandatory)
-     # Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
       # sliding window patterns to be simulated
-    #  Patterns: @local::SlidingWindowTriggerPatterns
+      Patterns: @local::SlidingWindowTriggerPatterns
 
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
-     # BeamGateDuration: @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
 
       # write event information in a simple tree for further investigation
-     # EventTreeName: "EventsSlidingAND"
+      EventTreeName: "EventsSlidingAND"
 
       # dump event information on screen (same stream as the rest)
-     # EventDetailsLogCategory: ""
+      EventDetailsLogCategory: ""
       
       # message facility stream
-      #LogCategory: "SlidingWindowTriggerEfficiencyPlotsAND"
+      LogCategory: "SlidingWindowTriggerEfficiencyPlotsAND"
 
-    #} # effSlidingAND
+    } # effSlidingAND
 
-    #effSlidingOR: {
+    effSlidingOR: {
 
-     # module_type: SlidingWindowTriggerEfficiencyPlots
+      module_type: SlidingWindowTriggerEfficiencyPlots
 
-     # TriggerGatesTag: trigslidewindowOR
+      TriggerGatesTag: trigslidewindowOR
 
       # select the thresholds to process (mandatory)
-    #  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
       # sliding window patterns to be simulated
-    #  Patterns: @local::SlidingWindowTriggerPatterns
+      Patterns: @local::SlidingWindowTriggerPatterns
 
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
-     # BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
 
       # write event information in a simple tree for further investigation (disabled)
       # EventTreeName: "EventsSlidingOR"
@@ -407,19 +379,19 @@ physics: {
       # EventDetailsLogCategory: ""
       
       # message facility stream
-     # LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
+      LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
 
-    #} # effSlidingOR
+    } # effSlidingOR
     # --------------------------------------------------------------------------
 
   } # analyzers
 
 
-  triggerAND:  [ pmtbaselines, discrimopdaq, lvdsgatesAND ]#, trigslidewindowAND ]
-  triggerOR: [ pmtbaselines, discrimopdaq, lvdsgatesOR ]#,  trigslidewindowOR  ]
+  triggerAND:  [ discrimopdaq, lvdsgatesAND, trigslidewindowAND ]
+  triggerOR: [ discrimopdaq, lvdsgatesOR,  trigslidewindowOR  ]
   
-  plotsAND: [ effSingleAND ]#, effSlidingAND ]
-  plotsOR:  [ effSingleOR ]#, effSlidingOR  ]
+  plotsAND: [ effSingleAND, effSlidingAND ]
+  plotsOR:  [ effSingleOR, effSlidingOR  ]
 
   output: [ rootoutput ]
 
@@ -438,17 +410,16 @@ outputs: {
     # each entry is "class_label_instance_process"
     outputCommands: [
       "drop *",
-    #  "keep simb::MCTruths_*_*_*",
-    #  "keep simb::MCFluxs_*_*_*",
-    #  "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*",
-    #  "keep simb::GTruths_*_*_*",
-    #  "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*",
-    #  "keep simb::MCParticles_largeant__G4",
-    #  "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
-    #  "keep sim::SimEnergyDeposits_largeant_*_G4",
+      "keep simb::MCTruths_*_*_*",
+      "keep simb::MCFluxs_*_*_*",
+      "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*",
+      "keep simb::GTruths_*_*_*",
+      "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*",
+      "keep simb::MCParticles_largeant__G4",
+      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
+      "keep sim::SimEnergyDeposits_largeant_*_G4",
     #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
-    #  "keep *_opdaq_*_DetSim", #enable for simultion
-      "keep *_daqPMT_*_opreco", #enable for real data
+      "keep *_opdaq_*_DetSim",
       "keep *_*_*_Trigger"
       ]
   } # rootoutput
@@ -479,15 +450,15 @@ services.message.destinations.LVDSANDLog: {
   }
 } # services.messages.destinations.LVDSANDLog
 
-#services.message.destinations.SlidingWindowANDLog: {
-#  type:       file
- # filename:  "SlidingWindowTrigger-AND.log"
- # threshold:  DEBUG
-#  categories: {
-#    SlidingWindowTriggerAND: { limit: -1 }
- #   default:   { limit: 0 }
- # }
-#} # services.messages.destinations.SlidingWindowANDLog
+services.message.destinations.SlidingWindowANDLog: {
+  type:       file
+  filename:  "SlidingWindowTrigger-AND.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerAND: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.SlidingWindowANDLog
 
 services.message.destinations.LVDSORLog: {
   type:       file
@@ -499,15 +470,15 @@ services.message.destinations.LVDSORLog: {
   }
 } # services.messages.destinations.LVDSORLog
 
-#services.message.destinations.SlidingWindowORLog: {
-#  type:       file
-#  filename:  "SlidingWindowTrigger-OR.log"
- # threshold:  DEBUG
- # categories: {
- #   SlidingWindowTriggerOR: { limit: -1 }
- #   default:   { limit: 0 }
- # }
-#} # services.messages.destinations.SlidingWindowORLog
+services.message.destinations.SlidingWindowORLog: {
+  type:       file
+  filename:  "SlidingWindowTrigger-OR.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerOR: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.SlidingWindowORLog
 
 
 services.message.destinations.SingleANDplotsLog: {
@@ -530,29 +501,26 @@ services.message.destinations.SingleORplotsLog: {
   }
 } # services.messages.destinations.SingleORplotsLog
 
-#services.message.destinations.SlidingANDplotsLog: {
- # type:       file
- # filename:  "SlidingWindowTriggerEfficiency_Count_Plots-AND.log"
- # threshold:  DEBUG
- # categories: {
- #   SlidingWindowTriggerEfficiencyPlotsAND: { limit: -1 }
- #   default:                                { limit: 0 }
- # }
-#} # services.messages.destinations.SlidingANDplotsLog
+services.message.destinations.SlidingANDplotsLog: {
+  type:       file
+  filename:  "SlidingWindowTriggerEfficiency_Count_Plots-AND.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerEfficiencyPlotsAND: { limit: -1 }
+    default:                                { limit: 0 }
+  }
+} # services.messages.destinations.SlidingANDplotsLog
 
-#services.message.destinations.SlidingORplotsLog: {
- # type:       file
- # filename:  "SlidingWindowTriggerEfficiency_Count_Plots-OR.log"
- # threshold:  DEBUG
- # categories: {
- #   SlidingWindowTriggerEfficiencyPlotsOR: { limit: -1 }
- #   default:                               { limit: 0 }
- # }
-#} # services.messages.destinations.SlidingORplotsLog
+services.message.destinations.SlidingORplotsLog: {
+  type:       file
+  filename:  "SlidingWindowTriggerEfficiency_Count_Plots-OR.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerEfficiencyPlotsOR: { limit: -1 }
+    default:                               { limit: 0 }
+  }
+} # services.messages.destinations.SlidingORplotsLog
 
-#services.Geometry: @local::icarus_single_induction_nooverburden_geometry
-#services.ExptGeoHelperInterface:
-#@local::icarus_single_induction_geometry_helper
 
 # ------------------------------------------------------------------------------
 # --- Configuration override guide

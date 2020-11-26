@@ -1,3 +1,4 @@
-#include "makelvdstrees_icarus.fcl"
+#include "makelvdstrees_icarus_data.fcl"
 
 physics.analyzers.treegger.TriggerGatesTag: "lvdsgatesOR:200"
+services.DetectorClocksService: @local::icarus_detectorclocks_data_notiming # from services_common_icarus.fcl

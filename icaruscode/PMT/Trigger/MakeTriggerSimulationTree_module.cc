@@ -798,6 +798,8 @@ std::min(waveformAndBaseline.cbegin(), waveformAndBaseline.waveform.cend()); */
     
    auto minAmplitude = std::min_element(pmtAmplitudes.begin(), pmtAmplitudes.end());
    double amplitude = static_cast<double>(minAmplitude[0]); 
+   std::cout<<"---> Amplitude: "<<amplitude<<std::endl;
+
     //
     // 2.4. fill the information
     //
