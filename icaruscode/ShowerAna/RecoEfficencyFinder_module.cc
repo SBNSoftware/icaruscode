@@ -1137,11 +1137,8 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
     } // end if statement on fIsTrueNu
 
     int hitsinbeam = 0;
-//      std::cout << "TEST TEST CRT part" << std::endl; //GM
 
     for( auto const& thiscrthit : crthits ){
-//      std::cout << "TEST TEST number of crthits = " << crthits.size() << std::endl; //GM
-
 //      float crt_time_in_us = thiscrthit->ts1_ns/1000. ;
       float crt_time_in_us = thiscrthit->ts0_ns/1000. - 1.6E3;   ///Chris
 //      float crt_time_in_us = thiscrthit->ts0_ns/1000.; 
