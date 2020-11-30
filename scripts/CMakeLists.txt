@@ -1,2 +1,2 @@
-install_scripts()
+install_scripts(SUBDIRS updates)
 

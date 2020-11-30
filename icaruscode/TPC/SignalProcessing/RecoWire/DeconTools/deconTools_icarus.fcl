@@ -33,7 +33,7 @@ icarus_differentialroifinder_2.Plane: 2
 
 icarus_morphologicalroifinder:
 {
-    tool_type:           ROIFinderMorphological
+    tool_type:           "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/ROIFinderMorphological"
     Plane:               0
     UseDifference:       true
     NumSigma:            2.0         # Number sigma for threshold
@@ -56,6 +56,21 @@ icarus_morphologicalroifinder_0.Plane:           0
 icarus_morphologicalroifinder_1.Plane:           1
 icarus_morphologicalroifinder_2.Plane:           2
 
+icarus_noproifinder:
+{
+    tool_type:       ROIFinderNOP
+    Plane:           0
+    roiLeadTrailPad: [ 2000, 2000 ] # number of bins to pad both ends of the ROIs
+}
+
+icarus_noproifinder_0: @local::icarus_noproifinder
+icarus_noproifinder_1: @local::icarus_noproifinder
+icarus_noproifinder_2: @local::icarus_noproifinder
+
+icarus_noproifinder_0.Plane: 0
+icarus_noproifinder_1.Plane: 1
+icarus_noproifinder_2.Plane: 2
+
 icarus_baselinestandard:
 {
     tool_type: BaselineStandard
@@ -64,7 +79,7 @@ icarus_baselinestandard:
 
 icarus_baselinemostprobave:
 {
-    tool_type:    BaselineMostProbAve
+    tool_type:    "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/BaselineMostProbAve"
     MaxROILength: 100
 }
 

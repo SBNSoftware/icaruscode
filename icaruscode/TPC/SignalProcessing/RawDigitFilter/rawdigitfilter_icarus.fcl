@@ -109,12 +109,12 @@ icarus_rawdigitsmoother:
 
 icarus_rawdigitfilter.FilterTools.FilterPlane0.Plane:                0
 icarus_rawdigitfilter.FilterTools.FilterPlane0.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
-icarus_rawdigitfilter.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_rawdigitfilter.FilterTools.FilterPlane0.FilterParametersVec:  [1., 0.0, 4.0]
 icarus_rawdigitfilter.FilterTools.FilterPlane1.Plane:                1
 icarus_rawdigitfilter.FilterTools.FilterPlane1.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
-icarus_rawdigitfilter.FilterTools.FilterPlane1.FilterParametersVec:  [1., 0.0, 0.004]
+icarus_rawdigitfilter.FilterTools.FilterPlane1.FilterParametersVec:  [1., 0.0, 4.0]
 icarus_rawdigitfilter.FilterTools.FilterPlane2.Plane:                2
 icarus_rawdigitfilter.FilterTools.FilterPlane2.FilterFunction:       "x>0. ? 1.-gaus(0) : 0."
-icarus_rawdigitfilter.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.0, 0.002]
+icarus_rawdigitfilter.FilterTools.FilterPlane2.FilterParametersVec:  [1., 0.0, 2.0]
 
 END_PROLOG

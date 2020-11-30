@@ -18,14 +18,14 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Algorithms/DiscretePhotoelectronPulse.h"
 #include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
-#include "icaruscode/Utilities/SampledFunction.h"
-#include "icaruscode/Utilities/FastAndPoorGauss.h"
+#include "icarusalg/Utilities/SampledFunction.h"
+#include "icarusalg/Utilities/FastAndPoorGauss.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "lardataalg/DetectorInfo/LArProperties.h"
-#include "lardataalg/DetectorInfo/DetectorClocks.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h"
 #include "lardataalg/Utilities/quantities_fhicl.h" // microsecond from FHiCL
 #include "lardataalg/Utilities/quantities/spacetime.h" // microsecond, ...
@@ -445,7 +445,8 @@ class icarus::opdet::PMTsimulationAlg {
 
 
     detinfo::LArProperties const* larProp = nullptr; ///< LarProperties service provider.
-    detinfo::DetectorClocks const* timeService = nullptr; ///< DetectorClocks service provider.
+
+    detinfo::DetectorClocksData const* clockData = nullptr;
 
     /// Single photon response function.
     SinglePhotonResponseFunc_t const* pulseFunction;
@@ -937,7 +938,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    */
   std::unique_ptr<PMTsimulationAlg> operator()(
     detinfo::LArProperties const& larProp,
-    detinfo::DetectorClocks const& detClocks,
+    detinfo::DetectorClocksData const& detClocks,
     SinglePhotonResponseFunc_t const& SPRfunction,
     CLHEP::HepRandomEngine& mainRandomEngine,
     CLHEP::HepRandomEngine& darkNoiseRandomEngine,
@@ -963,7 +964,7 @@ class icarus::opdet::PMTsimulationAlgMaker {
    */
   PMTsimulationAlg::ConfigurationParameters_t makeParams(
     detinfo::LArProperties const& larProp,
-    detinfo::DetectorClocks const& detClocks,
+    detinfo::DetectorClocksData const& clockData,
     SinglePhotonResponseFunc_t const& SPRfunction,
     CLHEP::HepRandomEngine& mainRandomEngine,
     CLHEP::HepRandomEngine& darkNoiseRandomEngine,
@@ -1080,4 +1081,3 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
 
 
 #endif // ICARUSCODE_PMT_ALGORITHMS_PMTSIMULATIONALG_H
-

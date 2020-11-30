@@ -41,6 +41,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -136,7 +137,7 @@ class Decon1DROI : public art::EDProducer
     std::unique_ptr<icarus_tool::IDeconvolution>               fDeconvolution;
     std::unique_ptr<icarus_tool::IBaseline>                    fBaseline;
 
-    icarus_signal_processing::WaveformTools<float>                        fWaveformTool;
+    icarus_signal_processing::WaveformTools<float>             fWaveformTool;
 
     const geo::GeometryCore*                                   fGeometry        = lar::providerFrom<geo::Geometry>();
     const lariov::ChannelStatusProvider*                       fChannelFilter   = lar::providerFrom<lariov::ChannelStatusService>();
@@ -310,6 +311,9 @@ void Decon1DROI::produce(art::Event& evt)
             }
         }
     }
+
+    // Make sure the collection is sorted
+    std::sort(wireCol->begin(), wireCol->end(), [](const auto& left, const auto& right){return left.Channel() < right.Channel();});
     
     evt.put(std::move(wireCol), fSpillName);
     evt.put(std::move(wireDigitAssn), fSpillName);
@@ -471,7 +475,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         }
         catch(...)
         {
-            std::cout << "Pedestal lookup fails with channel: " << channel << std::endl;
+            mf::LogDebug("Decon1DROI_module") << "Pedestal lookup fails with channel: " << channel << std::endl;
             return;
         }
         
@@ -497,7 +501,8 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size()));
         
         // Do the deconvolution on the full waveform
-        fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, deconROIVec, deconVec);
+        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+        fDeconvolution->Deconvolve(rawAdcLessPedVec, sampling_rate(clockData), channel, deconROIVec, deconVec);
         
         // Recover the deconvolved waveform
         const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();

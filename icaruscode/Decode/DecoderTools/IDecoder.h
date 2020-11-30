@@ -16,7 +16,6 @@
 
 // Algorithm includes
 #include "artdaq-core/Data/Fragment.hh"
-#include "lardataobj/RawData/RawDigit.h"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -61,7 +60,6 @@ public:
      *  @brief Given a set of recob hits, run DBscan to form 3D clusters
      *
      *  @param fragment            The artdaq fragment to process
-     *  @param rawDigitColllection The output RawDigits
      */
     virtual void process_fragment(const artdaq::Fragment& fragment) = 0;
 

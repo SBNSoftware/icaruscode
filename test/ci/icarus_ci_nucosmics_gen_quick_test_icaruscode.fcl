@@ -1,5 +1,5 @@
 #include "messages_icarus.fcl"
-#include "prodcorsika_genie_standard_icarus_workshop.fcl"
+#include "prodcorsika_genie_standard_icarus.fcl"
 
 # non-interactive output settings, but keep them verbose
 services.message: @local::icarus_message_services_prod_debug
@@ -16,7 +16,6 @@ physics.producers.generator.MaxFluxFileMB: 20
 physics.producers.generator.FluxSearchPaths: "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/beam/GENIE/BNB/standard/v01_00/"
 
 # Override CORSIKA flux file path to be able to access them without a proxy
-# FIXME for testing purpose use the SBND path, this will be replaced
 physics.producers.cosmgen.ShowerInputFiles:[
             "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/p_showers_*.db",
             "/cvmfs/sbn.osgstorage.org/pnfs/fnal.gov/usr/sbn/persistent/stash/physics/cosmics/Fermilab/CORSIKA/standard/He_showers_*.db",

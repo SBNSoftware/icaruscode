@@ -46,7 +46,9 @@ public:
 
     void generateNoise(CLHEP::HepRandomEngine&,
                        CLHEP::HepRandomEngine&,
-                       icarusutil::TimeVec&, double, unsigned int) override;
+                       icarusutil::TimeVec&,
+                       detinfo::DetectorPropertiesData const&,
+                       double, unsigned int) override;
     
 private:
     // Member variables from the fhicl file
@@ -60,7 +62,6 @@ private:
     // with the likely false hope this will be faster...
     std::vector<double> fNoiseHistVec;
 
-    const detinfo::DetectorProperties*                fDetector;              //< Pointer to the detector properties
     std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>> fFFT;
 };
     
@@ -105,10 +106,9 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
     // Close the input file
     inputFile.Close();
 
-    fDetector = lar::providerFrom<detinfo::DetectorPropertiesService>();
-
     // Now set up our plans for doing the convolution
-    int numberTimeSamples = fDetector->NumberTimeSamples();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    int numberTimeSamples = clockData.NumberTimeSamples();
 
     fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(numberTimeSamples);
    
@@ -118,12 +118,13 @@ void NoiseFromHist::configure(const fhicl::ParameterSet& pset)
 void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
                                   CLHEP::HepRandomEngine&,
                                   icarusutil::TimeVec& noise,
+                                  detinfo::DetectorPropertiesData const& detProp,
                                   double noise_factor,
                                   unsigned int channel)
 {    
     CLHEP::RandFlat flat(engine,-1,1);
     
-    size_t nFFTTicks = fDetector->NumberTimeSamples();
+    size_t nFFTTicks = detProp.NumberTimeSamples();
     
     if(noise.size() != nFFTTicks)
         throw cet::exception("SimWireICARUS")

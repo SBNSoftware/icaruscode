@@ -1,0 +1,21 @@
+BEGIN_PROLOG
+
+
+ChannelMappingPostGres: {
+    tool_type:          ChannelMapPostGres
+    Nothing:            0
+}
+
+ChannelMappingSQLite: {
+    tool_type:          ChannelMapSQLite
+    DBFileName:         "ChannelMapICARUS.db"
+}
+
+icarus_channelmappinggservice:
+{
+    service_provider:   ICARUSChannelMap
+    DiagnosticOutput:   true
+    ChannelMappingTool: @local::ChannelMappingSQLite
+}
+
+END_PROLOG

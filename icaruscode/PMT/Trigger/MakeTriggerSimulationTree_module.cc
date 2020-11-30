@@ -7,12 +7,15 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
+#include "icaruscode/PMT/Trigger/Algorithms/BeamGateStruct.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoTree.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventIDTree.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
-#include "icaruscode/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -244,6 +247,24 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
       Comment("length of time interval when optical triggers are accepted")
       };
 
+    fhicl::Atom<microseconds> BeamGateStart {
+      Name("BeamGateStart"),
+      Comment("open the beam gate this long after the nominal beam gate time"),
+      microseconds{ 0.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindow {
+      Name("PreSpillWindow"),
+      Comment("duration of the pre-spill window"),
+      microseconds{ 10.0 }
+      };
+
+    fhicl::Atom<microseconds> PreSpillWindowGap {
+      Name("PreSpillWindowGap"),
+      Comment("gap from the end of pre-spill window to the start of beam gate"),
+      microseconds{ 0.0 }
+      };
+
     fhicl::Atom<std::string> EventTreeName {
       Name("EventTreeName"),
       Comment("name of the ROOT tree"),
@@ -286,6 +307,16 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   
   // --- BEGIN Configuration variables -----------------------------------------
   
+  /// Duration of the gate during with global optical triggers are accepted.
+  microseconds fBeamGateDuration;
+  
+  /// Start of the beam gate with respect to `BeamGate()`.
+  microseconds fBeamGateStart;
+  
+  microseconds fPreSpillWindow; ///< Duration of the pre-spill gate.
+  
+  microseconds fPreSpillStart; ///< Start of the pre-spill gate.
+  
   /// Tag for optical trigger gate data product.
   art::InputTag fTriggerGatesTag;
   
@@ -297,18 +328,11 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   // --- BEGIN Setup variables -------------------------------------------------
   
   geo::GeometryCore const& fGeom;
-  detinfo::DetectorTimings fDetTimings;
   
   // --- END Setup variables ---------------------------------------------------
 
 
   // --- BEGIN Internal variables ----------------------------------------------
-  
-  /// The beam gate (as a `icarus::trigger::OpticalTriggerGate` object).
-  icarus::trigger::OpticalTriggerGate const fBeamGate;
-  
-  /// Beam gate start and stop time in simulation scale.
-  std::pair<simulation_time, simulation_time> const fBeamGateSim;
   
   /// Main ROOT tree: event ID.
   details::EventIDTree fIDTree;
@@ -323,8 +347,12 @@ class icarus::trigger::MakeTriggerSimulationTree: public art::EDAnalyzer {
   std::optional<TriggerGateTree> fTriggerGateTree;
   
   /// Helper to fill a `EventInfo_t` from an _art_ event.
-  details::EventInfoExtractor const eventInfoExtractor;
+  details::EventInfoExtractorMaker const fEventInfoExtractorMaker;
   
+  /// Functor returning whether a gate has changed.
+  icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::BeamGateStruct>
+    fBeamGateChangeCheck;
+
   // --- END Internal variables ------------------------------------------------
   
   
@@ -471,30 +499,24 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
   (Parameters const& config)
   : art::EDAnalyzer(config)
   // persistent configuration
+  , fBeamGateDuration     (config().BeamGateDuration())
+  , fBeamGateStart        (config().BeamGateStart())
+  , fPreSpillWindow       (config().PreSpillWindow())
+  , fPreSpillStart
+      (fBeamGateStart - config().PreSpillWindowGap() - fPreSpillWindow)
   , fTriggerGatesTag(config().TriggerGatesTag())
   , fLogCategory(config().LogCategory())
   // setup
   , fGeom(*lar::providerFrom<geo::Geometry>())
-  , fDetTimings(*lar::providerFrom<detinfo::DetectorClocksService>())
   // other data
-  , fBeamGate(
-      icarus::trigger::BeamGateMaker{ fDetTimings }
-        .make(config().BeamGateDuration())
-      )
-  , fBeamGateSim(
-    fDetTimings.toSimulationTime(fDetTimings.BeamGateTime()),
-    fDetTimings.toSimulationTime(fDetTimings.BeamGateTime())
-      + config().BeamGateDuration()
-    )
   , fIDTree(*(art::ServiceHandle<art::TFileService>()
       ->make<TTree>(config().EventTreeName().c_str(), "Event information")
       ))
   , fEventTree(fIDTree.tree())
   , fTriggerGateTree(fIDTree.tree())
-  , eventInfoExtractor(
+  , fEventInfoExtractorMaker(
     config().GeneratorTags(),              // truthTags
     config().EnergyDepositTags(),          // edepTags
-    fBeamGateSim,                          // inSpillTimes
     fGeom,                                 // geom
     fLogCategory,                          // logCategory
     consumesCollector()                    // consumesCollector
@@ -518,7 +540,25 @@ void icarus::trigger::MakeTriggerSimulationTree::analyze
   (art::Event const& event)
 {
   
-  details::EventInfo_t const eventInfo = eventInfoExtractor(event);
+  // we need to convert the two relevant gates with the proper parameters
+  auto const detTimings = icarus::ns::util::makeDetTimings(event);
+  
+  auto const beamGate = icarus::trigger::makeBeamGateStruct
+    (detTimings, fBeamGateDuration, fBeamGateStart);
+  
+  if (auto oldGate = fBeamGateChangeCheck(beamGate); oldGate) {
+    mf::LogWarning(fLogCategory)
+      << "Beam gate has changed from " << oldGate->asOptTickRange()
+      << " to " << beamGate.asOptTickRange() << " (optical tick)!";
+  }
+  
+  details::EventInfo_t const eventInfo = fEventInfoExtractorMaker(
+    beamGate.asSimulationRange(),
+    icarus::trigger::makeBeamGateStruct
+      (detTimings, fPreSpillStart, fPreSpillStart + fPreSpillWindow)
+      .asSimulationRange()
+    )(event);
+  
   TriggerGatesInfo const triggerInfo = extractTriggerInfo(event);
   
   mf::LogDebug(fLogCategory) << event.id() << " trigger info: " << triggerInfo;
@@ -550,6 +590,14 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
   using icarus::trigger::OpticalTriggerGateData_t;
   
   //
+  // 0. construct the beam gate for this event
+  //
+  auto const detTimings = icarus::ns::util::makeDetTimings(event);
+  auto const beamGate = icarus::trigger::BeamGateMaker{ detTimings }
+      .make(fBeamGateDuration, fBeamGateStart)
+    ;
+  
+  //
   // 1. get the data product from the event
   //
   auto const& gates
@@ -564,7 +612,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
   for (OpticalTriggerGateData_t const& gate: gates) {
     
     // the gate, in coincidence with the beam gate:
-    auto const beamAndGate = OpticalTriggerGateData_t::Mul(gate, fBeamGate);
+    auto const beamAndGate = OpticalTriggerGateData_t::Mul(gate, beamGate);
     
     //
     // 2.2. find and convert to `simulation_time` the first opening
@@ -594,7 +642,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
         // users should ignore this if `nOpenings == 0`:
       (nOpenings == 0U)
         ? std::numeric_limits<simulation_time>::max()
-        : fDetTimings.toSimulationTime
+        : detTimings.toSimulationTime
           (detinfo::timescales::optical_tick{ firstOpenTick })
       });
     

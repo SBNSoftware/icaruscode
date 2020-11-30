@@ -6,7 +6,7 @@
 #include "largeantmodules.fcl"
 #include "corsika_icarus.fcl"
 #include "mcreco.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "genie_icarus_bnb.fcl"
 #include "services_icarus_simulation.fcl"
 

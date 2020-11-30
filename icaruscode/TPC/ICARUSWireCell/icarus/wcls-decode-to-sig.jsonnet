@@ -108,7 +108,7 @@ local wcls_output = {
       anode: wc.tn(mega_anode),
       digitize: false,  // true means save as RawDigit, else recob::Wire
       frame_tags: ['gauss', 'wiener'],
-      frame_scale: [0.1, 0.1],
+      frame_scale: [0.025, 0.025],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,
@@ -154,7 +154,7 @@ local nfsp_pipes = [
                chsel_pipes[n],
                // magnifyio.orig_pipe[n],
 
-               nf_pipes[n],
+               // nf_pipes[n],
                // magnifyio.raw_pipe[n],
 
                sp_pipes[n],

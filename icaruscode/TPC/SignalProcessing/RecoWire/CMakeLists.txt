@@ -13,9 +13,11 @@ art_make(
             ${CETLIB}
             ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES 
+            icarus_signal_processing
             larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities
+            lardataalg_DetectorInfo
             larevt_Filters
             lardataobj_RawData
             larevt_CalibrationDBI_IOVData
@@ -44,4 +46,3 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
-

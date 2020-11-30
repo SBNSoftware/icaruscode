@@ -1,0 +1,132 @@
+##
+##  ICARUS definitions for the first stage of data processing
+##  modeled on standard version
+##
+
+#include "services_common_icarus.fcl"
+
+#include "decoderdefs_icarus.fcl"
+#include "recowire_icarus.fcl"
+#include "hitfindermodules_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "wcls-decode-to-sig-base.fcl"
+
+BEGIN_PROLOG
+
+### This is the complete list of all producers! ###
+icarus_stage0_producers:
+{
+  ### Decoder definitions
+  daqTPC:                         @local::decodeTPC
+  daqTPC0:                        @local::decodeTPC
+  daqTPC1:                        @local::decodeTPC
+  daqTPC2:                        @local::decodeTPC
+  daqTPC3:                        @local::decodeTPC
+
+  daqPMT:                         @local::decodePMT
+
+  ### calwire producers
+  decon1droi:                     @local::icarus_decon1droi
+  decon1DroiTPC0:                 @local::icarus_decon1droi
+  decon1DroiTPC1:                 @local::icarus_decon1droi
+  decon1DroiTPC2:                 @local::icarus_decon1droi
+  decon1DroiTPC3:                 @local::icarus_decon1droi
+
+  recowireraw:                    @local::icarus_recowireraw
+  recoWireRawTPC0:                @local::icarus_recowireraw
+  recoWireRawTPC1:                @local::icarus_recowireraw
+  recoWireRawTPC2:                @local::icarus_recowireraw
+  recoWireRawTPC3:                @local::icarus_recowireraw
+
+  ### wire-cell decon producers
+  decon2droi:                     @local::standard_wirecell_sigproc
+  decon2DroiTPC0:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC1:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC2:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC3:                 @local::standard_wirecell_sigproc
+
+  ### hit-finder producers
+  gaushit:                        @local::gaus_hitfinder_icarus
+  gaushitTPC0:                    @local::gaus_hitfinder_icarus
+  gaushitTPC1:                    @local::gaus_hitfinder_icarus
+  gaushitTPC2:                    @local::gaus_hitfinder_icarus
+  gaushitTPC3:                    @local::gaus_hitfinder_icarus
+
+  icarushit:                      @local::icarus_hitfinder
+  icarusHitTPC0:                  @local::icarus_hitfinder
+  icarusHitTPC1:                  @local::icarus_hitfinder
+  icarusHitTPC2:                  @local::icarus_hitfinder
+  icarusHitTPC3:                  @local::icarus_hitfinder
+
+  ### Optical hit finder
+  ophit:                          @local::icarus_ophit
+}
+
+icarus_reco_filters:
+{
+}
+
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_stage0_single:              [ daqTPC,
+                                     daqPMT,
+                                     decon1droi,
+                                     decon2droi,
+                                     gaushit
+                                   ]
+
+icarus_stage0_multiTPC_TPC:        [ daqTPC0,        daqTPC1,        daqTPC2,        daqTPC3,
+                                     decon1DroiTPC0, decon1DroiTPC1, decon1DroiTPC2, decon1DroiTPC3,
+                                     gaushitTPC0,    gaushitTPC1,    gaushitTPC2,    gaushitTPC3
+                                   ]
+
+icarus_stage0_pmt:                 [ daqPMT,
+                                     ophit 
+                                   ]
+
+icarus_stage0_multiTPC:            [ @local::icarus_stage0_multiTPC_TPC,
+                                     @local::icarus_stage0_pmt
+                                   ]
+
+### Below we include overrides for the modules above
+
+### Set up for single decoding
+icarus_stage0_producers.daqTPC.DiagnosticOutput:                                               false
+
+### Setup for multiple TPC readout 
+icarus_stage0_producers.daqTPC0.FragmentsLabel:                                                "daq:PHYSCRATEDATA0"
+icarus_stage0_producers.daqTPC1.FragmentsLabel:                                                "daq:PHYSCRATEDATA1"
+icarus_stage0_producers.daqTPC2.FragmentsLabel:                                                "daq:PHYSCRATEDATA2"
+icarus_stage0_producers.daqTPC3.FragmentsLabel:                                                "daq:PHYSCRATEDATA3"
+
+### Set up for single deconvolution
+icarus_stage0_producers.decon1droi.DigitModuleLabel:                                           "daqTPC"
+
+icarus_stage0_producers.decon2droi.wcls_main.inputers:                                         ["wclsRawFrameSource:rfsrc0"]
+icarus_stage0_producers.decon2droi.wcls_main.outputers:                                        ["wclsFrameSaver:spsaver0"]
+icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
+icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
+
+### Set up for multiple TPC readout
+icarus_stage0_producers.decon1DroiTPC0.DigitModuleLabel:                                       "daqTPC0"
+icarus_stage0_producers.decon1DroiTPC1.DigitModuleLabel:                                       "daqTPC1"
+icarus_stage0_producers.decon1DroiTPC2.DigitModuleLabel:                                       "daqTPC2"
+icarus_stage0_producers.decon1DroiTPC3.DigitModuleLabel:                                       "daqTPC3"
+
+### Set up for the single hit finding
+icarus_stage0_producers.gaushit.CalDataModuleLabel:                                            "decon1droi"
+
+### Set up for multiple TPC readout
+icarus_stage0_producers.gaushitTPC0.CalDataModuleLabel:                                        "decon1DroiTPC0"
+icarus_stage0_producers.gaushitTPC1.CalDataModuleLabel:                                        "decon1DroiTPC1"
+icarus_stage0_producers.gaushitTPC2.CalDataModuleLabel:                                        "decon1DroiTPC2"
+icarus_stage0_producers.gaushitTPC3.CalDataModuleLabel:                                        "decon1DroiTPC3"
+
+### Optical hit finding
+
+icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
+icarus_stage0_producers.ophit.InputLabels:                                                     []
+
+
+END_PROLOG

@@ -10,7 +10,6 @@
 #include "lardataobj/Simulation/AuxDetSimChannel.h"
 #include "lardataobj/RecoBase/Hit.h"
 #include "lardataobj/RecoBase/Cluster.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
@@ -55,8 +54,8 @@
 #include <array>
 
 // CRT data products
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 
 using std::string;
 using std::vector;
@@ -254,10 +253,9 @@ namespace crt {
     // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
     // The same for detector TDC clock services.
-    //fTimeService = lar::providerFrom<detinfo::DetectorClocksService>();
     // Access to detector properties.
-    const detinfo::DetectorProperties* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    fTriggerOffset = detprop->TriggerOffset();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob();
+    fTriggerOffset = trigger_offset(clockData);
   }
 
   void CRTDataAnalysis::FillFebMap() { 
@@ -395,7 +393,7 @@ namespace crt {
     else 
 	throw cet::exception("CRTSimAnalysis") << "CRTDAQ products not found!" << std::endl;
 
-    art::Handle<std::vector<icarus::crt::CRTHit>> crtHitHandle;
+    art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
     std::vector<int> ids;

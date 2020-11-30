@@ -98,7 +98,7 @@ class icarus::trigger::DynamicTriggerGateBuilder
   
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
   virtual std::vector<TriggerGates> build
-    (std::vector<raw::OpDetWaveform> const& waveforms) const override
+    (std::vector<WaveformWithBaseline> const& waveforms) const override
     { return unifiedBuild(DynamicGateManager(), waveforms); }
   
   

@@ -17,7 +17,7 @@
 
 // LArSoft libraries
 #include "test/Geometry/geometry_unit_test_base.h"
-#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
+#include "icarusalg/Geometry/ChannelMapIcarusAlg.h"
 
 // C/C++ standard libraries
 #include <string>

@@ -127,24 +127,31 @@ geo::Vector_t spacecharge::SpaceChargeICARUS::GetPosOffsets(geo::Point_t const& 
 {
   std::vector<double> thePosOffsets;
   double xx=point.X(), yy=point.Y(), zz=point.Z();
-  double corr=1.;
+  double cryo_corr=1., tpc_corr=1.;
 
   if(fRepresentationType == "Voxelized_TH3"){
     //handle OOAV by projecting edge cases
     //also only have map for positive cryostat (assume symmetry)
-    //need to invert coordinates for cryo0
+    //need to invert coordinates for cryo0 (cryo_corr)
 
     //in larsim, this is how the offsets are used in DriftElectronstoPlane_module
     // DriftDistance += -1.0 * thePosOffsets[0]
-    // transversePos1/2 = xyz[1/2] + thePosOffsets[1/2]
+    // thus need to apply correction to TPCs "left" of cryostat (tpc_corr)
+    // cathode spans x=220.14 and x=220.29 in pos cryostat
     if(xx>0){
-      corr=1.0;
+      cryo_corr=1.0;
+      if(xx<220.14){
+	tpc_corr=-1.0;
+      }
     }else{
-      corr=-1.0;
+      cryo_corr=-1.0;
+      if(xx<-220.29){
+	tpc_corr=-1.0;
+      }
     }
     fixCoords(&xx, &yy, &zz); //bring into AV and x = abs(x)
     double offset_x=0., offset_y=0., offset_z=0.;
-    offset_x = corr*SCEhistograms.at(0)->Interpolate(xx,yy,zz);
+    offset_x = tpc_corr*cryo_corr*SCEhistograms.at(0)->Interpolate(xx,yy,zz);
     offset_y = SCEhistograms.at(1)->Interpolate(xx,yy,zz);
     offset_z = SCEhistograms.at(2)->Interpolate(xx,yy,zz);
     thePosOffsets = {offset_x, offset_y, offset_z};
@@ -230,7 +237,7 @@ void spacecharge::SpaceChargeICARUS::fixCoords(double* xx, double* yy, double* z
   //handle the edge cases by projecting SCE corrections onto boundaries
   //using tpcid to disambiguate hits that cross cathode due to SCE
   //need to do some fancy flipping of the TPC ids as well because the use of abs()
-  if (xx < 0) { *tpcid = abs(*tpcid - 1); }
+  if (*xx < 0) { *tpcid = abs(*tpcid - 1); }
   *xx = abs(*xx);
   if(*xx<71.94){*xx=71.94;}
   if(*xx>368.49){*xx=368.489;}

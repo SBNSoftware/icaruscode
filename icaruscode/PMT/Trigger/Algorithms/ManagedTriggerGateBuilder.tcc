@@ -19,8 +19,8 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
-#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
-#include "icaruscode/Utilities/WaveformOperations.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -36,6 +36,7 @@
 // C/C++ standard libraries
 #include <optional>
 #include <iterator> // std::next(), std::prev()
+#include <cmath> // std::round()
 #include <cstddef> // std::ptrdiff_t
 
 
@@ -44,7 +45,7 @@
 //------------------------------------------------------------------------------
 template <typename GateMgr>
 auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
-  (GateMgr&& gateManager, std::vector<raw::OpDetWaveform> const& waveforms)
+  (GateMgr&& gateManager, std::vector<WaveformWithBaseline> const& waveforms)
   const -> std::vector<TriggerGates>
 {
   using GateManager_t = GateMgr;
@@ -64,14 +65,14 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
   // now group the waveforms by channel (must be already sorted!)
   // and process waveforms channel by channel
   auto sameChannel
-    = [](raw::OpDetWaveform const& a, raw::OpDetWaveform const& b)
-      { return a.ChannelNumber() == b.ChannelNumber(); }
+    = [] (WaveformWithBaseline const& a, WaveformWithBaseline const& b)
+      { return a.waveform().ChannelNumber() == b.waveform().ChannelNumber(); }
     ;
   
   auto byChannel = waveforms | ranges::view::group_by(sameChannel);
   for (auto const& channelWaveforms: byChannel) {
     
-    auto const& firstWaveform = channelWaveforms.front();
+    auto const& firstWaveform = channelWaveforms.front().waveform();
     
     // assert that the waveforms are sorted by channel and then by time
     // and not overlapping
@@ -82,7 +83,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
     if (firstWaveform.ChannelNumber() != channel)
       channel = firstWaveform.ChannelNumber();
     
-    // we don't know how many...
+    // we don't know how many... (maybe C++20 ranges will tell us)
     MF_LOG_TRACE(details::TriggerGateDebugLog)
       << "Building trigger gates from waveforms on channel " << channel;
     
@@ -110,8 +111,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
   Waveforms const& channelWaveforms
 ) const
 {
-  using ops
-    = icarus::waveform_operations::NegativePolarityOperations<ADCCounts_t>;
+  using ops = icarus::waveform_operations::NegativePolarityOperations<float>;
   
   if (channelWaveforms.empty()) return;
   
@@ -119,7 +119,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
   // extract all thresholds from each waveform in one pass
   //
   
-  raw::OpDetWaveform const& firstWaveform = channelWaveforms.front();
+  raw::OpDetWaveform const& firstWaveform
+    = channelWaveforms.front().waveform();
   raw::Channel_t const channel = firstWaveform.ChannelNumber();
   
   // used only in debug mode:
@@ -134,7 +135,21 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
    * both opening and closing at open time, and nothing at all at closing time.
    */
   unsigned int nWaveforms = 0U;
-  for (raw::OpDetWaveform const& waveform: channelWaveforms) {
+  for (auto const& waveformData: channelWaveforms) {
+    
+    raw::OpDetWaveform const& waveform = waveformData.waveform();
+    
+    ops const waveOps { waveformData.baseline().baseline() };
+    
+    // baseline subtraction is performed in floating point,
+    // but then rounding is applied again
+    auto subtractBaseline = [waveOps](float sample) -> ADCCounts_t
+      {
+        return
+          ADCCounts_t::castFrom(std::round(waveOps.subtractBaseline(sample)));
+      };
+    
+    
     ++nWaveforms;
     assert(waveform.ChannelNumber() == channel);
     
@@ -154,8 +169,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
     assert(lastWaveformTick <= waveformTickStart);
     lastWaveformTick = waveformTickEnd;
     
-    auto const tbegin = absoluteThresholds().begin();
-    auto const tend = absoluteThresholds().end();
+    auto const tbegin = channelThresholds().begin();
+    auto const tend = channelThresholds().end();
     
     // register this waveform with the gates (this feature is unused here)
     for (auto& gateInfo: channelGates) gateInfo.gate().add(waveform);
@@ -171,26 +186,36 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       = std::optional<std::vector<ADCCounts_t>::const_iterator>;
     ThresholdIterPtr_t ppLowerThreshold; // start at bottom with no lower threshold
     ThresholdIterPtr_t ppUpperThreshold;
-    if (!absoluteThresholds().empty())
-      ppUpperThreshold = absoluteThresholds().begin(); // std::optional behavior
+    if (!channelThresholds().empty())
+      ppUpperThreshold = channelThresholds().begin(); // std::optional behavior
     
     for (auto iSample: util::counter<std::ptrdiff_t>(waveform.size())) {
       
-      ADCCounts_t const sample { waveform[iSample] };
-      /*
+      // baseline subtraction is always a subtraction (as in "A minus B"),
+      // regardless the polarity of the waveform
+      auto const sample = waveform[iSample];
+      ADCCounts_t const relSample = subtractBaseline(sample);
+      
+      /* // this is too much also for regular debugging...
       MF_LOG_TRACE(details::TriggerGateDebugLog)
-        << "Sample #" << iSample << ": " << sample
-        << "; thresholds lower: "
+        << "Sample #" << iSample << ": " << sample << " [=> " << relSample
+        << "]; thresholds lower: "
           << (ppLowerThreshold? util::to_string(**ppLowerThreshold): "none")
         << ", upper: "
           << (ppUpperThreshold? util::to_string(**ppUpperThreshold): "none")
         ;
       */
+      
       //
       // if this sample is lower than the current lower threshold,
       // we are just tracking the thresholds: gate closing has already happened
       //
-      if (ppLowerThreshold && (ops::lessThan(sample, **ppLowerThreshold))) {
+      if (ppLowerThreshold && (relSample < **ppLowerThreshold)) {
+        
+        MF_LOG_TRACE(details::TriggerGateDebugLog)
+          << "Sample " << sample << " (" << relSample << " on "
+          << waveOps.baseline() << ") leaving thresholds at "
+          << waveformTickStart << " + " << optical_time_ticks{ iSample };
         
         do { // we keep opening gates at increasing thresholds
           
@@ -201,8 +226,8 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
           (--nextGateToOpen)->belowThresholdAt
             (waveformTickStart + optical_time_ticks{ iSample });
           
-//           MF_LOG_TRACE(details::TriggerGateDebugLog)
-//              << "  => decreasing threshold " << **ppLowerThreshold;
+          MF_LOG_TRACE(details::TriggerGateDebugLog)
+            << "  => decreasing threshold " << **ppLowerThreshold;
           
           if (*ppLowerThreshold == tbegin) { // was this the bottom threshold?
             ppLowerThreshold = std::nullopt;
@@ -210,7 +235,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
           }
           --*ppLowerThreshold; // point to previous threshold
           
-        } while (ops::lessThan(sample, **ppLowerThreshold));
+        } while (relSample < **ppLowerThreshold);
         
         // we can't be at the top since we just closed a gate
         ppUpperThreshold
@@ -222,32 +247,33 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
       // if this sample is greater or matching the next threshold,
       // we *are* opening gate(s)
       //
-      else if (ppUpperThreshold && ops::noLessThan(sample, **ppUpperThreshold))
-      {
+      else if (ppUpperThreshold && (relSample >= **ppUpperThreshold)) {
+        
+        MF_LOG_TRACE(details::TriggerGateDebugLog)
+          << "Sample " << sample << " (" << relSample << " on "
+          << waveOps.baseline() << ") passing thresholds at "
+          << waveformTickStart << " + " << optical_time_ticks{ iSample };
         
         do { // we keep opening gates at increasing thresholds
+          
+          // note that it is not guaranteed that gates at lower thresholds are
+          // still open (that depends on the builder implementation)
           
           // if there is an upper threshold, there must also be a closed gate!
           assert(nextGateToOpen != channelGates.end());
           
           MF_LOG_TRACE(details::TriggerGateDebugLog)
-            << "Opening thr=" << (**ppUpperThreshold)
-            << " at " << waveformTickStart
-            << " + " << optical_time_ticks{ iSample };
-          
+            << "Opening thr=" << (**ppUpperThreshold);
           
           (nextGateToOpen++)->aboveThresholdAt
             (waveformTickStart + optical_time_ticks{ iSample });
-          
-//           MF_LOG_TRACE(details::TriggerGateDebugLog)
-//             << "  => opening threshold " << **ppUpperThreshold;
           
           if (++*ppUpperThreshold == tend) { // was this the top threshold?
             ppUpperThreshold = std::nullopt;
             break;
           }
           
-        } while (ops::noLessThan(sample, **ppUpperThreshold));
+        } while (relSample >= **ppUpperThreshold);
         
         // we can't be at the bottom since we just opened a gate
         ppLowerThreshold = std::prev(ppUpperThreshold? *ppUpperThreshold: tend);

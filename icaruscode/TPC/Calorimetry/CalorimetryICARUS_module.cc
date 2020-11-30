@@ -96,7 +96,8 @@ private:
   bool BeginsOnBoundary(art::Ptr<recob::Track> lar_track);
   bool EndsOnBoundary(art::Ptr<recob::Track> lar_track);
 
-  void GetPitch(art::Ptr<recob::Hit> hit, std::vector<double> trkx, std::vector<double> trky, std::vector<double> trkz, std::vector<double> trkw, std::vector<double> trkx0, double *xyz3d, double &pitch, double TickT0);
+  void GetPitch(detinfo::DetectorPropertiesData const& detProp,
+                art::Ptr<recob::Hit> hit, std::vector<double> trkx, std::vector<double> trky, std::vector<double> trkz, std::vector<double> trkw, std::vector<double> trkx0, double *xyz3d, double &pitch, double TickT0);
 
   std::string fTrackModuleLabel;
   std::string fSpacePointModuleLabel;
@@ -148,9 +149,10 @@ calo::CalorimetryICARUS::CalorimetryICARUS(fhicl::ParameterSet const &pset)
 //------------------------------------------------------------------------------------//
 void calo::CalorimetryICARUS::produce(art::Event &evt)
 {
-//std::cout <<" producing calorimetry... " << std::endl;
-std::cout << " useintegral " << fUseIntegral << std::endl;
-  auto const *detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+  auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt, clockData);
+  //std::cout <<" producing calorimetry... " << std::endl;
+  std::cout << " useintegral " << fUseIntegral << std::endl;
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   art::Handle<std::vector<recob::Track>> trackListHandle;
@@ -200,7 +202,7 @@ std::cout << " useintegral " << fUseIntegral << std::endl;
       std::vector<art::Ptr<anab::T0>> allT0 = fmt0.at(trkIter);
       if (allT0.size())
         T0 = allT0[0]->Time();
-      TickT0 = T0 / detprop->SamplingRate();
+      TickT0 = T0 / sampling_rate(clockData);
     }
 
     std::vector<std::vector<unsigned int>> hits(nplanes);
@@ -329,11 +331,11 @@ std::cout << " useintegral " << fUseIntegral << std::endl;
         {
 
           double t = allHits[hits[ipl][i]]->PeakTime() - TickT0; // Want T0 here? Otherwise ticks to x is wrong?
-          double x = detprop->ConvertTicksToX(t, allHits[hits[ipl][i]]->WireID().Plane, allHits[hits[ipl][i]]->WireID().TPC, allHits[hits[ipl][i]]->WireID().Cryostat);
+          double x = detProp.ConvertTicksToX(t, allHits[hits[ipl][i]]->WireID().Plane, allHits[hits[ipl][i]]->WireID().TPC, allHits[hits[ipl][i]]->WireID().Cryostat);
           double w = allHits[hits[ipl][i]]->WireID().Wire;
           if (TickT0)
           {
-            trkx.push_back(sptv[j]->XYZ()[0] - detprop->ConvertTicksToX(TickT0, allHits[hits[ipl][i]]->WireID().Plane, allHits[hits[ipl][i]]->WireID().TPC, allHits[hits[ipl][i]]->WireID().Cryostat));
+            trkx.push_back(sptv[j]->XYZ()[0] - detProp.ConvertTicksToX(TickT0, allHits[hits[ipl][i]]->WireID().Plane, allHits[hits[ipl][i]]->WireID().TPC, allHits[hits[ipl][i]]->WireID().Cryostat));
           }
           else
           {
@@ -368,7 +370,7 @@ std::cout << " useintegral " << fUseIntegral << std::endl;
         const size_t &hitIndex = allHits[hits[ipl][ihit]].key();
 
         double charge = allHits[hits[ipl][ihit]]->PeakAmplitude();
-        if (fUseArea) 
+        if (fUseArea)
         {
        //   std::cout << " integral " << allHits[hits[ipl][ihit]]->Integral() << std::endl;
 //std::cout << " sumadc " << allHits[hits[ipl][ihit]]->SummedADC() << std::endl;
@@ -442,7 +444,7 @@ std::cout << " useintegral " << fUseIntegral << std::endl;
           }
         }
         else
-          GetPitch(allHits[hits[ipl][ihit]], trkx, trky, trkz, trkw, trkx0, xyz3d, pitch, TickT0);
+          GetPitch(detProp, allHits[hits[ipl][ihit]], trkx, trky, trkz, trkw, trkx0, xyz3d, pitch, TickT0);
 
         if (fBadhit)
           continue;
@@ -479,12 +481,12 @@ std::cout << " useintegral " << fUseIntegral << std::endl;
         double dQdx = MIPs / pitch;
         double dEdx = 0;
         if (fUseArea) {
-                   if(fUseIntegral) dEdx = caloAlg.dEdx_AREA(allHits[hits[ipl][ihit]], pitch, T0);
-else dEdx = caloAlg.dEdx_SUMADC(allHits[hits[ipl][ihit]], pitch, T0);
+                   if(fUseIntegral) dEdx = caloAlg.dEdx_AREA(clockData, detProp, *allHits[hits[ipl][ihit]], pitch, T0);
+                   else dEdx = caloAlg.dEdx_SUMADC(clockData, detProp, allHits[hits[ipl][ihit]], pitch, T0);
 //std::cout << " ipl " << ipl << " ihit " << ihit << " charge " << charge << std::endl;
 }
         else
-          dEdx = caloAlg.dEdx_AMP(allHits[hits[ipl][ihit]], pitch, T0);
+          dEdx = caloAlg.dEdx_AMP(clockData, detProp, *allHits[hits[ipl][ihit]], pitch, T0);
 
         Kin_En = Kin_En + dEdx * pitch;
 
@@ -736,7 +738,8 @@ else dEdx = caloAlg.dEdx_SUMADC(allHits[hits[ipl][ihit]], pitch, T0);
   return;
 }
 
-void calo::CalorimetryICARUS::GetPitch(art::Ptr<recob::Hit> hit, std::vector<double> trkx, std::vector<double> trky, std::vector<double> trkz, std::vector<double> trkw, std::vector<double> trkx0, double *xyz3d, double &pitch, double TickT0)
+void calo::CalorimetryICARUS::GetPitch(detinfo::DetectorPropertiesData const& detProp,
+                                       art::Ptr<recob::Hit> hit, std::vector<double> trkx, std::vector<double> trky, std::vector<double> trkz, std::vector<double> trkw, std::vector<double> trkx0, double *xyz3d, double &pitch, double TickT0)
 {
   //Get 3d coordinates and track pitch for each hit
   //Find 5 nearest space points and determine xyz and curvature->track pitch
@@ -745,7 +748,6 @@ void calo::CalorimetryICARUS::GetPitch(art::Ptr<recob::Hit> hit, std::vector<dou
 
   // Get services
   art::ServiceHandle<geo::Geometry const> geom;
-  auto const *dp = lar::providerFrom<detinfo::DetectorPropertiesService>();
   auto const *sce = lar::providerFrom<spacecharge::SpaceChargeService>();
 
   //save distance to each spacepoint sorted by distance
@@ -756,7 +758,7 @@ void calo::CalorimetryICARUS::GetPitch(art::Ptr<recob::Hit> hit, std::vector<dou
   double wire_pitch = geom->WirePitch(0);
 
   double t0 = hit->PeakTime() - TickT0;
-  double x0 = dp->ConvertTicksToX(t0, hit->WireID().Plane, hit->WireID().TPC, hit->WireID().Cryostat);
+  double x0 = detProp.ConvertTicksToX(t0, hit->WireID().Plane, hit->WireID().TPC, hit->WireID().Cryostat);
   double w0 = hit->WireID().Wire;
 
   for (size_t i = 0; i < trkx.size(); ++i)

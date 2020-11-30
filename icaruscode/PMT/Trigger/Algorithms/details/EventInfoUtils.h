@@ -38,7 +38,10 @@ namespace geo {
 } // namespace geo
 
 //------------------------------------------------------------------------------
-namespace icarus::trigger::details { class EventInfoExtractor; }
+namespace icarus::trigger::details {
+  class EventInfoExtractor;
+  class EventInfoExtractorMaker;
+} // namespace icarus::trigger::details
 
 /**
  * @brief Extracts from `event` the relevant information on the physics event.
@@ -87,51 +90,56 @@ class icarus::trigger::details::EventInfoExtractor {
   /// @{
   
   /**
-    * @brief Constructor: configures the object.
-    * @param truthTags list of truth information data products to be read
-    * @param edepTags list of energy deposition data products to be read
-    * @param inSpillTimes start and end of spill, in simulation time
-    * @param geom LArSoft geometry service provider
-    * @param logCategory name of message facility stream to sent messages to
-    * @see `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
-    * 
-    * In _art_ framework context, prefer the 
-    * `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
-    * constructor.
-    */
+   * @brief Constructor: configures the object.
+   * @param truthTags list of truth information data products to be read
+   * @param edepTags list of energy deposition data products to be read
+   * @param inSpillTimes start and end of spill, in simulation time
+   * @param inPreSpillTimes start and end of pre-spill, in simulation time
+   * @param geom LArSoft geometry service provider
+   * @param logCategory name of message facility stream to sent messages to
+   * @see `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
+   * 
+   * In _art_ framework context, prefer the 
+   * `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
+   * constructor.
+   */
   EventInfoExtractor(
     std::vector<art::InputTag> truthTags,
     std::vector<art::InputTag> edepTags,
     TimeSpan_t inSpillTimes,
+    TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
     std::string logCategory = "EventInfoExtractor"
     );
   
   /**
-    * @brief Constructor: configures, and declares consuming data product.
-    * @tparam ConsumesColl type with `art::ConsumesCollector` interface
-    * @param truthTags list of truth information data products to be read
-    * @param edepTags list of energy deposition data products to be read
-    * @param geom LArSoft geometry service provider
-    * @param logCategory name of message facility stream to sent messages to
-    * @param consumesCollector object to declare the consumed products to
-    * 
-    * Typical usage is within a _art_ module constructor:
-    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
-    * icarus::trigger::details::EventInfoExtractor const eventInfoFrom {
-    *   { art:InputTag{ "generator" } },
-    *   consumesCollector()
-    *   };
-    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    * 
-    */
+   * @brief Constructor: configures, and declares consuming data product.
+   * @tparam ConsumesColl type with `art::ConsumesCollector` interface
+   * @param truthTags list of truth information data products to be read
+   * @param edepTags list of energy deposition data products to be read
+   * @param inSpillTimes start and end of spill, in simulation time
+   * @param inPreSpillTimes start and end of pre-spill, in simulation time
+   * @param geom LArSoft geometry service provider
+   * @param logCategory name of message facility stream to sent messages to
+   * @param consumesCollector object to declare the consumed products to
+   * 
+   * Typical usage is within a _art_ module constructor:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * icarus::trigger::details::EventInfoExtractor const eventInfoFrom {
+   *   { art:InputTag{ "generator" } },
+   *   consumesCollector()
+   *   };
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * 
+   */
   template <typename ConsumesColl>
   EventInfoExtractor(
-    std::vector<art::InputTag> const& truthTags,
-    std::vector<art::InputTag> const& edepTags,
+    std::vector<art::InputTag> truthTags,
+    std::vector<art::InputTag> edepTags,
     TimeSpan_t inSpillTimes,
+    TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
-    std::string const& logCategory,
+    std::string logCategory,
     ConsumesColl& consumesCollector
     );
   
@@ -155,7 +163,15 @@ class icarus::trigger::details::EventInfoExtractor {
     
   // @}
   
+  /// Returns whether we are extracting any generator information.
+  bool hasGenerated() const { return !fGeneratorTags.empty(); }
+  
+  /// Returns whether we are extracting any energy deposition information.
+  bool hasEDep() const { return !fEnergyDepositTags.empty(); }
+  
     private:
+  
+  friend EventInfoExtractorMaker;
   
   // --- BEGIN -- Configuration variables --------------------------------------
   
@@ -176,6 +192,9 @@ class icarus::trigger::details::EventInfoExtractor {
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
   
   TimeSpan_t const fInSpillTimes; ///< Start and stop time for "in spill" label.
+  
+  /// Start and stop time for "pre-spill" label.
+  TimeSpan_t const fInPreSpillTimes;
   
   // --- END -- Set up  --------------------------------------------------------
   
@@ -222,34 +241,95 @@ class icarus::trigger::details::EventInfoExtractor {
   /// Undefined behaviour if the truth information does not describe a neutrino
   /// interaction.
   simulation_time getInteractionTime(simb::MCTruth const& truth) const;
+  
+  
+  /// Declares all the consumables to the collector.
+  template <typename ConsumesColl>
+  static void declareConsumables(
+    ConsumesColl& consumesCollector,
+    std::vector<art::InputTag> const& truthTags,
+    std::vector<art::InputTag> const& edepTags
+    );
+
+}; // class icarus::trigger::details::EventInfoExtractor
 
 
+// -----------------------------------------------------------------------------
+/// A helper class creating a `EventInfoExtractor` with a specific setup.
+class icarus::trigger::details::EventInfoExtractorMaker {
+  
+    public:
+  
+  using TimeSpan_t = EventInfoExtractor::TimeSpan_t;
+  
+  /// Constructor: stores parameters for construction of `EventInfoExtractor`.
+  EventInfoExtractorMaker(
+    std::vector<art::InputTag> truthTags,
+    std::vector<art::InputTag> edepTags,
+    geo::GeometryCore const& geom,
+    std::string logCategory
+    );
+  
+  /// Constructor: stores parameters for construction of `EventInfoExtractor`
+  /// and declares consumables.
+  template <typename ConsumesColl>
+  EventInfoExtractorMaker(
+    std::vector<art::InputTag> truthTags,
+    std::vector<art::InputTag> edepTags,
+    geo::GeometryCore const& geom,
+    std::string logCategory,
+    ConsumesColl& consumesCollector
+    );
+  
+  
+  //@{
+  /// Creates and returns a new `EventInfoExtractor` object.
+  EventInfoExtractor make
+    (TimeSpan_t inSpillTimes, TimeSpan_t inPreSpillTimes) const;
+  
+  EventInfoExtractor operator()
+    (TimeSpan_t inSpillTimes, TimeSpan_t inPreSpillTimes) const
+    { return make(inSpillTimes, inPreSpillTimes); }
+  
+  //@}
+  
+  /// Returns whether we are extracting any generator information.
+  bool hasGenerated() const { return !fGeneratorTags.empty(); }
+  
+  /// Returns whether we are extracting any energy deposition information.
+  bool hasEDep() const { return !fEnergyDepositTags.empty(); }
+  
+    private:
+  
+  std::vector<art::InputTag> const fGeneratorTags;
+  std::vector<art::InputTag> const fEnergyDepositTags;
+  std::string const fLogCategory;
+  geo::GeometryCore const& fGeom;
+  
 }; // class icarus::trigger::details::EventInfoExtractor
 
 
 // -----------------------------------------------------------------------------
 // ---  template implementation
 // -----------------------------------------------------------------------------
+// --- icarus::trigger::details::EventInfoExtractor
+// -----------------------------------------------------------------------------
 template <typename ConsumesColl>
 icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
-  std::vector<art::InputTag> const& truthTags,
-  std::vector<art::InputTag> const& edepTags,
+  std::vector<art::InputTag> truthTags,
+  std::vector<art::InputTag> edepTags,
   TimeSpan_t inSpillTimes,
+  TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
-  std::string const& logCategory,
+  std::string logCategory,
   ConsumesColl& consumesCollector
   )
-  : EventInfoExtractor(truthTags, edepTags, inSpillTimes, geom, logCategory)
+  : EventInfoExtractor{
+      std::move(truthTags), std::move(edepTags),
+      inSpillTimes, inPreSpillTimes, geom, std::move(logCategory)
+    }
 {
-  
-  for (art::InputTag const& inputTag: fGeneratorTags)
-    consumesCollector.template consumes<std::vector<simb::MCTruth>>(inputTag);
-  
-  for (art::InputTag const& inputTag: fEnergyDepositTags) {
-    consumesCollector.template consumes<std::vector<sim::SimEnergyDeposit>>
-      (inputTag);
-  }
-  
+  declareConsumables(consumesCollector, fGeneratorTags, fEnergyDepositTags);
 } // icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(coll)
 
 
@@ -296,6 +376,45 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
   
   return info;
 } // icarus::trigger::details::EventInfoExtractor::extractInfo()
+
+
+// -----------------------------------------------------------------------------
+template <typename ConsumesColl>
+void icarus::trigger::details::EventInfoExtractor::declareConsumables(
+  ConsumesColl& consumesCollector,
+  std::vector<art::InputTag> const& truthTags,
+  std::vector<art::InputTag> const& edepTags
+  )
+{
+  
+  for (art::InputTag const& inputTag: truthTags)
+    consumesCollector.template consumes<std::vector<simb::MCTruth>>(inputTag);
+  
+  for (art::InputTag const& inputTag: edepTags) {
+    consumesCollector.template consumes<std::vector<sim::SimEnergyDeposit>>
+      (inputTag);
+  }
+  
+} // icarus::trigger::details::EventInfoExtractor::declareConsumables()
+
+
+//------------------------------------------------------------------------------
+//--- icarus::trigger::details::EventInfoExtractorMaker
+//------------------------------------------------------------------------------
+template <typename ConsumesColl>
+icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
+  std::vector<art::InputTag> truthTags,
+  std::vector<art::InputTag> edepTags,
+  geo::GeometryCore const& geom,
+  std::string logCategory,
+  ConsumesColl& consumesCollector
+  )
+  : EventInfoExtractorMaker
+    (std::move(truthTags), std::move(edepTags), geom, std::move(logCategory))
+{
+  EventInfoExtractor::declareConsumables
+    (consumesCollector, fGeneratorTags, fEnergyDepositTags);
+} // icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker()
 
 
 //------------------------------------------------------------------------------

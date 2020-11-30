@@ -2,8 +2,8 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v08_57_00
-defaultqual e17
+parent icaruscode v09_10_00
+defaultqual e19
 
 # These optional lines define where headers, libraries, and executables go and should
 # be used only if your product does not conform to the defaults.
@@ -27,6 +27,7 @@ table_fragment_begin
     pathPrepend(FW_SEARCH_PATH, ${ICARUSCODE_DIR}/gdml)
     pathPrepend(FHICL_FILE_PATH, .:./job)
     pathPrepend(PYTHONPATH, ${UPS_PROD_DIR}/python)
+    pathPrepend(WIRECELL_PATH, ${UPS_PROD_DIR}/wire-cell-cfg)
 table_fragment_end
 
 # With "product  version" table below, we now define depdendencies
@@ -34,30 +35,29 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-larsoft                   v08_57_00
-icarusutil                v08_51_00
-icarus_signal_processing  v08_51_00
-icarus_data               v08_55_01
+sbncode                   v09_10_00
+icarusalg                 v09_09_01
+icarusutil                v09_09_01
+icarus_signal_processing  v09_10_00
+icarus_data               v09_10_00
 genie_xsec                v3_00_04a
-guideline_sl              v2_0_0
 fftw                      v3_3_8a
 libwda                    v2_28_0
-sbndaq_artdaq_core        v0_05_00_f03
 
-cetbuildtools	          v7_15_01	-	only_for_build
+cetbuildtools	          v7_17_01	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
-# We now define allowed qualifiers and the corresponding qualifiers for the depdencies.
+# We now define allowed qualifiers and the corresponding qualifiers for the dependencies.
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
-qualifier		larsoft			icarusutil   icarus_signal_processing   icarus_data  sbndaq_artdaq_core     genie_xsec              fftw  guideline_sl libwda notes
-e19:debug		e19:debug		e19:debug          e19:debug               -nq-        e19:debug	       G1810a0211a:k250:e1000   debug    -nq-           -nq-
-e19:opt			e19:opt			e19:opt     	   e19:opt                 -nq-        e19:opt	       G1810a0211a:k250:e1000   opt      -nq-           -nq-
-e19:prof    	e19:prof		e19:prof    	   e19:prof                -nq-        e19:prof	       G1810a0211a:k250:e1000   prof     -nq-           -nq-
-c7:debug    	c7:debug    	c7:debug    	   c7:debug                -nq-        c7:debug	       G1810a0211a:k250:e1000   debug    -nq-           -nq-
-c7:opt      	c7:opt      	c7:opt      	   c7:opt                  -nq-        c7:opt	    	   G1810a0211a:k250:e1000   opt      -nq-           -nq-
-c7:prof     	c7:prof     	c7:prof     	   c7:prof                 -nq-        c7:prof	       G1810a0211a:k250:e1000   prof     -nq-           -nq-
+qualifier  sbncode    icarusalg    icarusutil   icarus_signal_processing   icarus_data  genie_xsec               fftw        libwda notes
+e19:debug  e19:debug  e19:debug    e19:debug    e19:debug                  -nq-         G1810a0211a:k250:e1000   debug       -nq-
+e19:opt	   e19:opt    e19:opt      e19:opt      e19:opt                    -nq-         G1810a0211a:k250:e1000   opt         -nq-
+e19:prof   e19:prof   e19:prof     e19:prof     e19:prof                   -nq-         G1810a0211a:k250:e1000   prof        -nq-
+c7:debug   c7:debug   c7:debug     c7:debug     c7:debug                   -nq-         G1810a0211a:k250:e1000   debug       -nq-
+c7:opt     c7:opt     c7:opt       c7:opt       c7:opt                     -nq-         G1810a0211a:k250:e1000   opt         -nq-
+c7:prof    c7:prof    c7:prof      c7:prof      c7:prof                    -nq-         G1810a0211a:k250:e1000   prof        -nq-
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

@@ -29,6 +29,14 @@ simple_plugin(SimPMTIcarus "module"
   ${Boost_SYSTEM_LIBRARY}
   )
 
+simple_plugin(PMTWaveformBaselines "module"
+  icaruscode_PMT_Algorithms
+  sbnobj_ICARUS_PMT_Data
+  lardataobj_RawData
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  )
+
 
 simple_plugin(AsymGaussPulseFunctionTool "tool"
   icaruscode_PMT_Algorithms
@@ -47,6 +55,7 @@ simple_plugin(CustomPulseFunctionTool "tool"
 art_make(
   EXCLUDE
     "SimPMTIcarus_module.cc"
+    "PMTWaveformBaselines_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"
     "AsymExpPulseFunctionTool_tool.cc"
     "CustomPulseFunctionTool_tool.cc"
@@ -95,3 +104,10 @@ art_make(
 install_headers()
 install_fhicl()
 install_source()
+install_scripts(
+  SUBDIRS scripts
+  EXTRAS
+    "scripts/MergePhotonLibrary.C"
+    "scripts/RecompressROOTtrees.C"
+  )
+

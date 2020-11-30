@@ -762,9 +762,17 @@
     <!-- basically a statement of the origin in the detector coordinate system
          has the corresponding value in the beam coordinate system -->
     <!-- XML config must have already set the rotation matrix -->
-    <!-- uboone with numi beam - this puts uboone origin at miniboone origin
-         close enough for now -->
-    <beampos> ( 0.0, 0.0, 0.0 ) = (3.26, 82.78, 798.83)</beampos>
+    <beampos> ( 0.0, 0.0, 0.0 ) = (4.8195, 79.5800, 794.3955)</beampos>
+    <!-- the value above is a middle point between
+         point1 = (8.718, 79.043, 785.190) [m], and
+         point2 = (0.921 80.117 803.601) [m],
+         which are *design* upstream and downstream points in the center of the
+         ICARUS cryostat upstream and downstream faces in NuMI beam line coordinates.
+         The values were obtained in Jul 2019 from V.Bocean (FNAL Alignment and Metrology Dept.)
+         This value might be slightly innacurate as:
+          - the cryostat was actually installed slightly more to the downstream (tens of cm)
+          - center of the two TPC system might not be precisely in the center of the cryostat -->
+      
     <!-- define flux window in detector coords -->
     <!-- need 3 positions to define a rectoid -->
     <!-- not yet support beam coords, 

@@ -41,6 +41,7 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
@@ -71,7 +72,7 @@ class RecoWireROIICARUS : public art::EDProducer
     
   private:
     // It seems there are pedestal shifts that need correcting
-    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&) const;
+    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&);
     
     float getTruncatedRMS(const std::vector<float>&) const;
     
@@ -230,6 +231,8 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     
     const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+    double const samplingRate = sampling_rate(clockData);
     // loop over all wires
     wirecol->reserve(digitVecHandle->size());
     for(size_t rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter)
@@ -290,7 +293,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             fROIFinderVec.at(planeID.Plane)->FindROIs(rawAdcLessPedVec, channel, fEventCount, raw_noise, candRoiVec);
             
             // Do the deconvolution
-            fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, candRoiVec, ROIVec);
+            fDeconvolution->Deconvolve(rawAdcLessPedVec, samplingRate, channel, candRoiVec, ROIVec);
             
             // Make some histograms?
             if (fOutputHistograms)
@@ -367,7 +370,7 @@ float RecoWireROIICARUS::getTruncatedRMS(const std::vector<float>& waveform) con
     return truncRms;
 }
     
-float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform) const
+float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform)
 {
     // Get the truncated mean and rms
     float fullRMS;

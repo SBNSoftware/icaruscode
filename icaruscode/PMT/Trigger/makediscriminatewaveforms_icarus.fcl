@@ -15,10 +15,11 @@
 # Required services
 # ------------------
 # 
+#  * Geometry (DiscriminatePMTwaveforms; may be avoided by setting `NChannels: 360`)
 #  * DetectorClocksService (DiscriminatePMTwaveforms)
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
@@ -30,10 +31,10 @@ services: {
   
   # this provides: file service, random management (unused),
   #                Geometry, detector properties and clocks
-  @table::icarus_basic_services
+  @table::icarus_common_services
   
   # currently unused (remove the line if they start mattering):
-  Geometry:                  @erase
+#  Geometry:                  @erase
   LArPropertiesService:      @erase
   DetectorPropertiesService: @erase
   
@@ -46,12 +47,31 @@ physics: {
   
   producers: {
     
+    pmtbaselines: {
+
+      module_type: PMTWaveformBaselines
+
+      # label of input digitized optical waveform data product
+      OpticalWaveforms: "opdaq"
+
+      # produce plots on the extracted baseline
+      PlotBaselines: true  # default
+      
+      # tag of the module output to console via message facility
+      OutputCategory: "PMTWaveformBaselines"  # default
+
+    } # pmtbaselines
+
+
     discrimopdaq: {
       
       module_type: DiscriminatePMTwaveforms
       
       # input optical waveform data product tag:
       OpticalWaveforms: "opdaq"
+      
+      # baseline data product
+      Baselines: pmtbaselines
       
       #
       # choosing the discrimination algorithm: fixed length gates
@@ -70,12 +90,9 @@ physics: {
   } # producers
   
   
-  opdet: [ discrimopdaq ]
+  opdet: [ pmtbaselines, discrimopdaq ]
   
   output: [ rootoutput ]
-  
-  trigger_paths: [ opdet ]
-  end_paths: [ output ]
   
 } # physics
 

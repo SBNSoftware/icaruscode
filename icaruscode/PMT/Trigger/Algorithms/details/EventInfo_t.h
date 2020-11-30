@@ -37,6 +37,10 @@ namespace icarus::trigger::details {
  *
  * This is intended as a record for transferring relevant event information
  * between object.
+ * 
+ * The exact definition of the quantities is deferred to the user
+ * (e.g. when and how long the beam and pre-spill windows are, the definition
+ * of active volume, etc.).
  */
 struct icarus::trigger::details::EventInfo_t {
   
@@ -49,9 +53,17 @@ struct icarus::trigger::details::EventInfo_t {
   /// Constructor. As if nobody noticed.
   EventInfo_t() { fInteractions.fill(0U); }
   
-  // --- BEGIN Query interface -----------------------------------------------
-  /// @name Query interface
+  // --- BEGIN Generation information ----------------------------------------
+  /**
+   * @name Generation information
+   * 
+   * The information is available only if `hasGenerated()` returns `true`.
+   * Otherwise, the return value of all the members in this group is undefined.
+   */
   /// @{
+
+  /// Returns whether generator information is available.
+  bool hasGenerated() const { return fHasGenerated; }
 
   /// Returns the number of weak charged current interactions in the event.
   unsigned int nWeakChargedCurrentInteractions() const
@@ -87,19 +99,6 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns the neutrino PDG code
   int NeutrinoPDG() const { return fNeutrinoPDG; }
 
-  /// Returns the total energy deposited in the detector during the event [GeV]
-  GeV DepositedEnergy() const { return fEnergyDepTotal; }
-  
-  /// Returns the total energy deposited in the detector during beam [GeV]
-  GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
-
-  /// Returns the energy deposited in the active volume during the event [GeV]
-  GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
-  
-  /// Returns the energy deposited in the active volume during the beam [GeV]
-  GeV DepositedEnergyInSpillInActiveVolume() const
-    { return fEnergyDepSpillActive; }
-
   /// Returns the neutrino energy [GeV]
   GeV NeutrinoEnergy() const { return fNeutrinoEnergy; }
 
@@ -125,7 +124,45 @@ struct icarus::trigger::details::EventInfo_t {
   bool isInActiveVolume() const { return fInActiveVolume; }
   
   /// @}
-  // --- END Query interface -------------------------------------------------
+  // --- END Generation information ------------------------------------------
+
+
+  // --- BEGIN Deposited energy information ----------------------------------
+  /**
+   * @name Deposited energy information
+   * 
+   * The information is available only if `hasDepEnergy()` returns `true`.
+   * Otherwise, the return value of all the members in this group is undefined.
+   */
+  /// @{
+
+  /// Returns whether generator information is available.
+  bool hasDepEnergy() const { return fHasDepEnergy; }
+
+  /// Returns the total energy deposited in the detector during the event [GeV]
+  GeV DepositedEnergy() const { return fEnergyDepTotal; }
+  
+  /// Returns the total energy deposited in the detector during beam [GeV]
+  GeV DepositedEnergyInSpill() const { return fEnergyDepSpill; }
+
+  /// Returns the total energy deposited in the detector in the pre-spill window
+  /// [GeV]
+  GeV DepositedEnergyInPreSpill() const { return fEnergyDepPreSpill; }
+
+  /// Returns the energy deposited in the active volume during the event [GeV]
+  GeV DepositedEnergyInActiveVolume() const { return fEnergyDepActive; }
+  
+  /// Returns the energy deposited in the active volume during the beam [GeV]
+  GeV DepositedEnergyInSpillInActiveVolume() const
+    { return fEnergyDepSpillActive; }
+
+  /// Returns the energy deposited in the active volume during the pre-spill
+  /// window [GeV]
+  GeV DepositedEnergyInPreSpillInActiveVolume() const
+    { return fEnergyDepPreSpillActive; }
+
+  /// @}
+  // --- END Deposited energy information ------------------------------------
 
 
   // --- BEGIN Set interface -------------------------------------------------
@@ -134,56 +171,68 @@ struct icarus::trigger::details::EventInfo_t {
 
   /// Marks this event as including _n_ more weak charged current interactions.
   void AddWeakChargedCurrentInteractions(unsigned int n = 1U)
-    { fInteractions[itWCC] += n; }
+    { setGen(); fInteractions[itWCC] += n; }
 
   /// Marks this event as including _n_ more weak neutral current interactions.
   void AddWeakNeutralCurrentInteractions(unsigned int n = 1U)
-    { fInteractions[itWNC] += n; }
+    { setGen(); fInteractions[itWNC] += n; }
 
   /// Marks the flavor of the neutrino in the first interaction.
-  void SetNu_mu(bool numu) { nu_mu = numu; }
-  void SetNu_e(bool nue) { nu_e = nue; }
+  void SetNu_mu(bool numu) { setGen(); nu_mu = numu; }
+  void SetNu_e(bool nue) { setGen(); nu_e = nue; }
 
   /// Marks the neutrino type of the first interaction in the event.
-  void SetNeutrinoPDG(int NU) { fNeutrinoPDG = NU; }
-
-  /// Sets the total deposited energy of the event [GeV]
-  void SetDepositedEnergy(GeV e) { fEnergyDepTotal = e; }
-
-  /// Sets the energy of the event deposited during beam gate [GeV]
-  void SetDepositedEnergyInSpill(GeV e) { fEnergyDepSpill = e; }
-
-  /// Sets the total deposited energy of the event in active volume [GeV]
-  void SetDepositedEnergyInActiveVolume(GeV e) { fEnergyDepActive = e; }
-
-  /// Sets the energy of the event deposited during beam gate in active volume
-  /// [GeV]
-  void SetDepositedEnergyInSpillInActiveVolume(GeV e)
-    { fEnergyDepSpillActive = e; }
+  void SetNeutrinoPDG(int NU) { setGen(); fNeutrinoPDG = NU; }
 
   /// Sets the neutrino energy.
-  void SetNeutrinoEnergy(GeV eNu) { fNeutrinoEnergy = eNu; }
+  void SetNeutrinoEnergy(GeV eNu) { setGen(); fNeutrinoEnergy = eNu; }
 
   /// Sets the lepton energy.
-  void SetLeptonEnergy(GeV eL) { fLeptonEnergy = eL; }
+  void SetLeptonEnergy(GeV eL) { setGen(); fLeptonEnergy = eL; }
 
   /// Sets the interaction type
-  void SetInteractionType(int type) { fInteractionType = type; }
+  void SetInteractionType(int type) { setGen(); fInteractionType = type; }
 
   /// Sets the time of the first interaction.
-  void SetInteractionTime(simulation_time time) { fInteractionTime = time; }
+  void SetInteractionTime(simulation_time time)
+    { setGen(); fInteractionTime = time; }
   
   /// Set whether the event has relevant activity in the active volume.
-  void SetInActiveVolume(bool active = true) { fInActiveVolume = active; }
+  void SetInActiveVolume(bool active = true)
+    { setGen(); fInActiveVolume = active; }
   
   /// Adds a point to the list of interaction vertices in the event.
-  void AddVertex(geo::Point_t const& vertex) { fVertices.push_back(vertex); }
+  void AddVertex(geo::Point_t const& vertex)
+    { setGen(); fVertices.push_back(vertex); }
   
   /// Inserts a point in the specified position of the list of interaction
   /// vertices in the event.
   void InsertVertex(geo::Point_t const& vertex, std::size_t beforeIndex)
-    { fVertices.insert(next(begin(fVertices), beforeIndex), vertex); }
+    { setGen(); fVertices.insert(next(begin(fVertices), beforeIndex), vertex); }
   
+  /// Sets the total deposited energy of the event [GeV]
+  void SetDepositedEnergy(GeV e) { setDep(); fEnergyDepTotal = e; }
+
+  /// Sets the energy of the event deposited during beam gate [GeV]
+  void SetDepositedEnergyInSpill(GeV e) { setDep(); fEnergyDepSpill = e; }
+
+  /// Sets the energy of the event deposited during pre-spill window [GeV]
+  void SetDepositedEnergyInPreSpill(GeV e) { setDep(); fEnergyDepPreSpill = e; }
+
+  /// Sets the total deposited energy of the event in active volume [GeV]
+  void SetDepositedEnergyInActiveVolume(GeV e)
+    { setDep(); fEnergyDepActive = e; }
+
+  /// Sets the energy of the event deposited during beam gate in active volume
+  /// [GeV]
+  void SetDepositedEnergyInSpillInActiveVolume(GeV e)
+    { setDep(); fEnergyDepSpillActive = e; }
+
+  /// Sets the energy of the event deposited during pre-spill window in active
+  /// volume [GeV]
+  void SetDepositedEnergyInPreSpillInActiveVolume(GeV e)
+    { setDep(); fEnergyDepPreSpillActive = e; }
+
   /// @}
   // --- END Set interface ---------------------------------------------------
 
@@ -200,13 +249,11 @@ struct icarus::trigger::details::EventInfo_t {
 
   // --- END interaction type constants --------------------------------------
 
-  std::array<unsigned int, NInteractionTypes> fInteractions;
 
-  GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
-  GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
-  GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
-  /// Energy deposited in active volume in spill.
-  GeV fEnergyDepSpillActive { 0.0 };
+  // --- BEGIN generator information -----------------------------------------
+  bool fHasGenerated = false; ///< Whether generation information is available.
+
+  std::array<unsigned int, NInteractionTypes> fInteractions;
 
   int fNeutrinoPDG { 0 };
   int fInteractionType { 0 };
@@ -225,6 +272,30 @@ struct icarus::trigger::details::EventInfo_t {
   
   std::vector<geo::Point_t> fVertices; ///< Position of all vertices.
 
+  // --- END generator information -------------------------------------------
+  
+  
+  // --- BEGIN deposited energy information ----------------------------------
+  bool fHasDepEnergy = false; ///< Whether deposited energy info is available.
+  
+  GeV fEnergyDepTotal       { 0.0 }; ///< Total deposited energy.
+  GeV fEnergyDepSpill       { 0.0 }; ///< Energy deposited in spill.
+  GeV fEnergyDepPreSpill    { 0.0 }; ///< Energy deposited in pre-spill.
+  GeV fEnergyDepActive      { 0.0 }; ///< Energy deposited in active volume.
+  /// Energy deposited in active volume in spill.
+  GeV fEnergyDepSpillActive { 0.0 };
+  /// Energy deposited in active volume in pre-spill window.
+  GeV fEnergyDepPreSpillActive { 0.0 };
+  
+  // --- END deposited energy information ------------------------------------
+  
+  
+  /// Declares that this object has generator information.
+  void setGen() { fHasGenerated = true; }
+  
+  /// Declares that this object has deposited energy information.
+  void setDep() { fHasDepEnergy = true; }
+  
 }; // struct icarus::trigger::details::EventInfo_t
 
 inline std::ostream& icarus::trigger::details::operator<<

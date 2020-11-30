@@ -146,11 +146,11 @@ void OverlayICARUS::reconfigure(fhicl::ParameterSet const& p)
     fDriftEModuleLabel = p.get< art::InputTag >("DriftEModuleLabel", "largeant");
 
     //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    auto const detprop = art::ServiceHandle<detinfo::DetectorPropertiesService>()->DataForJob();
     
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
-    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop->NumberTimeSamples());
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(detprop.NumberTimeSamples());
     
     return;
 }
@@ -178,8 +178,6 @@ void OverlayICARUS::produce(art::Event& evt)
     // Get all of the services we will be using
     //
     //--------------------------------------------------------------------
-
-    auto const* ts = lar::providerFrom<detinfo::DetectorClocksService>();
 
     // Recocver the input RawDigits we are going to add our signal too
     art::Handle<std::vector<raw::RawDigit>> inputRawDigitHandle;
@@ -211,7 +209,7 @@ void OverlayICARUS::produce(art::Event& evt)
     icarusutil::TimeVec zeroCharge;
     
     //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(evt);
     
     // The outer loop is over the input RawDigits which will always be written out
     for(const auto& rawDigit : *inputRawDigitHandle)        
@@ -252,7 +250,7 @@ void OverlayICARUS::produce(art::Event& evt)
                 icarusutil::TimeVec chargeWork(adcvec.size(),0.);
 
                 // Need the to convert from deposited number of electrons to ADC units
-                double gain = fSignalShapingService->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+                double gain = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
 
                 // Loop through the simchannel energy deposits
                 for(const auto& tdcide : simChan->TDCIDEMap())
@@ -260,7 +258,7 @@ void OverlayICARUS::produce(art::Event& evt)
                     unsigned int tdc = tdcide.first;
 
                     // We need to convert this to a tick...
-                    int tick = ts->TPCTDC2Tick(tdc);
+                    int tick = clockData.TPCTDC2Tick(tdc);
 
                     // If out of range what is right thing to do?
                     if (tick < 0 ||tick > int(adcvec.size()))

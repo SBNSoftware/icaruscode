@@ -8,7 +8,6 @@ cet_enable_asserts()
 add_subdirectory(Geometry)
 add_subdirectory(fcl)
 add_subdirectory(PMT)
-add_subdirectory(Utilities)
 
 # Continuous Integration tests
 add_subdirectory(ci)
