@@ -136,8 +136,17 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
    */
   unsigned int nWaveforms = 0U;
   for (auto const& waveformData: channelWaveforms) {
-    
+
     raw::OpDetWaveform const& waveform = waveformData.waveform();
+
+    if ( waveform.ChannelNumber() == 54 || waveform.ChannelNumber() == 58 ||
+         waveform.ChannelNumber() == 67 || waveform.ChannelNumber() == 76 ||
+         waveform.ChannelNumber() == 98 || waveform.ChannelNumber() == 129 || 
+         waveform.ChannelNumber() == 131 || waveform.ChannelNumber() == 143 ||
+         waveform.ChannelNumber() == 153 || waveform.ChannelNumber() == 199 ||
+         waveform.ChannelNumber() == 254 || waveform.ChannelNumber() == 70 ||
+         waveform.ChannelNumber() == 106 || waveform.ChannelNumber() == 128 ||
+         waveform.ChannelNumber() == 217) { continue; }
     
     ops const waveOps { waveformData.baseline().baseline() };
     
