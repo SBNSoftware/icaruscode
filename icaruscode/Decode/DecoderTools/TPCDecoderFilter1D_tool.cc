@@ -368,6 +368,13 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     // and store into vectors useful for the next steps
     for(size_t board = 0; board < boardIDVec.size(); board++)
     {
+        // Some diagnostics test are removing boards so put in check here to watch for this
+        if (board >= nBoardsPerFragment)
+        {
+            mf::LogInfo("TPCDecoderFilter1D") << " Asking for board beyond number in fragment, want board " << board << ", maximum is " << nBoardsPerFragment << std::endl;
+            continue;
+        }
+
         const icarusDB::ChannelPlanePairVec& channelPlanePairVec = fChannelMap->getChannelPlanePair(boardIDVec[board]);
 
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
