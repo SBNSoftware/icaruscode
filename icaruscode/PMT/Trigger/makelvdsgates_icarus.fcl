@@ -53,6 +53,9 @@ physics: {
 
       # use the standard ICARUS pairing
       ChannelPairing: @local::icarus_trigger_channel_pairings
+
+      # ignore these problem channels (high noise/not turned on)
+      IgnoreChannels: @local::icarus_trigger_channel_ignore
       
       # message facility stream
       LogCategory: "LVDSgates"

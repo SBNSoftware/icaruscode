@@ -180,6 +180,12 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
         ("grouping of optical detector channels (e.g.: [ [ 0, 2 ], [ 4, 6 ], [ 8 ], ... ])")
       };
 
+    fhicl::Sequence<raw::Channel_t> IgnoreChannels {
+      Name("IgnoreChannels"),
+      Comment
+        ("grouping of optical detector channels to ignore (e.g.: [ 54, 58, 67, 76, ... ])")
+      };    
+
     fhicl::Atom<std::string> CombinationMode {
       Name("CombinationMode"),
       Comment("channel combination mode: " + CombinationModeSelector.optionListString())
@@ -247,6 +253,8 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   /// Pairing of optical detector channels.
   std::vector<std::vector<raw::Channel_t>> fChannelPairing;
   ComboMode fComboMode; ///< The operation used to combinate channels.
+
+  std::vector<raw::Channel_t> fIgnoreChannels;
   
   std::string fLogCategory; ///< Message facility stream category for output.
   
@@ -259,6 +267,11 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
     icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
     icarus::trigger::ADCCounts_t const threshold,
     art::InputTag const& dataTag
+    ) const;
+
+  std::vector<std::vector<raw::Channel_t>> removeChannels(
+    std::vector<std::vector<raw::Channel_t>> channelPairing,
+    std::vector<raw::Channel_t> fIgnoreChannels
     ) const;
   
   
@@ -331,6 +344,7 @@ icarus::trigger::LVDSgates::LVDSgates
   // configuration
   , fChannelPairing(config().ChannelPairing())
   , fComboMode(config().getCombinationMode())
+  , fIgnoreChannels(config().IgnoreChannels())
   , fLogCategory(config().LogCategory())
 {
   //
@@ -355,6 +369,7 @@ icarus::trigger::LVDSgates::LVDSgates
     log << nConfiguredChannels
       << " optical channels configured to be combined into "
       << fChannelPairing.size() << " LVDS outputs.";
+    log << "\nignored " << fIgnoreChannels.size() << " channels.";
     log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
@@ -399,6 +414,23 @@ void icarus::trigger::LVDSgates::produce(art::Event& event) {
   
 } // icarus::trigger::LVDSgates::produce()
 
+std::vector<std::vector<raw::Channel_t>> icarus::trigger::LVDSgates::removeChannels(
+  std::vector<std::vector<raw::Channel_t>> channelPairing,
+  std::vector<raw::Channel_t> fIgnoreChannels
+  ) const {
+
+  for (unsigned int i = 0; i < channelPairing.size(); i++) {
+    for (unsigned int j = channelPairing[i].size(); j-- > 0; ) {
+      std::vector<raw::Channel_t>::iterator it = find(fIgnoreChannels.begin(), fIgnoreChannels.end(), channelPairing[i][j]);
+      if (it != fIgnoreChannels.end()) {
+        channelPairing[i].erase(channelPairing[i].begin() + j);
+      }
+    }
+  }
+
+  return channelPairing;
+
+}
 
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::produceThreshold(
@@ -420,7 +452,9 @@ void icarus::trigger::LVDSgates::produceThreshold(
   checkInput(gates);
   
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates;
-  for (std::vector<raw::Channel_t> const& pairing: fChannelPairing) {
+  std::vector<std::vector<raw::Channel_t>> cleanedChannels = removeChannels(fChannelPairing, fIgnoreChannels);
+
+  for (std::vector<raw::Channel_t> const& pairing: cleanedChannels) {
     if (pairing.empty()) continue; // ???
     
     combinedGates.push_back(combineChannels(gates, pairing, fComboMode));
