@@ -481,9 +481,9 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment
-    if (boardIDVec.size() < 9)
+    if (nBoardsPerFragment < 9)
     {
-        std::fill(fChannelIDVec.begin() + boardIDVec.size() * nChannelsPerBoard, fChannelIDVec.end(), -1);
+        std::fill(fChannelIDVec.begin() + nBoardsPerFragment * nChannelsPerBoard, fChannelIDVec.end(), -1);
     }
 
     theClockPedestal.stop();
