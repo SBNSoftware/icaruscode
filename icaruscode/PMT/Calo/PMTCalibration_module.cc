@@ -7,6 +7,7 @@
 //
 //  mailto:ascarpell@bnl.gov
 ////////////////////////////////////////////////////////////////////////
+
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
 
@@ -16,12 +17,17 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 
+#include "artdaq-core/Data/Fragment.hh" // Fragment
+#include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh" // Fragment
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h" // Channel map
+
 #include "canvas/Utilities/Exception.h"
 
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
+
 
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "art_root_io/TFileService.h"
@@ -59,6 +65,7 @@ public:
 
 private:
 
+  art::InputTag m_fragment_label;
   art::InputTag m_data_label;
   std::string m_channel_dbase;
   bool m_filter_noise;
@@ -67,7 +74,10 @@ private:
   int m_run;
   int m_event;
 
+  TTree *m_geo_ttree;
   TTree *m_pulse_ttree;
+
+  const icarusDB::IICARUSChannelMap* fChannelMap;
 
   std::vector<float> *m_channel_id = NULL;
   std::vector<float> *m_baseline = NULL;
@@ -76,6 +86,7 @@ private:
   std::vector<float> *m_amplitude = NULL;
   std::vector<float> *m_integral = NULL;
   std::vector<float> *m_total_charge = NULL;
+  std::vector<float> *m_fragment_id = NULL;
   std::vector<float> *m_fragment_timestamp = NULL;
 
   // fitted quantities
@@ -103,12 +114,17 @@ private:
 
 pmtcalo::PMTCalibration::PMTCalibration(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
-{
+{ 
+
+   m_fragment_label = pset.get<art::InputTag>("FragmentLabel", "CAENV1730");
    m_data_label = pset.get<art::InputTag>("InputModule", "daq");
    m_filter_noise = pset.get<bool>("FilterNoise", false);
    m_waveform_config = pset.get<fhicl::ParameterSet>("WaveformAnalysis");
 
    myWaveformAna = new Waveform(m_waveform_config);
+
+   // Configure the channel mapping services
+   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
 }
 
@@ -132,6 +148,7 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("amplitude", &m_amplitude );
   m_pulse_ttree->Branch("integral", &m_integral );
   m_pulse_ttree->Branch("total_charge", &m_total_charge );
+  m_pulse_ttree->Branch("m_fragment_id", &m_fragment_id );
   m_pulse_ttree->Branch("m_fragment_timestamp", &m_fragment_timestamp );
 
   m_pulse_ttree->Branch("fit_start_time", &m_fit_start_time );
@@ -146,7 +163,6 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("ndf", &m_ndf);
   m_pulse_ttree->Branch("fitstatus", &m_fitstatus);
 
-  /*
   m_geo_ttree = tfs->make<TTree>("geotree","tree with detector geo info");
 
   std::vector<double> pmtX, pmtY, pmtZ;
@@ -178,18 +194,10 @@ void pmtcalo::PMTCalibration::beginJob()
   m_geo_ttree->Branch("maxX",&maxX);
   m_geo_ttree->Branch("maxY",&maxY);
   m_geo_ttree->Branch("maxZ",&maxZ);
+  
   m_geo_ttree->Fill();
-  */
-}
 
-//------------------------------------------------------------------------------
-
-/*
-void pmtcalo::PMTCalibration::respondToOpenInputFile(const art::FileBlock& fb)
-{
-  m_filename = fb.fileName();
 }
-*/
 
 //------------------------------------------------------------------------------
 
@@ -211,6 +219,37 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
    m_event = event.id().event();
 
+
+   // Get the association between channelID and fragment
+   std::map<raw::Channel_t, size_t > m_frag_map;
+   std::map<raw::Channel_t, sbndaq::CAENV1730FragmentMetadata > m_metafrag_map;
+
+   auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(m_fragment_label);
+
+   if (daq_handle.isValid() && daq_handle->size() > 0) {
+      for (auto const &artdaqFragment: *daq_handle) {
+
+        size_t fragment_id = artdaqFragment.fragmentID();
+
+        sbndaq::CAENV1730Fragment         fragment(artdaqFragment);
+        sbndaq::CAENV1730FragmentMetadata metafrag = *fragment.Metadata();
+
+        if (fChannelMap->hasPMTDigitizerID(fragment_id))
+        {
+
+          const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fChannelMap->getChannelIDPairVec(fragment_id);
+          
+          for(const auto& digitizerChannelPair : digitizerChannelVec)
+          {
+            raw::Channel_t channelID = digitizerChannelPair.second;
+            m_metafrag_map[channelID] = metafrag;
+            m_frag_map[channelID] = fragment_id;
+          }
+        }
+      }
+    }
+
+
    art::Handle< std::vector< raw::OpDetWaveform > > rawHandle;
    event.getByLabel(m_data_label, rawHandle);
 
@@ -220,13 +259,17 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
      // Without the correct mapping, we need to set the association with
      // the digitizer id by hand (in future this will be moved to the decoder)
-     m_channel_id->push_back( raw_waveform.ChannelNumber() );
-     m_fragment_timestamp->push_back( raw_waveform.TimeStamp() );
+
+     raw::Channel_t channel_id = raw_waveform.ChannelNumber();
+
+     m_channel_id->push_back( channel_id );
+     m_fragment_id->push_back( m_frag_map[channel_id] );
+     m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
 
-     auto pulse = myWaveformAna->getIntegral();
+     auto pulse = myWaveformAna->getLaserPulse();
 
      m_baseline->push_back( myWaveformAna->getBaselineMean() );
      m_rms->push_back( myWaveformAna->getBaselineWidth() );
@@ -272,6 +315,7 @@ void pmtcalo::PMTCalibration::clean(){
   m_amplitude->clear();
   m_integral->clear();
   m_total_charge->clear();
+  m_fragment_id->clear();
   m_fragment_timestamp->clear();
 
   m_fit_start_time->clear();

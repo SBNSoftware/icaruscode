@@ -18,7 +18,7 @@ waveformana_icarus:
   ####### Parameters for the pulse finder  #####################################
   PulseThreshold:   1.5      # Threshold to accept a laser pulse in mV
   DoFit: true                # Choose to fit a pulse
-  FitRange: [ 8, 12 ]        # fit range around t peak in ns [ tpeak - FitRange[0], tpeak + FitRange[1] ]
+  FitRange: [ 20, 30 ]        # fit range around t peak in ns [ tpeak - FitRange[0], tpeak + FitRange[1] ]
 
 }
 

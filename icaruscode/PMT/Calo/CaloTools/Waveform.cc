@@ -316,8 +316,8 @@ namespace pmtcalo
         // TODO -> this should be transformed into a function
         if( status ==0 ) {
 	  
-	  double t_start = m_startbin*m_sampling_period;
-	  double t_end = (m_startbin+m_nbins)*m_sampling_period;
+	        double t_start = m_startbin*m_sampling_period;
+	        double t_end = (m_startbin+m_nbins)*m_sampling_period;
 
           int npoints = 5000; // should grant decent resolution
           dt = (t_end-t_start)/npoints;

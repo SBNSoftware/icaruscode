@@ -13,6 +13,7 @@ pmt_dump_icarus:
 pmt_chargeana_icarus:
 {
   module_type: 	PMTCalibration
+  FragmentLabel: "daq:CAENV1730"
   InputModule: "daq"
   FilterNoise: false
   WaveformAnalysis : @local::waveformana_icarus
@@ -31,6 +32,24 @@ pmt_flashana_icarus:
   DecoderModulesList: ["daqPMT"]
   OpHitModulesList: ["ophit"]
   OpFlashModulesList: ["SimpleFlash"]
+}
+
+pmt_starttimeana_icarus:
+{
+  module_type: PMTMeanTimeAna
+}
+
+pmt_scintillation_icarus:
+{
+  module_type: PMTScintillationAna
+  DecoderLabel: "daqPMT"
+  OpHitModulesList: ["ophit"]
+  OpFlashModulesList: ["SimpleFlash"]
+  ScintillationWindow: [-25, 800] #crop window around starting time (in bins)
+  PadWindow: [900, 4100] # ingnore bins outside these edges (in bins)
+  DumpWaveform: false
+  WaveformAnalysis : @local::waveformana_icarus
+
 }
 
 END_PROLOG
