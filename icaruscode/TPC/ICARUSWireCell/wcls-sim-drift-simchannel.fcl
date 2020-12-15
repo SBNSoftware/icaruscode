@@ -4,10 +4,9 @@ services:
 {
    TFileService:            { }
                              @table::icarus_common_services
+   # explicitly set the split wire geometry 
+   @table::icarus_split_induction_nooverburden_geometry_services
 }
-# explicitly set the split wire geometry 
-services.Geometry: @local::icarus_split_induction_nooverburden_geometry
-services.ExptGeoHelperInterface: @local::icarus_split_induction_geometry_helper
 
 process_name: wclssim
 physics :{
