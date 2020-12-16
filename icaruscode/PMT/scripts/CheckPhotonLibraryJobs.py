@@ -2,13 +2,18 @@
 #
 # Run with `--help` for terse help.
 #
+# Changes:
+# 20201216 (petrillo@slac.stanford.edu) [v2.1]
+#   way faster if not collecting output files and using existing good job list;
+#   keyboard interruption informs that the file lists are unchanged.
+#
 
 __doc__ = """Checks the output of the jobs specified by their XML configuration file.
 
 The jobs must have been submitted by `project.py` and must have completed already.
 
 """
-__version__ = "2.0"
+__version__ = "2.1"
 
 import sys, os
 import re
@@ -28,6 +33,25 @@ def removeSuffixes(
     else: return s
   # while
 # removeSuffixes()
+
+
+class CachedValue:
+  """On the first call, it creates and returns an object.
+  On next calls, it returns the same object.
+  """
+  def __init__(self, fetchProc): self.fetchProc = fetchProc
+  def __call__(self, *args, **kwargs) -> "Returns the cached value.":
+    try: return self.cachedValue
+    except AttributeError: return self._fetchValue(*args, **kwargs)
+  # __call__()
+  def __nonzero__(self) -> "Returns whether the object is cached":
+    return hasattr(self, "cachedValue")
+  def _fetchValue(self, *args, **kwargs):
+    self.cachedValue = self.fetchProc(*args, **kwargs)
+    del self.fetchProc # not needed any more
+    return self.cachedValue
+  # _fetchValue()
+# CachedValue
 
 
 class JobIDclass:
@@ -178,6 +202,8 @@ class JobChecker:
     
   # reset()
   
+  def isCollectingOutput(self) -> "if the output file list is being filled":
+    return self.outputFileListName is not None
   
   def checkFromFile(self,
    XMLfilePath: "path to the file containing XML job configuration",
@@ -197,6 +223,7 @@ class JobChecker:
       
       try:
         self.checkJob(fileName, projectName=projectName, stageName=stageName)
+      except KeyboardInterrupt: raise
       except Exception as e:
         logging.error("Error processing job '%s' (file list line %d): %s",
           fileName, lineNo, e)
@@ -215,10 +242,12 @@ class JobChecker:
     if not os.path.isfile(XMLfilePath):
       raise RuntimeError("Can't open file '{}'.".format(XMLfilePath))
     
-    XMLfileDir, XMLfileName = os.path.split(XMLfilePath)
+    # jobInfo is a lazy callable returning the job information:
+    # information will be extracted only the first time `jobInfo()` is executed
+    jobInfo = CachedValue(lambda: self.getJobInfo \
+      (XMLfilePath, projectName=projectName, stageName=stageName))
     
-    jobInfo = self.getJobInfo \
-     (XMLfilePath, projectName=projectName, stageName=stageName)
+    XMLfileDir, XMLfileName = os.path.split(XMLfilePath)
     
     if self.knownGoodJobs and (XMLfilePath in self.knownGoodJobs):
       logging.info("%s: known as good, check skipped.", XMLfileName)
@@ -227,12 +256,13 @@ class JobChecker:
       logging.info("%s: known as bad, check skipped.", XMLfileName)
       good = False
     else:
-      good = self.checkJobGoodness(jobInfo, XMLfilePath)
+      good = self.checkJobGoodness(jobInfo(), XMLfilePath)
     #
     
     if good:
       self.goodList.append(XMLfilePath)
-      self.collectJobOutputFiles(jobInfo)
+      if self.isCollectingOutput(): self.collectJobOutputFiles(jobInfo())
+      #
     else:
       self.badList.append(XMLfilePath)
     
@@ -299,6 +329,7 @@ class JobChecker:
         
         try:
           status = int(open(statusFile, 'r').readline().strip())
+        except KeyboardInterrupt: raise
         except Exception as e:
           raise JobCheckError("job %s failed reading status file '%s': %s"
            % (jobID, statusFile, e))
@@ -445,7 +476,7 @@ if __name__ == "__main__":
    ('--version', '-V', action='version', version="%(prog)s v" + __version__)
   
   jobListGroup = Parser.add_argument_group("Job lists")
-    
+  
   jobListGroup.add_argument("--goodlist", "-g", dest="GoodJobList",
     default=None, help="name of the list to be created with all good jobs")
   jobListGroup.add_argument("--badlist", "-b", dest="BadJobList",
@@ -487,7 +518,12 @@ if __name__ == "__main__":
     skipKnownBadJobs=args.SkipBadJobs,
     )
   
-  jobChecker.checkFromFile(args.XMLfileList, maxJobs=args.MaxJobs)
+  try:
+    jobChecker.checkFromFile(args.XMLfileList, maxJobs=args.MaxJobs)
+  except KeyboardInterrupt:
+    logging.warning("\nCheck interrupted; file lists will not be changed.")
+    sys.exit(1)
+  #
   
   jobChecker.writeSummary()
   
