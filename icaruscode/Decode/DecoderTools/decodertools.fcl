@@ -22,7 +22,7 @@ TPCDecoderFilter1DTool: {
     StructuringElement: 16
     FilterWindow:       10
     Threshold:          [2.75, 2.75, 2.75]
-    FilterModeVec:      [e,g,d]
+    FilterModeVec:      ["e","g","d"]
     UseFFTFilter:       false
     FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [2.0,20.] ]
     FFTCutoffVals:      [ [8.,800.], [8.,800.], [3.0,800.] ]
