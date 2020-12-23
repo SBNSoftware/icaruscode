@@ -22,7 +22,10 @@ TPCDecoderFilter1DTool: {
     StructuringElement: 16
     FilterWindow:       10
     Threshold:          [2.75, 2.75, 2.75]
+    FilterModeVec:      [e,g,d]
     UseFFTFilter:       false
+    FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [2.0,20.] ]
+    FFTCutoffVals:      [ [8.,800.], [8.,800.], [3.0,800.] ]
     FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]
 }
 
