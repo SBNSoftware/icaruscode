@@ -16,7 +16,7 @@ icarus_simple_flashmatch_0: {
   # UseCalo: false
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
-  MakeTree: true
+  MakeTree: false
   MinFlashPE: 0.
   PEscale: 1.0
   ChargeToNPhotonsShower: 1.0
