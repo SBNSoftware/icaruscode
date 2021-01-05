@@ -88,6 +88,8 @@ private:
   std::vector<float> *m_total_charge = NULL;
   std::vector<float> *m_fragment_id = NULL;
   std::vector<float> *m_fragment_timestamp = NULL;
+  std::vector<float> *m_fragment_nseconds = NULL;
+  std::vector<uint32_t> *m_header_timestamp = NULL;
 
   // fitted quantities
   std::vector<float> *m_fit_start_time = NULL;
@@ -150,6 +152,8 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("total_charge", &m_total_charge );
   m_pulse_ttree->Branch("m_fragment_id", &m_fragment_id );
   m_pulse_ttree->Branch("m_fragment_timestamp", &m_fragment_timestamp );
+  m_pulse_ttree->Branch("m_fragment_nseconds", &m_fragment_nseconds );
+  m_pulse_ttree->Branch("m_header_timestamp", &m_header_timestamp );
 
   m_pulse_ttree->Branch("fit_start_time", &m_fit_start_time );
   m_pulse_ttree->Branch("error_start_time", &m_error_start_time );
@@ -223,6 +227,7 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
    // Get the association between channelID and fragment
    std::map<raw::Channel_t, size_t > m_frag_map;
    std::map<raw::Channel_t, sbndaq::CAENV1730FragmentMetadata > m_metafrag_map;
+   std::map<raw::Channel_t, uint32_t> m_headerttt_map; 
 
    auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(m_fragment_label);
 
@@ -233,6 +238,16 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
         sbndaq::CAENV1730Fragment         fragment(artdaqFragment);
         sbndaq::CAENV1730FragmentMetadata metafrag = *fragment.Metadata();
+	sbndaq::CAENV1730Event evt = *fragment.Event();
+	sbndaq::CAENV1730EventHeader header = evt.Header;
+	
+	const auto TTT = uint32_t {header.triggerTimeTag};
+	
+	std::cout << "Processing fragment id: " << fragment_id << std::endl;
+	std::cout << "\t fragment timestamp: " << 0.0 << std::endl;
+	std::cout << "\t header timestamp: " << header.triggerTimeTag << std::endl;
+	std::cout << "\t metafragm timestamp: " << metafrag.timeStampSec << "," << metafrag.timeStampNSec << std::endl;
+
 
         if (fChannelMap->hasPMTDigitizerID(fragment_id))
         {
@@ -244,6 +259,7 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
             raw::Channel_t channelID = digitizerChannelPair.second;
             m_metafrag_map[channelID] = metafrag;
             m_frag_map[channelID] = fragment_id;
+	    m_headerttt_map[channelID] = TTT;
           }
         }
       }
@@ -265,6 +281,8 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      m_channel_id->push_back( channel_id );
      m_fragment_id->push_back( m_frag_map[channel_id] );
      m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
+     m_fragment_nseconds->push_back( m_metafrag_map[channel_id].timeStampNSec );
+     m_header_timestamp->push_back( m_headerttt_map[channel_id] );
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
@@ -317,6 +335,8 @@ void pmtcalo::PMTCalibration::clean(){
   m_total_charge->clear();
   m_fragment_id->clear();
   m_fragment_timestamp->clear();
+  m_fragment_nseconds->clear();
+  m_header_timestamp->clear();
 
   m_fit_start_time->clear();
   m_error_start_time->clear();
