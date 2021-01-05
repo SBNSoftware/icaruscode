@@ -10,7 +10,7 @@ process_name: decode
 services:
 {
    TFileService:            { }
-   ICARUSChannelMap:         @local::icarus_channelmappinggservice
+   IICARUSChannelMap:        @local::icarus_channelmappinggservice
                              @table::icarus_calibration_services
                              @table::icarus_wirecalibration_services
 }

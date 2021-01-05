@@ -9,6 +9,7 @@
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
+#include "wcls-decode-to-sig-base.fcl"
 
 BEGIN_PROLOG
 
@@ -37,6 +38,16 @@ icarus_stage0_producers:
   recoWireRawTPC2:                @local::icarus_recowireraw
   recoWireRawTPC3:                @local::icarus_recowireraw
 
+  ### wire-cell decon producers
+  decon2droi:                     @local::standard_wirecell_sigproc
+  decon2DroiTPC0:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC1:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC2:                 @local::standard_wirecell_sigproc
+  decon2DroiTPC3:                 @local::standard_wirecell_sigproc
+
+  ### ROI finding on complete deconvolved waveforms
+  roifinder:                      @local::icarus_roifinder
+
   ### hit-finder producers
   gaushit:                        @local::gaus_hitfinder_icarus
   gaushitTPC0:                    @local::gaus_hitfinder_icarus
@@ -64,6 +75,8 @@ icarus_reco_filters:
 icarus_stage0_single:              [ daqTPC,
                                      daqPMT,
                                      decon1droi,
+                                     decon2droi,
+                                     roifinder,
                                      gaushit
                                    ]
 
@@ -73,7 +86,7 @@ icarus_stage0_multiTPC_TPC:        [ daqTPC0,        daqTPC1,        daqTPC2,   
                                    ]
 
 icarus_stage0_pmt:                 [ daqPMT,
-                                     ophit 
+                                     ophit
                                    ]
 
 icarus_stage0_multiTPC:            [ @local::icarus_stage0_multiTPC_TPC,
@@ -85,7 +98,7 @@ icarus_stage0_multiTPC:            [ @local::icarus_stage0_multiTPC_TPC,
 ### Set up for single decoding
 icarus_stage0_producers.daqTPC.DiagnosticOutput:                                               false
 
-### Setup for multiple TPC readout 
+### Setup for multiple TPC readout
 icarus_stage0_producers.daqTPC0.FragmentsLabel:                                                "daq:PHYSCRATEDATA0"
 icarus_stage0_producers.daqTPC1.FragmentsLabel:                                                "daq:PHYSCRATEDATA1"
 icarus_stage0_producers.daqTPC2.FragmentsLabel:                                                "daq:PHYSCRATEDATA2"
@@ -94,11 +107,19 @@ icarus_stage0_producers.daqTPC3.FragmentsLabel:                                 
 ### Set up for single deconvolution
 icarus_stage0_producers.decon1droi.DigitModuleLabel:                                           "daqTPC"
 
+icarus_stage0_producers.decon2droi.wcls_main.inputers:                                         ["wclsRawFrameSource:rfsrc0"]
+icarus_stage0_producers.decon2droi.wcls_main.outputers:                                        ["wclsFrameSaver:spsaver0"]
+icarus_stage0_producers.decon2droi.wcls_main.params.raw_input_label:                           "daqTPC"
+icarus_stage0_producers.decon2droi.wcls_main.params.tpc_volume_label:                          0
+
 ### Set up for multiple TPC readout
 icarus_stage0_producers.decon1DroiTPC0.DigitModuleLabel:                                       "daqTPC0"
 icarus_stage0_producers.decon1DroiTPC1.DigitModuleLabel:                                       "daqTPC1"
 icarus_stage0_producers.decon1DroiTPC2.DigitModuleLabel:                                       "daqTPC2"
 icarus_stage0_producers.decon1DroiTPC3.DigitModuleLabel:                                       "daqTPC3"
+
+### Set up to find ROIs
+icarus_stage0_producers.roifinder.WireModuleLabel:                                             "decon1droi"
 
 ### Set up for the single hit finding
 icarus_stage0_producers.gaushit.CalDataModuleLabel:                                            "decon1droi"

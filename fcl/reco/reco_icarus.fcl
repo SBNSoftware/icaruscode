@@ -613,7 +613,7 @@ icarus_reco_producers.pandoraGausSCECryo0.CorrectNoT0Tag:                       
 icarus_reco_producers.pandoraGausSCECryo0.PFPLabel:						                                 "pandoraGausCryo0"
 icarus_reco_producers.pandoraGausSCECryo0.TrackLabel:						                               "pandoraTrackGausCryo0"
 
-icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausCryo0"
+icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausSCECryo0"
 
 icarus_reco_producers.pandoraGausSCECryo1.T0Labels:                                            []
 icarus_reco_producers.pandoraGausSCECryo1.T0LabelsCorrectT0:                                   []
@@ -621,7 +621,7 @@ icarus_reco_producers.pandoraGausSCECryo1.CorrectNoT0Tag:                       
 icarus_reco_producers.pandoraGausSCECryo1.PFPLabel:						                                 "pandoraGausCryo1"
 icarus_reco_producers.pandoraGausSCECryo1.TrackLabel:						                               "pandoraTrackGausCryo1"
 
-icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausCryo1"
+icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausSCECryo1"
 
 icarus_reco_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
 icarus_reco_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
