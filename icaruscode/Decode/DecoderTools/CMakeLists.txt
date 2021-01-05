@@ -6,7 +6,9 @@ include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
 art_make(
           TOOL_LIBRARIES
-                        sbndaq-artdaq-core_Overlays_ICARUS 
+                        icaruscode_Decode_Dumpers
+                        sbndaq-artdaq-core_Overlays_ICARUS
+                        sbndaq-artdaq-core_Overlays_Common
                         artdaq-core_Utilities
                         icarus_signal_processing
                         icaruscode_TPC_Utilities_SignalShapingICARUSService_service

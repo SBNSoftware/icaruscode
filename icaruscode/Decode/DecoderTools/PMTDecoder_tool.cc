@@ -25,6 +25,7 @@
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/Dumpers/PMTdataDumpers.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 // std includes
@@ -159,6 +160,8 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 
     if (fDiagnosticOutput)
     {
+        mf::LogDebug("PMTDecoder") << "PMT fragment dump: " << fragment;
+        
         std::cout << "----> PMT Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
         std::cout << "      size: " << ev_size_quad_bytes << ", data size: " << data_size_double_bytes << ", samples/channel: " << nSamplesPerChannel << ", time: " << time_tag << std::endl;
     }

@@ -2,6 +2,7 @@ cet_enable_asserts()
 
 art_make(
           MODULE_LIBRARIES
+                        icaruscode_Decode_Dumpers
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         larcorealg_Geometry
@@ -33,6 +34,7 @@ install_fhicl()
 install_source()
 
 # Add our tools directory
+add_subdirectory(Dumpers)
 add_subdirectory(DecoderTools)
 add_subdirectory(ChannelMapping)
 
