@@ -198,7 +198,7 @@ ana::RecoEfficencyFinder::RecoEfficencyFinder(fhicl::ParameterSet const & pset)
   fLArGeantModuleLabel   (pset.get<art::InputTag>("LArGeantModuleLabel")),
   fMinRecoEnergyCut      (pset.get<float>        ("MinRecoEnergyCut")),
   fIsTrueNu              (pset.get<bool>         ("IsTrueNu",true)), 
-  fUseFlashMatch         (pset.get<bool>         ("UseFlashMatch",false)),
+  fUseFlashMatch         (pset.get<bool>         ("UseFlashMatch",true)),
   fFlashMatchLabel       (pset.get<art::InputTag>("FlashMatchLabel",""))
 {
 
@@ -362,6 +362,8 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
   std::vector<art::Ptr<anab::T0> > fmatches;
   if(evt.getByLabel(fFlashMatchLabel,fmatchHandle)){
     art::fill_ptr_vector(fmatches,fmatchHandle);
+    std::cout << "  TEST fmatches size = " << fmatches.size() << std::endl; //GM
+
   }
 
   //Get the CRT Hits
@@ -403,14 +405,14 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
     return;
   }
   std::cout << "TEST TEST Track Module Label = " << fTrackModuleLabel << std::endl; //GM
-/*
+
   //Assn between Tracks and calo
   art::FindManyP<anab::Calorimetry> fmcal(trackListHandle, evt, fCalorimetryModuleLabel);
-  if(!fmt.isValid()){
-    throw cet::exception("RecoEfficencyFinder") << "Track and PF particle association is somehow not valid. Stopping";
+  if(!fmcal.isValid()){
+    throw cet::exception("RecoEfficencyFinder") << "Calo and PF particle association is somehow not valid. Stopping";
     return;
   }
-*/
+
   //Assn between Tracks and hits
   art::FindManyP<recob::Hit> fmth(trackListHandle, evt, fTrackModuleLabel);
   if(!fmth.isValid()){
@@ -499,6 +501,7 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
   if( fIsTrueNu ){
     int numTrueNuBH=0;
     //std::cout << "BH BH BH: printout of neutrino(s) energy in event = ";
+    std::cout << " printout of neutrino(s) in event = ";
 
     //For the time being Lets not continue without a neutrino vertex in the AV.
     for(auto const& mc: mclist){
@@ -508,6 +511,7 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
 
       ++numTrueNuBH; // BH BH BH
       //std::cout << mc->GetNeutrino().Nu().E() << " "; // BH BH BH
+      std::cout << mc->GetNeutrino().Nu() << " "; // GM
 
       //Count the number of vertices that can be reconstructed.
       const TVector3 nuVtx = mc->GetNeutrino().Nu().Trajectory().Position(0).Vect();
@@ -724,7 +728,6 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
   shower_box_zmax_branch.resize(neutrinos.size());
 
   crt_hits_branch.resize(neutrinos.size());
-//  crt_time_branch.resize(neutrinos.size(),-999); ////GM
   crt_time_branch.resize(neutrinos.size()); ////GM
 
   for(auto const neutrino: neutrinos){
@@ -767,8 +770,15 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
 
   if( fUseFlashMatch ){
     // BH BH BH: Get the flash match details
-    std::vector<art::Ptr<anab::T0> > pfpFlashMatch = fmflash.at(neutrino->Self());
+    std::vector<art::Ptr<anab::T0> > pfpFlashMatch = fmflash.at(neutrino.key()); //slack chat
+//    std::cout << "  TEST neutrino->Self() = " << neutrino->Self() << std::endl; //GM
+    std::cout << "  TEST neutrino.key() = " << neutrino.key() << std::endl; //slack chat
+//    std::cout << "  TEST fmflash size = " << fmflash.size() << std::endl; //GM
+    std::cout << "  TEST fmflash.at(neutrino.key()).size() = " << fmflash.at(neutrino.key()).size() << std::endl; //slack chat
+//    std::cout << "  TEST fmflash.at(neutrino->Self()).size() = " << fmflash.at(neutrino->Self()).size() << std::endl; //GM
+
     if(pfpFlashMatch.size() < 1){
+      std::cout << "  no flashes "<< std::endl; //GM
       //      throw cet::exception("RecoEfficencyFinder") << "we don't have a flash match for this pfparticles";
       //      return;
       fmatch_time_branch.push_back(-9999.);
@@ -780,6 +790,7 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
       return;
     }
     else {
+      std::cout << "  flashes! "<< std::endl; //GM
       fmatch_time_branch.push_back(pfpFlashMatch.at(0)->Time());
       fmatch_score_branch.push_back(pfpFlashMatch.at(0)->TriggerConfidence());
       fmatch_pe_branch.push_back(pfpFlashMatch.at(0)->TriggerType());
@@ -943,17 +954,17 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
     //Loop over hadron daughter pfps and calculate the energy
     float Vertex_KE = 0;
     for(auto const& daughter: daughters){
-      std::cout << "TEST TEST number of children = " << daughters.size() << std::endl; //GM
+//      std::cout << "TEST TEST number of children = " << daughters.size() << std::endl; //GM
       if(pfp_map[daughter]->PdgCode() == 11){continue;}
-      std::cout << "TEST TEST found a non-shower child particle!!" << std::endl; //GM
+//      std::cout << "TEST TEST found a non-shower child particle!!" << std::endl; //GM
       art::Ptr<recob::PFParticle> daughter_pfp = pfp_map[daughter];
 
       //Get the track info 
       std::vector<art::Ptr<recob::Track> > daughter_track = fmt.at(daughter_pfp.key());
 //      std::vector<art::Ptr<recob::Track> > daughter_track = fmt.at(pfp_map[daughter].key());
-      std::cout << "TEST TEST daughter_pfp.key() = " << daughter_pfp.key() << std::endl; //GM
+//      std::cout << "TEST TEST daughter_pfp.key() = " << daughter_pfp.key() << std::endl; //GM
 //      std::cout << "TEST TEST pfp_map[daughter].key() = " << pfp_map[daughter].key() << std::endl; //GM
-      std::cout << "TEST TEST fmt.size() = " << fmt.size() << std::endl; //GM
+//      std::cout << "TEST TEST fmt.size() = " << fmt.size() << std::endl; //GM
       std::cout << "TEST TEST daughter_track.size() = " << daughter_track.size() << std::endl; //GM
       if(daughter_track.size() == 0){continue;}
       if(daughter_track.size() != 1){
@@ -978,14 +989,14 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
       track_box_zmax_branch.at(neutrino_iter).push_back(std::max(tbox_start[2],tbox_end[2]));
 
       //Get the calorimetry info
-//      std::vector<art::Ptr<anab::Calorimetry> > daughter_calo = fmcal.at(daughter_track[0].key());
-//      if(daughter_calo.size() != 3){continue;}
+      std::vector<art::Ptr<anab::Calorimetry> > daughter_calo = fmcal.at(daughter_track[0].key());
+      if(daughter_calo.size() != 3){continue;}
       // if(daughter_calo.size() != 1){
       // 	throw cet::exception("RecoEfficencyFinder") << "we have too many calos for tracks" << daughter_calo.size() << std::endl;€;
       //   return;
       // }
-//      Vertex_KE += daughter_calo[2]->KineticEnergy(); 
-      Vertex_KE += 0;
+      Vertex_KE += daughter_calo[2]->KineticEnergy(); 
+//      Vertex_KE += 0;
     }
 
     vertex_recoKE_branch.at(neutrino_iter) = Vertex_KE;
@@ -1031,7 +1042,7 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
       //Get the primary particle
       while(!parent->IsPrimary()){
   	temp_pfp = parent;
-  	if(pfp_map.find(parent->Self()) == pfp_map.end()){parent = temp_pfp; break;}
+  	if(pfp_map.find(parent->Self()) == pfp_map.end()){parent = temp_pfp; break;} //probably need to use .key() instead of ->Self()
   	parent = pfp_map[parent->Parent()];
       }
 
@@ -1050,14 +1061,14 @@ void ana::RecoEfficencyFinder::analyze(art::Event const & evt){
   	}
 
   	//Get the calorimetry info
-//  	std::vector<art::Ptr<anab::Calorimetry> > calo = fmcal.at(track[0].key());
-//  	if(calo.size() != 3){continue;}
+  	std::vector<art::Ptr<anab::Calorimetry> > calo = fmcal.at(track[0].key());
+  	if(calo.size() != 3){continue;}
 	//  	if(calo.size() != 1){
   	//  throw cet::exception("RecoEfficencyFinder") << "we have too many calos for tracks";
   	//  return;
   	//}
-//	float TrackEnergy = calo[2]->KineticEnergy();
-	float TrackEnergy = 0;
+	float TrackEnergy = calo[2]->KineticEnergy();
+//	float TrackEnergy = 0;
 
 	// BH BH BH Print statement
 	//std::cout << "BH BH BH reco track E added to nu_reco_energy = " << TrackEnergy << std::endl;

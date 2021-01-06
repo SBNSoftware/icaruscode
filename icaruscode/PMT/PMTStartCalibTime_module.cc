@@ -212,15 +212,18 @@ evt.getManyByType(type);
       {
           for(size_t idx = 0; idx < particleVecHandle->size(); idx++) particleVec.push_back(&particleVecHandle->at(idx)); //
       }
+    std::cout << "Particle size: " << particleVec.size() << std::endl;
+
     art::Handle< std::vector<recob::Track> > trackVecHandle;
-    evt.getByLabel("pandoraTrackICARUSCryo0", trackVecHandle);//at the moment I am calling here directly a particular kind of track: this should be generalized, putting the label of the track type in the fhicl...
+    evt.getByLabel("pandoraTrackICARUSCryo0", trackVecHandle);
+//    evt.getByLabel("pandoraTrackICARUSCryo1", trackVecHandle);//at the moment I am calling here directly a particular kind of track: this should be generalized, putting the label of the track type in the fhicl...
     
     std::vector<const recob::Track*> trackVec;
     if (trackVecHandle.isValid())
     {
         for(size_t idx = 0; idx < trackVecHandle->size(); idx++) trackVec.push_back(&trackVecHandle->at(idx)); //
     }
-
+    std::cout << "Track size: " << trackVec.size() << "  Event: " << event << std::endl;
 
 ////////////////////////////////// Putting at 0 all the variables//////////////////////////////
 
@@ -277,17 +280,14 @@ turned_PMT=0;
 
 total_coll_photons=0;
 
-for (std::size_t channel = 0; channel < optical.size(); ++channel) {
+for (std::size_t channel = 0; channel < optical.size(); ++channel) {  // loop on channel (arrival time PMT SimPhotons info)
 
 	sim::SimPhotons const& photon_vec = optical[channel];
 
 	noPMT[channel] = channel;	
 
 	photons_collected[channel]= photon_vec.size();
-    //std::cout << " channel " << channel << " photons collected " << photons_collected[channel] << std::endl;
-//	double media = photons_collected[channel]*QE;
-
-//	QE_photons_collected[channel]= Ran.Poisson(media);
+//    std::cout << " channel " << channel << " photons collected " << photons_collected[channel] << std::endl;
 
 	QE_photons_collected[channel]= 0.06*photons_collected[channel];
 
@@ -308,21 +308,17 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
         //std::cout << " channel " << channel << " total photons  " << total_coll_photons << std::endl;
 	firstphoton_time[channel] = 100000000;
 
-	if (photons_collected[channel]>0)
-	{
-		for (size_t i = 0; i<photon_vec.size() && int(i)< MaxPhotons; ++i)
-		{
+	if (photons_collected[channel]>0){
+		for (size_t i = 0; i<photon_vec.size() && int(i)< MaxPhotons; ++i){
 			photon_time[channel][i]= photon_vec.at(i).Time;
 
-			if (photon_time[channel][i]<firstphoton_time[channel])
-			{				
+			if (photon_time[channel][i]<firstphoton_time[channel]){				
 				firstphoton_time[channel]=photon_time[channel][i];
 			}
 		}
-
 	}
 
-
+//	std::cout << " First photon time " << firstphoton_time[channel] << std::endl;
 //	std::cout << PMTx[channel] << '\t' << PMTy[channel] << '\t' << PMTz[channel] << std::endl;
 
 	if (PMTx[channel]<0){Cryostat[channel]=0;}
@@ -332,17 +328,17 @@ for (std::size_t channel = 0; channel < optical.size(); ++channel) {
 	if (PMTx[channel]>-200 && PMTx[channel]<0){TPC[channel]=1;}
 	if (PMTx[channel]<200 && PMTx[channel]>0){TPC[channel]=2;}
 	if (PMTx[channel]>200){TPC[channel]=3;}
-    	
-}
+  	
+} // loop on channel (arrival time PMT SimPhotons info)
 
 //total_coll_photons = total_coll_photons;
 
-std::cout << " fotoni finale = " <<total_coll_photons <<std::endl; 
+std::cout << " final photons = " <<total_coll_photons <<std::endl; 
 
 
 
-for(int ijk=0;ijk<360;ijk++)
-{
+for(int ijk=0;ijk<nPMTs;ijk++){
+
     firstphoton_time_expected[ijk]=100000000;
     firstphoton_time_expected_r[ijk]=100000000;
     firstphoton_tp_expected[ijk]=100000000;
@@ -369,15 +365,12 @@ for(int ijk=0;ijk<360;ijk++)
     firstphoton_time_expected_d3[ijk]=100000000;
 }
 
-for(size_t mcl = 0; mcl < type.size(); ++mcl)
-{	
+for(size_t mcl = 0; mcl < type.size(); ++mcl){	
 	art::Handle< std::vector<simb::MCTruth> > mclistHandle = type[mcl];
 	
-	for(size_t m = 0; m < mclistHandle->size(); ++m)
-	{
+	for(size_t m = 0; m < mclistHandle->size(); ++m){
 	  art::Ptr<simb::MCTruth> mct(mclistHandle, m);	
-	  for(int ipart=0;ipart<mct->NParticles();ipart++)
-	  {	
+	  for(int ipart=0;ipart<mct->NParticles();ipart++){	
 		  //int pdg=mct->GetParticle(ipart).PdgCode();	
 		  //double xx=mct->GetParticle(ipart).Vx();	
 		  //double yy=mct->GetParticle(ipart).Vy();
@@ -386,63 +379,62 @@ for(size_t mcl = 0; mcl < type.size(); ++mcl)
 			event_type=mct->GetParticle(0).PdgCode();	
 			vertex_x=mct->GetParticle(0).Vx();	
 			vertex_y=mct->GetParticle(0).Vy();
-            vertex_z=mct->GetParticle(0).Vz();
-
-
+        		vertex_z=mct->GetParticle(0).Vz();
 
 	   }
+        std::cout << " event type: " << event_type << " Vertex X: " << vertex_x << " Vertex Y: " << vertex_y << " Vertex Z: " << vertex_z << std::endl;
 	}
-
 }
 
     gt_0=1;
     gt_1=1;
 
     
-    for(const auto& tracknow3 : trackVec)
-    {
-        std::cout << tracknow3->NumberTrajectoryPoints() << std::endl;
-                int ntraj = tracknow3->NumberTrajectoryPoints();
+    for(const auto& tracknow3 : trackVec){  //loop on trackVec
+
+        std::cout << " Number of trayectory points " << tracknow3->NumberTrajectoryPoints() << std::endl;
+
+        int ntraj = tracknow3->NumberTrajectoryPoints();
         int last_good_point=ntraj;
-        for ( size_t ijk=0;ijk<tracknow3->NumberTrajectoryPoints();ijk++)
-        {
+
+        for ( size_t ijk=0;ijk<tracknow3->NumberTrajectoryPoints();ijk++){
             auto trajPoint = tracknow3->TrajectoryPoint(ijk);
-            if(trajPoint.position.X()<-600)
-            {
+
+            if(trajPoint.position.X()<-600){
                 last_good_point=ijk;
                 ijk=ntraj+1;
             }
+
             //std::cout << "Start of trajectory at " << trajPoint.position.X() << " " <<  trajPoint.position.Y() << " " << trajPoint.position.Z()  << " cm " << std::endl;
         }
-
 
 
 	float y_max_value=-150;
         int point_y_max=-1;
 
-        for ( size_t ijk=0;ijk<tracknow3->NumberTrajectoryPoints();ijk++)
-        {
+        for ( size_t ijk=0;ijk<tracknow3->NumberTrajectoryPoints();ijk++){
             auto trajPoint = tracknow3->TrajectoryPoint(ijk);
-            if(trajPoint.position.Y()>y_max_value)
-            {
+
+            if(trajPoint.position.Y()>y_max_value){
                 point_y_max=ijk;
                 y_max_value=trajPoint.position.Y();
             }
-            //std::cout << "Start of trajectory at " << trajPoint.position.X() << " " <<  trajPoint.position.Y() << " " << trajPoint.position.Z()  << " cm " << std::endl;
-         }
+//            std::cout << "Start of trajectory at " << trajPoint.position.X() << " " <<  trajPoint.position.Y() << " " << trajPoint.position.Z()  << " cm " << std::endl;
+        }
 
 
         float c_f_x;
         float c_f_y;
         float c_f_z;
 
-          
-if(point_y_max>-1)
-{
-        auto first_point=tracknow3->TrajectoryPoint(point_y_max);
+	if(point_y_max>-1){
+
+            auto first_point=tracknow3->TrajectoryPoint(point_y_max);
+
             c_f_x=first_point.position.X();
             c_f_y=first_point.position.Y();
             c_f_z=first_point.position.Z();
+
 /*
         auto first_point=tracknow3->TrajectoryPoint(0);
         auto last_point=tracknow3->TrajectoryPoint(last_good_point);
@@ -462,40 +454,44 @@ if(point_y_max>-1)
             c_f_z=last_point.position.Z();
         }
 */
-std::cout << "Start of trajectory at " << first_point.position.X() << " " <<  first_point.position.Y() << " " << first_point.position.Z()  << " cm " << std::endl;
-        for ( int ijk2=0;ijk2<last_good_point;ijk2++)
-        {
-        auto trajPoint = tracknow3->TrajectoryPoint(ijk2);
-        //std::cout << "Start of trajectory at " << trajPoint.position.X() << " " <<  trajPoint.position.Y() << " " << trajPoint.position.Z()  << " cm " << std::endl;
-        float xpr=trajPoint.position.X();
-        float ypr=trajPoint.position.Y();
-        float zpr=trajPoint.position.Z();
-        float distance_from_first_point=sqrt((xpr-c_f_x)*(xpr-c_f_x)+(ypr-c_f_y)*(ypr-c_f_y)+(zpr-c_f_z)*(zpr-c_f_z))/100;    
-        float tpr=distance_from_first_point/0.3;
-        int factor=0;
-        if(xpr>0)factor=180;
-            if(xpr>-400)
-            {
-        for(int ijk=0;ijk<180;ijk++)
-        {
-            float distance_x=xpr-PMTx[ijk+factor];
-            float distance_y=ypr-PMTy[ijk+factor];
-            float distance_z=zpr-PMTz[ijk+factor];
-            float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
-            float time_travel_light=total_distance/(0.1);//velocita' e' 3*10^8 m/s cioe' 0.3 m/ns ma sto usando c/n e ho trovato n=1.5 da Petrillo al collaboration meeting
-            //std::cout << time_travel_light+tp << " " << tp << " " << time_travel_light << std::endl;
-            if(firstphoton_time_expected_r[ijk+factor]>(tpr+time_travel_light))
-{
-firstphoton_time_expected_r[ijk+factor]=(tpr+time_travel_light);
-           firstphoton_tp_expected_r[ijk+factor]=(tpr);
-           firstphoton_xp_expected_r[ijk+factor]=(xpr);
-           firstphoton_yp_expected_r[ijk+factor]=(ypr);
-           firstphoton_zp_expected_r[ijk+factor]=(zpr);
-}
-        }
-        }
-        }
-}
+        std::cout << "Start of trajectory at " << first_point.position.X() << " " <<  first_point.position.Y() << " " << first_point.position.Z()  << " cm " << std::endl;
+
+            for (int ijk2=0; ijk2<last_good_point; ijk2++){
+
+	        auto trajPoint = tracknow3->TrajectoryPoint(ijk2);
+//std::cout << "Start of trajectory at " << trajPoint.position.X() << " " <<  trajPoint.position.Y() << " " << trajPoint.position.Z()  << " cm " << std::endl;
+
+	        float xpr=trajPoint.position.X();
+	        float ypr=trajPoint.position.Y();
+	        float zpr=trajPoint.position.Z();
+	        float distance_from_first_point=sqrt((xpr-c_f_x)*(xpr-c_f_x)+(ypr-c_f_y)*(ypr-c_f_y)+(zpr-c_f_z)*(zpr-c_f_z))/100;    
+	        float tpr=distance_from_first_point/0.3;
+
+	        int factor=0;
+	        if(xpr>0)factor=180;
+	            if(xpr>-400){
+//	    	    if(ypr>-185 && ypr<140 && fabs(zpr)<910 && fabs(xpr)<370 && fabs(xpr)>70){
+		        for(int ijk=0;ijk<180;ijk++){
+		            float distance_x=xpr-PMTx[ijk+factor];
+		            float distance_y=ypr-PMTy[ijk+factor];
+		            float distance_z=zpr-PMTz[ijk+factor];
+		            float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
+		            float time_travel_light=total_distance/(0.1);//speed 3*10^8 m/s = 0.3 m/ns but I'm using c/n where I found n=1.5 from Petrillo collaboration meeting
+		            //std::cout << time_travel_light+tpr << " " << tpr << " " << time_travel_light << std::endl;
+
+		            if(firstphoton_time_expected_r[ijk+factor]>(tpr+time_travel_light)){
+
+		               firstphoton_time_expected_r[ijk+factor]=(tpr+time_travel_light);
+		               firstphoton_tp_expected_r[ijk+factor]=(tpr);
+		               firstphoton_xp_expected_r[ijk+factor]=(xpr);
+		               firstphoton_yp_expected_r[ijk+factor]=(ypr);
+		               firstphoton_zp_expected_r[ijk+factor]=(zpr);
+		            }
+		        }
+	            }
+            }
+
+	}
         
         /*
         for ( recob::Trajectory::const_iterator trajectory = tracknow3->Trajectory().begin(); trajectory != tracknow3->Trajectory().end(); ++trajectory)
@@ -507,93 +503,94 @@ firstphoton_time_expected_r[ijk+factor]=(tpr+time_travel_light);
             std::cout << xp << " " << yp << " " << zp << " " << tp << std::endl;
         }
          */
-    }
+    }  //loop on trackVec
     
-      for(const auto& particlenow3 : particleVec)
-      {
+      for(const auto& particlenow3 : particleVec){   //loop on particleVec
 
-for ( simb::MCTrajectory::const_iterator trajectory = particlenow3->Trajectory().begin(); trajectory != particlenow3->Trajectory().end(); ++trajectory)
-{
-	  float xp=(*trajectory).first.X(); 
-	  float yp=(*trajectory).first.Y();   
-	  float zp=(*trajectory).first.Z(); 
-	  float tp=(*trajectory).first.T(); 
-	  //std::cout << xp << " " << yp << " " << zp << " " << tp << std::endl;
-	  int factor=0;
-    if (yp>-185 && yp<140 && fabs(zp)<910)
-    {
-        if (xp<-343 || xp>-247) {
-            gt_0=0;
-        }
-        if (xp<-193 || xp>-98) {
-            gt_1=0;
-        }
-    }
-	  if(xp>0)factor=180;
-          if(yp>-185 && yp<140 && fabs(zp)<910 && fabs(xp)<370 && fabs(xp)>70){
-	  for(int ijk=0;ijk<180;ijk++)
-	    {
-	      float distance_x=xp-PMTx[ijk+factor];
-	      float distance_y=yp-PMTy[ijk+factor];
-	      float distance_z=zp-PMTz[ijk+factor];
-	      float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
-	      float time_travel_light_v2=total_distance/(0.2);//velocity used is 20 cm/ns
-	      float time_travel_light=total_distance/(0.1);//velocity used is 10 cm/ns
-         float time_travel_light_v3=total_distance/(0.05);//velocity used is 5 cm/ns
-	      if(firstphoton_time_expected[ijk+factor]>(tp+time_travel_light))
-{
-firstphoton_time_expected[ijk+factor]=(tp+time_travel_light);
-firstphoton_tp_expected[ijk+factor]=(tp);
-firstphoton_xp_expected[ijk+factor]=(xp);
-firstphoton_yp_expected[ijk+factor]=(yp);
-firstphoton_zp_expected[ijk+factor]=(zp);
-}
-              if(firstphoton_time_expected_v2[ijk+factor]>(tp+time_travel_light_v2))
-{
-firstphoton_time_expected_v2[ijk+factor]=(tp+time_travel_light_v2);
-firstphoton_tp_expected_v2[ijk+factor]=(tp);
-firstphoton_xp_expected_v2[ijk+factor]=(xp);
-firstphoton_yp_expected_v2[ijk+factor]=(yp);
-firstphoton_zp_expected_v2[ijk+factor]=(zp);
-}
-              if(firstphoton_time_expected_v3[ijk+factor]>(tp+time_travel_light_v3))
-{
-firstphoton_time_expected_v3[ijk+factor]=(tp+time_travel_light_v3);
-firstphoton_tp_expected_v3[ijk+factor]=(tp);
-firstphoton_xp_expected_v3[ijk+factor]=(xp);
-firstphoton_yp_expected_v3[ijk+factor]=(yp);
-firstphoton_zp_expected_v3[ijk+factor]=(zp);
-}
+         for ( simb::MCTrajectory::const_iterator trajectory = particlenow3->Trajectory().begin(); trajectory != particlenow3->Trajectory().end(); ++trajectory) {
 
+	    float xp=(*trajectory).first.X(); 
+	    float yp=(*trajectory).first.Y();   
+	    float zp=(*trajectory).first.Z(); 
+	    float tp=(*trajectory).first.T(); 
+	    //std::cout << xp << " " << yp << " " << zp << " " << tp << std::endl;
+	    int factor=0;
+	    if (yp>-185 && yp<140 && fabs(zp)<910){
+	      if (xp<-343 || xp>-247) {
+	        gt_0=0;
+	      }
+	      if (xp<-193 || xp>-98) {
+                gt_1=0;
+	      }
 	    }
-    for(int ijk=0;ijk<180;ijk++)
-    {
-        float distance_x=(xp-25)-PMTx[ijk+factor];
-        float distance_y=yp-PMTy[ijk+factor];
-        float distance_z=zp-PMTz[ijk+factor];
-        float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
-        float time_travel_light_d2=total_distance/(0.1);//velocita' e' 3*10^8 m/s cioe' 0.3 m/ns ma sto usando c/n e ho trovato n=1.5 da Petrillo al collaboration meeting
-        if(firstphoton_time_expected_d2[ijk+factor]>(tp+time_travel_light_d2))firstphoton_time_expected_d2[ijk+factor]=(tp+time_travel_light_d2);
-    }
-    for(int ijk=0;ijk<180;ijk++)
-    {
-        float distance_x=(xp+25)-PMTx[ijk+factor];
-        float distance_y=yp-PMTy[ijk+factor];
-        float distance_z=zp-PMTz[ijk+factor];
-        float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
-        float time_travel_light_d3=total_distance/(0.1);//velocita' e' 3*10^8 m/s cioe' 0.3 m/ns ma sto usando c/n e ho trovato n=1.5 da Petrillo al collaboration meeting
-        if(firstphoton_time_expected_d3[ijk+factor]>(tp+time_travel_light_d3))firstphoton_time_expected_d3[ijk+factor]=(tp+time_travel_light_d3);
-    }
-}
-    
-    
- }
-      }
+	    if(xp>0)factor=180;
+	    if(yp>-185 && yp<140 && fabs(zp)<910 && fabs(xp)<370 && fabs(xp)>70){
+	      for(int ijk=0;ijk<180;ijk++){
 
+	        float distance_x=xp-PMTx[ijk+factor];
+	        float distance_y=yp-PMTy[ijk+factor];
+	        float distance_z=zp-PMTz[ijk+factor];
+	        float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
+	        float time_travel_light=total_distance/(0.1);//velocity used is 10 cm/ns
+	        float time_travel_light_v2=total_distance/(0.2);//velocity used is 20 cm/ns
+	        float time_travel_light_v3=total_distance/(0.05);//velocity used is 5 cm/ns
+
+	        if(firstphoton_time_expected[ijk+factor]>(tp+time_travel_light)){
+
+	          firstphoton_time_expected[ijk+factor]=(tp+time_travel_light);
+	          firstphoton_tp_expected[ijk+factor]=(tp);
+	          firstphoton_xp_expected[ijk+factor]=(xp);
+	          firstphoton_yp_expected[ijk+factor]=(yp);
+	          firstphoton_zp_expected[ijk+factor]=(zp);
+	        }
+	        if(firstphoton_time_expected_v2[ijk+factor]>(tp+time_travel_light_v2)){
+
+	          firstphoton_time_expected_v2[ijk+factor]=(tp+time_travel_light_v2);
+	          firstphoton_tp_expected_v2[ijk+factor]=(tp);
+	          firstphoton_xp_expected_v2[ijk+factor]=(xp);
+	          firstphoton_yp_expected_v2[ijk+factor]=(yp);
+	          firstphoton_zp_expected_v2[ijk+factor]=(zp);
+	        }
+                if(firstphoton_time_expected_v3[ijk+factor]>(tp+time_travel_light_v3)){
+
+	          firstphoton_time_expected_v3[ijk+factor]=(tp+time_travel_light_v3);
+	          firstphoton_tp_expected_v3[ijk+factor]=(tp);
+	          firstphoton_xp_expected_v3[ijk+factor]=(xp);
+	          firstphoton_yp_expected_v3[ijk+factor]=(yp);
+	          firstphoton_zp_expected_v3[ijk+factor]=(zp);
+	        }
+	      }
+
+	      for(int ijk=0;ijk<180;ijk++){
+
+	        float distance_x=(xp-25)-PMTx[ijk+factor];
+	        float distance_y=yp-PMTy[ijk+factor];
+	        float distance_z=zp-PMTz[ijk+factor];
+	        float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
+	        float time_travel_light_d2=total_distance/(0.1);//velocita' e' 3*10^8 m/s cioe' 0.3 m/ns ma sto usando c/n e ho trovato n=1.5 da Petrillo al collaboration meeting
+
+	        if(firstphoton_time_expected_d2[ijk+factor]>(tp+time_travel_light_d2)) 
+	           firstphoton_time_expected_d2[ijk+factor]=(tp+time_travel_light_d2);
+	      }
+
+	      for(int ijk=0;ijk<180;ijk++){
+
+	        float distance_x=(xp+25)-PMTx[ijk+factor];
+	        float distance_y=yp-PMTy[ijk+factor];
+	        float distance_z=zp-PMTz[ijk+factor];
+	        float total_distance=sqrt(distance_x*distance_x+distance_y*distance_y+distance_z*distance_z)/100;
+	        float time_travel_light_d3=total_distance/(0.1);//velocita' e' 3*10^8 m/s cioe' 0.3 m/ns ma sto usando c/n e ho trovato n=1.5 da Petrillo al collaboration meeting
+
+	        if(firstphoton_time_expected_d3[ijk+factor]>(tp+time_travel_light_d3))
+	           firstphoton_time_expected_d3[ijk+factor]=(tp+time_travel_light_d3);
+	      }
+	    }
+         }
+      }   //loop on particleVec
 
 
 fTree->Fill();
-    std::cout << " after filling " << fTree << std::endl;
+//    std::cout << " after filling " << fTree << std::endl;
 }
 
 void icarus::PMTStartCalibTime::beginJob()
