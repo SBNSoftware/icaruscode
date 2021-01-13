@@ -38,8 +38,8 @@ product             version
 sbncode                   v09_12_00_01
 icarusalg                 v09_12_00
 icarusutil                v09_09_01
-icarus_signal_processing  v09_11_00
-icarus_data               v09_10_00
+icarus_signal_processing  v09_12_00
+icarus_data               v09_11_00
 genie_xsec                v3_00_04a
 fftw                      v3_3_8a
 libwda                    v2_28_0
