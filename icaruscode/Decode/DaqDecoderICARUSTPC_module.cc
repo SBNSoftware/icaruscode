@@ -260,6 +260,10 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
 
     mf::LogDebug("DaqDecoderICARUSTPC") << "     ==> concurrency: " << max_concurrency << std::endl;
 
+
+    std::cout << "------------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "===> Run: " << event.id().run() << ", subrn: " << event.id().subRun() << ", event: " << event.id().event() << std::endl;
+
     cet::cpu_timer theClockTotal;
 
     theClockTotal.start();
