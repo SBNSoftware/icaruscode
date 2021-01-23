@@ -1,0 +1,18 @@
+# File:    simulation_genie_icarus_bnb_volDetEnclosure.fcl
+# Purpose: generate neutrino interactions from BNB in the whole DetEnclosure volume
+# Date:    January 11, 2021
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# 
+# This configuration is based on `simulation_genie_icarus_bnb.fcl`,
+# the only difference being that the generation volume is explicitly
+# specified to be the detector enclosure, that is a box including
+# all cryostats.
+#
+
+#include "simulation_genie_icarus_bnb.fcl"
+
+physics.producers.generator.TopVolume: "volDetEnclosure"
+
+outputs.rootoutput.fileName: "simulation_genie_icarus_bnb_volDetEnclosure_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-simulation_genie_icarus_bnb_volDetEnclosure_%tc-%p.root"
+
