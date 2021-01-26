@@ -7,6 +7,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowCombinerAlg.h"
+#include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefinitionAlg.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
@@ -22,9 +23,9 @@
 #include "larcorealg/CoreUtils/StdUtils.h" // util::to_string()
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
 #include "larcorealg/CoreUtils/enumerate.h"
-#include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/CoreUtils/get_elements.h" // util::get_elements()
 // #include "larcorealg/CoreUtils/DebugUtils.h" // lar::debug::::static_assert_on<>
+#include "lardataobj/RawData/OpDetWaveform.h"
 
 // framework libraries
 #include "art/Framework/Services/Registry/ServiceHandle.h"
@@ -195,7 +196,7 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
 
     fhicl::Atom<unsigned int> WindowSize {
       Name("WindowSize"),
-      Comment("numer of optical channels to be included in each window")
+      Comment("number of optical channels to be included in each window")
       };
     fhicl::OptionalAtom<unsigned int> Stride {
       Name("Stride"),
@@ -239,7 +240,7 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   
     private:
   /// Definition of all windows.
-  using WindowDefs_t = icarus::trigger::SlidingWindowCombinerAlg::Windows_t;
+  using WindowDefs_t = icarus::trigger::TriggerWindowDefs_t;
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -317,12 +318,10 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   //
   {
     mf::LogInfo log(fLogCategory);
-    log << fWindowChannels.size() << " windows configured:";
-    for (auto const& [ iWindow, channels ]: util::enumerate(fWindowChannels)) {
-      log << "\n [#" << iWindow << "] " << channels.size() << " channels:";
-      for (raw::Channel_t const channel: channels) log << " " << channel;
-    } // for windows
-    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
+    log 
+      <<   "Trigger configuration: "
+        << icarus::trigger::dumpTriggerWindowDefs(fWindowChannels)
+      << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
   } // local block
@@ -371,86 +370,15 @@ void icarus::trigger::SlidingWindowTrigger::produce(art::Event& event) {
 auto icarus::trigger::SlidingWindowTrigger::defineWindows() const
   -> WindowDefs_t
 {
-  /*
-   * 1. compute the vertical PMT towers in each separate optical detector plane
-   * 2. fill the windows by counting channels (i.e. op. det.)
-   */
-  using icarus::trigger::PMTverticalSlicingAlg;
-
-  //
-  // 1. compute the vertical PMT towers in each separate optical detector plane
-  //
-  geo::GeometryCore const& geom = *(lar::providerFrom<geo::Geometry>());
-  PMTverticalSlicingAlg slicerAlg(fLogCategory);
-  PMTverticalSlicingAlg::Slices_t slices;
-  for (geo::CryostatGeo const& cryo: geom.IterateCryostats())
-    slicerAlg.appendCryoSlices(slices, cryo);
-
-  //
-  // 2. fill the windows by counting channels (i.e. op. det.)
-  //
-  WindowDefs_t windows;
-
-  for (PMTverticalSlicingAlg::PMTtowerOnPlane_t const& planeSlices: slices) {
-
-    auto itSlice = planeSlices.begin();
-    auto const send = planeSlices.end();
-    while (itSlice != send) {
-
-      mf::LogTrace(fLogCategory) << "Assembling window #" << windows.size();
-
-      WindowDefs_t::value_type window;
-      window.reserve(fWindowSize);
-
-      std::optional<decltype(itSlice)> nextStart;
-      unsigned int nChannels = 0U;
-      while (nChannels < fWindowSize) {
-
-        // aside: check if this is the right place to start the next window
-        if (nChannels == fWindowStride) {
-          mf::LogTrace(fLogCategory)
-            << "  (next window will start from this slice)";
-          nextStart = itSlice;
-        }
-        else if ((nChannels > fWindowStride) && !nextStart) {
-          throw cet::exception("SlidingWindowTrigger")
-            << "Unable to start a new window " << fWindowStride
-            << " channels after window #" << windows.size()
-            << " (next slice starts " << nChannels << " channels after)\n";
-        }
-
-        mf::LogTrace(fLogCategory)
-          << "  adding " << itSlice->size() << " channels to existing "
-          << nChannels;
-        for (geo::OpDetGeo const* opDet: *itSlice) {
-          geo::OpDetID const& id = opDet->ID();
-          raw::Channel_t const channel
-            = geom.OpDetFromCryo(id.OpDet, id.Cryostat);
-          mf::LogTrace(fLogCategory)
-            << "   * " << id << " (channel " << channel << ")";
-          window.push_back(channel);
-        } // for channels in slice
-        nChannels += (itSlice++)->size();
-      } // while
-      if (nChannels == fWindowStride) nextStart = itSlice;
-      assert(nextStart);
-
-      if (nChannels != fWindowSize) {
-        throw cet::exception("SlidingWindowTrigger")
-          << "Definition of one window yielded " << nChannels
-          << " elements (window should be of size " << fWindowSize
-          << " and with stride " << fWindowStride << ").\n";
-      }
-
-      windows.push_back(std::move(window));
-
-      itSlice = nextStart.value();
-    } // for all slices
-  } // for all windows
-  mf::LogTrace(fLogCategory)
-    << "SlidingWindowTrigger defined " << windows.size() << " windows.";
-
-  return windows;
+  // delegated to `SlidingWindowDefinitionAlg`
+  
+  icarus::trigger::SlidingWindowDefinitionAlg const algo {
+    *(lar::providerFrom<geo::Geometry>()),
+    "SlidingWindowTrigger/SlidingWindowDefinitionAlg"
+    };
+  
+  return algo.makeWindows(fWindowSize, fWindowStride);
+  
 } // icarus::trigger::SlidingWindowTrigger::defineWindows()
 
 
