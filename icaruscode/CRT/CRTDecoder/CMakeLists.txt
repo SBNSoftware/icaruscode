@@ -102,6 +102,23 @@ art_make_library(
 	CRT_PREPROCESS_TREE
 )
 
+art_make_library(
+    LIBRARY_NAME
+        BERN_CRT_TRANSLATOR
+    SOURCE
+        BernCRTTranslator.cc
+    LIBRARIES 
+        cetlib_except
+        ${CETLIB}
+
+  art_Framework_Services_Registry
+  art_root_io_tfile_support
+  art_root_io_TFileService_service
+  ${ROOT_BASIC_LIB_LIST}
+        ${ARTDAQ-CORE_UTILITIES}
+  sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
+)
 
 install_headers()
 install_source()
