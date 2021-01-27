@@ -18,9 +18,11 @@
 // -----------------------------------------------------------------------------
 icarus::trigger::SlidingWindowCombinerAlg::SlidingWindowCombinerAlg(
   Windows_t const& windows,
+  bool requireFullCoverage /* = true */,
   std::string logCategory /* = "SlidingWindowCombinerAlg" */
   )
   : fWindowChannels(sortedWindowChannels(windows))
+  , fRequireFullCoverage(requireFullCoverage)
   , fLogCategory(std::move(logCategory))
   {}
 

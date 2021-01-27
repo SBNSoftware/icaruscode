@@ -11,8 +11,9 @@
 
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // TriggerGateIndex
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/counter.h"
@@ -42,14 +43,15 @@ class icarus::trigger::SlidingWindowCombinerAlg {
 
     public:
   /// Type of optical detector channel list in a window.
-  using WindowChannels_t = std::vector<raw::Channel_t>;
+  using WindowChannels_t = icarus::trigger::TriggerWindowChannels_t;
 
   /// Type of content of all windows.
-  using Windows_t = std::vector<WindowChannels_t>;
+  using Windows_t = icarus::trigger::TriggerWindowDefs_t;
 
   /// Constructor: learns about the window pattern (keeps a reference).
   SlidingWindowCombinerAlg(
     Windows_t const& windows,
+    bool requireFullCoverage = true,
     std::string logCategory = "SlidingWindowCombinerAlg"
     );
 
@@ -62,6 +64,9 @@ class icarus::trigger::SlidingWindowCombinerAlg {
 
   /// Content of channels of each window.
   Windows_t const fWindowChannels;
+  
+  /// Whether to require all channels to be used.
+  bool const fRequireFullCoverage;
 
   std::string fLogCategory; ///< Category for messages to MessageFacility.
 
@@ -131,7 +136,7 @@ void icarus::trigger::SlidingWindowCombinerAlg::checkInput
    * Checks:
    *
    * * no gate is only partially contained in a window
-   * * no channel in the gates is skipped
+   * * no channel in the gates is skipped (optional)
    *
    */
 
@@ -182,26 +187,28 @@ void icarus::trigger::SlidingWindowCombinerAlg::checkInput
   for (auto const channel: util::counter<raw::Channel_t >(gateIndex.nChannels()))
     allGates.insert(&(gateIndex[channel]));
 
-  std::vector<GateObject const*> unusedGates;
-  std::set_difference(
-    allGates.cbegin(), allGates.cend(), usedGates.cbegin(), usedGates.cend(),
-    std::back_inserter(unusedGates)
-    );
-  if (!unusedGates.empty()) {
-    // we don't have much information to identify "which" gates...
-    cet::exception e("SlidingWindowCombinerAlg");
-    e << "SlidingWindowCombinerAlg::checkInput(): "
-      << "used only " << usedGates.size() << "/" << allGates.size()
-      << " input trigger gates, " << unusedGates.size() << " were not used:";
-    for (GateObject const* gate: unusedGates) {
-      e << "{";
-      for (raw::Channel_t const channel: gate->channels())
-        e << " ch:" << std::to_string(channel);
-      e << " }";
-    } // for
-    e << "\n";
-    throw e;
-  } // if unused
+  if (fRequireFullCoverage) {
+    std::vector<GateObject const*> unusedGates;
+    std::set_difference(
+      allGates.cbegin(), allGates.cend(), usedGates.cbegin(), usedGates.cend(),
+      std::back_inserter(unusedGates)
+      );
+    if (!unusedGates.empty()) {
+      // we don't have much information to identify "which" gates...
+      cet::exception e("SlidingWindowCombinerAlg");
+      e << "SlidingWindowCombinerAlg::checkInput(): "
+        << "used only " << usedGates.size() << "/" << allGates.size()
+        << " input trigger gates, " << unusedGates.size() << " were not used:";
+      for (GateObject const* gate: unusedGates) {
+        e << "{";
+        for (raw::Channel_t const channel: gate->channels())
+          e << " ch:" << std::to_string(channel);
+        e << " }";
+      } // for
+      e << "\n";
+      throw e;
+    } // if unused
+  } // if full coverage
 
 } // icarus::trigger::SlidingWindowCombinerAlg::checkInput()
 

@@ -8,6 +8,7 @@
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowCombinerAlg.h"
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefinitionAlg.h"
+#include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
@@ -36,6 +37,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/types/OptionalSequence.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
@@ -43,6 +45,7 @@
 
 
 // C/C++ standard libraries
+#include <numeric> // std::iota()
 #include <map>
 #include <vector>
 #include <string>
@@ -134,6 +137,12 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  *   (instance name: same as the input gates): associations between each
  *   produced gate and the optical waveforms providing the original data.
  *
+ * If window selection is requested (with `EnableOnlyWindows` or
+ * `DisableWindows` configuration parameters), only the selected windows will
+ * have an output entry. While each trigger data object comes with all the
+ * channels it covers, there is no explicit information of the _index_ of the
+ * surviving windows.
+ *
  * @note At the moment, associations between input and output gates is not
  *       produced. `art::Assns` would not support it, requiring distinct
  *       types for the associated objects.
@@ -165,10 +174,18 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  *     started at all multiples of `Stride`. For example, windows of 30 channels
  *     with `Stride` 15 will start after 0, 15, 30, 45 and 60 channels on each
  *     optical detector plane.
+ * * `EnableOnlyWindows` (list of integers, default: omitted): if specified,
+ *     only the windows with index in this list will be processed and output;
+ *     mutually exclusive with `DisableWindows`.
+ * * `DisableWindows` (list of integers, default: omitted): if specified,
+ *     the windows with index in this list will be excluded from processing and
+ *     from output; mutually exclusive with `EnableOnlyWindows`.
  * * `LogCategory` (string): name of the output stream category for console
  *     messages (managed by MessageFacility library).
  *
- *
+ * *Note*: when using `EnableOnlyWindows` or `DisableWindows` it may be useful
+ * to check the output of the module (at construction) to verify that the
+ * selected indices match the intended windows.
  * 
  */
 class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
@@ -203,6 +220,18 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
       Comment(
         "number of optical channel used as offset for sliding window [as WindowSize]"
         )
+      };
+    
+    fhicl::OptionalSequence<std::size_t> DisableWindows {
+      Name("DisableWindows"),
+      Comment("ignores the windows with the specified index"),
+      [this](){ return !EnableOnlyWindows.hasValue(); }
+      };
+
+    fhicl::OptionalSequence<std::size_t> EnableOnlyWindows {
+      Name("EnableOnlyWindows"),
+      Comment("only enables the windows with the specified index"),
+      [this](){ return !DisableWindows.hasValue(); }
       };
 
     fhicl::Atom<std::string> LogCategory {
@@ -249,19 +278,26 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
 
   unsigned int const fWindowSize; ///< Sliding window size in number of channels.
   unsigned int const fWindowStride; ///< Sliding window base offset.
+  
+  /// Channel content of each window.
+  WindowDefs_t const fWindowChannels;
+
+  /// List of windows to be included.
+  std::vector<std::size_t> const fEnabledWindows;
 
   /// Message facility stream category for output.
   std::string const fLogCategory;
   
   // --- END Configuration variables -------------------------------------------
   
-  /// Channel content of each window.
-  WindowDefs_t const fWindowChannels;
-
   /// Combining algorithm.
   icarus::trigger::SlidingWindowCombinerAlg const fCombiner;
 
 
+  /// Returns the number of disabled windows.
+  unsigned int nDisabledWindows() const noexcept
+    { return fWindowChannels.size() - fEnabledWindows.size(); }
+  
   /// Performs the combination for data with a specified threshold.
   void produceThreshold(
     art::Event& event,
@@ -279,6 +315,13 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
 
   /// Defines the channels falling in each window.
   WindowDefs_t defineWindows() const;
+  
+  /// Returns a list of enabled window indices.
+  static std::vector<std::size_t> makeEnabledWindowIndices(
+      std::size_t nWindows
+    , fhicl::OptionalSequence<std::size_t> const& enabled
+    , fhicl::OptionalSequence<std::size_t> const& disabled
+    );
 
   /// Adds the waveforms in the specified association to the waveform `map`.
   static void UpdateWaveformMap(
@@ -293,6 +336,25 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
 //------------------------------------------------------------------------------
 //--- Implementation
 //------------------------------------------------------------------------------
+namespace {
+  
+  /// Returns a collection of type CONT with copies of only the elements with
+  /// the specified `indices`.
+  template <typename Cont, typename Indices>
+  Cont filter(Cont const& coll, Indices const& indices) {
+    
+    Cont selected;
+    for (auto const index: indices) selected.push_back(coll[index]);
+    return selected;
+    
+  } // filter()
+  
+} // local namespace
+
+
+//------------------------------------------------------------------------------
+//--- icarus::trigger::SlidingWindowTrigger
+//------------------------------------------------------------------------------
 icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   (Parameters const& config)
   : art::EDProducer(config)
@@ -300,9 +362,15 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   , fWindowSize(config().WindowSize())
   , fWindowStride
     (util::fhicl::getOptionalValue(config().Stride).value_or(fWindowSize))
-  , fLogCategory(config().LogCategory())
   , fWindowChannels(defineWindows())
-  , fCombiner(fWindowChannels)
+  , fEnabledWindows(makeEnabledWindowIndices(
+     fWindowChannels.size(),
+     config().EnableOnlyWindows, config().DisableWindows
+     ))
+  , fLogCategory(config().LogCategory())
+    // demand full PMT coverage only if no window was disabled:
+  , fCombiner
+    (filter(fWindowChannels, fEnabledWindows), nDisabledWindows() == 0U)
 {
   //
   // more complex parameter parsing
@@ -318,10 +386,21 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   //
   {
     mf::LogInfo log(fLogCategory);
-    log 
-      <<   "Trigger configuration: "
-        << icarus::trigger::dumpTriggerWindowDefs(fWindowChannels)
-      << "\nConfigured " << fADCthresholds.size() << " thresholds:";
+    log <<   "Trigger configuration: " << fWindowChannels.size() << " windows";
+    if (fEnabledWindows.size() < fWindowChannels.size())
+      log << " (only " << fEnabledWindows.size() << " enabled)";
+    log << ":";
+    for (auto const& [ iWindow, window ]: util::enumerate(fWindowChannels)) {
+      log << "\n #" << iWindow << ": "
+        << icarus::trigger::dumpTriggerWindowChannels(window);
+      if (std::find(fEnabledWindows.begin(), fEnabledWindows.end(), iWindow)
+        == fEnabledWindows.end())
+      {
+        log << " (disabled)";
+      }
+    } // for
+    
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
       log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
   } // local block
@@ -429,6 +508,34 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     );
 
 } // icarus::trigger::SlidingWindowTrigger::produceThreshold()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::SlidingWindowTrigger::makeEnabledWindowIndices(
+    std::size_t nWindows
+  , fhicl::OptionalSequence<std::size_t> const& enabled
+  , fhicl::OptionalSequence<std::size_t> const& disabled
+) -> std::vector<std::size_t> {
+  
+  std::vector<std::size_t> selection; // indices of the enabled windows
+  
+  // add all enabled windows (or all if no enabled list is specified)
+  if (!enabled(selection)) {
+    selection.resize(nWindows);
+    std::iota(selection.begin(), selection.end(), 0U);
+  }
+  
+  // remove all disabled windows (if any)
+  std::vector<std::size_t> removeWindows;
+  disabled(removeWindows);
+  auto const find = [&selection](std::size_t index)
+    { return std::find(selection.begin(), selection.end(), index); };
+  for (std::size_t const index: removeWindows) {
+    if (auto const it = find(index); it != selection.end()) selection.erase(it);
+  } // for
+  
+  return selection;
+} // icarus::trigger::SlidingWindowTrigger::makeEnabledWindowIndices()
 
 
 //------------------------------------------------------------------------------
