@@ -6,12 +6,14 @@ art_make(
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
+        BernCRTTranslator.cc
 	
  NO_PLUGINS # WAnt different link lists for modues
  BASENAME_ONLY
  LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
  LIB_LIBRARIES sbndaq-artdaq-core_Overlays
                sbndaq-artdaq-core_Overlays_Common
+
 )
 
 art_make_library(
@@ -109,15 +111,12 @@ art_make_library(
         BernCRTTranslator.cc
     LIBRARIES 
         cetlib_except
-        ${CETLIB}
-
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+        ${CANVAS}
+        ${ARTDAQ_DAQDATA}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        sbndaq-artdaq-core_Overlays
+        sbndaq-artdaq-core_Overlays_Common
+        ${ART_PERSISTENCY_PROVENANCE}
 )
 
 install_headers()
