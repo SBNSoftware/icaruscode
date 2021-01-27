@@ -47,10 +47,10 @@ physics: {
 
       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
-      WindowSize: 15
+      WindowSize: 30
 
       # number of optical channel used as offset for sliding window [as WindowSize]
-      # Stride: 15
+      Stride: 15
 
       # name of the category used for the output
       LogCategory: "SlidingWindowTrigger"
