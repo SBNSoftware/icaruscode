@@ -70,6 +70,7 @@ auto icarus::trigger::SlidingWindowDefinitionAlg::makeWindows
       std::optional<decltype(itSlice)> nextStart;
       unsigned int nChannels = 0U;
       while (nChannels < windowSize) {
+        if (itSlice == send) break;
 
         // aside: check if this is the right place to start the next window
         if (nChannels == windowStride) {
@@ -100,6 +101,15 @@ auto icarus::trigger::SlidingWindowDefinitionAlg::makeWindows
       if (nChannels == windowStride) nextStart = itSlice;
       assert(nextStart);
 
+      if (nChannels < windowSize) {
+        if (!windows.empty()) {
+          // if the last window can't be completed, it's still fine for us
+          mf::LogTrace(fLogCategory)
+            << "  ... couldn't complete the last " << windowSize
+            << "-channel window: only " << nChannels << " channels collected";
+          break;
+        }
+      } // if missing windows
       if (nChannels != windowSize) {
         throw cet::exception("SlidingWindowDefinitionAlg")
           << "Definition of one window yielded " << nChannels
