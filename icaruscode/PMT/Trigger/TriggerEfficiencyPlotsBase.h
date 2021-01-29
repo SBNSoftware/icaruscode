@@ -16,6 +16,7 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoTree.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventIDTree.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
+#include "icaruscode/PMT/Trigger/Algorithms/details/PMTInfo_t.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
@@ -904,6 +905,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
 
 
   using EventInfo_t = details::EventInfo_t; // type alias
+  using PMTInfo_t = details::PMTInfo_t; // type alias
   using TriggerInfo_t = details::TriggerInfo_t; // type alias
   
   
@@ -1172,18 +1174,18 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// `eventInfo` and `triggerInfo`.
   virtual void fillEfficiencyPlots(
     EventInfo_t const& eventInfo,
+    PMTInfo_t const& PMTinfo,
     TriggerInfo_t const& triggerInfo,
-    PlotSandbox const& plots,
-    std::vector<ChannelID_t> const& channelList
+    PlotSandbox const& plots
     ) const;
 
   /// Fills the plots as `fillEfficiencyPlots()` and also as `fillEventPlots()`
   /// for the proper category: triggered or not triggered.
   virtual void fillAllEfficiencyPlots(
     EventInfo_t const& eventInfo,
+    PMTInfo_t const& PMTinfo,
     TriggerInfo_t const& triggerInfo,
-    PlotSandbox const& plots,
-    std::vector<ChannelID_t> const& channelList = {}
+    PlotSandbox const& plots
     ) const;
   
   // --- END Customization interface -------------------------------------------
@@ -1222,6 +1224,19 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   // documentation at definition:
   static PlotCategories_t const DefaultPlotCategories;
+  
+  
+  /**
+   * @brief Returns all channels contributing to the trigger gates.
+   * @param cryoGates all trigger gates
+   * @return a list of ID of "active" channels
+   * 
+   * A channels is considered "active" when it is contributing to a trigger gate
+   * which is open at least one. Conversely, all channels belonging to gates
+   * which have no opening are excluded.
+   */
+  static std::vector<ChannelID_t> extractActiveChannels
+    (TriggerGatesPerCryostat_t const& cryoGates);
   
   
   // --- END Additional helper utilities ---------------------------------------

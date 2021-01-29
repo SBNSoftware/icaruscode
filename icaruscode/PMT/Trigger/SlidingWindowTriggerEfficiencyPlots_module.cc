@@ -727,6 +727,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     std::size_t iPattern, WindowPattern const& pattern,
     PlotSandboxRefs_t const& plotSets,
     EventInfo_t const& eventInfo,
+    PMTInfo_t const& PMTinfo,
     WindowTriggerInfo const& triggerInfo
     ) const;
 
@@ -1419,6 +1420,9 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
       
     } // main window choice
     
+    PMTInfo_t const PMTinfo
+      { threshold.value(), helper().extractActiveChannels(gates) };
+    
     //
     // 2.3.   plot the trigger outcome
     //
@@ -1426,7 +1430,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
       thresholdIndex, threshold,
       iPattern, pattern,
       selectedPlots,
-      eventInfo, triggerInfo
+      eventInfo, PMTinfo, triggerInfo
       );
     
   } // for window patterns
@@ -1542,6 +1546,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   std::size_t iPattern, WindowPattern const& pattern,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
+  PMTInfo_t const& PMTinfo,
   WindowTriggerInfo const& triggerInfo
 ) const {
   
@@ -1581,7 +1586,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // efficiency plots
     // (including event plots in the triggered or non-triggered category)
     helper().fillAllEfficiencyPlots
-      (eventInfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
+      (eventInfo, PMTinfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
     
     //
     // add here further trigger-specific plots

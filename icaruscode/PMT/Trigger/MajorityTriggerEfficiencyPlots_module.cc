@@ -449,19 +449,6 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     TriggerGatesPerCryostat_t const& cryoGates,
     ADCCounts_t const threshold
     ) const;
-
-  /**
-   * @brief Returns all channels contributing to the trigger gates.
-   * @param cryoGates all trigger gates
-   * @return a list of ID of "active" channels
-   * 
-   * A channels is considered "active" when it is contributing to a trigger gate
-   * which is open at least one. Conversely, all channels belonging to gates
-   * which have no opening are excluded.
-   */
-  std::vector<ChannelID_t> returnCombinedTriggerPrimitives(
-    TriggerGatesPerCryostat_t const& cryoGates
-    ) const;
   
 }; // icarus::trigger::MajorityTriggerEfficiencyPlots
 
@@ -706,7 +693,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
     beamGate.apply(combineTriggerPrimitives(gates, threshold)),
-    returnCombinedTriggerPrimitives(gates)
+    helper().extractActiveChannels(gates)
     );
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot()
@@ -768,7 +755,6 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
   
-  
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
     // in this check, `fired` remembers the outcome from the previous threshold
@@ -788,6 +774,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       }
     } // if
     
+    PMTInfo_t const PMTinfo { threshold.value(), channelList };
     TriggerInfo_t triggerInfo;
     if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
 
@@ -824,7 +811,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       // efficiency plots
       // (including event plots in the triggered or non-triggered category)
       helper().fillAllEfficiencyPlots
-        (eventInfo, triggerInfo, plotSet.demandSandbox(minCountStr), channelList);
+        (eventInfo, PMTinfo, triggerInfo, plotSet.demandSandbox(minCountStr));
       
       //
       // add here further trigger-specific plots
@@ -895,31 +882,6 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives()
 
-//------------------------------------------------------------------------------
-auto icarus::trigger::MajorityTriggerEfficiencyPlots::returnCombinedTriggerPrimitives(
-  TriggerGatesPerCryostat_t const& cryoGates
-) const -> std::vector<ChannelID_t> {
-
-  //
-  // get channels contributing to gates in a fired event
-  //
-
-  std::vector<ChannelID_t> channelList;
-
-  for (auto const& gates: cryoGates) {
-    for (auto const& gate: gates) {
-      assert(gate.hasChannels());
-
-      if (gate.alwaysClosed()) continue;
-      for (auto& channel: gate.channels()) {
-        channelList.push_back(channel);
-      }
-    } // for gates
-  } // for
-
-  return channelList;
-  
-} // icarus::trigger::MajorityTriggerEfficiencyPlots::returnCombinedTriggerPrimitives()
 
 //------------------------------------------------------------------------------
 DEFINE_ART_MODULE(icarus::trigger::MajorityTriggerEfficiencyPlots)

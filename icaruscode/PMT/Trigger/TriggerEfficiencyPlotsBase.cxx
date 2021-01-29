@@ -733,9 +733,9 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   EventInfo_t const& eventInfo,
+  PMTInfo_t const& PMTinfo,
   TriggerInfo_t const& triggerInfo,
-  PlotSandbox const& plots,
-  std::vector<ChannelID_t> const& channelList
+  PlotSandbox const& plots
 ) const {
   
   using namespace std::string_literals;
@@ -766,7 +766,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
-    for (int channel : channelList) {
+    for (raw::ChannelID_t const channel: PMTinfo.activeChannels()) {
       getTrigEff.Hist("PMTChannels"s).Fill(channel);
     }
   }
@@ -777,12 +777,12 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   EventInfo_t const& eventInfo,
+  PMTInfo_t const& PMTinfo,
   TriggerInfo_t const& triggerInfo,
-  PlotSandbox const& plots,
-  std::vector<ChannelID_t> const& channelList
+  PlotSandbox const& plots
 ) const {
   
-  fillEfficiencyPlots(eventInfo, triggerInfo, plots, channelList);
+  fillEfficiencyPlots(eventInfo, PMTinfo, triggerInfo, plots);
   
   // plotting split for triggering/not triggering events
   fillEventPlots(
@@ -869,6 +869,33 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::splitByCryostat
   return gatesPerCryostat;
 
 } // icarus::trigger::TriggerEfficiencyPlotsBase::splitByCryostat()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
+  (TriggerGatesPerCryostat_t const& cryoGates) -> std::vector<ChannelID_t>
+{
+
+  //
+  // get channels contributing to gates in a fired event
+  //
+
+  std::vector<ChannelID_t> channelList;
+
+  for (auto const& gates: cryoGates) {
+    for (auto const& gate: gates) {
+      assert(gate.hasChannels());
+
+      if (gate.alwaysClosed()) continue;
+      for (auto const channel: gate.channels()) {
+        channelList.push_back(channel);
+      }
+    } // for gates
+  } // for
+
+  return channelList;
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels()
 
 
 //------------------------------------------------------------------------------
