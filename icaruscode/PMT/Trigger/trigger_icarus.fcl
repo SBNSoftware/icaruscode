@@ -158,11 +158,23 @@ icarus_trigger_channel_pairings: [
   
   ]
 
-icarus_trigger_channel_ignore: [ 
 
-54, 58, 67, 76, 98, 129, 131, 143, 153, 199, 254, 70, 106, 128, 217 
-
+################################################################################
+### PMT channels with issues
+###
+#
+# the following PMT were found to have issues during commissioning
+# on January 2021 (or earlier).
+# See e.g. SBN DocDB 20696.
+#
+icarus_trigger_channel_ignore_202101: [
+   70, 106, 207,                     # PMT not working [SBN DocDB 20696]
+   54,  58,  67,  98, 112, 153, 254, # hot channels [SBN DocDB 20696]
+   76, 129, 131, 143, 199, 128, 217 
 ]
+
+# default selection of PMT channels to ignore
+icarus_trigger_channel_ignore: @local::icarus_trigger_channel_ignore_202101
 
 
 ################################################################################
