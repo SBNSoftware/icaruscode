@@ -363,6 +363,7 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * * `Eff`: trigger efficiency defined as number of triggered events over the
  *   total number of events, as function of the pattern (as encoded above);
  *   uncertainties are managed by `TEfficiency`.
+ * * `Triggers`: trigger count as function of the pattern (as encoded above).
  * * `TriggerTick`: distribution of the time of the earliest trigger for the
  *   event, as function of the pattern (as in `Eff`). Each event appears at most
  *   once for each trigger pattern.
@@ -734,6 +735,10 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   /// Fills all event plots with data from `eventInfo` as in `fillEventPlots()`.
   void fillAllEventPlots
     (PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo) const;
+
+  /// Fills all PMY plots with data from `PMTinfo` as in `fillPMTplots()`.
+  void fillAllPMTplots
+    (PlotSandboxRefs_t const& plotSets, PMTInfo_t const& PMTinfo) const;
 
   /**
    * @brief Builds the channel maps from the specified gates.
@@ -1221,6 +1226,16 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   
   util::ROOT::applyAxisLabels(TrigTime->GetXaxis(), patternLabels);
   
+  auto* Triggers = plots.make<TH1F>(
+    "Triggers",
+    "Triggered events"
+      ";window pattern"
+      ";triggered events",
+    fPatterns.size(), 0.0, double(fPatterns.size())
+    );
+  
+  util::ROOT::applyAxisLabels(Triggers->GetXaxis(), patternLabels);
+  
   auto* Eff = plots.make<TEfficiency>(
     "Eff",
     "Efficiency of triggering"
@@ -1236,7 +1251,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   // histograms instead of directly as recommended.
   util::ROOT::applyAxisLabels
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), patternLabels);
-  
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet()
 
@@ -1385,6 +1399,10 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   }
   // --- END DEBUG -------------------------------------------------------------
   
+  // get which gates are active during the beam gate
+  PMTInfo_t const PMTinfo
+    { threshold.value(), helper().extractActiveChannels(gates) };
+  
   //
   // 2.   for each pattern:
   //
@@ -1420,9 +1438,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
       
     } // main window choice
     
-    PMTInfo_t const PMTinfo
-      { threshold.value(), helper().extractActiveChannels(gates) };
-    
     //
     // 2.3.   plot the trigger outcome
     //
@@ -1439,6 +1454,11 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   // 3. fill all trigger-independent plots (one copy per threshold... meh)
   //
   fillAllEventPlots(selectedPlots, eventInfo);
+  
+  //
+  // 4. fill all PMT plots (threshold-dependent)
+  //
+  fillAllPMTplots(selectedPlots, PMTinfo);
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot()
 
@@ -1462,6 +1482,29 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllEventPlots
   } // for
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllEventPlots()
+
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots
+  (PlotSandboxRefs_t const& plotSets, PMTInfo_t const& PMTinfo) const
+{
+  /*
+   * Now fill the plots independent of the trigger response:
+   * the same value is plotted in all plot sets.
+   * (again for all pertinent event categories, e.g. charged currents, etc.)
+   */
+  for (PlotSandbox const& plotSet: plotSets) {
+    
+    //
+    // general plots, independent of trigger definition but dependent on
+    // threshold
+    //
+    fillPMTplots(PMTinfo, plotSet);
+    
+  } // for
+  
+} // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots()
 
 
 
@@ -1571,6 +1614,9 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     
     // simple efficiency
     get.Eff("Eff"s).Fill(fired, iPattern);
+    
+    // simple count
+    if (fired) get.Hist("Triggers"s).Fill(iPattern);
     
     // trigger time (if any)
     if (fired) {

@@ -443,6 +443,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlotSet
   //
   initializeEventPlots(plots);
   
+  initializePMTplots(plots);
+  
   //
   // Plots per trigger setting, split in triggering and not triggering events;
   // the plot set is the same as the "global" one.
@@ -465,6 +467,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlotSet
       PlotSandbox& box = reqBox.addSubSandbox(name, desc);
       
       initializeEventPlots(box);
+      
+      initializePMTplots(box);
       
     } // for triggering requirement
   } // for triggering classes
@@ -559,13 +563,6 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
   //
   // plots independent of the trigger primitive requirements
   //
-  plots.make<TH1I>(
-    "PMTChannels",
-    "PMT Channel Distribution"
-    ";channel with opened trigger gate"
-    ";opened trigger gates",
-    360, 0, 360 // large number, zoom in presentations!
-    );
 
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots()
 
@@ -679,6 +676,28 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::initializePMTplots
+  (PlotSandbox& plots) const
+{
+  
+  unsigned int const nOpChannels = fGeom.NOpChannels();
+  
+  //
+  // plots independent of the trigger primitive requirements
+  //
+  plots.make<TH1I>(
+    "ActivePMT",
+    "PMT channels contributing to the trigger"
+    ";channel with opened trigger gate"
+    ";events",
+    nOpChannels, // large number, zoom in presentations!
+    0.0, static_cast<double>(nOpChannels)
+    );
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::initializePMTplots()
+
+
+//------------------------------------------------------------------------------
 bool icarus::trigger::TriggerEfficiencyPlotsBase::shouldPlotEvent
   (EventInfo_t const& eventInfo) const
 {
@@ -731,9 +750,24 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::fillPMTplots
+  (PMTInfo_t const& PMTinfo, PlotSandbox const& plots) const
+{
+  
+  using namespace std::string_literals;
+  
+  HistGetter const getTrig { plots };
+  
+  auto& activePMThist = getTrig.Hist("ActivePMT"s);
+  for (raw::Channel_t const channel: PMTinfo.activeChannels())
+    activePMThist.Fill(channel);
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::fillPMTplots()
+
+
+//------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   EventInfo_t const& eventInfo,
-  PMTInfo_t const& PMTinfo,
   TriggerInfo_t const& triggerInfo,
   PlotSandbox const& plots
 ) const {
@@ -766,9 +800,6 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
-    for (raw::ChannelID_t const channel: PMTinfo.activeChannels()) {
-      getTrigEff.Hist("PMTChannels"s).Fill(channel);
-    }
   }
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
@@ -782,11 +813,16 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   PlotSandbox const& plots
 ) const {
   
-  fillEfficiencyPlots(eventInfo, PMTinfo, triggerInfo, plots);
+  fillEfficiencyPlots(eventInfo, triggerInfo, plots);
   
   // plotting split for triggering/not triggering events
   fillEventPlots(
     eventInfo,
+    plots.demandSandbox(triggerInfo.fired()? "triggering": "nontriggering")
+    );
+  
+  fillPMTplots(
+    PMTinfo,
     plots.demandSandbox(triggerInfo.fired()? "triggering": "nontriggering")
     );
   
@@ -881,7 +917,6 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
   //
 
   std::vector<ChannelID_t> channelList;
-
   for (auto const& gates: cryoGates) {
     for (auto const& gate: gates) {
       assert(gate.hasChannels());
@@ -893,6 +928,11 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
     } // for gates
   } // for
 
+  // remove duplicates
+  std::sort(channelList.begin(), channelList.end());
+  auto const firstDuplicate
+    = std::unique(channelList.begin(), channelList.end());
+  channelList.erase(firstDuplicate, channelList.end());
   return channelList;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels()

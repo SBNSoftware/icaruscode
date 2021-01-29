@@ -383,7 +383,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * threshold (ADC) and a broad event category.
  * 
  * 
- * ### Plots independent of the triggers (selection plots)
+ * ### Plots independent of the triggers (including selection plots)
  * 
  * @anchor TriggerEfficiencyPlotsBase_SelectionPlots
  * 
@@ -405,8 +405,15 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *       neutrino interaction;
  *     * `InteractionVertexYZ`: coordinates of the location of all interactions
  *       in the event, in world coordinates, projected on the anode plane.
+ * * `ActivePMT`: the channels contributing to the trigger; a channel is added
+ *   to this plot if it belongs to a gate (LVDS output) which during the beam
+ *   gate it is beyond threshold at least once (note that in case of LVDS OR
+ *   combination, a channel will appear in this plot even if it is not beyond
+ *   threshold if the one paired with it is beyond threshold);
+ *   this plot depends on the discrimination threshold.
  * 
- * @note In fact, these plots usually do not even depend on the ADC threshold
+ * 
+ * @note In fact, these plots _usually_ do not even depend on the ADC threshold
  *       of the optical detector channels. Nevertheless, they are stored in the
  *       folders under specific thresholds, and they are duplicate.
  * 
@@ -1088,6 +1095,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Initializes a single, trigger-independent plot set into `plots`.
   virtual void initializeEventPlots(PlotSandbox& plots) const;
   
+  /// Initializes a single, trigger-independent, threshold-dependent plot set
+  /// into `plots`.
+  virtual void initializePMTplots(PlotSandbox& plots) const;
+  
   /// Returns whether an event with the specified information should be included
   /// in the plots at all (it's a filter).
   virtual bool shouldPlotEvent(EventInfo_t const& eventInfo) const;
@@ -1170,11 +1181,14 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   virtual void fillEventPlots
     (EventInfo_t const& eventInfo, PlotSandbox const& plots) const;
 
+  /// Fill the plots (`initializePMTplots()`) with info from `PMTinfo`.
+  virtual void fillPMTplots
+    (PMTInfo_t const& PMTinfo, PlotSandbox const& plots) const;
+
   /// Fills the plots (`initializeEfficiencyPerTriggerPlots()`) with info from
   /// `eventInfo` and `triggerInfo`.
   virtual void fillEfficiencyPlots(
     EventInfo_t const& eventInfo,
-    PMTInfo_t const& PMTinfo,
     TriggerInfo_t const& triggerInfo,
     PlotSandbox const& plots
     ) const;

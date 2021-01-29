@@ -18,13 +18,26 @@
 // -----------------------------------------------------------------------------
 icarus::trigger::SlidingWindowCombinerAlg::SlidingWindowCombinerAlg(
   Windows_t const& windows,
+  std::vector<raw::Channel_t> missingChannels /* = {} */,
   bool requireFullCoverage /* = true */,
   std::string logCategory /* = "SlidingWindowCombinerAlg" */
   )
   : fWindowChannels(sortedWindowChannels(windows))
+  , fMissingChannels(sortChannels(std::move(missingChannels)))
   , fRequireFullCoverage(requireFullCoverage)
   , fLogCategory(std::move(logCategory))
   {}
+
+
+// -----------------------------------------------------------------------------
+auto icarus::trigger::SlidingWindowCombinerAlg::firstChannelPresent
+  (WindowChannels_t const& channels) const -> WindowChannels_t::const_iterator
+{
+  auto iChannel = channels.begin();
+  auto const cend = channels.end();
+  while (iChannel != cend) if (!isMissingChannel(*iChannel)) return iChannel;
+  return cend;
+} // icarus::trigger::SlidingWindowCombinerAlg::firstChannelPresent()
 
 
 // -----------------------------------------------------------------------------
@@ -35,6 +48,15 @@ auto icarus::trigger::SlidingWindowCombinerAlg::sortedWindowChannels
   for (auto& window: newWindows) std::sort(window.begin(), window.end());
   return newWindows;
 } // icarus::trigger::SlidingWindowCombinerAlg::sortWindowChannels()
+
+
+// -----------------------------------------------------------------------------
+auto icarus::trigger::SlidingWindowCombinerAlg::sortChannels
+  (std::vector<raw::Channel_t> channels) -> std::vector<raw::Channel_t>
+{
+  std::sort(channels.begin(), channels.end());
+  return std::move(channels); // is move() needed?
+} // icarus::trigger::SlidingWindowCombinerAlg::sortChannels
 
 
 // -----------------------------------------------------------------------------

@@ -745,6 +745,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     << ")"
     ;
   
+  PMTInfo_t const PMTinfo { threshold.value(), channelList };
+  
   /*
    * Fill all the histograms for all the minimum primitive requirements
    * (filling the information whether or not the trigger fired),
@@ -774,7 +776,6 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       }
     } // if
     
-    PMTInfo_t const PMTinfo { threshold.value(), channelList };
     TriggerInfo_t triggerInfo;
     if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
 
@@ -832,6 +833,12 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     // general plots, independent of trigger definition details
     //
     fillEventPlots(eventInfo, plotSet);
+    
+    //
+    // general plots, independent of trigger definition but dependent on
+    // threshold
+    //
+    fillPMTplots(PMTinfo, plotSet);
     
     //
     // trigger-definition specific plots

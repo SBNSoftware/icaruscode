@@ -180,6 +180,9 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * * `DisableWindows` (list of integers, default: omitted): if specified,
  *     the windows with index in this list will be excluded from processing and
  *     from output; mutually exclusive with `EnableOnlyWindows`.
+ * * `MissingChannels` (list of integers, default: empty): the channels whose ID
+ *     is included in this list are expected and required not to be present in
+ *     the input (i.e. no input gate should include them).
  * * `LogCategory` (string): name of the output stream category for console
  *     messages (managed by MessageFacility library).
  *
@@ -232,6 +235,12 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
       Name("EnableOnlyWindows"),
       Comment("only enables the windows with the specified index"),
       [this](){ return !DisableWindows.hasValue(); }
+      };
+    
+    fhicl::Sequence<raw::Channel_t> MissingChannels {
+      Name("MissingChannels"),
+      Comment("list of ID of channels missing from the input"),
+      std::vector<raw::Channel_t>{}
       };
 
     fhicl::Atom<std::string> LogCategory {
@@ -369,8 +378,11 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
      ))
   , fLogCategory(config().LogCategory())
     // demand full PMT coverage only if no window was disabled:
-  , fCombiner
-    (filter(fWindowChannels, fEnabledWindows), nDisabledWindows() == 0U)
+  , fCombiner(
+      filter(fWindowChannels, fEnabledWindows),
+      config().MissingChannels(),
+      nDisabledWindows() == 0U
+    )
 {
   //
   // more complex parameter parsing
