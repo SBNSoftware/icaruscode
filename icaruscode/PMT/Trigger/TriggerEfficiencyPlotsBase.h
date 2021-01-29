@@ -1170,7 +1170,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   virtual void fillEfficiencyPlots(
     EventInfo_t const& eventInfo,
     TriggerInfo_t const& triggerInfo,
-    PlotSandbox const& plots
+    PlotSandbox const& plots,
+    std::vector<int> channelList
     ) const;
 
   /// Fills the plots as `fillEfficiencyPlots()` and also as `fillEventPlots()`
@@ -1178,7 +1179,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   virtual void fillAllEfficiencyPlots(
     EventInfo_t const& eventInfo,
     TriggerInfo_t const& triggerInfo,
-    PlotSandbox const& plots
+    PlotSandbox const& plots,
+    std::vector<int> channelList = {}
     ) const;
   
   // --- END Customization interface -------------------------------------------

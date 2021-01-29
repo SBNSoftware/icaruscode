@@ -426,7 +426,8 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     std::size_t iThr, ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
-    TriggerGateData_t const& combinedTrigger
+    TriggerGateData_t const& combinedTrigger,
+    std::vector<int> const& channelList
     ) const;
   
   /**
@@ -449,6 +450,10 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     ADCCounts_t const threshold
     ) const;
 
+  std::vector<int> returnCombinedTriggerPrimitives(
+    TriggerGatesPerCryostat_t const& cryoGates,
+    ADCCounts_t const threshold
+    ) const;
   
 }; // icarus::trigger::MajorityTriggerEfficiencyPlots
 
@@ -665,9 +670,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet
     ";maximum trigger primitives at the same time on a single cryostat"
     ";events",
     192, 0.0, 192.0 // large number, zoom in presentations!
-    );
-  
-  
+    ); 
+
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet()
 
 
@@ -693,7 +697,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
-    beamGate.apply(combineTriggerPrimitives(gates, threshold))
+    beamGate.apply(combineTriggerPrimitives(gates, threshold)),
+    returnCombinedTriggerPrimitives(gates, threshold)
     );
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot()
@@ -706,7 +711,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
-  TriggerGateData_t const& combinedCount
+  TriggerGateData_t const& combinedCount,
+  std::vector<int> const& channelList
 ) const {
   
   /*
@@ -776,7 +782,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     
     TriggerInfo_t triggerInfo;
     if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
-    
+
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
@@ -810,7 +816,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       // efficiency plots
       // (including event plots in the triggered or non-triggered category)
       helper().fillAllEfficiencyPlots
-        (eventInfo, triggerInfo, plotSet.demandSandbox(minCountStr));
+        (eventInfo, triggerInfo, plotSet.demandSandbox(minCountStr), channelList);
       
       //
       // add here further trigger-specific plots
@@ -881,6 +887,38 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives()
 
+//------------------------------------------------------------------------------
+auto icarus::trigger::MajorityTriggerEfficiencyPlots::returnCombinedTriggerPrimitives(
+  TriggerGatesPerCryostat_t const& cryoGates,
+  icarus::trigger::ADCCounts_t const threshold
+) const -> std::vector<int> {
+
+  //
+  // get channels contributing to gates in a fired event
+  //
+
+  std::vector<int> channelList;
+
+  for (auto const& [ iCryo, gates ]: util::enumerate(cryoGates)) {
+    geo::CryostatID const cryoID(iCryo);
+
+    if (gates.empty()) { // this is unexpected...
+      return {};
+    } // if no gates
+
+    for (auto& gate: gates) {
+      assert(gate.hasChannels());
+
+      if (gate.alwaysClosed()) continue;
+      for (auto& channel: gate.channels()) {
+        channelList.push_back(channel);
+      }
+    } // for gates
+  } // for
+
+  return channelList;
+  
+} // icarus::trigger::MajorityTriggerEfficiencyPlots::returnCombinedTriggerPrimitives()
 
 //------------------------------------------------------------------------------
 DEFINE_ART_MODULE(icarus::trigger::MajorityTriggerEfficiencyPlots)

@@ -556,6 +556,17 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
   
+  //
+  // plots independent of the trigger primitive requirements
+  //
+  plots.make<TH1I>(
+    "PMTChannels",
+    "PMT Channel Distribution"
+    ";channel with opened trigger gate"
+    ";opened trigger gates",
+    360, 0, 360 // large number, zoom in presentations!
+    );
+
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots()
 
 
@@ -652,6 +663,16 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
       120, -1200., +1200.,
       100,  -250.,  +250.
       );
+
+    plots.make<TH2F>(
+      "InteractionTypeNeutrinoEnergy",
+      "Interaction Type vs Neutrino Energy"
+      ";InteractionType"
+      ";Neutrino Energy",
+      200,999.5,1199.5,
+      120, 0.0, 6.0
+      );
+
   } // if generated information
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots()
@@ -699,6 +720,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
       getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
       getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
       getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+      getTrig.Hist("InteractionTypeNeutrinoEnergy"s).Fill(double(eventInfo.InteractionType()), double(eventInfo.NeutrinoEnergy()));
     } // if neutrino event
     TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
     for (auto const& point: eventInfo.Vertices())
@@ -712,7 +734,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   EventInfo_t const& eventInfo,
   TriggerInfo_t const& triggerInfo,
-  PlotSandbox const& plots
+  PlotSandbox const& plots,
+  std::vector<int> channelList
 ) const {
   
   using namespace std::string_literals;
@@ -743,8 +766,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
+    for (int channel : channelList) {
+      getTrigEff.Hist("PMTChannels"s).Fill(channel);
+    }
   }
-  
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 
@@ -753,10 +778,11 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   EventInfo_t const& eventInfo,
   TriggerInfo_t const& triggerInfo,
-  PlotSandbox const& plots
+  PlotSandbox const& plots,
+  std::vector<int> channelList
 ) const {
   
-  fillEfficiencyPlots(eventInfo, triggerInfo, plots);
+  fillEfficiencyPlots(eventInfo, triggerInfo, plots, channelList);
   
   // plotting split for triggering/not triggering events
   fillEventPlots(
