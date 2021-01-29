@@ -269,9 +269,15 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
     art::InputTag const& dataTag
     ) const;
 
+  /**
+   * @brief Removes all the channel in `ignoreChannels` from `channelPairing`.
+   * @return a copy of `channelPairing` with no element from `ignoreChannels`
+   * 
+   * Channel lists in the returned list may become empty.
+   */
   std::vector<std::vector<raw::Channel_t>> removeChannels(
     std::vector<std::vector<raw::Channel_t>> channelPairing,
-    std::vector<raw::Channel_t> fIgnoreChannels
+    std::vector<raw::Channel_t> const& ignoreChannels
     ) const;
   
   
@@ -414,23 +420,26 @@ void icarus::trigger::LVDSgates::produce(art::Event& event) {
   
 } // icarus::trigger::LVDSgates::produce()
 
+
+//------------------------------------------------------------------------------
 std::vector<std::vector<raw::Channel_t>> icarus::trigger::LVDSgates::removeChannels(
   std::vector<std::vector<raw::Channel_t>> channelPairing,
-  std::vector<raw::Channel_t> fIgnoreChannels
+  std::vector<raw::Channel_t> const& ignoreChannels
   ) const {
 
-  for (unsigned int i = 0; i < channelPairing.size(); i++) {
-    for (unsigned int j = channelPairing[i].size(); j-- > 0; ) {
-      std::vector<raw::Channel_t>::iterator it = find(fIgnoreChannels.begin(), fIgnoreChannels.end(), channelPairing[i][j]);
+  for (std::vector<raw::Channel_t>& channels: channelPairing) {
+    for (unsigned int j = channels.size(); j-- > 0; ) {
+      std::vector<raw::Channel_t>::const_iterator const it = find(ignoreChannels.begin(), ignoreChannels.end(), channels[j]);
       if (it != fIgnoreChannels.end()) {
-        channelPairing[i].erase(channelPairing[i].begin() + j);
+        channels.erase(channels.begin() + j);
       }
     }
   }
 
   return channelPairing;
 
-}
+} // icarus::trigger::LVDSgates::removeChannels()
+
 
 //------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::produceThreshold(
@@ -452,7 +461,7 @@ void icarus::trigger::LVDSgates::produceThreshold(
   checkInput(gates);
   
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates;
-  std::vector<std::vector<raw::Channel_t>> cleanedChannels = removeChannels(fChannelPairing, fIgnoreChannels);
+  std::vector<std::vector<raw::Channel_t>> const cleanedChannels = removeChannels(fChannelPairing, fIgnoreChannels);
 
   for (std::vector<raw::Channel_t> const& pairing: cleanedChannels) {
     if (pairing.empty()) continue; // ???

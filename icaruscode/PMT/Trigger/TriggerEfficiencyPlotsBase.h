@@ -1055,6 +1055,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Type of gate data without channel information.
   using TriggerGateData_t = InputTriggerGate_t::GateData_t;
   
+  /// Type representing the unique identifier of a optical detector channel.
+  using ChannelID_t = InputTriggerGate_t::ChannelID_t;
+  
   
   /// A collection of useful beam gates. Make one with `makeGatePack()`.
   struct GatePack_t {
@@ -1171,7 +1174,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     EventInfo_t const& eventInfo,
     TriggerInfo_t const& triggerInfo,
     PlotSandbox const& plots,
-    std::vector<int> channelList
+    std::vector<ChannelID_t> const& channelList
     ) const;
 
   /// Fills the plots as `fillEfficiencyPlots()` and also as `fillEventPlots()`
@@ -1180,7 +1183,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     EventInfo_t const& eventInfo,
     TriggerInfo_t const& triggerInfo,
     PlotSandbox const& plots,
-    std::vector<int> channelList = {}
+    std::vector<ChannelID_t> const& channelList = {}
     ) const;
   
   // --- END Customization interface -------------------------------------------

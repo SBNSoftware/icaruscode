@@ -427,7 +427,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     TriggerGateData_t const& combinedTrigger,
-    std::vector<int> const& channelList
+    std::vector<ChannelID_t> const& channelList
     ) const;
   
   /**
@@ -450,9 +450,17 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     ADCCounts_t const threshold
     ) const;
 
-  std::vector<int> returnCombinedTriggerPrimitives(
-    TriggerGatesPerCryostat_t const& cryoGates,
-    ADCCounts_t const threshold
+  /**
+   * @brief Returns all channels contributing to the trigger gates.
+   * @param cryoGates all trigger gates
+   * @return a list of ID of "active" channels
+   * 
+   * A channels is considered "active" when it is contributing to a trigger gate
+   * which is open at least one. Conversely, all channels belonging to gates
+   * which have no opening are excluded.
+   */
+  std::vector<ChannelID_t> returnCombinedTriggerPrimitives(
+    TriggerGatesPerCryostat_t const& cryoGates
     ) const;
   
 }; // icarus::trigger::MajorityTriggerEfficiencyPlots
@@ -698,7 +706,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
     beamGate.apply(combineTriggerPrimitives(gates, threshold)),
-    returnCombinedTriggerPrimitives(gates, threshold)
+    returnCombinedTriggerPrimitives(gates)
     );
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot()
@@ -712,7 +720,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   TriggerGateData_t const& combinedCount,
-  std::vector<int> const& channelList
+  std::vector<ChannelID_t> const& channelList
 ) const {
   
   /*
@@ -889,24 +897,17 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
 
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerEfficiencyPlots::returnCombinedTriggerPrimitives(
-  TriggerGatesPerCryostat_t const& cryoGates,
-  icarus::trigger::ADCCounts_t const threshold
-) const -> std::vector<int> {
+  TriggerGatesPerCryostat_t const& cryoGates
+) const -> std::vector<ChannelID_t> {
 
   //
   // get channels contributing to gates in a fired event
   //
 
-  std::vector<int> channelList;
+  std::vector<ChannelID_t> channelList;
 
-  for (auto const& [ iCryo, gates ]: util::enumerate(cryoGates)) {
-    geo::CryostatID const cryoID(iCryo);
-
-    if (gates.empty()) { // this is unexpected...
-      return {};
-    } // if no gates
-
-    for (auto& gate: gates) {
+  for (auto const& gates: cryoGates) {
+    for (auto const& gate: gates) {
       assert(gate.hasChannels());
 
       if (gate.alwaysClosed()) continue;

@@ -735,7 +735,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   EventInfo_t const& eventInfo,
   TriggerInfo_t const& triggerInfo,
   PlotSandbox const& plots,
-  std::vector<int> channelList
+  std::vector<ChannelID_t> const& channelList
 ) const {
   
   using namespace std::string_literals;
@@ -779,7 +779,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   EventInfo_t const& eventInfo,
   TriggerInfo_t const& triggerInfo,
   PlotSandbox const& plots,
-  std::vector<int> channelList
+  std::vector<ChannelID_t> const& channelList
 ) const {
   
   fillEfficiencyPlots(eventInfo, triggerInfo, plots, channelList);
