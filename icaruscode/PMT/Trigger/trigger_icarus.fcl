@@ -165,12 +165,11 @@ icarus_trigger_channel_pairings: [
 #
 # the following PMT were found to have issues during commissioning
 # on January 2021 (or earlier).
-# See e.g. SBN DocDB 20696.
+# See e.g. SBN DocDB 20696 (see plots on slide 7).
 #
 icarus_trigger_channel_ignore_202101: [
-   70, 106, 207,                     # PMT not working [SBN DocDB 20696]
-   54,  58,  67,  98, 112, 153, 254, # hot channels [SBN DocDB 20696]
-   76, 129, 131, 143, 199, 128, 217 
+   70, 106, 217,                     # PMT not working [SBN DocDB 20696]
+   54,  58,  67,  98, 112, 153, 254, # hot channels [SBN DocDB 20696] 
 ]
 
 # default selection of PMT channels to ignore
