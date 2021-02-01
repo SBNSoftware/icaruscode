@@ -225,6 +225,8 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
 
    // Get the association between channelID and fragment
+
+   /*
    std::map<raw::Channel_t, size_t > m_frag_map;
    std::map<raw::Channel_t, sbndaq::CAENV1730FragmentMetadata > m_metafrag_map;
    std::map<raw::Channel_t, uint32_t> m_headerttt_map; 
@@ -265,6 +267,8 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
       }
     }
 
+    */
+
 
    art::Handle< std::vector< raw::OpDetWaveform > > rawHandle;
    event.getByLabel(m_data_label, rawHandle);
@@ -279,10 +283,14 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      raw::Channel_t channel_id = raw_waveform.ChannelNumber();
 
      m_channel_id->push_back( channel_id );
-     m_fragment_id->push_back( m_frag_map[channel_id] );
-     m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
-     m_fragment_nseconds->push_back( m_metafrag_map[channel_id].timeStampNSec );
-     m_header_timestamp->push_back( m_headerttt_map[channel_id] );
+     //m_fragment_id->push_back( m_frag_map[channel_id] );
+     //m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
+     //m_fragment_nseconds->push_back( m_metafrag_map[channel_id].timeStampNSec );
+     //m_header_timestamp->push_back( m_headerttt_map[channel_id] );
+
+    m_fragment_timestamp->push_back( 0.0 );
+     m_fragment_nseconds->push_back( 0.0 );
+     m_header_timestamp->push_back( 0.0 );
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
