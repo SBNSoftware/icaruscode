@@ -117,6 +117,7 @@ art_make_library(
         sbndaq-artdaq-core_Overlays
         sbndaq-artdaq-core_Overlays_Common
         ${ART_PERSISTENCY_PROVENANCE}
+        artdaq-core_Data
 )
 
 install_headers()
