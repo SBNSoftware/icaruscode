@@ -770,8 +770,10 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     TriggerInfo_t triggerInfo;
     if (fired) { // this is still the previous requirement
       for (auto const& [ iCryo, cryoGate ]: util::enumerate(combinedCounts)) {
+        
         icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
-          { cryoGate, minCount, iCryo };
+          { cryoGate, minCount };
+        extractOpeningInfo.setLocation(iCryo);
         while (extractOpeningInfo) {
           auto info = extractOpeningInfo();
           if (info) triggerInfo.add(info.value());
@@ -792,12 +794,16 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       log << ", " << triggerInfo.nTriggers() << " triggers total:";
       for (auto const& [iTrigger, info ]: util::enumerate(triggerInfo.all())) {
         log << " [" << iTrigger << "] at " << info.tick;
-        if (info.hasLocation()) log << " of  C:" << info.locationID;
+        if (info.hasLocation()) log << " of C:" << info.locationID;
         else log << " [unknown location]";
         log << " (level=" << info.level << ")";
       } // for
       
     } // if fired
+    else {
+      mf::LogTrace(helper().logCategory())
+        << " => not fired (>" << minCount << ")";
+    }
     
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)

@@ -13,9 +13,11 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h" // 
 
 // C++ standard libraries
+#include <iostream> // FIXME DEBUG
 #include <vector>
 #include <algorithm>
 #include <optional>
+#include <utility> // std::pair, std::tie()
 #include <limits> // std::numeric_limits<>
 #include <utility> // std::forward()
 #include <cassert>
@@ -208,13 +210,12 @@ struct icarus::trigger::details::TriggerInfo_t {
 //------------------------------------------------------------------------------
 /**
  * @brief Helper to extract `OpeningInfo_t` from a trigger gate.
- * @tparam Gate type of trigger gate (interface: `icarus::trigger::TriggerGateData`)
  * 
  * Example of usage:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * icarus::trigger::details::TriggerInfo_t triggerInfo;
  * icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
- *   { gate, 6U };
+ *   { gate, { 6U } };
  * while (extractOpeningInfo) {
  *   auto info = extractOpeningInfo();
  *   if (info) triggerInfo.add(info.value());
@@ -226,6 +227,7 @@ struct icarus::trigger::details::TriggerInfo_t {
  * The time of the opening is the time when threshold is passed, but
  * _the reported level is the maximum in the opening range_.
  * 
+ * This algorithm will not work in multi-threading.
  */
 template <typename Gate>
 class icarus::trigger::details::GateOpeningInfoExtractor {
@@ -237,61 +239,137 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
   using LocationID_t = icarus::trigger::details::TriggerInfo_t::LocationID_t;
   
-  GateOpeningInfoExtractor(
-    Gate_t const& gate, OpeningCount_t const threshold,
-    LocationID_t location = OpeningInfo_t::UnknownLocation
-    )
-    : gate(gate), threshold(threshold), location(location)
+  /// Configuration of the algorithm.
+  struct Config_t {
+    OpeningCount_t openThreshold { 1U };
+    OpeningCount_t closeThreshold { 0U };
+    unsigned int minWidth { 1U };
+    unsigned int minGap { 0U };
+    LocationID_t location { OpeningInfo_t::UnknownLocation };
+    
+    Config_t() = default;
+    
+    Config_t(
+      OpeningCount_t openThreshold,
+      OpeningCount_t closeThreshold,
+      unsigned int minWidth = 1U,
+      unsigned int minGap = 0U,
+      LocationID_t location = OpeningInfo_t::UnknownLocation
+      )
+      : openThreshold(openThreshold), closeThreshold(closeThreshold)
+      , minWidth(minWidth), minGap(minGap)
+      , location(location)
+      {}
+    
+    Config_t(OpeningCount_t threshold): Config_t(threshold, threshold) {}
+    
+  }; // struct Config_t
+  
+  
+  /**
+   * @brief Constructor: uses default configuration.
+   * @param gate the gate to operate on
+   * @param config configuration of the algorithm
+   * @see `configure()`
+   */
+  GateOpeningInfoExtractor(Gate_t const& gate)
+    : GateOpeningInfoExtractor(gate, Config_t{})
     {}
   
+  /**
+   * @brief Constructor: sets all configuration parameters.
+   * @param gate the gate to operate on
+   * @param config configuration of the algorithm (see `configure()`)
+   */
+  GateOpeningInfoExtractor(Gate_t const& gate, Config_t config)
+    : gate(gate), config(std::move(config))
+    { restart(); }
+  
+  /**
+   * @brief Constructor: sets all configuration parameters.
+   * @param gate the gate to operate on
+   * @param threshold both opening and closing threshold
+   * @see `configure()`
+   */
+  GateOpeningInfoExtractor(Gate_t const& gate, OpeningCount_t threshold)
+    : GateOpeningInfoExtractor(gate, Config_t{ threshold })
+    {}
+  
+  /**
+   * @brief Sets the configuration.
+   * @brief Constructor: sets all configuration parameters.
+   * @param gate the gate to operate on
+   * @param config configuration of the algorithm
+   * 
+   * The configuration includes:
+   *  * `openThreshold`, `closeThreshold`: the opening and closing thresholds
+   *  * `minWidth`: minimum width of each opening range
+   *  * `minGap`: minimum gap between successive opening ranges
+   *  * `location`:  location ID to add to the produced `OpeningInfo_t` records
+   */
+  void configure(Config_t config) { config = std::move(config); }
+  
+  //@{
+  /// The returned gate is at least `minWidth` ticks wide.
   std::optional<OpeningInfo_t> operator() () { return findNextOpening(); }
   
-  std::optional<OpeningInfo_t> findNextOpening(unsigned int minWidth = 1U)
-    {
-      ClockTick_t const start = gate.findOpen(threshold, lastClosing);
-      if (start == Gate_t::MaxTick) {
-        lastClosing = Gate_t::MaxTick;
-        return std::nullopt;
-      }
-      lastClosing = gate.findClose(threshold, start);
-      assert(lastClosing > start);
-      if (lastClosing - start < minWidth) lastClosing = start + minWidth;
-      return std::optional<OpeningInfo_t>{ std::in_place,
-        detinfo::DetectorTimings::optical_tick{ lastClosing },
-        gate.openingCount(gate.findMaxOpen(start, lastClosing)),
-        location
-        };
-    };
+  std::optional<OpeningInfo_t> findNextOpening();
+  //@}
   
-  bool atEnd() const { return lastClosing == Gate_t::MaxTick; }
+  bool atEnd() const { return nextStart == Gate_t::MaxTick; }
   operator bool() const { return !atEnd(); }
   bool operator! () const { return atEnd(); }
   
-  /// Returns the last closing tick found.
-  ClockTick_t closingTick() const { return lastClosing; }
-  
   /// Resets the search from the specified time tick (beginning by default).
   void restart(ClockTick_t fromTick = Gate_t::MinTick)
-    { lastClosing = fromTick; }
+    { nextStart = findOpen(fromTick); }
   
-  /// Resets the search with a new threshold.
-  void restart(OpeningCount_t newThreshold) { threshold = newThreshold; }
+  
+  /// @name Configuration access
+  /// @{
+  
+  Config_t const& configuration() const { return config; }
+  
+  OpeningCount_t openThreshold() const { return config.openThreshold; }
+  OpeningCount_t closeThreshold() const { return config.closeThreshold; }
+  unsigned int minGap() const { return config.minGap; }
+  unsigned int minWidth() const { return config.minWidth; }
+  LocationID_t location() const { return config.location; }
+  
+  void setLocation(LocationID_t location) { config.location = location; }
+  
+  /// @}
+  
   
     private:
   
+  // --- BEGIN -- Configuration ------------------------------------------------
   Gate_t const& gate;
-  OpeningCount_t threshold;
-  LocationID_t location = OpeningInfo_t::UnknownLocation;
+  Config_t config;
+  // --- END ---- Configuration ------------------------------------------------
   
-  ClockTick_t lastClosing = Gate_t::MinTick;
   
-}; // class icarus::trigger::GateOpeningInfoExtractor
+  ClockTick_t nextStart = Gate_t::MinTick;
+  
+  
+  ClockTick_t findOpen(ClockTick_t start) const
+    { return gate.findOpen(openThreshold(), start); }
+  ClockTick_t findClose(ClockTick_t start) const
+    { return gate.findClose(closeThreshold(), start); }
+  
+  /// Returns the first closing and reopening above threshold from `start` on.
+  std::pair<ClockTick_t, ClockTick_t> findNextCloseAndOpen
+    (ClockTick_t start) const;
+  
+}; // class icarus::trigger::details::GateOpeningInfoExtractor<>
 
 
 // -----------------------------------------------------------------------------
 // ---  Inline implementation
 // -----------------------------------------------------------------------------
-bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
+// --- icarus::trigger::details::TriggerInfo_t
+// -----------------------------------------------------------------------------
+inline bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
   (TriggerInfo_t const& other)
 {
   if (!other.fired()) return false;
@@ -310,7 +388,7 @@ bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
 
 
 // -----------------------------------------------------------------------------
-bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
+inline bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
   (OpeningInfo_t const& info)
 {
   add(info);
@@ -319,6 +397,41 @@ bool icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier
   fMain = info;
   return true;
 } // icarus::trigger::details::TriggerInfo_t::addAndReplaceIfEarlier()
+
+
+// -----------------------------------------------------------------------------
+// ---  icarus::trigger::details::GateOpeningInfoExtractor<>
+// -----------------------------------------------------------------------------
+template <typename Gate>
+auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextOpening()
+  -> std::optional<OpeningInfo_t>
+{
+  if (atEnd()) return {};
+  
+  ClockTick_t const start = nextStart;
+  ClockTick_t closing;
+  do {
+    std::tie(closing, nextStart) = findNextCloseAndOpen(nextStart);
+    if (nextStart == Gate_t::MaxTick) break;
+  } while((closing - start < minWidth()) || (nextStart - closing < minGap()));
+  
+  return std::optional<OpeningInfo_t>{ std::in_place,
+    detinfo::DetectorTimings::optical_tick{ start },
+    gate.openingCount(gate.findMaxOpen(start, closing)),
+    location()
+    };
+} // icarus::trigger::details::GateOpeningInfoExtractor<>::findNextOpening()
+
+
+// -----------------------------------------------------------------------------
+template <typename Gate>
+auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextCloseAndOpen
+  (ClockTick_t start) const ->  std::pair<ClockTick_t, ClockTick_t>
+{
+  ClockTick_t const closing = (gate.openingCount(start) >= closeThreshold())
+    ? findClose(start): start;
+  return { closing, findOpen(closing) };
+} // icarus::trigger::details::GateOpeningInfoExtractor<>::findNextCloseAndOpen()
 
 
 // -----------------------------------------------------------------------------
