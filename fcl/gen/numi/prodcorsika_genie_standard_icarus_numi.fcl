@@ -1,0 +1,49 @@
+#
+# File:    prodcorsika_genie_standard_icarus_numi.fcl
+# Purpose: Generation of interactions of neutrinos from NuMI and cosmic rays.
+# Author:  Gianluca Petrillo (petrillo@slac.standard.edu)
+# Date:    February 2, 2021
+#
+# This job configuration generates events with the standard configuration of:
+#  * NuMI neutrino interactions in full detector (actually, `volDetEnclosure`)
+#  * cosmic rays with Constant Mass Composition model
+# 
+# Output
+# -------
+# 
+# The main output is an _art_ ROOT file with content:
+#  * `cosmicrays`: generated cosmic rays (`simb::MCTruth`)
+#  * `generator`: generated neutrino interactions (`simb::MCTruth`),
+#      beam information (`sim::BeamGateInfo`, `sumdata::POTSummary`),
+#      flux (`simb::MCFlux`) and GENIE-specific information (`simb::GTruth`)
+#      and relevant _art_ associations
+# 
+# 
+# Service dependencies
+# ---------------------
+# 
+# Services are inherited from the NuMI generation job.
+# No further services appear to be needed.
+# 
+#
+
+#include "corsika_icarus.fcl"
+
+#include "simulation_genie_icarus_numi_volDetEnclosure.fcl"
+
+
+process_name: GenNuMIbkgr
+
+#
+# plug comsic rays in
+#
+
+physics.producers.cosmicrays: @local::icarus_corsika_cmc
+physics.simulate: [ @sequence::physics.simulate, cosmicrays ]
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-prodcorsika_genie_standard_icarus_numi_%tc-%p.root"
+outputs.rootoutput.fileName:    "prodcorsika_genie_standard_icarus_numi_%tc-%p.root"
