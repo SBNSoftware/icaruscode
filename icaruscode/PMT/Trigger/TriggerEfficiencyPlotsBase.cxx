@@ -734,8 +734,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
       );
   }
   if (useGen()) {
-    assert(eventInfo.hasGenerated());
     if (eventInfo.isNeutrino()) {
+      assert(eventInfo.hasGenerated());
       getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
       getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
       getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
