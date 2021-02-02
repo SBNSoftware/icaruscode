@@ -114,6 +114,13 @@ struct icarus::trigger::details::EventInfo_t {
   /// Returns momentum of the muon intercepting the detector 
   //(if many muons, it takes the maximum momentum)
   double MuonMomentum() const { return fMomentum; }
+
+  /// Returns energy of the particles generated:
+  std::vector< double > MuonEnergy() const { return fMuEnergy; }
+  std::vector< double > ProtEnergy() const { return fPEnergy; }
+  std::vector< double > NeutEnergy() const { return fNEnergy; }
+  std::vector< double > ElecEnergy() const { return fElEnergy; }
+  std::vector< double > GammEnergy() const { return fGEnergy; }
  
   /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
@@ -208,6 +215,16 @@ struct icarus::trigger::details::EventInfo_t {
   
   /// Sets the max momentum of the muon intercepting the detector.
   void SetMuonMomentum(double mMu ) { fMomentum = mMu; }
+
+  ///Sets the kinematic energy:
+  void SetMuonEn(std::vector< double > mEn ) { fMuEnergy = mEn; }
+//(mEn.begin(), mEn.end()); }
+  void SetProtEn(std::vector< double > pEn ) { fPEnergy = pEn; }
+//(pEn.begin(), pEn.end()); }
+  void SetNeutEn(std::vector< double > nEn ) { fNEnergy = nEn; }
+  void SetElecEn(std::vector< double > eEn ) { fElEnergy = eEn; }
+  void SetGammEn(std::vector< double > gEn ) { fGEnergy = gEn; }
+
   
   /// Sets the interaction type
   void SetInteractionType(int type) { setGen(); fInteractionType = type; }
@@ -285,7 +302,12 @@ struct icarus::trigger::details::EventInfo_t {
 
   double fLeptonAngle { 0.0 };
   int fMuons{ 0 }; 
-  double fMomentum{ 0.0 };
+  double fMomentum { 0.0 };
+  std::vector< double > fMuEnergy;
+  std::vector< double > fPEnergy;
+  std::vector< double > fNEnergy;
+  std::vector< double > fElEnergy;
+  std::vector< double > fGEnergy;
    
   
   bool nu_mu { false };

@@ -22,7 +22,8 @@ physics: {
     rns:            { module_type: "RandomNumberSaver" }
   } # producers
   
-  simulate: [ rns, opdaq, daq, crtdaq ]
+  simulate: [ rns, opdaq ]
+  #, daq, crtdaq 
   
   # define the output stream, there could be more than one if using filters
   stream:  [ rootoutput ]
@@ -40,5 +41,5 @@ outputs: {
 #
 
 # we are suppressing channels with no signal in the TPC
-physics.producers.daq.SuppressNoSignal: true
+#physics.producers.daq.SuppressNoSignal: true
 

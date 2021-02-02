@@ -31,6 +31,11 @@ icarus::trigger::details::EventInfoTree::EventInfoTree
     this->tree().Branch("OutLeptAngle", &fOutLeptAngle);
     this->tree().Branch("MuonsInterc", &fMuons);
     this->tree().Branch("MuonMomentum", &fMomentum);
+    this->tree().Branch("MuonEnergy", &fMuEnergy);
+    this->tree().Branch("ProtEnergy", &fPEnergy);
+    this->tree().Branch("NeutEnergy", &fNEnergy);
+    this->tree().Branch("ElecEnergy", &fElEnergy);
+    this->tree().Branch("GammEnergy", &fGEnergy);
 //  this->tree().Branch("IsNu_mu", &fIsNu_mu);
 //  this->tree().Branch("IsNu_e", &fIsNu_e);
   } // if generated
@@ -66,8 +71,13 @@ void icarus::trigger::details::EventInfoTree::assignEvent
     fNuE      = static_cast<Double_t>(info.NeutrinoEnergy());
     fOutLeptE = static_cast<Double_t>(info.LeptonEnergy());
     fOutLeptAngle = static_cast<Double_t>(info.LeptonAngle());
-    fMuons = static_cast<Int_t>(info.MuonsInterceptingDetector());
+    fMuons    = static_cast<Int_t>(info.MuonsInterceptingDetector());
     fMomentum = static_cast<Double_t>(info.MuonMomentum());
+    fMuEnergy = info.MuonEnergy();
+    fPEnergy  = info.ProtEnergy(); 
+    fNEnergy  = info.NeutEnergy();
+    fElEnergy = info.ElecEnergy();
+    fGEnergy  = info.GammEnergy();
  // fIsNu_mu = static_cast<Bool_t>(info.isNu_mu());
  // fIsNu_e = static_cast<Bool_t>(info.isNu_e());
 

@@ -86,5 +86,6 @@ outputs: {
 #
 # overrides
 #
-physics.producers.generator.TopVolume:  "volCryostat"
+#physics.producers.generator.TopVolume:  "volCryostat"
+physics.producers.generator.TopVolume:  "volDetEnclosure"
 

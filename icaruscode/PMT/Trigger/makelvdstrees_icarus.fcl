@@ -87,7 +87,7 @@ physics: {
       GeneratorTags:     [ "generator" ]
       
       # use the summary data product instead of the original energy deposits
-      # EnergyDepositTags: [ "largeant:TPCActive" ]
+      #EnergyDepositTags: [ "largeant:TPCActive" ]
       EnergyDepositSummaryTag: edepsums
       
       TriggerGatesTag:   "lvdsgates:200"

@@ -82,7 +82,7 @@ struct TriggerGatesInfo {
     /// The time of the first opening on the channel, in simulation time [ns]
     simulation_time firstOpenTime = std::numeric_limits<simulation_time>::max();
 
-    double Amplitude; 
+    //double Amplitude; 
     
   }; // struct TriggerGateInfo
   
@@ -145,7 +145,7 @@ struct TriggerGateTree: public icarus::trigger::details::TreeHolder {
   std::vector<geo::Point_t> fOpDetPos; ///< Coordinates of the optical detector.
   std::vector<UInt_t> fNOpenings; ///< Number of openings (`0` if never opens).
   std::vector<Double_t> fOpeningTime; ///< Time of first opening.
-  std::vector<Double_t> fAmplitude; ///< PMT amplitude.
+ // std::vector<Double_t> fAmplitude; ///< PMT amplitude.
   
   /// Internal check: all branch buffers have the same size.
   void checkSizes() const;
@@ -529,7 +529,7 @@ TriggerGateTree::TriggerGateTree(TTree& tree)
   this->tree().Branch("OpDetPos",    &fOpDetPos);
   this->tree().Branch("NOpenings",   &fNOpenings);
   this->tree().Branch("OpeningTime", &fOpeningTime);
-  this->tree().Branch("Amplitude",   &fAmplitude);
+ // this->tree().Branch("Amplitude",   &fAmplitude);
   
 } // TriggerGateTree::TriggerGateTree()
 
@@ -554,11 +554,11 @@ void TriggerGateTree::checkSizes() const {
       << ": Internal error: unexpected buffer size (" << fOpeningTime.size()
       << ") : fOpeningTime\n";
   }
-  if (!checkSize(fAmplitude)) {
+  /*if (!checkSize(fAmplitude)) {
     throw cet::exception("TriggerGateTree") << __func__
       << ": Internal error: unexpected buffer size (" << fAmplitude.size()
       << ") : fOpeningTime\n";
-  }
+  }*/
   
 } // TriggerGateTree::checkSizes()
 
@@ -570,7 +570,7 @@ void TriggerGateTree::assignTriggerGatesInfo(TriggerGatesInfo const& info) {
   fOpDetPos.clear();
   fNOpenings.clear();
   fOpeningTime.clear();
-  fAmplitude.clear();
+  //fAmplitude.clear();
   for
     (auto const& [ iChannel, channelInfo ]: util::enumerate(info.TriggerGates))
   {
@@ -581,7 +581,7 @@ void TriggerGateTree::assignTriggerGatesInfo(TriggerGatesInfo const& info) {
     // accepting the fallback value when there is no interaction
     // (that is `max()`)
     fOpeningTime.push_back(channelInfo.firstOpenTime.value());
-    fAmplitude.push_back(channelInfo.Amplitude); 
+   // fAmplitude.push_back(channelInfo.Amplitude); 
   } // for
   
   checkSizes();
@@ -733,11 +733,11 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
     } // while
     if (nOpenings > 0) ++nOpenChannels;
     //
-    //2.35 if found openings>0 get the waveform amplitude
+    //2.35 if found openings>0 get the waveform's amplitude
     //
     //
 
-  auto const& waveforms
+/*  auto const& waveforms
   = event.getByLabel<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
   //
   // retrieve the baseline information
@@ -776,7 +776,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
 }
  }
 
-std::vector<double> pmtAmplitudes;
+  std::vector<double> pmtAmplitudes;
 
    if (nOpenings > 0){
    auto minAmplitudes = std::min_element(WaveformAndBaseline.begin(), WaveformAndBaseline.end());
@@ -791,15 +791,15 @@ std::vector<double> pmtAmplitudes;
 
 //std::vector<auto> waveformAndBaseline; 
 
-/*for(auto const& v : wf.waveform())
-WaveformAndBaseline.push_back(v - wf.baseline());
-std::min(waveformAndBaseline.cbegin(), waveformAndBaseline.waveform.cend()); */
+//for(auto const& v : wf.waveform())
+//WaveformAndBaseline.push_back(v - wf.baseline());
+//std::min(waveformAndBaseline.cbegin(), waveformAndBaseline.waveform.cend()); 
 } else pmtAmplitudes.push_back(0.0);
     
    auto minAmplitude = std::min_element(pmtAmplitudes.begin(), pmtAmplitudes.end());
    double amplitude = static_cast<double>(minAmplitude[0]); 
-   std::cout<<"---> Amplitude: "<<amplitude<<std::endl;
-
+   if (amplitude !=0 && amplitude != -9357) std::cout<<"---> Amplitude: "<<amplitude<<std::endl;
+*/
     //
     // 2.4. fill the information
     //
@@ -811,8 +811,8 @@ std::min(waveformAndBaseline.cbegin(), waveformAndBaseline.waveform.cend()); */
         ? std::numeric_limits<simulation_time>::max() //std::numeric_limits<T>::max Returns the maximum finite value representable by the 
 						      //numeric type T. Meaningful for all bounded types.
         : detTimings.toSimulationTime
-          (detinfo::timescales::optical_tick{ firstOpenTick }),
-       amplitude
+          (detinfo::timescales::optical_tick{ firstOpenTick })
+       //,amplitude
       });
     
   } // for all gates

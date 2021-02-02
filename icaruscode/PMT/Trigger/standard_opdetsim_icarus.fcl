@@ -1,4 +1,3 @@
-#
 # File:     standard_opdetsim_icarus.fcl
 # Purpose:  Runs digitization of the optical simulation.
 # Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
@@ -19,7 +18,8 @@
 
 #include "services_common_icarus.fcl"
 #include "opdetsim_pmt_icarus.fcl"
-
+#include "rootoutput_icarus.fcl"
+#
 process_name: OpDetSim
 
 services: {
@@ -53,9 +53,9 @@ physics: {
 
 outputs: {
   stream: {
-    module_type: RootOutput
-    
+    module_type: RootOutput 
     fileName: "%ifb_%p-%tc.root"
+    dataTier: "detector-simulated"
     
   } # stream
 } # outputs

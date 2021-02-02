@@ -76,7 +76,7 @@ void icarus::trigger::details::EventInfoExtractor::fillGeneratorCosmicInfo(
   std::vector<simb::MCParticle> const* particles
 ) const {
   
-  std::cout << "Cosmic fillGeneratorCosmicInfo"<< std::endl;
+//  std::cout << "Cosmic fillGeneratorCosmicInfo"<< std::endl;
   //if (truth.NeutrinoSet()) return;
   
  // simulation_time const interactionTime = getInteractionTime(truth);
@@ -147,12 +147,12 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo
   
   geo::TPCGeo const* tpc = pointInActiveTPC(vertex);
   if (tpc){ info.SetInActiveVolume();
-  std::cout<<"TPC min X: "<<tpc->MinX()<<std::endl;
-  std::cout<<"TPC max X: "<<tpc->MaxX()<<std::endl;
-  std::cout<<"TPC min Y: "<<tpc->MinY()<<std::endl;
-  std::cout<<"TPC max Y: "<<tpc->MaxY()<<std::endl;
-  std::cout<<"TPC min Z: "<<tpc->MinZ()<<std::endl;
-  std::cout<<"TPC max Z: "<<tpc->MaxZ()<<std::endl;
+ // std::cout<<"TPC min X: "<<tpc->MinX()<<std::endl;
+ // std::cout<<"TPC max X: "<<tpc->MaxX()<<std::endl;
+ // std::cout<<"TPC min Y: "<<tpc->MinY()<<std::endl;
+ // std::cout<<"TPC max Y: "<<tpc->MaxY()<<std::endl;
+ // std::cout<<"TPC min Z: "<<tpc->MinZ()<<std::endl;
+ // std::cout<<"TPC max Z: "<<tpc->MaxZ()<<std::endl;
   }
   
 } // icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo()
@@ -172,68 +172,86 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
    * first entry.
    */
 
-  
-  // How many cosmics:
-  int AllCosmics = 0; 
-  int CosmicsThatCrossed = 0; 
-  
-  std::vector< double > Momentums;
- 
-  
-  //
+  //How many particles
+  int muons = 0; //int protons = 0; int neutrons = 0; int electrons = 0; int gammas = 0; 
+  //How many crossed the active volume
+  int muons_in = 0; //int protons_in = 0; int neutrons_in = 0; int electrons_in = 0; int gammas_in = 0; 
+  //Particles energy:
+  std::vector< double > prot_E; //proton
+  std::vector< double > muon_E; //muons
+  std::vector< double > neut_E; //neutron
+  std::vector< double > elec_E; //elektron
+  std::vector< double > gamm_E; //gamma
+  //Particles energy in TPC:
+  std::vector< double > prot_E_inTPC; //proton
+  std::vector< double > muon_E_inTPC; //muons
+  std::vector< double > neut_E_inTPC; //neutron
+  std::vector< double > elec_E_inTPC; //elektron
+  std::vector< double > gamm_E_inTPC; //gamma
+  //ped mionow
+  std::vector< double > momenta; 
   // interaction flavor (nu_mu, nu_e)
-  // interaction type (CC, NC)
-  
+  // interaction type (CC, NC) 
   
   //Scanning through all the particles:
+   if (particles) for (simb::MCParticle const& particle: *particles){
 
-  if (particles) for (simb::MCParticle const& particle: *particles){
+      //muons:
+      if(particle.PdgCode()==13 || particle.PdgCode()==-13){ 
+         muons++;  
+         const TLorentzVector pos1 = particle.Position();
+         const TLorentzVector pos2 = particle.EndPosition();
+         muon_E.push_back(particle.E());
+         if(interceptsTPCActiveVolume(pos1, pos2)){ 
+            muons_in++; //std::cout<<"Found cosmic in the detector"<<std::endl;
+            //info.SetLeptonAngle(double{ particle.Theta() });
+ 	    momenta.push_back(particle.Momentum().Vect().Mag());
+            //std::cout<<"Momentum magn: "<<particle.Momentum().Vect().Mag()<<std::endl;
+         }
+      //other particles:
+      }else{ 
+//if(particle.PdgCode()!=14 && particle.PdgCode()!=-14 && particle.PdgCode()!=){  
+         const TLorentzVector pos1 = particle.Position();
+         const TLorentzVector pos2 = particle.EndPosition();
+         if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E.push_back(particle.E()); 
+         if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E.push_back(particle.E()); 
+         if(particle.PdgCode() == 2112 || particle.PdgCode() == -2112) neut_E.push_back(particle.E()); 
+         if(particle.PdgCode() == 22 || particle.PdgCode() == -22) gamm_E.push_back(particle.E()); 
+         if(interceptsTPCActiveVolume(pos1, pos2)){ 
+             std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
+             if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E_inTPC.push_back(particle.E()); 
+             if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E_inTPC.push_back(particle.E()); 
+             if(particle.PdgCode() == 2112 || particle.PdgCode() == -2112) neut_E_inTPC.push_back(particle.E()); 
+             if(particle.PdgCode() == 22 || particle.PdgCode() == -22) gamm_E_inTPC.push_back(particle.E()); 
+            //std::cout<<"Momentum: ";  particle.Momentum().Print();
+            //std::cout<<"StarPos: "; particle.Position().Print();
+            //std::cout<<"EndPos: ";particle.EndPosition().Print();
+         }
+      }
+   } // if for
 
-    bool check_0 = false;
-  //muons:
-    if(particle.PdgCode()==13 || particle.PdgCode()==-13){ 
-       AllCosmics++;  
-       const TLorentzVector pos1 = particle.Position();
-       const TLorentzVector pos2 = particle.EndPosition();
-       check_0 = interceptsTPCActiveVolume(pos1, pos2);
-       if(check_0){ 
-          CosmicsThatCrossed++; //std::cout<<"Found cosmic in the detector"<<std::endl;
-  	  //info.SetLeptonAngle(double{ particle.Theta() });
- 	 Momentums.push_back(particle.Momentum().Vect().Mag());
-         //std::cout<<"Momentum magn: "<<particle.Momentum().Vect().Mag()<<std::endl;
-       }
-   //other particles:
-    }else if(particle.PdgCode()!=14 || particle.PdgCode()!=-14){  
-             const TLorentzVector pos1 = particle.Position();
-             const TLorentzVector pos2 = particle.EndPosition();
-             check_0 = interceptsTPCActiveVolume(pos1, pos2);
-             if(check_0){ 
-                //std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
-                //std::cout<<"Momentum: ";  particle.Momentum().Print();
-                //std::cout<<"StarPos: "; particle.Position().Print();
-                //std::cout<<"EndPos: ";particle.EndPosition().Print();
-             }
-           }
-  } // if for
-
- std::cout<<"Number of all the cosmic muons in this event: "<<AllCosmics<<std::endl;
- std::cout<<"Number of the cosmic muons that intercepted the detector in this event: "<<CosmicsThatCrossed<<std::endl;
- info.SetMuonsInterceptingDetector(int{CosmicsThatCrossed});
+   //std::cout<<"Number of all the cosmic muons in this event: "<<muons<<std::endl;
+   //std::cout<<"Number of the cosmic muons that intercepted the detector in this event: "<<muons_in<<std::endl;
+   info.SetMuonsInterceptingDetector(int{muons_in});
  
-if(CosmicsThatCrossed){
-  info.SetMuonMomentum(Momentums.empty()
-    ? 0.0: *std::max_element(Momentums.begin(), Momentums.end())
-    );
-} else info.SetMuonMomentum(double{0.0});
+   if(muons_in){
+      info.SetMuonMomentum(momenta.empty()
+      ? 0.0: *std::max_element(momenta.begin(), momenta.end())
+      );
+   } else info.SetMuonMomentum(double{0.0});
 
-std::cout<<"What's in the vector: "<<std::endl;
-for(auto i : Momentums){
-std::cout<<i<<std::endl;
-}
+   /*std::cout<<"What's in the vector of momenta: "<<std::endl;
+   for(auto i : momenta){
+      std::cout<<i<<std::endl;
+   }*/
+   info.SetMuonEn(muon_E);
+   info.SetProtEn(prot_E);
+   info.SetNeutEn(neut_E);
+   info.SetElecEn(elec_E);
+   info.SetGammEn(gamm_E);
 
-
-//bool a =  interceptsTPCActiveVolume();
-//if(interceptsTPCActiveVolume()) std::cout<< "The track intercepts the Active Volume of the TPC" <<std::endl;
+   //bool a =  interceptsTPCActiveVolume();
+   //if(interceptsTPCActiveVolume()) std::cout<< "The track intercepts the Active Volume of the TPC" <<std::endl;
 } // icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo()
 
 
@@ -343,7 +361,7 @@ if (endPos.X() > tpcMinX && endPos.X() < tpcMaxX &&
     endPos.Y() > tpcMinY && endPos.Y() < tpcMaxY &&
     endPos.Z() > tpcMinZ && endPos.Z() < tpcMaxZ) 
     {//Hit = endPos; 
-    std::cout<<"Particle ended in TPC"<<std::endl;
+ //   std::cout<<"Particle ended in TPC"<<std::endl;
     return true;}
 
 
@@ -365,17 +383,17 @@ double xmu_ytop = (tpcMaxY - cx) / mx;
 
 if((zmu_ytop <= tpcMaxZ && zmu_ytop >= tpcMinZ) && ( xmu_ytop >= tpcMinX && xmu_ytop <= tpcMaxX)){
 
-std::cout << "Save this cosmic" << std::endl;
+//std::cout << "Save this cosmic" << std::endl;
 return true;
 
 }else if((zmu_ybot <= tpcMaxZ && zmu_ybot >= tpcMinZ) && ( xmu_ybot >= tpcMinX && xmu_ybot <= tpcMaxX)){
 
-std::cout << "Save this cosmic 2" << std::endl;
+//std::cout << "Save this cosmic 2" << std::endl;
 return true;
 
 } else { 
 
-std::cout << "Don't save this cosmic" << std::endl;
+//std::cout << "Don't save this cosmic" << std::endl;
 return false;
 }
 
@@ -383,7 +401,7 @@ return false;
 
   //geo::Point_t const starPos { particle.Position().X(), particle.Position().Y(), particle.Position().Z() };
   //geo::Point_t const endPos { particle.EndX(), particle.EndY(), particle.EndZ() };
-std::cout<<"End of the intercept code"<<std::endl;  
+//std::cout<<"End of the intercept code"<<std::endl;  
 return false;
 
 }

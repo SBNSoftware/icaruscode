@@ -1,5 +1,3 @@
-
-#
 # File:    run_trigger_gate_simulation_icarus.fcl
 # Purpose: Runs a chain to simulate ICARUS trigger primitives.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
@@ -458,12 +456,14 @@ outputs: {
       "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*", 
       "keep simb::GTruths_*_*_*",
       "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*", 
-      "keep simb::MCParticles_largeant__G4",
-      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
-      "keep sim::SimEnergyDeposits_largeant_*_G4", #drop this one
+      "keep simb::MCParticles_*__*",
+    #  "keep simb::MCParticles_largeant__G4",
+      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__*",
+      "keep sim::SimEnergyDeposits_largeant_*_*", #drop this one
     #  std::vector<sim::SimEnergyDeposit>
     #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
-      "keep *_opdaq_*_DetSim",
+      "keep *_opdaq_*_*",
+    #  "keep *_opdaq_*_DetSim",
       "keep *_*_*_Trigger",
       "drop longlonguinticarus::trigger::ReadoutTriggerGateraw::OpDetWaveformvoidart::Assns_*_*_Trigger"
       ]

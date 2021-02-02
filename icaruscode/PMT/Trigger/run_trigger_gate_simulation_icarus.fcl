@@ -171,8 +171,8 @@ physics: {
       module_type: PMTWaveformBaselines
 
       # label of input digitized optical waveform data product
-      OpticalWaveforms: "daqPMT"
-      #OpticalWaveforms: "opdaq"
+      #OpticalWaveforms: "daqPMT" #change here for real data
+      OpticalWaveforms: "opdaq"
 
       # produce plots on the extracted baseline
       PlotBaselines: true  # default
@@ -189,8 +189,8 @@ physics: {
       module_type: DiscriminatePMTwaveforms
 
       # input optical waveform data product tag:
-      OpticalWaveforms: "daqPMT"  #enable for real data
-      #OpticalWaveforms: "opdaq"
+      #OpticalWaveforms: "daqPMT"  #enable for real data
+      OpticalWaveforms: "opdaq"
 
       # PMT baselines
       # Baselines: "pmtbaselines" # from data products
@@ -438,17 +438,17 @@ outputs: {
     # each entry is "class_label_instance_process"
     outputCommands: [
       "drop *",
-    #  "keep simb::MCTruths_*_*_*",
-    #  "keep simb::MCFluxs_*_*_*",
-    #  "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*",
-    #  "keep simb::GTruths_*_*_*",
-    #  "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*",
-    #  "keep simb::MCParticles_largeant__G4",
-    #  "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
+      "keep simb::MCTruths_*_*_*", #sim only
+      "keep simb::MCFluxs_*_*_*", #sim only
+      "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*", #sim only
+      "keep simb::GTruths_*_*_*", #sim only
+      "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*", #sim only
+      "keep simb::MCParticles_largeant__G4",#sim only
+      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4", #sim only
     #  "keep sim::SimEnergyDeposits_largeant_*_G4",
     #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
-    #  "keep *_opdaq_*_DetSim", #enable for simultion
-      "keep *_daqPMT_*_opreco", #enable for real data
+      "keep *_opdaq_*_DetSim", #enable for simultion
+    #  "keep *_daqPMT_*_opreco", #enable for real data
       "keep *_*_*_Trigger"
       ]
   } # rootoutput
