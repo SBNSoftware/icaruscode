@@ -601,24 +601,6 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   using TriggerInfo_t = details::TriggerInfo_t; // type alias
   
   
-  /// Data structure to communicate internally a trigger response.
-  struct WindowTriggerInfo {
-    
-    std::size_t windowIndex = std::numeric_limits<std::size_t>::max();
-    TriggerInfo_t info;
-    
-    bool fired() const { return info.fired(); }
-    
-    operator bool() const { return bool(info); }
-    bool operator! () const { return !info; }
-    
-    void emplace(std::size_t index, TriggerInfo_t info)
-      { windowIndex = index; this->info = std::move(info); }
-    
-  }; // WindowTriggerInfo
-  
-
-  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Configured sliding window requirement patterns.
@@ -727,7 +709,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     PlotSandboxRefs_t const& plotSets,
     EventInfo_t const& eventInfo,
     PMTInfo_t const& PMTinfo,
-    WindowTriggerInfo const& triggerInfo
+    TriggerInfo_t const& triggerInfo
     ) const;
 
   /// Fills all event plots with data from `eventInfo` as in `fillEventPlots()`.
@@ -1410,7 +1392,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     //
     // 2.1.   for each main window, apply the pattern
     //
-    WindowTriggerInfo triggerInfo; // start empty
+    TriggerInfo_t triggerInfo; // start empty
     for (std::size_t const iWindow: util::counter(nWindows)) {
       
       TriggerInfo_t const windowResponse
@@ -1428,14 +1410,15 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
         ;
       
       //
-      // 2.2.   pick the main window with the earliest successful response, if any;
-      //        that defines location and time of the trigger
+      // 2.2.   pick the main window with the earliest successful response,
+      //        if any; that defines location and time of the trigger;
+      //        all other triggers are still kept in the record
       //
-      if (!triggerInfo || triggerInfo.info.atTick() > windowResponse.atTick())
-        triggerInfo.emplace(iWindow, windowResponse);
+      triggerInfo.addAndReplaceIfEarlier(windowResponse);
       
     } // main window choice
-    
+    triggerInfo.sortOpenings();
+
     //
     // 2.3.   plot the trigger outcome
     //
@@ -1544,8 +1527,7 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   //
   
   // main window
-  TriggerGateData_t trigPrimitive
-    = discriminate(gates[windowInfo.index], pattern.minInMainWindow);
+  TriggerGateData_t trigPrimitive = gates[windowInfo.index];
   
   // add opposite window requirement (if any)
   if ((pattern.minInOppositeWindow > 0U) && windowInfo.hasOppositeWindow()) {
@@ -1568,19 +1550,15 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   } // if
   
   //
-  // 4. find the trigger time, fill the trigger information accordingly
+  // 4. find the trigger times, fill the trigger information accordingly
   //
-  // TODO fill all candidate triggers rather than only the main one
-  // TODO fill the actual maximum instead of the maximum at opening
-  auto const trigTick = trigPrimitive.findOpen(); // first trigger
-  if (trigTick != trigPrimitive.MaxTick) {
-    res.replace({
-      detinfo::timescales::optical_tick{ trigTick },
-      trigPrimitive.openingCount(trigTick),
-      TriggerInfo_t::LocationID_t{ iWindow }
-      });
-    assert(res);
-  }
+  icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+    { trigPrimitive, pattern.minInMainWindow };
+  extractOpeningInfo.setLocation(TriggerInfo_t::LocationID_t{ iWindow });
+  while (extractOpeningInfo) {
+    auto info = extractOpeningInfo();
+    if (info) res.add(info.value());
+  } // while
   
   return res;
   
@@ -1594,7 +1572,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   PMTInfo_t const& PMTinfo,
-  WindowTriggerInfo const& triggerInfo
+  TriggerInfo_t const& triggerInfo
 ) const {
   
   using namespace std::string_literals;
@@ -1625,7 +1603,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // trigger time (if any)
     if (fired) {
       get.Hist2D("TriggerTick"s).Fill
-        (iPattern, triggerInfo.info.atTick().value());
+        (iPattern, triggerInfo.atTick().value());
     }
     
     //
@@ -1636,7 +1614,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // efficiency plots
     // (including event plots in the triggered or non-triggered category)
     helper().fillAllEfficiencyPlots
-      (eventInfo, PMTinfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
+      (eventInfo, PMTinfo, triggerInfo, plotSet.demandSandbox(patternTag));
     
     //
     // add here further trigger-specific plots
