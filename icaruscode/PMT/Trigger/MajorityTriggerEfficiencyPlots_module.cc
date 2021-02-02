@@ -777,6 +777,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
           if (info) triggerInfo.add(info.value());
         } // while
       } // for all cryostats
+      triggerInfo.sortOpenings(); // sort in time
       fired = triggerInfo.fired();
     } // if previous fired
     
