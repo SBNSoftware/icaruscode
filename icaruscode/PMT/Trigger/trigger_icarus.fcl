@@ -169,7 +169,7 @@ icarus_trigger_channel_pairings: [
 #
 icarus_trigger_channel_ignore_202101: [
    70, 106, 217,                     # PMT not working [SBN DocDB 20696]
-   54,  58,  67,  98, 112, 153, 254, # hot channels [SBN DocDB 20696] 
+   54,  58,  67,  98, 112, 153, 254  # hot channels [SBN DocDB 20696] 
 ]
 
 # default selection of PMT channels to ignore
