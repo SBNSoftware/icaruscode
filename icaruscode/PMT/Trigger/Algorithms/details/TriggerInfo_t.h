@@ -18,6 +18,7 @@
 #include <optional>
 #include <limits> // std::numeric_limits<>
 #include <utility> // std::forward()
+#include <cassert>
 
 
 // -----------------------------------------------------------------------------
@@ -236,14 +237,16 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
   using LocationID_t = icarus::trigger::details::TriggerInfo_t::LocationID_t;
   
-  GateOpeningInfoExtractor(Gate_t const& gate, OpeningCount_t const threshold)
-    : gate(gate), threshold(threshold)
+  GateOpeningInfoExtractor(
+    Gate_t const& gate, OpeningCount_t const threshold,
+    LocationID_t location = OpeningInfo_t::UnknownLocation
+    )
+    : gate(gate), threshold(threshold), location(location)
     {}
   
   std::optional<OpeningInfo_t> operator() () { return findNextOpening(); }
   
-  std::optional<OpeningInfo_t> findNextOpening
-    (LocationID_t location = OpeningInfo_t::UnknownLocation)
+  std::optional<OpeningInfo_t> findNextOpening(unsigned int minWidth = 1U)
     {
       ClockTick_t const start = gate.findOpen(threshold, lastClosing);
       if (start == Gate_t::MaxTick) {
@@ -251,6 +254,8 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
         return std::nullopt;
       }
       lastClosing = gate.findClose(threshold, start);
+      assert(lastClosing > start);
+      if (lastClosing - start < minWidth) lastClosing = start + minWidth;
       return std::optional<OpeningInfo_t>{ std::in_place,
         detinfo::DetectorTimings::optical_tick{ lastClosing },
         gate.openingCount(gate.findMaxOpen(start, lastClosing)),
@@ -276,6 +281,8 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   
   Gate_t const& gate;
   OpeningCount_t threshold;
+  LocationID_t location = OpeningInfo_t::UnknownLocation;
+  
   ClockTick_t lastClosing = Gate_t::MinTick;
   
 }; // class icarus::trigger::GateOpeningInfoExtractor
