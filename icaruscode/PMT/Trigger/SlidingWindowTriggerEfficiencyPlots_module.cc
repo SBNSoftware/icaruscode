@@ -436,8 +436,6 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * different trigger patterns and as a consequence might have specific plots to
  * fill.
  * 
- * TODO
- * 
  * This module redefines:
  * 
  * * `initializePlotSet()` to define the
@@ -1572,9 +1570,15 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   //
   // 4. find the trigger time, fill the trigger information accordingly
   //
+  // TODO fill all candidate triggers rather than only the main one
+  // TODO fill the actual maximum instead of the maximum at opening
   auto const trigTick = trigPrimitive.findOpen(); // first trigger
   if (trigTick != trigPrimitive.MaxTick) {
-    res.emplace(detinfo::timescales::optical_tick{ trigTick });
+    res.replace({
+      detinfo::timescales::optical_tick{ trigTick },
+      trigPrimitive.openingCount(trigTick),
+      TriggerInfo_t::LocationID_t{ iWindow }
+      });
     assert(res);
   }
   

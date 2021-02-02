@@ -839,11 +839,17 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
   // to use the splitter we need a *copy* of the gates
   auto const& cryoGates = fChannelSplitter.byCryostat(TriggerGates_t{ gates });
   
-  // NOTE to allow for distinction between cryostats, the logic needs to be reworked
   TriggerInfo_t triggerInfo; // not fired by default
-  for (auto const& gatesInCryo: cryoGates) {
+  for (auto const& [ iCryo, gatesInCryo ]: util::enumerate(cryoGates)) {
     
-    triggerInfo.replaceIfEarlier(simulateCryostat(beamGate, gatesInCryo));
+    TriggerInfo_t cryoTrigger = simulateCryostat(beamGate, gatesInCryo);
+    if (!cryoTrigger) continue;
+    
+    triggerInfo.addAndReplaceIfEarlier(TriggerInfo_t::OpeningInfo_t{
+      cryoTrigger.atTick(),
+      cryoTrigger.level(),
+      TriggerInfo_t::LocationID_t{ iCryo }
+      });
     
   } // for gates in cryostat
   
@@ -857,7 +863,8 @@ auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
   (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const
   -> TriggerInfo_t
 {
-
+  using detinfo::timescales::optical_tick;
+  
   /* 
    * 1. combine the trigger primitives
    * 2. apply the beam gate on the combination
@@ -869,11 +876,12 @@ auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
   // the first tick with enough opened gates:
   TriggerGateData_t::ClockTick_t const tick
     = combinedCount.findOpen(fMinimumPrimitives);
-  bool const fired = (tick != TriggerGateData_t::MaxTick);
   
-  TriggerInfo_t triggerInfo;
-  if (fired) triggerInfo.emplace(optical_tick{ tick });
-  return triggerInfo;
+  if (tick == TriggerGateData_t::MaxTick) return {};
+  
+  // TODO compute the level for real
+  auto const level = combinedCount.openingCount(tick);
+  return { TriggerInfo_t::OpeningInfo_t{ optical_tick{ tick }, level } };
   
 } // icarus::trigger::MajorityTriggerSimulation::simulateCryostat()
 

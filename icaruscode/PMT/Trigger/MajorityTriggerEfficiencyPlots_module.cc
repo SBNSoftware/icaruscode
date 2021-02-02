@@ -776,9 +776,15 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       }
     } // if
     
+    // TODO how to locate which cryostat at this point?
     TriggerInfo_t triggerInfo;
-    if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
-
+    if (fired) {
+      triggerInfo.replace({
+        optical_tick{ lastMinCount.first },
+        lastMinCount.second // TODO is this the right opening?
+        });
+    }
+    
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
