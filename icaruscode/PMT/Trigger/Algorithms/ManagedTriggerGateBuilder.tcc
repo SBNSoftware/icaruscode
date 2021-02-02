@@ -136,7 +136,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
    */
   unsigned int nWaveforms = 0U;
   for (auto const& waveformData: channelWaveforms) {
-    
+
     raw::OpDetWaveform const& waveform = waveformData.waveform();
     
     ops const waveOps { waveformData.baseline().baseline() };

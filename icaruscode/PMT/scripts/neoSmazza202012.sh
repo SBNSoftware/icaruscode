@@ -35,7 +35,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.3"
+SCRIPTVERSION="1.5"
 
 
 ################################################################################
@@ -46,11 +46,11 @@ SCRIPTVERSION="1.3"
 # physics configuration: geometry and number of voxels (and voxels per job);
 # current implementation uses bash to do the math: round to integers!
 # 
-# The current code (v09_06_00) can autodetect the size of the volume,
+# The current code (v09_00_00) can autodetect the size of the volume,
 # but it would make precise numbers; here we prefer to have round numbers and
 # potentially miss a bit of the volume close to the cryostat border;
 # these numbers describe the (rounded) volume of the default ICARUS geometry
-# in `icaruscode` `v09_06_00`.
+# in `icaruscode` `v09_00_00`.
 #
 declare XMin="-405" # cm
 declare XMax=" -35" # cm
@@ -70,10 +70,10 @@ declare -i PhotonsPerVoxel=1000000
 # Job configuration for the generation in a few voxels (template):
 # icaruscode version and FHiCL name
 #
-declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v09_06_00"}"
+declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v09_10_01"}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
-declare -ir VoxelsPerJob=1850 # estimate: 1'/ 1M photons
+declare -ir VoxelsPerJob=814 # estimate: 70s/ 1M photons
 
 declare -r DefaultUserOutputDir="/pnfs/icarus/scratch/users/${USER}/jobOutput"
 declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYMMDD
@@ -83,7 +83,7 @@ declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYM
 #
 declare -r Qualifiers="${MRB_QUALS:-"e19:prof"}" # default: GCC 8.2.0
 declare -r ExecutionNodeOS='SL7' # Scientific Linux [Fermi] 7
-declare    ExpectedJobTime='95h'
+declare    ExpectedJobTime='48h'
 declare -r ExpectedMemoryUsage='2000'
 declare -r GeneratorLabel='generator'
 
@@ -99,11 +99,12 @@ if [[ "${THISISATEST:-0}" != "0" ]]; then
   ExpectedJobTime='8h'
 fi
 
-# use only fast nodes:
-# "--append_condor_requirements='(TARGET.CpuFamily=?=6 &amp;&amp; TARGET.CpuModelNumber=?=85)'" 
-declare -a ExtraJobsubOptions=( )
+declare -a ExtraJobsubOptions=(
+  # this magic asks for more modern CPU:
+#   "--append_condor_requirements='(TARGET.CpuFamily=?=6 &amp;&amp; TARGET.CpuModelNumber=?=85)'" 
+)
 
-# be careful about single quotes inside the amendment
+# be careful about single quotes inside the amenment
 declare ConfigurationAmend=''
 
 ################################################################################
@@ -367,7 +368,8 @@ function CreateXML() {
       <numjobs>1</numjobs>
       <datatier>generated</datatier>
       
-      <jobsub>--expected-lifetime ${ExpectedJobTime}${ExtraJobsubOptions:+ "${ExtraJobsubOptions[@]}"}</jobsub>
+      <!-- AutoRelease+Grace: if expected life time is exceeded, ask for the job to be rescheduled with 1.5 more days -->
+      <jobsub>--expected-lifetime ${ExpectedJobTime} --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceLifetime=129600'${ExtraJobsubOptions:+ "${ExtraJobsubOptions[@]}"}</jobsub>
       
       <TFileName>&name;-PhotonLibraryData.root</TFileName>
       

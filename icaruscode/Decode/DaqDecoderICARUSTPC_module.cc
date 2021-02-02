@@ -260,6 +260,10 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
 
     mf::LogDebug("DaqDecoderICARUSTPC") << "     ==> concurrency: " << max_concurrency << std::endl;
 
+
+    std::cout << "------------------------------------------------------------------------------------------" << std::endl;
+    std::cout << "===> Run: " << event.id().run() << ", subrn: " << event.id().subRun() << ", event: " << event.id().event() << std::endl;
+
     cet::cpu_timer theClockTotal;
 
     theClockTotal.start();
@@ -372,7 +376,8 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                          
 
     // Also optional is to output the coherent corrections (note there will be many fewer of these! )
     if (fOutputCorrection)
-        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
+//        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
+        saveRawDigits(decoderTool->getCorrectedMedians(),locPedsVec,decoderTool->getFullRMSVals(),channelVec,coherentCollection);
 
     mf::LogDebug("DaqDecoderICARUSTPC") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;

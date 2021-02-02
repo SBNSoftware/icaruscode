@@ -39,7 +39,7 @@ icarus_photonvisibilityservice_direct: {
   
   @table::photon_propagation_timing_icarus # from photon_propogation_timing_icarus.fcl
   
-  LibraryFile:      "PhotonLibrary/PhotonLibrary-20200925.root"
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20201209.root"
   UseCryoBoundary:  false
   DoNotLoadLibrary: false
   

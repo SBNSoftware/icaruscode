@@ -15,7 +15,7 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 
 #include "TH1D.h"
 
