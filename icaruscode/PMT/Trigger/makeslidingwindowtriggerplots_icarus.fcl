@@ -47,6 +47,12 @@ physics: {
       # minimum number of trigger primitives required for the trigger to fire
       Patterns: [
         {
+          inMainWindow:     5
+        },
+        {
+          inMainWindow:     8
+        },
+        {
           inMainWindow:     3
           inOppositeWindow: 1
         },
