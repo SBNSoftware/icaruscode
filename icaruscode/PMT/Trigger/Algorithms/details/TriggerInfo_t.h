@@ -15,12 +15,16 @@
 // C++ standard libraries
 #include <vector>
 #include <algorithm>
+#include <optional>
 #include <limits> // std::numeric_limits<>
 #include <utility> // std::forward()
 
 
 // -----------------------------------------------------------------------------
-namespace icarus::trigger::details { struct TriggerInfo_t; }
+namespace icarus::trigger::details {
+  struct TriggerInfo_t;
+  template <typename Gate> class GateOpeningInfoExtractor;
+} // namespace icarus::trigger::details
 
 // -----------------------------------------------------------------------------
 /**
@@ -74,6 +78,8 @@ struct icarus::trigger::details::TriggerInfo_t {
       )
       : tick(tick), level(level), locationID(locationID) {}
     
+    /// Returns whether the location is set.
+    bool hasLocation() const { return locationID != UnknownLocation; }
     
     /// Comparison: order from time.
     bool operator< (OpeningInfo_t const& other) const
@@ -86,6 +92,30 @@ struct icarus::trigger::details::TriggerInfo_t {
   
   TriggerInfo_t() = default; // no trigger
   TriggerInfo_t(OpeningInfo_t info) { replace(std::move(info)); }
+  
+  // --- END -- Construction ---------------------------------------------------
+  
+  
+  // --- BEGIN -- Query whether the trigger fired ------------------------------
+  /// @name Query whether the trigger fired.
+  /// @{
+  
+  /// Returns whether the trigger fired.
+  bool fired() const { return !fAll.empty(); }
+  
+  /// Returns whether there is trigger information.
+  operator bool() const { return fired(); }
+  
+  /// Returns whether there is no trigger information.
+  bool operator! () const { return !fired(); }
+  
+  /// @}
+  // --- END -- Query whether the trigger fired --------------------------------
+  
+  
+  // --- BEGIN -- Modify trigger information -----------------------------------
+  /// @name Modify trigger information
+  /// @{
   
   /// Sets `info` as the new `main()` trigger
   void replace(OpeningInfo_t info)
@@ -113,30 +143,6 @@ struct icarus::trigger::details::TriggerInfo_t {
    */
   bool addAndReplaceIfEarlier(OpeningInfo_t const& info);
     
-  
-  // --- END -- Construction ---------------------------------------------------
-  
-  
-  // --- BEGIN -- Query whether the trigger fired ------------------------------
-  /// @name Query whether the trigger fired.
-  /// @{
-  
-  /// Returns whether the trigger fired.
-  bool fired() const { return !fAll.empty(); }
-  
-  /// Returns whether there is trigger information.
-  operator bool() const { return fired(); }
-  
-  /// Returns whether there is no trigger information.
-  bool operator! () const { return !fired(); }
-  
-  /// @}
-  // --- END -- Query whether the trigger fired --------------------------------
-  
-  
-  // --- BEGIN -- Modify trigger information -----------------------------------
-  /// @name Modify trigger information
-  /// @{
   
   /// Adds an opening to `all` list (`main` is not affected). Not sorted.
   /// If no trigger is marked as `main()`, this becomes it.
@@ -171,6 +177,9 @@ struct icarus::trigger::details::TriggerInfo_t {
   /// Returns the ID of the location of the trigger (undefined if `!fired()`).
   LocationID_t location() const { return main().locationID; }
   
+  /// Returns if the location of the trigger is set (undefined if `!fired()`).
+  bool hasLocation() const { return main().hasLocation(); }
+  
   /// Returns the full data (undefined if `!fired()`).
   OpeningInfo_t const& main() const { return fMain; }
   
@@ -193,6 +202,83 @@ struct icarus::trigger::details::TriggerInfo_t {
   std::vector<OpeningInfo_t> fAll;
   
 }; // icarus::trigger::details::TriggerInfo_t
+
+
+//------------------------------------------------------------------------------
+/**
+ * @brief Helper to extract `OpeningInfo_t` from a trigger gate.
+ * @tparam Gate type of trigger gate (interface: `icarus::trigger::TriggerGateData`)
+ * 
+ * Example of usage:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * icarus::trigger::details::TriggerInfo_t triggerInfo;
+ * icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+ *   { gate, 6U };
+ * while (extractOpeningInfo) {
+ *   auto info = extractOpeningInfo();
+ *   if (info) triggerInfo.add(info.value());
+ * } // while
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * fills `triggerInfo` with all the openings above level `6U`.
+ * Each opening is defined as from when `gate` reaches the specified threshold
+ * to when it goes below it, with no dead time afterward.
+ * The time of the opening is the time when threshold is passed, but
+ * _the reported level is the maximum in the opening range_.
+ * 
+ */
+template <typename Gate>
+class icarus::trigger::details::GateOpeningInfoExtractor {
+  using Gate_t = Gate;
+  
+    public:
+  using ClockTick_t = typename Gate_t::ClockTick_t;
+  using OpeningCount_t = typename Gate_t::OpeningCount_t;
+  using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
+  using LocationID_t = icarus::trigger::details::TriggerInfo_t::LocationID_t;
+  
+  GateOpeningInfoExtractor(Gate_t const& gate, OpeningCount_t const threshold)
+    : gate(gate), threshold(threshold)
+    {}
+  
+  std::optional<OpeningInfo_t> operator() () { return findNextOpening(); }
+  
+  std::optional<OpeningInfo_t> findNextOpening
+    (LocationID_t location = OpeningInfo_t::UnknownLocation)
+    {
+      ClockTick_t const start = gate.findOpen(threshold, lastClosing);
+      if (start == Gate_t::MaxTick) {
+        lastClosing = Gate_t::MaxTick;
+        return std::nullopt;
+      }
+      lastClosing = gate.findClose(threshold, start);
+      return std::optional<OpeningInfo_t>{ std::in_place,
+        detinfo::DetectorTimings::optical_tick{ lastClosing },
+        gate.openingCount(gate.findMaxOpen(start, lastClosing)),
+        location
+        };
+    };
+  
+  bool atEnd() const { return lastClosing == Gate_t::MaxTick; }
+  operator bool() const { return !atEnd(); }
+  bool operator! () const { return atEnd(); }
+  
+  /// Returns the last closing tick found.
+  ClockTick_t closingTick() const { return lastClosing; }
+  
+  /// Resets the search from the specified time tick (beginning by default).
+  void restart(ClockTick_t fromTick = Gate_t::MinTick)
+    { lastClosing = fromTick; }
+  
+  /// Resets the search with a new threshold.
+  void restart(OpeningCount_t newThreshold) { threshold = newThreshold; }
+  
+    private:
+  
+  Gate_t const& gate;
+  OpeningCount_t threshold;
+  ClockTick_t lastClosing = Gate_t::MinTick;
+  
+}; // class icarus::trigger::GateOpeningInfoExtractor
 
 
 // -----------------------------------------------------------------------------

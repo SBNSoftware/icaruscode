@@ -37,6 +37,7 @@
 #include <algorithm> // std::sort()
 #include <vector>
 #include <memory> // std::unique_ptr
+#include <optional>
 #include <utility> // std::pair<>, std::move()
 #include <cstddef> // std::size_t
 
@@ -733,6 +734,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
+  // --- BEGIN DEBUG -----------------------------------------------------------
   auto const maxPrimitiveTime { combinedCount.findMaxOpen() };
   PrimitiveCount_t const maxPrimitives
     { maxPrimitiveTime, combinedCount.openingCount(maxPrimitiveTime) };
@@ -744,6 +746,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
     << ")"
     ;
+  // --- END DEBUG -------------------------------------------------------------
   
   PMTInfo_t const PMTinfo { threshold.value(), channelList };
   
@@ -759,31 +762,36 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
-    // in this check, `fired` remembers the outcome from the previous threshold
-    if (fired && (lastMinCount.second < minCount)) {
-      // if we haven't passed this minimum yet
-      ClockTick_t const time = combinedCount.findOpen(minCount);
-      if (time == TriggerGateData_t::MaxTick) {
-        mf::LogTrace(helper().logCategory())
-          << "Never got at " << minCount << " primitives or above.";
-        fired = false;
-      }
-      else {
-        lastMinCount = { time, combinedCount.openingCount(time) };
-        mf::LogTrace(helper().logCategory())
-          << "Reached " << minCount << " primitives or above ("
-          << lastMinCount.second << ") at " << lastMinCount.first << ".";
-      }
-    } // if
+    
+    TriggerInfo_t triggerInfo;
+    if (fired) { // this is still the previous requirement
+      icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+        { combinedCount, minCount };
+      while (extractOpeningInfo) {
+        auto info = extractOpeningInfo();
+        if (info) triggerInfo.add(info.value());
+      } // while
+      fired = triggerInfo.fired();
+    } // if previous fired
     
     // TODO how to locate which cryostat at this point?
-    TriggerInfo_t triggerInfo;
     if (fired) {
-      triggerInfo.replace({
-        optical_tick{ lastMinCount.first },
-        lastMinCount.second // TODO is this the right opening?
-        });
-    }
+      mf::LogTrace log(helper().logCategory());
+      log
+        << " => fired (>" << minCount << ") at " << triggerInfo.atTick()
+        << " (level " << triggerInfo.level() << ") from"
+        ;
+      if (triggerInfo.hasLocation()) log << " C:" << triggerInfo.location();
+      else log << " unknown location";
+      log << ", " << triggerInfo.nTriggers() << " triggers total:";
+      for (auto const& [iTrigger, info ]: util::enumerate(triggerInfo.all())) {
+        log << " [" << iTrigger << "] at " << info.tick;
+        if (info.hasLocation()) log << " of  C:" << info.locationID;
+        else log << " [unknown location]";
+        log << " (level=" << info.level << ")";
+      } // for
+      
+    } // if fired
     
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
