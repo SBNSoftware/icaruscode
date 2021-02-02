@@ -27,7 +27,7 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/FFTFilterFunctions.h"
+#include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 
 // std includes
 #include <string>

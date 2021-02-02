@@ -426,7 +426,8 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     std::size_t iThr, ADCCounts_t const threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
-    TriggerGateData_t const& combinedTrigger
+    TriggerGateData_t const& combinedTrigger,
+    std::vector<ChannelID_t> const& channelList
     ) const;
   
   /**
@@ -448,7 +449,6 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     TriggerGatesPerCryostat_t const& cryoGates,
     ADCCounts_t const threshold
     ) const;
-
   
 }; // icarus::trigger::MajorityTriggerEfficiencyPlots
 
@@ -665,9 +665,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet
     ";maximum trigger primitives at the same time on a single cryostat"
     ";events",
     192, 0.0, 192.0 // large number, zoom in presentations!
-    );
-  
-  
+    ); 
+
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet()
 
 
@@ -693,7 +692,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
-    beamGate.apply(combineTriggerPrimitives(gates, threshold))
+    beamGate.apply(combineTriggerPrimitives(gates, threshold)),
+    helper().extractActiveChannels(gates)
     );
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot()
@@ -706,7 +706,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
-  TriggerGateData_t const& combinedCount
+  TriggerGateData_t const& combinedCount,
+  std::vector<ChannelID_t> const& channelList
 ) const {
   
   /*
@@ -744,6 +745,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     << ")"
     ;
   
+  PMTInfo_t const PMTinfo { threshold.value(), channelList };
+  
   /*
    * Fill all the histograms for all the minimum primitive requirements
    * (filling the information whether or not the trigger fired),
@@ -753,7 +756,6 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
-  
   
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
@@ -776,7 +778,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     
     TriggerInfo_t triggerInfo;
     if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
-    
+
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
@@ -810,7 +812,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       // efficiency plots
       // (including event plots in the triggered or non-triggered category)
       helper().fillAllEfficiencyPlots
-        (eventInfo, triggerInfo, plotSet.demandSandbox(minCountStr));
+        (eventInfo, PMTinfo, triggerInfo, plotSet.demandSandbox(minCountStr));
       
       //
       // add here further trigger-specific plots
@@ -831,6 +833,12 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     // general plots, independent of trigger definition details
     //
     fillEventPlots(eventInfo, plotSet);
+    
+    //
+    // general plots, independent of trigger definition but dependent on
+    // threshold
+    //
+    fillPMTplots(PMTinfo, plotSet);
     
     //
     // trigger-definition specific plots

@@ -40,7 +40,7 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/LineDetection.h"
+//#include "icarus_signal_processing/Detection/LineDetection.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
