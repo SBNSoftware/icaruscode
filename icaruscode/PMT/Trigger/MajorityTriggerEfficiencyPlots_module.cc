@@ -694,8 +694,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
-//     beamGate.apply(combineTriggerPrimitives(gates, threshold)),
-    combineTriggerPrimitives(gates, threshold), // FIXME apply beam gate
+    beamGate.applyToAll(combineTriggerPrimitives(gates, threshold)),
     helper().extractActiveChannels(gates)
     );
   
