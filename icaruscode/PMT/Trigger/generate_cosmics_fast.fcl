@@ -1,0 +1,103 @@
+#include "corsika_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+process_name: CorsikaForTrgTree
+services:
+{
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::icarus_gen_services
+  @table::icarus_g4_services
+  @table::icarus_detsim_services
+  LArPropertiesService:  @local::icarus_common_services.LArPropertiesService
+  DetectorClocksService: @local::icarus_common_services.DetectorClocksService
+
+}
+source:
+{
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+}
+physics:
+{
+ producers:
+ {
+   generator: @local::icarus_corsika_cmc 
+   largeant:  @local::icarus_largeant
+   opdaq:     @local::icarus_simpmt_nonoise # turn off the noise so it runs more quickly
+   ophit:     @local::icarus_ophit
+   opflash:   @local::ICARUSSimpleFlash
+   mcophit:   @local::ICARUSMCOpHit
+   mcopflash: @local::ICARUSMCOpFlash
+   rns:       { module_type: "RandomNumberSaver" }
+ }
+ analyzers: 
+ {
+   opflashana: @local::ICARUSOpFlashAna
+ }
+ simulate: [ rns, generator, largeant, opdaq]
+ #, mcophit, mcopflash, ophit, opflash ]
+ #analyze: [ opflashana ]
+ store:   [ out1 ]
+ trigger_paths: [ simulate ]
+ #end_paths:     [ analyze ]
+ #end_paths:     [ store, analyze ]
+ end_paths:     [store]
+}
+#services.SpaceChargeService.EnableSimSpatialSCE: true
+#services.SpaceChargeService.EnableSimEfieldSCE: true
+#services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
+#services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root'
+services.LArG4Parameters.NoElectronPropagation: true
+services.LArG4Parameters.FillSimEnergyDeposits: true
+services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+services.LArG4Parameters.DisableWireplanes: true
+physics.producers.generator.SampleTime:  0.5e-3
+physics.producers.generator.TimeOffset: -0.4e-3
+physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+#physics.analyzers.ophitana.OpHitProducerList:["ophit","mcophit"]
+#physics.analyzers.opflashana.OpFlashProducerList:["opflash"]
+#physics.analyzers.opflashana.SimChannelProducer: ""
+#physics.analyzers.opflashana.SimEnergyDepositProducer: "largeant:TPCActive"
+outputs:
+{
+ out1:
+ {
+   @table::icarus_rootoutput # from rootoutput_icarus.fcl
+   module_type: RootOutput
+   fileName:    "prod_fast_corsika_t%tc-%p.root"
+   dataTier:    "simulated"
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+physics.producers.opdaq.SinglePhotonResponse: @local::icarus_photoelectronresponse_exponentials
+
+#
+# debugging
+#
+services.message.destinations.LogDebugFile: {
+
+  threshold: "DEBUG"
+  type: "file"
+  filename: "PMTsimulationAlg.log"
+  append: false
+  categories: {
+    SimPMTIcarus:     { limit: -1 }
+    PMTsimulationAlg: { limit: -1 }
+    default:          { limit:  0 }
+  }
+
+} # services.message.destinations.LogDebugFile
