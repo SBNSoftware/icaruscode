@@ -27,7 +27,7 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/FFTFilterFunctions.h"
+#include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 
 // std includes
 #include <string>
@@ -464,7 +464,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                         filterFunctionPtr = std::make_unique<icarus_signal_processing::Average2D>(fStructuringElement[0],fStructuringElement[1]);
                         break;
                     case 'm' :
-                        filterFunctionPtr = std::make_unique<icarus_signal_processing::Median2D>(fStructuringElement[0],fStructuringElement[1]);
+                        filterFunctionPtr = std::make_unique<icarus_signal_processing::Median2D>(fStructuringElement[0],fStructuringElement[1],0);
                         break;
                     default:
                         std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCDecoderFilter2D" << std::endl;
