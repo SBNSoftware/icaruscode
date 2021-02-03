@@ -1,3 +1,13 @@
+/**
+ * This class provides a tool to read out CRT data.
+ * The main method, getCRTData reads an event and
+ * returns a vector containing all CRT hits in a
+ * unified format.
+ * This class automatically recognizes data
+ * collected in pull and push modes, and with any
+ * version of raw fragment type.
+ */
+
 #ifndef icaruscode_CRT_CRTDecoder_BERNCRTTranslator_hh
 #define icaruscode_CRT_CRTDecoder_BERNCRTTranslator_hh
 
