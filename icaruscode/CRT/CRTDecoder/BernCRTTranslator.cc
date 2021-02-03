@@ -23,7 +23,6 @@ icarus::crt::BernCRTTranslator icarus::crt::BernCRTTranslator::analyze_BernCRTZM
 
   //event data
   const sbndaq::BernCRTZMQEvent* bevt = bern_fragment.eventdata();
-
 //  TLOG(TLVL_INFO)<<*bevt;
 
   out.mac5     = bevt->MAC5();
@@ -66,7 +65,6 @@ icarus::crt::BernCRTTranslator icarus::crt::BernCRTTranslator::analyze_BernCRTFr
 
   //event data
   const sbndaq::BernCRTEvent* bevt = bern_fragment.eventdata();
-
 //  TLOG(TLVL_INFO)<<*bevt;
 
   out.mac5     = bevt->MAC5();
@@ -103,16 +101,16 @@ std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::anal
   
   const sbndaq::BernCRTFragmentV2 bern_fragment(frag);
   const sbndaq::BernCRTFragmentMetadataV2* md = bern_fragment.metadata();
-//  TLOG(TLVL_INFO)<<*md;
+//  TLOG(TLVL_INFO)<<*bern_fragment;
 
   const unsigned int nhits      = md->hits_in_fragment();
-  std::vector<icarus::crt::BernCRTTranslator> OUT(nhits);
+  std::vector<icarus::crt::BernCRTTranslator> OUT;
+  OUT.reserve(nhits);
 
   for(unsigned int iHit = 0; iHit < nhits; iHit++) {
     icarus::crt::BernCRTTranslator out;
 
     const sbndaq::BernCRTHitV2* bevt = bern_fragment.eventdata(iHit);
-    //  TLOG(TLVL_INFO)<<*bevt;
 
     out.flags                     = bevt->flags;
     out.lostcpu                   = bevt->lostcpu;
