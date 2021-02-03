@@ -50,6 +50,9 @@ icarus::crt::BernCRTTranslator icarus::crt::BernCRTTranslator::analyze_BernCRTZM
   out.feb_hit_number            = md->feb_event_number();
   out.lost_hits                 = md->omitted_events();
   out.last_accepted_timestamp   = md->last_accepted_timestamp();
+  
+  out.hits_in_fragment          = 1;
+
   return out;
 }
 
@@ -90,6 +93,9 @@ icarus::crt::BernCRTTranslator icarus::crt::BernCRTTranslator::analyze_BernCRTFr
   out.feb_hit_number            = md->feb_event_number();
   out.lost_hits                 = md->omitted_events();
   out.last_accepted_timestamp   = md->last_accepted_timestamp();
+
+  out.hits_in_fragment          = 1;
+
   return out;
 }
 
@@ -99,10 +105,10 @@ std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::anal
   const sbndaq::BernCRTFragmentMetadataV2* md = bern_fragment.metadata();
 //  TLOG(TLVL_INFO)<<*md;
 
-  unsigned int feb_hits_in_fragment      = md->hits_in_fragment();
-  std::vector<icarus::crt::BernCRTTranslator> OUT(feb_hits_in_fragment);
+  const unsigned int nhits      = md->hits_in_fragment();
+  std::vector<icarus::crt::BernCRTTranslator> OUT(nhits);
 
-  for(unsigned int iHit = 0; iHit < feb_hits_in_fragment; iHit++) {
+  for(unsigned int iHit = 0; iHit < nhits; iHit++) {
     icarus::crt::BernCRTTranslator out;
 
     const sbndaq::BernCRTHitV2* bevt = bern_fragment.eventdata(iHit);
@@ -132,6 +138,8 @@ std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::anal
     out.last_poll_end             = md->last_poll_end();
     out.system_clock_deviation    = md->system_clock_deviation();
     out.hits_in_poll              = md->hits_in_poll();
+ 
+    out.hits_in_fragment          = nhits;
 
     OUT.push_back(out);
   }
