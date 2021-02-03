@@ -3,17 +3,13 @@
 
 #include "art/Framework/Principal/Event.h"
 
-//#include <iostream>
-//#include <sstream>
-//#include <string>
-
 #include <vector>
 
 
 namespace icarus::crt {
 
   class BernCRTTranslator;
-//  std::ostream & operator << (std::ostream &, BernCRTTranslator const &);
+  std::ostream & operator << (std::ostream &, BernCRTTranslator const &);
 
 }
 
@@ -44,10 +40,13 @@ public:
   uint64_t  sequence_id             = 0; //*fragment* sequence_id. Note a fragment may contain multiple hits
   uint64_t  last_accepted_timestamp = 0; //timestamp of previous accepted hit
   uint16_t  lost_hits               = 0; //number of lost hits from the previous one
-  
+
+  bool IsOverflow_TS0()  const { return !(flags&1); } //TODO double check the logic
+  bool IsOverflow_TS1()  const { return !(flags&2); }
+  bool IsReference_TS0() const { return   flags&4; }
+  bool IsReference_TS1() const { return   flags&8; }
   
   static std::vector<BernCRTTranslator> getCRTData(art::Event const & evt);
-//  static std::vector<int> getCRTData(art::Event const  & evt);
 
 
 private:

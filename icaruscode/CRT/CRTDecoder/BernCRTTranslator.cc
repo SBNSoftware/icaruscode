@@ -1,8 +1,3 @@
-//#include "art/Framework/Core/EDAnalyzer.h"
-//#include "art/Framework/Core/ModuleMacros.h"
-//#include "art/Framework/Principal/Event.h"
-//#include "art/Framework/Principal/Handle.h"
-
 #include "canvas/Utilities/Exception.h"
 
 #include "sbndaq-artdaq-core/Overlays/Common/BernCRTZMQFragment.hh"
@@ -13,12 +8,8 @@
 #include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 
-//#include <algorithm>
-//#include <cassert>
-//#include <cmath>
-//#include <fstream>
-//#include <iomanip>
 #include <iostream>
+#include <bitset>
 
 #include "BernCRTTranslator.hh"
 
@@ -211,4 +202,39 @@ std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::getC
   return out;
 }
 
+std::ostream & icarus::crt::operator << (std::ostream & os, icarus::crt::BernCRTTranslator const& t){
+  os <<"\n\tMAC5:              0x" << std::hex << (int)t.mac5 << std::dec << " (" << (int)t.mac5 << ")"
+     << "\n\tRun start time:    " << sbndaq::BernCRTFragment::print_timestamp(t.run_start_time)
+     << "\n\tThis poll start:   " << sbndaq::BernCRTFragment::print_timestamp(t.this_poll_start)
+     << "\n\tThis poll finish:  " << sbndaq::BernCRTFragment::print_timestamp(t.this_poll_end)
+     << "\n\tLast poll start:   " << sbndaq::BernCRTFragment::print_timestamp(t.last_poll_start)
+     << "\n\tLast poll finish:  " << sbndaq::BernCRTFragment::print_timestamp(t.last_poll_end)
+     << "\n\tClock deviation:   " << t.system_clock_deviation<<" ns"
+     << "\n\tFEB hits/poll:     " << t.hits_in_poll
+     << "\n\tFEB hits/fragment: " << t.hits_in_fragment
+     << "\n\tFlags:             " << std::bitset<8>(t.flags)
+     <<(t.IsOverflow_TS0() ?" [T0 overflow]" :"")
+     <<(t.IsOverflow_TS1() ?" [T1 overflow]" :"")
+     <<(t.IsReference_TS0()?" [T0 reference]":"")
+     <<(t.IsReference_TS1()?" [T1 reference]":"")
+     << "\n\tLostCPU:           " << t.lostcpu
+     << "\n\tLostFPGA:          " << t.lostfpga
+     << "\n\tTime1 (TS0):       " << sbndaq::BernCRTFragment::print_timestamp(t.ts0)
+     << "\n\tTime2 (TS1):       " << sbndaq::BernCRTFragment::print_timestamp(t.ts1);
+
+  os << "\n\t[#ch]: ADC  ";
+  for(size_t i_c=0; i_c<32; ++i_c) {
+    if(!(i_c % 8)) os<<"\n\t";
+    os << " ["<<std::setw(2)<<i_c<<"]: " <<std::setw(4)<< t.adc[i_c];
+  }
+
+  os << "\n\tCoincidence:       " << std::bitset<32>(t.coinc)
+     << "\n\tTimestamp:         " << sbndaq::BernCRTFragment::print_timestamp(t.timestamp)
+     << "\n\tFEB hit number:    " << t.feb_hit_number
+     << "\n\tLost hits:         " << t.lost_hits
+     << "\n\tLast timestamp:    " << sbndaq::BernCRTFragment::print_timestamp(t.last_accepted_timestamp)
+     << "\n";
+
+  return os;
+}
 
