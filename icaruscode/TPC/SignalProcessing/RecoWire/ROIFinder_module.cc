@@ -119,7 +119,7 @@ class ROIFinder : public art::EDProducer
     std::vector<float>                             fThreshold;                  ///< Threshold to apply for saving signal
     bool                                           fOutputMorphed;              ///< Output the morphed waveforms
 
-    unsigned short                                 fNoiseSource;                ///< Used to determine ROI threshold
+//unused    unsigned short                                 fNoiseSource;                ///< Used to determine ROI threshold
     size_t                                         fEventCount;                 ///< count of event processed
     
     icarus_signal_processing::WaveformTools<float> fWaveformTool;
