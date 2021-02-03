@@ -9,6 +9,8 @@ art_make(
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         icarus_signal_processing
+                        icarus_signal_processing_Detection
+                        icarus_signal_processing_Filters
                         icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service

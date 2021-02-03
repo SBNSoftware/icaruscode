@@ -443,6 +443,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlotSet
   //
   initializeEventPlots(plots);
   
+  initializePMTplots(plots);
+  
   //
   // Plots per trigger setting, split in triggering and not triggering events;
   // the plot set is the same as the "global" one.
@@ -465,6 +467,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlotSet
       PlotSandbox& box = reqBox.addSubSandbox(name, desc);
       
       initializeEventPlots(box);
+      
+      initializePMTplots(box);
       
     } // for triggering requirement
   } // for triggering classes
@@ -556,6 +560,10 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
   
+  //
+  // plots independent of the trigger primitive requirements
+  //
+
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots()
 
 
@@ -652,9 +660,41 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots
       120, -1200., +1200.,
       100,  -250.,  +250.
       );
+
+    plots.make<TH2F>(
+      "InteractionTypeNeutrinoEnergy",
+      "Interaction Type vs Neutrino Energy"
+      ";InteractionType"
+      ";Neutrino Energy",
+      200,999.5,1199.5,
+      120, 0.0, 6.0
+      );
+
   } // if generated information
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::initializeEventPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::initializePMTplots
+  (PlotSandbox& plots) const
+{
+  
+  unsigned int const nOpChannels = fGeom.NOpChannels();
+  
+  //
+  // plots independent of the trigger primitive requirements
+  //
+  plots.make<TH1I>(
+    "ActivePMT",
+    "PMT channels contributing to the trigger"
+    ";channel with opened trigger gate"
+    ";events",
+    nOpChannels, // large number, zoom in presentations!
+    0.0, static_cast<double>(nOpChannels)
+    );
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::initializePMTplots()
 
 
 //------------------------------------------------------------------------------
@@ -699,6 +739,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
       getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
       getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
       getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
+      getTrig.Hist("InteractionTypeNeutrinoEnergy"s).Fill(double(eventInfo.InteractionType()), double(eventInfo.NeutrinoEnergy()));
     } // if neutrino event
     TH2& vertexHist = getTrig.Hist2D("InteractionVertexYZ"s);
     for (auto const& point: eventInfo.Vertices())
@@ -706,6 +747,22 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
   } // if use generated information
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::fillPMTplots
+  (PMTInfo_t const& PMTinfo, PlotSandbox const& plots) const
+{
+  
+  using namespace std::string_literals;
+  
+  HistGetter const getTrig { plots };
+  
+  auto& activePMThist = getTrig.Hist("ActivePMT"s);
+  for (raw::Channel_t const channel: PMTinfo.activeChannels())
+    activePMThist.Fill(channel);
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::fillPMTplots()
 
 
 //------------------------------------------------------------------------------
@@ -745,13 +802,13 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
   }
   
-  
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 
 
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   EventInfo_t const& eventInfo,
+  PMTInfo_t const& PMTinfo,
   TriggerInfo_t const& triggerInfo,
   PlotSandbox const& plots
 ) const {
@@ -761,6 +818,11 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
   // plotting split for triggering/not triggering events
   fillEventPlots(
     eventInfo,
+    plots.demandSandbox(triggerInfo.fired()? "triggering": "nontriggering")
+    );
+  
+  fillPMTplots(
+    PMTinfo,
     plots.demandSandbox(triggerInfo.fired()? "triggering": "nontriggering")
     );
   
@@ -843,6 +905,37 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::splitByCryostat
   return gatesPerCryostat;
 
 } // icarus::trigger::TriggerEfficiencyPlotsBase::splitByCryostat()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
+  (TriggerGatesPerCryostat_t const& cryoGates) -> std::vector<ChannelID_t>
+{
+
+  //
+  // get channels contributing to gates in a fired event
+  //
+
+  std::vector<ChannelID_t> channelList;
+  for (auto const& gates: cryoGates) {
+    for (auto const& gate: gates) {
+      assert(gate.hasChannels());
+
+      if (gate.alwaysClosed()) continue;
+      for (auto const channel: gate.channels()) {
+        channelList.push_back(channel);
+      }
+    } // for gates
+  } // for
+
+  // remove duplicates
+  std::sort(channelList.begin(), channelList.end());
+  auto const firstDuplicate
+    = std::unique(channelList.begin(), channelList.end());
+  channelList.erase(firstDuplicate, channelList.end());
+  return channelList;
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels()
 
 
 //------------------------------------------------------------------------------
