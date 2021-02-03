@@ -123,17 +123,6 @@ art_make_library(
 install_headers()
 install_source()
 
-simple_plugin( BernCRTZMQAna "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-)
-
 simple_plugin( BernCRTAna "module"
   art_Framework_Services_Registry
   art_root_io_tfile_support
@@ -142,6 +131,7 @@ simple_plugin( BernCRTAna "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtNoiseMonTool "module"
