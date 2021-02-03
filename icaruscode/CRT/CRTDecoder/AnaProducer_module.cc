@@ -17,6 +17,8 @@
 #include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 
+#include "BernCRTTranslator.hh"
+
 //#include "art/Framework/Services/Optional/TFileService.h"
 #include "art_root_io/TFileService.h"
 #include "TH1F.h"
@@ -109,8 +111,6 @@ public:
   
 
 private:
-   void analyze_fragment(artdaq::Fragment &);
-
    string  pFile;
    bool    pCalibrate;
    vector<uint8_t> pMacs;
@@ -139,7 +139,7 @@ private:
    uint64_t  fLast_poll_start;
    uint64_t  fLast_poll_end;
    int32_t   fSystem_clock_deviation;
-   uint32_t  fFeb_per_poll;
+   uint32_t  fFeb_in_poll;
    uint32_t  fFeb_event_number;
 
       //information from fragment header
@@ -234,7 +234,7 @@ icarus::crt::AnaProducer::AnaProducer(Parameters const& config)
   fRawTree->Branch("last_poll_start",        &fLast_poll_start,        "last_poll_start/l");
   fRawTree->Branch("last_poll_end",          &fLast_poll_end,          "last_poll_end/l");
   fRawTree->Branch("system_clock_deviation", &fSystem_clock_deviation, "system_clock_deviation/I");
-  fRawTree->Branch("feb_per_poll",           &fFeb_per_poll,           "feb_per_poll/i");
+  fRawTree->Branch("feb_in_poll",            &fFeb_in_poll,            "feb_in_poll/i");
   fRawTree->Branch("feb_event_number",       &fFeb_event_number,       "feb_event_number/i");
   fRawTree->Branch("sequence_id",            &fSequence_id,            "sequence_id/i");
   fRawTree->Branch("fragment_timestamp",     &fFragment_timestamp,     "fragment_timestamp/l");
@@ -304,7 +304,7 @@ icarus::crt::AnaProducer::AnaProducer(Parameters const& config)
   fLast_poll_start = 0;
   fLast_poll_end = 0;
   fSystem_clock_deviation = 0;
-  fFeb_per_poll = 0;
+  fFeb_in_poll = 0;
   fFeb_event_number = 0;
   fSequence_id = 0;
   fFragment_timestamp = 0;
@@ -381,73 +381,40 @@ void icarus::crt::AnaProducer::beginJob(){
 
 }
 
-void icarus::crt::AnaProducer::analyze_fragment(artdaq::Fragment & frag)
-{
-  sbndaq::BernCRTFragment bern_fragment(frag);
-
-  fFragment_timestamp        = frag.timestamp();
-  fSequence_id               = frag.sequenceID();
-
-  //event data
-  sbndaq::BernCRTEvent const* bevt = bern_fragment.eventdata();
-
-  fMac5     = bevt->MAC5();
-  fFlags    = bevt->flags;
-  fLostcpu  = bevt->lostcpu;
-  fLostfpga = bevt->lostfpga;
-  fTs0      = bevt->Time_TS0();
-  fTs1      = bevt->Time_TS1();
-  fCoinc    = bevt->coinc;
-
-  for(int ch=0; ch<32; ch++){
-    fMacToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
-    fAdc[ch] = bevt->ADC(ch);
-  }
-
-  //metadata
-  const sbndaq::BernCRTFragmentMetadata* md = bern_fragment.metadata();
-
-  fRun_start_time            = md->run_start_time();
-  fThis_poll_start           = md->this_poll_start();
-  fThis_poll_end             = md->this_poll_end();
-  fLast_poll_start           = md->last_poll_start();
-  fLast_poll_end             = md->last_poll_end();
-  fSystem_clock_deviation    = md->system_clock_deviation();
-  fFeb_per_poll              = md->feb_events_per_poll();
-  fFeb_event_number          = md->feb_event_number();
-
-  fRawTree->Fill();
-
-} //analyze_fragment
-
-
 void icarus::crt::AnaProducer::analyze(art::Event const & evt)
-{ 
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles); 
-  for (auto handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-    
-    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
-      //Container fragment
-      for (auto cont : *handle) { 
-        artdaq::ContainerFragment contf(cont);
-        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
-          continue; 
-        for (size_t ii = 0; ii < contf.block_count(); ++ii)
-          analyze_fragment(*contf[ii].get());
-      }   
-    }   
-    else {
-      //normal fragment
-      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
-      for (auto frag : *handle)
-        analyze_fragment(frag);
-    }   
+{
+  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+
+  for(auto & hit : hit_vector) {
+
+    fFragment_timestamp        = hit.timestamp;
+    fSequence_id               = hit.sequence_id;
+
+    fMac5                      = hit.mac5;
+    fFlags                     = hit.flags;
+    fLostcpu                   = hit.lostcpu;
+    fLostfpga                  = hit.lostfpga;
+    fTs0                       = hit.ts0;
+    fTs1                       = hit.ts1;
+    fCoinc                     = hit.coinc;
+
+    for(int ch=0; ch<32; ch++){
+      fMacToHistos[fMac5]->at(ch)->Fill( hit.adc[ch] );
+      fAdc[ch] = hit.adc[ch];
+    }
+
+    fRun_start_time            = hit.run_start_time;
+    fThis_poll_start           = hit.this_poll_start;
+    fThis_poll_end             = hit.this_poll_end;
+    fLast_poll_start           = hit.last_poll_start;
+    fLast_poll_end             = hit.last_poll_end;
+    fSystem_clock_deviation    = hit.system_clock_deviation;
+    fFeb_in_poll               = hit.hits_in_poll;
+    fFeb_event_number          = hit.feb_hit_number;
+
+    fRawTree->Fill();
   }
 } //analyze
-
 
 
 void icarus::crt::AnaProducer::endJob(){

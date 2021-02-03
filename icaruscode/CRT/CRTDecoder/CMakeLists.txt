@@ -144,6 +144,7 @@ simple_plugin( CrtNoiseMonTool "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtCalAnalysis "module"
@@ -157,6 +158,7 @@ simple_plugin( CrtCalAnalysis "module"
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
   CRT_CAL
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( AnaProducer "module"
@@ -173,6 +175,7 @@ simple_plugin( AnaProducer "module"
   CRT_CAL_TREE
   CRT_RAW_TREE
   CRT_TIMING
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CRTEventProducer "module"
