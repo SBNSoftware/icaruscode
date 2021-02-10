@@ -112,6 +112,8 @@ namespace icarus::trigger { class LVDSgates; }
  *     all the channels in the group.
  *     All optical detector channels *must* appear in the configuration, and
  *     each channel can be combined only in one group. Groups must not be empty.
+ * * `IgnoreChannels` (list of integral numbers, optional): ID of the optical
+ *     detector channels to skip.
  * * `CombinationMode` (either: `"disable"`, `"input1"`, `"input2"`, `"AND"`
  *     or `"OR"`): for each group of channels defined in `ChannelPairing`,
  *     the selected operation is used to combine all the channels in the group:
@@ -183,7 +185,7 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
     fhicl::Sequence<raw::Channel_t> IgnoreChannels {
       Name("IgnoreChannels"),
       Comment
-        ("grouping of optical detector channels to ignore (e.g.: [ 54, 58, 67, 76, ... ])")
+        ("optical detector channels to ignore (e.g.: [ 54, 58, 67, 76, ... ])")
       };    
 
     fhicl::Atom<std::string> CombinationMode {

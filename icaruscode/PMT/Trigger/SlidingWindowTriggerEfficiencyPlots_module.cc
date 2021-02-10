@@ -1389,13 +1389,15 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     mf::LogTrace log(helper().logCategory());
     log << "Input for threshold " << threshold << ": " << inBeamGates.size()
       << " primitives. After beam gate:";
-    
+    unsigned int nOpen = 0U;
     for (auto const& [ iWindow, gate ]: util::enumerate(inBeamGates)) {
       auto const maxTick = gate.findMaxOpen();
       if (maxTick == gate.MinTick) continue;
+      ++nOpen;
       log << "\n  window #" << iWindow << ": maximum "
         << gate.openingCount(maxTick) << " at tick " << maxTick;
     } // for
+    if (!nOpen) log << "  nothing.";
   }
   // --- END DEBUG -------------------------------------------------------------
   

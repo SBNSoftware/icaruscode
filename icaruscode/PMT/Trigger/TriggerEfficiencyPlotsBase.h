@@ -549,6 +549,10 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *     each single event is output into the specified stream category; if
  *     the string is specified empty, the default module stream is used, as
  *     determined by `LogCategory` parameter;
+ * * `PlotOnlyActiveVolume` (flag, default: `true`): if set, only events within
+ *     TPC active volume are plot; the check is performed on the generated
+ *     location of the neutrino interactions (if any); events with no neutrino
+ *     interactions are always plotted;
  * * `LogCategory` (string, default `TriggerEfficiencyPlots`): name of category
  *     used to stream messages from this module into message facility.
  * 
