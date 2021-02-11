@@ -384,7 +384,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const override;
+    ) override;
     
   // --- END Derived class methods ---------------------------------------------
 
@@ -677,7 +677,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
-) const {
+) {
   
   auto const threshold = helper().ADCthreshold(thresholdIndex);
   

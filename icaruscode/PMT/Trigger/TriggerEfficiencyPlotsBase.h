@@ -24,6 +24,7 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/PassCounter.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -58,6 +59,7 @@
 #include <iosfwd> // std::ostream
 #include <algorithm> // std::transform
 #include <atomic>
+#include <unordered_map>
 #include <map>
 #include <vector>
 #include <array>
@@ -66,6 +68,7 @@
 #include <functional> // std::function<>, std::reference_wrapper<>
 #include <memory> // std::unique_ptr
 #include <utility> // std::forward(), std::pair<>, std::move()
+#include <limits> // std::numeric_limits
 #include <cstddef> // std::size_t
 
 
@@ -74,7 +77,7 @@ namespace icarus::trigger {
   
   using namespace util::quantities::time_literals; // ""_ns ...
   
-  class TriggerEfficiencyPlotsBase; 
+  class TriggerEfficiencyPlotsBase;
   
 } // icarus::trigger
 
@@ -84,7 +87,138 @@ namespace icarus::trigger::details {
   
   struct PlotInfoTree;
   
+  class TriggerPassCounters;
+  std::ostream& operator<<
+    (std::ostream& out, TriggerPassCounters const& counters);
+  
 } // namespace icarus::trigger::details
+
+
+//------------------------------------------------------------------------------
+/// Tracks pass rate by discrimination threshold and trigger pattern name.
+class icarus::trigger::details::TriggerPassCounters {
+  
+    public:
+  using ADCCounts_t = icarus::trigger::ADCCounts_t; // alias
+  
+  /// Type used as counter for a specific trigger.
+  using Counter_t = icarus::ns::util::PassCounter<unsigned int>;
+  
+  using IndexPair_t = std::pair<std::size_t, std::size_t>;
+  
+  /// Represents the index of a threshold or pattern that is not registered.
+  static constexpr std::size_t NoIndex
+    = std::numeric_limits<std::size_t>::max();
+  
+  /**
+   * @brief Creates and returns a new counter.
+   * @return the specified counter
+   * 
+   * If the counter already exists, it is returned.
+   */
+  IndexPair_t create(ADCCounts_t threshold, std::string const& patternName);
+  
+  
+  // @{
+  /// Returns the counter for the specified threshold and pattern.
+  /// @throw std::out_of_range if not registered.
+  
+  Counter_t const& counter
+    (ADCCounts_t threshold, std::string const& patternName) const;
+  Counter_t const& counter
+    (std::size_t threshold, std::string const& patternName) const;
+  Counter_t const& counter
+    (ADCCounts_t threshold, std::size_t patternName) const;
+  Counter_t const& counter
+    (std::size_t threshold, std::size_t patternName) const;
+  Counter_t const& counter(IndexPair_t indices) const;
+  
+  Counter_t const& operator()
+    (ADCCounts_t threshold, std::string const& patternName) const
+    { return counter(threshold, patternName); }
+  Counter_t const& operator()
+    (std::size_t threshold, std::string const& patternName) const
+    { return counter(threshold, patternName); }
+  Counter_t const& operator()
+    (ADCCounts_t threshold, std::size_t patternName) const
+    { return counter(threshold, patternName); }
+  Counter_t const& operator()
+    (std::size_t threshold, std::size_t patternName) const
+    { return counter(threshold, patternName); }
+  Counter_t const& operator() (IndexPair_t indices) const
+    { return counter(indices); }
+  
+  Counter_t& counter(ADCCounts_t threshold, std::string const& patternName);
+  Counter_t& counter(std::size_t threshold, std::string const& patternName);
+  Counter_t& counter(ADCCounts_t threshold, std::size_t patternName);
+  Counter_t& counter(std::size_t threshold, std::size_t patternName);
+  Counter_t& counter(IndexPair_t indices);
+  
+  Counter_t& operator() (ADCCounts_t threshold, std::string const& patternName)
+    { return counter(threshold, patternName); }
+  Counter_t& operator() (std::size_t threshold, std::string const& patternName)
+    { return counter(threshold, patternName); }
+  Counter_t& operator() (ADCCounts_t threshold, std::size_t patternName)
+    { return counter(threshold, patternName); }
+  Counter_t& operator() (std::size_t threshold, std::size_t patternName)
+    { return counter(threshold, patternName); }
+  Counter_t& operator() (IndexPair_t indices) { return counter(indices); }
+  
+  // @}
+  
+  // @{
+  /// Returns whether the specified threshold is registered.
+  bool hasThreshold(ADCCounts_t threshold) const;
+  bool hasThreshold(std::size_t index) const;
+  // @}
+  
+  //@{
+  /// Returns whether the specified pattern is registered.
+  bool hasPattern(std::string const& patternName) const;
+  bool hasPattern(std::size_t patternIndex) const;
+  //@}
+  
+  /// Returns the index of the specified threshold (`max()` if not registered).
+  std::size_t thresholdIndex(ADCCounts_t threshold) const;
+  
+  /// Returns the index of the specified pattern (`max()` if not registered).
+  std::size_t patternIndex(std::string const& patternName) const;
+  
+  /// Returns the value of the threshold with the specified `index`.
+  /// @throw std::out_of_range if the index is not available
+  ADCCounts_t threshold(std::size_t index) const;
+  
+  /// Returns the name of the pattern with the specified `index`.
+  /// @throw std::out_of_range if the index is not available
+  std::string const& patternName(std::size_t index) const;
+  
+  /// Returns the number of thresholds currently registered.
+  std::size_t nThresholds() const;
+  
+  /// Returns the number of patterns currently registered.
+  std::size_t nPatterns() const;
+  
+  /// Dump all the counters on the specified stream.
+  void dump(std::ostream& out) const;
+  
+    private:
+  
+  /// All counters; indices: [threshold][pattern]
+  std::vector<std::vector<Counter_t>> fCounters;
+  
+  /// Map: threshold -> threshold index.
+  std::unordered_map<ADCCounts_t, std::size_t> fThresholdIndex;
+  
+  /// Map: pattern name -> pattern index.
+  std::unordered_map<std::string, std::size_t> fPatternIndex;
+  
+  /// Registers a new threshold in the index and returns its index (unchecked).
+  std::size_t registerThreshold(ADCCounts_t threshold);
+  
+  /// Registers a new pattern in the index and returns its index (unchecked).
+  std::size_t registerPattern(std::string const& name);
+  
+}; // icarus::trigger::details::TriggerPassCounters
 
 
 // --- BEGIN -- ROOT tree helpers ----------------------------------------------
@@ -564,7 +698,7 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * 
  * The modules based on this helper read
  * @ref TriggerEfficiencyPlotsBase_Data "trigger gate data products" from
- * different ADC thresholds, and for each threahold they combine the data into a
+ * different ADC thresholds, and for each threshold they combine the data into a
  * trigger response depending on a ADC threshold.
  * Then they apply different trigger settings and for each one they fill plots.
  *
@@ -1164,12 +1298,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
    * updated in this helper, as no way is provided to perform that customization
    * in the derived class.
    * 
-   * It is expected that all PMT thresholds and all trigger settings
-   * 
-   * settings identified
-   * by the specified `settings` index. This helper class does not know the
-   * definition of any trigger, and it is expected that settings are tracked by
-   * the derived classes and each is associated to an index. 
+   * It is expected that all PMT thresholds settings identified by the specified
+   * index. This helper class does not know the definition of any trigger, and
+   * it is expected that settings are tracked by the derived classes and each
+   * is associated to an index. 
    * 
    */
   virtual void simulateAndPlot(
@@ -1178,7 +1310,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const = 0;
+    ) = 0;
   
   
   /// Fills the plots (`initializeEventPlots()`) with info from `eventInfo`.
@@ -1210,6 +1342,24 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   
   // --- BEGIN Additional helper utilities -------------------------------------
+  
+  /**
+   * @brief Creates counters for all the thresholds of the specified trigger.
+   * @param patternName an identified for the pattern
+   * @return the index of the pattern in the counter list
+   */
+  std::size_t createCountersForPattern(std::string const& patternName);
+  
+  
+  //@{
+  /// Registers the outcome of the specified trigger.
+  void registerTriggerResult
+    (std::size_t threshold, std::size_t pattern, bool fired);
+  void registerTriggerResult(
+    std::size_t threshold, std::size_t pattern,
+    TriggerInfo_t const& triggerInfo
+    );
+  //@}
   
   /**
    * @brief Creates a `GatePack_t` from the specified event
@@ -1328,6 +1478,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Functor returning whether a gate has changed.
   icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::BeamGateStruct>
     fBeamGateChangeCheck;
+
+  details::TriggerPassCounters fPassCounters; ///< Counters for all triggers.
 
   // --- END Internal variables ------------------------------------------------
 

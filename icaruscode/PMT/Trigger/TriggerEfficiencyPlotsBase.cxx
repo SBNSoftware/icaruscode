@@ -63,6 +63,310 @@
 #include <string>
 #include <memory> // std::make_unique()
 #include <utility> // std::pair<>, std::move()
+#include <cassert>
+
+
+//------------------------------------------------------------------------------
+//---  icarus::trigger::details::TriggerPassCounters
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::create
+  (ADCCounts_t threshold, std::string const& patternName) -> IndexPair_t
+{
+  
+  std::size_t thrIndex = thresholdIndex(threshold);
+  if (thrIndex == NoIndex) thrIndex = registerThreshold(threshold);
+  
+  std::size_t patIndex = patternIndex(patternName);
+  if (patIndex == NoIndex) patIndex = registerPattern(patternName);
+  
+  if (thrIndex >= nThresholds())
+    fCounters.resize(thrIndex + 1U, std::vector<Counter_t>{ nPatterns() });
+  
+  if (patIndex >= nPatterns()) {
+    for (auto& thrCounters: fCounters) thrCounters.resize(patIndex + 1U);
+  }
+  
+  assert(hasThreshold(thrIndex));
+  assert(hasPattern(patIndex));
+  return { thrIndex, patIndex };
+  
+} // icarus::trigger::details::TriggerPassCounters::create()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::nThresholds() const
+  { return fCounters.size(); }
+
+  
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::nPatterns() const
+  { return fCounters.empty()? 0U: fCounters.front().size(); }
+
+  
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::registerThreshold
+  (ADCCounts_t threshold)
+{
+  assert(!hasThreshold(threshold));
+  
+  std::size_t const newIndex = nThresholds();
+  fThresholdIndex[threshold] = newIndex;
+  
+  assert(hasThreshold(threshold));
+  return newIndex;
+} // icarus::trigger::details::TriggerPassCounters::registerThreshold()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::registerPattern
+  (std::string const& name)
+{
+  assert(!hasPattern(name));
+  
+  std::size_t const newIndex = nPatterns();
+  fPatternIndex[name] = newIndex;
+  
+  assert(hasPattern(name));
+  return newIndex;
+} // icarus::trigger::details::TriggerPassCounters::registerPattern()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (ADCCounts_t threshold, std::string const& patternName) const
+  -> Counter_t const&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(ADCCounts_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::string const& patternName) const
+  -> Counter_t const&
+{
+  IndexPair_t const index { threshold, patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (ADCCounts_t threshold, std::size_t pattern) const
+  -> Counter_t const&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(ADCCounts_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::size_t pattern) const
+  -> Counter_t const&
+{
+  IndexPair_t const index { threshold, pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (IndexPair_t indices) const -> Counter_t const&
+{
+  if (!hasThreshold(indices.first))
+    throw std::out_of_range{ std::to_string(indices.first) };
+  
+  auto const& thrCounters = fCounters[indices.first];
+  if (indices.second >= thrCounters.size())
+    throw std::out_of_range{ std::to_string(indices.second) };
+  
+  return thrCounters[indices.second];
+} // icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (ADCCounts_t threshold, std::string const& patternName) -> Counter_t&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(ADCCounts_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::string const& patternName) -> Counter_t&
+{
+  IndexPair_t const index { threshold, patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (ADCCounts_t threshold, std::size_t pattern) -> Counter_t&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(ADCCounts_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::size_t pattern) -> Counter_t&
+{
+  IndexPair_t const index { threshold, pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t indices)
+  -> Counter_t&
+{
+  if (!hasThreshold(indices.first))
+    throw std::out_of_range{ std::to_string(indices.first) };
+  
+  auto& thrCounters = fCounters[indices.first];
+  if (indices.second >= thrCounters.size())
+    throw std::out_of_range{ std::to_string(indices.second) };
+  
+  return thrCounters[indices.second];
+} // icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t)
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasThreshold
+  (ADCCounts_t threshold) const
+  { return fThresholdIndex.find(threshold) != fThresholdIndex.end(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasThreshold
+  (std::size_t thresholdIndex) const
+  { return thresholdIndex < nThresholds(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasPattern
+  (std::string const& patternName) const
+  { return fPatternIndex.find(patternName) != fPatternIndex.end(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasPattern
+  (std::size_t patternIndex) const
+  { return patternIndex < nPatterns(); }
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::thresholdIndex
+  (ADCCounts_t threshold) const
+{
+  auto const iIndex = fThresholdIndex.find(threshold);
+  return (iIndex == fThresholdIndex.end())? NoIndex: iIndex->second;
+} // icarus::trigger::details::TriggerPassCounters::thresholdIndex()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::patternIndex
+  (std::string const& patternName) const
+{
+  auto const iIndex = fPatternIndex.find(patternName);
+  return (iIndex == fPatternIndex.end())? NoIndex: iIndex->second;
+} // icarus::trigger::details::TriggerPassCounters::patternIndex()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::threshold
+  (std::size_t index) const -> ADCCounts_t
+{
+  // reverse lookup: slow...
+  for (auto const& [ threshold, thrIndex ]: fThresholdIndex)
+    if (thrIndex == index) return threshold;
+  throw std::out_of_range{ std::to_string(index) };
+} // icarus::trigger::details::TriggerPassCounters::threshold()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::patternName
+  (std::size_t index) const -> std::string const&
+{
+  // reverse lookup: slow...
+  for (auto const& [ name, patIndex ]: fPatternIndex)
+    if (patIndex == index) return name;
+  throw std::out_of_range{ std::to_string(index) };
+} // icarus::trigger::details::TriggerPassCounters::patternName()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::details::TriggerPassCounters::dump
+  (std::ostream& out) const
+{
+  out << "Triggers for " << nThresholds() << " thresholds and " << nPatterns()
+    << " patterns:";
+  for (auto const iThr: util::counter(nThresholds())) {
+    
+    assert(hasThreshold(iThr));
+    out << "\n  threshold " << threshold(iThr) << " [#" << iThr << "]:";
+    unsigned int nonEmptyPatterns = 0U;
+    for (auto const iPat: util::counter(nPatterns())) {
+      assert(hasPattern(iPat));
+      auto const& counts = counter(iThr, iPat);
+      if (counts.empty()) continue;
+      out << "\n    " << patternName(iPat) << " [#" << iPat << "]: "
+        << counts.passed() << " / " << counts.total();
+      ++nonEmptyPatterns;
+    } // for patterns
+    if (nonEmptyPatterns == 0) out << " no events";
+    
+  } // for threshold
+  out << "\n";
+} // icarus::trigger::details::TriggerPassCounters::dump()
+
+
+//------------------------------------------------------------------------------
+std::ostream& icarus::trigger::details::operator<<
+  (std::ostream& out, TriggerPassCounters const& counters)
+  { counters.dump(out); return out; }
 
 
 //------------------------------------------------------------------------------
@@ -367,9 +671,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::printSummary() const {
   
-  mf::LogInfo(fLogCategory)
-    << nPlottedEvents << "/" << nEvents << " events plotted."
-    ;
+  mf::LogInfo log(fLogCategory);
+  log << nPlottedEvents << "/" << nEvents << " events plotted.";
+  
+  log << "\n" << fPassCounters;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::printSummary()
 
@@ -827,6 +1132,38 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
     );
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern
+  (std::string const& patternName) -> std::size_t
+{
+  
+  std::size_t patternIndex = fPassCounters.NoIndex;
+  std::size_t iThr [[maybe_unused]] = 0U;
+  for (auto const threshold: util::get_elements<0U>(fADCthresholds)) {
+    
+    auto const indices = fPassCounters.create(threshold, patternName);
+    assert(indices.first == iThr);
+    if (patternIndex == fPassCounters.NoIndex) patternIndex = indices.second;
+    else assert(indices.second == patternIndex);
+    
+  } // for thresholds
+  
+  return patternIndex;
+} // icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::registerTriggerResult
+  (std::size_t threshold, std::size_t pattern, bool fired)
+  { fPassCounters(threshold, pattern).add(fired); }
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::registerTriggerResult
+  (std::size_t threshold, std::size_t pattern, TriggerInfo_t const& triggerInfo)
+  { registerTriggerResult(threshold, pattern, triggerInfo.fired()); }
 
 
 //------------------------------------------------------------------------------

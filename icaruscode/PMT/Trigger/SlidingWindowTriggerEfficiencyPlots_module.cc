@@ -684,7 +684,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const override;
+    ) override;
     
   // --- END Derived class methods ---------------------------------------------
 
@@ -1114,6 +1114,13 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::SlidingWindowTriggerEffici
       << "At least one 'MinimumPrimitives' requirement... required.";
   }
   
+  std::size_t iPattern [[maybe_unused]] = 0U; // NOTE: incremented only in DEBUG
+  for (auto const& pattern: fPatterns) {
+    std::size_t const index [[maybe_unused]]
+      = createCountersForPattern(pattern.tag());
+    assert(index == iPattern++);
+  } // for patterns
+  
   //
   // more complex parameter parsing
   //
@@ -1249,8 +1256,11 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   // but TEfficiency really does not expose the interface to assign labels to
   // its axes, which supposedly could be done had we chosen to create it by
   // histograms instead of directly as recommended.
+  // Also need to guess which is the relevant histogram.
   util::ROOT::applyAxisLabels
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), patternLabels);
+  util::ROOT::applyAxisLabels
+    (const_cast<TH1*>(Eff->GetPassedHistogram())->GetXaxis(), patternLabels);
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet()
 
@@ -1353,7 +1363,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
-) const {
+) {
   
   auto const threshold = helper().ADCthreshold(thresholdIndex);
   
@@ -1441,8 +1451,9 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     } // main window choice
     
     //
-    // 2.3.   plot the trigger outcome
+    // 2.3.   register and plot the trigger outcome
     //
+    registerTriggerResult(thresholdIndex, iPattern, triggerInfo);
     plotResponse(
       thresholdIndex, threshold,
       iPattern, pattern,
