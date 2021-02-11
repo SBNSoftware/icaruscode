@@ -37,9 +37,9 @@
 #       | 400 | 600 | AND |  OR | 200ns |   6 m   |     |       |        |      |                |       |
 # ------+-----+-----+-----+-----+-------+---------|-----+-------+--------+------+----------------+-------+
 #  4762 |  x  |     |     |  x  |   x   |         |  0  |       |  50 us |  70% |                |       |
-#  4763 |  x  |     |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
-#  4766 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
-#  4768 |  x  |     |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
+#  4763 |  x  |     |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4766 |  x  |     |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4768 |  x  |     |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
 #  4772 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4774 |  x  |     |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4775 |  x  |     |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
@@ -54,9 +54,9 @@
 #  4759 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4760 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4761 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4764 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
-#  4765 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
-#  4769 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3M3 |
+#  4764 |     |  x  |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4765 |     |  x  |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4769 |     |  x  |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3M3 |
 #  4771 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4773 |     |  x  |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4776 |     |  x  |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
@@ -126,7 +126,8 @@
 BEGIN_PROLOG
 
 # bad PMT channels (off or too noisy)
-missing_pmt_channels: @local::icarus_trigger_channel_ignore_202101
+# missing_pmt_channels: @local::icarus_trigger_channel_ignore_202101
+missing_pmt_channels: []
 
 # beam gate window duration (BNB: 1.6 us; NuMI: 9.5 us)
 BeamGateDuration: "10 us"

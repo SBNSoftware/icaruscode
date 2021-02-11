@@ -1,121 +1,28 @@
 #
 # File:    triggersim_singlewindow_icarus_data.fcl
-# Purpose: Runs a chain to simulate ICARUS trigger primitives.
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    February 8, 2021
 # Version: 1.0
 #
 # This is a top-level configuration that can be run directly.
 # The selection of thresholds and trigger configurations reflects the ones used
-# for commissioning runs 4759-4787 (documented in the spreadsheet:
+# for commissioning runs 4759-4787 documented in the spreadsheet:
 # https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
 #
 #
-# The steps are:
-#
-#  * pmtbaselines (PMTWaveformBaselines): computes baselines for all PMT
-#      waveforms
-#  * discrimopdaq (DiscriminatePMTwaveforms): from each PMT extracts a gate
-#      signal according to each of the configured thresholds;
-#      for each threshold all gates are stored in their own data product
-#  * lvdsgatesOR (LVDSgates): pairs each of the discriminated waveforms above
-#      to reproduce the 192 hardware channels from PMT feeding the trigger
-#      the pairing is performed as an OR of the two gates in the pair;
-#  * trigslidewindowOR6m (SlidingWindowTrigger): applies a sliding window of 30
-#      PMT and keeps only the central ones of the two central ones of east
-#      cryostat (C:0); it uses OR paired output from LVDS simulation;
-#  * effSlidingOR6m (SlidingWindowTriggerEfficiencyPlots): produces plots of
-#      efficiency of a trigger requiring patterns of sliding window triggers,
-#      with minimum LVDS trigger primitives in each sliding window, to be
-#      present at the same time and in coincidence with a 1.6 us beam gate;
-#
-#
-# Run settings:
-# 
-#       |         LVDS                  | windows | req | beam  |    readout    |      efficiency      |
-#       | threshold |   logic   |  gate |         |     |  gate | buffer | post | module         | tag |
-#       | 400 | 600 | AND |  OR | 200ns |   6 m   |     |       |        |      |                |     |
-# ------+-----+-----+-----+-----+-------+---------|-----+-------+--------+------+----------------+-----+
-#  4762 |  x  |     |     |  x  |   x   |         |  0  |       |  50 us |  70% |                |     |
-#  4763 |  x  |     |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4766 |  x  |     |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4768 |  x  |     |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4772 |  x  |     |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4774 |  x  |     |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4775 |  x  |     |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4778 |  x  |     |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4779 |  x  |     |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4785 |  x  |     |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4642 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  50% |                |     |
-#  4663 |     |  x  |     |  x  |   x   |    x    |  2  | 1.6us |  25 us |  50% | effSlidingOR6m |  M2 |
-#  4690 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  70% |                |     |
-#  4740 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |     |
-#  4759 |     |  x  |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4760 |     |  x  |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4761 |     |  x  |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4764 |     |  x  |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4765 |     |  x  |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4769 |     |  x  |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4771 |     |  x  |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4773 |     |  x  |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4776 |     |  x  |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4777 |     |  x  |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4783 |     |  x  |     |  x  |   x   |    x    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5 |
-#  4784 |     |  x  |     |  x  |   x   |    x    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4 |
-#  4785 |  ?  |  ?  |     |  x  |   x   |    x    |  3  | 10 us |  70 us |  70% | effSlidingOR6m |  M3 |
-#  4786 |  ?  |  ?  |     |  x  |   x   |    x    |  3  | 10 us |  70 us |  70% | effSlidingOR6m |  M3 |
-#  4787 |     |  x  |     |  x  |   x   |    x    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3 |
-#  4795 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |     |
-#
-#
 # Required inputs
 # ----------------
 #
-#  * optical detector readout: `opdaq`
+#  * optical detector readout: `daqPMT`
 #
 #
 # Changes
 # --------
 # 
 # 20210208 (petrillo@slac.stanford.edu) [v1.0]
-# :   original version based on `run_trigger_gate_simulation_icarus.fcl` v2.1
+# :   original version based on `triggersim_singlewindow_icarus.fcl` v1.0
 #
-
-# Output
-# -------
-#
-# The two `LVDSgates` module instances produce each multiple sets of trigger
-# gates that can be used for trigger study.
-#
-# In addition, debugging log files are produced (settings are at the bottom).
-# 
-# Only selected data product from the input file are retained in the output,
-# in addition to all the ones produced by this job:
-#  * all standard products from event generation
-#  * particle propagated in argon by GEANT4 simulation
-#  * optical detector waveforms
-#
-#
-# Required inputs
-# ----------------
-#
-#  * simulated optical detector readout: `opdaq`
-#
-#
-# Required services
-# ------------------
-#
-#  * GeometryService (DiscriminatePMTwaveforms)
-#  * DetectorClocksService (most/all modules)
-#  * TFileService (TriggerEfficiencyPlots)
-#
-#
-# Changes
-# --------
-# 
-# 20210208 (petrillo@slac.stanford.edu) [v1.0]
-# :   original version from `run_trigger_gate_simulation_icarus.fcl`
-# 
 
 #include "triggersim_singlewindow_icarus.fcl"
 
