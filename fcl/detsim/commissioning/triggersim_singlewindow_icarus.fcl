@@ -36,35 +36,36 @@
 #       | threshold |   logic   |  gate |         |     |  gate | buffer | post | module         | tag   |
 #       | 400 | 600 | AND |  OR | 200ns |   6 m   |     |       |        |      |                |       |
 # ------+-----+-----+-----+-----+-------+---------|-----+-------+--------+------+----------------+-------+
-#  4762 |  x  |     |     |  x  |   x   |         |  0  |       |  50 us |  70% |                |       |
-#  4763 |  x  |     |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
-#  4766 |  x  |     |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
-#  4768 |  x  |     |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
-#  4772 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
-#  4774 |  x  |     |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4774 |  x  |     |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4775 |  x  |     |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4778 |  x  |     |     |  x  |   x   |   #2    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4779 |  x  |     |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4785 |  x  |     |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4786 |  x  |     |     |  x  |   x   |   #5    |  3  | 10 us |  70 us |  70% | effSlidingOR6m |  M3   |
-#  4642 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  50% |                |       |
-#  4663 |     |  x  |     |  x  |   x   |   #2    |  2  | 1.6us |  25 us |  50% | effSlidingOR6m |  M2   |
-#  4690 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  70% |                |       |
-#  4740 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
-#  4759 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
-#  4760 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
-#  4761 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4764 |     |  x  |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
-#  4765 |     |  x  |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
-#  4769 |     |  x  |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3M3 |
-#  4771 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4785 |  x  |     |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4779 |  x  |     |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4772 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4762 |  x  |     |     |  x  |   x   |  #2,#5  |  5  |       |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4768 |  x  |     |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
+#  4766 |  x  |     |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4763 |  x  |     |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
 #  4773 |     |  x  |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4776 |     |  x  |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4777 |     |  x  |     |  x  |   x   |   #2    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4783 |     |  x  |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
-#  4784 |     |  x  |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4787 |     |  x  |     |  x  |   x   |   #5    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4784 |     |  x  |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4783 |     |  x  |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4759 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4771 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4760 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4761 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4765 |     |  x  |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4769 |     |  x  |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3M3 |
+#  4764 |     |  x  |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4642 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  50% |                |       |
+#  4663 |     |  x  |     |  x  |   x   |   ??    |  2  | 1.6us | 100 us |  50% | effSlidingOR6m |  ??   |
+#  4690 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  70% |                |       |
+#  4740 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
 #  4795 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
+#  4811 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
 #
 #
 # Required inputs
@@ -148,11 +149,13 @@ SlidingWindowTriggerPatterns: [
   { inMainWindow: 3                       },
   { inMainWindow: 4                       },
   { inMainWindow: 5                       },
+  { inMainWindow: 6                       },
   { inMainWindow: 1   inOppositeWindow: 1 },
   { inMainWindow: 2   inOppositeWindow: 2 },
   { inMainWindow: 3   inOppositeWindow: 3 },
   { inMainWindow: 4   inOppositeWindow: 4 },
-  { inMainWindow: 5   inOppositeWindow: 5 }
+  { inMainWindow: 5   inOppositeWindow: 5 },
+  { inMainWindow: 6   inOppositeWindow: 6 }
 ] # SlidingWindowTriggerPatterns
 
 

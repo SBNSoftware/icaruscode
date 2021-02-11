@@ -46,7 +46,7 @@ services.DetectorClocksService: {
   
 } # services.DetectorClocksService
 
-physics.analyzers.effSlidingOR6m.BeamGateStart: "-1 us"
+physics.analyzers.effSlidingOR6m.BeamGateStart: "-2 us"
 
 
 #
