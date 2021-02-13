@@ -25,6 +25,8 @@
 #   reconnected quantum efficiency to the value in `opticalproperties_icarus.fcl`
 # 20210206 (petrillo@slac.stanford.edu)
 #   added explicit noise configuration, and made standard an alias of it
+# 20210212 (petrillo@slac.stanford.edu)
+#   updated baseline to reflect the one in data
 #
 #
 
@@ -132,7 +134,7 @@ icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_expo
 
 icarus_pmtsimulationalg_noise: {
 
-  Baseline:                  7999.5         #in ADC
+  Baseline:                  14999.5         #in ADC
   
   SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
   
