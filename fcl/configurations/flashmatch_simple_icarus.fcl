@@ -9,8 +9,8 @@ icarus_simple_flashmatch_0: {
   OpHitProducer: "ophit"
   BeamWindowStart: -0.2 # us
   BeamWindowEnd: 2.0 # us
-  LightWindowStart: -0.01 # us, wrt flash time
-  LightWindowEnd: 0.09 # us, wrt flash time
+  LightWindowStart: -0.02 # us, wrt flash time
+  LightWindowEnd: 0.08 # us, wrt flash time
   SelectNeutrino: true
   UseOppVolMetric: true
   # UseCalo: false
