@@ -48,7 +48,7 @@ icarus_simple_flashmatch_0: {
   rr_up: 200.
   pe_bins: 37
   pe_low: 0.
-  pe_up: 1.1
+  pe_up: 1.
 }
 
 icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
