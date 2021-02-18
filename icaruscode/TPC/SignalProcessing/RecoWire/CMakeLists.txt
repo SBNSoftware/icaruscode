@@ -1,3 +1,6 @@
+
+cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+
 # Add the subfolder containing the deconvolution tools
 add_subdirectory(DeconTools)
 add_subdirectory(SimTestPulse)
