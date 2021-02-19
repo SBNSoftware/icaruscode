@@ -122,6 +122,12 @@ struct icarus::trigger::details::EventInfo_t {
   std::vector< double > ElecEnergy() const { return fElEnergy; }
   std::vector< double > GammEnergy() const { return fGEnergy; }
  
+  /// Returns energy of the particles intercepting tpc:
+  std::vector< double > MuonEnergyInTPC() const { return fMuEnergyInTPC; }
+  std::vector< double > ProtEnergyInTPC() const { return fPEnergyInTPC; }
+  std::vector< double > NeutEnergyInTPC() const { return fNEnergyInTPC; }
+  std::vector< double > ElecEnergyInTPC() const { return fElEnergyInTPC; }
+  std::vector< double > GammEnergyInTPC() const { return fGEnergyInTPC; }
   /// Returns the interaction type
   int InteractionType() const { return fInteractionType; }
 
@@ -218,13 +224,17 @@ struct icarus::trigger::details::EventInfo_t {
 
   ///Sets the kinematic energy:
   void SetMuonEn(std::vector< double > mEn ) { fMuEnergy = mEn; }
-//(mEn.begin(), mEn.end()); }
   void SetProtEn(std::vector< double > pEn ) { fPEnergy = pEn; }
-//(pEn.begin(), pEn.end()); }
   void SetNeutEn(std::vector< double > nEn ) { fNEnergy = nEn; }
   void SetElecEn(std::vector< double > eEn ) { fElEnergy = eEn; }
   void SetGammEn(std::vector< double > gEn ) { fGEnergy = gEn; }
 
+  ///Sets the kinematic energy:
+  void SetMuonEn_inTPC(std::vector< double > mEnIn ) { fMuEnergyInTPC = mEnIn; }
+  void SetProtEn_inTPC(std::vector< double > pEnIn ) { fPEnergyInTPC = pEnIn; }
+  void SetNeutEn_inTPC(std::vector< double > nEnIn ) { fNEnergyInTPC = nEnIn; }
+  void SetElecEn_inTPC(std::vector< double > eEnIn ) { fElEnergyInTPC = eEnIn; }
+  void SetGammEn_inTPC(std::vector< double > gEnIn ) { fGEnergyInTPC = gEnIn; }
   
   /// Sets the interaction type
   void SetInteractionType(int type) { setGen(); fInteractionType = type; }
@@ -309,6 +319,11 @@ struct icarus::trigger::details::EventInfo_t {
   std::vector< double > fElEnergy;
   std::vector< double > fGEnergy;
    
+  std::vector< double > fMuEnergyInTPC;
+  std::vector< double > fPEnergyInTPC;
+  std::vector< double > fNEnergyInTPC;
+  std::vector< double > fElEnergyInTPC;
+  std::vector< double > fGEnergyInTPC;
   
   bool nu_mu { false };
   bool nu_e { false };

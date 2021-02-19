@@ -65,7 +65,7 @@ services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
 services.LArG4Parameters.DisableWireplanes: true
 physics.producers.generator.SampleTime:  0.5e-3
 physics.producers.generator.TimeOffset: -0.4e-3
-physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+physics.producers.largeant.KeepParticlesInVolumes: [ "volDetEnclosure" ] #saves only particles in detector, including CRT
 #physics.analyzers.ophitana.OpHitProducerList:["ophit","mcophit"]
 #physics.analyzers.opflashana.OpFlashProducerList:["opflash"]
 #physics.analyzers.opflashana.SimChannelProducer: ""

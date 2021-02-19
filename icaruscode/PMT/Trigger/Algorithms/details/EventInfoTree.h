@@ -101,6 +101,11 @@ struct icarus::trigger::details::EventInfoTree: public TreeHolder {
   std::vector< Double_t > fNEnergy;
   std::vector< Double_t > fElEnergy;
   std::vector< Double_t > fGEnergy;
+  std::vector< Double_t > fMuEnergyInTPC;
+  std::vector< Double_t > fPEnergyInTPC;
+  std::vector< Double_t > fNEnergyInTPC;
+  std::vector< Double_t > fElEnergyInTPC;
+  std::vector< Double_t > fGEnergyInTPC;
   
 //  Bool_t fIsNu_mu;
 // Bool_t fIsNu_e;

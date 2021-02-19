@@ -36,6 +36,11 @@ icarus::trigger::details::EventInfoTree::EventInfoTree
     this->tree().Branch("NeutEnergy", &fNEnergy);
     this->tree().Branch("ElecEnergy", &fElEnergy);
     this->tree().Branch("GammEnergy", &fGEnergy);
+    this->tree().Branch("MuonEnergyInTPC", &fMuEnergyInTPC);
+    this->tree().Branch("ProtEnergyInTPC", &fPEnergyInTPC);
+    this->tree().Branch("NeutEnergyInTPC", &fNEnergyInTPC);
+    this->tree().Branch("ElecEnergyInTPC", &fElEnergyInTPC);
+    this->tree().Branch("GammEnergyInTPC", &fGEnergyInTPC);
 //  this->tree().Branch("IsNu_mu", &fIsNu_mu);
 //  this->tree().Branch("IsNu_e", &fIsNu_e);
   } // if generated
@@ -78,6 +83,11 @@ void icarus::trigger::details::EventInfoTree::assignEvent
     fNEnergy  = info.NeutEnergy();
     fElEnergy = info.ElecEnergy();
     fGEnergy  = info.GammEnergy();
+    fMuEnergyInTPC = info.MuonEnergyInTPC();
+    fPEnergyInTPC  = info.ProtEnergyInTPC(); 
+    fNEnergyInTPC  = info.NeutEnergyInTPC();
+    fElEnergyInTPC = info.ElecEnergyInTPC();
+    fGEnergyInTPC  = info.GammEnergyInTPC();
  // fIsNu_mu = static_cast<Bool_t>(info.isNu_mu());
  // fIsNu_e = static_cast<Bool_t>(info.isNu_e());
 

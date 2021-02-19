@@ -195,30 +195,36 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
   
   //Scanning through all the particles:
    if (particles) for (simb::MCParticle const& particle: *particles){
-
+   geo::Point_t const point_2 { particle.EndX(), particle.EndY(), particle.EndZ() };
+   geo::Point_t const point_1 { particle.Vx(), particle.Vy(), particle.Vz() };
+   geo::TPCGeo const* tpc_1 = pointInActiveTPC(point_1);
+   geo::TPCGeo const* tpc_2 = pointInActiveTPC(point_2);
+   //geo::Point_t const point_2 { particle.EndX(), particle.EndY(), particle.EndZ() };
       //muons:
-      if(particle.PdgCode()==13 || particle.PdgCode()==-13){ 
+      if(particle.PdgCode() == 13 || particle.PdgCode() == -13){ 
          muons++;  
-         const TLorentzVector pos1 = particle.Position();
-         const TLorentzVector pos2 = particle.EndPosition();
+         //const TLorentzVector pos_muon_1 = particle.Position();
+         //const TLorentzVector pos_muon_2 = particle.EndPosition();
          muon_E.push_back(particle.E());
-         if(interceptsTPCActiveVolume(pos1, pos2)){ 
+         //if(interceptsTPCActiveVolume(pos_muon_1, pos_muon_2)){ 
+         if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
             muons_in++; //std::cout<<"Found cosmic in the detector"<<std::endl;
             //info.SetLeptonAngle(double{ particle.Theta() });
  	    momenta.push_back(particle.Momentum().Vect().Mag());
+	    muon_E_inTPC.push_back(particle.E());
             //std::cout<<"Momentum magn: "<<particle.Momentum().Vect().Mag()<<std::endl;
          }
       //other particles:
       }else{ 
-//if(particle.PdgCode()!=14 && particle.PdgCode()!=-14 && particle.PdgCode()!=){  
-         const TLorentzVector pos1 = particle.Position();
-         const TLorentzVector pos2 = particle.EndPosition();
+         //const TLorentzVector pos1 = particle.Position();
+         //const TLorentzVector pos2 = particle.EndPosition();
          if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E.push_back(particle.E()); 
          if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E.push_back(particle.E()); 
          if(particle.PdgCode() == 2112 || particle.PdgCode() == -2112) neut_E.push_back(particle.E()); 
          if(particle.PdgCode() == 22 || particle.PdgCode() == -22) gamm_E.push_back(particle.E()); 
-         if(interceptsTPCActiveVolume(pos1, pos2)){ 
-             std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
+         //if(interceptsTPCActiveVolume(pos1, pos2)){ 
+  	if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
+             //std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
              if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E_inTPC.push_back(particle.E()); 
              if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E_inTPC.push_back(particle.E()); 
              if(particle.PdgCode() == 2112 || particle.PdgCode() == -2112) neut_E_inTPC.push_back(particle.E()); 
@@ -244,12 +250,19 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
    for(auto i : momenta){
       std::cout<<i<<std::endl;
    }*/
+   std::cout<<"Number of muons: "<<muons<<std::endl;
+   std::cout<<"Number of muons in TPC: "<<muons_in<<std::endl;
    info.SetMuonEn(muon_E);
    info.SetProtEn(prot_E);
    info.SetNeutEn(neut_E);
    info.SetElecEn(elec_E);
    info.SetGammEn(gamm_E);
 
+   info.SetMuonEn_inTPC(muon_E_inTPC);
+   info.SetProtEn_inTPC(prot_E_inTPC);
+   info.SetNeutEn_inTPC(neut_E_inTPC);
+   info.SetElecEn_inTPC(elec_E_inTPC);
+   info.SetGammEn_inTPC(gamm_E_inTPC);
    //bool a =  interceptsTPCActiveVolume();
    //if(interceptsTPCActiveVolume()) std::cout<< "The track intercepts the Active Volume of the TPC" <<std::endl;
 } // icarus::trigger::details::EventInfoExtractor::setMainGeneratorNeutrinoInfo()
@@ -345,7 +358,6 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
 bool icarus::trigger::details::EventInfoExtractor::interceptsTPCActiveVolume
   (const TLorentzVector & starPos, const TLorentzVector & endPos) const
 {
-
 double tpcMinX = -368.49; double tpcMaxX = 368.49;
 double tpcMinY = -181.86; double tpcMaxY = 134.96;
 double tpcMinZ = -894.951; double tpcMaxZ = 894.951;
