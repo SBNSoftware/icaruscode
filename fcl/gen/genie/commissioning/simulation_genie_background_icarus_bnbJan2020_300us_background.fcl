@@ -1,0 +1,26 @@
+#
+# File:    simulation_genie_background_icarus_bnbJan2020_300us_background.fcl
+# Purpose: Background simulation in a reduced time window around the beam gate.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 6, 2021
+#
+# This configuration is equivalent to
+# `simulation_genie_background_icarus_bnbJan2020_300us_signal.fcl`
+# and `simulation_genie_background_icarus_bnbJan2020_300us.fcl`, with the
+# difference that it does not ever generate any BNB neutrino interaction.
+#
+
+# ------------------------------------------------------------------------------
+#include "simulation_genie_background_icarus_bnbJan2020_300us_signal.fcl"
+
+
+# ------------------------------------------------------------------------------
+physics.producers.generator: @erase
+physics.simulate: [ rns, cosmicgen, radiogen ]
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput.fileName:    "simulation_genie_background_icarus_bnbJan2020_300us_background_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-simulation_genie_background_icarus_bnbJan2020_300us_background_%tc-%p.root"
+
+# ------------------------------------------------------------------------------

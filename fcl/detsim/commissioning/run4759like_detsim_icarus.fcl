@@ -1,0 +1,71 @@
+#
+# File:    run4759like_detsim_icarus.fcl
+# Purpose: Simulation of digitization with parameters mirroring data run 4759.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 8, 2021
+#
+# This job configuration is designed to replicate the conditions of an actual
+# commissionin run.
+# Many of the runs have features documented in the spreadsheet at
+# https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
+#
+# Note that the timestamp of the event is not replicating the one of the run,
+# since it has already been assigned at generation step.
+#
+#
+# Run 4759
+# =========
+# 
+# Beam:       BNB, 3-5 Hz, 2.8 10^12 POT/spill (to be checked; possibly varying)
+# Detectors:  East PMT only, and trigger
+# Trigger:    PMT majority (3 LVDS in 10 us beam gate in central 6 m slice)
+# PMT window: single, -15 us -- +35 us around the trigger signal
+# 
+# 
+#
+
+#include "services_common_icarus.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: DetSim4759
+
+
+services: @local::icarus_common_services  # from services_common_icarus.fcl
+
+
+# only PMT acquired:
+physics: {
+  producers: {
+    opdaq: {
+      @table::icarus_simpmt_noise  # from opdetsim_pmt_icarus.fcl
+      
+      #
+      # enabled readout window
+      #
+      TriggerOffsetPMT:    "-15 us"
+      ReadoutEnablePeriod: " 50 us" # no point in making it longer...
+      
+      #
+      # single readout
+      #
+      ReadoutWindowSize: 25000   # = 50 microseconds
+      PreTrigFraction:       0.3 # 30% (15 microseconds) before trigger
+      
+      #
+      # trigger settings
+      #
+      BeamGateTriggerNReps:  1   # just one PMT window acquired at beam gate 
+      ThresholdADC:        600.0 # ADC; but it should not matter
+    }
+  }
+  
+  simulate: [ opdaq ]
+  stream:   [ rootoutput ]
+  
+} # physics.producers.opdaq
+
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
+}

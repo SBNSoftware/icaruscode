@@ -384,7 +384,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const override;
+    ) override;
     
   // --- END Derived class methods ---------------------------------------------
 
@@ -428,7 +428,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     detinfo::DetectorClocksData const& clockData,
     TriggerGateData_t const& combinedTrigger,
     std::vector<ChannelID_t> const& channelList
-    ) const;
+    );
   
   /**
    * @brief Computes the trigger response from primitives with the given
@@ -519,6 +519,13 @@ icarus::trigger::MajorityTriggerEfficiencyPlots::MajorityTriggerEfficiencyPlots
     throw art::Exception(art::errors::Configuration)
       << "At least one 'MinimumPrimitives' requirement... required.";
   }
+  
+  std::size_t iPattern [[maybe_unused]] = 0U; // NOTE: incremented only in DEBUG
+  for (auto const& req: fMinimumPrimitives) {
+    std::size_t const index [[maybe_unused]]
+      = createCountersForPattern("Req" + std::to_string(req));
+    assert(index == iPattern++);
+  } // for requirements
   
   {
     mf::LogInfo log(helper().logCategory());
@@ -677,7 +684,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
-) const {
+) {
   
   auto const threshold = helper().ADCthreshold(thresholdIndex);
   
@@ -708,7 +715,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   detinfo::DetectorClocksData const& clockData,
   TriggerGateData_t const& combinedCount,
   std::vector<ChannelID_t> const& channelList
-) const {
+) {
   
   /*
    * This function plots according to the configured minimum number of trigger
@@ -783,6 +790,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     // and the time of this one is in lastMinCount.first (just in case)
     
     if (fResponseTree) fResponseTree->assignResponse(iThr, iReq, fired);
+    
+    registerTriggerResult(iThr, iReq, fired);
     
     std::string const minCountStr { "Req" + std::to_string(minCount) };
     
