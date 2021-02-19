@@ -38,7 +38,7 @@
 #include "services_icarus_simulation.fcl"
 #include "largeantmodules_icarus.fcl"
 
-process_name: CosmicsCorsikaCMCGenAndG4InTime
+process_name: CosmicsCorsikaPGenAndG4InTime
 
 services:
 {
