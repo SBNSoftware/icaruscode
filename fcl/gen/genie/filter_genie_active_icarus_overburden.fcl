@@ -1,6 +1,7 @@
-#include "filter_genie_active.fcl"
+#include "filter_genie_active_icarus.fcl"
 
-   services: {
-     @table::services
-     @table::icarus_split_induction_overburden_geometry_services
-   } # services
+services: {
+  @table::services
+  @table::icarus_split_induction_overburden_geometry_services
+} # services
+
