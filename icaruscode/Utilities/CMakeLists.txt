@@ -4,6 +4,14 @@ art_make(
     "SaveConfigurationIntoTFile_module.cc"
     "DuplicateEventTracker_service.cc"
   LIB_LIBRARIES
+    ${ART_ROOT_IO_ROOTDB}
+    cetlib_except
+    cetlib
+    fhiclcpp
+    hep_concurrency # required by fhicl::ParameterSetRegistry
+    ROOT::Tree
+    ROOT::Core
+    ROOT::RIO
 )
 
 simple_plugin(SaveConfigurationIntoTFile "module"
