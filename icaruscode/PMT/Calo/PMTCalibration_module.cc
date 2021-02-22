@@ -58,6 +58,7 @@ public:
   virtual void beginJob() override;
   virtual void beginSubRun(const art::SubRun &sr) override;
 
+  void getTriggerTime( std::vector<uint16_t> waveform, double & tch16 );
 
   void analyze(art::Event const& event) override;
 
@@ -86,10 +87,11 @@ private:
   std::vector<float> *m_amplitude = NULL;
   std::vector<float> *m_integral = NULL;
   std::vector<float> *m_total_charge = NULL;
+  std::vector<int> *m_crate_id = NULL;
   std::vector<float> *m_fragment_id = NULL;
   std::vector<float> *m_fragment_timestamp = NULL;
   std::vector<float> *m_fragment_nseconds = NULL;
-  std::vector<uint32_t> *m_header_timestamp = NULL;
+  std::vector<float> *m_crate_starttime = NULL;
 
   // fitted quantities
   std::vector<float> *m_fit_start_time = NULL;
@@ -118,8 +120,8 @@ pmtcalo::PMTCalibration::PMTCalibration(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
 { 
 
-   m_fragment_label = pset.get<art::InputTag>("FragmentLabel", "CAENV1730");
-   m_data_label = pset.get<art::InputTag>("InputModule", "daq");
+   m_fragment_label = pset.get<art::InputTag>("FragmentLabel", "daq:CAENV1730");
+   m_data_label = pset.get<art::InputTag>("InputModule", "daqPMT");
    m_filter_noise = pset.get<bool>("FilterNoise", false);
    m_waveform_config = pset.get<fhicl::ParameterSet>("WaveformAnalysis");
 
@@ -150,10 +152,11 @@ void pmtcalo::PMTCalibration::beginJob()
   m_pulse_ttree->Branch("amplitude", &m_amplitude );
   m_pulse_ttree->Branch("integral", &m_integral );
   m_pulse_ttree->Branch("total_charge", &m_total_charge );
+  m_pulse_ttree->Branch("m_crate_id", &m_crate_id );
   m_pulse_ttree->Branch("m_fragment_id", &m_fragment_id );
   m_pulse_ttree->Branch("m_fragment_timestamp", &m_fragment_timestamp );
   m_pulse_ttree->Branch("m_fragment_nseconds", &m_fragment_nseconds );
-  m_pulse_ttree->Branch("m_header_timestamp", &m_header_timestamp );
+  m_pulse_ttree->Branch("m_crate_starttime", &m_crate_starttime );
 
   m_pulse_ttree->Branch("fit_start_time", &m_fit_start_time );
   m_pulse_ttree->Branch("error_start_time", &m_error_start_time );
@@ -218,6 +221,95 @@ void pmtcalo::PMTCalibration::beginJob()
 //-----------------------------------------------------------------------------
 
 
+void pmtcalo::PMTCalibration::getTriggerTime( std::vector<uint16_t> waveform, double & tch16 )
+{
+
+    //Get the start and end point
+    // Find the max val and the maxbin
+    // Start point, bin before the one over the threshold (5% max)
+    // End point first bin on the plateau
+
+    double max=0;
+    double binmax=0;
+
+    for( size_t bin=0; bin<waveform.size(); bin++ ){
+
+      double value = waveform[bin];
+      if( value > max ){
+        max = value;
+        binmax=bin;
+      }
+    }
+
+    // Now we found the beam start
+    double startval=0;
+    double binstart=0;
+
+    for( size_t bin=0; bin<waveform.size(); bin++ ){
+
+      double value = waveform[bin+1]-waveform[bin];
+      double delta = max - waveform[bin+1];
+
+
+      if( value>0.05*delta ){
+        startval = waveform[bin];
+        binstart=bin;
+        break;
+      }
+    }
+
+    // Now we found the beam end
+    double endval=0;
+    double binend=0;
+
+    for( size_t bin=binstart; bin<binmax+1; bin++ ){
+
+      double value = waveform[bin];
+      if( max-value < 10  ){
+        endval = value;
+        binend = bin;
+        break;
+      }
+    }
+
+    //std::cout << binmax << " " << max << " " << binmax*2+1 << std::endl;
+    //std::cout << binstart << " " << startval << " " << binstart*2+1 << std::endl;
+    //std::cout << binend << " " << endval << " " << binend*2+1 << std::endl;
+
+    // We now calculate the start time
+
+    double tstart = (double)binstart*2+1;
+    double tend = (double)binend*2+1;
+    
+    int npx = 1000;
+
+    // Linear interpolation y = a + m*x
+    double m = (endval-startval)/(tend-tstart);
+    double a = endval - m*tend;
+
+    for( int i=0; i<npx; i++ ){
+
+      double delta = endval-startval;
+
+      double t = tstart + (double)i*(tend-tstart)/npx;
+      double val =  a+m*t - startval;
+
+      //std::cout << i*(tend-tstart)/npx << " " << t << " " << val << std::endl;
+
+      if( val > 0.05*delta ){
+        tch16 = t;
+        break;
+      }
+
+    }
+
+    return;
+}
+
+
+//-----------------------------------------------------------------------------
+
+
 void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 {
 
@@ -226,49 +318,77 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
 
    // Get the association between channelID and fragment
 
-   /*
    std::map<raw::Channel_t, size_t > m_frag_map;
    std::map<raw::Channel_t, sbndaq::CAENV1730FragmentMetadata > m_metafrag_map;
-   std::map<raw::Channel_t, uint32_t> m_headerttt_map; 
+   std::map<int, double> m_crate_time;
+
+   std::cout << m_fragment_label << std::endl;
 
    auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(m_fragment_label);
 
    if (daq_handle.isValid() && daq_handle->size() > 0) {
+
+
+      double fragment_start_time=0;
+
+
       for (auto const &artdaqFragment: *daq_handle) {
 
-        size_t fragment_id = artdaqFragment.fragmentID();
+       size_t fragment_id = artdaqFragment.fragmentID();
 
-        sbndaq::CAENV1730Fragment         fragment(artdaqFragment);
-        sbndaq::CAENV1730FragmentMetadata metafrag = *fragment.Metadata();
-	sbndaq::CAENV1730Event evt = *fragment.Event();
-	sbndaq::CAENV1730EventHeader header = evt.Header;
+       sbndaq::CAENV1730Fragment         fragment(artdaqFragment);
+       sbndaq::CAENV1730FragmentMetadata metafrag = *fragment.Metadata();
+	     sbndaq::CAENV1730Event evt = *fragment.Event();
+	     sbndaq::CAENV1730EventHeader header = evt.Header;
+
+       size_t nChannelsPerBoard  = metafrag.nChannels; //fragment.nChannelsPerBoard();
+       uint32_t ev_size_quad_bytes         = header.eventSize;
+       uint32_t evt_header_size_quad_bytes = sizeof(sbndaq::CAENV1730EventHeader)/sizeof(uint32_t);
+       uint32_t data_size_double_bytes     = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
+       uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
+
+       const uint16_t* data_begin = reinterpret_cast<const uint16_t*>(artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
+       const uint16_t* value_ptr  = data_begin;
+       uint16_t        value      = 0;
+       size_t          ch_offset  = 0;
 	
-	const auto TTT = uint32_t {header.triggerTimeTag};
-	
-	std::cout << "Processing fragment id: " << fragment_id << std::endl;
-	std::cout << "\t fragment timestamp: " << 0.0 << std::endl;
-	std::cout << "\t header timestamp: " << header.triggerTimeTag << std::endl;
-	std::cout << "\t metafragm timestamp: " << metafrag.timeStampSec << "," << metafrag.timeStampNSec << std::endl;
-
-
-        if (fChannelMap->hasPMTDigitizerID(fragment_id))
-        {
-
+       if (fChannelMap->hasPMTDigitizerID(fragment_id))
+       {
           const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fChannelMap->getChannelIDPairVec(fragment_id);
           
+          // Get a new start time when we're looking to fragments at the beginning of each vme crate
+          if( fragment_id % 3 == 0 ){
+
+            // create the waveoform and pre-allocate the space for the sample
+            std::vector<uint16_t> wvfm(nSamplesPerChannel);
+
+            ch_offset = 15 * nSamplesPerChannel;
+
+            for(size_t i_t=0; i_t < nSamplesPerChannel; ++i_t)
+            {
+                value_ptr = data_begin + ch_offset + i_t; /*pointer arithmetic*/
+                value     = *(value_ptr);
+                wvfm[i_t] = value;
+            }
+
+            // Now that the waveform for ch16 is created, we get the starting time
+            getTriggerTime( wvfm, fragment_start_time );
+
+            int crate_id = (int)fragment_id / 3;
+            m_crate_time[crate_id] = fragment_start_time;
+
+          }
+          
+
           for(const auto& digitizerChannelPair : digitizerChannelVec)
           {
-            raw::Channel_t channelID = digitizerChannelPair.second;
-            m_metafrag_map[channelID] = metafrag;
-            m_frag_map[channelID] = fragment_id;
-	    m_headerttt_map[channelID] = TTT;
+              raw::Channel_t channelID = digitizerChannelPair.second;
+              m_metafrag_map[channelID] = metafrag;
+              m_frag_map[channelID] = fragment_id;
           }
-        }
+        } 
       }
     }
-
-    */
-
 
    art::Handle< std::vector< raw::OpDetWaveform > > rawHandle;
    event.getByLabel(m_data_label, rawHandle);
@@ -283,14 +403,13 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
      raw::Channel_t channel_id = raw_waveform.ChannelNumber();
 
      m_channel_id->push_back( channel_id );
-     //m_fragment_id->push_back( m_frag_map[channel_id] );
-     //m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
-     //m_fragment_nseconds->push_back( m_metafrag_map[channel_id].timeStampNSec );
-     //m_header_timestamp->push_back( m_headerttt_map[channel_id] );
+     m_fragment_id->push_back( m_frag_map[channel_id] );
+     m_fragment_timestamp->push_back( m_metafrag_map[channel_id].timeStampSec );
+     m_fragment_nseconds->push_back( m_metafrag_map[channel_id].timeStampNSec );
 
-    m_fragment_timestamp->push_back( 0.0 );
-     m_fragment_nseconds->push_back( 0.0 );
-     m_header_timestamp->push_back( 0.0 );
+     int crate_id = (int)m_frag_map[channel_id] / 3;
+     m_crate_id->push_back( crate_id );
+     m_crate_starttime->push_back( m_crate_time[crate_id] );
 
      myWaveformAna->loadData( raw_waveform );
      if( m_filter_noise ){ myWaveformAna->filterNoise(); }
@@ -341,10 +460,11 @@ void pmtcalo::PMTCalibration::clean(){
   m_amplitude->clear();
   m_integral->clear();
   m_total_charge->clear();
+  m_crate_id->clear();
   m_fragment_id->clear();
   m_fragment_timestamp->clear();
   m_fragment_nseconds->clear();
-  m_header_timestamp->clear();
+  m_crate_starttime->clear();
 
   m_fit_start_time->clear();
   m_error_start_time->clear();
