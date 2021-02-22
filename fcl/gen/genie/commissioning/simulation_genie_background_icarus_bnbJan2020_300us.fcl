@@ -1,0 +1,30 @@
+#
+# File:    simulation_genie_background_icarus_bnbJan2020_300us.fcl
+# Purpose: BNB simulation in a reduced time window around the beam gate.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 6, 2021
+#
+# This configuration generates a BNB neutrino interaction proportionally to
+# the beam intensity.
+# 
+# The rest of the settings is imported from
+# `simulation_genie_background_icarus_bnbJan2020_300us.fcl`.
+# 
+# NOTE: this configuration appears to be currently broken, in that `GENIEGen`
+#       always produces one interaction per spill.
+# 
+#
+
+# ------------------------------------------------------------------------------
+#include "simulation_genie_background_icarus_bnbJan2020_300us_signal.fcl"
+
+
+# ------------------------------------------------------------------------------
+physics.producers.generator.PassEmptySpills: true
+
+
+# ------------------------------------------------------------------------------
+outputs.rootoutput.fileName:    "simulation_genie_background_icarus_bnbJan2020_300us_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-simulation_genie_background_icarus_bnbJan2020_300us_%tc-%p.root"
+
+# ------------------------------------------------------------------------------

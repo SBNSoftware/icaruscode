@@ -246,8 +246,8 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * This module is an implementation of `TriggerEfficiencyPlotsBase`
  * for a trigger defined as a pattern of sliding windows.
  * 
- * Note that the logical waveforms from the sliding windows are expected to
- * be provided as input.
+ * Note that the multi-level logical waveforms from the sliding windows are
+ * expected to be provided as input.
  * 
  * The single sliding window with the highest activity is picked as a reference.
  * A requirement on the number of trigger primitives "on" in that window is
@@ -264,54 +264,55 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * 
  * @anchor SlidingWindowTriggerEfficiencyPlots_Algorithm
  * 
- * TODO
- * 
  * This section describes the trigger logic algorithm used in
  * `icarus::trigger::SlidingWindowTriggerEfficiencyPlots` and its assumptions.
  * 
- * The algorithm keeps the trigger primitives from the different cryostats
- * separate for the most time. 
- * Within each cryostat, all trigger primitives are treated equally, whether
- * they originate from one or from two channels (or 10 or 30), and wherever
- * their channels are in the cryostat.
- * The trigger primitives in each cryostat are combined in a multi-level gate by
- * adding them, so that the level of the resulting gate matches at any time how
- * many trigger primitives are on at that time.
- * Finally, the maximum number of trigger primitives open in any of the
- * cryostats at each time is the level to be compared to the trigger
- * requirements.
+ * The module receives as input a multi-level trigger gate for each of the
+ * windows to be considered.
+ * On the first input (i.e. the first event), that input is parsed to learn
+ * the windows and their relative position from the input trigger gates
+ * (`initializeTopologicalMaps()`). This topology will be used to apply the
+ * configured patterns. On the following events, their input is checked to
+ * confirm the compatibility of the composition of its windows with the one from
+ * that first event (`verifyTopologicalMap()`).
  * 
- * This multi-level gate is set in coincidence with the beam gate by multiplying
- * the multi-level and the beam gates.
+ * All multi-level gates are set in coincidence with the beam gate by
+ * multiplying the multi-level and the beam gates. Beacuse of this, trigger
+ * gates are suppressed everywhere except than during the beam gate.
  * The beam gate opens at a time configured in `DetectorClocks` service provider
  * (`detinfo::DetectorClocks::BeamGateTime()`) and has a duration configured
  * in this module (`BeamGateDuration`).
  * 
- * At this point, the trigger gate is a multi-level gate suppressed everywhere
- * except than during the beam gate.
- * The algorithm handles multiple trigger primitive requirements.
- * Each requirement is simply how many trigger primitives must be open at the
- * same time in a single cryostat for the trigger to fire. The values of these
- * requirements are set in the configuration (`MinimumPrimitives`).
- * To determine whether a trigger with a given requirement, i.e. with a required
- * minimum number of trigger primitives open at the same time, has fired, the
- * gate combined as described above is scanned to find _the first tick_ where
- * the level of the gate reaches or passes this minimum required number. If such
- * tick exists, the trigger is considered to have fired, and at that time.
+ * The algorithm handles independently multiple trigger patterns.
+ * On each input, each configured pattern is applied based on the window
+ * topology. Each pattern describes a minimum level of the trigger
+ * gate in the window, that usually means the number of LVDS signals in
+ * coincidence at any given time ("majority"). A pattern may have requirements
+ * on the neighbouring windows in addition to the main one. The pattern is
+ * satisfied if all involved windows pass their specific requirements at the
+ * same time (coincidence between windows).
+ * Each pattern is applied in turn to each of the windows (which is the "main"
+ * window). The neighborhood described in the pattern is applied with respect to
+ * that main window. The method `applyWindowPattern()` performs this
+ * combination.
+ * The trigger fires if one or more of the windows satisfy the pattern, and the
+ * trigger time is the one of the earliest satisfied pattern (more precisely,
+ * the earliest tick when the coincidence required by that pattern is
+ * satisfied).
  * 
- * As a consequence, there are for each event as many different trigger
- * responses as how many different requirements are configured in
- * `MinimumPrimitives`, _times_ how many ADC thresholds are provided in input,
+ * All windows in the detector are considered independently, but the supported
+ * patterns may only include components in the same cryostat. Therefore,
+ * triggers are effectively on a single cryostat.
+ * 
+ * Eventually, for each event there are as many different trigger responses as
+ * how many different patterns are configured (`Patterns` configuration
+ * parameter), _times_ how many ADC thresholds are provided in input,
  * configured in `Thresholds`.
  * 
  * While there _is_ a parameter describing the time resolution of the trigger
  * (`TriggerTimeResolution`), this is currently only used for aesthetic purposes
  * to choose the binning of some plots: the resolution is _not_ superimposed
  * to the gates (yet).
- * 
- * The combination algorithm is implemented in `combineTriggerPrimitives()`
- * while the requirement evaluation and plotting are implemented in
- * `plotResponse()`.
  * 
  * The set of plots and their organization are described in the documentation of
  * `icarus::trigger::TriggerEfficiencyPlotsBase`.
@@ -322,13 +323,9 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * -------------
  * 
  * A generic "setting" of `icarus::trigger::TriggerEfficiencyPlotsBase` is
- * in this module represented by the single trigger primitive requirement _N_
- * (configuration parameter: `MinimumPrimitives`). The folders and plots will
- * identify each requirement with the tag `ReqN` (e.g. `Req5` when requesting
- * at least 5 trigger primitives for an event trigger).
- * 
- * There are a few plots that are produced by this module in addition to the
- * ones in `TriggerEfficiencyPlotsBase`.
+ * in this module represented by a tag encoding the characteristics of the
+ * pattern (see `WindowPattern::tag()`). The folders and plots will
+ * identify each requirement with tags like `M8` or `M5O2`.
  * 
  * There are different "types" of plots. Some
  * @ref SlidingWindowTriggerEfficiencyPlots_SelectionPlots "do not depend on triggering at all",
@@ -341,7 +338,9 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * this is the case of all the plots including only triggering or non-triggering
  * events.
  * 
- * A list of additional plots follows for each plot type.
+ * There are a few plots that are produced by this module in addition to the
+ * ones in `TriggerEfficiencyPlotsBase`. They are described below.
+ * 
  * All the plots are always relative to a specific optical detector channel
  * threshold (ADC) and a broad event category.
  * 
@@ -362,19 +361,12 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * from `TriggerEfficiencyPlotsBase`, the following plots are also produced:
  * 
  * * `Eff`: trigger efficiency defined as number of triggered events over the
- *   total number of events, as function of the minimum number of trigger
- *   primitives (`MinimumPrimitives`) to define a firing trigger; uncertainties
- *   are managed by `TEfficiency`.
+ *   total number of events, as function of the pattern (as encoded above);
+ *   uncertainties are managed by `TEfficiency`.
+ * * `Triggers`: trigger count as function of the pattern (as encoded above).
  * * `TriggerTick`: distribution of the time of the earliest trigger for the
- *   event, as function of the minimum number of trigger primitives (as in
- *   `Eff`). It may happen that the event is such that there is e.g. a
- *   20-primitive flash, then subsiding, and then another 30-primitive flash.
- *   In such a case, in the trigger requirement "&geq; 15 primitives" such event
- *   will show at the time of the 20-primitive flash, while in the trigger
- *   requirement "&geq; 25 primitives" it will show at the time of the 
- *   30-primitive flash. Each event appears at most once for each trigger
- *   requirement, and it may not appear at all if does not fire a trigger.
- * * `NPrimitives`: the maximum number of primitives "on" at any time.
+ *   event, as function of the pattern (as in `Eff`). Each event appears at most
+ *   once for each trigger pattern.
  * 
  * 
  * ### Plots depending on a specific trigger definition
@@ -402,12 +394,34 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * @ref TriggerEfficiencyPlotsBase_Configuration "all the configuration parameters"
  * from `TriggerEfficiencyPlotsBase`, the following one is also present:
  * 
- * * `MinimumPrimitives` (list of integers, _mandatory_): a list of alternative
- *     requirements for the definition of a trigger; each value is the number
- *     of trigger primitives needed to be "on" at the same time for the trigger
- *     to fire;
+ * * `Patterns` (list of pattern specifications, _mandatory_): a list of
+ *     alternative pattern requirements for the definition of a trigger; each
+ *     value is a table on its own, with the following elements:
+ *     * `inMainWindow` (integer, mandatory): the minimum number of primitives
+ *         to be fired in the central ("main") window of the pattern
+ *     * `inDownstreamWindow` (integer, default: `0`): the minimum number of
+ *         primitives to be fired in the window downstream of the main one
+ *         (downstream is farther from the face beam neutrinos enter the
+ *         detector through, i.e. larger _z_)
+ *     * `inUpstreamWindow` (integer, default: `0`): the minimum number of
+ *         primitives to be fired in the window upstream of the main one
+ *         (upstream is closer to the face beam neutrinos enter the
+ *         detector through, i.e. smaller _z_)
+ *     * `inOppositeWindow` (integer, default: `0`): the minimum number of
+ *         primitives to be fired in the window opposite to the main one
+ *     * `requireDownstreamWindow` (flag, default: `false`): if set, this
+ *         pattern is applied only on main windows that have a window downstream
+ *         of them, i.e. farther from the face of the detector the beam enters
+ *         through (larger _z_ coordinate); if set to `false`, if a main window
+ *         has no downstream window, the downstream window requirement is always
+ *         considered passed
+ *     * `requireUpstreamWindow` (flag, default: `false`): if set, this pattern
+ *         is applied only on main windows that have a window upstream of them,
+ *         in the same way as for the `requireDownstreamWindow` setting
+ *         described above
  * 
- * An example job configuration is provided as `maketriggerplots_icarus.fcl`.
+ * An example job configuration is provided as
+ * `makeslidingwindowtriggerplots_icarus.fcl`.
  * 
  * 
  * Technical description of the module
@@ -417,10 +431,12 @@ namespace icarus::trigger { class SlidingWindowTriggerEfficiencyPlots; }
  * `icarus::trigger::TriggerEfficiencyPlotsBase`, which provides a backbone to
  * perform the simulation of triggers and plotting of their efficiency.
  * 
- * There is not any superior design involved in this separation, but just the
- * desire to share most code possible between different modules which simulate
+ * There is no superior design involved in this separation, but rather the goal
+ * to share most code possible between different modules which simulate
  * different trigger patterns and as a consequence might have specific plots to
  * fill.
+ * 
+ * TODO
  * 
  * This module redefines:
  * 
@@ -547,7 +563,29 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     /// Whether a window location with no downstream window should be discarded.
     bool requireDownstreamWindow = false;
     
-    /// Returns a tag summarizing the pattern.
+    /**
+     * @brief Returns a tag summarizing the pattern.
+     * 
+     * The tag encodes the requirements on the main window (_R(M)_), its
+     * opposite window (_R(O)_), and downstream (_R(D)_) and upstream (_R(U)_)
+     * windows.
+     * A requirement _R(X)_ is in the format `X##[req]`, where `X` is the tag
+     * letter of the requirement, `##` is the requirement level for that window,
+     * and the optional `req` tag means that if for a main window this window
+     * does not exist, that main window is not considered (e.g. the downstream
+     * window of a main window which is the most downstream in the detector).
+     * 
+     * For example, `M5O2D2reqU1` requires 5 openings in the main window (`M5`),
+     * 2 in the window opposite to the main one (`O2`) and also 2 on the window
+     * downstream of the main one (`D2req`) and also 1 on the window
+     * upstream of the main one (`U1`); in addition, if the main window
+     * has no downstream window (i.e. it's at the "far end" of the detector),
+     * the downstream requirement is never satisfied and the trigger is
+     * considered to never fire. Instead, if there is no upstream window (i.e.
+     * the main window is in the "near end" of the detector) the upstream window
+     * requirement is considered to be satisfied (or ignored).
+     * 
+     */
     std::string tag() const;
     
     /// Returns a description of the pattern.
@@ -646,7 +684,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const override;
+    ) override;
     
   // --- END Derived class methods ---------------------------------------------
 
@@ -690,12 +728,17 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     std::size_t iPattern, WindowPattern const& pattern,
     PlotSandboxRefs_t const& plotSets,
     EventInfo_t const& eventInfo,
+    PMTInfo_t const& PMTinfo,
     WindowTriggerInfo const& triggerInfo
     ) const;
 
   /// Fills all event plots with data from `eventInfo` as in `fillEventPlots()`.
   void fillAllEventPlots
     (PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo) const;
+
+  /// Fills all PMY plots with data from `PMTinfo` as in `fillPMTplots()`.
+  void fillAllPMTplots
+    (PlotSandboxRefs_t const& plotSets, PMTInfo_t const& PMTinfo) const;
 
   /**
    * @brief Builds the channel maps from the specified gates.
@@ -1071,6 +1114,13 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::SlidingWindowTriggerEffici
       << "At least one 'MinimumPrimitives' requirement... required.";
   }
   
+  std::size_t iPattern [[maybe_unused]] = 0U; // NOTE: incremented only in DEBUG
+  for (auto const& pattern: fPatterns) {
+    std::size_t const index [[maybe_unused]]
+      = createCountersForPattern(pattern.tag());
+    assert(index == iPattern++);
+  } // for patterns
+  
   //
   // more complex parameter parsing
   //
@@ -1183,6 +1233,16 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   
   util::ROOT::applyAxisLabels(TrigTime->GetXaxis(), patternLabels);
   
+  auto* Triggers = plots.make<TH1F>(
+    "Triggers",
+    "Triggered events"
+      ";window pattern"
+      ";triggered events",
+    fPatterns.size(), 0.0, double(fPatterns.size())
+    );
+  
+  util::ROOT::applyAxisLabels(Triggers->GetXaxis(), patternLabels);
+  
   auto* Eff = plots.make<TEfficiency>(
     "Eff",
     "Efficiency of triggering"
@@ -1196,9 +1256,11 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet
   // but TEfficiency really does not expose the interface to assign labels to
   // its axes, which supposedly could be done had we chosen to create it by
   // histograms instead of directly as recommended.
+  // Also need to guess which is the relevant histogram.
   util::ROOT::applyAxisLabels
     (const_cast<TH1*>(Eff->GetTotalHistogram())->GetXaxis(), patternLabels);
-  
+  util::ROOT::applyAxisLabels
+    (const_cast<TH1*>(Eff->GetPassedHistogram())->GetXaxis(), patternLabels);
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::initializePlotSet()
 
@@ -1246,15 +1308,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::verifyTopologicalMap
   (TriggerGatesPerCryostat_t const& gates) const
 {
   /*
-   *    * @brief Verifies that the current channel maps are compatible with `gates`.
-   * @param gates the combined sliding window trigger gates, per cryostat
-   * @throw IncompatibleMap (category: `SlidingWindowTriggerEfficiencyPlots`)
-   *        or derived, if an incompatibility is found
-   * 
-   * The method verifies that the current channel mapping is compatible with the
-   * gates.
-   * 
-   * This currently means that the `gates` are in the expected order and have
+   * Verifies that the `gates` are in the expected order and have
    * the expected channel content.
    */
 
@@ -1309,7 +1363,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
-) const {
+) {
   
   auto const threshold = helper().ADCthreshold(thresholdIndex);
   
@@ -1345,15 +1399,21 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     mf::LogTrace log(helper().logCategory());
     log << "Input for threshold " << threshold << ": " << inBeamGates.size()
       << " primitives. After beam gate:";
-    
+    unsigned int nOpen = 0U;
     for (auto const& [ iWindow, gate ]: util::enumerate(inBeamGates)) {
       auto const maxTick = gate.findMaxOpen();
       if (maxTick == gate.MinTick) continue;
+      ++nOpen;
       log << "\n  window #" << iWindow << ": maximum "
         << gate.openingCount(maxTick) << " at tick " << maxTick;
     } // for
+    if (!nOpen) log << "  nothing.";
   }
   // --- END DEBUG -------------------------------------------------------------
+  
+  // get which gates are active during the beam gate
+  PMTInfo_t const PMTinfo
+    { threshold.value(), helper().extractActiveChannels(gates) };
   
   //
   // 2.   for each pattern:
@@ -1391,13 +1451,14 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
     } // main window choice
     
     //
-    // 2.3.   plot the trigger outcome
+    // 2.3.   register and plot the trigger outcome
     //
+    registerTriggerResult(thresholdIndex, iPattern, triggerInfo);
     plotResponse(
       thresholdIndex, threshold,
       iPattern, pattern,
       selectedPlots,
-      eventInfo, triggerInfo
+      eventInfo, PMTinfo, triggerInfo
       );
     
   } // for window patterns
@@ -1406,6 +1467,11 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   // 3. fill all trigger-independent plots (one copy per threshold... meh)
   //
   fillAllEventPlots(selectedPlots, eventInfo);
+  
+  //
+  // 4. fill all PMT plots (threshold-dependent)
+  //
+  fillAllPMTplots(selectedPlots, PMTinfo);
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot()
 
@@ -1433,21 +1499,29 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllEventPlots
 
 
 //------------------------------------------------------------------------------
-/**
-  * @brief Returns the trigger time for the specified sliding window, if any.
-  * @param pattern the pattern used to decide whether the trigger fires
-  * @param iWindow the index of the main sliding window in the pattern
-  * @param gates all the sliding window gates
-  * @return the trigger information for the specified sliding window
-  * 
-  * This method applies the specified pattern using `iWindow` as the main
-  * window of the pattern, and assigning the upstream, downstream and opposite
-  * windows with the current topological map.
-  * 
-  * The return contains the earliest optical time tick at which the pattern
-  * requirements are all satisfied. If that never happens, the returned value
-  * has instead `fired()` returning `false`.
-  */
+void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots
+  (PlotSandboxRefs_t const& plotSets, PMTInfo_t const& PMTinfo) const
+{
+  /*
+   * Now fill the plots independent of the trigger response:
+   * the same value is plotted in all plot sets.
+   * (again for all pertinent event categories, e.g. charged currents, etc.)
+   */
+  for (PlotSandbox const& plotSet: plotSets) {
+    
+    //
+    // general plots, independent of trigger definition but dependent on
+    // threshold
+    //
+    fillPMTplots(PMTinfo, plotSet);
+    
+  } // for
+  
+} // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots()
+
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   WindowPattern const& pattern, std::size_t iWindow, TriggerGates_t const& gates
   ) const -> TriggerInfo_t
@@ -1528,6 +1602,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   std::size_t iPattern, WindowPattern const& pattern,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
+  PMTInfo_t const& PMTinfo,
   WindowTriggerInfo const& triggerInfo
 ) const {
   
@@ -1553,6 +1628,9 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // simple efficiency
     get.Eff("Eff"s).Fill(fired, iPattern);
     
+    // simple count
+    if (fired) get.Hist("Triggers"s).Fill(iPattern);
+    
     // trigger time (if any)
     if (fired) {
       get.Hist2D("TriggerTick"s).Fill
@@ -1567,7 +1645,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // efficiency plots
     // (including event plots in the triggered or non-triggered category)
     helper().fillAllEfficiencyPlots
-      (eventInfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
+      (eventInfo, PMTinfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
     
     //
     // add here further trigger-specific plots

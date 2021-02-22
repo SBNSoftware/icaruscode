@@ -1,3 +1,6 @@
+
+cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+
 # Add the subfolder containing the deconvolution tools
 add_subdirectory(DeconTools)
 add_subdirectory(SimTestPulse)
@@ -14,6 +17,8 @@ art_make(
             ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES 
             icarus_signal_processing
+            icarus_signal_processing_Detection
+            icarus_signal_processing_Filters
             larcorealg_Geometry
             larcore_Geometry_Geometry_service
             lardata_Utilities

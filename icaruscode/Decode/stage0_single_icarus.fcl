@@ -1,8 +1,19 @@
+##
+## This fhicl file is used to run "stage0" processing specifically for the case where all 
+## TPC data is included in an artdaq data product from a single instance
+##
 #include "stage0_icarus_driver_common.fcl"
 
 process_name: stage0
 
-physics.reco: [@sequence::icarus_stage0_single]
+## Use the following to run the full defined stage0 set of modules
+#physics.reco: [@sequence::icarus_stage0_single]
+
+## Use the following to run only the decoding and noise filtering
+## ==> Set as default for production processing for lifetime measurements - Jan, 2021
+physics.reco: [ daqTPC ]
+
+## boiler plate...
 physics.trigger_paths: [ reco ]
 outputs.out1.fileName: "%ifb_%tc-%p.root"
 outputs.out1.dataTier: "reconstructed"
@@ -11,7 +22,12 @@ outputs.out1.dataTier: "reconstructed"
 outputs.rootout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
 
 # Add a few temporary overrides that will either be dropped or made default in the future. 
-#physics.producers.daqTPC.DecoderTool.DiagnosticOutput:             true  # This turns on lots of diagnostic messages... LOTS
+#physics.producers.daqTPC.DecoderTool.DiagnosticOutput:             true               # This turns on lots of diagnostic messages... LOTS. S
+physics.producers.daqTPC.OutputRawWaveform:                        true                # This will output uncorrected waveforms along with correctedd
+physics.producers.daqTPC.OutputCorrection:                         true                # This outputs the coherent noise corrections
+physics.producers.daqTPC.DecoderTool.UseFFTFilter:                 false               # If true will run high/low/window filters 
+physics.producers.daqTPC.DecoderTool.Threshold:                    [3.00, 3.00, 3.00]  # ROI thresholds for coherent noise subtraction "protection"
+#physics.producers.daqTPC.DecoderTool.StructuringElement:           16                 # Allows setting size of 1D structuring element
 
 # This causes 1D deconvolution to output full waveforms
 physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0: @local::icarus_noproifinder_0

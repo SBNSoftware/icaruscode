@@ -1,0 +1,5 @@
+#include "dump_opdetwaveforms_icarus.fcl"
+
+physics.analyzers.dumpopdetwaveforms.OpDetWaveformsTag: "daqPMT"
+physics.analyzers.dumpopdetwaveforms.Pedestal:           0
+

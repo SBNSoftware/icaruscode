@@ -1,0 +1,41 @@
+#
+# File:    prodcorsika_300us_icarus.fcl
+# Purpose: Cosmic ray generation in a reduced time window around the beam gate.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 5, 2021
+#
+# This configuration generates cosmic rays with the standard ICARUS
+# configuration (CORSIKA CMC model from `prodcorsika_standard_icarus.fcl`)
+# limiting the generation time from -103 to 200 microsecond around the
+# nominal beam gate time (which is the time used as reference by readout).
+# 
+# Note that the turn on for photon detection is almost immediate,
+# and this configuration allows for an additional "turn-on time" of
+# 3 microseconds. I could not actually identify any turn on from a sample
+# of 770 events, so 3 microseconds is just a (way excessive) precaution.
+# 
+# This configuration is *NOT GOOD* for simulation including the TPC,
+# and should be used only when simulating PMT + CRT + trigger runs only.
+# 
+# Recommended workflow:
+#  * prodcorsika_300us_icarus.fcl
+#  * cosmics_g4_icarus_volCryostat.fcl
+#  * custom optical detsim (e.g. run4642like_detsim_icarus.fcl)
+#
+
+#include "prodcorsika_standard_icarus.fcl"
+
+process_name: Gen300us
+
+
+physics.producers.generator: {
+  @table::physics.producers.generator
+  
+  TimeOffset: -103e-6 # seconds
+  SampleTime:  303e-6 # seconds
+  
+} # physics.producers.generator
+
+
+outputs.out1.fileName:    "prodcorsika_300us_icarus_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-prodcorsika_300us_icarus_%tc-%p.root"

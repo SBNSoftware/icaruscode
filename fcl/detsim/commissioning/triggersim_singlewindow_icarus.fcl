@@ -1,0 +1,452 @@
+#
+# File:    triggersim_singlewindow_icarus.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 8, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# The selection of thresholds and trigger configurations reflects the ones used
+# for commissioning runs 4759-4787 (documented in the spreadsheet:
+# https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
+#
+#
+# The steps are:
+#
+#  * pmtbaselines (PMTWaveformBaselines): computes baselines for all PMT
+#      waveforms
+#  * discrimopdaq (DiscriminatePMTwaveforms): from each PMT extracts a gate
+#      signal according to each of the configured thresholds;
+#      for each threshold all gates are stored in their own data product
+#  * lvdsgatesOR (LVDSgates): pairs each of the discriminated waveforms above
+#      to reproduce the 192 hardware channels from PMT feeding the trigger
+#      the pairing is performed as an OR of the two gates in the pair;
+#  * trigslidewindowOR6m (SlidingWindowTrigger): applies a sliding window of 30
+#      PMT and keeps only the central ones of the two central ones of east
+#      cryostat (C:0); it uses OR paired output from LVDS simulation;
+#  * effSlidingOR6m (SlidingWindowTriggerEfficiencyPlots): produces plots of
+#      efficiency of a trigger requiring patterns of sliding window triggers,
+#      with minimum LVDS trigger primitives in each sliding window, to be
+#      present at the same time and in coincidence with a 1.6 us beam gate;
+#
+#
+# Run settings:
+# 
+#       |         LVDS                  | windows | req | beam  |    readout    |      efficiency        |
+#       | threshold |   logic   |  gate |         |     |  gate | buffer | post | module         | tag   |
+#       | 400 | 600 | AND |  OR | 200ns |   6 m   |     |       |        |      |                |       |
+# ------+-----+-----+-----+-----+-------+---------|-----+-------+--------+------+----------------+-------+
+#  4774 |  x  |     |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4775 |  x  |     |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4778 |  x  |     |     |  x  |   x   |   #2    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4786 |  x  |     |     |  x  |   x   |   #5    |  3  | 10 us |  70 us |  70% | effSlidingOR6m |  M3   |
+#  4785 |  x  |     |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4779 |  x  |     |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4772 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4762 |  x  |     |     |  x  |   x   |  #2,#5  |  5  |       |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4768 |  x  |     |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
+#  4766 |  x  |     |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4763 |  x  |     |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4773 |     |  x  |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4776 |     |  x  |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4777 |     |  x  |     |  x  |   x   |   #2    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4787 |     |  x  |     |  x  |   x   |   #5    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4784 |     |  x  |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4783 |     |  x  |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4759 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4771 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
+#  4760 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
+#  4761 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4765 |     |  x  |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
+#  4769 |     |  x  |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3M3 |
+#  4764 |     |  x  |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4642 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  50% |                |       |
+#  4663 |     |  x  |     |  x  |   x   |   ??    |  2  | 1.6us | 100 us |  50% | effSlidingOR6m |  ??   |
+#  4690 |     |  x  |     |  x  |   x   |         |  0  |       | 100 us |  70% |                |       |
+#  4740 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
+#  4795 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
+#  4811 |     |  x  |     |  x  |   x   |         |  0  |       |  25 us |  60% |                |       |
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `opdaq`
+#
+#
+# Changes
+# --------
+# 
+# 20210208 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `run_trigger_gate_simulation_icarus.fcl` v2.1
+#
+
+# Output
+# -------
+#
+# The two `LVDSgates` module instances produce each multiple sets of trigger
+# gates that can be used for trigger study.
+#
+# In addition, debugging log files are produced (settings are at the bottom).
+# 
+# Only selected data product from the input file are retained in the output,
+# in addition to all the ones produced by this job:
+#  * all standard products from event generation
+#  * particle propagated in argon by GEANT4 simulation
+#  * optical detector waveforms
+#
+#
+# Required inputs
+# ----------------
+#
+#  * simulated optical detector readout: `opdaq`
+#
+#
+# Required services
+# ------------------
+#
+#  * GeometryService (DiscriminatePMTwaveforms)
+#  * DetectorClocksService (most/all modules)
+#  * TFileService (TriggerEfficiencyPlots)
+#
+#
+# Changes
+# --------
+# 
+# 20210208 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version from `run_trigger_gate_simulation_icarus.fcl`
+# 
+
+# ------------------------------------------------------------------------------
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+# bad PMT channels (off or too noisy)
+# missing_pmt_channels: @local::icarus_trigger_channel_ignore_202101
+missing_pmt_channels: []
+
+# beam gate window duration (BNB: 1.6 us; NuMI: 9.5 us)
+BeamGateDuration: "10 us"
+
+# discrimination thresholds:
+PMTthresholds: [ 400, 600 ]
+
+
+# PMT discriminated signal width
+LVDSsignalWidth: 0.160 # microseconds
+
+
+# settings for plotting efficiency under patterns of sliding window triggers
+# firing during beam time
+SlidingWindowTriggerPatterns: [
+  { inMainWindow: 1                       },
+  { inMainWindow: 2                       },
+  { inMainWindow: 3                       },
+  { inMainWindow: 4                       },
+  { inMainWindow: 5                       },
+  { inMainWindow: 6                       },
+  { inMainWindow: 1   inOppositeWindow: 1 },
+  { inMainWindow: 2   inOppositeWindow: 2 },
+  { inMainWindow: 3   inOppositeWindow: 3 },
+  { inMainWindow: 4   inOppositeWindow: 4 },
+  { inMainWindow: 5   inOppositeWindow: 5 },
+  { inMainWindow: 6   inOppositeWindow: 6 }
+] # SlidingWindowTriggerPatterns
+
+
+# list of the sliding windows that are enabled (all others are disabled)
+EnabledWindows: [ 2, 5 ]
+
+
+END_PROLOG
+# ------------------------------------------------------------------------------
+
+process_name: Trigger
+
+
+# ------------------------------------------------------------------------------
+services: {
+
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+
+} # services
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    pmtbaselines: {
+
+      module_type: PMTWaveformBaselines
+
+      # label of input digitized optical waveform data product
+      OpticalWaveforms: "opdaq"
+
+      # produce plots on the extracted baseline
+      PlotBaselines: true  # default
+      
+      # tag of the module output to console via message facility
+      OutputCategory: "PMTWaveformBaselines"  # default
+
+    } # pmtbaselines
+
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    discrimopdaq: {
+
+      module_type: DiscriminatePMTwaveforms
+
+      # input optical waveform data product tag:
+      OpticalWaveforms: "opdaq"
+
+      # PMT baselines
+      Baselines: "pmtbaselines" # from data products
+      # Baseline: 8000
+      
+      #
+      # choosing the discrimination algorithm: fixed length gates
+      #
+      TriggerGateBuilder: {
+        @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+        
+        ChannelThresholds: @local::PMTthresholds
+        
+        GateDuration: @local::LVDSsignalWidth
+        
+      } # TriggerGateBuilder
+
+      # select which thresholds to save (the algorithm *must* provide them!);
+      # omitted: save all thresholds that the algorithm provides (above)
+    #  SelectThresholds: [ 5, 15 ]
+
+      # message facility stream
+      OutputCategory: "DiscriminatePMTwaveforms"
+
+    } # discrimopdaq
+
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    lvdsgatesOR: {
+
+      module_type: LVDSgates
+
+      TriggerGatesTag: discrimopdaq
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::PMTthresholds
+
+      # CombinationMode: mostly either "AND" or "OR"
+      CombinationMode: "OR"
+
+      # use the standard ICARUS pairing
+      ChannelPairing: @local::icarus_trigger_channel_pairings
+
+      # input does not include these channels:
+      IgnoreChannels: @local::missing_pmt_channels
+
+      # message facility stream
+      LogCategory: "LVDSgatesOR"
+
+    } # lvdsgatesOR
+
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    trigslidewindowOR6m: {
+
+      module_type: SlidingWindowTrigger
+
+      TriggerGatesTag: "lvdsgatesOR"
+
+      Thresholds: @local::PMTthresholds
+
+      WindowSize: 30
+
+      # number of optical channel used as offset for sliding window [as WindowSize]
+      # Stride: 30
+      
+      # enable only the central window of each PMT wall
+      EnableOnlyWindows: @local::EnabledWindows
+
+      MissingChannels: @local::missing_pmt_channels
+      
+      # name of the category used for the output
+      LogCategory: "SlidingWindowTriggerOR"
+
+    } # trigslidewindowOR6m
+
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  } # producers
+
+
+  analyzers: {
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    effSlidingOR6m: {
+
+      module_type: SlidingWindowTriggerEfficiencyPlots
+
+      TriggerGatesTag: trigslidewindowOR6m
+
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::PMTthresholds
+
+      # sliding window patterns to be simulated
+      Patterns: @local::SlidingWindowTriggerPatterns
+
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: @local::BeamGateDuration
+
+      # write event information in a simple tree for further investigation (disabled)
+      # EventTreeName: "EventsSlidingOR"
+
+      # dump event information on screen (disabled)
+      # EventDetailsLogCategory: ""
+      
+      # we plot events wherever theirs interactions are
+      PlotOnlyActiveVolume: false
+      
+      # message facility stream
+      LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
+
+    } # effSlidingOR6m
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+  } # analyzers
+
+
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  triggerOR: [ pmtbaselines, discrimopdaq, lvdsgatesOR,  trigslidewindowOR6m  ]
+  
+  plotsOR:  [ effSlidingOR6m  ]
+
+  output: [ rootoutput ]
+
+  trigger_paths: [ triggerOR ]
+  end_paths: [ plotsOR, output ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+
+  rootoutput: {
+    
+    @table::icarus_rootoutput # from rootoutput_icarus.fcl
+    
+    # each entry is "class_label_instance_process"
+    outputCommands: [
+      "drop *",
+      "keep simb::MCTruths_*_*_*",
+      "keep simb::MCFluxs_*_*_*",
+      "keep simb::MCFluxsimb::MCTruthvoidart::Assns_*_*_*",
+      "keep simb::GTruths_*_*_*",
+      "keep simb::GTruthsimb::MCTruthvoidart::Assns_*_*_*",
+      "keep simb::MCParticles_largeant__G4",
+      "keep simb::MCParticlesimb::MCTruthsim::GeneratedParticleInfoart::Assns_largeant__G4",
+      "keep sim::SimEnergyDeposits_largeant_*_G4",
+    #  "keep sim::SimPhotonss_largeant__G4", # enable for optical efficiency studies
+      "keep *_opdaq_*_DetSim",
+      "keep *_*_*_Trigger"
+      ]
+  } # rootoutput
+  
+} # outputs
+
+
+# ------------------------------------------------------------------------------
+# add debug output to its own file
+#
+services.message.destinations.TriggerThresholdLog: {
+  type:       file
+  filename:  "TriggerThresholds.log"
+  threshold:  DEBUG
+  categories: {
+    DiscriminatePMTwaveforms: { limit: -1 }
+    default: { limit: 0 }
+  }
+} # services.messages.destinations.TriggerThresholdLog
+
+services.message.destinations.LVDSORLog: {
+  type:       file
+  filename:  "LVDS-OR.log"
+  threshold:  DEBUG
+  categories: {
+    LVDSgatesOR: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.LVDSORLog
+
+services.message.destinations.SlidingWindowORLog: {
+  type:       file
+  filename:  "SlidingWindowTrigger-OR.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerOR: { limit: -1 }
+    default:   { limit: 0 }
+  }
+} # services.messages.destinations.SlidingWindowORLog
+
+
+services.message.destinations.SlidingORplotsLog: {
+  type:       file
+  filename:  "SlidingWindowTriggerEfficiency_Count_Plots-OR.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerEfficiencyPlotsOR: { limit: -1 }
+    default:                               { limit: 0 }
+  }
+} # services.messages.destinations.SlidingORplotsLog
+
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+# ------------------------------------------------------------------------------
+# The "trigger builder" algorithm performs the discrimination and generates the
+# gates.
+#
+
+# Each time the waveform is beyond the set ADC threshold, a gate is opened for
+# a certain time, that is the duration in microseconds set here:
+
+# physics.producers.discrimopdaq.TriggerGateBuilder.GateDuration: @local::icarus_fixedtriggergate.GateDuration
+
+
+# ------------------------------------------------------------------------------
+# Channels are combined in pairs. Pairing is fixed by cabling the PMT readout
+# boards to the PMTs. Some channels are special and are left alone.
+#
+# The pattern is set here:
+#
+
+# physics.producers.lvdsgatesOR.ChannelPairing: @local::icarus_trigger_channel_pairings
+
+# ------------------------------------------------------------------------------
+

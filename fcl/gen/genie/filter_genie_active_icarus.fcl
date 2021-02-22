@@ -1,5 +1,5 @@
 #
-# File:    filter_genie_active.fcl
+# File:    filter_genie_active_icarus.fcl
 # Purpose: Filters out all events with no neutrino interaction in active volume.
 # Authors: Christian Farnese (farnese@pd.infn.it), Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    May 6, 2020
@@ -9,6 +9,8 @@
 # The events in the input file are filtered with the requirement that at least
 # one neutrino interaction happens within the active volume of the detector.
 # See `FilterNeutrinosActiveVolume` documentation for more details.
+#
+# The standard ICARUS geometry configuration is used.
 #
 #
 # Input

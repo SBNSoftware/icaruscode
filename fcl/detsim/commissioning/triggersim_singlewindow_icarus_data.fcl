@@ -1,0 +1,76 @@
+#
+# File:    triggersim_singlewindow_icarus_data.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 8, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# The selection of thresholds and trigger configurations reflects the ones used
+# for commissioning runs 4759-4787 documented in the spreadsheet:
+# https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20210208 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_singlewindow_icarus.fcl` v1.0
+#
+
+#include "triggersim_singlewindow_icarus.fcl"
+
+#
+# detector timings are quite different...
+#
+services.DetectorClocksService: {
+  @table::services.DetectorClocksService
+  
+  # timestamps are set to 0 (and it is in electronics time);
+  # 50 us PMT window with post trigger 70% means beam 15 us after the start
+  #   of the waveform, i.e. 15 us from electronics time start
+  DefaultBeamTime: 15
+  DefaultTrigTime: 15
+  
+  G4RefTime: 0
+  
+  InheritClockConfig: false # after we spend time to override it, just leave it alone!
+  
+#  TriggerOffsetTPC: -340
+  
+} # services.DetectorClocksService
+
+physics.analyzers.effSlidingOR6m.BeamGateStart: "-2 us"
+
+
+#
+# different input labels
+#
+physics.producers.pmtbaselines.OpticalWaveforms: "daqPMT"
+physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
+
+#
+# disable truth information
+#
+physics.analyzers.effSlidingOR6m.GeneratorTags:       []
+physics.analyzers.effSlidingOR6m.DetectorParticleTag: @erase
+physics.analyzers.effSlidingOR6m.EnergyDeposits:      []
+
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+
+# ------------------------------------------------------------------------------
+

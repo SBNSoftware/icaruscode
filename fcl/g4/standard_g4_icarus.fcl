@@ -65,9 +65,6 @@ outputs:
 
 #physics.producers.largeant.KeepParticlesInVolumes: ["volCryostat"] #only keep MCParticles that cross the cryostat
 
-# turn on the SimEnergyDeposit output
-services.LArG4Parameters.FillSimEnergyDeposits:       true
-
 services.message.destinations :
 {
   STDCOUT:
