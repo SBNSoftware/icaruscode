@@ -42,11 +42,13 @@
 #  4786 |  x  |     |     |  x  |   x   |   #5    |  3  | 10 us |  70 us |  70% | effSlidingOR6m |  M3   |
 #  4785 |  x  |     |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4779 |  x  |     |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
+#  4771 |  x  |     |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4772 |  x  |     |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4762 |  x  |     |     |  x  |   x   |  #2,#5  |  5  |       |  50 us |  70% | effSlidingOR6m |  M5   |
 #  4768 |  x  |     |     |  x  |   x   |  #2,#5  | 3+3 | 10 us |  50 us |  70% | effSlidingOR6m |  M3O3 |
 #  4766 |  x  |     |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
 #  4763 |  x  |     |     |  x  |   x   |  #2,#5  | 5+5 | 10 us |  50 us |  70% | effSlidingOR6m |  M5O5 |
+#  4989 |  x  |     |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4773 |     |  x  |     |  x  |   x   |   #2    |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4776 |     |  x  |     |  x  |   x   |   #2    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4777 |     |  x  |     |  x  |   x   |   #2    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
@@ -54,7 +56,6 @@
 #  4784 |     |  x  |     |  x  |   x   |   #5    |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4783 |     |  x  |     |  x  |   x   |   #5    |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
 #  4759 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
-#  4771 |     |  x  |     |  x  |   x   |  #2,#5  |  3  | 10 us |  50 us |  70% | effSlidingOR6m |  M3   |
 #  4760 |     |  x  |     |  x  |   x   |  #2,#5  |  4  | 10 us |  50 us |  70% | effSlidingOR6m |  M4   |
 #  4761 |     |  x  |     |  x  |   x   |  #2,#5  |  5  | 10 us |  50 us |  70% | effSlidingOR6m |  M5   |
 #  4765 |     |  x  |     |  x  |   x   |  #2,#5  | 4+4 | 10 us |  50 us |  70% | effSlidingOR6m |  M4O4 |
@@ -143,19 +144,29 @@ LVDSsignalWidth: 0.160 # microseconds
 
 # settings for plotting efficiency under patterns of sliding window triggers
 # firing during beam time
-SlidingWindowTriggerPatterns: [
+SlidingWindowTriggerPatternsSingleWindow: [
   { inMainWindow: 1                       },
   { inMainWindow: 2                       },
   { inMainWindow: 3                       },
   { inMainWindow: 4                       },
   { inMainWindow: 5                       },
-  { inMainWindow: 6                       },
+  { inMainWindow: 6                       }
+] # SlidingWindowTriggerPatternsSingleWindow
+
+
+SlidingWindowTriggerPatternsWindowPair: [
   { inMainWindow: 1   inOppositeWindow: 1 },
   { inMainWindow: 2   inOppositeWindow: 2 },
   { inMainWindow: 3   inOppositeWindow: 3 },
   { inMainWindow: 4   inOppositeWindow: 4 },
   { inMainWindow: 5   inOppositeWindow: 5 },
   { inMainWindow: 6   inOppositeWindow: 6 }
+] # SlidingWindowTriggerPatternsWindowPair
+
+
+SlidingWindowTriggerPatterns: [
+  @sequence::SlidingWindowTriggerPatternsSingleWindow,
+  @sequence::SlidingWindowTriggerPatternsWindowPair
 ] # SlidingWindowTriggerPatterns
 
 
