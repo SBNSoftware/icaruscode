@@ -849,6 +849,34 @@ void icarus::trigger::details::WindowChannelMap::dump
 
 
 //------------------------------------------------------------------------------
+namespace icarus::trigger::details {
+  
+  auto findClosestWindow(
+    std::vector<WindowChannelMap::WindowInfo*> const& windowList,
+    WindowChannelMap::WindowInfo const* targetWindow
+    ) -> WindowChannelMap::WindowInfo const*
+  {
+    
+    if (!targetWindow || windowList.empty()) return nullptr;
+    
+    WindowChannelMap::WindowInfo const* closest = nullptr;
+    double minDistance2 = std::numeric_limits<double>::max();
+    for (auto const* window: windowList) {
+      if (!window) continue;
+      
+      double const d2 = (window->center - targetWindow->center).mag2();
+      if (minDistance2 <= d2) continue;
+      minDistance2 = d2;
+      closest = window;
+    } // for
+    
+    return closest;
+  } // icarus::trigger::details::findClosestWindow()
+  
+} // namespace icarus::trigger::details
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::details::makeWindowChannelMap(
   WindowChannelsPerCryostat_t const& allWindowChannels,
   geo::GeometryCore const& geom
@@ -961,7 +989,12 @@ auto icarus::trigger::details::makeWindowChannelMap(
       for (auto [ iPlaneWindow, windowInfo ]: util::enumerate(planeWindows)) {
         
         // assumes all topology information is InvalidWindowIndex by default
-        windowInfo->opposite = otherPlaneWindows[iPlaneWindow]->index;
+        
+        if (WindowChannelMap::WindowInfo const* closestOppositeWindow
+          = findClosestWindow(otherPlaneWindows, windowInfo)
+        ) {
+          windowInfo->opposite = closestOppositeWindow->index;
+        }
         
         if (iPlaneWindow > 0U)
           windowInfo->upstream = planeWindows[iPlaneWindow - 1U]->index;

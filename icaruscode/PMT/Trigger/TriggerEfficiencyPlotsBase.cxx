@@ -1144,7 +1144,6 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern
   for (auto const threshold: util::get_elements<0U>(fADCthresholds)) {
     
     auto const indices = fPassCounters.create(threshold, patternName);
-    assert(indices.first == iThr);
     if (patternIndex == fPassCounters.NoIndex) patternIndex = indices.second;
     else assert(indices.second == patternIndex);
     

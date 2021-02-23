@@ -69,7 +69,8 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * multi-level discriminated gates according to the geometric criterion of a
  * sliding window.
  *
- * The combination is a sum of all the discrminated waveforms within the window.
+ * The combination is a sum of all the discriminated waveforms within the
+ * window.
  * Different optical detector planes are treated independently and separately.
  * It is expected that the input is from V1730 LVDS gates
  * (see `icarus::trigger::LVDSgates` module) which combine (usually) two optical
@@ -94,8 +95,9 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * multiple channels (that is the common case if the input is LVDS gates).
  * A window can't cover only part of the channels of any input, but rather must
  * extend wide enough so that all the channels in the included gates are
- * covered.
- * Finally, all the channels must be covered by at least one window.
+ * covered. Channels may be exempted by marking them as "missing".
+ * Finally, all the channels which are not "missing" must be covered by at least
+ * one window.
  *
  * For the sliding window configuration to be valid, all the windows starting
  * with an offset multiple of the stride must be valid.
