@@ -1343,6 +1343,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   // --- BEGIN Additional helper utilities -------------------------------------
   
+  /// Deletes plots with no entries, and directories which became empty.
+  void deleteEmptyPlots();
+  
   /**
    * @brief Creates counters for all the thresholds of the specified trigger.
    * @param patternName an identified for the pattern
@@ -1502,6 +1505,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /// Moves the data in `gates` in a collection of gates by cryostat.
   TriggerGatesPerCryostat_t splitByCryostat(TriggerGates_t&& gates) const;
+  
+  /// Deletes from `plots` sandbox all plots and subboxes with no entries.
+  /// @return whether `plots` is now empty
+  bool deleteEmptyPlots(PlotSandbox& plots) const;
   
   
   /// Fills and returns a map of cryostat ID for each optical detector channel.

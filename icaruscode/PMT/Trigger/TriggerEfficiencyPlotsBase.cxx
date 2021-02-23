@@ -51,6 +51,7 @@
 
 // ROOT libraries
 #include "TEfficiency.h"
+#include "TGraph.h"
 #include "TH1F.h"
 #include "TH1I.h"
 #include "TH2F.h"
@@ -1135,6 +1136,15 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
+{
+  
+  for (auto& thrPlots: fThresholdPlots) deleteEmptyPlots(thrPlots);
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern
   (std::string const& patternName) -> std::size_t
 {
@@ -1272,6 +1282,81 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
   return channelList;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels()
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots
+  (PlotSandbox& plots) const
+{
+  TDirectory* baseDir = plots.getDirectory();
+  if (!baseDir) return true; // no content, nothing to do
+  
+  // our plots first
+  unsigned int nEntries = 0U, nDirectories = 0U, nDeleted = 0U;
+  for (TObject* obj: *(baseDir->GetList())) {
+    
+    // we do not deal with directories (except for subboxes below)
+    if (dynamic_cast<TDirectory*>(obj)) {
+      ++nDirectories;
+      continue;
+    }
+    
+    ++nEntries;
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    if (auto hist = dynamic_cast<TH1 const*>(obj)) {
+      if (hist->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto graph = dynamic_cast<TGraph const*>(obj)) {
+      if (graph->GetN() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto* eff = dynamic_cast<TEfficiency const*>(obj)) {
+      auto const* hist = eff->GetTotalHistogram();
+      if (hist && hist->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto* tree = dynamic_cast<TTree const*>(obj)) {
+      if (tree->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // add here more supported object types
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else continue; // we don't delete unknown objects
+    
+    mf::LogTrace(fLogCategory)
+      << "Deleting empty " << obj->IsA()->GetName() << "['" << obj->GetName()
+      << "'] from " << plots.name();
+    delete obj;
+    ++nDeleted;
+    
+  } // for objects in directory
+  
+  // if we have found no more directories than the ones expected
+  // from the subboxes and all the other entries have been deleted,
+  // this box might be empty
+  
+  bool empty
+    = (nDeleted == nEntries) && (nDirectories <= plots.nSubSandboxes());
+  
+  // we can't delete the sandboxes while iterating on them...
+  std::vector<std::string> toBeDeleted;
+  for (PlotSandbox& subbox: plots.subSandboxes()) {
+    if (!deleteEmptyPlots(subbox)) continue;
+    toBeDeleted.push_back(subbox.name());
+    mf::LogTrace(fLogCategory)
+      << "Scheduling empty " << plots.name() << "/" << toBeDeleted.back() << " for deletion";
+  } // for subboxes
+  if (toBeDeleted.size() != plots.nSubSandboxes()) empty = false;
+  for (std::string const& subName: toBeDeleted) {
+    if (!plots.deleteSubSandbox(subName)) continue;
+    mf::LogTrace(fLogCategory)
+      << "Deleted box " << plots.name() << "/" << subName;
+  } // for
+  
+  return empty;
+} // icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
 
 
 //------------------------------------------------------------------------------

@@ -1217,6 +1217,8 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::analyze
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::endJob() {
   
+  helper().deleteEmptyPlots(); // don't keep plots with no entries
+  
   // hook helper and framework
   helper().printSummary();
   
