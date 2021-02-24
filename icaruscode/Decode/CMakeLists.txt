@@ -1,6 +1,8 @@
 cet_enable_asserts()
 
 art_make(
+          EXCLUDE
+                        PMTconfigurationExtraction_module.cc
           MODULE_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
@@ -27,6 +29,14 @@ art_make(
                         cetlib cetlib_except
                         ${TBB}
         )
+
+simple_plugin(PMTconfigurationExtraction module
+  icaruscode_Decode_DecoderTools
+  sbnobj_ICARUS_PMT_Data
+  art_Framework_Services_Registry
+  fhiclcpp
+  cetlib_except
+  )
 
 install_headers()
 install_fhicl()

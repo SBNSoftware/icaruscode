@@ -22,14 +22,6 @@
 
 // C/C++ standard libraries
 #include <map>
-#include <vector>
-// #include <mutex>
-// #include <utility> // std::pair<>
-// #include <string>
-// #include <functional> // std::hash<>
-// #include <optional>
-// #include <limits> // std::numeric_limits<>
-// #include <cstddef> // std::size_t
 
 
 // -----------------------------------------------------------------------------
@@ -40,6 +32,7 @@ namespace util {
    * @brief Reads and returns the _art_ configuration stored in `sourceDir`.
    * @param file ROOT file where the configuration is stored
    * @return the full configuration
+   * @throw cet::exception (category: `"readConfigurationFromArtFile"`) on error
    * 
    * The configuration is expected to be stored by _art_ in the way it does
    * for _art_ ROOT files.

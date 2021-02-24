@@ -12,49 +12,63 @@
 #include "icaruscode/Utilities/ReadArtConfiguration.h"
 
 // framework libraries
-// #include "art_root_io/GetFileFormatEra.h"
 #include "art_root_io/RootDB/SQLite3Wrapper.h"
-// #include "art_root_io/RootDB/tkeyvfs.h"
-// #include "canvas/Persistency/Provenance/FileFormatVersion.h"
-// #include "canvas/Persistency/Provenance/ParameterSetBlob.h"
-// #include "canvas/Persistency/Provenance/ParameterSetMap.h"
-// #include "canvas/Persistency/Provenance/rootNames.h"
-// #include "cetlib_except/exception.h"
-// #include "cetlib/container_algorithms.h"
-// #include "cetlib/exempt_ptr.h"
-#include "fhiclcpp/ParameterSetRegistry.h"
-// #include "fhiclcpp/make_ParameterSet.h"
-
-// ROOT libraries
-#include "TTree.h"
-
-// C/C++ standard libraries
-// #include <unordered_map>
-// #include <vector>
-// #include <mutex>
-// #include <utility> // std::pair<>
-#include <string>
-// #include <functional> // std::hash<>
-#include <memory> // std::unique_ptr<>
-// #include <optional>
-// #include <limits> // std::numeric_limits<>
-// #include <cstddef> // std::size_t
+#include "fhiclcpp/make_ParameterSet.h"
 
 
 // -----------------------------------------------------------------------------
 std::map<fhicl::ParameterSetID, fhicl::ParameterSet>
 util::readConfigurationFromArtFile(TFile& file)
 {
-  // OMGOMGOMG this is SO copied from art `config_dumper` source!!
-  
-  // Open the DB
+  /*
+   * This code is ripped from `fhiclcpp/ParameterSetRegistry.h` and
+   * `lardata/DetectorInfoServices/DetectorClocksServiceStandard_service.cc`
+   * (LArSoft v 9.17.0).
+   * 
+   * The special wrapped defines hooks to support a "virtual file system"
+   * within a ROOT file data base, in the way that art knows and I do not.
+   * So we bite it and accept a dependency against art_root_io.
+   */
   art::SQLite3Wrapper sqliteDB(&file, "RootFileDB");
-  fhicl::ParameterSetRegistry::importFrom(sqliteDB);
-  fhicl::ParameterSetRegistry::stageIn();
+  
+  auto* db = static_cast<sqlite3*>(sqliteDB);
+  
+  auto const throwOnSQLiteNotOK = [&db](std::string const& msg = {})
+    {
+      if (db == nullptr) {
+        throw cet::exception("readConfigurationFromArtFile")
+          << "Can't open SQLite database.";
+      }
+      auto const errcode = sqlite3_errcode(db);
+      // Caller's responsibility to make sure this really is an error
+      // and not (say) SQLITE_ROW or SQLITE_DONE:
+      if (errcode == SQLITE_OK) return;
+      throw cet::exception("readConfigurationFromArtFile")
+        << "SQLite3 error (code" << errcode << "): "
+        << sqlite3_errstr(errcode) << (msg.empty() ? "" : (": " + msg))
+        << "\n";
+    };
+  
+  
+  sqlite3_stmt* stmt = nullptr;
+  sqlite3_prepare_v2
+    (sqliteDB, "SELECT ID, PSetBlob from ParameterSets;", -1, &stmt, nullptr);
+  throwOnSQLiteNotOK("[SELECT ID, PSetBlob from ParameterSets;]");
   
   std::map<fhicl::ParameterSetID, fhicl::ParameterSet> config;
-  for (auto const& idAndPSset: fhicl::ParameterSetRegistry::get())
-    config.emplace(idAndPSset);
+  while (sqlite3_step(stmt) == SQLITE_ROW) {
+    
+    // reinterpretation: `unsigned char*` -> `char*`
+    std::string const psetIDstr
+      = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
+    fhicl::ParameterSet pset;
+    fhicl::make_ParameterSet
+      (reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)), pset);
+    config.emplace(fhicl::ParameterSetID{ psetIDstr }, std::move(pset));
+    
+  } // while
+  sqlite3_finalize(stmt);
+  throwOnSQLiteNotOK("[SELECT ID, PSetBlob from ParameterSets;]");
   
   return config;
 } // util::readConfigurationFromArtFile()

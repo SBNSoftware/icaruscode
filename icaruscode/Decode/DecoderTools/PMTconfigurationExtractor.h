@@ -4,6 +4,11 @@
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   February 18, 2021
  * @file   icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.cxx
+ * 
+ * The design of this thing is still a big mess, winking to a templated
+ * class hierarchy to be used for other components as well, but not getting
+ * quite there.
+ * 
  */
 
 #ifndef ICARUSCODE_DECODE_DECODERTOOLS_PMTCONFIGURATIONEXTRACTOR_H
@@ -11,18 +16,119 @@
 
 
 // ICARUS libraries
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtFile()
+
 #include "sbnobj/ICARUS/PMT/Data/PMTconfiguration.h"
 #include "sbnobj/ICARUS/PMT/Data/V1730Configuration.h"
 
 // framework libraries
 #include "fhiclcpp/ParameterSet.h"
+#include "cetlib_except/exception.h"
+
+// ROOT libraries
+#include "TFile.h"
 
 // C/C++ standard libraries
+#include <regex>
 #include <string>
+#include <initializer_list>
+
 
 
 // -----------------------------------------------------------------------------
-namespace icarus { class PMTconfigurationExtractor; }
+namespace icarus {
+  
+  class PMTconfigurationExtractorBase;
+  class PMTconfigurationExtractor;
+  
+  icarus::PMTconfiguration extractPMTreadoutConfiguration
+    (std::string const& srcFileName, icarus::PMTconfigurationExtractor extractor);
+  icarus::PMTconfiguration extractPMTreadoutConfiguration
+    (TFile& srcFile, icarus::PMTconfigurationExtractor extractor);
+  
+} // namespace icarus
+
+
+// -----------------------------------------------------------------------------
+class icarus::PMTconfigurationExtractorBase {
+  
+    public:
+  
+  using ConfigurationData_t = icarus::PMTconfiguration;
+  
+  // --- BEGIN -- Interface ----------------------------------------------------
+  /// @name Interface
+  /// @{
+  
+  /// Returns whether `pset` may contain the needed configuration.
+  static bool mayHaveConfiguration(fhicl::ParameterSet const& pset)
+    { return pset.has_key("configuration_documents"); }
+  
+  
+  /**
+   * @brief Extracts all supported PMT configuration from `config`.
+   * @param config a FHiCL parameter set with component configuration
+   * @return an object with the supported PMT configuration
+   * 
+   * All PMT-related configuration that is known to this code is extracted and
+   * returned.
+   * 
+   * This function is undefined here: it must be overridden.
+   */
+  ConfigurationData_t extract(fhicl::ParameterSet const& config) const;
+  
+  
+  /// Finalizes the content of `config` and returns it.
+  ConfigurationData_t finalize(ConfigurationData_t config) const
+    { return std::move(config); }
+  
+  
+  /// @}
+  // --- END ---- Interface ----------------------------------------------------
+  
+  
+  // --- BEGIN -- Utility ------------------------------------------------------
+  /// @name Utility
+  /// @{
+  
+  /**
+   * @brief Returns a parameter set with the content of
+   *        `configuration_documents` key from `container`.
+   * @param container parameter set including a table with key `configListKey`
+   * @param configListKey name of the key in `container` with the configuration
+   * @param components keys to be converted (as regular expressions)
+   * @return a parameter set
+   * 
+   * The `configuration_documents` element of `container` is processed: for
+   * each of its keys which match at least one of the `components` regular
+   * expression patterns (`std::regex_match()`), the associated string value
+   * is parsed with FHiCL parser, and the result is set as a FHiCL table in
+   * the output parameter set.
+   * For example, if the `components` are
+   * `{ std::regex{".*pmt.*"}, std::regex{".*trigger.*"} }`, the returned
+   * value is a parameter set that may have keys like `icaruspmtee01`,
+   * `icaruspmtew02`, `icarustrigger` etc., each one with a FHiCL table as
+   * `value.
+   */
+  static fhicl::ParameterSet convertConfigurationDocuments(
+    fhicl::ParameterSet const& container,
+    std::string const& configListKey,
+    std::initializer_list<std::regex const> components
+    );
+  
+  /// Returns whether `key` matches at least one of the regular expressions
+  /// in the [ `rbegin`, `rend` [ range.
+  template <typename RBegin, typename REnd>
+  static bool matchKey(std::string const& key, RBegin rbegin, REnd rend);
+  
+  /// @}
+  // --- END ---- Utility ------------------------------------------------------
+  
+}; // icarus::PMTconfigurationExtractorBase
+
+
+// -----------------------------------------------------------------------------
 /**
  * @brief Class to extract PMT readout board configuration.
  * 
@@ -194,9 +300,32 @@ namespace icarus { class PMTconfigurationExtractor; }
  * 
  * 
  */
-class icarus::PMTconfigurationExtractor {
+class icarus::PMTconfigurationExtractor
+  : public icarus::PMTconfigurationExtractorBase
+{
   
     public:
+  
+  /// Constructor: no channel mapping, channel IDs won't be `finalize()`'d.
+  PMTconfigurationExtractor() = default;
+  
+  /// Constructor: use channel mapping to `finalize()` channel IDs.
+  PMTconfigurationExtractor
+    (icarusDB::IICARUSChannelMap const& channelMappingService);
+  
+  
+  // --- BEGIN -- Interface ----------------------------------------------------
+  /// @name Interface
+  /// @{
+  
+  /// Returns whether `pset` may contain the needed configuration.
+  static bool mayHaveConfiguration(fhicl::ParameterSet const& pset)
+    { return pset.has_key("configuration_documents"); }
+  
+  /// Returns whether the specified `key` of `pset` is a good configuration.
+  static bool isGoodConfiguration
+    (fhicl::ParameterSet const& pset, std::string const& key);
+  
   
   /**
    * @brief Extracts all supported PMT configuration from `config`.
@@ -208,7 +337,20 @@ class icarus::PMTconfigurationExtractor {
    */
   icarus::PMTconfiguration extract(fhicl::ParameterSet const& config) const;
   
+  
+  /// Assigns unique channel IDs to the channel information.
+  icarus::PMTconfiguration finalize(icarus::PMTconfiguration config) const;
+  
+  /// @}
+  // --- END ---- Interface ----------------------------------------------------
+  
     private:
+  
+  /// Regular expressions matching all names of supported PMT configurations.
+  static std::vector<std::regex> const ConfigurationNames;
+  
+  /// Hardware PMT channel mapping to LArSoft's.
+  icarusDB::IICARUSChannelMap const* fChannelMap = nullptr;
   
   /**
    * @brief Extracts PMT readout board configuration from `pset`.
@@ -241,6 +383,28 @@ class icarus::PMTconfigurationExtractor {
     (fhicl::ParameterSet const& pset, std::string const& key) const;
   
 }; // icarus::PMTconfigurationExtractor
+
+
+// ---------------------------------------------------------------------------
+// --- Inline implementation
+// ---------------------------------------------------------------------------
+icarus::PMTconfigurationExtractor::PMTconfigurationExtractor
+  (icarusDB::IICARUSChannelMap const& channelMappingService)
+  : fChannelMap(&channelMappingService)
+  {}
+
+
+// ---------------------------------------------------------------------------
+// ---  Template implementation
+// -----------------------------------------------------------------------------
+template <typename RBegin, typename REnd>
+bool icarus::PMTconfigurationExtractorBase::matchKey
+  (std::string const& key, RBegin rbegin, REnd rend)
+{
+  for (auto iRegex = rbegin; iRegex != rend; ++iRegex)
+    if (std::regex_match(key, *iRegex)) return true;
+  return false;
+} // icarus::PMTconfigurationExtractorBase::matchKey()
 
 
 // ---------------------------------------------------------------------------

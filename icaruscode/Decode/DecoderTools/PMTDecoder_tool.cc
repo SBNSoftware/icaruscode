@@ -32,7 +32,6 @@
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
-#include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtFile()
 
 // ROOT
 #include "TFile.h"
@@ -136,6 +135,8 @@ private:
     const geo::Geometry*               fGeometry = nullptr;       ///< pointer to the Geometry service
     const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
     
+    /// Configuration of PMT readout as extracted from the FHiCL configuration.
+    std::optional<icarus::PMTconfiguration> fPMTconfig;
     
     /**
      * @brief Returns a parameter set with the content of
@@ -155,11 +156,6 @@ private:
      * `icaruspmtew02`, `icarustrigger` etc., each one with a FHiCL table as
      * `value.
      */
-    static fhicl::ParameterSet convertConfigurationDocuments(
-      fhicl::ParameterSet const& container,
-      std::initializer_list<std::regex const> components
-      );
-    
 };
 
 PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
@@ -197,125 +193,16 @@ void PMTDecoder::initializeDataProducts()
     return;
 }
 
-//------------------------------------------------------------------------------------------------------------------------------------------
-fhicl::ParameterSet PMTDecoder::convertConfigurationDocuments(
-  fhicl::ParameterSet const& container,
-  std::initializer_list<std::regex const> components
-) {
-  static std::string const ConfigListKey { "configuration_documents" };
-  
-  fhicl::ParameterSet const sourceConfig
-    = container.get<fhicl::ParameterSet>(ConfigListKey);
-  
-  fhicl::ParameterSet configDocs;
-  for (auto const& key: sourceConfig.get_names()) {
-    if (!sourceConfig.is_key_to_atom(key)) continue;
-    
-    // filter by key
-    if (components.size() > 0U) {
-      bool keep = false;
-      for (auto const& pattern: components) {
-        if (!std::regex_match(key, pattern)) continue;
-        keep = true;
-        break;
-      }
-      if (!keep) continue;
-    } // if filtering
-    
-    std::string const psetStr = sourceConfig.get<std::string>(key);
-    
-    fhicl::ParameterSet pset;
-    try {
-      fhicl::make_ParameterSet(psetStr, pset);
-    }
-    catch (cet::exception& e) {
-      throw cet::exception{ "PMTDecoder", "", e }
-        << "Error parsing the content of key '" << ConfigListKey << "." << key
-        << "'; content was:\n" << psetStr << "\n";
-    }
-    
-    configDocs.put(key, pset);
-    
-  } // for all main keys
-  
-  return configDocs;
-} // PMTDecoder::convertConfigurationDocuments()
-
-
 void PMTDecoder::decodeConfigurationFromFile(TFile& file) {
+  
+  // there should be a way to read this information from a data product instead;
+  // the module for the data product is `PMTconfigurationExtraction`.
   
   if (!fExtractConfig) return;
   
-  /*
-   * The plan is to look in all the FHiCL configuration fragments we can find
-   * in the input file, and find all the useful configuration therein.
-   * Given that there may be multiple input files, there may also be multiple
-   * configurations for the same detector components.
-   * In that case, we will extract parameters from each and every one of the
-   * configurations, and throw an exception if they are not all consistent.
-   * 
-   * Consistency is tested only for the extracted parameters, not for the whole
-   * FHiCL configuration fragment.
-   */
-  icarus::PMTconfigurationExtractor extractor;
+  icarus::PMTconfigurationExtractor extractor { *fChannelMap };
   
-  auto const& globalConfigColl = util::readConfigurationFromArtFile(file);
-  
-  std::optional<icarus::PMTconfiguration> config;
-  
-  // look in the global configuration for all parameter sets which contain
-  // `configuration_documents` as a (direct) name;
-  for (auto const& [ id, pset ]: globalConfigColl) {
-    if (!pset.has_key("configuration_documents")) continue;
-    
-    fhicl::ParameterSet const configDocs
-      = convertConfigurationDocuments(pset, { std::regex{ "icaruspmt.*" } });
-    
-    icarus::PMTconfiguration candidateConfig = extractor.extract(configDocs);
-    if (config) {
-      if (config.value() == candidateConfig) continue;
-      mf::LogError log("PMTDecoder");
-      log << "Found two candidate configurations differring:"
-        "\nFirst:\n" << config.value()
-        << "\nSecond:\n" << candidateConfig
-        ;
-      throw cet::exception("PMTDecoder")
-        << "PMTDecoder::decodeConfigurationFromFile() found inconsistent configurations.\n";
-    } // if incompatible configurations
-    
-    config.emplace(std::move(candidateConfig));
-  } // for all configuration documents
-  
-  if (!config) {
-    throw cet::exception("PMTDecoder")
-      << "PMTDecoder::decodeConfigurationFromFile() could not find a suitable configuration.\n";
-  }
-  
-  for (icarus::V1730Configuration& readoutBoardConfig: config->boards) {
-    if (!fChannelMap->hasPMTDigitizerID(readoutBoardConfig.fragmentID))
-      continue;
-    icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
-      = fChannelMap->getChannelIDPairVec(readoutBoardConfig.fragmentID);
-    
-    // finds the channel ID matching the specified channel number of this board
-    auto const toChannelID = [&channelIDs=digitizerChannelVec]
-      (short unsigned int channelNo)
-      {
-        auto const it = std::find_if(channelIDs.begin(), channelIDs.end(),
-          [channelNo](auto const& p){ return p.first == channelNo; });
-        return (it != channelIDs.end())
-          ? it->second
-          : icarus::V1730channelConfiguration::NoChannelID
-          ;
-      };
-    
-    for (auto& channelInfo: readoutBoardConfig.channels)
-      channelInfo.channelID = toChannelID(channelInfo.channelNo);
-    
-  } // for boards
-  
-  mf::LogInfo("PMTDecoder")
-    << "PMT readout: " << config.value();
+  fPMTconfig.emplace(extractPMTreadoutConfiguration(file, extractor));
   
 } // PMTDecoder::decodeConfigurationFromFile()
 

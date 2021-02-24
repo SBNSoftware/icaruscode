@@ -6,10 +6,14 @@ include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
 art_make(
           LIB_LIBRARIES
+                        icaruscode_Utilities
                         sbnobj_ICARUS_PMT_Data
+                        ${MF_MESSAGELOGGER}
                         ${FHICLCPP}
                         cetlib_except
                         cetlib
+                        ROOT::RIO
+                        ROOT::Core
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
