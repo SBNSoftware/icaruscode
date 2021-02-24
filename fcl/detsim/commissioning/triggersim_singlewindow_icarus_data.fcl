@@ -24,6 +24,8 @@
 # :   original version based on `triggersim_singlewindow_icarus.fcl` v1.0
 #
 
+#include "channelmapping_icarus.fcl"
+
 #include "triggersim_singlewindow_icarus.fcl"
 
 #
@@ -52,8 +54,47 @@ physics.analyzers.effSlidingOR6m.BeamGateStart: "-2 us"
 #
 # different input labels
 #
-physics.producers.pmtbaselines.OpticalWaveforms: "daqPMT"
 physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
+
+#
+# additional modules: PMT configuration from metadata
+#
+services.IICARUSChannelMap: @local::icarus_channelmappinggservice
+
+physics.producers.pmtconfig: {
+
+  module_type: PMTconfigurationExtraction
+
+} # physics.producers.pmtconfig
+
+physics.triggerOR: [ pmtconfig, @sequence::physics.triggerOR ]
+
+
+#
+# completely different baselining: directly from PMT readout configuration
+#
+
+physics.producers.pmtbaselines: {
+
+  module_type: PMTWaveformBaselinesFromReadoutConfiguration
+
+  # label of input digitized optical waveform data product
+  OpticalWaveforms: "daqPMT"
+  
+  # label of PMT configuration
+  PMTconfigurationTag: "pmtconfig"
+
+  # produce plots on the extracted baseline
+  PlotBaselines: true  # default
+  
+  # print on screen the baselines (good for debugging)
+  PrintBaselines: true
+  
+  # tag of the module output to console via message facility
+  OutputCategory: "PMTWaveformBaselines"  # default
+
+} # physics.producers.pmtbaselines
+
 
 #
 # disable truth information
