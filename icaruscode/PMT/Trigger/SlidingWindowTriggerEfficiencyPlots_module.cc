@@ -713,7 +713,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   /**
    * @brief Fills plots with the specified trigger response.
    * @param iThr index of PMT threshold (used in tree output)
-   * @param threshold PMT threshold in ADC counts (for printing)
+   * @param threshold PMT threshold tag (for printing)
    * @param iPattern index of the pattern being plotted
    * @param pattern the pattern being plotted
    * @param plotSets set of plot boxes to fill (from `initializePlotSet()`)
@@ -724,7 +724,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
    * and threshold. The trigger response is passed as a parameter.
    */
   void plotResponse(
-    std::size_t iThr, ADCCounts_t const threshold,
+    std::size_t iThr, std::string const& threshold,
     std::size_t iPattern, WindowPattern const& pattern,
     PlotSandboxRefs_t const& plotSets,
     EventInfo_t const& eventInfo,
@@ -1032,13 +1032,12 @@ ResponseTree::ResponseTree
   , RespTxxSxx{ std::make_unique<bool[]>(indices.size()) }
 {
 
-  for (auto [ iThr, threshold]: util::enumerate(thresholds)) {
-    std::string const thrStr = util::to_string(raw::ADC_Count_t(threshold));
+  for (auto [ iThr, thresholdTag]: util::enumerate(thresholds)) {
 
     for (auto [ iSetting, setting ]: util::enumerate(settings)) {
 
       std::string const branchName
-        = "RespT" + thrStr + "S" + util::to_string(setting);
+        = "RespT" + thresholdTag + "S" + util::to_string(setting);
 
       this->tree().Branch
         (branchName.c_str(), &(RespTxxSxx[indices(iThr, iSetting)]));
@@ -1400,7 +1399,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   PlotSandboxRefs_t const& selectedPlots
 ) {
   
-  auto const threshold = helper().ADCthreshold(thresholdIndex);
+  auto const threshold = helper().ADCthresholdTag(thresholdIndex);
   
   /*
    * 0.   initialize or verify the topology of the input
@@ -1448,7 +1447,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   
   // get which gates are active during the beam gate
   PMTInfo_t const PMTinfo
-    { threshold.value(), helper().extractActiveChannels(gates) };
+    { threshold, helper().extractActiveChannels(gates) };
   
   //
   // 2.   for each pattern:
@@ -1633,7 +1632,7 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
-  std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
+  std::size_t iThr, std::string const& threshold,
   std::size_t iPattern, WindowPattern const& pattern,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,

@@ -99,7 +99,7 @@ namespace icarus::trigger::details {
 class icarus::trigger::details::TriggerPassCounters {
   
     public:
-  using ADCCounts_t = icarus::trigger::ADCCounts_t; // alias
+  using Threshold_t = std::string;
   
   /// Type used as counter for a specific trigger.
   using Counter_t = icarus::ns::util::PassCounter<unsigned int>;
@@ -116,7 +116,8 @@ class icarus::trigger::details::TriggerPassCounters {
    * 
    * If the counter already exists, it is returned.
    */
-  IndexPair_t create(ADCCounts_t threshold, std::string const& patternName);
+  IndexPair_t create
+    (Threshold_t const& threshold, std::string const& patternName);
   
   
   // @{
@@ -124,23 +125,23 @@ class icarus::trigger::details::TriggerPassCounters {
   /// @throw std::out_of_range if not registered.
   
   Counter_t const& counter
-    (ADCCounts_t threshold, std::string const& patternName) const;
+    (Threshold_t const& threshold, std::string const& patternName) const;
   Counter_t const& counter
     (std::size_t threshold, std::string const& patternName) const;
   Counter_t const& counter
-    (ADCCounts_t threshold, std::size_t patternName) const;
+    (Threshold_t const& threshold, std::size_t patternName) const;
   Counter_t const& counter
     (std::size_t threshold, std::size_t patternName) const;
   Counter_t const& counter(IndexPair_t indices) const;
   
   Counter_t const& operator()
-    (ADCCounts_t threshold, std::string const& patternName) const
+    (Threshold_t const& threshold, std::string const& patternName) const
     { return counter(threshold, patternName); }
   Counter_t const& operator()
     (std::size_t threshold, std::string const& patternName) const
     { return counter(threshold, patternName); }
   Counter_t const& operator()
-    (ADCCounts_t threshold, std::size_t patternName) const
+    (Threshold_t const& threshold, std::size_t patternName) const
     { return counter(threshold, patternName); }
   Counter_t const& operator()
     (std::size_t threshold, std::size_t patternName) const
@@ -148,17 +149,19 @@ class icarus::trigger::details::TriggerPassCounters {
   Counter_t const& operator() (IndexPair_t indices) const
     { return counter(indices); }
   
-  Counter_t& counter(ADCCounts_t threshold, std::string const& patternName);
+  Counter_t& counter
+    (Threshold_t const& threshold, std::string const& patternName);
   Counter_t& counter(std::size_t threshold, std::string const& patternName);
-  Counter_t& counter(ADCCounts_t threshold, std::size_t patternName);
+  Counter_t& counter(Threshold_t const& threshold, std::size_t patternName);
   Counter_t& counter(std::size_t threshold, std::size_t patternName);
   Counter_t& counter(IndexPair_t indices);
   
-  Counter_t& operator() (ADCCounts_t threshold, std::string const& patternName)
+  Counter_t& operator()
+    (Threshold_t const& threshold, std::string const& patternName)
     { return counter(threshold, patternName); }
   Counter_t& operator() (std::size_t threshold, std::string const& patternName)
     { return counter(threshold, patternName); }
-  Counter_t& operator() (ADCCounts_t threshold, std::size_t patternName)
+  Counter_t& operator() (Threshold_t const& threshold, std::size_t patternName)
     { return counter(threshold, patternName); }
   Counter_t& operator() (std::size_t threshold, std::size_t patternName)
     { return counter(threshold, patternName); }
@@ -168,7 +171,7 @@ class icarus::trigger::details::TriggerPassCounters {
   
   // @{
   /// Returns whether the specified threshold is registered.
-  bool hasThreshold(ADCCounts_t threshold) const;
+  bool hasThreshold(Threshold_t const& threshold) const;
   bool hasThreshold(std::size_t index) const;
   // @}
   
@@ -179,14 +182,14 @@ class icarus::trigger::details::TriggerPassCounters {
   //@}
   
   /// Returns the index of the specified threshold (`max()` if not registered).
-  std::size_t thresholdIndex(ADCCounts_t threshold) const;
+  std::size_t thresholdIndex(Threshold_t const& threshold) const;
   
   /// Returns the index of the specified pattern (`max()` if not registered).
   std::size_t patternIndex(std::string const& patternName) const;
   
   /// Returns the value of the threshold with the specified `index`.
   /// @throw std::out_of_range if the index is not available
-  ADCCounts_t threshold(std::size_t index) const;
+  Threshold_t const& threshold(std::size_t index) const;
   
   /// Returns the name of the pattern with the specified `index`.
   /// @throw std::out_of_range if the index is not available
@@ -207,13 +210,13 @@ class icarus::trigger::details::TriggerPassCounters {
   std::vector<std::vector<Counter_t>> fCounters;
   
   /// Map: threshold -> threshold index.
-  std::unordered_map<ADCCounts_t, std::size_t> fThresholdIndex;
+  std::unordered_map<Threshold_t, std::size_t> fThresholdIndex;
   
   /// Map: pattern name -> pattern index.
   std::unordered_map<std::string, std::size_t> fPatternIndex;
   
   /// Registers a new threshold in the index and returns its index (unchecked).
-  std::size_t registerThreshold(ADCCounts_t threshold);
+  std::size_t registerThreshold(Threshold_t const& threshold);
   
   /// Registers a new pattern in the index and returns its index (unchecked).
   std::size_t registerPattern(std::string const& name);
@@ -640,12 +643,12 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  *     The typical trigger primitives used as input may be LVDS discriminated
  *     output (e.g. from `icarus::trigger::LVDSgates` module) or combinations
  *     of them (e.g. from `icarus::trigger::SlidingWindowTrigger` module).
- * * `Thresholds` (list of integers, mandatory): list of the discrimination
- *     thresholds to consider, in ADC counts. A data product containing a
+ * * `Thresholds` (list of tags, mandatory): list of the discrimination
+ *     thresholds to consider. A data product containing a
  *     digital signal is read for each one of the thresholds, and the tag of the
  *     data product is expected to be the module label `TriggerGatesTag` with as
- *     instance name the value of the threshold (e.g. for a threshold of 60 ADC
- *     counts the data product tag might be `LVDSgates:60`).
+ *     instance name the value of the threshold (e.g. for a threshold of `"60"`
+ *     ADC counts the data product tag might be `LVDSgates:60`).
  * * `GeneratorTags` (list of input tags, default: `[ generator ]`): a list of
  *     data products containing the particles generated by event generators;
  *     if empty, plots or categories requiring truth information will be
@@ -987,9 +990,9 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       Comment("label of the input trigger gate data product (no instance name)")
       };
 
-    fhicl::Sequence<raw::ADC_Count_t> Thresholds {
+    fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
-      Comment("thresholds to consider [ADC counts]")
+      Comment("thresholds to consider (as tags)")
       };
 
     fhicl::Atom<microseconds> BeamGateDuration {
@@ -1097,10 +1100,10 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Returns a iterable sequence of all configured PMT thresholds.
   auto ADCthresholds() const { return util::get_elements<0U>(fADCthresholds); }
   
-  /// Returns the ADC threshold value for PMT threshold index `iThr`.
+  /// Returns the ADC threshold tag value for PMT threshold index `iThr`.
   /// @throws std::out_of_range if `iThr` is not a valid threshold index
   /// @see `nADCthresholds()`
-  icarus::trigger::ADCCounts_t ADCthreshold(std::size_t iThr) const
+  std::string const& ADCthresholdTag(std::size_t iThr) const
     { return next(fADCthresholds.begin(), iThr)->first; }
   
   /// Returns the detector geometry service provider.
@@ -1419,8 +1422,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   art::InputTag fDetectorParticleTag; ///< Input simulated particles.
   
-  /// ADC thresholds to read, and the input tag connected to their data.
-  std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
+  /// ADC threshold tags to read, and the input tag connected to their data.
+  std::map<std::string, art::InputTag> fADCthresholds;
   
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
