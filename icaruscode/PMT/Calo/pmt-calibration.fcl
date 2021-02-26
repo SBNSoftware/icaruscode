@@ -52,4 +52,10 @@ pmt_scintillation_icarus:
 
 }
 
+pmt_monitor:
+{
+  module_type:  PMTMonitor
+  FragmentLabel: "daq:CAENV1730"
+}
+
 END_PROLOG
