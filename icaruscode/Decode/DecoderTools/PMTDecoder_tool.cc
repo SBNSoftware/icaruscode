@@ -26,9 +26,9 @@
 
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
-#include "sbnobj/ICARUS/PMT/Data/PMTconfiguration.h"
-#include "sbnobj/ICARUS/PMT/Data/V1730Configuration.h"
-#include "sbnobj/ICARUS/PMT/Data/V1730channelConfiguration.h"
+#include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
+#include "sbnobj/Common/PMT/Data/V1730Configuration.h"
+#include "sbnobj/Common/PMT/Data/V1730channelConfiguration.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
@@ -136,7 +136,7 @@ private:
     const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
     
     /// Configuration of PMT readout as extracted from the FHiCL configuration.
-    std::optional<icarus::PMTconfiguration> fPMTconfig;
+    std::optional<sbn::PMTconfiguration> fPMTconfig;
     
     /**
      * @brief Returns a parameter set with the content of

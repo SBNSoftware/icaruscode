@@ -6,9 +6,9 @@
  */
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Data/PMTconfiguration.h"
-#include "sbnobj/ICARUS/PMT/Data/V1730Configuration.h"
-#include "sbnobj/ICARUS/PMT/Data/V1730channelConfiguration.h"
+#include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
+#include "sbnobj/Common/PMT/Data/V1730Configuration.h"
+#include "sbnobj/Common/PMT/Data/V1730channelConfiguration.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 // #include "icaruscode/Utilities/DataProductPointerMap.h"
 
@@ -224,7 +224,7 @@ class icarus::PMTWaveformBaselinesFromReadoutConfiguration
   /// Returns the number of channels in configuration and a baseline map.
   std::pair<unsigned int, std::vector<Baseline_t>>
   extractBaselinesFromConfiguration
-    (icarus::PMTconfiguration const& PMTconfig) const;
+    (sbn::PMTconfiguration const& PMTconfig) const;
   
   /// Returns the number of channels currently configured with a baseline.
   unsigned int nChannelsWithBaseline() const;
@@ -287,7 +287,7 @@ icarus::PMTWaveformBaselinesFromReadoutConfiguration::PMTWaveformBaselinesFromRe
   //
   // declaration of input
   //
-  consumes<icarus::PMTconfiguration, art::InRun>(fPMTconfigurationTag);
+  consumes<sbn::PMTconfiguration, art::InRun>(fPMTconfigurationTag);
   consumes<std::vector<raw::OpDetWaveform>>(fOpDetWaveformTag);
   
   //
@@ -315,7 +315,7 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun
   (art::Run& run)
 {
   auto const& PMTconfig
-    = run.getByLabel<icarus::PMTconfiguration>(fPMTconfigurationTag);
+    = run.getByLabel<sbn::PMTconfiguration>(fPMTconfigurationTag);
   
   std::vector<Baseline_t> newBaselines;
   std::tie(fConfigured, newBaselines)
@@ -420,16 +420,16 @@ auto icarus::PMTWaveformBaselinesFromReadoutConfiguration::getBaseline
 //------------------------------------------------------------------------------
 auto
 icarus::PMTWaveformBaselinesFromReadoutConfiguration::extractBaselinesFromConfiguration
-  (icarus::PMTconfiguration const& PMTconfig) const
+  (sbn::PMTconfiguration const& PMTconfig) const
   -> std::pair<unsigned int, std::vector<Baseline_t>>
 {
-  constexpr auto NoChannelID = icarus::V1730channelConfiguration::NoChannelID;
+  constexpr auto NoChannelID = sbn::V1730channelConfiguration::NoChannelID;
   
   unsigned int nConfigured = 0U;
   std::vector<Baseline_t> baselines;
   
-  for (icarus::V1730Configuration const& boardConfig: PMTconfig.boards) {
-    for (icarus::V1730channelConfiguration const& channelConfig
+  for (sbn::V1730Configuration const& boardConfig: PMTconfig.boards) {
+    for (sbn::V1730channelConfiguration const& channelConfig
       : boardConfig.channels
     ) {
       

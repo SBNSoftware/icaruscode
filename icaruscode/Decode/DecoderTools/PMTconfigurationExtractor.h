@@ -18,9 +18,8 @@
 // ICARUS libraries
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icaruscode/Utilities/ReadArtConfiguration.h" // util::readConfigurationFromArtFile()
-
-#include "sbnobj/ICARUS/PMT/Data/PMTconfiguration.h"
-#include "sbnobj/ICARUS/PMT/Data/V1730Configuration.h"
+#include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
+#include "sbnobj/Common/PMT/Data/V1730Configuration.h"
 
 // framework libraries
 #include "fhiclcpp/ParameterSet.h"
@@ -42,9 +41,9 @@ namespace icarus {
   class PMTconfigurationExtractorBase;
   class PMTconfigurationExtractor;
   
-  icarus::PMTconfiguration extractPMTreadoutConfiguration
+  sbn::PMTconfiguration extractPMTreadoutConfiguration
     (std::string const& srcFileName, icarus::PMTconfigurationExtractor extractor);
-  icarus::PMTconfiguration extractPMTreadoutConfiguration
+  sbn::PMTconfiguration extractPMTreadoutConfiguration
     (TFile& srcFile, icarus::PMTconfigurationExtractor extractor);
   
 } // namespace icarus
@@ -55,7 +54,7 @@ class icarus::PMTconfigurationExtractorBase {
   
     public:
   
-  using ConfigurationData_t = icarus::PMTconfiguration;
+  using ConfigurationData_t = sbn::PMTconfiguration;
   
   // --- BEGIN -- Interface ----------------------------------------------------
   /// @name Interface
@@ -335,11 +334,11 @@ class icarus::PMTconfigurationExtractor
    * All PMT-related configuration that is known to this code is extracted and
    * returned.
    */
-  icarus::PMTconfiguration extract(fhicl::ParameterSet const& config) const;
+  sbn::PMTconfiguration extract(fhicl::ParameterSet const& config) const;
   
   
   /// Assigns unique channel IDs to the channel information.
-  icarus::PMTconfiguration finalize(icarus::PMTconfiguration config) const;
+  sbn::PMTconfiguration finalize(sbn::PMTconfiguration config) const;
   
   /// @}
   // --- END ---- Interface ----------------------------------------------------
@@ -360,7 +359,7 @@ class icarus::PMTconfigurationExtractor
    * 
    * 
    */
-  icarus::V1730Configuration extractV1730configuration
+  sbn::V1730Configuration extractV1730configuration
     (fhicl::ParameterSet const& pset, std::string const& boardName)
     const;
   
@@ -370,7 +369,7 @@ class icarus::PMTconfigurationExtractor
    * @param channelNo number of channel on board (0-15)
    * @return the configuration of the specified channel
    */
-  icarus::V1730channelConfiguration extractChannelConfiguration
+  sbn::V1730channelConfiguration extractChannelConfiguration
     (fhicl::ParameterSet const& boardPSet, unsigned short int channelNo) const;
   
   /**

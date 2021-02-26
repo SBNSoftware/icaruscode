@@ -78,11 +78,11 @@ bool icarus::PMTconfigurationExtractor::isGoodConfiguration
 
 
 // -----------------------------------------------------------------------------
-icarus::PMTconfiguration icarus::PMTconfigurationExtractor::extract
+sbn::PMTconfiguration icarus::PMTconfigurationExtractor::extract
   (fhicl::ParameterSet const& pset) const
 {
   
-  icarus::PMTconfiguration config;
+  sbn::PMTconfiguration config;
   
   for (std::string const& key: pset.get_names()) {
     
@@ -102,13 +102,13 @@ icarus::PMTconfiguration icarus::PMTconfigurationExtractor::extract
 // -----------------------------------------------------------------------------
 auto icarus::PMTconfigurationExtractor::extractV1730configuration
   (fhicl::ParameterSet const& pset, std::string const& boardName) const
-  -> icarus::V1730Configuration
+  -> sbn::V1730Configuration
 {
   
   auto const& boardParams
     = pset.get<fhicl::ParameterSet>("daq.fragment_receiver");
   
-  icarus::V1730Configuration rc; // readout config, for friends
+  sbn::V1730Configuration rc; // readout config, for friends
   rc.boardName = boardName;
   
   rc.boardID = boardParams.get<unsigned int>("board_id");
@@ -127,13 +127,13 @@ auto icarus::PMTconfigurationExtractor::extractV1730configuration
 
 
 // -----------------------------------------------------------------------------
-icarus::V1730channelConfiguration
+sbn::V1730channelConfiguration
 icarus::PMTconfigurationExtractor::extractChannelConfiguration
   (fhicl::ParameterSet const& boardPSet, unsigned short int channelNo) const
 {
   std::string const ChannelStr = std::to_string(channelNo);
   
-  icarus::V1730channelConfiguration channel;
+  sbn::V1730channelConfiguration channel;
   
   channel.channelNo = channelNo;
   
@@ -149,11 +149,11 @@ icarus::PMTconfigurationExtractor::extractChannelConfiguration
 
 // ---------------------------------------------------------------------------
 
-icarus::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
-  (icarus::PMTconfiguration config) const
+sbn::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
+  (sbn::PMTconfiguration config) const
 {
 
-  for (icarus::V1730Configuration& readoutBoardConfig: config.boards) {
+  for (sbn::V1730Configuration& readoutBoardConfig: config.boards) {
     if (!fChannelMap->hasPMTDigitizerID(readoutBoardConfig.fragmentID))
       continue;
     
@@ -168,7 +168,7 @@ icarus::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
           [channelNo](auto const& p){ return p.first == channelNo; });
         return (it != channelIDs.end())
           ? it->second
-          : icarus::V1730channelConfiguration::NoChannelID
+          : sbn::V1730channelConfiguration::NoChannelID
           ;
       };
     
@@ -212,7 +212,7 @@ icarus::PMTconfigurationExtractor::readBoardConfig
 // -----------------------------------------------------------------------------
 // ---  free functions implementation
 // -----------------------------------------------------------------------------
-icarus::PMTconfiguration icarus::extractPMTreadoutConfiguration
+sbn::PMTconfiguration icarus::extractPMTreadoutConfiguration
   (std::string const& srcFileName, icarus::PMTconfigurationExtractor extractor)
 {
   //
@@ -228,7 +228,7 @@ icarus::PMTconfiguration icarus::extractPMTreadoutConfiguration
 
 
 // -----------------------------------------------------------------------------
-icarus::PMTconfiguration icarus::extractPMTreadoutConfiguration
+sbn::PMTconfiguration icarus::extractPMTreadoutConfiguration
   (TFile& srcFile, icarus::PMTconfigurationExtractor extractor)
 {
   
@@ -246,7 +246,7 @@ icarus::PMTconfiguration icarus::extractPMTreadoutConfiguration
   
   auto const& globalConfigColl = util::readConfigurationFromArtFile(srcFile);
   
-  std::optional<icarus::PMTconfiguration> config;
+  std::optional<sbn::PMTconfiguration> config;
   
   // look in the global configuration for all parameter sets which contain
   // `configuration_documents` as a (direct) name;
@@ -258,7 +258,7 @@ icarus::PMTconfiguration icarus::extractPMTreadoutConfiguration
         (pset, "configuration_documents", { std::regex{ "icaruspmt.*" } })
       ;
     
-    icarus::PMTconfiguration candidateConfig = extractor.extract(configDocs);
+    sbn::PMTconfiguration candidateConfig = extractor.extract(configDocs);
     if (config) {
       if (config.value() == candidateConfig) continue;
       mf::LogError log("extractPMTreadoutConfiguration");

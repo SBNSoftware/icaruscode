@@ -8,7 +8,7 @@
 // ICARUS libraries
 #include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "sbnobj/ICARUS/PMT/Data/PMTconfiguration.h"
+#include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
 
 // framework libraries
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
@@ -48,7 +48,7 @@ namespace icarus { class PMTconfigurationExtraction; }
  * Output
  * -------
  * 
- * A data product of type `icarus::PMTconfiguration` is placed in each run.
+ * A data product of type `sbn::PMTconfiguration` is placed in each run.
  * Note that the module itself does not enforce any coherence in the
  * configuration.
  * 
@@ -63,7 +63,7 @@ namespace icarus { class PMTconfigurationExtraction; }
  *     LArSoft PMT channel IDs, and this information is saved together with
  *     the channel information; if the service is not available, this flag
  *     should be set to `false`, in which case the channel ID will be marked
- *     as unknown (`icarus::V1730channelConfiguration::NoChannelID`).
+ *     as unknown (`sbn::V1730channelConfiguration::NoChannelID`).
  * * **RequireConsistentPMTconfigurations** (flag, default: `true`): requires
  *     that all input files contain compatible PMT configuration; while this is
  *     in general desired during decoding, when mixing files with different
@@ -87,7 +87,7 @@ namespace icarus { class PMTconfigurationExtraction; }
 class icarus::PMTconfigurationExtraction: public art::EDProducer {
   
   /// Current PMT configuration (may be still unassigned).
-  std::optional<icarus::PMTconfiguration> fPMTconfig;
+  std::optional<sbn::PMTconfiguration> fPMTconfig;
   
   /// Pointer to the online channel mapping service.
   icarusDB::IICARUSChannelMap const* fChannelMap = nullptr;
@@ -167,7 +167,7 @@ icarus::PMTconfigurationExtraction::PMTconfigurationExtraction
   
   // no consummation here (except for FHiCL configuration)
   
-  produces<icarus::PMTconfiguration, art::InRun>();
+  produces<sbn::PMTconfiguration, art::InRun>();
   
 } // icarus::PMTconfigurationExtraction::PMTconfigurationExtraction()
 
@@ -179,7 +179,7 @@ void icarus::PMTconfigurationExtraction::respondToOpenInputFile
 
   icarus::PMTconfigurationExtractor extractor { *fChannelMap };
   
-  icarus::PMTconfiguration config
+  sbn::PMTconfiguration config
     = extractPMTreadoutConfiguration(fileInfo.fileName(), extractor);
 
   mf::LogDebug(fLogCategory) << "Input file '"
@@ -218,7 +218,7 @@ void icarus::PMTconfigurationExtraction::beginRun(art::Run& run) {
   assert(fPMTconfig);
   
   // put a copy of the current configuration
-  run.put(std::make_unique<icarus::PMTconfiguration>(fPMTconfig.value()));
+  run.put(std::make_unique<sbn::PMTconfiguration>(fPMTconfig.value()));
   
 } // icarus::PMTconfigurationExtraction::beginRun()
 

@@ -32,7 +32,7 @@ art_make(
 
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
-  sbnobj_ICARUS_PMT_Data
+  sbnobj_Common_PMT_Data
   art_Framework_Services_Registry
   fhiclcpp
   cetlib_except

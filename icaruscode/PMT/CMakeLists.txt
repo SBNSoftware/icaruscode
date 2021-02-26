@@ -41,6 +41,7 @@ simple_plugin(PMTWaveformBaselines "module"
 
 simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
   sbnobj_ICARUS_PMT_Data
+  sbnobj_Common_PMT_Data
   lardataobj_RawData
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
