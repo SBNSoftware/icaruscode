@@ -48,10 +48,6 @@
 #include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-// ROOT
-#include "TDatabasePDG.h"
-#include "TParticlePDG.h"
-
 // C++ standard libraries
 #include <regex>
 #include <algorithm> // std::sort(), std::binary_search()
@@ -124,10 +120,6 @@ namespace icarus::simfilter { class FilterNeutrinosActiveVolume; }
  * * `weakCurrent` (`CC` or `NC`, optional): if specified, interactions
  *   qualify only if they are tagged as charged or neutral currents;
  *   see `icarus::WeakCurrentTypes::parse()`;
- * * `neutrinoFlavors` (list of integers, optional): if specified, interactions
- *   qualify only if their incoming particle (a neutrino in the standard GENIE
- *   generation) has one of the specified PDG particle IDs (e.g. `-12` for
- *   electron antineutrino); by default, no requirement on flavor is imposed.
  * * `logCategory` (string, default: `FilterNeutrinosActiveVolume`): name of the
  *   category this module uses to send messages to the message facility.
  * 
@@ -233,13 +225,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
         std::vector<int>{}
         };
       
-      fhicl::Sequence<int> neutrinoFlavors {
-        Name("neutrinoFlavors"),
-        Comment
-          ("require an interaction by a particle with one of these PDG ID"),
-        std::vector<int>{}
-        };
-      
       fhicl::Atom<std::string> weakCurrent {
         Name("weakCurrent"),
         Comment(
@@ -278,9 +263,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     /// List of qualifying interaction types.
     std::vector<int> const fInteractions;
     
-    /// List of qualifying incoming particle ID.
-    std::vector<int> const fNeutrinoFlavors;
-    
     icarus::WeakCurrentType const fWeakCurrentType; ///< Selected weak current.
     
     std::string const fLogCategory; ///< Category name for the output stream.
@@ -312,9 +294,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     /// Returns whether the interaction type is qualifying.
     bool qualifyingInteractionType(int const interactionType) const;
 
-    /// Returns whether the `PDGID` flavor of incoming particle is qualifying.
-    bool qualifyingIncomingFlavor(int const PDGID) const;
-
     /// Returns whether the weak current type is qualifying.
     bool qualifyingWeakCurrent(int const CCNC) const;
     
@@ -326,8 +305,6 @@ class icarus::simfilter::FilterNeutrinosActiveVolume: public art::EDFilter {
     template <typename Coll>
     static Coll sorted(Coll const& coll);
     
-    /// Returns the name of the particle with `pdgid`, empty if unknown.
-    static std::string particleName(int pdgid);
     
 }; // icarus::simfilter::FilterNeutrinosActiveVolume
 
@@ -340,7 +317,6 @@ icarus::simfilter::FilterNeutrinosActiveVolume::FilterNeutrinosActiveVolume
   (Parameters const& config)
   : art::EDFilter(config)
   , fInteractions(sorted(config().interactionTypes()))
-  , fNeutrinoFlavors(sorted(config().neutrinoFlavors()))
   , fWeakCurrentType(config().weakCurrent())
   , fLogCategory(config().logCategory())
 {
@@ -353,15 +329,8 @@ icarus::simfilter::FilterNeutrinosActiveVolume::FilterNeutrinosActiveVolume
     if (!fInteractions.empty()) {
       log << "\n * required one of these " << size(fInteractions)
         << " interaction types:";
-      for (int const intType: fInteractions)
+      for (int intType: fInteractions)
         log << "\n    - " << sim::TruthInteractionTypeName(intType);
-    } // if
-    
-    if (!fNeutrinoFlavors.empty()) {
-      log << "\n * required one of these " << size(fNeutrinoFlavors)
-        << " flavors:";
-      for (int const pdgid: fNeutrinoFlavors)
-        log << "\n    - " << particleName(pdgid) << " [" << pdgid << "]";
     } // if
     
     log << "\n * weak current type: " << std::string(fWeakCurrentType);
@@ -633,12 +602,6 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifying
     return false;
   
   //
-  // interaction type
-  //
-  if (!fNeutrinoFlavors.empty() && !qualifyingIncomingFlavor(nu.PdgCode()))
-    return false;
-  
-  //
   // current type
   //
   if ((fWeakCurrentType != icarus::AnyWeakCurrentType) && !qualifyingWeakCurrent(nuInfo.CCNC()))
@@ -671,23 +634,6 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingInteractionType
   return pass;
   
 } // icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingInteractionType()
-
-
-// -----------------------------------------------------------------------------
-bool icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingIncomingFlavor
-  (int const PDGID) const
-{
-  mf::LogTrace log(fLogCategory);
-  log << "Particle type: " << PDGID;
-  if (std::string const& name = particleName(PDGID); !name.empty())
-    log << " (" << name << ")";
-  
-  bool const pass
-    = std::binary_search(begin(fNeutrinoFlavors), end(fNeutrinoFlavors), PDGID);
-  log << " => :-" << (pass? ')': '(');
-  return pass;
-  
-} // icarus::simfilter::FilterNeutrinosActiveVolume::qualifyingIncomingFlavor()
 
 
 // -----------------------------------------------------------------------------
@@ -748,17 +694,6 @@ Coll icarus::simfilter::FilterNeutrinosActiveVolume::sorted(Coll const& coll) {
   
 } // icarus::simfilter::FilterNeutrinosActiveVolume::sorted()
 
-
-// -----------------------------------------------------------------------------
-/// Returns the name of the particle with `pdgid`, empty if unknown.
-std::string icarus::simfilter::FilterNeutrinosActiveVolume::particleName
-  (int pdgid)
-{
-  
-  TParticlePDG const* particle = TDatabasePDG::Instance()->GetParticle(pdgid);
-  return particle? particle->GetName(): "";
-  
-} // icarus::simfilter::FilterNeutrinosActiveVolume::particleName()
 
 
 // -----------------------------------------------------------------------------
