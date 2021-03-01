@@ -901,9 +901,6 @@ auto icarus::trigger::details::makeWindowChannelMap(
   std::size_t iWindow = 0U;
   for (auto const& [ iCryo, cryoWindows ]: util::enumerate(allWindowChannels)) {
     
-    // window number required to be even (each window has an unique opposite)
-    assert(cryoWindows.size() % 2 == 0);
-    
     geo::CryostatID const cryoid(iCryo);
     assert(geom.HasCryostat(cryoid));
     
@@ -1571,7 +1568,6 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   details::WindowChannelMap::WindowInfo const& windowInfo
     = fWindowMap->info(iWindow);
   assert(windowInfo.index == iWindow);
-  assert(windowInfo.hasOppositeWindow());
   
   TriggerInfo_t res; // no trigger by default
   assert(!res);
