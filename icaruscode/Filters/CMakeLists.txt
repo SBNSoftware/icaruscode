@@ -25,6 +25,7 @@ art_make(
                         ${FHICLCPP}
                         ${CETLIB}
                         ${CETLIB_EXCEPT}
+                        ROOT::EG
                         ${ROOT_GEOM}
                         ${ROOT_XMLIO}
                         ${ROOT_GDML}
