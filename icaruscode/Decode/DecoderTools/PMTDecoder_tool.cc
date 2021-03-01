@@ -15,7 +15,9 @@
 #include "art/Persistency/Common/PtrMaker.h"
 #include "art/Utilities/ToolMacros.h"
 #include "cetlib/cpu_timer.h"
+#include "fhiclcpp/make_ParameterSet.h"
 #include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/ParameterSetRegistry.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
@@ -24,11 +26,21 @@
 
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
+#include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
+#include "sbnobj/Common/PMT/Data/V1730Configuration.h"
+#include "sbnobj/Common/PMT/Data/V1730channelConfiguration.h"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
+
+// ROOT
+#include "TFile.h"
 
 // std includes
+#include <regex>
+#include <initializer_list>
 #include <string>
+#include <optional>
 #include <iostream>
 #include <memory>
 
@@ -42,6 +54,24 @@ namespace daq {
 class PMTDecoder : virtual public IDecoder
 {
 public:
+    
+    struct Config {
+      
+      fhicl::Atom<bool> DiagnosticOutput {
+        fhicl::Name("DiagnosticOutput"),
+        fhicl::Comment("enable additional console output"),
+        false // default
+        };
+      
+      fhicl::Atom<bool> ExtractConfiguration {
+        fhicl::Name("ExtractConfiguration"),
+        fhicl::Comment("creates a data product with the PMT configuration"),
+        false // default
+        };
+      
+    }; // Config
+
+  
     /**
      *  @brief  Constructor
      *
@@ -73,6 +103,11 @@ public:
      */
     virtual void initializeDataProducts() override;
 
+    
+    /// Extracts the PMT readout board configuration from the specified `file`
+    /// and keeps it in the object.
+    virtual void decodeConfigurationFromFile(TFile& file) override;
+    
     /**
      *  @brief Given a set of recob hits, run DBscan to form 3D clusters
      *
@@ -90,14 +125,37 @@ public:
 
 private:
 
-    bool                               fDiagnosticOutput;       //< If true will spew endless messages to output
+    bool                               fDiagnosticOutput;       ///< If true will spew endless messages to output
+    bool                               fExtractConfig; ///< Parse PMT readout configuration.
 
     using OpDetWaveformCollection    = std::vector<raw::OpDetWaveform>;
     using OpDetWaveformCollectionPtr = std::unique_ptr<OpDetWaveformCollection>;
 
-    OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  //< The output data collection pointer
-    const geo::Geometry*               fGeometry;                 //< pointer to the Geometry service
-    const icarusDB::IICARUSChannelMap* fChannelMap;
+    OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  ///< The output data collection pointer
+    const geo::Geometry*               fGeometry = nullptr;       ///< pointer to the Geometry service
+    const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
+    
+    /// Configuration of PMT readout as extracted from the FHiCL configuration.
+    std::optional<sbn::PMTconfiguration> fPMTconfig;
+    
+    /**
+     * @brief Returns a parameter set with the content of
+     *        `configuration_documents` key from `container`.
+     * @param container parameter set including a `configuration_documents`
+     * @param components keys to be converted (as regular expressions)
+     * @return a parameter set
+     * 
+     * The `configuration_documents` element of `container` is processed: for
+     * each of its keys which match at least one of the `components` regular
+     * expression patterns (`std::regex_match()`), the associated string value
+     * is parsed with FHiCL parser, and the result is set as a FHiCL table in
+     * the output parameter set.
+     * For example, if the `components` are
+     * `{ std::regex{".*pmt.*"}, std::regex{".*trigger.*"} }`, the returned
+     * value is a parameter set that may have keys like `icaruspmtee01`,
+     * `icaruspmtew02`, `icarustrigger` etc., each one with a FHiCL table as
+     * `value.
+     */
 };
 
 PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
@@ -120,6 +178,7 @@ void PMTDecoder::produces(art::ProducesCollector& collector)
 void PMTDecoder::configure(fhicl::ParameterSet const &pset)
 {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
+    fExtractConfig = pset.get<bool>("ExtractReadoutConfig", false);
 
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
@@ -134,6 +193,20 @@ void PMTDecoder::initializeDataProducts()
     return;
 }
 
+void PMTDecoder::decodeConfigurationFromFile(TFile& file) {
+  
+  // there should be a way to read this information from a data product instead;
+  // the module for the data product is `PMTconfigurationExtraction`.
+  
+  if (!fExtractConfig) return;
+  
+  icarus::PMTconfigurationExtractor extractor { *fChannelMap };
+  
+  fPMTconfig.emplace(extractPMTreadoutConfiguration(file, extractor));
+  
+} // PMTDecoder::decodeConfigurationFromFile()
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 {
     size_t fragment_id = artdaqFragment.fragmentID();

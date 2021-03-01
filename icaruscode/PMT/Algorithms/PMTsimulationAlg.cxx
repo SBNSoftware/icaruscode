@@ -39,6 +39,23 @@
 
 
 // -----------------------------------------------------------------------------
+#if __cplusplus < 202002L // C++20?
+namespace util {
+  
+  /// Substitute for C++20 `std::identity`.
+  struct identity {
+    template <typename T>
+    constexpr T&& operator() (T&& v) const noexcept
+      { return std::forward<T>(v); }
+  }; // struct identity
+  
+} // namespace util
+#else
+# error("Replace util::identity with std::identity (#include <functional>)")
+#endif
+
+
+// -----------------------------------------------------------------------------
 // ---  icarus::opdet::PMTsimulationAlg
 // -----------------------------------------------------------------------------
 
@@ -86,7 +103,7 @@ icarus::opdet::PMTsimulationAlg::PMTsimulationAlg
   , fQE(fParams.QEbase / fParams.larProp->ScintPreScale())
   , fSampling(fParams.clockData->OpticalClock().Frequency())
   , fNsamples(fParams.readoutEnablePeriod * fSampling) // us * MHz cancels out
-  , wsp(
+  , wsp( // NOTE: wsp amplitude already includes sign from polarity
     *(fParams.pulseFunction),
     fSampling,
     fParams.pulseSubsamples, // tick subsampling
@@ -274,16 +291,14 @@ auto icarus::opdet::PMTsimulationAlg::CreateFullWaveform
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded noise... " << photons.OpChannel() << " " << diff.count() << std::endl;
 //       start=std::chrono::high_resolution_clock::now();
-
-      // Implementing saturation effects;
-      // waveform is negative, and saturation is a minimum ADC count
-      // TODO use waveform_operations (what is polarity is different?)
-      auto const saturationLevel
-        = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
-      std::replace_if(waveform.begin(),waveform.end(),
-		      [saturationLevel](auto s) -> bool{return s < saturationLevel;},
-		      saturationLevel);
-
+      
+    // saturation in terms of photoelectrons (sharp);
+    auto const ADCrange = fParams.ADCrange();
+    ApplySaturation(waveform, ADCrange);
+    
+    // clip to the ADC range, 0 -- 2
+    ClipWaveform(waveform, ADCrange.first, ADCrange.second);
+    
 //       end=std::chrono::high_resolution_clock::now(); diff = end-start;
 //       std::cout << "\tadded saturation... " << photons.OpChannel() << " " << diff.count() << std::endl;
     
@@ -602,6 +617,75 @@ void icarus::opdet::PMTsimulationAlg::AddDarkNoise(Waveform_t& wave) const {
 
 
 // -----------------------------------------------------------------------------
+auto icarus::opdet::PMTsimulationAlg::saturationRange() const
+  -> std::pair<ADCcount, ADCcount>
+{
+  ADCcount const saturationLevel
+    = fParams.baseline + fParams.saturation*wsp.peakAmplitude();
+  return std::make_pair(
+    ((fParams.pulsePolarity > 0)
+      ? std::numeric_limits<ADCcount>::min(): saturationLevel),
+    ((fParams.pulsePolarity > 0)
+      ? saturationLevel: std::numeric_limits<ADCcount>::max())
+    );
+} // icarus::opdet::PMTsimulationAlg::saturationRange()
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::ApplySaturation
+  (Waveform_t& waveform) const
+{
+  //
+  // simple sharp capping/cupping of ADC values
+  //
+  auto const boundaries = saturationRange();
+  ClipWaveform(waveform, boundaries.first, boundaries.second);
+  
+} // icarus::opdet::PMTsimulationAlg::ApplySaturation()
+
+
+// -----------------------------------------------------------------------------
+void icarus::opdet::PMTsimulationAlg::ApplySaturation
+  (Waveform_t& waveform, std::pair<ADCcount, ADCcount> const& range) const
+{
+  //
+  // simple sharp capping/cupping of ADC values
+  //
+  auto const boundaries = saturationRange();
+  
+  // saturation is out of boundaries: do not apply it.
+  if ((boundaries.first <= range.first) && (boundaries.second >= range.second))
+    return;
+  
+  ClipWaveform(waveform, boundaries.first, boundaries.second);
+  
+} // icarus::opdet::PMTsimulationAlg::ApplySaturation(range)
+
+
+// -----------------------------------------------------------------------------
+/// Forces `waveform` ADC within the `min` to `max` range (`max` included).
+void icarus::opdet::PMTsimulationAlg::ClipWaveform
+  (Waveform_t& waveform, ADCcount min, ADCcount max)
+{
+  auto const clamper =
+    (min == std::numeric_limits<ADCcount>::min())
+      ? ((max == std::numeric_limits<ADCcount>::max())
+        ? std::function{ [](ADCcount s){ return s; } }
+        : std::function{ [max](ADCcount s){ return std::min(s, max); } }
+        )
+      : ((max == std::numeric_limits<ADCcount>::max())
+        ? std::function{ [min](ADCcount s){ return std::max(s, min); } }
+        : std::function{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
+        )
+      ;
+  
+  std::for_each(waveform.begin(), waveform.end(),
+    [clamper](ADCcount& s){ s = clamper(s); });
+  
+} // icarus::opdet::PMTsimulationAlg::ClipWaveform()
+
+
+// -----------------------------------------------------------------------------
 auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
   (double const tick_d) const -> std::tuple<tick, SubsampleIndex_t>
 {
@@ -640,6 +724,7 @@ icarus::opdet::PMTsimulationAlgMaker::PMTsimulationAlgMaker
   fBaseConfig.readoutEnablePeriod      = config.ReadoutEnablePeriod();
   fBaseConfig.readoutWindowSize        = config.ReadoutWindowSize();
   fBaseConfig.baseline                 = ADCcount(config.Baseline());
+  fBaseConfig.ADCbits                  = config.ADCBits();
   fBaseConfig.pulsePolarity            = config.PulsePolarity();
   fBaseConfig.pretrigFraction          = config.PreTrigFraction();
   fBaseConfig.triggerOffsetPMT         = config.TriggerOffsetPMT();

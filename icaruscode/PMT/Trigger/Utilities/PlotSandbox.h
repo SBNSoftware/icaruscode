@@ -214,6 +214,9 @@ class icarus::trigger::PlotSandbox {
   /// @name ROOT object management
   /// @{
   
+  /// Returns if the sandbox is empty (neither it nor subboxes hold objects).
+  bool empty() const;
+  
   /**
    * @brief Fetches the object with the specified name from the sandbox.
    * @tparam Obj (default: `TObject`) type of the object to fetch
@@ -261,6 +264,16 @@ class icarus::trigger::PlotSandbox {
   template <typename Obj = TObject>
   Obj& demand(std::string const& name) const;
   
+  /**
+   * @brief Fetches the base directory of the sandbox.
+   * @return a pointer to the requested directory, or `nullptr` if wrong type
+   * 
+   * The directory is converted to the desired type via `dynamic_cast`.
+   * If conversion fails, a null pointer is returned.
+   */
+  template <typename DirObj = TDirectory>
+  DirObj* getDirectory() const;
+
   /**
    * @brief Fetches the directory with the specified name from the sandbox.
    * @tparam DirObj (default: `TDirectory`) type of ROOT directory object to get
@@ -353,6 +366,10 @@ class icarus::trigger::PlotSandbox {
   decltype(auto) subSandboxes()
     { return details::map_dereferenced_values(fData.subBoxes); }
   // @}
+  
+  /// @brief Deletes the subbox with the specified `name` and its directory.
+  /// @return whether there was a subbox with that `name`
+  bool deleteSubSandbox(std::string const& name);
   
   /// @}
   // --- END -- Contained sandboxes --------------------------------------------
@@ -501,6 +518,12 @@ Obj& icarus::trigger::PlotSandbox::demand(std::string const& name) const {
   
   throw e << "\n";
 } // icarus::trigger::PlotSandbox::demand()
+
+
+//------------------------------------------------------------------------------
+template <typename DirObj /* = TDirectory */>
+DirObj* icarus::trigger::PlotSandbox::getDirectory() const
+  { return dynamic_cast<DirObj*>(fData.outputDir.fROOTdir); }
 
 
 //------------------------------------------------------------------------------
