@@ -55,11 +55,16 @@ physics.analyzers.effSlidingOR6m.BeamGateStart: "-2 us"
 # different input labels
 #
 physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
+physics.producers.pmtbaselines.OpticalWaveforms: "daqPMT"
 
 #
-# additional modules: PMT configuration from metadata
+# additional modules:
+#  * PMT configuration from metadata
+#  * baseline from PMT configuration
+#  * discrimination from PMT configuration
 #
 services.IICARUSChannelMap: @local::icarus_channelmappinggservice
+
 
 physics.producers.pmtconfig: {
 
@@ -67,14 +72,8 @@ physics.producers.pmtconfig: {
 
 } # physics.producers.pmtconfig
 
-physics.triggerOR: [ pmtconfig, @sequence::physics.triggerOR ]
 
-
-#
-# completely different baselining: directly from PMT readout configuration
-#
-
-physics.producers.pmtbaselines: {
+physics.producers.pmtconfigbaselines: {
 
   module_type: PMTWaveformBaselinesFromReadoutConfiguration
 
@@ -93,7 +92,53 @@ physics.producers.pmtbaselines: {
   # tag of the module output to console via message facility
   OutputCategory: "PMTWaveformBaselines"  # default
 
-} # physics.producers.pmtbaselines
+} # physics.producers.pmtconfigbaselines
+
+
+physics.producers.pmtthr: {
+
+  module_type: DiscriminatePMTwaveformsByChannel
+
+  # input optical waveform data product tag:
+  OpticalWaveforms: "daqPMT"
+
+  # PMT baselines
+  Baselines: "pmtconfigbaselines" # from data products
+  
+  # threshold configuration
+  ThresholdsFromPMTconfig: "pmtconfig"
+  NChannels:                360 # to be safe...
+  
+  #
+  # choosing the discrimination algorithm: fixed length gates
+  #
+  TriggerGateBuilder: {
+    @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+    
+    ChannelThresholds: @local::PMTthresholds
+    
+    GateDuration: @local::LVDSsignalWidth
+    
+  } # TriggerGateBuilder
+
+
+  # message facility stream
+  OutputCategory: "DiscriminatePMTwaveforms"
+
+} # physics.producers.pmtthr
+
+
+physics.producers.lvdsgatesOR.Thresholds: 
+  [ @sequence::physics.producers.lvdsgatesOR.Thresholds, "pmtthr:" ]
+physics.producers.trigslidewindowOR6m.Thresholds:
+  [ @sequence::physics.producers.trigslidewindowOR6m.Thresholds, pmtthr ]
+physics.analyzers.effSlidingOR6m.Thresholds: @local::physics.producers.trigslidewindowOR6m.Thresholds
+
+
+physics.triggerOR: [
+  pmtconfig, pmtconfigbaselines, pmtthr, 
+  @sequence::physics.triggerOR 
+]
 
 
 #
