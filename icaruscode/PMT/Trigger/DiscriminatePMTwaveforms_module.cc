@@ -258,7 +258,8 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
    * than that).
    * For each channel, a gate is set in the item of the collection with index
    * the channel ID (i.e. the first gate in the collection will be the one for
-   * channel `0`, the next the one for channel `1` and so on).
+   * channel `0`, the next the one for channel `1` and so on). It is assumed
+   * that there is only at most one gate per channel.
    * The `gates` specified in the argument are _moved_ to the proper item in the
    * returned collection. The other gates are assigned the proper channel number
    * but are closed gates and associated with no waveform.
@@ -421,6 +422,14 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   for (auto const& [ waveform, baseline ]: util::zip(waveforms, *baselines))
     waveformInfo.emplace_back(&waveform, &baseline);
   
+  {
+    mf::LogDebug log { fLogCategory };
+    log << "Discrimination of " << waveforms.size() << " PMT waveforms from '"
+      << fOpDetWaveformTag.encode() << "'";
+    if (fBaselineTag)
+      log << " with baselines from '" << fBaselineTag->encode() << "'";
+  }
+  
   
   //
   // define channel-level trigger gate openings as function on threshold
@@ -504,6 +513,7 @@ icarus::trigger::DiscriminatePMTwaveforms::fillChannelGaps
     auto const channel = gate.channel();
     if (static_cast<std::size_t>(channel) >= gateMap.size())
       gateMap.resize(channel + 1U, nullptr);
+    assert(gateMap[channel] == nullptr);
     gateMap[channel] = &gate;
     
   } // for all gates

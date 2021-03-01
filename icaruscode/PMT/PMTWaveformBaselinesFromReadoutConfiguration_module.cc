@@ -281,7 +281,7 @@ icarus::PMTWaveformBaselinesFromReadoutConfiguration::PMTWaveformBaselinesFromRe
   // configuration report (currently, more like a placeholder)
   //
   mf::LogInfo(fLogCategory)
-    << "Using configured baselines from '" << fPMTconfigurationTag
+    << "Using configured baselines from '" << fPMTconfigurationTag.encode()
     << "', waveform by waveform, on '" << fOpDetWaveformTag.encode() << "'.";
   
   //
