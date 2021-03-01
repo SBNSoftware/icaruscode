@@ -6,12 +6,14 @@ art_make(
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
+        BernCRTTranslator.cc
 	
  NO_PLUGINS # WAnt different link lists for modues
  BASENAME_ONLY
  LIBRARY_NAME sbndaq-artdaq_ArtModules_Common
  LIB_LIBRARIES sbndaq-artdaq-core_Overlays
                sbndaq-artdaq-core_Overlays_Common
+
 )
 
 art_make_library(
@@ -102,20 +104,24 @@ art_make_library(
 	CRT_PREPROCESS_TREE
 )
 
+art_make_library(
+    LIBRARY_NAME
+        BERN_CRT_TRANSLATOR
+    SOURCE
+        BernCRTTranslator.cc
+    LIBRARIES 
+        cetlib_except
+        ${CANVAS}
+        ${ARTDAQ_DAQDATA}
+        ${ART_FRAMEWORK_PRINCIPAL}
+        sbndaq-artdaq-core_Overlays
+        sbndaq-artdaq-core_Overlays_Common
+        ${ART_PERSISTENCY_PROVENANCE}
+        artdaq-core_Data
+)
 
 install_headers()
 install_source()
-
-simple_plugin( BernCRTZMQAna "module"
-  art_Framework_Services_Registry
-  art_root_io_tfile_support
-  art_root_io_TFileService_service
-  #art_Framework_Services_Optional
-  #art_Framework_Services_Optional_TFileService_service
-  ${ROOT_BASIC_LIB_LIST}
-        ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
-)
 
 simple_plugin( BernCRTAna "module"
   art_Framework_Services_Registry
@@ -125,6 +131,7 @@ simple_plugin( BernCRTAna "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtNoiseMonTool "module"
@@ -137,6 +144,7 @@ simple_plugin( CrtNoiseMonTool "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtCalAnalysis "module"
@@ -150,6 +158,7 @@ simple_plugin( CrtCalAnalysis "module"
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
   CRT_CAL
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( AnaProducer "module"
@@ -166,6 +175,7 @@ simple_plugin( AnaProducer "module"
   CRT_CAL_TREE
   CRT_RAW_TREE
   CRT_TIMING
+  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CRTEventProducer "module"

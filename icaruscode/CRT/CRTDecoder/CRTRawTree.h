@@ -42,7 +42,7 @@ class icarus::crt::CRTRawTree{
 	ULong64_t  fLast_poll_start;
 	ULong64_t  fLast_poll_end;
 	int32_t   fSystem_clock_deviation;
-	uint32_t  fFeb_per_poll;
+	uint32_t  fFeb_in_poll;
 	uint32_t  fFeb_event_number;
 	uint32_t  fSequence_id;
 	ULong64_t  fFragment_timestamp;
@@ -61,7 +61,7 @@ class icarus::crt::CRTRawTree{
 	TBranch* b_Last_poll_start;
 	TBranch* b_Last_poll_end;
 	TBranch* b_System_clock_deviation;
-	TBranch* b_Feb_per_poll;
+	TBranch* b_Feb_in_poll;
 	TBranch* b_Feb_event_number;
 	TBranch* b_Sequence_id;
 	TBranch* b_Fragment_timestamp;
