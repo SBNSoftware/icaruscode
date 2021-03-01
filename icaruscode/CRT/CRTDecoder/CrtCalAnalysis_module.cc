@@ -24,6 +24,8 @@
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 #include "icaruscode/CRT/CRTDecoder/CrtCal.h"
 
+#include "BernCRTTranslator.hh"
+
 //ROOT includes
 #include "art_root_io/TFileService.h"
 #include "TH1F.h"
@@ -80,8 +82,6 @@ public:
 
 
 private:
-  void analyze_fragment(artdaq::Fragment &);
-
   art::ServiceHandle<art::TFileService> tfs;
 
   vector<uint8_t> macs; 
@@ -208,47 +208,21 @@ void icarus::crt::CrtCalAnalyzer::beginJob(){
 
 }
 
-void icarus::crt::CrtCalAnalyzer::analyze_fragment(artdaq::Fragment & frag) {
-
-  sbndaq::BernCRTFragment bern_fragment(frag);
-  sbndaq::BernCRTEvent const* bevt = bern_fragment.eventdata();
-
-  fMac5     = bevt->MAC5();
-  
-  if(macToHistos.find(fMac5) == macToHistos.end()) return;
-  
-  for(int ch=0; ch<32; ch++) {
-    macToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
-  }
-
-}//end analyze
-
 void icarus::crt::CrtCalAnalyzer::analyze(art::Event const & evt)
-{ 
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles); 
-  for (auto handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-    
-    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
-      //Container fragment
-      for (auto cont : *handle) { 
-        artdaq::ContainerFragment contf(cont);
-        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
-          continue; 
-        for (size_t ii = 0; ii < contf.block_count(); ++ii)
-          analyze_fragment(*contf[ii].get());
-      }
-    }
-    else {
-      //normal fragment
-      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
-      for (auto frag : *handle)
-        analyze_fragment(frag);
+{
+  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+
+  for(auto & hit : hit_vector) {
+
+    fMac5     =  hit.mac5;
+
+    if(macToHistos.find(fMac5) == macToHistos.end()) return;
+
+    for(int ch=0; ch<32; ch++) {
+      macToHistos[fMac5]->at(ch)->Fill( hit.adc[ch] );
     }
   }
-} //analyze
+}//end analyze
 
 
 void icarus::crt::CrtCalAnalyzer::endJob(){
