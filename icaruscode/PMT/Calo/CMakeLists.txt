@@ -30,6 +30,7 @@ simple_plugin(PMTCalibration "module"
 simple_plugin(PMTMonitor "module"
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calo_CaloTools
+                larana_OpticalDetector_OpHitFinder
                 lardataobj_RawData
                 lardataobj_Simulation
                 lardataobj_RecoBase
