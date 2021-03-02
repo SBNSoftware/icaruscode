@@ -713,7 +713,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   /**
    * @brief Fills plots with the specified trigger response.
    * @param iThr index of PMT threshold (used in tree output)
-   * @param threshold PMT threshold in ADC counts (for printing)
+   * @param threshold PMT threshold tag (for printing)
    * @param iPattern index of the pattern being plotted
    * @param pattern the pattern being plotted
    * @param plotSets set of plot boxes to fill (from `initializePlotSet()`)
@@ -724,7 +724,7 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
    * and threshold. The trigger response is passed as a parameter.
    */
   void plotResponse(
-    std::size_t iThr, ADCCounts_t const threshold,
+    std::size_t iThr, std::string const& threshold,
     std::size_t iPattern, WindowPattern const& pattern,
     PlotSandboxRefs_t const& plotSets,
     EventInfo_t const& eventInfo,
@@ -849,6 +849,34 @@ void icarus::trigger::details::WindowChannelMap::dump
 
 
 //------------------------------------------------------------------------------
+namespace icarus::trigger::details {
+  
+  auto findClosestWindow(
+    std::vector<WindowChannelMap::WindowInfo*> const& windowList,
+    WindowChannelMap::WindowInfo const* targetWindow
+    ) -> WindowChannelMap::WindowInfo const*
+  {
+    
+    if (!targetWindow || windowList.empty()) return nullptr;
+    
+    WindowChannelMap::WindowInfo const* closest = nullptr;
+    double minDistance2 = std::numeric_limits<double>::max();
+    for (auto const* window: windowList) {
+      if (!window) continue;
+      
+      double const d2 = (window->center - targetWindow->center).mag2();
+      if (minDistance2 <= d2) continue;
+      minDistance2 = d2;
+      closest = window;
+    } // for
+    
+    return closest;
+  } // icarus::trigger::details::findClosestWindow()
+  
+} // namespace icarus::trigger::details
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::details::makeWindowChannelMap(
   WindowChannelsPerCryostat_t const& allWindowChannels,
   geo::GeometryCore const& geom
@@ -872,9 +900,6 @@ auto icarus::trigger::details::makeWindowChannelMap(
   //
   std::size_t iWindow = 0U;
   for (auto const& [ iCryo, cryoWindows ]: util::enumerate(allWindowChannels)) {
-    
-    // window number required to be even (each window has an unique opposite)
-    assert(cryoWindows.size() % 2 == 0);
     
     geo::CryostatID const cryoid(iCryo);
     assert(geom.HasCryostat(cryoid));
@@ -961,7 +986,12 @@ auto icarus::trigger::details::makeWindowChannelMap(
       for (auto [ iPlaneWindow, windowInfo ]: util::enumerate(planeWindows)) {
         
         // assumes all topology information is InvalidWindowIndex by default
-        windowInfo->opposite = otherPlaneWindows[iPlaneWindow]->index;
+        
+        if (WindowChannelMap::WindowInfo const* closestOppositeWindow
+          = findClosestWindow(otherPlaneWindows, windowInfo)
+        ) {
+          windowInfo->opposite = closestOppositeWindow->index;
+        }
         
         if (iPlaneWindow > 0U)
           windowInfo->upstream = planeWindows[iPlaneWindow - 1U]->index;
@@ -999,13 +1029,12 @@ ResponseTree::ResponseTree
   , RespTxxSxx{ std::make_unique<bool[]>(indices.size()) }
 {
 
-  for (auto [ iThr, threshold]: util::enumerate(thresholds)) {
-    std::string const thrStr = util::to_string(raw::ADC_Count_t(threshold));
+  for (auto [ iThr, thresholdTag]: util::enumerate(thresholds)) {
 
     for (auto [ iSetting, setting ]: util::enumerate(settings)) {
 
       std::string const branchName
-        = "RespT" + thrStr + "S" + util::to_string(setting);
+        = "RespT" + thresholdTag + "S" + util::to_string(setting);
 
       this->tree().Branch
         (branchName.c_str(), &(RespTxxSxx[indices(iThr, iSetting)]));
@@ -1183,6 +1212,8 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::analyze
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::endJob() {
+  
+  helper().deleteEmptyPlots(); // don't keep plots with no entries
   
   // hook helper and framework
   helper().printSummary();
@@ -1365,7 +1396,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   PlotSandboxRefs_t const& selectedPlots
 ) {
   
-  auto const threshold = helper().ADCthreshold(thresholdIndex);
+  auto const threshold = helper().ADCthresholdTag(thresholdIndex);
   
   /*
    * 0.   initialize or verify the topology of the input
@@ -1413,7 +1444,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   
   // get which gates are active during the beam gate
   PMTInfo_t const PMTinfo
-    { threshold.value(), helper().extractActiveChannels(gates) };
+    { threshold, helper().extractActiveChannels(gates) };
   
   //
   // 2.   for each pattern:
@@ -1537,7 +1568,6 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
   details::WindowChannelMap::WindowInfo const& windowInfo
     = fWindowMap->info(iWindow);
   assert(windowInfo.index == iWindow);
-  assert(windowInfo.hasOppositeWindow());
   
   TriggerInfo_t res; // no trigger by default
   assert(!res);
@@ -1598,7 +1628,7 @@ auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern(
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
-  std::size_t iThr, icarus::trigger::ADCCounts_t const threshold,
+  std::size_t iThr, std::string const& threshold,
   std::size_t iPattern, WindowPattern const& pattern,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,

@@ -5,6 +5,15 @@ cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
 art_make(
+          LIB_LIBRARIES
+                        icaruscode_Utilities
+                        sbnobj_Common_PMT_Data
+                        ${MF_MESSAGELOGGER}
+                        ${FHICLCPP}
+                        cetlib_except
+                        cetlib
+                        ROOT::RIO
+                        ROOT::Core
           TOOL_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
@@ -12,6 +21,8 @@ art_make(
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
                         icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+                        icaruscode_Decode_DecoderTools
+                        icaruscode_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities

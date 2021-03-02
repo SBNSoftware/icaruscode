@@ -190,6 +190,13 @@ class icarus::trigger::TriggerGateBuilder {
   virtual void resetup(detinfo::DetectorTimings const& timings)
     { reset(); setup(timings); }
   
+  /// Resets and sets up (including a new set of thresholds).
+  virtual void resetup(
+    detinfo::DetectorTimings const& timings,
+    std::vector<ADCCounts_t> const& thresholds
+    )
+    { resetup(timings); doSetThresholds(thresholds); }
+  
   /// Returns a collection of `TriggerGates` objects sorted by threshold.
   virtual std::vector<TriggerGates> build
     (std::vector<WaveformWithBaseline> const& waveforms) const = 0;
@@ -218,6 +225,9 @@ class icarus::trigger::TriggerGateBuilder {
   /// thresholds are kept relative.
   std::vector<TriggerGates> prepareAllGates() const;
 
+  /// Sets all thresholds anew.
+  virtual void doSetThresholds(std::vector<ADCCounts_t> const& thresholds)
+    { fChannelThresholds = thresholds; }
   
     private:
   
