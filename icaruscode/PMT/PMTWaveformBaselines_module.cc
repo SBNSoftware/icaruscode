@@ -10,7 +10,10 @@
 // #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
+#include "larcore/Geometry/Geometry.h"
+#include "lardataalg/Utilities/StatCollector.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 
 // framework libraries
@@ -26,6 +29,9 @@
 #include "cetlib_except/exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
+
+// ROOT libraries
+#include "TH2F.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -63,7 +69,11 @@ namespace icarus { class PMTWaveformBaselines; }
  * Output plots
  * -------------
  * 
- * None so far.
+ * * `Baselines`: baseline distribution, per channel; average baseline [ADC] per
+ *     event per channel; all waveforms on the same channels in a single event
+ *     contribute to the average, and channels with no waveforms in an event do
+ *     not contribute an entry for that event.
+ * 
  * 
  * 
  * Input data products
@@ -77,7 +87,7 @@ namespace icarus { class PMTWaveformBaselines; }
  * Service requirements
  * ---------------------
  * 
- * * `TFileService` if `PlotBaselines` is enabled
+ * * `TFileService` and `Geometry` if `PlotBaselines` is enabled
  * 
  * 
  * Configuration parameters
@@ -171,6 +181,8 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
   // --- BEGIN Algorithms ------------------------------------------------------
   
   // --- END Algorithms --------------------------------------------------------
+  
+  TH2* fHBaselines = nullptr; ///< All baselines, per channel.
   
   
   /// Creates all the plots to be filled by the module.
@@ -280,6 +292,9 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
   std::vector<icarus::WaveformBaseline> baselines;
   baselines.reserve(waveforms.size());
   
+  std::vector<lar::util::StatCollector<double>> averages;
+  if (fHBaselines) averages.resize(fHBaselines->GetNbinsX());
+  
   art::Assns<icarus::WaveformBaseline, raw::OpDetWaveform> baselineToWaveforms;
   
   art::PtrMaker<icarus::WaveformBaseline> const makeBaselinePtr(event);
@@ -289,6 +304,8 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
     
     icarus::WaveformBaseline const baseline { baselineFromMedian(waveform) };
     
+    if (!averages.empty())
+      averages[waveform.ChannelNumber()].add(baseline.baseline());
     baselines.push_back(baseline);
     
     baselineToWaveforms.addSingle(
@@ -296,10 +313,17 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
       art::Ptr<raw::OpDetWaveform>(waveformHandle, iWaveform)
       );
     
-    // fill the plots TODO
-    
   } // for waveforms
   
+  //
+  // plot filling
+  //
+  if (!averages.empty()) {
+    
+    for (auto const& [ channel, stat ]: util::enumerate(averages))
+      if (stat.N() > 0) fHBaselines->Fill(double(channel), stat.Average());
+    
+  } // if plots
   
   //
   // output
@@ -319,7 +343,19 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
 
 //------------------------------------------------------------------------------
 void icarus::PMTWaveformBaselines::setupPlots() {
-  // TODO
+  
+  auto const& tfs = *(art::ServiceHandle<art::TFileService>());
+  auto const& geom = *(lar::providerFrom<geo::Geometry const>());
+  
+  unsigned int const nChannels = geom.NOpChannels();
+  
+  fHBaselines = tfs.make<TH2F>(
+    "Baselines",
+    "PMT baseline;channel;baseline per channel [ / 8 ADC ]",
+    nChannels, 0.0, double(nChannels),
+    256, 13312.0, 15360.0
+    );
+  
 } // icarus::PMTWaveformBaselines::setupPlots()
 
 

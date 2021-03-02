@@ -13,7 +13,9 @@
 // #include "icaruscode/Utilities/DataProductPointerMap.h"
 
 // LArSoft libraries
+#include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
 
 // framework libraries
@@ -29,6 +31,9 @@
 #include "cetlib_except/exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
+
+// ROOT libraries
+#include "TH2F.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -72,7 +77,8 @@ namespace icarus { class PMTWaveformBaselinesFromReadoutConfiguration; }
  * Output plots
  * -------------
  * 
- * None so far.
+ * * `Baselines`: baseline distribution, per channel; one entry [ADC]
+ *     per configured channel per run.
  * 
  * 
  * Input data products
@@ -86,7 +92,7 @@ namespace icarus { class PMTWaveformBaselinesFromReadoutConfiguration; }
  * Service requirements
  * ---------------------
  * 
- * * `TFileService` if `PlotBaselines` is enabled
+ * * `TFileService` and `Geometry` if `PlotBaselines` is enabled
  * 
  * 
  * Configuration parameters
@@ -211,6 +217,8 @@ class icarus::PMTWaveformBaselinesFromReadoutConfiguration
   
   // --- END Algorithms --------------------------------------------------------
   
+  TH2* fHBaselines = nullptr; ///< All baselines, per channel.
+  
   
   /// Creates all the plots to be filled by the module.
   void setupPlots();
@@ -324,6 +332,13 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun
   bool const changed = (fBaselines != newBaselines);
   fBaselines = std::move(newBaselines);
   
+  if (fHBaselines) {
+    for (auto const& [ channel, baseline ]: util::enumerate(fBaselines)) {
+      if (baseline != NoBaseline)
+        fHBaselines->Fill(double(channel), double(baseline));
+    } // for
+  } // if plots
+  
   if (fPrintBaselines && changed) printBaselines();
   
 } // icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun()
@@ -373,8 +388,6 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::produce
       art::Ptr<raw::OpDetWaveform>(waveformHandle, iWaveform)
       );
     
-    // fill the plots TODO
-    
   } // for waveforms
   
   
@@ -396,7 +409,19 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::produce
 
 //------------------------------------------------------------------------------
 void icarus::PMTWaveformBaselinesFromReadoutConfiguration::setupPlots() {
-  // TODO
+  
+  auto const& tfs = *(art::ServiceHandle<art::TFileService>());
+  auto const& geom = *(lar::providerFrom<geo::Geometry const>());
+  
+  unsigned int const nChannels = geom.NOpChannels();
+  
+  fHBaselines = tfs.make<TH2F>(
+    "Baselines",
+    "PMT baseline;channel;baseline per channel [ / 8 ADC ]",
+    nChannels, 0.0, double(nChannels),
+    256, 13312.0, 15360.0
+    );
+  
 } // icarus::PMTWaveformBaselinesFromReadoutConfiguration::setupPlots()
 
 
