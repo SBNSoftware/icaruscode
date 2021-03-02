@@ -1,0 +1,148 @@
+#
+# File:    simulation_genie_background_icarus_bnbJan2020_300us_signal.fcl
+# Purpose: BNB simulation in a reduced time window around the beam gate.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 6, 2021
+#
+# This configuration generates a BNB neutrino interaction per event.
+# The background model includes:
+#  * cosmic rays, as in `prodcorsika_300us_icarus.fcl`
+#  * radiological background, as in `prodbackground_300us_icarus.fcl`
+#  * BNB simulation with reduced intensity (2.8 x10^12 POT/spill)
+# 
+# This configuration is *NOT GOOD* for simulation including the TPC,
+# and should be used only when simulating PMT + CRT + trigger runs only.
+# 
+# Recommended workflow:
+#  * simulation_genie_background_icarus_bnbJan2020_300us_signal.fcl
+#  * cosmics_g4_icarus_volCryostat.fcl
+#  * custom optical detsim (e.g. run4642like_detsim_icarus.fcl)
+#
+#
+# Changes:
+# 
+# 20200206 (petrillo@slac.stanford.edu)
+#   original version
+#
+#
+
+# ------------------------------------------------------------------------------
+#include "services_icarus_simulation.fcl"
+#include "genie_icarus_bnb.fcl"
+#include "corsika_icarus.fcl"
+#include "radiological_model_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: Gen300us
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  @table::icarus_gen_services
+  
+  IFDH: {}
+  
+  TFileService: {
+    fileName: "Supplemental-simulation_genie_background_icarus_bnbJan2020_300us_signal_%tc-%p.root"
+  }
+  
+#  FileCatalogMetadata:  @local::art_file_catalog_mc
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+source: {
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+  maxEvents:       10          # Number of events to create
+  firstRun:        1           # Run number to use for this file
+  firstEvent:      1           # number of first event in the file
+} # source
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    rns: { module_type: "RandomNumberSaver" }
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    generator: {
+      @table::icarus_genie_BNB # from `genie_icarus_bnb.fcl`
+      
+      EventsPerSpill:  0
+      POTPerSpill:     2.8e12
+      PassEmptySpills: false
+      TopVolume:      "volDetEnclosure"
+      
+    } # generator
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    cosmicgen: {
+      @table::icarus_corsika_cmc  # from `corsika_icarus.fcl`
+  
+      TimeOffset: -103e-6 # seconds
+      SampleTime:  303e-6 # seconds
+      
+    } # cosmicgen
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    radiogen: {
+      @table::radiogen_Ar39_icarus  # from radiological_model_icarus.fcl
+      
+      T0: [ -103e3 ] # nanoseconds
+      T1: [  200e3 ] # nanoseconds
+      
+    } # radiogen
+    
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+  
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  simulate:     [ rns, generator, cosmicgen, radiogen ]
+  
+  outputstream: [ rootoutput ]
+  
+  trigger_paths: [ simulate ]
+  end_paths:     [ outputstream ]
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  
+  rootoutput: {
+    module_type: RootOutput
+    
+    fileName:    "simulation_genie_background_icarus_bnbJan2020_300us_signal_%tc-%p.root"
+    dataTier:    "simulated"
+    
+    compressionLevel: 1
+    
+    # SelectEvents: [ filterLabel ]
+    
+  } # rootoutput
+  
+} # outputs
+
+
+# ------------------------------------------------------------------------------
+#
+# overrides
+#
+
+# none so far

@@ -13,12 +13,9 @@
 # ======================================================================
 
 
-# use cmake 3.12-3.14
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.12...3.18 FATAL_ERROR)
 
 project(icaruscode LANGUAGES CXX)
-
-#project(icaruscode)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -26,17 +23,9 @@ message(STATUS
   "\n-- ===")
 
 # cetbuildtools contains our cmake modules
-SET ( CETBUILDTOOLS_VERSION $ENV{CETBUILDTOOLS_VERSION} )
-IF (NOT CETBUILDTOOLS_VERSION)
-    MESSAGE (FATAL_ERROR "ERROR: setup cetbuildtools to get the cmake modules")
-ENDIF()
+find_package(cetbuildtools REQUIRED)
 
-set(CMAKE_MODULE_PATH
-  $ENV{CANVAS_ROOT_IO_DIR}/Modules
-  $ENV{CANVAS_DIR}/Modules
-  $ENV{CETBUILDTOOLS_DIR}/Modules
-  ${CMAKE_MODULE_PATH}
-  )
+list(APPEND CMAKE_MODULE_PATH $ENV{CANVAS_ROOT_IO_DIR}/Modules $ENV{ART_DIR}/Modules )
 
 include(CetCMakeEnv)
 cet_cmake_env()
@@ -51,7 +40,6 @@ cet_report_compiler_flags()
 
 # these are minimum required versions, not the actual product versions
 find_ups_product( larsoft )
-find_ups_product( cetbuildtools )
 find_ups_product( libwda )
 find_ups_product( postgresql )
 find_ups_product( eigen )

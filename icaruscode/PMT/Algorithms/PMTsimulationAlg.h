@@ -431,6 +431,7 @@ class icarus::opdet::PMTsimulationAlg {
 
     unsigned int pulseSubsamples = 1U; ///< Number of tick subsamples.
 
+    unsigned int ADCbits = 14U; ///< Number of bits of the digitizer.
     ADCcount baseline; //waveform baseline
     ADCcount ampNoise; //amplitude of gaussian noise
     bool useFastElectronicsNoise; ///< Whether to use fast generator for electronics noise.
@@ -473,6 +474,11 @@ class icarus::opdet::PMTsimulationAlg {
 
     std::size_t pretrigSize() const { return pretrigFraction * readoutWindowSize; }
     std::size_t posttrigSize() const { return readoutWindowSize - pretrigSize(); }
+    
+    ADCcount maxADC() const { return ADCcount::castFrom((1 << ADCbits) - 1); }
+
+    std::pair<ADCcount, ADCcount> ADCrange() const
+      { return { ADCcount{ 0 }, maxADC() }; }
 
     /// @}
 
@@ -572,7 +578,7 @@ class icarus::opdet::PMTsimulationAlg {
   double fQE;            ///< PMT quantum efficiency.
   megahertz fSampling;   ///< Wave sampling frequency [MHz].
   std::size_t fNsamples; ///< Samples per waveform.
-
+  
   DiscretePhotoelectronPulse wsp; /// Single photon pulse (sampled).
 
   NoiseAdderFunc_t const fNoiseAdder; ///< Selected electronics noise method.
@@ -734,6 +740,7 @@ class icarus::opdet::PMTsimulationAlg {
    */
   std::vector<optical_tick> FindTriggers(Waveform_t const& wvfm) const;
   
+  
   /**
    * @brief Generate periodic interest points regardless the actual activity.
    * @return a collection of ticks where we pretend interesting activity to be
@@ -756,6 +763,22 @@ class icarus::opdet::PMTsimulationAlg {
 
   /// Returns a random response whether a photon generates a photoelectron.
   bool KicksPhotoelectron() const;
+  
+  /// Returns the ADC range allowed for photoelectron saturation.
+  std::pair<ADCcount, ADCcount> saturationRange() const;
+  
+  /// Applies the configured photoelectron saturation on the `waveform`,
+  /// only if the saturation is cutting into the digitisation range.
+  void ApplySaturation
+    (Waveform_t& waveform, std::pair<ADCcount, ADCcount> const& range) const;
+  
+  /// Applies the configured photoelectron saturation on the `waveform`.
+  void ApplySaturation(Waveform_t& waveform) const;
+  
+  /// Forces `waveform` ADC within the `min` to `max` range (`max` included).
+  static void ClipWaveform(Waveform_t& waveform, ADCcount min, ADCcount max);
+  
+  
 }; // class PMTsimulationAlg
 
 
@@ -812,6 +835,11 @@ class icarus::opdet::PMTsimulationAlgMaker {
       Comment
         ("Duration of a single PMT readout acquisition window [samples]")
       // mandatory
+      };
+    fhicl::Atom<unsigned int> ADCBits {
+      Name("ADCBits"),
+      Comment("number of bits of the Analog-to-Digital Converter"),
+      14U
       };
     fhicl::Atom<float> Baseline {
       Name("Baseline"),
@@ -1036,7 +1064,10 @@ void icarus::opdet::PMTsimulationAlg::printConfiguration
   using namespace util::quantities::electronics_literals;
 
   out
-            << indent << "Baseline:            " << fParams.baseline
+            << indent << "ADC bits:            " << fParams.ADCbits
+      << " (" << fParams.ADCrange().first << " -- " << fParams.ADCrange().second
+      << ")"
+    << '\n' << indent << "Baseline:            " << fParams.baseline
     << '\n' << indent << "ReadoutWindowSize:   " << fParams.readoutWindowSize << " ticks"
     << '\n' << indent << "PreTrigFraction:     " << fParams.pretrigFraction
     << '\n' << indent << "ThresholdADC:        " << fParams.thresholdADC

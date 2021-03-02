@@ -19,7 +19,6 @@ icarus_largeantparameters: {
     StoreTrajectories:        true
     VisualizationEnergyCut:   10.e-3  #depricated, in GeV
     VisualizeNeutrals:        false   #depricated
-    UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
     ModifyProtonCut:          false   #Whether to modify the default proton cut
     NewProtonCut:             0.0     #new ProtonCut value, ModifyProtonCut must be set to set new value
     KeepEMShowerDaughters:    true    #save secondary, tertiary, etc particles in EM showers
@@ -39,6 +38,7 @@ icarus_largeantparameters: {
     CosmogenicXSMNBiasFactor: 1 # Not more than 5-ish cuz of numerical instabilities.
     DisableWireplanes:        false #if set true, charge drift simulation does not run - used for optical sim jobs OR just when you don't wanna drift the e's.
     SkipWireSignalInTPCs:     []     # put here TPC id's which should not receive ionization electrons - used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
+    FillSimEnergyDeposits:    true
     UseModBoxRecomb:          true   # use Modified Box recombination instead of Birks
     # IonAndScintCalculator: "NEST"
 
@@ -65,6 +65,8 @@ icarus_largeantparameters: {
                                   [-60, 3, 0.15],
                                   [  0, 3, 0.15] ] ]
     UseLitePhotons: false
+
+    
 }
 
 

@@ -26,13 +26,14 @@ struct icarus::trigger::details::PMTInfo_t {
   
   using ChannelID_t = raw::Channel_t; ///< Type to represent a channel ID.
   
-  using ADCcount_t = raw::ADC_Count_t; ///< Type to represent threshold.
+  using ADCcount_t = std::string; ///< Type to represent threshold.
   
   
   // --- BEGIN -- Construction -------------------------------------------------
   
   PMTInfo_t() = default; // no trigger
-  PMTInfo_t(ADCcount_t threshold, std::vector<ChannelID_t> activeChannels);
+  PMTInfo_t
+    (ADCcount_t const& threshold, std::vector<ChannelID_t> activeChannels);
   
   // --- END -- Construction ---------------------------------------------------
   
@@ -41,8 +42,8 @@ struct icarus::trigger::details::PMTInfo_t {
   /// @name Access to PMT information
   /// @{
   
-  /// The threshold this PMT data is extracted with.
-  ADCcount_t threshold() const { return fThreshold; }
+  /// The threshold this PMT data is extracted with (tag).
+  ADCcount_t const& threshold() const { return fThreshold; }
   
   /// Returns the list of channels with activity above threshold.
   std::vector<ChannelID_t> const& activeChannels() const
@@ -53,7 +54,7 @@ struct icarus::trigger::details::PMTInfo_t {
   
     private:
   
-  ADCcount_t fThreshold { 0 }; ///< Discrimination threshold.
+  ADCcount_t fThreshold {}; ///< Discrimination threshold tag.
   
   /// Channels whose activity is above threshold.
   std::vector<ChannelID_t> fActiveChannels;
@@ -65,7 +66,7 @@ struct icarus::trigger::details::PMTInfo_t {
 // ---  Inline implementation
 // -----------------------------------------------------------------------------
 icarus::trigger::details::PMTInfo_t::PMTInfo_t
-  (ADCcount_t threshold, std::vector<ChannelID_t> activeChannels)
+  (ADCcount_t const& threshold, std::vector<ChannelID_t> activeChannels)
   : fThreshold(threshold)
   , fActiveChannels(std::move(activeChannels))
 {}

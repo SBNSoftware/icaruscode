@@ -51,6 +51,7 @@
 
 // ROOT libraries
 #include "TEfficiency.h"
+#include "TGraph.h"
 #include "TH1F.h"
 #include "TH1I.h"
 #include "TH2F.h"
@@ -63,6 +64,310 @@
 #include <string>
 #include <memory> // std::make_unique()
 #include <utility> // std::pair<>, std::move()
+#include <cassert>
+
+
+//------------------------------------------------------------------------------
+//---  icarus::trigger::details::TriggerPassCounters
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::create
+  (Threshold_t const& threshold, std::string const& patternName) -> IndexPair_t
+{
+  
+  std::size_t thrIndex = thresholdIndex(threshold);
+  if (thrIndex == NoIndex) thrIndex = registerThreshold(threshold);
+  
+  std::size_t patIndex = patternIndex(patternName);
+  if (patIndex == NoIndex) patIndex = registerPattern(patternName);
+  
+  if (thrIndex >= nThresholds())
+    fCounters.resize(thrIndex + 1U, std::vector<Counter_t>{ nPatterns() });
+  
+  if (patIndex >= nPatterns()) {
+    for (auto& thrCounters: fCounters) thrCounters.resize(patIndex + 1U);
+  }
+  
+  assert(hasThreshold(thrIndex));
+  assert(hasPattern(patIndex));
+  return { thrIndex, patIndex };
+  
+} // icarus::trigger::details::TriggerPassCounters::create()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::nThresholds() const
+  { return fCounters.size(); }
+
+  
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::nPatterns() const
+  { return fCounters.empty()? 0U: fCounters.front().size(); }
+
+  
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::registerThreshold
+  (Threshold_t const& threshold)
+{
+  assert(!hasThreshold(threshold));
+  
+  std::size_t const newIndex = nThresholds();
+  fThresholdIndex[threshold] = newIndex;
+  
+  assert(hasThreshold(threshold));
+  return newIndex;
+} // icarus::trigger::details::TriggerPassCounters::registerThreshold()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::registerPattern
+  (std::string const& name)
+{
+  assert(!hasPattern(name));
+  
+  std::size_t const newIndex = nPatterns();
+  fPatternIndex[name] = newIndex;
+  
+  assert(hasPattern(name));
+  return newIndex;
+} // icarus::trigger::details::TriggerPassCounters::registerPattern()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (Threshold_t const& threshold, std::string const& patternName) const
+  -> Counter_t const&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ threshold };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(Threshold_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::string const& patternName) const
+  -> Counter_t const&
+{
+  IndexPair_t const index { threshold, patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (Threshold_t const& threshold, std::size_t pattern) const
+  -> Counter_t const&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ threshold };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(Threshold_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::size_t pattern) const
+  -> Counter_t const&
+{
+  IndexPair_t const index { threshold, pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (IndexPair_t indices) const -> Counter_t const&
+{
+  if (!hasThreshold(indices.first))
+    throw std::out_of_range{ std::to_string(indices.first) };
+  
+  auto const& thrCounters = fCounters[indices.first];
+  if (indices.second >= thrCounters.size())
+    throw std::out_of_range{ std::to_string(indices.second) };
+  
+  return thrCounters[indices.second];
+} // icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (Threshold_t const& threshold, std::string const& patternName) -> Counter_t&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ threshold };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(Threshold_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::string const& patternName) -> Counter_t&
+{
+  IndexPair_t const index { threshold, patternIndex(patternName) };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ patternName };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, string)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (Threshold_t const& threshold, std::size_t pattern) -> Counter_t&
+{
+  IndexPair_t const index
+    { thresholdIndex(threshold), pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ threshold };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(Threshold_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter
+  (std::size_t threshold, std::size_t pattern) -> Counter_t&
+{
+  IndexPair_t const index { threshold, pattern };
+  if (index.first == NoIndex)
+    throw std::out_of_range{ std::to_string(threshold) };
+  if (index.second == NoIndex)
+    throw std::out_of_range{ std::to_string(pattern) };
+  return counter(index);
+} // icarus::trigger::details::TriggerPassCounters::counter(size_t, size_t)
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t indices)
+  -> Counter_t&
+{
+  if (!hasThreshold(indices.first))
+    throw std::out_of_range{ std::to_string(indices.first) };
+  
+  auto& thrCounters = fCounters[indices.first];
+  if (indices.second >= thrCounters.size())
+    throw std::out_of_range{ std::to_string(indices.second) };
+  
+  return thrCounters[indices.second];
+} // icarus::trigger::details::TriggerPassCounters::counter(IndexPair_t)
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasThreshold
+  (Threshold_t const& threshold) const
+  { return fThresholdIndex.find(threshold) != fThresholdIndex.end(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasThreshold
+  (std::size_t thresholdIndex) const
+  { return thresholdIndex < nThresholds(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasPattern
+  (std::string const& patternName) const
+  { return fPatternIndex.find(patternName) != fPatternIndex.end(); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::details::TriggerPassCounters::hasPattern
+  (std::size_t patternIndex) const
+  { return patternIndex < nPatterns(); }
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::thresholdIndex
+  (Threshold_t const& threshold) const
+{
+  auto const iIndex = fThresholdIndex.find(threshold);
+  return (iIndex == fThresholdIndex.end())? NoIndex: iIndex->second;
+} // icarus::trigger::details::TriggerPassCounters::thresholdIndex()
+
+
+//------------------------------------------------------------------------------
+std::size_t icarus::trigger::details::TriggerPassCounters::patternIndex
+  (std::string const& patternName) const
+{
+  auto const iIndex = fPatternIndex.find(patternName);
+  return (iIndex == fPatternIndex.end())? NoIndex: iIndex->second;
+} // icarus::trigger::details::TriggerPassCounters::patternIndex()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::threshold
+  (std::size_t index) const -> Threshold_t const&
+{
+  // reverse lookup: slow...
+  for (auto const& [ threshold, thrIndex ]: fThresholdIndex)
+    if (thrIndex == index) return threshold;
+  throw std::out_of_range{ std::to_string(index) };
+} // icarus::trigger::details::TriggerPassCounters::threshold()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::details::TriggerPassCounters::patternName
+  (std::size_t index) const -> std::string const&
+{
+  // reverse lookup: slow...
+  for (auto const& [ name, patIndex ]: fPatternIndex)
+    if (patIndex == index) return name;
+  throw std::out_of_range{ std::to_string(index) };
+} // icarus::trigger::details::TriggerPassCounters::patternName()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::details::TriggerPassCounters::dump
+  (std::ostream& out) const
+{
+  out << "Triggers for " << nThresholds() << " thresholds and " << nPatterns()
+    << " patterns:";
+  for (auto const iThr: util::counter(nThresholds())) {
+    
+    assert(hasThreshold(iThr));
+    out << "\n  threshold " << threshold(iThr) << " [#" << iThr << "]:";
+    unsigned int nonEmptyPatterns = 0U;
+    for (auto const iPat: util::counter(nPatterns())) {
+      assert(hasPattern(iPat));
+      auto const& counts = counter(iThr, iPat);
+      if (counts.empty()) continue;
+      out << "\n    " << patternName(iPat) << " [#" << iPat << "]: "
+        << counts.passed() << " / " << counts.total();
+      ++nonEmptyPatterns;
+    } // for patterns
+    if (nonEmptyPatterns == 0) out << " no events";
+    
+  } // for threshold
+  out << "\n";
+} // icarus::trigger::details::TriggerPassCounters::dump()
+
+
+//------------------------------------------------------------------------------
+std::ostream& icarus::trigger::details::operator<<
+  (std::ostream& out, TriggerPassCounters const& counters)
+  { counters.dump(out); return out; }
 
 
 //------------------------------------------------------------------------------
@@ -205,10 +510,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   } // if EventDetailsLogCategory is specified
 
   std::string const discrModuleLabel = config.TriggerGatesTag();
-  for (raw::ADC_Count_t threshold: config.Thresholds()) {
-    fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
-  }
+  for (std::string const& threshold: config.Thresholds())
+    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
+  
 
   if (config.EventTreeName.hasValue()) {
     
@@ -237,9 +541,9 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
 
   {
     mf::LogInfo log(fLogCategory);
-    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
-    for (auto const& [ threshold, dataTag ]: fADCthresholds)
-      log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
+    for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
+      log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
     
   } // local block
   
@@ -323,7 +627,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
     : util::enumerate(fADCthresholds, fThresholdPlots)
   ) {
 
-    auto const& [ threshold, dataTag ] = thrPair;
+    auto const& [ thresholdTag, dataTag ] = thrPair;
 
     //
     // 2.1. read the trigger primitives
@@ -367,9 +671,10 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
 //------------------------------------------------------------------------------
 void icarus::trigger::TriggerEfficiencyPlotsBase::printSummary() const {
   
-  mf::LogInfo(fLogCategory)
-    << nPlottedEvents << "/" << nEvents << " events plotted."
-    ;
+  mf::LogInfo log(fLogCategory);
+  log << nPlottedEvents << "/" << nEvents << " events plotted.";
+  
+  log << "\n" << fPassCounters;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::printSummary()
 
@@ -394,9 +699,9 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
       ;
     
     mf::LogInfo log(fLogCategory);
-    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
-    for (auto const& [ threshold, dataTag ]: fADCthresholds)
-      log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
+    for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
+      log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
     log << "\nBeam gate for plots is " << beamGate.asSimulationRange();
     
   } // local block
@@ -404,13 +709,11 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
   
   fPlotCategories = std::move(categories);
   
-  for (icarus::trigger::ADCCounts_t const threshold
-    : util::get_elements<0U>(fADCthresholds))
+  for (std::string const& thresholdTag: util::get_elements<0U>(fADCthresholds))
   {
     // create a plot sandbox inside `fOutputDir` with a name/prefix `Thr###`
-    auto const thr = threshold.value();
-    icarus::trigger::PlotSandbox thrPlots { fOutputDir,
-      "Thr"s + util::to_string(thr), "(thr: "s + util::to_string(thr) + ")"s };
+    icarus::trigger::PlotSandbox thrPlots
+      { fOutputDir, "Thr"s + thresholdTag, "(thr: "s + thresholdTag + ")"s };
     
     // create a subbox for each plot category
     for (PlotCategory const& category: fPlotCategories) {
@@ -830,6 +1133,47 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillAllEfficiencyPlots(
 
 
 //------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
+{
+  
+  for (auto& thrPlots: fThresholdPlots) deleteEmptyPlots(thrPlots);
+  
+} // icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern
+  (std::string const& patternName) -> std::size_t
+{
+  
+  std::size_t patternIndex = fPassCounters.NoIndex;
+  std::size_t iThr [[maybe_unused]] = 0U;
+  for (std::string const& thresholdTag: util::get_elements<0U>(fADCthresholds))
+  {
+    
+    auto const indices = fPassCounters.create(thresholdTag, patternName);
+    if (patternIndex == fPassCounters.NoIndex) patternIndex = indices.second;
+    else assert(indices.second == patternIndex);
+    
+  } // for thresholds
+  
+  return patternIndex;
+} // icarus::trigger::TriggerEfficiencyPlotsBase::createCountersForPattern()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::registerTriggerResult
+  (std::size_t threshold, std::size_t pattern, bool fired)
+  { fPassCounters(threshold, pattern).add(fired); }
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::TriggerEfficiencyPlotsBase::registerTriggerResult
+  (std::size_t threshold, std::size_t pattern, TriggerInfo_t const& triggerInfo)
+  { registerTriggerResult(threshold, pattern, triggerInfo.fired()); }
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::TriggerEfficiencyPlotsBase::makeGatePack
   (art::Event const* event /* = nullptr */) const -> GatePack_t
 {
@@ -936,6 +1280,81 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
   return channelList;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels()
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots
+  (PlotSandbox& plots) const
+{
+  TDirectory* baseDir = plots.getDirectory();
+  if (!baseDir) return true; // no content, nothing to do
+  
+  // our plots first
+  unsigned int nEntries = 0U, nDirectories = 0U, nDeleted = 0U;
+  for (TObject* obj: *(baseDir->GetList())) {
+    
+    // we do not deal with directories (except for subboxes below)
+    if (dynamic_cast<TDirectory*>(obj)) {
+      ++nDirectories;
+      continue;
+    }
+    
+    ++nEntries;
+    
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    if (auto hist = dynamic_cast<TH1 const*>(obj)) {
+      if (hist->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto graph = dynamic_cast<TGraph const*>(obj)) {
+      if (graph->GetN() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto* eff = dynamic_cast<TEfficiency const*>(obj)) {
+      auto const* hist = eff->GetTotalHistogram();
+      if (hist && hist->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else if (auto* tree = dynamic_cast<TTree const*>(obj)) {
+      if (tree->GetEntries() > 0) continue;
+    }
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // add here more supported object types
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    else continue; // we don't delete unknown objects
+    
+    mf::LogTrace(fLogCategory)
+      << "Deleting empty " << obj->IsA()->GetName() << "['" << obj->GetName()
+      << "'] from " << plots.name();
+    delete obj;
+    ++nDeleted;
+    
+  } // for objects in directory
+  
+  // if we have found no more directories than the ones expected
+  // from the subboxes and all the other entries have been deleted,
+  // this box might be empty
+  
+  bool empty
+    = (nDeleted == nEntries) && (nDirectories <= plots.nSubSandboxes());
+  
+  // we can't delete the sandboxes while iterating on them...
+  std::vector<std::string> toBeDeleted;
+  for (PlotSandbox& subbox: plots.subSandboxes()) {
+    if (!deleteEmptyPlots(subbox)) continue;
+    toBeDeleted.push_back(subbox.name());
+    mf::LogTrace(fLogCategory)
+      << "Scheduling empty " << plots.name() << "/" << toBeDeleted.back() << " for deletion";
+  } // for subboxes
+  if (toBeDeleted.size() != plots.nSubSandboxes()) empty = false;
+  for (std::string const& subName: toBeDeleted) {
+    if (!plots.deleteSubSandbox(subName)) continue;
+    mf::LogTrace(fLogCategory)
+      << "Deleted box " << plots.name() << "/" << subName;
+  } // for
+  
+  return empty;
+} // icarus::trigger::TriggerEfficiencyPlotsBase::deleteEmptyPlots()
 
 
 //------------------------------------------------------------------------------
