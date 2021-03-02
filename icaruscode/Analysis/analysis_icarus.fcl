@@ -10,6 +10,8 @@ icarus_BasicHitAnalysis:
   TrackProducerLabel:      ["trackkalmanhit"]
   WireProducerLabel:       ["caldata"]
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+
+  UseTrackHitsOnly: false
 }
 
 icarus_WireAnalysis:
@@ -31,6 +33,17 @@ icarus_HitEfficiencyAnalysis:
 {
   module_type:                    HitEfficiencyAna
   HitEfficiencyHistogramToolList: [ @local::TrackHitEfficiencyAnalysisTool ]
+}
+
+icarus_SimpleTrackAndPFParticleAnalysis: {
+  module_type: "SimpleTrackAndPFParticleAna"
+  PFParticleModuleLabel: "pandoraGaus"
+  TrackModuleLabel: "pandoraTrackGaus"
+  UseFV: true                            # Consider tracks with PFP Vertices in fiducial volume using below tolerances
+  TolUsDs: 50                            # Upstream/downstream tolerance for vertex [cm]
+  TolAnode: 5                            # Anode tolerance for vertex [cm]
+  TolTopBot: 5                           # Top/Bottom tolerance for vertex [cm]
+  TolCathode: 1.5                        # Cathode tolerance for vertex [cm]
 }
 
 END_PROLOG

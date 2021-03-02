@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+
+icarus_SimpleScanFilter: {
+  module_type: "SimpleScanFilter"
+  PFParticleModuleLabel: "pandoraGaus"
+  TrackModuleLabel: "pandoraTrackGaus"
+  CompleteLoop: false                    # Make debug plots and complete the loop to find maxTrackLength
+  TolUsDs: 50                            # Upstream/downstream tolerance for vertex [cm]
+  TolAnode: 5                            # Anode tolerance for vertex [cm]
+  TolTopBot: 5                           # Top/Bottom tolerance for vertex [cm]
+  TolCathode: 1                          # Cathode tolerance for vertex [cm]
+}
+
+END_PROLOG

@@ -31,6 +31,8 @@
 #include "correctionservices_icarus.fcl"
 #include "scecorrections.fcl"
 
+#include "SimpleScanFilter.fcl"
+
 BEGIN_PROLOG
 
 icarus_reco_services:
@@ -220,8 +222,8 @@ icarus_reco_producers:
 
 icarus_reco_filters:
 {
+  simplescan:			@local::icarus_SimpleScanFilter
 }
-
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 

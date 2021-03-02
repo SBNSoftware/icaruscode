@@ -16,6 +16,8 @@ art_make(
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
+			${ART_ROOT_IO_TFILE_SUPPORT}
+                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
                         ${ROOT_CORE}
                         art_Persistency_Common 
                         art_Persistency_Provenance 
