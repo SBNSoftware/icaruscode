@@ -40,6 +40,7 @@ simple_plugin(PMTWaveformBaselines "module"
   ${ART_ROOT_IO_TFILE_SUPPORT}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${MF_MESSAGELOGGER}
+  ROOT::Hist
   ROOT::Core
   )
 
@@ -53,6 +54,7 @@ simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
   ${ART_ROOT_IO_TFILE_SUPPORT}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${MF_MESSAGELOGGER}
+  ROOT::Hist
   ROOT::Core
   )
 
