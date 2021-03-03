@@ -18,6 +18,7 @@
 
 // framework libraries
 #include "art_root_io/TFileService.h"
+#include "art_root_io/TFileDirectory.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
@@ -33,6 +34,7 @@
 // ROOT libraries
 #include "TH2F.h"
 #include "TGraph.h"
+#include "TProfile.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -40,6 +42,7 @@
 #include <iterator> // std::distance()
 #include <memory> // std::make_unique(), std::allocator
 #include <string>
+#include <cmath> // std::ceil()
 #include <cassert>
 
 //------------------------------------------------------------------------------
@@ -105,6 +108,8 @@ namespace icarus { class PMTWaveformBaselines; }
  *   configuration;
  * * `PlotBaselines` (flag, default: `true`): whether to produce distributions
  *   of the extracted baselines.
+ * * `BaselineTimeAverage` (real number, default: `600.0`): binning of the
+ *   baseline profile vs. time, in seconds. Requires `PlotBaselines` to be set.
  * 
  */
 class icarus::PMTWaveformBaselines: public art::EDProducer {
@@ -134,6 +139,13 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
       true
       };
     
+    fhicl::Atom<double> BaselineTimeAverage {
+      Name("BaselineTimeAverage"),
+      Comment("binning of the baseline profile vs. time [s]"),
+      [this](){ return PlotBaselines(); }, // enabled if `PlotBaselines` is set
+      600.0
+      };
+    
   }; // struct Config
   
   using Parameters = art::EDProducer::Table<Config>;
@@ -141,13 +153,8 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
   
   
   // --- BEGIN Constructors ----------------------------------------------------
-  explicit PMTWaveformBaselines(Parameters const& config);
   
-  // Plugins should not be copied or assigned.
-  PMTWaveformBaselines(PMTWaveformBaselines const&) = delete;
-  PMTWaveformBaselines(PMTWaveformBaselines&&) = delete;
-  PMTWaveformBaselines& operator=(PMTWaveformBaselines const&) = delete;
-  PMTWaveformBaselines& operator=(PMTWaveformBaselines&&) = delete;
+  explicit PMTWaveformBaselines(Parameters const& config);
   
   // --- END Constructors ------------------------------------------------------
   
@@ -170,7 +177,11 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
   // --- BEGIN Configuration variables -----------------------------------------
   
   art::InputTag const fOpDetWaveformTag; ///< Input optical waveform tag.
+  
   bool fPlotBaselines; ///< Whether to produce plots.
+  
+  /// Width of baseline time profile binning [s]
+  double const fBaselineTimeAverage { 0.0 };
   
   std::string const fLogCategory; ///< Category name for the console output stream.
   
@@ -240,6 +251,7 @@ icarus::PMTWaveformBaselines::PMTWaveformBaselines
   // configuration
   , fOpDetWaveformTag(config().OpticalWaveforms())
   , fPlotBaselines(config().PlotBaselines())
+  , fBaselineTimeAverage(config().BaselineTimeAverage())
   , fLogCategory(config().OutputCategory())
 {
   //
@@ -400,7 +412,11 @@ void icarus::PMTWaveformBaselines::setupPlots() {
 //------------------------------------------------------------------------------
 void icarus::PMTWaveformBaselines::buildBaselineGraphs() {
   
-  auto const& tfs = *(art::ServiceHandle<art::TFileService>());
+  auto& tfs = *(art::ServiceHandle<art::TFileService>());
+  
+  art::TFileDirectory graphDir = tfs.mkdir("graphs", "Baseline vs. time");
+  art::TFileDirectory profileDir
+    = tfs.mkdir("profiles", "Baseline profiles vs. time");
   
   for (auto const channel: util::counter(fBaselinesVsTime.size())) {
     
@@ -411,7 +427,8 @@ void icarus::PMTWaveformBaselines::buildBaselineGraphs() {
     // but that does not really happen nor it mattered if it happened)
     std::sort(timeAndBaselines.begin(), timeAndBaselines.end());
     
-    auto* const graph = tfs.makeAndRegister<TGraph>(
+    // graph, one point per event
+    auto* const graph = graphDir.makeAndRegister<TGraph>(
       "BaselineCh" + std::to_string(channel),
       "PMT channel #" + std::to_string(channel) + ": baseline vs. run time",
       timeAndBaselines.size()
@@ -421,10 +438,35 @@ void icarus::PMTWaveformBaselines::buildBaselineGraphs() {
     graph->GetXaxis()->SetTitle("event time");
     graph->GetYaxis()->SetTitle("baseline  [ ADC ]");
     
+    
+    // profile, one point every 10 minutes (or best offer)
+    double const startTime = timeAndBaselines.front().first;
+    double const totalTime = timeAndBaselines.back().first - startTime;
+    auto const nBins = std::max(1U,
+      static_cast<unsigned int>(std::ceil(totalTime / fBaselineTimeAverage))
+      );
+    double const endTime = startTime + nBins * fBaselineTimeAverage;
+    
+    auto* const profile = profileDir.make<TProfile>(
+      ("BaselineCh" + std::to_string(channel) + "profile").c_str(),
+      ("PMT channel #" + std::to_string(channel) + ": baseline vs. run time")
+        .c_str(),
+      nBins, startTime, endTime
+      );
+    assert(profile->GetXaxis());
+    assert(profile->GetYaxis());
+    profile->GetXaxis()->SetTitle(
+      ("event time  [ / " + std::to_string(fBaselineTimeAverage) + " s ]")
+      .c_str()
+      );
+    profile->GetYaxis()->SetTitle("average baseline  [ ADC ]");
+    
     for (auto const& [ i, data ]: util::enumerate(timeAndBaselines)) {
       auto const [ time, baseline ] = data;
       graph->SetPoint(i, time, baseline);
+      profile->Fill(time, baseline);
     } // for
+    
   } // for
   
 } // icarus::PMTWaveformBaselines::buildBaselineGraphs()
