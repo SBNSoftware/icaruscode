@@ -32,6 +32,7 @@
 
 // ROOT libraries
 #include "TH2F.h"
+#include "TGraph.h"
 
 // C/C++ standard libraries
 #include <vector>
@@ -158,6 +159,9 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
   /// Creates the data products.
   virtual void produce(art::Event& event) override;
   
+  /// Remove empty plots.
+  virtual void endJob() override;
+  
   // --- END Framework hooks ---------------------------------------------------
   
   
@@ -182,11 +186,18 @@ class icarus::PMTWaveformBaselines: public art::EDProducer {
   
   // --- END Algorithms --------------------------------------------------------
   
+  std::size_t fNPlotChannels = 0U; ///< Number of plotted channels
   TH2* fHBaselines = nullptr; ///< All baselines, per channel.
+  
+  /// For each channel, all event times and their baselines.
+  std::vector<std::vector<std::pair<double, double>>> fBaselinesVsTime;
   
   
   /// Creates all the plots to be filled by the module.
   void setupPlots();
+  
+  /// Removes the empty plots.
+  void buildBaselineGraphs();
   
   /// Extracts a baseline as median from a single waveform.
   icarus::WaveformBaseline baselineFromMedian
@@ -293,7 +304,8 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
   baselines.reserve(waveforms.size());
   
   std::vector<lar::util::StatCollector<double>> averages;
-  if (fHBaselines) averages.resize(fHBaselines->GetNbinsX());
+  if (fHBaselines || !fBaselinesVsTime.empty())
+    averages.resize(fNPlotChannels);
   
   art::Assns<icarus::WaveformBaseline, raw::OpDetWaveform> baselineToWaveforms;
   
@@ -320,8 +332,20 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
   //
   if (!averages.empty()) {
     
-    for (auto const& [ channel, stat ]: util::enumerate(averages))
-      if (stat.N() > 0) fHBaselines->Fill(double(channel), stat.Average());
+    double const eventTime = static_cast<double>(event.time().timeHigh())
+      + static_cast<double>(event.time().timeHigh()) * 1e-9;
+    
+    for (auto const& [ channel, stat ]: util::enumerate(averages)) {
+      if (stat.N() == 0) continue;
+      
+      double const aveBaseline = stat.Average();
+      
+      fHBaselines->Fill(double(channel), aveBaseline);
+      
+      if (channel < fBaselinesVsTime.size())
+        fBaselinesVsTime[channel].emplace_back(eventTime, aveBaseline);
+      
+    } // for baselines
     
   } // if plots
   
@@ -342,21 +366,68 @@ void icarus::PMTWaveformBaselines::produce(art::Event& event) {
 
 
 //------------------------------------------------------------------------------
+void icarus::PMTWaveformBaselines::endJob() {
+  
+  if (fPlotBaselines) buildBaselineGraphs();
+  
+} // icarus::PMTWaveformBaselines::endJob()
+
+
+//------------------------------------------------------------------------------
 void icarus::PMTWaveformBaselines::setupPlots() {
   
   auto const& tfs = *(art::ServiceHandle<art::TFileService>());
   auto const& geom = *(lar::providerFrom<geo::Geometry const>());
   
-  unsigned int const nChannels = geom.NOpChannels();
+  fNPlotChannels = geom.NOpChannels();
   
   fHBaselines = tfs.make<TH2F>(
     "Baselines",
     "PMT baseline;channel;baseline per channel [ / 8 ADC ]",
-    nChannels, 0.0, double(nChannels),
+    fNPlotChannels, 0.0, double(fNPlotChannels),
     256, 13312.0, 15360.0
     );
   
+  // these are graphs, and it is more convenient to carry around their data
+  // in a vector than carrying around the graphs themselves;
+  // `buildBaselineGraphs()` will turn that data into graph at end of the job;
+  // here we just declare which channels we are going to plot.
+  fBaselinesVsTime.resize(fNPlotChannels);
+  
 } // icarus::PMTWaveformBaselines::setupPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::PMTWaveformBaselines::buildBaselineGraphs() {
+  
+  auto const& tfs = *(art::ServiceHandle<art::TFileService>());
+  
+  for (auto const channel: util::counter(fBaselinesVsTime.size())) {
+    
+    auto& timeAndBaselines = fBaselinesVsTime[channel];
+    if (timeAndBaselines.empty()) continue;
+    
+    // sort by time (entries with the same time would be sorted by baseline,
+    // but that does not really happen nor it mattered if it happened)
+    std::sort(timeAndBaselines.begin(), timeAndBaselines.end());
+    
+    auto* const graph = tfs.makeAndRegister<TGraph>(
+      "BaselineCh" + std::to_string(channel),
+      "PMT channel #" + std::to_string(channel) + ": baseline vs. run time",
+      timeAndBaselines.size()
+      );
+    assert(graph->GetXaxis());
+    assert(graph->GetYaxis());
+    graph->GetXaxis()->SetTitle("event time");
+    graph->GetYaxis()->SetTitle("baseline  [ ADC ]");
+    
+    for (auto const& [ i, data ]: util::enumerate(timeAndBaselines)) {
+      auto const [ time, baseline ] = data;
+      graph->SetPoint(i, time, baseline);
+    } // for
+  } // for
+  
+} // icarus::PMTWaveformBaselines::buildBaselineGraphs()
 
 
 //------------------------------------------------------------------------------
