@@ -71,6 +71,7 @@ private:
   std::string m_channel_dbase;
   bool m_filter_noise;
   fhicl::ParameterSet m_waveform_config;
+  size_t m_reference_digitizer_index;
 
   int m_run;
   int m_event;
@@ -87,7 +88,7 @@ private:
   std::vector<float> *m_amplitude = NULL;
   std::vector<float> *m_integral = NULL;
   std::vector<float> *m_total_charge = NULL;
-  std::vector<int> *m_crate_id = NULL;
+  std::vector<int>   *m_crate_id = NULL;
   std::vector<float> *m_fragment_id = NULL;
   std::vector<float> *m_fragment_timestamp = NULL;
   std::vector<float> *m_fragment_nseconds = NULL;
@@ -124,11 +125,17 @@ pmtcalo::PMTCalibration::PMTCalibration(fhicl::ParameterSet const& pset)
    m_data_label = pset.get<art::InputTag>("InputModule", "daqPMT");
    m_filter_noise = pset.get<bool>("FilterNoise", false);
    m_waveform_config = pset.get<fhicl::ParameterSet>("WaveformAnalysis");
+   m_reference_digitizer_index = pset.get<size_t>("ReferenceDigitizer");
 
    myWaveformAna = new Waveform(m_waveform_config);
 
    // Configure the channel mapping services
    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+
+   if( m_reference_digitizer_index < 0 || m_reference_digitizer_index >= 3 ){
+    std::cout << "Wrong digitizer index! digitizer index refers to the position of a digitzer in a VME crate. Range is from [0-2]" << std::endl;
+    throw;
+   }
 
 }
 
@@ -357,7 +364,7 @@ void pmtcalo::PMTCalibration::analyze(art::Event const& event)
           const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fChannelMap->getChannelIDPairVec(fragment_id);
           
           // Get a new start time when we're looking to fragments at the beginning of each vme crate
-          if( fragment_id % 3 == 0 ){
+          if( fragment_id % 3 == m_reference_digitizer_index ){
 
             // create the waveoform and pre-allocate the space for the sample
             std::vector<uint16_t> wvfm(nSamplesPerChannel);
