@@ -10,6 +10,8 @@
 #include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 
+#include "BernCRTTranslator.hh"
+
 //#include "art/Framework/Services/Optional/TFileService.h"
 #include "art_root_io/TFileService.h"
 #include "TH1F.h"
@@ -37,9 +39,7 @@ public:
   
 
 private:
-  void analyze_fragment(artdaq::Fragment & frag);
-  
-  TTree * events;
+  TTree * hits;
 
 //data payload
   uint8_t mac5; //last 8 bits of FEB mac5 address
@@ -58,12 +58,16 @@ private:
   uint64_t  last_poll_start;
   uint64_t  last_poll_end;
   int32_t   system_clock_deviation;
-  uint32_t  feb_events_per_poll;
-  uint32_t  feb_event_number;
+  uint32_t  feb_hits_in_poll;
+  uint32_t  feb_hit_number;
 
 //information from fragment header
   uint32_t  sequence_id;
   uint64_t  fragment_timestamp;
+
+  uint64_t  last_accepted_timestamp;
+  uint16_t  lost_hits;
+  uint16_t  hits_in_fragment;
 };
 
 //Define the constructor
@@ -73,101 +77,76 @@ sbndaq::BernCRTAna::BernCRTAna(fhicl::ParameterSet const & pset)
 
   art::ServiceHandle<art::TFileService> tfs; //pointer to a file named tfs
 
-  events = tfs->make<TTree>("events", "FEB events");
+  hits = tfs->make<TTree>("hits", "FEB hits");
 
-//event data
-  events->Branch("mac5",        &mac5,          "mac5/b");
-  events->Branch("flags",       &flags,         "flags/s");
-  events->Branch("lostcpu",     &lostcpu,       "lostcpu/s");
-  events->Branch("lostfpga",    &lostfpga,      "lostfpga/s");
-  events->Branch("ts0",         &ts0,           "ts0/i");
-  events->Branch("ts1",         &ts1,           "ts1/i");
-  events->Branch("adc",         &adc,           "adc[32]/s");
-  events->Branch("coinc",       &coinc,         "coinc/i");
+  hits->Branch("mac5",        &mac5,          "mac5/b");
+  hits->Branch("flags",       &flags,         "flags/s");
+  hits->Branch("lostcpu",     &lostcpu,       "lostcpu/s");
+  hits->Branch("lostfpga",    &lostfpga,      "lostfpga/s");
+  hits->Branch("ts0",         &ts0,           "ts0/i");
+  hits->Branch("ts1",         &ts1,           "ts1/i");
+  hits->Branch("adc",         &adc,           "adc[32]/s");
+  hits->Branch("coinc",       &coinc,         "coinc/i");
 
-//metadata
-  events->Branch("run_start_time",            &run_start_time,              "run_start_time/l");
-  events->Branch("this_poll_start",           &this_poll_start,             "this_poll_start/l");
-  events->Branch("this_poll_end",             &this_poll_end,               "this_poll_end/l");
-  events->Branch("last_poll_start",           &last_poll_start,             "last_poll_start/l");
-  events->Branch("last_poll_end",             &last_poll_end,               "last_poll_end/l");
-  events->Branch("system_clock_deviation",    &system_clock_deviation,      "system_clock_deviation/I");
-  events->Branch("feb_events_per_poll",       &feb_events_per_poll,         "feb_events_per_poll/i");
-  events->Branch("feb_event_number",          &feb_event_number,            "feb_event_number/i");
+  hits->Branch("run_start_time",            &run_start_time,              "run_start_time/l");
+  hits->Branch("this_poll_start",           &this_poll_start,             "this_poll_start/l");
+  hits->Branch("this_poll_end",             &this_poll_end,               "this_poll_end/l");
+  hits->Branch("last_poll_start",           &last_poll_start,             "last_poll_start/l");
+  hits->Branch("last_poll_end",             &last_poll_end,               "last_poll_end/l");
+  hits->Branch("system_clock_deviation",    &system_clock_deviation,      "system_clock_deviation/I");
+  hits->Branch("feb_hits_in_poll",          &feb_hits_in_poll,            "feb_hits_in_poll/i");
+  hits->Branch("feb_hit_number",            &feb_hit_number,              "feb_hit_number/i");
 
-  events->Branch("sequence_id",               &sequence_id,                 "sequence_id/i");
-  events->Branch("fragment_timestamp",        &fragment_timestamp,          "fragment_timestamp/l");
+  hits->Branch("sequence_id",               &sequence_id,                 "sequence_id/i");
+  hits->Branch("fragment_timestamp",        &fragment_timestamp,          "fragment_timestamp/l");
+
+  hits->Branch("last_accepted_timestamp",   &last_accepted_timestamp,      "last_accepted_timestamp/l");
+  hits->Branch("lost_hits",                 &lost_hits,                    "lost_hits/s");
+  hits->Branch("hits_in_fragment",          &hits_in_fragment,             "hits_in_fragment/s");
+
 }
 
 sbndaq::BernCRTAna::~BernCRTAna()
 {
 }
 
-void sbndaq::BernCRTAna::analyze_fragment(artdaq::Fragment & frag) {
+void sbndaq::BernCRTAna::analyze(art::Event const & evt) {
 
-  BernCRTFragment bern_fragment(frag);
+  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
 
-  fragment_timestamp        = frag.timestamp();
-  sequence_id               = frag.sequenceID();
+  for(auto & hit : hit_vector) {
+    TLOG(TLVL_INFO)<<hit;
 
-  //event data
-  BernCRTEvent const* bevt = bern_fragment.eventdata();
+    fragment_timestamp        = hit.timestamp;
+    sequence_id               = hit.sequence_id;
 
-//  TLOG(TLVL_INFO)<<*bevt;
+    mac5     = hit.mac5;
+    flags    = hit.flags;
+    lostcpu  = hit.lostcpu;
+    lostfpga = hit.lostfpga;
+    ts0      = hit.ts0;
+    ts1      = hit.ts1;
+    coinc    = hit.coinc;
 
-  mac5     = bevt->MAC5();
-  flags    = bevt->flags;
-  lostcpu  = bevt->lostcpu;
-  lostfpga = bevt->lostfpga;
-  ts0      = bevt->Time_TS0();
-  ts1      = bevt->Time_TS1();
-  coinc    = bevt->coinc;
+    for(int ch=0; ch<32; ch++) adc[ch] = hit.adc[ch];
 
-  for(int ch=0; ch<32; ch++) adc[ch] = bevt->ADC(ch);
+    run_start_time            = hit.run_start_time;
+    this_poll_start           = hit.this_poll_start;
+    this_poll_end             = hit.this_poll_end;
+    last_poll_start           = hit.last_poll_start;
+    last_poll_end             = hit.last_poll_end;
+    system_clock_deviation    = hit.system_clock_deviation;
+    feb_hits_in_poll          = hit.hits_in_poll;
+    feb_hit_number            = hit.feb_hit_number; 
 
-  //metadata
-  const BernCRTFragmentMetadata* md = bern_fragment.metadata();
-//  TLOG(TLVL_INFO)<<*md;
+    last_accepted_timestamp   = hit.last_accepted_timestamp;
+    lost_hits                 = hit.lost_hits;
+    hits_in_fragment          = hit.hits_in_fragment;
 
-  run_start_time            = md->run_start_time();
-  this_poll_start           = md->this_poll_start();
-  this_poll_end             = md->this_poll_end();
-  last_poll_start           = md->last_poll_start();
-  last_poll_end             = md->last_poll_end();
-  system_clock_deviation    = md->system_clock_deviation();
-  feb_events_per_poll       = md->feb_events_per_poll();
-  feb_event_number          = md->feb_event_number();
-
-  events->Fill();
-}
-
-
-void sbndaq::BernCRTAna::analyze(art::Event const & evt)
-{
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
-  for (auto handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-    
-    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
-      //Container fragment
-      for (auto cont : *handle) {
-        artdaq::ContainerFragment contf(cont);
-        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
-          continue;
-        for (size_t ii = 0; ii < contf.block_count(); ++ii)
-          analyze_fragment(*contf[ii].get());
-      }
-    }
-    else {
-      //normal fragment
-      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
-      for (auto frag : *handle) 
-        analyze_fragment(frag);
-    }
+    hits->Fill();
   }
 } //analyze
+
 
 DEFINE_ART_MODULE(sbndaq::BernCRTAna)
 
