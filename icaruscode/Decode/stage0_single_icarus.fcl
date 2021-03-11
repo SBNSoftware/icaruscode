@@ -10,3 +10,13 @@ outputs.out1.dataTier: "reconstructed"
 # Drop the artdaq format files on output
 outputs.rootout.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
 
+# Add a few temporary overrides that will either be dropped or made default in the future. 
+#physics.producers.daqTPC.DecoderTool.DiagnosticOutput:             true  # This turns on lots of diagnostic messages... LOTS
+
+# This causes 1D deconvolution to output full waveforms
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0: @local::icarus_noproifinder_0
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1: @local::icarus_noproifinder_1
+physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2: @local::icarus_noproifinder_2
+
+physics.producers.gaushit.CalDataModuleLabel:                      "roifinder" #decon2droi:gauss" #"roifinder"
+

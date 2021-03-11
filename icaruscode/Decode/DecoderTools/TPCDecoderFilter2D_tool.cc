@@ -138,48 +138,48 @@ public:
 
 private:
 
-    uint32_t                                    fFragment_id_offset;     //< Allow offset for id
-    float                                       fSigmaForTruncation;     //< Selection cut for truncated rms calculation
-    size_t                                      fCoherentNoiseGrouping;  //< # channels in common for coherent noise
-    std::vector<size_t>                         fStructuringElement;     //< Structuring element for morphological filter
-    size_t                                      fMorphWindow;            //< Window for filter
-    std::vector<float>                          fThreshold;              //< Threshold to apply for saving signal
-    bool                                        fDiagnosticOutput;       //< If true will spew endless messages to output
-      
-    std::vector<char>                           fFilterModeVec;          //< Allowed modes for the filter
+    uint32_t                                       fFragment_id_offset;     //< Allow offset for id
+    float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
+    size_t                                         fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    std::vector<size_t>                            fStructuringElement;     //< Structuring element for morphological filter
+    size_t                                         fMorphWindow;            //< Window for filter
+    std::vector<float>                             fThreshold;              //< Threshold to apply for saving signal
+    bool                                           fDiagnosticOutput;       //< If true will spew endless messages to output
+         
+    std::vector<char>                              fFilterModeVec;          //< Allowed modes for the filter
 
     using FragmentIDPair = std::pair<unsigned int, unsigned int>;
     using FragmentIDVec  = std::vector<FragmentIDPair>;
     using FragmentIDMap  = std::map<unsigned int, unsigned int>;
 
-    FragmentIDMap                               fFragmentIDMap;
+    FragmentIDMap                                  fFragmentIDMap;
 
     // Allocate containers for noise processing
-    icarus_signal_processing::VectorInt         fChannelIDVec;
-    icarus_signal_processing::ArrayBool         fSelectVals;
-    icarus_signal_processing::ArrayBool         fROIVals;
-    icarus_signal_processing::ArrayFloat        fRawWaveforms;
-    icarus_signal_processing::ArrayFloat        fPedCorWaveforms;
-    icarus_signal_processing::ArrayFloat        fIntrinsicRMS;
-    icarus_signal_processing::ArrayFloat        fCorrectedMedians;
-    icarus_signal_processing::ArrayFloat        fWaveLessCoherent;
-    icarus_signal_processing::ArrayFloat        fMorphedWaveforms;
-      
-    icarus_signal_processing::VectorFloat       fPedestalVals;
-    icarus_signal_processing::VectorFloat       fFullRMSVals;
-    icarus_signal_processing::VectorFloat       fTruncRMSVals;
-    icarus_signal_processing::VectorInt         fNumTruncBins;
-    icarus_signal_processing::VectorInt         fRangeBins;
-
-    icarus_signal_processing::VectorFloat       fThresholdVec;
-
-    std::vector<unsigned int>                   fPlaneVec;
-    
-    const geo::Geometry*                        fGeometry;              //< pointer to the Geometry service
-    const icarusDB::IICARUSChannelMap*          fChannelMap;
+    icarus_signal_processing::VectorInt            fChannelIDVec;
+    icarus_signal_processing::ArrayBool            fSelectVals;
+    icarus_signal_processing::ArrayBool            fROIVals;
+    icarus_signal_processing::ArrayFloat           fRawWaveforms;
+    icarus_signal_processing::ArrayFloat           fPedCorWaveforms;
+    icarus_signal_processing::ArrayFloat           fIntrinsicRMS;
+    icarus_signal_processing::ArrayFloat           fCorrectedMedians;
+    icarus_signal_processing::ArrayFloat           fWaveLessCoherent;
+    icarus_signal_processing::ArrayFloat           fMorphedWaveforms;
+         
+    icarus_signal_processing::VectorFloat          fPedestalVals;
+    icarus_signal_processing::VectorFloat          fFullRMSVals;
+    icarus_signal_processing::VectorFloat          fTruncRMSVals;
+    icarus_signal_processing::VectorInt            fNumTruncBins;
+    icarus_signal_processing::VectorInt            fRangeBins;
+   
+    icarus_signal_processing::VectorFloat          fThresholdVec;
+   
+    std::vector<unsigned int>                      fPlaneVec;
+       
+    const geo::Geometry*                           fGeometry;              //< pointer to the Geometry service
+    const icarusDB::IICARUSChannelMap*             fChannelMap;
 
     // Keep track of the FFT 
-    std::unique_ptr<icarus_signal_processing::IFFTFilterFunction> fFFTFilter; ///< Object to handle thread safe FFT
+    icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
 
 };
 
@@ -238,8 +238,11 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
     std::vector<std::pair<double,double>> windowSigma  = {{1.5,20.}, {1.5,20.}, {2.0,20.}};
     std::vector<std::pair<double,double>> windowCutoff = {{8.,800.}, {8.,800.}, {3.0,800.}};
 
-//    fFFTFilter = std::make_unique<icarus_signal_processing::HighPassFFTFilter>(highPassSigma, highPassCutoff);
-    fFFTFilter = std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma, windowCutoff);
+
+    for(int plane = 0; plane < 3; plane++)
+    {
+        fFFTFilterFunctionVec.emplace_back(std::make_unique<icarus_signal_processing::WindowFFTFilter>(windowSigma[plane], windowCutoff[plane]));
+    }
 
     return;
 }
@@ -411,7 +414,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                                                        fRangeBins[channelOnBoard]);
 
             // Convolve with a filter function
-            (*fFFTFilter)(pedCorDataVec, plane);
+            (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
 
             if (fDiagnosticOutput)
             {

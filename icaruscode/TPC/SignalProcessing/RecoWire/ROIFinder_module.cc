@@ -311,7 +311,8 @@ void  ROIFinder::processPlane(size_t                      idx,
 
         for(size_t idx = 0; idx < baseVec.size(); idx++)
         {
-            if (std::abs(baseVec[idx]) > threshold) selVals[idx] = true;
+//            if (std::abs(baseVec[idx]) > threshold) selVals[idx] = true;
+            if (baseVec[idx] > threshold) selVals[idx] = true;
         }
 
         // Check to see if we should save the baseVec
@@ -336,6 +337,8 @@ void  ROIFinder::processPlane(size_t                      idx,
     using CandidateROI    = std::pair<size_t, size_t>;
     using CandidateROIVec = std::vector<CandidateROI>;
 
+    size_t leadTrail(1);
+
     for(size_t waveIdx = 0; waveIdx < dataArray.size(); waveIdx++)
     {
         // Set up an object... 
@@ -348,11 +351,11 @@ void  ROIFinder::processPlane(size_t                      idx,
         {
             if (selVals[idx])
             {
-                Size_t startTick = idx > 4 ? idx -5 : 0;
+                Size_t startTick = idx >= leadTrail ? idx - leadTrail : 0;
 
                 while(idx < selVals.size() && selVals[idx]) idx++;
 
-                size_t stopTick  = idx < selVals.size() - 5 ? idx + 5 : selVals.size();
+                size_t stopTick  = idx < selVals.size() - leadTrail ? idx + leadTrail : selVals.size();
 
                 candidateROIVec.emplace_back(startTick, stopTick);
             }
@@ -410,11 +413,15 @@ void  ROIFinder::processPlane(size_t                      idx,
         
             // Now we do the baseline determination and correct the ROI
             // For now we are going to reset to the minimum element
-//            icarus_signal_processing::VectorFloat::iterator minItr = std::min_element(holder.begin(),holder.end());
+            // Get slope/offset from first to last ticks
+            float dADC   = (holder.back() - holder.front()) / float(holder.size());
+            float offset = holder.front();
 
-//            float base = *minItr;
-        
-//            std::transform(holder.begin(),holder.end(),holder.begin(),[base](auto& adcVal){return adcVal - base;});
+            for(auto& adcVal : holder)
+            {
+                adcVal -= offset;
+                offset += dADC;
+            }
 
             // add the range into ROIVec
             ROIVec.add_range(candROI.first, std::move(holder));

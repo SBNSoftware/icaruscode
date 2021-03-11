@@ -372,7 +372,8 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                          
 
     // Also optional is to output the coherent corrections (note there will be many fewer of these! )
     if (fOutputCorrection)
-        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
+//        saveRawDigits(decoderTool->getCorrectedMedians(),decoderTool->getPedestalVals(),decoderTool->getFullRMSVals(),channelVec,coherentCollection);
+        saveRawDigits(decoderTool->getCorrectedMedians(),locPedsVec,decoderTool->getFullRMSVals(),channelVec,coherentCollection);
 
     mf::LogDebug("DaqDecoderICARUSTPC") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
