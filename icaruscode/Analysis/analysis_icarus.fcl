@@ -39,6 +39,7 @@ icarus_SimpleTrackAndPFParticleAnalysis: {
   module_type: "SimpleTrackAndPFParticleAna"
   PFParticleModuleLabel: "pandoraGaus"
   TrackModuleLabel: "pandoraTrackGaus"
+  PrintAnodeToCathode: false             # Print out potential anode-to-cathode crossing tracks.
   UseFV: true                            # Consider tracks with PFP Vertices in fiducial volume using below tolerances
   TolUsDs: 50                            # Upstream/downstream tolerance for vertex [cm]
   TolAnode: 5                            # Anode tolerance for vertex [cm]
