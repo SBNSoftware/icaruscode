@@ -1,0 +1,79 @@
+#include "reco_icarus_driver_common.fcl"
+
+process_name: Stage1
+
+physics.reco: [ @sequence::icarus_reco_cluster3d,
+                @sequence::icarus_reco_pandoraGaus ] #,
+#                @sequence::icarus_reco_pandoraICARUS ]
+
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+
+### Definitions for a single pandora instance
+physics.producers.pandoraGaus.HitFinderModuleLabel:                       "cluster3d"
+physics.producers.pandoraTrackGaus.PFParticleLabel:                       "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:     "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:         "pandoraTrackGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:        "pandoraShowerGaus"
+physics.producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:           ""
+physics.producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:            ""
+physics.producers.pandoraKalmanTrackGaus.options.trackFromPF:             false
+physics.producers.pandoraKalmanTrackGaus.options.showerFromPF:            false
+
+### Definitions for a single pandora instance
+physics.producers.pandoraICARUS.HitFinderModuleLabel:                     "icarushit"
+physics.producers.pandoraTrackICARUS.PFParticleLabel:                     "pandoraICARUS"
+physics.producers.pandoraShowerICARUS.PFParticleLabel:                    "pandoraICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:   "pandoraICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:       "pandoraTrackICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:      "pandoraShowerICARUS"
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputCaloLabel:         ""
+physics.producers.pandoraKalmanTrackICARUS.inputs.inputPidLabel:          ""
+physics.producers.pandoraKalmanTrackICARUS.options.trackFromPF:           false
+physics.producers.pandoraKalmanTrackICARUS.options.showerFromPF:          false
+
+## Standard 3D hit building
+physics.producers.cluster3d.Hit3DBuilderAlg:                              @local::standard_snippethit3dbuilder
+physics.producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:              ["gaushit"]
+#physics.producers.cluster3d.Hit3DBuilderAlg.HitWidthScaleFactor:          10.0 #3.0
+#physics.producers.cluster3d.Hit3DBuilderAlg.RangeNumSigma:                3.
+#physics.producers.cluster3d.Hit3DBuilderAlg.DeltaPeakTimeSig:             10. #1.75
+physics.producers.cluster3d.Hit3DBuilderAlg.PulseHeightFraction:          0. #0.75 #0.25
+physics.producers.cluster3d.Hit3DBuilderAlg.PHLowSelection:               0. #4.0 # 20.
+physics.producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:              1000000.
+#physics.producers.cluster3d.Hit3DBuilderAlg.WirePitchScaleFactor:         1.2
+#physics.producers.cluster3d.Hit3DBuilderAlg.LongHitsStretchFactor:        2.50
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:             false
+
+## Switch pandora back to just gaushits?
+physics.producers.pandoraGaus.ConfigFile:                                "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3D:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       PMAlgTracker:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}
+
