@@ -6,7 +6,6 @@
 ////////////////////////////////////////////////////////////////////////
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Core/ModuleMacros.h"
-#include "art/Framework/Core/FileBlock.h"
 #include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Principal/Event.h"
@@ -20,16 +19,11 @@
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
-// ROOT
-#include "TFile.h"
-
 //some standard C++ includes
 #include <iostream>
 #include <stdlib.h>
 #include <string>
 #include <vector>
-#include <memory> // std::unique_ptr<>
-#include <cassert>
 
 namespace daq
 {
@@ -52,9 +46,6 @@ public:
     DaqDecoderICARUSPMT & operator = (DaqDecoderICARUSPMT const &) = delete;
 
     DaqDecoderICARUSPMT & operator = (DaqDecoderICARUSPMT &&) = delete;
-
-
-    void respondToOpenInputFile(art::FileBlock const& fileInfo) override;
 
     // Required functions.
     void produce(art::Event & e) override;
@@ -80,18 +71,6 @@ DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(fhicl::ParameterSet const & params): ar
 
     return;
 }
-
-void DaqDecoderICARUSPMT::respondToOpenInputFile(art::FileBlock const& fileInfo)
-{
-  assert(fDecoderTool);
-  
-  std::unique_ptr<TFile> const file
-    { TFile::Open(fileInfo.fileName().c_str(), "READ") };
-  
-  fDecoderTool->decodeConfigurationFromFile(*file);
-  
-} // DaqDecoderICARUSPMT::respondToOpenInputFile()
-
 
 void DaqDecoderICARUSPMT::produce(art::Event & event)
 {
