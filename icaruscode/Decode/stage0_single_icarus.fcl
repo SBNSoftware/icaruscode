@@ -33,10 +33,6 @@ outputs.out1.dataTier: "reconstructed"
 # Drop the artdaq format files on output
 outputs.out1.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
 
-# Test Alessandro's geometry
-services.Geometry.GDML:                                                      "icarus_complete_splitwire_UV.gdml"
-services.Geometry.ROOT:                                                      "icarus_complete_splitwire_UV.gdml"
-
 # Add a few temporary overrides that will either be dropped or made default in the future.
 #physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                       true               # This turns on lots of diagnostic messages... LOTS. S
 #physics.producers.daqTPC.OutputRawWaveform:                                  true                # This will output uncorrected waveforms along with correctedd
