@@ -16,7 +16,9 @@ decodeTPC: {
                     module_type:        DaqDecoderICARUSTPC
                     FragmentsLabel:     "daq:PHYSCRATEDATA"
                     OutputRawWaveform:  false
+                    OutputCorrection:   false
                     OutputRawWavePath:  "RAW"
+                    OutputCoherentPath: "Cor"
                     DiagnosticOutput:   false
                     DecoderTool:        @local::TPCDecoderFilter1DTool
 }
@@ -28,4 +30,3 @@ decodePMT: {
 }
 
 END_PROLOG
-

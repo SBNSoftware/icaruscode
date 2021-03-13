@@ -18,7 +18,6 @@
 #include "artdaq-core/Data/Fragment.hh"
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-class TFile; // ROOT forward declaration
 
 namespace art
 {
@@ -57,15 +56,6 @@ public:
      */
     virtual void initializeDataProducts() = 0;
 
-    /**
-     *   @brief Decodes the relevant configuration.
-     * 
-     *   The resulting decoded configuration may be kept as data member.
-     * 
-     *   By default, nothing is done.
-     */
-    virtual void decodeConfigurationFromFile(TFile& file [[maybe_unused]]) {}
-    
     /**
      *  @brief Given a set of recob hits, run DBscan to form 3D clusters
      *

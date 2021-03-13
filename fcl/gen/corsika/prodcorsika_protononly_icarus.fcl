@@ -1,0 +1,36 @@
+#
+# File:    prodcorsika_protononly_icarus.fcl
+# Purpose: Generation of cosmic rays using only proton primaries (not CMC).
+# Author:  Gianluca Petrillo (petrillo@slac.standard.edu)
+# Date:    March 10, 2021
+#
+# This job configuration generates cosmic ray events in ICARUS with a
+# configuration similar to `prodcorsika_standard_icarus.fcl`, but using
+# a proton-only primary composition instead of the Constant Mass Composition.
+# 
+# Output
+# -------
+# 
+# See `prodcorsika_standard_icarus.fcl`.
+# The main output is an _art_ ROOT file with content:
+#  * `generator`: generated cosmic rays from CORSIKA (`simb::MCTruth` collection)
+# 
+
+#include "prodcorsika_standard_icarus.fcl"
+
+
+process_name: Gen
+
+#
+# change comsic ray model
+#
+
+physics.producers.generator: @local::icarus_corsika_p
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-prodcorsika_protononly_icarus_%tc-%p.root"
+outputs.out1.fileName:    "prodcorsika_protononly_icarus_%tc-%p.root"
+

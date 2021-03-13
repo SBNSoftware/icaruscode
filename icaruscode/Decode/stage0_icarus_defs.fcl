@@ -55,6 +55,14 @@ icarus_stage0_producers:
   gaushitTPC2:                    @local::gaus_hitfinder_icarus
   gaushitTPC3:                    @local::gaus_hitfinder_icarus
 
+  ### wire processing for inpujt to the icarus hit finding
+  recowireraw:                    @local::icarus_recowireraw
+  recoWireRawTPC0:                @local::icarus_recowireraw
+  recoWireRawTPC1:                @local::icarus_recowireraw
+  recoWireRawTPC2:                @local::icarus_recowireraw
+  recoWireRawTPC3:                @local::icarus_recowireraw
+
+  ### This is the ICARUS "raw" hit finder
   icarushit:                      @local::icarus_hitfinder
   icarusHitTPC0:                  @local::icarus_hitfinder
   icarusHitTPC1:                  @local::icarus_hitfinder
@@ -74,6 +82,8 @@ icarus_reco_filters:
 
 icarus_stage0_single:              [ daqTPC,
                                      daqPMT,
+                                     recowireraw,
+                                     icarushit,
                                      decon1droi,
                                      decon2droi,
                                      roifinder,
@@ -129,6 +139,10 @@ icarus_stage0_producers.gaushitTPC0.CalDataModuleLabel:                         
 icarus_stage0_producers.gaushitTPC1.CalDataModuleLabel:                                        "decon1DroiTPC1"
 icarus_stage0_producers.gaushitTPC2.CalDataModuleLabel:                                        "decon1DroiTPC2"
 icarus_stage0_producers.gaushitTPC3.CalDataModuleLabel:                                        "decon1DroiTPC3"
+
+### Set up for icarus raw hit finder
+icarus_stage0_producers.recowireraw.DigitModuleLabel:                                          "daqTPC"
+icarus_stage0_producers.icarushit.CalDataModuleLabel:                                          "recowireraw"
 
 ### Optical hit finding
 
