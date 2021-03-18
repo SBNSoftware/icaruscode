@@ -30,8 +30,9 @@
 #include "art/Framework/Principal/Event.h"
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/TableAs.h"
 #include "fhiclcpp/types/Table.h"
+#include "fhiclcpp/types/Sequence.h"
 
 // ROOT libraries
 #include "TTree.h"
@@ -457,94 +458,6 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   : public art::EDAnalyzer
   , private icarus::trigger::TriggerEfficiencyPlotsBase
 {
-
-    public:
-  
-  // --- BEGIN Configuration ---------------------------------------------------
-  struct Config: public TriggerEfficiencyPlotsBase::Config {
-    
-    using Name = fhicl::Name;
-    using Comment = fhicl::Comment;
-    
-    struct WindowPattern {
-      
-      fhicl::Atom<unsigned int> inMainWindow {
-        Name("inMainWindow"),
-        Comment("minimum fired primitives in the main sliding window")
-        };
-      fhicl::Atom<unsigned int> inUpstreamWindow {
-        Name("inUpstreamWindow"),
-        Comment(
-          "minimum fired primitives in the sliding window upstream of main one"
-          ),
-        0U // default
-        };
-      fhicl::Atom<unsigned int> inDownstreamWindow {
-        Name("inDownstreamWindow"),
-        Comment(
-         "minimum fired primitives in the sliding window downstream of main one"
-         ),
-        0U // default
-        };
-      fhicl::Atom<unsigned int> inOppositeWindow {
-        Name("inOppositeWindow"),
-        Comment(
-          "minimum fired primitives in the sliding window opposite of main one"
-          ),
-        0U // default
-        };
-      
-      fhicl::Atom<bool> requireUpstreamWindow {
-        Name("requireUpstreamWindow"),
-        Comment("an upstream window must be present (no border main window)"),
-        false
-        };
-      fhicl::Atom<bool> requireDownstreamWindow {
-        Name("requireDownstreamWindow"),
-        Comment("a downstream window must be present (no border main window)"),
-        false
-        };
-      
-    }; // WindowPattern
-    
-    fhicl::Sequence<fhicl::Table<WindowPattern>> Patterns {
-      Name("Patterns"),
-      Comment("sliding window pattern requirements")
-      };
-    
-  }; // struct Config
-
-  using Parameters = art::EDAnalyzer::Table<Config>;
-  // --- END Configuration -----------------------------------------------------
-
-
-  // --- BEGIN Constructors ----------------------------------------------------
-  explicit SlidingWindowTriggerEfficiencyPlots(Parameters const& config);
-
-  // Plugins should not be copied or assigned.
-  SlidingWindowTriggerEfficiencyPlots(SlidingWindowTriggerEfficiencyPlots const&) = delete;
-  SlidingWindowTriggerEfficiencyPlots(SlidingWindowTriggerEfficiencyPlots&&) = delete;
-  SlidingWindowTriggerEfficiencyPlots& operator=(SlidingWindowTriggerEfficiencyPlots const&) = delete;
-  SlidingWindowTriggerEfficiencyPlots& operator=(SlidingWindowTriggerEfficiencyPlots&&) = delete;
-
-  // --- END Constructors ------------------------------------------------------
-
-
-  // --- BEGIN Framework hooks -------------------------------------------------
-
-  /// Initializes the plots.
-  virtual void beginJob() override;
-  
-  /// Fills the plots. Also extracts the information to fill them with.
-  virtual void analyze(art::Event const& event) override;
-  
-  /// Prints end-of-job summaries.
-  virtual void endJob() override;
-  
-  // --- END Framework hooks ---------------------------------------------------
-  
-  
-    private:
   
   /// Specification of the requirement of sliding window firing pattern.
   struct WindowPattern {
@@ -593,6 +506,101 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
     
   }; // WindowPattern
   
+  
+
+    public:
+  
+  // --- BEGIN Configuration ---------------------------------------------------
+  /// Configuration for single pattern (see `WindowPattern` and `convert()`).
+  struct WindowPatternConfig {
+    
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Atom<unsigned int> inMainWindow {
+      Name("inMainWindow"),
+      Comment("minimum fired primitives in the main sliding window")
+      };
+    fhicl::Atom<unsigned int> inUpstreamWindow {
+      Name("inUpstreamWindow"),
+      Comment(
+        "minimum fired primitives in the sliding window upstream of main one"
+        ),
+      0U // default
+      };
+    fhicl::Atom<unsigned int> inDownstreamWindow {
+      Name("inDownstreamWindow"),
+      Comment(
+        "minimum fired primitives in the sliding window downstream of main one"
+        ),
+      0U // default
+      };
+    fhicl::Atom<unsigned int> inOppositeWindow {
+      Name("inOppositeWindow"),
+      Comment(
+        "minimum fired primitives in the sliding window opposite of main one"
+        ),
+      0U // default
+      };
+    
+    fhicl::Atom<bool> requireUpstreamWindow {
+      Name("requireUpstreamWindow"),
+      Comment("an upstream window must be present (no border main window)"),
+      false
+      };
+    fhicl::Atom<bool> requireDownstreamWindow {
+      Name("requireDownstreamWindow"),
+      Comment("a downstream window must be present (no border main window)"),
+      false
+      };
+    
+  }; // WindowPatternConfig
+  
+  struct Config: public TriggerEfficiencyPlotsBase::Config {
+    
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Sequence<fhicl::TableAs<WindowPattern, WindowPatternConfig>> Patterns {
+      Name("Patterns"),
+      Comment("sliding window pattern requirements")
+      };
+    
+  }; // struct Config
+
+  using Parameters = art::EDAnalyzer::Table<Config>;
+  // --- END Configuration -----------------------------------------------------
+
+
+  // --- BEGIN Constructors ----------------------------------------------------
+  explicit SlidingWindowTriggerEfficiencyPlots(Parameters const& config);
+
+  // Plugins should not be copied or assigned.
+  SlidingWindowTriggerEfficiencyPlots(SlidingWindowTriggerEfficiencyPlots const&) = delete;
+  SlidingWindowTriggerEfficiencyPlots(SlidingWindowTriggerEfficiencyPlots&&) = delete;
+  SlidingWindowTriggerEfficiencyPlots& operator=(SlidingWindowTriggerEfficiencyPlots const&) = delete;
+  SlidingWindowTriggerEfficiencyPlots& operator=(SlidingWindowTriggerEfficiencyPlots&&) = delete;
+
+  // --- END Constructors ------------------------------------------------------
+
+
+  // --- BEGIN Framework hooks -------------------------------------------------
+
+  /// Initializes the plots.
+  virtual void beginJob() override;
+  
+  /// Fills the plots. Also extracts the information to fill them with.
+  virtual void analyze(art::Event const& event) override;
+  
+  /// Prints end-of-job summaries.
+  virtual void endJob() override;
+  
+  // --- END Framework hooks ---------------------------------------------------
+  
+  
+    private:
+  
+  friend WindowPattern convert(WindowPatternConfig const&);
   
   friend std::string to_string
     (SlidingWindowTriggerEfficiencyPlots::WindowPattern const& pattern);
@@ -773,13 +781,6 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   void verifyTopologicalMap(TriggerGatesPerCryostat_t const& gates) const;
   
   
-  /// Builds a `WindowPattern` object from its FHiCL configuration.
-  static WindowPattern makeWindowPattern(Config::WindowPattern const& config);
-  
-  /// Builds a sequence of `WindowPattern` objects from FHiCL configuration.
-  static WindowPatterns_t makeWindowPatterns
-    (std::vector<Config::WindowPattern> const& config);
-  
 }; // icarus::trigger::SlidingWindowTriggerEfficiencyPlots
 
 
@@ -811,6 +812,26 @@ namespace {
 
 //------------------------------------------------------------------------------
 //--- icarus::trigger::details::WindowChannelMap
+//------------------------------------------------------------------------------
+namespace icarus::trigger {
+  
+  // conversion function: WindowPattern -> WindowPatterns_t
+  SlidingWindowTriggerEfficiencyPlots::WindowPattern convert
+    (SlidingWindowTriggerEfficiencyPlots::WindowPatternConfig const& config)
+  {
+    return {
+      config.inMainWindow(),           // minInMainWindow
+      config.inUpstreamWindow(),       // minInUpstreamWindow
+      config.inDownstreamWindow(),     // minInDownstreamWindow
+      config.inOppositeWindow(),       // minInOppositeWindow
+      config.requireUpstreamWindow(),  // requireUpstreamWindow
+      config.requireDownstreamWindow() // requireDownstreamWindow
+      };
+  } // icarus::trigger::convert()
+  
+} // namespace icarus::trigger
+
+
 //------------------------------------------------------------------------------
 template <typename Stream>
 void icarus::trigger::details::WindowChannelMap::WindowInfo::dump
@@ -1135,7 +1156,7 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::SlidingWindowTriggerEffici
   : art::EDAnalyzer           (config)
   , TriggerEfficiencyPlotsBase(config(), consumesCollector())
   // configuration
-  , fPatterns(makeWindowPatterns(config().Patterns()))
+  , fPatterns(config().Patterns())
 {
   
   if (fPatterns.empty()) {
@@ -1684,32 +1705,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   } // for all qualifying plot categories
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::SlidingWindowTriggerEfficiencyPlots::makeWindowPatterns
-  (std::vector<Config::WindowPattern> const& config) -> WindowPatterns_t
-{
-  
-  WindowPatterns_t patterns;
-  patterns.reserve(config.size());
-  for (Config::WindowPattern const& patternConfig: config) {
-    
-    WindowPattern const pattern {
-      patternConfig.inMainWindow(),           // minInMainWindow
-      patternConfig.inUpstreamWindow(),       // minInUpstreamWindow
-      patternConfig.inDownstreamWindow(),     // minInDownstreamWindow
-      patternConfig.inOppositeWindow(),       // minInOppositeWindow
-      patternConfig.requireUpstreamWindow(),  // requireUpstreamWindow
-      patternConfig.requireDownstreamWindow() // requireDownstreamWindow
-    };
-    patterns.push_back(std::move(pattern));
-    
-  } // for
-  
-  return patterns;
-  
-} // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::makeWindowPatterns()
 
 
 //------------------------------------------------------------------------------
