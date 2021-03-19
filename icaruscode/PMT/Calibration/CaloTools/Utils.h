@@ -17,11 +17,28 @@
 #include <string>
 #include <algorithm>
 
-using namespace std;
 
-namespace pmtcalo
+bool hasChannel( unsigned int ch, std::vector<unsigned int> channels )
 {
+  /*
+    Check if channel belongs to a list.
+  **/
 
+  bool hasIt = false;
+
+  auto found = std::find( channels.begin(), channels.end(), ch );
+
+  if( found != channels.end() )
+    hasIt = true;
+
+  return hasIt;
+
+}
+
+
+
+
+  /*
   //////////////////////////////////////////////////////////////////////////////
 
   class CSVReader
@@ -144,5 +161,7 @@ namespace pmtcalo
   }
 
 }
+
+*/
 
 #endif //UTILS_H

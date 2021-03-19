@@ -4,6 +4,7 @@
 # cet_set_compiler_flags(EXTRA_CXX_FLAGS -mavx)
 
 add_subdirectory(CaloTools)
+add_subdirectory(fcl)
 
 simple_plugin(PMTLaserCalibration "module"
                 icaruscode_PMT_Algorithms
@@ -47,7 +48,6 @@ simple_plugin(PMTBackgroundphotonsCalibration "module"
                 ${ROOT_BASIC_LIB_LIST}
                 ${Boost_SYSTEM_LIBRARY}
               )
-
 
 install_headers()
 install_fhicl()

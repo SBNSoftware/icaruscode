@@ -4,7 +4,7 @@ laser_pulse_configuration:
 {
 
   ADCmV: 0.122 			
-  ADCpC: 0.122*0.2*0.02  
+  ADCpC: 0.00488  
   SamplingTime: 2.0      # ns
 
   NoiseWindowSize: 600        #n bins
