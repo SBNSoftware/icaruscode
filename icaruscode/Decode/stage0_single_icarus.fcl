@@ -15,9 +15,7 @@ process_name: stage0
 
 # Custom list
 physics.reco: [ daqTPC,
-#                daqPMT,
-                recowireraw,
-                icarushit,
+                daqPMT,
                 decon1droi,
 #                decon2droi,
                 roifinder,
@@ -31,7 +29,7 @@ outputs.out1.fileName: "%ifb_%tc-%p.root"
 outputs.out1.dataTier: "reconstructed"
 
 # Drop the artdaq format files on output
-outputs.out1.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*" ]
+outputs.out1.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*" ]
 
 # Add a few temporary overrides that will either be dropped or made default in the future.
 #physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                       true               # This turns on lots of diagnostic messages... LOTS. S
@@ -48,6 +46,7 @@ physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2:           @lo
 
 # This to study 2D ROI finding
 #physics.producers.roifinder.WireModuleLabel:                                "decon2droi:gauss"
+physics.producers.roifinder.OutputMorphed:                                   false
 
 physics.producers.gaushit.CalDataModuleLabel:                                "roifinder" #decon2droi:gauss" #"roifinder"
 physics.producers.gaushit.HitFinderToolVec.CandidateHitsPlane0:              @local::candhitfinder_standard      # Sets hit finding for plane 0
