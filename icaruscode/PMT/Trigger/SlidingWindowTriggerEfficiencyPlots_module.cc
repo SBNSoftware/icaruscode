@@ -1120,13 +1120,15 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::WindowPattern::description
     s += " + " + std::to_string(minInOppositeWindow) + " (opposite)"s;
   
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {
-    s += " + " + std::to_string(minInDownstreamWindow) + " (downstream";
+    if (minInDownstreamWindow) s += " + " + std::to_string(minInDownstreamWindow);
+    s += " (downstream";
     if (requireDownstreamWindow) s+= ", mandatory)"s;
     s += ")"s;
   } // if downstream
   
   if ((minInUpstreamWindow > 0U) || requireUpstreamWindow) {
-    s += " + " + std::to_string(minInUpstreamWindow) + " (upstream";
+    if (minInUpstreamWindow) s += " + " + std::to_string(minInUpstreamWindow);
+    s += " (upstream";
     if (requireUpstreamWindow) s+= ", mandatory)"s;
     s += ")"s;
   } // if upstream
