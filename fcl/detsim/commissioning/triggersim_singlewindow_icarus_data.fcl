@@ -144,6 +144,7 @@ physics.triggerOR: [
 #
 # disable truth information
 #
+physics.analyzers.effSlidingOR6m.OnlyPlotCategories:  [ "All" ]
 physics.analyzers.effSlidingOR6m.GeneratorTags:       []
 physics.analyzers.effSlidingOR6m.DetectorParticleTag: @erase
 physics.analyzers.effSlidingOR6m.EnergyDeposits:      []
