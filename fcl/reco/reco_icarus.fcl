@@ -345,17 +345,17 @@ icarus_reco_pandoraICARUS:         [ pandoraICARUS,
 ]
 
 icarus_reco_pandoraICARUSCryo0:    [ pandoraICARUSCryo0,
-                                     pandoraTrackICARUSCryo0,
+                                     pandoraTrackICARUSCryo0
 #                                     pandoraShowerICARUSCryo0,
-                                     pandoraKalmanTrackICARUSCryo0
+#                                     pandoraKalmanTrackICARUSCryo0
 #,                                    mcsICARUSRawCryo0,
 #                                     mcsstandardRawCryo0
 ]
 
 icarus_reco_pandoraICARUSCryo1:    [ pandoraICARUSCryo1,
-                                     pandoraTrackICARUSCryo1,
+                                     pandoraTrackICARUSCryo1
 #                                     pandoraShowerICARUSCryo1,
-                                     pandoraKalmanTrackICARUSCryo1
+#                                     pandoraKalmanTrackICARUSCryo1
 #,                                    mcsICARUSRawCryo1,
 #                                     mcsstandardRawCryo1
 ]
