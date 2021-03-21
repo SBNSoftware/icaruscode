@@ -1,0 +1,73 @@
+#
+# File:     dump_pmtconfig_icarus.fcl
+# Purpose:  Dump on screen PMT configuration from DAQ.
+# Author:   Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:     March 17, 2021
+# Version:  1.0
+#
+# This module extracts and then dumps the PMT configuration stored in the
+# FHiCL configuration of that file(s), one per run.
+#
+#
+# Input: (data) files with FHiCL configuration of PMT.
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20210317 (petrillo@slac.stanford.edu) [v1.0]
+#   first version
+#
+
+#include "messages_icarus.fcl"
+#include "geometry_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: DumpPMTcfg
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+  message: @local::icarus_message_services_interactive
+  
+                     @table::icarus_geometry_services
+  IICARUSChannelMap: @local::icarus_channelmappinggservice
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+source: {
+  module_type: RootInput
+  maxEvents:  -1            # number of events to read
+} # source
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  producers: {
+    pmtconfig: { module_type: PMTconfigurationExtraction }
+  }
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  analyzers: {
+    dumppmtconfig: {
+      module_type:  DumpPMTconfiguration
+      
+      PMTconfigurationTag: "pmtconfig"
+      
+    } # dumppmtconfig
+  } # analyzers
+  
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  extractors: [ pmtconfig ]
+  dumpers:    [ dumppmtconfig ]
+  
+} # physics
+
+
+# ------------------------------------------------------------------------------

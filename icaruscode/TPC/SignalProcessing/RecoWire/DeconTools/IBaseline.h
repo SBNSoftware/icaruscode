@@ -32,7 +32,7 @@ namespace icarus_tool
         virtual void outputHistograms(art::TFileDirectory&)                                     const = 0;
         
         // Find the baseline
-        virtual float GetBaseline(icarusutil::TimeVec const&, raw::ChannelID_t, size_t, size_t) const = 0;
+        virtual float GetBaseline(std::vector<float> const&, raw::ChannelID_t, size_t, size_t) const = 0;
     };
 }
 
