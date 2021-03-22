@@ -6,6 +6,7 @@ add_subdirectory(MultiVertex)
 add_subdirectory(numi)
 add_subdirectory(overlay)
 add_subdirectory(background)
+add_subdirectory(text)
 #add_subdirectory(other)
 
 install_fhicl()
