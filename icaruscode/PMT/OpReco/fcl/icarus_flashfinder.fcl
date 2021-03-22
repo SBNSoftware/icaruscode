@@ -13,6 +13,12 @@ ICARUSSimpleFlash:
   PECalib         : @local::NoCalib
 }
 
+ICARUSSimpleFlashCryo0: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryo0.AlgoConfig: @local::SimpleFlashCryo0
+
+ICARUSSimpleFlashCryo1: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryo1.AlgoConfig: @local::SimpleFlashCryo1
+
 ICARUSSimpleFlashTPC0: @local::ICARUSSimpleFlash
 ICARUSSimpleFlashTPC0.AlgoConfig: @local::SimpleFlashTPC0
 

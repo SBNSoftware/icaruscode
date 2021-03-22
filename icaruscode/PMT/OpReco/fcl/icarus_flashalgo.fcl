@@ -4,17 +4,24 @@ BEGIN_PROLOG
 SimpleFlashStandard:
 {
   PEThreshold:    20
+  PEThresholdHit: 0.5
   MinPECoinc:     10
   MinMultCoinc:   5
   IntegralTime:   8.
   PreSample:      0.1
   VetoSize:       8.
-  TimeResolution: 0.04
+  TimeResolution: 0.1
   HitVetoRangeStart: []
   HitVetoRangeEnd:   []
   OpChannelRange:    [0,359]
   DebugMode: false
 }
+
+SimpleFlashCryo0: @local::SimpleFlashStandard
+SimpleFlashCryo0.OpChannelRange: [0,179]
+
+SimpleFlashCryo1: @local::SimpleFlashStandard
+SimpleFlashCryo1.OpChannelRange: [180,359]
 
 SimpleFlashTPC0: @local::SimpleFlashStandard
 SimpleFlashTPC0.OpChannelRange: [0,89]
