@@ -1,0 +1,114 @@
+#
+# File:    triggersim_singlewindow_icarus_data_multiconfig.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 8, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# The selection of thresholds and trigger configurations reflects the ones used
+# for commissioning runs 4759-4787 documented in the spreadsheet:
+# https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
+#
+# This configuration is based on `triggersim_singlewindow_icarus_data.fcl`,
+# but it runs different trigger configurations: only east side, only west side,
+# both sides in AND and both sides in OR.
+# The input is expected to have PMT information on both sides. Three trigger
+# plot configurations are run, with different set of sliding windows enabled.
+# 
+# The inherited `effSlidingOR6m` configuration has both sides enabled:
+#  * `effSlidingOR6m` `M3` requirement simulates an OR of the two sides
+#  * `effSlidingOR6m` `M3O3` requirement simulates an AND of the two sides
+#  * (all other multiplicities likewise)
+# Two additional configurations are provided:
+#  * `effSlidingOR6mE` `M3` uses only PMT from the east wall (60-89)
+#  * `effSlidingOR6mW` `M3` uses only PMT from the east wall (150-179)
+# 
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20210221 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_singlewindow_icarus_data.fcl` v1.0
+#
+
+#include "triggersim_singlewindow_icarus_data.fcl"
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.producers.trigslidewindowOR6mE: {
+
+  @table::physics.producers.trigslidewindowOR6m
+
+  # enable only the central window of each PMT wall
+  EnableOnlyWindows: [ 2 ]
+
+} # physics.producers.trigslidewindowOR6mE
+
+
+physics.analyzers.effSlidingOR6mE: {
+
+  @table::physics.analyzers.effSlidingOR6m
+  
+  TriggerGatesTag: trigslidewindowOR6mE
+
+  # exclude patterns which require the opposite window
+  Patterns: @local::SlidingWindowTriggerPatternsSingleWindow
+
+  # message facility stream (dumping everything in the same log so far)
+#  LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
+
+} # physics.analyzers.effSlidingOR6mE
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.producers.trigslidewindowOR6mW: {
+
+  @table::physics.producers.trigslidewindowOR6m
+
+  # enable only the central window of each PMT wall
+  EnableOnlyWindows: [ 5 ]
+  
+} # physics.producers.trigslidewindowOR6mW
+
+
+physics.analyzers.effSlidingOR6mW: {
+
+  @table::physics.analyzers.effSlidingOR6m
+  
+  TriggerGatesTag: trigslidewindowOR6mW
+
+  # exclude patterns which require the opposite window
+  Patterns: @local::SlidingWindowTriggerPatternsSingleWindow
+
+  # message facility stream (dumping everything in the same log so far)
+#  LogCategory: "SlidingWindowTriggerEfficiencyPlotsOR"
+
+} # physics.analyzers.effSlidingOR6mW
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+physics.triggerOR:  [ @sequence::physics.triggerOR, trigslidewindowOR6mE, trigslidewindowOR6mW ]
+physics.plotsSides:  [ effSlidingOR6mE, effSlidingOR6mW ]
+
+physics.end_paths:  [ @sequence::physics.end_paths, plotsSides ]
+
+
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+
+# ------------------------------------------------------------------------------
+

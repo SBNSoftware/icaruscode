@@ -1,9 +1,14 @@
+
+cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+
 add_subdirectory(Algorithms)
 add_subdirectory(Utilities)
 
 art_make(
   EXCLUDE
+    "DiscriminatePMTwaveformsByChannel_module.cc"
     "MajorityTriggerSimulation_module.cc"
+    "SlidingWindowTrigger_module.cc"
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
@@ -49,6 +54,42 @@ art_make(
     lardataobj_RawData
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
+  )
+
+simple_plugin(DiscriminatePMTwaveformsByChannel module
+  icaruscode_PMT_Trigger_Algorithms
+  sbnobj_ICARUS_PMT_Trigger_Data
+  sbnobj_ICARUS_PMT_Data
+  sbnobj_Common_PMT_Data
+  icaruscode_PMT_Trigger_Utilities
+  icaruscode_PMT_Algorithms
+  lardataobj_RawData
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Core
+  )
+
+simple_plugin(SlidingWindowTrigger module
+  icaruscode_PMT_Trigger_Algorithms
+  sbnobj_ICARUS_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  icaruscode_PMT_Algorithms
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Core
   )
 
 simple_plugin(MajorityTriggerSimulation module

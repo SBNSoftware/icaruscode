@@ -10,6 +10,9 @@ declare -r DefaultExperimentName='ICARUS'
 # other repositories to check out for a complete documentation
 declare -ra AdditionalRepoNames=( 'sbnobj' 'sbncode' 'icarusalg' 'icarus_signal_processing' )
 
+# special release branches (the others get `$DefaultBranch`)
+declare -rA ReleaseBranches=( ['sbnobj']='main' ['sbncode']='main' )
+
 # where the content is published
 declare -r PublishBaseDir='/web/sites/i/icarus-exp.fnal.gov/htdocs/at_work/software/doc'
 

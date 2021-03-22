@@ -384,7 +384,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
     PlotSandboxRefs_t const& selectedPlots
-    ) const override;
+    ) override;
     
   // --- END Derived class methods ---------------------------------------------
 
@@ -423,11 +423,12 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    * trigger requirement.
    */
   void plotResponses(
-    std::size_t iThr, ADCCounts_t const threshold,
+    std::size_t iThr, std::string const& threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
-    TriggerGateData_t const& combinedTrigger
-    ) const;
+    TriggerGateData_t const& combinedTrigger,
+    std::vector<ChannelID_t> const& channelList
+    );
   
   /**
    * @brief Computes the trigger response from primitives with the given
@@ -446,9 +447,8 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    */
   TriggerGateData_t combineTriggerPrimitives(
     TriggerGatesPerCryostat_t const& cryoGates,
-    ADCCounts_t const threshold
+    std::string const& threshold
     ) const;
-
   
 }; // icarus::trigger::MajorityTriggerEfficiencyPlots
 
@@ -467,13 +467,12 @@ ResponseTree::ResponseTree
   , RespTxxRxx{ std::make_unique<bool[]>(indices.size()) }
 {
 
-  for (auto [ iThr, threshold]: util::enumerate(thresholds)) {
-    std::string const thrStr = util::to_string(raw::ADC_Count_t(threshold));
+  for (auto [ iThr, thresholdTag]: util::enumerate(thresholds)) {
 
     for (auto [ iReq, req ]: util::enumerate(minReqs)) {
 
       std::string const branchName
-        = "RespT" + thrStr + "R" + util::to_string(req);
+        = "RespT" + thresholdTag + "R" + util::to_string(req);
 
       this->tree().Branch
         (branchName.c_str(), &(RespTxxRxx[indices(iThr, iReq)]));
@@ -519,6 +518,13 @@ icarus::trigger::MajorityTriggerEfficiencyPlots::MajorityTriggerEfficiencyPlots
     throw art::Exception(art::errors::Configuration)
       << "At least one 'MinimumPrimitives' requirement... required.";
   }
+  
+  std::size_t iPattern [[maybe_unused]] = 0U; // NOTE: incremented only in DEBUG
+  for (auto const& req: fMinimumPrimitives) {
+    std::size_t const index [[maybe_unused]]
+      = createCountersForPattern("Req" + std::to_string(req));
+    assert(index == iPattern++);
+  } // for requirements
   
   {
     mf::LogInfo log(helper().logCategory());
@@ -665,9 +671,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet
     ";maximum trigger primitives at the same time on a single cryostat"
     ";events",
     192, 0.0, 192.0 // large number, zoom in presentations!
-    );
-  
-  
+    ); 
+
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::initializePlotSet()
 
 
@@ -678,9 +683,9 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
   PlotSandboxRefs_t const& selectedPlots
-) const {
+) {
   
-  auto const threshold = helper().ADCthreshold(thresholdIndex);
+  auto const threshold = helper().ADCthresholdTag(thresholdIndex);
   
   auto const& beamGate = helper().makeMyBeamGate(clockData);
   
@@ -693,7 +698,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
-    beamGate.apply(combineTriggerPrimitives(gates, threshold))
+    beamGate.apply(combineTriggerPrimitives(gates, threshold)),
+    helper().extractActiveChannels(gates)
     );
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot()
@@ -702,12 +708,13 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
 //------------------------------------------------------------------------------
 void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   std::size_t iThr,
-  icarus::trigger::ADCCounts_t const threshold,
+  std::string const& threshold,
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
-  TriggerGateData_t const& combinedCount
-) const {
+  TriggerGateData_t const& combinedCount,
+  std::vector<ChannelID_t> const& channelList
+) {
   
   /*
    * This function plots according to the configured minimum number of trigger
@@ -744,6 +751,8 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     << ")"
     ;
   
+  PMTInfo_t const PMTinfo { threshold, channelList };
+  
   /*
    * Fill all the histograms for all the minimum primitive requirements
    * (filling the information whether or not the trigger fired),
@@ -753,7 +762,6 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    */
   PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
   bool fired = true; // the final trigger response (changes with requirement)
-  
   
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
@@ -776,11 +784,13 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     
     TriggerInfo_t triggerInfo;
     if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
-    
+
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
     if (fResponseTree) fResponseTree->assignResponse(iThr, iReq, fired);
+    
+    registerTriggerResult(iThr, iReq, fired);
     
     std::string const minCountStr { "Req" + std::to_string(minCount) };
     
@@ -810,7 +820,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       // efficiency plots
       // (including event plots in the triggered or non-triggered category)
       helper().fillAllEfficiencyPlots
-        (eventInfo, triggerInfo, plotSet.demandSandbox(minCountStr));
+        (eventInfo, PMTinfo, triggerInfo, plotSet.demandSandbox(minCountStr));
       
       //
       // add here further trigger-specific plots
@@ -833,6 +843,12 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     fillEventPlots(eventInfo, plotSet);
     
     //
+    // general plots, independent of trigger definition but dependent on
+    // threshold
+    //
+    fillPMTplots(PMTinfo, plotSet);
+    
+    //
     // trigger-definition specific plots
     //
     HistGetter const get(plotSet);
@@ -848,7 +864,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
 //------------------------------------------------------------------------------
 auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   TriggerGatesPerCryostat_t const& cryoGates,
-  icarus::trigger::ADCCounts_t const threshold
+  std::string const& threshold
 ) const -> TriggerGateData_t {
 
   //

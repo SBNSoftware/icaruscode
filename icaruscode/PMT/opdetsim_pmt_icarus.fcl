@@ -19,23 +19,10 @@ icarus_simpmt_nonoise: {
   @table::icarus_pmtsimulationalg_nonoise
 }
 
-###
-### FIXME (petrillo@slac.stanford.edu) remove this stuyff from here: it makes
-###       maintenance hell and jeopardises the consistency of the jobs;
-###       not to mention that neither services are required by `SimPMTIcarus`.
-###
-services.OpDetResponseInterface:                  @local::standard_opdetresponse
-services.PhotonVisibilityService.LibraryFile:     "PhotonLibrary-20180801.root"
-services.PhotonVisibilityService.UseCryoBoundary: false
+icarus_simpmt_noise: {
+  @table::icarus_simpmt
+  @table::icarus_pmtsimulationalg_noise
+}
 
-services.PhotonVisibilityService.XMin: -366
-services.PhotonVisibilityService.XMax: -66
-services.PhotonVisibilityService.YMin: -210
-services.PhotonVisibilityService.YMax:  180
-services.PhotonVisibilityService.ZMin: -995
-services.PhotonVisibilityService.ZMax:  965
-services.PhotonVisibilityService.NX:     60
-services.PhotonVisibilityService.NY:     78
-services.PhotonVisibilityService.NZ:    392
 
 END_PROLOG

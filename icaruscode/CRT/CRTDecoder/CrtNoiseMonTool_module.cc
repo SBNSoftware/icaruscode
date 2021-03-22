@@ -17,6 +17,8 @@
 #include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 
+#include "BernCRTTranslator.hh"
+
 //#include "art/Framework/Services/Optional/TFileService.h"
 #include "art_root_io/TFileService.h"
 #include "TH1F.h"
@@ -49,8 +51,6 @@ public:
   
 
 private:
-  void analyze_fragment(artdaq::Fragment & frag);
-  
   std::map<uint8_t,std::vector<float>> macToRate;
   std::map<uint8_t,std::vector<uint64_t>> macToRateTime;
 
@@ -130,30 +130,24 @@ icarus::crt::CrtNoiseMonTool::~CrtNoiseMonTool()
 {
 }
 
-void icarus::crt::CrtNoiseMonTool::analyze_fragment(artdaq::Fragment & frag) {
+void icarus::crt::CrtNoiseMonTool::analyze(art::Event const & evt) {
 
-  //this applies the 'overlay' to the fragment, to tell it to treat it like a BernCRT fragment
-  sbndaq::BernCRTFragment bern_fragment(frag);
+  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
 
-  //event data
-  sbndaq::BernCRTEvent const* bevt = bern_fragment.eventdata();
+  for(auto & hit : hit_vector) {
 
-  uint8_t mac5     = bevt->MAC5();
+    uint8_t mac5     = hit.mac5;
 
-  if(bevt->flags==7) return; //AA: 1. is it a correct check? 2. does it even work? :(
+    if(hit.flags==7) continue; //AA: 1. is it a correct check? 2. does it even work? :(
 
-  //metadata
-  const sbndaq::BernCRTFragmentMetadata* md = bern_fragment.metadata();
+    const uint64_t runtime = (hit.this_poll_start-hit.run_start_time) *1.0e-9; //time since run start [s]
+    const double   dt      = (hit.this_poll_start-hit.last_poll_start)*1.0e-9; //interval between consecutive polls [s]
+    const float    rate    = 1.0e-3*hit.hits_in_poll/dt; //poll-averaged event rate [kHz]
 
-  const uint64_t runtime = (md->this_poll_start()-md->run_start_time())*1.0e-9; //time since run start [s]
-  const double dt = (md->this_poll_start() - md->last_poll_start())*1.0e-9; //interval between consecutive events [s]
-  const float rate = 1.0e-3*md->feb_events_per_poll()/dt; //poll averaged event rate [kHz]
-
-  if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) return; //avoid processing the same poll multiple times (they all have the same 
-  macToRateTime[mac5].push_back(runtime);
-  macToRate[mac5].push_back(rate);
-
-
+    if(macToRateTime[mac5].size()!=0 && macToRateTime[mac5].back() == runtime) continue; //avoid processing the same poll multiple times (they all have the same 
+    macToRateTime[mac5].push_back(runtime);
+    macToRate[mac5].push_back(rate);
+  }
 }//end analyze
 
 
@@ -284,36 +278,7 @@ void icarus::crt::CrtNoiseMonTool::endJob(){
   
   hview->Write();
 
-} //analyze_fragment
-
-void icarus::crt::CrtNoiseMonTool::analyze(art::Event const & evt)
-{
-//  TLOG(TLVL_INFO)<<" Processing event "<<evt.event();
-
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
-  for (auto handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-    
-    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
-      //Container fragment
-      for (auto cont : *handle) {
-        artdaq::ContainerFragment contf(cont);
-        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
-          continue;
-        for (size_t ii = 0; ii < contf.block_count(); ++ii)
-          analyze_fragment(*contf[ii].get());
-      }
-    }
-    else {
-      //normal fragment
-      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
-      for (auto frag : *handle) 
-        analyze_fragment(frag);
-    }
-  }
-} //analyze
+} //endJob
 
 DEFINE_ART_MODULE(icarus::crt::CrtNoiseMonTool)
 //this is where the name is specified

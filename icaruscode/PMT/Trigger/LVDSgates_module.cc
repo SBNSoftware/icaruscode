@@ -82,10 +82,11 @@ namespace icarus::trigger { class LVDSgates; }
  * =====================
  *
  * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (instance name:
- *   same as the input gates): sets of gates combined according to the
- *   configuration; one set per input threshold.
+ *   concatenation of input module label and instance name of the input gates;
+ *   the former is omitted if it is `TriggerGatesTag`): sets of gates combined
+ *   according to the configuration; one set per input threshold.
  * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, raw::OpDetWaveform>`
- *   (instance name: same as the input gates): associations between each
+ *   (instance name: same as above): associations between each
  *   produced gate and the optical waveforms providing the original data.
  * 
  * 
@@ -98,13 +99,20 @@ namespace icarus::trigger { class LVDSgates; }
  * * `TriggerGatesTag` (string, default: `discrimopdaq`): name of the module
  *     instance which produced the discriminated waveforms; it must not include
  *     any instance name, as the instance names will be automatically added from
- *     `Thresholds` parameter.
- * * `Thresholds` (list of integers, mandatory): list of the discrimination
- *     thresholds to consider, in ADC counts. A data product containing a
- *     digital signal is read for each one of the thresholds, and the tag of the
- *     data product is expected to be the module label `TriggerGatesTag` with as
- *     instance name the value of the threshold (e.g. for a threshold of 6 ADC
- *     counts the data product tag might be `discrimopdaq:6`).
+ *     `Thresholds` parameter. This value is used as module name for all
+ *     thresholds which do not specify one.
+ * * `Thresholds` (list of tags, mandatory): list of the discrimination
+ *     thresholds to consider. A data product containing a digital signal is
+ *     read for each one of the thresholds; each threshold entry is expected
+ *     to be a input tag in the form `"[ModuleLabel:]InstanceName"`, and if the
+ *     module label part is not specified, the one from `TriggerGatesTag` is
+ *     used as default. In this way, thresholds can be specified simply by a
+ *     number, e.g. `[ 200, 400, 600 ]`, which will be translated into e.g.
+ *     `"discrimopdaq:200"`, `"discrimopdaq:400"` and `"discrimopdaq:600"`,
+ *     while a full specification can be also used: `[ 200, "discrim:config" ]`
+ *     will turn into `"discrimopdaq:200"` and `"discrim:config"` (to specify
+ *     a label with no instance name, set it ending with a colon, like in
+ *     `"discrim:"`).
  * * `ChannelPairing` (list of integral number lists): channels to combine;
  *     each element of this list is itself a list of optical detector channel
  *     numbers. The channels within each group are combined according to
@@ -112,6 +120,8 @@ namespace icarus::trigger { class LVDSgates; }
  *     all the channels in the group.
  *     All optical detector channels *must* appear in the configuration, and
  *     each channel can be combined only in one group. Groups must not be empty.
+ * * `IgnoreChannels` (list of integral numbers, optional): ID of the optical
+ *     detector channels to skip.
  * * `CombinationMode` (either: `"disable"`, `"input1"`, `"input2"`, `"AND"`
  *     or `"OR"`): for each group of channels defined in `ChannelPairing`,
  *     the selected operation is used to combine all the channels in the group:
@@ -169,9 +179,10 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
       "discrimopdaq"
       };
 
-    fhicl::Sequence<raw::ADC_Count_t> Thresholds {
+    fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
-      Comment("thresholds to consider [ADC counts]")
+      Comment
+        ("thresholds to consider (full tag or instance name of TriggerGatesTag)")
       };
     
     fhicl::Sequence<fhicl::Sequence<raw::Channel_t>> ChannelPairing {
@@ -179,6 +190,12 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
       Comment
         ("grouping of optical detector channels (e.g.: [ [ 0, 2 ], [ 4, 6 ], [ 8 ], ... ])")
       };
+
+    fhicl::Sequence<raw::Channel_t> IgnoreChannels {
+      Name("IgnoreChannels"),
+      Comment
+        ("optical detector channels to ignore (e.g.: [ 54, 58, 67, 76, ... ])")
+      };    
 
     fhicl::Atom<std::string> CombinationMode {
       Name("CombinationMode"),
@@ -241,12 +258,20 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   
   // --- BEGIN Configuration variables -----------------------------------------
   
+  /// Information for each source.
+  struct SourceInfo_t {
+    art::InputTag inputTag;
+    std::string outputInstanceName;
+  };
+  
   /// ADC thresholds to read, and the input tag connected to their data.
-  std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
+  std::map<std::string, SourceInfo_t> fADCthresholds;
   
   /// Pairing of optical detector channels.
   std::vector<std::vector<raw::Channel_t>> fChannelPairing;
   ComboMode fComboMode; ///< The operation used to combinate channels.
+
+  std::vector<raw::Channel_t> fIgnoreChannels;
   
   std::string fLogCategory; ///< Message facility stream category for output.
   
@@ -257,8 +282,19 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   void produceThreshold(
     art::Event& event,
     icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
-    icarus::trigger::ADCCounts_t const threshold,
-    art::InputTag const& dataTag
+    std::string const& thresholdStr,
+    SourceInfo_t const& srcInfo
+    ) const;
+
+  /**
+   * @brief Removes all the channel in `ignoreChannels` from `channelPairing`.
+   * @return a copy of `channelPairing` with no element from `ignoreChannels`
+   * 
+   * Channel lists in the returned list may become empty.
+   */
+  std::vector<std::vector<raw::Channel_t>> removeChannels(
+    std::vector<std::vector<raw::Channel_t>> channelPairing,
+    std::vector<raw::Channel_t> const& ignoreChannels
     ) const;
   
   
@@ -318,6 +354,14 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
     icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap
     );
 
+  /// Converts a threshold string into an input tag.
+  static art::InputTag makeTag
+    (std::string const& thresholdStr, std::string const& defModule);
+
+  /// Converts an input tag into an instance name for the corresponding output.
+  static std::string makeOutputInstanceName
+    (art::InputTag const& inputTag, std::string const& defModule);
+  
 }; // class icarus::trigger::LVDSgates
 
 
@@ -331,16 +375,18 @@ icarus::trigger::LVDSgates::LVDSgates
   // configuration
   , fChannelPairing(config().ChannelPairing())
   , fComboMode(config().getCombinationMode())
+  , fIgnoreChannels(config().IgnoreChannels())
   , fLogCategory(config().LogCategory())
 {
   //
   // more complex parameter parsing
   //
   std::string const discrModuleLabel = config().TriggerGatesTag();
-  for (raw::ADC_Count_t threshold: config().Thresholds()) {
-    fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
-  }
+  for (std::string const& thresholdStr: config().Thresholds()) {
+    art::InputTag const inputTag = makeTag(thresholdStr, discrModuleLabel);
+    fADCthresholds[thresholdStr]
+      = { inputTag, makeOutputInstanceName(inputTag, discrModuleLabel) };
+  } // for all thresholds
   
   //
   // configuration validation
@@ -355,9 +401,12 @@ icarus::trigger::LVDSgates::LVDSgates
     log << nConfiguredChannels
       << " optical channels configured to be combined into "
       << fChannelPairing.size() << " LVDS outputs.";
-    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
-    for (auto const& [ threshold, dataTag ]: fADCthresholds)
-      log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
+    log << "\nignored " << fIgnoreChannels.size() << " channels.";
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
+    for (auto const& [ threshold, srcInfo ]: fADCthresholds) {
+      log << "\n * " << threshold
+        << " (from '" << srcInfo.inputTag.encode() << "')";
+    }
   } // local block
 
   
@@ -366,20 +415,19 @@ icarus::trigger::LVDSgates::LVDSgates
   //
   // input data declaration
   //
-  for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
-    consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
+  for (auto const& [ inputTag, outName ]: util::const_values(fADCthresholds)) {
+    consumes<std::vector<OpticalTriggerGateData_t>>(inputTag);
     consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
-      (inputDataTag);
+      (inputTag);
   } // for
   
   
   //
   // output data declaration
   //
-  for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
-    produces<std::vector<OpticalTriggerGateData_t>>(inputDataTag.instance());
-    produces<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
-      (inputDataTag.instance());
+  for (auto const& [ inputTag, outName ]: util::const_values(fADCthresholds)) {
+    produces<std::vector<OpticalTriggerGateData_t>>(outName);
+    produces<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(outName);
   } // for
   
   
@@ -391,9 +439,9 @@ void icarus::trigger::LVDSgates::produce(art::Event& event) {
   
   icarus::trigger::OpDetWaveformDataProductMap_t waveformMap;
   
-  for (auto const& [ threshold, dataTag ]: fADCthresholds) {
+  for (auto const& [ thresholdStr, srcInfo ]: fADCthresholds) {
     
-    produceThreshold(event, waveformMap, threshold, dataTag);
+    produceThreshold(event, waveformMap, thresholdStr, srcInfo);
     
   } // for all thresholds
   
@@ -401,15 +449,37 @@ void icarus::trigger::LVDSgates::produce(art::Event& event) {
 
 
 //------------------------------------------------------------------------------
+std::vector<std::vector<raw::Channel_t>> icarus::trigger::LVDSgates::removeChannels(
+  std::vector<std::vector<raw::Channel_t>> channelPairing,
+  std::vector<raw::Channel_t> const& ignoreChannels
+  ) const {
+
+  for (std::vector<raw::Channel_t>& channels: channelPairing) {
+    for (unsigned int j = channels.size(); j-- > 0; ) {
+      std::vector<raw::Channel_t>::const_iterator const it = find(ignoreChannels.begin(), ignoreChannels.end(), channels[j]);
+      if (it != fIgnoreChannels.end()) {
+        channels.erase(channels.begin() + j);
+      }
+    }
+  }
+
+  return channelPairing;
+
+} // icarus::trigger::LVDSgates::removeChannels()
+
+
+//------------------------------------------------------------------------------
 void icarus::trigger::LVDSgates::produceThreshold(
   art::Event& event,
   icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
-  icarus::trigger::ADCCounts_t const threshold,
-  art::InputTag const& dataTag
+  std::string const& thresholdStr,
+  SourceInfo_t const& srcInfo
 ) const {
   
+  auto const& [ dataTag, outputInstanceName ] = srcInfo;
+  
   mf::LogDebug(fLogCategory)
-    << "Processing threshold " << threshold
+    << "Processing threshold " << thresholdStr
     << " from '" << dataTag.encode() << "'";
 
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
@@ -420,7 +490,9 @@ void icarus::trigger::LVDSgates::produceThreshold(
   checkInput(gates);
   
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates;
-  for (std::vector<raw::Channel_t> const& pairing: fChannelPairing) {
+  std::vector<std::vector<raw::Channel_t>> const cleanedChannels = removeChannels(fChannelPairing, fIgnoreChannels);
+
+  for (std::vector<raw::Channel_t> const& pairing: cleanedChannels) {
     if (pairing.empty()) continue; // ???
     
     combinedGates.push_back(combineChannels(gates, pairing, fComboMode));
@@ -429,28 +501,28 @@ void icarus::trigger::LVDSgates::produceThreshold(
   
   // transform the data; after this line, `gates` is not usable any more
   art::PtrMaker<OpticalTriggerGateData_t> const makeGatePtr
-    (event, dataTag.instance());
-  auto&& [ outputGates, outputAssns ]
+    (event, outputInstanceName);
+  auto [ outputGates, outputAssns ]
     = icarus::trigger::transformIntoOpticalTriggerGate
     (combinedGates, makeGatePtr, waveformMap);
   
   mf::LogTrace(fLogCategory)
-    << "Threshold " << threshold << " ('" << dataTag.encode() << "'): "
+    << "Threshold " << thresholdStr << " ('" << dataTag.encode() << "'): "
     << gates.size() << " input channels, "
     << outputGates.size() << " output channels (+"
     << outputAssns.size() << " associations to waveforms) into '"
-    << moduleDescription().moduleLabel() << ":" << dataTag.instance() << "'"
+    << moduleDescription().moduleLabel() << ":" << outputInstanceName << "'"
     ;
 
   event.put(
     std::make_unique<std::vector<OpticalTriggerGateData_t>>
       (std::move(outputGates)),
-    dataTag.instance()
+    outputInstanceName
     );
   event.put(
     std::make_unique<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
       (std::move(outputAssns)),
-    dataTag.instance()
+    outputInstanceName
     );
   
 } // icarus::trigger::LVDSgates::produceThreshold()
@@ -713,6 +785,29 @@ icarus::trigger::LVDSgates::ReadTriggerGates(
     (*(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag)), assns);
   
 } // icarus::trigger::LVDSgates::ReadTriggerGates()
+
+
+//------------------------------------------------------------------------------
+art::InputTag icarus::trigger::LVDSgates::makeTag
+  (std::string const& thresholdStr, std::string const& defModule)
+{
+  return (thresholdStr.find(':') == std::string::npos)
+    ? art::InputTag{ defModule, thresholdStr }
+    : art::InputTag{ thresholdStr }
+    ;
+} // icarus::trigger::LVDSgates::makeTag()
+
+
+//------------------------------------------------------------------------------
+std::string icarus::trigger::LVDSgates::makeOutputInstanceName
+  (art::InputTag const& inputTag, std::string const& defModule)
+{
+  return (inputTag.label() == defModule)
+    ? inputTag.instance()
+    : inputTag.instance().empty()
+      ? inputTag.label(): inputTag.label() + inputTag.instance()
+    ;
+} // icarus::trigger::LVDSgates::makeTag()
 
 
 //------------------------------------------------------------------------------
