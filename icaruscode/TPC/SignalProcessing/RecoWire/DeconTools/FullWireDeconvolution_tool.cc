@@ -113,7 +113,7 @@ void FullWireDeconvolution::configure(const fhicl::ParameterSet& pset)
 }
     
 void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        waveform,
-                                       double const samplingRate,
+                                       double const                       samplingRate,
                                        raw::ChannelID_t                   channel,
                                        IROIFinder::CandidateROIVec const& roiVec,
                                        recob::Wire::RegionsOfInterest_t&  ROIVec) const
@@ -148,11 +148,11 @@ void FullWireDeconvolution::Deconvolve(IROIFinder::Waveform const&        wavefo
         const auto& roi = roiVec[roiIdx];
         
         // First up: copy out the relevent ADC bins into the ROI holder
-        size_t roiLen = roi.second - roi.first;
+        size_t roiLen = roi.second - roi.first + 1;
         
         holder.resize(roiLen);
         
-        std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roi.second, holder.begin());
+        std::copy(rawAdcLessPedVec.begin()+binOffset+roi.first, rawAdcLessPedVec.begin()+binOffset+roiLen, holder.begin());
         if (applyNormFactor) std::transform(holder.begin(),holder.end(),holder.begin(), std::bind(std::multiplies<float>(),std::placeholders::_1,normFactor));
         
         // Get the truncated mean and rms

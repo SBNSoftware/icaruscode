@@ -459,7 +459,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
             return;
         }
         
-        const geo::PlaneID&      planeID = wids[0].planeID();
+        const geo::PlaneID& planeID = wids[0].planeID();
 
         // vector holding uncompressed adc values
         std::vector<short> rawadc(dataSize);
@@ -498,7 +498,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         // Make a dummy candidate roi vec
         icarus_tool::IROIFinder::CandidateROIVec deconROIVec;
         
-        deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size()));
+        deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size() - 1));
         
         // Do the deconvolution on the full waveform
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
@@ -513,13 +513,13 @@ void  Decon1DROI::processChannel(size_t                                  idx,
         // Now find the candidate ROI's
         fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
         
-        icarusutil::TimeVec holder;
+        std::vector<float> holder;
         
         // We need to copy the deconvolved (and corrected) waveform ROI's
         for(const auto& candROI : candRoiVec)
         {
             // First up: copy out the relevent ADC bins into the ROI holder
-            size_t roiLen = candROI.second - candROI.first;
+            size_t roiLen = candROI.second - candROI.first + 1;
             
             holder.resize(roiLen);
             
