@@ -12,6 +12,7 @@ art_make(
                         lardataobj_RawData
                         lardataobj_RecoBase
                         lardata_RecoObjects
+			larpandora_LArPandoraInterface
                         nusimdata_SimulationBase
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
