@@ -61,12 +61,12 @@ physics.producers.ophitfull.HitAlgoPset.Verbosity: false
 
 physics.producers.opflashCryo0.AlgoConfig.PEThreshold:    100
 physics.producers.opflashCryo0.AlgoConfig.PEThresholdHit: 1.0
-physics.producers.opflashCryo0.AlgoConfig.MinPECoinc:     50
+physics.producers.opflashCryo0.AlgoConfig.MinPECoinc:     30
 physics.producers.opflashCryo0.AlgoConfig.MinMultCoinc:   5
 physics.producers.opflashCryo0.AlgoConfig.IntegralTime:   1.
 physics.producers.opflashCryo0.AlgoConfig.PreSample:      0.02
 physics.producers.opflashCryo0.AlgoConfig.VetoSize:       1.
-physics.producers.opflashCryo0.AlgoConfig.TimeResolution: 0.01
+physics.producers.opflashCryo0.AlgoConfig.TimeResolution: 0.02
 #physics.producers.opflashCryo0.AlgoConfig.DebugMode: true
 
 physics.analyzers.ophitana.OutputFileName: "ophit_ana.root"

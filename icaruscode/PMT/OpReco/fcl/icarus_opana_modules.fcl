@@ -26,7 +26,6 @@ ICARUSMCOpHit: {
     MergePeriod: 0.01
     SimPhotonsProducer: "largeant"
     SPEArea: @local::SPE.Area
-    SPEAmplitude: @local::SPE.Amplitude
 }
 
 ICARUSMCOpFlash: {

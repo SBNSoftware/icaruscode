@@ -3,9 +3,9 @@ BEGIN_PROLOG
 
 SimpleFlashStandard:
 {
-  PEThreshold:    20
+  PEThreshold:    40
   PEThresholdHit: 0.5
-  MinPECoinc:     10
+  MinPECoinc:     40
   MinMultCoinc:   5
   IntegralTime:   8.
   PreSample:      0.1
@@ -22,6 +22,17 @@ SimpleFlashCryo0.OpChannelRange: [0,179]
 
 SimpleFlashCryo1: @local::SimpleFlashStandard
 SimpleFlashCryo1.OpChannelRange: [180,359]
+
+
+SimpleFlashDataCryo0: @local::SimpleFlashCryo0
+
+SimpleFlashDataCryo1: @local::SimpleFlashCryo1
+
+
+################################
+# CONFIGS BELOW ARE DEPRECATED #
+################################
+
 
 SimpleFlashTPC0: @local::SimpleFlashStandard
 SimpleFlashTPC0.OpChannelRange: [0,89]

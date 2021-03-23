@@ -66,7 +66,7 @@ physics.producers.opflashCryo0.AlgoConfig.MinMultCoinc:   5
 physics.producers.opflashCryo0.AlgoConfig.IntegralTime:   1.
 physics.producers.opflashCryo0.AlgoConfig.PreSample:      0.02
 physics.producers.opflashCryo0.AlgoConfig.VetoSize:       1.
-physics.producers.opflashCryo0.AlgoConfig.TimeResolution: 0.01
+physics.producers.opflashCryo0.AlgoConfig.TimeResolution: 0.02
 #physics.producers.opflashCryo0.AlgoConfig.DebugMode: true
 
 physics.analyzers.ophitana.OutputFileName: "ophit_ana.root"

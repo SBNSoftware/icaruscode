@@ -9,7 +9,6 @@ ICARUSSimpleFlash:
   FlashFinderAlgo : "SimpleFlashAlgo"
   AlgoConfig      : @local::SimpleFlashStandard
   OpHitProducer   : "ophit"
-  OpFlashProducer : "opflash"
   PECalib         : @local::NoCalib
 }
 

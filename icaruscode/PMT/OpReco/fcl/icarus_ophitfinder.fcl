@@ -79,6 +79,7 @@ icarus_ophit:
    reco_man:       @local::standard_preco_manager
    HitAlgoPset:    @local::icarus_opreco_hit_slidingwindow
    PedAlgoPset:    @local::icarus_opreco_pedestal_rmsslider
+   #PedAlgoPset:    @local::icarus_opreco_pedestal_rollingmean
 }
 
 icarus_ophitdebugger: @local::icarus_ophit
@@ -91,10 +92,14 @@ icarus_ophit_data.PedAlgoPset.Threshold: 4.0
 icarus_ophit_data.PedAlgoPset.MaxSigma: 4.0
 icarus_ophit_data.PedAlgoPset.PedRangeMax: 15200
 icarus_ophit_data.PedAlgoPset.PedRangeMin: 14640
-
 icarus_ophit_data.HitAlgoPset.ADCThreshold: 10
 icarus_ophit_data.HitAlgoPset.TailADCThreshold: 6
-icarus_ophit_data.HitAlgoPset.EndADCThreshold: 3
+icarus_ophit_data.HitAlgoPset.EndADCThreshold: 2
 icarus_ophit_data.HitAlgoPset.MinPulseWidth: 5
+
+icarus_ophitdebugger_data: @local::icarus_ophit_data
+icarus_ophitdebugger_data.module_type: "FullOpHitFinder"
+icarus_ophitdebugger_data.OutputFile:  "ophit_debug.root"
+
 
 END_PROLOG
