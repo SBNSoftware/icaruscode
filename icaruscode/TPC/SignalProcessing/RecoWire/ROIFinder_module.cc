@@ -31,6 +31,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -47,6 +48,31 @@
 #include "tbb/task_arena.h"
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_hash_map.h"
+
+
+namespace {
+  
+  /// Helper: lazily returns the expanded content of a set of `recob::Wires`.
+  struct PlaneWireData {
+    std::size_t size() const { return wires.size(); }
+    void resize(std::size_t nWires)
+      { wires.clear(); wires.resize(nWires, nullptr); }
+    void addWire(std::size_t iWire, recob::Wire const& wire)
+      { wires.at(iWire) = &wire; }
+    icarus_signal_processing::ArrayFloat operator() () const
+      {
+        icarus_signal_processing::ArrayFloat data;
+        data.resize(wires.size());
+        for (auto [ iWire, wire ]: util::enumerate(wires))
+          if (wire) data[iWire] = wire->Signal();
+        return data;
+      }
+      private:
+    std::vector<recob::Wire const*> wires;
+  }; // PlaneWireData
+  
+} // local namespace
+
 
 ///creation of calibrated signals on wires
 namespace caldata {
@@ -67,7 +93,7 @@ class ROIFinder : public art::EDProducer
     void reconfigure(fhicl::ParameterSet const& p);
     
   private:
-    using PlaneIDToDataPair    = std::pair<std::vector<raw::ChannelID_t>,icarus_signal_processing::ArrayFloat>;
+    using PlaneIDToDataPair    = std::pair<std::vector<raw::ChannelID_t>,PlaneWireData>;
     using PlaneIDToDataPairMap = std::map<geo::PlaneID,PlaneIDToDataPair>;
     using PlaneIDVec           = std::vector<geo::PlaneID>;
 
@@ -225,7 +251,7 @@ void ROIFinder::produce(art::Event& evt)
 
             // Add waveform to the 2D array
             mapItr->second.first[wireID.Wire]  = channel;
-            mapItr->second.second[wireID.Wire] = wire.Signal();
+            mapItr->second.second.addWire(wireID.Wire, wire);
         }
     }
 
@@ -271,8 +297,7 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     const PlaneIDToDataPair& planeIDToDataPair = mapItr->second;
 
-    const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second;
-
+    const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second();
     icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
     // Use this to get the 2D Dilation of each waveform
