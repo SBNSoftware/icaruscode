@@ -232,22 +232,21 @@ void TrackHitAna::analyze(const art::Event& event)
     {
       IHitHistogramTool::HitPtrVec allHitVec;
 
-      // get tracks and the assocation of the hits to tracks
-      art::Handle< std::vector<recob::Track> > trackHandle;
-      std::vector< art::Ptr<recob::Track> > trkVec;
-      if( event.getByLabel(fTrackProducerLabel, trackHandle) ){
-	art::fill_ptr_vector(trkVec, trackHandle);
-      }
+      if( fUseOnlyTrackHits ){
+	// get tracks and the association of the hits to tracks
+	art::Handle< std::vector<recob::Track> > trackHandle;
+	std::vector< art::Ptr<recob::Track> > trkVec;
+	if( event.getByLabel(fTrackProducerLabel, trackHandle) ){
+	  art::fill_ptr_vector(trkVec, trackHandle);
+	}
 
-      art::FindManyP<recob::Hit> fmhit(trackHandle, event, fTrackProducerLabel);
-      bool fmhitValid = true;
-      if( !fmhit.isValid() ){
-	mf::LogWarning("TrackHitsAna") << "fmhit is not valid. Will default to using ALL hits.";
-	fmhitValid = false;
-      }
+	art::FindManyP<recob::Hit> fmhit(trackHandle, event, fTrackProducerLabel);
+	if( !fmhit.isValid() ){
+	  mf::LogWarning("TrackHitsAna") << "fmhit is not valid. RETURNING.";
+	  return;
+	}
 
-      // if using trk hits, then get those combined
-      if( fUseOnlyTrackHits && fmhitValid ){
+	// combine the track hits
 	std::unordered_set< art::Ptr<recob::Hit> > trkHitSet;
 	for( auto const& iTrk : trkVec ){
 	  //if( iTrk->Length() < 5. ) continue; // skip small tracks... maybe useful at low thresholds? testing...
