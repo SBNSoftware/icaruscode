@@ -47,6 +47,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/FindMany.h"
 #include "canvas/Persistency/Common/FindManyP.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -62,6 +63,7 @@
 #include <iostream>
 #include <string>
 #include <cmath>
+#include <unordered_set>
 
 #include <iostream>
 #include <fstream>
@@ -115,10 +117,12 @@ private:
     double projectedLength(const recob::Track* track);
 
     // The parameters we'll read from the .fcl file.
-    std::vector<art::InputTag> fHitProducerLabelVec;
-    std::vector<art::InputTag> fWireProducerLabelVec;
-    std::vector<art::InputTag> fPFParticleProducerLabelVec;
-    std::vector<art::InputTag> fTrackProducerLabelVec;
+    art::InputTag fHitProducerLabel;
+    art::InputTag fWireProducerLabel;
+    art::InputTag fPFParticleProducerLabel;
+    art::InputTag fTrackProducerLabel;
+
+    bool fUseOnlyTrackHits;
 
     // The variables that will go into the n-tuple.
     int fEvent;
@@ -194,11 +198,13 @@ void TrackHitAna::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fHitProducerLabelVec        = p.get< std::vector<art::InputTag> >("HitModuleLabel",          std::vector<art::InputTag>() = {"gauss"});
-    fPFParticleProducerLabelVec = p.get< std::vector<art::InputTag> >("PFParticleProducerLabel", std::vector<art::InputTag>() = {"cluster3d"});
-    fTrackProducerLabelVec      = p.get< std::vector<art::InputTag> >("TrackProducerLabel",      std::vector<art::InputTag>() = {"trackkalmanhit"});
-    fWireProducerLabelVec       = p.get< std::vector<art::InputTag> >("WireProducerLabel",       std::vector<art::InputTag>() = {"caldata"});
-    
+    fHitProducerLabel        = p.get< art::InputTag >("HitModuleLabel",          "gauss");
+    fPFParticleProducerLabel = p.get< art::InputTag >("PFParticleProducerLabel", "cluster3d");
+    fTrackProducerLabel      = p.get< art::InputTag >("TrackProducerLabel",      "trackkalmanhit");
+    fWireProducerLabel       = p.get< art::InputTag >("WireProducerLabel",       "caldata");
+
+    fUseOnlyTrackHits           = p.get< bool >("UseOnlyTrackHits",false);
+
     // Implement the tools for handling the responses
     const std::vector<fhicl::ParameterSet>& hitHistogramToolVec = p.get<std::vector<fhicl::ParameterSet>>("HitHistogramToolList");
     
@@ -218,19 +224,50 @@ void TrackHitAna::analyze(const art::Event& event)
 
     fNumEvents++;
     
-    for(const auto& hitLabel : fHitProducerLabelVec)
+    // Make a pass through all hits to make contrasting plots
+    art::Handle< std::vector<recob::Hit> > hitHandle;
+    event.getByLabel(fHitProducerLabel, hitHandle);
+
+    if (hitHandle.isValid())
     {
-        // Make a pass through all hits to make contrasting plots
-        art::Handle< std::vector<recob::Hit> > hitHandle;
-        event.getByLabel(hitLabel, hitHandle);
-        
-        if (hitHandle.isValid())
-        {
-            IHitHistogramTool::HitPtrVec allHitVec;
-            art::fill_ptr_vector(allHitVec, hitHandle);
-            
-            for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(allHitVec);
-        }
+      IHitHistogramTool::HitPtrVec allHitVec;
+
+      // get tracks and the assocation of the hits to tracks
+      art::Handle< std::vector<recob::Track> > trackHandle;
+      std::vector< art::Ptr<recob::Track> > trkVec;
+      if( event.getByLabel(fTrackProducerLabel, trackHandle) ){
+	art::fill_ptr_vector(trkVec, trackHandle);
+      }
+
+      art::FindManyP<recob::Hit> fmhit(trackHandle, event, fTrackProducerLabel);
+      bool fmhitValid = true;
+      if( !fmhit.isValid() ){
+	mf::LogWarning("TrackHitsAna") << "fmhit is not valid. Will default to using ALL hits.";
+	fmhitValid = false;
+      }
+
+      // if using trk hits, then get those combined
+      if( fUseOnlyTrackHits && fmhitValid ){
+	std::unordered_set< art::Ptr<recob::Hit> > trkHitSet;
+	for( auto const& iTrk : trkVec ){
+	  //if( iTrk->Length() < 5. ) continue; // skip small tracks... maybe useful at low thresholds? testing...
+	  std::vector< art::Ptr<recob::Hit> > theseHits = fmhit.at(iTrk.key());
+	  for( auto const& iHitPtr : theseHits ){
+	    trkHitSet.insert( iHitPtr );
+	  }
+	}
+
+	// Now that we have the set, fill the vector
+	for( auto const& iSetHit : trkHitSet ){
+	  allHitVec.push_back( iSetHit );
+	}
+      }
+      else{
+	// else use all hits
+	art::fill_ptr_vector(allHitVec, hitHandle);
+      }
+
+      for(auto& hitHistTool : fHitHistogramToolVec) hitHistTool->fillHistograms(allHitVec);
     }
 
     return;
