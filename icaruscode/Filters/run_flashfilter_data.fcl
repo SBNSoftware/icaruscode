@@ -23,20 +23,32 @@ physics:
    ophit:  @local::icarus_ophit_data
    ophitfull:    @local::icarus_ophitdebugger_data
    opflashCryo0: @local::ICARUSSimpleFlashDataCryo0
-   opflashCryo1: @local::ICARUSSimpleFlashDataCryo1   
+   opflashCryo1: @local::ICARUSSimpleFlashDataCryo1
+   
  }
  analyzers: { 
    ophitana: @local::ICARUSOpHitTuple 
    opflashana: @local::ICARUSOpFlashAna
  }
+ filters: {
+   flashfilter: { module_type: "FilterOpFlash" 
+                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
+                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
+                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
+                }
+ }
+
  #produce: [ ophitfull]
- produce: [ ophit, opflashCryo0, opflashCryo1 ]
+ produce: [ ophit, opflashCryo0, opflashCryo1, flashfilter ]
  #produce: [ ophitfull, ophit, opflashCryo0, opflashCryo1 ]
- analyze: [ ophitana, opflashana ]
- #analyze: [ opflashana ]
+
+ #analyze: [ ophitana, opflashana ]
+ analyze: [ opflashana ]
+
  store:   [ out1 ]
+
  trigger_paths: [ produce ]
- end_paths:     [ analyze ]
+ end_paths:     [ analyze, store ]
 }
 
 outputs:
@@ -49,6 +61,7 @@ outputs:
    saveMemoryObjectThreshold: 0
    compressionLevel: 1
    fastCloning: false
+   SelectEvents: [produce]
  }
 }
 
@@ -58,7 +71,7 @@ services.DetectorClocksService.InheritClockConfig: false
 physics.producers.ophitfull.PedAlgoPset.Verbose: false
 physics.producers.ophitfull.HitAlgoPset.Verbosity: false
 
-physics.analyzers.ophitana.OutputFileName: "ophitana.root"
+physics.analyzers.ophitana.OutputFileName: "ophit_ana.root"
 physics.analyzers.ophitana.MCTruthProducer: ""
 #physics.analyzers.ophitana.OpDetWaveformProducer: "daqPMT"
 physics.analyzers.ophitana.OpHitProducerList: ["ophit"]
