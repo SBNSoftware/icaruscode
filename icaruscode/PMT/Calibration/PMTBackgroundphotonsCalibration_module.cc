@@ -76,7 +76,7 @@ public:
 
   void analyze(art::Event const& event) override;
 
-  void doFitGauss(TH1D* hist, int pmt, std::vector<double>& m_params);
+  //void doFitGauss(TH1D* hist, int pmt, std::vector<double>& m_params);
 
   void clean();
 
@@ -103,7 +103,7 @@ private:
 
   TH1D *hequalization;
 
-  std::vector<unsigned int>   *m_channel_id = NULL;
+  std::vector<unsigned int> *m_channel_id = NULL;
   std::vector<float> *m_tstart = NULL;
   std::vector<float> *m_tmax = NULL;
   std::vector<float> *m_amplitude = NULL;
@@ -125,6 +125,7 @@ private:
 pmtcalo::PMTBackgroundphotonsCalibration::PMTBackgroundphotonsCalibration(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
 {
+
 
    m_ophit_label = pset.get<art::InputTag>("OpHitModule", "ophit");
 
@@ -271,13 +272,13 @@ void pmtcalo::PMTBackgroundphotonsCalibration::clean()
 
 //-----------------------------------------------------------------------------
 
-
+/*
 void pmtcalo::PMTBackgroundphotonsCalibration::doFitGauss(TH1D* hist, int pmt, std::vector<double>& m_params) 
 {
 
   int npars = 3;
 
-  /*
+  
   int ncounts = 5;
   int rangeMin = -5;
   int rangeMax = 5;
@@ -323,7 +324,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::doFitGauss(TH1D* hist, int pmt, s
 
   double startFit = (binPeak+rangeMin)*width;
   double endFit = (binPeak+rangeMax)*width;
-  */
+  
 
   Gaussian function_obj;
   TF1* func = new TF1("gaussian", function_obj, 0.0, 8.0, npars);
@@ -352,6 +353,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::doFitGauss(TH1D* hist, int pmt, s
   
 
 }
+*/
 
 
 //=============================================================================
@@ -362,7 +364,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::doFitGauss(TH1D* hist, int pmt, s
 void pmtcalo::PMTBackgroundphotonsCalibration::endJob()
 {
 
-  
+  /*
   std::cout << " END OF THE JOB!" << std::endl;
   std::cout << m_timestamp << std::endl;
 
@@ -393,6 +395,7 @@ void pmtcalo::PMTBackgroundphotonsCalibration::endJob()
   }
 
   std::cout << " ALL DONE! " << std::endl;
+  */
 
 }
 
