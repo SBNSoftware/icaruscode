@@ -28,6 +28,9 @@
 #   using GitHub sources
 # 20201009 (petrillo@slac.stanford.edu) [v1.2]
 #   support additional repositories; metadata version: 2
+# 20210302 (petrillo@slac.stanford.edu) [v1.3]
+#   support for non-`master` release branches (like in `sbnobj`);
+#   in case of tagged target, use the versions from UPS for all repositories
 #
 
 # -- BEGIN -- boilerplate settings and library loading -------------------------
@@ -44,7 +47,7 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.2"
+SCRIPTVERSION="1.3"
 
 
 declare -ri MetadataVersion='2' # integral numbers please
@@ -227,7 +230,7 @@ function PrepareRepository() {
   local GIToldCommit
   if [[ "$RequestedCodeBranch" != 'HEAD' ]]; then
     
-    local -r CodeBranch="${RequestedCodeBranch:-$DefaultBranch}"
+    local -r CodeBranch="${RequestedCodeBranch:-${ReleaseBranches[$CodeRepoName]:-${DefaultBranch}}}"
     
     if isFlagUnset NewGITclone ; then
       echo "Fetching updates for the existing GIT source tree of '${CodeRepoPath}'"
@@ -249,8 +252,7 @@ function PrepareRepository() {
     GIToldCommit="$(cd "$CodeRepoPath" && git reflog -n 1 --format='format:%H')"
     local OldScriptChecksum="$(md5sum < "$0")"
     
-    echo "Updating the GIT branch..."
-    git -C "$CodeRepoPath" checkout "$CodeBranch" && git -C "$CodeRepoPath" rebase
+    git -C "$CodeRepoPath" checkout "$CodeBranch"
     local -i res=$?
     if [[ $res != 0 ]]; then
       RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
@@ -258,6 +260,15 @@ function PrepareRepository() {
         FATAL "$res" "Failed to check out branch '${CodeBranch}' of GIT repository ${CodeRepoPath}."
       else
         echo "Failed to check out branch '${CodeBranch}' of GIT repository ${CodeRepoPath}."
+      fi
+    fi
+    
+    if [[ -n "$CodeBranch" ]] && ! isGITtag "$CodeBranch" ; then
+      echo "Updating the GIT branch..."
+      git -C "$CodeRepoPath" rebase
+      if [[ $res != 0 ]]; then
+        RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
+        echo "Failed to update (rebase) branch '${CodeBranch}' of GIT repository ${CodeRepoPath}."
       fi
     fi
     
@@ -314,9 +325,12 @@ function CheckOutSources() {
   local -r RequestedCodeBranch="$RequestedExperimentCodeBranch"
   
   # all the same branch, just because of the simpler interface
+  local RequestedRepoVersion
   for CodeRepoName in "${RepoNames[@]}" ; do
-    echo " === preparing repository '${CodeRepoName}' === "
-    PrepareRepository "$CodeRepoName" "$RequestedCodeBranch"
+    RequestedRepoVersion="$(UPSversion "$CodeRepoName")"
+    [[ $? == 0 ]] || RequestedRepoVersion="$RequestedCodeBranch"
+    echo " === preparing repository '${CodeRepoName}' (${RequestedRepoVersion}) === "
+    PrepareRepository "$CodeRepoName" "$RequestedRepoVersion"
   done
   echo " === all repositories prepared === "
   
@@ -327,7 +341,7 @@ function CheckOutSources() {
     for CodeRepoName in "${RepoNames[@]}" ; do
       echo " === Picking tag ${ExperimentCodeVersion} for ${CodeRepoName} ==="
       local CodeRepoPath="${CodeRepoPaths[$CodeRepoName]}"
-      git -C "$CodeRepoPath" checkout "$ExperimentCodeVersion" || echo "${CodeRepoName} does not have tag '${ExperimentCodeVersion}', we'll use the current branch."
+      git -C "$CodeRepoPath" checkout "$ExperimentCodeVersion" || echo "${CodeRepoName} does not have tag '${ExperimentCodeVersion}', we'll use the current branch ($(git -C "$CodeRepoPath" describe))."
     done
     echo " === tag ${ExperimentCodeVersion} selection completed ==="
   fi

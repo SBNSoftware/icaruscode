@@ -1,0 +1,119 @@
+#
+# File:    prodtext_standard_icarus.fcl
+# Purpose: Runs `TextFileGen` module on an input file `HEPevents.txt`.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 1, 2021
+#
+# This module effectively converts events from a HEP text format in a
+# `HEPevents.txt` file (not provided) into nugen/LArSoft MC truth record for
+# use with ICARUS.
+# 
+# Note that the module sets the position of the events exactly where the input
+# file places them, and therefore the input file should know about the detector
+# geometry.
+# 
+# The active volume of ICARUS TPC can be approximated (in LArSoft v09_17_00) as
+#     
+#     (-369.63,-214.61,-984.951) -- (-70.80,167.71,984.951) cm
+#     (  70.80,-214.61,-984.951) -- (369.63,167.71,984.951) cm
+#     
+# (which includes some cathode volume as well). Because of this deterministic
+# feature, `Geometry` service would not be required by this job. This
+# configuration demands it nevertheless for stronger consistency enforcement.
+# If this is not desired and the output files should be "geometry-agnostic",
+# just add in the overridden configuration file (see below for an example) the
+# following lines:
+# 
+#     services.Geometry:                    @erase
+#     services.GeometryConfigurationWriter: @erase
+#     services.ExptGeoHelperInterface:      @erase
+# 
+# The output file name will be `prodtext_standard_icarus_%tc-GenText.root`
+# (`%tc` being a timestamp assigned by art).
+# 
+# 
+# How to run a job with this configuration
+# =========================================
+# 
+# A different input file ("MyEvents.txt") can be processed by running a
+# configuration like the following:
+#     
+#     #include "prodtext_standard_icarus.fcl"
+#     
+#     physics.producers.generator.InputFileName: "MyEvents.txt"
+#     
+#     outputs.rootoutput.fileName: "MyEvents_icarus_%tc-%p.root"
+#     
+# where the last line changes the output file name for convenience (the same
+# effect can be achieved by specifying `-o "MyEvents_icarus_%tc-%p.root"`
+# argument to `lar` executable).
+# 
+# In every case, the number of events in the input file should be specified
+# either in the configuration (`source.MaxEvents: 10`) or on the command line
+# (`lar -n 10 ...`). Specifying a number of events larger than the ones in the
+# input files will result in the excess events being created with no particles.
+#
+#
+
+#include "messages_icarus.fcl"
+#include "geometry_icarus.fcl"
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+process_name: GenText
+
+
+# ------------------------------------------------------------------------------
+services: {
+
+  @table::icarus_art_services  # from `services_common_icarus.fcl`
+  
+  message: @local::icarus_message_services_interactive  # from `messages_icarus.fcl`
+  
+  @table::icarus_geometry_services  # from `geometry_icarus.fcl`
+  
+} # services
+
+
+# ------------------------------------------------------------------------------
+source: {
+  module_type:     EmptyEvent
+  timestampPlugin: { plugin_type: "GeneratedEventTimestamp" }
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+
+  producers: {
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    generator: {
+      module_type:    TextFileGen
+      InputFileName: "HEPevents.txt"
+    }
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+
+  simulate: [ generator ]
+
+  stream:   [ rootoutput ]
+
+} # physics
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+    @table::icarus_rootoutput  # from `rootoutput_icarus.fcl`
+    fileName:    "prodtext_standard_icarus_%tc-%p.root"
+  }
+}
+
+
+# ------------------------------------------------------------------------------
