@@ -1,0 +1,88 @@
+#include "services_common_icarus.fcl"
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: OpReco
+
+services:
+{
+  @table::icarus_basic_services
+}
+
+source:
+{
+  module_type: RootInput
+}
+
+physics:
+{
+
+ producers:
+ {
+   ophit:  @local::icarus_ophit_data
+   ophitfull:    @local::icarus_ophitdebugger_data
+   opflashCryo0: @local::ICARUSSimpleFlashDataCryo0
+   opflashCryo1: @local::ICARUSSimpleFlashDataCryo1   
+ }
+ analyzers: { 
+   ophitana: @local::ICARUSOpHitTuple 
+   opflashana: @local::ICARUSOpFlashAna
+ }
+ #produce: [ ophitfull]
+ produce: [ ophit, opflashCryo0, opflashCryo1 ]
+ #produce: [ ophitfull, ophit, opflashCryo0, opflashCryo1 ]
+ analyze: [ ophitana, opflashana ]
+ #analyze: [ opflashana ]
+ store:   [ out1 ]
+ trigger_paths: [ produce ]
+ end_paths:     [ analyze ]
+}
+
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "reconstructed.root"
+   dataTier:    "reco"
+   saveMemoryObjectThreshold: 0
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+
+services.DetectorClocksService.InheritClockConfig: false
+
+physics.producers.ophitfull.PedAlgoPset.Verbose: false
+physics.producers.ophitfull.HitAlgoPset.Verbosity: false
+
+physics.analyzers.ophitana.OutputFileName: "ophitana.root"
+physics.analyzers.ophitana.MCTruthProducer: ""
+#physics.analyzers.ophitana.OpDetWaveformProducer: "daqPMT"
+physics.analyzers.ophitana.OpHitProducerList: ["ophit"]
+
+physics.analyzers.opflashana.MCOpFlashProducer: ""
+physics.analyzers.opflashana.MCTruthProducer: ""
+physics.analyzers.opflashana.OpFlashProducerList: ["opflashCryo0","opflashCryo1"]
+
+
+source.inputCommands: ["keep *_*_*_*", "drop opreco_*_*_*" ]
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "INFO"      #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       default:
+       {
+         limit:       1000  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 1
+       }
+     }
+  }
+}

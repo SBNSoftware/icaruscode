@@ -22,18 +22,16 @@
 #include "TProfile.h"
 
 // framework libraries
-#include "fhiclcpp/ParameterSet.h" 
-#include "messagefacility/MessageLogger/MessageLogger.h" 
-#include "art/Framework/Core/ModuleMacros.h" 
-#include "art/Framework/Core/EDProducer.h"
-#include "art/Framework/Principal/Event.h" 
-#include "art/Framework/Principal/Handle.h" 
+#include "art/Framework/Core/ModuleMacros.h"
+#include "art/Framework/Core/ReplicatedProducer.h"
+#include "art/Framework/Principal/Event.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art_root_io/TFileService.h"
 #include "art/Utilities/make_tool.h"
-#include "canvas/Persistency/Common/Ptr.h" 
-#include "canvas/Persistency/Common/PtrVector.h" 
-#include "art/Framework/Services/Registry/ServiceHandle.h" 
-#include "art_root_io/TFileService.h" 
-#include "canvas/Utilities/Exception.h"
+#include "canvas/Persistency/Common/Ptr.h"
+#include "canvas/Persistency/Common/PtrVector.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "cetlib/cpu_timer.h"
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
@@ -64,15 +62,14 @@ namespace caldata {
     
 tbb::spin_mutex deconvolutionSpinMutex;
 
-class Decon1DROI : public art::EDProducer
+class Decon1DROI : public art::ReplicatedProducer
 {
   public:
     // create calibrated signals on wires. this class runs 
     // an fft to remove the electronics shaping.     
-    explicit Decon1DROI(fhicl::ParameterSet const& pset);
-    virtual ~Decon1DROI();
+    explicit Decon1DROI(fhicl::ParameterSet const &, art::ProcessingFrame const&);
     
-    void produce(art::Event& evt); 
+    void produce(art::Event& evt, art::ProcessingFrame const&); 
     void beginJob(); 
     void endJob();                 
     void reconfigure(fhicl::ParameterSet const& p);
@@ -87,18 +84,20 @@ class Decon1DROI : public art::EDProducer
                                            art::Event&                              event,
                                            art::Handle<std::vector<raw::RawDigit>>& rawDigitHandle, 
                                            std::vector<recob::Wire>&                wireColVec,
-                                           art::Assns<raw::RawDigit,recob::Wire>&   wireAssns)
+                                           art::Assns<raw::RawDigit,recob::Wire>&   wireAssns,
+                                           std::string const&                       instance)
             : fDecon1DROI(parent),
               fEvent(event),
               fRawDigitHandle(rawDigitHandle),
               fWireColVec(wireColVec),
-              fWireAssns(wireAssns)
+              fWireAssns(wireAssns),
+              fInstance(instance)
         {}
 
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-                fDecon1DROI.processChannel(idx, fEvent, fRawDigitHandle, fWireColVec, fWireAssns);
+                fDecon1DROI.processChannel(idx, fEvent, fRawDigitHandle, fWireColVec, fWireAssns, fInstance);
         }
     private:
         const Decon1DROI&                        fDecon1DROI;
@@ -106,6 +105,7 @@ class Decon1DROI : public art::EDProducer
         art::Handle<std::vector<raw::RawDigit>>& fRawDigitHandle;
         std::vector<recob::Wire>&                fWireColVec;
         art::Assns<raw::RawDigit,recob::Wire>&   fWireAssns;
+        std::string                              fInstance;
     };
 
     // It seems there are pedestal shifts that need correcting
@@ -118,12 +118,12 @@ class Decon1DROI : public art::EDProducer
                          art::Event&,
                          art::Handle<std::vector<raw::RawDigit>>, 
                          std::vector<recob::Wire>&, 
-                         art::Assns<raw::RawDigit,recob::Wire>&) const;
+                         art::Assns<raw::RawDigit,recob::Wire>&,
+                         const std::string&) const;
     
-    std::string                                                fDigitModuleLabel;           ///< module that made digits
-    std::string                                                fSpillName;                  ///< nominal spill is an empty string
-                                                                                         ///< it is set by the DigitModuleLabel
-                                                                                         ///< ex.:  "daq:preSpill" for prespill data
+    std::vector<art::InputTag>                                 fRawDigitLabelVec;           ///< Contains the input tags for finding RawDigits
+                                                                                            ///< it is set by the DigitModuleLabel
+                                                                                            ///< ex.:  "daq:preSpill" for prespill data
     unsigned short                                             fNoiseSource;                ///< Used to determine ROI threshold
     int                                                        fSaveWireWF;                 ///< Save recob::wire object waveforms
     size_t                                                     fEventCount;                 ///< count of event processed
@@ -158,30 +158,31 @@ class Decon1DROI : public art::EDProducer
 DEFINE_ART_MODULE(Decon1DROI)
   
 //-------------------------------------------------
-Decon1DROI::Decon1DROI(fhicl::ParameterSet const& pset) : EDProducer{pset}
+Decon1DROI::Decon1DROI(fhicl::ParameterSet const & pset, art::ProcessingFrame const& frame) : art::ReplicatedProducer(pset,frame)
 {
-  this->reconfigure(pset);
+    this->reconfigure(pset);
 
-  produces< std::vector<recob::Wire> >(fSpillName);
-  produces<art::Assns<raw::RawDigit, recob::Wire>>(fSpillName);
-}
+    // We create a separate output instance for each input instance
+    for(const auto& rawDigit : fRawDigitLabelVec)
+    {
+        std::cout << "Initializing for input data: " << rawDigit << std::endl;
 
-//-------------------------------------------------
-Decon1DROI::~Decon1DROI()
-{
+        produces< std::vector<recob::Wire> >(rawDigit.instance());
+        produces<art::Assns<raw::RawDigit, recob::Wire>>(rawDigit.instance());
+    }
 }
 
 //////////////////////////////////////////////////////
 void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
-    fDigitModuleLabel     = pset.get< std::string >   ("DigitModuleLabel", "daq");
-    fNoiseSource          = pset.get< unsigned short >("NoiseSource",          3);
-    fSaveWireWF           = pset.get< int >           ("SaveWireWF"             );
-    fMinAllowedChanStatus = pset.get< int >           ("MinAllowedChannelStatus");
-    fTruncRMSThreshold    = pset.get< float >         ("TruncRMSThreshold",    6.);
-    fTruncRMSMinFraction  = pset.get< float >         ("TruncRMSMinFraction", 0.6);
-    fOutputHistograms     = pset.get< bool  >         ("OutputHistograms",   true);
+    fRawDigitLabelVec     = pset.get< std::vector<art::InputTag>> ("RawDigitLabelVec", std::vector<art::InputTag>()={"daqTPC"});
+    fNoiseSource          = pset.get< unsigned short            > ("NoiseSource",                                            3);
+    fSaveWireWF           = pset.get< int                       > ("SaveWireWF"                                               );
+    fMinAllowedChanStatus = pset.get< int                       > ("MinAllowedChannelStatus"                                  );
+    fTruncRMSThreshold    = pset.get< float                     > ("TruncRMSThreshold",                                     6.);
+    fTruncRMSMinFraction  = pset.get< float                     > ("TruncRMSMinFraction",                                  0.6);
+    fOutputHistograms     = pset.get< bool                      > ("OutputHistograms",                                    true);
     
     // Recover the vector of fhicl parameters for the ROI tools
     const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
@@ -211,15 +212,6 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
     if (baselineParams.has_key("MaxROILength")) baselineParams.put_or_replace("MaxROILength",size_t(roiPadding));
 
     fBaseline  = art::make_tool<icarus_tool::IBaseline> (baselineParams);
-
-    fSpillName.clear();
-    
-    size_t pos = fDigitModuleLabel.find(":");
-    if( pos!=std::string::npos )
-    {
-        fSpillName = fDigitModuleLabel.substr( pos+1 );
-        fDigitModuleLabel = fDigitModuleLabel.substr( 0, pos );
-    }
     
     if (fOutputHistograms)
     {
@@ -264,59 +256,70 @@ void Decon1DROI::endJob()
 }
   
 //////////////////////////////////////////////////////
-void Decon1DROI::produce(art::Event& evt)
+void Decon1DROI::produce(art::Event& evt, art::ProcessingFrame const& frame)
 {
-    // make a collection of Wires
-    std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
-    // ... and an association set
-    std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire>> wireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
-
-    // Read in the digit List object(s). 
-    art::Handle< std::vector<raw::RawDigit>> digitVecHandle;
-    
-    if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
-    else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
-
-    if (!digitVecHandle->size())
+    // We loop over the collection of RawDigits in our input list
+    // This is not done multi threaded as a way to cut down on overall job memory usage...
+    for(const auto& rawDigitLabel : fRawDigitLabelVec)
     {
-        evt.put(std::move(wireCol), fSpillName);
-        evt.put(std::move(wireDigitAssn), fSpillName);
-        fEventCount++;
-        
-        return;
-    }
+        // make a collection of Wires
+        std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
 
-    // Reserve the room for the output
-    wireCol->reserve(digitVecHandle->size());
+        // ... and an association set
+        std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire>> wireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
 
-    // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-    multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, digitVecHandle, *wireCol, *wireDigitAssn);
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, digitVecHandle->size()), deconvolutionProcessing);
+        std::cout << "decon1droi, looking for RawDigits: " << rawDigitLabel << std::endl;
     
-    // Time to stroe everything
-    if(wireCol->size() == 0)
-      mf::LogWarning("Decon1DROI") << "No wires made for this event.";
+        // Read in the digit List object(s). 
+        art::Handle< std::vector<raw::RawDigit>> digitVecHandle;
 
-    //Make Histogram of recob::wire objects from Signal() vector
-    // get access to the TFile service
-    if ( fSaveWireWF ){
-        art::ServiceHandle<art::TFileService> tfs;
-        for (size_t wireN = 0; wireN < wireCol->size(); wireN++){
-            std::vector<float> sigTMP = wireCol->at(wireN).Signal();
-            TH1D* fWire = tfs->make<TH1D>(Form("Noise_Evt%04zu_N%04zu",fEventCount,wireN), ";Noise (ADC);",
-				      sigTMP.size(),-0.5,sigTMP.size()-0.5);
-            for (size_t tick = 0; tick < sigTMP.size(); tick++){
-                fWire->SetBinContent(tick+1, sigTMP.at(tick) );
+        evt.getByLabel(rawDigitLabel, digitVecHandle);
+    
+        if (!digitVecHandle->size())
+        {
+            std::cout << "Decon1DROI found zero length RawDigits so exiting" << std::endl;
+
+            evt.put(std::move(wireCol), rawDigitLabel.instance());
+            evt.put(std::move(wireDigitAssn), rawDigitLabel.instance());
+            fEventCount++;
+            
+            return;
+        }
+    
+        // Reserve the room for the output
+        wireCol->reserve(digitVecHandle->size());
+    
+        // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
+        multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, digitVecHandle, *wireCol, *wireDigitAssn, rawDigitLabel.instance());
+    
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, digitVecHandle->size()), deconvolutionProcessing);
+        
+        // Time to stroe everything
+        if(wireCol->size() == 0)
+          mf::LogWarning("Decon1DROI") << "No wires made for this event.";
+    
+        //Make Histogram of recob::wire objects from Signal() vector
+        // get access to the TFile service
+        if ( fSaveWireWF ){
+            art::ServiceHandle<art::TFileService> tfs;
+            for (size_t wireN = 0; wireN < wireCol->size(); wireN++){
+                std::vector<float> sigTMP = wireCol->at(wireN).Signal();
+                TH1D* fWire = tfs->make<TH1D>(Form("Noise_Evt%04zu_N%04zu",fEventCount,wireN), ";Noise (ADC);",
+    				      sigTMP.size(),-0.5,sigTMP.size()-0.5);
+                for (size_t tick = 0; tick < sigTMP.size(); tick++){
+                    fWire->SetBinContent(tick+1, sigTMP.at(tick) );
+                }
             }
         }
-    }
-
-    // Make sure the collection is sorted
-    std::sort(wireCol->begin(), wireCol->end(), [](const auto& left, const auto& right){return left.Channel() < right.Channel();});
     
-    evt.put(std::move(wireCol), fSpillName);
-    evt.put(std::move(wireDigitAssn), fSpillName);
+        // Make sure the collection is sorted
+        std::sort(wireCol->begin(), wireCol->end(), [](const auto& left, const auto& right){return left.Channel() < right.Channel();});
+
+        std::cout << "Decon1DROI is storing the wire collection, size: " << wireCol->size() << std::endl;
+        
+        evt.put(std::move(wireCol), rawDigitLabel.instance());
+        evt.put(std::move(wireDigitAssn), rawDigitLabel.instance());
+    }
 
     fEventCount++;
 
@@ -423,7 +426,8 @@ void  Decon1DROI::processChannel(size_t                                  idx,
                                  art::Event&                             event,
                                  art::Handle<std::vector<raw::RawDigit>> digitVecHandle, 
                                  std::vector<recob::Wire>&               wireColVec, 
-                                 art::Assns<raw::RawDigit,recob::Wire>&  wireAssns) const
+                                 art::Assns<raw::RawDigit,recob::Wire>&  wireAssns,
+                                 const std::string&                      instance) const
 {
     // vector that will be moved into the Wire object
     recob::Wire::RegionsOfInterest_t deconVec;
@@ -562,7 +566,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
 
     // add an association between the last object in wirecol
     // (that we just inserted) and digitVec
-    if (!util::CreateAssn(*this, event, wireColVec, digitVec, wireAssns, fSpillName))
+    if (!util::CreateAssn(event, wireColVec, digitVec, wireAssns, instance))
     {
         throw art::Exception(art::errors::ProductRegistrationFailure)
             << "Can't associate wire #" << (wireColVec.size() - 1)

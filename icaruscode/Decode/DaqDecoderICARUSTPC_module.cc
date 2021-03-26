@@ -120,7 +120,7 @@ private:
     std::vector<std::unique_ptr<IDecoderFilter>> fDecoderToolVec;      ///< Decoder tools
 
     // Fcl parameters.
-    art::InputTag                                fFragmentsLabel;      ///< The input artdaq fragment label
+    std::vector<art::InputTag>                   fFragmentsLabelVec;   ///< The input artdaq fragment label vector (for more than one)
     bool                                         fOutputRawWaveform;   ///< Should we output pedestal corrected (not noise filtered)?
     bool                                         fOutputCorrection;    ///< Should we output the coherent noise correction vectors?
     std::string                                  fOutputRawWavePath;   ///< Path to assign to the output if asked for
@@ -196,13 +196,19 @@ DaqDecoderICARUSTPC::DaqDecoderICARUSTPC(fhicl::ParameterSet const & pset, art::
 
     fFragmentOffset = channel / 576;
 
-    produces<std::vector<raw::RawDigit>>();
+    // Set up our "produces" 
+    // Note that we can have multiple instances input to the module
+    // Our convention will be to create a similar number of outputs with the same instance names
+    for(const auto& fragmentLabel : fFragmentsLabelVec)
+    {
+        produces<std::vector<raw::RawDigit>>(fragmentLabel.instance());
 
-    if (fOutputRawWaveform)
-        produces<std::vector<raw::RawDigit>>(fOutputRawWavePath);
+        if (fOutputRawWaveform)
+            produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputRawWavePath);
 
-    if (fOutputCorrection)
-        produces<std::vector<raw::RawDigit>>(fOutputCoherentPath);
+        if (fOutputCorrection)
+            produces<std::vector<raw::RawDigit>>(fragmentLabel.instance() + fOutputCoherentPath);
+    }
 
     // Report.
     mf::LogInfo("DaqDecoderICARUSTPC") << "DaqDecoderICARUSTPC configured\n";
@@ -222,12 +228,12 @@ DaqDecoderICARUSTPC::~DaqDecoderICARUSTPC()
 ///
 void DaqDecoderICARUSTPC::configure(fhicl::ParameterSet const & pset)
 {
-    fFragmentsLabel     = pset.get<art::InputTag>("FragmentsLabel",    "daq:PHYSCRATEDATA");
-    fOutputRawWaveform  = pset.get<bool         >("OutputRawWaveform",               false);
-    fOutputCorrection   = pset.get<bool         >("OutputCorrection",                false);
-    fOutputRawWavePath  = pset.get<std::string  >("OutputRawWavePath",               "RAW");
-    fOutputCoherentPath = pset.get<std::string  >("OutputCoherentPath",              "Cor");
-    fPlaneToSimulate    = pset.get<unsigned int >("PlaneToSimulate",                     2);
+    fFragmentsLabelVec  = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fOutputRawWaveform  = pset.get<bool                      >("OutputRawWaveform",                                               false);
+    fOutputCorrection   = pset.get<bool                      >("OutputCorrection",                                                false);
+    fOutputRawWavePath  = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
+    fOutputCoherentPath = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
+    fPlaneToSimulate    = pset.get<unsigned int              >("PlaneToSimulate",                                                     2);
 }
 
 //----------------------------------------------------------------------------
@@ -250,9 +256,6 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
 {
     ++fNumEvent;
 
-    art::Handle<artdaq::Fragments> daq_handle;
-    event.getByLabel(fFragmentsLabel, daq_handle);
-
     mf::LogDebug("DaqDecoderICARUSTPC") << "**** Processing raw data fragments ****" << std::endl;
 
     // Check the concurrency 
@@ -268,55 +271,64 @@ void DaqDecoderICARUSTPC::produce(art::Event & event, art::ProcessingFrame const
 
     theClockTotal.start();
 
-    ConcurrentRawDigitCol concurrentRawDigits;
-    ConcurrentRawDigitCol concurrentRawRawDigits;
-    ConcurrentRawDigitCol coherentRawDigits;
-
-    // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
-    multiThreadFragmentProcessing fragmentProcessing(*this,
-                                                     clockData,
-                                                     daq_handle,
-                                                     concurrentRawDigits,
-                                                     concurrentRawRawDigits,
-                                                     coherentRawDigits);
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
-
-    // Copy the raw digits from the concurrent vector to our output vector
-    RawDigitCollectionPtr rawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawDigits.begin()), 
-                                                                                            std::move_iterator(concurrentRawDigits.end()));
-
-    // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
-    std::sort(rawDigitCollection->begin(),rawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
-
-    // Now transfer ownership to the event store
-    event.put(std::move(rawDigitCollection));
-
-    if (fOutputRawWaveform)
+    // Loop through the list of input daq fragment collections one by one 
+    // We are not trying to multi thread at this stage because we are trying to control
+    // overall memory usage at this level. We'll multi thread internally...
+    for(const auto& fragmentLabel : fFragmentsLabelVec)
     {
+        art::Handle<artdaq::Fragments> daq_handle;
+        event.getByLabel(fragmentLabel, daq_handle);
+
+        ConcurrentRawDigitCol concurrentRawDigits;
+        ConcurrentRawDigitCol concurrentRawRawDigits;
+        ConcurrentRawDigitCol coherentRawDigits;
+    
+        // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
+        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
+        multiThreadFragmentProcessing fragmentProcessing(*this,
+                                                         clockData,
+                                                         daq_handle,
+                                                         concurrentRawDigits,
+                                                         concurrentRawRawDigits,
+                                                         coherentRawDigits);
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, daq_handle->size()), fragmentProcessing);
+    
         // Copy the raw digits from the concurrent vector to our output vector
-        RawDigitCollectionPtr rawRawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawRawDigits.begin()), 
-                                                                                                   std::move_iterator(concurrentRawRawDigits.end()));
-
+        RawDigitCollectionPtr rawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawDigits.begin()), 
+                                                                                                std::move_iterator(concurrentRawDigits.end()));
+    
         // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
-        std::sort(rawRawDigitCollection->begin(),rawRawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
-
+        std::sort(rawDigitCollection->begin(),rawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
+    
         // Now transfer ownership to the event store
-        event.put(std::move(rawRawDigitCollection),fOutputRawWavePath);
-    }
-
-    if (fOutputCorrection)
-    {
-        // Copy the raw digits from the concurrent vector to our output vector
-        RawDigitCollectionPtr coherentCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(coherentRawDigits.begin()), 
-                                                                                                std::move_iterator(coherentRawDigits.end()));
-
-        // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
-        std::sort(coherentCollection->begin(),coherentCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
-
-        // Now transfer ownership to the event store
-        event.put(std::move(coherentCollection),fOutputCoherentPath);
+        event.put(std::move(rawDigitCollection), fragmentLabel.instance());
+    
+        if (fOutputRawWaveform)
+        {
+            // Copy the raw digits from the concurrent vector to our output vector
+            RawDigitCollectionPtr rawRawDigitCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(concurrentRawRawDigits.begin()), 
+                                                                                                       std::move_iterator(concurrentRawRawDigits.end()));
+    
+            // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
+            std::sort(rawRawDigitCollection->begin(),rawRawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
+    
+            // Now transfer ownership to the event store
+            event.put(std::move(rawRawDigitCollection),fragmentLabel.instance() + fOutputRawWavePath);
+        }
+    
+        if (fOutputCorrection)
+        {
+            // Copy the raw digits from the concurrent vector to our output vector
+            RawDigitCollectionPtr coherentCollection = std::make_unique<std::vector<raw::RawDigit>>(std::move_iterator(coherentRawDigits.begin()), 
+                                                                                                    std::move_iterator(coherentRawDigits.end()));
+    
+            // Want the RawDigits to be sorted in channel order... has to be done somewhere so why not now?
+            std::sort(coherentCollection->begin(),coherentCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
+    
+            // Now transfer ownership to the event store
+            event.put(std::move(coherentCollection),fragmentLabel.instance() + fOutputCoherentPath);
+        }
     }
 
     theClockTotal.stop();
