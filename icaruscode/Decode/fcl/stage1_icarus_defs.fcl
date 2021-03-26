@@ -76,13 +76,13 @@ icarus_reco_pandoraGaus:           [ pandoraGaus,
                                    ]
 
 icarus_reco_pandoraGausCryo0:      [ pandoraGausCryo0,
-                                     pandoraTrackGausCryo0,
-                                     pandoraKalmanTrackGausCryo0
+                                     pandoraTrackGausCryo0 #,
+                                     #pandoraKalmanTrackGausCryo0
                                    ]
 
 icarus_reco_pandoraGausCryo1:      [ pandoraGausCryo1,
-                                     pandoraTrackGausCryo1,
-                                     pandoraKalmanTrackGausCryo1
+                                     pandoraTrackGausCryo1 #,
+                                     #pandoraKalmanTrackGausCryo1
                                    ]
 
 icarus_reco_Gauss:                 [
@@ -112,26 +112,26 @@ icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:              
 icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:                              false
 
 ## Definitions for running the 3D clustering by Cryostat
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
-icarus_stage1_producers.cluster3dCryo0.Hit3DBuilderAlg.OutputHistograms:                         false
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.OutputHistograms:                         false
 
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
-icarus_stage1_producers.cluster3dCryo1.Hit3DBuilderAlg.OutputHistograms:                         false
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.OutputHistograms:                         false
 
 ### Definitions for a single pandora instance
 icarus_stage1_producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
 icarus_stage1_producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
 icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:                      "pandoraGaus"
 icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                          "pandoraTrackGaus"
-icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:                         "pandoraShowerGaus"
+icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:                         "" #"pandoraShowerGaus"
 icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputCaloLabel:                            ""
 icarus_stage1_producers.pandoraKalmanTrackGaus.inputs.inputPidLabel:                             ""
 icarus_stage1_producers.pandoraKalmanTrackGaus.options.trackFromPF:                              false
@@ -142,17 +142,17 @@ icarus_stage1_producers.pandoraGausCryo0.HitFinderModuleLabel:                  
 icarus_stage1_producers.pandoraTrackGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputPFParticleLabel:                 "pandoraGausCryo0"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputTracksLabel:                     "pandoraTrackGausCryo0"
-icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputShowersLabel:                    "pandoraShowerGausCryo0"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputShowersLabel:                    "" #"pandoraShowerGausCryo0"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputCaloLabel:                       ""
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputs.inputPidLabel:                        ""
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.options.trackFromPF:                         false
 icarus_stage1_producers.pandoraKalmanTrackGausCryo0.options.showerFromPF:                        false
 
 icarus_stage1_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
-icarus_stage1_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausCryo1"
+icarus_stage1_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputPFParticleLabel:                 "pandoraGausCryo1"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputTracksLabel:                     "pandoraTrackGausCryo1"
-icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputShowersLabel:                    "pandoraShowerGausCryo1"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputShowersLabel:                    "" #"pandoraShowerGausCryo1"
 icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputCaloLabel:                       ""
 icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputs.inputPidLabel:                        ""
 icarus_stage1_producers.pandoraKalmanTrackGausCryo1.options.trackFromPF:                         false
@@ -161,8 +161,8 @@ icarus_stage1_producers.pandoraKalmanTrackGausCryo1.options.showerFromPF:       
 
 ## Switch pandora back to just gaushits?
 icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-icarus_stage1_producers.pandoraGausCryo0.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-icarus_stage1_producers.pandoraGausCryo1.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo0.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo1.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
 
 
