@@ -9,9 +9,24 @@ ICARUSSimpleFlash:
   FlashFinderAlgo : "SimpleFlashAlgo"
   AlgoConfig      : @local::SimpleFlashStandard
   OpHitProducer   : "ophit"
-  OpFlashProducer : "opflash"
   PECalib         : @local::NoCalib
 }
+
+ICARUSSimpleFlashCryo0: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryo0.AlgoConfig: @local::SimpleFlashCryo0
+
+ICARUSSimpleFlashCryo1: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryo1.AlgoConfig: @local::SimpleFlashCryo1
+
+ICARUSSimpleFlashDataCryo0: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryo0.AlgoConfig: @local::SimpleFlashDataCryo0
+
+ICARUSSimpleFlashDataCryo1: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryo1.AlgoConfig: @local::SimpleFlashDataCryo1
+
+################################
+# CONFIGS BELOW ARE DEPRECATED #
+################################
 
 ICARUSSimpleFlashTPC0: @local::ICARUSSimpleFlash
 ICARUSSimpleFlashTPC0.AlgoConfig: @local::SimpleFlashTPC0

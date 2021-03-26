@@ -84,9 +84,9 @@ private:
 ICARUSOpFlashAna::ICARUSOpFlashAna(fhicl::ParameterSet const& p)
   : EDAnalyzer{p}, _geotree(nullptr)
 {
-  _output_fname = p.get<std::string>("OutputFileName"        );
-  _mcflash_label  = p.get<std::string>("MCOpFlashProducer"       );
-	_mctruth_label = p.get<std::string>("MCTruthProducer");
+  _output_fname = p.get<std::string>("OutputFileName");
+  _mcflash_label  = p.get<std::string>("MCOpFlashProducer","");
+  _mctruth_label = p.get<std::string>("MCTruthProducer","");
   _flash_label_v  = p.get<std::vector<std::string> >("OpFlashProducerList");
   _match_time_min = p.get<double>("MatchTimeStart",0.105); // in micro-seconds
   _match_time_max = p.get<double>("MatchTimeEnd",0.120); // in micro-seconds
@@ -105,14 +105,16 @@ void ICARUSOpFlashAna::beginJob()
     flashtree->Branch("event",&_event,"event/I");
     flashtree->Branch("time",&_time,"time/D");
     flashtree->Branch("pe_v",&_pe_v);
-    flashtree->Branch("time_true",&_time_true,"time_true/D");
-    flashtree->Branch("pe_true_v",&_pe_true_v);
     flashtree->Branch("pe_sum",&_pe_sum,"pe_sum/D");
-    flashtree->Branch("pe_sum_true",&_pe_sum_true,"pe_sum_true/D");
-    flashtree->Branch("x",&_x,"x/D");
-    flashtree->Branch("y",&_y,"y/D");
-    flashtree->Branch("z",&_z,"z/D");
-    flashtree->Branch("nphotons",&_nphotons,"nphotons/D");
+    if(!_mctruth_label.empty() && !_mcflash_label.empty()) {
+      flashtree->Branch("time_true",&_time_true,"time_true/D");
+      flashtree->Branch("pe_true_v",&_pe_true_v);
+      flashtree->Branch("pe_sum_true",&_pe_sum_true,"pe_sum_true/D");
+      flashtree->Branch("x",&_x,"x/D");
+      flashtree->Branch("y",&_y,"y/D");
+      flashtree->Branch("z",&_z,"z/D");
+      flashtree->Branch("nphotons",&_nphotons,"nphotons/D");
+    }
     _flashtree_v.push_back(flashtree);
   }
 
@@ -163,36 +165,42 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
   _event = e.id().event();
   _run   = e.id().run();
 
-	// get MCTruth
-	art::Handle< std::vector< simb::MCTruth > > mctruth_h;
-	e.getByLabel(_mctruth_label, mctruth_h);
-	std::map<double, int> mctruth_db;
-	for (size_t mctruth_index = 0; mctruth_index < mctruth_h->size(); ++mctruth_index) {
-		auto const& mctruth = (*mctruth_h)[mctruth_index];
-		for (int part_idx = 0; part_idx < mctruth.NParticles(); ++part_idx) {
-			const simb::MCParticle & particle = mctruth.GetParticle(part_idx);
-			//const TLorentzVector& pos = particle.Position();
-			//const TLorentzVector& mom = particle.Momentum();
-			mctruth_db[particle.T() + _match_time_min] = part_idx; // FIXME assumes mctruth_h->size() == 1 always?
-		}
-	}
+  // get MCTruth
+  art::Handle< std::vector< simb::MCTruth > > mctruth_h;
+  std::map<double, int> mctruth_db;
+  if(!_mctruth_label.empty()) {
+    e.getByLabel(_mctruth_label, mctruth_h);
+    for (size_t mctruth_index = 0; mctruth_index < mctruth_h->size(); ++mctruth_index) {
+      auto const& mctruth = (*mctruth_h)[mctruth_index];
+      for (int part_idx = 0; part_idx < mctruth.NParticles(); ++part_idx) {
+	const simb::MCParticle & particle = mctruth.GetParticle(part_idx);
+	//const TLorentzVector& pos = particle.Position();
+	//const TLorentzVector& mom = particle.Momentum();
+	mctruth_db[particle.T() + _match_time_min] = part_idx; // FIXME assumes mctruth_h->size() == 1 always?
+      }
+    }
+  }
 
   // get MCOpFlash
   art::Handle< std::vector< recob::OpFlash > > mcflash_h;
-  e.getByLabel(_mcflash_label, mcflash_h);
-  if(!mcflash_h.isValid()) {
-    std::cerr << "Invalid producer for truth recob::OpFlash: " << _mcflash_label << std::endl;
-    throw std::exception();
+  if(!_mcflash_label.empty()) {
+    e.getByLabel(_mcflash_label, mcflash_h);
+    if(!mcflash_h.isValid()) {
+      std::cerr << "Invalid producer for truth recob::OpFlash: " << _mcflash_label << std::endl;
+      throw std::exception();
+    }
   }
   // Create a "time-map" of MCOpFlash
   // inner map ... key = mcflash timing
   //               value = mcflash location (i.e. array index number)
   std::map<double,int> mcflash_db;
-  // fill the map
-  //auto const geop = lar::providerFrom<geo::Geometry>();
-  for(size_t mcflash_index=0; mcflash_index < mcflash_h->size(); ++mcflash_index) {
-    auto const& mcflash = (*mcflash_h)[mcflash_index];
-    mcflash_db[mcflash.Time() + _match_time_min] = mcflash_index;
+  if(!_mcflash_label.empty()) {
+    // fill the map
+    //auto const geop = lar::providerFrom<geo::Geometry>();
+    for(size_t mcflash_index=0; mcflash_index < mcflash_h->size(); ++mcflash_index) {
+      auto const& mcflash = (*mcflash_h)[mcflash_index];
+      mcflash_db[mcflash.Time() + _match_time_min] = mcflash_index;
+    }
   }
   // now fill opflash trees
   for(size_t label_idx=0; label_idx<_flash_label_v.size(); ++label_idx) {
@@ -207,62 +215,70 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
     }
 
     // keep the record of which mcflash was used (to store un-tagged mcflash at the end)
-    std::vector<bool> mcflash_used(mcflash_h->size(),false);
+    std::vector<bool> mcflash_used;
+    if(!_mcflash_label.empty()) { mcflash_used.resize(mcflash_h->size(),false); }
     // now loop over flash, identify mc flash, fill ttree
     for(auto const& flash : (*flash_h)) {
       // fill simple info
       _time = flash.Time();
       _pe_v = flash.PEs();
       _pe_sum = flash.TotalPE();//std::accumulate(_pe_v.begin(),_pe_v.end());
-			// search for corresponding mctruth
-			auto low_mct = mctruth_db.lower_bound(_time);
-			if (low_mct != mctruth_db.begin()) {
-				--low_mct;
-				auto const& mctruth = (*mctruth_h).at(0);
-				auto const& particle = mctruth.GetParticle((*low_mct).second);
-				if ( (particle.T() - (*low_mct).first) < _match_dt) {
-					_nphotons = particle.E();
-					_x = particle.Vx();
-					_y = particle.Vy();
-					_z = particle.Vz();
-				}
-			}
-      // search for corresponding mcflash
-      auto low = mcflash_db.lower_bound(_time);
-      _pe_true_v.resize(_pe_v.size());
-      for(auto& pe : _pe_true_v) pe = 0.;
-      _time_true = std::numeric_limits<double>::max();
-      _pe_sum_true = -1;
-      if(low != mcflash_db.begin()) {
-	--low;
-	// get mc opflash
-	auto const& mcflash = (*mcflash_h).at((*low).second);
-	// Check if this is in the "match" range
-	if( (_time - (*low).first) < _match_dt ) {
-	  _pe_true_v = mcflash.PEs();
-	  _time_true = mcflash.Time();
-	  _pe_sum_true = mcflash.TotalPE();
-	  //_pe_sum_true = std::accumulate(_pe_true_v.begin(),_pe_true_v.end());
-	  mcflash_used[(*low).second] = true;
-		std::cout << mcflash.TotalPE() << " " << std::accumulate(_pe_true_v.begin(), _pe_true_v.end(), 0.) << std::endl;
+
+      if(!_mctruth_label.empty() && !_mcflash_label.empty()) {
+	// search for corresponding mctruth
+	auto low_mct = mctruth_db.lower_bound(_time);
+	if (low_mct != mctruth_db.begin()) {
+	  --low_mct;
+	  auto const& mctruth = (*mctruth_h).at(0);
+	  auto const& particle = mctruth.GetParticle((*low_mct).second);
+	  if ( (particle.T() - (*low_mct).first) < _match_dt) {
+	    _nphotons = particle.E();
+	    _x = particle.Vx();
+	    _y = particle.Vy();
+	    _z = particle.Vz();
+	  }
+	}
+	// search for corresponding mcflash
+	auto low = mcflash_db.lower_bound(_time);
+	_pe_true_v.resize(_pe_v.size());
+	for(auto& pe : _pe_true_v) pe = 0.;
+	_time_true = std::numeric_limits<double>::max();
+	_pe_sum_true = -1;
+	if(low != mcflash_db.begin()) {
+	  --low;
+	  // get mc opflash
+	  auto const& mcflash = (*mcflash_h).at((*low).second);
+	  // Check if this is in the "match" range
+	  if( (_time - (*low).first) < _match_dt ) {
+	    _pe_true_v = mcflash.PEs();
+	    _time_true = mcflash.Time();
+	    _pe_sum_true = mcflash.TotalPE();
+	    //_pe_sum_true = std::accumulate(_pe_true_v.begin(),_pe_true_v.end());
+	    mcflash_used[(*low).second] = true;
+	    std::cout << mcflash.TotalPE() << " " << std::accumulate(_pe_true_v.begin(), _pe_true_v.end(), 0.) << std::endl;
+	  }
 	}
       }
       flashtree->Fill();
     }
+
+
     // now fill mcflash info that was not tagged
-    for(size_t mcflash_idx=0; mcflash_idx < mcflash_used.size(); ++mcflash_idx) {
-      if(mcflash_used[mcflash_idx]) continue;
-      auto const& mcflash = (*mcflash_h)[mcflash_idx];
-      _pe_true_v = mcflash.PEs();
-      //_pe_sum_true = std::accumulate(_pe_true_v.begin(),_pe_true-v.end());
-      _pe_sum_true = mcflash.TotalPE();
-      _time_true = mcflash.Time();
-      // fill the "reco flash" values with vogus values
-      _time = std::numeric_limits<double>::max();
-      _pe_v.clear();
-      _pe_v.resize(_pe_true_v.size(),0.);
-      _pe_sum = -1.;
-      flashtree->Fill();
+    if(!_mctruth_label.empty() && !_mcflash_label.empty()) {
+      for(size_t mcflash_idx=0; mcflash_idx < mcflash_used.size(); ++mcflash_idx) {
+	if(mcflash_used[mcflash_idx]) continue;
+	auto const& mcflash = (*mcflash_h)[mcflash_idx];
+	_pe_true_v = mcflash.PEs();
+	//_pe_sum_true = std::accumulate(_pe_true_v.begin(),_pe_true-v.end());
+	_pe_sum_true = mcflash.TotalPE();
+	_time_true = mcflash.Time();
+	// fill the "reco flash" values with vogus values
+	_time = std::numeric_limits<double>::max();
+	_pe_v.clear();
+	_pe_v.resize(_pe_true_v.size(),0.);
+	_pe_sum = -1.;
+	flashtree->Fill();
+      }
     }
 
   }
