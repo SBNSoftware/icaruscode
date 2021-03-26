@@ -1,0 +1,200 @@
+##
+##  ICARUS definitions for the second stage (stage1) of data processing
+##  modeled on standard version
+##
+
+#include "services_common_icarus.fcl"
+
+#include "cluster_icarus.fcl"
+#include "trackfindermodules_icarus.fcl"
+#include "showerfindermodules_icarus.fcl"
+#include "icarus_flashfinder.fcl"
+
+BEGIN_PROLOG
+
+### This is the complete list of all producers! ###
+icarus_stage1_producers:
+{
+  ### Cluster3D
+  cluster3d:                      @local::icarus_cluster3d
+  cluster3DCryo0:                 @local::icarus_cluster3d
+  cluster3DCryo1:                 @local::icarus_cluster3d
+
+  ### pandora
+  pandoraGaus:                    @local::icarus_pandora
+  pandoraTrackGaus:               @local::icarus_pandoraTrackCreation
+  pandoraGausCryo0:               @local::icarus_pandora
+  pandoraTrackGausCryo0:          @local::icarus_pandoraTrackCreation
+  pandoraGausCryo1:               @local::icarus_pandora
+  pandoraTrackGausCryo1:          @local::icarus_pandoraTrackCreation
+
+  pandoraICARUS:                  @local::icarus_pandora_rawicarus
+  pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
+  pandoraICARUSCryo0:             @local::icarus_pandora_rawicarus
+  pandoraTrackICARUSCryo0:        @local::icarus_pandoraTrackCreation
+  pandoraICARUSCryo1:             @local::icarus_pandora_rawicarus
+  pandoraTrackICARUSCryo1:        @local::icarus_pandoraTrackCreation
+
+  ### PM algorithm for pandora
+  pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
+
+  pandoraKalmanTrackGausCryo0:    @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackGausCryo1:    @local::icarus_pandora_kalmantrack
+
+  pandoraKalmanTrackICARUS:       @local::icarus_pandora_kalmantrack
+
+  pandoraKalmanTrackICARUSCryo0:  @local::icarus_pandora_kalmantrack
+  pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
+
+  # pandora CALO and PID
+#  pandoraGausCaloCryo0:		        @local::icarus_calomc
+#  pandoraGausPidCryo0:		        @local::icarus_chi2pid
+#  pandoraGausCaloCryo1:		        @local::icarus_calomc
+#  pandoraGausPidCryo1:		        @local::icarus_chi2pid
+
+  ### Purity monitoring
+  purityana0: { module_type: "ICARUSPurityDQM" }
+  purityana1: { module_type: "ICARUSPurityDQM" }
+
+}
+
+icarus_stage1_filters:
+{
+   flashfilter: { module_type: "FilterOpFlash" 
+                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
+                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
+                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
+                }
+}
+
+icarus_stage1_analyzers:
+{
+  purityinfoana0: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana0"
+                    PrintInfo:       true
+                    SelectEvents:    [ reco ]
+                  }
+  purityinfoana1: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana1"
+                    PrintInfo:       true
+                    SelectEvents:    [ reco ]
+                  }
+}
+
+### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+icarus_reco_cluster3d:             [ cluster3d ]
+
+icarus_reco_cluster3DCryo0:        [ cluster3DCryo0 ]
+
+icarus_reco_cluster3DCryo1:        [ cluster3DCryo1 ]
+
+icarus_reco_pandoraGaus:           [ pandoraGaus,
+                                     pandoraTrackGaus,
+                                     pandoraKalmanTrackGaus
+                                   ]
+
+icarus_reco_pandoraGausCryo0:      [ pandoraGausCryo0,
+                                     pandoraTrackGausCryo0,
+                                     pandoraKalmanTrackGausCryo0
+                                   ]
+
+icarus_reco_pandoraGausCryo1:      [ pandoraGausCryo1,
+                                     pandoraTrackGausCryo1,
+                                     pandoraKalmanTrackGausCryo1
+                                   ]
+
+icarus_purity_monitor:             [
+                                     purityana0,
+                                     purityana1
+
+                                   ]
+
+icarus_reco_Gauss:                 [
+                                     @sequence::icarus_purity_monitor,
+                                     @sequence::icarus_reco_cluster3d,
+                                     @sequence::icarus_reco_pandoraGaus
+                                   ]
+
+icarus_reco_Gauss_Cryo0:           [ 
+                                     purityana0,
+                                     @sequence::icarus_reco_cluster3DCryo0,
+                                     @sequence::icarus_reco_pandoraGausCryo0
+                                   ]
+
+icarus_reco_Gauss_Cryo1:           [ 
+                                     purityana1,
+                                     @sequence::icarus_reco_cluster3DCryo1,
+                                     @sequence::icarus_reco_pandoraGausCryo1
+                                   ]
+
+### Below we include overrides for the modules above
+
+
+## Standard 3D hit building
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg:                                               @local::standard_snippethit3dbuilder
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.PulseHeightFraction:                           0. #0.75 #0.25
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.PHLowSelection:                                0. #4.0 # 20.
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:                               1000000.
+icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:                              false
+
+## Definitions for running the 3D clustering by Cryostat
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCWW", "gaushitTPCWE"]
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryo0.Hit3DBuilderAlg.OutputHistograms:                         false
+
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.HitFinderTagVec:                          ["gaushitTPCEW", "gaushitTPCEE"]
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.PulseHeightFraction:                      0. #0.75 #0.25
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.PHLowSelection:                           0. #4.0 # 20.
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
+icarus_stage1_producers.cluster3DCryo1.Hit3DBuilderAlg.OutputHistograms:                         false
+
+### Definitions for a single pandora instance
+icarus_stage1_producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
+icarus_stage1_producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
+
+### Definitions for a pandora by cryostat
+icarus_stage1_producers.pandoraGausCryo0.HitFinderModuleLabel:                                   "cluster3DCryo0"
+icarus_stage1_producers.pandoraTrackGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputCollection:                             "pandoraGausCryo0"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo0.trackInputTag:                               "pandoraTrackGausCryo0"
+
+icarus_stage1_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
+icarus_stage1_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputCollection:                             "pandoraGausCryo1"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo1.trackInputTag:                               "pandoraTrackGausCryo1"
+
+## Switch pandora back to just gaushits?
+#icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo0.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo1.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+
+## Default purity monitor settings (single TPC readout assumed)
+icarus_stage1_producers.purityana0.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
+icarus_stage1_producers.purityana0.ValoreTauFCL:                                                 600000.
+icarus_stage1_producers.purityana0.CryostatFCL:                                                  0
+icarus_stage1_producers.purityana0.PlaneFCL:                                                     2
+icarus_stage1_producers.purityana0.ThresholdFCL:                                                 3
+icarus_stage1_producers.purityana0.PersistPurityInfo:                                            false
+icarus_stage1_producers.purityana0.FillAnaTuple:                                                 false
+icarus_stage1_producers.purityana0.PersistPurityInfo:                                            false
+icarus_stage1_producers.purityana0.FillAnaTuple:                                                 false
+
+icarus_stage1_producers.purityana1.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
+icarus_stage1_producers.purityana1.ValoreTauFCL:                                                 600000.
+icarus_stage1_producers.purityana1.CryostatFCL:                                                  1
+icarus_stage1_producers.purityana1.PlaneFCL:                                                     2
+icarus_stage1_producers.purityana1.ThresholdFCL:                                                 3
+icarus_stage1_producers.purityana1.PersistPurityInfo:                                            false
+icarus_stage1_producers.purityana1.FillAnaTuple:                                                 false
+icarus_stage1_producers.purityana1.PersistPurityInfo:                                            false
+icarus_stage1_producers.purityana1.FillAnaTuple:                                                 false
+
+
+
+END_PROLOG
