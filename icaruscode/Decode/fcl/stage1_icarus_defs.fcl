@@ -138,14 +138,14 @@ icarus_stage1_producers.pandoraKalmanTrackGausCryo0.trackInputTag:              
 
 icarus_stage1_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
 icarus_stage1_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
-icarus_stage1_producers.pandoraKalmanTrackGausCryo0.inputCollection:                             "pandoraGausCryo1"
-icarus_stage1_producers.pandoraKalmanTrackGausCryo0.trackInputTag:                               "pandoraTrackGausCryo1"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo1.inputCollection:                             "pandoraGausCryo1"
+icarus_stage1_producers.pandoraKalmanTrackGausCryo1.trackInputTag:                               "pandoraTrackGausCryo1"
 
 
 ## Switch pandora back to just gaushits?
-icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-icarus_stage1_producers.pandoraGausCryo0.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-icarus_stage1_producers.pandoraGausCryo1.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo0.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+#icarus_stage1_producers.pandoraGausCryo1.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
 
 
