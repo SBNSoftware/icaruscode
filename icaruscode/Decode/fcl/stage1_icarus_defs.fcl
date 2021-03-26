@@ -92,16 +92,12 @@ icarus_reco_Gauss:                 [
 
 icarus_reco_Gauss_Cryo0:           [ 
                                      @sequence::icarus_reco_cluster3DCryo0,
-                                     @sequence::icarus_reco_pandoraGausCryo0,
-                                     SBNShowerGausCryo0,
-				                             SBNShowerTestGausCryo0 
+                                     @sequence::icarus_reco_pandoraGausCryo0
                                    ]
 
 icarus_reco_Gauss_Cryo1:           [ 
                                      @sequence::icarus_reco_cluster3DCryo1,
-                                     @sequence::icarus_reco_pandoraGausCryo1,
-                                     SBNShowerGausCryo1,
-				                             SBNShowerTestGausCryo1 
+                                     @sequence::icarus_reco_pandoraGausCryo1
                                    ]
 
 ### Below we include overrides for the modules above
