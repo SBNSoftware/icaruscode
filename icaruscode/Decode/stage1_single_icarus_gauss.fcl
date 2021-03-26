@@ -1,6 +1,6 @@
 #include "reco_icarus_driver_common.fcl"
 
-process_name: Stage1
+process_name: stage1
 
 physics.filters: {
    flashfilter: { module_type: "FilterOpFlash" 
@@ -15,9 +15,10 @@ physics.reco: [ flashfilter,
                 @sequence::icarus_reco_pandoraGaus ] #,
 #                @sequence::icarus_reco_pandoraICARUS ]
 
-physics.trigger_paths: [ reco ]
-outputs.out1.fileName: "%ifb_%tc-%p.root"
-outputs.out1.dataTier: "reconstructed"
+physics.trigger_paths:     [ reco ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
 
 ### Definitions for a single pandora instance
 physics.producers.pandoraGaus.HitFinderModuleLabel:                       "cluster3d"
