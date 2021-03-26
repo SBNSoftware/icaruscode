@@ -36,6 +36,11 @@ physics:
      @table::icarus_stage1_filters
  }
 
+ analyzers:
+ {
+     @table::icarus_stage1_analyzers
+ }
+
  #reco sequence and trigger_paths to be defined elsewhere
 
  stream1:    [ out1 ]
