@@ -1,19 +1,9 @@
-#include "reco_icarus_driver_common.fcl"
+#include "stage1_icarus_driver_common.fcl"
 
 process_name: stage1
 
-physics.filters: {
-   flashfilter: { module_type: "FilterOpFlash" 
-                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
-                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
-                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
-                }
-}
-
 physics.reco: [ flashfilter,
-                @sequence::icarus_reco_cluster3d,
-                @sequence::icarus_reco_pandoraGaus ] #,
-#                @sequence::icarus_reco_pandoraICARUS ]
+                @sequence::icarus_reco_Gauss ] 
 
 physics.trigger_paths:     [ reco ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
