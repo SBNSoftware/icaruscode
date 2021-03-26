@@ -19,6 +19,7 @@ outputs.out1.fileName: "%ifb_%tc-%p.root"
 outputs.out1.dataTier: "reconstructed"
 
 # Drop the artdaq format files on output
+# We also drop the intermediate full deconolved waveforms (and keep only the ROIs from the next step)
 outputs.out1.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*" ]
 
 # Add a few temporary overrides that will either be dropped or made default in the future.
