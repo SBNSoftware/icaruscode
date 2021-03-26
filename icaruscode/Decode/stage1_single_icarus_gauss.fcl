@@ -2,7 +2,16 @@
 
 process_name: Stage1
 
-physics.reco: [ @sequence::icarus_reco_cluster3d,
+physics.filters: {
+   flashfilter: { module_type: "FilterOpFlash" 
+                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
+                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
+                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
+                }
+}
+
+physics.reco: [ flashfilter,
+                @sequence::icarus_reco_cluster3d,
                 @sequence::icarus_reco_pandoraGaus ] #,
 #                @sequence::icarus_reco_pandoraICARUS ]
 
