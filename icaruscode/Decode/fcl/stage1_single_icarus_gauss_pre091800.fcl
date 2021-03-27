@@ -1,0 +1,14 @@
+#
+# "Stage 1" configuration for data files decoded with icaruscode older than v09_18_00.
+# See https://sbnsoftware.github.io/icaruscode_wiki/Detector_geometry.html
+# for details.
+#
+
+#include "stage1_single_icarus_gauss.fcl"
+
+# setting the older geometry
+services: {
+  @table::services
+  @table::icarus_geometry_services_legacy_icarus_splitwires
+}
+
