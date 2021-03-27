@@ -131,7 +131,7 @@ icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,
                                    ]
 
 icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_pmt,
-#                                    flashfilter,
+                                    flashfilter,
                                      @sequence::icarus_stage0_multiTPC_TPC
                                    ]
 

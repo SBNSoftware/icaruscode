@@ -37,5 +37,13 @@ services.message.destinations :
        }
      }
   }
+  ErrorStream:
+  {
+     type:      "cerr"      #tells the message service to output this destination to standard error stream
+     threshold: "CRITICAL"  #tells the message service that this destination applies to the most CRITICAL level messages only
+     categories: {
+       default: { limit: -1 }
+     }
+  }
 }
 
