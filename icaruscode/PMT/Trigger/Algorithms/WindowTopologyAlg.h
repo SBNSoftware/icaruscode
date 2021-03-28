@@ -19,6 +19,9 @@
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 
+// framework libraries
+#include "cetlib_except/exception.h"
+
 // C/C++ standard libraries
 #include <optional>
 #include <vector>
@@ -87,6 +90,22 @@ class icarus::trigger::WindowTopologyAlg
    */
   WindowChannelMap createFromGates
     (TriggerGatesPerCryostat_t const& gates) const;
+  
+  
+  /**
+   * @brief Returns the topology of the windows described by the gates.
+   * @param gates a set of gates
+   * @return topology of the windows described by the gates
+   * 
+   * The input `gates` is a collection with all relevant gates in the detector.
+   * 
+   * Each gate covers one or more channels: each window is made out of all the
+   * channels in a gate. The opening content of the gates is not considered.
+   * 
+   * Gates are first split by the cryostat they belong to (cross-cryostat gates
+   * are forbidden), and then the window topology is extracted.
+   */
+  WindowChannelMap createFromGates(TriggerGates_t const& gates) const;
   
   
   /**
@@ -180,6 +199,9 @@ class icarus::trigger::WindowTopologyVerification
   
     public:
   
+  /// Type of sets of trigger gates.
+  using TriggerGates_t = icarus::trigger::WindowTopologyAlg::TriggerGates_t;
+  
   /// Type of sets of trigger gates, grouped by cryostat.
   using TriggerGatesPerCryostat_t
     = icarus::trigger::WindowTopologyAlg::TriggerGatesPerCryostat_t;
@@ -219,15 +241,22 @@ class icarus::trigger::WindowTopologyVerification
   /// @throw std::bad_optional_access if no topology has been set
   WindowChannelMap const& getTopology() const;
   
+  //@{
   /**
    * @brief Verifies that `gates` match the topology current set up.
    * @param gates the set of gates to match to the topology
    * @return a composite error message (empty on success)
    * @throw cet::exception (category: `WindowTopologyVerification`) if no window
    *                       topology is set up yet
+   * 
+   * Gates can be specified either as a collection, or as a set of collections,
+   * one per cryostat.
    */
   std::string verify(TriggerGatesPerCryostat_t const& gates) const;
+  std::string verify(TriggerGates_t const& gates) const;
+  //@}
   
+  //@{
   /**
    * @brief Verifies that `gates` match the topology current set up.
    * @param gates the set of gates to match to the topology
@@ -238,6 +267,24 @@ class icarus::trigger::WindowTopologyVerification
    * @see `verify()`
    */
   void operator() (TriggerGatesPerCryostat_t const& gates) const;
+  void operator() (TriggerGates_t const& gates) const;
+  //@}
+  
+  
+    private:
+  
+  /// Type of trigger gate used for input to the algorithm.
+  using InputTriggerGate_t
+    = icarus::trigger::WindowTopologyAlg::InputTriggerGate_t;
+  
+  /// Checks that the specified `gate` matched the window with index `iWindow`.
+  /// @return message describing the failure, empty on success
+  std::string verifyGate
+    (std::size_t iWindow, InputTriggerGate_t const& gate) const;
+  
+  /// Implementation of `operator()`.
+  template <typename Gates>
+  void verifyOrThrow(Gates const& gates) const;
   
 }; // icarus::trigger::WindowTopologyVerification
 
@@ -256,7 +303,10 @@ class icarus::trigger::WindowTopologyVerification
  * The class can be reset to restart the cycle, and the topology can be obtained
  * directly with the `operator->`.
  * 
- * 
+ * The main methods support different types of input, collectively known as
+ * `Gates`. The complete set of supported input depends on what is supported
+ * by the underlying classes. Currently, supported input includes (flat)
+ * collections of gates and collections of gates grouped by cryostat.
  */
 class icarus::trigger::WindowTopologyManager
   : protected icarus::ns::util::mfLoggingClass
@@ -268,6 +318,9 @@ class icarus::trigger::WindowTopologyManager
   geo::GeometryCore const* const fGeom; ///< Geometry service provider.
   
     public:
+  
+  /// Type of sets of trigger gates.
+  using TriggerGates_t = icarus::trigger::WindowTopologyAlg::TriggerGates_t;
   
   /// Type of sets of trigger gates, grouped by cryostat.
   using TriggerGatesPerCryostat_t
@@ -286,20 +339,24 @@ class icarus::trigger::WindowTopologyManager
   
   /**
    * @brief Extracts topology or verifies it against `gates` .
+   * @tparam Gates type of gate collection
    * @param gates the set of gates to match to the topology
    * @return a composite error message (empty on success)
    * 
    */
-  std::string setOrVerify(TriggerGatesPerCryostat_t const& gates);
+  template <typename Gates>
+  std::string setOrVerify(Gates const& gates);
 
   /**
    * @brief Extracts topology or verifies it against `gates` .
+   * @tparam Gates type of gate collection
    * @param gates the set of gates to match to the topology
    * @return whether this method extracted the topology
    * @throw cet::exception (category: `WindowTopologyVerification`) if
    *                       verification fails
    */
-  bool operator() (TriggerGatesPerCryostat_t const& gates);
+  template <typename Gates>
+  bool operator() (Gates const& gates);
 
   /// Access to the stored topology.
   /// @throw std::bad_optional_access if no topology has been set
@@ -314,7 +371,8 @@ class icarus::trigger::WindowTopologyManager
     private:
   
   /// Helper: creates the topology from `gates`.
-  void extractTopology(TriggerGatesPerCryostat_t const& gates);
+  template <typename Gates>
+  void extractTopology(Gates const& gates);
   
 }; // icarus::trigger::WindowTopologyManager
 
@@ -364,6 +422,18 @@ inline void icarus::trigger::WindowTopologyVerification::clearTopology()
 
 
 //------------------------------------------------------------------------------
+inline void icarus::trigger::WindowTopologyVerification::operator()
+  (TriggerGates_t const& gates) const
+  { verifyOrThrow(gates); }
+
+
+//------------------------------------------------------------------------------
+inline void icarus::trigger::WindowTopologyVerification::operator()
+  (TriggerGatesPerCryostat_t const& gates) const
+  { verifyOrThrow(gates); }
+
+
+//------------------------------------------------------------------------------
 //--- icarus::trigger::WindowTopologyManager
 //------------------------------------------------------------------------------
 inline icarus::trigger::WindowTopologyManager::WindowTopologyManager(
@@ -386,6 +456,72 @@ inline auto icarus::trigger::WindowTopologyManager::operator* () const
 inline auto icarus::trigger::WindowTopologyManager::operator-> () const
   -> WindowChannelMap const*
   { return &(fVerify.getTopology()); }
+
+
+//------------------------------------------------------------------------------
+//--- Template implementation
+//------------------------------------------------------------------------------
+//--- icarus::trigger::WindowTopologyVerification
+// -----------------------------------------------------------------------------
+template <typename Gates>
+void icarus::trigger::WindowTopologyVerification::verifyOrThrow
+  (Gates const& gates) const
+{
+  
+  std::string const errorMsg = verify(gates);
+  if (errorMsg.empty()) return;
+  
+  // put together the exception message and throw it.
+  throw cet::exception("WindowTopologyVerification")
+    << "Some channels from trigger gates do not match the previous window allocation:\n"
+    << errorMsg
+    << "\n"
+    << "Window allocation: "
+    << fWindowMap.value()
+    ;
+  
+} // icarus::trigger::WindowTopologyVerification::operator()
+
+
+//------------------------------------------------------------------------------
+//--- icarus::trigger::WindowTopologyManager
+//------------------------------------------------------------------------------
+template <typename Gates>
+std::string icarus::trigger::WindowTopologyManager::setOrVerify
+  (Gates const& gates)
+{
+  if (fVerify.hasTopology()) {
+    return fVerify.verify(gates);
+  }
+  else {
+    extractTopology(gates);
+    return {};
+  }
+} // icarus::trigger::WindowTopologyManager::setOrVerify()
+
+
+//------------------------------------------------------------------------------
+template <typename Gates>
+bool icarus::trigger::WindowTopologyManager::operator() (Gates const& gates) {
+  if (fVerify.hasTopology()) {
+    fVerify(gates);
+    return false;
+  }
+  else {
+    extractTopology(gates);
+    return true;
+  }
+} // icarus::trigger::WindowTopologyManager::operator()
+
+
+//------------------------------------------------------------------------------
+template <typename Gates>
+void icarus::trigger::WindowTopologyManager::extractTopology(Gates const& gates)
+{
+  icarus::trigger::WindowTopologyAlg const topoMaker
+    { *fGeom, logCategory() + ":Extractor" };
+  fVerify.setTopology(topoMaker.createFromGates(gates));
+} // icarus::trigger::WindowTopologyManager::extractTopology()
 
 
 //------------------------------------------------------------------------------

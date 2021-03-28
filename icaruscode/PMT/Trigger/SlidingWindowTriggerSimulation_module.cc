@@ -1,12 +1,16 @@
 /**
  * @file   SlidingWindowTriggerSimulation_module.cc
- * @brief  Plots of efficiency for triggers based on PMT channel global count.
+ * @brief  Plots of efficiency for triggers based on PMT sliding windows.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
- * @date   January 9, 2020
+ * @date   March 27, 2021
  */
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowPatternAlg.h"
+#include "icaruscode/PMT/Trigger/Algorithms/WindowTopologyAlg.h" // WindowTopologyManager
+#include "icaruscode/PMT/Trigger/Algorithms/WindowPatternConfig.h"
+#include "icaruscode/PMT/Trigger/Algorithms/WindowPattern.h"
 #include "icaruscode/PMT/Trigger/Algorithms/ApplyBeamGate.h"
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
@@ -14,7 +18,6 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
-#include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
@@ -69,9 +72,6 @@
 #include <string>
 #include <atomic>
 #include <optional>
-#ifdef __cpp_lib_source_location
-#  include <source_location>
-#endif //  __cpp_lib_source_location
 #include <utility> // std::pair<>, std::move()
 #include <cmath> // std::ceil()
 #include <cstddef> // std::size_t
@@ -80,142 +80,6 @@
 
 //------------------------------------------------------------------------------
 using namespace util::quantities::time_literals;
-
-
-// TODO Sort this mess
-
-//------------------------------------------------------------------------------
-namespace icarus::trigger { class MajorityTriggerCombiner; }
-
-/// Combines a group of trigger gates for majority trigger. Glorified `Sum()`.
-class icarus::trigger::MajorityTriggerCombiner
-  : protected icarus::ns::util::mfLoggingClass
-{
-  
-    public:
-  
-  MajorityTriggerCombiner
-    (std::string const& logCategory = "MajorityTriggerCombiner")
-    : icarus::ns::util::mfLoggingClass(logCategory) {}
-  
-  /// Combines all the gates (by cryostat) in a single majority gate.
-  template <typename GateObj>
-  GateObj combine(std::vector<GateObj> const& gates) const
-    { return icarus::trigger::sumGates(gates); }
-
-  
-    private:
-  
-}; // class icarus::trigger::MajorityTriggerCombiner
-
-
-//------------------------------------------------------------------------------
-namespace icarus::trigger { class CryostatTriggerCombiner; }
-
-/// Combines cryostat triggers via OR. Glorified `Max()`.
-class icarus::trigger::CryostatTriggerCombiner
-  : protected icarus::ns::util::mfLoggingClass
-{
-  
-    public:
-  
-  CryostatTriggerCombiner
-    (std::string const& logCategory = "CryostatTriggerCombiner")
-    : icarus::ns::util::mfLoggingClass(logCategory) {}
-  
-  /// Combines all the gates (by cryostat) in a single majority gate.
-  template <typename GateObj>
-  GateObj combine(std::vector<GateObj> const& cryoGates) const
-    { return icarus::trigger::maxGates(cryoGates); }
-  
-    private:
-  
-}; // class icarus::trigger::CryostatTriggerCombiner
-
-
-//------------------------------------------------------------------------------
-namespace icarus::trigger { class GeometryChannelSplitter; }
-
-
-/// Combines cryostat triggers via OR. Glorified `Max()`.
-class icarus::trigger::GeometryChannelSplitter
-  : protected icarus::ns::util::mfLoggingClass
-{
-  
-    public:
-  
-  GeometryChannelSplitter(
-    geo::GeometryCore const& geom,
-    std::string const& logCategory = "GeometryChannelSplitter"
-    );
-  
-  /// Splits the gates by cryostat.
-  template <typename GateObj>
-  std::vector<std::vector<GateObj>> byCryostat
-    (std::vector<GateObj>&& gates) const;
-  
-    private:
-  
-  unsigned int const fNCryostats; ///< Number of cryostats in the detector.
-  
-  /// Map: optical channel ID -> number of the cryostat with that channel.
-  std::vector<geo::CryostatID> const fChannelCryostat;
-  
-  
-  /// Creates a map like `fChannelCryostat` from the geometry information.
-  static std::vector<geo::CryostatID> makeChannelCryostatMap
-    (geo::GeometryCore const& geom);
-  
-}; // class icarus::trigger::GeometryChannelSplitter
-
-
-//------------------------------------------------------------------------------
-icarus::trigger::GeometryChannelSplitter::GeometryChannelSplitter(
-  geo::GeometryCore const& geom,
-  std::string const& logCategory /* = "GeometryChannelSplitter" */
-  )
-  : icarus::ns::util::mfLoggingClass(logCategory)
-  , fNCryostats(geom.Ncryostats())
-  , fChannelCryostat(makeChannelCryostatMap(geom))
-{}
-
-
-//------------------------------------------------------------------------------
-template <typename GateObj>
-std::vector<std::vector<GateObj>>
-icarus::trigger::GeometryChannelSplitter::byCryostat
-  (std::vector<GateObj>&& gates) const
-{
-  std::vector<std::vector<GateObj>> gatesPerCryostat{ fNCryostats };
-  
-  for (auto& gate: gates) {
-    assert(gate.hasChannels());
-    gatesPerCryostat[fChannelCryostat.at(gate.channels().front()).Cryostat]
-      .push_back(std::move(gate));
-  } // for gates
-  
-  return gatesPerCryostat;
-} // icarus::trigger::GeometryChannelSplitter::byCryostat()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::GeometryChannelSplitter::makeChannelCryostatMap
-  (geo::GeometryCore const& geom) -> std::vector<geo::CryostatID>
-{
-  
-  auto const nOpChannels = geom.NOpChannels();
-  
-  std::vector<geo::CryostatID> channelCryostatMap(nOpChannels);
-  
-  for (auto const opChannel: util::counter(nOpChannels)) {
-    if (!geom.IsValidOpChannel(opChannel)) continue;
-    channelCryostatMap.at(opChannel)
-      = geom.OpDetGeoFromOpChannel(opChannel).ID();
-  } // for all channels
-  
-  return channelCryostatMap;
-  
-} // icarus::trigger::GeometryChannelSplitter::makeChannelCryostatMap()
 
 
 //------------------------------------------------------------------------------
@@ -251,33 +115,35 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * Configuration
  * ==============
  * 
- * * `TriggerGatesTag` (string, mandatory): name of the module
- *     instance which produced the trigger primitives to be used as input;
- *     it must not include any instance name, as the instance names will be
- *     automatically added from `Thresholds` parameter.
- *     The typical trigger primitives used as input may be LVDS discriminated
- *     output (e.g. from `icarus::trigger::LVDSgates` module) or combinations
- *     of them (e.g. from `icarus::trigger::SlidingWindowTrigger` module).
- * * `Thresholds` (list of integers, mandatory): list of the discrimination
- *     thresholds to consider, in ADC counts. A data product containing a
- *     digital signal is read for each one of the thresholds, and the tag of the
- *     data product is expected to be the module label `TriggerGatesTag` with as
- *     instance name the value of the threshold (e.g. for a threshold of 60 ADC
- *     counts the data product tag might be `LVDSgates:60`).
+ * * `TriggerGatesTag` (string, mandatory): name of the module instance which
+ *     produced the trigger primitives to be used as input; it must not include
+ *     any instance name, as the instance names will be automatically added from
+ *     `Thresholds` parameter.
+ *     The typical trigger primitives used as input are LVDS discriminated
+ *     output combined into trigger windows (e.g. from
+ *     `icarus::trigger::SlidingWindowTrigger` module).
+ * * `Thresholds` (list of names, mandatory): list of the discrimination
+ *     thresholds to consider. A data product containing a digital signal is
+ *     read for each one of the thresholds, and the tag of the data product is
+ *     expected to be the instance name in this configuration parameter for the
+ *     module label set in `TriggerGatesTag` (e.g. for a threshold of
+ *     `"60"`, supposedly 60 ADC counts, and with `TriggerGatesTag` set to
+ *     `"TrigSlidingWindows"`, the data product tag would be
+ *     `TrigSlidingWindows:60`).
  * * `Pattern` (configuration table, mandatory): describes the sliding window
- *     pattern TODO
+ *     pattern; the configuration format for a pattern is described under
+ *     `icarus::trigger::ns::fhicl::WindowPatternConfig`.
  * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
  *     gate; _the time requires the unit to be explicitly specified_: use
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
  *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
  *     `trigger_icarus.fcl`);
- * * `TriggerTimeResolution` (time, default: `8 ns`): time resolution for the
- *     trigger primitives;
- * * `LogCategory` (string, default `TriggerEfficiencyPlots`): name of category
- *     used to stream messages from this module into message facility.
+ * * `BeamBits` (TODO): bits to be set in the produced `raw::Trigger` objects.
+ * * `LogCategory` (string, default `SlidingWindowTriggerSimulation`): name of
+ *     category used to stream messages from this module into message facility.
  * 
  * An example job configuration is provided as
- * `simulateslidingwindowtriggers_icarus.fcl`.
+ * `simulate_sliding_window_trigger_icarus.fcl`.
  * 
  * 
  * Output data products
@@ -300,59 +166,69 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * 
  * This section describes the trigger logic algorithm used in
  * `icarus::trigger::SlidingWindowTriggerSimulation` and its assumptions.
+ * Nevertheless, more up-to-date information can be found in
+ * `SlidingWindowTrigger` module (for the combination of the LVDS signals into
+ * window-wide gates) and in `icarus::trigger::SlidingWindowPatternAlg`,
+ * which applies the configured pattern logic to the input.
  * 
- * TODO
+ * The module receives as input a multi-level trigger gate for each of the
+ * windows to be considered.
+ * On the first input (i.e. the first event), that input is parsed to learn
+ * the windows and their relative position from the input trigger gates.
+ * This topology will be used to apply the configured patterns. On the following
+ * events, their input is checked to confirm the compatibility of the
+ * composition of its windows with the one from that first event (both aspects
+ * are handled by an `icarus::trigger::WindowTopologyManager` object).
  * 
- * The algorithm keeps the trigger primitives from the different cryostats
- * separate for the most time.
- * Within each cryostat, all trigger primitives are treated equally, whether
- * they originate from one or from two channels (or 10 or 30), and wherever
- * their channels are in the cryostat.
- * The trigger primitives in each cryostat are combined in a multi-level gate by
- * adding them, so that the level of the resulting gate matches at any time how
- * many trigger primitives are on at that time.
- * Finally, the maximum number of trigger primitives open in any of the
- * cryostats at each time is the level to be compared to the trigger
- * requirements.
- * 
- * This multi-level gate is set in coincidence with the beam gate by multiplying
- * the multi-level and the beam gates.
+ * All multi-level gates are set in coincidence with the beam gate by
+ * multiplying the multi-level and the beam gates. Because of this, trigger
+ * gates are suppressed everywhere except than during the beam gate.
  * The beam gate opens at a time configured in `DetectorClocks` service provider
- * (`detinfo::DetectorClocks::BeamGateTime()`) and has a duration configured
- * in this module (`BeamGateDuration`).
+ * (`detinfo::DetectorClocks::BeamGateTime()`), optionally offset
+ * (`BeamGateStart`), and has a duration configured in this module
+ * (`BeamGateDuration`).
  * 
- * At this point, the trigger gate is a multi-level gate suppressed everywhere
- * except than during the beam gate.
- * The trigger requirement is simply how many trigger primitives must be open at
- * the same time in a single cryostat for the trigger to fire. The requirement
- * is set in the configuration (`MinimumPrimitives`).
- * To determine whether a trigger with the given minimum number of primitives
- * open at the same time has fired, the gate combined as described above is
- * scanned to find _the first tick_ where the level of the gate reaches
- * or passes this minimum required number. If such tick exists, the trigger is
- * considered to have fired, and at that time.
+ * The algorithm handles independently multiple trigger patterns.
+ * On each input, each configured pattern is applied based on the window
+ * topology. Each pattern describes a minimum level of the trigger
+ * gate in the window, that usually means the number of LVDS signals in
+ * coincidence at any given time ("majority"). A pattern may have requirements
+ * on the neighbouring windows in addition to the main one. The pattern is
+ * satisfied if all involved windows pass their specific requirements at the
+ * same time (coincidence between windows).
+ * Each pattern is applied in turn to each of the windows (which is the "main"
+ * window). The neighborhood described in the pattern is applied with respect to
+ * that main window. The trigger fires if one or more of the windows satisfy
+ * the pattern, and the trigger time is the one of the earliest satisfied
+ * pattern (more precisely, the earliest tick when the coincidence required
+ * by that pattern is satisfied).* 
+ * All windows in the detector are considered independently, but the supported
+ * patterns may only include components in the same cryostat. Therefore,
+ * triggers are effectively on a single cryostat.
+ * An object of class `icarus::trigger::SlidingWindowPatternAlg` applies this
+ * logic: see its documentation for the most up-to-date details.
  * 
- * While there _is_ a parameter describing the time resolution of the trigger
- * (`TriggerTimeResolution`), this is currently only used for aesthetic purposes
- * to choose the binning of some plots: the resolution is _not_ superimposed
- * to the gates (yet).
+ * Eventually, for each event there are as many different trigger responses as
+ * how many different patterns are configured (`Patterns` configuration
+ * parameter), _times_ how many ADC thresholds are provided in input,
+ * configured in `Thresholds`.
  * 
  * 
- * Output plots
- * -------------
+ * Technical aspects of the module
+ * --------------------------------
  * 
- * Plots are directly stored in the producer folder of the `TFileService` ROOT
- * output file.
+ * @anchor SlidingWindowTriggerSimulation_Tech
  * 
- * Summary plots are generated:
- * * `NTriggers`: total number of triggers, per threshold
- * * `Eff`: fraction of events with at least one trigger, per threshold
- * * `TriggerTick`: trigger time distribution (optical tick), per threshold
- * 
- * The plots marked "per threshold" have a "threshold" axis where each bin
- * corresponds to the threshold specified in the `Thresholds` configuration
- * parameter. Note that the numerical value of the axis on that bin does not
- * match the threshold value.
+ * This module does not build the trigger gates of the sliding windows, but
+ * rather it takes them as input (see e.g. `SlidingWindowTrigger` module).
+ * Window topology (size of the windows and their relations) is stored in
+ * `icarus::trigger::WindowChannelMap` objects, and its construction is
+ * delegated to `icarus::trigger::WindowTopologyAlg` (under the hood of the
+ * `WindowTopologyManager` class) which learns it from the actual trigger gate
+ * input rather than on explicit configuration. Pattern definitions and
+ * configuration are defined in `icarus::trigger::WindowPattern` and
+ * `icarus::trigger::ns::fhicl::WindowPatternConfig` respectively. Trigger
+ * simulation is delegated to `icarus::trigger::SlidingWindowPatternAlg`.
  * 
  */
 class icarus::trigger::SlidingWindowTriggerSimulation
@@ -377,16 +253,16 @@ class icarus::trigger::SlidingWindowTriggerSimulation
       Comment("label of the input trigger gate data product (no instance name)")
       };
 
-    fhicl::Sequence<raw::ADC_Count_t> Thresholds {
+    fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
-      Comment("thresholds to consider [ADC counts]")
+      Comment("tags of the thresholds to consider")
       };
 
-    fhicl::Atom<unsigned int> MinimumPrimitives { // TODO
-      Name("MinimumPrimitives"),
-      Comment("minimum required number of trigger primitives for the trigger")
+    icarus::trigger::ns::fhicl::WindowPatternTable Pattern {
+      Name("Pattern"),
+      Comment("trigger requirements as a trigger window pattern")
       };
-    
+ 
     fhicl::Atom<microseconds> BeamGateDuration {
       Name("BeamGateDuration"),
       Comment("length of time interval when optical triggers are accepted")
@@ -400,13 +276,13 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     fhicl::Atom<nanoseconds> TriggerTimeResolution {
       Name("TriggerTimeResolution"),
       Comment("resolution of trigger in time"),
-      8_ns
+      25_ns
       };
     
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
-      "SlidingWindowTrigger" // default
+      "SlidingWindowTriggerSimulation" // default
       };
     
   }; // struct Config
@@ -440,38 +316,40 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   using TriggerInfo_t = details::TriggerInfo_t; ///< Type alias.
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::SlidingWindowPatternAlg::InputTriggerGate_t;
   
-  /// A list of trigger gates from input.
-  using TriggerGates_t = std::vector<InputTriggerGate_t>;
-
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
+  /// List of trigger gates.
+  using TriggerGates_t
+    = icarus::trigger::SlidingWindowPatternAlg::TriggerGates_t;
+  
+  /// Data structure to communicate internally a trigger response.
+  using WindowTriggerInfo_t
+    = icarus::trigger::SlidingWindowPatternAlg::AllTriggerInfo_t;
   
   
   // --- BEGIN Configuration variables -----------------------------------------
   
-  /// ADC thresholds to read, and the input tag connected to their data.
-  std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
+  /// Name of ADC thresholds to read, and the input tag connected to their data.
+  std::map<std::string, art::InputTag> fADCthresholds;
   
-  /// Minimum number of trigger primitives for a trigger to happen.
-  unsigned int const fMinimumPrimitives = 0; // FIXME DELME
+  /// Configured sliding window requirement pattern.
+  WindowPattern const fPattern;
   
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
   
-  nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
-  
   std::uint32_t fBeamBits; ///< Bits for the beam gate being simulated.
+  
+  nanoseconds fTriggerTimeResolution; ///< Trigger resolution in time.
   
   /// Message facility stream category for output.
   std::string const fLogCategory;
   
   // --- END Configuration variables -------------------------------------------
   
+  
   // --- BEGIN Service variables -----------------------------------------------
-
-  geo::GeometryCore const& fGeom;
 
   /// ROOT directory where all the plots are written.
   art::TFileDirectory fOutputDir;
@@ -481,10 +359,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   
   // --- BEGIN Internal variables ----------------------------------------------
   
-  MajorityTriggerCombiner const fCombiner; ///< Algorithm to combine primitives.
+  /// Mapping of each sliding window with location and topological information.
+  // mutable = not thread-safe
+  mutable icarus::trigger::WindowTopologyManager fWindowMapMan;
   
-  /// Algorithm to sort trigger gates by cryostat or TPC.
-  GeometryChannelSplitter fChannelSplitter;
+  /// Pattern algorithm.
+  std::optional<icarus::trigger::SlidingWindowPatternAlg> fPatternAlg;
   
   /// All plots in one practical sandbox.
   icarus::trigger::PlotSandbox fPlots;
@@ -494,7 +374,6 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   std::atomic<unsigned int> fTotalEvents { 0U }; ///< Count of fired triggers.
   
   
-  // TODO this is not multithread-safe, needs a mutex
   /// Functor returning whether a gate has changed.
   icarus::ns::util::ThreadSafeChangeMonitor<icarus::trigger::ApplyBeamGateClass>
     fGateChangeCheck;
@@ -513,7 +392,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    * @param event _art_ event to read data from and put results into
    * @param iThr index of the threshold in the configuration
    * @param thr value of the threshold (ADC counts)
-   * @return a simple copy of the trigger response information
+   * @return the trigger response information
    * 
    * For the given threshold, the simulation of the configured trigger is
    * performed.
@@ -525,43 +404,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    * 
    * The simulation itself is performed by the `simulate()` method.
    */
-  TriggerInfo_t produceForThreshold(
+  WindowTriggerInfo_t produceForThreshold(
     art::Event& event,
     detinfo::DetectorTimings const& detTimings,
     ApplyBeamGateClass const& beamGate,
-    std::size_t const iThr, icarus::trigger::ADCCounts_t const thr
+    std::size_t const iThr, std::string const& thrTag
     );
-  
-  /**
-   * @brief Performs the simulation of the configured trigger on `gates` input.
-   * @param gates the input to the trigger simulation
-   * @return the outcome and details of the trigger simulation
-   * 
-   * The simulation is performed using the input single trigger requests
-   * (or trigger primitives) from the `gates` collection.
-   * 
-   * The gates are split by cryostat, and the simulation is performed
-   * independently on each cryostat (`simulateCryostat()`).
-   * Finally, the cryostat triggers are combined (OR) into the final trigger
-   * decision, bearing as time the earliest one.
-   */
-  TriggerInfo_t simulate(ApplyBeamGateClass const& clockData,
-                         TriggerGates_t const& gates) const;
-  
-  /**
-   * @brief Simulates the trigger response within a single cryostat.
-   * @param gates the trigger primitives to be considered
-   * @return the outcome and details of the trigger simulation
-   * 
-   * The simulation computes the count of trigger `gates` open at any time,
-   * sets it in coincidence with the beam gate, and fires a trigger if within
-   * that gate the count of open `gates` is equal or larger than the threshold
-   * configured (`MinimumPrimitives`).
-   * The time is the earliest one when that requirement is met.
-   */
-  TriggerInfo_t simulateCryostat(ApplyBeamGateClass const& clockData,
-                                 TriggerGates_t const& gates) const;
-  
   
   /**
    * @brief Converts the trigger information into a `raw::Trigger` object.
@@ -574,11 +422,11 @@ class icarus::trigger::SlidingWindowTriggerSimulation
    */
   raw::Trigger triggerInfoToTriggerData
     (detinfo::DetectorTimings const& detTimings,
-     unsigned int triggerNumber, TriggerInfo_t const& info) const;
+     unsigned int triggerNumber, WindowTriggerInfo_t const& info) const;
   
   /// Fills the plots for threshold index `iThr` with trigger information.
   void plotTriggerResponse
-    (std::size_t iThr, TriggerInfo_t const& triggerInfo) const;
+    (std::size_t iThr, WindowTriggerInfo_t const& triggerInfo) const;
   
   
   /// Prints the summary of fired triggers on screen.
@@ -618,34 +466,31 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   (Parameters const& config)
   : art::EDProducer       (config)
   // configuration
+  , fPattern              (config().Pattern())
   , fBeamGateDuration     (config().BeamGateDuration())
-  , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fBeamBits             (config().BeamBits())
+  , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fLogCategory          (config().LogCategory())
   // services
-  , fGeom      (*lar::providerFrom<geo::Geometry>())
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
-  , fCombiner       (fLogCategory)
-  , fChannelSplitter(fGeom, fLogCategory)
+  , fWindowMapMan
+    { *lar::providerFrom<geo::Geometry>(), fLogCategory + ":WindowMapManager" }
   , fPlots(
-     fOutputDir, "", "minimum primitives: " + std::to_string(fMinimumPrimitives)
+     fOutputDir, "", "requirement: " + fPattern.description()
     )
 {
   
   //
   // more complex parameter parsing
   //
-  std::string const discrModuleLabel = config().TriggerGatesTag();
-  for (raw::ADC_Count_t threshold: config().Thresholds()) {
-    fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
-  }
+  std::string const& discrModuleLabel = config().TriggerGatesTag();
+  for (std::string const& threshold: config().Thresholds())
+    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
   
   // initialization of a vector of atomic is not as trivial as it sounds...
   fTriggerCount = std::vector<std::atomic<unsigned int>>(fADCthresholds.size());
   std::fill(fTriggerCount.begin(), fTriggerCount.end(), 0U);
-
 
   //
   // input data declaration
@@ -665,9 +510,13 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
     produces<std::vector<raw::Trigger>>(inputDataTag.instance());
   
-  
-  mf::LogInfo(fLogCategory)
-    << "Requirement of minimum " << fMinimumPrimitives << " primitives.";
+  {
+    mf::LogInfo log(fLogCategory);
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
+    for (auto const& [ thresholdTag, dataTag ]: fADCthresholds)
+      log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
+    
+  } // local block
   
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation()
@@ -682,10 +531,8 @@ void icarus::trigger::SlidingWindowTriggerSimulation::beginJob() {
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event) {
-  
-  mf::LogDebug log(fLogCategory);
-  log << "Event " << event.id() << ":";
+void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
+{
   
   auto const clockData
     = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
@@ -698,15 +545,18 @@ void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
   }
 
 
-  for (auto const [ iThr, thr ]
+  mf::LogDebug log(fLogCategory); // this will print at the end of produce()
+  log << "Event " << event.id() << ":";
+  
+  for (auto const& [ iThr, thrTag ]
     : util::enumerate(util::get_elements<0U>(fADCthresholds))
   ) {
     
-    TriggerInfo_t const triggerInfo
-      = produceForThreshold(event, detTimings, beamGate, iThr, thr);
+    WindowTriggerInfo_t const triggerInfo
+      = produceForThreshold(event, detTimings, beamGate, iThr, thrTag);
     
-    log << "\n * threshold " << thr << ": ";
-    if (triggerInfo) log << "trigger at " << triggerInfo.atTick();
+    log << "\n * threshold " << thrTag << ": ";
+    if (triggerInfo) log << "trigger at " << triggerInfo.info.atTick();
     else             log << "not triggered";
     
   } // for
@@ -733,8 +583,8 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
   
   std::vector<std::string> thresholdLabels;
   thresholdLabels.reserve(size(fADCthresholds));
-  for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
-    thresholdLabels.push_back(inputDataTag.instance());
+  for (std::string thr: util::get_elements<0U>(fADCthresholds))
+    thresholdLabels.push_back(std::move(thr));
   
   auto const beamGate = makeMyBeamGate();
   fGateChangeCheck(beamGate);
@@ -758,9 +608,9 @@ void icarus::trigger::SlidingWindowTriggerSimulation::initializePlots() {
   
   auto* Eff = fPlots.make<TEfficiency>(
     "Eff",
-    "Efficiency of triggering"
+    "Triggering pass fraction"
       ";PMT discrimination threshold  [ ADC counts ]"
-      ";trigger efficiency",
+      ";trigger pass fraction",
     thresholdLabels.size(), 0.0, double(thresholdLabels.size())
     );
   // people are said to have earned hell for things like this;
@@ -799,20 +649,27 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
   art::Event& event,
   detinfo::DetectorTimings const& detTimings,
   ApplyBeamGateClass const& beamGate,
-  std::size_t const iThr, icarus::trigger::ADCCounts_t const thr
-) -> TriggerInfo_t {
+  std::size_t const iThr, std::string const& thrTag
+) -> WindowTriggerInfo_t {
   
   //
   // get the input
   //
-  art::InputTag const dataTag = fADCthresholds.at(thr);
+  art::InputTag const& dataTag = fADCthresholds.at(thrTag);
   auto const& gates = readTriggerGates(event, dataTag);
+  
+  // extract or verify the topology of the trigger windows
+  if (fWindowMapMan(gates))
+    fPatternAlg.emplace(*fWindowMapMan, fPattern, fLogCategory);
+  assert(fPatternAlg);
   
   //
   // simulate the trigger response
   //
-  TriggerInfo_t const triggerInfo = simulate(beamGate, gates);
+  WindowTriggerInfo_t const triggerInfo
+    = fPatternAlg->simulateResponse(beamGate.applyToAll(gates));
   if (triggerInfo) ++fTriggerCount[iThr]; // keep the unique count
+  
   
   //
   // fill the plots
@@ -823,7 +680,7 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
   // create and store the data product
   //
   auto triggers = std::make_unique<std::vector<raw::Trigger>>();
-  if (triggerInfo.fired()) {
+  if (triggerInfo.info.fired()) {
     triggers->push_back
       (triggerInfoToTriggerData(detTimings, fTriggerCount[iThr], triggerInfo));
   } // if
@@ -834,70 +691,19 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
 } // icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold()
 
 
-//------------------------------------------------------------------------------
-auto icarus::trigger::SlidingWindowTriggerSimulation::simulate
-  (ApplyBeamGateClass const& beamGate,
-   TriggerGates_t const& gates) const -> TriggerInfo_t
-{
-
-  /* 
-   * 1. split the input by cryostat
-   * 2. simulate the cryostat trigger
-   * 3. combine the responses (earliest wins)
-   */
-  
-  // to use the splitter we need a *copy* of the gates
-  auto const& cryoGates = fChannelSplitter.byCryostat(TriggerGates_t{ gates });
-  
-  // NOTE to allow for distinction between cryostats, the logic needs to be reworked
-  TriggerInfo_t triggerInfo; // not fired by default
-  for (auto const& gatesInCryo: cryoGates) {
-    
-    triggerInfo.replaceIfEarlier(simulateCryostat(beamGate, gatesInCryo));
-    
-  } // for gates in cryostat
-  
-  return triggerInfo;
-  
-} // icarus::trigger::SlidingWindowTriggerSimulation::simulate()
-
-
-//------------------------------------------------------------------------------
-auto icarus::trigger::SlidingWindowTriggerSimulation::simulateCryostat
-  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const
-  -> TriggerInfo_t
-{
-
-  /* 
-   * 1. combine the trigger primitives
-   * 2. apply the beam gate on the combination
-   * 3. compute the trigger response
-   */
-  
-  auto const combinedCount = beamGate.apply(fCombiner.combine(gates));
-  
-  // the first tick with enough opened gates:
-  TriggerGateData_t::ClockTick_t const tick
-    = combinedCount.findOpen(fMinimumPrimitives);
-  bool const fired = (tick != TriggerGateData_t::MaxTick);
-  
-  TriggerInfo_t triggerInfo;
-  if (fired) triggerInfo.emplace(optical_tick{ tick });
-  return triggerInfo;
-  
-} // icarus::trigger::SlidingWindowTriggerSimulation::simulateCryostat()
-
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse
-  (std::size_t iThr, TriggerInfo_t const& triggerInfo) const
+  (std::size_t iThr, WindowTriggerInfo_t const& triggerInfo) const
 {
+  bool const fired = triggerInfo.info.fired();
   
-  fPlots.demand<TEfficiency>("Eff").Fill(triggerInfo.fired(), iThr);
+  fPlots.demand<TEfficiency>("Eff").Fill(fired, iThr);
   
-  if (triggerInfo.fired()) {
+  if (fired) {
     fPlots.demand<TH1>("NTriggers").Fill(iThr);
-    fPlots.demand<TH2>("TriggerTick").Fill(triggerInfo.atTick().value(), iThr);
+    fPlots.demand<TH2>("TriggerTick").Fill
+      (triggerInfo.info.atTick().value(), iThr);
   }
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse()
@@ -911,16 +717,19 @@ void icarus::trigger::SlidingWindowTriggerSimulation::printSummary() const {
   //
   mf::LogInfo log(fLogCategory);
   log
-    << "Summary of triggers requiring " << fMinimumPrimitives
-    << "+ primitives for " << fTriggerCount.size() << " ADC thresholds:"
+    << "Summary of triggers for " << fTriggerCount.size()
+    << " thresholds (ADC) with pattern: " << fPattern.description()
     ;
   for (auto const& [ count, thr ]
     : util::zip(fTriggerCount, util::get_elements<0U>(fADCthresholds)))
   {
-    log << "\n  ADC threshold " << thr
-      << ": " << count << " events triggered";
-    if (fTotalEvents > 0U)
-      log << " (" << (double(count) / fTotalEvents * 100.0) << "%)";
+    log << "\n  threshold " << thr
+      << ": " << count;
+    if (fTotalEvents > 0U) {
+      log << "/" << fTotalEvents
+        << " (" << (double(count) / fTotalEvents * 100.0) << "%)";
+    }
+    else log << " events triggered";
   } // for
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::printSummary()
@@ -930,15 +739,15 @@ void icarus::trigger::SlidingWindowTriggerSimulation::printSummary() const {
 raw::Trigger
 icarus::trigger::SlidingWindowTriggerSimulation::triggerInfoToTriggerData
   (detinfo::DetectorTimings const& detTimings,
-   unsigned int triggerNumber, TriggerInfo_t const& info) const
+   unsigned int triggerNumber, WindowTriggerInfo_t const& info) const
 {
-  assert(info.fired());
+  assert(info.info.fired());
   
   return {
-    triggerNumber,                                        // counter
-    double(detTimings.toElectronicsTime(info.atTick())), // trigger time
+    triggerNumber,                                            // counter
+    double(detTimings.toElectronicsTime(info.info.atTick())), // trigger time
     double(detTimings.BeamGateTime()), // beam gate in electronics time scale
-    fBeamBits                                             // bits 
+    fBeamBits                                                 // bits 
     };
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::triggerInfoToTriggerData()

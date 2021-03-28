@@ -57,9 +57,7 @@ icarus::trigger::WindowTopologyAlg::WindowTopologyAlg(
 )
   : icarus::ns::util::mfLoggingClass(logCategory)
   , fGeom(&geom)
-{
-  
-} // icarus::trigger::WindowTopologyAlg::WindowTopologyAlg()
+{}
 
 
 //------------------------------------------------------------------------------
@@ -70,7 +68,9 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   // store the window topology information here:
   std::vector<WindowChannelMap::WindowInfo_t> windows;
   
-  for (auto const& [ cryoGates, cryo ]: util::zip(gates, fGeom->IterateCryostats())) {
+  for (auto const& [ cryoGates, cryo ]
+    : util::zip(gates, fGeom->IterateCryostats()))
+  {
     
     append(
       windows,
@@ -81,6 +81,37 @@ auto icarus::trigger::WindowTopologyAlg::createFromGates
   } // for cryostats
   
   return WindowChannelMap{ std::move(windows) };
+  
+} // icarus::trigger::WindowTopologyAlg::createFromGates()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::WindowTopologyAlg::createFromGates
+  (TriggerGates_t const& gates) const -> WindowChannelMap
+{
+  
+  // split gates by cryostat
+  TriggerGatesPerCryostat_t gatesByCryostat { fGeom->Ncryostats() };
+  for (InputTriggerGate_t const& gate: gates) {
+    
+    geo::CryostatID cid; // invalid
+    assert(!cid.isValid);
+    
+    for (raw::Channel_t const channel: gate.channels()) {
+      geo::OpDetGeo const& opDet = fGeom->OpDetGeoFromOpChannel(channel);
+      geo::OpDetID const oid = opDet.ID();
+      if (!cid) cid = oid;
+      else if (cid != oid) { // just in case
+        throw cet::exception("WindowTopologyAlg")
+          << "Input gate includes gates from different cryostats!!\n";
+      }
+    } // for channels in gate
+    if (!cid) continue; // gate with no channels does not contribute
+    
+    gatesByCryostat.at(cid.Cryostat).push_back(gate); // (copy)
+  } // for gates
+  
+  return createFromGates(gatesByCryostat);
   
 } // icarus::trigger::WindowTopologyAlg::createFromGates()
 
@@ -240,6 +271,36 @@ auto icarus::trigger::WindowTopologyAlg::extractGateChannels
 //--- icarus::trigger::WindowTopologyVerification
 //------------------------------------------------------------------------------
 std::string icarus::trigger::WindowTopologyVerification::verify
+  (TriggerGates_t const& gates) const
+{
+  /*
+   * Verifies that the `gates` are in the expected order and have
+   * the expected channel content.
+   */
+
+  if (!hasTopology()) {
+    throw cet::exception("WindowTopologyVerification")
+      << "verify() called without any window topology set to be verified.\n";
+  }
+  
+  std::size_t iWindow = 0U;
+  std::string errorMsg; // if this stays `empty()` there is no error
+  for (auto const& gate: gates) {
+    
+    // if error message is `empty()` there is no error
+    std::string const windowError = verifyGate(iWindow++, gate);
+    
+    if (!windowError.empty()) errorMsg += windowError + '\n';
+    
+  } // for gates
+  
+  return errorMsg;
+  
+} // icarus::trigger::WindowTopologyVerification::verify()
+
+
+//------------------------------------------------------------------------------
+std::string icarus::trigger::WindowTopologyVerification::verify
   (TriggerGatesPerCryostat_t const& gates) const
 {
   /*
@@ -257,28 +318,11 @@ std::string icarus::trigger::WindowTopologyVerification::verify
   for (auto const& cryoGates: gates) {
     for (auto const& gate: cryoGates) {
       
-      std::string windowError; // if this stays `empty()` there is no error
-      
-      WindowChannelMap::WindowInfo_t const& windowInfo
-        = fWindowMap->info(iWindow++);
-      
-      auto const channelInWindow
-        = [begin=windowInfo.channels.cbegin(),end=windowInfo.channels.cend()]
-        (raw::Channel_t channel)
-        { return std::binary_search(begin, end, channel); }
-        ;
-      
-      for (raw::Channel_t const channel: gate.channels()) {
-        if (channelInWindow(channel)) continue;
-        if (windowError.empty()) {
-          windowError =
-            "channels not in window #" + std::to_string(windowInfo.index)
-            + ":";
-        } // if first error
-        windowError += " " + std::to_string(channel);
-      } // for all channels in gate
+      // if error message is `empty()` there is no error
+      std::string const windowError = verifyGate(iWindow++, gate);
       
       if (!windowError.empty()) errorMsg += windowError + '\n';
+      
     } // for gates in cryostat
   } // for cryostats
   
@@ -287,65 +331,32 @@ std::string icarus::trigger::WindowTopologyVerification::verify
 } // icarus::trigger::WindowTopologyVerification::verifyTopologicalMap()
 
 
-// -----------------------------------------------------------------------------
-void icarus::trigger::WindowTopologyVerification::operator()
-  (TriggerGatesPerCryostat_t const& gates) const
+//------------------------------------------------------------------------------
+std::string icarus::trigger::WindowTopologyVerification::verifyGate
+  (std::size_t iWindow, InputTriggerGate_t const& gate) const
 {
+  std::string errors; // if this stays `empty()` there is no error
   
-  std::string const errorMsg = verify(gates);
-  if (errorMsg.empty()) return;
+  WindowChannelMap::WindowInfo_t const& windowInfo = fWindowMap->info(iWindow);
   
-  // put together the exception message and throw it.
-  throw cet::exception("WindowTopologyVerification")
-    << "Some channels from trigger gates do not match the previous window allocation:\n"
-    << errorMsg
-    << "\n"
-    << "Window allocation: "
-    << fWindowMap.value()
+  auto const channelInWindow
+    = [begin=windowInfo.channels.cbegin(),end=windowInfo.channels.cend()]
+    (raw::Channel_t channel)
+    { return std::binary_search(begin, end, channel); }
     ;
   
-} // icarus::trigger::WindowTopologyVerification::operator()
-
-
-//------------------------------------------------------------------------------
-//--- icarus::trigger::WindowTopologyManager
-//------------------------------------------------------------------------------
-std::string icarus::trigger::WindowTopologyManager::setOrVerify
-  (TriggerGatesPerCryostat_t const& gates)
-{
-  if (fVerify.hasTopology()) {
-    return fVerify.verify(gates);
-  }
-  else {
-    extractTopology(gates);
-    return {};
-  }
-} // icarus::trigger::WindowTopologyManager::setOrVerify()
-
-
-//------------------------------------------------------------------------------
-bool icarus::trigger::WindowTopologyManager::operator()
-  (TriggerGatesPerCryostat_t const& gates)
-{
-  if (fVerify.hasTopology()) {
-    fVerify(gates);
-    return false;
-  }
-  else {
-    extractTopology(gates);
-    return true;
-  }
-} // icarus::trigger::WindowTopologyManager::operator()
-
-
-//------------------------------------------------------------------------------
-void icarus::trigger::WindowTopologyManager::extractTopology
-  (TriggerGatesPerCryostat_t const& gates)
-{
-  icarus::trigger::WindowTopologyAlg const topoMaker
-    { *fGeom, logCategory() + ":Extractor" };
-  fVerify.setTopology(topoMaker.createFromGates(gates));
-} // icarus::trigger::WindowTopologyManager::extractTopology()
+  for (raw::Channel_t const channel: gate.channels()) {
+    if (channelInWindow(channel)) continue;
+    if (errors.empty()) {
+      errors =
+        "channels not in window #" + std::to_string(windowInfo.index)
+        + ":";
+    } // if first error
+    errors += " " + std::to_string(channel);
+  } // for all channels in gate
+  
+  return errors;
+} // icarus::trigger::WindowTopologyVerification::verifyGate()
 
 
 //------------------------------------------------------------------------------

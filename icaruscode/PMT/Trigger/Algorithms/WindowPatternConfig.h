@@ -10,10 +10,10 @@
 #define ICARUSCODE_PMT_TRIGGER_ALGORITHMS_WINDOWPATTERNCONFIG_H
 
 
-// C/C++ standard libraries
-#include <vector>
-#include <string>
-#include <limits>
+// framework libraries
+#include "fhiclcpp/types/TableAs.h"
+#include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/Atom.h"
 
 
 // -----------------------------------------------------------------------------

@@ -1,8 +1,8 @@
 #
 # File:    simulate_sliding_window_trigger_icarus.fcl
-# Purpose: Runs `icarus::trigger::MajorityTriggerSimulation` module.
+# Purpose: Runs SlidingWindowTriggerSimulation module.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
-# Date:    January 29, 2021
+# Date:    March 27, 2021
 #
 # This is a top-level configuration that can be run directly.
 # 
@@ -16,21 +16,21 @@
 # -------
 # 
 # Data products:
-#  * `slidingwindowtrigger1:THR`, `slidingwindowtrigger2:THR`, ...:
-#    `raw::Trigger` collections for (MajorityTriggerSimulation);
-#    the number in the instance name is the minimum requirement, while the
+#  * `slidingwindowtriggerM3:thr`, `slidingwindowtriggerM3O3:thr`, ...:
+#    `raw::Trigger` collections for SlidingWindowTriggerSimulation;
+#    the tag in the instance name is the requirement pattern, while the
 #    instance name represents the discrimination threshold used for input.
 # 
 # Plots:
-#  * `slidingwindowtrigger1`, `slidingwindowtrigger2`: basic trigger response
-#    distributions
+#  * `slidingwindowtriggerM3`, `slidingwindowtriggerM3O3`, ...:
+#       basic trigger response distributions
 #
 
 #include "services_common_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "trigger_icarus.fcl"
 
-process_name: MajTrg
+process_name: TrigSim
 
 
 services: {
@@ -48,16 +48,16 @@ services: {
 
 slidingwindowtriggerTemplate: {
 
-  module_type: MajorityTriggerSimulation
+  module_type: SlidingWindowTriggerSimulation
 
-  TriggerGatesTag: "lvdsgates"
+  TriggerGatesTag: "trigslidewindowOR"
 
-  Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+  Thresholds: [ 400, 600, pmtthr ]
   
   ###
   ### requirement:
   ###
-  Patterns: @nil # need to replace
+  Pattern: @nil # need to replace
 
   # Beam gate:
   # duration (BNB: 1.6 us; NuMI: 9.5 us)
@@ -65,11 +65,10 @@ slidingwindowtriggerTemplate: {
   BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
 
 
-  # this should probably be 12 or 24 ns
-  TriggerTimeResolution: "8 ns"
+  TriggerTimeResolution: "25 ns"
 
   # name of the category used for the output
-  LogCategory: "MajorityTrigger"
+  LogCategory: "SlidingWindowTriggerSimulation"
 
 } # slidingwindowtriggerTemplate
 
@@ -78,51 +77,77 @@ physics: {
   
   producers: {
   
-    slidingwindowtrigger2: {
+    slidingwindowtriggerM3: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 2
-    } # slidingwindowtrigger2
+      Pattern: {
+        inMainWindow: 3
+      }
+    } # slidingwindowtriggerM3
 
-    slidingwindowtrigger3: {
+    slidingwindowtriggerM4: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 3
-    } # slidingwindowtrigger3
+      Pattern: {
+        inMainWindow: 4
+      }
+    } # slidingwindowtriggerM4
 
-    slidingwindowtrigger4: {
+    slidingwindowtriggerM5: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 4
-    } # slidingwindowtrigger4
+      Pattern: {
+        inMainWindow: 5
+      }
+    } # slidingwindowtriggerM5
 
-    slidingwindowtrigger5: {
+    slidingwindowtriggerM6: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 5
-    } # slidingwindowtrigger5
-
-    slidingwindowtrigger8: {
+      Pattern: {
+        inMainWindow: 6
+      }
+    } # slidingwindowtriggerM6
+    
+    slidingwindowtriggerM3O3: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 8
-    } # slidingwindowtrigger8
+      Pattern: {
+        inMainWindow:     3
+        inOppositeWindow: 3
+      }
+    } # slidingwindowtriggerM3O3
 
-    slidingwindowtrigger12: {
+    slidingwindowtriggerM4O4: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 12
-    } # slidingwindowtrigger12
+      Pattern: {
+        inMainWindow: 4
+        inOppositeWindow: 4
+      }
+    } # slidingwindowtriggerM4O4
 
-    slidingwindowtrigger20: {
+    slidingwindowtriggerM5O5: {
       @table::slidingwindowtriggerTemplate
-      MinimumPrimitives: 20
-    } # slidingwindowtrigger20
+      Pattern: {
+        inMainWindow: 5
+        inOppositeWindow: 5
+      }
+    } # slidingwindowtriggerM5O5
 
+    slidingwindowtriggerM6O6: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 6
+        inOppositeWindow: 6
+      }
+    } # slidingwindowtriggerM6O6
+    
   } # producers
   
   trigger: [
-    slidingwindowtrigger2,
-    slidingwindowtrigger3,
-    slidingwindowtrigger4,
-    slidingwindowtrigger5,
-    slidingwindowtrigger8,
-    slidingwindowtrigger12,
-    slidingwindowtrigger20
+    slidingwindowtriggerM3,
+    slidingwindowtriggerM4,
+    slidingwindowtriggerM5,
+    slidingwindowtriggerM6,
+    slidingwindowtriggerM3O3,
+    slidingwindowtriggerM4O4,
+    slidingwindowtriggerM5O5,
+    slidingwindowtriggerM6O6
     ]
   output: [ rootoutput ]
   
@@ -147,8 +172,8 @@ services.message.destinations.SlidingWindowTriggerLog: {
   filename:  "SlidingWindowTriggerSim.log"
   threshold:  DEBUG
   categories: {
-    MajorityTrigger: { limit: -1 }
-    default:          { limit: 0 }
+    SlidingWindowTriggerSimulation: { limit: -1 }
+    default:                        { limit:  0 }
   }
 } # services.messages.destinations.SlidingWindowTriggerLog
 
