@@ -785,7 +785,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   for (auto const& [ iPattern, pattern ]: util::enumerate(fPatterns)) {
     
     auto& patternAlg = fPatternAlgs[iPattern];
-//     patternAlg.setBeamGate(beamGate);
     
     WindowTriggerInfo_t const triggerInfo
       = patternAlg.simulateResponse(inBeamGates);

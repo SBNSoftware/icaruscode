@@ -6,6 +6,11 @@
 #
 # This is a top-level configuration that can be run directly.
 # 
+# This job simulates eight different sliding window triggers, with requirements
+# of 3 to 6 LVDS gates open in one window, with or without a coincidence with
+# the opposite window.
+# 
+# 
 # Required inputs
 # ----------------
 # 
@@ -65,6 +70,8 @@ slidingwindowtriggerTemplate: {
   BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
 
 
+  EventTimeBinning: 900 # seconds-> 15'
+  
   TriggerTimeResolution: "25 ns"
 
   # name of the category used for the output
