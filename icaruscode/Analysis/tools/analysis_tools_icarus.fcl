@@ -8,6 +8,11 @@ BasicHitAnalysisTool:
   tool_type:         "BasicHitAnalysis"
   LocalDirName:      "BasicHists"
 }
+BasicTrackAnalysisTool:
+{
+  tool_type:         "BasicTrackAnalysis"
+  LocalDirName:      "BasicHists"
+}
 
 TrackHitEfficiencyAnalysisTool:
 {

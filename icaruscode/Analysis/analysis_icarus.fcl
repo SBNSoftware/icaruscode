@@ -7,11 +7,122 @@ icarus_BasicHitAnalysis:
   module_type:             "TrackHitAna"
   HitModuleLabel:          "gaushit"
   PFParticleProducerLabel: "cluster3d"
-  TrackProducerLabel:      "trackkalmanhit"
+  TrackProducerLabel:      "pandoraTrackGaus"
   WireProducerLabel:       "caldata"
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
 
-  UseOnlyTrackHits: false
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisRaw:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "icarushit"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackICARUS"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+ 
+UseOnlyTrackHits: true
+}
+
+icarus_BasicHitAnalysisMC0:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "gaushitTPC0"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackGausCryo0"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+  
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC1:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "gaushitTPC1"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackGausCryo0"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+  
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC2:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "gaushitTPC2"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackGausCryo1"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC3:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "gaushitTPC3"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackGausCryo1"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+ 
+UseOnlyTrackHits: true
+}
+
+icarus_BasicHitAnalysisMC0raw:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "icarusHitTPC0"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackICARUSCryo0"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+  
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC1raw:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "icarusHitTPC1"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackICARUSCryo0"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+  
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC2raw:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "icarusHitTPC2"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackICARUSCryo1"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+
+UseOnlyTrackHits: true
+}
+icarus_BasicHitAnalysisMC3raw:
+{
+  module_type:             "TrackHitAna"
+  HitModuleLabel:          "icarusHitTPC3"
+  PFParticleProducerLabel: "cluster3d"
+  TrackProducerLabel:      "pandoraTrackICARUSCryo1"
+  WireProducerLabel:       "caldata"
+  HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
+TrackHistogramToolList:    [ @local::BasicTrackAnalysisTool ]
+ 
+UseOnlyTrackHits: true
 }
 
 icarus_WireAnalysis:
