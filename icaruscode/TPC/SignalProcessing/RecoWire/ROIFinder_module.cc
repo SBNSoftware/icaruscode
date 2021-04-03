@@ -31,6 +31,7 @@
 
 // LArSoft libraries
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
+#include "larcorealg/CoreUtils/enumerate.h"
 #include "larcore/Geometry/Geometry.h"
 #include "lardataobj/RecoBase/Wire.h"
 #include "lardataobj/RawData/RawDigit.h"
@@ -48,29 +49,52 @@
 #include "tbb/spin_mutex.h"
 #include "tbb/concurrent_hash_map.h"
 
+
+namespace {
+
+  /// Helper: lazily returns the expanded content of a set of `recob::Wires`.
+struct PlaneWireData 
+{
+    std::size_t size() const { return wires.size(); }
+    void resize(std::size_t nWires)
+    { wires.clear(); wires.resize(nWires, nullptr); }
+    void addWire(std::size_t iWire, recob::Wire const& wire)
+    { wires.at(iWire) = &wire; }
+    icarus_signal_processing::ArrayFloat operator() () const
+    {
+        icarus_signal_processing::ArrayFloat data;
+        data.resize(wires.size());
+        for (auto [ iWire, wire ]: util::enumerate(wires))
+          if (wire) data[iWire] = wire->Signal();
+      return data;
+}
+private:
+    std::vector<recob::Wire const*> wires;
+}; // PlaneWireData
+  
+} // local namespace
+
+
 ///creation of calibrated signals on wires
 namespace caldata {
-    
-tbb::spin_mutex roifinderSpinMutex;
+
+    tbb::spin_mutex roifinderSpinMutex;
 
 class ROIFinder : public art::EDProducer
 {
-  public:
-    // create calibrated signals on wires. this class runs 
-    // an fft to remove the electronics shaping.     
+public:
+// create calibrated signals on wires. this class runs 
+// an fft to remove the electronics shaping.     
     explicit ROIFinder(fhicl::ParameterSet const& pset);
     virtual ~ROIFinder();
-    
-    void produce(art::Event& evt); 
-    void beginJob(); 
-    void endJob();                 
-    void reconfigure(fhicl::ParameterSet const& p);
-    
-  private:
-    using PlaneIDToDataPair    = std::pair<std::vector<raw::ChannelID_t>,icarus_signal_processing::ArrayFloat>;
+    void     produce(art::Event& evt); 
+    void     beginJob(); 
+    void     endJob();                 
+    void     reconfigure(fhicl::ParameterSet const& p);
+private:
+    using PlaneIDToDataPair    = std::pair<std::vector<raw::ChannelID_t>,PlaneWireData>;
     using PlaneIDToDataPairMap = std::map<geo::PlaneID,PlaneIDToDataPair>;
     using PlaneIDVec           = std::vector<geo::PlaneID>;
-
     // Define a class to handle processing for individual threads
     class multiThreadDeconvolutionProcessing 
     {
@@ -82,13 +106,12 @@ class ROIFinder : public art::EDProducer
                                            std::vector<recob::Wire>&   wireColVec,
                                            std::vector<recob::Wire>&   morphedVec)
             : fROIFinder(parent),
-              fEvent(event),
-              fPlaneIDVec(planeIDVec),
-              fPlaneIDToDataPairMap(planeIDToDataPairMap),
-              fWireColVec(wireColVec),
-              fMorphedVec(morphedVec)
+            fEvent(event),
+            fPlaneIDVec(planeIDVec),
+            fPlaneIDToDataPairMap(planeIDToDataPairMap),
+            fWireColVec(wireColVec),
+            fMorphedVec(morphedVec)
         {}
-
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
@@ -113,13 +136,11 @@ class ROIFinder : public art::EDProducer
 
     // This is for the baseline...
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
-    
-    art::InputTag                                  fWireModuleLabel;            ///< module that made digits
+
+    std::vector<art::InputTag>                     fWireModuleLabelVec;         ///< vector of modules that made digits
     std::vector<size_t>                            fStructuringElement;         ///< Structuring element for morphological filter
     std::vector<float>                             fThreshold;                  ///< Threshold to apply for saving signal
     bool                                           fOutputMorphed;              ///< Output the morphed waveforms
-
-//unused    unsigned short                                 fNoiseSource;                ///< Used to determine ROI threshold
     size_t                                         fEventCount;                 ///< count of event processed
     
     icarus_signal_processing::WaveformTools<float> fWaveformTool;
@@ -129,15 +150,18 @@ class ROIFinder : public art::EDProducer
 }; // class ROIFinder
 
 DEFINE_ART_MODULE(ROIFinder)
-  
+
 //-------------------------------------------------
 ROIFinder::ROIFinder(fhicl::ParameterSet const& pset) : EDProducer{pset}
 {
-  this->reconfigure(pset);
+    this->reconfigure(pset);
 
-  produces< std::vector<recob::Wire>>(fWireModuleLabel.instance());
+    for(const auto& wireLabel : fWireModuleLabelVec)
+    {
+        produces< std::vector<recob::Wire>>(wireLabel.instance());
 
-  if (fOutputMorphed) produces<std::vector<recob::Wire>>("Morphed");
+        if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel.instance() + "M");
+    }
 }
 
 //-------------------------------------------------
@@ -149,10 +173,10 @@ ROIFinder::~ROIFinder()
 void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
-    fWireModuleLabel     = pset.get< std::string       >("WireModuleLabel",     "decon1droi");
-    fStructuringElement  = pset.get<std::vector<size_t>>("StructuringElement",  std::vector<size_t>()={8,16});
-    fThreshold           = pset.get<std::vector<float> >("Threshold",           std::vector<float>()={2.75,2.75,2.75});
-    fOutputMorphed       = pset.get< bool              >("OutputMorphed",       true);
+    fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
+    fStructuringElement  = pset.get<std::vector<size_t>       >("StructuringElement",                 std::vector<size_t>()={8,16});
+    fThreshold           = pset.get<std::vector<float>        >("Threshold",                 std::vector<float>()={2.75,2.75,2.75});
+    fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
     
     return;
 }
@@ -167,95 +191,103 @@ void ROIFinder::beginJob()
 void ROIFinder::endJob()
 {
 }
-  
+
 //////////////////////////////////////////////////////
 void ROIFinder::produce(art::Event& evt)
 {
-    // make a collection of Wires
-    std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
-
-    std::unique_ptr<std::vector<recob::Wire>> morphedCol(new std::vector<recob::Wire>);
-
-    // Read in the collection of full length deconvolved waveforms
-    // Note we assume this list is sorted in increasing channel number!
-    art::Handle< std::vector<recob::Wire>> wireVecHandle;
+    // We need to loop through the list of Wire data we have been given
+    for(const auto& wireLabel : fWireModuleLabelVec)
+    {
+        // make a collection of Wires
+        std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     
-    evt.getByLabel(fWireModuleLabel, wireVecHandle);
-
-    if (!wireVecHandle->size())
-    {
-        evt.put(std::move(wireCol), fWireModuleLabel.instance());
-        fEventCount++;
+        std::unique_ptr<std::vector<recob::Wire>> morphedCol(new std::vector<recob::Wire>);
+    
+        std::cout << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
+    
+        // Read in the collection of full length deconvolved waveforms
+        // Note we assume this list is sorted in increasing channel number!
+        art::Handle< std::vector<recob::Wire>> wireVecHandle;
         
-        return;
-    }
-
-    // The first step is to break up into groups by logical TPC/plane in order to do the parallel loop
-    PlaneIDToDataPairMap planeIDToDataPairMap;
-    PlaneIDVec           planeIDVec;
-
-    for(const auto& wire : *wireVecHandle)
-    {
-        raw::ChannelID_t channel = wire.Channel();
-        
-        std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
-
-        for(const auto& wireID : wireIDVec)
+        evt.getByLabel(wireLabel, wireVecHandle);
+    
+        std::cout << "Recovered Wire data, size: " << wireVecHandle->size() << std::endl;
+    
+        if (!wireVecHandle->size())
         {
-            const geo::PlaneID& planeID = wireID.planeID();
-
-            PlaneIDToDataPairMap::iterator mapItr = planeIDToDataPairMap.find(planeID);
-
-            // Make sure the array is initialized
-            if (mapItr == planeIDToDataPairMap.end())
-            {
-                unsigned int nWires = fGeometry->Nwires(planeID);
-
-                std::pair<PlaneIDToDataPairMap::iterator,bool> mapInsert = planeIDToDataPairMap.insert({planeID,PlaneIDToDataPair()});
-
-                if (!mapInsert.second) std::cout << "Failed to insert, is this possible?" << std::endl;
-
-                mapItr = mapInsert.first;
-
-                mapItr->second.first.resize(nWires);
-                mapItr->second.second.resize(nWires);
-
-                planeIDVec.emplace_back(planeID);
-            }
-
-            // Add waveform to the 2D array
-            mapItr->second.first[wireID.Wire]  = channel;
-            mapItr->second.second[wireID.Wire] = wire.Signal();
+            evt.put(std::move(wireCol), wireLabel.instance());
+            fEventCount++;
+            
+            return;
         }
+    
+        // The first step is to break up into groups by logical TPC/plane in order to do the parallel loop
+        PlaneIDToDataPairMap planeIDToDataPairMap;
+        PlaneIDVec           planeIDVec;
+    
+        for(const auto& wire : *wireVecHandle)
+        {
+            raw::ChannelID_t channel = wire.Channel();
+            
+            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+    
+            for(const auto& wireID : wireIDVec)
+            {
+                const geo::PlaneID& planeID = wireID.planeID();
+    
+                PlaneIDToDataPairMap::iterator mapItr = planeIDToDataPairMap.find(planeID);
+    
+                // Make sure the array is initialized
+                if (mapItr == planeIDToDataPairMap.end())
+                {
+                    unsigned int nWires = fGeometry->Nwires(planeID);
+    
+                    std::pair<PlaneIDToDataPairMap::iterator,bool> mapInsert = planeIDToDataPairMap.insert({planeID,PlaneIDToDataPair()});
+    
+                    if (!mapInsert.second) std::cout << "Failed to insert, is this possible?" << std::endl;
+    
+                    mapItr = mapInsert.first;
+    
+                    mapItr->second.first.resize(nWires);
+                    mapItr->second.second.resize(nWires);
+    
+                    planeIDVec.emplace_back(planeID);
+                }
+    
+                // Add waveform to the 2D array
+                mapItr->second.first[wireID.Wire]  = channel;
+                mapItr->second.second.addWire(wireID.Wire, wire);
+            }
+        }
+    
+        // Reserve the room for the output
+        wireCol->reserve(wireVecHandle->size());
+    
+        // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
+        multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol);
+    
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, planeIDVec.size()), deconvolutionProcessing);
+        
+        // Time to stroe everything
+        if(wireCol->size() == 0)
+          mf::LogWarning("ROIFinder") << "No wires made for this event.";
+
+        evt.put(std::move(wireCol), wireLabel.instance());
+
+        if (fOutputMorphed) evt.put(std::move(morphedCol), wireLabel.instance()+"M");
     }
 
-    // Reserve the room for the output
-    wireCol->reserve(wireVecHandle->size());
+  fEventCount++;
 
-    // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
-    multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol);
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, planeIDVec.size()), deconvolutionProcessing);
-    
-    // Time to stroe everything
-    if(wireCol->size() == 0)
-      mf::LogWarning("ROIFinder") << "No wires made for this event.";
-    
-    evt.put(std::move(wireCol), fWireModuleLabel.instance());
-
-    if (fOutputMorphed) evt.put(std::move(morphedCol), "Morphed");
-
-    fEventCount++;
-
-    return;
+  return;
 } // produce
 
 void  ROIFinder::processPlane(size_t                      idx,
-                              art::Event&                 event,
-                              const PlaneIDVec&           planeIDVec,
-                              const PlaneIDToDataPairMap& planeIDToDataPairMap, 
-                              std::vector<recob::Wire>&   wireColVec,
-                              std::vector<recob::Wire>&   morphedVec) const
+  art::Event&                 event,
+  const PlaneIDVec&           planeIDVec,
+  const PlaneIDToDataPairMap& planeIDToDataPairMap, 
+  std::vector<recob::Wire>&   wireColVec,
+  std::vector<recob::Wire>&   morphedVec) const
 {
     // Recover the planeID for this thread
     const geo::PlaneID& planeID = planeIDVec[idx];
@@ -271,8 +303,7 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     const PlaneIDToDataPair& planeIDToDataPair = mapItr->second;
 
-    const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second;
-
+    const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second();
     icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
     // Use this to get the 2D Dilation of each waveform
@@ -280,7 +311,7 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     // Keep track of our selected values
     icarus_signal_processing::ArrayBool selectedVals(dataArray.size());
-        
+
     // Now traverse each waveform and look for the ROIs
     for(size_t waveIdx = 0; waveIdx < dataArray.size(); waveIdx++)
     {
@@ -294,9 +325,9 @@ void  ROIFinder::processPlane(size_t                      idx,
 
         for(size_t idx = 0; idx < morphedWave.size(); idx++) baseVec[idx] = morphedWave[idx] - median;
 
-        icarus_signal_processing::VectorFloat rmsVec = baseVec;
+            icarus_signal_processing::VectorFloat rmsVec = baseVec;
         size_t                                maxIdx = 0.75 * rmsVec.size();
-            
+
         std::nth_element(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.end());
 
         float rms       = std::sqrt(std::inner_product(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.begin(), 0.) / float(maxIdx));
@@ -400,17 +431,17 @@ void  ROIFinder::processPlane(size_t                      idx,
 
         const icarus_signal_processing::VectorFloat& waveform = dataArray[waveIdx];
         icarus_signal_processing::VectorFloat holder;
-    
+
         // We need to copy the deconvolved (and corrected) waveform ROI's
         for(const auto& candROI : candidateROIVec)
         {
             // First up: copy out the relevent ADC bins into the ROI holder
             size_t roiLen = candROI.second - candROI.first;
-        
+
             holder.resize(roiLen);
-        
+
             std::copy(waveform.begin()+candROI.first, waveform.begin()+candROI.second, holder.begin());
-        
+
             // Now we do the baseline determination and correct the ROI
             // For now we are going to reset to the minimum element
             // Get slope/offset from first to last ticks

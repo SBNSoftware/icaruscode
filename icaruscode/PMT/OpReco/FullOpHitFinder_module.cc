@@ -102,6 +102,7 @@ namespace opdet {
     EDProducer{pset},
     fPulseRecoMgr()
   {
+
     // Indicate that the Input Module comes from .fcl
     fInputModule   = pset.get< std::string >("InputModule");
     fInputLabels   = pset.get< std::vector< std::string > >("InputLabels");
@@ -148,7 +149,6 @@ namespace opdet {
 
   void FullOpHitFinder::beginJob()
   {
-
     // analyzie tuple prep
     _ofile = TFile::Open(_output_filename.c_str(),"RECREATE");
 
@@ -205,7 +205,6 @@ namespace opdet {
     _geotree->Branch("maxY",&maxY);
     _geotree->Branch("maxZ",&maxZ);
     _geotree->Fill();
-
   }
 
   void FullOpHitFinder::endJob()
