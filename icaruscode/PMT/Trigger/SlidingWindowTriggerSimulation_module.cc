@@ -139,6 +139,9 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
  *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
  *     `trigger_icarus.fcl`);
+ * * `BeamGateStart` (time, default: `0_us`): how long after the
+ * *   @ref DetectorClocksBeamGateOpening "nominal beam gate opening time"
+ *     the actual beam gate opens at;
  * * `BeamBits` (TODO): bits to be set in the produced `raw::Trigger` objects.
  * * `LogCategory` (string, default `SlidingWindowTriggerSimulation`): name of
  *     category used to stream messages from this module into message facility.
@@ -269,6 +272,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
       Comment("length of time interval when optical triggers are accepted")
       };
 
+    fhicl::Atom<microseconds> BeamGateStart {
+      Name("BeamGateStart"),
+      Comment("open the beam gate this long after the nominal beam gate time"),
+      microseconds{ 0.0 }
+      };
+
     fhicl::Atom<std::uint32_t> BeamBits {
       Name("BeamBits"),
       Comment("bits to be set in the trigger object as beam identified")
@@ -345,6 +354,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   
   /// Duration of the gate during with global optical triggers are accepted.
   microseconds fBeamGateDuration;
+  
+  /// Start of the beam gate with respect to `BeamGate()`.
+  microseconds fBeamGateStart;
   
   std::uint32_t fBeamBits; ///< Bits for the beam gate being simulated.
   
@@ -465,7 +477,7 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     (art::Event const* event = nullptr) const
     {
       return makeApplyBeamGate(
-        fBeamGateDuration,
+        fBeamGateDuration, fBeamGateStart,
         icarus::ns::util::makeDetClockData(event),
         fLogCategory
         );
@@ -499,6 +511,7 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   // configuration
   , fPattern              (config().Pattern())
   , fBeamGateDuration     (config().BeamGateDuration())
+  , fBeamGateStart        (config().BeamGateStart())
   , fBeamBits             (config().BeamBits())
   , fTriggerTimeResolution(config().TriggerTimeResolution())
   , fEventTimeBinning     (config().EventTimeBinning())
