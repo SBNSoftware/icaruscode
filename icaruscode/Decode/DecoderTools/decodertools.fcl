@@ -64,4 +64,8 @@ PMTDecoderTool: {
     tool_type:          PMTDecoder
 }
 
+TriggerDecoderTool: {
+   tool_type:          TriggerDecoder
+}
+
 END_PROLOG
