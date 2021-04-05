@@ -84,6 +84,20 @@ physics: {
   
   producers: {
   
+    slidingwindowtriggerM1: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 1
+      }
+    } # slidingwindowtriggerM1
+
+    slidingwindowtriggerM2: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 2
+      }
+    } # slidingwindowtriggerM2
+
     slidingwindowtriggerM3: {
       @table::slidingwindowtriggerTemplate
       Pattern: {
@@ -147,6 +161,8 @@ physics: {
   } # producers
   
   trigger: [
+    slidingwindowtriggerM1,
+    slidingwindowtriggerM2,
     slidingwindowtriggerM3,
     slidingwindowtriggerM4,
     slidingwindowtriggerM5,
