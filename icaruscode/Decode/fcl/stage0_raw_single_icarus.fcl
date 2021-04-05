@@ -1,0 +1,27 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0raw
+
+## Use the following to run the full defined stage0 set of modules
+#physics.reco: [@sequence::icarus_stage0_single]
+
+## Use the following to run only the decoding and noise filtering
+## ==> Set as default for production processing for lifetime measurements - Jan, 2021
+#physics.reco: [ daqTPC ]
+
+# Custom list
+physics.reco: [ recowireraw,
+                icarushit
+              ]
+
+## boiler plate...
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+
+# Drop the artdaq format files on output
+outputs.out1.outputCommands: ["keep *_*_*_*"]

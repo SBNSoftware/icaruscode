@@ -145,7 +145,7 @@ void PMTDecoder::initializeDataProducts()
 
 void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 {
-    size_t fragment_id = artdaqFragment.fragmentID();
+    size_t fragment_id = artdaqFragment.fragmentID() & 0x0fff;
 
     // convert fragment to Nevis fragment
     sbndaq::CAENV1730Fragment         fragment(artdaqFragment);

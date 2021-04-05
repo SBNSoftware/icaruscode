@@ -3,6 +3,7 @@ cet_enable_asserts()
 art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
+                        DumpPMTconfiguration_module.cc
           MODULE_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
@@ -38,6 +39,13 @@ simple_plugin(PMTconfigurationExtraction module
   cetlib_except
   )
 
+simple_plugin(DumpPMTconfiguration module
+  sbnobj_Common_PMT_Data
+  ${MF_MESSAGELOGGER}
+  fhiclcpp
+  cetlib_except
+  )
+
 install_headers()
 install_fhicl()
 install_source()
@@ -45,4 +53,5 @@ install_source()
 # Add our tools directory
 add_subdirectory(DecoderTools)
 add_subdirectory(ChannelMapping)
+add_subdirectory(fcl)
 
