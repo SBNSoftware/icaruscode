@@ -21,6 +21,10 @@ decodePMT.DecoderTool.PMTconfigTag: pmtconfig
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
 {
+
+  ### configuration extraction
+  pmtconfig:                      { module_type: PMTconfigurationExtraction }
+
   ### Decoder definitions
   daqTrigger:                     @local::decodeTrigger
 
