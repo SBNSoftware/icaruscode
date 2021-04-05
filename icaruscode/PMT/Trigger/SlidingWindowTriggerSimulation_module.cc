@@ -343,6 +343,11 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   using WindowTriggerInfo_t
     = icarus::trigger::SlidingWindowPatternAlg::AllTriggerInfo_t;
   
+  /// All information needed to generate plots for a specific threshold.
+  struct ThresholdPlotInfo_t {
+    icarus::ns::util::FixedBins<double> eventTimes;
+  };
+  
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -390,10 +395,8 @@ class icarus::trigger::SlidingWindowTriggerSimulation
   /// All plots in one practical sandbox.
   icarus::trigger::PlotSandbox fPlots;
   
-  /// All information needed to generate plots for a specific threshold.
-  struct ThresholdPlotInfo_t {
-    icarus::ns::util::FixedBins<double> eventTimes;
-  };
+  /// Proto-histogram information in a not-so-practical array; event-wide.
+  ThresholdPlotInfo_t fEventPlotInfo;
   
   /// Proto-histogram information in a not-so-practical array; per threshold.
   std::vector<ThresholdPlotInfo_t> fThresholdPlots;
@@ -425,6 +428,10 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     ThresholdPlotInfo_t const& plotInfo
     );
   
+  /// Creates in the main sandbox all event-wide plots.
+  void makeEventPlots();
+  
+  
   /**
    * @brief Performs the simulation for the specified ADC threshold.
    * @param event _art_ event to read data from and put results into
@@ -448,6 +455,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     ApplyBeamGateClass const& beamGate,
     std::size_t const iThr, std::string const& thrTag
     );
+  
+  /// Fills event-wide plots.
+  void plotEvent(art::Event const& event);
   
   /**
    * @brief Converts the trigger information into a `raw::Trigger` object.
@@ -524,6 +534,7 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   , fPlots(
      fOutputDir, "", "requirement: " + fPattern.description()
     )
+  , fEventPlotInfo{ icarus::ns::util::FixedBins{ fEventTimeBinning } }
 {
   
   //
@@ -605,6 +616,8 @@ void icarus::trigger::SlidingWindowTriggerSimulation::produce(art::Event& event)
     else             log << "not triggered";
     
   } // for
+  
+  plotEvent(event);
   
   ++fTotalEvents;
   
@@ -708,6 +721,8 @@ void icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots() {
     if (plots.empty()) fPlots.deleteSubSandbox(plots.name());
   } // for thresholds
   
+  makeEventPlots();
+  
 } // icarus::trigger::SlidingWindowTriggerSimulation::finalizePlots()
 
 
@@ -739,6 +754,32 @@ void icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots(
   } // if trigger times
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::makeThresholdPlots()
+
+
+//------------------------------------------------------------------------------
+void icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots() {
+  
+  auto const& triggerTimeBins = fEventPlotInfo.eventTimes;
+  if (!triggerTimeBins.empty()) {
+    TH1* triggerTimes = fPlots.make<TH1F>(
+      "EventTime",
+      "Time of the events"
+        ";time"
+        ";events  [ / " + std::to_string(triggerTimeBins.binWidth())
+          + "\" ]",
+      triggerTimeBins.nBins(), triggerTimeBins.min(), triggerTimeBins.max()
+      );
+    
+    // directly transfer the content bin by bin
+    unsigned int total = 0U;
+    for (auto [ iBin, count ]: util::enumerate(triggerTimeBins)) {
+      triggerTimes->SetBinContent(iBin + 1, count);
+      total += count;
+    }
+    triggerTimes->SetEntries(static_cast<double>(total));
+  } // if trigger times
+  
+} // icarus::trigger::SlidingWindowTriggerSimulation::makeEventPlots()
 
 
 //------------------------------------------------------------------------------
@@ -792,6 +833,15 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
   
 } // icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold()
 
+
+//------------------------------------------------------------------------------
+void icarus::trigger::SlidingWindowTriggerSimulation::plotEvent
+  (art::Event const& event)
+{
+  
+  fEventPlotInfo.eventTimes.add(eventTimestampInSeconds(event));
+  
+} // icarus::trigger::SlidingWindowTriggerSimulation::plotEvent()
 
 
 //------------------------------------------------------------------------------
