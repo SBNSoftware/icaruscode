@@ -557,7 +557,7 @@ icarus::trigger::SlidingWindowTriggerEfficiencyPlots::SlidingWindowTriggerEffici
   // internal variables
   , fWindowMapMan{
       helper().geometry(),
-      helper().logCategory() + ":WindowMapManager"
+      helper().logCategory() + "_WindowMapManager"
       }
 {
   

@@ -151,7 +151,13 @@ class icarus::trigger::WindowTopologyAlg
   
   geo::GeometryCore const* const fGeom; ///< Geometry service provider.
 
-
+  
+  /// Convenience function: creates and returns a `WindowChannelMap` from the
+  /// arguments (`args`); in the meanwhile, it also dumps it into debug stream.
+  template <typename... Args>
+  WindowChannelMap emplaceAndDumpMap(Args&&... args) const;
+  
+  
   /**
    * @brief Extracts topology information from a set of windows.
    * @param windowChannels the windows, specified by composition in channel ID
@@ -178,6 +184,23 @@ class icarus::trigger::WindowTopologyAlg
    */
   static WindowChannelColl_t extractGateChannels(TriggerGates_t const& gates);
 
+  /**
+   * @brief Returns the window in `windowList` closest to the `targetWindow`.
+   * @param windowList list of (pointers to) the candidate windows
+   * @param targetWindow the reference window
+   * @return a pointer to the closest among `windowList`, `nullptr` if none
+   * 
+   * A pointer to the window with the smallest distance from `targetWindow` is
+   * returned. The distance is computed between the centers of the windows as
+   * reported by the windows themselves.
+   * 
+   * The only case where no window (`nullptr`) is returned is when the window
+   * candidate list `windowList` is empty.
+   */
+  static WindowChannelMap::WindowInfo_t const* findClosestWindow(
+    std::vector<WindowChannelMap::WindowInfo_t*> const& windowList,
+    WindowChannelMap::WindowInfo_t const* targetWindow
+    );
   
 }; // icarus::trigger::WindowTopologyAlg
 
@@ -519,7 +542,7 @@ template <typename Gates>
 void icarus::trigger::WindowTopologyManager::extractTopology(Gates const& gates)
 {
   icarus::trigger::WindowTopologyAlg const topoMaker
-    { *fGeom, logCategory() + ":Extractor" };
+    { *fGeom, logCategory() + "_Extractor" };
   fVerify.setTopology(topoMaker.createFromGates(gates));
 } // icarus::trigger::WindowTopologyManager::extractTopology()
 

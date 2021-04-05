@@ -520,7 +520,7 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   , fOutputDir (*art::ServiceHandle<art::TFileService>())
   // internal and cached
   , fWindowMapMan
-    { *lar::providerFrom<geo::Geometry>(), fLogCategory + ":WindowMapManager" }
+    { *lar::providerFrom<geo::Geometry>(), fLogCategory + "_WindowMapManager" }
   , fPlots(
      fOutputDir, "", "requirement: " + fPattern.description()
     )
@@ -772,7 +772,6 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
     ++fTriggerCount[iThr]; // keep the unique count
     plotInfo.eventTimes.add(eventTimestampInSeconds(event));
   }
-  
   
   //
   // fill the plots
