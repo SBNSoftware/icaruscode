@@ -11,7 +11,7 @@ physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
 outputs.out1.dataTier:     "reconstructed"
-#outputs.out1.SelectEvents: [ reco ]
+outputs.out1.SelectEvents: [ reco ]
 
 ## Need overrides for the purity monitor
 physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
