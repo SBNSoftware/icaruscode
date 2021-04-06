@@ -49,6 +49,18 @@ simple_plugin(PMTBackgroundphotonsCalibration "module"
                 ${Boost_SYSTEM_LIBRARY}
               )
 
+
+art_make_exec(  NAME 
+                    fitPulseDistribution 
+                SOURCE 
+                    fitPulseDistribution.cc
+                LIBRARIES
+                    icaruscode_PMT_Algorithms
+                    icaruscode_PMT_Calibration_CaloTools
+              )
+
+
 install_headers()
 install_fhicl()
 install_source()
+
