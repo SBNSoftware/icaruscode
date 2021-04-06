@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+
+icarus_morphologicalroifinder:
+{
+    tool_type:           ROIMorphological2D
+    StructuringElement:  [8, 16]
+    Threshold:           [2.75,2.75,2.75]
+}
+
+
+END_PROLOG
