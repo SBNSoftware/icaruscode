@@ -12,6 +12,8 @@
 #include "art/Framework/Principal/Handle.h"
 
 #include "canvas/Utilities/InputTag.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
+#include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -28,28 +30,48 @@ namespace daq
   class DaqDecoderICARUSTrigger: public art::EDProducer
   {
   public:
-    explicit DaqDecoderICARUSTrigger(fhicl::ParameterSet const & p);
-    DaqDecoderICARUSTrigger(DaqDecoderICARUSTrigger const &) = delete;
-    DaqDecoderICARUSTrigger(DaqDecoderICARUSTrigger &&) = delete;
-    DaqDecoderICARUSTrigger & operator = (DaqDecoderICARUSTrigger const &) = delete;
-    DaqDecoderICARUSTrigger & operator = (DaqDecoderICARUSTrigger &&) = delete;
+    
+    struct Config {
+      
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      fhicl::Atom<art::InputTag> FragmentsLabel {
+        Name("FragmentsLabel"),
+        Comment("input tag for the DAQ fragment of the trigger"),
+        "daq:ICARUSTriggerUDP"
+        };
+      
+      fhicl::DelegatedParameter DecoderTool {
+        Name("DecoderTool"),
+        Comment("configuration for the trigger decoding tool")
+        };
+      
+      
+    }; // Config
+    
+    using Parameters = art::EDProducer::Table<Config>;
+    
+    explicit DaqDecoderICARUSTrigger(Parameters const & params);
 
     void produce(art::Event & e) override;
     
   private:
     std::unique_ptr<IDecoder> fDecoderTool;
-    art::InputTag fInputTag;
+    art::InputTag const fInputTag;
 
   };
 
   DEFINE_ART_MODULE(DaqDecoderICARUSTrigger)
   
-  DaqDecoderICARUSTrigger::DaqDecoderICARUSTrigger(fhicl::ParameterSet const & params): art::EDProducer{params}, fInputTag(params.get<std::string>("FragmentsLabel", "daq:ICARUSTriggerUDP"))
+  DaqDecoderICARUSTrigger::DaqDecoderICARUSTrigger(Parameters const & params)
+    : art::EDProducer{params}
+    , fDecoderTool{
+      art::make_tool<IDecoder>(params().DecoderTool.get<fhicl::ParameterSet>())
+      }
+    , fInputTag{ params().FragmentsLabel() }
   {
-    fDecoderTool = art::make_tool<IDecoder>(params.get<fhicl::ParameterSet>("DecoderTool"));
     fDecoderTool->produces(producesCollector());
-
-    return;
   }
   
   void DaqDecoderICARUSTrigger::produce(art::Event & event)

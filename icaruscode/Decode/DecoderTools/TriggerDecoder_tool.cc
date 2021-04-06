@@ -8,13 +8,14 @@
 //
 ///////////////////////////////////////////////
 
-#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/ProducesCollector.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
-#include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Persistency/Common/PtrMaker.h"
+// #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
-#include "cetlib/cpu_timer.h"
+// #include "cetlib/cpu_timer.h"
+#include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
@@ -24,21 +25,42 @@
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
-#include <cstdlib>
-#include <iostream>
+#include <stdexcept> // std::logic_error
+#include <cstdlib> // std::size_t
 #include <memory>
 
 namespace daq 
 {
   
-  class TriggerDecoder : virtual public IDecoder
+  class TriggerDecoder: public IDecoder
   {
   public:
-    explicit TriggerDecoder(fhicl::ParameterSet const &pset);
-    ~TriggerDecoder();
+    
+    struct Config {
+      
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      fhicl::Atom<bool> DiagnosticOutput {
+        Name("DiagnosticOutput"),
+        Comment("prints additional diagnostic output"),
+        false
+        };
+      
+      fhicl::Atom<bool> Debug {
+        Name("Debug"),
+        Comment("enables debug mode"),
+        false
+        };
+      
+    }; // Config
+    
+    using Parameters = art::ToolConfigTable<Config>;
+    
+    explicit TriggerDecoder(Parameters const &pset);
     
     virtual void produces(art::ProducesCollector&) override;
-    virtual void configure(const fhicl::ParameterSet&) override;
+    virtual void configure(fhicl::ParameterSet const&) override;
     virtual void initializeDataProducts() override;
     virtual void process_fragment(const artdaq::Fragment &fragment) override;
     virtual void outputDataProducts(art::Event &event) override;
@@ -46,37 +68,40 @@ namespace daq
   private: 
     using TriggerCollection = std::vector<raw::ExternalTrigger>;
     using TriggerPtr = std::unique_ptr<TriggerCollection>;
+    
     TriggerPtr fTrigger;
-    bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
-    bool fDebug; //< Use this for debugging this tool
+    
+    /// Produces large number of diagnostic messages, use with caution!
+    bool const fDiagnosticOutput;
+    
+    /// Use this for debugging this tool
+    bool const fDebug;
+    
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
-  };
+  }; // class TriggerDecoder
 
-  TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
+  TriggerDecoder::TriggerDecoder(Parameters const &pset)
+    : fDiagnosticOutput{ pset().DiagnosticOutput() }
+    , fDebug{ pset().Debug() }
   {
-    this->configure(pset);
   }
 
-  TriggerDecoder::~TriggerDecoder() {}
-  
   void TriggerDecoder::produces(art::ProducesCollector& collector) 
   {
     collector.produces<TriggerCollection>();
   }
 
-  void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
-  {
-    fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
-    fDebug = pset.get<bool>("Debug", false);
-    return;
+  void TriggerDecoder::configure [[noreturn]] (fhicl::ParameterSet const&) {
+    throw
+      std::logic_error{ "TriggerDecoder does not support reconfiguration." };
   }
-  
+
+
   void TriggerDecoder::initializeDataProducts()
   {
     //use until different object chosen 
     //fTrigger = new raw::Trigger();
-    fTrigger = TriggerPtr(new TriggerCollection);
-    return;
+    fTrigger = std::make_unique<TriggerPtr::element_type>();
   }
 
   void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
@@ -99,27 +124,34 @@ namespace daq
     fTrigger->emplace_back(wr_event_no, trigger_ts);
     if(fDiagnosticOutput || fDebug)
     {
-      std::cout << "Fragment ID: " << fragmentID <<  " Local Trigger ID: " << local_trig << " Event Number: " << local_event_no << " Local Seconds: " << local_seconds << " Local Nanoseconds: " << local_nsec << std::endl;
-      std::cout << "White Rabbit Trigger ID: " << wr_trig << " Event Number: " << wr_event_no << " White Rabbit POSIX Seconds: " << std::fixed << wr_seconds << " White Rabbit Timestamp Nanoseconds: " << wr_nsec << std::endl;
-      std::cout << "Full Timestamp = " << std::fixed << trigger_ts << std::endl;
+      mf::LogInfo log { "TriggerDecoder" };
+      
+      log 
+        <<   "Fragment ID: " << fragmentID
+          << " Local Trigger ID: " << local_trig
+          << " Event Number: " << local_event_no
+          << " Local Seconds: " << local_seconds
+          << " Local Nanoseconds: " << local_nsec
+        << "\nWhite Rabbit Trigger ID: " << wr_trig
+          << " Event Number: " << wr_event_no 
+          << " White Rabbit POSIX Seconds: " << std::fixed << wr_seconds
+          << " White Rabbit Timestamp Nanoseconds: " << wr_nsec
+        << "\nFull Timestamp = " << std::fixed << trigger_ts
+        ;
     }
     
     //Once we have full trigger data object, set up and place information into there
-    return;
-  }
+    
+  } // TriggerDecoder::process_fragment()
 
   void TriggerDecoder::outputDataProducts(art::Event &event)
   {
     //Place trigger data object into raw data store 
     event.put(std::move(fTrigger));
-    return;
   }
 
   DEFINE_ART_CLASS_TOOL(TriggerDecoder)
 
-}
+} // namespace daq
 
 
-
-
-  
