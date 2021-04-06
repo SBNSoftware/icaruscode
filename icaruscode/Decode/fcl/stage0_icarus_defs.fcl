@@ -19,7 +19,7 @@ icarus_stage0_producers:
 {
 
   ### configuration extraction
-  pmtconfig:                      { module_type: PMTconfigurationExtraction }
+  pmtconfig:                      @local::extractPMTconfig
 
   ### Decoder definitions
   daqTPC:                         @local::decodeTPC
@@ -29,6 +29,8 @@ icarus_stage0_producers:
   daqTPCEE:                       @local::decodeTPC
 
   daqPMT:                         @local::decodePMT
+  
+  daqTrigger:                     @local::decodeTrigger
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -117,6 +119,7 @@ icarus_stage0_multiTPC_Sep_TPC:    [ daqTPCWW,        daqTPCWE,        daqTPCEW,
                                    ]
 
 icarus_stage0_multiTPC_TPC:        [ pmtconfig,
+                                     daqTrigger,
                                      daqTPC,
                                      daqPMT,
                                      decon1droi,
@@ -125,6 +128,7 @@ icarus_stage0_multiTPC_TPC:        [ pmtconfig,
                                    ]
 
 icarus_stage0_pmt:                 [ pmtconfig,
+                                     daqTrigger,
                                      daqPMT,
                                      ophit,
                                      opflashCryo0,

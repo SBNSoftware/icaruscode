@@ -3,6 +3,11 @@
 BEGIN_PROLOG
 
 
+extractPMTconfig:  {
+                    module_type:        PMTconfigurationExtraction 
+}
+
+
 decodeFilterNoise: {
                     module_type:        FilterNoiseICARUS
                     FragmentsLabel:     "daq:PHYSCRATEDATA"
@@ -27,6 +32,12 @@ decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
                     FragmentsLabel:     "daq:CAENV1730"
                     DecoderTool:        @local::PMTDecoderTool
+}
+
+decodeTrigger: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerUDP"
+                    DecoderTool:        @local::TriggerDecoderTool
 }
 
 END_PROLOG
