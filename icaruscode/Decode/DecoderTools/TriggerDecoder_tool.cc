@@ -23,6 +23,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
+#include "icaruscode/Decode/DecoderTools/TriggerPayloadParser.h"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
@@ -33,6 +34,7 @@
 #include <cstdlib> // std::size_t
 #include <memory>
 
+// -----------------------------------------------------------------------------
 namespace daq 
 {
   
@@ -128,6 +130,19 @@ namespace daq
         << " --- BEGIN " << std::string(60, '-') << "\n"
         << payloadAsText
         << "\n --- END --" << std::string(60, '-')
+        ;
+      TriggerPayloadParser parser;
+      auto const& triggerData = parser(payloadAsText);
+      mf::LogVerbatim("TriggerDecoder")
+        << "Parsed data:"
+        << "\nLocal timestamp: "
+        << "\n  - event number: " << triggerData.Local_TS1->eventNo
+        << "\n  - time:         " << triggerData.Local_TS1->timeStampHigh
+          << " s + " << triggerData.Local_TS1->timeStampLow << " ns"
+        << "\nWhite Rabbit timestamp: "
+        << "\n  - event number: " << triggerData.WR_TS1->eventNo
+        << "\n  - time:         " << triggerData.WR_TS1->timeStampHigh
+          << " s + " << triggerData.WR_TS1->timeStampLow << " ns"
         ;
       
     } // if diagnostics
