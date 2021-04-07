@@ -1031,6 +1031,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       true
       };
     
+    fhicl::Sequence<std::string> OnlyPlotCategories {
+      Name("OnlyPlotCategories"),
+      Comment
+        ("if specified, plot categories not in this list are not considered"),
+      std::vector<std::string>{}
+      };
+    
     fhicl::OptionalAtom<std::string> EventTreeName {
       Name("EventTreeName"),
       Comment("name of a ROOT tree where to store event-by-event information")
@@ -1439,11 +1446,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
   
+  ///< Only apply these categories (empty applies all).
+  std::vector<std::string> fOnlyPlotCategories;
+  
   /// Message facility stream category for output.
   std::string const fLogCategory;
 
   std::string fLogEventDetails; ///< Steam where to print event info.
-  
   
   /// Plot categories (via `initializePlots()`).
   PlotCategories_t fPlotCategories;
