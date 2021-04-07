@@ -22,9 +22,13 @@
 #include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 
+#include <algorithm> // std::replace()
+#include <utility> // std::move()
+#include <vector>
 #include <stdexcept> // std::logic_error
 #include <cstdlib> // std::size_t
 #include <memory>
@@ -80,6 +84,7 @@ namespace daq
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
   }; // class TriggerDecoder
 
+  
   TriggerDecoder::TriggerDecoder(Parameters const &pset)
     : fDiagnosticOutput{ pset().DiagnosticOutput() }
     , fDebug{ pset().Debug() }
@@ -109,9 +114,23 @@ namespace daq
     size_t fragmentID = fragment.fragmentID();
     icarus::ICARUSTriggerUDPFragment frag(fragment);
     //artdaq::Fragment::timestamp_t ts = frag.timestamp();
-    icarus::ICARUSTriggerUDPFragmentMetadata meta = *frag.Metadata();
-    if(fDiagnosticOutput)
-      std::cout << meta << std::endl;
+    if(fDiagnosticOutput) {
+      icarus::ICARUSTriggerUDPFragmentMetadata meta = *frag.Metadata();
+      std::string payloadAsText
+        = reinterpret_cast<char const*>(fragment.dataBeginBytes());
+      std::replace(payloadAsText.begin(), payloadAsText.end(), '\x0D', '\n');
+      mf::LogVerbatim log { "TriggerDecoder" };
+      log
+          << meta
+        << "\nFragment dump:\n"
+        << sbndaq::dumpFragment(fragment)
+        << "Trigger data as text:\n"
+        << " --- BEGIN " << std::string(60, '-') << "\n"
+        << payloadAsText
+        << "\n --- END --" << std::string(60, '-')
+        ;
+      
+    } // if diagnostics
     int local_trig = frag.getName();
     int local_event_no = frag.getEventNo();
     int local_seconds = frag.getSeconds();
