@@ -7,5 +7,18 @@ icarus_morphologicalroifinder:
     Threshold:           [2.75,2.75,2.75]
 }
 
+icarus_cannyedgedetector:
+{
+    tool_type:                    ROICannyEdgeDetection
+    StructuringElement:           [8, 16]
+    Threshold:                    [2.75,2.75,2.75]
+    ButterworthOrder:             2
+    ButterworthThreshold:         30
+    Morph2DStructuringElementX:   7
+    Morph2DStructuringElementY:   28
+    CoherentNoiseGrouping:        32
+    MorphologicalWindow:          10
+    CoherentThresholdFactor:      2.5
+}
 
 END_PROLOG
