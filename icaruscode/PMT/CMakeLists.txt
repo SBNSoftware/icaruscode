@@ -19,6 +19,7 @@ simple_plugin(SimPMTIcarus "module"
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
   art_Persistency_Provenance
   ${CANVAS}
   ${MF_MESSAGELOGGER}
@@ -32,20 +33,28 @@ simple_plugin(SimPMTIcarus "module"
 simple_plugin(PMTWaveformBaselines "module"
   icaruscode_PMT_Algorithms
   sbnobj_ICARUS_PMT_Data
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
   lardataobj_RawData
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${MF_MESSAGELOGGER}
+  ROOT::Hist
   ROOT::Core
   )
 
 simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
   sbnobj_ICARUS_PMT_Data
   sbnobj_Common_PMT_Data
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
   lardataobj_RawData
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${MF_MESSAGELOGGER}
+  ROOT::Hist
   ROOT::Core
   )
 

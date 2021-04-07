@@ -1,0 +1,56 @@
+#
+# File:    triggersim_westmodule_icarus_data.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 18, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20210208 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_eastmodule_icarus_data.fcl` v1.0
+#
+
+
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+
+# list of the sliding windows that are enabled (all others are disabled)
+# * configuration with 3 windows per PMT wall (12 windows overall)
+EnabledWindows         @protect_ignore: [ 6, 7, 8, 9, 10, 11 ]
+EnabledWindowsE        @protect_ignore: [ 6, 7, 8 ]
+EnabledWindowsW        @protect_ignore: [ 9, 10, 11 ]
+EnabledWindowsS        @protect_ignore: [ 6, 9 ]
+EnabledWindowsSE       @protect_ignore: [ 6 ]
+EnabledWindowsSW       @protect_ignore: [ 9 ]
+EnabledWindowsC        @protect_ignore: [ 7, 10 ]
+EnabledWindowsCE       @protect_ignore: [ 7 ]
+EnabledWindowsCW       @protect_ignore: [ 10 ]
+EnabledWindowsN        @protect_ignore: [ 8, 11 ]
+EnabledWindowsNE       @protect_ignore: [ 8 ]
+EnabledWindowsNW       @protect_ignore: [ 11 ]
+# * configuration with 5 windows per PMT wall, overlapping (20 windows overall)
+EnabledWindowsSliding  @protect_ignore: [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+EnabledWindowsSlidingE @protect_ignore: [ 10, 11, 12, 13, 14 ]
+EnabledWindowsSlidingW @protect_ignore: [ 15, 16, 17, 18, 19 ]
+
+
+END_PROLOG
+# ------------------------------------------------------------------------------
+
+#include "triggersim_eastmodule_icarus_data.fcl"
+
+# ------------------------------------------------------------------------------
+

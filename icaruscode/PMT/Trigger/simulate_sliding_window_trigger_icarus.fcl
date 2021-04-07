@@ -1,0 +1,202 @@
+#
+# File:    simulate_sliding_window_trigger_icarus.fcl
+# Purpose: Runs SlidingWindowTriggerSimulation module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 27, 2021
+#
+# This is a top-level configuration that can be run directly.
+# 
+# This job simulates eight different sliding window triggers, with requirements
+# of 3 to 6 LVDS gates open in one window, with or without a coincidence with
+# the opposite window.
+# 
+# 
+# Required inputs
+# ----------------
+# 
+#  * sliding window trigger gates made from the selected sliding window
+#    configuration (with threshold)
+# 
+# Output
+# -------
+# 
+# Data products:
+#  * `slidingwindowtriggerM3:thr`, `slidingwindowtriggerM3O3:thr`, ...:
+#    `raw::Trigger` collections for SlidingWindowTriggerSimulation;
+#    the tag in the instance name is the requirement pattern, while the
+#    instance name represents the discrimination threshold used for input.
+# 
+# Plots:
+#  * `slidingwindowtriggerM3`, `slidingwindowtriggerM3O3`, ...:
+#       basic trigger response distributions
+#
+
+#include "services_common_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: TrigSim
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+slidingwindowtriggerTemplate: {
+
+  module_type: SlidingWindowTriggerSimulation
+
+  TriggerGatesTag: "trigslidewindowOR"
+
+  Thresholds: [ 400, 600, pmtthr ]
+  
+  ###
+  ### requirement:
+  ###
+  Pattern: @nil # need to replace
+
+  # Beam gate:
+  # duration (BNB: 1.6 us; NuMI: 9.5 us)
+  BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+  BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl
+
+
+  EventTimeBinning: 900 # seconds-> 15'
+  
+  TriggerTimeResolution: "25 ns"
+
+  # name of the category used for the output
+  LogCategory: "SlidingWindowTriggerSimulation"
+
+} # slidingwindowtriggerTemplate
+
+
+physics: {
+  
+  producers: {
+  
+    slidingwindowtriggerM1: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 1
+      }
+    } # slidingwindowtriggerM1
+
+    slidingwindowtriggerM2: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 2
+      }
+    } # slidingwindowtriggerM2
+
+    slidingwindowtriggerM3: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 3
+      }
+    } # slidingwindowtriggerM3
+
+    slidingwindowtriggerM4: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 4
+      }
+    } # slidingwindowtriggerM4
+
+    slidingwindowtriggerM5: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 5
+      }
+    } # slidingwindowtriggerM5
+
+    slidingwindowtriggerM6: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 6
+      }
+    } # slidingwindowtriggerM6
+    
+    slidingwindowtriggerM3O3: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow:     3
+        inOppositeWindow: 3
+      }
+    } # slidingwindowtriggerM3O3
+
+    slidingwindowtriggerM4O4: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 4
+        inOppositeWindow: 4
+      }
+    } # slidingwindowtriggerM4O4
+
+    slidingwindowtriggerM5O5: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 5
+        inOppositeWindow: 5
+      }
+    } # slidingwindowtriggerM5O5
+
+    slidingwindowtriggerM6O6: {
+      @table::slidingwindowtriggerTemplate
+      Pattern: {
+        inMainWindow: 6
+        inOppositeWindow: 6
+      }
+    } # slidingwindowtriggerM6O6
+    
+  } # producers
+  
+  trigger: [
+    slidingwindowtriggerM1,
+    slidingwindowtriggerM2,
+    slidingwindowtriggerM3,
+    slidingwindowtriggerM4,
+    slidingwindowtriggerM5,
+    slidingwindowtriggerM6,
+    slidingwindowtriggerM3O3,
+    slidingwindowtriggerM4O4,
+    slidingwindowtriggerM5O5,
+    slidingwindowtriggerM6O6
+    ]
+  output: [ rootoutput ]
+  
+  trigger_paths: [ trigger ]
+  end_paths: [ output ]
+  
+} # physics
+
+
+outputs: {
+  
+  rootoutput: @local::icarus_rootoutput # from rootoutput_icarus.fcl
+  
+} # outputs
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.SlidingWindowTriggerLog: {
+  type:       file
+  filename:  "SlidingWindowTriggerSim.log"
+  threshold:  DEBUG
+  categories: {
+    SlidingWindowTriggerSimulation: { limit: -1 }
+    default:                        { limit:  0 }
+  }
+} # services.messages.destinations.SlidingWindowTriggerLog
+

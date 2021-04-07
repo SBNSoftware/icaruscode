@@ -1,5 +1,40 @@
+#
+# File:     dump_opdetwaveforms_icarus_data.fcl
+# Purpose:  Dump on screen raw optical detector waveforms, ICARUS data settings
+# Author:   Gianluca Petrillo (petrillo@fnal.gov)
+# Date:     March 18, 2021
+# Version:  1.0
+#
+# Service dependencies:
+# - message facility
+# 
+# Changes:
+# 20210318 (petrillo@slac.stanford.edu) [v1.0]
+#   first version, from `dump_opdetwaveforms_icarus.fcl`
+#
+
 #include "dump_opdetwaveforms_icarus.fcl"
 
+#
+## detector timings are quite different...
+##
+services.DetectorClocksService: {
+  @table::icarus_detectorclocks # from `detectorclocks_icarus.fcl`
+   
+  # timestamps are set to 0 (and it is in electronics time);
+  # 50 us PMT window with post trigger 70% means beam 15 us after the start
+  #   of the waveform, i.e. 15 us from electronics time start
+  DefaultBeamTime: 15
+  DefaultTrigTime: 15
+  
+  G4RefTime: 0
+                   
+  InheritClockConfig: false # after we spend time to override it, just leave it alone!
+                       
+  TriggerOffsetTPC: -340
+                
+} # services.DetectorClocksService
+  
 physics.analyzers.dumpopdetwaveforms.OpDetWaveformsTag: "daqPMT"
-physics.analyzers.dumpopdetwaveforms.Pedestal:           0
-
+# physics.analyzers.dumpopdetwaveforms.Pedestal:          15000
+# physics.analyzers.dumpopdetwaveforms.TickLabel:        tick

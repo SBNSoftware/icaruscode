@@ -723,11 +723,13 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::refreshCurrentThresholds()
   //
   // first set the default values for the first time
   //
-  if ((fNOpDetChannels > 0U) && fDefaultThreshold.has_value()) {
+  if (fNOpDetChannels > 0U) {
     fCurrentThresholds.resize(
       fNOpDetChannels,
-      ADCvalueSetting_t
-        { Source_t::Default, ADCCounts_t::castFrom(fDefaultThreshold.value()) }
+      fDefaultThreshold.has_value()
+        ? ADCvalueSetting_t
+         { Source_t::Default, ADCCounts_t::castFrom(fDefaultThreshold.value()) }
+        : ADCvalueSetting_t{ Source_t::Unset }
       );
   } // if
   

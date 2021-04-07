@@ -1,5 +1,6 @@
 #include "caldata.fcl"
 #include "deconTools_icarus.fcl"
+#include "roiTools_icarus.fcl"
 ##include "roialg.fcl"
 ##include "database_microboone.fcl"
 
@@ -88,6 +89,7 @@ icarus_roifinder:
 {
     module_type:     ROIFinder
     WireModuleLabel: "decon1droi"
+    ROIFinder:       @local::icarus_morphologicalroifinder
 }
 
 END_PROLOG
