@@ -351,7 +351,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
     if (fPlaneVec.empty())          fPlaneVec.resize(nChannelsPerBoard,0);
    
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+//    icarus_signal_processing::Denoiser2D_Hough     denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;
@@ -478,19 +478,17 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                     continue;
                 }
 
+                icarus_signal_processing::Denoiser2D_Hough denoiser(filterFunctionPtr.get(), fThresholdVec, fCoherentNoiseGrouping, fMorphWindow);
+
                 // Run the coherent filter
-                denoiser.removeCoherentNoiseHough(fWaveLessCoherent.begin()  + boardOffset + startChannel,
-                                                  fPedCorWaveforms.begin()   + boardOffset + startChannel,
-                                                  fMorphedWaveforms.begin()  + boardOffset + startChannel,
-                                                  fIntrinsicRMS.begin()      + boardOffset + startChannel,
-                                                  fSelectVals.begin()        + boardOffset + startChannel,
-                                                  fROIVals.begin()           + boardOffset + startChannel,
-                                                  fCorrectedMedians.begin()  + boardOffset + startChannel,
-                                                  filterFunctionPtr.get(),
-                                                  fThresholdVec.begin()      + boardOffset + startChannel,
-                                                  deltaChannels,
-                                                  fCoherentNoiseGrouping,
-                                                  fMorphWindow);
+                denoiser(fWaveLessCoherent.begin()  + boardOffset + startChannel,
+                         fPedCorWaveforms.begin()   + boardOffset + startChannel,
+                         fMorphedWaveforms.begin()  + boardOffset + startChannel,
+                         fIntrinsicRMS.begin()      + boardOffset + startChannel,
+                         fSelectVals.begin()        + boardOffset + startChannel,
+                         fROIVals.begin()           + boardOffset + startChannel,
+                         fCorrectedMedians.begin()  + boardOffset + startChannel,
+                         deltaChannels);
 
                     }
 

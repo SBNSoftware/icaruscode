@@ -352,12 +352,12 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.empty())      fNumTruncBins     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
     if (fRangeBins.empty())         fRangeBins        = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
 
-    if (fThresholdVec.empty())      fThresholdVec     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fThresholdVec.empty())      fThresholdVec     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment / fCoherentNoiseGrouping);
 
     if (fFilterFunctionVec.empty()) fFilterFunctionVec.resize(maxChannelsPerFragment);
    
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+    icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;
@@ -411,8 +411,8 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             // Handle the filter function to use for this channel
             unsigned int plane = channelPlanePairVec[chanIdx].second;
 
-            // Set the threshold for this channel
-            fThresholdVec[channelOnBoard] = fThreshold[plane];
+            // Set the threshold which toggles between planes
+            fThresholdVec[channelOnBoard / fCoherentNoiseGrouping] = fThreshold[plane];
 
             if (plane > 2)
             {
@@ -479,18 +479,18 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 //                                           fCoherentNoiseGrouping,
 //                                           fMorphWindow);
 
-        denoiser.removeCoherentNoise1D(fWaveLessCoherent.begin()  + boardOffset,
-                                       fPedCorWaveforms.begin()   + boardOffset,
-                                       fMorphedWaveforms.begin()  + boardOffset,
-                                       fIntrinsicRMS.begin()      + boardOffset,
-                                       fSelectVals.begin()        + boardOffset,
-                                       fROIVals.begin()           + boardOffset,
-                                       fCorrectedMedians.begin()  + boardOffset,
-                                       fFilterFunctionVec.begin() + boardOffset,
-                                       fThresholdVec.begin()      + boardOffset,
-                                       nChannelsPerBoard,
-                                       fCoherentNoiseGrouping,
-                                       fMorphWindow);
+        denoiser(fWaveLessCoherent.begin()  + boardOffset,
+                 fPedCorWaveforms.begin()   + boardOffset,
+                 fMorphedWaveforms.begin()  + boardOffset,
+                 fIntrinsicRMS.begin()      + boardOffset,
+                 fSelectVals.begin()        + boardOffset,
+                 fROIVals.begin()           + boardOffset,
+                 fCorrectedMedians.begin()  + boardOffset,
+                 fFilterFunctionVec.begin() + boardOffset,
+                 fThresholdVec,
+                 nChannelsPerBoard,
+                 fCoherentNoiseGrouping,
+                 fMorphWindow);
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment

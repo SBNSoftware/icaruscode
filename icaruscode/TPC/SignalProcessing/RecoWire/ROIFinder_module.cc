@@ -39,9 +39,10 @@
 #include "lardata/ArtDataHelper/WireCreator.h"
 #include "lardata/Utilities/AssociationUtil.h"
 
+#include "icaruscode/TPC/SignalProcessing/RecoWire/ROITools/IROILocator.h"
+
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-//#include "icarus_signal_processing/Detection/LineDetection.h"
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"
@@ -95,6 +96,7 @@ private:
     using PlaneIDToDataPair    = std::pair<std::vector<raw::ChannelID_t>,PlaneWireData>;
     using PlaneIDToDataPairMap = std::map<geo::PlaneID,PlaneIDToDataPair>;
     using PlaneIDVec           = std::vector<geo::PlaneID>;
+
     // Define a class to handle processing for individual threads
     class multiThreadDeconvolutionProcessing 
     {
@@ -118,12 +120,12 @@ private:
                 fROIFinder.processPlane(idx, fEvent, fPlaneIDVec, fPlaneIDToDataPairMap, fWireColVec, fMorphedVec);
         }
     private:
-        const ROIFinder&              fROIFinder;
-        art::Event&                   fEvent;
-        const PlaneIDVec&             fPlaneIDVec;
-        const PlaneIDToDataPairMap&   fPlaneIDToDataPairMap;
-        std::vector<recob::Wire>&     fWireColVec;
-        std::vector<recob::Wire>&     fMorphedVec;
+        const ROIFinder&            fROIFinder;
+        art::Event&                 fEvent;
+        const PlaneIDVec&           fPlaneIDVec;
+        const PlaneIDToDataPairMap& fPlaneIDToDataPairMap;
+        std::vector<recob::Wire>&   fWireColVec;
+        std::vector<recob::Wire>&   fMorphedVec;
     };
 
     // Function to do the work
@@ -138,12 +140,10 @@ private:
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
 
     std::vector<art::InputTag>                     fWireModuleLabelVec;         ///< vector of modules that made digits
-    std::vector<size_t>                            fStructuringElement;         ///< Structuring element for morphological filter
-    std::vector<float>                             fThreshold;                  ///< Threshold to apply for saving signal
     bool                                           fOutputMorphed;              ///< Output the morphed waveforms
     size_t                                         fEventCount;                 ///< count of event processed
     
-    icarus_signal_processing::WaveformTools<float> fWaveformTool;
+    std::unique_ptr<icarus_tool::IROILocator>      fROITool;
 
     const geo::GeometryCore*                       fGeometry = lar::providerFrom<geo::Geometry>();
     
@@ -174,9 +174,12 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
     fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
-    fStructuringElement  = pset.get<std::vector<size_t>       >("StructuringElement",                 std::vector<size_t>()={8,16});
-    fThreshold           = pset.get<std::vector<float>        >("Threshold",                 std::vector<float>()={2.75,2.75,2.75});
     fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
+    
+    // Recover the baseline tool 
+    fhicl::ParameterSet roiFinderParams = pset.get<fhicl::ParameterSet>("ROIFinder");
+
+    fROITool = art::make_tool<icarus_tool::IROILocator> (roiFinderParams);
     
     return;
 }
@@ -265,6 +268,8 @@ void ROIFinder::produce(art::Event& evt)
     
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
         multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol);
+
+        std::cout << "ROIFinder has " << planeIDToDataPairMap.size() << " images to analyze" << std::endl;
     
         tbb::parallel_for(tbb::blocked_range<size_t>(0, planeIDVec.size()), deconvolutionProcessing);
         
@@ -283,11 +288,11 @@ void ROIFinder::produce(art::Event& evt)
 } // produce
 
 void  ROIFinder::processPlane(size_t                      idx,
-  art::Event&                 event,
-  const PlaneIDVec&           planeIDVec,
-  const PlaneIDToDataPairMap& planeIDToDataPairMap, 
-  std::vector<recob::Wire>&   wireColVec,
-  std::vector<recob::Wire>&   morphedVec) const
+                              art::Event&                 event,
+                              const PlaneIDVec&           planeIDVec,
+                              const PlaneIDToDataPairMap& planeIDToDataPairMap, 
+                              std::vector<recob::Wire>&   wireColVec,
+                              std::vector<recob::Wire>&   morphedVec) const
 {
     // Recover the planeID for this thread
     const geo::PlaneID& planeID = planeIDVec[idx];
@@ -304,64 +309,15 @@ void  ROIFinder::processPlane(size_t                      idx,
     const PlaneIDToDataPair& planeIDToDataPair = mapItr->second;
 
     const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second();
-    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
-
-    // Use this to get the 2D Dilation of each waveform
-    icarus_signal_processing::Dilation2D(fStructuringElement[0],fStructuringElement[1])(dataArray.begin(),dataArray.size(),morphedWaveforms.begin());
 
     // Keep track of our selected values
     icarus_signal_processing::ArrayBool selectedVals(dataArray.size());
 
-    // Now traverse each waveform and look for the ROIs
-    for(size_t waveIdx = 0; waveIdx < dataArray.size(); waveIdx++)
-    {
-        // We start working with the morphed waveform
-        const icarus_signal_processing::VectorFloat& morphedWave = morphedWaveforms[waveIdx];
+    fROITool->FindROIs(dataArray, mapItr->first, selectedVals);
 
-        // We need to zero suppress so we can find the rms
-        float median = getMedian(morphedWave, morphedWave.size());
+//    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
-        icarus_signal_processing::VectorFloat baseVec(morphedWave.size());
-
-        for(size_t idx = 0; idx < morphedWave.size(); idx++) baseVec[idx] = morphedWave[idx] - median;
-
-            icarus_signal_processing::VectorFloat rmsVec = baseVec;
-        size_t                                maxIdx = 0.75 * rmsVec.size();
-
-        std::nth_element(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.end());
-
-        float rms       = std::sqrt(std::inner_product(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.begin(), 0.) / float(maxIdx));
-        float threshold = rms * fThreshold[planeID.Plane];
-
-//        std::cout << "==> median: " << median << ", rms: " << rms << ", threshold: " << threshold << std::endl;
-
-        // Right size the selected values array
-        icarus_signal_processing::VectorBool& selVals = selectedVals[waveIdx];
-
-        selVals.resize(morphedWave.size(),false);
-
-        for(size_t idx = 0; idx < baseVec.size(); idx++)
-        {
-//            if (std::abs(baseVec[idx]) > threshold) selVals[idx] = true;
-            if (baseVec[idx] > threshold) selVals[idx] = true;
-        }
-
-        // Check to see if we should save the baseVec
-        if (fOutputMorphed)
-        {
-            raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
-            geo::View_t      view    = fGeometry->View(channel);
-
-            morphedVec.push_back(recob::WireCreator(std::move(baseVec),channel,view).move());
-        }
-    }
-
-    // Do the enhancement with the Hough transform
-    icarus_signal_processing::ArrayBool refinedVals = selectedVals;
-
-//    icarus_signal_processing::LineDetection lineModule;
-
-//    lineModule.refineSelectVals(selectedVals, refinedVals);
+    std::cout << "  --processPlane returns with vals: " << selectedVals.size() << std::endl;
 
     // Ok, now go through the refined selected values array and find ROIs
     // Define the ROI and its container
@@ -370,13 +326,13 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     size_t leadTrail(1);
 
-    for(size_t waveIdx = 0; waveIdx < dataArray.size(); waveIdx++)
+    for(size_t waveIdx = 0; waveIdx < selectedVals.size(); waveIdx++)
     {
         // Set up an object... 
         CandidateROIVec candidateROIVec;
 
         // Search for ROIs in current waveform
-        icarus_signal_processing::VectorBool& selVals = refinedVals[waveIdx];
+        icarus_signal_processing::VectorBool& selVals = selectedVals[waveIdx];
 
         for(size_t idx = 0; idx < selVals.size(); idx++)
         {
