@@ -3,18 +3,50 @@ BEGIN_PROLOG
 
 SimpleFlashStandard:
 {
-  PEThreshold:    20
-  MinPECoinc:     10
+  PEThreshold:    40
+  PEThresholdHit: 0.5
+  MinPECoinc:     40
   MinMultCoinc:   5
   IntegralTime:   8.
   PreSample:      0.1
   VetoSize:       8.
-  TimeResolution: 0.04
+  TimeResolution: 0.1
   HitVetoRangeStart: []
   HitVetoRangeEnd:   []
   OpChannelRange:    [0,359]
   DebugMode: false
 }
+
+SimpleFlashCryo0: @local::SimpleFlashStandard
+SimpleFlashCryo0.OpChannelRange: [0,179]
+
+SimpleFlashCryo1: @local::SimpleFlashStandard
+SimpleFlashCryo1.OpChannelRange: [180,359]
+
+
+SimpleFlashDataCryo0: @local::SimpleFlashCryo0
+SimpleFlashDataCryo0.PEThreshold:    100
+SimpleFlashDataCryo0.PEThresholdHit: 1.0
+SimpleFlashDataCryo0.MinPECoinc:     100
+SimpleFlashDataCryo0.MinMultCoinc:   5
+SimpleFlashDataCryo0.IntegralTime:   1.
+SimpleFlashDataCryo0.PreSample:      0.02
+SimpleFlashDataCryo0.VetoSize:       1.
+SimpleFlashDataCryo0.TimeResolution: 0.01
+
+SimpleFlashDataCryo1: @local::SimpleFlashCryo1
+SimpleFlashDataCryo1.PEThreshold:    100
+SimpleFlashDataCryo1.PEThresholdHit: 1.0
+SimpleFlashDataCryo1.MinPECoinc:     100
+SimpleFlashDataCryo1.MinMultCoinc:   5
+SimpleFlashDataCryo1.IntegralTime:   1.
+SimpleFlashDataCryo1.PreSample:      0.02
+SimpleFlashDataCryo1.VetoSize:       1.
+SimpleFlashDataCryo1.TimeResolution: 0.01
+
+################################
+# CONFIGS BELOW ARE DEPRECATED #
+################################
 
 SimpleFlashTPC0: @local::SimpleFlashStandard
 SimpleFlashTPC0.OpChannelRange: [0,89]
@@ -27,5 +59,6 @@ SimpleFlashTPC2.OpChannelRange: [180,269]
 
 SimpleFlashTPC3: @local::SimpleFlashStandard
 SimpleFlashTPC3.OpChannelRange: [270,359]
+
 
 END_PROLOG
