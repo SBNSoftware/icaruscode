@@ -1,0 +1,2 @@
+#include "study_ophit_single.p.fcl"
+physics.producers.generator.X0: [ -310 ]

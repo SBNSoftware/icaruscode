@@ -2,8 +2,8 @@
 BEGIN_PROLOG
 
 SPE: {
-  Area: 65.47
-  Amplitude: 10.
+  Area: 212.
+  Shift: 0.
 }
 
 END_PROLOG
