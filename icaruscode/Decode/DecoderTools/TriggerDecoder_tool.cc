@@ -30,7 +30,9 @@
 #include <algorithm> // std::replace()
 #include <utility> // std::move()
 #include <vector>
+#include <optional>
 #include <stdexcept> // std::logic_error
+#include <ctime> // std::ctime()
 #include <cstdlib> // std::size_t
 #include <memory>
 
@@ -83,6 +85,9 @@ namespace daq
     /// Use this for debugging this tool
     bool const fDebug;
     
+    /// Information of the previous processed event.
+    std::optional<TriggerPayloadParser::TriggerData_t> fLastEventData;
+    
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
   }; // class TriggerDecoder
 
@@ -133,6 +138,10 @@ namespace daq
         ;
       TriggerPayloadParser parser;
       auto const& triggerData = parser(payloadAsText);
+      
+      std::time_t dateTime = triggerData.WR_TS1->timeStampHigh;
+      std::string dateTimeStr = std::ctime(&dateTime);
+      if (dateTimeStr.back() == '\n') dateTimeStr.pop_back();
       mf::LogVerbatim("TriggerDecoder")
         << "Parsed data:"
         << "\nLocal timestamp: "
@@ -142,8 +151,32 @@ namespace daq
         << "\nWhite Rabbit timestamp: "
         << "\n  - event number: " << triggerData.WR_TS1->eventNo
         << "\n  - time:         " << triggerData.WR_TS1->timeStampHigh
-          << " s + " << triggerData.WR_TS1->timeStampLow << " ns"
+          << " s + " << triggerData.WR_TS1->timeStampLow << " ns ("
+          << dateTimeStr << ")"
         ;
+      
+      if (fLastEventData) { // no previous information
+        
+        int const dWRevents
+          = triggerData.WR_TS1->eventNo - fLastEventData->WR_TS1->eventNo;
+        auto const dWRtime
+          = triggerData.WR_TS1->nanoseconds() - fLastEventData->WR_TS1->nanoseconds();
+        int const dLocalEvents
+          = triggerData.Local_TS1->eventNo - fLastEventData->Local_TS1->eventNo;
+        auto const dLocalTime
+          = triggerData.Local_TS1->nanoseconds() - fLastEventData->Local_TS1->nanoseconds();
+        
+        mf::LogVerbatim("TriggerDecoder") << std::showpos
+          << "Compared with the previous event:"
+          << "\n* local timestamp: "
+          << "\n  - event number change: " << dLocalEvents
+          << "\n  - time change:         " << dLocalTime << " ns"
+          << "\n* White Rabbit timestamp: "
+          << "\n  - event number change: " << dWRevents
+          << "\n  - time change:         " << dWRtime << " ns"
+          ;
+      }
+      fLastEventData = triggerData;
       
     } // if diagnostics
     int local_trig = frag.getName();

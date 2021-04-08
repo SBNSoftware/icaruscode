@@ -77,14 +77,10 @@ std::optional<std::string> daq::TriggerPayloadParser::nextToken
   std::string token;
   while (sstr >> token) {
     if ((token.length() == 1) && (token.front() == sep)) continue;
-    if (!token.empty() && token.back() == sep)
-      token.erase(token.length() - 1);
-    while (!token.empty() && std::isspace(token.back()))
-      token.erase(token.length() - 1);
-    if (!token.empty() && token.front() == sep)
-      token.erase(0);
-    while (!token.empty() && std::isspace(token.front()))
-      token.erase(0);
+    if (!token.empty() && token.back() == sep) token.pop_back();
+    while (!token.empty() && std::isspace(token.back())) token.pop_back();
+    if (!token.empty() && token.front() == sep) token.erase(0);
+    while (!token.empty() && std::isspace(token.front())) token.erase(0);
     return std::optional(std::move(token));
   } // while
   return std::nullopt;

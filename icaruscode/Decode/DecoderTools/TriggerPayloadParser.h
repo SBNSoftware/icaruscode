@@ -56,6 +56,8 @@ class daq::TriggerPayloadParser {
     int timeStampLow = 0;
     double time() const
       { return double(timeStampHigh) + double(timeStampLow) * 1e-9; }
+    long long int nanoseconds() const
+      { return (timeStampHigh * 1'000'000'000LL) + timeStampLow; }
   }; // struct TSdata_t
   
   /// The complete interpreted trigger data.
