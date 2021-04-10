@@ -145,9 +145,9 @@ icarus_reco_producers:
   #pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
   # pandora CALO and PID
-  pandoraGausCaloCryo0:		        @local::icarus_calomc
+  pandoraGausCaloCryo0:		        @local::icarus_gnewcalomc
   pandoraGausPidCryo0:		        @local::icarus_chi2pid
-  pandoraGausCaloCryo1:		        @local::icarus_calomc
+  pandoraGausCaloCryo1:		        @local::icarus_gnewcalomc
   pandoraGausPidCryo1:		        @local::icarus_chi2pid
 
   pandoraGausSCECaloCryo0:        @local::icarus_gnewcalomc
@@ -362,6 +362,9 @@ icarus_reco_pandoraICARUSCryo1:    [ pandoraICARUSCryo1,
 
 icarus_reco_Gauss_SCE_Cryo0:       [ pandoraGausSCECryo0, pandoraTrackGausSCECryo0, SBNShowerGausSCECryo0, SBNShowerTestGausSCECryo0, pandoraGausSCECaloCryo0, pandoraGausSCEPidCryo0]
 icarus_reco_Gauss_SCE_Cryo1:       [ pandoraGausSCECryo1, pandoraTrackGausSCECryo1, SBNShowerGausSCECryo1, SBNShowerTestGausSCECryo1, pandoraGausSCECaloCryo1, pandoraGausSCEPidCryo1]
+
+icarus_reco_calorimetry_noSCE: [ pandoraGausCaloCryo0, pandoraGausCaloCryo1 ]
+icarus_reco_calorimetry_SCE: [ pandoraGausSCECaloCryo0, pandoraGausSCECaloCryo1 ]
 
 icarus_reco_Gauss_Cryo0:           [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                      @sequence::icarus_reco_SigProcTPC1Gauss,
@@ -744,11 +747,15 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:           
 icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                            ["hitMergerCryo1"]
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
 
+
 # point the pandora CALO modules to pandora output
 icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel:                                   "pandoraTrackGausCryo0"
-icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel:                              "pandoraGausCryo0"
+#icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel:                              "pandoraGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:                                    "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel:                              "pandoraGausCaloCryo0"
+icarus_reco_producers.pandoraGausCaloCryo0.FieldDistortion:                                 false
+icarus_reco_producers.pandoraGausCaloCryo0.TrackIsFieldDistortionCorrected:                 false
+icarus_reco_producers.pandoraGausCaloCryo0.FieldDistortionEfield:                           false
 
 icarus_reco_producers.pandoraGausSCECaloCryo0.TrackModuleLabel:                                "pandoraTrackGausSCECryo0"
 icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortion:                                 true
@@ -759,10 +766,12 @@ icarus_reco_producers.pandoraGausSCEPidCryo0.CalorimetryModuleLabel:            
 
 
 icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel:                                   "pandoraTrackGausCryo1"
-icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel:                              "pandoraGausCryo1"
+#icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel:                              "pandoraGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel:                                    "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel:                              "pandoraGausCaloCryo1"
-
+icarus_reco_producers.pandoraGausCaloCryo1.FieldDistortion:                                 false
+icarus_reco_producers.pandoraGausCaloCryo1.TrackIsFieldDistortionCorrected:                 false
+icarus_reco_producers.pandoraGausCaloCryo1.FieldDistortionEfield:                           false
 icarus_reco_producers.pandoraGausSCECaloCryo1.TrackModuleLabel:                                "pandoraTrackGausSCECryo1"
 icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortion:                                 true
 icarus_reco_producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected:                 true
