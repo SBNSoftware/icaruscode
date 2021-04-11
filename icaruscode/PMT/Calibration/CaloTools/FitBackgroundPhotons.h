@@ -16,7 +16,6 @@
 //	class FitBackgroundPhotons;
 //}
 
-
 class FitBackgroundPhotons {
 
 	public: 
@@ -31,6 +30,9 @@ class FitBackgroundPhotons {
 		float getChi2(){ return m_fitf->GetChisquare(); };
 		int getNDF(){ return m_fitf->GetNDF(); };
 		int getFitStatus(){ return m_fitstatus; };
+
+		void setFitRange( float low, float high ){ m_fitrange[0]=low; m_fitrange[1]=high; };
+		void getFitRange( float &low, float &high ){ low=m_fitrange[0]; high=m_fitrange[1]; };
 
 	private: 
 

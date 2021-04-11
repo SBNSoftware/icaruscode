@@ -13,8 +13,9 @@ class  IdealPmtResponse {
 
 		IdealPmtResponse(){};
 
-		IdealPmtResponse( int nsum, bool useExpPedestal ) 
-		: m_nsum(nsum), 
+		IdealPmtResponse( int nstart, int nsum, bool useExpPedestal ) 
+		: m_nstart(nstart),
+		  m_nsum(nsum), 
 		  m_useExpPedestal(useExpPedestal)
 		{};
 
@@ -28,7 +29,7 @@ class  IdealPmtResponse {
 
 			double val = 0;
 
-			for( int n=1; n<m_nsum; n++ )
+			for( int n=m_nstart; n<m_nstart+m_nsum; n++ )
 				val+=poissonGauss( x[0], amplitude, n, mu, q, sigma );
 
 			if( m_useExpPedestal ){
@@ -45,6 +46,7 @@ class  IdealPmtResponse {
 
 	private: 
 
+		int m_nstart=1;
 		int m_nsum=4;
 		bool m_useExpPedestal=false;
 
