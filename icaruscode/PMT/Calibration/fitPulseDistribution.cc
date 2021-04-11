@@ -23,21 +23,48 @@ int main( int argc, char **argv ){
   int startch = 0; 
   int endch = 359; 
 
+  float rangeLow=0.3, rangeHigh=2.0;
+  int modelPedestal=0;
+
   for ( int i=1; i<argc; i=i+2 )
   {
     if      ( std::string(argv[i]) == "-i" ) inputFilename = argv[i+1];
     else if ( std::string(argv[i]) == "-d" ) destinationFolder = argv[i+1];
+    else if ( std::string(argv[i]) == "-l" ) rangeLow = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-h" ) rangeHigh = atof(argv[i+1]);
+    else if ( std::string(argv[i]) == "-p" ) modelPedestal = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-v" ) debug = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-s" ) startch = atoi(argv[i+1]);
     else if ( std::string(argv[i]) == "-e" ) endch = atoi(argv[i+1]);
     else {
-      std::cout << "Unknown option " << argv[i+1] << std::endl;
+      std::cout << "Unknown option \n" << argv[i+1] << std::endl;
       return 1;
     }
   }
 
+
+  // The function to fit is initialized here
+  bool hasExponential=false;  
+  if( modelPedestal == 1 ) 
+    hasExponential=true;
+
+  IdealPmtResponse idealPmtResponseFunct(1, 4, hasExponential);
+  FitBackgroundPhotons fitPMTResponse(6, idealPmtResponseFunct);
+  fitPMTResponse.setFitRange( rangeLow, rangeHigh );
+
+  if ( debug>0 && hasExponential )
+    std::cout << "Use the IdealPMTResponse function between [" << rangeLow << " : " << rangeHigh << "] with exponential background model" << std::endl; 
+  else if ( debug>0 && !hasExponential )
+    std::cout << "Use the IdealPMTResponse function between [" << rangeLow << " : " << rangeHigh << "] without exponential background model" << std::endl; 
+
+
   // Here we open the input file and get the first timestamp to give a time reference
   TFile *tfile = new TFile(inputFilename.c_str(), "READ");
+
+  if( !tfile->IsOpen() ){
+    std::cout << inputFilename << " not found!" << std::endl;
+    return 1;
+  }
 
   int run = 0;
   int timestamp = 0;
@@ -51,7 +78,6 @@ int main( int argc, char **argv ){
   std::cout << "Perform fit for run: " << run << ", Timestamp: " << timestamp << std::endl;
 
   // Here there is the output file
-
   char csvFilename[100];
   sprintf( csvFilename, "%s/backgroundphotons_run%d_%d.csv", destinationFolder.c_str(), run, timestamp );
 
@@ -63,10 +89,6 @@ int main( int argc, char **argv ){
   if( debug>0 )
     std::cout << line << std::endl;
 
-
-  // Here we prepare for the fit
-  IdealPmtResponse idealPmtResponseFunct(4, true);
-  FitBackgroundPhotons fitPMTResponse(6, idealPmtResponseFunct);
 
   // Now we fit the histograms
   for( int pmt=startch; pmt<=endch; pmt++ )
