@@ -143,6 +143,7 @@ private:
     uint32_t                                       fFragment_id_offset;     //< Allow offset for id
     float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
     size_t                                         fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    size_t                                         fCoherentNoiseOffset;    //< Offset for midplane
     size_t                                         fStructuringElement;     //< Structuring element for morphological filter
     size_t                                         fMorphWindow;            //< Window for filter
     std::vector<float>                             fThreshold;              //< Threshold to apply for saving signal
@@ -222,6 +223,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fFragment_id_offset    = pset.get<uint32_t                >("fragment_id_offset"      );
     fSigmaForTruncation    = pset.get<float                   >("NSigmaForTrucation",  3.5);
     fCoherentNoiseGrouping = pset.get<size_t                  >("CoherentGrouping",     64);
+    fCoherentNoiseOffset   = pset.get<size_t                  >("CoherentOffset",        0);
     fStructuringElement    = pset.get<size_t                  >("StructuringElement",   20);
     fMorphWindow           = pset.get<size_t                  >("FilterWindow",         10);
     fThreshold             = pset.get<std::vector<float>      >("Threshold",           std::vector<float>()={5.0,3.5,3.5});
@@ -490,6 +492,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
                  fThresholdVec,
                  nChannelsPerBoard,
                  fCoherentNoiseGrouping,
+                 fCoherentNoiseOffset,
                  fMorphWindow);
     }
 

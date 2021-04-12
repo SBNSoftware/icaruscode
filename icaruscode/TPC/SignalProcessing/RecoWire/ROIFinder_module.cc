@@ -311,13 +311,34 @@ void  ROIFinder::processPlane(size_t                      idx,
     const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second();
 
     // Keep track of our selected values
-    icarus_signal_processing::ArrayBool selectedVals(dataArray.size());
+    icarus_signal_processing::ArrayFloat outputArray(dataArray.size());
+    icarus_signal_processing::ArrayBool  selectedVals(dataArray.size());
 
-    fROITool->FindROIs(dataArray, mapItr->first, selectedVals);
+    fROITool->FindROIs(dataArray, mapItr->first, outputArray, selectedVals);
 
 //    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
-    std::cout << "  --processPlane returns with vals: " << selectedVals.size() << std::endl;
+    std::cout << "  --processPlane returns with vals: " << selectedVals.size() << ", output: " << outputArray.size() << std::endl;
+
+    // Copy the "morphed" array
+    for(size_t waveIdx = 0; waveIdx < outputArray.size(); waveIdx++)
+    {
+        // First get a lock to make sure we don't conflict
+        tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
+
+//        std::cout << "  -- waveIdx: " << waveIdx; 
+//        icarus_signal_processing::VectorFloat holder = outputArray[waveIdx];
+        recob::Wire::RegionsOfInterest_t ROIVec;
+                
+        ROIVec.add_range(0, std::move(outputArray[waveIdx]));
+
+        raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
+        geo::View_t      view    = fGeometry->View(channel);
+
+//        std::cout << " adding to morphedVec, channel: " << channel << ", view: " << view << std::endl;
+
+        morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+    }
 
     // Ok, now go through the refined selected values array and find ROIs
     // Define the ROI and its container
@@ -401,17 +422,20 @@ void  ROIFinder::processPlane(size_t                      idx,
             // Now we do the baseline determination and correct the ROI
             // For now we are going to reset to the minimum element
             // Get slope/offset from first to last ticks
-            float dADC   = (holder.back() - holder.front()) / float(holder.size());
-            float offset = holder.front();
-
-            for(auto& adcVal : holder)
+            if (holder.size() < 40)
             {
-                adcVal -= offset;
-                offset += dADC;
-            }
+                float dADC   = (holder.back() - holder.front()) / float(holder.size());
+                float offset = holder.front();
 
-            // add the range into ROIVec
-            ROIVec.add_range(candROI.first, std::move(holder));
+                for(auto& adcVal : holder)
+                {
+                    adcVal -= offset;
+                    offset += dADC;
+                }
+
+                // add the range into ROIVec
+                ROIVec.add_range(candROI.first, std::move(holder));
+            }
         }
 
         // Check for emptiness
