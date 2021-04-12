@@ -148,17 +148,23 @@ icarus::PMTconfigurationExtractor::extractChannelConfiguration
 
 
 // ---------------------------------------------------------------------------
-
 sbn::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
   (sbn::PMTconfiguration config) const
 {
 
   for (sbn::V1730Configuration& readoutBoardConfig: config.boards) {
-    if (!fChannelMap->hasPMTDigitizerID(readoutBoardConfig.fragmentID))
+    auto const fragmentID = readoutBoardDBfragmentID(readoutBoardConfig);
+    if (!fChannelMap->hasPMTDigitizerID(fragmentID)) {
+      mf::LogWarning("PMTconfigurationExtractor")
+        << "No entry found in PMT channel mapping database for board '"
+        << readoutBoardConfig.boardName << "' (fragment ID: "
+        << readoutBoardConfig.fragmentID << " => " << std::hex << fragmentID
+        << ")\n";
       continue;
-    
+    }
+  
     icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
-      = fChannelMap->getChannelIDPairVec(readoutBoardConfig.fragmentID);
+      = fChannelMap->getChannelIDPairVec(fragmentID);
     
     // finds the channel ID matching the specified channel number of this board
     auto const toChannelID = [&channelIDs=digitizerChannelVec]
@@ -280,6 +286,14 @@ sbn::PMTconfiguration icarus::extractPMTreadoutConfiguration
   
   return extractor.finalize(std::move(config.value()));
 } // icarus::extractPMTreadoutConfiguration(TFile)
+
+
+// ---------------------------------------------------------------------------
+unsigned int icarus::PMTconfigurationExtractor::readoutBoardDBfragmentID
+  (sbn::V1730Configuration const& boardConfig)
+{
+  return boardConfig.fragmentID & 0xFF; // secret recipe
+} // icarus::PMTconfigurationExtractor::readoutBoardDBfragmentID()
 
 
 // -----------------------------------------------------------------------------
