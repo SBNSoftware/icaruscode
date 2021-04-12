@@ -34,7 +34,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset) override;
     
-    void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayBool&)    const override;
+    void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&)    const override;
     
 private:
 
@@ -59,6 +59,7 @@ private:
 
     // Parameters for the denoiser
     unsigned int         fCoherentNoiseGrouping;      ///< Number of consecutive channels in coherent noise subtraction
+    unsigned int         fCoherentNoiseOffset;        ///< Offset for the midplane...
     unsigned int         fMorphologicalWindow;        ///< Window size for filter
     bool                 fOutputStats;                ///< Output of timiing statistics?
     float                fCoherentThresholdFactor;    ///< Threshold factor for coherent noise removal
@@ -71,8 +72,8 @@ private:
     float                fSigma_r;                    ///<
     float                fLowThreshold;               ///<
     float                fHighThreshold;              ///<
-    unsigned int         fBinaryClosing_SX;           ///<
-    unsigned int         fBinaryClosing_SY;           ///<
+    unsigned int         fBinaryDilation_SX;          ///<
+    unsigned int         fBinaryDilation_SY;          ///<
 
     // We need to give to the denoiser the "threshold vector" we will fill during our data loop
     icarus_signal_processing::VectorFloat  fThresholdVec;  ///< "threshold vector" filled during decoding loop
@@ -107,12 +108,13 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
     fMorphologicalFilter = std::make_unique<icarus_signal_processing::Dilation2D>(fMorph2DStructuringElementX,fMorph2DStructuringElementY);
 
     fCoherentNoiseGrouping   = pset.get<unsigned int>("CoherentNoiseGrouping",    32);
+    fCoherentNoiseOffset     = pset.get<unsigned int>("CoherentNoiseOffset",      24);
     fMorphologicalWindow     = pset.get<unsigned int>("MorphologicalWindow",      10);
     fCoherentThresholdFactor = pset.get<float       >("CoherentThresholdFactor", 2.5);
 
     fThresholdVec.resize(6560/fCoherentNoiseGrouping,fCoherentThresholdFactor);
 
-    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fMorphologicalWindow);
+    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphologicalWindow);
 
     fADFilter_SX           = pset.get<unsigned int>("ADFilter_SX",        7);
     fADFilter_SY           = pset.get<unsigned int>("ADFilter_SY",        7);
@@ -121,8 +123,8 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
     fSigma_r               = pset.get<float       >("Sigma_r",         30.0);
     fLowThreshold          = pset.get<float       >("LowThreshold",     3.0);
     fHighThreshold         = pset.get<float       >("HighThreshold",   15.0);
-    fBinaryClosing_SX      = pset.get<unsigned int>("BinaryClosing_SX",  13);
-    fBinaryClosing_SY      = pset.get<unsigned int>("BinaryClosing_SY",  13);
+    fBinaryDilation_SX     = pset.get<unsigned int>("BinaryDilation_SX",  13);
+    fBinaryDilation_SY     = pset.get<unsigned int>("BinaryDilation_SY",  13);
 
     fBilateralFilters = std::make_unique<icarus_signal_processing::BilateralFilters>();
     fEdgeDetection    = std::make_unique<icarus_signal_processing::EdgeDetection>();
@@ -138,24 +140,60 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
                                                                               fSigma_r,
                                                                               fLowThreshold,
                                                                               fHighThreshold,
-                                                                              fBinaryClosing_SX,
-                                                                              fBinaryClosing_SY);
+                                                                              fBinaryDilation_SX,
+                                                                              fBinaryDilation_SY);
     
     return;
 }
 
-void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayBool& outputROIs) const
+void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
 {
-    icarus_signal_processing::ArrayFloat waveLessCoherent(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat medianVals(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat coherentRMS(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat finalErosion(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat fullEvent(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
+    unsigned int numChannels = inputImage.size();
+    unsigned int numTicks    = inputImage[0].size();
+
+//    icarus_signal_processing::ArrayFloat waveLessCoherent(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
+//    icarus_signal_processing::ArrayFloat medianVals(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
+//    icarus_signal_processing::ArrayFloat coherentRMS(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
+//    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
+    icarus_signal_processing::ArrayFloat finalErosion(numChannels,icarus_signal_processing::VectorFloat(4096,0.));
+    icarus_signal_processing::ArrayFloat fullEvent(numChannels,icarus_signal_processing::VectorFloat(4096,0.));
 
     outputROIs.resize(inputImage.size(),VectorBool(4096,false));
 
-    (*fROIFinder2D)(inputImage,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);
+//    (*fROIFinder2D)(inputImage,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);data_dl17_run5392_48_20210327T233602_20210409T191447-stage0.root
+  
+    // 5. Directional Smoothing
+    std::cout << "++> Step 5: Directional smoothing" << std::endl;
+    icarus_signal_processing::ArrayFloat buffer0  (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayFloat buffer   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayFloat sobelX   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayFloat sobelY   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayFloat gradient (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayFloat direction(numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
+    icarus_signal_processing::ArrayBool  rois     (numChannels, icarus_signal_processing::VectorBool( numTicks,false));
+
+    fEdgeDetection->Sobel(inputImage, sobelX, sobelY, gradient, direction);
+
+    std::cout << "==> Step 6: Apply bilateral filter" << std::endl;
+
+    fBilateralFilters->directional(inputImage, direction, buffer0, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, 360);
+
+    std::cout << "==> Step 7: Apply Second Morphological Enhancing" << std::endl;
+
+    icarus_signal_processing::Dilation2D(fADFilter_SX,fADFilter_SY)(buffer0.begin(), numChannels, buffer.begin());
+
+    std::cout << "==> Step 8: Perform Canny Edge Detection" << std::endl;
+
+    // 6. Apply Canny Edge Detection
+    fEdgeDetection->Canny(buffer, rois, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, fLowThreshold, fHighThreshold, 'd');  // Since we run on deconvolved waveforms, use dilation 
+
+    std::cout << "==> Final Step: get dilation, numChannels: " << numChannels << ", rois: " << rois.size() << ", output: " << outputROIs.size() << std::endl;
+
+    icarus_signal_processing::Dilation2D(fBinaryDilation_SX,fBinaryDilation_SY)(rois.begin(), numChannels, outputROIs.begin());
+
+    std::cout << "==> DONE!! returning to calling module..." << std::endl;
+
+    output = buffer;
 
     std::cout << "--> ROICannyEdgeDetection finished!" << std::endl;
      

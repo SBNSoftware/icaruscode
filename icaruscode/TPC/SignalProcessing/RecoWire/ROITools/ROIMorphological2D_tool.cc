@@ -33,7 +33,7 @@ public:
     
     void configure(const fhicl::ParameterSet& pset) override;
     
-    void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayBool&)    const override;
+    void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&)    const override;
     
 private:
     // This is for the baseline...
@@ -64,7 +64,7 @@ void ROIMorphological2D::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROIMorphological2D::FindROIs(const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayBool& outputROIs) const
+void ROIMorphological2D::FindROIs(const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
 {
     icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size());
 

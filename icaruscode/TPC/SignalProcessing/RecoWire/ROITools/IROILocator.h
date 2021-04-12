@@ -34,7 +34,7 @@ namespace icarus_tool
         using PlaneIDVec  = std::vector<geo::PlaneID>;
         
         // Find the ROI's
-        virtual void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayBool&) const = 0;
+        virtual void FindROIs(const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) const = 0;
     };
 }
 
