@@ -327,7 +327,7 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun
   
   std::vector<Baseline_t> newBaselines;
   std::tie(fConfigured, newBaselines)
-     = extractBaselinesFromConfiguration(PMTconfig);
+    = extractBaselinesFromConfiguration(PMTconfig);
   
   bool const changed = (fBaselines != newBaselines);
   fBaselines = std::move(newBaselines);
