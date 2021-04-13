@@ -446,8 +446,9 @@ TYPEDEF_HIDES_STRUCT   = NO
 # symbols. At the end of a run doxygen will report the cache usage and suggest
 # the optimal cache size from a speed point of view.
 # Minimum value: 0, maximum value: 9, default value: 0.
+# Value of 1 was suggested by Doxygen running on icaruscode v09_20_00.
 
-LOOKUP_CACHE_SIZE      = 0
+LOOKUP_CACHE_SIZE      = 1
 
 #---------------------------------------------------------------------------
 # Build related configuration options
