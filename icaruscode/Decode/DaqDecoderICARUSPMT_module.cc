@@ -9,10 +9,12 @@
 #include "art/Utilities/make_tool.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h" 
 #include "art/Framework/Principal/Event.h"
-#include "art/Framework/Principal/Handle.h"
 
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Utilities/Exception.h"
 #include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "artdaq-core/Data/Fragment.hh"
@@ -36,7 +38,31 @@ namespace daq
 class DaqDecoderICARUSPMT: public art::EDProducer 
 {
 public:
-    explicit DaqDecoderICARUSPMT(fhicl::ParameterSet const & p);
+    
+    /// FHiCL configuration of the module.
+    struct Config {
+      
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
+      fhicl::Atom<art::InputTag> FragmentsLabel {
+        Name("FragmentsLabel"),
+        Comment("data product with the PMT fragments from DAQ"),
+        "daq:CAEN1730" // default
+        };
+      
+      fhicl::DelegatedParameter DecoderTool {
+        Name("DecoderTool"),
+        Comment
+          ("configuration of decoding tool (daq::IDecoder) to be loaded and used")
+        };
+      
+    }; // struct Config
+    
+    using Parameters = art::EDProducer::Table<Config>;
+  
+  
+    explicit DaqDecoderICARUSPMT(Parameters const & params);
     // The compiler-generated destructor is fine for non-base
     // classes without bare pointers or other resource use.
     // Plugins should not be copied or assigned.
@@ -54,18 +80,24 @@ private:
 
     // Tools for decoding fragments depending on type
     std::unique_ptr<IDecoder>  fDecoderTool;  ///< Decoder tools
+    
+    
+    art::InputTag const fInputTag;
 
-    art::InputTag fInputTag;
 };
 
 DEFINE_ART_MODULE(DaqDecoderICARUSPMT)
 
-DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(fhicl::ParameterSet const & params): art::EDProducer{params},
-    fInputTag(params.get<std::string>("FragmentsLabel", "daq:CAEN1730"))
+DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const & params)
+  : art::EDProducer{params}
+  , fInputTag{ params().FragmentsLabel() }
 {
+    fDecoderTool = art::make_tool<IDecoder>
+      (params().DecoderTool.get<fhicl::ParameterSet>());
     // Recover the PMT decoder tool
-    fDecoderTool = art::make_tool<IDecoder>(params.get<fhicl::ParameterSet>("DecoderTool"));
 
+    consumes<artdaq::Fragments>(fInputTag);
+    
     // Announce what the tool will do
     fDecoderTool->produces(producesCollector());
 
@@ -81,13 +113,17 @@ void DaqDecoderICARUSPMT::produce(art::Event & event)
     try
     {
         // Recover the data fragments for the PMT 
-        auto const& daq_handle = event.getValidHandle<artdaq::Fragments>(fInputTag);
+        auto const& fragments = event.getByLabel<artdaq::Fragments>(fInputTag);
     
         // Make sure data available
-        if (daq_handle.isValid() && daq_handle->size() > 0)
+        if (!fragments.empty())
         {
-            for (auto const &rawFrag: *daq_handle)  fDecoderTool->process_fragment(rawFrag);
+            for (auto const &rawFrag: fragments)  fDecoderTool->process_fragment(rawFrag);
         }
+    }
+    catch(art::Exception const& e) {
+        std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode:"
+          << "\n" << e.what() << std::endl;
     }
     catch(...)
     {

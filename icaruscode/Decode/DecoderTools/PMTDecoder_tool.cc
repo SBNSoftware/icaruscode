@@ -1,26 +1,28 @@
 /**
- *  @file   PMTDecoder_tool.cc
+ *  @file   icaruscode/Decode/DecoderTools/PMTDecoder_tool.cc
  *
  *  @brief  This tool provides "standard" 3D hits built (by this tool) from 2D hits
  * 
- *  This code provided by Andrea Scarpelli
+ *  @author Andrea Scarpelli (ascarpell@bnl.gov)
  *
  */
 
 // Framework Includes
-#include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
-#include "art/Persistency/Common/PtrMaker.h"
+#include "art/Framework/Core/ProducesCollector.h"
 #include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
-#include "cetlib/cpu_timer.h"
-#include "fhiclcpp/ParameterSet.h"
+// #include "cetlib/cpu_timer.h"
+#include "cetlib_except/exception.h"
+#include "fhiclcpp/types/Atom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // LArSoft includes
 #include "larcore/Geometry/Geometry.h"
+#include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
@@ -30,26 +32,57 @@
 
 // std includes
 #include <string>
-#include <iostream>
 #include <memory>
+
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
 
 namespace daq {
 /**
- *  @brief  PMTDecoder class definiton
+ * @brief Turns PMT readout fragments from DAQ into LArSoft data products.
+ * 
+ * The tool can read fragments from CAEN V1730 readout boards delivered by
+ * artDAQ.
+ * 
+ * This decoder must support both a off-line mode (for storage and downstream
+ * processing) and a on-line mode (for monitoring).
+ * In particular, the on-line workflow is such that it may not be possible to
+ * access the FHiCL configuration of the job and therefore the PMT configuration
+ * data (see `icarus::PMTconfigurationExtraction` module).
+ * 
+ * Configuration
+ * --------------
+ * 
+ * The set of supported parameters can be seen on command line by running
+ * `lar --print-description PMTDecoder`.
+ * 
+ * Description of the configuration parameters:
+ * * `DiagnosticOutput` (flag, default: `false`): enables additional console
+ *     output, including dumping of the fragments (that is huge output).
+ * * `LogCategory` (string, default: `PMTDecoder`): name of the message facility
+ *     category where the output is sent.
+ * 
  */
-class PMTDecoder : virtual public IDecoder
+class PMTDecoder: public IDecoder
 {
 public:
     
     struct Config {
       
+      using Name = fhicl::Name;
+      using Comment = fhicl::Comment;
+      
       fhicl::Atom<bool> DiagnosticOutput {
-        fhicl::Name("DiagnosticOutput"),
-        fhicl::Comment("enable additional console output"),
+        Name("DiagnosticOutput"),
+        Comment("enable additional console output"),
         false // default
+        };
+      
+      fhicl::Atom<std::string> LogCategory {
+        Name("LogCategory"),
+        Comment("name of the category for message stream"),
+        "PMTDecoder" // default
         };
       
     }; // Config
@@ -59,9 +92,9 @@ public:
     /**
      *  @brief  Constructor
      *
-     *  @param  pset
+     *  @param  params configuration parameter set
      */
-    explicit PMTDecoder(fhicl::ParameterSet const &pset);
+    explicit PMTDecoder(Parameters const& params);
 
 
     /**
@@ -70,11 +103,7 @@ public:
      */
     virtual void produces(art::ProducesCollector&) override;
 
-    /**
-     *  @brief Interface for configuring the particular algorithm tool
-     *
-     *  @param ParameterSet  The input set of parameters for configuration
-     */
+    /// Reconfiguration is not supported: all configuration at construction time.
     virtual void configure(const fhicl::ParameterSet&) override;
 
     /**
@@ -101,20 +130,36 @@ public:
 
 private:
 
-    bool                               fDiagnosticOutput;       ///< If true will spew endless messages to output
+    // --- BEGIN -- Configuration parameters -----------------------------------
+    bool const        fDiagnosticOutput; ///< If true will spew endless messages to output.
+    
+    std::string const fLogCategory; ///< Message facility category.
+    
+    // --- END ---- Configuration parameters -----------------------------------
+
+    
+    // --- BEGIN -- Services ---------------------------------------------------
+    
+    geo::GeometryCore const&           fGeometry; ///< Geometry service provider.
+    icarusDB::IICARUSChannelMap const& fChannelMap; ///< Fragment/channel mapping database.
+
+    // --- END ---- Services ---------------------------------------------------
 
     using OpDetWaveformCollection    = std::vector<raw::OpDetWaveform>;
     using OpDetWaveformCollectionPtr = std::unique_ptr<OpDetWaveformCollection>;
 
     OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  ///< The output data collection pointer
-    const geo::Geometry*               fGeometry = nullptr;       ///< pointer to the Geometry service
-    const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
     
-};
+}; // class PMTDecoder
 
-PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+PMTDecoder::PMTDecoder(Parameters const& params)
+  : fDiagnosticOutput{ params().DiagnosticOutput() }
+  , fLogCategory{ params().LogCategory() }
+  , fGeometry{ *(lar::providerFrom<geo::Geometry const>()) }
+  , fChannelMap{ *(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}) }
 {
-    this->configure(pset);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -126,21 +171,17 @@ void PMTDecoder::produces(art::ProducesCollector& collector)
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-void PMTDecoder::configure(fhicl::ParameterSet const &pset)
-{
-    fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
+void PMTDecoder::configure(fhicl::ParameterSet const&) {
+  // Configuration all happens during construction
+  throw cet::exception("PMTDecoder")
+    << "This tool does not support reconfiguration.\n"; 
+} // PMTDecoder::configure()
 
-    fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
-    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
 
-    return;
-}
-
+//------------------------------------------------------------------------------------------------------------------------------------------
 void PMTDecoder::initializeDataProducts()
 {
     fOpDetWaveformCollection = OpDetWaveformCollectionPtr(new OpDetWaveformCollection);
-
-    return;
 }
 
 void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
@@ -168,8 +209,15 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 
     if (fDiagnosticOutput)
     {
-        std::cout << "----> PMT Fragment ID: " << fragment_id << ", boardID: " << boardId << ", nChannelsPerBoard: " << nChannelsPerBoard << ", nSamplesPerChannel: " << nSamplesPerChannel << std::endl;
-        std::cout << "      size: " << ev_size_quad_bytes << ", data size: " << data_size_double_bytes << ", samples/channel: " << nSamplesPerChannel << ", time: " << time_tag << std::endl;
+        mf::LogVerbatim(fLogCategory)
+          << "----> PMT Fragment ID: " << fragment_id << ", boardID: " << boardId
+            << ", nChannelsPerBoard: " << nChannelsPerBoard
+            << ", nSamplesPerChannel: " << nSamplesPerChannel
+          << "\n      size: " << ev_size_quad_bytes
+            << ", data size: " << data_size_double_bytes
+            << ", samples/channel: " << nSamplesPerChannel
+            << ", time: " << time_tag
+          ;
     }
 
     const uint16_t* data_begin = reinterpret_cast<const uint16_t*>(artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
@@ -181,9 +229,10 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     time_tag = 0;
 
     // Recover the information for this fragment
-    if (fChannelMap->hasPMTDigitizerID(fragment_id))
+    if (fChannelMap.hasPMTDigitizerID(fragment_id))
     {
-        const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec = fChannelMap->getChannelIDPairVec(fragment_id);
+        const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec
+          = fChannelMap.getChannelIDPairVec(fragment_id);
 
         // Allocate the vector outside the loop just since we'll resuse it over and over... 
         std::vector<uint16_t> wvfm(nSamplesPerChannel);
@@ -205,12 +254,18 @@ void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
             fOpDetWaveformCollection->emplace_back(time_tag, channelID, wvfm);
         } 
     }
-    else std::cout << "*** PMT could not find channel information for fragment: " << fragment_id << std::endl;
+    else {
+      mf::LogError(fLogCategory)
+        << "*** PMT could not find channel information for fragment: "
+          << fragment_id;
+    }
 
-    if (fDiagnosticOutput) std::cout << "      - size of output collection: " << fOpDetWaveformCollection->size() << std::endl;
-
-    return;
-}
+    if (fDiagnosticOutput) {
+      mf::LogVerbatim(fLogCategory)
+        << "      - size of output collection: " << fOpDetWaveformCollection->size();
+    }
+    
+} // PMTDecoder::process_fragment()
 
 void PMTDecoder::outputDataProducts(art::Event& event)
 {
@@ -220,8 +275,7 @@ void PMTDecoder::outputDataProducts(art::Event& event)
     // Now transfer ownership to the event store
     event.put(std::move(fOpDetWaveformCollection));
 
-    return;
 }
 
 DEFINE_ART_CLASS_TOOL(PMTDecoder)
-} // namespace lar_cluster3d
+} // namespace daq
