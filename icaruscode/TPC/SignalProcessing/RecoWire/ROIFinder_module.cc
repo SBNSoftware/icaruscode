@@ -311,8 +311,8 @@ void  ROIFinder::processPlane(size_t                      idx,
     const icarus_signal_processing::ArrayFloat& dataArray = planeIDToDataPair.second();
 
     // Keep track of our selected values
-    icarus_signal_processing::ArrayFloat outputArray(dataArray.size());
-    icarus_signal_processing::ArrayBool  selectedVals(dataArray.size());
+    icarus_signal_processing::ArrayFloat outputArray(dataArray.size(),icarus_signal_processing::VectorFloat(dataArray[0].size(),0.));
+    icarus_signal_processing::ArrayBool  selectedVals(dataArray.size(),icarus_signal_processing::VectorBool(dataArray[0].size(),false));
 
     fROITool->FindROIs(dataArray, mapItr->first, outputArray, selectedVals);
 
@@ -339,6 +339,8 @@ void  ROIFinder::processPlane(size_t                      idx,
 
         morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
     }
+
+    std::cout << "    Now searching for ROIs" << std::endl;
 
     // Ok, now go through the refined selected values array and find ROIs
     // Define the ROI and its container
