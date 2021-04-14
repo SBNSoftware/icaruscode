@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <string>
 #include <vector>
+#include <cassert>
 
 namespace daq
 {
@@ -51,6 +52,13 @@ public:
         "daq:CAEN1730" // default
         };
       
+      fhicl::Atom<bool> SurviveExceptions {
+        Name("SurviveExceptions"),
+        Comment
+          ("when the decoding tool throws an exception, print a message and move on"),
+        true // default
+        };
+      
       fhicl::DelegatedParameter DecoderTool {
         Name("DecoderTool"),
         Comment
@@ -73,6 +81,9 @@ public:
 
     DaqDecoderICARUSPMT & operator = (DaqDecoderICARUSPMT &&) = delete;
 
+    /// Initiates PMT configuration reading at run transition.
+    void beginRun(art::Run& run) override;
+    
     // Required functions.
     void produce(art::Event & e) override;
 
@@ -83,6 +94,8 @@ private:
     
     
     art::InputTag const fInputTag;
+    
+    bool const fSurviveExceptions;
 
 };
 
@@ -91,6 +104,7 @@ DEFINE_ART_MODULE(DaqDecoderICARUSPMT)
 DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const & params)
   : art::EDProducer{params}
   , fInputTag{ params().FragmentsLabel() }
+  , fSurviveExceptions{ params().SurviveExceptions() }
 {
     fDecoderTool = art::make_tool<IDecoder>
       (params().DecoderTool.get<fhicl::ParameterSet>());
@@ -99,16 +113,25 @@ DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const & params)
     consumes<artdaq::Fragments>(fInputTag);
     
     // Announce what the tool will do
+    fDecoderTool->consumes(consumesCollector());
     fDecoderTool->produces(producesCollector());
 
     return;
 }
 
+void DaqDecoderICARUSPMT::beginRun(art::Run& run) {
+  assert(fDecoderTool);
+  fDecoderTool->setupRun(run);
+}
+
 void DaqDecoderICARUSPMT::produce(art::Event & event)
 {
+    assert(fDecoderTool);
+    fDecoderTool->setupEvent(event);
+
     // storage for waveform
     fDecoderTool->initializeDataProducts();
-
+    
     // Protect for runs with no PMT info
     try
     {
@@ -121,12 +144,14 @@ void DaqDecoderICARUSPMT::produce(art::Event & event)
             for (auto const &rawFrag: fragments)  fDecoderTool->process_fragment(rawFrag);
         }
     }
-    catch(art::Exception const& e) {
+    catch(cet::exception const& e) {
+        if (!fSurviveExceptions) throw;
         std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode:"
           << "\n" << e.what() << std::endl;
     }
     catch(...)
     {
+        if (!fSurviveExceptions) throw;
         std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode" << std::endl;
     }
 

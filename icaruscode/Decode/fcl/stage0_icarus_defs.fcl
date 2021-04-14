@@ -24,6 +24,7 @@ icarus_stage0_producers:
   daqTPCEW:                       @local::decodeTPC
   daqTPCEE:                       @local::decodeTPC
 
+  pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
 
   ### calwire producers
