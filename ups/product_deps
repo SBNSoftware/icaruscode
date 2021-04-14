@@ -17,6 +17,7 @@ defaultqual e19
 # libdir  fq_dir       lib
 # bindir  fq_dir       bin
 #
+
 fcldir  product_dir job
 gdmldir product_dir gdml
 fwdir   product_dir scripts
