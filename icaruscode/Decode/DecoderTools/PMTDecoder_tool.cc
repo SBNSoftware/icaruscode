@@ -564,9 +564,6 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     }
 
     const uint16_t* data_begin = reinterpret_cast<const uint16_t*>(artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
-    const uint16_t* value_ptr  =  data_begin;
-    uint16_t        value      = 0;
-    size_t          ch_offset  = 0;
 
     // Recover the information for this fragment
     if (fChannelMap.hasPMTDigitizerID(eff_fragment_id))
@@ -613,22 +610,15 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec
           = fChannelMap.getChannelIDPairVec(eff_fragment_id);
 
-        // Allocate the vector outside the loop just since we'll resuse it over and over... 
+        // Allocate the vector outside the loop just since we'll reuse it over and over... 
         std::vector<uint16_t> wvfm(nSamplesPerChannel);
 
-        for(const auto& digitizerChannelPair : digitizerChannelVec)
+        for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec)
         {
-            size_t         digitizerChannel = digitizerChannelPair.first;
-            raw::Channel_t channelID        = digitizerChannelPair.second;
             
-            ch_offset = digitizerChannel * nSamplesPerChannel;
+            std::size_t const ch_offset = digitizerChannel * nSamplesPerChannel;
 
-            for(size_t i_t=0; i_t < nSamplesPerChannel; ++i_t)
-            {
-                value_ptr = data_begin + ch_offset + i_t; /*pointer arithmetic*/
-                value     = *(value_ptr);
-  	            wvfm[i_t] = value;
-            }
+            std::copy_n(data_begin + ch_offset, nSamplesPerChannel, wvfm.begin());
 
             mf::LogTrace(fLogCategory)
               << "PMT channel " << channelID << " has " << wvfm.size()
