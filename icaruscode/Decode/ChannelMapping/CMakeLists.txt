@@ -1,6 +1,7 @@
 cet_enable_asserts()
 
 art_make(
+          EXCLUDE "PMTChannelMapDumper.cxx"
           LIB_LIBRARIES
                         art_Utilities
                         canvas
@@ -49,6 +50,16 @@ art_make(
                         ${SQLITE3}
                         ${TBB}
         )
+
+art_make_exec(NAME "PMTChannelMapDumper"
+  LIBRARIES
+    icaruscode_Decode_ChannelMapping
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    cetlib
+    cetlib_except
+    Boost::filesystem
+  )
 
 install_headers()
 install_fhicl()
