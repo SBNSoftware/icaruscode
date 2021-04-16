@@ -123,10 +123,10 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
     fSigma_r               = pset.get<float       >("Sigma_r",          30.0);
 
     fLowThreshold          = pset.get<float       >("LowThreshold",     10.0);
-    fHighThreshold         = pset.get<float       >("HighThreshold",    15.0); 
+    fHighThreshold         = pset.get<float       >("HighThreshold",    20.0); 
 
-    fBinaryDilation_SX     = pset.get<unsigned int>("BinaryDilation_SX",  25);
-    fBinaryDilation_SY     = pset.get<unsigned int>("BinaryDilation_SY",  25);
+    fBinaryDilation_SX     = pset.get<unsigned int>("BinaryDilation_SX",  31);
+    fBinaryDilation_SY     = pset.get<unsigned int>("BinaryDilation_SY",  31);
 
     fBilateralFilters = std::make_unique<icarus_signal_processing::BilateralFilters>();
     fEdgeDetection    = std::make_unique<icarus_signal_processing::EdgeDetection>();
@@ -182,6 +182,8 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
 
     icarus_signal_processing::Dilation2D(fADFilter_SX,fADFilter_SY)(buffer0.begin(), numChannels, buffer.begin());
 
+//    output = buffer;
+
     std::cout << "==> Step 8: Perform Canny Edge Detection" << std::endl;
 
     // 6. Apply Canny Edge Detection
@@ -197,17 +199,46 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
     std::vector<int> weakEdgeRows;
     std::vector<int> weakEdgeCols;
 
-    fEdgeDetection->DoubleThresholding(buffer, rois, strongEdgeRows, strongEdgeCols, weakEdgeRows, weakEdgeCols, fLowThreshold, fHighThreshold);
+    std::cout << "==> DoubleThresholding with low threshold: " << fLowThreshold << ", high threshold: " << fHighThreshold << std::endl;
+
+    fEdgeDetection->HysteresisThresholdingFast(buffer, fLowThreshold, fHighThreshold, rois);
+
+//    fEdgeDetection->DoubleThresholding(buffer, rois, strongEdgeRows, strongEdgeCols, weakEdgeRows, weakEdgeCols, fLowThreshold, fHighThreshold);
 
 //    fEdgeDetection->HysteresisThresholding(rois, strongEdgeRows, strongEdgeCols, weakEdgeRows, weakEdgeCols, outputROIs);
     std::cout << "==> Final Step: get dilation, numChannels: " << numChannels << ", rois: " << rois.size() << ", output: " << outputROIs.size() << std::endl;
 
     icarus_signal_processing::Dilation2D(fBinaryDilation_SX,fBinaryDilation_SY)(rois.begin(), numChannels, outputROIs.begin());
 
+//    fEdgeDetection->getDilation2D(rois, fBinaryDilation_SX,fBinaryDilation_SY, outputROIs);
+
+//    for (size_t i = 0; i < strongEdgeRows.size(); ++i)
+//    {
+//        //output[strongEdgeRows[i]][strongEdgeCols[i]] = 1.;
+//        output[strongEdgeRows[i]][strongEdgeCols[i]] = 10.;
+//    }
+
+//    for (size_t i = 0; i < weakEdgeRows.size(); ++i)
+//    {
+//        //output[strongEdgeRows[i]][strongEdgeCols[i]] = 1.;
+//        output[weakEdgeRows[i]][weakEdgeCols[i]] = 10.;
+//    }
+
     std::cout << "==> DONE!! returning to calling module..." << std::endl;
 
-    output     = buffer;
-    outputROIs = rois;
+//    for(size_t rowIdx; rowIdx < output.size(); rowIdx++) 
+//    {
+//        for(size_t colIdx = 0; colIdx < output[rowIdx].size(); colIdx++) output[rowIdx][colIdx] = 10. * direction[rowIdx][colIdx];
+//    }
+
+//    for(size_t rowIdx = 0; rowIdx < numChannels; rowIdx++)
+//    {
+//        for(size_t colIdx = 0; colIdx < numTicks; colIdx++)
+//            output[rowIdx][colIdx] = outputROIs[rowIdx][colIdx] ? 10. : 0.;
+//    }
+
+//    output     = buffer;
+//    outputROIs = rois;
 
     std::cout << "--> ROICannyEdgeDetection finished!" << std::endl;
      
