@@ -34,6 +34,7 @@
 #include "lardataalg/Utilities/intervals_fhicl.h" // for nanoseconds in FHiCL
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
+#include "larcorealg/CoreUtils/counter.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
 
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
@@ -42,6 +43,7 @@
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
+#include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 
 // std includes
@@ -414,6 +416,31 @@ private:
     NeededBoardInfo_t fetchNeededBoardInfo
       (details::BoardInfoLookup::BoardInfo_t const* boardInfo, unsigned int fragmentID) const;
 
+
+    /**
+     * @brief Returns the count of set bits for each set bit.
+     * @tparam NBits the number of bits to test
+     * @param value the bit mask to be analyzed
+     * @return a pair: `first` an array with the `NBits` values,
+     *         `second` the number of bits set
+     * 
+     * Much better to go with an example.
+     * Let's process `setBitIndices<16U>(0x6701)`: `value` is `0110 0111 0000 0001`,
+     * and we request the `16` least significant bits (`NBits`).
+     * There are six bit that are set, in position 0, 8, 9, 10, 13 and 14.
+     * The returned value includes the number of set bits (6) as the `second`
+     * element of the pair, an as `first` an array of 16 indices, one for each bit
+     * position.
+     * Its values are `0` at `[0]`, `1` at `[8]`, `2` at `[9]`, `3` at `[10]`,
+     * `4` at `[13]` and `5` at `[14]`. That is, each value represents the number
+     * of that bit in the list of set bits. All the other indices, associated to
+     * the bits which are not set, are assigned a value that is equal or larger than
+     * the number of bits set (i.e. `6` or larger).
+     */
+    template <std::size_t NBits, typename T>
+    constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
+      setBitIndices(T value) noexcept;
+
 }; // class daq::PMTDecoder
 
 
@@ -520,6 +547,7 @@ void daq::PMTDecoder::setupRun(art::Run const& run)
     UpdatePMTConfiguration(PMTconfig);
 }
 
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 void daq::PMTDecoder::initializeDataProducts()
 {
@@ -545,17 +573,24 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     uint32_t evt_header_size_quad_bytes = sizeof(sbndaq::CAENV1730EventHeader)/sizeof(uint32_t);
     uint32_t data_size_double_bytes     = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
     uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
+    uint16_t const enabledChannels      = header.ChannelMask();
 
     unsigned int const time_tag =  header.triggerTimeTag;
 
     size_t boardId = nChannelsPerBoard * eff_fragment_id;
 
+    // chDataMap tells where in the buffer each digitizer channel is;
+    // if nowhere, then the answer is a number no smaller than nEnabledChannels
+    auto const [ chDataMap, nEnabledChannels ] = setBitIndices<16U>(enabledChannels);
+
     if (fDiagnosticOutput)
     {
         mf::LogVerbatim(fLogCategory)
-          << "----> PMT Fragment ID: " << fragment_id << ", boardID: " << boardId
+          << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
+            << ", boardID: " << boardId
             << ", nChannelsPerBoard: " << nChannelsPerBoard
             << ", nSamplesPerChannel: " << nSamplesPerChannel
+            << ", enabled (" << nEnabledChannels << "): " << icarus::ns::util::bin(enabledChannels)
           << "\n      size: " << ev_size_quad_bytes
             << ", data size: " << data_size_double_bytes
             << ", samples/channel: " << nSamplesPerChannel
@@ -609,22 +644,63 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 
         const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec
           = fChannelMap.getChannelIDPairVec(eff_fragment_id);
-
+        
+        std::optional<mf::LogVerbatim> diagOut;
+        if (fDiagnosticOutput) {
+          diagOut.emplace(fLogCategory);
+          (*diagOut)
+            << "      " << digitizerChannelVec.size() << " channels:";
+        }
         // Allocate the vector outside the loop just since we'll reuse it over and over... 
         std::vector<uint16_t> wvfm(nSamplesPerChannel);
 
+        // track what we do and what we want to
+        uint16_t attemptedChannels = 0;
+        
         for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec)
         {
+            if (diagOut)
+              (*diagOut) << " " << digitizerChannel << " [=> " << channelID << "];";
             
-            std::size_t const ch_offset = digitizerChannel * nSamplesPerChannel;
+            attemptedChannels |= (1 << digitizerChannel);
+            
+            std::size_t const channelPosInData = chDataMap[digitizerChannel];
+            if (channelPosInData >= nEnabledChannels) {
+              mf::LogTrace(fLogCategory)
+                << "Digitizer channel " << digitizerChannel
+                << " [=> " << channelID << "] skipped because not enabled.";
+              continue;
+            }
+            
+            std::size_t const ch_offset = channelPosInData * nSamplesPerChannel;
 
             std::copy_n(data_begin + ch_offset, nSamplesPerChannel, wvfm.begin());
 
             mf::LogTrace(fLogCategory)
               << "PMT channel " << channelID << " has " << wvfm.size()
-              << " samples starting at electronics time " << timeStamp;
+              << " samples (read from entry #" << channelPosInData
+              << " in fragment data) starting at electronics time " << timeStamp;
             fOpDetWaveformCollection->emplace_back(timeStamp.value(), channelID, wvfm);
         }
+        if (diagOut) diagOut.reset(); // destroys and therefore prints out
+        if (attemptedChannels != enabledChannels) {
+          // this is mostly a warning; regularly, for example,
+          // we effectively have 15 channels per board; but all 16 are enabled,
+          // so one channel is not decoded at all
+          mf::LogTrace log(fLogCategory);
+          log << "Not all data read:";
+          for (int const bit: util::counter(16U)) {
+            uint16_t const mask = (1 << bit);
+            bool const attempted = bool(attemptedChannels & mask);
+            bool const enabled = bool(enabledChannels & mask);
+            if (attempted == enabled) continue;
+            if (!enabled) // and attempted
+              log << "\n  requested channel " << bit << " was not enabled";
+            if (!attempted) // and enabled
+              log << "\n  data for enabled channel " << bit << " was ignored";
+          } // for
+        } // if request and availability did not match
+        
     }
     else {
       mf::LogError(fLogCategory)
@@ -796,6 +872,22 @@ auto daq::PMTDecoder::fetchNeededBoardInfo
     };
     
 } // daq::PMTDecoder::fetchNeededBoardInfo()
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+template <std::size_t NBits, typename T>
+constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
+daq::PMTDecoder::setBitIndices(T value) noexcept {
+    
+    std::pair<std::array<std::size_t, NBits>, std::size_t> res;
+    auto& [ indices, nSetBits ] = res;
+    for (std::size_t& index: indices) {
+        index = (value & 1)? nSetBits++: NBits;
+        value >>= 1;
+    } // for
+    return res;
+    
+} // daq::PMTDecoder::setBitIndices()
 
 
 //------------------------------------------------------------------------------------------------------------------------------------------

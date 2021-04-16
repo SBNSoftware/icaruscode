@@ -96,13 +96,15 @@ int main(int argc, char** argv) {
     
     std::sort
       (digitizerChannels.begin(), digitizerChannels.end(), SortByElement<1U>{});
-      
+    
     
     mf::LogVerbatim log("PMTchannelMappingDumper");
     log
       << "[" << iFragment << "] " << std::hex << fragmentID << std::dec
       << " includes " << digitizerChannels.size()
-      << " LArSoft channels [board channel index in brackets]:";
+      << " LArSoft channels between " << digitizerChannels.front().second
+      << " and " << digitizerChannels.back().second
+      << " [board channel index in brackets]:";
     constexpr unsigned int Cols = 8U;
     unsigned int n = 0;
     for(auto const [ digitizerChannel, channelID ]: digitizerChannels) {
