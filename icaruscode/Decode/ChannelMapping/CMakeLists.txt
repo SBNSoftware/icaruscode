@@ -1,7 +1,15 @@
 cet_enable_asserts()
 
 art_make(
+          LIB_LIBRARIES
+                        art_Utilities
+                        canvas
+                        ${FHICLCPP}
+                        ${MF_MESSAGELOGGER}
+                        cetlib_except
+                        cetlib
           SERVICE_LIBRARIES
+                        icaruscode_Decode_ChannelMapping
                         lardata_Utilities
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
