@@ -318,29 +318,24 @@ void  ROIFinder::processPlane(size_t                      idx,
 
 //    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
-    std::cout << "  --processPlane returns with vals: " << selectedVals.size() << ", output: " << outputArray.size() << std::endl;
-
     // Copy the "morphed" array
-    for(size_t waveIdx = 0; waveIdx < outputArray.size(); waveIdx++)
+    if (fOutputMorphed)
     {
-        // First get a lock to make sure we don't conflict
-        tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
+        for(size_t waveIdx = 0; waveIdx < outputArray.size(); waveIdx++)
+        {
+            // First get a lock to make sure we don't conflict
+            tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
 
-//        std::cout << "  -- waveIdx: " << waveIdx; 
-//        icarus_signal_processing::VectorFloat holder = outputArray[waveIdx];
-        recob::Wire::RegionsOfInterest_t ROIVec;
-                
-        ROIVec.add_range(0, std::move(outputArray[waveIdx]));
+            recob::Wire::RegionsOfInterest_t ROIVec;
 
-        raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
-        geo::View_t      view    = fGeometry->View(channel);
+            ROIVec.add_range(0, std::move(outputArray[waveIdx]));
 
-//        std::cout << " adding to morphedVec, channel: " << channel << ", view: " << view << std::endl;
+            raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
+            geo::View_t      view    = fGeometry->View(channel);
 
-        morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+            morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+        }
     }
-
-    std::cout << "    Now searching for ROIs" << std::endl;
 
     // Ok, now go through the refined selected values array and find ROIs
     // Define the ROI and its container
@@ -434,10 +429,10 @@ void  ROIFinder::processPlane(size_t                      idx,
                     adcVal -= offset;
                     offset += dADC;
                 }
-
-                // add the range into ROIVec
-                ROIVec.add_range(candROI.first, std::move(holder));
             }
+
+            // add the range into ROIVec
+            ROIVec.add_range(candROI.first, std::move(holder));
         }
 
         // Check for emptiness
