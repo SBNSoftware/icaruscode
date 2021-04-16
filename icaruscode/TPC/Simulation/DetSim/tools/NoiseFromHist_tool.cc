@@ -19,7 +19,7 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 
 // FFT
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandFlat.h"

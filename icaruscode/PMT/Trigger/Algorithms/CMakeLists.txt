@@ -1,8 +1,11 @@
+
+cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+
 cet_make(
   SUBDIRS
     "details"
   LIBRARIES
-    icaruscode_PMT_Trigger_Data
+    sbnobj_ICARUS_PMT_Trigger_Data
     icaruscode_PMT_Algorithms
     lardataalg_DetectorInfo
     lardataalg_MCDumpers

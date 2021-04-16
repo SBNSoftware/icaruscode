@@ -92,7 +92,7 @@
 #include <vector>
 
 //CRT includes
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 #include "icaruscode/CRT/CRTUtils/CRTDetSimAlg.h"
 

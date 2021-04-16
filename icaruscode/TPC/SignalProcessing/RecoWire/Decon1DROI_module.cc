@@ -311,6 +311,9 @@ void Decon1DROI::produce(art::Event& evt)
             }
         }
     }
+
+    // Make sure the collection is sorted
+    std::sort(wireCol->begin(), wireCol->end(), [](const auto& left, const auto& right){return left.Channel() < right.Channel();});
     
     evt.put(std::move(wireCol), fSpillName);
     evt.put(std::move(wireDigitAssn), fSpillName);

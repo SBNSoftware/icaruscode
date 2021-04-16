@@ -30,6 +30,16 @@ icarus_pandora.ShouldRunNeutrinoRecoOption:      true
 icarus_pandora.ShouldRunCosmicRecoOption:        true
 icarus_pandora.ShouldPerformSliceId:             true
 
+icarus_pandora_rawicarus:                                  @local::icarus_basicpandora
+icarus_pandora_rawicarus.ConfigFile:                       "PandoraSettings_Master_ICARUS_RawICARUS.xml"
+icarus_pandora_rawicarus.ShouldRunAllHitsCosmicReco:       true
+icarus_pandora_rawicarus.ShouldRunStitching:               true
+icarus_pandora_rawicarus.ShouldRunCosmicHitRemoval:        true
+icarus_pandora_rawicarus.ShouldRunSlicing:                 true
+icarus_pandora_rawicarus.ShouldRunNeutrinoRecoOption:      true
+icarus_pandora_rawicarus.ShouldRunCosmicRecoOption:        true
+icarus_pandora_rawicarus.ShouldPerformSliceId:             true
+
 icarus_pandorawriter:                            @local::icarus_basicpandora
 icarus_pandorawriter.ConfigFile:                 "PandoraSettings_Write.xml"
 icarus_pandorawriter.EnableMCParticles:          true

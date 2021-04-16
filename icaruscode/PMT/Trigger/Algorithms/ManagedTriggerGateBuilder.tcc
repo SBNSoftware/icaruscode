@@ -19,7 +19,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // icarus::trigger::ADCCounts_t
-#include "icaruscode/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
 
 // LArSoft libraries
@@ -69,7 +69,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
       { return a.waveform().ChannelNumber() == b.waveform().ChannelNumber(); }
     ;
   
-  auto byChannel = waveforms | ranges::view::group_by(sameChannel);
+  auto byChannel = waveforms | ranges::views::group_by(sameChannel);
   for (auto const& channelWaveforms: byChannel) {
     
     auto const& firstWaveform = channelWaveforms.front().waveform();
@@ -136,7 +136,7 @@ void icarus::trigger::ManagedTriggerGateBuilder::buildChannelGates(
    */
   unsigned int nWaveforms = 0U;
   for (auto const& waveformData: channelWaveforms) {
-    
+
     raw::OpDetWaveform const& waveform = waveformData.waveform();
     
     ops const waveOps { waveformData.baseline().baseline() };

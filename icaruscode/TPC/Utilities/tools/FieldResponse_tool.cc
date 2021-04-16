@@ -13,7 +13,7 @@
 #include "larcore/CoreUtils/ServiceUtil.h"
 #include "art_root_io/TFileService.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 #include "icarus_signal_processing/WaveformTools.h"
 #include "TFile.h"
 #include "TProfile.h"

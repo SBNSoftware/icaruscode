@@ -17,6 +17,9 @@ icarus_generalcalomc:
  CaloAlg:	             @local::icarus_calorimetryalgmc
 }
 
+icarus_gnewcalomc:              @local::standard_gnocchicaloicarus
+icarus_gnewcalomc.CaloAlg:      @local::icarus_calorimetryalgmc
+
 icarus_trackcalorimetryalg:                @local::standard_trackcalorimetryalg
 icarus_trackcalorimetryalg.CalorimetryAlg: @local::icarus_calorimetryalgmc
 
@@ -26,7 +29,6 @@ icarus_trackcalorimetry.TrackCalorimetryAlg: @local::icarus_trackcalorimetryalg
 icarus_trackcalorimetry.TrackModuleLabel: "pmAlgTracker"
 icarus_trackcalorimetry.SpacePointModuleLabel: "pmAlgTracker"
 icarus_trackcalorimetry.HitModuleLabel: "gaushit"
-
 
 
 END_PROLOG

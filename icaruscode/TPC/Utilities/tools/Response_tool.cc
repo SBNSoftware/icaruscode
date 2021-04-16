@@ -23,7 +23,7 @@
 
 #include "TProfile.h"
 
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 
 #include <fstream>
 #include <iomanip>

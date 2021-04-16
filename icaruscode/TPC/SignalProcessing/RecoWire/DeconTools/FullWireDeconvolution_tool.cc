@@ -16,7 +16,7 @@
 
 #include "art/Utilities/make_tool.h"
 #include "icarus_signal_processing/WaveformTools.h"
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 
 #include "TH1D.h"
 

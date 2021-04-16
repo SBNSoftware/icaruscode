@@ -26,6 +26,8 @@
 #   first version in `icaruscode`; metadata version: 1
 # 20200520 (petrillo@slac.stanford.edu) [v1.1]
 #   using GitHub sources
+# 20201009 (petrillo@slac.stanford.edu) [v1.2]
+#   support additional repositories; metadata version: 2
 #
 
 # -- BEGIN -- boilerplate settings and library loading -------------------------
@@ -33,7 +35,7 @@ SCRIPTNAME="$(basename "$0")"
 SCRIPTDIR="$(dirname "$0")"
 
 declare LibraryToLoad
-for LibraryToLoad in 'settings.sh' 'utilities.sh' ; do
+for LibraryToLoad in 'settings.sh' 'experiment_settings.sh' 'utilities.sh' ; do
   
   source "${SCRIPTDIR%/}/${LibraryToLoad}" || exit $?
   
@@ -42,11 +44,10 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.1"
+SCRIPTVERSION="1.2"
 
 
-declare -ri MetadataVersion='1' # integral numbers please
-declare -ri GitHubExperimentGroup='SBNSoftware'
+declare -ri MetadataVersion='2' # integral numbers please
 
 
 # ------------------------------------------------------------------------------
@@ -150,7 +151,16 @@ function PrepareDoxyfile() {
   local -r DoxyfileTemplate="$1"
   local -r Doxyfile="$2"
   
+  # special variables:
+  ALL_REPO_PATHS=
+  local CodeRepo
+  for CodeRepo in "${CodeRepoNames[@]}" ; do
+    ALL_REPO_PATHS+="${ALL_REPO_PATHS:+ }${CodeRepoPaths[$CodeRepo]}"
+  done
+  
   ReplaceEnvironmentVariables "$DoxyfileTemplate" "$Doxyfile"
+  
+  unset ALL_REPO_PATHS
 } # PrepareDoxyfile()
 
 
@@ -174,18 +184,126 @@ function RestoreGITrepository() {
 
 
 ################################################################################
-function RunDoxygen() {
+declare -a CodeRepoNames=( )
+declare -A CodeRepoPaths=( )
+declare -Ai NewGITclones=( )
+declare -Ai GITstashedRepos=( )
+declare -A  GIToldCommits=( )
+
+function PrepareRepository() {
+  # 
+  # PrepareRepository CodeRepoName RequestedCodeBranch
+  # 
+  local -r CodeRepoName="$1"
+  local -r RequestedCodeBranch="$2"
+  
+  # constraint: it needs to be in the current directory
+  local CodeRepoPath="$CodeRepoName"
+  CodeRepoPaths[$CodeRepoName]="$CodeRepoPath"
+  
+  local NewGITclone=0
+  local -i res=0
+  if [[ ! -r "${CodeRepoPath}/.git" ]]; then
+    local -a GitSources=(
+      $(GitHubRemoteURL "$CodeRepoName" "$GitHubExperimentGroup" )
+      $(RedmineGITremoteURL "$CodeRepoName")
+      )
+    
+    for GitSource in "${GitSources[@]}" ; do
+      echo "Attempting to clone the GIT source tree of '${CodeRepoName}' from '${GitSource}'"
+      git clone "$GitSource" "$CodeRepoName" >&2
+      res=$?
+      [[ $res == 0 ]] && break
+      echo "  (failed)"
+    done
+    
+    [[ -r "${CodeRepoPath}/.git" ]] || FATAL 1 "Could not download '${CodeRepoName}' code!"
+    
+    NewGITclone=1
+  fi
+  NewGITclones["$CodeRepoName"]="$NewGITclone"
+  
+  local -i GITstashed
+  local GIToldCommit
+  if [[ "$RequestedCodeBranch" != 'HEAD' ]]; then
+    
+    local -r CodeBranch="${RequestedCodeBranch:-$DefaultBranch}"
+    
+    if isFlagUnset NewGITclone ; then
+      echo "Fetching updates for the existing GIT source tree of '${CodeRepoPath}'"
+      git -C "$CodeRepoPath" fetch
+    fi
+    
+    # remove everything that could bother our update;
+    # git stash does not tell a script if a stash was created
+    local -i nStashes="$(cd "$CodeRepoPath" && git stash list | wc -l)"
+    git -C "$CodeRepoPath" stash save --quiet -- "${SCRIPTNAME} temporary for Doxygen generation - $(date)"
+    LASTFATAL "Failed to save local changes in '${CodeRepoPath}'. Giving up."
+    local -i nNewStashes="$(cd "$CodeRepoPath" && git stash list | wc -l)"
+    if [[ "$nNewStashes" -gt "$nStashes" ]]; then
+      echo "Changes in GIT repository temporary stashed."
+      GITstashed+=( "$CodeRepoName" )
+    fi
+    
+    # also keep track of where we are
+    GIToldCommit="$(cd "$CodeRepoPath" && git reflog -n 1 --format='format:%H')"
+    local OldScriptChecksum="$(md5sum < "$0")"
+    
+    echo "Updating the GIT branch..."
+    git -C "$CodeRepoPath" checkout "$CodeBranch" && git -C "$CodeRepoPath" rebase
+    local -i res=$?
+    if [[ $res != 0 ]]; then
+      RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
+      if [[ -n "$RequestedCodeBranch" ]]; then
+        FATAL "$res" "Failed to check out branch '${CodeBranch}' of GIT repository ${CodeRepoPath}."
+      else
+        echo "Failed to check out branch '${CodeBranch}' of GIT repository ${CodeRepoPath}."
+      fi
+    fi
+    
+    local GITnewCommit="$(cd "$CodeRepoPath" && git reflog -n 1 --format='format:%H')"
+    [[ "$GITnewCommit" == "$GIToldCommit" ]] && unset GIToldCommit # no change, no need to track
+    local NewScriptChecksum="$(md5sum < "$0")"
+    
+    if [[ "$OldScriptChecksum" != "$NewScriptChecksum" ]]; then
+      FATAL 1 "The attempt to update the repository '${CodeRepoPath}' on the fly caused a change in this script ('${SCRIPTNAME}'). Please update the repository manually and try again."
+      RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
+    fi
+    
+  fi
+  GIToldCommits["$CodeRepoName"]="$GIToldCommit"
+  GITstashedRepos["$CodeRepoName"]="$GITstashed"
+  
+  
+} # PrepareRepository()
+
+
+function RestoreAllRepositories() {
+  # restore the status of the repositories from stored information
+  local CodeRepoName
+  for CodeRepoName in "${CodeRepoNames[@]}" ; do
+    RestoreGITrepository "${CodeRepoPaths[$CodeRepoName]}" "${GIToldCommits[$CodeRepoName]}" "${GITstashedRepos[$CodeRepoName]:-0}"
+  done
+} # RestoreAllRepositories()
+
+
+
+function CheckOutSources() {
   
   #
   # find a Doxygen configuration file
   #
   local -r ExperimentName="$1"
+  shift
+  local RepoNames=( "$@" )
+  
   
   local MasterDoxyfile
   MasterDoxyfile="$(FindDoxyfile "$ExperimentName")"
   LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
   
-  local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
+  [[ -z "${RepoNames[0]}" ]] && RepoNames[0]="$(ExperimentCodeProduct "$ExperimentName" )"
+  local ExperimentCodeName="${RepoNames[0]}"
   
   # in the future this constraint can be relaxed:
   local ExperimentCodeRepoPath="$ExperimentCodeName"
@@ -193,82 +311,61 @@ function RunDoxygen() {
   local DateTag="$(date '+%Y%m%d')"
   local DoxygenLog="${LogDir%/}/$(basename "${MasterDoxyfile%.doxy*}")-${DateTag}.log"
   
-  local -i res=0
-  local NewGITclone=0
-  if [[ ! -r "${ExperimentCodeRepoPath}/.git" ]]; then
-    local -a GitSources=(
-      $(GitHubRemoteURL "$ExperimentCodeName" "$GitHubExperimentGroup" )
-      $(RedmineGITremoteURL "$ExperimentCodeName")
-      )
-    
-    for GitSource in "${GitSources[@]}" ; do
-      echo "Attempting to clone the GIT source tree of '${ExperimentCodeName}' from '${GitSource}'"
-      git clone "$GitSource" "$ExperimentCodeName" >&2
-      res=$?
-      [[ $res == 0 ]] && break
-      echo "  (failed)"
-    done
-    
-    [[ -r "${ExperimentCodeRepoPath}/.git" ]] || FATAL 1 "Could not download '${ExperimentCodeName}' code!"
-    
-    NewGITclone=1
-  fi
+  local -r RequestedCodeBranch="$RequestedExperimentCodeBranch"
   
-  local -i GITstashed=0
-  local GIToldCommit
-
-  if [[ "$RequestedExperimentCodeBranch" != 'HEAD' ]]; then
-    
-    local -r ExperimentCodeBranch="${RequestedExperimentCodeBranch:-$DefaultBranch}"
-    
-    if isFlagUnset NewGITclone ; then
-      echo "Fetching updates for the existing GIT source tree of '${ExperimentCodeRepoPath}'"
-      git -C "$ExperimentCodeRepoPath" fetch
-    fi
-    
-    # remove everything that could bother our update;
-    # git stash does not tell a script if a stash was created
-    local -i nStashes="$(cd "$ExperimentCodeRepoPath" && git stash list | wc -l)"
-    git -C "$ExperimentCodeRepoPath" stash save --quiet -- "${SCRIPTNAME} temporary for Doxygen generation - $(date)"
-    LASTFATAL "Failed to save local changes in '${ExperimentCodeRepoPath}'. Giving up."
-    local -i nNewStashes="$(cd "$ExperimentCodeRepoPath" && git stash list | wc -l)"
-    if [[ "$nNewStashes" -gt "$nStashes" ]]; then
-      echo "Changes in GIT repository temporary stashed."
-      GITstashed=1
-    fi
-    
-    # also keep track of where we are
-    GIToldCommit="$(cd "$ExperimentCodeRepoPath" && git reflog -n 1 --format='format:%H')"
-    local OldScriptChecksum="$(md5sum < "$0")"
-    
-    echo "Updating the GIT branch..."
-    git -C "$ExperimentCodeRepoPath" checkout "$ExperimentCodeBranch"
-    git -C "$ExperimentCodeRepoPath" rebase
-    local -i res=$?
-    if [[ $res != 0 ]]; then
-      RestoreGITrepository "$ExperimentCodeRepoPath" "$GIToldCommit" "$GITstashed"
-      FATAL "$res" "Failed to check out branch '${ExperimentCodeBranch}' of GIT repository ${ExperimentCodeRepoPath}."
-    fi
-    
-    local GITnewCommit="$(cd "$ExperimentCodeRepoPath" && git reflog -n 1 --format='format:%H')"
-    [[ "$GITnewCommit" == "$GIToldCommit" ]] && unset GIToldCommit # no change, no need to track
-    local NewScriptChecksum="$(md5sum < "$0")"
-    
-    if [[ "$OldScriptChecksum" != "$NewScriptChecksum" ]]; then
-      FATAL 1 "The attempt to update the repository '${ExperimentCodeRepoPath}' on the fly caused a change in this script ('${SCRIPTNAME}'). Please update the repository manually and try again."
-      RestoreGITrepository "$ExperimentCodeRepoPath" "$GIToldCommit" "$GITstashed"
-    fi
-    
-  fi
+  # all the same branch, just because of the simpler interface
+  for CodeRepoName in "${RepoNames[@]}" ; do
+    echo " === preparing repository '${CodeRepoName}' === "
+    PrepareRepository "$CodeRepoName" "$RequestedCodeBranch"
+  done
+  echo " === all repositories prepared === "
   
   local -r ExperimentCodeVersion="$(cd "$ExperimentCodeRepoPath" && git describe --abbrev=0)" # use as tag
   
   # special: if no branch was requested in particular, we move to the tagged version of it
-  [[ -z "$RequestedExperimentCodeBranch" ]] && git -C "$ExperimentCodeRepoPath" checkout "$ExperimentCodeVersion"
+  if [[ -z "$RequestedCodeBranch" ]]; then
+    for CodeRepoName in "${RepoNames[@]}" ; do
+      echo " === Picking tag ${ExperimentCodeVersion} for ${CodeRepoName} ==="
+      local CodeRepoPath="${CodeRepoPaths[$CodeRepoName]}"
+      git -C "$CodeRepoPath" checkout "$ExperimentCodeVersion" || echo "${CodeRepoName} does not have tag '${ExperimentCodeVersion}', we'll use the current branch."
+    done
+    echo " === tag ${ExperimentCodeVersion} selection completed ==="
+  fi
   
-  local GitDescription
   GitDescription="$(cd "$ExperimentCodeRepoPath" && git describe 2> /dev/null)"
   [[ $? == 0 ]] && echo "Repository status: ${GitDescription}"
+  
+  return 0
+} # CheckOutSources()
+
+
+
+################################################################################
+function RunDoxygen() {
+  
+  #
+  # find a Doxygen configuration file
+  #
+  local -r ExperimentName="$1"
+  shift
+  local -a AdditionalRepositories=( "$@" )
+  
+  local MasterDoxyfile
+  MasterDoxyfile="$(FindDoxyfile "$ExperimentName")"
+  LASTFATAL "Can't find a doxygen configuration file for '${ExperimentName}'"
+  
+  local ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName" )"
+  CodeRepoNames=( "$ExperimentCodeName" "${AdditionalRepositories[@]}" )
+  
+  local DateTag="$(date '+%Y%m%d')"
+  local DoxygenLog="${LogDir%/}/$(basename "${MasterDoxyfile%.doxy*}")-${DateTag}.log"
+  
+  CheckOutSources "$ExperimentName" "${CodeRepoNames[@]}"
+
+  # in the future this constraint can be relaxed:
+  local ExperimentCodeRepoPath="${CodeRepoPaths[$ExperimentCodeName]}"
+  
+  local -r ExperimentCodeVersion="$(cd "$ExperimentCodeRepoPath" && git describe --abbrev=0)" # use as tag
   
   mkdir -p "$LogDir"
   
@@ -325,7 +422,7 @@ EOB
   fi
   
   # restore the status of the repository
-  RestoreGITrepository "$ExperimentCodeRepoPath" "$GIToldCommit" "$GITstashed"
+  RestoreAllRepositories
   
   
   if [[ -d "$ConfiguredOutputDir" ]]; then
@@ -353,8 +450,16 @@ DoxygenVersion  = '$($doxygen --version)'
 LogFile         = '${DoxygenLog}'
 ExitCode        = '${ExitCode}'
 EOM
-  fi
+
   ### END metadata version 1
+  
+  ### BEGIN metadata version 2:
+    cat <<EOM >> "$MetadataFile"
+AdditionalRepos = ( ${AdditionalRepositories[@]} )
+EOM
+
+  ### END metadata version 2
+  fi
   
   
   cat <<EOB
@@ -484,4 +589,4 @@ Now running Doxygen
 
 EOB
 
-RunDoxygen "$ExperimentName"
+RunDoxygen "$ExperimentName" "${AdditionalRepoNames[@]}"

@@ -29,7 +29,7 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     return;
 }
 //---------------------------------------------------------------------------------------
-vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<CRTData>> crtList) {
+vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<CRTData>> crtList) {
 
     vector<pair<CRTHit, vector<int>>> returnHits;
     vector<int> dataIds;
@@ -177,7 +177,7 @@ vector<pair<CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<art::Ptr<C
 }
 //--------------------------------------------------------------------------------------------
 // Function to make filling a CRTHit a bit faster
-CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap,
+sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap,
                             float peshit, double time0, double time1, int plane, 
                             double x, double ex, double y, double ey, double z, double ez, string tagger){
     CRTHit crtHit;
@@ -203,7 +203,7 @@ CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pai
 } // CRTHitRecoAlg::FillCRTHit()
 
 //------------------------------------------------------------------------------------------
-CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
     if(fCrtutils->MacToType(mac)!='c')
@@ -307,7 +307,7 @@ CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeTopHit
 
 //------------------------------------------------------------------------------------------
-CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
+sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 
     uint8_t mac = data->fMac5;
     map< uint8_t, vector< pair<int,float> > > pesmap;
@@ -373,7 +373,7 @@ CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 } // CRTHitRecoAlg::MakeBottomHit
 
 //-----------------------------------------------------------------------------------
-CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
+sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;

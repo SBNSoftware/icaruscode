@@ -7,6 +7,9 @@
  * Changes
  * --------
  * 
+ * * version 6:
+ *     * added autodetection of the number of channels; overrides input metadata
+ * 
  * * version 5:
  *     * missing voxel check reports as errors only blocks larger than
  *       `MinMissingVoxelBlockReport`
@@ -78,6 +81,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <algorithm> // std::max_element
 #include <memory> // std::make_unique()
 #include <utility> // std::pair
 #include <cassert>
@@ -85,7 +89,7 @@
 
 // -----------------------------------------------------------------------------
 static std::string const ScriptName { "MergePhotonLibrary.C" };
-static unsigned int const ScriptVersion { 5 };
+static unsigned int const ScriptVersion { 6 };
 
 static unsigned int MinMissingVoxelBlockReport = 10U;
 
@@ -146,6 +150,11 @@ std::vector<std::pair<std::string, std::string>> extractSourceFilePathsFromChain
 MetadataSet_t extractMetadata(TDirectory& dir);
 
 
+/// Sets the value of an existing metadata object of actual type `DestType`.
+template <typename DestType, typename Value>
+void setMetadataValue(TNamed& obj, Value value);
+
+
 /// Returns a pair of `TFile` and `TDirectory` from the specified path.
 std::pair<std::unique_ptr<TFile>, TDirectory*> openROOTdirectory(
   std::string const& filePath, std::string const& dirPath,
@@ -171,11 +180,14 @@ void writeMetadata(MetadataSet_t const& metadata, TDirectory& outDir);
  * @param outFile the ROOT directory where to write the metadata information
  * @return the collected metadata
  */
-MetadataSet_t collectMetadata(TChain& tree);
+MetadataSet_t collectSourceMetadata(TChain& tree);
 
 
 /// Extracts the number of expected voxels from the metadata.
 unsigned int extractNVoxels(MetadataSet_t const& metadata);
+
+/// Finds and returns the highest channel number in the `tree`.
+unsigned int highestChannel(TTree& tree);
 
 
 /// Extracts the list of voxels from the library and reports any missing ones.
@@ -390,7 +402,17 @@ int MergePhotonLibrary(
   // deal with metadata; errors are not "fatal"
   //
   timer.Start();
-  MetadataSet_t metadata = collectMetadata(*pSourceTree);
+  MetadataSet_t metadata = collectSourceMetadata(*pSourceTree);
+  
+  auto const itChannelMetadata = metadata.index.find("NChannels");
+  if (itChannelMetadata != metadata.index.cend()) {
+    unsigned int const highestChannelID = highestChannel(*pDestTree);
+    if (highestChannelID > 0U) {
+      setMetadataValue<RooInt>
+        (*(itChannelMetadata->second), highestChannelID + 1U);
+    }
+  } // if has channel metadata
+
   writeMetadata(metadata, *pDestDir);
   timer.Stop();
   
@@ -441,6 +463,22 @@ void printMetadataValue(Stream& out, TNamed const& obj) {
   }
   
 } // printMetadataValue()
+
+
+template <typename DestType, typename Value>
+void setMetadataValue(TNamed& obj, Value value) {
+  
+  auto meta = dynamic_cast<DestType*>(&obj);
+  if (!meta) {
+    std::cerr << "Type error attempting to set metadata '" << obj.GetName()
+      << "' (" << obj.IsA()->GetName() << ")" << std::endl;
+    return;
+  }
+  
+  // this code supports only RooInt and RooDouble so far
+  *meta = std::move(value);
+  
+} // setMetadataValue()
 
 
 template <typename Stream>
@@ -636,7 +674,7 @@ void writeMetadata(MetadataSet_t const& metadata, TDirectory& outDir) {
 
 
 // -----------------------------------------------------------------------------
-MetadataSet_t collectMetadata(TChain& tree) {
+MetadataSet_t collectSourceMetadata(TChain& tree) {
   
   std::cout << "Parsing the tree chain for metadata..." << std::endl;
   
@@ -674,7 +712,7 @@ MetadataSet_t collectMetadata(TChain& tree) {
   
   return globalMetadata;
   
-} // collectMetadata()
+} // collectSourceMetadata()
 
 
 // -----------------------------------------------------------------------------
@@ -796,6 +834,30 @@ unsigned int voxelCheck(
   
   return nLargeMissingBlocks;
 } // voxelCheck()
+
+
+
+// -----------------------------------------------------------------------------
+unsigned int highestChannel(TTree& tree) {
+  std::string const ChannelBranchName = "OpChannel";
+  
+  // loop appears to be a bit faster than using `TTree::Draw()`
+  Int_t branchChannel = -1;
+  tree.SetBranchStatus("*", false);
+  tree.SetBranchStatus(ChannelBranchName.c_str(), true);
+  tree.SetBranchAddress(ChannelBranchName.c_str(), &branchChannel);
+  Long64_t iEntry = 0;
+  Long64_t const nEntries = tree.GetEntries();
+  Int_t maxChannel = 0;
+  while (tree.GetEntry(iEntry++) > 0)
+    if (branchChannel > maxChannel) maxChannel = branchChannel;
+  if (--iEntry != nEntries) {
+    std::cerr << "ERROR: " << nEntries << " entries expected in the tree, but "
+      << iEntry << " were read." << std::endl;
+  }
+  return maxChannel;
+
+} // highestChannel()
 
 
 

@@ -54,8 +54,8 @@
 #include <array>
 
 // CRT data products
-#include "icaruscode/CRT/CRTProducts/CRTData.hh"
-#include "icaruscode/CRT/CRTProducts/CRTHit.hh"
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+#include "sbnobj/Common/CRT/CRTHit.hh"
 
 using std::string;
 using std::vector;
@@ -393,7 +393,7 @@ namespace crt {
     else 
 	throw cet::exception("CRTSimAnalysis") << "CRTDAQ products not found!" << std::endl;
 
-    art::Handle<std::vector<icarus::crt::CRTHit>> crtHitHandle;
+    art::Handle<std::vector<sbn::crt::CRTHit>> crtHitHandle;
     
     bool isCRTHit = event.getByLabel(fCRTHitProducerLabel, crtHitHandle);
     std::vector<int> ids;

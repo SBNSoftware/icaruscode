@@ -117,6 +117,16 @@ simple_plugin( BernCRTZMQAna "module"
   sbndaq-artdaq-core_Overlays_Common 
 )
 
+simple_plugin( BernCRTAna "module"
+  art_Framework_Services_Registry
+  art_root_io_tfile_support
+  art_root_io_TFileService_service
+  ${ROOT_BASIC_LIB_LIST}
+        ${ARTDAQ-CORE_UTILITIES}
+  sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
+)
+
 simple_plugin( CrtNoiseMonTool "module"
   art_Framework_Services_Registry
   art_root_io_tfile_support
@@ -126,6 +136,7 @@ simple_plugin( CrtNoiseMonTool "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
 )
 
 simple_plugin( CrtCalAnalysis "module"
@@ -137,6 +148,7 @@ simple_plugin( CrtCalAnalysis "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
   CRT_CAL
 )
 
@@ -149,6 +161,7 @@ simple_plugin( AnaProducer "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
+  artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
   CRT_RAW_TREE
@@ -164,7 +177,7 @@ simple_plugin( CRTEventProducer "module"
   #${ROOT_BASIC_LIB_LIST}
   CRT_PREPROCESS_TREE
   #CRT_CAL_TREE
-  icaruscode_CRTProducts
+  sbnobj_Common_CRT
 )
 
 install_fhicl()

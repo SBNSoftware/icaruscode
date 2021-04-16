@@ -11,11 +11,13 @@
 
 
 // ICARUS libraries
-#include "icaruscode/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // TriggerGateIndex
+#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/counter.h"
+#include "lardataobj/RawData/OpDetWaveform.h" // raw::Channel_t
 
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
@@ -42,14 +44,16 @@ class icarus::trigger::SlidingWindowCombinerAlg {
 
     public:
   /// Type of optical detector channel list in a window.
-  using WindowChannels_t = std::vector<raw::Channel_t>;
+  using WindowChannels_t = icarus::trigger::TriggerWindowChannels_t;
 
   /// Type of content of all windows.
-  using Windows_t = std::vector<WindowChannels_t>;
+  using Windows_t = icarus::trigger::TriggerWindowDefs_t;
 
   /// Constructor: learns about the window pattern (keeps a reference).
   SlidingWindowCombinerAlg(
     Windows_t const& windows,
+    std::vector<raw::Channel_t> missingChannels = {},
+    bool requireFullCoverage = true,
     std::string logCategory = "SlidingWindowCombinerAlg"
     );
 
@@ -58,11 +62,21 @@ class icarus::trigger::SlidingWindowCombinerAlg {
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combine
     (std::vector<GateObject> const& gates) const;
 
+  /// Returns if `channel` is configured to be missing.
+  bool isMissingChannel(raw::Channel_t channel) const;
+
+
     private:
 
   /// Content of channels of each window.
   Windows_t const fWindowChannels;
+  
+  /// Channels known (and required) to be missing (sorted).
+  std::vector<raw::Channel_t> fMissingChannels;
 
+  /// Whether to require all channels to be used.
+  bool const fRequireFullCoverage;
+  
   std::string fLogCategory; ///< Category for messages to MessageFacility.
 
   /// Throws an exception if the gates are not suitable for input.
@@ -77,6 +91,11 @@ class icarus::trigger::SlidingWindowCombinerAlg {
     WindowChannels_t const& channels
     ) const;
 
+  /// Returns an iterator to the first of the `channels` which is not missing.
+  WindowChannels_t::const_iterator firstChannelPresent
+    (WindowChannels_t const& channels) const;
+
+
   /// Adds the gate data of `input` to `dest`, unless it's already included.
   /// @return whether the addition happened
   template <typename GateObject>
@@ -87,6 +106,10 @@ class icarus::trigger::SlidingWindowCombinerAlg {
 
   /// Returns windows with numerically sorted channel numbers.
   static Windows_t sortedWindowChannels(Windows_t const& windows);
+
+  /// Returns a sorted copy of `channels`.
+  static std::vector<raw::Channel_t> sortChannels
+    (std::vector<raw::Channel_t> channels);
 
   /// Returns whether the container `c` has `value`.
   template <typename Cont, typename T>
@@ -131,7 +154,7 @@ void icarus::trigger::SlidingWindowCombinerAlg::checkInput
    * Checks:
    *
    * * no gate is only partially contained in a window
-   * * no channel in the gates is skipped
+   * * no channel in the gates is skipped (optional)
    *
    */
 
@@ -143,6 +166,8 @@ void icarus::trigger::SlidingWindowCombinerAlg::checkInput
   for (std::vector<raw::Channel_t> const& window: fWindowChannels) {
 
     for (raw::Channel_t const channel: window) {
+
+      if (isMissingChannel(channel)) continue;
 
       //
       // check that we have all the channels we need
@@ -178,30 +203,54 @@ void icarus::trigger::SlidingWindowCombinerAlg::checkInput
 
   } // for windows
 
-  std::set<GateObject const*> allGates;
-  for (auto const channel: util::counter<raw::Channel_t >(gateIndex.nChannels()))
-    allGates.insert(&(gateIndex[channel]));
-
-  std::vector<GateObject const*> unusedGates;
-  std::set_difference(
-    allGates.cbegin(), allGates.cend(), usedGates.cbegin(), usedGates.cend(),
-    std::back_inserter(unusedGates)
-    );
-  if (!unusedGates.empty()) {
-    // we don't have much information to identify "which" gates...
+  //
+  // check for channels that should be missing but are here
+  //
+  std::vector<raw::Channel_t> spuriousChannels;
+  for (raw::Channel_t const channel: fMissingChannels) {
+    if (gateIndex.find(channel)) spuriousChannels.push_back(channel);
+  } // for
+  if (!spuriousChannels.empty()) {
     cet::exception e("SlidingWindowCombinerAlg");
     e << "SlidingWindowCombinerAlg::checkInput(): "
-      << "used only " << usedGates.size() << "/" << allGates.size()
-      << " input trigger gates, " << unusedGates.size() << " were not used:";
-    for (GateObject const* gate: unusedGates) {
-      e << "{";
-      for (raw::Channel_t const channel: gate->channels())
-        e << " ch:" << std::to_string(channel);
-      e << " }";
-    } // for
+      << spuriousChannels.size() << " of the " << fMissingChannels.size()
+      << " supposedly missing channels are actually included:";
+    for (raw::Channel_t const channel: spuriousChannels) e << " " << channel;
     e << "\n";
     throw e;
-  } // if unused
+  }
+  
+  //
+  // check that all channels are here (except known missing ones)
+  //
+  if (fRequireFullCoverage) {
+    std::set<GateObject const*> allGates;
+    for (auto const channel: util::counter<raw::Channel_t >(gateIndex.nChannels())) {
+      if (isMissingChannel(channel)) continue;
+      allGates.insert(&(gateIndex[channel]));
+    }
+
+    std::vector<GateObject const*> unusedGates;
+    std::set_difference(
+      allGates.cbegin(), allGates.cend(), usedGates.cbegin(), usedGates.cend(),
+      std::back_inserter(unusedGates)
+      );
+    if (!unusedGates.empty()) {
+      // we don't have much information to identify "which" gates...
+      cet::exception e("SlidingWindowCombinerAlg");
+      e << "SlidingWindowCombinerAlg::checkInput(): "
+        << "used only " << usedGates.size() << "/" << allGates.size()
+        << " input trigger gates, " << unusedGates.size() << " were not used:";
+      for (GateObject const* gate: unusedGates) {
+        e << "{";
+        for (raw::Channel_t const channel: gate->channels())
+          e << " ch:" << std::to_string(channel);
+        e << " }";
+      } // for
+      e << "\n";
+      throw e;
+    } // if unused
+  } // if full coverage
 
 } // icarus::trigger::SlidingWindowCombinerAlg::checkInput()
 
@@ -218,8 +267,9 @@ icarus::trigger::SlidingWindowCombinerAlg::combineChannels(
 
   assert(!channels.empty());
 
-  auto iChannel = channels.begin();
-  auto cend = channels.end();
+  auto iChannel = firstChannelPresent(channels);
+  auto const cend = channels.end();
+  if (iChannel == cend) return {}; // empty gate, no channels inside
 
   TriggerGate_t const& firstGate = gates[*iChannel];
 
@@ -229,6 +279,7 @@ icarus::trigger::SlidingWindowCombinerAlg::combineChannels(
 
   mf::LogTrace(fLogCategory) << "Input:  " << firstGate;
   while (++iChannel != cend) {
+    if (isMissingChannel(*iChannel)) continue;
 
     TriggerGate_t const& inputGate = gates[*iChannel];
 
@@ -260,6 +311,17 @@ bool icarus::trigger::SlidingWindowCombinerAlg::mergeGateInto(
   return true;
 
 } // icarus::trigger::SlidingWindowCombinerAlg::mergeGateInto()
+
+
+// -----------------------------------------------------------------------------
+// ---  inline implementation
+// -----------------------------------------------------------------------------
+inline bool icarus::trigger::SlidingWindowCombinerAlg::isMissingChannel
+  (raw::Channel_t channel) const
+{
+  return std::find(fMissingChannels.begin(), fMissingChannels.end(), channel)
+    != fMissingChannels.end();
+} // icarus::trigger::SlidingWindowCombinerAlg::isMissingChannel()
 
 
 // -----------------------------------------------------------------------------

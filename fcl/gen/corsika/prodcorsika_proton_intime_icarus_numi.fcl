@@ -1,0 +1,109 @@
+#
+# File:    prodcorsika_proton_intime_icarus_numi.fcl
+# Purpose: Generation of cosmic rays in time with NuMI spill.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    February 2, 2021
+#
+# This job configuration is part of a workflow specific for simulation of cosmic
+# rays constrained in a time window matching a neutrino beam spill.
+# 
+# This job generates cosmic rays for ICARUS detector, ensuring that at least one
+# of them is in coincidence with the NuMI beam gate.
+# The job includes the generation of cosmic rays with only proton component
+# (as opposed to a Constant Mass Composition model, CMC).
+# 
+# The workflow for in-time cosmic ray simulation is made of two specific steps:
+#  * generation (`prodcorsika_proton_intime_icarus_numi.fcl`)
+#  * propagation through the detector (`intime_g4_icarus.fcl`);
+#    alternatively, a standard G4 process can be used, taking care of discarding
+#    the G4 output (`larg4intime`) from this job
+# 
+# Following these two stages, the resulting output can then be processed as a
+# regular G4 job output, usually via a digitization stage (DetSim).
+# Note that this workflow does not generate any neutrino interaction.
+# 
+# The flow of the job is quite complex, and this job configuration is simply
+# overriding relevant parameters from the BNB-focussing configuration
+# `prodcorsika_proton_intime_icarus_bnb.fcl` by Gray Putnam
+# (grayputnam@uchicago.edu). Gray has done an excellent job of documentation
+# within that configuration file, and reading of that documentation is strongly
+# recommended.
+# Here the beam window has been extended to 10 microseconds, and that's pretty
+# much it.
+# 
+# In a nutshell: this stage (generation) is a standard cosmic ray generation
+# (protons only in this case), followed by the selection of generated particles
+# that might cause scintillation during the beam gate (a tuned [ Tmin, Tmax ]),
+# and by the GEANT4 simulation of those particles; finally, events that haven't
+# deposited in TPC at least a minimum of energy are filtered out and not saved.
+#
+# Input
+# ------
+# 
+# This is a generation job: no input is required.
+# Empty event input file can still be specified (e.g. by using a `-s` argument
+# to `lar` executable) which by reusing the events with a fixed timestamp may
+# facilitate the reproducibility of the jobs.
+# 
+# Output
+# -------
+# 
+# This job includes filters: the number of generated events may not
+# (and almost surely *will not*) match the requested number.
+# A test run (`icrauscode` `v09_14_00`) has shown:
+#
+# absolute efficiency   BNB  NuMI
+# generated            100%  100%
+# particle in time       8%   37%
+# min. photons/energy    6%   28%
+# time/event           2.4"  2.4"
+# 
+# An _art_ ROOT file is produced, with the following content highlight:
+#  * generator: the complete cosmic ray particle list
+#  * GenInTimeSorter: generated particles split in `intime` and `outtime`
+#  * larg4intime: LArG4 processing on `GenInTimeSorter:intime` particles only
+#
+#
+# Dependencies
+# -------------
+# 
+# This job configuration was written based on `icaruscode` `v09_14_00`.
+# Changes in the underlying job configuration,
+# `prodcorsika_proton_intime_icarus_bnb.fcl`, affect this one as well.
+#
+#
+
+#include "prodcorsika_proton_intime_icarus_bnb.fcl"
+
+
+# ##############################################################################
+# generation: events with particles produced within a time range
+#             with at least this energy are preserved
+#
+
+# kinetic energy cut for in-time candidate particles
+# physics.filters.GenInTimeSorter.MinKE: 0.1
+
+# time reference is generation time 0 (matching the beam gate start in ICARUS)
+physics.filters.GenInTimeSorter.MaxT: 9600 # [ns]  9.5 us (NuMI beam) + 0.1 us (buffer)
+physics.filters.GenInTimeSorter.MinT: -200 # [ns]
+
+
+# ##############################################################################
+# time filter: events with at least this much scintillation energy detected
+#              within configured time are preserved
+#
+
+# scintillation photon time:
+physics.filters.timefilter.TimeWindows: [ [ -202, 9798 ] ] # ns
+
+# energy from scintillation:
+# physics.filters.timefilter.MinTotalEnergy: 0.0002425 # [MeV] = 25 photons x9.7 eV
+
+
+# ##############################################################################
+# other customisation
+#
+
+outputs.out1.fileName:	"prodcorsika_proton_intime_icarus_numi_%tc.root"
+

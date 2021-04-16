@@ -28,13 +28,23 @@
     each with its own daisychain. Each wall is controlled by one DAQ server with
     two network ports each.
 
-    With artdaqDriver, the data is structured such that one data fragment,
-    corresponding to one front-end board trigger/readout, is written per
-    art::event. The events are ordered such that fragments for a particular
-    front-end board are time ordered. However, the data packets are received
-    via a single poll of the DAQ containing all fragment series for each of the
-    front-end boards on the daisychain. Thus, accross a poll, the data is not
-    time-ordered.
+    artdaqDriver each data fragment, corresponding to one front-end board
+    trigger/readout is saved in a single art::event, thus one event contains
+    that single fragment only. The events are ordered such that fragments for
+    a particular front-end board are time ordered. However, the data packets are
+    received via a single poll of the DAQ containing all fragment series for each
+    of the front-end boards on the daisychain. Thus, accross a poll, the data is
+    not time-ordered.
+
+    DAQInterface (which is how we run DAQ in Control Room) in turn collects
+    multiple fragments from given FEB in fragment containers. An event will
+    therefore contain multiple fragment containers, and each fragment container
+    will contain zero or multiple fragments.
+
+    The data collected by artdaqDriver and DAQInterface therefore has different
+    structure and must be read differently. In the programs described below
+    you can find function analyze() which distinguishes between fragments and
+    fragment containers in each event and properly loops over them.
 
      -- poll structure with one time ordered sequence per FEB --
 
@@ -57,8 +67,8 @@
     There are different possible workflows currently supported
      A. raw data analysis
        1. convert raw data files into ntuples
-       2. Uses single analyzer module: BernCRTZMQAna_module.cc
-       3. Run with "lar -c analyze_BernCRTZMQ.fcl -s data.artroot -T ntuple.root"
+       2. Uses single analyzer module: BernCRTAna_module.cc
+       3. Run with "lar -c analyze_BernCRT.fcl -s data.artroot -T ntuple.root"
      B. noise monitoring and analysis
        1. sepecialized version of (A) for data where SiPM HV is off
        2. Uses single analyzer module: CrtNoiseMonTool_module.cc

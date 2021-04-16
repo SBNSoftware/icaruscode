@@ -1,4 +1,5 @@
 add_subdirectory(overburden)
+add_subdirectory(commissioning)
 
 # Install fcl files in /job subdirectory.
 

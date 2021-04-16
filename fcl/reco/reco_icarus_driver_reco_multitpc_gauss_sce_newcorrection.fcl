@@ -1,0 +1,23 @@
+#include "reco_icarus_driver_common.fcl"
+
+process_name: McRecoGaussSCE
+
+physics.reco: [@sequence::icarus_gauss_MultiTPCSCERecon]
+physics.trigger_paths: [ reco ]
+outputs.out1.fileName: "%ifb_%tc-%p.root"
+outputs.out1.dataTier: "reconstructed"
+source.inputCommands: ["keep *_*_*_*", "drop *_*_*GaussSCE*_McRecoGauss" ]
+outputs.out1.outputCommands:  ["keep *_*_*_*", "drop *_*_*GaussSCE*_McRecoGauss" ]
+physics.producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausSCECryo0"
+physics.producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausSCECryo1"
+
+#icarus_reco_producers.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausSCECryo0"
+#icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                                "pandoraGausSCECryo1"
+
+#physics.reco.icarus_gauss_MultiTPCSCERecon.pandoraTrackGausSCECryo0.PFParticleLabel:                                "pandoraGausSCECryo0"
+services.SpaceChargeService.EnableSimSpatialSCE: true
+services.SpaceChargeService.EnableSimEfieldSCE: true
+services.SpaceChargeService.EnableCalSpatialSCE: true
+services.SpaceChargeService.EnableCalEfieldSCE: true
+services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
+services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root'

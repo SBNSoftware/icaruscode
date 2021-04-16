@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Settings for the scripts in this directory.
+# General settings for the scripts in this directory.
+# Override the settings in `experiment_settings.sh`.
 # 
 # Usage:
 # 
@@ -9,7 +10,7 @@
 # SCRIPTDIR="$(dirname "$0")"
 # 
 # declare LibraryToLoad
-# for LibraryToLoad in 'settings.sh' 'utilities.sh' ; do
+# for LibraryToLoad in 'settings.sh' 'experiment_settings.sh' 'utilities.sh' ; do
 #   
 #   source "${SCRIPTDIR%/}/${LibraryToLoad}" || exit $?
 #   
@@ -18,26 +19,28 @@
 # # -- END -- boilerplate settings and library loading ---------------------------
 #
 
-declare -r DefaultExperimentName='ICARUS'
+declare DefaultExperimentName='ICARUS'
 
 # name for a log directory (scripts may set it where they want)
-declare -r LogDir='logs'
+declare LogDir='logs'
 
 # the GIT branch or commit to check out before generating the documentation.
-declare -r DefaultBranch='master'
+declare DefaultBranch='master'
 
 # the subdirectory under the GIT repository where documentation generation might be found
-declare -r RepoDocSubdir='doc'
+declare RepoDocSubdir='doc'
 
 # where the content is published
-declare -r PublishBaseDir='/web/sites/i/icarus-exp.fnal.gov/htdocs/at_work/software/doc'
+declare PublishBaseDir='/web/sites/i/icarus-exp.fnal.gov/htdocs/at_work/software/doc'
 
 # directory of Doxygen generation metadata, relative to Doxygen output directory
-declare -r MetadataFileRelPath='meta/doxygen'
+declare MetadataFileRelPath='meta/doxygen'
 
 # name of the index file for package software versions (must match the hard-coded name from the web site)
-declare -r VersionListFile='versionlist.html'
+declare VersionListFile='versionlist.html'
 
 # name of the current version of the software
-declare -r LatestLinkName='latest'
+declare LatestLinkName='latest'
 
+# GitHub group name for fetching code
+declare GitHubExperimentGroup='SBNSoftware'

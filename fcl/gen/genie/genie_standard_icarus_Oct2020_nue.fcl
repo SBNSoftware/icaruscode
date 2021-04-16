@@ -1,0 +1,12 @@
+#include "simulation_genie_icarus_Aug2018_nue.fcl"
+
+process_name: GenGenieCorsika
+
+   services: {
+     @table::services
+     @table::icarus_split_induction_overburden_geometry_services
+   } # services
+
+outputs.out1.fileName: "genie_nue_icarus_%tc_gen.root"
+physics.producers.generator.TopVolume:  "volCryostat"
+physics.producers.generator.GenFlavors: [ 12, -12 ]

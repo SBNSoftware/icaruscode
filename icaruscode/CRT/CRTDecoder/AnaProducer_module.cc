@@ -12,8 +12,10 @@
 
 #include "canvas/Utilities/Exception.h"
 
-#include "sbndaq-artdaq-core/Overlays/Common/BernCRTZMQFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/Common/BernCRTFragment.hh"
 #include "artdaq-core/Data/Fragment.hh"
+#include "artdaq-core/Data/ContainerFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 
 //#include "art/Framework/Services/Optional/TFileService.h"
 #include "art_root_io/TFileService.h"
@@ -107,6 +109,7 @@ public:
   
 
 private:
+   void analyze_fragment(artdaq::Fragment &);
 
    string  pFile;
    bool    pCalibrate;
@@ -293,7 +296,7 @@ icarus::crt::AnaProducer::AnaProducer(Parameters const& config)
   fLostfpga = 0;
   fTs0 = 0;
   fTs1 = 0;
-  fAdc[32] = 0;
+  for(int i=0; i<32; ++i) fAdc[i] = 0;
   fCoinc = 0;
   fRun_start_time = 0;
   fThis_poll_start = 0;
@@ -378,67 +381,74 @@ void icarus::crt::AnaProducer::beginJob(){
 
 }
 
-void icarus::crt::AnaProducer::analyze(art::Event const & evt)
+void icarus::crt::AnaProducer::analyze_fragment(artdaq::Fragment & frag)
 {
+  sbndaq::BernCRTFragment bern_fragment(frag);
+
+  fFragment_timestamp        = frag.timestamp();
+  fSequence_id               = frag.sequenceID();
+
+  //event data
+  sbndaq::BernCRTEvent const* bevt = bern_fragment.eventdata();
+
+  fMac5     = bevt->MAC5();
+  fFlags    = bevt->flags;
+  fLostcpu  = bevt->lostcpu;
+  fLostfpga = bevt->lostfpga;
+  fTs0      = bevt->Time_TS0();
+  fTs1      = bevt->Time_TS1();
+  fCoinc    = bevt->coinc;
+
+  for(int ch=0; ch<32; ch++){
+    fMacToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
+    fAdc[ch] = bevt->ADC(ch);
+  }
+
+  //metadata
+  const sbndaq::BernCRTFragmentMetadata* md = bern_fragment.metadata();
+
+  fRun_start_time            = md->run_start_time();
+  fThis_poll_start           = md->this_poll_start();
+  fThis_poll_end             = md->this_poll_end();
+  fLast_poll_start           = md->last_poll_start();
+  fLast_poll_end             = md->last_poll_end();
+  fSystem_clock_deviation    = md->system_clock_deviation();
+  fFeb_per_poll              = md->feb_events_per_poll();
+  fFeb_event_number          = md->feb_event_number();
+
+  fRawTree->Fill();
+
+} //analyze_fragment
 
 
-  //can get the art event number
-  //art::EventNumber_t eventNumber = evt.event();
-  
-  //we get a 'handle' to the fragments in the event
-  //this will act like a pointer to a vector of artdaq fragments
-  art::Handle< std::vector<artdaq::Fragment> > rawFragHandle;
-  
-  //we fill the handle by getting the right data according to the label
-  //the module label will be 'daq', while the instance label (second argument) matches the type of fragment
-  evt.getByLabel("daq","BERNCRTZMQ", rawFragHandle);
-
-  //this checks to make sure it's ok
-  if (!rawFragHandle.isValid()) return;
-
-
-  for (size_t idx = 0; idx < rawFragHandle->size(); ++idx) { // loop over the fragments of an event
-
-    const auto& frag((*rawFragHandle)[idx]); // use this fragment as a reference to the same data
-
-    //this applies the 'overlay' to the fragment, to tell it to treat it like a BernCRTZMQ fragment
-    sbndaq::BernCRTZMQFragment bern_fragment(frag);
+void icarus::crt::AnaProducer::analyze(art::Event const & evt)
+{ 
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  evt.getManyByType(fragmentHandles); 
+  for (auto handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
     
-    fFragment_timestamp        = frag.timestamp();
-    fSequence_id               = frag.sequenceID();
+    if (handle->front().type() == artdaq::Fragment::ContainerFragmentType) {
+      //Container fragment
+      for (auto cont : *handle) { 
+        artdaq::ContainerFragment contf(cont);
+        if (contf.fragment_type() != sbndaq::detail::FragmentType::BERNCRT)
+          continue; 
+        for (size_t ii = 0; ii < contf.block_count(); ++ii)
+          analyze_fragment(*contf[ii].get());
+      }   
+    }   
+    else {
+      //normal fragment
+      if (handle->front().type() != sbndaq::detail::FragmentType::BERNCRT) continue;
+      for (auto frag : *handle)
+        analyze_fragment(frag);
+    }   
+  }
+} //analyze
 
-    //event data
-    sbndaq::BernCRTZMQEvent const* bevt = bern_fragment.eventdata();
 
-    fMac5     = bevt->MAC5();
-    fFlags    = bevt->flags;
-    fLostcpu  = bevt->lostcpu;
-    fLostfpga = bevt->lostfpga;
-    fTs0      = bevt->Time_TS0();
-    fTs1      = bevt->Time_TS1();
-    fCoinc    = bevt->coinc;
-
-    for(int ch=0; ch<32; ch++){
-	 fMacToHistos[fMac5]->at(ch)->Fill( bevt->ADC(ch));
-	 fAdc[ch] = bevt->ADC(ch);
-    }
-
-    //metadata
-    const sbndaq::BernCRTZMQFragmentMetadata* md = bern_fragment.metadata();
-
-    fRun_start_time            = md->run_start_time();
-    fThis_poll_start           = md->this_poll_start();
-    fThis_poll_end             = md->this_poll_end();
-    fLast_poll_start           = md->last_poll_start();
-    fLast_poll_end             = md->last_poll_end();
-    fSystem_clock_deviation    = md->system_clock_deviation();
-    fFeb_per_poll              = md->feb_events_per_poll();
-    fFeb_event_number          = md->feb_event_number();
-
-    fRawTree->Fill();
-
-  }//end loop over fragments
-}
 
 void icarus::crt::AnaProducer::endJob(){
 

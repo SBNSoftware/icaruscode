@@ -246,7 +246,7 @@ void CrtCal::PedCal(){
 		delete h;
 	}
 
-	delete statarr;
+	delete[] statarr;
 	fHasPedCal = true;
 
 	return;
@@ -283,7 +283,7 @@ void CrtCal::GainCal(){
 		delete h;
 	}
 
-	delete statarr;
+	delete[] statarr;
 	fHasGainCal = true;
 	return;
 }
@@ -675,14 +675,14 @@ void CrtCal::GainFit(TH1F* h, size_t chan, float** statsarr, bool save){
 		statsarr[14][i]   = peakNdf[i];
 	}
 	
-	delete peakXsqr;
-	delete peakMean;
-	delete peakMeanErr;
-	delete peakNorm;
-	delete peakNormErr;
-	delete peakSigma;
-	delete peakSigmaErr;
-	delete peakNdf;
+	delete[] peakXsqr;
+	delete[] peakMean;
+	delete[] peakMeanErr;
+	delete[] peakNorm;
+	delete[] peakNormErr;
+	delete[] peakSigma;
+	delete[] peakSigmaErr;
+	delete[] peakNdf;
 
         if ( save )
         {

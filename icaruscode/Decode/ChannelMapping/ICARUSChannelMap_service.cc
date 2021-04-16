@@ -7,6 +7,7 @@
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Services/Registry/ServiceMacros.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Utilities/make_tool.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "cetlib_except/exception.h"
@@ -14,7 +15,8 @@
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom<>()
 
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
-#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
+//#include "icaruscode/Decode/ChannelMapping/TPCChannelmapping.h"
+#include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
 
 #include <fstream>
 
@@ -49,11 +51,13 @@ private:
 
     bool fDiagnosticOutput;
       
-    database::TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
+    IChannelMapping::TPCFragmentIDToReadoutIDMap   fFragmentToReadoutMap;
       
-    database::TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
+    IChannelMapping::TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
-    database::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+    IChannelMapping::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+
+    std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 
 };
 
@@ -71,12 +75,18 @@ void ICARUSChannelMap::reconfigure(const fhicl::ParameterSet& pset)
     mf::LogInfo("ICARUSChannelMap") << "Building the channel mapping" ;
 
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
-    
+
+    // Recover the vector of fhicl parameters for the ROI tools
+    const fhicl::ParameterSet&channelMappingParams = pset.get<fhicl::ParameterSet>("ChannelMappingTool");
+
+    // Get instance of the mapping tool (allowing switch between database instances)
+    fChannelMappingTool = art::make_tool<IChannelMapping>(channelMappingParams);
+
     cet::cpu_timer theClockFragmentIDs;
 
     theClockFragmentIDs.start();
 
-    if (database::BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
+    if (fChannelMappingTool->BuildTPCFragmentIDToReadoutIDMap(fFragmentToReadoutMap))
     {
         throw cet::exception("ICARUSChannelMap") << "Cannot recover the Fragment ID channel map from the database \n";
     }
@@ -94,14 +104,14 @@ void ICARUSChannelMap::reconfigure(const fhicl::ParameterSet& pset)
 
     theClockReadoutIDs.start();
 
-    if (database::BuildTPCReadoutBoardToChannelMap(fReadoutBoardToChannelMap))
+    if (fChannelMappingTool->BuildTPCReadoutBoardToChannelMap(fReadoutBoardToChannelMap))
     {
         std::cout << "******* FAILED TO CONFIGURE CHANNEL MAP ********" << std::endl;
         throw cet::exception("ICARUSChannelMap") << "POS didn't read the F'ing database again \n";
     }
 
     // Do the channel mapping initialization
-    if (database::BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
+    if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
     {
         throw cet::exception("PMTDecoder") << "Cannot recover the Fragment ID channel map from the database \n";
     }
@@ -128,7 +138,7 @@ bool ICARUSChannelMap::hasFragmentID(const unsigned int fragmentID) const
 
 const std::string&  ICARUSChannelMap::getCrateName(const unsigned int fragmentID) const
 {
-    database::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMap") << "Fragment ID " << fragmentID << " not found in lookup map when looking up crate name \n";
@@ -138,7 +148,7 @@ const std::string&  ICARUSChannelMap::getCrateName(const unsigned int fragmentID
 
 const ReadoutIDVec& ICARUSChannelMap::getReadoutBoardVec(const unsigned int fragmentID) const
 {
-    database::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
+    IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
 
     if (fragToReadoutItr == fFragmentToReadoutMap.end())
         throw cet::exception("ICARUSChannelMap") << "Fragment ID " << fragmentID << " not found in lookup map when looking up board vector \n";
@@ -154,7 +164,7 @@ bool ICARUSChannelMap::hasBoardID(const unsigned int boardID)  const
 
 unsigned int ICARUSChannelMap::getBoardSlot(const unsigned int boardID)  const
 {
-    database::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMap") << "Board ID " << boardID << " not found in lookup map when looking up board slot \n";
@@ -164,7 +174,7 @@ unsigned int ICARUSChannelMap::getBoardSlot(const unsigned int boardID)  const
 
  const ChannelPlanePairVec& ICARUSChannelMap::getChannelPlanePair(const unsigned int boardID) const
 {
-    database::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
+    IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
 
     if (readoutBoardItr == fReadoutBoardToChannelMap.end())
         throw cet::exception("ICARUSChannelMap") << "Board ID " << boardID << " not found in lookup map when looking up channel/plane pair \n";
@@ -180,7 +190,7 @@ bool ICARUSChannelMap::hasPMTDigitizerID(const unsigned int fragmentID)   const
 
 const DigitizerChannelChannelIDPairVec& ICARUSChannelMap::getChannelIDPairVec(const unsigned int fragmentID) const
 {
-    database::FragmentToDigitizerChannelMap::const_iterator digitizerItr = fFragmentToDigitizerMap.find(fragmentID);
+    IChannelMapping::FragmentToDigitizerChannelMap::const_iterator digitizerItr = fFragmentToDigitizerMap.find(fragmentID);
 
     if (digitizerItr == fFragmentToDigitizerMap.end())
         throw cet::exception("ICARUSChannelMap") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";

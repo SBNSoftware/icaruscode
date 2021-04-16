@@ -25,7 +25,7 @@
 #include "TProfile2D.h"
 #include "TF1.h"
 
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 #include "icarus_signal_processing/WaveformTools.h"
 
 #include <cmath>
@@ -185,7 +185,7 @@ void BasicRawDigitAnalysis::configure(fhicl::ParameterSet const & pset)
     fFFTFitFuncVec  = pset.get<std::vector<std::string>>        ("FFTFunctionVec",             std::vector<std::string>()={"1","1","1"});
     fParameterVec   = pset.get<std::vector<std::vector<double>>>("FFTFuncParamsVec", std::vector<std::vector<double>>() = {{1},{1},{1}});
 
-    const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
+    //const fhicl::ParameterSet& waveformParamSet = pset.get<fhicl::ParameterSet>("WaveformTool");
 }
 
 //----------------------------------------------------------------------------

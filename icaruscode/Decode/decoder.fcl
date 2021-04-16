@@ -1,6 +1,6 @@
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
-#include "decoderDefs.fcl"
+#include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
@@ -10,7 +10,7 @@ process_name: decode
 services:
 {
    TFileService:            { }
-   ICARUSChannelMap:         @local::icarus_channelmappinggservice
+   IICARUSChannelMap:        @local::icarus_channelmappinggservice
                              @table::icarus_calibration_services
                              @table::icarus_wirecalibration_services
 }
