@@ -168,6 +168,12 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
       Comment("label of trigger gate extraction module (no instance name)"),
       "discrimopdaq"
       };
+    
+    fhicl::Sequence<raw::Channel_t> IgnoreChannels {
+      Name("IgnoreChannels"),
+      Comment
+        ("optical detector channels to ignore (e.g.: [ 0, 1, 2, 3, 4, ... ])")
+      };
 
     fhicl::Sequence<raw::ADC_Count_t> Thresholds {
       Name("Thresholds"),
@@ -243,7 +249,11 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
   
   /// ADC thresholds to read, and the input tag connected to their data.
   std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
-  
+ 
+
+  ///Disable channels option: 
+  std::vector<raw::Channel_t> fIgnoreChannels;
+
   /// Pairing of optical detector channels.
   std::vector<std::vector<raw::Channel_t>> fChannelPairing;
   ComboMode fComboMode; ///< The operation used to combinate channels.
@@ -329,6 +339,7 @@ icarus::trigger::LVDSgates::LVDSgates
   (Parameters const& config)
   : art::EDProducer(config)
   // configuration
+  , fIgnoreChannels(config().IgnoreChannels())
   , fChannelPairing(config().ChannelPairing())
   , fComboMode(config().getCombinationMode())
   , fLogCategory(config().LogCategory())
@@ -418,13 +429,18 @@ void icarus::trigger::LVDSgates::produceThreshold(
     = ReadTriggerGates(event, dataTag, waveformMap);
   
   checkInput(gates);
-  
+
   std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates;
   for (std::vector<raw::Channel_t> const& pairing: fChannelPairing) {
-    if (pairing.empty()) continue; // ???
+    bool found = false;
+    for (raw::Channel_t const& chan: fIgnoreChannels) {
+      if (pairing.empty() || pairing[0]==chan || pairing[1]==chan){ 
+        found=true;
+        break;} // if you find the channel to be ignored stop looking
     
+    }
+    if(!found) //if the ignored channel was not found in the pair you can add combinechannels to the gate
     combinedGates.push_back(combineChannels(gates, pairing, fComboMode));
-    
   } // for
   
   // transform the data; after this line, `gates` is not usable any more
@@ -553,9 +569,9 @@ unsigned int icarus::trigger::LVDSgates::checkPairings() const {
   //
   auto const& geom = *(lar::providerFrom<geo::Geometry>());
 
-
   // collect configured and duplicate channel numbers
   unsigned int nEmptyGroups = 0U;
+  //HERE
   std::set<raw::Channel_t> configuredChannels, duplicateChannels;
   for (auto const& pairing: fChannelPairing) {
     if (pairing.empty()) {

@@ -36,6 +36,8 @@ physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
 # use the baseline from `pmtbaselines` instead of the fixed value
 physics.producers.discrimopdaq.Baseline: @erase
 physics.producers.discrimopdaq.Baselines: "pmtbaselines"
+physics.producers.lvdsgatesAND.IgnoreChannels: [ 1000 ]
+physics.producers.lvdsgatesOR.IgnoreChannels: [ 1000 ]
 
 physics.analyzers.effSingleAND.GeneratorTags: []
 physics.analyzers.effSingleAND.EnergyDeposits: []

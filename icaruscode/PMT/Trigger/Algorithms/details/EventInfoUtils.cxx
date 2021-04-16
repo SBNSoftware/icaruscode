@@ -195,19 +195,19 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
   
   //Scanning through all the particles:
    if (particles) for (simb::MCParticle const& particle: *particles){
-   geo::Point_t const point_2 { particle.EndX(), particle.EndY(), particle.EndZ() };
-   geo::Point_t const point_1 { particle.Vx(), particle.Vy(), particle.Vz() };
-   geo::TPCGeo const* tpc_1 = pointInActiveTPC(point_1);
-   geo::TPCGeo const* tpc_2 = pointInActiveTPC(point_2);
+  // geo::Point_t const point_2 { particle.EndX(), particle.EndY(), particle.EndZ() };
+  // geo::Point_t const point_1 { particle.Vx(), particle.Vy(), particle.Vz() };
+  // geo::TPCGeo const* tpc_1 = pointInActiveTPC(point_1);
+  // geo::TPCGeo const* tpc_2 = pointInActiveTPC(point_2);
    //geo::Point_t const point_2 { particle.EndX(), particle.EndY(), particle.EndZ() };
       //muons:
       if(particle.PdgCode() == 13 || particle.PdgCode() == -13){ 
          muons++;  
-         //const TLorentzVector pos_muon_1 = particle.Position();
-         //const TLorentzVector pos_muon_2 = particle.EndPosition();
+         const TLorentzVector pos_muon_1 = particle.Position();
+         const TLorentzVector pos_muon_2 = particle.EndPosition();
          muon_E.push_back(particle.E());
-         //if(interceptsTPCActiveVolume(pos_muon_1, pos_muon_2)){ 
-         if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
+         if(interceptsTPCActiveVolume(pos_muon_1, pos_muon_2)){ 
+         //if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
             muons_in++; //std::cout<<"Found cosmic in the detector"<<std::endl;
             //info.SetLeptonAngle(double{ particle.Theta() });
  	    momenta.push_back(particle.Momentum().Vect().Mag());
@@ -216,14 +216,14 @@ void icarus::trigger::details::EventInfoExtractor::setMainGeneratorCosmicInfo(
          }
       //other particles:
       }else{ 
-         //const TLorentzVector pos1 = particle.Position();
-         //const TLorentzVector pos2 = particle.EndPosition();
+         const TLorentzVector pos1 = particle.Position();
+         const TLorentzVector pos2 = particle.EndPosition();
          if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E.push_back(particle.E()); 
          if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E.push_back(particle.E()); 
          if(particle.PdgCode() == 2112 || particle.PdgCode() == -2112) neut_E.push_back(particle.E()); 
          if(particle.PdgCode() == 22 || particle.PdgCode() == -22) gamm_E.push_back(particle.E()); 
-         //if(interceptsTPCActiveVolume(pos1, pos2)){ 
-  	if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
+        if(interceptsTPCActiveVolume(pos1, pos2)){ 
+  	//if (tpc_1 && tpc_2){ //info.SetInActiveVolume();
              //std::cout<<"Found non-muon in the detector, PDG:"<<particle.PdgCode()<<std::endl;
              if(particle.PdgCode() == 11 || particle.PdgCode() == -11) elec_E_inTPC.push_back(particle.E()); 
              if(particle.PdgCode() == 2212 || particle.PdgCode() == -2212) prot_E_inTPC.push_back(particle.E()); 
