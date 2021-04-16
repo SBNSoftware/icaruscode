@@ -90,6 +90,7 @@ icarus_roifinder:
     module_type:     ROIFinder
     WireModuleLabel: "decon1droi"
     ROIFinder:       @local::icarus_morphologicalroifinder
+#    ROIFinder:       @local::icarus_cannyedgedetector
 }
 
 END_PROLOG
