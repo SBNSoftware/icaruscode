@@ -12,6 +12,14 @@
 # updateline    : (block) the "last updated" line
 # warning       : a message about possible failure
 # 
+# 
+# Changes
+# --------
+# 
+# 202004xx (petrillo@slac.stanford.edu) [v1.0]
+#   original version
+# 20210412 (petrillo@slac.stanford.edu) [v1.1]
+#   added support for command line options
 #
 
 # -- BEGIN -- boilerplate settings and library loading -------------------------
@@ -28,18 +36,52 @@ unset LibraryToLoad
 # -- END -- boilerplate settings and library loading ---------------------------
 
 # ------------------------------------------------------------------------------
-SCRIPTVERSION="1.0"
+SCRIPTVERSION="1.1"
 
 # additional settings
 declare -r RepoDir="./"
 
 # template for the version list HTML file, relative to the script directory
-declare -r TemplateFileName='versionlisttemplate.html'
+declare -r DefaultTemplateFileName='versionlisttemplate.html'
 
 # the first line with this tag in the template will be replaced with the list
-declare -r VersionListTag='VERSIONLISTTAG'
+declare -r DefaultVersionListTag='VERSIONLISTTAG'
 # the first line with this tag in the template will be replaced with update info
-declare -r UpdateTag='UPDATETAG'
+declare -r DefaultUpdateTag='UPDATETAG'
+
+
+# ------------------------------------------------------------------------------
+function printHelp() {
+  
+  cat <<EOH
+
+Updates the HTML file presenting the list of available documentation of
+${ExperimentName:-the currently configured experiment}.
+
+Usage:  ${SCRIPTNAME}  [options]
+
+Supported options:
+--experiment=EXPERIMENTNAME [${ExperimentName:-autodetect}]
+    the name of the experiment (e.g. 'MicroBooNE')
+--outputfile=OUTPUTHTML
+    sets the list file to be created (by default, the repository name under the
+    configured PublishBaseDir${PublishBaseDir:+", i.e. '${PublishBaseDir}'"})
+--reponame=REPONAME [${ExperimentCodeName:-autodetect}]
+    the name of the repository (e.g. 'uboonecode')
+--version , -V
+    prints the script version and exits (hint: it's version ${SCRIPTVERSION}
+--help , -h , -?
+    prints this usage message and exits
+
+EOH
+
+} # printHelp()
+
+
+function printVersion() {
+  echo "${SCRIPTNAME} version ${SCRIPTVERSION}."
+} # printVersion()
+
 
 # ------------------------------------------------------------------------------
 function FillVersionsList() {
@@ -191,27 +233,72 @@ EOC
 # ------------------------------------------------------------------------------
 
 #
-# argument "parsing"
+# argument parsing
 #
-declare DestFile="$1" # default set later
+declare -i NoMoreOptions
+declare -i DoVersion=0 DoHelp=0
+declare -i CleanOutputArea=0 UpdateOutputArea=0
+declare TemplateFileName="$DefaultTemplateFileName"
+declare VersionListTag="$DefaultVersionListTag"
+declare UpdateTag="$DefaultUpdateTag"
+
+
+declare ExitWithCode
+declare Param
+for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
+  Param="${!iParam}"
+  if isFlagUnset NoMoreOptions && [[ "${Param:0:1}" == '-' ]]; then
+    case "$Param" in
+      ( '--experiment='* )         ExperimentName="${Param#--*=}" ;;
+      ( '--outputfile='* )         DestFile="${Param#--*=}" ;;
+      ( '--reponame='* )           ExperimentCodeName="${Param#--*=}" ;;
+      ( '--version' | '-V' )       DoVersion=1 ;;
+      ( '--help' | '-h' | '-?' )   DoHelp=1 ;;
+      ( '-' | '--' )               NoMoreOptions=1 ;;
+      ( * )
+        ERROR "Unknown option: '${Param}'."
+        ExitWithCode=1
+    esac
+  else
+    PositionalArguments+=( "$Param" )
+  fi
+done
+
+[[ "${#PositionalArguments[@]}" -gt 0 ]] && FATAL 1 "Found ${#PositionalArguments[@]} spurious arguments on command line: ${PositionalArguments[@]}."
+
+: ${ExperimentName:="$(FindExperiment)"}
+: ${ExperimentCodeName:="$(ExperimentCodeProduct "$ExperimentName")"}
+
+if isFlagSet DoVersion ; then
+  printVersion
+  [[ -z "$ExitWithCode" ]] && ExitWithCode=0
+fi
+if isFlagSet DoHelp ; then
+  printHelp
+  [[ -z "$ExitWithCode" ]] && ExitWithCode=0
+fi
+
+[[ -n "$ExitWithCode" ]] && exit "$ExitWithCode"
+
 
 #
 # checks
 #
-ExperimentName="$(FindExperiment)"
-LASTFATAL "Can't detect the experiment name."
+# (some checks are delayed because they are not fatal when just printing help)
+# 
+[[ -n "$ExperimentName" ]] || FATAL 1 "Can't detect the experiment name."
+
+[[ -n "$ExperimentCodeName" ]] || FATAL 1 "Can't put together the experiment code repository name for '${ExperimentName}'."
 
 declare TemplateFilePath="${SCRIPTDIR%/}/${TemplateFileName}"
 [[ -r "$TemplateFilePath" ]] || FATAL 2 "Can't find template file '${TemplateFileName}' in '${SCRIPTDIR}'."
 
-declare -r ExperimentCodeName="$(ExperimentCodeProduct "$ExperimentName")"
-
-declare DocDir="${PublishBaseDir%/}/${ExperimentCodeName}"
-[[ -r "$DocDir" ]] || FATAL 2 "Can't find publishing base directory '${DocDir}'."
+# not controlled by option because used only to compose `DestFile`:
+PublishDir="${PublishBaseDir%/}/${ExperimentCodeName}"
+[[ -r "$PublishDir" ]] || FATAL 2 "Can't find publishing base directory '${PublishDir}'."
 
 # set a default destination if needed
-declare -r DefaultDestFile="${DocDir%/}/${VersionListFile}"
-: ${DestFile:="$DefaultDestFile"}
+: ${DestFile:="${PublishDir%/}/${VersionListFile}"}
 
 #
 # write the HTML file
@@ -222,5 +309,5 @@ else
   echo "Writing: '${DestFile}'"
 fi
 
-MakeVersionListFile "$TemplateFilePath" "$DocDir" > "$DestFile"
+MakeVersionListFile "$TemplateFilePath" "$PublishDir" > "$DestFile"
 
