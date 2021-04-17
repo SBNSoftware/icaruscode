@@ -3,6 +3,7 @@ BEGIN_PROLOG
 
 SPE: {
   Area: 212.
+  Amplitude: 49.18
   Shift: 0.
 }
 
