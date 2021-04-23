@@ -90,12 +90,12 @@ icarus_roifinder:
     module_type:        ROIFinder
     WireModuleLabel:    "decon1droi"
     ROIFinderToolVec: {
-        ROIFinderPlane0: @local::morphologicalfinder_0
-        ROIFinderPlane1: @local::morphologicalfinder_1
-        ROIFinderPlane2: @local::morphologicalfinder_2
-#        ROIFinderPlane0: @local::cannyedgedetector_0
-#        ROIFinderPlane1: @local::cannyedgedetector_1
-#        ROIFinderPlane2: @local::cannyedgedetector_2
+#        ROIFinderPlane0: @local::morphologicalfinder_0
+#        ROIFinderPlane1: @local::morphologicalfinder_1
+#        ROIFinderPlane2: @local::morphologicalfinder_2
+        ROIFinderPlane0: @local::cannyedgedetector_0
+        ROIFinderPlane1: @local::cannyedgedetector_1
+        ROIFinderPlane2: @local::cannyedgedetector_2
     }
 }
 

@@ -122,7 +122,7 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
     std::vector<int> weakEdgeRows;
     std::vector<int> weakEdgeCols;
 
-    fEdgeDetection->HysteresisThresholdingFast(output, fLowThreshold, fHighThreshold, rois);
+    fEdgeDetection->SparseHysteresisThresholding(output, fLowThreshold, fHighThreshold, rois);
 
     std::cout << "==> Final Step: get dilation, numChannels: " << numChannels << ", rois: " << rois.size() << ", output: " << outputROIs.size() << std::endl;
 
