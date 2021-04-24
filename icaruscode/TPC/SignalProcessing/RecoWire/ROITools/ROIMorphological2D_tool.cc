@@ -66,7 +66,7 @@ void ROIMorphological2D::configure(const fhicl::ParameterSet& pset)
 
 void ROIMorphological2D::FindROIs(const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
 {
-    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size());
+    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(inputImage[0].size(),0.));
 
     // Use this to get the 2D Dilation of each waveform
     icarus_signal_processing::Dilation2D(fStructuringElement[0],fStructuringElement[1])(inputImage.begin(),inputImage.size(),morphedWaveforms.begin());
