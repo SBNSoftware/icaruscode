@@ -206,7 +206,7 @@ double pmtcalo::PMTMonitor::findMedian(std::vector<double> a, size_t n) {
 
 void pmtcalo::PMTMonitor::process_fragment(const artdaq::Fragment &artdaqFragment)
 {
-    size_t fragment_id = artdaqFragment.fragmentID();
+    size_t fragment_id = artdaqFragment.fragmentID()& 0x0fff;
 
     
     // convert fragment to Nevis fragment
