@@ -14,6 +14,10 @@
 
 BEGIN_PROLOG
 
+# set the name of our `extractPMTconfig` (and, in future, trigger) module
+decodePMT.DecoderTool.PMTconfigTag: pmtconfig
+
+
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
 {
@@ -114,13 +118,15 @@ icarus_stage0_multiTPC_Sep_TPC:    [ daqTPCWW,        daqTPCWE,        daqTPCEW,
                                    ]
 
 icarus_stage0_multiTPC_TPC:        [ daqTPC,
+                                     pmtconfig,
                                      daqPMT,
                                      decon1droi,
                                      roifinder,
                                      gaushitTPCWW, gaushitTPCWE, gaushitTPCEW, gaushitTPCEE
                                    ]
 
-icarus_stage0_pmt:                 [ daqPMT,
+icarus_stage0_pmt:                 [ pmtconfig,
+                                     daqPMT,
                                      ophit,
                                      opflashCryo0,
                                      opflashCryo1
