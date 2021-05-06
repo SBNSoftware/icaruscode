@@ -107,6 +107,16 @@ namespace daq { class PMTDecoder; }
  *     * `TriggerDelay` (nanoseconds, default: 0 ns): measured delay from the
  *       primitive trigger time to the execution of the PMT trigger; specify
  *       the unit! (e.g. `"43 ns"`).
+ * * `RequireKnownBoards` (flag, default: `true`): if set, the readout boards
+ *     in input must each have a setup configuration (`BoardSetup`) *and* must
+ *     be present in the PMT DAQ configuration, or an exception is thrown;
+ *     if not set, readout boards in input will be processed even when their
+ *     setup or DAQ configuration is not known, at the cost of fewer corrections
+ *     on the timestamps (which should then be considered unreliable).
+ * * `RequireBoardConfig` (flag, default: `true`): if set, the readout boards
+ *     which have a setup (`BoardSetup`) are required to be included in the DAQ
+ *     configuration of the input file, or an exception is thrown; if not set,
+ *     missing readout boards are unnoticed;
  * * `LogCategory` (string, default: `PMTDecoder`): name of the message facility
  *     category where the output is sent.
  * 
@@ -611,9 +621,6 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
          * We only need to know how sooner than the trigger the V1730 buffer
          * starts. Oh, and the delay from the global trigger time to when
          * the readout board receives and processes the trigger signal.
-         * 
-         * All this stuff is common to all the channels in the board;
-         * a better design would move this out of the loop.
          */
         details::BoardInfoLookup::BoardInfo_t const* boardInfo = fBoardInfoLookup->findBoardInfo(fragment_id);
         if (!boardInfo) {
@@ -666,10 +673,10 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
             
             std::size_t const channelPosInData = chDataMap[digitizerChannel];
             if (channelPosInData >= nEnabledChannels) {
-              mf::LogTrace(fLogCategory)
-                << "Digitizer channel " << digitizerChannel
-                << " [=> " << channelID << "] skipped because not enabled.";
-              continue;
+                mf::LogTrace(fLogCategory)
+                  << "Digitizer channel " << digitizerChannel
+                  << " [=> " << channelID << "] skipped because not enabled.";
+                continue;
             }
             
             std::size_t const ch_offset = channelPosInData * nSamplesPerChannel;
@@ -684,33 +691,33 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         }
         if (diagOut) diagOut.reset(); // destroys and therefore prints out
         if (attemptedChannels != enabledChannels) {
-          // this is mostly a warning; regularly, for example,
-          // we effectively have 15 channels per board; but all 16 are enabled,
-          // so one channel is not decoded at all
-          mf::LogTrace log(fLogCategory);
-          log << "Not all data read:";
-          for (int const bit: util::counter(16U)) {
-            uint16_t const mask = (1 << bit);
-            bool const attempted = bool(attemptedChannels & mask);
-            bool const enabled = bool(enabledChannels & mask);
-            if (attempted == enabled) continue;
-            if (!enabled) // and attempted
-              log << "\n  requested channel " << bit << " was not enabled";
-            if (!attempted) // and enabled
-              log << "\n  data for enabled channel " << bit << " was ignored";
-          } // for
+            // this is mostly a warning; regularly, for example,
+            // we effectively have 15 channels per board; but all 16 are enabled,
+            // so one channel is not decoded at all
+            mf::LogTrace log(fLogCategory);
+            log << "Not all data read:";
+            for (int const bit: util::counter(16U)) {
+                uint16_t const mask = (1 << bit);
+                bool const attempted = bool(attemptedChannels & mask);
+                bool const enabled = bool(enabledChannels & mask);
+                if (attempted == enabled) continue;
+                if (!enabled) // and attempted
+                    log << "\n  requested channel " << bit << " was not enabled";
+                if (!attempted) // and enabled
+                    log << "\n  data for enabled channel " << bit << " was ignored";
+              } // for
         } // if request and availability did not match
         
     }
     else {
-      mf::LogError(fLogCategory)
-        << "*** PMT could not find channel information for fragment: "
-          << fragment_id;
+        mf::LogError(fLogCategory)
+          << "*** PMT could not find channel information for fragment: "
+            << fragment_id;
     }
 
     if (fDiagnosticOutput) {
-      mf::LogVerbatim(fLogCategory)
-        << "      - size of output collection: " << fOpDetWaveformCollection->size();
+        mf::LogVerbatim(fLogCategory)
+          << "      - size of output collection: " << fOpDetWaveformCollection->size();
     }
     
 } // PMTDecoder::process_fragment()
@@ -781,10 +788,13 @@ auto daq::PMTDecoder::matchBoardConfigurationAndSetup
       {
         if (!hasPMTconfiguration()) return nullptr;
         auto const* ppBoardConfig = details::binarySearch(configByName, name);
-        if (!ppBoardConfig && fRequireKnownBoards) {
+        if (!ppBoardConfig) {
+            if (!fRequireBoardConfig) return nullptr;
             throw cet::exception("PMTDecoder")
               << "No DAQ configuration found for PMT readout board '"
-              << name << "'\n";
+              << name << "'\n"
+              << "If this is expected, you may skip this check by setting "
+              << "PMTDecoder tool configuration `RequireBoardConfig` to `false`.\n";
         }
         return ppBoardConfig->second;
       };
@@ -800,33 +810,33 @@ auto daq::PMTDecoder::matchBoardConfigurationAndSetup
         sbn::V1730Configuration const* pBoardConfig = findPMTconfig(boardName);
         
         if (pBoardConfig) {
-          // fragment ID from configuration and setup must match if both present
-          if (boardSetup.hasFragmentID() && (boardSetup.fragmentID != pBoardConfig->fragmentID)) 
-          {
-            throw cet::exception("PMTDecoder")
-              << "Board '" << boardName << "' has fragment ID "
-              << std::hex << pBoardConfig->fragmentID << std::dec
-              << " but it is set up as "
-              << std::hex << boardSetup.fragmentID << std::dec
-              << "!\n";
-          } // if fragment ID in setup
+            // fragment ID from configuration and setup must match if both present
+            if (boardSetup.hasFragmentID() && (boardSetup.fragmentID != pBoardConfig->fragmentID)) 
+            {
+                throw cet::exception("PMTDecoder")
+                  << "Board '" << boardName << "' has fragment ID "
+                  << std::hex << pBoardConfig->fragmentID << std::dec
+                  << " but it is set up as "
+                  << std::hex << boardSetup.fragmentID << std::dec
+                  << "!\n";
+            } // if fragment ID in setup
         }
         else {
-          if (boardSetup.hasFragmentID()) {
-            mf::LogPrint(fLogCategory)
-              << "Board '" << boardName
-              << "' has no configuration information:"
-                 " some time stamp corrections will be skipped.";
-            // to avoid this, make a PMT configuration available
-          }
-          else {
-            mf::LogPrint(fLogCategory)
-              << "Board '" << boardName
-              << "' can't be associated to a fragment ID: its time stamp corrections will be skipped.";
-            // to avoid this, add a `BoardSetup.FragmentID` entry for it in the
-            // configuration of this tool, or make a PMT configuration available
-            continue; // no entry for this board at all
-          }
+            if (boardSetup.hasFragmentID()) {
+                mf::LogPrint(fLogCategory)
+                  << "Board '" << boardName
+                  << "' has no configuration information:"
+                    " some time stamp corrections will be skipped.";
+                // to avoid this, make a PMT configuration available from input file
+            }
+            else {
+                mf::LogPrint(fLogCategory)
+                  << "Board '" << boardName
+                  << "' can't be associated to a fragment ID: its time stamp corrections will be skipped.";
+                // to avoid this, add a `BoardSetup.FragmentID` entry for it in the
+                // configuration of this tool, or make a PMT configuration available
+                continue; // no entry for this board at all
+            }
         }
         
         unsigned int const fragmentID
@@ -861,16 +871,16 @@ auto daq::PMTDecoder::fetchNeededBoardInfo
   (details::BoardInfoLookup::BoardInfo_t const* boardInfo, unsigned int fragmentID) const
   -> NeededBoardInfo_t
 {
-  
-  return NeededBoardInfo_t{
-    // name
-      ((boardInfo && boardInfo->config)? boardInfo->config->boardName: ("<ID=" + std::to_string(fragmentID)))
-    // preTriggerTime
-    , (boardInfo? boardInfo->facts.preTriggerTime: nanoseconds{ 0.0 })
-    // PMTtriggerDelay
-    , ((boardInfo && boardInfo->setup)? boardInfo->setup->triggerDelay: nanoseconds{ 0.0 })
-    };
     
+    return NeededBoardInfo_t{
+      // name
+        ((boardInfo && boardInfo->config)? boardInfo->config->boardName: ("<ID=" + std::to_string(fragmentID)))
+      // preTriggerTime
+      , (boardInfo? boardInfo->facts.preTriggerTime: nanoseconds{ 0.0 })
+      // PMTtriggerDelay
+      , ((boardInfo && boardInfo->setup)? boardInfo->setup->triggerDelay: nanoseconds{ 0.0 })
+      };
+      
 } // daq::PMTDecoder::fetchNeededBoardInfo()
 
 
