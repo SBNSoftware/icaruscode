@@ -17,32 +17,32 @@ SimpleFlashStandard:
   DebugMode: false
 }
 
-SimpleFlashCryo0: @local::SimpleFlashStandard
-SimpleFlashCryo0.OpChannelRange: [0,179]
+SimpleFlashCryoEast: @local::SimpleFlashStandard
+SimpleFlashCryoEast.OpChannelRange: [0,179]
 
-SimpleFlashCryo1: @local::SimpleFlashStandard
-SimpleFlashCryo1.OpChannelRange: [180,359]
+SimpleFlashCryoWest: @local::SimpleFlashStandard
+SimpleFlashCryoWest.OpChannelRange: [180,359]
 
 
-SimpleFlashDataCryo0: @local::SimpleFlashCryo0
-SimpleFlashDataCryo0.PEThreshold:    100
-SimpleFlashDataCryo0.PEThresholdHit: 1.0
-SimpleFlashDataCryo0.MinPECoinc:     100
-SimpleFlashDataCryo0.MinMultCoinc:   5
-SimpleFlashDataCryo0.IntegralTime:   1.
-SimpleFlashDataCryo0.PreSample:      0.02
-SimpleFlashDataCryo0.VetoSize:       1.
-SimpleFlashDataCryo0.TimeResolution: 0.01
+SimpleFlashDataCryoEast: @local::SimpleFlashCryoEast
+SimpleFlashDataCryoEast.PEThreshold:    100
+SimpleFlashDataCryoEast.PEThresholdHit: 1.0
+SimpleFlashDataCryoEast.MinPECoinc:     100
+SimpleFlashDataCryoEast.MinMultCoinc:   5
+SimpleFlashDataCryoEast.IntegralTime:   1.
+SimpleFlashDataCryoEast.PreSample:      0.02
+SimpleFlashDataCryoEast.VetoSize:       1.
+SimpleFlashDataCryoEast.TimeResolution: 0.01
 
-SimpleFlashDataCryo1: @local::SimpleFlashCryo1
-SimpleFlashDataCryo1.PEThreshold:    100
-SimpleFlashDataCryo1.PEThresholdHit: 1.0
-SimpleFlashDataCryo1.MinPECoinc:     100
-SimpleFlashDataCryo1.MinMultCoinc:   5
-SimpleFlashDataCryo1.IntegralTime:   1.
-SimpleFlashDataCryo1.PreSample:      0.02
-SimpleFlashDataCryo1.VetoSize:       1.
-SimpleFlashDataCryo1.TimeResolution: 0.01
+SimpleFlashDataCryoWest: @local::SimpleFlashCryoWest
+SimpleFlashDataCryoWest.PEThreshold:    100
+SimpleFlashDataCryoWest.PEThresholdHit: 1.0
+SimpleFlashDataCryoWest.MinPECoinc:     100
+SimpleFlashDataCryoWest.MinMultCoinc:   5
+SimpleFlashDataCryoWest.IntegralTime:   1.
+SimpleFlashDataCryoWest.PreSample:      0.02
+SimpleFlashDataCryoWest.VetoSize:       1.
+SimpleFlashDataCryoWest.TimeResolution: 0.01
 
 ################################
 # CONFIGS BELOW ARE DEPRECATED #

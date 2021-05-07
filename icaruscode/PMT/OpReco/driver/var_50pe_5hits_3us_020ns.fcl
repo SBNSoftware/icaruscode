@@ -22,8 +22,8 @@ physics:
  {
    ophit:  @local::icarus_ophit_data
    ophitfull:    @local::icarus_ophitdebugger_data
-   opflashCryo0: @local::ICARUSSimpleFlashCryo0
-   opflashCryo1: @local::ICARUSSimpleFlashCryo1
+   opflashCryoEast: @local::ICARUSSimpleFlashCryoEast
+   opflashCryoWest: @local::ICARUSSimpleFlashCryoWest
    
  }
  analyzers: { 
@@ -31,8 +31,8 @@ physics:
    opflashana: @local::ICARUSOpFlashAna
  }
  #produce: [ ophitfull]
- produce: [ ophit, opflashCryo0, opflashCryo1 ]
- #produce: [ ophitfull, ophit, opflashCryo0, opflashCryo1 ]
+ produce: [ ophit, opflashCryoEast, opflashCryoWest ]
+ #produce: [ ophitfull, ophit, opflashCryoEast, opflashCryoWest ]
  #analyze: [ ophitana, opflashana ]
  analyze: [ opflashana ]
  store:   [ out1 ]
@@ -59,15 +59,15 @@ services.DetectorClocksService.InheritClockConfig: false
 physics.producers.ophitfull.PedAlgoPset.Verbose: false
 physics.producers.ophitfull.HitAlgoPset.Verbosity: false
 
-physics.producers.opflashCryo0.AlgoConfig.PEThreshold:    100
-physics.producers.opflashCryo0.AlgoConfig.PEThresholdHit: 1.0
-physics.producers.opflashCryo0.AlgoConfig.MinPECoinc:     50
-physics.producers.opflashCryo0.AlgoConfig.MinMultCoinc:   5
-physics.producers.opflashCryo0.AlgoConfig.IntegralTime:   3.
-physics.producers.opflashCryo0.AlgoConfig.PreSample:      0.02
-physics.producers.opflashCryo0.AlgoConfig.VetoSize:       3.
-physics.producers.opflashCryo0.AlgoConfig.TimeResolution: 0.02
-#physics.producers.opflashCryo0.AlgoConfig.DebugMode: true
+physics.producers.opflashCryoEast.AlgoConfig.PEThreshold:    100
+physics.producers.opflashCryoEast.AlgoConfig.PEThresholdHit: 1.0
+physics.producers.opflashCryoEast.AlgoConfig.MinPECoinc:     50
+physics.producers.opflashCryoEast.AlgoConfig.MinMultCoinc:   5
+physics.producers.opflashCryoEast.AlgoConfig.IntegralTime:   3.
+physics.producers.opflashCryoEast.AlgoConfig.PreSample:      0.02
+physics.producers.opflashCryoEast.AlgoConfig.VetoSize:       3.
+physics.producers.opflashCryoEast.AlgoConfig.TimeResolution: 0.02
+#physics.producers.opflashCryoEast.AlgoConfig.DebugMode: true
 
 physics.analyzers.ophitana.OutputFileName: "ophit_ana.root"
 physics.analyzers.ophitana.MCTruthProducer: ""
@@ -76,7 +76,7 @@ physics.analyzers.ophitana.OpHitProducerList: ["ophit"]
 
 physics.analyzers.opflashana.MCOpFlashProducer: ""
 physics.analyzers.opflashana.MCTruthProducer: ""
-physics.analyzers.opflashana.OpFlashProducerList: ["opflashCryo0","opflashCryo1"]
+physics.analyzers.opflashana.OpFlashProducerList: ["opflashCryoEast","opflashCryoWest"]
 
 
 #physics.analyzers.opana.OpHitProducerList:["ophit","mcophit"]

@@ -22,8 +22,8 @@ physics:
  {
    ophit:  @local::icarus_ophit_data
    ophitfull:    @local::icarus_ophitdebugger_data
-   opflashCryo0: @local::ICARUSSimpleFlashDataCryo0
-   opflashCryo1: @local::ICARUSSimpleFlashDataCryo1
+   opflashCryoEast: @local::ICARUSSimpleFlashDataCryoEast
+   opflashCryoWest: @local::ICARUSSimpleFlashDataCryoWest
    
  }
  analyzers: { 
@@ -32,15 +32,15 @@ physics:
  }
  filters: {
    flashfilter: { module_type: "FilterOpFlash" 
-                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
+                  OpFlashProducerList: ["opflashCryoEast","opflashCryoWest"] 
                   WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
                   WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
                 }
  }
 
  #produce: [ ophitfull]
- produce: [ ophit, opflashCryo0, opflashCryo1, flashfilter ]
- #produce: [ ophitfull, ophit, opflashCryo0, opflashCryo1 ]
+ produce: [ ophit, opflashCryoEast, opflashCryoWest, flashfilter ]
+ #produce: [ ophitfull, ophit, opflashCryoEast, opflashCryoWest ]
 
  #analyze: [ ophitana, opflashana ]
  analyze: [ opflashana ]
@@ -78,7 +78,7 @@ physics.analyzers.ophitana.OpHitProducerList: ["ophit"]
 
 physics.analyzers.opflashana.MCOpFlashProducer: ""
 physics.analyzers.opflashana.MCTruthProducer: ""
-physics.analyzers.opflashana.OpFlashProducerList: ["opflashCryo0","opflashCryo1"]
+physics.analyzers.opflashana.OpFlashProducerList: ["opflashCryoEast","opflashCryoWest"]
 
 
 source.inputCommands: ["keep *_*_*_*", "drop opreco_*_*_*" ]

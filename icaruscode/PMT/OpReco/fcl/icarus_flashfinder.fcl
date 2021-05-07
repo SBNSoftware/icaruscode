@@ -12,17 +12,17 @@ ICARUSSimpleFlash:
   PECalib         : @local::NoCalib
 }
 
-ICARUSSimpleFlashCryo0: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashCryo0.AlgoConfig: @local::SimpleFlashCryo0
+ICARUSSimpleFlashCryoEast: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryoEast.AlgoConfig: @local::SimpleFlashCryoEast
 
-ICARUSSimpleFlashCryo1: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashCryo1.AlgoConfig: @local::SimpleFlashCryo1
+ICARUSSimpleFlashCryoWest: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryoWest.AlgoConfig: @local::SimpleFlashCryoWest
 
-ICARUSSimpleFlashDataCryo0: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashDataCryo0.AlgoConfig: @local::SimpleFlashDataCryo0
+ICARUSSimpleFlashDataCryoEast: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryoEast.AlgoConfig: @local::SimpleFlashDataCryoEast
 
-ICARUSSimpleFlashDataCryo1: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashDataCryo1.AlgoConfig: @local::SimpleFlashDataCryo1
+ICARUSSimpleFlashDataCryoWest: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryoWest.AlgoConfig: @local::SimpleFlashDataCryoWest
 
 ################################
 # CONFIGS BELOW ARE DEPRECATED #
