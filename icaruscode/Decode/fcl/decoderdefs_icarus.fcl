@@ -23,6 +23,16 @@ decodeTPC: {
                     DecoderTool:        @local::TPCDecoderFilter1DTool
 }
 
+decodeTPCROI: {
+                    module_type:        DaqDecoderICARUSTPCwROI
+                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    OutputRawWaveform:  false
+                    OutputCorrection:   false
+                    OutputRawWavePath:  "RAW"
+                    OutputCoherentPath: "Cor"
+                    DiagnosticOutput:   false
+}
+
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
                     FragmentsLabel:     "daq:CAENV1730"
