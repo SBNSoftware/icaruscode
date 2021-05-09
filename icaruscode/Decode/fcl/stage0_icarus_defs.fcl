@@ -83,14 +83,14 @@ icarus_stage0_producers:
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
   ophitfull:                      @local::icarus_ophitdebugger_data
-  opflashCryo0:                   @local::ICARUSSimpleFlashDataCryo0
-  opflashCryo1:                   @local::ICARUSSimpleFlashDataCryo1
+  opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
+  opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 }
 
 icarus_reco_filters:
 {
    flashfilter: { module_type: "FilterOpFlash" 
-                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
+                  OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
                   WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
                   WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
                 }
@@ -123,8 +123,8 @@ icarus_stage0_multiTPC_TPC:        [ daqTPC,
 
 icarus_stage0_pmt:                 [ daqPMT,
                                      ophit,
-                                     opflashCryo0,
-                                     opflashCryo1
+                                     opflashCryoE,
+                                     opflashCryoW
                                    ]
 
 icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,
