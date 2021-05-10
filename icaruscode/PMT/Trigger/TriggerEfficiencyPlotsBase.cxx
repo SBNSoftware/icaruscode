@@ -559,7 +559,23 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.duration() / triggerResolutionTicks,
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
+
+  plots.make<TH1F>(
+    "OpeningTicks",
+    "Start Time of Trigger Gate"
+     ";opening time (us)"
+     ";opened trigger gates",
+     10000,0,100
+     );
   
+  plots.make<TH1F>(
+    "MainTick",
+    "Start Time of Trigger Gate"
+     ";opening time (us)"
+     ";opened trigger gates",
+     1000,0,100
+     );
+
   //
   // plots independent of the trigger primitive requirements
   //
@@ -773,11 +789,15 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
 ) const {
   
   using namespace std::string_literals;
-  
+  using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
+
+  auto const detTimings = icarus::ns::util::makeDetTimings();
+
   HistGetter const getTrigEff { plots };
   
   bool const fired = triggerInfo.fired();
-  
+  double timeOffset = 0;
+
   // efficiency plots
   if (useEDep()) {
     getTrigEff.Eff("EffVsEnergyInSpill"s).Fill
@@ -788,6 +808,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
       (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
     getTrigEff.Eff("EffVsEnergyInPreSpillActive"s).Fill
       (fired, double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
+    timeOffset = 1500.0;
   } // if use energy deposits
   if (useGen()) {
     if (eventInfo.isNeutrino()) {
@@ -800,7 +821,19 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   
   if (fired) {
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
+
+    getTrigEff.Hist("MainTick"s).Fill(double(detTimings.toElectronicsTime(triggerInfo.main().tick)));
+
+    std::vector<OpeningInfo_t> const& allTriggerOpenings = triggerInfo.all();
+
+    for (OpeningInfo_t const& opening : allTriggerOpenings) {
+      //std::cout << double(detTimings.toElectronicsTime(opening.tick)) << std::endl;
+      getTrigEff.Hist("OpeningTicks"s).Fill(double(detTimings.toElectronicsTime(opening.tick))-timeOffset);
+    }
   }
+
+
+
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 
