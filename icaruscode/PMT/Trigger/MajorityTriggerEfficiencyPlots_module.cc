@@ -891,7 +891,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
 auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   TriggerGatesPerCryostat_t const& cryoGates,
   std::string const& threshold
-) const -> TriggerGateData_t {
+) const -> std::vector<TriggerGateData_t> {
 
   //
   // simple count

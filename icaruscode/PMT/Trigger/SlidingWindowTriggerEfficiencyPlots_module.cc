@@ -904,7 +904,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // trigger time (if any)
     if (fired) {
       get.Hist2D("TriggerTick"s).Fill
-        (iPattern, triggerInfo.atTick().value());
+        (iPattern, triggerInfo.info.atTick().value());
     }
     
     //
@@ -915,7 +915,7 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
     // efficiency plots
     // (including event plots in the triggered or non-triggered category)
     helper().fillAllEfficiencyPlots
-      (eventInfo, PMTinfo, triggerInfo, plotSet.demandSandbox(patternTag));
+      (eventInfo, PMTinfo, triggerInfo.info, plotSet.demandSandbox(patternTag));
     
     //
     // add here further trigger-specific plots
