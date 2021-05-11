@@ -2,7 +2,8 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v09_14_00
+parent icaruscode v09_22_03
+
 defaultqual e19
 
 # These optional lines define where headers, libraries, and executables go and should
@@ -16,6 +17,7 @@ defaultqual e19
 # libdir  fq_dir       lib
 # bindir  fq_dir       bin
 #
+
 fcldir  product_dir job
 gdmldir product_dir gdml
 fwdir   product_dir scripts
@@ -35,14 +37,14 @@ table_fragment_end
 # Add the dependent product and version
 
 product             version
-sbncode                   v09_14_00
-icarusalg                 v09_14_00
-icarusutil                v09_09_01
-icarus_signal_processing  v09_13_00
-icarus_data               v09_13_00
+sbncode                   v09_22_03_00
+icarusalg                 v09_22_01
+icarusutil                v09_22_03
+icarus_signal_processing  v09_22_01
+icarus_data               v09_17_02
 genie_xsec                v3_00_04a
 fftw                      v3_3_8a
-libwda                    v2_28_0
+libwda                    v2_29_1
 
 cetbuildtools	          v7_17_01	-	only_for_build
 end_product_list
@@ -52,11 +54,11 @@ end_product_list
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
 qualifier  sbncode    icarusalg    icarusutil   icarus_signal_processing   icarus_data  genie_xsec               fftw        libwda notes
+e20:debug  e20:debug  e20:debug    e20:debug    e20:debug                  -nq-         G1810a0211a:k250:e1000   debug       -nq-
+e20:prof   e20:prof   e20:prof     e20:prof     e20:prof                   -nq-         G1810a0211a:k250:e1000   prof        -nq-
 e19:debug  e19:debug  e19:debug    e19:debug    e19:debug                  -nq-         G1810a0211a:k250:e1000   debug       -nq-
-e19:opt	   e19:opt    e19:opt      e19:opt      e19:opt                    -nq-         G1810a0211a:k250:e1000   opt         -nq-
 e19:prof   e19:prof   e19:prof     e19:prof     e19:prof                   -nq-         G1810a0211a:k250:e1000   prof        -nq-
 c7:debug   c7:debug   c7:debug     c7:debug     c7:debug                   -nq-         G1810a0211a:k250:e1000   debug       -nq-
-c7:opt     c7:opt     c7:opt       c7:opt       c7:opt                     -nq-         G1810a0211a:k250:e1000   opt         -nq-
 c7:prof    c7:prof    c7:prof      c7:prof      c7:prof                    -nq-         G1810a0211a:k250:e1000   prof        -nq-
 end_qualifier_list
 

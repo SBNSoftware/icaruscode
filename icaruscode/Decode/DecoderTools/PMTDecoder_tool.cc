@@ -13,6 +13,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Persistency/Common/PtrMaker.h"
+#include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
 #include "cetlib/cpu_timer.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -42,6 +43,19 @@ namespace daq {
 class PMTDecoder : virtual public IDecoder
 {
 public:
+    
+    struct Config {
+      
+      fhicl::Atom<bool> DiagnosticOutput {
+        fhicl::Name("DiagnosticOutput"),
+        fhicl::Comment("enable additional console output"),
+        false // default
+        };
+      
+    }; // Config
+    
+    using Parameters = art::ToolConfigTable<Config>;
+  
     /**
      *  @brief  Constructor
      *
@@ -49,10 +63,6 @@ public:
      */
     explicit PMTDecoder(fhicl::ParameterSet const &pset);
 
-    /**
-     *  @brief  Destructor
-     */
-    ~PMTDecoder();
 
     /**
      *  @brief Each algorithm may have different objects it wants "produced" so use this to
@@ -73,6 +83,7 @@ public:
      */
     virtual void initializeDataProducts() override;
 
+    
     /**
      *  @brief Given a set of recob hits, run DBscan to form 3D clusters
      *
@@ -90,14 +101,15 @@ public:
 
 private:
 
-    bool                               fDiagnosticOutput;       //< If true will spew endless messages to output
+    bool                               fDiagnosticOutput;       ///< If true will spew endless messages to output
 
     using OpDetWaveformCollection    = std::vector<raw::OpDetWaveform>;
     using OpDetWaveformCollectionPtr = std::unique_ptr<OpDetWaveformCollection>;
 
-    OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  //< The output data collection pointer
-    const geo::Geometry*               fGeometry;                 //< pointer to the Geometry service
-    const icarusDB::IICARUSChannelMap* fChannelMap;
+    OpDetWaveformCollectionPtr         fOpDetWaveformCollection;  ///< The output data collection pointer
+    const geo::Geometry*               fGeometry = nullptr;       ///< pointer to the Geometry service
+    const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
+    
 };
 
 PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
@@ -107,9 +119,6 @@ PMTDecoder::PMTDecoder(fhicl::ParameterSet const &pset)
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-PMTDecoder::~PMTDecoder()
-{
-}
 
 void PMTDecoder::produces(art::ProducesCollector& collector)
 {
@@ -136,7 +145,7 @@ void PMTDecoder::initializeDataProducts()
 
 void PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 {
-    size_t fragment_id = artdaqFragment.fragmentID();
+    size_t fragment_id = artdaqFragment.fragmentID() & 0x0fff;
 
     // convert fragment to Nevis fragment
     sbndaq::CAENV1730Fragment         fragment(artdaqFragment);

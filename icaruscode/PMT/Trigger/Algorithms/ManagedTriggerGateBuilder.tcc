@@ -69,7 +69,7 @@ auto icarus::trigger::ManagedTriggerGateBuilder::unifiedBuild
       { return a.waveform().ChannelNumber() == b.waveform().ChannelNumber(); }
     ;
   
-  auto byChannel = waveforms | ranges::view::group_by(sameChannel);
+  auto byChannel = waveforms | ranges::views::group_by(sameChannel);
   for (auto const& channelWaveforms: byChannel) {
     
     auto const& firstWaveform = channelWaveforms.front().waveform();

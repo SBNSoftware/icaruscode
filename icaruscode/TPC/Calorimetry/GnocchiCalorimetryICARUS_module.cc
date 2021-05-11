@@ -424,7 +424,7 @@ std::vector<std::vector<unsigned>> calo::GnocchiCalorimetryICARUS::OrganizeHitsS
 }
 
 bool calo::GnocchiCalorimetryICARUS::HitIsValid(const art::Ptr<recob::Hit> hit, const recob::TrackHitMeta *thm, const recob::Track &track) {
-  if (thm->Index() == std::numeric_limits<int>::max()) return false;
+  if (thm->Index() == std::numeric_limits<unsigned int>::max()) return false;
   if (!track.HasValidPoint(thm->Index())) return false;
   return true;
 }

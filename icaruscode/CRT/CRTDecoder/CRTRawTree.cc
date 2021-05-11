@@ -29,7 +29,7 @@ void CRTRawTree::Init(){
   fTree->SetBranchAddress("last_poll_start",        &fLast_poll_start,        &b_Last_poll_start);
   fTree->SetBranchAddress("last_poll_end",          &fLast_poll_end,          &b_Last_poll_end);
   fTree->SetBranchAddress("system_clock_deviation", &fSystem_clock_deviation, &b_System_clock_deviation);
-  fTree->SetBranchAddress("feb_per_poll",           &fFeb_per_poll,           &b_Feb_per_poll);
+  fTree->SetBranchAddress("feb_in_poll",            &fFeb_in_poll,            &b_Feb_in_poll);
   fTree->SetBranchAddress("feb_event_number",       &fFeb_event_number,       &b_Feb_event_number);
   fTree->SetBranchAddress("sequence_id",            &fSequence_id,            &b_Sequence_id);
   fTree->SetBranchAddress("fragment_timestamp",     &fFragment_timestamp,     &b_Fragment_timestamp);
@@ -84,7 +84,7 @@ float CRTRawTree::GetPollRate(size_t ientry) const {
         }
 
         fTree->GetEntry(ientry);
-        return fFeb_per_poll/(fThis_poll_start-fLast_poll_start);
+        return fFeb_in_poll/(fThis_poll_start-fLast_poll_start);
 }
 
 uint64_t CRTRawTree::GetInterval(size_t ientry1, size_t ientry2) const {

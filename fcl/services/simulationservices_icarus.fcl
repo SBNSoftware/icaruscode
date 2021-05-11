@@ -19,7 +19,6 @@ icarus_largeantparameters: {
     StoreTrajectories:        true
     VisualizationEnergyCut:   10.e-3  #depricated, in GeV
     VisualizeNeutrals:        false   #depricated
-    UseCustomPhysics:         false   #Whether to use a custom list of physics processes or the default
     ModifyProtonCut:          false   #Whether to modify the default proton cut
     NewProtonCut:             0.0     #new ProtonCut value, ModifyProtonCut must be set to set new value
     KeepEMShowerDaughters:    true    #save secondary, tertiary, etc particles in EM showers
@@ -39,7 +38,35 @@ icarus_largeantparameters: {
     CosmogenicXSMNBiasFactor: 1 # Not more than 5-ish cuz of numerical instabilities.
     DisableWireplanes:        false #if set true, charge drift simulation does not run - used for optical sim jobs OR just when you don't wanna drift the e's.
     SkipWireSignalInTPCs:     []     # put here TPC id's which should not receive ionization electrons - used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
+    FillSimEnergyDeposits:    true
     UseModBoxRecomb:          true   # use Modified Box recombination instead of Birks
+    UseModLarqlRecomb:        false   # use LArQL recombination corrections (dependence on EF)
+   
+    #* Recombination factor coefficients come from Nucl.Instrum.Meth.A523:275-286,2004
+    #* * @f$ dE/dx @f$ is given by the voxel energy deposition, but have to convert it to MeV/cm from GeV/voxel width
+    #* * electric field: @f$ E @f$ in kV/cm
+    #* * @f$ R = A/(1 + (dE/dx)*k/E) @f$
+    #* * @f$ A = 0.800 \pm 0.003 @f$
+    #* * @f$ k = 0.0486 @f$ needs to be scaled with Electric field
+    RecombA: 0.800      #< _A_ constant.
+    Recombk: 0.0486     #< _k_ constant, in g/(MeV cm&sup2;)*kV/cm.
+   
+    #* Recombination factor coefficients come from Nucl.Instrum.Meth.A523:275-286,2004
+    #* * @f$ dE/dx @f$ is given by the voxel energy deposition, but have to convert it to MeV/cm from GeV/voxel width
+    #* * electric field: @f$ E @f$ in kV/cm
+    #* * `kModBoxB` needs to be scaled with the electric field.
+    ModBoxA: 0.930
+    ModBoxB: 0.212
+   
+    #* Recombination factor coefficients for LArQL can be found in https://cdcvs.fnal.gov/redmine/projects/larsoft/wiki/LArQL_algorithm
+    #* * @f$ dE/dx @f$ is given by the energy deposition in MeV/cm
+    #* * electric field: @f$ E @f$ in kV/cm
+    LarqlChi0A: 0.00338427
+    LarqlChi0B: -6.57037
+    LarqlChi0C: 1.88418
+    LarqlChi0D: 0.000129379
+    LarqlAlpha: 0.0372
+    LarqlBeta: 0.0124
     # IonAndScintCalculator: "NEST"
 
     # The following parameters specify details of wireplanes or similar
@@ -65,6 +92,8 @@ icarus_largeantparameters: {
                                   [-60, 3, 0.15],
                                   [  0, 3, 0.15] ] ]
     UseLitePhotons: false
+
+    
 }
 
 

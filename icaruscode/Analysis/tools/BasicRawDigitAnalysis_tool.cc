@@ -25,7 +25,7 @@
 #include "TProfile2D.h"
 #include "TF1.h"
 
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 #include "icarus_signal_processing/WaveformTools.h"
 
 #include <cmath>

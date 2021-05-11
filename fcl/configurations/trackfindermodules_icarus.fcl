@@ -1,6 +1,7 @@
 #include "trackfindermodules.fcl"
 #include "pandoramodules_icarus.fcl"
 #include "kalmanfilterfinaltrackfitter.fcl"
+#include "trackproducerfrompfparticle.fcl"
 
 BEGIN_PROLOG
 
@@ -30,12 +31,23 @@ icarus_pmalgkalmantrack.inputs.inputPidLabel:                    ""
 icarus_pmalgkalmantrack.options.trackFromPF:                     true
 
 # kalman track fits for pandora
-icarus_pandora_kalmantrack:                                      @local::kalmantrackfit
-icarus_pandora_kalmantrack.inputs.inputPFParticleLabel:          "pandoraTrack"
-icarus_pandora_kalmantrack.inputs.inputTracksLabel:              ""
-icarus_pandora_kalmantrack.inputs.inputShowersLabel:             ""
-icarus_pandora_kalmantrack.inputs.inputCaloLabel:                ""
-icarus_pandora_kalmantrack.inputs.inputPidLabel:                 ""
-icarus_pandora_kalmantrack.options.trackFromPF:                  true
+# Deprecating this version in favor of below from Bruce/Giuseppe
+#icarus_pandora_kalmantrack:                                      @local::kalmantrackfit
+#icarus_pandora_kalmantrack.inputs.inputPFParticleLabel:          "pandoraTrack"
+#icarus_pandora_kalmantrack.inputs.inputTracksLabel:              ""
+#icarus_pandora_kalmantrack.inputs.inputShowersLabel:             ""
+#icarus_pandora_kalmantrack.inputs.inputCaloLabel:                ""
+#icarus_pandora_kalmantrack.inputs.inputPidLabel:                 ""
+#icarus_pandora_kalmantrack.options.trackFromPF:                  true
+
+# kalman track with G. Cerati's updated configuration
+icarus_pandora_kalmantrack:                                       @local::trackproducerfrompfparticle
+icarus_pandora_kalmantrack.inputCollection:                       "pandoraGaus"
+icarus_pandora_kalmantrack.trackInputTag:                         "pandoraTrackGaus"
+#icarus_pandora_kalmantrack.trackmaker.options.momFromCombAndPid:  true
+#icarus_pandora_kalmantrack.trackmaker.options.contInputTag:       "pandoraContTag" # doesn't exist for ICARUS, comment out these lines
+#icarus_pandora_kalmantrack.trackmaker.options.pidFromLengthCut:   35.0
+icarus_pandora_kalmantrack.trackFromPF:                           true
+icarus_pandora_kalmantrack.showerFromPF:                          false
 
 END_PROLOG

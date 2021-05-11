@@ -27,7 +27,7 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/FFTFilterFunctions.h"
+#include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 
 // std includes
 #include <string>
@@ -143,6 +143,7 @@ private:
     uint32_t                                       fFragment_id_offset;     //< Allow offset for id
     float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
     size_t                                         fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    size_t                                         fCoherentNoiseOffset;    //< Offset for midplane
     size_t                                         fStructuringElement;     //< Structuring element for morphological filter
     size_t                                         fMorphWindow;            //< Window for filter
     std::vector<float>                             fThreshold;              //< Threshold to apply for saving signal
@@ -222,6 +223,7 @@ void TPCDecoderFilter1D::configure(fhicl::ParameterSet const &pset)
     fFragment_id_offset    = pset.get<uint32_t                >("fragment_id_offset"      );
     fSigmaForTruncation    = pset.get<float                   >("NSigmaForTrucation",  3.5);
     fCoherentNoiseGrouping = pset.get<size_t                  >("CoherentGrouping",     64);
+    fCoherentNoiseOffset   = pset.get<size_t                  >("CoherentOffset",        0);
     fStructuringElement    = pset.get<size_t                  >("StructuringElement",   20);
     fMorphWindow           = pset.get<size_t                  >("FilterWindow",         10);
     fThreshold             = pset.get<std::vector<float>      >("Threshold",           std::vector<float>()={5.0,3.5,3.5});
@@ -352,12 +354,12 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.empty())      fNumTruncBins     = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
     if (fRangeBins.empty())         fRangeBins        = icarus_signal_processing::VectorInt(maxChannelsPerFragment);
 
-    if (fThresholdVec.empty())      fThresholdVec     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment);
+    if (fThresholdVec.empty())      fThresholdVec     = icarus_signal_processing::VectorFloat(maxChannelsPerFragment / fCoherentNoiseGrouping);
 
     if (fFilterFunctionVec.empty()) fFilterFunctionVec.resize(maxChannelsPerFragment);
    
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+    icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;
@@ -382,7 +384,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
         if (fDiagnosticOutput)
         {
             std::cout << "********************************************************************************" << std::endl;
-            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard << ", ";
+            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardIDVec[boardSlot] << ", slot: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard << ", ";
             std::cout << std::endl;
         }
 
@@ -411,8 +413,8 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
             // Handle the filter function to use for this channel
             unsigned int plane = channelPlanePairVec[chanIdx].second;
 
-            // Set the threshold for this channel
-            fThresholdVec[channelOnBoard] = fThreshold[plane];
+            // Set the threshold which toggles between planes
+            fThresholdVec[channelOnBoard / fCoherentNoiseGrouping] = fThreshold[plane];
 
             if (plane > 2)
             {
@@ -479,18 +481,19 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 //                                           fCoherentNoiseGrouping,
 //                                           fMorphWindow);
 
-        denoiser.removeCoherentNoise1D(fWaveLessCoherent.begin()  + boardOffset,
-                                       fPedCorWaveforms.begin()   + boardOffset,
-                                       fMorphedWaveforms.begin()  + boardOffset,
-                                       fIntrinsicRMS.begin()      + boardOffset,
-                                       fSelectVals.begin()        + boardOffset,
-                                       fROIVals.begin()           + boardOffset,
-                                       fCorrectedMedians.begin()  + boardOffset,
-                                       fFilterFunctionVec.begin() + boardOffset,
-                                       fThresholdVec.begin()      + boardOffset,
-                                       nChannelsPerBoard,
-                                       fCoherentNoiseGrouping,
-                                       fMorphWindow);
+        denoiser(fWaveLessCoherent.begin()  + boardOffset,
+                 fPedCorWaveforms.begin()   + boardOffset,
+                 fMorphedWaveforms.begin()  + boardOffset,
+                 fIntrinsicRMS.begin()      + boardOffset,
+                 fSelectVals.begin()        + boardOffset,
+                 fROIVals.begin()           + boardOffset,
+                 fCorrectedMedians.begin()  + boardOffset,
+                 fFilterFunctionVec.begin() + boardOffset,
+                 fThresholdVec,
+                 nChannelsPerBoard,
+                 fCoherentNoiseGrouping,
+                 fCoherentNoiseOffset,
+                 fMorphWindow);
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment

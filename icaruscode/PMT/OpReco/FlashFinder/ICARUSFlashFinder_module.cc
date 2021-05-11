@@ -50,7 +50,6 @@ private:
   // Declare member data here.
   ::pmtana::FlashFinderManager _mgr;
   ::pmtana::PECalib _pecalib;
-  std::string _flash_producer;
   std::string _hit_producer;
 
   void GetFlashLocation(std::vector<double>, double&, double&, double&, double&);
@@ -63,7 +62,6 @@ ICARUSFlashFinder::ICARUSFlashFinder(pmtana::Config_t const & p)
 // Initialize member data here.
 {
   _hit_producer   = p.get<std::string>("OpHitProducer");
-  _flash_producer = p.get<std::string>("OpFlashProducer");
   
   auto const flash_algo  = p.get<std::string>("FlashFinderAlgo");
   auto const flash_pset = p.get<pmtana::Config_t>("AlgoConfig");

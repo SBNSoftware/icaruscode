@@ -81,6 +81,8 @@ icarus_art_services: {
     }
   }
 
+  DuplicateEventTracker: {}
+
 } # icarus_art_services
 
 

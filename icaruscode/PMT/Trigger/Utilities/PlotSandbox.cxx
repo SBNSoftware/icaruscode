@@ -121,6 +121,36 @@ std::string icarus::trigger::PlotSandbox::processTitle
 
 
 //------------------------------------------------------------------------------
+bool icarus::trigger::PlotSandbox::empty() const {
+  
+  std::vector<TDirectory const*> subDirectories; // directories of subboxes
+  
+  // if any of the subboxes is not empty, then this one is not either
+  for (auto& subbox: subSandboxes()) {
+    if (!subbox.empty()) return false;
+    subDirectories.push_back(subbox.getDirectory());
+  } // for
+  
+  auto const isSubDirectory = [b=subDirectories.begin(),e=subDirectories.end()]
+    (TObject const* obj)
+    {
+      auto dir = dynamic_cast<TDirectory const*>(obj);
+      return dir && std::find(b, e, dir) != e;
+    };
+  
+  // if there is any object in memory associated to the directory,
+  // that is not empty (directories from subboxes are exempted)
+  for (TObject const* obj: *(getDirectory()->GetList()))
+    if (!isSubDirectory(obj)) return false;
+  
+  // if there is any key associated to the directory, that is not empty
+  if (getDirectory()->GetListOfKeys()->GetSize()) return false;
+  
+  return true;
+} // icarus::trigger::PlotSandbox::empty()
+
+
+//------------------------------------------------------------------------------
 auto icarus::trigger::PlotSandbox::findSandbox(std::string const& name)
   -> PlotSandbox*
   { return findSandbox(*this, name); }
@@ -138,6 +168,23 @@ auto icarus::trigger::PlotSandbox::demandSandbox(std::string const& name)
 auto icarus::trigger::PlotSandbox::demandSandbox(std::string const& name) const
   -> PlotSandbox const&
   { return demandSandbox(*this, name); }
+
+
+//------------------------------------------------------------------------------
+bool icarus::trigger::PlotSandbox::deleteSubSandbox(std::string const& name) {
+  
+  auto const it = fData.subBoxes.find(name);
+  if (it == fData.subBoxes.end()) return false;
+  
+  if (it->second) {
+    auto&& subbox = std::move(it->second); // will get destroyed at end of scope
+    if (subbox->getDirectory()) delete subbox->getDirectory();
+    if (getDirectory()) getDirectory()->Delete((name + ";*").c_str());
+  }
+  
+  fData.subBoxes.erase(it);
+  return true;
+} // icarus::trigger::PlotSandbox::deleteSubSandbox()
 
 
 //------------------------------------------------------------------------------

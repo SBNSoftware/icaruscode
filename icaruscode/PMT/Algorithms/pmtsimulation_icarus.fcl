@@ -7,7 +7,9 @@
 # * `PMTsimulationAlg` algorithm:
 #     * `icarus_pmtsimulationalg_standard`: main configuration, expected to be
 #       used in production and by the general user
-#     * `icarus_pmtsimulationalg_nonoise`: as `icarus_pmtsimulationalg_standard`
+#     * `icarus_pmtsimulationalg_noise`: a general use configuration,
+#       including dark and electronics noise disabled
+#     * `icarus_pmtsimulationalg_nonoise`: as `icarus_pmtsimulationalg_noise`
 #       but with dark and electronics noise disabled
 # 
 # Usage:
@@ -21,6 +23,10 @@
 #   detached from `opdetsim_pmt_icarus.fcl`
 # 20200212 (petrillo@slac.stanford.edu)
 #   reconnected quantum efficiency to the value in `opticalproperties_icarus.fcl`
+# 20210206 (petrillo@slac.stanford.edu)
+#   added explicit noise configuration, and made standard an alias of it
+# 20210212 (petrillo@slac.stanford.edu)
+#   updated baseline to reflect the one in data
 #
 #
 
@@ -126,9 +132,9 @@ icarus_photoelectronresponse_standard: @local::icarus_photoelectronresponse_expo
 ###
 ###
 
-icarus_pmtsimulationalg_standard: {
+icarus_pmtsimulationalg_noise: {
 
-  Baseline:                  7999.5         #in ADC
+  Baseline:                  14999.5         #in ADC
   
   SinglePhotonResponse: @local::icarus_photoelectronresponse_standard
   
@@ -168,22 +174,33 @@ icarus_pmtsimulationalg_standard: {
     Gain:                   1e7            # total typical PMT gain
   } # PMTspecs
 
-} # icarus_pmtsimulationalg_standard
+} # icarus_pmtsimulationalg_noise
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ###
 ### No-noise configuration: `icarus_pmtsimulationalg_nonoise`
 ###
 ###
 icarus_pmtsimulationalg_nonoise: {
   
-  @table::icarus_pmtsimulationalg_standard
+  @table::icarus_pmtsimulationalg_noise
   
   AmpNoise:      0.0     # RMS in ADC counts
   DarkNoiseRate: "0 kHz"
   
-  
 } # icarus_pmtsimulationalg_nonoise
 
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+###
+### Configuration used for standard simulation
+###
+#
+# Includes noise.
+#
+icarus_pmtsimulationalg_standard: @local::icarus_pmtsimulationalg_noise
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 END_PROLOG

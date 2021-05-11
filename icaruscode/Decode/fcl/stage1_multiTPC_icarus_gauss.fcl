@@ -1,0 +1,46 @@
+#include "stage1_icarus_driver_common.fcl"
+
+process_name: stage1
+
+physics.reco: [ flashfilter,
+                @sequence::icarus_reco_Gauss_Cryo0 ,
+                @sequence::icarus_reco_Gauss_Cryo1 ] 
+
+physics.outana:            [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
+
+## Need overrides for the purity monitor
+physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.purityana1.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3D:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       PMAlgTracker:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}
+

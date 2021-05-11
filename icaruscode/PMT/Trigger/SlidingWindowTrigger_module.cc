@@ -69,7 +69,8 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * multi-level discriminated gates according to the geometric criterion of a
  * sliding window.
  *
- * The combination is a sum of all the discrminated waveforms within the window.
+ * The combination is a sum of all the discriminated waveforms within the
+ * window.
  * Different optical detector planes are treated independently and separately.
  * It is expected that the input is from V1730 LVDS gates
  * (see `icarus::trigger::LVDSgates` module) which combine (usually) two optical
@@ -94,8 +95,9 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * multiple channels (that is the common case if the input is LVDS gates).
  * A window can't cover only part of the channels of any input, but rather must
  * extend wide enough so that all the channels in the included gates are
- * covered.
- * Finally, all the channels must be covered by at least one window.
+ * covered. Channels may be exempted by marking them as "missing".
+ * Finally, all the channels which are not "missing" must be covered by at least
+ * one window.
  *
  * For the sliding window configuration to be valid, all the windows starting
  * with an offset multiple of the stride must be valid.
@@ -158,12 +160,13 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  *     instance which produced the discriminated waveforms; it must not include
  *     any instance name, as the instance names will be automatically added from
  *     `Thresholds` parameter.
- * * `Thresholds` (list of integers, mandatory): list of the discrimination
- *     thresholds to consider, in ADC counts. A data product containing a
- *     digital signal is read for each one of the thresholds, and the tag of the
- *     data product is expected to be the module label `TriggerGatesTag` with as
- *     instance name the value of the threshold (e.g. for a threshold of 6 ADC
- *     counts the data product tag might be `discrimopdaq:6`).
+ * * `Thresholds` (list of strings, mandatory): list of the discrimination
+ *     thresholds to consider. A data product containing a digital signal is
+ *     read for each one of the thresholds, and the tag of the data product is
+ *     expected to be the module label `TriggerGatesTag` with as instance name
+ *     the value of the entry in this list. While it is common for this entry to
+ *     be the actual threshold value in ADC (e.g. `"400"`), this is not
+ *     required.
  * * `WindowSize` (integral, mandatory): the number of _optical detector
  *     channels_ that every window must include. Note that this is not
  *     equivalent to the number of input objects from the `TriggerGatesTag` data
@@ -209,9 +212,10 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
       Comment("label of the input trigger gate data product (no instance name)")
       };
 
-    fhicl::Sequence<raw::ADC_Count_t> Thresholds {
+    fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
-      Comment("thresholds to consider [ADC counts]")
+      Comment
+        ("thresholds to consider (instance names of `TriggerGatesTag` input)")
       };
 
     fhicl::Atom<unsigned int> WindowSize {
@@ -283,7 +287,7 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// ADC thresholds to read, and the input tag connected to their data.
-  std::map<icarus::trigger::ADCCounts_t, art::InputTag> fADCthresholds;
+  std::map<std::string, art::InputTag> fADCthresholds;
 
   unsigned int const fWindowSize; ///< Sliding window size in number of channels.
   unsigned int const fWindowStride; ///< Sliding window base offset.
@@ -311,7 +315,7 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   void produceThreshold(
     art::Event& event,
     icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
-    icarus::trigger::ADCCounts_t const threshold,
+    std::string const& threshold,
     art::InputTag const& dataTag
     ) const;
 
@@ -353,7 +357,7 @@ namespace {
   Cont filter(Cont const& coll, Indices const& indices) {
     
     Cont selected;
-    for (auto const index: indices) selected.push_back(coll[index]);
+    for (auto const index: indices) selected.push_back(coll.at(index));
     return selected;
     
   } // filter()
@@ -388,10 +392,8 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   // more complex parameter parsing
   //
   std::string const discrModuleLabel = config().TriggerGatesTag();
-  for (raw::ADC_Count_t threshold: config().Thresholds()) {
-    fADCthresholds[icarus::trigger::ADCCounts_t{threshold}]
-      = art::InputTag{ discrModuleLabel, util::to_string(threshold) };
-  }
+  for (std::string const& threshold: config().Thresholds())
+    fADCthresholds[threshold] = art::InputTag{ discrModuleLabel, threshold };
 
   //
   // configuration report (short)
@@ -412,9 +414,9 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
       }
     } // for
     
-    log << "\nConfigured " << fADCthresholds.size() << " thresholds:";
+    log << "\nConfigured " << fADCthresholds.size() << " thresholds (ADC):";
     for (auto const& [ threshold, dataTag ]: fADCthresholds)
-      log << "\n * " << threshold << " ADC (from '" << dataTag.encode() << "')";
+      log << "\n * " << threshold << " (from '" << dataTag.encode() << "')";
   } // local block
 
 
@@ -448,9 +450,9 @@ void icarus::trigger::SlidingWindowTrigger::produce(art::Event& event) {
   
   icarus::trigger::OpDetWaveformDataProductMap_t waveformMap;
 
-  for (auto const& [ threshold, dataTag ]: fADCthresholds) {
+  for (auto const& [ thresholdStr, dataTag ]: fADCthresholds) {
 
-    produceThreshold(event, waveformMap, threshold, dataTag);
+    produceThreshold(event, waveformMap, thresholdStr, dataTag);
     
   } // for all thresholds
   
@@ -477,13 +479,14 @@ auto icarus::trigger::SlidingWindowTrigger::defineWindows() const
 void icarus::trigger::SlidingWindowTrigger::produceThreshold(
   art::Event& event,
   icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
-  icarus::trigger::ADCCounts_t const threshold,
+  std::string const& threshold,
   art::InputTag const& dataTag
 ) const {
   
   mf::LogDebug(fLogCategory)
     << "Processing threshold " << threshold
-    << " from '" << dataTag.encode() << "'";
+    << " from '" << dataTag.encode() << "'"
+    ;
 
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
   

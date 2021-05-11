@@ -15,7 +15,7 @@
 #include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icarus_signal_processing/ICARUSFFT.h"
+#include "icarus_signal_processing/Filters/ICARUSFFT.h"
 
 #include "TH1D.h"
 
@@ -143,11 +143,11 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         fSignalShaping->SetDecon(samplingRate, deconSize, channel);
         
         deconSize = fFFTSize;
-        
-        icarusutil::TimeVec holder(deconSize);
+
+        icarusutil::TimeVec deconVec(deconSize);
         
         // Pad with zeroes if the deconvolution buffer is larger than the input waveform
-        if (deconSize > waveform.size()) holder.resize(deconSize, 0.);
+        if (deconSize > waveform.size()) deconVec.resize(deconSize, 0.);
         
         // Watch for the case where the input ROI is long enough to want an deconvolution buffer that is
         // larger than the input waveform.
@@ -187,13 +187,15 @@ void ROIDeconvolution::Deconvolve(const IROIFinder::Waveform&        waveform,
         size_t holderOffset = 0; //deconSize > waveform.size() ? (deconSize - waveform.size()) / 2 : 0;
         
         // Fill the buffer and do the deconvolution
-        std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, holder.begin() + holderOffset);
+        std::copy(waveform.begin()+firstOffset, waveform.begin()+secondOffset, deconVec.begin() + holderOffset);
         
         // Deconvolute the raw signal using the channel's nominal response
-        fFFT->deconvolute(holder, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
+        fFFT->deconvolute(deconVec, fSignalShaping->GetResponse(channel).getDeconvKernel(), fSignalShaping->ResponseTOffset(channel));
+
+        std::vector<float>  holder(deconVec.size());
         
         // Get rid of the leading and trailing "extra" bins needed to keep the FFT happy
-        if (roiStart > 0 || holderOffset > 0) std::copy(holder.begin() + holderOffset + roiStart, holder.begin() + holderOffset + roiStop, holder.begin());
+        if (roiStart > 0 || holderOffset > 0) std::copy(deconVec.begin() + holderOffset + roiStart, deconVec.begin() + holderOffset + roiStop, holder.begin());
         
         // Resize the holder to the ROI length
         holder.resize(roiLen);

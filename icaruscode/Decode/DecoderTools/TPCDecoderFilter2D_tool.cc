@@ -27,7 +27,7 @@
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
-#include "icarus_signal_processing/FFTFilterFunctions.h"
+#include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 
 // std includes
 #include <string>
@@ -141,6 +141,7 @@ private:
     uint32_t                                       fFragment_id_offset;     //< Allow offset for id
     float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
     size_t                                         fCoherentNoiseGrouping;  //< # channels in common for coherent noise
+    size_t                                         fCoherentNoiseOffset;    //< offset for midplane
     std::vector<size_t>                            fStructuringElement;     //< Structuring element for morphological filter
     size_t                                         fMorphWindow;            //< Window for filter
     std::vector<float>                             fThreshold;              //< Threshold to apply for saving signal
@@ -217,6 +218,7 @@ void TPCDecoderFilter2D::configure(fhicl::ParameterSet const &pset)
     fFragment_id_offset     = pset.get<uint32_t           >("fragment_id_offset"      );
     fSigmaForTruncation     = pset.get<float              >("NSigmaForTrucation",  3.5);
     fCoherentNoiseGrouping  = pset.get<size_t             >("CoherentGrouping",    64);
+    fCoherentNoiseOffset    = pset.get<size_t             >("CoherentOffset",       0);
     fStructuringElement     = pset.get<std::vector<size_t>>("StructuringElement",  std::vector<size_t>()={8,16});
     fMorphWindow            = pset.get<size_t             >("FilterWindow",        10);
     fThreshold              = pset.get<std::vector<float> >("Threshold",           std::vector<float>()={5.0,3.5,3.5});
@@ -351,7 +353,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
     if (fPlaneVec.empty())          fPlaneVec.resize(nChannelsPerBoard,0);
    
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+//    icarus_signal_processing::Denoiser2D_Hough     denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;
@@ -464,7 +466,7 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                         filterFunctionPtr = std::make_unique<icarus_signal_processing::Average2D>(fStructuringElement[0],fStructuringElement[1]);
                         break;
                     case 'm' :
-                        filterFunctionPtr = std::make_unique<icarus_signal_processing::Median2D>(fStructuringElement[0],fStructuringElement[1]);
+                        filterFunctionPtr = std::make_unique<icarus_signal_processing::Median2D>(fStructuringElement[0],fStructuringElement[1],0);
                         break;
                     default:
                         std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCDecoderFilter2D" << std::endl;
@@ -478,19 +480,17 @@ void TPCDecoderFilter2D::process_fragment(detinfo::DetectorClocksData const&,
                     continue;
                 }
 
+                icarus_signal_processing::Denoiser2D_Hough denoiser(filterFunctionPtr.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphWindow);
+
                 // Run the coherent filter
-                denoiser.removeCoherentNoiseHough(fWaveLessCoherent.begin()  + boardOffset + startChannel,
-                                                  fPedCorWaveforms.begin()   + boardOffset + startChannel,
-                                                  fMorphedWaveforms.begin()  + boardOffset + startChannel,
-                                                  fIntrinsicRMS.begin()      + boardOffset + startChannel,
-                                                  fSelectVals.begin()        + boardOffset + startChannel,
-                                                  fROIVals.begin()           + boardOffset + startChannel,
-                                                  fCorrectedMedians.begin()  + boardOffset + startChannel,
-                                                  filterFunctionPtr.get(),
-                                                  fThresholdVec.begin()      + boardOffset + startChannel,
-                                                  deltaChannels,
-                                                  fCoherentNoiseGrouping,
-                                                  fMorphWindow);
+                denoiser(fWaveLessCoherent.begin()  + boardOffset + startChannel,
+                         fPedCorWaveforms.begin()   + boardOffset + startChannel,
+                         fMorphedWaveforms.begin()  + boardOffset + startChannel,
+                         fIntrinsicRMS.begin()      + boardOffset + startChannel,
+                         fSelectVals.begin()        + boardOffset + startChannel,
+                         fROIVals.begin()           + boardOffset + startChannel,
+                         fCorrectedMedians.begin()  + boardOffset + startChannel,
+                         deltaChannels);
 
                     }
 
