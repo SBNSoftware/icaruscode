@@ -83,6 +83,7 @@ namespace daq { class PMTDecoder; }
  * access the FHiCL configuration of the job and therefore the PMT configuration
  * data (see `icarus::PMTconfigurationExtraction` module).
  * 
+ * 
  * Configuration
  * --------------
  * 
@@ -122,9 +123,22 @@ namespace daq { class PMTDecoder; }
  * * `RequireBoardConfig` (flag, default: `true`): if set, the readout boards
  *     which have a setup (`BoardSetup`) are required to be included in the DAQ
  *     configuration of the input file, or an exception is thrown; if not set,
- *     missing readout boards are unnoticed;
+ *     missing readout boards are unnoticed.
+ * * `DataTrees` (list of strings, default: none): list of data trees to be
+ *     produced; if none (default), then `TFileService` is not required.
  * * `LogCategory` (string, default: `PMTDecoder`): name of the message facility
  *     category where the output is sent.
+ * 
+ * 
+ * Requirements
+ * -------------
+ * 
+ * Services required include:
+ * 
+ * * `IICARUSChannelMap` for the association of fragments to LArSoft channel ID;
+ * * `DetectorClocksService` for the correct decoding of the time stamps
+ *   (always required, even when dumbed-down timestamp decoding is requested);
+ * * `TFileService` only if the production of trees or plots is requested.
  * 
  * 
  * Waveform time stamp
@@ -178,6 +192,25 @@ namespace daq { class PMTDecoder; }
  * of an internal counter of the board at the time the board received a trigger.
  * This can be used to relate the various waveforms (and the various fragments)
  * in the _art_ event.
+ * 
+ * 
+ * Data trees
+ * -----------
+ * 
+ * The tool supports the following ROOT trees production on demand:
+ * 
+ * * `PMTfragments`: data pertaining a single fragment; each entry is about a
+ *   single fragment, and it includes full event ID, event time stamp (from
+ *   _art_, i.e. the one assigned to the event by artDAQ), the ID of the
+ *   fragment the entry is describing, and then the rest of the data, including:
+ *     * `TTT` (64-bit integer): (Extended) Trigger Time Tag value, in readout
+ *       board ticks (each worth 8 ns) from the last board reset;
+ *       currently the value includes the 31-bit counter and in addition the
+ *       overflow bit as MSB; the overflow bit is set by the readout board
+ *       the first time the counter passes its limit (2^31) and wraps, and never
+ *       cleared until the next board reset.
+ *       While the tree has room for the 48-bit version (ETTT), the rest of the
+ *       decoder does not yet support it.
  * 
  * 
  * 
@@ -757,7 +790,7 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         auto const timeStamp
           = fDetTimings.TriggerTime() - PMTtriggerDelay - preTriggerTime;
         mf::LogTrace(fLogCategory) << "V1730 board '" << info.name
-          << " has data starting at electronics time " << timeStamp
+          << "' has data starting at electronics time " << timeStamp
           << " = " << fDetTimings.TriggerTime()
           << " - " << PMTtriggerDelay << " - " << preTriggerTime
           ;
