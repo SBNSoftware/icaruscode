@@ -8,6 +8,7 @@
  */
 
 // Framework Includes
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
@@ -16,6 +17,8 @@
 #include "art/Framework/Core/ConsumesCollector.h"
 #include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
+#include "canvas/Persistency/Provenance/EventID.h"
+#include "canvas/Persistency/Provenance/Timestamp.h"
 // #include "cetlib/cpu_timer.h"
 #include "cetlib_except/exception.h"
 #include "fhiclcpp/types/TableAs.h"
@@ -45,6 +48,9 @@
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
+
+// ROOT libraries
+#include "TTree.h"
 
 // std includes
 #include <ostream>
@@ -216,6 +222,19 @@ namespace daq { class PMTDecoder; }
  */
 class daq::PMTDecoder: public IDecoder
 {
+  
+  /// Enumerate the supported data trees.
+  enum class DataTrees: std::size_t {
+    Fragments, ///< Information about fragments
+    N          ///< Counter.
+  };
+  using TreeNameList_t
+    = std::array<std::string, static_cast<std::size_t>(DataTrees::N)>;
+  static TreeNameList_t const TreeNames;
+  
+  /// Returns a string with all supported tree names.
+  static std::string listTreeNames(std::string const& sep = "\n");
+  
 public:
     
     using nanoseconds = util::quantities::intervals::nanoseconds; ///< Alias.
@@ -279,7 +298,13 @@ public:
         Comment("list of the setup settings for all relevant V1730 boards")
         };
       
-      fhicl::Atom<std::string> LogCategory {
+      fhicl::Sequence<std::string> DataTrees {
+        fhicl::Name("DataTrees"),
+        fhicl::Comment("produces the specified ROOT trees (" + listTreeNames(",") + ")"),
+        std::vector<std::string>{} // default
+        };
+      
+    fhicl::Atom<std::string> LogCategory {
         Name("LogCategory"),
         Comment("name of the category for message stream"),
         "PMTDecoder" // default
@@ -315,7 +340,7 @@ public:
     virtual void setupRun(art::Run const& run);
 
     /// Will read trigger information one day if needed.
-    virtual void setupEvent(art::Event const& event) {}
+    virtual void setupEvent(art::Event const& event);
     
     /**
      *  @brief Initialize any data products the tool will output
@@ -451,6 +476,62 @@ private:
     constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
       setBitIndices(T value) noexcept;
 
+    
+    // --- BEGIN -- Trees and their data ---------------------------------------
+    
+    /// Data structure for basic event information in simple ROOT trees.
+    struct TreeData_EventID_t {
+        unsigned int run;    ///< Run number.
+        unsigned int subrun; ///< Subrun number.
+        unsigned int event;  ///< Event number.
+        double timestamp;    ///< Event timestamp (seconds from the epoch).
+    }; // TreeData_EventID_t
+    
+    /// Structure collecting all data for a fragment ROOT tree.
+    struct TreeFragment_t {
+        struct Data_t: public TreeData_EventID_t {
+            
+            int fragmentID = 0; ///< ID of the fragment of this entry.
+            unsigned long int TriggerTimeTag = 0; ///< Trigger time tag from the fragment.
+            
+        }; // Data_t
+        
+        Data_t data;
+        TTree* tree = nullptr;
+    }; // TreeFragment_t
+    
+    
+    std::unique_ptr<TreeData_EventID_t> fEventInfo; ///< Event ID for trees.
+    std::unique_ptr<TreeFragment_t> fTreeFragment; ///< Tree with fragment information.
+    
+    // --- END ---- Trees and their data ---------------------------------------
+    
+    // --- BEGIN -- Tree-related methods ---------------------------------------
+    
+    /// Declares the use of event information.
+    void usesEventInfo();
+    
+    /// Initializes all requested data trees.
+    void initTrees(std::vector<std::string> const& treeNames);
+    
+    /// Initializes the event ID part of a tree.
+    void initEventIDtree(TTree& tree, TreeData_EventID_t& data);
+    
+    /// Initializes the fragment data tree (`fTreeFragment`).
+    void initFragmentsTree();
+
+    /// Fills the base information of a tree data entry from an _art_ event.
+    void fillTreeEventID
+      (art::Event const& event, TreeData_EventID_t& treeData) const;
+
+    /// Assigns the cached event information to the specified tree data.
+    void assignEventInfo(TreeData_EventID_t& treeData) const;
+  
+    /// Static initialization.
+    static TreeNameList_t initTreeNames();
+    
+    // --- END ---- Tree-related methods ---------------------------------------
+    
 }; // class daq::PMTDecoder
 
 
@@ -472,6 +553,28 @@ namespace daq {
 
 
 //------------------------------------------------------------------------------------------------------------------------------------------
+daq::PMTDecoder::TreeNameList_t const daq::PMTDecoder::TreeNames
+  = daq::PMTDecoder::initTreeNames();
+
+auto daq::PMTDecoder::initTreeNames() -> TreeNameList_t {
+  TreeNameList_t names;
+  names[static_cast<std::size_t>(DataTrees::Fragments)] = "PMTfragments";
+  return names;
+} // daq::PMTDecoder::initTreeNames()
+
+std::string daq::PMTDecoder::listTreeNames(std::string const& sep /* = " " */) {
+  std::string l;
+  for (std::string const& name: TreeNames) {
+    if (!l.empty()) l += sep;
+    l += '\'';
+    l += name;
+    l += '\'';
+  } // for
+  return l;
+} // daq::PMTDecoder::listTreeNames()
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 daq::PMTDecoder::PMTDecoder(Parameters const& params)
   : fDiagnosticOutput{ params().DiagnosticOutput() }
   , fRequireKnownBoards{ params().RequireKnownBoards() }
@@ -489,6 +592,8 @@ daq::PMTDecoder::PMTDecoder(Parameters const& params)
   // nobody is asking what this tool consumes()...
   // if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(fPMTconfigTag.value());
   
+  initTrees(params().DataTrees());
+    
   mf::LogInfo log(fLogCategory);
   log << "Configuration:"
     << "\n * boards with setup: " << fBoardSetup.size();
@@ -556,6 +661,14 @@ void daq::PMTDecoder::setupRun(art::Run const& run)
     
     UpdatePMTConfiguration(PMTconfig);
 }
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+void daq::PMTDecoder::setupEvent(art::Event const& event)
+{
+    // if needed, fill the record with the basic information of the event
+    if (fEventInfo) fillTreeEventID(event, *fEventInfo);
+} // daq::PMTDecoder::setupEvent()
 
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -720,6 +833,13 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
           << "      - size of output collection: " << fOpDetWaveformCollection->size();
     }
     
+    if (fTreeFragment) {
+      fTreeFragment->data.fragmentID = fragment_id;
+      fTreeFragment->data.TriggerTimeTag = time_tag;
+      assignEventInfo(fTreeFragment->data);
+      fTreeFragment->tree->Fill();
+    } // if fTreeFragment
+    
 } // PMTDecoder::process_fragment()
 
 
@@ -798,6 +918,9 @@ auto daq::PMTDecoder::matchBoardConfigurationAndSetup
         }
         return ppBoardConfig->second;
       };
+    
+    
+    if (fTreeFragment) assignEventInfo(fTreeFragment->data);
     
     // the filling is driven by boards configured in the tool
     // (which is how a setup entry is mandatory)
@@ -898,6 +1021,95 @@ daq::PMTDecoder::setBitIndices(T value) noexcept {
     return res;
     
 } // daq::PMTDecoder::setBitIndices()
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+void daq::PMTDecoder::initTrees(std::vector<std::string> const& treeNames) {
+    
+    auto findTree = [](std::string const& name)
+      {
+        return static_cast<PMTDecoder::DataTrees>(
+          std::distance(PMTDecoder::TreeNames.begin(),
+          std::find(PMTDecoder::TreeNames.begin(), PMTDecoder::TreeNames.end(), name))
+          );
+      };
+    
+    for (std::string const& name: treeNames) {
+        switch (findTree(name)) {
+            case DataTrees::Fragments: initFragmentsTree(); break;
+            case DataTrees::N:
+            default:
+                throw cet::exception("PMTdecoder")
+                  << "initTrees(): no data tree supported with name '" << name << "'.\n";
+        } // switch
+    } // for names
+    
+} // daq::PMTDecoder::initTrees()
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+void daq::PMTDecoder::initEventIDtree(TTree& tree, TreeData_EventID_t& data) {
+    
+    usesEventInfo(); // this tree includes event information
+    
+    tree.Branch("run", &data.run);
+    tree.Branch("subrun", &data.subrun);
+    tree.Branch("event", &data.event);
+    tree.Branch("timestamp", &data.timestamp);
+    
+} // daq::PMTDecoder::initEventIDtree()
+
+
+void daq::PMTDecoder::initFragmentsTree() {
+    
+    if (fTreeFragment) return;
+    
+    TTree* tree = art::ServiceHandle<art::TFileService>()
+      ->make<TTree>("PMTfragments", "PMT fragment data");
+    
+    fTreeFragment = std::make_unique<TreeFragment_t>();
+    fTreeFragment->tree = tree;
+    auto& data = fTreeFragment->data;
+    
+    initEventIDtree(*tree, data);
+    
+    tree->Branch("fragmentID", &data.fragmentID);
+    tree->Branch("TTT", &data.TriggerTimeTag, "TTT/l"); // ROOT 6.24 can't detect 64-bit
+    
+} // daq::PMTDecoder::initFragmentsTree()
+
+
+void daq::PMTDecoder::usesEventInfo() {
+  
+    // the allocation of fEventInfo is the flag for event information usage
+    if (!fEventInfo) fEventInfo = std::make_unique<TreeData_EventID_t>();
+  
+} // daq::PMTDecoder::usesEventInfo()
+
+
+void daq::PMTDecoder::assignEventInfo
+  (TreeData_EventID_t& treeData) const
+{
+    
+    assert(fEventInfo);
+    treeData = *fEventInfo; // nice slicing
+    
+} // daq::PMTDecoder::assignEventInfo()
+
+
+void daq::PMTDecoder::fillTreeEventID
+  (art::Event const& event, TreeData_EventID_t& treeData) const
+{
+    art::EventID const& id = event.id();
+    treeData.run    = id.run();
+    treeData.subrun = id.subRun();
+    treeData.event  = id.event();
+    
+    art::Timestamp const& timestamp = event.time();
+    treeData.timestamp
+      = static_cast<double>(timestamp.timeHigh()) + 1.e-9 * timestamp.timeLow();
+    
+} // daq::PMTDecoder::fillTreeEventID()
 
 
 //------------------------------------------------------------------------------------------------------------------------------------------
