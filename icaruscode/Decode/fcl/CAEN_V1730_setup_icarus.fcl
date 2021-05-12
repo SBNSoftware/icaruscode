@@ -1,5 +1,5 @@
 #
-# File:    CAEN_V1720_setup_icarus.fcl
+# File:    CAEN_V1730_setup_icarus.fcl
 # Purpose: Features of the setup of CAEN V1730 PMT readout boards in ICARUS.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    April 13, 2021

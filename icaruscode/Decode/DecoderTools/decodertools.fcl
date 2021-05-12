@@ -1,4 +1,4 @@
-#include "CAEN_V1720_setup_icarus.fcl"
+#include "CAEN_V1730_setup_icarus.fcl"
 
 BEGIN_PROLOG
 
