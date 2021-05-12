@@ -108,11 +108,11 @@ private:
                                            std::vector<recob::Wire>&   wireColVec,
                                            std::vector<recob::Wire>&   morphedVec)
             : fROIFinder(parent),
-            fEvent(event),
-            fPlaneIDVec(planeIDVec),
-            fPlaneIDToDataPairMap(planeIDToDataPairMap),
-            fWireColVec(wireColVec),
-            fMorphedVec(morphedVec)
+              fEvent(event),
+              fPlaneIDVec(planeIDVec),
+              fPlaneIDToDataPairMap(planeIDToDataPairMap),
+              fWireColVec(wireColVec),
+              fMorphedVec(morphedVec)
         {}
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
@@ -139,13 +139,14 @@ private:
     // This is for the baseline...
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
 
-    std::vector<art::InputTag>                     fWireModuleLabelVec;         ///< vector of modules that made digits
-    bool                                           fOutputMorphed;              ///< Output the morphed waveforms
-    size_t                                         fEventCount;                 ///< count of event processed
+    std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
+    bool                                                       fOutputMorphed;              ///< Output the morphed waveforms
+    bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
+    size_t                                                     fEventCount;                 ///< count of event processed
     
-    std::unique_ptr<icarus_tool::IROILocator>      fROITool;
+    std::map<size_t,std::unique_ptr<icarus_tool::IROILocator>> fROIToolMap;
 
-    const geo::GeometryCore*                       fGeometry = lar::providerFrom<geo::Geometry>();
+    const geo::GeometryCore*                                   fGeometry = lar::providerFrom<geo::Geometry>();
     
 }; // class ROIFinder
 
@@ -175,11 +176,20 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     // Recover the parameters
     fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
     fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
+    fDiagnosticOutput    = pset.get< bool                     >("DaignosticOutput",                                          false);
     
-    // Recover the baseline tool 
-    fhicl::ParameterSet roiFinderParams = pset.get<fhicl::ParameterSet>("ROIFinder");
+    // Recover the list of ROI finding tools
+    const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
 
-    fROITool = art::make_tool<icarus_tool::IROILocator> (roiFinderParams);
+    // Make a mapping between plane id and a plane's ROI finder
+    // This allows different ROI finders per plane but, more important, different parameters
+    for(const std::string& roiFinderTool : roiFinderTools.get_pset_names())
+    {
+        const fhicl::ParameterSet& roiFinderToolParamSet = roiFinderTools.get<fhicl::ParameterSet>(roiFinderTool);
+        size_t                     planeIdx              = roiFinderToolParamSet.get<size_t>("Plane");
+        
+        fROIToolMap[planeIdx] = art::make_tool<icarus_tool::IROILocator> (roiFinderToolParamSet);
+    }
     
     return;
 }
@@ -262,14 +272,12 @@ void ROIFinder::produce(art::Event& evt)
                 mapItr->second.second.addWire(wireID.Wire, wire);
             }
         }
-    
+   
         // Reserve the room for the output
         wireCol->reserve(wireVecHandle->size());
     
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
         multiThreadDeconvolutionProcessing deconvolutionProcessing(*this, evt, planeIDVec, planeIDToDataPairMap, *wireCol, *morphedCol);
-
-        std::cout << "ROIFinder has " << planeIDToDataPairMap.size() << " images to analyze" << std::endl;
     
         tbb::parallel_for(tbb::blocked_range<size_t>(0, planeIDVec.size()), deconvolutionProcessing);
         
@@ -314,7 +322,7 @@ void  ROIFinder::processPlane(size_t                      idx,
     icarus_signal_processing::ArrayFloat outputArray(dataArray.size(),icarus_signal_processing::VectorFloat(dataArray[0].size(),0.));
     icarus_signal_processing::ArrayBool  selectedVals(dataArray.size(),icarus_signal_processing::VectorBool(dataArray[0].size(),false));
 
-    fROITool->FindROIs(dataArray, mapItr->first, outputArray, selectedVals);
+    fROIToolMap.at(planeID.Plane)->FindROIs(dataArray, mapItr->first, outputArray, selectedVals);
 
 //    icarus_signal_processing::ArrayFloat morphedWaveforms(dataArray.size());
 
@@ -443,6 +451,21 @@ void  ROIFinder::processPlane(size_t                      idx,
 
             raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
             geo::View_t      view    = fGeometry->View(channel);
+
+            // Since we process logical TPC images we need to watch for duplicating entries 
+            // We can do that by checking to see if a channel has already been added...
+            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+
+            if (wireIDVec.size() > 1)
+            {
+                std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
+
+                if (wireItr != wireColVec.end())
+                {
+                    if (fDiagnosticOutput) std::cout << "******************* Found duplicate entry for channel " << channel << " ************************" << std::endl;
+                    continue;
+                }
+            }
 
             wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
         }

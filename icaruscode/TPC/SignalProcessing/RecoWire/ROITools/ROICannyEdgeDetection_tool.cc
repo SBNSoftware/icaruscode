@@ -21,6 +21,7 @@
 #include "TProfile.h"
 
 #include <fstream>
+#include <chrono>
 
 namespace icarus_tool
 {
@@ -38,31 +39,9 @@ public:
     
 private:
 
-    std::unique_ptr<icarus_signal_processing::HighPassButterworthFilter> fButterworthFilter;
-    std::unique_ptr<icarus_signal_processing::IMorphologicalFunctions2D> fMorphologicalFilter;
-    std::unique_ptr<icarus_signal_processing::IDenoiser2D>               fDenoiser2D;
-    std::unique_ptr<icarus_signal_processing::BilateralFilters>          fBilateralFilters;
-    std::unique_ptr<icarus_signal_processing::EdgeDetection>             fEdgeDetection;
-    std::unique_ptr<icarus_signal_processing::IROIFinder2D>              fROIFinder2D;
-
-    // fhicl parameters
-    std::vector<size_t>  fStructuringElement;         ///< Structuring element for morphological filter
-    std::vector<float>   fThreshold;                  ///< Threshold to apply for saving signal
-
-    // Start with parameters for Butterworth Filter
-    unsigned int         fButterworthOrder;           ///< Order parameter for Butterworth filter
-    unsigned int         fButterworthThreshold;       ///< Threshold for Butterworth filter
-
-    // Parameters for the 2D morphological filter
-    unsigned int         fMorph2DStructuringElementX; ///< Structuring element in X
-    unsigned int         fMorph2DStructuringElementY; ///< Structuring element in Y
-
-    // Parameters for the denoiser
-    unsigned int         fCoherentNoiseGrouping;      ///< Number of consecutive channels in coherent noise subtraction
-    unsigned int         fCoherentNoiseOffset;        ///< Offset for the midplane...
-    unsigned int         fMorphologicalWindow;        ///< Window size for filter
-    bool                 fOutputStats;                ///< Output of timiing statistics?
-    float                fCoherentThresholdFactor;    ///< Threshold factor for coherent noise removal
+    std::unique_ptr<icarus_signal_processing::BilateralFilters> fBilateralFilters;
+    std::unique_ptr<icarus_signal_processing::EdgeDetection>    fEdgeDetection;
+    std::unique_ptr<icarus_signal_processing::IROIFinder2D>     fROIFinder2D;
 
     // Parameters for the ROI finding
     unsigned int         fADFilter_SX;                ///< 
@@ -74,10 +53,6 @@ private:
     float                fHighThreshold;              ///<
     unsigned int         fBinaryDilation_SX;          ///<
     unsigned int         fBinaryDilation_SY;          ///<
-
-    // We need to give to the denoiser the "threshold vector" we will fill during our data loop
-    icarus_signal_processing::VectorFloat  fThresholdVec;  ///< "threshold vector" filled during decoding loop
-
 };
     
 //----------------------------------------------------------------------
@@ -93,29 +68,6 @@ ROICannyEdgeDetection::~ROICannyEdgeDetection()
     
 void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
 {
-    // Start by recovering the parameters
-    fStructuringElement = pset.get<std::vector<size_t> >("StructuringElement", std::vector<size_t>()={8,16});
-    fThreshold          = pset.get<std::vector<float>  >("Threshold",          std::vector<float>()={2.75,2.75,2.75});
-
-    fButterworthOrder     = pset.get<unsigned int>("ButterworthOrder",     2);
-    fButterworthThreshold = pset.get<unsigned int>("ButterworthThreshld", 30);
-
-    fButterworthFilter = std::make_unique<icarus_signal_processing::HighPassButterworthFilter>(fButterworthThreshold,fButterworthOrder,4096);
-
-    fMorph2DStructuringElementX = pset.get<unsigned int>("Morph2DStructuringElementX", 7);
-    fMorph2DStructuringElementY = pset.get<unsigned int>("Morph2DStructuringElementX", 28);
-
-    fMorphologicalFilter = std::make_unique<icarus_signal_processing::Dilation2D>(fMorph2DStructuringElementX,fMorph2DStructuringElementY);
-
-    fCoherentNoiseGrouping   = pset.get<unsigned int>("CoherentNoiseGrouping",    32);
-    fCoherentNoiseOffset     = pset.get<unsigned int>("CoherentNoiseOffset",      24);
-    fMorphologicalWindow     = pset.get<unsigned int>("MorphologicalWindow",      10);
-    fCoherentThresholdFactor = pset.get<float       >("CoherentThresholdFactor", 2.5);
-
-    fThresholdVec.resize(6560/fCoherentNoiseGrouping,fCoherentThresholdFactor);
-
-    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphologicalWindow);
-
     fADFilter_SX           = pset.get<unsigned int>("ADFilter_SX",         7);
     fADFilter_SY           = pset.get<unsigned int>("ADFilter_SY",         7);
     fSigma_x               = pset.get<float       >("Sigma_x",          10.0);
@@ -130,20 +82,6 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
 
     fBilateralFilters = std::make_unique<icarus_signal_processing::BilateralFilters>();
     fEdgeDetection    = std::make_unique<icarus_signal_processing::EdgeDetection>();
-
-    fROIFinder2D = std::make_unique<icarus_signal_processing::ROICannyFilter>(fButterworthFilter.get(), 
-                                                                              fDenoiser2D.get(), 
-                                                                              fBilateralFilters.get(),
-                                                                              fEdgeDetection.get(), 
-                                                                              fADFilter_SX,
-                                                                              fADFilter_SY,
-                                                                              fSigma_x,
-                                                                              fSigma_y,
-                                                                              fSigma_r,
-                                                                              fLowThreshold,
-                                                                              fHighThreshold,
-                                                                              fBinaryDilation_SX,
-                                                                              fBinaryDilation_SY);
     
     return;
 }
@@ -152,19 +90,11 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
 {
     unsigned int numChannels = inputImage.size();
     unsigned int numTicks    = inputImage[0].size();
-
-//    icarus_signal_processing::ArrayFloat waveLessCoherent(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-//    icarus_signal_processing::ArrayFloat medianVals(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-//    icarus_signal_processing::ArrayFloat coherentRMS(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-//    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat finalErosion(numChannels,icarus_signal_processing::VectorFloat(4096,0.));
-    icarus_signal_processing::ArrayFloat fullEvent(numChannels,icarus_signal_processing::VectorFloat(4096,0.));
-
-//    (*fROIFinder2D)(inputImage,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);data_dl17_run5392_48_20210327T233602_20210409T191447-stage0.root
   
+    std::chrono::high_resolution_clock::time_point funcStartTime = std::chrono::high_resolution_clock::now();
+
     // 5. Directional Smoothing
     std::cout << "++> Step 5: Directional smoothing" << std::endl;
-    icarus_signal_processing::ArrayFloat buffer0  (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
     icarus_signal_processing::ArrayFloat buffer   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
     icarus_signal_processing::ArrayFloat sobelX   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
     icarus_signal_processing::ArrayFloat sobelY   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
@@ -172,75 +102,65 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
     icarus_signal_processing::ArrayFloat direction(numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
     icarus_signal_processing::ArrayBool  rois     (numChannels, icarus_signal_processing::VectorBool( numTicks,false));
 
+    std::chrono::high_resolution_clock::time_point sobelStartTime = std::chrono::high_resolution_clock::now();
+
     fEdgeDetection->SepSobel(inputImage, sobelX, sobelY, gradient, direction);
+
+    std::chrono::high_resolution_clock::time_point sobelStopTime      = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point bilateralStartTime = sobelStopTime;
 
     std::cout << "==> Step 6: Apply bilateral filter" << std::endl;
 
-    fBilateralFilters->directional(inputImage, direction, buffer0, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, 360);
+    fBilateralFilters->directional(inputImage, direction, buffer, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, 360);
+
+    std::chrono::high_resolution_clock::time_point bilateralStopTime = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point dilationStartTime = bilateralStopTime;
 
     std::cout << "==> Step 7: Apply Second Morphological Enhancing" << std::endl;
 
-    icarus_signal_processing::Dilation2D(fADFilter_SX,fADFilter_SY)(buffer0.begin(), numChannels, buffer.begin());
+    icarus_signal_processing::Dilation2D(fADFilter_SX,fADFilter_SY)(buffer.begin(), numChannels, output.begin());
 
-//    output = buffer;
+    std::chrono::high_resolution_clock::time_point dilationStopTime    = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point edgeInterpStartTime = dilationStopTime;
 
     std::cout << "==> Step 8: Perform Canny Edge Detection" << std::endl;
 
     // 6. Apply Canny Edge Detection
-//    fEdgeDetection->Canny(buffer, rois, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, fLowThreshold, fHighThreshold, 'd');  // Since we run on deconvolved waveforms, use dilation 
-
     for(auto& gradVec : gradient) std::fill(gradVec.begin(),gradVec.end(),0.);
 
-    fEdgeDetection->SepSobel(buffer, sobelX, sobelY, gradient, direction);
-    fEdgeDetection->EdgeNMSInterpolation(gradient, sobelX, sobelY, direction, buffer);
+    fEdgeDetection->SepSobel(output, sobelX, sobelY, gradient, direction);
+    fEdgeDetection->EdgeNMSInterpolation(gradient, sobelX, sobelY, direction, output);
+
+    std::chrono::high_resolution_clock::time_point edgeInterpStopTime  = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point hysterisisStartTime = edgeInterpStopTime;
 
     std::vector<int> strongEdgeRows;
     std::vector<int> strongEdgeCols;
     std::vector<int> weakEdgeRows;
     std::vector<int> weakEdgeCols;
 
-    std::cout << "==> DoubleThresholding with low threshold: " << fLowThreshold << ", high threshold: " << fHighThreshold << std::endl;
+    fEdgeDetection->SparseHysteresisThresholding(output, fLowThreshold, fHighThreshold, rois);
 
-    fEdgeDetection->HysteresisThresholdingFast(buffer, fLowThreshold, fHighThreshold, rois);
-
-//    fEdgeDetection->DoubleThresholding(buffer, rois, strongEdgeRows, strongEdgeCols, weakEdgeRows, weakEdgeCols, fLowThreshold, fHighThreshold);
-
-//    fEdgeDetection->HysteresisThresholding(rois, strongEdgeRows, strongEdgeCols, weakEdgeRows, weakEdgeCols, outputROIs);
     std::cout << "==> Final Step: get dilation, numChannels: " << numChannels << ", rois: " << rois.size() << ", output: " << outputROIs.size() << std::endl;
+
+    std::chrono::high_resolution_clock::time_point hysterisisStopTime      = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point binaryDilationStartTime = hysterisisStopTime;
 
     icarus_signal_processing::Dilation2D(fBinaryDilation_SX,fBinaryDilation_SY)(rois.begin(), numChannels, outputROIs.begin());
 
-//    fEdgeDetection->getDilation2D(rois, fBinaryDilation_SX,fBinaryDilation_SY, outputROIs);
-
-//    for (size_t i = 0; i < strongEdgeRows.size(); ++i)
-//    {
-//        //output[strongEdgeRows[i]][strongEdgeCols[i]] = 1.;
-//        output[strongEdgeRows[i]][strongEdgeCols[i]] = 10.;
-//    }
-
-//    for (size_t i = 0; i < weakEdgeRows.size(); ++i)
-//    {
-//        //output[strongEdgeRows[i]][strongEdgeCols[i]] = 1.;
-//        output[weakEdgeRows[i]][weakEdgeCols[i]] = 10.;
-//    }
-
-    std::cout << "==> DONE!! returning to calling module..." << std::endl;
-
-//    for(size_t rowIdx; rowIdx < output.size(); rowIdx++) 
-//    {
-//        for(size_t colIdx = 0; colIdx < output[rowIdx].size(); colIdx++) output[rowIdx][colIdx] = 10. * direction[rowIdx][colIdx];
-//    }
-
-//    for(size_t rowIdx = 0; rowIdx < numChannels; rowIdx++)
-//    {
-//        for(size_t colIdx = 0; colIdx < numTicks; colIdx++)
-//            output[rowIdx][colIdx] = outputROIs[rowIdx][colIdx] ? 10. : 0.;
-//    }
-
-//    output     = buffer;
-//    outputROIs = rois;
+    std::chrono::high_resolution_clock::time_point binaryDilationStopTime  = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point funcStopTime            = hysterisisStopTime;
+  
+    std::chrono::duration<double> funcTime       = std::chrono::duration_cast<std::chrono::duration<double>>(funcStopTime - funcStartTime);
+    std::chrono::duration<double> sobelTime      = std::chrono::duration_cast<std::chrono::duration<double>>(sobelStopTime - sobelStartTime);
+    std::chrono::duration<double> bilateralTime  = std::chrono::duration_cast<std::chrono::duration<double>>(bilateralStopTime - bilateralStartTime);
+    std::chrono::duration<double> dilationTime   = std::chrono::duration_cast<std::chrono::duration<double>>(dilationStopTime - dilationStartTime);
+    std::chrono::duration<double> edgeInterpTime = std::chrono::duration_cast<std::chrono::duration<double>>(edgeInterpStopTime - edgeInterpStartTime);
+    std::chrono::duration<double> hysterisisTime = std::chrono::duration_cast<std::chrono::duration<double>>(hysterisisStopTime - hysterisisStartTime);
+    std::chrono::duration<double> binaryDilTime  = std::chrono::duration_cast<std::chrono::duration<double>>(binaryDilationStopTime - binaryDilationStartTime);
 
     std::cout << "--> ROICannyEdgeDetection finished!" << std::endl;
+    std::cout << "    - Total time: " << funcTime.count() << ", sobel: " << sobelTime.count() << ", bilateral: " << bilateralTime.count() << ", dilation: " << dilationTime.count() << ", Edge: " << edgeInterpTime.count() << ", hysterisis: " << hysterisisTime.count() << ", dilate: " << binaryDilTime.count() << std::endl;
      
     return;
 }
