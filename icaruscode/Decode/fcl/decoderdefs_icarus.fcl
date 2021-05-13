@@ -1,4 +1,4 @@
-#include "decodertools.fcl"
+(#include "decodertools.fcl"
 
 BEGIN_PROLOG
 
@@ -36,6 +36,12 @@ decodePMT: {
                                     @table::PMTDecoderTool
                       PMTconfigTag: @nil # must override
                     }
+}
+
+decodeTrigger: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerUDP"
+                    DecoderTool:        @local::TriggerDecoderTool
 }
 
 END_PROLOG

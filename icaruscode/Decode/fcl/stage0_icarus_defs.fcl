@@ -21,6 +21,10 @@ decodePMT.DecoderTool.PMTconfigTag: pmtconfig
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
 {
+
+  ### configuration extraction
+  pmtconfig:                      @local::extractPMTconfig
+
   ### Decoder definitions
   daqTPC:                         @local::decodeTPC
   daqTPCWW:                       @local::decodeTPC
@@ -30,6 +34,8 @@ icarus_stage0_producers:
 
   pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
+  
+  daqTrigger:                     @local::decodeTrigger
 
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
@@ -117,8 +123,9 @@ icarus_stage0_multiTPC_Sep_TPC:    [ daqTPCWW,        daqTPCWE,        daqTPCEW,
                                      gaushitSTPCWW,   gaushitSTPCWE,   gaushitSTPCEW,   gaushitSTPCEE
                                    ]
 
-icarus_stage0_multiTPC_TPC:        [ daqTPC,
-                                     pmtconfig,
+icarus_stage0_multiTPC_TPC:        [ pmtconfig,
+                                     daqTrigger,
+                                     daqTPC,
                                      daqPMT,
                                      decon1droi,
                                      roifinder,
@@ -126,6 +133,8 @@ icarus_stage0_multiTPC_TPC:        [ daqTPC,
                                    ]
 
 icarus_stage0_pmt:                 [ pmtconfig,
+                                     daqPMT,
+                                     daqTrigger,
                                      daqPMT,
                                      ophit,
                                      opflashCryo0,

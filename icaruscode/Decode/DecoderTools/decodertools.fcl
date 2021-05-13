@@ -68,4 +68,8 @@ PMTDecoderTool: {
     BoardSetup:         @local::icarus_V1730_setup
 }
 
+TriggerDecoderTool: {
+   tool_type:          TriggerDecoder
+}
+
 END_PROLOG

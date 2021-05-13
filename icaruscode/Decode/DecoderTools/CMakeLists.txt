@@ -4,7 +4,11 @@ cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
+add_subdirectory("Dumpers")
+
 art_make( SUBDIRS details
+          EXCLUDE
+                       "TriggerDecoder_tool.cc"
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
@@ -46,6 +50,22 @@ art_make( SUBDIRS details
                         ${FHICLCPP}
                         cetlib cetlib_except
         )
+
+simple_plugin( "TriggerDecoder" tool
+  icaruscode_Decode_DecoderTools_Dumpers
+  icaruscode_Decode_DecoderTools
+  lardataobj_RawData
+  sbndaq-artdaq-core_Overlays_ICARUS
+  artdaq-core_Utilities
+  ${ART_PERSISTENCY_PROVENANCE}
+  ${ART_FRAMEWORK_CORE}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_UTILITIES}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB}
+  )
 
 install_headers()
 install_fhicl()
