@@ -39,7 +39,7 @@
 # =============
 #
 # This configuration does not directly depend on any specific configuration,
-# but it requires the service `PhotonVisibilityService` to have been already
+# but it requires the service `LArG4Parameters` to have been already
 # configured.
 #
 #
