@@ -49,6 +49,15 @@ class daq::TriggerPayloadParser {
   
     public:
   
+  using GateID_t = int; ///< Type for gate ID storage. TODO
+  
+  /// Type for gate type storage. TODO
+  struct GateType_t {
+    static constexpr int noType = std::numeric_limits<int>::max();
+    int A = noType;
+    int B = noType;
+  }; // GateType_t
+  
   /// Data for a single time stamp.
   struct TSdata_t {
     int eventNo = -1;
@@ -112,7 +121,7 @@ class daq::TriggerPayloadParser {
     private:
   
   /// Separator used to split words (actually, not really).
-  static constexpr char sep = ',';
+  static constexpr std::array<char, 3U> seps = { ',', '\r', '\n' };
   
   /// Throws an exception if `data` is not complete.
   static void validate(TriggerData_t const& data);
@@ -143,6 +152,18 @@ class daq::TriggerPayloadParser {
   TSdata_t parseTSdata(std::istringstream& sstr, std::string const& TSname);
   
   
+  /// Extracts information about the gate ID from the stream `sstr`.
+  static GateID_t parseGateID(std::istringstream& sstr);
+  
+  /// Extracts information about the gate type from the stream `sstr`.
+  static GateType_t parseGateType(std::istringstream& sstr);
+  
+  /// Extracts all spaces from `is`, returns `is` itself (may end up in EOF).
+  static std::istream& wasteSpaces(std::istream& is);
+  
+  /// Returns whether c` is any of the separators in `seps`.
+  static /* constexpr */ bool issep(char c); // C++20: constexpr
+
 }; // class daq::TriggerPayloadParser
 
 

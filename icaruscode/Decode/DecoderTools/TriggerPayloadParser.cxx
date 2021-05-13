@@ -15,7 +15,6 @@
 #include <vector>
 #include <cctype> // std::isspace()
 
-
 // -----------------------------------------------------------------------------
 // ---  TriggerPayloadParser implementation
 // -----------------------------------------------------------------------------
@@ -45,9 +44,22 @@ auto daq::TriggerPayloadParser::parse(std::string payload) -> TriggerData_t {
       triggerData.Local_TS1.emplace(parseTSdata(buffer, word));
     else if (word == "WR_TS1")
       triggerData.WR_TS1.emplace(parseTSdata(buffer, word));
+    else if (word == "Gate ID")
+      parseGateID(buffer); // TODO store it
+    else if (word == "Gate Type")
+      parseGateType(buffer); // TODO store it
     else {
+#if 1
+      // FIXME this is for TEMPORARY support for recent runs (581x)
+      // with some buffer overflow problem
+      // we are currently not depending on message facility... so I even skip the warning
+      // mf::LogWarning("TriggerPayloadParser")
+      //   << "Unsupported token: '" << word << "'";
+      continue;
+#else
       throw cet::exception("TriggerPayloadParser")
         << "Unsupported token: '" << word << "'\n";
+#endif // 1?
     }
   }
   validate(triggerData); // throws if incomplete/invalid/inconsistent
@@ -74,16 +86,26 @@ void daq::TriggerPayloadParser::validate(TriggerData_t const& data) {
 std::optional<std::string> daq::TriggerPayloadParser::nextToken
   (std::istream& sstr)
 {
+  if (wasteSpaces(sstr).fail()) return std::nullopt; // got to EOF (and back)
+
+  // there are only two ways to complete a token:
+  // a separator character, or the end of file
+  char c;
   std::string token;
-  while (sstr >> token) {
-    if ((token.length() == 1) && (token.front() == sep)) continue;
-    if (!token.empty() && token.back() == sep) token.pop_back();
-    while (!token.empty() && std::isspace(token.back())) token.pop_back();
-    if (!token.empty() && token.front() == sep) token.erase(0);
-    while (!token.empty() && std::isspace(token.front())) token.erase(0);
-    return std::optional(std::move(token));
+  while (sstr.get(c)) { // spaces are merged verbatim into the token
+    if (issep(c)) break;
+    token += c;
   } // while
-  return std::nullopt;
+  
+  // remove trailing spaces from the token
+  while (!token.empty() && std::isspace(token.back())) token.pop_back();
+  
+  // if we reached the end of file and the token is still empty,
+  // i.e. if the current token was terminated by EOF rather than a separator,
+  // we don't emit the (empty) token: an empty token can be only be made
+  // by closing it explicitly with a separator
+  return (sstr.eof() && token.empty())
+    ? std::nullopt: std::optional(std::move(token));
 } // daq::TriggerPayloadParser::nextToken()
 
 
@@ -117,6 +139,42 @@ auto daq::TriggerPayloadParser::parseTSdata
   }
   return data;
 } // daq::TriggerPayloadParser::parseTSdata()
+
+
+// -----------------------------------------------------------------------------
+auto daq::TriggerPayloadParser::parseGateID
+  (std::istringstream& sstr) -> GateID_t
+{
+  return { nextRequiredValue<int>(sstr) };
+} // daq::TriggerPayloadParser::parseGateID()
+
+
+// -----------------------------------------------------------------------------
+auto daq::TriggerPayloadParser::parseGateType
+  (std::istringstream& sstr) -> GateType_t
+{
+  GateType_t gateType;
+  gateType.A = nextRequiredValue<int>(sstr);
+//   gateType.B = nextRequiredValue<int>(sstr);
+  return gateType;
+} // daq::TriggerPayloadParser::parseGateType()
+
+
+// -----------------------------------------------------------------------------
+/* constexpr */ bool daq::TriggerPayloadParser::issep(char c) // C++20: constexpr
+  { return std::find(seps.begin(), seps.end(), c) != seps.end(); }
+
+
+// -----------------------------------------------------------------------------
+std::istream& daq::TriggerPayloadParser::wasteSpaces(std::istream& is) {
+  constexpr auto EoF = std::istream::traits_type::eof();
+  do {
+    auto const ch = is.get();
+    if (ch == EoF) return is;
+    if (!std::isspace(ch)) return is.unget();
+  } while (is);
+  throw std::logic_error("daq::TriggerPayloadParser::wasteSpaces() unexpected");
+} // daq::TriggerPayloadParser::wasteSpaces()
 
 
 // -----------------------------------------------------------------------------
