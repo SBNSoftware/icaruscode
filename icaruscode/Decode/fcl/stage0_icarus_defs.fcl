@@ -14,8 +14,9 @@
 
 BEGIN_PROLOG
 
-# set the name of our `extractPMTconfig` (and, in future, trigger) module
+# set the name of our `extractPMTconfig` and trigger decoder modules
 decodePMT.DecoderTool.PMTconfigTag: pmtconfig
+decodePMT.DecoderTool.TriggerTag:   daqTrigger
 
 
 ### This is the complete list of all producers! ###
