@@ -45,6 +45,7 @@ decodePMT: {
                     DecoderTool: {
                                     @table::PMTDecoderTool
                       PMTconfigTag: @nil # must override
+                      TriggerTag:   @nil # must override
                     }
 }
 
