@@ -36,6 +36,11 @@
 #include <cstdlib> // std::size_t
 #include <memory>
 
+// FIXME in some of the runs, the board reader appears to return nonsense
+//       (or the interpretation this side of the online border is wrong);
+//       use the local parser to store trigger information?
+#define TRIGGERDECODER_TriggerFromDirectParsing 1
+
 // -----------------------------------------------------------------------------
 namespace daq 
 {
@@ -121,11 +126,29 @@ namespace daq
     size_t fragmentID = fragment.fragmentID();
     icarus::ICARUSTriggerUDPFragment frag(fragment);
     //artdaq::Fragment::timestamp_t ts = frag.timestamp();
+
+    int TriggerNumber = 0;
+    std::uint64_t GlobalTriggerTimestamp = 0;
+
+#if TRIGGERDECODER_TriggerFromDirectParsing
+    std::string payloadAsText
+      = reinterpret_cast<char const*>(fragment.dataBeginBytes());
+    std::replace(payloadAsText.begin(), payloadAsText.end(), '\x0D', '\n');
+    TriggerPayloadParser parser;
+    auto const& triggerData = parser(payloadAsText);
+    TriggerNumber = triggerData.WR_TS1->eventNo;
+    GlobalTriggerTimestamp
+      = static_cast<std::uint64_t>(triggerData.WR_TS1->timeStampHigh) * 1'000'000'000UL
+      + triggerData.WR_TS1->timeStampLow;
+#endif // TRIGGERDECODER_TriggerFromDirectParsing
+
     if(fDiagnosticOutput) {
-      icarus::ICARUSTriggerUDPFragmentMetadata meta = *frag.Metadata();
+#if !TRIGGERDECODER_TriggerFromDirectParsing
       std::string payloadAsText
         = reinterpret_cast<char const*>(fragment.dataBeginBytes());
       std::replace(payloadAsText.begin(), payloadAsText.end(), '\x0D', '\n');
+#endif // !TRIGGERDECODER_TriggerFromDirectParsing
+      icarus::ICARUSTriggerUDPFragmentMetadata meta = *frag.Metadata();
       mf::LogVerbatim log { "TriggerDecoder" };
       log
           << meta
@@ -136,8 +159,10 @@ namespace daq
         << payloadAsText
         << "\n --- END --" << std::string(60, '-')
         ;
+#if !TRIGGERDECODER_TriggerFromDirectParsing
       TriggerPayloadParser parser;
       auto const& triggerData = parser(payloadAsText);
+#endif // !TRIGGERDECODER_TriggerFromDirectParsing
       
       std::time_t dateTime = triggerData.WR_TS1->timeStampHigh;
       std::string dateTimeStr = std::ctime(&dateTime);
@@ -188,7 +213,14 @@ namespace daq
     long wr_seconds = frag.getWRSeconds();
     long wr_nsec = frag.getWRNanoSeconds();
     uint64_t trigger_ts = wr_seconds*1e9 + wr_nsec;
-    fTrigger->emplace_back(wr_event_no, trigger_ts);
+    
+#if !TRIGGERDECODER_TriggerFromDirectParsing
+    TriggerNumber = wr_event_no;
+    GlobalTriggerTimestamp = trigger_ts;
+#endif // !TRIGGERDECODER_TriggerFromDirectParsing
+    
+    fTrigger->emplace_back(TriggerNumber, GlobalTriggerTimestamp);
+    
     if(fDiagnosticOutput || fDebug)
     {
       mf::LogInfo log { "TriggerDecoder" };
@@ -214,6 +246,12 @@ namespace daq
   void TriggerDecoder::outputDataProducts(art::Event &event)
   {
     //Place trigger data object into raw data store 
+    mf::LogInfo log { "TriggerDecoder" };
+    log << "Decoded " << fTrigger->size() << " triggers:";
+    for (raw::ExternalTrigger const& trigger: *fTrigger) {
+      log << "\n - ID=" << trigger.GetTrigID() << " timestamp=" << trigger.GetTrigTime();
+    }
+    
     event.put(std::move(fTrigger));
   }
 
