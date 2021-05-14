@@ -228,7 +228,7 @@ private:
     unsigned int                                                fNumROPs;
 
     // Our functions
-    std::unique_ptr<icarus_signal_processing::HighPassButterworthFilter> fButterworthFilter;
+    std::unique_ptr<icarus_signal_processing::IFFTFilterFunction>        fButterworthFilter;
     std::unique_ptr<icarus_signal_processing::IMorphologicalFunctions2D> fMorphologicalFilter;
     std::unique_ptr<icarus_signal_processing::IDenoiser2D>               fDenoiser2D;
     std::unique_ptr<icarus_signal_processing::BilateralFilters>          fBilateralFilters;
@@ -348,7 +348,8 @@ void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fButterworthOrder           = pset.get<unsigned int              >("ButterworthOrder",     2);
     fButterworthThreshold       = pset.get<unsigned int              >("ButterworthThreshld", 30);
 
-    fButterworthFilter = std::make_unique<icarus_signal_processing::HighPassButterworthFilter>(fButterworthThreshold,fButterworthOrder,4096);
+    //fButterworthFilter = std::make_unique<icarus_signal_processing::HighPassButterworthFilter>(fButterworthThreshold,fButterworthOrder,4096);
+    fButterworthFilter = std::make_unique<icarus_signal_processing::NoFFTFilter>();
 
     fMorph2DStructuringElementX = pset.get<unsigned int              >("Morph2DStructuringElementX", 7);
     fMorph2DStructuringElementY = pset.get<unsigned int              >("Morph2DStructuringElementX", 28);
@@ -362,7 +363,8 @@ void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 
     fThresholdVec.resize(6560/fCoherentNoiseGrouping,fCoherentThresholdFactor);
 
-    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphologicalWindow);
+    //fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D_Hough>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fCoherentNoiseOffset, fMorphologicalWindow);
+    fDenoiser2D = std::make_unique<icarus_signal_processing::Denoiser2D>(fMorphologicalFilter.get(), fThresholdVec, fCoherentNoiseGrouping, fMorphologicalWindow);
 
     fADFilter_SX                = pset.get<unsigned int              >("ADFilter_SX",         7);
     fADFilter_SY                = pset.get<unsigned int              >("ADFilter_SY",         7);
