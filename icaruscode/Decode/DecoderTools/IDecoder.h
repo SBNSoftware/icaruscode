@@ -22,6 +22,8 @@
 namespace art
 {
     class ProducesCollector;
+    class ConsumesCollector;
+    class Run;
 }
 
 namespace daq
@@ -38,6 +40,11 @@ public:
     virtual ~IDecoder() noexcept = default;
 
     /**
+     *  @brief Declare to the framework what you expect to read.
+     */
+    virtual void consumes(art::ConsumesCollector&) {}
+
+    /**
      *  @brief The space point building should output the hit collection
      *         for those hits which combine to form space points - a nice noise filter!
      */
@@ -49,6 +56,20 @@ public:
      *  @param ParameterSet  The input set of parameters for configuration
      */
     virtual void configure(const fhicl::ParameterSet&) = 0;
+
+    /**
+     *  @brief Preparation to process a new run.
+     *
+     *  To be called on every _art_ run transition.
+     */
+    virtual void setupRun(art::Run const& run) {}
+
+    /**
+     *  @brief Preparation to process a new event.
+     *
+     *  To be called on every _art_ event transition.
+     */
+    virtual void setupEvent(art::Event const& event) {}
 
     /**
      *  @brief Initialize any data products the tool will output

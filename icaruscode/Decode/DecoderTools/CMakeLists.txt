@@ -4,7 +4,7 @@ cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
-art_make(
+art_make( SUBDIRS details
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
