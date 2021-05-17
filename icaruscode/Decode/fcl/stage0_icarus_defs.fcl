@@ -122,11 +122,16 @@ icarus_stage0_multiTPC_Sep_TPC:    [ daqTPCWW,        daqTPCWE,        daqTPCEW,
                                    ]
 
 icarus_stage0_multiTPC_TPC:        [ daqTPC,
-                                     pmtconfig,
-                                     daqPMT,
                                      decon1droi,
-                                     roifinder,
-                                     gaushitTPCWW, gaushitTPCWE, gaushitTPCEW, gaushitTPCEE
+                                     roifinder
+                                   ]
+
+icarus_stage0_EastHits_TPC:        [ gaushitTPCEW,
+                                     gaushitTPCEE
+                                   ]
+
+icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
+                                     gaushitTPCWE
                                    ]
 
 icarus_stage0_pmt:                 [ pmtconfig,
@@ -142,8 +147,10 @@ icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,
                                    ]
 
 icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_pmt,
-                                    flashfilter,
-                                     @sequence::icarus_stage0_multiTPC_TPC
+                                     flashfilter,
+                                     @sequence::icarus_stage0_multiTPC_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC
                                    ]
 
 ### Below we include overrides for the modules above
