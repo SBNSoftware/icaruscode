@@ -238,12 +238,16 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   //
   // 4. find the trigger time, fill the trigger information accordingly
   //
-  auto const trigTick = trigPrimitive.findOpen(); // first trigger
-  if (trigTick != trigPrimitive.MaxTick) {
-    res.emplace(detinfo::timescales::optical_tick{ trigTick });
-    assert(res);
-  }
-  
+  icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+    { trigPrimitive, pattern.minInMainWindow };
+
+  extractOpeningInfo.setLocation(TriggerInfo_t::LocationID_t{ windowInfo.index });
+
+  while (extractOpeningInfo) {
+    auto info = extractOpeningInfo();
+    if (info) res.add(info.value());
+  } // while
+
   return res;
   
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::applyWindowPattern()
