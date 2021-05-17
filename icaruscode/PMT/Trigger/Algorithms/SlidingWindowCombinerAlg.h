@@ -22,7 +22,6 @@
 // framework libraries
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
-
 // C/C++ standard libraries
 #include <set>
 #include <vector>

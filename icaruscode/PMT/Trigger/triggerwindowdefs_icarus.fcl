@@ -1,0 +1,54 @@
+#
+# File:    triggerwindowdefs_icarus.fcl
+# Purpose: Trigger sliding window configurations.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    January 29, 2021
+#
+# Presets are defined in this configuration file that can be used
+# with `SlidingWindowTrigger` module to simulate sliding window triggers.
+# 
+# Example of usage:
+#
+# physics: {
+#   producers: {
+#     
+#     trigslidewindow: {
+#
+#       module_type: SlidingWindowTrigger
+#
+#       TriggerGatesTag: "lvdsgates"
+#
+#       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+#
+#       @table::icarus_trigslidewindow_standard_size
+#
+#       # channels not included in the input
+#       MissingChannels: @local::icarus_trigger_channel_ignore
+#
+#       # name of the category used for the output
+#       LogCategory: "SlidingWindowTrigger"
+#
+#     } # trigslidewindow
+#
+#   } # producers
+# } # physics
+#
+# 
+
+#include "trigger_icarus.fcl"
+
+BEGIN_PROLOG
+
+#
+# Configuration with 5 sliding windows per PMT wall,
+# 30 PMT each (roughly 6 meter coverage), overlapping half size.
+#
+icarus_trigslidewindow_standard_size: {
+  WindowSize: 30
+  Stride: 15
+} # icarus_trigslidewindow_standard_size
+
+
+
+END_PROLOG
+

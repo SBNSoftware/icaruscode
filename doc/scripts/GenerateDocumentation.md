@@ -5,7 +5,7 @@
 | Type:           | Technical documentation                              |
 | Author:         | Gianluca Petrillo (petrillo@slac.stanford.edu)       |
 | Created on:     | April 23, 2020                                       |
-| Version:        | 1.0                                                  |
+| Version:        | 1.1                                                  |
 
 
 This document describes a procedure to render the documentation embedded in the
@@ -15,18 +15,18 @@ ICARUS documentation web page.
 
 ### Format of this document
 
-This file (`README.md`) is written in a dialect of [Markdown] format that is
-compatible with [`pandoc`][pandoc] and with Doxygen. The format is designed to
-be readable as plain text: the reader will find all the links to external
-resources at the end of the document.
+This file (`GenerateDocumentation.md`) is written in a dialect of [Markdown]
+format that is compatible with [`pandoc`][pandoc] and with Doxygen. The format
+is designed to be readable as plain text: the reader will find all the links to
+external resources at the end of the document.
 The program `pandoc` allows to render this file in other formats. For example,
 to render it into Portable Document Format:
     
-    pandoc --toc -o README.pdf README.md
+    pandoc --toc -o GenerateDocumentation.pdf GenerateDocumentation.md
     
-and to render it into HyperText Transfer Protocol format:
+and to render it into HyperText Markup Language format:
     
-    pandoc --toc -o README.html README.md
+    pandoc --toc -o GenerateDocumentation.html GenerateDocumentation.md
     
 
 
@@ -35,8 +35,8 @@ and to render it into HyperText Transfer Protocol format:
 
 The documentation written in Doxygen format across `icaruscode` source files
 can be rendered by the `doxygen` program in one of several formats.
-We render it in HTML format, and then copy the result into an area which is
-served by Fermilab web server under http://icarus-exp.fnal.gov.
+We render it in HTML format, and then copy the result into an area ("Software")
+which is served by Fermilab web server under http://icarus-exp.fnal.gov.
 
 While the procedure is mostly automated, it is requested that an operator pushes
 through all the steps:
@@ -56,24 +56,26 @@ The script to run this part is `updateLocalDocumentation.sh`. This script can
 be found in `icaruscode` GIT repository under `doc/scripts` directory.
 In order to successfully run it, the additional library scripts `settings.sh`
 and `utilities.sh` must also be in the same directory as the main script.
+In addition, `experiment_settings.sh` overriding the general settings is also
+parsed.
 There are two possibilities:
 
 * clone the GIT repository altogether, and find the scripts in
   `icaruscode/doc/scripts`;
-* download the three scripts from anywhere.
+* download the three (plus one) scripts from anywhere.
 
 The script, when running, will clone the repository anyway, so the recommended
 approach is to clone it first, e.g.:
     
-    git clone http://cdcvs.fnal.gov/projects/icaruscode
+    git clone https://github.com/SBNSoftware/icaruscode.git
     icaruscode/doc/scripts/updateLocalDocumentation.sh
     
 Note that the script *must* be executed from outside the `icaruscode` GIT
 repository, like in the example above.
 
-Normally this will clone or update the repository, and run Doxygen on it.
-Note that **update**: the script `updateLocalDocumentation.sh` **does** mess up
-with the GIT repository, and while there is some provision not to lose data,
+Normally this will clone or _update_ the repository, and run Doxygen on it.
+Note that **"update"**: the script `updateLocalDocumentation.sh` **does** mess
+up with the GIT repository, and while there is some provision not to lose data,
 if that repository has anything valuable it should be backed up or pushed before
 running.
 
@@ -169,10 +171,10 @@ the branch to check out by default, etc., are encoded in the file.
 ## TL;DR #######################################################################
 
     
-    [[ -d 'icaruscode' ]] || git clone http://cdcvs.fnal.gov/projects/icaruscode
-    icaruscode/doc/scripts/updateLocalDocumentation.sh
-    icaruscode/doc/scripts/publish.sh
-    icaruscode/doc/scripts/updateVersionList.sh
+    [[ -d 'icaruscode' ]] || git clone https://github.com/SBNSoftware/icaruscode.git
+    bash icaruscode/doc/scripts/updateLocalDocumentation.sh
+    bash icaruscode/doc/scripts/publish.sh
+    bash icaruscode/doc/scripts/updateVersionList.sh
     
 
 
@@ -180,6 +182,9 @@ the branch to check out by default, etc., are encoded in the file.
 
 Version 1.0 (April 23, 2020, petrillo@slac.stanford.edu)
 :   original version
+
+Version 1.1 (April 12, 2021, petrillo@slac.stanford.edu)
+:   updated GIT repository (GitHub) and general refresh.
 
 
 [Markdown]: https://daringfireball.net/projects/markdown

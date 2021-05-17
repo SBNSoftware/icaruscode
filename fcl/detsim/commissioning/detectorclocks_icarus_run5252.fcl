@@ -1,0 +1,51 @@
+# 
+# File:    detectorclocks_icarus_run5252.fcl
+# Purpose: DetectorClocks configuration appropriate to ICARUS minimum bias runs.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 29, 2021
+# Version: 1.0
+# 
+# This DetectorClocksStandard configuration reflects the configuration of ICARUS
+# minimum bias data runs like run 5252.
+# 
+# There is a single PMT waveform per channel,  acquired at beam gate opening
+# time. TPC is acquired also based on beam gate.
+# The timestamp of PMT are not assigned and their value is stored as 0.
+# This configuration aims to align those PMT waveforms with the TPC ones.
+# 
+# An important parameter is that the PMT waveform is set to 60% post-trigger
+# (i.e. 10 out of 25 microseconds are collected before the beam gate opening).
+# 
+# This is an overriding configuration: include it after the main configuration;
+# for example:
+#     
+#     #include "simulate_sliding_window_trigger_icarus.fcl"
+#     #include "detectorclocks_icarus_run5252.fcl"
+#     
+#     # ... other overrides as needed
+#     
+# 
+# Changes:
+# 20210329 (petrillo@slac.stanford.edu) [v1.0]
+#   original configuration
+# 
+# 
+
+# ------------------------------------------------------------------------------
+services.DetectorClocksService: {
+  @table::services.DetectorClocksService
+  
+  # timestamps are set to 0 (and it is in electronics time);
+  # 25 us PMT window with post trigger 60% means beam 10 us after the start
+  #   of the waveform, i.e. 10 us from electronics time start
+  DefaultBeamTime: 10
+  DefaultTrigTime: 10
+  
+  G4RefTime: 0
+  
+  InheritClockConfig: false # after we spend time to override it, just leave it alone!
+  
+#  TriggerOffsetTPC: -340 # leave as is
+  
+} # services.DetectorClocksService
+

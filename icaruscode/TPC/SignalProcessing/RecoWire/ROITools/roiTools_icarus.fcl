@@ -1,0 +1,46 @@
+BEGIN_PROLOG
+
+icarus_morphologicalroifinder:
+{
+    tool_type:           ROIMorphological2D
+    Plane:               0
+    StructuringElement:  [8, 16]
+    Threshold:           [2.75,2.75,2.75]
+}
+
+morphologicalfinder_0:       @local::icarus_morphologicalroifinder
+
+morphologicalfinder_1:       @local::icarus_morphologicalroifinder
+morphologicalfinder_1.Plane: 1
+
+morphologicalfinder_2:       @local::icarus_morphologicalroifinder
+morphologicalfinder_2.Plane: 2
+
+icarus_cannyedgedetector:
+{
+    tool_type:                    ROICannyEdgeDetection
+    Plane:                        0
+    ADFilter_SX:                  7
+    ADFilter_SY:                  7
+    Sigma_x:                      10.0
+    Sigma_y:                      10.0
+    Sigma_r:                      30.0
+    LowThreshold:                 15.0
+    HighThreshold:                35.0 
+    BinaryDilation_SX:            31
+    BinaryDilation_SY:            31
+}
+
+cannyedgedetector_0:        @local::icarus_cannyedgedetector
+
+cannyedgedetector_1:        @local::icarus_cannyedgedetector
+
+cannyedgedetector_1.Plane:  1
+
+cannyedgedetector_2:        @local::icarus_cannyedgedetector
+
+cannyedgedetector_2.Plane:  2
+cannyedgedetector_2.LowThreshold:   15.0
+cannyedgedetector_2.HighThreshold:  30.0
+
+END_PROLOG

@@ -68,6 +68,18 @@
 
 
 //------------------------------------------------------------------------------
+namespace {
+  
+  /// Returns a sorted copy of the specified collection.
+  template <typename Coll>
+  Coll sortCollection(Coll cont) {
+    std::sort(cont.begin(), cont.end());
+    return cont;
+  }
+  
+} // local namespace
+
+//------------------------------------------------------------------------------
 //---  icarus::trigger::details::TriggerPassCounters
 //------------------------------------------------------------------------------
 auto icarus::trigger::details::TriggerPassCounters::create
@@ -486,6 +498,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       (fBeamGateStart - config.PreSpillWindowGap() - fPreSpillWindow)
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
+  , fOnlyPlotCategories   (sortCollection(config.OnlyPlotCategories()))
   , fLogCategory          (config.LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
@@ -690,6 +703,22 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
 
   fBeamGateChangeCheck(beamGate);
   
+  if (fOnlyPlotCategories.empty()) fPlotCategories = std::move(categories);
+  else {
+    auto const plotThisCategory = [this](std::string const& name)
+      {
+        return std::binary_search
+          (fOnlyPlotCategories.begin(), fOnlyPlotCategories.end(), name);
+      };
+    
+    fPlotCategories.clear();
+    for (auto&& plotCategory: categories) {
+      if (!plotThisCategory(plotCategory.name())) continue;
+      fPlotCategories.push_back(std::move(plotCategory));
+    } // for
+  }
+  
+  
   {
     mf::LogTrace(fLogCategory)
       << "Beam gate:"
@@ -704,10 +733,15 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
     log << "\nBeam gate for plots is " << beamGate.asSimulationRange();
     
+    log << "\nConfigured " << fPlotCategories.size() << " plot categories"
+      << (fPlotCategories.empty()? '.': ':');
+    for (auto const& plotCategory: fPlotCategories) {
+      log << "\n ['" << plotCategory.name() << "'] "
+        << plotCategory.description();
+    } // for
+    
   } // local block
   
-  
-  fPlotCategories = std::move(categories);
   
   for (std::string const& thresholdTag: util::get_elements<0U>(fADCthresholds))
   {
