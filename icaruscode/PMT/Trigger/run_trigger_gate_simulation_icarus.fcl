@@ -604,3 +604,30 @@ outputs: {
 # physics.producers.lvdsgatesOR.ChannelPairing: @local::icarus_trigger_channel_pairings
 
 # ------------------------------------------------------------------------------
+
+################################################################################
+###  20210511 -- FIXES (?)  ####################################################
+################################################################################
+#
+# disable truth information
+#
+physics.analyzers.effSingleAND.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSingleAND.GeneratorTags:       []
+physics.analyzers.effSingleAND.DetectorParticleTag: @erase
+physics.analyzers.effSingleAND.EnergyDeposits:      []
+
+physics.analyzers.effSingleOR.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSingleOR.GeneratorTags:       []
+physics.analyzers.effSingleOR.DetectorParticleTag: @erase
+physics.analyzers.effSingleOR.EnergyDeposits:      []
+
+physics.analyzers.effSlidingAND.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSlidingAND.GeneratorTags:       []
+physics.analyzers.effSlidingAND.DetectorParticleTag: @erase
+physics.analyzers.effSlidingAND.EnergyDeposits:      []
+
+physics.analyzers.effSlidingOR.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSlidingOR.GeneratorTags:       []
+physics.analyzers.effSlidingOR.DetectorParticleTag: @erase
+physics.analyzers.effSlidingOR.EnergyDeposits:      []
+
