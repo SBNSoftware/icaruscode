@@ -28,6 +28,8 @@
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpHit.h"
 
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+
 #include "TTree.h"
 
 namespace pmtcalo {
@@ -56,17 +58,20 @@ public:
 
 private:
 
+  art::InputTag m_trigger_label;
   art::InputTag m_decode_label;
   art::InputTag m_ophit_label;
 
   fhicl::ParameterSet m_waveform_config;
 
-  TTree *m_ophit_ttree;
+  TTree *m_trigger_ttree;
+  TTree *m_ophit_ttree; 
   TTree *m_geo_ttree;
 
   int m_run;
   int m_subrun;
   int m_event;
+  int m_gate_type = -999;
   
   std::vector<int>   *m_channel_id = NULL;
   std::vector<float> *m_tstart = NULL;
@@ -87,6 +92,7 @@ pmtcalo::PMTPulseAna::PMTPulseAna(fhicl::ParameterSet const& pset)
   : art::EDAnalyzer(pset)  // ,
 {
    m_decode_label = pset.get<art::InputTag>("DecoderModule", "daqPMT");
+   m_trigger_label = pset.get<art::InputTag>("TriggerFragment", "ICARUSTriggerUDP");
    m_ophit_label = pset.get<art::InputTag>("OpHitModule", "ophit");
 }
 
@@ -96,6 +102,14 @@ pmtcalo::PMTPulseAna::PMTPulseAna(fhicl::ParameterSet const& pset)
 
 void pmtcalo::PMTPulseAna::beginJob()
 {
+
+  m_trigger_ttree = tfs->make<TTree>("triggertree", "Trigger metadata");
+
+  m_trigger_ttree->Branch("run", &m_run, "run/I" );
+  m_trigger_ttree->Branch("subrun", &m_subrun, "subrun/I" );
+  m_trigger_ttree->Branch("event", &m_event, "event/I" );
+  m_trigger_ttree->Branch("gateType", &m_gate_type, "gate_type/I" );
+
 
   m_ophit_ttree = tfs->make<TTree>("ophittree","OpHit TTree");
   
@@ -175,9 +189,33 @@ float pmtcalo::PMTPulseAna::_getTotalCharge( std::vector<short int> wfrm )
 void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
 {
 
-   m_run = event.id().run();
-   m_subrun = event.id().subRun();
-   m_event = event.id().event();
+  m_run = event.id().run();
+  m_subrun = event.id().subRun();
+  m_event = event.id().event();
+
+
+  // Get the trigger metatada and protect runs without information
+  try
+  {
+      // Recover the data fragments for the PMT 
+      auto const& fragments = event.getByLabel<artdaq::Fragments>(m_trigger_label);
+    
+      // Make sure data available
+      if (!fragments.empty())
+      {
+            for (auto const &rawFrag: fragments){
+
+              icarus::ICARUSTriggerUDPFragment triggerFragment(rawFrag);
+              m_gate_type = triggerFragment.getGateType();
+
+            }
+      }
+  }
+  catch(cet::exception const& e) {
+        std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode:"
+          << "\n" << e.what() << std::endl;
+  }
+
 
    // First thing we sort the ophit in their respective channels
    art::Handle< std::vector< recob::OpHit > > ophitHandle;
@@ -213,6 +251,7 @@ void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
    } // end loop over pmt channels
 
    m_ophit_ttree->Fill();
+   m_trigger_ttree->Fill();
    
    clean();
 
