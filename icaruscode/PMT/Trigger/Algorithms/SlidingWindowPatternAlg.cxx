@@ -221,6 +221,21 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
       (discriminate(gates[windowInfo.opposite], pattern.minInOppositeWindow));
   } // if
   
+  // add main plus opposite window requirement (if any)
+  if (pattern.minSumInOppositeWindows > 0U) {
+    if (windowInfo.hasOppositeWindow()) {
+      trigPrimitive.Mul(discriminate(
+        TriggerGateData_t::Sum
+          (gates[windowInfo.index], gates[windowInfo.opposite]),
+        pattern.minInOppositeWindow
+        ));
+    }
+    else { // no opposite window available: only apply on main window
+      trigPrimitive.Mul
+       (discriminate(gates[windowInfo.index], pattern.minSumInOppositeWindows));
+    }
+  } // if
+  
   // add upstream window requirement (if any)
   if ((pattern.minInUpstreamWindow > 0U) && windowInfo.hasUpstreamWindow()) {
     trigPrimitive.Mul
