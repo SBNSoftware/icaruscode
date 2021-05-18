@@ -5,6 +5,9 @@ art_make(
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
           MODULE_LIBRARIES
+                        icarus_signal_processing
+                        icarus_signal_processing_Detection
+                        icarus_signal_processing_Filters
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         larcorealg_Geometry

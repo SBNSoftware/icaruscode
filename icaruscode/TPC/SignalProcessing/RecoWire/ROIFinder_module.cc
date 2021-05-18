@@ -141,6 +141,7 @@ private:
 
     std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
     bool                                                       fOutputMorphed;              ///< Output the morphed waveforms
+    bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     size_t                                                     fEventCount;                 ///< count of event processed
     
     std::map<size_t,std::unique_ptr<icarus_tool::IROILocator>> fROIToolMap;
@@ -175,6 +176,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     // Recover the parameters
     fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
     fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
+    fDiagnosticOutput    = pset.get< bool                     >("DaignosticOutput",                                          false);
     
     // Recover the list of ROI finding tools
     const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
@@ -449,6 +451,21 @@ void  ROIFinder::processPlane(size_t                      idx,
 
             raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
             geo::View_t      view    = fGeometry->View(channel);
+
+            // Since we process logical TPC images we need to watch for duplicating entries 
+            // We can do that by checking to see if a channel has already been added...
+            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+
+            if (wireIDVec.size() > 1)
+            {
+                std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
+
+                if (wireItr != wireColVec.end())
+                {
+                    if (fDiagnosticOutput) std::cout << "******************* Found duplicate entry for channel " << channel << " ************************" << std::endl;
+                    continue;
+                }
+            }
 
             wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
         }

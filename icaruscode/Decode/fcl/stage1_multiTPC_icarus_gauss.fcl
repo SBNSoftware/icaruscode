@@ -3,8 +3,8 @@
 process_name: stage1
 
 physics.reco: [ flashfilter,
-                @sequence::icarus_reco_Gauss_Cryo0 ,
-                @sequence::icarus_reco_Gauss_Cryo1 ] 
+                @sequence::icarus_reco_Gauss_CryoE ,
+                @sequence::icarus_reco_Gauss_CryoW ] 
 
 physics.outana:            [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths:     [ reco ]

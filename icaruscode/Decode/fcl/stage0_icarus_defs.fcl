@@ -14,6 +14,10 @@
 
 BEGIN_PROLOG
 
+# set the name of our `extractPMTconfig` (and, in future, trigger) module
+decodePMT.DecoderTool.PMTconfigTag: pmtconfig
+
+
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
 {
@@ -24,6 +28,9 @@ icarus_stage0_producers:
   daqTPCEW:                       @local::decodeTPC
   daqTPCEE:                       @local::decodeTPC
 
+  daqTPCROI:                      @local::decodeTPCROI
+
+  pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
 
   ### calwire producers
@@ -81,16 +88,18 @@ icarus_stage0_producers:
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
   ophitfull:                      @local::icarus_ophitdebugger_data
-  opflashCryo0:                   @local::ICARUSSimpleFlashDataCryo0
-  opflashCryo1:                   @local::ICARUSSimpleFlashDataCryo1
+  opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
+  opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
 }
 
 icarus_reco_filters:
 {
    flashfilter: { module_type: "FilterOpFlash" 
-                  OpFlashProducerList: ["opflashCryo0","opflashCryo1"] 
-                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
-                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
+                  OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
+#                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
+#                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
+                  WindowStartTime: -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
+                  WindowEndTime:   -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
                 }
 }
 
@@ -113,16 +122,18 @@ icarus_stage0_multiTPC_Sep_TPC:    [ daqTPCWW,        daqTPCWE,        daqTPCEW,
                                    ]
 
 icarus_stage0_multiTPC_TPC:        [ daqTPC,
+                                     pmtconfig,
                                      daqPMT,
                                      decon1droi,
                                      roifinder,
                                      gaushitTPCWW, gaushitTPCWE, gaushitTPCEW, gaushitTPCEE
                                    ]
 
-icarus_stage0_pmt:                 [ daqPMT,
+icarus_stage0_pmt:                 [ pmtconfig,
+                                     daqPMT,
                                      ophit,
-                                     opflashCryo0,
-                                     opflashCryo1
+                                     opflashCryoE,
+                                     opflashCryoW
                                    ]
 
 icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,

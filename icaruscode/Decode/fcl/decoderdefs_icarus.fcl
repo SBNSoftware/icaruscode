@@ -3,6 +3,12 @@
 BEGIN_PROLOG
 
 
+extractPMTconfig: {
+                    module_type:        PMTconfigurationExtraction
+                    AssignOfflineChannelIDs: true
+}
+
+
 decodeFilterNoise: {
                     module_type:        FilterNoiseICARUS
                     FragmentsLabel:     "daq:PHYSCRATEDATA"
@@ -23,10 +29,23 @@ decodeTPC: {
                     DecoderTool:        @local::TPCDecoderFilter1DTool
 }
 
+decodeTPCROI: {
+                    module_type:        DaqDecoderICARUSTPCwROI
+                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    OutputRawWaveform:  false
+                    OutputCorrection:   false
+                    OutputRawWavePath:  "RAW"
+                    OutputCoherentPath: "Cor"
+                    DiagnosticOutput:   false
+}
+
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
                     FragmentsLabel:     "daq:CAENV1730"
-                    DecoderTool:        @local::PMTDecoderTool
+                    DecoderTool: {
+                                    @table::PMTDecoderTool
+                      PMTconfigTag: @nil # must override
+                    }
 }
 
 END_PROLOG

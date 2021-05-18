@@ -1,0 +1,133 @@
+#
+# File:    decodePMT_icarus.fcl
+# Purpose: PMT readout fragment decoding for studies in ICARUS.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 12, 2021
+# 
+# 
+# PMT waveform decoding is performed, extensive debugging messages are
+# included in the `debug.log` log file, and ROOT trees are produced for studies.
+# This configuration, as is, is not meant for production.
+# 
+# 
+# Input
+# ------
+# 
+# * artDAQ fragments from all 24 PMT readout boards, named `daq:CAENV1730`
+# * no trigger fragments required yet (it may change in the future)
+# * DAQ configuration as FHiCL in the art/ROOT input file
+# 
+# This configuration requires a data fragment for each PMT readout board
+# which is mentioned in `physics.producers.daqPMT.DecoderTool.BoardSetup`,
+# which by default is all 24. If the input run misses some PMT readout boards,
+# use `decodePMT_icarus_incomplete.fcl` instead.
+# 
+# 
+# Output
+# -------
+# 
+# Only new data products are written in the art/ROOT output file, including:
+# 
+# * `daqPMT` (std::vector<raw::OpDetWaveform>): decoded waveforms,
+#   with our best reconstruction for their time stamps in LArSoft reference
+# 
+# 
+# The `Trees-<InputFile>*.root` file (from `TFileService`) includes ROOT tree
+# `PMTfragments`.
+# 
+# 
+# 
+# Service configuration
+# ----------------------
+# 
+# * `DetectorClocksService` is essential to assign a correct waveform timestamp
+#     * `Geometry` service bundle is required by `DetectorClocksService`
+# * `IICARUSChannelMap` to relate PMT fragment IDs to channels
+# * `TFileService` used to write trees (not needed if all trees are disabled)
+# 
+#
+
+
+# ------------------------------------------------------------------------------
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "rootoutput_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
+
+# ------------------------------------------------------------------------------
+process_name: DecodePMT
+
+
+# ------------------------------------------------------------------------------
+services: {
+  
+                     @table::icarus_art_services
+  message:           @local::icarus_message_services_interactive_debug
+  
+                     @table::icarus_geometry_services
+  DetectorClocksService: @local::icarus_detectorclocks
+  IICARUSChannelMap: @local::icarus_channelmappinggservice
+  
+  TFileService: { fileName: "Trees-%ifb_%tc-%p.root" }
+}
+
+
+# ------------------------------------------------------------------------------
+physics: {
+  
+  producers: {
+    
+    PMTconfig:  @local::extractPMTconfig
+    
+//     daqTrigger: @local::decodeTrigger
+    
+    daqPMT:     @local::decodePMT
+    
+  }
+  
+//   decoding: [ PMTconfig, daqTrigger, daqPMT ]
+  decoding: [ PMTconfig, daqPMT ]
+  streams: [ rootoutput ]
+}
+
+
+# ------------------------------------------------------------------------------
+outputs: {
+  rootoutput: {
+                      @table::icarus_rootoutput
+    dataTier:        "decoded"
+    fileProperties:   { maxInputFiles: 1 }
+    checkFileName:    false
+    compressionLevel: 501
+    
+    outputCommands:  [ "drop *_*_*_*", "keep *_*_*_DecodePMT" ]
+  } # rootoutput
+} # outputs 
+
+
+# ------------------------------------------------------------------------------
+
+physics.producers.daqPMT.DecoderTool.PMTconfigTag: PMTconfig # required
+
+# services.Geometry.Name: icarus_splitwires # for runs < 548x
+
+#
+# customization of PMT decoding
+#
+
+physics.producers.daqPMT.SurviveExceptions: false
+physics.producers.daqPMT.DecoderTool.DiagnosticOutput:  false
+physics.producers.daqPMT.DecoderTool.RequireKnownBoards: true
+physics.producers.daqPMT.DecoderTool.RequireBoardConfig: true
+physics.producers.daqPMT.DecoderTool.DataTrees: [ "PMTfragments" ]
+
+#
+# customization of trigger decoding
+#
+
+# physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
+# physics.producers.daqTrigger.DecoderTool.Debug: true
+
+
+# ------------------------------------------------------------------------------

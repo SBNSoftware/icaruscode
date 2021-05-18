@@ -25,6 +25,7 @@ pmt_pulseana_icarus:
   module_type: 	PMTPulseAna
   DecoderModule: "daqPMT"
   OpHitModule: "ophit"
+  TriggerFragment: "daq:ICARUSTriggerUDP"
 }
 
 pmt_flashana_icarus:

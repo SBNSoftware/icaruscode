@@ -51,6 +51,8 @@ simple_plugin(PMTMonitor "module"
               )
 
 simple_plugin(PMTPulseAna "module"
+                sbndaq-artdaq-core_Overlays_ICARUS 
+                artdaq-core_Utilities
                 icaruscode_PMT_Algorithms
                 icaruscode_PMT_Calo_CaloTools
                 lardataobj_RawData

@@ -71,6 +71,12 @@ private:
   int m_run;
   int m_subrun;
   int m_event;
+  int m_spexi_local_seconds = -999;
+  int m_spexi_local_nseconds = -999;
+  int m_wr_event = -999;
+  int m_wr_seconds = -999;
+  int m_wr_nseconds = -999;
+  int m_gate_id = -999;
   int m_gate_type = -999;
   
   std::vector<int>   *m_channel_id = NULL;
@@ -108,7 +114,13 @@ void pmtcalo::PMTPulseAna::beginJob()
   m_trigger_ttree->Branch("run", &m_run, "run/I" );
   m_trigger_ttree->Branch("subrun", &m_subrun, "subrun/I" );
   m_trigger_ttree->Branch("event", &m_event, "event/I" );
-  m_trigger_ttree->Branch("gateType", &m_gate_type, "gate_type/I" );
+  m_trigger_ttree->Branch("spexi_local_seconds", &m_spexi_local_seconds, "spexi_local_seconds/I");
+  m_trigger_ttree->Branch("spexi_local_nseconds", &m_spexi_local_nseconds, "spexi_local_nseconds/I");
+  m_trigger_ttree->Branch("wr_event", &m_wr_event, "wr_event/I");
+  m_trigger_ttree->Branch("wr_seconds", &m_wr_seconds, "wr_seconds/I");
+  m_trigger_ttree->Branch("wr_nseconds", &m_wr_nseconds, "wr_nseconds/I");
+  m_trigger_ttree->Branch("gate_id", &m_gate_id, "gate_id/I");
+  m_trigger_ttree->Branch("gate_type", &m_gate_type, "gate_type/I" );
 
 
   m_ophit_ttree = tfs->make<TTree>("ophittree","OpHit TTree");
@@ -206,13 +218,19 @@ void pmtcalo::PMTPulseAna::analyze(art::Event const& event)
             for (auto const &rawFrag: fragments){
 
               icarus::ICARUSTriggerUDPFragment triggerFragment(rawFrag);
+              m_spexi_local_seconds = triggerFragment.getSeconds();
+              m_spexi_local_nseconds = triggerFragment.getNanoSeconds();
+              m_wr_event = triggerFragment.getWREventNo();
+              m_wr_seconds = triggerFragment.getWRSeconds();
+              m_wr_nseconds = triggerFragment.getWRNanoSeconds();
+              m_gate_id = triggerFragment.getGateID();
               m_gate_type = triggerFragment.getGateType();
 
             }
       }
   }
   catch(cet::exception const& e) {
-        std::cout << "DaqDecoderICARUSPMT: Did not find daq data products to decode:"
+        std::cout << "PMTPulseAna:Did not find daq data products to decode:"
           << "\n" << e.what() << std::endl;
   }
 

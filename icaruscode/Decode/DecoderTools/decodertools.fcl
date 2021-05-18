@@ -1,3 +1,5 @@
+#include "CAEN_V1730_setup_icarus.fcl"
+
 BEGIN_PROLOG
 
 FakeParticleTool: {
@@ -62,6 +64,8 @@ TPCDecoderOverlayFilter2DTool: {
 
 PMTDecoderTool: {
     tool_type:          PMTDecoder
+    PMTconfigTag:       @nil # either specify or @erase in downstream config
+    BoardSetup:         @local::icarus_V1730_setup
 }
 
 END_PROLOG

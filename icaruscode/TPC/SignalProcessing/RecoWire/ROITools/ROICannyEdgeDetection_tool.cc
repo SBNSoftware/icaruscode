@@ -21,6 +21,7 @@
 #include "TProfile.h"
 
 #include <fstream>
+#include <chrono>
 
 namespace icarus_tool
 {
@@ -90,6 +91,8 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
     unsigned int numChannels = inputImage.size();
     unsigned int numTicks    = inputImage[0].size();
   
+    std::chrono::high_resolution_clock::time_point funcStartTime = std::chrono::high_resolution_clock::now();
+
     // 5. Directional Smoothing
     std::cout << "++> Step 5: Directional smoothing" << std::endl;
     icarus_signal_processing::ArrayFloat buffer   (numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
@@ -99,15 +102,26 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
     icarus_signal_processing::ArrayFloat direction(numChannels, icarus_signal_processing::VectorFloat(numTicks,0.));
     icarus_signal_processing::ArrayBool  rois     (numChannels, icarus_signal_processing::VectorBool( numTicks,false));
 
+    std::chrono::high_resolution_clock::time_point sobelStartTime = std::chrono::high_resolution_clock::now();
+
     fEdgeDetection->SepSobel(inputImage, sobelX, sobelY, gradient, direction);
+
+    std::chrono::high_resolution_clock::time_point sobelStopTime      = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point bilateralStartTime = sobelStopTime;
 
     std::cout << "==> Step 6: Apply bilateral filter" << std::endl;
 
     fBilateralFilters->directional(inputImage, direction, buffer, fADFilter_SX, fADFilter_SY, fSigma_x, fSigma_y, fSigma_r, 360);
 
+    std::chrono::high_resolution_clock::time_point bilateralStopTime = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point dilationStartTime = bilateralStopTime;
+
     std::cout << "==> Step 7: Apply Second Morphological Enhancing" << std::endl;
 
     icarus_signal_processing::Dilation2D(fADFilter_SX,fADFilter_SY)(buffer.begin(), numChannels, output.begin());
+
+    std::chrono::high_resolution_clock::time_point dilationStopTime    = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point edgeInterpStartTime = dilationStopTime;
 
     std::cout << "==> Step 8: Perform Canny Edge Detection" << std::endl;
 
@@ -116,6 +130,9 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
 
     fEdgeDetection->SepSobel(output, sobelX, sobelY, gradient, direction);
     fEdgeDetection->EdgeNMSInterpolation(gradient, sobelX, sobelY, direction, output);
+
+    std::chrono::high_resolution_clock::time_point edgeInterpStopTime  = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point hysterisisStartTime = edgeInterpStopTime;
 
     std::vector<int> strongEdgeRows;
     std::vector<int> strongEdgeCols;
@@ -126,9 +143,24 @@ void ROICannyEdgeDetection::FindROIs(const ArrayFloat& inputImage, const geo::Pl
 
     std::cout << "==> Final Step: get dilation, numChannels: " << numChannels << ", rois: " << rois.size() << ", output: " << outputROIs.size() << std::endl;
 
+    std::chrono::high_resolution_clock::time_point hysterisisStopTime      = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point binaryDilationStartTime = hysterisisStopTime;
+
     icarus_signal_processing::Dilation2D(fBinaryDilation_SX,fBinaryDilation_SY)(rois.begin(), numChannels, outputROIs.begin());
 
+    std::chrono::high_resolution_clock::time_point binaryDilationStopTime  = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point funcStopTime            = hysterisisStopTime;
+  
+    std::chrono::duration<double> funcTime       = std::chrono::duration_cast<std::chrono::duration<double>>(funcStopTime - funcStartTime);
+    std::chrono::duration<double> sobelTime      = std::chrono::duration_cast<std::chrono::duration<double>>(sobelStopTime - sobelStartTime);
+    std::chrono::duration<double> bilateralTime  = std::chrono::duration_cast<std::chrono::duration<double>>(bilateralStopTime - bilateralStartTime);
+    std::chrono::duration<double> dilationTime   = std::chrono::duration_cast<std::chrono::duration<double>>(dilationStopTime - dilationStartTime);
+    std::chrono::duration<double> edgeInterpTime = std::chrono::duration_cast<std::chrono::duration<double>>(edgeInterpStopTime - edgeInterpStartTime);
+    std::chrono::duration<double> hysterisisTime = std::chrono::duration_cast<std::chrono::duration<double>>(hysterisisStopTime - hysterisisStartTime);
+    std::chrono::duration<double> binaryDilTime  = std::chrono::duration_cast<std::chrono::duration<double>>(binaryDilationStopTime - binaryDilationStartTime);
+
     std::cout << "--> ROICannyEdgeDetection finished!" << std::endl;
+    std::cout << "    - Total time: " << funcTime.count() << ", sobel: " << sobelTime.count() << ", bilateral: " << bilateralTime.count() << ", dilation: " << dilationTime.count() << ", Edge: " << edgeInterpTime.count() << ", hysterisis: " << hysterisisTime.count() << ", dilate: " << binaryDilTime.count() << std::endl;
      
     return;
 }
