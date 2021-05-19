@@ -9,6 +9,8 @@
 # Changes:
 # 20210411 (petrillo@slac.fnal.gov) [1.0]
 #   first public version
+# 20210518 (petrillo@slac.fnal.gov) [1.1]
+#   added options for duplicate events
 #
 
 import sys, os
@@ -40,7 +42,7 @@ for duplication altogether.
 
 __author__ = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
 __date__ = 'February 26, 2021'
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 class CycleCompareClass:
@@ -292,7 +294,7 @@ if __name__ == "__main__":
   for iSource, file_ in enumerate(inputFiles):
     isSingleFile = isinstance(file_, list) and len(file_) <= 1
     for iLine, line in enumerate(file_):
-      info = FileInfoClass(line, source=( iSource, None if isSingleFile else iLine ))
+      info = FileInfoClass(line, source=( iSource, None if isSingleFile else iLine + 1 ))
       if not info.is_file:
         if not info.path or info.path.startswith('#'):
           (postComments if fileInfo else preComments).append(info.line)
@@ -312,7 +314,6 @@ if __name__ == "__main__":
     firstPassFiles = findFirstCycle(fileInfo)
     assert firstPassFiles
     firstLogger = detectFirstLogger(firstPassFiles)
-    
   else: firstLogger = args.firstlogger if args.firstlogger is None else 4
   
   FileInfoClass.setFirstDataLogger(firstLogger)
@@ -329,16 +330,17 @@ if __name__ == "__main__":
     duplicateFiles = [] if makeDuplicateList else None
     # we rely on insertion-ordered dictionary guarantee of Python 3.7
     for fileList in fileIndex.values():
-      if uniqueFiles is not None: uniqueFiles.append(fileList[0])
+      mainInfo = fileList[0]
+      if uniqueFiles is not None: uniqueFiles.append(mainInfo)
       if len(fileList) > 1:
         nDuplicates += len(fileList) - 1
         if duplicateFiles is not None: duplicateFiles.extend(fileList[1:])
         if printDuplicates:
-          firstSource = fileList[0].source[0]
-          msg = f"Run {info.run} cycle {info.pass_} data logger {info.dataLogger} with {len(fileList) - 1} duplicates of"
+          firstSource = mainInfo.source[0]
+          msg = f"Run {mainInfo.run} cycle {mainInfo.pass_} data logger {mainInfo.dataLogger} with {len(fileList) - 1} duplicates of"
           
-          if len(sources) > 1: msg += f" {sources[fileList[0].source[0]]}"
-          if fileList[0].source[1] is not None: msg += f" line {fileList[0].source[1]}"
+          if len(sources) > 1: msg += f" {sources[mainInfo.source[0]]}"
+          if mainInfo.source[1] is not None: msg += f" line {mainInfo.source[1]}"
           msg += ":"
           for info in fileList[1:]:
             if info.source[0] != firstSource: msg += f"{sources[info.source[0]]}"
