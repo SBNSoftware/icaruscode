@@ -48,4 +48,10 @@ decodePMT: {
                     }
 }
 
+decodeTrigger: {
+                    module_type:        DaqDecoderICARUSTrigger
+                    FragmentsLabel:     "daq:ICARUSTriggerUDP"
+                    DecoderTool:        @local::TriggerDecoderTool
+}
+
 END_PROLOG
