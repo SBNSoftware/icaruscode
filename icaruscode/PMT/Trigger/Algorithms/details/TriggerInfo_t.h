@@ -13,7 +13,6 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h" // 
 
 // C++ standard libraries
-#include <iostream> // FIXME DEBUG
 #include <vector>
 #include <algorithm>
 #include <optional>
@@ -355,7 +354,7 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
   ClockTick_t findOpen(ClockTick_t start) const
     { return gate.findOpen(openThreshold(), start); }
   ClockTick_t findClose(ClockTick_t start) const
-    { return gate.findClose(closeThreshold(), start); }
+    { return gate.findClose(closeThreshold() + 1, start); }
   
   /// Returns the first closing and reopening above threshold from `start` on.
   std::pair<ClockTick_t, ClockTick_t> findNextCloseAndOpen
@@ -428,7 +427,7 @@ template <typename Gate>
 auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextCloseAndOpen
   (ClockTick_t start) const ->  std::pair<ClockTick_t, ClockTick_t>
 {
-  ClockTick_t const closing = (gate.openingCount(start) >= closeThreshold())
+  ClockTick_t const closing = (gate.openingCount(start) > closeThreshold())
     ? findClose(start): start;
   return { closing, findOpen(closing) };
 } // icarus::trigger::details::GateOpeningInfoExtractor<>::findNextCloseAndOpen()

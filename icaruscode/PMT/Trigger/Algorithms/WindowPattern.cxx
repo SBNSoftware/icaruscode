@@ -50,7 +50,7 @@ std::string icarus::trigger::WindowPattern::description() const {
     s += " + "s + std::to_string(minInOppositeWindow) + " (opposite)"s;
   
   if (minSumInOppositeWindows > 0U)
-    s += " + "s + std::to_string(minSumInOppositeWindows) + " (main+opposite)"s;
+    s += " (and "s + std::to_string(minSumInOppositeWindows) + " main+opposite)"s;
   
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {
     if (minInDownstreamWindow)
