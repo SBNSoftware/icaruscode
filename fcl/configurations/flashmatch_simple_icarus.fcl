@@ -19,8 +19,11 @@ icarus_simple_flashmatch_0: {
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
   MakeTree: false
-  MinFlashPE: 0.
+  MinHitQ: 0.
+  MinSliceQ: 0.
   QScale:  0.001
+  MinOpHPE: 0.
+  MinFlashPE: 0.
   PEScale: 1.0
   ChargeToNPhotonsShower: 1.0
   ChargeToNPhotonsTrack: 1.0
