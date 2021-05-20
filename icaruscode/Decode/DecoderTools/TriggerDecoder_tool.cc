@@ -85,7 +85,7 @@ namespace daq
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
-    collector.produces<BeamGateInfoCollection>();
+    collector.produces<BeamGateInfoCollection>(CurrentTriggerInstanceName);
   }
     
 
@@ -128,37 +128,39 @@ namespace daq
         std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
       std::cout << delta_gates_bnb << " " << delta_gates_numi << " " << delta_gates_other << std::endl; // nonsensical print statement to avoid error that I don't use these...until we have an object to store them in...    
     }
-    if(gate_type == 1) //BNB
+    
+    //
+    // absolute time trigger (raw::ExternalTrigger)
+    //
+    fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
+    //
+    // previous absolute time trigger (raw::ExternalTrigger)
+    //
+    if(datastream_info.wr_event_no == 1)
     {
-      
-      fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
-      if(datastream_info.wr_event_no == 1)
-      {
-        fLastEvent = 0;
-      }
-      else 
-      {
-        fLastEvent = datastream_info.wr_event_no - 1;
-      }
-      fLastTrigger = frag.getLastTimestampBNB();
-      fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
-      fBeamGateInfo->emplace_back
-        (wr_ts, BNBgateDuration.convertInto<nanoseconds>().value(), sim::kBNB);
+      fLastEvent = 0;
     }
-    if(gate_type == 2) //NuMI
+    else 
     {
-      fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
-      if(datastream_info.wr_event_no == 1)
-        {
-          fLastEvent = 0;
-        }
-      else
-        fLastEvent = datastream_info.wr_event_no - 1;
-      fLastTrigger = frag.getLastTimestampOther(); //actually NuMI for now
-      fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
-      fBeamGateInfo->emplace_back
-        (wr_ts, NuMIgateDuration.convertInto<nanoseconds>().value(), sim::kNuMI);
+      fLastEvent = datastream_info.wr_event_no - 1;
     }
+    fLastTrigger = frag.getLastTimestampBNB();
+    fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
+    //
+    // beam gate
+    //
+    switch (gate_type) {
+      case 1: //BNB
+        fBeamGateInfo->emplace_back
+          (wr_ts, BNBgateDuration.convertInto<nanoseconds>().value(), sim::kBNB);
+        break;
+      case 2: //NuMI
+        fBeamGateInfo->emplace_back
+          (wr_ts, NuMIgateDuration.convertInto<nanoseconds>().value(), sim::kNuMI);
+        break;
+      default:
+        mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
+    } // switch gate_type
     //Once we have full trigger data object, set up and place information into there
     return;
   }
@@ -168,7 +170,7 @@ namespace daq
     //Place trigger data object into raw data store 
     event.put(std::move(fTrigger), CurrentTriggerInstanceName);
     event.put(std::move(fPrevTrigger), PreviousTriggerInstanceName);
-    event.put(std::move(fBeamGateInfo));
+    event.put(std::move(fBeamGateInfo), CurrentTriggerInstanceName);
     return;
   }
 
