@@ -110,7 +110,7 @@ namespace daq
       std::cout << "Full Timestamp = " << wr_ts << std::endl;
       double cross_check = wr_ts - artdaq_ts;
       if(abs(cross_check) > 1000)
-	std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
+        std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
       std::cout << delta_gates_bnb << " " << delta_gates_numi << " " << delta_gates_other << std::endl; // nonsensical print statement to avoid error that I don't use these...until we have an object to store them in...    
     }
     if(gate_type == 1) //BNB
@@ -119,11 +119,11 @@ namespace daq
       fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
       if(datastream_info.wr_event_no == 1)
       {
-	fLastEvent = 0;
+        fLastEvent = 0;
       }
       else 
       {
-	fLastEvent = datastream_info.wr_event_no - 1;
+        fLastEvent = datastream_info.wr_event_no - 1;
       }
       fLastTrigger = frag.getLastTimestampBNB();
       fTrigger->emplace_back(fLastEvent, fLastTrigger);
@@ -134,11 +134,11 @@ namespace daq
     {
       fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
       if(datastream_info.wr_event_no == 1)
-	{
-	  fLastEvent = 0;
-	}
+        {
+          fLastEvent = 0;
+        }
       else
-	fLastEvent = datastream_info.wr_event_no - 1;
+        fLastEvent = datastream_info.wr_event_no - 1;
       fLastTrigger = frag.getLastTimestampOther(); //actually NuMI for now
       fTrigger->emplace_back(fLastEvent, fLastTrigger);
       fBeamGateInfo->emplace_back
