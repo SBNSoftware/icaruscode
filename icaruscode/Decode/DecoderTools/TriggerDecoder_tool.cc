@@ -173,14 +173,18 @@ namespace daq
     //
     // beam gate
     //
+    // TODO UnknownBeamTime: beam gate time is not available yet, here assuming it's same as trigger
+    nanoseconds gateStartFromTrigger { 0 }; // beam gate - trigger: hope it's negative...
+    auto const gateStart
+      = fDetTimings.toSimulationTime(fDetTimings.TriggerTime() + gateStartFromTrigger);
     switch (gate_type) {
-      case 1: //BNB
+      case TriggerGateTypes::BNB:
         fBeamGateInfo->emplace_back
-          (wr_ts, BNBgateDuration.convertInto<nanoseconds>().value(), sim::kBNB);
+          (gateStart.value(), BNBgateDuration.value(), sim::kBNB);
         break;
-      case 2: //NuMI
+      case TriggerGateTypes::NuMI:
         fBeamGateInfo->emplace_back
-          (wr_ts, NuMIgateDuration.convertInto<nanoseconds>().value(), sim::kNuMI);
+          (gateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
         break;
       default:
         mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
