@@ -18,6 +18,7 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
 #include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
 #include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
 
@@ -34,6 +35,7 @@ namespace daq
   
   class TriggerDecoder : public IDecoder
   {
+    using nanoseconds = util::quantities::nanosecond;
   public:
     explicit TriggerDecoder(fhicl::ParameterSet const &pset);
     
@@ -56,6 +58,9 @@ namespace daq
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
     uint64_t fLastTimeStamp = 0;
     long fLastEvent = 0;
+    
+    static constexpr nanoseconds BNBgateDuration { 1600. };
+    static constexpr nanoseconds NuMIgateDuration { 9500. };
   };
 
   TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
@@ -122,7 +127,8 @@ namespace daq
       }
       fLastTrigger = frag.getLastTimestampBNB();
       fTrigger->emplace_back(fLastEvent, fLastTrigger);
-      fBeamGateInfo->emplace_back(wr_ts, 1600, sim::kBNB); //1.6 us width for BNB, is 1600 here ns? In constuctor of object
+      fBeamGateInfo->emplace_back
+        (wr_ts, BNBgateDuration.convertInto<nanoseconds>().value(), sim::kBNB);
     }
     if(gate_type == 2) //NuMI
     {
@@ -135,7 +141,8 @@ namespace daq
 	fLastEvent = datastream_info.wr_event_no - 1;
       fLastTrigger = frag.getLastTimestampOther(); //actually NuMI for now
       fTrigger->emplace_back(fLastEvent, fLastTrigger);
-      fBeamGateInfo->emplace_back(wr_ts, 9500, sim::kNuMI); //9.5 us width for NuMI?
+      fBeamGateInfo->emplace_back
+        (wr_ts, NuMIgateDuration.convertInto<nanoseconds>().value(), sim::kNuMI);
     }
     //Once we have full trigger data object, set up and place information into there
     return;
