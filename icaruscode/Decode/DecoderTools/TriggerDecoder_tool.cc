@@ -51,6 +51,7 @@ namespace daq
     using BeamGateInfoCollection = std::vector<sim::BeamGateInfo>;
     using BeamGateInfoPtr = std::unique_ptr<BeamGateInfoCollection>;
     TriggerPtr fTrigger;
+    TriggerPtr fPrevTrigger;
     BeamGateInfoPtr fBeamGateInfo; 
     bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
     bool fDebug; //< Use this for debugging this tool
@@ -59,9 +60,20 @@ namespace daq
     uint64_t fLastTimeStamp = 0;
     long fLastEvent = 0;
     
+    /// Name of the data product instance for the current trigger.
+    static std::string const CurrentTriggerInstanceName;
+    
+    /// Name of the data product instance for the previous trigger.
+    static std::string const PreviousTriggerInstanceName;
+    
     static constexpr nanoseconds BNBgateDuration { 1600. };
     static constexpr nanoseconds NuMIgateDuration { 9500. };
   };
+
+
+  std::string const TriggerDecoder::CurrentTriggerInstanceName {};
+  std::string const TriggerDecoder::PreviousTriggerInstanceName { "previous" };
+  
 
   TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
   {
@@ -71,9 +83,11 @@ namespace daq
   
   void TriggerDecoder::produces(art::ProducesCollector& collector) 
   {
-    collector.produces<TriggerCollection>();
+    collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
+    collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
     collector.produces<BeamGateInfoCollection>();
   }
+    
 
   void TriggerDecoder::configure(fhicl::ParameterSet const &pset) 
   {
@@ -87,7 +101,8 @@ namespace daq
   {
     //use until different object chosen 
     //fTrigger = new raw::Trigger();
-    fTrigger = TriggerPtr(new TriggerCollection);
+    fTrigger = std::make_unique<TriggerCollection>();
+    fPrevTrigger = std::make_unique<TriggerCollection>();
     fBeamGateInfo = BeamGateInfoPtr(new BeamGateInfoCollection);
     return;
   }
@@ -126,7 +141,7 @@ namespace daq
         fLastEvent = datastream_info.wr_event_no - 1;
       }
       fLastTrigger = frag.getLastTimestampBNB();
-      fTrigger->emplace_back(fLastEvent, fLastTrigger);
+      fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
       fBeamGateInfo->emplace_back
         (wr_ts, BNBgateDuration.convertInto<nanoseconds>().value(), sim::kBNB);
     }
@@ -140,7 +155,7 @@ namespace daq
       else
         fLastEvent = datastream_info.wr_event_no - 1;
       fLastTrigger = frag.getLastTimestampOther(); //actually NuMI for now
-      fTrigger->emplace_back(fLastEvent, fLastTrigger);
+      fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
       fBeamGateInfo->emplace_back
         (wr_ts, NuMIgateDuration.convertInto<nanoseconds>().value(), sim::kNuMI);
     }
@@ -151,7 +166,8 @@ namespace daq
   void TriggerDecoder::outputDataProducts(art::Event &event)
   {
     //Place trigger data object into raw data store 
-    event.put(std::move(fTrigger));
+    event.put(std::move(fTrigger), CurrentTriggerInstanceName);
+    event.put(std::move(fPrevTrigger), PreviousTriggerInstanceName);
     event.put(std::move(fBeamGateInfo));
     return;
   }
