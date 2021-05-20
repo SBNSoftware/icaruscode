@@ -18,13 +18,18 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/Utilities/quantities/spacetime.h" // util::quantities::nanosecond
 #include "lardataobj/RawData/ExternalTrigger.h" //JCZ: TBD, placeholder for now to represent the idea
+#include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 #include "lardataobj/Simulation/BeamGateInfo.h" //JCZ:, another placeholder I am unsure if this and above will be combined at some point into a dedicated object 
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
+// #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
+#include "icaruscode/Decode/BeamBits.h"
 
 #include <cstdlib>
 #include <iostream>
@@ -48,10 +53,12 @@ namespace daq
   private: 
     using TriggerCollection = std::vector<raw::ExternalTrigger>;
     using TriggerPtr = std::unique_ptr<TriggerCollection>;
+    using RelativeTriggerCollection = std::vector<raw::Trigger>;
     using BeamGateInfoCollection = std::vector<sim::BeamGateInfo>;
     using BeamGateInfoPtr = std::unique_ptr<BeamGateInfoCollection>;
     TriggerPtr fTrigger;
     TriggerPtr fPrevTrigger;
+    std::unique_ptr<RelativeTriggerCollection> fRelTrigger;
     BeamGateInfoPtr fBeamGateInfo; 
     bool fDiagnosticOutput; //< Produces large number of diagnostic messages, use with caution!
     bool fDebug; //< Use this for debugging this tool
@@ -60,14 +67,25 @@ namespace daq
     uint64_t fLastTimeStamp = 0;
     long fLastEvent = 0;
     
+    detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.
+    
     /// Name of the data product instance for the current trigger.
     static std::string const CurrentTriggerInstanceName;
     
     /// Name of the data product instance for the previous trigger.
     static std::string const PreviousTriggerInstanceName;
     
+    static constexpr double UnknownBeamTime = std::numeric_limits<double>::max();
+    
+    /// Codes of gate types from the trigger hardware.
+    struct TriggerGateTypes {
+      static constexpr int BNB { 1 };
+      static constexpr int NuMI { 2 };
+    }; 
+    
     static constexpr nanoseconds BNBgateDuration { 1600. };
     static constexpr nanoseconds NuMIgateDuration { 9500. };
+    
   };
 
 
@@ -76,6 +94,8 @@ namespace daq
   
 
   TriggerDecoder::TriggerDecoder(fhicl::ParameterSet const &pset)
+    : fDetTimings
+      { art::ServiceHandle<detinfo::DetectorClocksService>()->DataForJob() }
   {
     this->configure(pset);
   }
@@ -85,6 +105,7 @@ namespace daq
   {
     collector.produces<TriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<TriggerCollection>(PreviousTriggerInstanceName);
+    collector.produces<RelativeTriggerCollection>(CurrentTriggerInstanceName);
     collector.produces<BeamGateInfoCollection>(CurrentTriggerInstanceName);
   }
     
@@ -103,6 +124,7 @@ namespace daq
     //fTrigger = new raw::Trigger();
     fTrigger = std::make_unique<TriggerCollection>();
     fPrevTrigger = std::make_unique<TriggerCollection>();
+    fRelTrigger = std::make_unique<RelativeTriggerCollection>();
     fBeamGateInfo = BeamGateInfoPtr(new BeamGateInfoCollection);
     return;
   }
@@ -133,6 +155,7 @@ namespace daq
     // absolute time trigger (raw::ExternalTrigger)
     //
     fTrigger->emplace_back(datastream_info.wr_event_no, wr_ts);
+    
     //
     // previous absolute time trigger (raw::ExternalTrigger)
     //
@@ -146,6 +169,7 @@ namespace daq
     }
     fLastTrigger = frag.getLastTimestampBNB();
     fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
+    
     //
     // beam gate
     //
@@ -161,6 +185,24 @@ namespace daq
       default:
         mf::LogWarning("TriggerDecoder") << "Unsupported gate type #" << gate_type;
     } // switch gate_type
+    
+    //
+    // relative time trigger (raw::Trigger)
+    //
+    sbn::triggerSource beamGateBit;
+    switch (gate_type) {
+      case TriggerGateTypes::BNB:  beamGateBit = sbn::triggerSource::BNB;  break;
+      case TriggerGateTypes::NuMI: beamGateBit = sbn::triggerSource::NuMI; break;
+      default:                     beamGateBit = sbn::triggerSource::Unknown;
+    } // switch gate_type
+    
+    fRelTrigger->emplace_back(
+      static_cast<unsigned int>(datastream_info.wr_event_no), // counter
+      fDetTimings.TriggerTime().value(),                      // trigger_time
+      UnknownBeamTime,                                        // beamgate_time TODO
+      mask(beamGateBit)                                       // bits
+      );
+    
     //Once we have full trigger data object, set up and place information into there
     return;
   }
@@ -169,6 +211,7 @@ namespace daq
   {
     //Place trigger data object into raw data store 
     event.put(std::move(fTrigger), CurrentTriggerInstanceName);
+    event.put(std::move(fRelTrigger), CurrentTriggerInstanceName);
     event.put(std::move(fPrevTrigger), PreviousTriggerInstanceName);
     event.put(std::move(fBeamGateInfo), CurrentTriggerInstanceName);
     return;
