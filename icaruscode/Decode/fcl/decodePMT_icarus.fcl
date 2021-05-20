@@ -80,14 +80,13 @@ physics: {
     
     PMTconfig:  @local::extractPMTconfig
     
-//     daqTrigger: @local::decodeTrigger
+    daqTrigger: @local::decodeTrigger
     
     daqPMT:     @local::decodePMT
     
   }
   
-//   decoding: [ PMTconfig, daqTrigger, daqPMT ]
-  decoding: [ PMTconfig, daqPMT ]
+  decoding: [ PMTconfig, daqTrigger, daqPMT ]
   streams: [ rootoutput ]
 }
 

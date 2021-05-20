@@ -22,6 +22,8 @@ decodePMT.DecoderTool.PMTconfigTag: pmtconfig
 icarus_stage0_producers:
 {
   ### Decoder definitions
+  daqTrigger:                     @local::decodeTrigger
+
   daqTPC:                         @local::decodeTPC
   daqTPCWW:                       @local::decodeTPC
   daqTPCWE:                       @local::decodeTPC
@@ -143,7 +145,8 @@ icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
                                      gaushitTPCWE
                                    ]
 
-icarus_stage0_pmt:                 [ pmtconfig,
+icarus_stage0_pmt:                 [ daqTrigger,
+                                     pmtconfig,
                                      daqPMT,
                                      ophit,
                                      opflashCryoE,
