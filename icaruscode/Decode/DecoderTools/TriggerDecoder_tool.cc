@@ -182,7 +182,7 @@ namespace daq
     long delta_gates_bnb = frag.getDeltaGatesBNB();
     long delta_gates_numi = frag.getDeltaGatesOther(); //this is actually NuMI due to abrupt changes in trigger board logic
     long delta_gates_other = frag.getDeltaGatesNuMI();
-    uint64_t fLastTrigger = 0;
+    uint64_t lastTrigger = 0;
     if(fDiagnosticOutput || fDebug)
     {
       std::cout << "Full Timestamp = " << wr_ts << std::endl;
@@ -207,9 +207,9 @@ namespace daq
     else 
     {
       fLastEvent = datastream_info.wr_event_no - 1;
+      lastTrigger = frag.getLastTimestampBNB();
+      fPrevTrigger->emplace_back(fLastEvent, lastTrigger);
     }
-    fLastTrigger = frag.getLastTimestampBNB();
-    fPrevTrigger->emplace_back(fLastEvent, fLastTrigger);
     
     //
     // beam gate
