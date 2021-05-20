@@ -37,7 +37,48 @@
 
 namespace daq 
 {
-  
+  /**
+   * @brief Tool decoding the trigger information from DAQ.
+   * 
+   * Produces:
+   * * `std::vector<raw::ExternalTrigger>` containing the absolute trigger time
+   *     stamp from the White Rabbit system, and a trigger count;
+   *     it always includes a single entry (zero _might_ be supported).
+   * * `std::vector<raw::Trigger>` containing:
+   *     * `TriggerTime()`: the relative time of the trigger as reported in the
+   *         White Rabbit timestamp, measured in the
+   *         @ref DetectorClocksElectronicsTime "electronics time scale" (for
+   *         ICARUS it will always be
+   *         `detinfo::DetectorClocksData::TriggerTime()`).
+   *     * `BeamGateTime()`: relative time of the announced arrival of the beam
+   *         (currently not available) also in
+   *         @ref DetectorClocksElectronicsTime "electronics time scale".
+   *     * `TriggerCount()`: the trigger count from the beginning of the run.
+   *     * `TriggerBits()`: includes the beam(s) with an open gate when the
+   *         trigger happened (currently only one beam gate per trigger);
+   *         definitions are in `sbn::beamType` namespace.
+   * 
+   *     It always includes a single entry (zero _might_ be supported).
+   * * `std::vector<sim::BeamGateInfo>` containing information on the "main"
+   *     beam gate associated to each trigger (a way to say that if by any
+   *     chance there are more than one bits set for the trigger, this gate
+   *     will pick only one of them):
+   *     * `Start()`: relative time of the announced arrival of the beam
+   *         (currently not available), in
+   *         @ref DetectorClocksSimulationTime "simulation time scale".
+   *     * `Width()`: duration of the gate, in nanoseconds; currently set to a
+   *         nominal value.
+   *     * `BeamType()`: the type of the beam gate being described (BNB, NuMI).
+   * 
+   * Besides the main data product (empty instance name) an additional
+   * `std::vector<raw::ExternalTrigger>` data product with instance name
+   * `"previous"` is also produced, which relays the same kind of information
+   * but for the _previous_ trigger. This information also comes from the
+   * trigger DAQ. If no previous trigger is available, this collection will be
+   * empty.
+   * 
+   * 
+   */
   class TriggerDecoder : public IDecoder
   {
     using nanoseconds = util::quantities::nanosecond;
