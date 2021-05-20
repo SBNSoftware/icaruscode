@@ -33,6 +33,8 @@ icarus_stage0_producers:
   pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
 
+  daqTrigger:                     @local::decodeTrigger
+
   ### calwire producers
   decon1droi:                     @local::icarus_decon1droi
   decon1DroiTPCWW:                @local::icarus_decon1droi
@@ -94,13 +96,20 @@ icarus_stage0_producers:
 
 icarus_reco_filters:
 {
-   flashfilter: { module_type: "FilterOpFlash" 
-                  OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
-#                  WindowStartTime: -1489.6 # -1489.4 - 0.2us safe margin
-#                  WindowEndTime:   -1487.6 # -1487.8 + 0.2us safe margin
-                  WindowStartTime: -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
-                  WindowEndTime:   -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
-                }
+   flashfilterBNB: { module_type:         "FilterOpFlash" 
+                     OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
+#                     WindowStartTime:     -1489.6 # -1489.4 - 0.2us safe margin
+#                     WindowEndTime:       -1487.6 # -1487.8 + 0.2us safe margin
+#                     WindowStartTime:     -1490.8 # 9.6 us - 1500 us offset - 0.4us safe margin
+#                     WindowEndTime:       -1488.4 # 11.2 -1500 us offset + 0.4us safe margin
+                     WindowStartTime:     -0.2 # 9.6 us - 1500 us offset - 0.4us safe margin
+                     WindowEndTime:        1.8 # 11.2 -1500 us offset + 0.4us safe margin
+                   }
+   flashfilterNUMI: { module_type:         "FilterOpFlash" 
+                      OpFlashProducerList: ["opflashCryoE","opflashCryoW"] 
+                      WindowStartTime:     -0.2 # 9.6 us - 1500 us offset - 0.4us safe margin
+                      WindowEndTime:        9.8 # 11.2 -1500 us offset + 0.4us safe margin
+                    }
 }
 
 
@@ -142,12 +151,24 @@ icarus_stage0_pmt:                 [ pmtconfig,
                                    ]
 
 icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,
-                                     flashfilter,
+                                     flashfilterBNB,
                                      @sequence::icarus_stage0_single_TPC
                                    ]
 
 icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_pmt,
-                                     flashfilter,
+                                     flashfilterBNB,
+                                     @sequence::icarus_stage0_multiTPC_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC
+                                   ]
+
+icarus_stage0_multiTPC_BNB:        [ flashfilterBNB,
+                                     @sequence::icarus_stage0_multiTPC_TPC,
+                                     @sequence::icarus_stage0_EastHits_TPC,
+                                     @sequence::icarus_stage0_WestHits_TPC
+                                   ]
+
+icarus_stage0_multiTPC_NUMI:       [ #flashfilterNUMI,
                                      @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
                                      @sequence::icarus_stage0_WestHits_TPC
