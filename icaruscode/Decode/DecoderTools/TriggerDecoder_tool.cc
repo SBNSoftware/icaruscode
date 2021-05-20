@@ -32,11 +32,10 @@
 namespace daq 
 {
   
-  class TriggerDecoder : virtual public IDecoder
+  class TriggerDecoder : public IDecoder
   {
   public:
     explicit TriggerDecoder(fhicl::ParameterSet const &pset);
-    ~TriggerDecoder();
     
     virtual void produces(art::ProducesCollector&) override;
     virtual void configure(const fhicl::ParameterSet&) override;
@@ -64,7 +63,6 @@ namespace daq
     this->configure(pset);
   }
 
-  TriggerDecoder::~TriggerDecoder() {}
   
   void TriggerDecoder::produces(art::ProducesCollector& collector) 
   {
