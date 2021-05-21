@@ -1,0 +1,35 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the paths we'll execute depending on data
+physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,  @sequence::icarus_stage0_pmt_BNB,  @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
+physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI, @sequence::icarus_stage0_pmt_NuMI, @sequence::icarus_stage0_multiTPC_TPC, @sequence::icarus_stage0_EastHits_TPC ]
+
+## boiler plate...
+physics.trigger_paths: [ pathBNB, pathNUMI ]
+physics.end_paths:     [ streamBNB, streamNUMI ]
+
+outputs.outBNB.fileName: "BNB_%ifb_%tc-%p.root"
+outputs.outBNB.dataTier:  "reconstructed"
+outputs.outBNB.SelectEvents: [ pathBNB ]
+
+outputs.outNUMI.fileName: "NUMI_%ifb_%tc-%p.root"
+outputs.outNUMI.dataTier:  "reconstructed"
+outputs.outNUMI.SelectEvents: [ pathNUMI ]
+
+# Drop the artdaq format files on output
+outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Temporarily overrie pmt configuration for a single cryostat configuration
+physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.daqTPC.FragmentsLabelVec:              ["daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.WireModuleLabelVec:          ["decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
