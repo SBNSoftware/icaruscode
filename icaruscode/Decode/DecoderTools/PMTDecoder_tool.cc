@@ -39,6 +39,7 @@
 #include "larcorealg/CoreUtils/enumerate.h"
 #include "larcorealg/CoreUtils/counter.h"
 #include "lardataobj/RawData/OpDetWaveform.h"
+#include "lardataobj/RawData/ExternalTrigger.h"
 
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
 
@@ -124,6 +125,9 @@ namespace daq { class PMTDecoder; }
  *     which have a setup (`BoardSetup`) are required to be included in the DAQ
  *     configuration of the input file, or an exception is thrown; if not set,
  *     missing readout boards are unnoticed.
+ * * `TriggerTag` (data product tag, mandatory): tag for the information
+ *     (currently required to be a collection of `raw::ExternalTrigger`,
+ *     in the future it should become `raw::Trigger`);
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
  * * `LogCategory` (string, default: `PMTDecoder`): name of the message facility
@@ -211,6 +215,13 @@ namespace daq { class PMTDecoder; }
  *       cleared until the next board reset.
  *       While the tree has room for the 48-bit version (ETTT), the rest of the
  *       decoder does not yet support it.
+ *     * `trigger` (64-bit signed integer): global trigger time (from the
+ *       trigger decoder), in nanoseconds from The Epoch.
+ *     * `triggerSec`, `triggerNS` (32-bit integer each): same time as `trigger`
+ *       branch, split into second and nanosecond components.
+ *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
+ *       integer): the timestamp of the PMT fragment, assigned by the board
+ *       reader constructing the fragment.
  * 
  * 
  * 
@@ -272,6 +283,26 @@ public:
     
     using nanoseconds = util::quantities::intervals::nanoseconds; ///< Alias.
     
+    /// Data structure for trigger time.
+    struct SplitTimestamp_t {
+        static_assert(sizeof(int) >= 4U);
+        struct Split_t {
+            int seconds = std::numeric_limits<int>::min(); ///< The ongoing second.
+            /// Nanoseconds from the start of current second.
+            unsigned int nanoseconds = std::numeric_limits<unsigned int>::max();
+        }; // Split_t
+        
+        /// Trigger time in nanoseconds from The Epoch.
+        long long int time = std::numeric_limits<long long int>::min();
+        /// Trigger time in nanoseconds from The Epoch (in components).
+        Split_t split;
+        
+        constexpr SplitTimestamp_t() = default;
+        constexpr SplitTimestamp_t(int sec, unsigned int ns);
+        constexpr SplitTimestamp_t(long long int triggerTime);
+    }; // SplitTimestamp_t
+    
+    
     // --- BEGIN -- FHiCL configuration ----------------------------------------
     
     /// Configuration of the V1730 readout board setup.
@@ -329,6 +360,11 @@ public:
       fhicl::Sequence<fhicl::TableAs<details::BoardSetup_t, BoardSetupConfig>> BoardSetup {
         Name("BoardSetup"),
         Comment("list of the setup settings for all relevant V1730 boards")
+        };
+      
+      fhicl::Atom<art::InputTag> TriggerTag {
+        Name("TriggerTag"),
+        Comment("input tag for the global trigger object (raw::ExternalTrigger)")
         };
       
       fhicl::Sequence<std::string> DataTrees {
@@ -405,8 +441,7 @@ private:
       nanoseconds preTriggerTime;
       nanoseconds PMTtriggerDelay;
     };
-
-
+    
     // --- BEGIN -- Configuration parameters -----------------------------------
     bool const        fDiagnosticOutput; ///< If true will spew endless messages to output.
     
@@ -414,6 +449,8 @@ private:
     bool const        fRequireBoardConfig; ///< Whether setup info on all boards is required.
     
     std::optional<art::InputTag> const fPMTconfigTag; ///< Input tag of the PMT configuration.
+    
+    art::InputTag const fTriggerTag; ///< Input tag of the global trigger.
     
     std::vector<details::BoardSetup_t> const fBoardSetup; ///< All board setup settings.
     
@@ -452,6 +489,10 @@ private:
     
     /// Find the information on a readout boards by fragment ID.
     std::optional<details::BoardInfoLookup> fBoardInfoLookup;
+    
+    
+    /// Trigger timestamp for the current event.
+    SplitTimestamp_t fTriggerTimestamp;
     
     
     /// Returns whether PMT configuration information is expected to be available.
@@ -517,7 +558,7 @@ private:
         unsigned int run;    ///< Run number.
         unsigned int subrun; ///< Subrun number.
         unsigned int event;  ///< Event number.
-        double timestamp;    ///< Event timestamp (seconds from the epoch).
+        SplitTimestamp_t timestamp; ///< Event timestamp (seconds from the epoch).
     }; // TreeData_EventID_t
     
     /// Structure collecting all data for a fragment ROOT tree.
@@ -526,6 +567,10 @@ private:
             
             int fragmentID = 0; ///< ID of the fragment of this entry.
             unsigned long int TriggerTimeTag = 0; ///< Trigger time tag from the fragment.
+            
+            SplitTimestamp_t trigger; ///< Global trigger time.
+            
+            SplitTimestamp_t fragTime; ///< PMT fragment time stamp.
             
         }; // Data_t
         
@@ -585,6 +630,30 @@ namespace daq {
 } // namespace daq
 
 
+//-------------------------------------------------------------------------------------------                -----------------------------------------------
+constexpr daq::PMTDecoder::SplitTimestamp_t::SplitTimestamp_t(int sec, unsigned int ns)
+  : time { static_cast<long long int>(sec) * 1'000'000'000LL + ns }
+  , split { sec, ns }
+  {}
+
+constexpr daq::PMTDecoder::SplitTimestamp_t::SplitTimestamp_t(long long int triggerTime)
+  : time { triggerTime }
+  , split {
+      static_cast<int>(time / 1'000'000'000), // seconds
+      static_cast<unsigned int>(time % 1'000'000'000) // nanoseconds
+    }
+  {}
+
+
+namespace daq {
+    std::ostream& operator<< (std::ostream& out, PMTDecoder::SplitTimestamp_t const& time) {
+        out << time.split.seconds << '.'
+          << std::setfill('0') << std::setw(9) << time.split.nanoseconds;
+        return out;
+    } // operator<< (std::ostream&, PMTDecoder::SplitTimestamp_t)
+} // namespace daq
+
+
 //------------------------------------------------------------------------------------------------------------------------------------------
 daq::PMTDecoder::TreeNameList_t const daq::PMTDecoder::TreeNames
   = daq::PMTDecoder::initTreeNames();
@@ -613,6 +682,7 @@ daq::PMTDecoder::PMTDecoder(Parameters const& params)
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
   , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
+  , fTriggerTag{ params().TriggerTag() }
   , fBoardSetup{ params().BoardSetup() }
   , fLogCategory{ params().LogCategory() }
   , fGeometry{ *(lar::providerFrom<geo::Geometry const>()) }
@@ -622,8 +692,6 @@ daq::PMTDecoder::PMTDecoder(Parameters const& params)
   , fOpticalTick{ fDetTimings.OpticalClockPeriod() }
   , fNominalTriggerTime{ fDetTimings.TriggerTime() }
 {
-  // nobody is asking what this tool consumes()...
-  // if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(fPMTconfigTag.value());
   
   initTrees(params().DataTrees());
     
@@ -668,8 +736,9 @@ daq::PMTDecoder::PMTDecoder(Parameters const& params)
 
 
 void daq::PMTDecoder::consumes(art::ConsumesCollector& consumerColl) {
-  if (fPMTconfigTag)
-    consumerColl.consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
+    if (fPMTconfigTag)
+        consumerColl.consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
+    consumerColl.consumes<std::vector<raw::ExternalTrigger>>(fTriggerTag);
 }
 
 
@@ -699,8 +768,29 @@ void daq::PMTDecoder::setupRun(art::Run const& run)
 //------------------------------------------------------------------------------------------------------------------------------------------
 void daq::PMTDecoder::setupEvent(art::Event const& event)
 {
+    //
+    // global trigger
+    //
+    auto const& triggers
+      = event.getByLabel<std::vector<raw::ExternalTrigger>>(fTriggerTag);
+    if (triggers.size() != 1) {
+      // if this is hit, the decoder needs some development to correctly deal
+      // with input with no trigger, or more than one
+      throw cet::exception("PMTDecoder")
+        << "Found " << triggers.size() << " triggers from '"
+        << fTriggerTag.encode() << "', can deal only with 1.\n";
+    }
+    fTriggerTimestamp = { triggers.front().GetTrigTime() };
+    mf::LogTrace(fLogCategory)
+      << "Trigger time ('" << fTriggerTag.encode() << "'): " << fTriggerTimestamp << " s";
+    
+    //
+    // event ID
+    //
+      
     // if needed, fill the record with the basic information of the event
     if (fEventInfo) fillTreeEventID(event, *fEventInfo);
+    
 } // daq::PMTDecoder::setupEvent()
 
 
@@ -731,6 +821,8 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
     uint16_t const enabledChannels      = header.ChannelMask();
 
+    artdaq::Fragment::timestamp_t const fragmentTimestamp = artdaqFragment.timestamp();
+    
     unsigned int const time_tag =  header.triggerTimeTag;
 
     size_t boardId = nChannelsPerBoard * eff_fragment_id;
@@ -751,6 +843,8 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
             << ", data size: " << data_size_double_bytes
             << ", samples/channel: " << nSamplesPerChannel
             << ", trigger time tag: " << time_tag
+            << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
+              << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
           ;
     }
 
@@ -788,10 +882,10 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
         nanoseconds const preTriggerTime = info.preTriggerTime;
         nanoseconds const PMTtriggerDelay = info.PMTtriggerDelay;
         auto const timeStamp
-          = fDetTimings.TriggerTime() - PMTtriggerDelay - preTriggerTime;
+          = fNominalTriggerTime - PMTtriggerDelay - preTriggerTime;
         mf::LogTrace(fLogCategory) << "V1730 board '" << info.name
           << "' has data starting at electronics time " << timeStamp
-          << " = " << fDetTimings.TriggerTime()
+          << " = " << fNominalTriggerTime
           << " - " << PMTtriggerDelay << " - " << preTriggerTime
           ;
 
@@ -869,6 +963,8 @@ void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
     if (fTreeFragment) {
       fTreeFragment->data.fragmentID = fragment_id;
       fTreeFragment->data.TriggerTimeTag = time_tag;
+      fTreeFragment->data.trigger = fTriggerTimestamp;
+      fTreeFragment->data.fragTime = { static_cast<long long int>(fragmentTimestamp) };
       assignEventInfo(fTreeFragment->data);
       fTreeFragment->tree->Fill();
     } // if fTreeFragment
@@ -951,9 +1047,6 @@ auto daq::PMTDecoder::matchBoardConfigurationAndSetup
         }
         return ppBoardConfig->second;
       };
-    
-    
-    if (fTreeFragment) assignEventInfo(fTreeFragment->data);
     
     // the filling is driven by boards configured in the tool
     // (which is how a setup entry is mandatory)
@@ -1088,7 +1181,7 @@ void daq::PMTDecoder::initEventIDtree(TTree& tree, TreeData_EventID_t& data) {
     tree.Branch("run", &data.run);
     tree.Branch("subrun", &data.subrun);
     tree.Branch("event", &data.event);
-    tree.Branch("timestamp", &data.timestamp);
+    tree.Branch("timestamp", &data.timestamp.time, "timestamp/L");
     
 } // daq::PMTDecoder::initEventIDtree()
 
@@ -1107,7 +1200,12 @@ void daq::PMTDecoder::initFragmentsTree() {
     initEventIDtree(*tree, data);
     
     tree->Branch("fragmentID", &data.fragmentID);
+    tree->Branch("fragTime", &data.fragTime.time, "fragTime/L"); // ROOT 6.24 can't detect 64-bit
+    tree->Branch("fragTimeSec", &data.fragTime.split.seconds);
     tree->Branch("TTT", &data.TriggerTimeTag, "TTT/l"); // ROOT 6.24 can't detect 64-bit
+    tree->Branch("trigger", &data.trigger.time, "trigger/L"); // ROOT 6.24 can't detect 64-bit
+    tree->Branch("triggerSec", &data.trigger.split.seconds);
+    tree->Branch("triggerNS", &data.trigger.split.nanoseconds);
     
 } // daq::PMTDecoder::initFragmentsTree()
 
@@ -1140,7 +1238,7 @@ void daq::PMTDecoder::fillTreeEventID
     
     art::Timestamp const& timestamp = event.time();
     treeData.timestamp
-      = static_cast<double>(timestamp.timeHigh()) + 1.e-9 * timestamp.timeLow();
+      = { static_cast<int>(timestamp.timeHigh()), timestamp.timeLow() };
     
 } // daq::PMTDecoder::fillTreeEventID()
 
