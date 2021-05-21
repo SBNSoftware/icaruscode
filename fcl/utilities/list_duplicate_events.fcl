@@ -1,0 +1,64 @@
+#
+# File:    list_duplicate_events.fcl
+# Purpose: Runs through all events in a sample, looking for duplicates.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 18, 2021
+# Version: 1.0
+# 
+# Use as:
+#     
+#     lar -c list_duplicate_events.fcl -S input.filelist
+#     
+# and find the result in "DuplicateEventList.log".
+# 
+#
+
+process_name: FindDupl
+
+services: {
+
+  DuplicateEventTracker: {
+
+    # just emit a warning on screen instead of throwing an exception
+    WarningOnly: false
+
+    # print a summary of the duplicate events at end of job (default)
+    SkipSummary: false
+
+    ## in case of duplicate, wait until the end of job to throw an exception
+    ExceptionAtEnd: true
+
+    ## tag of output category used by this service to the message facility
+    LogCategory: "DuplicateEventTracker"
+    
+  } # DuplicateEventTracker
+  
+  
+  message: {
+    destinations: {
+      Console: {
+        type:      cout
+        threshold: WARNING
+      }
+      DuplicatesLog: {
+        type:      file
+        filename: "DuplicateEventList.log"
+        threshold: INFO
+        format: {
+          timestamp:      "none"
+          wantModule:      false
+          wantSubroutine:  false
+          wantSomeContext: true
+          wantText:        true
+          noLineBreaks:    true
+        }
+        categories: {
+          DuplicateEventTracker: { limit: -1 }
+          default:               { limit: 0 }
+        }
+      }
+    } # destinations
+  } # message
+
+} # services
+

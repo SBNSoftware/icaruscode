@@ -1,0 +1,57 @@
+#
+# File:    triggersim_icarus_run5837_pre09_22_03_01.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 17, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# It is tuned for data like ICARUS run 5837:
+# * minimum bias on BNB gate
+# * pre-trigger: 9 us ( = (buffer length) x (1 - post_trigger_fraction) = 30 us x (1 - 70%))
+# * beam gate: 1.6 us opening at trigger time (centered with a 25% margin)
+#
+# In addition, this configuration arranges the configuration of detector clocks
+# to be compatible with data decoded with icaruscode v09_22_03_01 or earlier.
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20210517 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_icarus_data.fcl` v1.0
+#
+
+#include "triggersim_icarus_data.fcl"
+
+
+### override detector clocks with data settings
+#include "detectorclocks_icarus_run5837pre09_22_03_01.fcl"
+
+
+# ------------------------------------------------------------------------------
+# reduce the amount of loggery emitted:
+# services.message.destinations.TriggerThresholdLog: @erase
+# services.message.destinations.LVDSORLog: @erase
+# services.message.destinations.SlidingWindowORLog: @erase
+# services.message.destinations.SlidingORsimLog: @erase
+# services.message.destinations.SlidingORplotsLog: @erase
+
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+
+# ------------------------------------------------------------------------------
+

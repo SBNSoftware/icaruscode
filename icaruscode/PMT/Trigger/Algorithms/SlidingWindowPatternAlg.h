@@ -184,11 +184,11 @@ class icarus::trigger::SlidingWindowPatternAlg
    * all `gates` before calling this function (see e.g. `applyBeamGate()`).
    * 
    */
-  static TriggerInfo_t applyWindowPattern(
+  TriggerInfo_t applyWindowPattern(
     WindowTopology_t::WindowInfo_t const& windowInfo,
     WindowPattern_t const& pattern,
     TriggerGates_t const& gates
-    );
+    ) const;
   
   
     private:

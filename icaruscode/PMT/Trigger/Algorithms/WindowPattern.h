@@ -56,6 +56,7 @@ struct icarus::trigger::WindowPattern {
   unsigned int minInUpstreamWindow = 0U;
   unsigned int minInDownstreamWindow = 0U;
   unsigned int minInOppositeWindow = 0U;
+  unsigned int minSumInOppositeWindows = 0U;
   /// @}
   
   /// Whether a window location with no upstream window should be discarded.
@@ -68,8 +69,8 @@ struct icarus::trigger::WindowPattern {
     * @brief Returns a tag summarizing the pattern.
     * 
     * The tag encodes the requirements on the main window (_R(M)_), its
-    * opposite window (_R(O)_), and downstream (_R(D)_) and upstream (_R(U)_)
-    * windows.
+    * opposite window (_R(O)_), their minimum sum (_R(S)_) and downstream
+    * (_R(D)_) and upstream (_R(U)_) windows.
     * A requirement _R(X)_ is in the format `X##[req]`, where `X` is the tag
     * letter of the requirement, `##` is the requirement level for that window,
     * and the optional `req` tag means that if for a main window this window

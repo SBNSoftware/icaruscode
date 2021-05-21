@@ -379,12 +379,11 @@ class icarus::trigger::SlidingWindowTriggerEfficiencyPlots
   using WindowPatterns_t = icarus::trigger::WindowPatterns_t;
   
   using TriggerInfo_t = details::TriggerInfo_t; // type alias
-  
+
   /// Data structure to communicate internally a trigger response.
   using WindowTriggerInfo_t
     = icarus::trigger::SlidingWindowPatternAlg::AllTriggerInfo_t;
-  
-  
+
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Configured sliding window requirement patterns.
@@ -783,13 +782,14 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::simulateAndPlot(
   // 2. for each pattern:
   //
   for (auto const& [ iPattern, pattern ]: util::enumerate(fPatterns)) {
-    
+
     auto& patternAlg = fPatternAlgs[iPattern];
     
     WindowTriggerInfo_t const triggerInfo
       = patternAlg.simulateResponse(inBeamGates);
     
     registerTriggerResult(thresholdIndex, iPattern, triggerInfo.info);
+
     plotResponse(
       thresholdIndex, threshold,
       iPattern, pattern,
@@ -867,8 +867,6 @@ void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots
 } // icarus::trigger::SlidingWindowTriggerEfficiencyPlots::fillAllPMTplots()
 
 
-
-//------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTriggerEfficiencyPlots::plotResponse(
   std::size_t iThr, std::string const& threshold,
   std::size_t iPattern, WindowPattern const& pattern,
