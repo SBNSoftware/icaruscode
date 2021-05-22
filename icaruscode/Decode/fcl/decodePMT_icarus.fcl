@@ -107,8 +107,8 @@ outputs: {
 
 # ------------------------------------------------------------------------------
 
-physics.producers.daqPMT.DecoderTool.PMTconfigTag: PMTconfig # required
-physics.producers.daqPMT.DecoderTool.TriggerTag:   daqTrigger # required
+physics.producers.daqPMT.PMTconfigTag: PMTconfig # required
+physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
 # services.Geometry.Name: icarus_splitwires # for runs < 548x
 
@@ -117,16 +117,16 @@ physics.producers.daqPMT.DecoderTool.TriggerTag:   daqTrigger # required
 #
 
 physics.producers.daqPMT.SurviveExceptions: false
-physics.producers.daqPMT.DecoderTool.DiagnosticOutput:  false
-physics.producers.daqPMT.DecoderTool.RequireKnownBoards: true
-physics.producers.daqPMT.DecoderTool.RequireBoardConfig: true
-physics.producers.daqPMT.DecoderTool.DataTrees: [ "PMTfragments" ]
+physics.producers.daqPMT.DiagnosticOutput:  false
+physics.producers.daqPMT.RequireKnownBoards: true
+physics.producers.daqPMT.RequireBoardConfig: true
+physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
 
 #
 # customization of trigger decoding
 #
 
-physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
+physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: false
 physics.producers.daqTrigger.DecoderTool.Debug: false
 
 

@@ -42,11 +42,9 @@ decodeTPCROI: {
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
                     FragmentsLabel:     "daq:CAENV1730"
-                    DecoderTool: {
-                                    @table::PMTDecoderTool
-                      PMTconfigTag: @nil # must override
-                      TriggerTag:   @nil # must override
-                    }
+                    PMTconfigTag:       @nil # must override
+                    TriggerTag:         @nil # must override
+                    BoardSetup:         @local::icarus_V1730_setup
 }
 
 decodeTrigger: {

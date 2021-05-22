@@ -119,6 +119,8 @@ auto icarus::PMTconfigurationExtractor::extractV1730configuration
   
   rc.nChannels = boardParams.get<unsigned int>("nChannels");
   
+  rc.useTimeTagForTimeStamp = boardParams.get("UseTimeTagForTimeStamp", false);
+  
   for (unsigned short int channelNo = 0; channelNo < 16; ++channelNo)
     rc.channels.push_back(extractChannelConfiguration(boardParams, channelNo));
   
