@@ -1,0 +1,122 @@
+////////////////////////////////////////////////////////////////////////
+// Class:       DecoderICARUSCRT
+// Plugin Type: producer (art v3_06_03)
+// File:        DecoderICARUSCRT_module.cc
+//
+// Generated at Sat May  1 20:19:33 2021 by Biswaranjan Behera using cetskelgen
+// from cetlib version v3_11_01.
+////////////////////////////////////////////////////////////////////////
+
+#include "art/Framework/Core/EDProducer.h"
+#include "art/Framework/Core/ModuleMacros.h"
+#include "art/Framework/Principal/Event.h"
+#include "art/Framework/Principal/Handle.h"
+#include "art/Framework/Principal/Run.h"
+#include "art/Framework/Principal/SubRun.h"
+#include "canvas/Utilities/InputTag.h"
+#include "fhiclcpp/ParameterSet.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+#include "canvas/Utilities/Exception.h"
+#include "canvas/Persistency/Common/Ptr.h" 
+#include "canvas/Persistency/Common/PtrVector.h" 
+#include "canvas/Persistency/Common/FindManyP.h"
+#include "art/Persistency/Common/PtrMaker.h"
+
+#include "sbndaq-artdaq-core/Overlays/Common/BernCRTFragment.hh"
+#include "artdaq-core/Data/Fragment.hh"
+#include "artdaq-core/Data/ContainerFragment.hh"
+#include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
+#include "icaruscode/CRT/CRTDecoder/BernCRTTranslator.hh"
+
+#include "icaruscode/Decode/DecoderTools/IDecoder.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+
+#include "sbnobj/ICARUS/CRT/CRTData.hh"
+
+#include "art_root_io/TFileService.h"
+#include "art_root_io/TFileDirectory.h"
+
+#include "TH1F.h"
+#include "TNtuple.h"
+
+#include <memory>
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <fstream>
+#include <iomanip>
+#include <vector>
+#include <iostream>
+#include<stdlib.h>
+
+namespace crt {
+  class DecoderICARUSCRT;
+}
+
+
+class crt::DecoderICARUSCRT : public art::EDProducer {
+public:
+  explicit DecoderICARUSCRT(fhicl::ParameterSet const& p);
+  // The compiler-generated destructor is fine for non-base
+  // classes without bare pointers or other resource use.
+
+  // Plugins should not be copied or assigned.
+  DecoderICARUSCRT(DecoderICARUSCRT const&) = delete;
+  DecoderICARUSCRT(DecoderICARUSCRT&&) = delete;
+  DecoderICARUSCRT& operator=(DecoderICARUSCRT const&) = delete;
+  DecoderICARUSCRT& operator=(DecoderICARUSCRT&&) = delete;
+
+  // Required functions.
+  void produce(art::Event& evt) override;
+
+private:
+
+  // Declare member data here.
+  const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
+};
+
+
+crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
+  : EDProducer{p}  // ,
+// More initializers here.
+
+{
+  fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
+  // Call appropriate produces<>() functions here.
+  produces< std::vector<icarus::crt::CRTData> >();
+  // Call appropriate consumes<>() for any products to be retrieved by this module.
+}
+
+void crt::DecoderICARUSCRT::produce(art::Event& evt)
+{
+  // Implementation of required member function here.
+  //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
+  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
+  
+  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+  
+  for (auto & hit : hit_vector){ 
+    //  TLOG(TLVL_INFO)<<hit;
+    
+    icarus::crt::CRTData data;
+    data.fMac5  = fChannelMap->getSimMacAddress(hit.mac5);
+    //data.fMac5  = fChannelMap->getSimMacAddress(80);
+    //data.fMac5  = hit.mac5;
+    data.fTs0   = hit.ts0;
+    data.fTs1   = hit.ts1;
+    // data.fEntry = hit.entry;
+    //data.coinc    = hit.coinc;
+    //    std::cout<< "80" <<"\t" <<fChannelMap->getSimMacAddress(80) << std::endl;
+    
+    std::cout << "HW MAC5: \t" << (int)hit.mac5 <<  ", Sim MAC5: \t" << (int)data.fMac5 
+	      << ", T0: \t" << data.fTs0  << ", T1: \t" << data.fTs1 << std::endl;
+
+    for(int ch=0; ch<32; ch++) data.fAdc[ch] = hit.adc[ch];
+    crtdata->push_back(std::move(data));
+  }
+
+  evt.put(std::move(crtdata));
+  
+}
+
+DEFINE_ART_MODULE(crt::DecoderICARUSCRT)

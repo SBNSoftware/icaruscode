@@ -17,17 +17,17 @@
 
 namespace icarusDB
 {
-/**
- *  @brief  IChannelMapping interface class definiton
- */
-class IChannelMapping
-{
-public:
+  /**
+   *  @brief  IChannelMapping interface class definiton
+   */
+  class IChannelMapping
+  {
+  public:
     /**
      *  @brief  Virtual Destructor
      */
     virtual ~IChannelMapping() noexcept = default;
-
+    
     /**
      *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
      *         and the related crate and readout information. 
@@ -36,9 +36,9 @@ public:
     using ReadoutIDVec                = std::vector<unsigned int>;
     using CrateNameReadoutIDPair      = std::pair<std::string,ReadoutIDVec>;
     using TPCFragmentIDToReadoutIDMap = std::map<unsigned int, CrateNameReadoutIDPair>;
-
+    
     virtual int BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap&) const = 0;
-
+    
     /**
      *  @brief Define the returned data structures for a mapping between TPC readout boards
      *         and the channel information 
@@ -58,9 +58,26 @@ public:
      */
     using DigitizerChannelChannelIDPair    = std::pair<size_t,size_t>;
     using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
-    using FragmentToDigitizerChannelMap    = std::map<size_t,DigitizerChannelChannelIDPairVec>;
+    using FragmentToDigitizerChannelMap    = std::map<size_t, DigitizerChannelChannelIDPairVec>;
 
     virtual int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const = 0;
+
+    /**
+     *  @brief Define the returned data structures for a mapping between CRT hardware mac_address
+     *         to the simulated mac_address. 
+     *         Then define the function interface to fill these data structures
+     */
+
+    using CRTHWtoSimMacAddressPair                  = std::pair<unsigned int, unsigned int>;
+    using CRTChannelIDToHWtoSimMacAddressPairMap    = std::map<unsigned int, CRTHWtoSimMacAddressPair>;
+
+    virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap&) const = 0;
+
+    /*
+    std::pair<size_t,size_t> CRTHWtoSimMacAddressPair;
+    std::map<size_t, std::pair<size_t,size_t> >  CRTChannelIDToHWtoSimMacAddressPairMap;    
+    virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(std::map<size_t, std::pair<size_t,size_t> > &) const = 0;
+    */
 };
 
 } // namespace lar_cluster3d

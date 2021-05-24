@@ -44,7 +44,8 @@ public:
     // Section for recovering PMT information
     virtual bool                                    hasPMTDigitizerID(const unsigned int)   const = 0;
     virtual const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const = 0;
-    
+
+    virtual unsigned int                            getSimMacAddress(const unsigned int)    const = 0;    
 };
 
 } // end of namespace

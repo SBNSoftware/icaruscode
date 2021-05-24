@@ -4,6 +4,8 @@ art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
+                  #      BernCRTTranslator.cc
+
           MODULE_LIBRARIES
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
@@ -13,6 +15,10 @@ art_make(
                         larevt_Filters
                         lardataobj_RawData
                         lardata_ArtDataHelper
+                        # sbndaq-artdaq-core_Overlays_Common
+                      #  artdaq-core_Data
+                       #BERN_CRT_TRANSLATOR
+                      #  sbnobj_Common_CRT
                         ${ROOT_BASIC_LIB_LIST}
                         ${LIBWDA}
                         ${ART_FRAMEWORK_CORE}
@@ -29,7 +35,8 @@ art_make(
                         ${FHICLCPP}
                         cetlib cetlib_except
                         ${TBB}
-        )
+ 
+)
 
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
@@ -45,6 +52,7 @@ simple_plugin(DumpPMTconfiguration module
   fhiclcpp
   cetlib_except
   )
+
 
 install_headers()
 install_fhicl()
