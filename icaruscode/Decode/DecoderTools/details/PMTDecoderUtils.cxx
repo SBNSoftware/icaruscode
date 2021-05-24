@@ -25,6 +25,7 @@ std::ostream& daq::details::operator<<
     out << "\n  board \"" << boardInfo.setup->name
       << "\" (fragment ID " << std::hex << boardInfo.fragmentID << std::dec
       << "): trigger delay " << boardInfo.setup->triggerDelay
+      << ", TTT reset delay " << boardInfo.setup->TTTresetDelay
       << ", pre-trigger buffer length " << boardInfo.facts.preTriggerTime;
     if (boardInfo.config) {
       out << ", buffer " << boardInfo.config->bufferLength

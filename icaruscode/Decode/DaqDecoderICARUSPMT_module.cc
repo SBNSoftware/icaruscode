@@ -123,6 +123,14 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * `TriggerTag` (data product tag, mandatory): tag for the information
  *     (currently required to be a collection of `raw::ExternalTrigger`,
  *     in the future it should become `raw::Trigger`);
+ * * `TTTresetEverySecond` (optional): if set, the decoder will take advantage
+ *     of the assumption that the Trigger Time Tag of all PMT readout boards is
+ *     synchronised with the global trigger time and reset at every change of
+ *     second of the timescale of the latter; this is currently the only
+ *     implementation supporting multiple PMT readout windows on the same board;
+ *     if this option is set to `false`, all PMT readout boards are assumed to
+ *     have been triggered at the time of the global trigger. By default, this
+ *     option is set to `true` unless `TriggerTag` is specified empty.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
  * * `LogCategory` (string, default: `DaqDecoderICARUSPMT`): name of the message
@@ -172,7 +180,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * * the delay of the propagation from the trigger board to the readout board
  *   is subtracted to the timestamp; this value must be independently measured
  *   and provided to this decoder via tool configuration as setup information
- *   (`TriggerDelay`); if not present in the setup, this delay is not considred;
+ *   (`TriggerDelay`); if not present in the setup, this delay is not added;
  * * upon receiving the trigger, the readout board will keep some of the samples
  *   already digitized, in what we call pre-trigger buffer; the size of this
  *   buffer is a fixed number of samples which is specified in DAQ as a fraction
@@ -183,9 +191,6 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *   configuration is available, this offset is not subtracted; note that this
  *   is a major shift (typically, a few microseconds) that should be always
  *   included.
- * 
- * We do not assign the the time stamp of the waveforms not matching the global
- * trigger because we have no clue how to do that. Ok, that is a TODO!
  * 
  * Each V1730 event record includes a trigger time tag (TTT), which is the value
  * of an internal counter of the board at the time the board received a trigger.
@@ -259,7 +264,8 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     time stamp of the (SPEXi) global trigger that acquired the event.
  * 
  * 
- * 
+ * @todo Merge contiguous waveforms on the same channel
+ * @todo Add interface for fragment containers
  * 
  * 
  */
@@ -331,6 +337,13 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       0_ns
       };
     
+    fhicl::Atom<nanoseconds> TTTresetDelay {
+      fhicl::Name("TTTresetDelay"),
+      fhicl::Comment
+        ("assume that V1730 counter (Trigger Time Tag) is reset every second"),
+      0_ns
+      };
+    
   }; // struct BoardSetupConfig
   
   
@@ -390,6 +403,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       Comment("input tag for the global trigger object (raw::ExternalTrigger)")
       };
     
+    fhicl::OptionalAtom<bool> TTTresetEverySecond {
+      Name("TTTresetEverySecond"),
+      Comment
+        ("assume that V1730 counter (Trigger Time Tag) is reset every second")
+      };
+    
     fhicl::Sequence<std::string> DataTrees {
       fhicl::Name("DataTrees"),
       fhicl::Comment
@@ -406,6 +425,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   }; // Config
   
   using Parameters = art::EDProducer::Table<Config>;
+  
+  
+  static constexpr detinfo::timescales::electronics_time NoTimestamp
+    = std::numeric_limits<detinfo::timescales::electronics_time>::min();
+  
   
   // --- END ---- FHiCL configuration ------------------------------------------
   
@@ -425,8 +449,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Information used in decoding from a board.
   struct NeededBoardInfo_t {
     std::string const name;
+    nanoseconds bufferLength;
     nanoseconds preTriggerTime;
     nanoseconds PMTtriggerDelay;
+    nanoseconds TTTresetDelay;
   };
   
   // --- BEGIN -- Configuration parameters -------------------------------------
@@ -448,6 +474,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   std::optional<art::InputTag> const fPMTconfigTag;
   
   art::InputTag const fTriggerTag; ///< Input tag of the global trigger.
+  
+  bool const fTTTresetEverySecond; ///< Whether V1730 TTT is reset every second.
   
   /// All board setup settings.
   std::vector<daq::details::BoardSetup_t> const fBoardSetup;
@@ -521,6 +549,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     unsigned int fragmentID
     ) const;
 
+  /// Extracts the Trigger Time Tag (31+1 bits) value from the fragment
+  static unsigned int extractTriggerTimeTag(artdaq::Fragment const& fragment);
+
+
   // --- END -- PMT readout configuration --------------------------------------
 
 
@@ -545,7 +577,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * the number of bits set (i.e. `6` or larger).
    */
   template <std::size_t NBits, typename T>
-  constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
+  static constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
     setBitIndices(T value) noexcept;
 
   
@@ -586,15 +618,116 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   // --- END ---- Trees and their data -----------------------------------------
   
+  
+  // --- BEGIN -- Timestamps ---------------------------------------------------
+  
   /// Retrieves the global trigger time stamp from the event.
   SplitTimestamp_t fetchTriggerTimestamp(art::Event const& event) const;
   
+  /// Returns the timestamp for the waveforms in the specified fragment.
+  detinfo::timescales::electronics_time fragmentWaveformTimestamp(
+    artdaq::Fragment const& artdaqFragment,
+    NeededBoardInfo_t const& boardInfo,
+    SplitTimestamp_t triggerTime
+    ) const;
+  
+  /**
+   * @brief Returns the timestamp for the waveforms in the specified fragment.
+   * 
+   * This method assumes that all PMT readout board triggers happened at the
+   * same time as the global trigger.
+   * Unsurprisingly, this does not work well with multiple PMT windows.
+   */
+  detinfo::timescales::electronics_time fragmentWaveformTimestampOnTrigger(
+    artdaq::Fragment const& artdaqFragment,
+    NeededBoardInfo_t const& boardInfo,
+    SplitTimestamp_t triggerTime
+    ) const;
+  
+  /**
+   * @brief Returns the timestamp for the waveforms in the specified fragment.
+   * 
+   * This method assumes that the Trigger Time Tag counters are synchronised
+   * with the global trigger and their value is reset on each new second of 
+   * the global trigger timescale (International Atomic Time).
+   * 
+   * This assumptions enables timestamping of waveforms from the same readout
+   * boards at different times ("multi-window PMT readout").
+   * 
+   * See `TTTresetEverySecond` configuration option.
+   */
+  detinfo::timescales::electronics_time fragmentWaveformTimestampFromTTT(
+    artdaq::Fragment const& artdaqFragment,
+    NeededBoardInfo_t const& boardInfo,
+    SplitTimestamp_t triggerTime
+    ) const;
+  
+  /// Returns the fragment ID to be used with databases.
+  static constexpr std::size_t effectivePMTboardFragmentID
+    (artdaq::Fragment::fragment_id_t id)
+    { return id & 0x0fff; }
+  
+  // --- END ---- Timestamps ---------------------------------------------------
+  
+  
+  /// Collection of useful information from fragment data.
+  struct FragmentInfo_t {
+    artdaq::Fragment::fragment_id_t fragmentID
+      = std::numeric_limits<artdaq::Fragment::fragment_id_t>::max();
+    artdaq::Fragment::timestamp_t fragmentTimestamp;
+    std::uint32_t TTT = 0U;
+    std::uint16_t enabledChannels = 0U;
+    std::size_t nSamplesPerChannel = 0U;
+    std::uint16_t const* data = nullptr;
+  }; // FragmentInfo_t
+
   /// Extracts waveforms from the specified fragments from a board.
   std::vector<raw::OpDetWaveform> processBoardFragments(
     std::vector<artdaq::Fragment const*> const& artdaqFragment,
     SplitTimestamp_t triggerTime
     );
   
+  /**
+   * @brief Create waveforms and fills trees for the specified artDAQ fragment.
+   * @param artdaqFragment the fragment to process
+   * @param boardInfo board information needed, from configuration/setup
+   * @param triggerTime absolute time of the trigger
+   * @return collection of PMT waveforms from the fragment
+   * 
+   * This method fills the information for the PMT fragment tree
+   * (`fillPMTfragmentTree()`) and creates PMT waveforms from the fragment data
+   * (`createFragmentWaveforms()`).
+   */
+  std::vector<raw::OpDetWaveform> processFragment(
+    artdaq::Fragment const& artdaqFragment,
+    NeededBoardInfo_t const& boardInfo,
+    SplitTimestamp_t triggerTime
+    );
+
+  /**
+   * @brief Creates `raw::OpDetWaveform` objects from the fragment data.
+   * @param fragInfo information extracted from the fragment
+   * @param timeStamp timestamp of the waveforms in the fragment
+   * @return collection of newly created `raw::OpDetWaveform`
+   * 
+   * All fragment information needed is enclosed in `fragInfo`
+   * (`extractFragmentInfo()`). The timestamp can be obtained with a call to
+   * `fragmentWaveformTimestamp()`.
+   */
+  std::vector<raw::OpDetWaveform> createFragmentWaveforms(
+    FragmentInfo_t const& fragInfo,
+    detinfo::timescales::electronics_time const timeStamp
+    ) const;
+  
+  /// Extracts useful information from fragment data.
+  FragmentInfo_t extractFragmentInfo
+    (artdaq::Fragment const& artdaqFragment) const;
+  
+  /// Returns the board information for this fragment.
+  NeededBoardInfo_t neededBoardInfo
+    (artdaq::Fragment::fragment_id_t fragment_id) const;
+  
+
   /// Sorts in place the specified waveforms in channel order, then in time.
   void sortWaveforms(std::vector<raw::OpDetWaveform>& waveforms) const;
   
@@ -619,6 +752,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
 
   /// Assigns the cached event information to the specified tree data.
   void assignEventInfo(TreeData_EventID_t& treeData) const;
+  
+  /// Fills the PMT fragment tree with the specified information
+  /// (additional information needs to have been set already).
+  void fillPMTfragmentTree
+    (FragmentInfo_t const& fragInfo, SplitTimestamp_t triggerTime);
+  
 
   /// Static initialization.
   static TreeNameList_t initTreeNames();
@@ -663,6 +802,7 @@ namespace icarus {
       , getOptionalValue(config.FragmentID) 
           .value_or(daq::details::BoardSetup_t::NoFragmentID)  // fragmentID
       , config.TriggerDelay()                                  // triggerDelay
+      , config.TTTresetDelay()                                 // TTTresetDelay
       };
   } // convert(BoardSetupConfig)
 
@@ -743,6 +883,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fRequireBoardConfig{ params().RequireBoardConfig() }
   , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
   , fTriggerTag{ params().TriggerTag() }
+  , fTTTresetEverySecond{
+    ::util::fhicl::getOptionalValue(params().TTTresetEverySecond)
+      .value_or(!fTriggerTag.empty())
+    }
   , fBoardSetup{ params().BoardSetup() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
@@ -1042,16 +1186,25 @@ auto icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo(
   daq::details::BoardInfoLookup::BoardInfo_t const* boardInfo,
   unsigned int fragmentID
 ) const -> NeededBoardInfo_t {
-    
+  
+  using util::quantities::intervals::microseconds;
+  
   return NeededBoardInfo_t{
     // name
       ((boardInfo && boardInfo->config)
         ? boardInfo->config->boardName: ("<ID=" + std::to_string(fragmentID)))
+    // bufferLength
+    , ((boardInfo && boardInfo->config)
+        ? boardInfo->config->bufferLength * fOpticalTick: nanoseconds{ 0.0 }
+      )
     // preTriggerTime
     , (boardInfo? boardInfo->facts.preTriggerTime: nanoseconds{ 0.0 })
     // PMTtriggerDelay
     , ((boardInfo && boardInfo->setup)
         ? boardInfo->setup->triggerDelay: nanoseconds{ 0.0 })
+    // TTTresetDelay
+    , ((boardInfo && boardInfo->setup)
+        ? boardInfo->setup->TTTresetDelay: nanoseconds{ 0.0 })
     };
       
 } // icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo()
@@ -1080,181 +1233,439 @@ auto icarus::DaqDecoderICARUSPMT::processBoardFragments(
   SplitTimestamp_t triggerTime
 ) -> std::vector<raw::OpDetWaveform> {
   
-    if (artdaqFragments.empty()) return {};
-    
-    artdaq::Fragment const& artdaqFragment = *(artdaqFragments.front());
+  if (artdaqFragments.empty()) return {};
+  
+  assert(artdaqFragments.front());
+  
+  NeededBoardInfo_t const boardInfo
+    = neededBoardInfo(artdaqFragments.front()->fragmentID());
+  
+  std::vector<raw::OpDetWaveform> waveforms;
+  for (artdaq::Fragment const* fragment: artdaqFragments)
+    appendTo(waveforms, processFragment(*fragment, boardInfo, triggerTime));
+  
+  return waveforms;
+  
+} // icarus::DaqDecoderICARUSPMT::processBoardFragments()
 
-    size_t const fragment_id = artdaqFragment.fragmentID();
-    size_t const eff_fragment_id = artdaqFragment.fragmentID() & 0x0fff;
 
-    // convert fragment to Nevis fragment
-    sbndaq::CAENV1730Fragment         fragment(artdaqFragment);
-    sbndaq::CAENV1730FragmentMetadata metafrag = *fragment.Metadata();
-    sbndaq::CAENV1730Event            evt      = *fragment.Event();
-    sbndaq::CAENV1730EventHeader      header   = evt.Header;
-
-    size_t nChannelsPerBoard  = metafrag.nChannels; //fragment.nChannelsPerBoard();
-
-    //std::cout << "Decoder:channels_per_board: " << nChannelsPerBoard << std::endl;
-
-    uint32_t ev_size_quad_bytes         = header.eventSize;
-    uint32_t evt_header_size_quad_bytes = sizeof(sbndaq::CAENV1730EventHeader)/sizeof(uint32_t);
-    uint32_t data_size_double_bytes     = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
-    uint32_t nSamplesPerChannel         = data_size_double_bytes/nChannelsPerBoard;
-    uint16_t const enabledChannels      = header.ChannelMask();
-
-    artdaq::Fragment::timestamp_t const fragmentTimestamp = artdaqFragment.timestamp();
-    
-    unsigned int const time_tag =  header.triggerTimeTag;
-
-    size_t boardId = nChannelsPerBoard * eff_fragment_id;
-
-    // chDataMap tells where in the buffer each digitizer channel is;
-    // if nowhere, then the answer is a number no smaller than nEnabledChannels
-    auto const [ chDataMap, nEnabledChannels ] = setBitIndices<16U>(enabledChannels);
-
-    if (fDiagnosticOutput)
-    {
-        mf::LogVerbatim(fLogCategory)
-          << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
-            << ", boardID: " << boardId
-            << ", nChannelsPerBoard: " << nChannelsPerBoard
-            << ", nSamplesPerChannel: " << nSamplesPerChannel
-            << ", enabled (" << nEnabledChannels << "): " << icarus::ns::util::bin(enabledChannels)
-          << "\n      size: " << ev_size_quad_bytes
-            << ", data size: " << data_size_double_bytes
-            << ", samples/channel: " << nSamplesPerChannel
-            << ", trigger time tag: " << time_tag
-            << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
-              << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
-          ;
-    }
-
-    const uint16_t* data_begin = reinterpret_cast<const uint16_t*>(artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
-
-    std::vector<raw::OpDetWaveform> opDetWaveforms;
-    
-    // Recover the information for this fragment
-    if (fChannelMap.hasPMTDigitizerID(eff_fragment_id))
-    {
-        assert(fBoardInfoLookup);
-    
-        /*
-         * The trigger time is always the nominal one, because that is the
-         * reference time of the whole DAQ (PMT, TPC...).
-         * We only need to know how sooner than the trigger the V1730 buffer
-         * starts. Oh, and the delay from the global trigger time to when
-         * the readout board receives and processes the trigger signal.
-         */
-        daq::details::BoardInfoLookup::BoardInfo_t const* boardInfo = fBoardInfoLookup->findBoardInfo(fragment_id);
-        if (!boardInfo) {
-            if (fRequireKnownBoards) {
-                cet::exception e("PMTDecoder");
-                e << "Input fragment has ID " << fragment_id
-                  << " which has no associated board information (`BoardSetup`";
-                if (!hasPMTconfiguration()) e << " + `.FragmentID`";
-                throw e << ").\n";
-            }
-        }
-        else {
-            assert(boardInfo->fragmentID == fragment_id);
-            assert(boardInfo->setup);
-        }
-        
-        NeededBoardInfo_t const info = fetchNeededBoardInfo(boardInfo, fragment_id);
-        
-        nanoseconds const preTriggerTime = info.preTriggerTime;
-        nanoseconds const PMTtriggerDelay = info.PMTtriggerDelay;
-        auto const timeStamp
-          = fNominalTriggerTime - PMTtriggerDelay - preTriggerTime;
-        mf::LogTrace(fLogCategory) << "V1730 board '" << info.name
-          << "' has data starting at electronics time " << timeStamp
-          << " = " << fNominalTriggerTime
-          << " - " << PMTtriggerDelay << " - " << preTriggerTime
-          ;
-
-        const icarusDB::DigitizerChannelChannelIDPairVec& digitizerChannelVec
-          = fChannelMap.getChannelIDPairVec(eff_fragment_id);
-        
-        std::optional<mf::LogVerbatim> diagOut;
-        if (fDiagnosticOutput) {
-          diagOut.emplace(fLogCategory);
-          (*diagOut)
-            << "      " << digitizerChannelVec.size() << " channels:";
-        }
-        // Allocate the vector outside the loop just since we'll reuse it over and over... 
-        std::vector<uint16_t> wvfm(nSamplesPerChannel);
-
-        // track what we do and what we want to
-        uint16_t attemptedChannels = 0;
-        
-        for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec)
-        {
-            if (diagOut)
-              (*diagOut) << " " << digitizerChannel << " [=> " << channelID << "];";
-            
-            attemptedChannels |= (1 << digitizerChannel);
-            
-            std::size_t const channelPosInData = chDataMap[digitizerChannel];
-            if (channelPosInData >= nEnabledChannels) {
-                mf::LogTrace(fLogCategory)
-                  << "Digitizer channel " << digitizerChannel
-                  << " [=> " << channelID << "] skipped because not enabled.";
-                continue;
-            }
-            
-            std::size_t const ch_offset = channelPosInData * nSamplesPerChannel;
-
-            std::copy_n(data_begin + ch_offset, nSamplesPerChannel, wvfm.begin());
-
-            mf::LogTrace(fLogCategory)
-              << "PMT channel " << channelID << " has " << wvfm.size()
-              << " samples (read from entry #" << channelPosInData
-              << " in fragment data) starting at electronics time " << timeStamp;
-            opDetWaveforms.emplace_back(timeStamp.value(), channelID, wvfm);
-        }
-        if (diagOut) diagOut.reset(); // destroys and therefore prints out
-        if (attemptedChannels != enabledChannels) {
-            // this is mostly a warning; regularly, for example,
-            // we effectively have 15 channels per board; but all 16 are enabled,
-            // so one channel is not decoded at all
-            mf::LogTrace log(fLogCategory);
-            log << "Not all data read:";
-            for (int const bit: util::counter(16U)) {
-                uint16_t const mask = (1 << bit);
-                bool const attempted = bool(attemptedChannels & mask);
-                bool const enabled = bool(enabledChannels & mask);
-                if (attempted == enabled) continue;
-                if (!enabled) // and attempted
-                    log << "\n  requested channel " << bit << " was not enabled";
-                if (!attempted) // and enabled
-                    log << "\n  data for enabled channel " << bit << " was ignored";
-              } // for
-        } // if request and availability did not match
-        
-    }
-    else {
-        mf::LogError(fLogCategory)
-          << "*** PMT could not find channel information for fragment: "
-            << fragment_id;
-    }
-
-    if (fDiagnosticOutput) {
-        mf::LogVerbatim(fLogCategory)
-          << "      - numbed of waveforms decoded: " << opDetWaveforms.size();
-    }
-    
-    if (fTreeFragment) {
-      fTreeFragment->data.fragmentID = fragment_id;
-      fTreeFragment->data.TriggerTimeTag = time_tag;
-      fTreeFragment->data.trigger = triggerTime;
-      fTreeFragment->data.fragTime = { static_cast<long long int>(fragmentTimestamp) };
-      assignEventInfo(fTreeFragment->data);
-      fTreeFragment->tree->Fill();
-    } // if fTreeFragment
-    
-    return opDetWaveforms;
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::processFragment(
+  artdaq::Fragment const& artdaqFragment,
+  NeededBoardInfo_t const& boardInfo,
+  SplitTimestamp_t triggerTime
+) -> std::vector<raw::OpDetWaveform> {
+  
+  FragmentInfo_t const fragInfo = extractFragmentInfo(artdaqFragment);
+  
+  if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerTime);
+  
+  auto const timeStamp
+    = fragmentWaveformTimestamp(artdaqFragment, boardInfo, triggerTime);
+  return (timeStamp != NoTimestamp)
+    ? createFragmentWaveforms(fragInfo, timeStamp)
+    : std::vector<raw::OpDetWaveform>{}
+    ;
+  
 } // icarus::DaqDecoderICARUSPMT::processFragment()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
+  FragmentInfo_t const& fragInfo,
+  detinfo::timescales::electronics_time const timeStamp
+) const -> std::vector<raw::OpDetWaveform> {
+
+  assert(timeStamp != NoTimestamp);
+  
+  auto const [ chDataMap, nEnabledChannels ]
+    = setBitIndices<16U>(fragInfo.enabledChannels);
+
+  std::vector<raw::OpDetWaveform> opDetWaveforms; // output collection
+    
+  std::optional<mf::LogVerbatim> diagOut;
+  if (fDiagnosticOutput) diagOut.emplace(fLogCategory);
+  
+  icarusDB::DigitizerChannelChannelIDPairVec const& digitizerChannelVec
+    = fChannelMap.getChannelIDPairVec
+      (effectivePMTboardFragmentID(fragInfo.fragmentID))
+    ;
+  
+  if (diagOut)
+    (*diagOut) << "      " << digitizerChannelVec.size() << " channels:";
+  
+  // allocate the vector outside the loop since we'll reuse it over and over
+  std::vector<std::uint16_t> wvfm(fragInfo.nSamplesPerChannel);
+
+  // track what we do and what we want to
+  std::uint16_t attemptedChannels = 0;
+  
+  // loop over the channels that we know might be in the fragment
+  for(auto const [ digitizerChannel, channelID ]: digitizerChannelVec) {
+    
+    if (diagOut)
+      (*diagOut) << " " << digitizerChannel << " [=> " << channelID << "];";
+    
+    attemptedChannels |= (1 << digitizerChannel);
+    
+    // find where this channel is in the data fragment
+    std::size_t const channelPosInData = chDataMap[digitizerChannel];
+    if (channelPosInData >= nEnabledChannels) {
+      mf::LogTrace(fLogCategory)
+        << "Digitizer channel " << digitizerChannel
+        << " [=> " << channelID << "] skipped because not enabled.";
+      continue;
+    }
+    
+    std::size_t const ch_offset
+      = channelPosInData * fragInfo.nSamplesPerChannel;
+    
+    std::copy_n(fragInfo.data + ch_offset, wvfm.size(), wvfm.begin());
+    
+    mf::LogTrace(fLogCategory)
+      << "PMT channel " << channelID << " has " << wvfm.size()
+      << " samples (read from entry #" << channelPosInData
+      << " in fragment data) starting at electronics time " << timeStamp;
+    opDetWaveforms.emplace_back(timeStamp.value(), channelID, wvfm);
+    
+  } // for channels
+  
+  if (diagOut) diagOut.reset(); // destroys and therefore prints out
+  if (attemptedChannels != fragInfo.enabledChannels) {
+    // this is mostly a warning; regularly, for example,
+    // we effectively have 15 channels per board; but all 16 are enabled,
+    // so one channel is not decoded at all
+    mf::LogTrace log(fLogCategory);
+    log << "Not all data read:";
+    for (int const bit: util::counter(16U)) {
+      std::uint16_t const mask = (1 << bit);
+      bool const attempted = bool(attemptedChannels & mask);
+      bool const enabled = bool(fragInfo.enabledChannels & mask);
+      if (attempted == enabled) continue;
+      if (!enabled) // and attempted
+        log << "\n  requested channel " << bit << " was not enabled";
+      if (!attempted) // and enabled
+        log << "\n  data for enabled channel " << bit << " was ignored";
+    } // for bits
+  } // if request and availability did not match
+
+  if (fDiagnosticOutput) {
+    mf::LogVerbatim(fLogCategory)
+      << "      - number of waveforms decoded: " << opDetWaveforms.size();
+  }
+  
+  return opDetWaveforms;
+  
+} // icarus::DaqDecoderICARUSPMT::createFragmentWaveforms()
+
+
+//------------------------------------------------------------------------------
+void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree
+  (FragmentInfo_t const& fragInfo, SplitTimestamp_t triggerTime)
+{
+  
+  if (!fTreeFragment) return;
+  
+  fTreeFragment->data.fragmentID = fragInfo.fragmentID;
+  fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
+  fTreeFragment->data.trigger = triggerTime;
+  fTreeFragment->data.fragTime
+    = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
+  assignEventInfo(fTreeFragment->data);
+  fTreeFragment->tree->Fill();
+  
+} // icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
+  (artdaq::Fragment const& artdaqFragment) const -> FragmentInfo_t
+{
+  artdaq::Fragment::fragment_id_t const fragment_id
+    = artdaqFragment.fragmentID();
+
+  sbndaq::CAENV1730Fragment const fragment { artdaqFragment };
+  sbndaq::CAENV1730FragmentMetadata const& metafrag = *(fragment.Metadata());
+  sbndaq::CAENV1730EventHeader const& header = fragment.Event()->Header;
+
+  // chDataMap tells where in the buffer each digitizer channel is;
+  // if nowhere, then the answer is a number no smaller than nEnabledChannels
+  std::uint16_t const enabledChannels = header.ChannelMask();
+
+  artdaq::Fragment::timestamp_t const fragmentTimestamp
+    = artdaqFragment.timestamp();
+    
+  unsigned int const TTT =  header.triggerTimeTag;
+  
+  std::size_t const nChannelsPerBoard = metafrag.nChannels;
+    
+  std::uint32_t const ev_size_quad_bytes = header.eventSize;
+  constexpr std::uint32_t evt_header_size_quad_bytes
+    = sizeof(sbndaq::CAENV1730EventHeader)/sizeof(std::uint32_t);
+  std::uint32_t const data_size_double_bytes
+    = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
+  std::size_t const nSamplesPerChannel
+    = data_size_double_bytes/nChannelsPerBoard;
+  
+  if (fDiagnosticOutput) {
+    
+    mf::LogVerbatim(fLogCategory)
+      << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
+        << ", nChannelsPerBoard: " << nChannelsPerBoard
+        << ", nSamplesPerChannel: " << nSamplesPerChannel
+        << ", enabled: " << icarus::ns::util::bin(enabledChannels)
+      << "\n      size: " << ev_size_quad_bytes
+        << ", data size: " << data_size_double_bytes
+        << ", samples/channel: " << nSamplesPerChannel
+        << ", trigger time tag: " << TTT
+        << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
+          << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
+      ;
+  } // if diagnostics
+
+  std::uint16_t const* data_begin = reinterpret_cast<std::uint16_t const*>
+    (artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
+
+  return { // C++20: write the member names explicitly
+    fragment_id,
+    fragmentTimestamp,
+    TTT,
+    enabledChannels,
+    nSamplesPerChannel,
+    data_begin
+    };
+  
+} // icarus::DaqDecoderICARUSPMT::extractFragmentInfo()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestamp(
+  artdaq::Fragment const& artdaqFragment,
+  NeededBoardInfo_t const& boardInfo,
+  SplitTimestamp_t triggerTime
+) const -> detinfo::timescales::electronics_time {
+  
+  // check availability of mapping for this board, otherwise can't do anything
+  std::size_t const fragment_id = artdaqFragment.fragmentID();
+  std::size_t const eff_fragment_id = effectivePMTboardFragmentID(fragment_id);
+  
+  if (!fChannelMap.hasPMTDigitizerID(eff_fragment_id)) {
+    mf::LogError(fLogCategory)
+      << "*** PMT could not find channel information for fragment: "
+      << artdaqFragment.fragmentID()
+      ;
+    return NoTimestamp;
+  }
+  
+  if (fTTTresetEverySecond) {
+    return
+      fragmentWaveformTimestampFromTTT(artdaqFragment, boardInfo, triggerTime);
+  }
+  else {
+    return fragmentWaveformTimestampOnTrigger
+      (artdaqFragment, boardInfo, triggerTime);
+  }
+  
+} // icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestamp()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampOnTrigger(
+  artdaq::Fragment const& artdaqFragment,
+  NeededBoardInfo_t const& boardInfo,
+  SplitTimestamp_t /* triggerTime */
+) const -> detinfo::timescales::electronics_time {
+  
+  nanoseconds const preTriggerTime = boardInfo.preTriggerTime;
+  nanoseconds const PMTtriggerDelay = boardInfo.PMTtriggerDelay;
+  
+  auto const timestamp = fNominalTriggerTime - PMTtriggerDelay - preTriggerTime;
+  mf::LogTrace(fLogCategory) << "V1730 board '" << boardInfo.name
+    << "' has data starting at electronics time " << timestamp
+    << " = " << fNominalTriggerTime
+    << " - " << PMTtriggerDelay << " - " << preTriggerTime
+    ;
+  return timestamp;
+  
+} // icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampOnTrigger()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT(
+  artdaq::Fragment const& artdaqFragment,
+  NeededBoardInfo_t const& boardInfo,
+  SplitTimestamp_t triggerTime
+) const -> detinfo::timescales::electronics_time {
+  
+  /*
+   * 1. goal is a timestamp in electronics time
+   * 2. we have the global trigger time in electronics time
+   *    (from raw::Trigger data product or from DetectorClocks service)
+   * 3. board TTT and global trigger time are on the same timescale:
+   *    their difference directly describes the time of the board trigger
+   *    relative to the global trigger
+   * 4. TTT tags the last (or after the last?) sample of the collected waveform;
+   *    the time of the first sample precedes that tag by the full buffer length
+   * 5. the PMT trigger itself is subject to a sequence of delays compared to
+   *    the (local or global) trigger from SPEXi; here we quantify these delays
+   *    from calibration offsets collectively passed via job configuration.
+   */
+  
+  using namespace util::quantities::time_literals;
+  
+  //
+  // 2. global trigger time
+  //
+  detinfo::timescales::electronics_time waveformTime = fNominalTriggerTime;
+  
+  //
+  // 3. PMT readout board trigger relative to global trigger time
+  //
+  unsigned int const triggerTimeNS = triggerTime.split.nanoseconds;
+  
+  // converted into nanoseconds (each TTT tick is 8 nanoseconds):
+  unsigned int const TTT = extractTriggerTimeTag(artdaqFragment) * 8;
+  
+  /*
+   * The trigger time tag (TTT) on the PMT readout board is incremented every 8
+   * nanoseconds, and the board is sent a reset signal every second, matching
+   * the time of the change of second of the global trigger time scale
+   * (International Atomic Time from White Rabbit). If the global trigger and
+   * the trigger of the PMT readout happen at the same instant (which would be
+   * ideally true for one fragment for each board and each event), the TTT will
+   * represent exactly the number of nanoseconds of the global trigger passed
+   * since the last crossing of a second boundary.
+   * (in practice, this is biassed by the signal creation, propagation and
+   * interpretation delays, and smeared by the clocks of the SPEXi board sending
+   * the signal and the CAEN V1730 readout board, which have a period of 25 ns
+   * and 8 ns, respectively).
+   *
+   * Multiple fragments can be collected from one PMT readout board for the same
+   * event by sending the board multiple "local" triggers; these triggers are
+   * all supposed to be in the neighbourhood of the global trigger time;
+   * in fact, they should not be more than 1 ms away from it, since PMT readout
+   * enable window is +/- 1 ms around the expected beam arrival time.
+   *
+   * In the most common case when global trigger and fragment tag are not
+   * separated by a boundary of the second
+   * (e.g. global trigger at 1620'284'028 seconds + 799'800'000 nanoseconds
+   * and fragment tag 0.5 milliseconds earlier, at 1620'284'028 seconds
+   * + 799'300'000 nanoseconds, i.e. with a trigger tag around 799'300'000);
+   * in this example, the fragment is 0.5 ms earlier:
+   * -500'000 nanoseconds = 799'300'000 (TTT) - 799'800'000 (glob. trigger)
+   */
+  int fragmentRelTime = static_cast<int>(TTT) - triggerTimeNS;
+  if (TTT > triggerTimeNS + 500'000'000U) { // 0.5 seconds
+    /*
+     * case when global trigger arrives just after the boundary of the second
+     * (e.g. global trigger at 1620'284'029 seconds + 300'000 nanoseconds)
+     * and this fragment was tagged before that crossing (e.g. 0.5 milliseconds
+     * earlier, at 1620'284'028 seconds + 999'800'000 nanoseconds, i.e. with a
+     * trigger tag around 999'800'000);
+     * in this example, the fragment is 0.5 ms earlier: -500'000 nanoseconds =
+     * 999'800'000 (TTT) - 1'000'000'000 (second step) - 300'000 (glob. trigger)
+     * and the plain difference,
+     * 999'800'000 (TTT) - 300'000 (glob. trigger) = 999'500'000,
+     * must be corrected by removing a whole second:
+     */
+    fragmentRelTime -= 1'000'000'000;
+  }
+  else if (TTT + 500'000'000U < triggerTimeNS) { // 0.5 seconds
+    /*
+     * case when global trigger arrives just before the boundary of the second
+     * (e.g. global trigger at 1620'284'028 seconds + 999'800'000 nanoseconds)
+     * and this fragment was tagged after that crossing (e.g. 0.5 milliseconds
+     * later, at 1620'284'029 seconds + 300'000 nanoseconds, i.e. with a
+     * trigger tag around 300'000 because of the pulse-per-second reset);
+     * in this example, the fragment is 0.5 ms late: 500'000 nanoseconds =
+     * 300'000 (TTT) + 1'000'000'000 (second step) - 999'800'000 (glob. trigger)
+     * and the plain difference,
+     * 300'000 (TTT) - 999'800'000 (glob. trigger) = -999'500'000,
+     * must be corrected by adding a whole second:
+     */
+    fragmentRelTime += 1'000'000'000;
+  }
+  
+  waveformTime += nanoseconds::castFrom(fragmentRelTime);
+  
+  //
+  // 4. correction for relative position of sample tagged by TTT in the buffer
+  //
+  waveformTime -= boardInfo.bufferLength;
+  
+  //
+  // 5. correction for calibrated delays
+  //
+  /*
+   * Waveform time has been expressed based on the "absolute" trigger time plus
+   * an offset based on the Trigger Time Tag, which is synchronous with the
+   * global trigger and reset every second.
+   * We are missing a possible delay between the time of the trigger time scale
+   * stepping into a new second and the the time TTT reset is effective.
+   * 
+   * 
+   */
+  
+  waveformTime += boardInfo.TTTresetDelay;
+  
+  mf::LogTrace(fLogCategory) << "V1730 board '" << boardInfo.name
+    << "' has data starting at electronics time " << waveformTime
+    << " = " << fNominalTriggerTime << " (global trigger)"
+    << " + " << nanoseconds(fragmentRelTime) << " (TTT - global trigger)"
+    << " - " << boardInfo.bufferLength << " (buffer size)"
+    << " + " << boardInfo.TTTresetDelay << " (reset delay)"
+    ;
+  
+  return waveformTime;
+  
+  
+} // icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::neededBoardInfo
+  (artdaq::Fragment::fragment_id_t fragment_id) const -> NeededBoardInfo_t
+{
+  
+  assert(fBoardInfoLookup);
+
+  /*
+   * The trigger time is always the nominal one, because that is the
+   * reference time of the whole DAQ (PMT, TPC...).
+   * We only need to know how sooner than the trigger the V1730 buffer
+   * starts. Oh, and the delay from the global trigger time to when
+   * the readout board receives and processes the trigger signal.
+   */
+  daq::details::BoardInfoLookup::BoardInfo_t const* boardInfo
+    = fBoardInfoLookup->findBoardInfo(fragment_id);
+  if (!boardInfo) {
+    if (fRequireKnownBoards) {
+      cet::exception e("PMTDecoder");
+      e << "Input fragment has ID " << fragment_id
+        << " which has no associated board information (`BoardSetup`";
+      if (!hasPMTconfiguration()) e << " + `.FragmentID`";
+      throw e << ").\n";
+    }
+  }
+  else {
+    assert(boardInfo->fragmentID == fragment_id);
+    assert(boardInfo->setup);
+  }
+  
+  return fetchNeededBoardInfo(boardInfo, fragment_id);
+} // icarus::DaqDecoderICARUSPMT::neededBoardInfo()
+
+
+//------------------------------------------------------------------------------
+unsigned int icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag
+  (artdaq::Fragment const& fragment)
+{
+  sbndaq::CAENV1730Fragment const V1730fragment { fragment };
+  sbndaq::CAENV1730EventHeader const header = V1730fragment.Event()->Header;
+  
+  return { header.triggerTimeTag }; // prevent narrowing
+  
+} // icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag()
 
 
 //------------------------------------------------------------------------------
