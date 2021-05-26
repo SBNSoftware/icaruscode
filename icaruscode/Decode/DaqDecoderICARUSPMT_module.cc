@@ -9,12 +9,14 @@
 
 // ICARUS/SBN libraries
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
 
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h" // sbn::PMTconfiguration
 #include "sbndaq-artdaq-core/Overlays/Common/CAENV1730Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/FragmentType.hh" // sbndaq::FragmentType
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -30,6 +32,7 @@
 #include "lardataobj/RawData/ExternalTrigger.h"
 
 // artDAQ
+#include "artdaq-core/Data/ContainerFragment.hh"
 #include "artdaq-core/Data/Fragment.hh"
 
 // framework libraries
@@ -372,6 +375,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       false // default
       };
     
+    fhicl::Atom<bool> PacketDump {
+      Name("PacketDump"),
+      Comment("enable dump of the whole V1730 data (huge)"),
+      false // default
+      };
+    
     fhicl::Atom<bool> RequireKnownBoards {
       Name("RequireKnownBoards"),
       Comment
@@ -443,6 +452,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Processes the event.
   void produce(art::Event& event) override;
   
+  /// Prints a end-of-job message.
+  void endJob() override;
+  
   
     private:
   
@@ -463,6 +475,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// If true will spew endless messages to output.
   bool const fDiagnosticOutput;
+  
+  bool const fPacketDump; ///< Dump V1730 data.
   
   /// Whether info on all input boards is required.
   bool const fRequireKnownBoards;
@@ -515,6 +529,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   // --- END -- Per-run data cache ---------------------------------------------
   
   
+  unsigned int fNFailures = 0U; ///< Number of event failures encountered.
+  
+  
   // --- BEGIN -- PMT readout configuration ------------------------------------
   
   /// Returns whether PMT configuration information is expected to be available.
@@ -523,7 +540,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Updates the PMT configuration cache. How? Dunno. Placeholder.
   bool UpdatePMTConfiguration(sbn::PMTconfiguration const* PMTconfig);
   
-  
+
   /**
    * @brief Returns a lookup object with board setup and configuration info.
    * @param PMTconfig the PMT configuration, if available
@@ -670,6 +687,33 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   // --- END ---- Timestamps ---------------------------------------------------
   
   
+  // --- BEGIN -- Input data management ----------------------------------------
+  
+  /// Throws an exception if `artdaqFragment` is not of type `CAEN1730`.
+  void checkFragmentType(artdaq::Fragment const& artdaqFragment) const;
+  
+  /// Converts a fragment into a fragment collection
+  /// (dispatcher based on fragment type).
+  std::vector<artdaq::FragmentPtr> makeFragmentCollection
+    (artdaq::Fragment const& sourceFragment) const;
+
+  /// Converts a plain fragment into a fragment collection.
+  std::vector<artdaq::FragmentPtr> makeFragmentCollectionFromFragment
+    (artdaq::Fragment const& sourceFragment) const;
+
+  /// Converts a container fragment into a fragment collection.
+  std::vector<artdaq::FragmentPtr> makeFragmentCollectionFromContainerFragment
+    (artdaq::Fragment const& sourceFragment) const;
+
+  /// Extracts waveforms from the specified fragments from a board.
+  std::vector<raw::OpDetWaveform> processBoardFragments(
+    std::vector<artdaq::FragmentPtr> const& artdaqFragment,
+    SplitTimestamp_t triggerTime
+    );
+  
+  // --- END ---- Input data management ----------------------------------------
+  
+  
   /// Collection of useful information from fragment data.
   struct FragmentInfo_t {
     artdaq::Fragment::fragment_id_t fragmentID
@@ -681,11 +725,6 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     std::uint16_t const* data = nullptr;
   }; // FragmentInfo_t
 
-  /// Extracts waveforms from the specified fragments from a board.
-  std::vector<raw::OpDetWaveform> processBoardFragments(
-    std::vector<artdaq::Fragment const*> const& artdaqFragment,
-    SplitTimestamp_t triggerTime
-    );
   
   /**
    * @brief Create waveforms and fills trees for the specified artDAQ fragment.
@@ -704,6 +743,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     SplitTimestamp_t triggerTime
     );
 
+  
   /**
    * @brief Creates `raw::OpDetWaveform` objects from the fragment data.
    * @param fragInfo information extracted from the fragment
@@ -731,6 +771,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Sorts in place the specified waveforms in channel order, then in time.
   void sortWaveforms(std::vector<raw::OpDetWaveform>& waveforms) const;
   
+  /// Returns pointers to all waveforms including the nominal trigger time.
+  std::vector<raw::OpDetWaveform const*> findWaveformsWithNominalTrigger
+    (std::vector<raw::OpDetWaveform> const& waveforms) const;
+    
   
   // --- BEGIN -- Tree-related methods -----------------------------------------
   
@@ -879,6 +923,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fInputTag{ params().FragmentsLabel() }
   , fSurviveExceptions{ params().SurviveExceptions() }
   , fDiagnosticOutput{ params().DiagnosticOutput() }
+  , fPacketDump{ params().PacketDump() }
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
   , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
@@ -898,6 +943,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // consumed data products declaration
   //
+  consumes<artdaq::Fragments>(fInputTag);
   if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
   consumes<std::vector<raw::ExternalTrigger>>(fTriggerTag);
   
@@ -917,6 +963,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   mf::LogInfo log(fLogCategory);
   log << "Configuration:"
+    << "\n * data from: '" << fInputTag.encode() << "'"
     << "\n * boards with setup: " << fBoardSetup.size();
   if (fPMTconfigTag)
     log << "\n * PMT configuration from '" << fPMTconfigTag->encode() << "'";
@@ -1001,16 +1048,19 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // ---------------------------------------------------------------------------
   // processing
   //
-  try {
-    
+  
+  try { // catch-all
     auto const& fragments = event.getByLabel<artdaq::Fragments>(fInputTag);
     
     for (artdaq::Fragment const& fragment: fragments) {
-      std::vector<artdaq::Fragment const*> boardFragments { &fragment };
+      
       appendTo(
-        opDetWaveforms, processBoardFragments(boardFragments, triggerTimestamp)
+        opDetWaveforms,
+        processBoardFragments
+          (makeFragmentCollection(fragment), triggerTimestamp)
         );
-    } // for
+      
+    } // for all input fragments
     
   }
   catch (cet::exception const& e) {
@@ -1018,18 +1068,26 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     mf::LogError("DaqDecoderICARUSPMT")
       << "Error while attempting to decode PMT data:\n" << e.what() << '\n';
     opDetWaveforms.clear();
+    ++fNFailures;
   }
   catch (...) {
     if (!fSurviveExceptions) throw;
     mf::LogError("DaqDecoderICARUSPMT")
       << "Error while attempting to decode PMT data.\n";
     opDetWaveforms.clear();
+    ++fNFailures;
   }
   
   //
   // post-processing
   //
   sortWaveforms(opDetWaveforms);
+  
+  std::vector<raw::OpDetWaveform const*> waveformsWithTrigger
+    = findWaveformsWithNominalTrigger(opDetWaveforms);
+  mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
+    << opDetWaveforms.size() << " decoded waveforms include trigger time ("
+    << fNominalTriggerTime << ").";
   
   // ---------------------------------------------------------------------------
   // output
@@ -1039,6 +1097,37 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     );
   
 } // icarus::DaqDecoderICARUSPMT::produce()
+
+
+//------------------------------------------------------------------------------
+void icarus::DaqDecoderICARUSPMT::endJob() {
+  
+  if (fNFailures > 0U) {
+    mf::LogError(fLogCategory) << "Encountered errors on " << fNFailures
+      << " events. Errors were ignored.";
+  }
+  
+} // icarus::DaqDecoderICARUSPMT::endJob()
+
+
+//------------------------------------------------------------------------------
+std::vector<raw::OpDetWaveform const*>
+icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger
+  (std::vector<raw::OpDetWaveform> const& waveforms) const
+{
+  std::vector<raw::OpDetWaveform const*> matchedWaveforms;
+  for (raw::OpDetWaveform const& waveform: waveforms) {
+    
+    detinfo::timescales::electronics_time const timestamp
+      { waveform.TimeStamp() };
+    if (fNominalTriggerTime < timestamp) continue;
+    if (fNominalTriggerTime > timestamp + waveform.size() * fOpticalTick)
+      continue;
+    
+    matchedWaveforms.push_back(&waveform);
+  } // for
+  return matchedWaveforms;
+} // icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger()
 
 
 //------------------------------------------------------------------------------
@@ -1102,7 +1191,7 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
         = daq::details::binarySearch(configByName, name);
       if (!ppBoardConfig) {
         if (!fRequireBoardConfig) return nullptr;
-        throw cet::exception("PMTDecoder")
+        throw cet::exception("DaqDecoderICARUSPMT")
           << "No DAQ configuration found for PMT readout board '"
           << name << "'\n"
           << "If this is expected, you may skip this check by setting "
@@ -1126,7 +1215,7 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
       if (boardSetup.hasFragmentID()
         && (boardSetup.fragmentID != pBoardConfig->fragmentID)
       ) {
-        throw cet::exception("PMTDecoder")
+        throw cet::exception("DaqDecoderICARUSPMT")
           << "Board '" << boardName << "' has fragment ID "
           << std::hex << pBoardConfig->fragmentID << std::dec
           << " but it is set up as "
@@ -1219,7 +1308,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   if (triggers.size() != 1U) {
     // if this is hit, the decoder needs some development to correctly deal
     // with input with no trigger, or more than one
-    throw cet::exception("PMTDecoder")
+    throw cet::exception("DaqDecoderICARUSPMT")
       << "Found " << triggers.size() << " triggers from '"
       << fTriggerTag.encode() << "', can deal only with 1.\n";
   }
@@ -1228,20 +1317,93 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
 
 
 //------------------------------------------------------------------------------
+std::vector<artdaq::FragmentPtr>
+icarus::DaqDecoderICARUSPMT::makeFragmentCollection
+  (artdaq::Fragment const& sourceFragment) const
+{
+  switch (sourceFragment.type()) {
+    case sbndaq::FragmentType::CAENV1730:
+      return makeFragmentCollectionFromFragment(sourceFragment);
+    case artdaq::Fragment::ContainerFragmentType:
+      return makeFragmentCollectionFromContainerFragment(sourceFragment);
+    default:
+      throw cet::exception("DaqDecoderICARUSPMT")
+        << "Unexpected PMT data product fragment type: "
+        << static_cast<int>(sourceFragment.type()) << " ('"
+        << sbndaq::fragmentTypeToString
+          (static_cast<sbndaq::FragmentType>(sourceFragment.type()))
+        << "')\n";
+  } // switch
+} // icarus::DaqDecoderICARUSPMT::makeFragmentCollection()
+
+
+//------------------------------------------------------------------------------
+std::vector<artdaq::FragmentPtr>
+icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromFragment
+  (artdaq::Fragment const& sourceFragment) const
+{
+  assert(sourceFragment.type() == sbndaq::FragmentType::CAENV1730);
+  std::vector<artdaq::FragmentPtr> fragColl;
+  fragColl.push_back(std::make_unique<artdaq::Fragment>(sourceFragment));
+  return fragColl;
+} // icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromFragment()
+
+
+//------------------------------------------------------------------------------
+std::vector<artdaq::FragmentPtr>
+icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromContainerFragment
+  (artdaq::Fragment const& sourceFragment) const
+{
+  assert(sourceFragment.type() == artdaq::Fragment::ContainerFragmentType);
+  artdaq::ContainerFragment const containerFragment{ sourceFragment };
+  
+  if (containerFragment.block_count() == 0) return {};
+    
+  std::vector<artdaq::FragmentPtr> fragColl;
+  for (auto const iFrag: util::counter(containerFragment.block_count()))
+    fragColl.push_back(containerFragment.at(iFrag));
+  
+  return fragColl;
+} // icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromContainerFragment()
+
+
+//------------------------------------------------------------------------------
+void icarus::DaqDecoderICARUSPMT::checkFragmentType
+  (artdaq::Fragment const& artdaqFragment) const
+{
+  if (artdaqFragment.type() == sbndaq::FragmentType::CAENV1730) return;
+  
+  throw cet::exception("DaqDecoderICARUSPMT")
+    << "Unexpected PMT fragment data type: '"
+    << sbndaq::fragmentTypeToString
+      (static_cast<sbndaq::FragmentType>(artdaqFragment.type()))
+    << "'\n";
+  
+} // icarus::DaqDecoderICARUSPMT::checkFragmentType
+
+
+//------------------------------------------------------------------------------
 auto icarus::DaqDecoderICARUSPMT::processBoardFragments(
-  std::vector<artdaq::Fragment const*> const& artdaqFragments,
+  std::vector<artdaq::FragmentPtr> const& artdaqFragments,
   SplitTimestamp_t triggerTime
 ) -> std::vector<raw::OpDetWaveform> {
   
   if (artdaqFragments.empty()) return {};
   
-  assert(artdaqFragments.front());
+  artdaq::Fragment const& referenceFragment = *(artdaqFragments.front());
+  assert(&referenceFragment);
+  
+  checkFragmentType(referenceFragment);
   
   NeededBoardInfo_t const boardInfo
     = neededBoardInfo(artdaqFragments.front()->fragmentID());
   
+  mf::LogTrace(fLogCategory)
+    << " - " << boardInfo.name << ": " << artdaqFragments.size()
+    << " fragments";
+  
   std::vector<raw::OpDetWaveform> waveforms;
-  for (artdaq::Fragment const* fragment: artdaqFragments)
+  for (artdaq::FragmentPtr const& fragment: artdaqFragments)
     appendTo(waveforms, processFragment(*fragment, boardInfo, triggerTime));
   
   return waveforms;
@@ -1255,6 +1417,16 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
   NeededBoardInfo_t const& boardInfo,
   SplitTimestamp_t triggerTime
 ) -> std::vector<raw::OpDetWaveform> {
+  
+  checkFragmentType(artdaqFragment);
+  
+  if (fPacketDump) {
+    mf::LogVerbatim{ fLogCategory } << "PMT packet:"
+      << "\n" << std::string(80, '-')
+      << "\n" << sbndaq::dumpFragment(artdaqFragment)
+      << "\n" << std::string(80, '-')
+      ;
+  } // if diagnostics
   
   FragmentInfo_t const fragInfo = extractFragmentInfo(artdaqFragment);
   
@@ -1409,7 +1581,7 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
   
   if (fDiagnosticOutput) {
     
-    mf::LogVerbatim(fLogCategory)
+    mf::LogVerbatim{ fLogCategory }
       << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
         << ", nChannelsPerBoard: " << nChannelsPerBoard
         << ", nSamplesPerChannel: " << nSamplesPerChannel
@@ -1421,7 +1593,7 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
         << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
           << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
       ;
-  } // if diagnostics
+  }
 
   std::uint16_t const* data_begin = reinterpret_cast<std::uint16_t const*>
     (artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
@@ -1471,7 +1643,7 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestamp(
 
 //------------------------------------------------------------------------------
 auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampOnTrigger(
-  artdaq::Fragment const& artdaqFragment,
+  artdaq::Fragment const& /* artdaqFragment */,
   NeededBoardInfo_t const& boardInfo,
   SplitTimestamp_t /* triggerTime */
 ) const -> detinfo::timescales::electronics_time {
@@ -1640,7 +1812,7 @@ auto icarus::DaqDecoderICARUSPMT::neededBoardInfo
     = fBoardInfoLookup->findBoardInfo(fragment_id);
   if (!boardInfo) {
     if (fRequireKnownBoards) {
-      cet::exception e("PMTDecoder");
+      cet::exception e("DaqDecoderICARUSPMT");
       e << "Input fragment has ID " << fragment_id
         << " which has no associated board information (`BoardSetup`";
       if (!hasPMTconfiguration()) e << " + `.FragmentID`";

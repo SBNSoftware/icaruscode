@@ -37,8 +37,10 @@ art_make(
 
 simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_PMT_Data
+  icaruscode_Decode_DecoderTools_Dumpers
   icaruscode_Decode_DecoderTools
   sbndaq-artdaq-core_Overlays_Common
+  sbndaq-artdaq-core_Overlays
   lardataobj_RawData
   artdaq-core_Data
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
