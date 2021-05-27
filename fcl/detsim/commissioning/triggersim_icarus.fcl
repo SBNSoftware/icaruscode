@@ -1,11 +1,20 @@
 #
-# File:    triggersim_eastmodule_icarus.fcl
+# File:    triggersim_icarus.fcl
 # Purpose: Runs a chain to simulate ICARUS trigger primitives.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
-# Date:    March 18, 2021
+# Date:    May 17, 2021
 # Version: 1.0
 #
 # This is a top-level configuration that can be run directly.
+# 
+# This job simulates the full detector in two configurations: with tiling
+# windows (no trigger window overlap) and with sliding windows
+# (half-overlapping).
+# For each configuration, an overall trigger is simulated as well as only
+# cryostat 0 ("east module") and only cryostat 1 ("west module").
+# Also, for each configuration, several trigger patterns are simulated including
+# single window requirements (M1 to M6), main and opposite window (M3O3 to M6O6)
+# and total of main and opposite window (M2S4, M4S8, M5S10, M6S12).
 #
 #
 # The steps are:
@@ -36,8 +45,8 @@
 # Changes
 # --------
 # 
-# 20210318 (petrillo@slac.stanford.edu) [v1.0]
-# :   original version based on `triggersim_singlewindow_icarus.fcl` v1.0
+# 20210517 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_eastmodule_icarus.fcl` v1.0
 #
 
 
@@ -123,43 +132,28 @@ SlidingWindowTriggerPatternsWindowPair: [
   { inMainWindow: 3   inOppositeWindow: 3 },
   { inMainWindow: 4   inOppositeWindow: 4 },
   { inMainWindow: 5   inOppositeWindow: 5 },
-  { inMainWindow: 6   inOppositeWindow: 6 }
-] # SlidingWindowTriggerPatternsWindowPair
-
-
-SlidingWindowTriggerPatternsOppositeWindows: [
+  { inMainWindow: 6   inOppositeWindow: 6 },
   { inMainWindow: 2   sumOfOppositeWindows:  4 },
   { inMainWindow: 4   sumOfOppositeWindows:  8 },
   { inMainWindow: 5   sumOfOppositeWindows: 10 },
-  { inMainWindow: 6   sumOfOppositeWindows: 12 },
-] # SlidingWindowTriggerPatternsOppositeWindows
+  { inMainWindow: 6   sumOfOppositeWindows: 12 }
+] # SlidingWindowTriggerPatternsWindowPair
 
 
 SlidingWindowTriggerPatterns: [
   @sequence::SlidingWindowTriggerPatternsSingleWindow,
   @sequence::SlidingWindowTriggerPatternsWindowPair
-  @sequence::SlidingWindowTriggerPatternsOppositeWindows
 ] # SlidingWindowTriggerPatterns
 
 
 # list of the sliding windows that are enabled (all others are disabled)
 # * configuration with 3 windows per PMT wall (12 windows overall)
-EnabledWindows:         [ 0, 1, 2, 3, 4, 5 ]
-EnabledWindowsE:        [ 0, 1, 2 ]
-EnabledWindowsW:        [ 3, 4, 5 ]
-EnabledWindowsS:        [ 0, 3 ]
-EnabledWindowsSE:       [ 0 ]
-EnabledWindowsSW:       [ 3 ]
-EnabledWindowsC:        [ 1, 4 ]
-EnabledWindowsCE:       [ 1 ]
-EnabledWindowsCW:       [ 4 ]
-EnabledWindowsN:        [ 2, 5 ]
-EnabledWindowsNE:       [ 2 ]
-EnabledWindowsNW:       [ 5 ]
+EnabledWindowsE:        [ 0, 1, 2, 3,  4,  5 ]
+EnabledWindowsW:        [ 6, 7, 8, 9, 10, 11 ]
 # * configuration with 5 windows per PMT wall, overlapping (20 windows overall)
-EnabledWindowsSliding:  [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-EnabledWindowsSlidingE: [ 0, 1, 2, 3, 4 ]
-EnabledWindowsSlidingW: [ 5, 6, 7, 8, 9 ]
+EnabledWindowsSlidingE: [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9 ]
+EnabledWindowsSlidingW: [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+
 
 END_PROLOG
 # ------------------------------------------------------------------------------
@@ -178,7 +172,6 @@ services: {
   LArPropertiesService:      @erase
   DetectorPropertiesService: @erase
   
-
 } # services
 
 
@@ -277,9 +270,6 @@ physics: {
       # number of optical channel used as offset for sliding window [as WindowSize]
       # Stride: 30
       
-      # enable only the central window of each PMT wall
-      EnableOnlyWindows: @local::EnabledWindows
-
       MissingChannels: @local::missing_pmt_channels
       
       # name of the category used for the output
@@ -288,9 +278,7 @@ physics: {
     } # trigtilewindowOR
 
 
-    # defined later:  trigtilewindowORS, trigtilewindowORC, trigtilewindowORN,
-    # trigtilewindowORE, trigtilewindowORSE, trigtilewindowORCE, trigtilewindowORNE,
-    # trigtilewindowORW, trigtilewindowORSW, trigtilewindowORCW, trigtilewindowORNW,
+    # defined later:  trigtilewindowORE, trigtilewindowORW,
     # trigslidewindowOR, trigslidewindowORE, trigslidewindowORW
     
     
@@ -373,26 +361,23 @@ physics: {
     pmtbaselines, discrimopdaq, lvdsgatesOR,
     
     # tiling
-    trigtilewindowOR, trigtilewindowORS, trigtilewindowORC, trigtilewindowORN,
-    trigtilewindowORE, trigtilewindowORSE, trigtilewindowORCE, trigtilewindowORNE,
-    trigtilewindowORW, trigtilewindowORSW, trigtilewindowORCW, trigtilewindowORNW,
+    trigtilewindowOR, trigtilewindowORE, trigtilewindowORW,
     # sliding
     trigslidewindowOR, trigslidewindowORE, trigslidewindowORW,
     
     # trigger simulation: tiling
     simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
     simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
+    simTiledORM2S4, simTiledORM4S8, simTiledORM5S10, simTiledORM6S12,
     # trigger simulation: sliding
     simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
-    simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6
-    
+    simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
+    simSlidingORM2S4, simSlidingORM4S8, simSlidingORM5S10, simSlidingORM6S12
     ]
   
   plotsOR:  [
     # tiling
-    effTiledOR, effTiledORS, effTiledORC, effTiledORN,
-    effTiledORE, effTiledORSE, effTiledORCE, effTiledORNE,
-    effTiledORW, effTiledORSW, effTiledORCW, effTiledORNW,
+    effTiledOR, effTiledORE, effTiledORW,
     # sliding
     effSlidingOR, effSlidingORE, effSlidingORW
   ]
@@ -409,38 +394,9 @@ physics: {
 
 # additional regional definitions for OR pairing
 
-physics.producers.trigtilewindowORS: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsS
-}
-physics.producers.trigtilewindowORC: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsC
-}
-
-physics.producers.trigtilewindowORN: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsN
-}
-
 physics.producers.trigtilewindowORE: {
   @table::physics.producers.trigtilewindowOR
   EnableOnlyWindows: @local::EnabledWindowsE
-}
-
-physics.producers.trigtilewindowORSE: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsSE
-}
-
-physics.producers.trigtilewindowORCE: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsCE
-}
-
-physics.producers.trigtilewindowORNE: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsNE
 }
 
 physics.producers.trigtilewindowORW: {
@@ -448,26 +404,10 @@ physics.producers.trigtilewindowORW: {
   EnableOnlyWindows: @local::EnabledWindowsW
 }
 
-physics.producers.trigtilewindowORSW: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsSW
-}
-
-physics.producers.trigtilewindowORCW: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsCW
-}
-
-physics.producers.trigtilewindowORNW: {
-  @table::physics.producers.trigtilewindowOR
-  EnableOnlyWindows: @local::EnabledWindowsNW
-}
-
 physics.producers.trigslidewindowOR: {
   @table::physics.producers.trigtilewindowOR
   
   Stride: 15
-  EnableOnlyWindows: @local::EnabledWindowsSliding
 }
 
 physics.producers.trigslidewindowORE: {
@@ -481,59 +421,14 @@ physics.producers.trigslidewindowORW: {
 }
 
 
-physics.analyzers.effTiledORS: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORS
-}
-
-physics.analyzers.effTiledORC: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORC
-}
-
-physics.analyzers.effTiledORN: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORN
-}
-
 physics.analyzers.effTiledORE: {
   @table::physics.analyzers.effTiledOR
   TriggerGatesTag: trigtilewindowORE
 }
 
-physics.analyzers.effTiledORSE: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORSE
-}
-
-physics.analyzers.effTiledORCE: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORCE
-}
-
-physics.analyzers.effTiledORNE: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORNE
-}
-
 physics.analyzers.effTiledORW: {
   @table::physics.analyzers.effTiledOR
   TriggerGatesTag: trigtilewindowORW
-}
-
-physics.analyzers.effTiledORSW: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORSW
-}
-
-physics.analyzers.effTiledORCW: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORCW
-}
-
-physics.analyzers.effTiledORNW: {
-  @table::physics.analyzers.effTiledOR
-  TriggerGatesTag: trigtilewindowORNW
 }
 
 physics.analyzers.effSlidingOR: {
@@ -602,6 +497,26 @@ physics.producers.simTiledORM6O6: {
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
 }
 
+physics.producers.simTiledORM2S4: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # M2S4
+}
+
+physics.producers.simTiledORM4S8: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # M4S8
+}
+
+physics.producers.simTiledORM5S10: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # M5S10
+}
+
+physics.producers.simTiledORM6S12: {
+  @table::physics.producers.simTiledORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # M6S12
+}
+
 physics.producers.simSlidingORM1: {
   @table::physics.producers.simTiledORM1
   TriggerGatesTag: trigslidewindowOR
@@ -650,6 +565,26 @@ physics.producers.simSlidingORM5O5: {
 physics.producers.simSlidingORM6O6: {
   @table::physics.producers.simSlidingORM1
   Pattern: @local::SlidingWindowTriggerPatternsWindowPair[5]  # M6O6
+}
+
+physics.producers.simSlidingORM2S4: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[6]  # M2S4
+}
+
+physics.producers.simSlidingORM4S8: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[7]  # M4S8
+}
+
+physics.producers.simSlidingORM5S10: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[8]  # M5S10
+}
+
+physics.producers.simSlidingORM6S12: {
+  @table::physics.producers.simSlidingORM1
+  Pattern: @local::SlidingWindowTriggerPatternsWindowPair[9]  # M6S12
 }
 
 

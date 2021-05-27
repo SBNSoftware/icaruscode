@@ -21,6 +21,9 @@ std::string icarus::trigger::WindowPattern::tag() const {
   if (minInOppositeWindow > 0U)
     s += "O"s + std::to_string(minInOppositeWindow);
   
+  if (minSumInOppositeWindows > 0U)
+    s += "S"s + std::to_string(minSumInOppositeWindows);
+  
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {
     s += "D"s + std::to_string(minInDownstreamWindow);
     if (requireDownstreamWindow) s+= "req"s;
@@ -44,18 +47,22 @@ std::string icarus::trigger::WindowPattern::description() const {
   s += " "s + std::to_string(minInMainWindow);
   
   if (minInOppositeWindow > 0U)
-    s += " + " + std::to_string(minInOppositeWindow) + " (opposite)"s;
+    s += " + "s + std::to_string(minInOppositeWindow) + " (opposite)"s;
+  
+  if (minSumInOppositeWindows > 0U)
+    s += " (and "s + std::to_string(minSumInOppositeWindows) + " main+opposite)"s;
   
   if ((minInDownstreamWindow > 0U) || requireDownstreamWindow) {
-    if (minInDownstreamWindow) s += " + " + std::to_string(minInDownstreamWindow);
-    s += " (downstream";
+    if (minInDownstreamWindow)
+      s += " + "s + std::to_string(minInDownstreamWindow);
+    s += " (downstream"s;
     if (requireDownstreamWindow) s+= ", mandatory)"s;
     s += ")"s;
   } // if downstream
   
   if ((minInUpstreamWindow > 0U) || requireUpstreamWindow) {
-    if (minInUpstreamWindow) s += " + " + std::to_string(minInUpstreamWindow);
-    s += " (upstream";
+    if (minInUpstreamWindow) s += " + "s + std::to_string(minInUpstreamWindow);
+    s += " (upstream"s;
     if (requireUpstreamWindow) s+= ", mandatory)"s;
     s += ")"s;
   } // if upstream

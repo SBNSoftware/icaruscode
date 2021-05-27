@@ -11,6 +11,9 @@
 // library header
 #include "icaruscode/PMT/Trigger/Algorithms/WindowChannelMap.h"
 
+// ICARUS libraries
+#include "icarusalg/Utilities/IntegerRanges.h"
+
 // C/C++ standard libraries
 #include <ostream>
 
@@ -23,13 +26,8 @@ void icarus::trigger::WindowChannelMap::WindowInfo_t::dump
   if (hasCryostat()) out << " in " << cryoid;
   else               out << " (cryostat undefined)";
   out << " includes " << channels.size() << " channels";
-  if (!channels.empty()) {
-    auto iChannel = channels.begin();
-    auto const cend = channels.end();
-    out << " (" << *iChannel;
-    while (++iChannel != cend) out << ", " << *iChannel;
-    out << ")";
-  } // if channels
+  if (!channels.empty())
+    out << " (" << icarus::makeIntegerRanges(channels) << ")";
   if (hasOppositeWindow()) out << " opposite to [#" << opposite << "]";
   if (hasUpstreamWindow()) out << " downstream of [#" << upstream << "]";
   if (hasDownstreamWindow()) out << " upstream of [#" << downstream << "]";
