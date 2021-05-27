@@ -694,20 +694,20 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Converts a fragment into a fragment collection
   /// (dispatcher based on fragment type).
-  std::vector<artdaq::FragmentPtr> makeFragmentCollection
+  artdaq::FragmentPtrs makeFragmentCollection
     (artdaq::Fragment const& sourceFragment) const;
 
   /// Converts a plain fragment into a fragment collection.
-  std::vector<artdaq::FragmentPtr> makeFragmentCollectionFromFragment
+  artdaq::FragmentPtrs makeFragmentCollectionFromFragment
     (artdaq::Fragment const& sourceFragment) const;
 
   /// Converts a container fragment into a fragment collection.
-  std::vector<artdaq::FragmentPtr> makeFragmentCollectionFromContainerFragment
+  artdaq::FragmentPtrs makeFragmentCollectionFromContainerFragment
     (artdaq::Fragment const& sourceFragment) const;
 
   /// Extracts waveforms from the specified fragments from a board.
   std::vector<raw::OpDetWaveform> processBoardFragments(
-    std::vector<artdaq::FragmentPtr> const& artdaqFragment,
+    artdaq::FragmentPtrs const& artdaqFragment,
     SplitTimestamp_t triggerTime
     );
   
@@ -1317,8 +1317,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
 
 
 //------------------------------------------------------------------------------
-std::vector<artdaq::FragmentPtr>
-icarus::DaqDecoderICARUSPMT::makeFragmentCollection
+artdaq::FragmentPtrs icarus::DaqDecoderICARUSPMT::makeFragmentCollection
   (artdaq::Fragment const& sourceFragment) const
 {
   switch (sourceFragment.type()) {
@@ -1338,19 +1337,19 @@ icarus::DaqDecoderICARUSPMT::makeFragmentCollection
 
 
 //------------------------------------------------------------------------------
-std::vector<artdaq::FragmentPtr>
+artdaq::FragmentPtrs
 icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromFragment
   (artdaq::Fragment const& sourceFragment) const
 {
   assert(sourceFragment.type() == sbndaq::FragmentType::CAENV1730);
-  std::vector<artdaq::FragmentPtr> fragColl;
+  artdaq::FragmentPtrs fragColl;
   fragColl.push_back(std::make_unique<artdaq::Fragment>(sourceFragment));
   return fragColl;
 } // icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromFragment()
 
 
 //------------------------------------------------------------------------------
-std::vector<artdaq::FragmentPtr>
+artdaq::FragmentPtrs
 icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromContainerFragment
   (artdaq::Fragment const& sourceFragment) const
 {
@@ -1359,7 +1358,7 @@ icarus::DaqDecoderICARUSPMT::makeFragmentCollectionFromContainerFragment
   
   if (containerFragment.block_count() == 0) return {};
     
-  std::vector<artdaq::FragmentPtr> fragColl;
+  artdaq::FragmentPtrs fragColl;
   for (auto const iFrag: util::counter(containerFragment.block_count()))
     fragColl.push_back(containerFragment.at(iFrag));
   
@@ -1384,7 +1383,7 @@ void icarus::DaqDecoderICARUSPMT::checkFragmentType
 
 //------------------------------------------------------------------------------
 auto icarus::DaqDecoderICARUSPMT::processBoardFragments(
-  std::vector<artdaq::FragmentPtr> const& artdaqFragments,
+  artdaq::FragmentPtrs const& artdaqFragments,
   SplitTimestamp_t triggerTime
 ) -> std::vector<raw::OpDetWaveform> {
   
