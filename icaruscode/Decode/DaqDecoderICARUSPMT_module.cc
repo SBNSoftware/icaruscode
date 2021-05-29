@@ -74,7 +74,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * @brief Produces `raw::OpDetWaveform` from V1730 artDAQ data fragments.
  * 
  * The module can read fragments from CAEN V1730 readout boards delivered by
- * artDAQ.
+ * artDAQ. It produces optical detector waveforms in LArSoft standards.
  * 
  * This decoder must support both a off-line mode (for storage and downstream
  * processing) and a on-line mode (for monitoring).
@@ -156,7 +156,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * 
  * @anchor icarus_PMTDecoder_timestamps
  * 
- * All waveforms on the same readout board share the same timestamp.
+ * All waveforms on the same readout board fragment share the same timestamp.
+ * The same readout board can produce different fragments at different times
+ * within an event in which case each fragment will be independently assigned
+ * a timstamp .
  * 
  * The time stamp of the waveform is defined as the time when the first sample
  * of the waveform started (that is, if the sample represent the value of the
@@ -166,39 +169,74 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * The representation of the time stamp is in the
  * @ref DetectorClocksElectronicsTime "electronics time scale".
  * 
- * There are two "types" of waveforms: the ones acquired at global trigger time,
- * and the ones acquired because of a "local trigger" which was not promoted to
- * global (likely because not in coincidence with the beam gate).
- * In both cases, it is the same type of signal: a trigger primitive from
- * the NI7820 FPGA, which initializes the acquisition of the waveform.
+ * Waveforms all originate from a trigger primitive signal being sent to the
+ * readout boards by NI7820 FPGA to start the acquisition of the waveform.
+ * One of these primitives matches the global event trigger, but the
+ * corresponding fragment is not treated in any special way.
  * Every delay between when that signal is emitted and when the PMT trigger is
- * executed shifts the time stamp of the waveform backward.
+ * executed shifts the timestamp of the waveform backward.
  * 
- * We assign the the time stamp of the waveforms matching the global trigger
- * as follow:
- * * the base time is the global trigger time; this effectively defines the
- *   electronics time scale, so its representation is a fixed number that is
- *   configured in LArSoft and can be accessed with
+ * We assign the the time stamp of the waveforms as follow:
+ * 1. the base time is the global trigger time; the global trigger time is read
+ *   from the trigger data, where it is stored as an absolute time in TAI scale;
+ *   the global trigger time itself effectively defines the electronics time
+ *   scale used within a _art_ event, so its representation is a fixed number
+ *   that is configured in LArSoft and can be accessed with
  *   `DetectorClocksData::TriggerTime()`;
- * * the delay of the propagation from the trigger board to the readout board
- *   is subtracted to the timestamp; this value must be independently measured
- *   and provided to this decoder via tool configuration as setup information
- *   (`TriggerDelay`); if not present in the setup, this delay is not added;
- * * upon receiving the trigger, the readout board will keep some of the samples
- *   already digitized, in what we call pre-trigger buffer; the size of this
- *   buffer is a fixed number of samples which is specified in DAQ as a fraction
- *   of the complete buffer that is _post-trigger_; this amount, converted in
- *   time, is subtracted to the trigger time to point back to the beginning of
- *   the waveform instead that to the trigger primitive time. The necessary
- *   information is read from the PMT configuration (`PMTconfigTag`); if no
- *   configuration is available, this offset is not subtracted; note that this
- *   is a major shift (typically, a few microseconds) that should be always
- *   included.
+ * 2. each V1730 data fragment comes with a time tag ("TTT") describing the time
+ *   of the end of the readout buffer (unknown whether the start or the end of
+ *   the tick of the last sample). This tag is a counter internal to the V1730
+ *   board, incremented every 8 ns. The counter is reset at the beginning of
+ *   every "new" TAI second, and it can thus be easily transformed into a time
+ *   in the same TAI scale as the global trigger; the difference between TTT
+ *   and the global trigger pins down the end of the readout buffer in the
+ *   electronics time scale;
+ * 3. a delay is subtracted to the timestamp, which encompasses all fixed delays
+ *   occurring in the trigger signal transportation; the most prominent is the
+ *   delay occurring between the start of the "new" TAI second and when the
+ *   TTT reset signal reaches and is honoured by the readout board.
+ *   This value must be independently measured and provided to this decoder via
+ *   configuration as setup information (`TTTresetDelay`); if not present in the
+ *   setup, this delay is not added;
+ * 4. finally, the time of the beginning of the waveform, that is the target
+ *   for `raw::OpDetWaveform` timestamp, is obtained from the time of its end
+ *   by simply subtracting the readout buffer length.
  * 
- * Each V1730 event record includes a trigger time tag (TTT), which is the value
- * of an internal counter of the board at the time the board received a trigger.
- * This can be used to relate the various waveforms (and the various fragments)
- * in the _art_ event.
+ * A special decoding mode, hoped to be just historical by now, does not rely
+ * on the global trigger time. This mode can be safely used only when the (only)
+ * data fragment was triggered by the global trigger (e.g. in the simplest
+ * minimum/zero bias trigger). It has the advantage that it does not use the TTT
+ * information. It can be enabled explicitly by setting the option
+ * `TTTresetEverySecond` to `true`, or by removing the specification of the
+ * trigger time data product tag (`TriggerTag`).
+ * 1. The trigger primitive time is assumed to be the global trigger time too,
+ *   so that the trigger primitive time in electronics time also matches the
+ *   global trigger time.
+ * 2. upon receiving the trigger primitive signal, the readout board will keep
+ *   some of the samples already digitized, in what we call pre-trigger buffer;
+ *   the size of this buffer is a fixed number of samples which is specified in
+ *   DAQ as a fraction of the complete buffer that is _post-trigger_; this
+ *   amount, converted in time, is subtracted to the trigger time to point back
+ *   to the beginning of the waveform instead that to the trigger primitive
+ *   time. The necessary information is read from the PMT configuration
+ *   (`PMTconfigTag`); if no configuration is available, this offset is not
+ *   subtracted; note that this is a major shift (typically, a few microseconds)
+ *   that should be always included. This step is equivalent to the step (4) of
+ *   the regular mode, where here the adjustment starts from the trigger
+ *   primitive time instead than from the end-of-buffer time.
+ * 3. a delay is subtracted to the timestamp, which encompasses all fixed delays
+ *   occurring in the trigger signal transportation; one component of it is the
+ *   relative delay in the propagation of the trigger primitive signal from a
+ *   board to the next (in fact, every three boards have the trigger signal in
+ *   daisy chain). This value must be independently measured and provided to
+ *   this decoder via configuration as setup information (`TriggerDelay`); if
+ *   not present in the setup, this delay is not added.
+ *   Note that the particular contribution of the daisy chain to the delay does
+ *   not need to be explicitly taken into account in the main mode, because the
+ *   TTT reset is independent  and not daisy-chained, so that the TTT times
+ *   are all synchronized and when the primitive trigger arrives (via daisy
+ *   chain) the TTT value at that instant is already including the delay.
+ * 
  * 
  * 
  * Data trees
@@ -225,7 +263,13 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
  *       integer): the timestamp of the PMT fragment, assigned by the board
  *       reader constructing the fragment.
- * 
+ *     * `waveformTime` (double): time assigned to the waveforms from this
+ *       fragment (electronics time scale)
+ *     * `waveformSize` (unsigned integer): number of ticks for the waveforms
+ *       from this fragment
+ *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
+ *       trigger time (which should be equivalent to whether the fragment was
+ *       triggered by the global trigger)
  * 
  * 
  * Technical notes
@@ -234,20 +278,24 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * In order to correctly reconstruct the time stamp, this module needs several
  * pieces of information.
  * These include the size of the pre-trigger buffer, which is set by the readout
- * board configuration, and the delay between the global trigger and the time
- * that trigger is received and acted upon in the readout board, which needs to
- * be measured.
+ * board configuration, and the delay either between the start of the "new"
+ * second and the execution of the TTT reset, or between the global trigger and
+ * the time that trigger is received and acted upon in the readout board,
+ * depending of the time stamping mode; in both cases, the delays need to be
+ * measured.
  * The first category of information, from readout board configuration, are read
  * from the input file (`sbn::PMTconfiguration`), while the second category 
  * needs to be specified in the tool FHiCL configuration.
  * 
  * PMT configuration is optional, in the sense that it can be omitted; in that
- * case, some standard values will be used for it.
+ * case, some standard values will be used for it. This kind of setup may be
+ * good for monitoring, but it does not meet the requirements for physics
+ * analyses.
  * For a board to be served, an entry of that board must be present in the
  * tool configuration (`BoardSetup`). It is an error for a fragment in input not
  * to have an entry for the corresponding board setup.
  * 
- * The module code extract the needed information and matches it into a
+ * The module extracts the needed information and matches it into a
  * sort-of-database keyed by fragment ID, so that it can be quickly applied
  * when decoding a fragment. The matching is performed by board name.
  * 
@@ -260,6 +308,8 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     is information included in the `BoardSetup` configuration list of this
  *     tool; the "PMT configuration" is information included in the DAQ
  *     configuration that is delivered via `PMTconfigTag`.
+ * * **TAI** (International Atomic Time): a time standard defining a universal
+ *     time with a precision higher than it will ever matter for ICARUS.
  * * **TTT**: trigger time tag, from the V1730 event record (31 bits); may be:
  * * **ETTT**: extended trigger time tag, from the V1730 event record (48 bits).
  * * **trigger delay**: time point when a V1730 board processes a (PMT) trigger
@@ -268,8 +318,6 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * 
  * 
  * @todo Merge contiguous waveforms on the same channel
- * @todo Add interface for fragment containers
- * 
  * 
  */
 class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
@@ -515,7 +563,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Duration of the optical detector readout sampling tick (i.e. 2 ns; hush!).
   nanoseconds const fOpticalTick;
   
-  /// Trigger time as reported by `DetectorClocks` service.
+  /// Trigger time as reported by `detinfo::DetectorClocks` service.
   detinfo::timescales::electronics_time const fNominalTriggerTime;
   
   // --- END ---- Cached values ------------------------------------------------
