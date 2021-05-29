@@ -669,6 +669,14 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       SplitTimestamp_t fragTime; ///< PMT fragment time stamp.
       
+      /// Time assigned to the waveforms.
+      double waveformTime = std::numeric_limits<double>::lowest();
+      
+      unsigned int waveformSize = 0U; ///< Ticks in the waveforms.
+      
+      ///< Whether waveforms cover nominal trigger time.
+      bool onGlobalTrigger = false;
+      
     }; // Data_t
     
     Data_t data;
@@ -822,7 +830,14 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Returns pointers to all waveforms including the nominal trigger time.
   std::vector<raw::OpDetWaveform const*> findWaveformsWithNominalTrigger
     (std::vector<raw::OpDetWaveform> const& waveforms) const;
-    
+  
+  /// Returns whether `waveform` includes the tick of the nominal trigger time.
+  bool containsGlobalTrigger(raw::OpDetWaveform const& waveform) const;
+  
+  /// Returns whether nominal trigger time is within `nTicks` from `time`.
+  bool containsGlobalTrigger
+    (detinfo::timescales::electronics_time time, std::size_t nTicks) const;
+  
   
   // --- BEGIN -- Tree-related methods -----------------------------------------
   
@@ -847,8 +862,11 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// Fills the PMT fragment tree with the specified information
   /// (additional information needs to have been set already).
-  void fillPMTfragmentTree
-    (FragmentInfo_t const& fragInfo, SplitTimestamp_t triggerTime);
+  void fillPMTfragmentTree(
+    FragmentInfo_t const& fragInfo,
+    SplitTimestamp_t triggerTime,
+    detinfo::timescales::electronics_time waveformTimestamp
+    );
   
 
   /// Static initialization.
@@ -1165,17 +1183,31 @@ icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger
 {
   std::vector<raw::OpDetWaveform const*> matchedWaveforms;
   for (raw::OpDetWaveform const& waveform: waveforms) {
-    
-    detinfo::timescales::electronics_time const timestamp
-      { waveform.TimeStamp() };
-    if (fNominalTriggerTime < timestamp) continue;
-    if (fNominalTriggerTime > timestamp + waveform.size() * fOpticalTick)
-      continue;
-    
+    if (!containsGlobalTrigger(waveform)) continue;
     matchedWaveforms.push_back(&waveform);
   } // for
   return matchedWaveforms;
 } // icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger()
+
+
+//------------------------------------------------------------------------------
+bool icarus::DaqDecoderICARUSPMT::containsGlobalTrigger
+  (detinfo::timescales::electronics_time time, std::size_t nTicks) const
+{
+  return (fNominalTriggerTime >= time)
+    && (fNominalTriggerTime < time + nTicks * fOpticalTick);
+} // icarus::DaqDecoderICARUSPMT::containsGlobalTrigger(time, ticks)
+
+
+//------------------------------------------------------------------------------
+bool icarus::DaqDecoderICARUSPMT::containsGlobalTrigger
+  (raw::OpDetWaveform const& waveform) const
+{
+  return containsGlobalTrigger(
+    detinfo::timescales::electronics_time{ waveform.TimeStamp() },
+    waveform.size()
+    );
+} // icarus::DaqDecoderICARUSPMT::containsGlobalTrigger(waveform)
 
 
 //------------------------------------------------------------------------------
@@ -1232,7 +1264,7 @@ auto icarus::DaqDecoderICARUSPMT::matchBoardConfigurationAndSetup
   
   
   auto findPMTconfig = [this, &configByName]
-      (std::string const& name) -> sbn::V1730Configuration const*
+    (std::string const& name) -> sbn::V1730Configuration const*
     {
       if (!hasPMTconfiguration()) return nullptr;
       auto const* ppBoardConfig
@@ -1477,10 +1509,11 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
   
   FragmentInfo_t const fragInfo = extractFragmentInfo(artdaqFragment);
   
-  if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerTime);
-  
   auto const timeStamp
     = fragmentWaveformTimestamp(artdaqFragment, boardInfo, triggerTime);
+    
+  if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerTime, timeStamp);
+  
   return (timeStamp != NoTimestamp)
     ? createFragmentWaveforms(fragInfo, timeStamp)
     : std::vector<raw::OpDetWaveform>{}
@@ -1541,12 +1574,12 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
     
     std::copy_n(fragInfo.data + ch_offset, wvfm.size(), wvfm.begin());
     
+    opDetWaveforms.emplace_back(timeStamp.value(), channelID, wvfm);
+    
     mf::LogTrace(fLogCategory)
       << "PMT channel " << channelID << " has " << wvfm.size()
       << " samples (read from entry #" << channelPosInData
       << " in fragment data) starting at electronics time " << timeStamp;
-    opDetWaveforms.emplace_back(timeStamp.value(), channelID, wvfm);
-    
   } // for channels
   
   if (diagOut) diagOut.reset(); // destroys and therefore prints out
@@ -1568,10 +1601,12 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
     } // for bits
   } // if request and availability did not match
 
-  if (fDiagnosticOutput) {
-    mf::LogVerbatim(fLogCategory)
+  if (diagOut) {
+    (*diagOut)
       << "      - number of waveforms decoded: " << opDetWaveforms.size();
-  }
+    if (!opDetWaveforms.empty() && containsGlobalTrigger(opDetWaveforms.back()))
+      (*diagOut) << "      - matches global trigger!";
+  } // if diagnostics
   
   return opDetWaveforms;
   
@@ -1579,9 +1614,11 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
 
 
 //------------------------------------------------------------------------------
-void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree
-  (FragmentInfo_t const& fragInfo, SplitTimestamp_t triggerTime)
-{
+void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
+  FragmentInfo_t const& fragInfo, 
+  SplitTimestamp_t triggerTime,
+  detinfo::timescales::electronics_time waveformTimestamp
+) {
   
   if (!fTreeFragment) return;
   
@@ -1590,6 +1627,10 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree
   fTreeFragment->data.trigger = triggerTime;
   fTreeFragment->data.fragTime
     = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
+  fTreeFragment->data.waveformTime = waveformTimestamp.value();
+  fTreeFragment->data.waveformSize = fragInfo.nSamplesPerChannel;
+  fTreeFragment->data.onGlobalTrigger
+    = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
   assignEventInfo(fTreeFragment->data);
   fTreeFragment->tree->Fill();
   
@@ -1983,6 +2024,9 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("trigger", &data.trigger.time, "trigger/L"); // ROOT 6.24 can't detect 64-bit
   tree->Branch("triggerSec", &data.trigger.split.seconds);
   tree->Branch("triggerNS", &data.trigger.split.nanoseconds);
+  tree->Branch("waveformTime", &data.waveformTime);
+  tree->Branch("waveformSize", &data.waveformSize);
+  tree->Branch("onGlobal", &data.onGlobalTrigger);
   
 } // icarus::DaqDecoderICARUSPMT::initFragmentsTree()
 
