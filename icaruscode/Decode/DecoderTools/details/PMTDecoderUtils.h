@@ -48,6 +48,8 @@ namespace daq::details {
     
     nanoseconds triggerDelay = 0_ns; ///< Delay from global trigger to TTT set.
     
+    nanoseconds TTTresetDelay = 0_ns; ///< Delay from TTT reset issue to enact.
+    
     /// Returns whether this object contains a valid fragment ID.
     constexpr bool hasFragmentID() const { return fragmentID != NoFragmentID; }
     

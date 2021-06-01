@@ -4,6 +4,7 @@ art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
+                        DaqDecoderICARUSPMT_module.cc
           MODULE_LIBRARIES
                         icarus_signal_processing
                         icarus_signal_processing_Detection
@@ -33,6 +34,23 @@ art_make(
                         cetlib cetlib_except
                         ${TBB}
         )
+
+simple_plugin(DaqDecoderICARUSPMT module
+  sbnobj_Common_PMT_Data
+  icaruscode_Decode_DecoderTools_Dumpers
+  icaruscode_Decode_DecoderTools
+  sbndaq-artdaq-core_Overlays_Common
+  sbndaq-artdaq-core_Overlays
+  lardataobj_RawData
+  artdaq-core_Data
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  cetlib_except
+  ROOT::Tree
+  )
 
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
