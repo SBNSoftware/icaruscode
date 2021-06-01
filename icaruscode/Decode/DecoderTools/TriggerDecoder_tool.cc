@@ -186,7 +186,8 @@ namespace daq
     if(fDiagnosticOutput || fDebug)
     {
       std::cout << "Full Timestamp = " << wr_ts << std::endl;
-      double cross_check = wr_ts - artdaq_ts;
+      auto const cross_check = static_cast<signed long long int>(wr_ts)
+        - static_cast<signed long long int>(artdaq_ts);
       if(abs(cross_check) > 1000)
         std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
       std::cout << delta_gates_bnb << " " << delta_gates_numi << " " << delta_gates_other << std::endl; // nonsensical print statement to avoid error that I don't use these...until we have an object to store them in...    
