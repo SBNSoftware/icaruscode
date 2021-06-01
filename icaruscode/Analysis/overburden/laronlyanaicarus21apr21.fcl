@@ -1,0 +1,66 @@
+
+#include "services_common_icarus.fcl"
+#include "services_icarus_simulation.fcl"
+#include "OverburdenAnaICARUS.fcl"
+
+process_name: ObAnaICARUS
+
+services:
+{ 
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+  # Load the service that manages root files for histograms.
+  TFileService: { fileName: "no_overburden_ana_icarus.root" }
+  # TimeTracker:         {}
+  # MemoryTracker:       {} # default is one
+  # RandomNumberGenerator: {} #ART native random number generator
+  FileCatalogMetadata:  @local::art_file_catalog_mc
+  @table::icarus_g4_services
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput   
+  maxEvents:   -1          # Number of events to create
+  firstRun:    1           # Run number to use for this file
+  firstEvent:  1           # number of first event in the file
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+  analyzers:
+        {
+                obana:     @local::obanalysis
+        }
+
+  ana: [ obana ]	
+  end_paths:     [ana]
+ }
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "out-art.root"
+   dataTier:    "analysis"
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+# Geometry with laronly
+services.Geometry.GDML: "icarus_complete_laronly_20210511.gdml"
+services.Geometry.ROOT: "icarus_complete_laronly_20210511.gdml"
+
+
+services.GeometryConfigurationWriter: {}
+
+
