@@ -13,8 +13,9 @@
 # Input
 # ------
 # 
-# * artDAQ fragments from all 24 PMT readout boards, named `daq:CAENV1730`
-# * no trigger fragments required yet (it may change in the future)
+# * artDAQ fragments from all 24 PMT readout boards, named
+#   `daq:ContainerCAENV1730`
+# * trigger fragment `daq:ICARUSTriggerUDP` (will be decoded as well)
 # * DAQ configuration as FHiCL in the art/ROOT input file
 # 
 # This configuration requires a data fragment for each PMT readout board
@@ -118,6 +119,7 @@ physics.producers.daqPMT.TriggerTag:   daqTrigger # required
 
 physics.producers.daqPMT.SurviveExceptions: false
 physics.producers.daqPMT.DiagnosticOutput:  false
+physics.producers.daqPMT.PacketDump:        false
 physics.producers.daqPMT.RequireKnownBoards: true
 physics.producers.daqPMT.RequireBoardConfig: true
 physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
@@ -126,7 +128,7 @@ physics.producers.daqPMT.DataTrees: [ "PMTfragments" ]
 # customization of trigger decoding
 #
 
-physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: false
+physics.producers.daqTrigger.DecoderTool.DiagnosticOutput: true
 physics.producers.daqTrigger.DecoderTool.Debug: false
 
 
