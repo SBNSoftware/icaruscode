@@ -1,0 +1,16 @@
+BEGIN_PROLOG
+
+overburdenana:
+{
+  module_type:   "OverburdenAnaICARUS"
+  Dummy:         "dummy"
+}
+
+obanalysis:
+{
+ module_type:   "OBAnaICARUS"
+ SavePi0Tree:    true
+ SaveMuonTree:    true
+ SimulatingDirt: false
+}
+END_PROLOG

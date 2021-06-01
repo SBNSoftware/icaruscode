@@ -1,0 +1,11 @@
+#include "prodcorsika_standard_icarus.fcl"
+
+physics.producers.generator: @local::icarus_corsika_p
+physics.producers.generator.ProjectToHeight:  1850  #height to which particles are projected in cm
+
+# Geometry with no-overburden
+services.Geometry.GDML: "icarus_complete_laronly_20210511.gdml"
+services.Geometry.ROOT: "icarus_complete_laronly_20210511.gdml"
+
+services.PhotonVisibilityService.Mapping.CryostatChannelRemap: @erase
+services.GeometryConfigurationWriter: {}
