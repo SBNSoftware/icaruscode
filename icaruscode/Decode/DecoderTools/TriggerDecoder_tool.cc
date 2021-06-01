@@ -29,7 +29,7 @@
 
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 // #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
-#include "icaruscode/Decode/BeamBits.h"
+#include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 
 #include <cstdlib>
 #include <iostream>
