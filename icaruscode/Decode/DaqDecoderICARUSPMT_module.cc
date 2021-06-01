@@ -265,6 +265,8 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
  *       integer): the timestamp of the PMT fragment, assigned by the board
  *       reader constructing the fragment.
+ *     * `fragCount` (unsigned integer): the counter of the fragment within a
+ *       readout board (its "event counter").
  *     * `waveformTime` (double): time assigned to the waveforms from this
  *       fragment (electronics time scale).
  *     * `waveformSize` (unsigned integer): number of ticks for the waveforms
@@ -671,6 +673,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       int fragmentID = 0; ///< ID of the fragment of this entry.
       
+      unsigned int fragCount = 0U; ///< Counter of the fragment in the board.
+      
       ///< Trigger time tag from the fragment.
       unsigned long int TriggerTimeTag = 0;
       
@@ -787,6 +791,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     artdaq::Fragment::fragment_id_t fragmentID
       = std::numeric_limits<artdaq::Fragment::fragment_id_t>::max();
     artdaq::Fragment::timestamp_t fragmentTimestamp;
+    unsigned int eventCounter = 0U;
     std::uint32_t TTT = 0U;
     std::uint16_t enabledChannels = 0U;
     std::size_t nSamplesPerChannel = 0U;
@@ -1678,6 +1683,7 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   if (!fTreeFragment) return;
   
   fTreeFragment->data.fragmentID = fragInfo.fragmentID;
+  fTreeFragment->data.fragCount = fragInfo.eventCounter;
   fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
   fTreeFragment->data.trigger = triggerInfo.time;
   fTreeFragment->data.fragTime
@@ -1722,6 +1728,7 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
     = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
   std::size_t const nSamplesPerChannel
     = data_size_double_bytes/nChannelsPerBoard;
+  unsigned int const eventCounter = header.eventCounter;
   
   if (fDiagnosticOutput) {
     
@@ -1734,6 +1741,7 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
         << ", data size: " << data_size_double_bytes
         << ", samples/channel: " << nSamplesPerChannel
         << ", trigger time tag: " << TTT
+        << ", event counter: " << eventCounter
         << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
           << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
       ;
@@ -1745,6 +1753,7 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
   return { // C++20: write the member names explicitly
     fragment_id,
     fragmentTimestamp,
+    eventCounter,
     TTT,
     enabledChannels,
     nSamplesPerChannel,
@@ -2074,6 +2083,7 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   initEventIDtree(*tree, data);
   
   tree->Branch("fragmentID", &data.fragmentID);
+  tree->Branch("fragCount", &data.fragCount);
   tree->Branch("fragTime", &data.fragTime.time, "fragTime/L"); // ROOT 6.24 can't detect 64-bit
   tree->Branch("fragTimeSec", &data.fragTime.split.seconds);
   tree->Branch("TTT", &data.TriggerTimeTag, "TTT/l"); // ROOT 6.24 can't detect 64-bit
