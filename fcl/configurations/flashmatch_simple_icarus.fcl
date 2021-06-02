@@ -13,7 +13,7 @@ icarus_simple_flashmatch_0: {
   FlashStart: -0.02 # us, wrt flash time
   FlashEnd: 0.08 # us, wrt flash time
   SelectNeutrino: true
-  OnlyPrimaries: true
+  OnlyCollectionWires: false
   UseOppVolMetric: true
   # UseCalo: false
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
