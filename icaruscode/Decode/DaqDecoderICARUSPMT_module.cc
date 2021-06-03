@@ -92,6 +92,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  * `lar --print-description DaqDecoderICARUSPMT`.
  * 
  * Description of the configuration parameters:
+ * * `FragmentsLabels` (list of input tags): a list of possible input data
+ *     products. A valid input data product contain a list of fragments from
+ *     V1730. All input tags are tried. If only one is available, its content
+ *     is used for decoding; otherwise, an exception is thrown.
  * * `DiagnosticOutput` (flag, default: `false`): enables additional console
  *     output, including dumping of the fragments (that is huge output).
  * * `PMTconfigTag` (data product tag, optional): if specified, the pre-trigger
@@ -409,10 +413,10 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     using Name = fhicl::Name;
     using Comment = fhicl::Comment;
     
-    fhicl::Atom<art::InputTag> FragmentsLabel {
-      Name("FragmentsLabel"),
-      Comment("data product with the PMT fragments from DAQ"),
-      "daq:CAEN1730" // default
+    fhicl::Sequence<art::InputTag> FragmentsLabels {
+      Name("FragmentsLabels"),
+      Comment("data product candidates with the PMT fragments from DAQ"),
+      std::vector<art::InputTag>{ "daq:CAENV1730", "daq:ContainerCAENV1730" }
       };
     
     fhicl::Atom<bool> SurviveExceptions {
@@ -528,7 +532,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
 
   // --- BEGIN -- Configuration parameters -------------------------------------
   
-  art::InputTag const fInputTag; ///< Data product with artDAQ data fragments.
+  ///< List of candidate data products with artDAQ data fragments.
+  std::vector<art::InputTag> const fInputTags;
   
   bool const fSurviveExceptions; ///< Whether to "ignore" errors.
   
@@ -760,6 +765,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   
   // --- BEGIN -- Input data management ----------------------------------------
+  
+  /// Reads the fragments to be processed.
+  artdaq::Fragments const& readInputFragments(art::Event const& event) const;
   
   /// Throws an exception if `artdaqFragment` is not of type `CAEN1730`.
   void checkFragmentType(artdaq::Fragment const& artdaqFragment) const;
@@ -1018,7 +1026,7 @@ std::string icarus::DaqDecoderICARUSPMT::listTreeNames
 //------------------------------------------------------------------------------
 icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   : art::EDProducer(params)
-  , fInputTag{ params().FragmentsLabel() }
+  , fInputTags{ params().FragmentsLabels() }
   , fSurviveExceptions{ params().SurviveExceptions() }
   , fDiagnosticOutput{ params().DiagnosticOutput() }
   , fPacketDump{ params().PacketDump() }
@@ -1041,7 +1049,8 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // consumed data products declaration
   //
-  consumes<artdaq::Fragments>(fInputTag);
+  for (art::InputTag const& inputTag: fInputTags)
+    consumes<artdaq::Fragments>(inputTag);
   if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
   consumes<std::vector<raw::ExternalTrigger>>(fTriggerTag);
   if (contains(params().DataTrees(), treeName(DataTrees::Fragments)))
@@ -1063,7 +1072,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   mf::LogInfo log(fLogCategory);
   log << "Configuration:"
-    << "\n * data from: '" << fInputTag.encode() << "'"
+    << "\n * data from one of " << fInputTags.size() << " data products:";
+  for (art::InputTag const& inputTag: fInputTags)
+    log << " '" << inputTag.encode() << "'";
+  log
     << "\n * boards with setup: " << fBoardSetup.size();
   if (fPMTconfigTag)
     log << "\n * PMT configuration from '" << fPMTconfigTag->encode() << "'";
@@ -1161,7 +1173,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   
   try { // catch-all
-    auto const& fragments = event.getByLabel<artdaq::Fragments>(fInputTag);
+    auto const& fragments = readInputFragments(event);
     
     for (artdaq::Fragment const& fragment: fragments) {
       
@@ -1219,6 +1231,47 @@ void icarus::DaqDecoderICARUSPMT::endJob() {
   }
   
 } // icarus::DaqDecoderICARUSPMT::endJob()
+
+
+//------------------------------------------------------------------------------
+artdaq::Fragments const& icarus::DaqDecoderICARUSPMT::readInputFragments
+  (art::Event const& event) const
+{
+  art::Handle<artdaq::Fragments> handle;
+  art::InputTag selectedInputTag; // empty
+  for (art::InputTag const& inputTag: fInputTags) {
+    
+    mf::LogTrace(fLogCategory)
+      << "DaqDecoderICARUSPMT trying data product: '" << inputTag.encode()
+      << "'";
+    
+    art::Handle<artdaq::Fragments> thisHandle;
+    if (!event.getByLabel<artdaq::Fragments>(inputTag, thisHandle)) continue;
+    if (!thisHandle.isValid() || thisHandle->empty()) continue;
+    
+    mf::LogTrace(fLogCategory)
+      << "  => data product: '" << inputTag.encode() << "' is present and has "
+      << thisHandle->size() << " entries";
+    
+    if (!selectedInputTag.empty()) {
+      throw cet::exception("DaqDecoderICARUSPMT")
+        << "Found multiple suitable input candidates: '"
+        << inputTag.encode() << "' and '" << selectedInputTag << "'\n";
+    }
+    selectedInputTag = inputTag;
+    handle = thisHandle;
+  } // for
+  
+  if (!handle.isValid()) {
+    cet::exception e { "DaqDecoderICARUSPMT" };
+    e << "No suitable input data product found among:";
+    for (art::InputTag const& inputTag: fInputTags)
+      e << " '" << inputTag.encode() << "'";
+    throw e << "\n";
+  }
+  
+  return *handle;
+} // icarus::DaqDecoderICARUSPMT::readInputFragments()
 
 
 //------------------------------------------------------------------------------
