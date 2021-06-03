@@ -184,8 +184,8 @@ def findFirstCycle(files, stream):
     elif not wrapped and info.dataLogger < firstLogger: wrapped = True
     
     firstPassFiles.append(info)
-    logging.debug("Added cycle %d logger %d to first cycle list",
-      info.pass_, info.dataLogger)
+    logging.debug("Added cycle %d logger %d stream %s to first cycle list",
+      info.pass_, info.dataLogger, info.stream)
   # for
   return firstPassFiles
 # findFirstCycle()
