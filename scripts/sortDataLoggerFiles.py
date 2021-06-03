@@ -11,6 +11,9 @@
 #   first public version
 # 20210518 (petrillo@slac.fnal.gov) [1.1]
 #   added options for duplicate events
+# 20210602 (petrillo@slac.fnal.gov) [1.2]
+#   added optional stream name to the file name pattern;
+#   fixed a bug where first logger option value would be ignored
 #
 
 import sys, os
@@ -42,7 +45,7 @@ for duplication altogether.
 
 __author__ = 'Gianluca Petrillo (petrillo@slac.stanford.edu)'
 __date__ = 'February 26, 2021'
-__version__ = '1.1'
+__version__ = '1.2'
 
 
 class CycleCompareClass:
@@ -65,7 +68,9 @@ class FileInfoClass:
   POSIXprotocolHead = '/'
   POSIXprotocolDir = 'pnfs'
   
-  Pattern = re.compile(r"data_dl(\d+)_run(\d+)_(\d+)_(.*)\.root")
+  # pattern parameters:   data logger stream stream name run  pass  filler (timestamp)
+  #                              <1>  <2>    <3>         <4>   <5>  <6>
+  Pattern = re.compile(r"data_dl(\d+)(_fstrm([^_]*))?_run(\d+)_(\d+)_(.*)\.root")
   POSIXPattern = re.compile(
     POSIXprotocolHead.replace('.', r'\.')
     + POSIXprotocolDir.replace('.', r'\.')
@@ -94,7 +99,10 @@ class FileInfoClass:
     self.protocolAndDir, self.name = os.path.split(self.path)
     match = FileInfoClass.Pattern.match(self.name)
     self.is_file = match is not None
-    if self.is_file: self.dataLogger, self.run, self.pass_ = map(int, match.group(1, 2, 3))
+    if self.is_file:
+      # see Pattern above:
+      self.dataLogger, self.run, self.pass_ = map(int, match.group(1, 4, 5))
+      self.stream = match.group(3)
   # __init__()
   
   def __lt__(self, other):
@@ -109,8 +117,13 @@ class FileInfoClass:
     if self.pass_ < other.pass_: return True
     if self.pass_ > other.pass_: return False
     
-    return \
-      FileInfoClass._DataLoggerSorter.less(self.dataLogger, other.dataLogger)
+    if self.dataLogger != other.dataLogger:
+      return \
+        FileInfoClass._DataLoggerSorter.less(self.dataLogger, other.dataLogger)
+    
+    assert (self.stream is None) == (other.stream is None)
+    return False if self.stream is None else self.stream < other.stream
+    
   # __lt__()
   
   def pathToXRootD(self) -> "stored file path in XRootD format":
@@ -158,11 +171,12 @@ class MinimumAccumulator:
 # class MinimumAccumulator
 
 
-def findFirstCycle(files):
+def findFirstCycle(files, stream):
   firstLogger = None
   firstPassFiles = []
   wrapped = False
-  for info in fileInfo:
+  for info in files:
+    if info.stream != stream: continue
     if firstLogger == info.dataLogger: break # cycle completed
     if wrapped and info.dataLogger > firstLogger: break # cycle completed
     
@@ -170,8 +184,8 @@ def findFirstCycle(files):
     elif not wrapped and info.dataLogger < firstLogger: wrapped = True
     
     firstPassFiles.append(info)
-    logging.debug("Added cycle %d logger %d to first cycle list",
-      info.pass_, info.dataLogger)
+    logging.debug("Added cycle %d logger %d stream %s to first cycle list",
+      info.pass_, info.dataLogger, info.stream)
   # for
   return firstPassFiles
 # findFirstCycle()
@@ -191,7 +205,10 @@ def extractFirstEvent(filePath):
     raise RuntimeError \
       ("Failed to open '%s' for event number extraction." % filePath)
   #
-  firstEvent = next(iter(srcFile.Events)) # go PyROOT
+  try: firstEvent = next(iter(srcFile.Events)) # go PyROOT
+  except StopIteration:
+    logging.debug("File '%s' appears to contain no events.", filePath)
+    return None
   firstEventNumber = firstEvent.EventAuxiliary.event() # keep going PyROOT
   
   logging.debug("First event from '%s': %d", filePath, firstEventNumber)
@@ -200,11 +217,22 @@ def extractFirstEvent(filePath):
 
 
 def detectFirstLogger(fileInfo):
+  # in the end, we don't need a stream-aware algorithm to determine which
+  # data logger received the first event, as long as we have all relevant
+  # streams represented
   lowestEvent = MinimumAccumulator()
-  for info in fileInfo:
-    firstEvent = extractFirstEvent(info.pathToXRootD())
-    lowestEvent.add(info, key=firstEvent)
-  firstLogger = lowestEvent.min().dataLogger
+  for stream, files in fileInfo.items():
+    if not len(files): continue
+    for info in files:
+      firstEvent = extractFirstEvent(info.pathToXRootD())
+      if firstEvent is not None: lowestEvent.add(info, key=firstEvent)
+    # for files
+  # for 
+  try: firstLogger = lowestEvent.min().dataLogger
+  except AttributeError:
+    # this is in general a problem because it implies that we are failing to
+    # correctly parse the list of input files
+    raise RuntimeError("No data found for the first data logger pass.")
   logging.debug("Detected first logger: %d", firstLogger)
   return firstLogger
 # detectFirstLogger()
@@ -214,7 +242,7 @@ def buildFileIndex(
   fileInfo: "list with information from all files",
   ) -> "a dictionary: { key -> list of files }":
   
-  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger )
+  fileKey = lambda info: ( info.run, info.pass_, info.dataLogger, info.stream, )
   index = {}
   for info in fileInfo:
     index.setdefault(fileKey(info), []).append(info)
@@ -308,14 +336,22 @@ if __name__ == "__main__":
     # for line in file
   # for input files
   
+  Streams = list(set( info.stream for info in fileInfo ))
+  logging.debug("%d data files in %d streams: %s",
+    len(fileInfo), len(Streams),
+    ", ".join(stream if stream else "<none>" for stream in Streams)
+    )
+  
   if fileInfo and (args.firstlogger is None):
     # uses internal FileInfoClass ordering (firstLogger not set: any will do)
     fileInfo.sort()
-    firstPassFiles = findFirstCycle(fileInfo)
+    firstPassFiles = dict( ( stream, findFirstCycle(fileInfo, stream) )
+      for stream in Streams )
     assert firstPassFiles
     firstLogger = detectFirstLogger(firstPassFiles)
-  else: firstLogger = args.firstlogger if args.firstlogger is None else 4
+  else: firstLogger = args.firstlogger if args.firstlogger is not None else 4
   
+  print(f"{firstLogger=}")
   FileInfoClass.setFirstDataLogger(firstLogger)
   
   fileInfo.sort() # uses internal FileInfoClass ordering
@@ -337,7 +373,9 @@ if __name__ == "__main__":
         if duplicateFiles is not None: duplicateFiles.extend(fileList[1:])
         if printDuplicates:
           firstSource = mainInfo.source[0]
-          msg = f"Run {mainInfo.run} cycle {mainInfo.pass_} data logger {mainInfo.dataLogger} with {len(fileList) - 1} duplicates of"
+          msg = f"Run {mainInfo.run} cycle {mainInfo.pass_} data logger {mainInfo.dataLogger}"
+          if mainInfo.stream: msg += f" stream {mainInfo.stream}"
+          msg += f" with {len(fileList) - 1} duplicates of"
           
           if len(sources) > 1: msg += f" {sources[mainInfo.source[0]]}"
           if mainInfo.source[1] is not None: msg += f" line {mainInfo.source[1]}"

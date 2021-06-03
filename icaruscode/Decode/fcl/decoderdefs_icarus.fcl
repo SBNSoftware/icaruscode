@@ -41,7 +41,7 @@ decodeTPCROI: {
 
 decodePMT: {
                     module_type:        DaqDecoderICARUSPMT
-                    FragmentsLabel:     "daq:ContainerCAENV1730"
+                    FragmentsLabels:  [ "daq:CAENV1730", "daq:ContainerCAENV1730" ]
                     PMTconfigTag:       @nil # must override
                     TriggerTag:         @nil # must override
                     BoardSetup:         @local::icarus_V1730_setup
