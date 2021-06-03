@@ -8,9 +8,9 @@ process_name: stage0
 
 ## Define the paths we'll execute depending on data
 #physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
-physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT_BNB,  @sequence::icarus_stage0_multiTPC ]
-physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT_NuMI, @sequence::icarus_stage0_multiTPC ]
-physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT,      @sequence::icarus_stage0_multiTPC ]
+physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT, @sequence::icarus_stage0_multiTPC ]
+physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT, @sequence::icarus_stage0_multiTPC ]
+physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT, @sequence::icarus_stage0_multiTPC ]
 
 ## boiler plate...
 physics.trigger_paths: [ pathBNB, pathNUMI, pathUnknown ]
@@ -31,8 +31,8 @@ outputs.outNUMI.outputCommands:    ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_d
 outputs.outUnknown.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration
-physics.producers.daqPMT.FragmentsLabel:         "daq:CAENV1730"   # expect single window readout
-physics.producers.daqPMT.RequireBoardConfig:     false
+physics.producers.daqPMT.FragmentsLabel:         "daq:ContainerCAENV1730"   # expect multiple window readout
+#physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.daqTPC.FragmentsLabelVec:      ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
