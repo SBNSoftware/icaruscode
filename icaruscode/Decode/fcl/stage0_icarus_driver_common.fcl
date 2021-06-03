@@ -40,9 +40,10 @@ physics:
 
  #reco sequence and trigger_paths to be defined elsewhere
 
- streamBNB:  [ outBNB ]
- streamNUMI: [ outNUMI ]
- end_paths:  [streamBNB]
+ streamBNB:     [ outBNB ]
+ streamNUMI:    [ outNUMI ]
+ streamUnknown: [ outUnknown ]
+ end_paths:     [streamBNB]
 
 }
 
@@ -59,6 +60,13 @@ outputs:
    saveMemoryObjectThreshold: 0
  }
  outNUMI:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+ outUnknown:
  {
    module_type: RootOutput
    dataTier: "reconstructed"

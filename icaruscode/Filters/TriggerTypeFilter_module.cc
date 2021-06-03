@@ -45,8 +45,9 @@ filter::TriggerTypeFilter::TriggerTypeFilter(fhicl::ParameterSet const &pset)
 
     std::cout << "****> Initializing trigger type " << fTriggerType << std::endl;
 
-    if (fTriggerType == "BNB")  fTriggerBits = value(sbn::triggerSource::BNB);
-    if (fTriggerType == "NuMI") fTriggerBits = value(sbn::triggerSource::NuMI);
+    if (fTriggerType == "BNB")     fTriggerBits = value(sbn::triggerSource::BNB);
+    if (fTriggerType == "NuMI")    fTriggerBits = value(sbn::triggerSource::NuMI);
+    if (fTriggerType == "Unknown") fTriggerBits = value(sbn::triggerSource::Unknown);
 
     return;
 }

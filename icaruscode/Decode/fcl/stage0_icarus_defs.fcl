@@ -98,15 +98,20 @@ icarus_stage0_filters:
                       WindowEndTime:        9.8 
                     }
 
-   triggerfilterBNB:   {  module_type:        "TriggerTypeFilter"
-                          TriggerDataLabel:   "daqTrigger"
-                          TriggerType:        "BNB"
-                       }
+   triggerfilterBNB:      {  module_type:        "TriggerTypeFilter"
+                             TriggerDataLabel:   "daqTrigger"
+                             TriggerType:        "BNB"
+                          }
 
-   triggerfilterNuMI:  {  module_type:        "TriggerTypeFilter"
-                          TriggerDataLabel:   "daqTrigger"
-                          TriggerType:        "NuMI"
-                       }
+   triggerfilterNuMI:     {  module_type:        "TriggerTypeFilter"
+                             TriggerDataLabel:   "daqTrigger"
+                             TriggerType:        "NuMI"
+                          }
+
+   triggerfilterUnknown:  {  module_type:        "TriggerTypeFilter"
+                             TriggerDataLabel:   "daqTrigger"
+                             TriggerType:        "Unknown"
+                          }
 }
 
 
@@ -118,6 +123,10 @@ icarus_stage0_trigger_BNB:         [ daqTrigger,
 
 icarus_stage0_trigger_NuMI:        [ daqTrigger,
                                      triggerfilterNuMI 
+                                   ]
+
+icarus_stage0_trigger_Unknown:     [ daqTrigger,
+                                     triggerfilterUnknown
                                    ]
 
 icarus_stage0_single_TPC:          [ daqTPC,
@@ -142,7 +151,7 @@ icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
                                      gaushitTPCWE
                                    ]
 
-icarus_stage0_pmt:                 [ daqTrigger,
+icarus_stage0_PMT:                 [ daqTrigger,
                                      pmtconfig,
                                      daqPMT,
                                      ophit,
@@ -150,15 +159,15 @@ icarus_stage0_pmt:                 [ daqTrigger,
                                      opflashCryoW
                                    ]
 
-icarus_stage0_pmt_BNB:             [ @sequence::icarus_stage0_pmt,
+icarus_stage0_PMT_BNB:             [ @sequence::icarus_stage0_PMT,
                                      flashfilterBNB
                                    ]
 
-icarus_stage0_pmt_NuMI:            [ @sequence::icarus_stage0_pmt,
+icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
                                      flashfilterNuMI
                                    ]
 
-icarus_stage0_single:              [ @sequence::icarus_stage0_pmt,
+icarus_stage0_single:              [ @sequence::icarus_stage0_PMT,
                                      flashfilterBNB,
                                      @sequence::icarus_stage0_single_TPC
                                    ]
