@@ -29,7 +29,7 @@ icarus_recowireroi:
 icarus_decon1droi:
 {
     module_type:                "Decon1DROI"
-    DigitModuleLabel:           "daq"
+    RawDigitLabelVec:         [ "daq" ]
     NoiseSource:                3
     SaveWireWF:                 0
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered

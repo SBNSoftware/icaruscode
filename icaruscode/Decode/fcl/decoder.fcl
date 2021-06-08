@@ -56,7 +56,7 @@ physics.producers.daqTPC.DecoderTool.FragmentIDVec:                             
 #physics.producers.daqTPC.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
 
 # Setup for the 1D deconvolution
-physics.producers.decon1droi.DigitModuleLabel:                                      "daqTPC"
+physics.producers.decon1droi.RawDigitLabelVec:                                    [ "daqTPC" ]
 
 physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.NumSigma:          4.0
 physics.producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0.roiLeadTrailPad:  [30,30]

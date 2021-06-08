@@ -525,13 +525,13 @@ icarus_reco_producers.rawDigitFilterTPC3.FFTNoise:                              
 icarus_reco_producers.rawDigitFilterTPC3.FFTAlg.FillHistograms:                                false
 
 ### Definitions for a single instance of the deconvolution
-icarus_reco_producers.decon1droi.DigitModuleLabel:                                             "rawdigitfilter"
+icarus_reco_producers.decon1droi.RawDigitLabelVec:                                             [ "rawdigitfilter" ]
 
 ### Definitions for instances by TPC
-icarus_reco_producers.decon1DroiTPC0.DigitModuleLabel:                                         "rawDigitFilterTPC0"
-icarus_reco_producers.decon1DroiTPC1.DigitModuleLabel:                                         "rawDigitFilterTPC1"
-icarus_reco_producers.decon1DroiTPC2.DigitModuleLabel:                                         "rawDigitFilterTPC2"
-icarus_reco_producers.decon1DroiTPC3.DigitModuleLabel:                                         "rawDigitFilterTPC3"
+icarus_reco_producers.decon1DroiTPC0.RawDigitLabelVec:                                         [ "rawDigitFilterTPC0" ]
+icarus_reco_producers.decon1DroiTPC1.RawDigitLabelVec:                                         [ "rawDigitFilterTPC1" ]
+icarus_reco_producers.decon1DroiTPC2.RawDigitLabelVec:                                         [ "rawDigitFilterTPC2" ]
+icarus_reco_producers.decon1DroiTPC3.RawDigitLabelVec:                                         [ "rawDigitFilterTPC3" ]
 
 icarus_reco_producers.recowireraw.DigitModuleLabel:                                            "rawdigitfilter"
 

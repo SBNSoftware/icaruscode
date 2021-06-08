@@ -51,7 +51,7 @@ physics.producers.daq.DecoderTool.FragmentIDVec:                                
 #physics.producers.daq.DecoderTool.DiagnosticOutput:                             true  # This turns on lots of diagnostic messages... LOTS
 
 # Setup for the 1D deconvolution
-physics.producers.decon1droi.DigitModuleLabel:                                  "daq"
+physics.producers.decon1droi.RawDigitLabelVec:                                [ "daq" ]
 
 outputs: {
   rootout: {
