@@ -155,7 +155,7 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<int>("TAIOffset", 2);
+    fOffset = pset.get<int>("TAIOffset", 2'000'000'000);
     return;
   }
   
