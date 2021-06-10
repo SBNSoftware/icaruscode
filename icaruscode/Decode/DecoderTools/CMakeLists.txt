@@ -24,6 +24,7 @@ art_make( SUBDIRS details
                         icarus_signal_processing_Filters
                         icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                         icaruscode_Decode_DecoderTools
+                        icaruscode_Decode_DecoderTools_Dumpers
                         icaruscode_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
