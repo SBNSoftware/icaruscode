@@ -4,6 +4,7 @@ art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
+                        DumpArtDAQfragments_module.cc
                         DaqDecoderICARUSPMT_module.cc
           MODULE_LIBRARIES
                         icarus_signal_processing
@@ -62,6 +63,14 @@ simple_plugin(PMTconfigurationExtraction module
 
 simple_plugin(DumpPMTconfiguration module
   sbnobj_Common_PMT_Data
+  ${MF_MESSAGELOGGER}
+  fhiclcpp
+  cetlib_except
+  )
+
+simple_plugin(DumpArtDAQfragments module
+  icaruscode_Decode_DecoderTools_Dumpers
+  artdaq-core_Data
   ${MF_MESSAGELOGGER}
   fhiclcpp
   cetlib_except
