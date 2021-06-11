@@ -421,7 +421,7 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     // clearing is cleansing
     crtChannelIDToHWtoSimMacAddressPairMap.clear();
     // Recover the information from the database on the mapping
-    const std::string  dataType("pmt_placements");
+    const std::string  dataType("feb_channels");
     
     // Recover the data from the database
     int error = GetDataset(dataType,buildCRTChannelIDToHWtoSimMacAddressPairMap_callback,&crtChannelIDToHWtoSimMacAddressPairMap);

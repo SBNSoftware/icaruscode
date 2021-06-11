@@ -56,6 +56,7 @@
 // CRT data products
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "sbnobj/Common/CRT/CRTHit.hh"
+#include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
 using std::string;
 using std::vector;
@@ -68,12 +69,12 @@ namespace {
   //uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo); 
   //char ModToAuxDetType(geo::AuxDetGeo const& adgeo);
   //int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
-  uint32_t MacToADReg(uint32_t mac);
+    uint32_t MacToADReg(uint32_t mac);
   char MacToType(uint32_t mac);
   uint32_t MacToTypeCode(uint32_t mac);
-  //std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid);
-  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan);
-  int ChannelToAuxDetSensitiveID(int mac, int chan);
+  //  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid);
+   int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan);
+   int ChannelToAuxDetSensitiveID(int mac, int chan);
   int RegToTypeCode(int reg);
 
 } // local namespace
@@ -200,12 +201,15 @@ namespace crt {
     int32_t    fT1Hit; ///< hit time w.r.t. PPS
     //double    fT0CorrHit;
     //double    fT1CorrHit;
+    //string ftagger;
     int       fHitReg; ///< region code of CRT hit
     int       fHitSubSys;
     int       fNHit; ///< number of CRT hits for this event
     int       fHitStrip;
     int       fHitMod;
-
+    int       fNHitFeb;
+    float     fHitTotPe;
+    /*
     TH1F* fModMultHistC;   ///< true N C-modules hit / muon track
     TH1F* fModMultHistM;   ///< true N M-modules hit / muon track
     TH1F* fModMultHistD;   ///< true N D-modules hit / muon track
@@ -221,13 +225,13 @@ namespace crt {
     TH1F* fFEBMultHistC;   //N FEBs w/trigger / muon track
     TH1F* fFEBMultHistM;
     TH1F* fFEBMultHistD;
-
+    */
     /// @}
     
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     int                      fTriggerOffset;     ///< (units of ticks) time of expected neutrino event
-    
+    //    CRTCommonUtils* fCrtutils;  
   }; // class CRTDataAnalysis
 
 
@@ -249,6 +253,7 @@ namespace crt {
     : EDAnalyzer(config)
     , fCRTHitProducerLabel(config().CRTHitLabel())
     , fCRTDAQProducerLabel(config().CRTDAQLabel())
+      //    , fCrtutils(new CRTCommonUtils())
   {
     // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -305,7 +310,8 @@ namespace crt {
     //fStripMultHistC   = tfs->make<TH1F>("StripMultC",";no. strips hit / module / #mu;",64,0,64);
     //fStripMultHistM   = tfs->make<TH1F>("StripMultM",";no. strips hit / module / #mu;",64,0,64);
     //fStripMultHistD   = tfs->make<TH1F>("StripMultD",";no. strips hit / module / #mu;",64,0,64);
-    fModMultHistC     = tfs->make<TH1F>("ModMultC",";no. modules hit / #mu;",10,0,10);
+    /*   
+	 fModMultHistC     = tfs->make<TH1F>("ModMultC",";no. modules hit / #mu;",10,0,10);
     fModMultHistM     = tfs->make<TH1F>("ModMultM",";no. modules hit / #mu;",10,0,10);
     fModMultHistD     = tfs->make<TH1F>("ModMultD",";no. modules hit / #mu;",10,0,10);
 
@@ -315,7 +321,7 @@ namespace crt {
     fFEBMultHistC     =tfs->make<TH1F>("FEBMultC",";no. FEB triggers / #mu;",64,0,64);
     fFEBMultHistM     =tfs->make<TH1F>("FEBMultD",";no. FEB triggers / #mu;",64,0,64);
     fFEBMultHistD     =tfs->make<TH1F>("FEBMultM",";no. FEB triggers / #mu;",64,0,64);
-
+    */
     // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
@@ -339,10 +345,12 @@ namespace crt {
     fHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
     fHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
+    //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
     fHitNtuple->Branch("modID",       &fHitMod,      "modID/I");
     fHitNtuple->Branch("stripID",     &fHitStrip,    "stripID/I");
-
+    fHitNtuple->Branch("nFeb",        &fNHitFeb,     "nFeb/I");
+    fHitNtuple->Branch("totPe",       &fHitTotPe,    "totPe/F");
 }
    
   void CRTDataAnalysis::beginRun(const art::Run& /*run*/)
@@ -370,8 +378,10 @@ namespace crt {
         fDetEvent       = fEvent;
         fMac5           = febdat.fMac5;
         fEntry          = febdat.fEntry;
+	//        fFEBReg         = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
         fFEBReg         = MacToADReg(fMac5);
         fNChan = 0;
+	//        fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
         fDetSubSys = MacToTypeCode(fMac5);
         fT0 = febdat.fTs0;
         fT1 = febdat.fTs1;
@@ -417,10 +427,16 @@ namespace crt {
             fZErrHit = hit.z_err;
             fT0Hit   = hit.ts0_ns;
             fT1Hit   = hit.ts1_ns;
-
+	    fNHitFeb  = hit.feb_id.size();
+            fHitTotPe = hit.peshit;
+	    //	    ftagger  = hit.tagger;
             int mactmp = hit.feb_id[0];
-            fHitReg  = MacToADReg(mactmp);
-            fHitSubSys = RegToTypeCode(fHitReg);
+	    fHitReg  = MacToADReg(mactmp);
+	    fHitSubSys = RegToTypeCode(fHitReg);
+
+	    //	    fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+            //fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+
 
             auto ittmp = hit.pesmap.find(mactmp);
             if (ittmp==hit.pesmap.end()) {
@@ -432,8 +448,11 @@ namespace crt {
             }
             int chantmp = (*ittmp).second[0].first;
 
-            fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
+	    fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
             fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
+
+	    //fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+	    //fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 
             fHitNtuple->Fill();
         }//for CRT Hits
@@ -454,7 +473,7 @@ namespace crt {
 // Back to our local namespace.
 namespace {
 
-  /*char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
+  /* char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
     size_t nstrips = adgeo.NSensitiveVolume();
     if (nstrips==16) return 'c'; 
     if (nstrips==20) return 'm';
@@ -468,8 +487,8 @@ namespace {
     if (nstrips==20) return 1; //'m'
     if (nstrips==64) return 2; //'d'
     return UINT32_MAX;
-  }*/
-
+  }
+*/
   /*int GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
   {
     char type = ModToAuxDetType(adgeo);
@@ -509,28 +528,28 @@ namespace {
     if(reg == "Bottom")     return 50;
 
     return INT_MAX;
-  }*/
-
+  }
+  */
   uint32_t MacToADReg(uint32_t mac) {
 
-      if(mac>=107 && mac<=190) return 30; //top
-      if(mac>=191 && mac<=204) return 31; //rim west
-      if(mac>=205 && mac<=218) return 32; //rim east
-      if(mac>=219 && mac<=224) return 33; //rim south
-      if(mac>=225 && mac<=230) return 34; //rim north
+      if(mac>=108 && mac<=191) return 30; //top
+      if(mac>=192 && mac<=205) return 31; //rim west
+      if(mac>=206 && mac<=219) return 32; //rim east
+      if(mac>=220 && mac<=225) return 33; //rim south
+      if(mac>=226 && mac<=231) return 34; //rim north
       if(            mac<=12 ) return 40; //west side, south stack
       if(mac>=13  && mac<=24 ) return 41; //west side, center stack
       if(mac>=25  && mac<=36 ) return 42; //west side, north stack
       if(mac>=37  && mac<=48 ) return 43; //east side, south stack
       if(mac>=49  && mac<=60 ) return 44; //east side, center stack
       if(mac>=61  && mac<=72 ) return 45; //east side, north stack
-      if(mac>=73  && mac<=84 ) return 46; //south
-      if(mac>=85  && mac<=92 ) return 47; //north
-      if(mac>=93 && mac<=106) return 50; //bottom
+      if(mac>=73  && mac<=85 ) return 46; //south
+      if(mac>=86  && mac<=93 ) return 47; //north
+      if(mac>=94  && mac<=107) return 50; //bottom
 
       return 0;
   }
-
+  
   char MacToType(uint32_t mac) {
 
       uint32_t reg = MacToADReg(mac);
@@ -558,7 +577,7 @@ namespace {
 
       return UINT32_MAX;//'e';
   }
-
+  
   //for C- and D-modules, mac address is same as AD ID
   //three M-modules / FEB, each modules readout at both ends
   //  numbering convention is module from FEB i 
@@ -574,8 +593,8 @@ namespace {
               return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[0].first);
       }
       return std::make_pair(UINT32_MAX,UINT32_MAX);
-  }*/
-
+  }
+  */
   int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan){
       char type = MacToType(mac);
       int pos=1;
@@ -601,7 +620,7 @@ namespace {
 
     return INT_MAX;
   }
-
+  
   int RegToTypeCode(int reg){
       if(reg>=30&&reg<40)
           return 0;
@@ -612,5 +631,5 @@ namespace {
       std::cout << "ERROR in RegToTypeCode: unknown reg code!" << std::endl;
       return -1;
   }
-
+  //*/
 }//local namespace

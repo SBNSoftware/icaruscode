@@ -118,8 +118,8 @@ def copyTable(postGres, dbCurs, dbName, table, columns):
                     fieldEntry = rowList[idx].upper()
                 insertString += "\'" + fieldEntry + "\'"
             else:
-             #insertString +=  "\'" +rowList[idx]+ "\'"
-                insertString += rowList[idx]
+                insertString +=  "\'" +rowList[idx]+ "\'"
+                #insertString += rowList[idx]
         insertString += ")"
         if table == "daq_channels":
             print("idx:",rowIdx,"  -->",insertString)
@@ -155,7 +155,7 @@ copyTable(dataQuery, dbCurs, dbName, flangesTable, flangesColumns)
 
 copyTable(dataQuery, dbCurs, dbName, pmtPlacementTable, pmtPlacementColumns)
 
-#copyTable(dataQuery, dbCurs, dbName, crtfebchannelsTable, crtFEBChannelsColumns)
+copyTable(dataQuery, dbCurs, dbName, crtfebchannelsTable, crtFEBChannelsColumns)
 
 ###################################################################################
 
