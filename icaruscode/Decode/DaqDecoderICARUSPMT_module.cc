@@ -1803,14 +1803,15 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
     
     mf::LogVerbatim{ fLogCategory }
       << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
-        << ", nChannelsPerBoard: " << nChannelsPerBoard
-        << ", nSamplesPerChannel: " << nSamplesPerChannel
+        << ", size: " << ev_size_quad_bytes << " (DAQ)"
+        << ", data size: " << data_size_double_bytes << " (samples)"
+      << "\n    "
+        << "  channels/board: " << nChannelsPerBoard
         << ", enabled: " << icarus::ns::util::bin(enabledChannels)
-      << "\n      size: " << ev_size_quad_bytes
-        << ", data size: " << data_size_double_bytes
         << ", samples/channel: " << nSamplesPerChannel
+      << "\n    "
+        << "  event counter: " << eventCounter
         << ", trigger time tag: " << TTT
-        << ", event counter: " << eventCounter
         << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
           << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
       ;
