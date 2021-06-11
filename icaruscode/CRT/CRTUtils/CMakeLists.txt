@@ -1,5 +1,3 @@
-cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-
 art_make(    LIBRARY_NAME icaruscode_CRTUtils
              LIB_LIBRARIES larcorealg_Geometry
                            larcore_Geometry_Geometry_service
