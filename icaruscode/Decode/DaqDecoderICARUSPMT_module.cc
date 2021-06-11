@@ -129,9 +129,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     which have a setup (`BoardSetup`) are required to be included in the DAQ
  *     configuration of the input file, or an exception is thrown; if not set,
  *     missing readout boards are unnoticed.
- * * `TriggerTag` (data product tag, mandatory): tag for the information
- *     (currently required to be a collection of `raw::ExternalTrigger`,
- *     in the future it should become `raw::Trigger`);
+ * * `TriggerTag` (data product tag): tag for the information (currently
+ *     required to be a collection of `raw::ExternalTrigger`, in the future it
+ *     should become `raw::Trigger`); if not specified, the _art_ event
+ *     timestamp will be used as trigger time (*not* recommended).
  * * `TTTresetEverySecond` (optional): if set, the decoder will take advantage
  *     of the assumption that the Trigger Time Tag of all PMT readout boards is
  *     synchronised with the global trigger time and reset at every change of
@@ -464,7 +465,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       Comment("list of the setup settings for all relevant V1730 boards")
       };
     
-    fhicl::Atom<art::InputTag> TriggerTag {
+    fhicl::OptionalAtom<art::InputTag> TriggerTag {
       Name("TriggerTag"),
       Comment("input tag for the global trigger object (raw::ExternalTrigger)")
       };
@@ -551,7 +552,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Input tag of the PMT configuration.
   std::optional<art::InputTag> const fPMTconfigTag;
   
-  art::InputTag const fTriggerTag; ///< Input tag of the global trigger.
+  /// Input tag of the global trigger.
+  std::optional<art::InputTag> const fTriggerTag;
   
   bool const fTTTresetEverySecond; ///< Whether V1730 TTT is reset every second.
   
@@ -1033,10 +1035,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   , fRequireKnownBoards{ params().RequireKnownBoards() }
   , fRequireBoardConfig{ params().RequireBoardConfig() }
   , fPMTconfigTag{ ::util::fhicl::getOptionalValue(params().PMTconfigTag) }
-  , fTriggerTag{ params().TriggerTag() }
+  , fTriggerTag{ ::util::fhicl::getOptionalValue(params().TriggerTag) }
   , fTTTresetEverySecond{
     ::util::fhicl::getOptionalValue(params().TTTresetEverySecond)
-      .value_or(!fTriggerTag.empty())
+      .value_or(fTriggerTag.has_value())
     }
   , fBoardSetup{ params().BoardSetup() }
   , fLogCategory{ params().LogCategory() }
@@ -1052,9 +1054,11 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   for (art::InputTag const& inputTag: fInputTags)
     consumes<artdaq::Fragments>(inputTag);
   if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
-  consumes<std::vector<raw::ExternalTrigger>>(fTriggerTag);
-  if (contains(params().DataTrees(), treeName(DataTrees::Fragments)))
-    consumes<std::vector<raw::Trigger>>(fTriggerTag);
+  if (fTriggerTag) {
+    consumes<std::vector<raw::ExternalTrigger>>(*fTriggerTag);
+    if (contains(params().DataTrees(), treeName(DataTrees::Fragments)))
+      consumes<std::vector<raw::Trigger>>(*fTriggerTag);
+  } // if trigger
   
   //
   // produced data products declaration
@@ -1081,6 +1085,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
     log << "\n * PMT configuration from '" << fPMTconfigTag->encode() << "'";
   else 
     log << "\n * PMT configuration not used (and some corrections will be skipped)";
+  if (fTriggerTag)
+    log << "\n * trigger information from: '" << fTriggerTag->encode() << '\'';
+  else
+    log << "\n * trigger time from event timestamp [fallback]";
   if (fRequireKnownBoards) {
     log << "\n * all readout boards in input must be known (from `"
       << params().BoardSetup.name() << "` or `"
@@ -1136,9 +1144,12 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   TriggerInfo_t const triggerInfo = fetchTriggerTimestamp(event);
   {
     mf::LogDebug log { fLogCategory };
-    log << "Trigger time ('" << fTriggerTag.encode() << "'): "
-      << triggerInfo.time << " s, bits: "
-      << icarus::ns::util::bin(triggerInfo.bits);
+    if (fTriggerTag)
+      log << "Trigger time ('" << fTriggerTag->encode() << "'): ";
+    else
+      log << "Trigger from event timestamp: ";
+    log << triggerInfo.time << " s, bits: "
+        << icarus::ns::util::bin(triggerInfo.bits);
     if (triggerInfo.bits) {
       log << " {";
       for (std::string const& name
@@ -1148,7 +1159,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       }
       log << " }";
     } // if
-  }
+  } // local block
   
   //
   // event ID
@@ -1481,25 +1492,30 @@ auto icarus::DaqDecoderICARUSPMT::fetchNeededBoardInfo(
 auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   (art::Event const& event) const -> TriggerInfo_t
 {
+  
+  if (!fTriggerTag)
+    return { SplitTimestamp_t(event.time().value()), 0U };
+  
+  
   auto const& extTriggers
-    = event.getByLabel<std::vector<raw::ExternalTrigger>>(fTriggerTag);
+    = event.getByLabel<std::vector<raw::ExternalTrigger>>(*fTriggerTag);
   if (extTriggers.size() != 1U) {
     // if this is hit, the decoder needs some development to correctly deal
     // with input with no trigger, or more than one
     throw cet::exception("DaqDecoderICARUSPMT")
       << "Found " << extTriggers.size() << " raw::ExternalTrigger from '"
-      << fTriggerTag.encode() << "', can deal only with 1.\n";
+      << fTriggerTag->encode() << "', can deal only with 1.\n";
   }
   raw::ExternalTrigger const& extTrigger = extTriggers.front();
   
   auto const& triggers
-    = event.getByLabel<std::vector<raw::Trigger>>(fTriggerTag);
+    = event.getByLabel<std::vector<raw::Trigger>>(*fTriggerTag);
   if (triggers.size() != 1U) {
     // if this is hit, the decoder needs some development to correctly deal
     // with input with no trigger, or more than one
     throw cet::exception("DaqDecoderICARUSPMT")
       << "Found " << triggers.size() << " raw::Trigger from '"
-      << fTriggerTag.encode() << "', can deal only with 1.\n";
+      << fTriggerTag->encode() << "', can deal only with 1.\n";
   }
   raw::Trigger const& trigger = triggers.front();
   
