@@ -61,6 +61,7 @@
 // C/C++ standard libraries
 #include <memory>
 #include <ostream>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <optional>
@@ -809,6 +810,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     std::uint16_t const* data = nullptr;
   }; // FragmentInfo_t
 
+  using BoardID_t = short int; ///< Type used internally to represent board ID.
+  
   
   /**
    * @brief Create waveforms and fills trees for the specified artDAQ fragment.
@@ -844,6 +847,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Extracts useful information from fragment data.
   FragmentInfo_t extractFragmentInfo
     (artdaq::Fragment const& artdaqFragment) const;
+  
+  /// Extracts the fragment ID (i.e. board ID) from the specified `fragment`.
+  static BoardID_t extractFragmentBoardID(artdaq::Fragment const& fragment);
   
   /// Returns the board information for this fragment.
   NeededBoardInfo_t neededBoardInfo
@@ -1182,15 +1188,30 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   // processing
   //
   
+  std::unordered_map<BoardID_t, unsigned int> boardCounts;
+  bool duplicateBoards = false;
   try { // catch-all
     auto const& fragments = readInputFragments(event);
     
     for (artdaq::Fragment const& fragment: fragments) {
       
+      artdaq::FragmentPtrs const& fragmentCollection
+        = makeFragmentCollection(fragment);
+      
+      if (empty(fragmentCollection)) {
+        mf::LogWarning("DaqDecoderICARUSPMT")
+          << "Found a data fragment (ID=" << extractFragmentBoardID(fragment)
+          << ") containing no data.";
+        continue;
+      } // if no data
+      
+      BoardID_t const boardID
+        = extractFragmentBoardID(*(fragmentCollection.front()));
+      if (++boardCounts[boardID] > 1U) duplicateBoards = true;
+      
       appendTo(
         opDetWaveforms,
-        processBoardFragments
-          (makeFragmentCollection(fragment), triggerInfo)
+        processBoardFragments(fragmentCollection, triggerInfo)
         );
       
     } // for all input fragments
@@ -1210,6 +1231,15 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
     opDetWaveforms.clear();
     ++fNFailures;
   }
+  
+  if (duplicateBoards) {
+    mf::LogWarning log { "DaqDecoderICARUSPMT" };
+    log << "found multiple data product entries for the same board:";
+    for (auto [ boardID, count ]: boardCounts) {
+      if (count < 2U) continue;
+      log << " " << std::hex << boardID << std::dec << " (x" << count << ");";
+    } // for
+  } // if duplicate board fragments
   
   //
   // post-processing
@@ -1763,6 +1793,14 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->tree->Fill();
   
 } // icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree()
+
+
+//------------------------------------------------------------------------------
+auto icarus::DaqDecoderICARUSPMT::extractFragmentBoardID
+  (artdaq::Fragment const& fragment) -> BoardID_t
+{
+  return static_cast<BoardID_t>(fragment.fragmentID());
+} // icarus::DaqDecoderICARUSPMT::extractFragmentBoardID()
 
 
 //------------------------------------------------------------------------------
