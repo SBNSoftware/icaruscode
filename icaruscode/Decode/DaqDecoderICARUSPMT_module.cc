@@ -69,6 +69,7 @@
 
 //------------------------------------------------------------------------------
 using namespace util::quantities::time_literals;
+using detinfo::timescales::electronics_time;
 
 //------------------------------------------------------------------------------
 namespace icarus { class DaqDecoderICARUSPMT; }
@@ -494,8 +495,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   using Parameters = art::EDProducer::Table<Config>;
   
   
-  static constexpr detinfo::timescales::electronics_time NoTimestamp
-    = std::numeric_limits<detinfo::timescales::electronics_time>::min();
+  static constexpr electronics_time NoTimestamp
+    = std::numeric_limits<electronics_time>::min();
   
   
   // --- END ---- FHiCL configuration ------------------------------------------
@@ -582,7 +583,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   nanoseconds const fOpticalTick;
   
   /// Trigger time as reported by `detinfo::DetectorClocks` service.
-  detinfo::timescales::electronics_time const fNominalTriggerTime;
+  electronics_time const fNominalTriggerTime;
   
   // --- END ---- Cached values ------------------------------------------------
   
@@ -721,7 +722,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   TriggerInfo_t fetchTriggerTimestamp(art::Event const& event) const;
   
   /// Returns the timestamp for the waveforms in the specified fragment.
-  detinfo::timescales::electronics_time fragmentWaveformTimestamp(
+  electronics_time fragmentWaveformTimestamp(
     artdaq::Fragment const& artdaqFragment,
     NeededBoardInfo_t const& boardInfo,
     SplitTimestamp_t triggerTime
@@ -734,7 +735,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * same time as the global trigger.
    * Unsurprisingly, this does not work well with multiple PMT windows.
    */
-  detinfo::timescales::electronics_time fragmentWaveformTimestampOnTrigger(
+  electronics_time fragmentWaveformTimestampOnTrigger(
     artdaq::Fragment const& artdaqFragment,
     NeededBoardInfo_t const& boardInfo,
     SplitTimestamp_t triggerTime
@@ -752,7 +753,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * 
    * See `TTTresetEverySecond` configuration option.
    */
-  detinfo::timescales::electronics_time fragmentWaveformTimestampFromTTT(
+  electronics_time fragmentWaveformTimestampFromTTT(
     artdaq::Fragment const& artdaqFragment,
     NeededBoardInfo_t const& boardInfo,
     SplitTimestamp_t triggerTime
@@ -837,10 +838,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
    * (`extractFragmentInfo()`). The timestamp can be obtained with a call to
    * `fragmentWaveformTimestamp()`.
    */
-  std::vector<raw::OpDetWaveform> createFragmentWaveforms(
-    FragmentInfo_t const& fragInfo,
-    detinfo::timescales::electronics_time const timeStamp
-    ) const;
+  std::vector<raw::OpDetWaveform> createFragmentWaveforms
+    (FragmentInfo_t const& fragInfo, electronics_time const timeStamp) const;
   
   /// Extracts useful information from fragment data.
   FragmentInfo_t extractFragmentInfo
@@ -892,7 +891,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   void fillPMTfragmentTree(
     FragmentInfo_t const& fragInfo,
     TriggerInfo_t const& triggerInfo,
-    detinfo::timescales::electronics_time waveformTimestamp
+    electronics_time waveformTimestamp
     );
   
   
@@ -1301,7 +1300,7 @@ icarus::DaqDecoderICARUSPMT::findWaveformsWithNominalTrigger
 
 //------------------------------------------------------------------------------
 bool icarus::DaqDecoderICARUSPMT::containsGlobalTrigger
-  (detinfo::timescales::electronics_time time, std::size_t nTicks) const
+  (electronics_time time, std::size_t nTicks) const
 {
   return (fNominalTriggerTime >= time)
     && (fNominalTriggerTime < time + nTicks * fOpticalTick);
@@ -1312,10 +1311,8 @@ bool icarus::DaqDecoderICARUSPMT::containsGlobalTrigger
 bool icarus::DaqDecoderICARUSPMT::containsGlobalTrigger
   (raw::OpDetWaveform const& waveform) const
 {
-  return containsGlobalTrigger(
-    detinfo::timescales::electronics_time{ waveform.TimeStamp() },
-    waveform.size()
-    );
+  return containsGlobalTrigger
+    (electronics_time{ waveform.TimeStamp() }, waveform.size());
 } // icarus::DaqDecoderICARUSPMT::containsGlobalTrigger(waveform)
 
 
@@ -1746,7 +1743,7 @@ auto icarus::DaqDecoderICARUSPMT::createFragmentWaveforms(
 void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   FragmentInfo_t const& fragInfo,
   TriggerInfo_t const& triggerInfo,
-  detinfo::timescales::electronics_time waveformTimestamp
+  electronics_time waveformTimestamp
 ) {
   
   if (!fTreeFragment) return;
@@ -1869,7 +1866,7 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampOnTrigger(
   artdaq::Fragment const& /* artdaqFragment */,
   NeededBoardInfo_t const& boardInfo,
   SplitTimestamp_t /* triggerTime */
-) const -> detinfo::timescales::electronics_time {
+) const -> electronics_time {
   
   nanoseconds const preTriggerTime = boardInfo.preTriggerTime;
   nanoseconds const PMTtriggerDelay = boardInfo.PMTtriggerDelay;
@@ -1890,7 +1887,7 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT(
   artdaq::Fragment const& artdaqFragment,
   NeededBoardInfo_t const& boardInfo,
   SplitTimestamp_t triggerTime
-) const -> detinfo::timescales::electronics_time {
+) const -> electronics_time {
   
   /*
    * 1. goal is a timestamp in electronics time
@@ -1911,7 +1908,7 @@ auto icarus::DaqDecoderICARUSPMT::fragmentWaveformTimestampFromTTT(
   //
   // 2. global trigger time
   //
-  detinfo::timescales::electronics_time waveformTime = fNominalTriggerTime;
+  electronics_time waveformTime = fNominalTriggerTime;
   
   //
   // 3. PMT readout board trigger relative to global trigger time
