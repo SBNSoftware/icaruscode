@@ -1932,39 +1932,53 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentBoardID
 auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
   (artdaq::Fragment const& artdaqFragment) const -> FragmentInfo_t
 {
+  //
+  // fragment ID, timestamp and data begin
+  //
   artdaq::Fragment::fragment_id_t const fragment_id
     = artdaqFragment.fragmentID();
+  artdaq::Fragment::timestamp_t const fragmentTimestamp
+    = artdaqFragment.timestamp();
+  std::uint16_t const* data_begin = reinterpret_cast<std::uint16_t const*>
+    (artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
 
+  //
+  // event counter, trigger time tag, enabled channels
+  //
   sbndaq::CAENV1730Fragment const fragment { artdaqFragment };
   sbndaq::CAENV1730FragmentMetadata const& metafrag = *(fragment.Metadata());
   sbndaq::CAENV1730EventHeader const& header = fragment.Event()->Header;
-
-  // chDataMap tells where in the buffer each digitizer channel is;
-  // if nowhere, then the answer is a number no smaller than nEnabledChannels
-  std::uint16_t const enabledChannels = header.ChannelMask();
-
-  artdaq::Fragment::timestamp_t const fragmentTimestamp
-    = artdaqFragment.timestamp();
-    
-  unsigned int const TTT =  header.triggerTimeTag;
   
-  std::size_t const nChannelsPerBoard = metafrag.nChannels;
-    
-  std::uint32_t const ev_size_quad_bytes = header.eventSize;
-  constexpr std::uint32_t evt_header_size_quad_bytes
-    = sizeof(sbndaq::CAENV1730EventHeader)/sizeof(std::uint32_t);
-  std::uint32_t const data_size_double_bytes
-    = 2*(ev_size_quad_bytes - evt_header_size_quad_bytes);
-  std::size_t const nSamplesPerChannel
-    = data_size_double_bytes/nChannelsPerBoard;
   unsigned int const eventCounter = header.eventCounter;
   
+  unsigned int const TTT =  header.triggerTimeTag;
+  
+  std::uint16_t const enabledChannels = header.ChannelMask();
+
+  //
+  // samples per channel
+  //
+  // artDAQ size is measured in 4-byte words
+  std::size_t const eventSize = header.eventSize * sizeof(std::uint32_t);
+  
+  constexpr std::size_t headerSize = sizeof(sbndaq::CAENV1730EventHeader);
+  
+  std::size_t const sampleDataSize = eventSize - headerSize;
+  
+  std::size_t const samplesInFragment = sampleDataSize / sizeof(std::uint16_t);
+  
+  std::size_t const nChannelsPerBoard = metafrag.nChannels;
+  std::size_t const nSamplesPerChannel = samplesInFragment / nChannelsPerBoard;
+  
+  //
+  // diagnostics dump
+  //
   if (fDiagnosticOutput) {
     
     mf::LogVerbatim{ fLogCategory }
       << "----> PMT Fragment ID: " << std::hex << fragment_id << std::dec
-        << ", size: " << ev_size_quad_bytes << " (DAQ)"
-        << ", data size: " << data_size_double_bytes << " (samples)"
+        << ", size: " << eventSize << " B"
+        << ", data size: " << samplesInFragment << " samples"
       << "\n    "
         << "  channels/board: " << nChannelsPerBoard
         << ", enabled: " << icarus::ns::util::bin(enabledChannels)
@@ -1975,11 +1989,12 @@ auto icarus::DaqDecoderICARUSPMT::extractFragmentInfo
         << ", time stamp: " << (fragmentTimestamp / 1'000'000'000UL)
           << "." << (fragmentTimestamp % 1'000'000'000UL) << " s"
       ;
-  }
+    
+  } // if diagnostics
 
-  std::uint16_t const* data_begin = reinterpret_cast<std::uint16_t const*>
-    (artdaqFragment.dataBeginBytes() + sizeof(sbndaq::CAENV1730EventHeader));
-
+  //
+  // all done
+  //
   return { // C++20: write the member names explicitly
     fragment_id,
     fragmentTimestamp,
