@@ -1,0 +1,4 @@
+#include "stage0_multiTPC_icarus.fcl"
+
+physics.reco: [ @sequence::icarus_stage0_pmt, @sequence::icarus_stage0_multiTPC_TPC]
+outputs.out1.SelectEvents: @erase
