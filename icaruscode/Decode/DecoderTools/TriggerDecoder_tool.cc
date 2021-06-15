@@ -30,6 +30,9 @@
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 // #include "sbnobj/Common/Trigger/BeamBits.h" // maybe future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h" // dumpFragment()
+#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
+#include "icarusalg/Utilities/BinaryDumpUtils.h" // hexdump() DEBUG
 
 #include <cstdlib>
 #include <iostream>
@@ -127,6 +130,8 @@ namespace daq
     static constexpr nanoseconds BNBgateDuration { 1600. };
     static constexpr nanoseconds NuMIgateDuration { 9500. };
     
+    static std::string_view firstLine(std::string const& s, const char* endl = "\0\n\r");
+    
   };
 
 
@@ -155,7 +160,7 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<int>("TAIOffset", 2);
+    fOffset = pset.get<int>("TAIOffset", 2'000'000'000);
     return;
   }
   
@@ -191,6 +196,26 @@ namespace daq
       if(abs(cross_check) > 1000)
         std::cout << "Loaded artdaq TS and fragment data TS are > 1 ms different! They are " << cross_check << " nanoseconds different!" << std::endl;
       std::cout << delta_gates_bnb << " " << delta_gates_numi << " " << delta_gates_other << std::endl; // nonsensical print statement to avoid error that I don't use these...until we have an object to store them in...    
+      
+      // note that this parsing is independent from the one used above
+      std::string_view const dataLine = firstLine(data);
+      try {
+        auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+        std::cout << "Parsed data (from " << dataLine.size() << " characters): "
+          << parsedData << std::endl;
+      }
+      catch(icarus::details::KeyedCSVparser::Error const& e) {
+        mf::LogError("TriggerDecoder")
+          << "Error parsing " << dataLine.length()
+          << "-char long trigger string:\n==>|" << dataLine
+          << "|<==\nError message: " << e.what() << std::endl;
+        throw;
+      }
+      
+      if (fDebug) { // this grows tiresome quickly when processing many events
+        std::cout << "Full trigger fragment dump:"
+          << sbndaq::dumpFragment(fragment) << std::endl;
+      }
     }
     
     //
@@ -263,6 +288,13 @@ namespace daq
     return;
   }
 
+  std::string_view TriggerDecoder::firstLine
+    (std::string const& s, const char* endl /* = "\0\n\r" */)
+  {
+    return { s.data(), std::min(s.find_first_of(endl), s.size()) };
+  }
+  
+  
   DEFINE_ART_CLASS_TOOL(TriggerDecoder)
 
 }

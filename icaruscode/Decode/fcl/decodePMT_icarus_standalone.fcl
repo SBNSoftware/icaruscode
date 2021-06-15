@@ -1,0 +1,69 @@
+#
+# File:    decodePMT_icarus_standalone.fcl
+# Purpose: PMT readout fragment decoding for studies in ICARUS.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    June 10, 2021
+# 
+# This configuration expects only PMT fragments, and not even all of them:
+# as a consequence many timestamp corrections will be skipped.
+# PMT waveform decoding is performed, extensive debugging messages are
+# included in the `debug.log` log file, and ROOT trees are produced for studies.
+# This configuration, as is, is not meant for production.
+# 
+# 
+# Input
+# ------
+# 
+# * artDAQ fragments from PMT readout boards, named
+#   `daq:ContainerCAENV1730` or `daq:CAENV1730` (not both!)
+# 
+# 
+# Output
+# -------
+# 
+# Only new data products are written in the art/ROOT output file, including:
+# 
+# * `daqPMT` (std::vector<raw::OpDetWaveform>): decoded waveforms,
+#   with our best reconstruction for their time stamps in LArSoft reference
+# 
+# 
+# The `Trees-<InputFile>*.root` file (from `TFileService`) includes ROOT tree
+# `PMTfragments`.
+# 
+# 
+# 
+# Service configuration
+# ----------------------
+# 
+# * `DetectorClocksService` is essential to assign a correct waveform timestamp
+#     * `Geometry` service bundle is required by `DetectorClocksService`
+# * `IICARUSChannelMap` to relate PMT fragment IDs to channels
+# * `TFileService` used to write trees (not needed if all trees are disabled)
+# 
+#
+
+
+# ------------------------------------------------------------------------------
+#include "decodePMT_icarus.fcl"
+
+
+# ------------------------------------------------------------------------------
+physics.decoding: [ daqPMT ]
+
+
+# ------------------------------------------------------------------------------
+
+physics.producers.daqPMT.PMTconfigTag: @erase # required
+physics.producers.daqPMT.TriggerTag:   @erase # required
+
+#
+# customization of PMT decoding
+#
+
+physics.producers.daqPMT.SurviveExceptions:  false
+physics.producers.daqPMT.DiagnosticOutput:    true
+physics.producers.daqPMT.PacketDump:          true
+physics.producers.daqPMT.RequireKnownBoards: false
+physics.producers.daqPMT.RequireBoardConfig: false
+
+# ------------------------------------------------------------------------------
