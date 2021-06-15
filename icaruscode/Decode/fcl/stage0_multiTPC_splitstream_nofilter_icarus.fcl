@@ -31,7 +31,7 @@ outputs.outNUMI.outputCommands:    ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_d
 outputs.outUnknown.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration
-physics.producers.daqPMT.FragmentsLabel:         "daq:ContainerCAENV1730"   # expect multiple window readout
+#physics.producers.daqPMT.FragmentsLabel:         "daq:ContainerCAENV1730"   # expect multiple window readout
 #physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
