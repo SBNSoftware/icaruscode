@@ -116,7 +116,7 @@ dataQuery = DataQuery(queryurl)
 
 print(dataQuery)
 
-dbName             = "icarus_hardware_dev"
+dbName             = "icarus_hardware_prd"
 readoutBoardsTable = "readout_boards"
 daqChannelsTable   = "daq_channels"
 flangesTable       = "flanges"
