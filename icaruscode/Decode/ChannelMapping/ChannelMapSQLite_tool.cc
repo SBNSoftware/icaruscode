@@ -374,7 +374,7 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     unsigned int fragmentID         = std::stol(argv[18]);
     unsigned int digitizerChannelNo = std::stol(argv[9]);
     unsigned int channelID          = std::stol(argv[17]);
-    
+
     // Fill the map
     fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID);
     
@@ -409,7 +409,8 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     unsigned int channelID         = std::stol(argv[10]);
     unsigned int simmacaddress     = std::stol(argv[11]);
     unsigned int hwmacaddress      = std::stol(argv[12]);
-    
+
+        
     // Fill the map
     crtChannelIDToHWtoSimMacAddressPairMap[channelID]=std::make_pair(hwmacaddress, simmacaddress);
 

@@ -222,16 +222,16 @@ size_t CRTCommonUtils::MacToAuxDetID(uint8_t mac, int chan)
     char type = MacToType(mac);
     int pos=1;
     
-    //    chan = chan+2;
- 
+
+    /*
     if(type=='m'){
       if (chan >=0 && chan < 12) pos = 1;
       else if (chan >=12 && chan < 22) pos = 2;
       else if (chan >=22 && chan < 32) pos = 3;
       //else pos = 1; 
     }
-    //
-    //if(type=='m') pos = chan/10 + 1;
+    */
+    if(type=='m') pos = chan/10 + 1;
 
 
     
@@ -252,6 +252,7 @@ size_t CRTCommonUtils::MacToAuxDetID(uint8_t mac, int chan)
       //std::cout << "mac: "  << (int)mac << " ,module number " << adid <<  ", pos " << fAuxDetIdToChanGroup[adid] 
       //	<<  ", chan " << chan <<", pos to match " << pos << std::endl;
       //std::cout << " good upto Step 1" << std::endl;
+      /*
       if (mac == 49 && pos == 3){ 
 	//	std::cout << " good upto Step 2" << std::endl;
 	continue;
@@ -263,7 +264,11 @@ size_t CRTCommonUtils::MacToAuxDetID(uint8_t mac, int chan)
 	return 0;
       }
       
-      
+      */
+
+      if (fAuxDetIdToChanGroup[adid]==pos){
+	return adid;
+      }
       //	 std::cout << "mac: "  << (int)mac << ", chan " << chan << ", pos " << pos << ", adid " << adid<< std::endl;
     }
     
@@ -347,11 +352,12 @@ int CRTCommonUtils::GetLayerID(sim::AuxDetSimChannel const& adsc){
         }
         // if south stack
         if( region == 46) {
-            auto const& adsGeo = adGeo.SensitiveVolume(0);
-            if(adsGeo.Length() < 500) //is cut module?
-                layer = 1;
-            else 
-                layer = 0;
+	  auto const& adsGeo = adGeo.SensitiveVolume(0);
+	  //            if(adsGeo.Length() < 500) //is cut module?
+	  if(adsGeo.Length() == 400 || adsGeo.Length() == 485.15) //is cut module?
+	    layer = 1;
+	  else 
+	    layer = 0;
         }
     }
 
@@ -408,7 +414,7 @@ int CRTCommonUtils::GetLayerID(const art::Ptr<sim::AuxDetSimChannel> adsc){
         }
         // if south stack
         if( region == 46) {
-	  //      if(adsGeo.Length() < 500) //is cut module?
+	  //if(adsGeo.Length() < 500) //is cut module?
 	  if(adsGeo.Length() == 400 || adsGeo.Length() == 485.15) //is cut module?
                 layer = 1;
             else 

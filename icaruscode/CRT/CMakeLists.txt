@@ -179,6 +179,7 @@ simple_plugin(CRTDataAnalysis module
               icaruscode_CRTData
               icaruscode_CRT
               sbnobj_Common_CRT
+              icaruscode_CRTUtils
               larcore_Geometry_Geometry_service
               larcorealg_Geometry
               nusimdata_SimulationBase

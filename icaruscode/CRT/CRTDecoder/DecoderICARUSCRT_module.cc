@@ -99,38 +99,38 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
 
     icarus::crt::CRTData data;
     data.fMac5  = fChannelMap->getSimMacAddress(hit.mac5);
-    //data.fMac5  = fChannelMap->getSimMacAddress(80);
-    //data.fMac5  = hit.mac5;
     data.fTs0   = hit.ts0;
     data.fTs1   = hit.ts1;
     // data.fEntry = hit.entry;
     //data.coinc    = hit.coinc;
-    //    std::cout<< "80" <<"\t" <<fChannelMap->getSimMacAddress(80) << std::endl;
-    //    std::cout << "HW MAC5: \t" << (int)hit.mac5 <<  ", Sim MAC5: \t" << (int)data.fMac5 
-    //	      << ", T0: \t" << data.fTs0  << ", T1: \t" << data.fTs1 << std::endl;
+
     for(int ch=0; ch<32; ch++) {
+
       // East-center wall
       if (hit.mac5 == 27 || hit.mac5 == 28
-	  || hit.mac5 == 33 || hit.mac5 == 34){
-	if (ch > 21) {
-	  data.fAdc[ch] = 0.;
-	}else {data.fAdc[ch] = hit.adc[ch];}
+          || hit.mac5 == 33 || hit.mac5 == 34){
+        if (ch > 19) {
+          data.fAdc[ch] = 0.;
+        }else {data.fAdc[ch] = hit.adc[ch+2];}
+
 	// West-center wall
       }else if (hit.mac5 == 21 || hit.mac5 == 22
-		|| hit.mac5 == 13 || hit.mac5 == 14){
-	if (ch > 21) {
-	  data.fAdc[ch] = 0.;
-	}else {data.fAdc[ch] = hit.adc[ch];}
+                || hit.mac5 == 13 || hit.mac5 == 14){
+        if (ch > 19) {
+          data.fAdc[ch] = 0.;
+        }else {data.fAdc[ch] = hit.adc[ch+2];}
 	// All side-crt walls
-      }	else  {data.fAdc[ch] = hit.adc[ch];}
-      //	std::cout << "ch: " << ch << " with adc value: " << hit.adc[ch] << std::endl; 
-      //	data.fAdc[ch] = hit.adc[ch];
+      } else  if (ch > 29){
+	data.fAdc[ch] = 0.;
+      }else {
+	data.fAdc[ch] = hit.adc[ch+2];
+      }
     }
     crtdata->push_back(std::move(data));
   }
   
   evt.put(std::move(crtdata));
-  
+ 
 }
 
 DEFINE_ART_MODULE(crt::DecoderICARUSCRT)

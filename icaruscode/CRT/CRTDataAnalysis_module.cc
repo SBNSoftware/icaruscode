@@ -65,21 +65,6 @@ using std::set;
 using std::pair;
 
 
-namespace {
-  //uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo); 
-  //char ModToAuxDetType(geo::AuxDetGeo const& adgeo);
-  //int GetAuxDetRegion(geo::AuxDetGeo const& adgeo);
-    uint32_t MacToADReg(uint32_t mac);
-  char MacToType(uint32_t mac);
-  uint32_t MacToTypeCode(uint32_t mac);
-  //  std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid);
-   int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan);
-   int ChannelToAuxDetSensitiveID(int mac, int chan);
-  int RegToTypeCode(int reg);
-
-} // local namespace
-
-
 namespace icarus {
 namespace crt {
 
@@ -190,7 +175,7 @@ namespace crt {
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
 
     //CRT hit product vars
-    int       fHitEvent;
+    int      fHitEvent;
     float    fXHit; ///< reconstructed X position of CRT hit (cm)
     float    fYHit; ///< reconstructed Y position of CRT hit (cm)
     float    fZHit; ///< reconstructed Z position of CRT hit (cm)
@@ -231,7 +216,7 @@ namespace crt {
     // Other variables that will be shared between different methods.
     geo::GeometryCore const* fGeometryService;   ///< pointer to Geometry provider
     int                      fTriggerOffset;     ///< (units of ticks) time of expected neutrino event
-    //    CRTCommonUtils* fCrtutils;  
+    CRTCommonUtils* fCrtutils;  
   }; // class CRTDataAnalysis
 
 
@@ -253,7 +238,7 @@ namespace crt {
     : EDAnalyzer(config)
     , fCRTHitProducerLabel(config().CRTHitLabel())
     , fCRTDAQProducerLabel(config().CRTDAQLabel())
-      //    , fCrtutils(new CRTCommonUtils())
+    , fCrtutils(new CRTCommonUtils())
   {
     // Get a pointer to the geometry service provider.
     fGeometryService = lar::providerFrom<geo::Geometry>();
@@ -378,11 +363,9 @@ namespace crt {
         fDetEvent       = fEvent;
         fMac5           = febdat.fMac5;
         fEntry          = febdat.fEntry;
-	//        fFEBReg         = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
-        fFEBReg         = MacToADReg(fMac5);
+	fFEBReg         = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(fMac5));
         fNChan = 0;
-	//        fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
-        fDetSubSys = MacToTypeCode(fMac5);
+	fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
         fT0 = febdat.fTs0;
         fT1 = febdat.fTs1;
 
@@ -429,13 +412,9 @@ namespace crt {
             fT1Hit   = hit.ts1_ns;
 	    fNHitFeb  = hit.feb_id.size();
             fHitTotPe = hit.peshit;
-	    //	    ftagger  = hit.tagger;
             int mactmp = hit.feb_id[0];
-	    fHitReg  = MacToADReg(mactmp);
-	    fHitSubSys = RegToTypeCode(fHitReg);
-
-	    //	    fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
-            //fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
+	    fHitReg  = fCrtutils->AuxDetRegionNameToNum(fCrtutils->MacToRegion(mactmp));
+            fHitSubSys =  fCrtutils->MacToTypeCode(mactmp);
 
 
             auto ittmp = hit.pesmap.find(mactmp);
@@ -446,13 +425,14 @@ namespace crt {
                 std::cout << "could not find mac in pesmap!" << std::endl;
                 continue;
             }
+
             int chantmp = (*ittmp).second[0].first;
 
-	    fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
-            fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	    // fHitMod  = MacToAuxDetID(this->fFebMap, mactmp, chantmp);
+	    // fHitStrip = ChannelToAuxDetSensitiveID(mactmp, chantmp);
 
-	    //fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
-	    //fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
+	    fHitMod  = fCrtutils->MacToAuxDetID(mactmp, chantmp);
+	    fHitStrip = fCrtutils->ChannelToAuxDetSensitiveID(mactmp, chantmp);
 
             fHitNtuple->Fill();
         }//for CRT Hits
@@ -469,167 +449,3 @@ namespace crt {
 } // namespace crt
 } // namespace icarus
 
-
-// Back to our local namespace.
-namespace {
-
-  /* char ModToAuxDetType(geo::AuxDetGeo const& adgeo) {
-    size_t nstrips = adgeo.NSensitiveVolume();
-    if (nstrips==16) return 'c'; 
-    if (nstrips==20) return 'm';
-    if (nstrips==64) return 'd';
-    return 'e';
-  }
-
-  uint32_t ModToTypeCode(geo::AuxDetGeo const& adgeo) {
-    size_t nstrips = adgeo.NSensitiveVolume();
-    if (nstrips==16) return 0; //'c'
-    if (nstrips==20) return 1; //'m'
-    if (nstrips==64) return 2; //'d'
-    return UINT32_MAX;
-  }
-*/
-  /*int GetAuxDetRegion(geo::AuxDetGeo const& adgeo)
-  {
-    char type = ModToAuxDetType(adgeo);
-    std::string base = "volAuxDet_";
-    switch ( type ) {
-      case 'c' : base+= "CERN"; break;
-      case 'd' : base+= "DC"; break;
-      case 'm' : base+= "MINOS"; break;
-      case 'e' :
-          std::cout << "error in GetAuxDetRegion: type error" << std::endl;
-          return INT_MAX;
-    }
-    base+="_module_###_";
-    std::string volName(adgeo.TotalVolume()->GetName());
-
-    //module name has 2 possible formats
-    //  volAuxDet_<subsystem>_module_###_<region>
-    //  volAuxDet_<subsystem>_module_###_cut###_<region>
-
-    std::string reg = volName.substr(base.length(),volName.length());
-    if( reg.find("_")!=std::string::npos)
-        reg = reg.substr(reg.find("_")+1,reg.length());
-
-    if(reg == "Top")        return 30;
-    if(reg == "RimWest")    return 31;
-    if(reg == "RimEast")    return 32;
-    if(reg == "RimSouth")   return 33;
-    if(reg == "RimNorth")   return 34;
-    if(reg == "WestSouth")  return 40;
-    if(reg == "WestCenter") return 41;
-    if(reg == "WestNorth")  return 42;
-    if(reg == "EastSouth")  return 43;
-    if(reg == "EastCenter") return 44;
-    if(reg == "EastNorth")  return 45;
-    if(reg == "South")      return 46;
-    if(reg == "North")      return 47;
-    if(reg == "Bottom")     return 50;
-
-    return INT_MAX;
-  }
-  */
-  uint32_t MacToADReg(uint32_t mac) {
-
-      if(mac>=108 && mac<=191) return 30; //top
-      if(mac>=192 && mac<=205) return 31; //rim west
-      if(mac>=206 && mac<=219) return 32; //rim east
-      if(mac>=220 && mac<=225) return 33; //rim south
-      if(mac>=226 && mac<=231) return 34; //rim north
-      if(            mac<=12 ) return 40; //west side, south stack
-      if(mac>=13  && mac<=24 ) return 41; //west side, center stack
-      if(mac>=25  && mac<=36 ) return 42; //west side, north stack
-      if(mac>=37  && mac<=48 ) return 43; //east side, south stack
-      if(mac>=49  && mac<=60 ) return 44; //east side, center stack
-      if(mac>=61  && mac<=72 ) return 45; //east side, north stack
-      if(mac>=73  && mac<=85 ) return 46; //south
-      if(mac>=86  && mac<=93 ) return 47; //north
-      if(mac>=94  && mac<=107) return 50; //bottom
-
-      return 0;
-  }
-  
-  char MacToType(uint32_t mac) {
-
-      uint32_t reg = MacToADReg(mac);
-
-      if( reg>29 && reg<40 )
-        return 'c';
-      if( reg>39 && reg<50 )
-        return 'm';
-      if( reg==50 )
-        return 'd';
-
-      return 'e';
-  }
-
-  uint32_t MacToTypeCode(uint32_t mac) {
-
-      char reg = MacToType(mac);
-
-      if(reg=='c')
-        return 0; //'c';
-      if(reg=='m')
-        return 1; //'m';
-      if(reg=='d')
-        return 2; //'d';
-
-      return UINT32_MAX;//'e';
-  }
-  
-  //for C- and D-modules, mac address is same as AD ID
-  //three M-modules / FEB, each modules readout at both ends
-  //  numbering convention is module from FEB i 
-  //  is readout on the opposite end by FEB i+50
-  //  return FEB i
-  /*std::pair<uint32_t,uint32_t> ADToMac(const map<int,vector<pair<int,int>>>& febMap, uint32_t adid) {
-      for(auto const& p : febMap) {
-          if((uint32_t)p.first!=adid)
-              continue;
-          if(p.second.size()==2)
-              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[1].first);
-          else
-              return std::make_pair((uint32_t)p.second[0].first,(uint32_t)p.second[0].first);
-      }
-      return std::make_pair(UINT32_MAX,UINT32_MAX);
-  }
-  */
-  int MacToAuxDetID(const map<int,vector<pair<int,int>>>& febMap, int mac, int chan){
-      char type = MacToType(mac);
-      int pos=1;
-      if(type=='m')
-          pos = chan/10 + 1;
-
-      for(auto const& p : febMap) {
-          if(p.second[0].first == mac && p.second[0].second==pos)
-              return (uint32_t)p.first;
-          if(p.second.size()==2)
-              if(p.second[1].first==mac && p.second[1].second==pos)
-                  return (uint32_t)p.first;
-      }
-
-    return INT_MAX;
-  }
-
-  int ChannelToAuxDetSensitiveID(int mac, int chan) {
-    int type = MacToTypeCode(mac);
-    if (type==2) return chan; //d
-    if (type==0) return chan/2; //c
-    if (type==1) return (chan % 10)*2; //m
-
-    return INT_MAX;
-  }
-  
-  int RegToTypeCode(int reg){
-      if(reg>=30&&reg<40)
-          return 0;
-      if(reg>=40&&reg<50)
-          return 1;
-      if(reg==50)
-          return 2;
-      std::cout << "ERROR in RegToTypeCode: unknown reg code!" << std::endl;
-      return -1;
-  }
-  //*/
-}//local namespace
