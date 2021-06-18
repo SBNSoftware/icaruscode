@@ -2,8 +2,9 @@ include_directories( ${CMAKE_CURRENT_SOURCE_DIR} )
 
 art_make( 
 	  LIB_LIBRARIES
-		   icaruscode_Geometry
+		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
+		   larcorealg_Geometry
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}
 		   canvas
@@ -21,7 +22,6 @@ art_make(
 		   art_Persistency_Provenance
 		   art_Utilities
 		   ${MF_MESSAGELOGGER}
-		   ${MF_UTILITIES}
 		   ${FHICLCPP}
 		   ${ROOT_GEOM}
 		   ${ROOT_XMLIO}
@@ -29,8 +29,9 @@ art_make(
 		   ${ROOT_BASIC_LIB_LIST}
           MODULE_LIBRARIES
 		   icaruscode_PMT_OpReco_FlashFinder
-		   icaruscode_Geometry
+		   icarusalg_Geometry
 		   larcore_Geometry_Geometry_service
+		   larcorealg_Geometry
 		   lardataobj_RecoBase
 		   ${LARDATA_LIB}
 		   canvas
@@ -47,7 +48,6 @@ art_make(
 		   art_Persistency_Provenance
 		   art_Utilities
 		   ${MF_MESSAGELOGGER}
-		   ${MF_UTILITIES}
 		   ${FHICLCPP}
 		   ${ROOT_GEOM}
 		   ${ROOT_XMLIO}

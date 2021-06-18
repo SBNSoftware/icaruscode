@@ -3,7 +3,7 @@
 ##  modeled on uboone version
 ##
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "rawdigitfilter_icarus.fcl"
 #include "recowire_icarus.fcl"
 
@@ -19,7 +19,7 @@ BEGIN_PROLOG
 
 icarus_reco_services:
 {
-   @table::icarus_basic_services
+   @table::icarus_common_services
 }
 
 ### This is the complete list of all producers! ###

@@ -2,70 +2,43 @@
 #include "detsimmodules_ICARUS.fcl"
 #include "opdetsim_pmt_icarus.fcl"
 #include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
 
 process_name: DetSim
 
-services:
-{
-  #FileCatalogMetadata:  @local::art_file_catalog_mc
+services: {
   @table::icarus_detsim_services
+  #FileCatalogMetadata:  @local::art_file_catalog_mc
+} # services
+
+
+physics: {
+
+  producers: {
+    crtdaq:         @local::icarus_crtsim
+#    opdaq:          @local::icarus_simpmt
+    opdaq:          @local::icarus_simpmt_nonoise # turn off the noise so it runs more quickly
+    daq:            @local::icarus_simwire
+    rns:            { module_type: "RandomNumberSaver" }
+  } # producers
+  
+  simulate: [ rns, opdaq, daq, crtdaq ]
+  
+  # define the output stream, there could be more than one if using filters
+  stream:  [ rootoutput ]
+
+} # physics
+
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
 }
 
-#source is now a root file
-source:
-{
-  module_type: RootInput
-  saveMemoryObjectThreshold: 0
-}
-
-# Define and configure some modules to do work on each event.
-# First modules are defined; they are scheduled later.
-# Modules are grouped by type.
-physics:
-{
-
- producers:
- {
-   crtdaq:         @local::icarus_crtsim
-   #opdaq:          @local::icarus_simpmt
-   opdaq:          @local::icarus_simpmt_nonoise #turn off the noise so it runs more quickly
-   daq:            @local::icarus_simwire
-   rns:            { module_type: "RandomNumberSaver" }
- }
- 
- #define the producer and filter modules for this path, order matters, 
- #filters reject all following items.  see lines starting physics.producers below
- simulate: [ rns, opdaq, daq, crtdaq ]
- 
- #define the output stream, there could be more than one if using filters 
- stream1:  [ out1 ]
-
- #trigger_paths is a keyword and contains the paths that modify the art::event, 
- #ie filters and producers
- trigger_paths: [ simulate ] 
-
- #end_paths is a keyword and contains the paths that do not modify the art::Event, 
- #ie analyzers and output streams.  these all run simultaneously
- end_paths:     [stream1]  
-}
 
 #
-# For MCC1.1 we are still suppressing channels with no signal in the TPC
-physics.producers.daq.SuppressNoSignal: true
+# customisation
+#
 
-#block to define where the output goes.  if you defined a filter in the physics
-#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
-#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
-outputs:
-{
- out1:
- {
-   module_type: RootOutput
-   fileName:    "%ifb_%tc-%p.root"
-   dataTier:    "detector-simulated"
-   saveMemoryObjectThreshold: 0
-   compressionLevel: 1
-   fastCloning: false
- }
-}
+# we are suppressing channels with no signal in the TPC
+physics.producers.daq.SuppressNoSignal: true
 

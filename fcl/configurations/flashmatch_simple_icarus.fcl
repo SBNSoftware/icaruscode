@@ -1,0 +1,55 @@
+
+icarus_simple_flashmatch_0: {
+  module_type: FlashPredict
+  Cryostat: 0
+  OpHitProducer: "ophit"
+  BeamWindowStart: -0.2 # us
+  BeamWindowEnd: 2.0 # us
+  ChargeToNPhotonsShower: 1.0
+  ChargeToNPhotonsTrack: 1.0
+  InputFileName: "FlashMatch/fm_metrics_icarus.root"
+  NoAvailableMetrics: false
+  MakeTree: true
+  SelectNeutrino: true
+  UseCalo: false
+  LightWindowStart: -0.01 # us, wrt flash time
+  LightWindowEnd: 0.09 # us, wrt flash time
+  PEscale: 1.0
+  MinFlashPE: 0.
+  ThresholdTerm: 30.
+
+  PDMapAlg: {
+    tool_type: PDMapAlgSimple
+  }
+
+  # ICARUS specific
+  PandoraProducer: "pandoraGausCryo0"
+  TrackProducer: "pandoraTrackGausCryo0"
+  CaloProducer: "pandoraGausCaloCryo0"
+  SpacePointProducer: "pandoraGausCryo0"
+
+  # binning and geometry
+  score_hist_bins: 100
+  score_hist_low: 0.
+  score_hist_up: 50.
+
+  n_bins: 30
+  DriftDistance: 150.
+
+  dy_bins: 75
+  dy_low: -200.
+  dy_up: 200.
+  dz_bins: 75
+  dz_low: -200.
+  dz_up: 200.
+  rr_bins: 75
+  rr_low: 0.
+  rr_up: 200.
+}
+
+icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
+icarus_simple_flashmatch_1.Cryostat: 1
+icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
+icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryo1
+icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
+icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1

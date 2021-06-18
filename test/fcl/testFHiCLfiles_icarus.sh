@@ -12,6 +12,7 @@ fi
 
 #
 # find the actual test script
+# currently located alongside this file
 #
 declare -r TestScriptName='testFHiCLfiles.sh'
 declare TestScript

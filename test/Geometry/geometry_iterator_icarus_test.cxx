@@ -13,7 +13,7 @@
 #define BOOST_TEST_MODULE GeometryIteratorTestICARUS
 
 // ICARUS libraries
-#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
+#include "icarusalg/Geometry/ChannelMapIcarusAlg.h"
 
 // LArSoft libraries
 #include "test/Geometry/geometry_unit_test_icarus.h"

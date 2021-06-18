@@ -1,0 +1,76 @@
+#include "services_icarus_simulation.fcl"
+#include "largeantmodules_icarus.fcl"
+#include "photpropservices_icarus.fcl"
+process_name: G4
+
+services:
+{
+  @table::icarus_g4_services
+  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
+}
+
+#source is now a root file
+source:
+{
+  module_type: RootInput
+  maxEvents:  10        # Number of events to create
+  saveMemoryObjectThreshold: 0
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+
+ producers:
+ {
+   larg4outtime:  @local::icarus_largeant
+   largeant: {
+     module_type: "MergeSimSources"
+     InputSourcesLabels: [ "larg4intime","larg4outtime"]
+     TrackIDOffsets: [ 10000000,20000000 ]
+   }
+   ionization: {
+                 module_type: "larsim/ElectronDrift/ShiftEdepSCE"
+                 EDepTag:     "largeant:TPCActive"
+                 MakeAnaTree: false
+               }
+   rns:      { module_type: "RandomNumberSaver" }
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+ merge: [rns, larg4outtime, largeant ] # ionization]
+ 
+ #define the output stream, there could be more than one if using filters 
+ stream1:  [ out1 ]
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "%ifb_%tc_g4.root"
+   dataTier:    "g4"
+   compressionLevel: 1
+   outputCommands: [ "keep *_*_*_*",
+                     "drop *_larg4intime_*_*",
+                     "drop *_larg4outtime_*_*"]
+   dropMetaDataForDroppedData: true
+   saveMemoryObjectThreshold: 0
+ }
+}
+
+# turn on the SimEnergyDeposit output
+services.LArG4Parameters.FillSimEnergyDeposits:       true
+
+services.LArG4Parameters.ParticleKineticEnergyCut: 0.0005
+physics.producers.larg4outtime.KeepParticlesInVolumes: [ "volDetEnclosure" ]
+physics.producers.larg4outtime.InputLabels: [ "GenInTimeSorter:outtime" ]
+services.PhotonVisibilityService: @local::icarus_photonvisibilityservice_mapped  # from photpropservices_icarus.fcl
+

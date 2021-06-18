@@ -88,7 +88,7 @@ private:
     std::array<double,2> _zrange;
     
     // TPC range
-    std::vector<unsigned short> _tpc_v;
+    std::vector<std::vector<unsigned short> > _tpc_v;
     
     // multiplicity constraint
     size_t _multi_min;
@@ -109,7 +109,8 @@ MultiPartVertex::~MultiPartVertex()
 
 MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
 : EDProducer(p)
-, fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
+, fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "GenVertex"))
+  //, fFlatEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Gen", p, "Seed"))
 // Initialize member data here.
 {
     
@@ -130,7 +131,7 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     _multi_min = p.get<size_t>("MultiMin");
     _multi_max = p.get<size_t>("MultiMax");
     
-    auto const _tpc_v  = p.get<std::vector<unsigned short> > ("TPCRange");
+    _tpc_v  = p.get<std::vector<std::vector<unsigned short> > >("TPCRange");
     auto const xrange = p.get<std::vector<double> > ("XRange");
     auto const yrange = p.get<std::vector<double> > ("YRange");
     auto const zrange = p.get<std::vector<double> > ("ZRange");
@@ -167,14 +168,16 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     for(auto const& r : pdg_v    ) { if(              r.empty()  ) this->abort("PDG code not given!");                        }
     for(auto const& r : kerange_v) { if(              r.size()!=2) this->abort("Incompatible legnth @ KE vector!");           }
     
+    size_t multi_min = 0;
     for(size_t idx=0; idx<minmult_v.size(); ++idx) {
         if(minmult_v[idx] > maxmult_v[idx]) this->abort("Particle MinMulti > Particle MaxMulti!");
         if(minmult_v[idx] > _multi_max) this->abort("Particle MinMulti > overall MultiMax!");
-        if(minmult_v[idx] > _multi_min)
-            _multi_min = minmult_v[idx];
+	multi_min += minmult_v[idx];
     }
+    _multi_min = std::max(_multi_min, multi_min);
     if(_multi_max < _multi_min) this->abort("Overall MultiMax <= overall MultiMin!");
-    
+
+    /*
     if(!xrange.empty() && xrange.size() >2) this->abort("Incompatible legnth @ X vector!" );
     if(!yrange.empty() && yrange.size() >2) this->abort("Incompatible legnth @ Y vector!" );
     if(!zrange.empty() && zrange.size() >2) this->abort("Incompatible legnth @ Z vector!" );
@@ -186,6 +189,70 @@ MultiPartVertex::MultiPartVertex(fhicl::ParameterSet const & p)
     if(yrange.size()==2) { _yrange[0] = yrange[0]; _yrange[1] = yrange[1]; }
     if(zrange.size()==1) { _zrange[0] = _zrange[1] = zrange[0]; }
     if(zrange.size()==2) { _zrange[0] = zrange[0]; _zrange[1] = zrange[1]; }
+    */
+
+    if(!xrange.empty() && xrange.size() >2) this->abort("Incompatible legnth @ X vector!" );
+    if(!yrange.empty() && yrange.size() >2) this->abort("Incompatible legnth @ Y vector!" );
+    if(!zrange.empty() && zrange.size() >2) this->abort("Incompatible legnth @ Z vector!" );
+    
+    // slight modification from mpv: define the overall volume across specified TPC IDs + range options
+    double xmin,xmax,ymin,ymax,zmin,zmax;
+    xmin = ymin = zmin =  1.e20;
+    xmax = ymax = zmax = -1.e20;
+    // Implementation of required member function here.
+    auto geop = lar::providerFrom<geo::Geometry>();
+    for(auto const& tpc_id : _tpc_v) {
+      assert(tpc_id.size() == 2);
+      size_t cid = tpc_id[0];
+      size_t tid = tpc_id[1];
+      auto const& cryostat = geop->Cryostat(cid);
+      assert(cryostat.HasTPC(tid));
+
+      auto const& tpc = cryostat.TPC(tid);
+      auto const& tpcabox = tpc.ActiveBoundingBox();
+      xmin = std::min(tpcabox.MinX(), xmin);
+      ymin = std::min(tpcabox.MinY(), ymin);
+      zmin = std::min(tpcabox.MinZ(), zmin);
+      xmax = std::max(tpcabox.MaxX(), xmax);
+      ymax = std::max(tpcabox.MaxY(), ymax);
+      zmax = std::max(tpcabox.MaxZ(), zmax);
+      
+      if(_debug) {
+	std::cout << "Using Cryostat " << tpc_id[0] << " TPC " << tpc_id[1]
+		  << " ... X " << xmin << " => " << xmax
+		  << " ... Y " << ymin << " => " << ymax
+		  << " ... Z " << zmin << " => " << zmax
+		  << std::endl;
+      }
+    }
+
+    // range register
+    if(xrange.size()==1) { _xrange[0] = _xrange[1] = xrange[0]; }
+    if(yrange.size()==1) { _yrange[0] = _yrange[1] = yrange[0]; }
+    if(zrange.size()==1) { _zrange[0] = _zrange[1] = zrange[0]; }
+    if(xrange.size()==2) { _xrange[0] = xrange[0]; _xrange[1] = xrange[1]; }
+    if(yrange.size()==2) { _yrange[0] = yrange[0]; _yrange[1] = yrange[1]; }
+    if(zrange.size()==2) { _zrange[0] = zrange[0]; _zrange[1] = zrange[1]; }
+
+    _xrange[0] = xmin + _xrange[0];
+    _xrange[1] = xmax - _xrange[1];
+    _yrange[0] = ymin + _yrange[0];
+    _yrange[1] = ymax - _yrange[1];
+    _zrange[0] = zmin + _zrange[0];
+    _zrange[1] = zmax - _zrange[1];
+
+    // check
+    assert(_xrange[0] <= _xrange[1]);
+    assert(_yrange[0] <= _yrange[1]);
+    assert(_zrange[0] <= _zrange[1]);
+
+    if(_debug>0) {
+      std::cout<<"Particle generation world boundaries..."<<std::endl
+	       <<"X " << _xrange[0] << " => " << _xrange[1] << std::endl
+	       <<"Y " << _yrange[0] << " => " << _yrange[1] << std::endl
+	       <<"Z " << _zrange[0] << " => " << _zrange[1] << std::endl;
+    }
+
     
     // register
     //auto db = new TDatabasePDG;
@@ -241,12 +308,24 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
     
     std::vector<size_t> result;
     std::vector<size_t> gen_count_v(_param_v.size(),0);
-    std::vector<double> weight_v(_param_v.size(),0);
-    for(size_t idx=0; idx<_param_v.size(); ++idx)
-        weight_v[idx] = _param_v[idx].weight;
     
     int num_part = (int)(fFlatRandom->fire(_multi_min,_multi_max+1-1.e-10));
-    
+
+    // generate min multiplicity first
+    std::vector<double> weight_v(_param_v.size(),0);
+    for(size_t idx=0; idx<_param_v.size(); ++idx) {
+      weight_v[idx] = _param_v[idx].weight;
+      for(size_t ctr=0; ctr<_param_v[idx].multi[0]; ++ctr) { 
+	result.push_back(idx);
+	gen_count_v[idx] += 1;
+	num_part -= 1;
+      }
+      if(gen_count_v[idx] >= _param_v[idx].multi[1])
+	weight_v[idx] = 0.;
+    }
+
+    assert(num_part >= 0);
+
     while(num_part) {
         
         double total_weight = 0;
@@ -268,38 +347,52 @@ std::vector<size_t> MultiPartVertex::GenParticles() const {
         gen_count_v[idx] += 1;
         if(gen_count_v[idx] >= _param_v[idx].multi[1])
             weight_v[idx] = 0.;
-        
+	
         --num_part;
     }
     return result;
 }
 
+
+void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
+
+  x = fFlatRandom->fire(_xrange[0],_xrange[1]);
+  y = fFlatRandom->fire(_yrange[0],_yrange[1]);
+  z = fFlatRandom->fire(_zrange[0],_zrange[1]);
+
+  if(_debug>0) {
+    std::cout << "Generating a rain particle at (" 
+	      << x << "," << y << "," << z << ")" << std::endl;
+  }
+}
+/*
 void MultiPartVertex::GenPosition(double& x, double& y, double& z) {
     
-    size_t tpc_id = (size_t)(fFlatRandom->fire(0,_tpc_v.size()));
-    bool found = false;
-    // Implementation of required member function here.
-    auto geop = lar::providerFrom<geo::Geometry>();
-    for(size_t c=0; c<geop->Ncryostats(); ++c) {
-        auto const& cryostat = geop->Cryostat(c);
-        if(!cryostat.HasTPC(tpc_id)) continue;
-        auto const& tpc = cryostat.TPC(tpc_id);
-        auto const& tpcabox = tpc.ActiveBoundingBox();
-        double xmin = tpcabox.MinX() + _xrange[0];
-        double xmax = tpcabox.MaxX() - _xrange[1];
-        double ymin = tpcabox.MinY() + _yrange[0];
-        double ymax = tpcabox.MaxY() - _yrange[1];
-        double zmin = tpcabox.MinZ() + _zrange[0];
-        double zmax = tpcabox.MaxZ() - _zrange[1];
-        x = fFlatRandom->fire(xmin,xmax);
-        y = fFlatRandom->fire(ymin,ymax);
-        z = fFlatRandom->fire(zmin,zmax);
-        found = true;
-        break;
-    }
-    if(!found) std::cerr<< "\033[93mTPC " << tpc_id << " not found...\033[00m" << std::endl;
-}
+  auto const& tpc_id = _tpc_v.at((size_t)(fFlatRandom->fire(0,_tpc_v.size())));
+  // Implementation of required member function here.
+  auto geop = lar::providerFrom<geo::Geometry>();
+  size_t cid = tpc_id[0];
+  size_t tid = tpc_id[1];
+  auto const& cryostat = geop->Cryostat(cid);
+  if(!cryostat.HasTPC(tid)) {
+    std::cerr<< "\033[93mTPC " << tid << " not found... in cryostat " << cid << "\033[00m" << std::endl;
+    throw std::exception();
+  }
 
+  auto const& tpc = cryostat.TPC(tid);
+  auto const& tpcabox = tpc.ActiveBoundingBox();
+  double xmin = tpcabox.MinX() + _xrange[0];
+  double xmax = tpcabox.MaxX() - _xrange[1];
+  double ymin = tpcabox.MinY() + _yrange[0];
+  double ymax = tpcabox.MaxY() - _yrange[1];
+  double zmin = tpcabox.MinZ() + _zrange[0];
+  double zmax = tpcabox.MaxZ() - _zrange[1];
+  x = fFlatRandom->fire(xmin,xmax);
+  y = fFlatRandom->fire(ymin,ymax);
+  z = fFlatRandom->fire(zmin,zmax);
+
+}
+*/
 void MultiPartVertex::GenMomentum(const PartGenParam& param, const double& mass, double& px, double& py, double& pz) {
     
     double tot_energy = 0;
@@ -309,15 +402,13 @@ void MultiPartVertex::GenMomentum(const PartGenParam& param, const double& mass,
         tot_energy = fFlatRandom->fire(param.kerange[0],param.kerange[1]) + mass;
     
     double mom_mag = sqrt(pow(tot_energy,2) - pow(mass,2));
-    
+
     double phi   = fFlatRandom->fire(0, 2 * 3.141592653589793238);
     double theta = fFlatRandom->fire(0, 1 * 3.141592653589793238);
-    
+      
     px = cos(phi) * sin(theta);
     py = sin(phi) * sin(theta);
     pz = cos(theta);
-    
-    //std::cout<<"LOGME,"<<phi<<","<<theta<<","<<px<<","<<py<<","<<pz<<std::endl;
     
     if(_debug>1)
         std::cout << "    Direction : (" << px << "," << py << "," << pz << ")" << std::endl

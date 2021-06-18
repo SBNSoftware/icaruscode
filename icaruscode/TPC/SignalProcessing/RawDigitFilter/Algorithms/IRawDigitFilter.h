@@ -14,6 +14,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "icaruscode/TPC/SignalProcessing/RawDigitFilter/Algorithms/RawDigitNoiseFilterDefs.h"
+#include "TProfile.h"
 
 namespace art
 {
@@ -22,6 +23,22 @@ namespace art
 
 namespace caldata
 {
+    enum HistogramType : int
+    {
+        WAVEFORM,
+        WAVELESSAVE,
+        EROSION,
+        DILATION,
+        AVERAGE,
+        DIFFERENCE,
+        OPENING,
+        CLOSING,
+        DOPENCLOSING,
+        LASTELEMENT
+    };
+    
+    using HistogramMap = std::map<int, TProfile*>;
+
     class IRawDigitFilter
     {
     public:

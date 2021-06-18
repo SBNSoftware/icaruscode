@@ -1,0 +1,388 @@
+#
+# File:    photon_propagation_timing_icarus.fcl
+# Purpose: parameters of the time of arrival to PMT of scintillation light
+# Date:    20201002
+# Author:  Patrick Green (data),
+#          Gianluca Petrillo (petrillo@slac.stanford.edu) (packaging)
+# 
+# The time of arrivals of scintillation photons to PMT is parametrized with
+# a Landau or (Landau plus Exponential) functional form, as function of the
+# displacement between the scintillation point and the PMT.
+# In particular, both the modulus of the displacement (distance) and the
+# incident angle on the PMT are relevant.
+# The parametrization currently covers only the hemispace the PMT face,
+# while light from behind (which must incur major scattering in order to hit
+# the sensitive surface of the hemispherical PMT) is not included.
+# 
+# ICARUS does not have reflective foils or wavelength shifters inside
+# the detector volume (apart from the coating on the PMT), so all the light is
+# at wavelength aroudn 128 nm (VUV): the visible/reflected components are not
+# present and not needed.
+# 
+# The content of this file includes:
+# 
+# * photon_propagation_timing_icarus: the parametrization of choice of ICARUS;
+#     defined as alias of another parametrization
+# * photon_propagation_timing_icarus_protodune: settings for ProtoDUNE,
+#     imported from opticalsimparameterisations_dune.fcl of dunetpc repository
+#     tag v09_05_00; these values were plugged in there by Patrick Green
+#     (SBND, DUNE) on September 23, 2020.
+# * photon_propagation_timing_icarus_v09_05_00: settings for SBND, modified
+#     to correctly extrapolate to ICARUS distances; these values were the
+#     default settings in LArSoft v09_05_00, and they have been recommended
+#     for ICARUS by Patrick Green and Diego Garcia Gamez (SBND), with the
+#     belief that ICARUS-derived parameetrs will not relevantly differ.
+#
+
+BEGIN_PROLOG
+
+################################################################################
+###  photon_propagation_timing_icarus_protodune: ProtoDUNE, Sept. 2020
+################################################################################
+
+###
+### VUV light: parameters of the Landau + Exponential (<= 400 cm) and Landau (> 400 cm) models;
+### 
+### The parameters are distance (30 distances. 0 to 725 cm in 30x 25 cm steps)
+### and incident angle (2 angle spans, 0--45 and 45--90 degrees)
+###
+
+#
+# angular bin size
+#
+angle_bin_timing_icarus_protodune: 45 # degrees
+
+#
+# Distance in cm from "Landau + Expo" -> "Single Landau" model
+#
+inflexion_point_distance_icarus_protodune: 400.0 # cm
+
+
+# ---------------------
+#   Landau parameters
+# ------------------------------------------------------------------------------------------------------
+Distances_landau_icarus_protodune: [ # cm
+            0,        25,        50,        75,       100,       125,       150,       175,
+          200,       225,       250,       275,       300,       325,       350,       375,
+          400,       425,       450,       475,       500,       525,       550,       575,
+          600,       625,       650,       675,       700,       725
+]
+
+# ------------------------------------------------------------------------------------------------------
+Norm_over_entries_icarus_protodune: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    27.41    , 27.41    , 2.57134  , 1.47775  , 0.960340 , 0.668723 , 0.487808 , 0.362789 , #   0 cm...
+    0.277659 , 0.224883 , 0.185199 , 0.159048 , 0.143393 , 0.134121 , 0.125978 , 0.115751 , # 200 cm...
+    0.0921523, 0.0907023, 0.0856498, 0.0814134, 0.0750844, 0.0750844, 0.0750844, 0.0750844, # 400 cm...
+    0.0750844, 0.0750844, 0.0750844, 0.0750844, 0.0750844, 0.0750844                        # 600 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    3.79032  , 3.79032  , 1.25862  , 0.928939 , 0.566822 , 0.319336 , 0.331336 , 0.219171 , #   0 cm...
+    0.178579 , 0.135635 , 0.119011 , 0.109138 , 0.0991792, 0.091753 , 0.0787281, 0.0743768, # 200 cm...
+    0.0663083, 0.0648284, 0.0608437, 0.0572599, 0.0561134, 0.0543579, 0.0529609, 0.0519021, # 400 cm...
+    0.0510434, 0.0504866, 0.0503902, 0.0507405, 0.0503883, 0.0497511                        # 600 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Mpv_icarus_protodune: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    1.77134  , 1.77134  , 3.85131  , 5.593    , 7.46645  , 9.44108  , 11.5899  , 13.8189  , #   0 cm...
+    16.2753  , 18.8619  , 21.6428  , 24.4828  , 27.189   , 29.6607  , 32.3706  , 35.2212  , # 200 cm...
+    41.4392  , 43.2475  , 45.939   , 48.5748  , 51.4841  , 51.4841  , 51.4841  , 51.4841  , # 400 cm...
+    51.4841  , 51.4841  , 51.4841  , 51.4841  , 51.4841  , 51.4841                          # 600 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    1.91282  , 1.91282  , 4.31774  , 5.90297  , 8.90329  , 11.8104  , 12.9629  , 17.0555  , #   0 cm...
+    19.5031  , 24.7774  , 27.175   , 29.8128  , 33.5619  , 36.6553  , 43.0021  , 46.059   , # 200 cm...
+    52.6953  , 55.1056  , 59.9728  , 65.2979  , 67.9593  , 71.0675  , 74.7855  , 79.689   , # 400 cm...
+    85.3232  , 90.818   , 97.0409  , 103.2    , 111.306  , 117.6                            # 600 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Width_icarus_protodune: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.10303  , 0.10303  , 0.313506 , 0.525492 , 0.716541 , 0.969894 , 1.29961  , 1.73657  , #   0 cm...
+    2.30482  , 2.94669  , 3.71951  , 4.53258  , 5.24435  , 5.79945  , 6.53951  , 7.34736  , # 200 cm...
+    12.0305  , 12.4263  , 13.4917  , 14.7245  , 16.6202  , 16.6202  , 16.6202  , 16.6202  , # 400 cm...
+    16.6202  , 16.6202  , 16.6202  , 16.6202  , 16.6202  , 16.6202                          # 600 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0        , 0.281535 , 0.633816 , 0.80694  , 1.46701  , 2.32209  , 2.20895  , 3.56751  , #   0 cm...
+    4.23966  , 6.11748  , 6.97923  , 7.82035  , 9.05225  , 10.1422  , 12.6053  , 13.6305  , # 200 cm...
+    17.7093  , 18.3244  , 19.9961  , 22.1072  , 23.4653  , 25.3052  , 27.5297  , 30.5683  , # 400 cm...
+    34.8304  , 39.7456  , 45.1447  , 51.3363  , 58.4681  , 63.0122                          # 600 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+
+# --------------------------
+#   Exponential parameters
+# ------------------------------------------------------------------------------------------------------
+Distances_exp_icarus_protodune: [
+             0,          25,         50,         75,        100,        125,        150,        175,
+           200,         225,        250,        275,        300,        325,        350,        375
+]
+
+Slope_icarus_protodune: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    -0.205783 , -0.205783  , -0.157344 , -0.124546 , -0.0949427, -0.0640574, -0.0509928, -0.0421876, # 0   cm...
+    -0.0360771, -0.0327956 , -0.02997  , -0.0280924, -0.0269181, -0.0259104, -0.0248679, -0.0233511  # 200 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    -0.157151 , -0.157151  , -0.10447  , -0.0875509, -0.0605052, -0.0435416, -0.040128 , -0.0325951, # 0   cm...
+    -0.0292046, -0.0255942 , -0.0241776, -0.0226607, -0.0213594, -0.02037  , -0.0181767, -0.0172752  # 200 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Expo_over_Landau_norm_icarus_protodune: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.00276789, 0.00276789, 0.0362807  , 0.081067  , 0.111523  , 0.106485  , 0.123852  , 0.144239  , # 0   cm...
+    0.168534  , 0.201111  , 0.234443   , 0.269284  , 0.300041  , 0.320541  , 0.342403  , 0.356125    # 200 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.0242526 , 0.0242526 , 0.086063   , 0.101552  , 0.134787  , 0.171863  , 0.152519  , 0.203461  , # 0   cm...
+    0.224872  , 0.279135  , 0.304123   , 0.317034  , 0.341433  , 0.360053  , 0.382877  , 0.391287    # 200 cm...
+  ]
+]
+
+
+# ------------------------------------------------------------------------------------------------------
+
+photon_propagation_timing_icarus_protodune: {
+  
+  # angular bin size in degrees (must correspond to parameterisation set)
+  angle_bin_timing_vuv: @local::angle_bin_timing_icarus_protodune
+  
+  # Distance in cm from "Landau + Expo" -> "Single Landau" model
+  inflexion_point_distance: @local::inflexion_point_distance_icarus_protodune
+  
+  #
+  # Timing parameterisaion:
+  #
+  # Parameters of the Landau + Exponential (<= 400 cm) and Landau (> 400 cm) models
+  #
+  # Landau parameters
+  # 
+  Distances_landau:      @local::Distances_landau_icarus_protodune
+  Norm_over_entries:     @local::Norm_over_entries_icarus_protodune
+  Mpv:                   @local::Mpv_icarus_protodune
+  Width:                 @local::Width_icarus_protodune
+
+  # Exponential parameters
+  Distances_exp:         @local::Distances_exp_icarus_protodune
+  Slope:                 @local::Slope_icarus_protodune
+
+  # Normalizations
+  Expo_over_Landau_norm: @local::Expo_over_Landau_norm_icarus_protodune
+  
+  #
+  # other settings
+  #
+  
+  # Discretisation step size
+  step_size: 1.0 # cm
+  
+  # Min and maximum distance parameterizations are generated for
+  # (only generated when required to prevent long initial loading time)
+  min_d:   25.0 # cm
+  max_d: 2500.0 # cm
+  
+  # VUV group velocity
+  vuv_vgroup_mean: 13.5 # cm/ns
+  vuv_vgroup_max:  18.0 # cm/ns
+
+} # photon_propagation_timing_icarus_protodune
+
+
+################################################################################
+###  common_vuv_timing_parameterization_icarus: LArSoft, pre-v09_05_00
+################################################################################
+
+###
+### This parametrization is the copy of the "generic" one from
+### opticalsimparameterisations.fcl in LArSoft v09_05_00 (larsim).
+###
+### VUV light: parameters of the Landau + Exponential (<= 350 cm) and Landau (> 350 cm) models;
+### 
+### The parameters are distance (23 distances. 0 to 550 cm in 23x 25 cm steps)
+### and incident angle (2 angle spans, 0--45 and 45--90 degrees)
+###
+
+#
+# angular bin size
+#
+angle_bin_timing_icarus_v09_05_00: 45 # degrees
+
+#
+# Distance in cm from "Landau + Expo" -> "Single Landau" model
+#
+inflexion_point_distance_icarus_v09_05_00: 400.0 # cm
+
+
+# ---------------------
+#   Landau parameters
+# ------------------------------------------------------------------------------------------------------
+Distances_landau_icarus_v09_05_00: [ # cm
+            0,        25,        50,        75,       100,       125,       150,       175,
+          200,       225,       250,       275,       300,       325,       350,       375,
+          400,       425,       450,       475,       500,       525,       550
+]
+
+# ------------------------------------------------------------------------------------------------------
+Norm_over_entries_icarus_v09_05_00: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    4.64837 , 4.64837 , 2.86581 , 1.4143  , 0.974871, 0.71311 , 0.55772 , 0.461078, #   0 cm...
+    0.411807, 0.364951, 0.325477, 0.297132, 0.297132, 0.297132, 0.297132, 0.297132, # 200 cm...
+    0.297132, 0.297132, 0.297132, 0.297132, 0.297132, 0.297132, 0.297132            # 400 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    3.43562 , 3.43562 , 1.61042 , 0.981127, 0.64465 , 0.476552, 0.369063, 0.310461, #   0 cm...
+    0.264819, 0.231387, 0.215373, 0.199128, 0.189638, 0.170387, 0.159308, 0.151498, # 200 cm...
+    0.140134, 0.135217, 0.131114, 0.129511, 0.126329, 0.12452 , 0.124595            # 400 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Mpv_icarus_v09_05_00: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    2.73373 , 2.73373 , 3.599   , 5.80141 , 7.57883 , 9.56959 , 11.6047 , 13.6676 , #   0 cm...
+    15.6126 , 17.5389 , 19.492  , 21.3254 , 21.3254 , 21.3254 , 21.3254 , 21.3254 , # 200 cm...
+    21.3254 , 21.3254 , 21.3254 , 21.3254 , 21.3254 , 21.3254 , 21.3254             # 400 cm...
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    2.19076 , 2.19076 , 4.0163  , 5.86531 , 8.09466 , 10.4547 , 12.9261 , 15.2731 , #   0 cm...
+    17.7939 , 20.6664 , 22.99   , 25.7017 , 27.9139 , 30.9469 , 33.6378 , 36.1413 , # 200 cm...
+    39.8435 , 42.1625 , 44.6396 , 46.5133 , 48.6331 , 50.6754 , 53.3949             # 400 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Width_icarus_v09_05_00: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.198303, 0.198303, 0.347397, 0.562874, 0.750881, 0.998318, 1.2622  , 1.55553 , #   0 cm...
+    1.79799 , 2.05579 , 2.3295  , 2.57611 , 2.57611 , 2.57611 , 2.57611 , 2.57611 , # 200 cm...
+    2.57611 , 2.57611 , 2.57611 , 2.57611 , 2.57611 , 2.57611 , 2.57611
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.305766, 0.305766, 0.508544, 0.747765, 1.12059 , 1.57047 , 2.07501 , 2.54661 , #   0 cm...
+    3.09789 , 3.79078 , 4.19731 , 4.74438 , 5.09894 , 5.83702 , 6.36225 , 6.80253 , # 200 cm...
+    8.278   , 8.717   , 9.2568  , 9.7239  , 10.5865 , 11.3262 , 11.8423             # 400 cm...
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+
+# --------------------------
+#   Exponential parameters
+# ------------------------------------------------------------------------------------------------------
+Distances_exp_icarus_v09_05_00: [ # cm
+            0,        25,        50,        75,       100,       125,       150,       175,
+          200,       225,       250,       275,       300,       325,       350,       375
+]
+
+# ------------------------------------------------------------------------------------------------------
+Slope_icarus_v09_05_00: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    -0.181318 , -0.181318 , -0.148935 , -0.126243 , -0.10837  , -0.0860558, -0.0759728, -0.0706126,
+    -0.0672814, -0.0622897, -0.0577351, -0.0546709, -0.0546709, -0.0546709, -0.0546709, -0.0546709
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    -0.169274 , -0.169274 , -0.119906 , -0.0983691, -0.0781793, -0.0659805, -0.0587059, -0.0545288,
+    -0.0514041, -0.0489773, -0.047259 , -0.0454668, -0.0439597, -0.0415122, -0.0396851, -0.0378005
+  ]
+]
+
+# ------------------------------------------------------------------------------------------------------
+Expo_over_Landau_norm_icarus_v09_05_00: [
+  [
+    # - - -  0 -- 45 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.0149644 , 0.0149644 , 0.0337403 , 0.0967895 , 0.152669  , 0.181732  , 0.23025   , 0.290033  ,
+    0.338948  , 0.372986  , 0.404828  , 0.441243  , 0.441243  , 0.441243  , 0.441243  , 0.441243
+  ],
+  [
+    # - - - 45 -- 90 degrees - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    0.0252807 , 0.0252807 , 0.0638727 , 0.113343  , 0.165669  , 0.216794  , 0.274868  , 0.325299  ,
+    0.38959   , 0.466117  , 0.515046  , 0.578897  , 0.621872  , 0.689713  , 0.742833  , 0.773619
+  ]
+]
+
+
+# ------------------------------------------------------------------------------------------------------
+photon_propagation_timing_icarus_v09_05_00: {
+
+  # angular bin size in degrees (must correspond to parameterisation set)
+  angle_bin_timing_vuv: @local::angle_bin_timing_icarus_v09_05_00
+  
+  # Distance in cm from "Landau + Expo" -> "Single Landau" model
+  inflexion_point_distance: @local::inflexion_point_distance_icarus_v09_05_00
+  
+  #
+  # Timing parameterisaion:
+  #
+  # Parameters of the Landau + Exponential (<= 350 cm) and Landau (> 350 cm) models
+  #
+  # Landau parameters
+  # 
+  Distances_landau:      @local::Distances_landau_icarus_v09_05_00
+  Norm_over_entries:     @local::Norm_over_entries_icarus_v09_05_00
+  Mpv:                   @local::Mpv_icarus_v09_05_00
+  Width:                 @local::Width_icarus_v09_05_00
+
+  # Exponential parameters
+  Distances_exp:         @local::Distances_exp_icarus_v09_05_00
+  Slope:                 @local::Slope_icarus_v09_05_00
+
+  # Normalizations
+  Expo_over_Landau_norm: @local::Expo_over_Landau_norm_icarus_v09_05_00
+  
+  #
+  # other settings
+  #
+  
+  # Discretisation step size
+  step_size: 1.0 # cm
+  
+  # Min and maximum distance parameterizations are generated for
+  # (only generated when required to prevent long initial loading time)
+  min_d:   25.0 # cm
+  max_d: 2500.0 # cm
+  
+  # VUV group velocity
+  vuv_vgroup_mean: 13.5 # cm/ns
+  vuv_vgroup_max:  18.0 # cm/ns
+
+} # photon_propagation_timing_icarus_v09_05_00
+
+
+################################################################################
+###  photon_propagation_timing_icarus: default ICARUS settings
+################################################################################
+
+photon_propagation_timing_icarus: @local::photon_propagation_timing_icarus_v09_05_00
+
+################################################################################
+
+
+END_PROLOG

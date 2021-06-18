@@ -1,0 +1,16 @@
+#
+# File:    simulation_genie_icarus_numi_volCryostat.fcl
+# Purpose: Simulation of neutrinos from NuMI on a single ICARUS cryostat.
+# Date:    August 19, 2019
+# Version: 1.0
+#
+# GENIE is instructed to use only `volCryostat` volume.
+# There are two of them, but GENIE will pick only one of them (C:0, apparently).
+#
+#
+
+#include "simulation_genie_icarus_numi.fcl"
+
+physics.producers.generator.TopVolume:  "volCryostat"
+
+outputs.rootoutput.fileName: "simulation_genie_icarus_numi_volCryostat_%tc-%p.root"

@@ -1,5 +1,5 @@
 #include "messages_icarus.fcl"
-#include "prod_muon_20deg.fcl"
+#include "prod_muon_workshop.fcl"
 
 # non-interactive output settings, but keep them verbose
 services.message: @local::icarus_message_services_prod_debug

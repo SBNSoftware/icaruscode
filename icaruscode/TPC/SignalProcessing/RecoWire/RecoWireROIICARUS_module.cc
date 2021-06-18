@@ -41,10 +41,9 @@
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Wire.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/ArtDataHelper/WireCreator.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardata/Utilities/AssociationUtil.h"
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
@@ -53,7 +52,7 @@
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IROIFinder.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IDeconvolution.h"
 #include "icaruscode/TPC/SignalProcessing/RecoWire/DeconTools/IBaseline.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 ///creation of calibrated signals on wires
 namespace caldata {
@@ -73,7 +72,7 @@ class RecoWireROIICARUS : public art::EDProducer
     
   private:
     // It seems there are pedestal shifts that need correcting
-    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&) const;
+    float fixTheFreakingWaveform(const std::vector<float>&, raw::ChannelID_t, std::vector<float>&);
     
     float getTruncatedRMS(const std::vector<float>&) const;
     
@@ -92,11 +91,10 @@ class RecoWireROIICARUS : public art::EDProducer
     
     std::vector<std::unique_ptr<icarus_tool::IROIFinder>>   fROIFinderVec;               ///< ROI finders per plane
     std::unique_ptr<icarus_tool::IDeconvolution>            fDeconvolution;
-    std::unique_ptr<icarus_tool::IWaveformTool>             fWaveformTool;
+
+    icarus_signal_processing::WaveformTools<float>          fWaveformTool;
     
     const geo::GeometryCore*                                fGeometry = lar::providerFrom<geo::Geometry>();
-    art::ServiceHandle<util::LArFFT>                        fFFT;
-    art::ServiceHandle<util::SignalShapingServiceICARUS>    fSignalShaping;
     
     // Define here a temporary set of histograms...
     std::vector<TH1F*>     fPedestalOffsetVec;
@@ -145,13 +143,6 @@ void RecoWireROIICARUS::reconfigure(fhicl::ParameterSet const& pset)
     std::sort(fROIFinderVec.begin(),fROIFinderVec.end(),[](const auto& left,const auto& right){return left->plane() < right->plane();});
 
     fDeconvolution = art::make_tool<icarus_tool::IDeconvolution>(pset.get<fhicl::ParameterSet>("Deconvolution"));
-    
-    // Let's apply some smoothing as an experiment... first let's get the tool we need
-    fhicl::ParameterSet waveformToolParams;
-    
-    waveformToolParams.put<std::string>("tool_type","Waveform");
-    
-    fWaveformTool = art::make_tool<icarus_tool::IWaveformTool>(waveformToolParams);
 
     fDigitModuleLabel           = pset.get< std::string >   ("DigitModuleLabel", "daq");
     fNoiseSource                = pset.get< unsigned short >("NoiseSource",          3);
@@ -224,7 +215,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     std::unique_ptr<art::Assns<raw::RawDigit,recob::Wire> > WireDigitAssn(new art::Assns<raw::RawDigit,recob::Wire>);
 
     // Read in the digit List object(s). 
-    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;
+    art::Handle< std::vector<raw::RawDigit> > digitVecHandle;        
     
     if(fSpillName.size()>0) evt.getByLabel(fDigitModuleLabel, fSpillName, digitVecHandle);
     else                    evt.getByLabel(fDigitModuleLabel, digitVecHandle);
@@ -240,6 +231,8 @@ void RecoWireROIICARUS::produce(art::Event& evt)
     
     const lariov::ChannelStatusProvider& chanFilt = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
+    double const samplingRate = sampling_rate(clockData);
     // loop over all wires
     wirecol->reserve(digitVecHandle->size());
     for(size_t rdIter = 0; rdIter < digitVecHandle->size(); ++rdIter)
@@ -300,7 +293,7 @@ void RecoWireROIICARUS::produce(art::Event& evt)
             fROIFinderVec.at(planeID.Plane)->FindROIs(rawAdcLessPedVec, channel, fEventCount, raw_noise, candRoiVec);
             
             // Do the deconvolution
-            fDeconvolution->Deconvolve(rawAdcLessPedVec, channel, candRoiVec, ROIVec);
+            fDeconvolution->Deconvolve(rawAdcLessPedVec, samplingRate, channel, candRoiVec, ROIVec);
             
             // Make some histograms?
             if (fOutputHistograms)
@@ -377,7 +370,7 @@ float RecoWireROIICARUS::getTruncatedRMS(const std::vector<float>& waveform) con
     return truncRms;
 }
     
-float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform) const
+float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& waveform, raw::ChannelID_t channel, std::vector<float>& fixedWaveform)
 {
     // Get the truncated mean and rms
     float fullRMS;
@@ -385,11 +378,11 @@ float RecoWireROIICARUS::fixTheFreakingWaveform(const std::vector<float>& wavefo
     float truncMean;
     float nSig(2.0);  // make tight constraint
     int   nTrunc;
+    int   range;
+
+    fixedWaveform.resize(waveform.size());
     
-    fWaveformTool->getTruncatedMeanRMS(waveform, nSig, truncMean, fullRMS, truncRMS, nTrunc);
-    
-    // Set the waveform to the new baseline
-    std::transform(waveform.begin(), waveform.end(), fixedWaveform.begin(), std::bind(std::minus<float>(),std::placeholders::_1,truncMean));
+    fWaveformTool.getPedestalCorrectedWaveform(waveform, fixedWaveform, nSig, truncMean, fullRMS, truncRMS, nTrunc, range);
     
     // Fill histograms
     if (fOutputHistograms)

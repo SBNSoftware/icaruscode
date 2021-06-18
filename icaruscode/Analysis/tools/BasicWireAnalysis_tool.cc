@@ -1,4 +1,3 @@
-
 #include "icaruscode/Analysis/tools/IWireHistogramTool.h"
 
 #include "fhiclcpp/ParameterSet.h"
@@ -11,13 +10,11 @@
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 #include "larcore/Geometry/Geometry.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larreco/HitFinder/HitFinderTools/IWaveformTool.h"
 
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
-#include "icaruscode/Utilities/tools/IWaveformTool.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 
 #include "TH1.h"
 #include "TH2.h"
@@ -152,10 +149,9 @@ private:
     art::TFileDirectory*                fHistDirectory;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    const geo::GeometryCore&            fGeometry;             ///< pointer to Geometry service
-    util::SignalShapingServiceICARUS&   fSignalServices;       ///< The signal shaping service
-    const detinfo::DetectorProperties*  fDetectorProperties;   ///< Detector properties service
-    const lariov::DetPedestalProvider&  fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
+    const geo::GeometryCore&                fGeometry;             ///< pointer to Geometry service
+    icarusutil::SignalShapingICARUSService& fSignalServices;       ///< The signal shaping service
+    const lariov::DetPedestalProvider&      fPedestalRetrievalAlg; ///< Keep track of an instance to the pedestal retrieval alg
 };
     
 //----------------------------------------------------------------------------
@@ -167,11 +163,9 @@ private:
 ///
 BasicWireAnalysis::BasicWireAnalysis(fhicl::ParameterSet const & pset) :
     fGeometry(*lar::providerFrom<geo::Geometry>()),
-    fSignalServices(*art::ServiceHandle<util::SignalShapingServiceICARUS>()),
+    fSignalServices(*art::ServiceHandle<icarusutil::SignalShapingICARUSService>()),
     fPedestalRetrievalAlg(*lar::providerFrom<lariov::DetPedestalService>())
 {
-    fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();
-    
     configure(pset);
     
     // Report.
@@ -310,8 +304,6 @@ void BasicWireAnalysis::fillHistograms(const IWireHistogramTool::WirePtrVec&    
             fFullRmsHist.at(plane)->Fill(fullRMS, 1.);
             fNumTruncHist.at(plane)->Fill(float(nTrunc)/float(waveform.size()),1.);
 
-            Waveform::const_iterator timeIter;          // iterator for time bins
-            
             // ROI start time
             raw::TDCtick_t roiStartTick = range.begin_index();
             

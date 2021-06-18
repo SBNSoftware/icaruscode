@@ -140,11 +140,8 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
     
     getMeanAndTruncRms(rawWaveform, truncMean, rms, truncRms, numTruncBins);
     
-    // Recover the database version of the pedestal
-    float pedestal = fPedestalRetrievalAlg.PedMean(channel);
-    
     // The pedCorVal will transform from the average of waveform calculated here to the expected value of the pedestal.
-    pedCorVal = truncMean - pedestal;
+    pedCorVal = 0.;
     
     // Determine the range of ADC values on this wire
     std::pair<RawDigitVector::const_iterator,RawDigitVector::const_iterator> minMaxItrPair = std::minmax_element(rawWaveform.begin(),rawWaveform.end());
@@ -214,7 +211,7 @@ void RawDigitCharacterizationAlg::getWaveformParams(const RawDigitVector& rawWav
         short minMax = std::min(maxVal - minVal,199);
         
         fAdcCntHist[view]->Fill(numTruncBins, 1.);
-        fAveValHist[view]->Fill(std::max(-29.9, std::min(29.9,double(truncMean - pedestal))), 1.);
+        fAveValHist[view]->Fill(std::max(-29.9, std::min(29.9,double(truncMean))), 1.);
         fRmsTValHist[view]->Fill(std::min(19.9, double(truncRms)), 1.);
         fRmsFValHist[view]->Fill(std::min(19.9, double(rms)), 1.);
         fRmsValProf[view]->Fill(wire, double(truncRms), 1.);
@@ -286,7 +283,16 @@ void RawDigitCharacterizationAlg::getMeanRmsAndPedCor(const RawDigitVector& rawW
     getMeanAndRms(rawWaveform, truncMean, rmsVal, meanCnt);
     
     // Recover the database version of the pedestal
-    float pedestal = fPedestalRetrievalAlg.PedMean(channel);
+    float pedestal(0.);
+    
+    try
+    {
+        pedestal = fPedestalRetrievalAlg.PedMean(channel);
+    }
+    catch(...)
+    {
+        pedestal = truncMean;
+    }
     
     pedCorVal = truncMean - pedestal;
     

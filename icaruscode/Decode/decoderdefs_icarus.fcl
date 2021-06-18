@@ -1,0 +1,31 @@
+#include "decodertools.fcl"
+
+BEGIN_PROLOG
+
+
+decodeFilterNoise: {
+                    module_type:        FilterNoiseICARUS
+                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    OutputPedestalCor:  false
+                    OutputPedestalPath: "RAW"
+                    DiagnosticOutput:   false
+                    DecoderTool:        @local::TPCDecoderFilter1DTool
+}
+
+decodeTPC: {
+                    module_type:        DaqDecoderICARUSTPC
+                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    OutputRawWaveform:  false
+                    OutputRawWavePath:  "RAW"
+                    DiagnosticOutput:   false
+                    DecoderTool:        @local::TPCDecoderFilter1DTool
+}
+
+decodePMT: {
+                    module_type:        DaqDecoderICARUSPMT
+                    FragmentsLabel:     "daq:CAENV1730"
+                    DecoderTool:        @local::PMTDecoderTool
+}
+
+END_PROLOG
+

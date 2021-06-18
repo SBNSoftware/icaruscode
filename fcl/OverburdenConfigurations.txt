@@ -1,0 +1,11 @@
+# prodcorsika_standard_icarus.fcl # generation FHiCL files will have special configuration
+# prodcorsika_genie_icarus.fcl    # to override output file name until Redmine issue #22357 is solved
+
+standard_g4_icarus.fcl
+cosmics_g4_icarus_volCryostat.fcl
+cosmics_g4_icarus_volDetEnc.fcl
+
+standard_detsim_icarus.fcl
+multitpc_detsim_icarus.fcl
+
+evd_icarus.fcl

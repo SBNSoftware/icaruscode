@@ -1,7 +1,7 @@
 
 #include "services_icarus_simulation.fcl"
 #include "singles_icarus.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"

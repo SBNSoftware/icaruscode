@@ -1,0 +1,5 @@
+/**
+ * @namespace icarus::opdet
+ * @brief Optical detector simulation for ICARUS.
+ */
+

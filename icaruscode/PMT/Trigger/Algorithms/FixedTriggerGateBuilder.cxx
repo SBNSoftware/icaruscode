@@ -22,6 +22,7 @@ icarus::trigger::FixedTriggerGateBuilder::FixedTriggerGateBuilder
   (Config const& config)
   : Base_t(config)
   , fGateDuration(config.GateDuration())
+  , fExtendGate(config.ExtendGate())
 {}
   
   

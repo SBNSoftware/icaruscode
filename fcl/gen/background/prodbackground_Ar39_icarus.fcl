@@ -13,14 +13,14 @@
 #   first version
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "radiological_model_icarus.fcl"
 
 process_name: BackgroundGen
 
 services: {
   
-  @table::icarus_basic_services # from services_icarus.fcl
+  @table::icarus_common_services # from services_common_icarus.fcl
   
 } # services
 
@@ -49,6 +49,7 @@ physics: {
 outputs: {
   rootoutput: {
     module_type:  RootOutput
-    fileName:    "prodbackground_Ar39_icarus_%p-%tc.root"
+    fileName:    "prodbackground_Ar39_icarus_%tc-%p.root"
+    dataTier:    "simulated"
   } # rootoutput
 } # outputs

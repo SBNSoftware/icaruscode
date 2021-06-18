@@ -1,4 +1,4 @@
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
 ##include "triggersim_icarus.fcl"
 ##include "opticaldetectorsim_icarus.fcl"
@@ -16,7 +16,7 @@ services:
   #MemoryTracker:           @local::icarus_memory_tracker
   RandomNumberGenerator: {} #ART native random number generator
   #FileCatalogMetadata:  @local::art_file_catalog_mc
-  @table::icarus_basic_services
+  @table::icarus_common_services
 }
 
 #source is now a root file

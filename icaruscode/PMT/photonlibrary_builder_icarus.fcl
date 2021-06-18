@@ -1,0 +1,197 @@
+#
+# File:    photonlibrary_builder_icarus.fcl
+# Purpose: main configuration file for simulation of scintillation visibility
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 16, 2020
+# Version: 1.0
+#
+# This configuration is base for the simulation of a few voxels of the
+# photon visibility lookup table ("photon library") for ICARUS.
+# 
+# 
+# This is the merge and optimization of `icarus_prodsingle_buildopticallibrary.fcl`
+# from `icaruscode` `v08_57_00` plus `prova_source.fcl`.
+#
+#
+
+
+# services
+#include "services_icarus_simulation.fcl"
+
+# modules
+#include "opticaldetectormodules.fcl"
+#include "opticaldetectorservices.fcl"
+#include "emptyevent_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+
+
+process_name: LibraryBuild
+
+
+################################################################################
+###  service configuration
+################################################################################
+
+services: {
+  
+                      @table::icarus_g4_services
+  
+  # events are generated anew each time: default per-event policy is ineffective
+  NuRandomService:    @local::random_NuRandomService
+  
+  OpDetResponse:      @local::standard_opdetresponse
+  
+  SpaceChargeService: @erase
+  
+} # services
+
+
+services.TFileService.fileName: "Supplemental-photonlibrary_builder_icarus_%tc-%p.root"
+
+services.Geometry.DisableWiresInG4: false # we need to account for wire shadow
+
+services.LArG4Parameters: { # customization
+  
+  @table::services.LArG4Parameters
+  
+  # enable this custom LArG4 physics list
+  # with optical physics instead of fast scintillation
+  UseCustomPhysics: true
+  EnabledPhysics: [
+    "Em",
+    "Optical",            # <== this is the important one!
+    "SynchrotronAndGN",
+    "Ion",
+    "Hadron",
+    "Decay",
+    "HadronElastic",
+    "Stopping",
+    "NeutronTrackingCut"
+    ]
+  
+  # store only the count of photons per channel, not the single photons
+  UseLitePhotons: true 
+  
+  # avoid unnecessary steps
+  DisableWireplanes: true
+  FillSimEnergyDeposits: false
+  NoElectronPropagation: false
+  
+} # services.LArG4Parameters
+
+
+services.PhotonVisibilityService: {
+  LibraryBuildJob:  true
+  DoNotLoadLibrary: true
+  
+  #
+  # to avoid getting weird voxel size (for human readability),
+  # we hard-code the voxel grid;
+  # the library is generated only in the first cryostat
+  # (in the simulation the two cryostats are identical anyway);
+  # the volume of the cryostat C:0 according to icaruscode v08_57_00 was:
+  # 
+  #   (-420.43,-233.61,-1003.95) -- (-20,193.21,1003.95) cm
+  # 
+  # This is roughly a (400 x 430 x 2010) = 345.72 m^3.
+  # Running a Monte Carlo "integration" (`photonlibrary_volumetest_icarus.fcl`)
+  # revealed that some 5-cm voxels at the borders where consistently not liquid
+  # argon and therefore we discount them here (3+3, 4+5 and 4+4).
+  # This turns out in going from 2765760 to 2245012 voxels (-20%!).
+  # The library generated on August 2018 covered a volume of 267.54 m^3.
+  # 
+  UseCryoBoundary:  false
+  XMin: -405.0 # cm (August 2018: -366.0 cm)
+  XMax:  -35.0 # cm (August 2018:  -66.0 cm)
+  YMin: -215.0 # cm (August 2018: -210.0 cm)
+  YMax:  170.0 # cm (August 2018:  180.0 cm)
+  ZMin: -985.0 # cm (August 2018: -995.0 cm)
+  ZMax:  985.0 # cm (August 2018:  965.0 cm)
+  
+  NX:  74  # 5 cm voxels filling 370 cm
+  NY:  77  # 5 cm voxels filling 385 cm
+  NZ: 394  # 5 cm voxels filling 1970 cm
+
+} # services.PhotonVisibilityService
+
+# for photon library generation we do not include prescale
+# (is prescale included at all except in fast optical simulation?)
+services.LArPropertiesService.ScintPreScale: 1.0
+
+
+################################################################################
+###  workflow configuration
+################################################################################
+source: { module_type: EmptyEvent }
+
+physics: {
+
+  producers: {
+    # --------------------------------------------------------------------------
+    generator: {
+      module_type: "LightSource"
+      
+      # mode: scan a volume voxel by voxel;
+      # use the whole volume from PhotonVisibilityService,
+      # and the voxelization defined therein
+      SourceMode:          1 # kSCAN
+      N:             1000000
+      FirstVoxel:       @nil # voxel range must be overridden
+      LastVoxel:        @nil
+      UseCustomRegion: false # use volume from PhotonVisibilityService
+
+      # emission point distribution: uniform in the whole selected volume,
+      # but only from where liquid argon is present
+      PosDist:           0       # kUNIF
+      SelectMaterials: [ "LAr" ]
+      NMaxFactor:       20       # never generate more that 20 times the required photons
+      
+      # photon energy distriibution: Gaussian around time distribution:
+      # fixed at 127.8 nm wavelength
+      PDist:  1    # kGAUS
+      P:      9.70 # average photon energy [eV]
+      SigmaP: 0.25 # photon energy spread (RMS) [eV]
+      
+      # time distribution: fixed at 0 (i.e. we don't use or care)
+      TDist:  0   # kUNIF
+      T0:     0.0
+      SigmaT: 0.0
+      
+      # other options
+      FillTree: false # no additional output please
+      
+    } # generator
+    # --------------------------------------------------------------------------
+    
+    largeant:  @local::icarus_largeant
+    
+    # --------------------------------------------------------------------------
+    
+  } # physics
+
+  analyzers: {
+    pmtresponse: {
+      module_type:  SimPhotonCounter
+      GeneratorModule:            "generator"
+      Verbosity:                   0 # quiet!
+      MakeAllPhotonsTree:      false
+      MakeDetectedPhotonsTree: false
+      MakeOpDetsTree:          false
+      MakeOpDetEventsTree:     false
+      MakeLightAnalysisTree:   false
+    }
+  } # analyzers
+
+  simulate:  [ generator, largeant ]
+  analyzeIt: [ pmtresponse ]
+
+} # physics
+
+
+#
+# Optical specific module configuration:
+#
+
+# we do not save, nor create, MCParticle objects
+physics.producers.largeant.MakeMCParticles: false
+

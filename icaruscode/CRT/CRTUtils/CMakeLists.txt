@@ -18,11 +18,12 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ART_FRAMEWORK_SERVICES_REGISTRY}
                            ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
                            ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
                            art_Persistency_Common canvas
                            art_Persistency_Provenance canvas
                            art_Utilities canvas
                            ${MF_MESSAGELOGGER}
-                           
+                           ${CLHEP}
                            ${FHICLCPP}
                            ${ROOT_GEOM}
                            ${ROOT_XMLIO}
@@ -30,10 +31,12 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ROOT_BASIC_LIB_LIST}
                            ${Boost_SYSTEM_LIBRARY}
                            icaruscode_CRT
-                           icaruscode_CRTProducts
+                           sbnobj_Common_CRT
                            icaruscode_CRTData
                            lardata_DetectorInfoServices_DetectorClocksServiceStandard_service
                            nurandom_RandomUtils_NuRandomService_service
         )
+
 install_headers()
+install_fhicl()
 install_source()

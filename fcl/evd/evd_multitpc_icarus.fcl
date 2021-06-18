@@ -1,5 +1,4 @@
 #include "evdservices_icarus.fcl"
-#include "services_icarus.fcl"
 
 process_name: EvdIcarus
 
@@ -41,7 +40,8 @@ physics:
  #and output modules. all items here can be run simultaneously
  end_paths: [evd]  
 }
-services.RawDrawingOptions.TotalTicks: 4100
+services.RawDrawingOptions.TotalTicks: 4096
+services.EvdLayoutOptions.AutoZoomInterest:                0
 
 # Some basic overrides to set up basic drawing
 

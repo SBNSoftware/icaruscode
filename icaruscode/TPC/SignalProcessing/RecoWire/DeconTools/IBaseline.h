@@ -14,6 +14,7 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "larcoreobj/SimpleTypesAndConstants/RawTypes.h" // raw::ChannelID_t
+#include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
 
 namespace art
 {
@@ -27,11 +28,11 @@ namespace icarus_tool
     public:
         virtual ~IBaseline() noexcept = default;
         
-        virtual void configure(const fhicl::ParameterSet& pset)                                = 0;
-        virtual void outputHistograms(art::TFileDirectory&)                              const = 0;
+        virtual void configure(const fhicl::ParameterSet& pset)                                       = 0;
+        virtual void outputHistograms(art::TFileDirectory&)                                     const = 0;
         
         // Find the baseline
-        virtual float GetBaseline(std::vector<float> const&, raw::ChannelID_t, size_t, size_t) const = 0;
+        virtual float GetBaseline(icarusutil::TimeVec const&, raw::ChannelID_t, size_t, size_t) const = 0;
     };
 }
 

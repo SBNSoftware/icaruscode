@@ -1,0 +1,18 @@
+#include "simulation_genie_icarus_Mar2019.fcl"
+
+process_name: GenGenie
+
+services:
+{
+@table::services
+@table::icarus_legacy_services_v08_50_00
+}
+
+services.Geometry: @local::icarus_single_induction_nooverburden_geometry
+services.ExpGeoHelperInterface: @local::icarus_single_induction_geometry_helper
+
+physics.producers.generator.TopVolume:  "volTPCActive"
+physics.producers.generator.GenFlavors: [ 14 ]
+physics.producers.generator.FluxCopyMethod: "IFDH"
+
+outputs.out1.fileName: "prod_numuCC1pi0_workshop_icarus_%tc_gen.root"

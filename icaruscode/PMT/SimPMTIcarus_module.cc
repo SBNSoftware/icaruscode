@@ -1,5 +1,5 @@
 /**
- * @file   icaruscode/Light/SimPMTIcarus_module.cc
+ * @file   icaruscode/PMT/SimPMTIcarus_module.cc
  * @see    `icarus::opdet::PMTsimulationAlg`
  * 
  * Based on `SimPMTSBND_module.cc` by L. Paulucci and F. Marinho.
@@ -7,11 +7,15 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/SinglePhotonPulseFunctionTool.h"
 #include "icaruscode/PMT/Algorithms/PMTsimulationAlg.h"
+#include "icaruscode/PMT/Algorithms/PhotoelectronPulseFunction.h"
 
 // LArSoft libraries
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardata/DetectorInfoServices/LArPropertiesService.h"
+#include "lardataalg/Utilities/quantities/spacetime.h" // nanosecond
 #include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/Simulation/SimPhotons.h"
 #include "nurandom/RandomUtils/NuRandomService.h"
@@ -23,22 +27,27 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art/Framework/Services/Optional/RandomNumberGenerator.h"
+#include "art/Utilities/make_tool.h"
 #include "canvas/Utilities/InputTag.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
-#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/DelegatedParameter.h"
 #include "fhiclcpp/types/TableFragment.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/ParameterSet.h"
 
 // CLHEP libraries
 #include "CLHEP/Random/RandEngine.h" // CLHEP::HepRandomEngine
 
 // C/C++ standard library
 #include <vector>
+#include <atomic> // std::atomic_flag
 #include <iterator> // std::back_inserter()
 #include <memory> // std::make_unique()
 #include <utility> // std::move()
+#include <optional>
 
 
-namespace opdet{
+namespace icarus::opdet {
   
   /**
    * @brief Simulates the digitization of ICARUS PMT response and trigger.
@@ -50,11 +59,31 @@ namespace opdet{
    * Configuration
    * ==============
    * 
-   * Apart from the input collection of propagated photons, all the
-   * configuration parameters are passed directly to the
-   * `icarus::opdet::PMTsimulationAlg` algorithm.
+   * All the configuration parameters are passed directly to the
+   * `icarus::opdet::PMTsimulationAlg` algorithm, with the following exceptions:
+   * * **InputModule** (input tag): tag of the data product containing the
+   *   `sim::SimPhotons` collection to be digitized;
+   * * **SinglePhotonResponse** (configuration table): configuration of the
+   *   _art_ tool delivering the single photon response function (see below);
+   * * **EfficiencySeed**, **DarkNoiseSeed** and **ElectronicsNoiseSeed**
+   *   (integers, optional): if specified, each number is used to seed the
+   *   pertaining random engine; otherwise, the seed is assigned by
+   *   `NuRandomService`;
+   * * **ElectronicsNoiseRandomEngine** and **DarkNoiseRandomEngine** (strings,
+   *   default: `HepJamesRandom`): name of the random number generation
+   *   algorithm to use; valid values are all the ones supported by
+   *   `art::RandomNumberGenerator` (which match the random engine classes
+   *   derived from `clhep::HepRandomEngine` in CLHEP 2.3 except
+   *   `NonRandomEngine` and `RandEngine`);
+   * * **WritePhotons** (boolean, default: `false`): saves in an additional
+   *   `sim::SimPhotons` collection the photons effectively contributing to
+   *   the waveforms; currently, no selection ever happens and all photons are
+   *   contributing, making this collection the same as the input one.
    * 
-   * The module also utilizes three random number engines.
+   * See the @ref ICARUS_PMTSimulationAlg_RandomEngines "documentation" of
+   * `icarus::PMTsimulationAlg` for the purpose of the three random number
+   * engines.
+   * 
    * Currently, no configuration interface is provided to directly control their
    * seeds, which is delegated to `rndm::NuRandomService` service.
    * 
@@ -73,6 +102,10 @@ namespace opdet{
    * (`std::vector<raw::OpDetWaveform>`) is produced.
    * See `icarus::opdet::PMTsimulationAlg` algorithm documentation for details.
    * 
+   * If `WritePhotons` configuration parameter is set `true`, a collection of
+   * the scintillation photons (`std::vector<sim::SimPhotons>`) which
+   * contributed to the waveforms is also produced.
+   * 
    * 
    * Requirements
    * =============
@@ -83,21 +116,88 @@ namespace opdet{
    * 
    * Three random streams are also used.
    * 
+   * 
+   * Single photon response function tool
+   * -------------------------------------
+   * 
+   * The single photon response function passed to the underlying algorithm,
+   * `icarus::opdet::PMTsimulationAlg`, is extracted from an _art_ tool.
+   * The specifications of the tool are:
+   * 
+   * * the _art_ tool class must implement the
+   *   `icarus::opdet::SinglePhotonPulseFunctionTool` interface;
+   * * the resulting function describes the signal as digitized by the PMT
+   *   readout;
+   * * the function must therefore express the level of the response as
+   *   digitized ADC count above the baseline; this level is negative if the
+   *   signal polarity is negative;
+   * * the time scale of this function has `0` as the photoelectron production
+   *   time.
+   * 
+   * These requirements imply that the tool (or the underlying function) must
+   * include electronics effects like the the time it takes to form the signal,
+   * the signal shape at PMT output, the delay and distortion of the cables and
+   * the ones of the digitization electronics, but the baseline is assumed flat
+   * at 0.
+   * 
    */
   class SimPMTIcarus : public art::EDProducer {
   public:
       
     struct Config
     {
-        using Comment = fhicl::Comment;
-        using Name = fhicl::Name;
-        
-        fhicl::Atom<art::InputTag> inputModuleLabel {
-            Name("InputModule"),
-            Comment("simulated photons to be digitised (sim::SimPhotons)")
+      using Comment = fhicl::Comment;
+      using Name = fhicl::Name;
+      
+      fhicl::Atom<art::InputTag> inputModuleLabel {
+          Name("InputModule"),
+          Comment("simulated photons to be digitized (sim::SimPhotons)")
+      };
+      
+      fhicl::DelegatedParameter SinglePhotonResponse {
+        fhicl::Name("SinglePhotonResponse"),
+        fhicl::Comment(
+          "parameters describing the single photon response"
+          " (SinglePhotonPulseFunctionTool tool)"
+          )
         };
-        
-        fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+
+      fhicl::TableFragment<icarus::opdet::PMTsimulationAlgMaker::Config> algoConfig;
+      
+      fhicl::Atom<bool> writePhotons {
+          Name("WritePhotons"),
+          Comment
+            ("writes the scintillation photon contributing to the waveforms"),
+          false
+      };
+      
+      rndm::SeedAtom EfficiencySeed {
+        Name("EfficiencySeed"),
+        Comment("fix the seed for stochastic photon detection efficiency")
+        };
+      
+      rndm::SeedAtom DarkNoiseSeed {
+        Name("DarkNoiseSeed"),
+        Comment("fix the seed for stochastic dark noise generation")
+        };
+      
+      rndm::SeedAtom ElectronicsNoiseSeed {
+        Name("ElectronicsNoiseSeed"),
+        Comment("fix the seed for stochastic electronics noise generation")
+        };
+      
+      fhicl::Atom<std::string> electronicsNoiseRandomEngine {
+          Name("ElectronicsNoiseRandomEngine"),
+          Comment("type of random engine to use for electronics noise"),
+          "HepJamesRandom"
+      };
+
+      fhicl::Atom<std::string> darkNoiseRandomEngine {
+          Name("DarkNoiseRandomEngine"),
+          Comment("type of random engine to use for dark noise"),
+          "HepJamesRandom"
+      };
+
     }; // struct Config
       
     using Parameters = art::EDProducer::Table<Config>;
@@ -116,8 +216,17 @@ namespace opdet{
     
   private:
     
-    // Declare member data here.
+    /// Type of single photoelectron response function.
+    using SinglePhotonResponseFunc_t
+      = icarus::opdet::SinglePhotonResponseFunc_t const;
+    
+    /// Input tag for simulated scintillation photons (or photoelectrons).
     art::InputTag fInputModuleName;
+    
+    bool fWritePhotons { false }; ///< Whether to save contributing photons.
+    
+    /// Single photoelectron response function.
+    std::unique_ptr<SinglePhotonResponseFunc_t> const fSinglePhotonResponseFunc;
     
     /// The actual simulation algorithm.
     icarus::opdet::PMTsimulationAlgMaker makePMTsimulator;
@@ -125,6 +234,13 @@ namespace opdet{
     CLHEP::HepRandomEngine&  fEfficiencyEngine;
     CLHEP::HepRandomEngine&  fDarkNoiseEngine;
     CLHEP::HepRandomEngine&  fElectronicsNoiseEngine;
+    
+    
+    /// True if `firstTime()` has already been called.
+    std::atomic_flag fNotFirstTime;
+    
+    /// Returns whether no other event has been processed yet.
+    bool firstTime() { return !fNotFirstTime.test_and_set(); }
     
   }; // class SimPMTIcarus
   
@@ -135,14 +251,34 @@ namespace opdet{
 SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     : EDProducer{config}
     , fInputModuleName(config().inputModuleLabel())
+    , fWritePhotons(config().writePhotons())
+    , fSinglePhotonResponseFunc{
+        art::make_tool<icarus::opdet::SinglePhotonPulseFunctionTool>
+          (config().SinglePhotonResponse.get<fhicl::ParameterSet>())
+          ->getPulseFunction()
+      }
     , makePMTsimulator(config().algoConfig())
-    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "Efficiencies")) //, config.Seed))
-    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "DarkNoise")) //, config.Seed))
-    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "ElectronicsNoise")) //, config.Seed, "SeedElectronicsNoise"))
- {
+    , fEfficiencyEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine
+        (*this, "HepJamesRandom", "Efficiencies", config().EfficiencySeed)
+      )
+    , fDarkNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
+        config().darkNoiseRandomEngine(),
+        "DarkNoise",
+        config().DarkNoiseSeed
+      ))
+    , fElectronicsNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(
+        *this,
+        config().electronicsNoiseRandomEngine(),
+        "ElectronicsNoise",
+        config().ElectronicsNoiseSeed
+      ))
+  {
     // Call appropriate produces<>() functions here.
     produces<std::vector<raw::OpDetWaveform>>();
-    produces<std::vector<sim::SimPhotons> >();
+    if (fWritePhotons) produces<std::vector<sim::SimPhotons> >();
+    
+    fNotFirstTime.clear(); // superfluous in C++20
   } // SimPMTIcarus::SimPMTIcarus()
   
   
@@ -155,35 +291,52 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // fetch the input
     //
     auto pulseVecPtr = std::make_unique< std::vector< raw::OpDetWaveform > > ();
-    auto simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
+    std::unique_ptr<std::vector<sim::SimPhotons>> simphVecPtr;
+    if (fWritePhotons)
+      simphVecPtr = std::make_unique< std::vector< sim::SimPhotons > > ();
+    
     //
     // prepare the output
     //
     auto const& pmtVector
       = *(e.getValidHandle< std::vector<sim::SimPhotons> >(fInputModuleName));
     
+    auto const clockData =
+      art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(e);
     //
     // prepare the algorithm
     //
     auto PMTsimulator = makePMTsimulator(
       *(lar::providerFrom<detinfo::LArPropertiesService>()),
-      *(lar::providerFrom<detinfo::DetectorClocksService>()),
+      clockData,
+      *fSinglePhotonResponseFunc,
       fEfficiencyEngine,
       fDarkNoiseEngine,
-      fElectronicsNoiseEngine
+      fElectronicsNoiseEngine,
+      fWritePhotons
       );
+    
+    if (firstTime()) {
+      mf::LogDebug log { "SimPMTIcarus" };
+      log << "PMT simulation configuration (first event):\n";
+      PMTsimulator->printConfiguration(log);
+    } // if first time
     
     //
     // run the algorithm
     //
     for(auto const& photons : pmtVector) {
-      sim::SimPhotons photons_used;
-      auto const& channelWaveforms = PMTsimulator->simulate(photons,photons_used);
+      
+      auto const& [ channelWaveforms, photons_used ]
+        = PMTsimulator->simulate(photons);
       std::move(
         channelWaveforms.cbegin(), channelWaveforms.cend(),
         std::back_inserter(*pulseVecPtr)
         );
-      simphVecPtr->emplace_back(std::move(photons_used));
+      if (simphVecPtr && photons_used)
+        simphVecPtr->emplace_back(std::move(photons_used.value()));
+      
     } // for
 
     mf::LogInfo("SimPMTIcarus") << "Generated " << pulseVecPtr->size()
@@ -193,14 +346,14 @@ SimPMTIcarus::SimPMTIcarus(Parameters const& config)
     // save the result
     //
     e.put(std::move(pulseVecPtr));
-    e.put(std::move(simphVecPtr));
+    if (simphVecPtr) e.put(std::move(simphVecPtr));
   } // SimPMTIcarus::produce()
   
   
-  // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
   DEFINE_ART_MODULE(SimPMTIcarus)
   
   
   // ---------------------------------------------------------------------------
 
-} // namespace icarus
+} // namespace icarus::opdet

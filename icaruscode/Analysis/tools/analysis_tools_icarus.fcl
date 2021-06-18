@@ -27,10 +27,11 @@ SpacePointAnalysisTool:
 {
   tool_type:               "SpacePointAnalysis"
 
-  SpacePointLabelVec:      ["cluster3d"]
+  SpacePointLabelVec:      [ "cluster3DCryo0","cluster3DCryo1" ]
+  HitLabelVec:             [ "cluster3DCryo0","cluster3DCryo1" ]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
-  SimEnergyLabel:          "largeant"
+  SimEnergyLabel:          "ionization"
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
   SigmaVec:                [1.,1.,1.]

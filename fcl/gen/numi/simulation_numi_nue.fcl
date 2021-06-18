@@ -5,7 +5,7 @@
 #include "largeantmodules.fcl"
 #include "genie_icarus_numioffaxis.fcl"
 #include "mcreco.fcl"
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 
 process_name: GenGenieiNumi

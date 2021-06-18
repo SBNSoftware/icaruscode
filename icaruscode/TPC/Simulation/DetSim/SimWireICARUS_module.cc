@@ -9,6 +9,7 @@
 // - save the electron clusters associated with each digit.
 //
 ////////////////////////////////////////////////////////////////////////
+
 // C/C++ standard library
 #include <stdexcept> // std::range_error
 #include <vector>
@@ -51,14 +52,16 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardata/Utilities/LArFFT.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksServiceStandard.h" // FIXME: this is not portable
-#include "icaruscode/Utilities/SignalShapingServiceICARUS.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "icaruscode/TPC/Utilities/SignalShapingICARUSService_service.h"
 #include "lardataobj/Simulation/sim.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalService.h"
 #include "larevt/CalibrationDBI/Interface/DetPedestalProvider.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusService.h"
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "tools/IGenNoise.h"
+#include "icarus_signal_processing/ICARUSFFT.h"
+
 using namespace util;
 ///Detector simulation of raw signals on wires
 namespace detsim {
@@ -79,13 +82,15 @@ public:
     
 private:
     
-    void MakeADCVec(std::vector<short>& adc, std::vector<float> const& noise,
-                    std::vector<double> const& charge, float ped_mean) const;
+    void MakeADCVec(std::vector<short>& adc, icarusutil::TimeVec const& noise,
+                    icarusutil::TimeVec const& charge, float ped_mean) const;
+
+    using TPCIDVec  = std::vector<geo::TPCID>;
     
-    std::string                  fDriftEModuleLabel; ///< module making the ionization electrons
+    art::InputTag                fDriftEModuleLabel; ///< module making the ionization electrons
     bool                         fProcessAllTPCs;    ///< If true we process all TPCs
     unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
-    unsigned int                 fTPC;               ///< If ProcessAllTPCs is false then TPC to use
+    TPCIDVec                     fTPCVec;            ///< List of TPCs to process for this instance of the module
     raw::Compress_t              fCompression;       ///< compression type to use
     unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
     std::map< double, int >      fShapingTimeOrder;
@@ -103,7 +108,6 @@ private:
     size_t                       fTestWire;
     std::vector<size_t>          fTestIndex;
     std::vector<double>          fTestCharge;
-    int                          fSample; // for histograms, -1 means no histos
     
     TH1F*                        fSimCharge;
     TH2F*                        fSimChargeWire;
@@ -127,9 +131,13 @@ private:
         double m_charge;
         size_t m_time;
     };
+
+    using FFTPointer = std::unique_ptr<icarus_signal_processing::ICARUSFFT<double>>;
+    FFTPointer                              fFFT;                   //< Object to handle thread safe FFT
     
     //services
-    const geo::GeometryCore& fGeometry;
+    const geo::GeometryCore&                fGeometry;
+    icarusutil::SignalShapingICARUSService* fSignalShapingService;  //< Access to the response functions
     
 }; // class SimWireICARUS
 DEFINE_ART_MODULE(SimWireICARUS)
@@ -156,21 +164,29 @@ SimWireICARUS::~SimWireICARUS() {}
 //-------------------------------------------------
 void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
-    fDriftEModuleLabel= p.get< std::string         >("DriftEModuleLabel"    );
-    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs", false);
-    fCryostat         = p.get< unsigned int        >("Cryostat",           0);
-    fTPC              = p.get< unsigned int        >("TPC",                0);
-    fSimDeadChannels  = p.get< bool                >("SimDeadChannels"      );
-    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal"     );
-    fMakeHistograms   = p.get< bool                >("MakeHistograms", false);
-    fSample           = p.get< int                 >("Sample"               );
-    fSmearPedestals   = p.get< bool                >("SmearPedestals",  true);
-    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",      32);
-    fTest             = p.get< bool                >("Test"                 );
-    fTestWire         = p.get< size_t              >("TestWire"             );
-    fTestIndex        = p.get< std::vector<size_t> >("TestIndex"            );
-    fTestCharge       = p.get< std::vector<double> >("TestCharge"           );
-    
+    fDriftEModuleLabel= p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
+    fProcessAllTPCs   = p.get< bool                >("ProcessAllTPCs",                     false);
+    fCryostat         = p.get< unsigned int        >("Cryostat",                               0);
+    fSimDeadChannels  = p.get< bool                >("SimDeadChannels",                    false);
+    fSuppressNoSignal = p.get< bool                >("SuppressNoSignal",                   false);
+    fMakeHistograms   = p.get< bool                >("MakeHistograms",                     false);
+    fSmearPedestals   = p.get< bool                >("SmearPedestals",                      true);
+    fNumChanPerMB     = p.get< int                 >("NumChanPerMB",                          32);
+    fTest             = p.get< bool                >("Test",                               false);
+    fTestWire         = p.get< size_t              >("TestWire",                               0);
+    fTestIndex        = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
+    fTestCharge       = p.get< std::vector<double> >("TestCharge",         std::vector<double>());
+
+    using TPCValsPair = std::pair<unsigned int, unsigned int>; // Assume cryostat, TPC 
+    using TPCValsVec  = std::vector<TPCValsPair>;
+
+    TPCValsVec tempIDVec = p.get< TPCValsVec >("TPCVec", TPCValsVec());
+
+    for(const auto& idPair : tempIDVec)
+    {
+        fTPCVec.push_back(geo::TPCID(idPair.first,idPair.second));
+    }
+
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
@@ -182,10 +198,14 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
+
     //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob();
+    fNTimeSamples = detProp.NumberTimeSamples();
     
-    fNTimeSamples = detprop->NumberTimeSamples();
+    fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
+
+    fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fNTimeSamples);
     
     return;
 }
@@ -240,33 +260,10 @@ void SimWireICARUS::produce(art::Event& evt)
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
     
-    //get the FFT
-    art::ServiceHandle<util::LArFFT> fFFT;
-    fFFT->ReinitializeFFT(fNTimeSamples,fFFT->FFTOptions(),fFFT->FFTFitBins());
-    size_t nTicks = fFFT->FFTSize();
-    if ( nTicks%2 != 0 )
-        MF_LOG_DEBUG("SimWireICARUS") << "Warning: FFTSize " << nTicks << " not a power of 2. "
-        << "May cause issues in (de)convolution.\n";
-    if ( fNTimeSamples > nTicks )
-        mf::LogError("SimWireICARUS") << "Cannot have number of readout samples "
-        << fNTimeSamples << " greater than FFTSize " << nTicks << "!";
-    
-    //TimeService
-    art::ServiceHandle<detinfo::DetectorClocksServiceStandard> tss;
-    
-    // In case trigger simulation is run in the same job...
-    // FIXME:  You should not be calling preProcessEvent
-    tss->preProcessEvent(evt,art::ScheduleContext::invalid());
-    auto const* ts = tss->provider();
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
-    
-    //Get N_RESPONSES from SignalShapingService, on the fly
-    // flag added to use nominal one response per plane or multiple responses
-    // per plane and scaling for YZ dependent responses
-    // or data driven field responses
-    art::ServiceHandle<util::SignalShapingServiceICARUS> sss;
 
     //--------------------------------------------------------------------
     //
@@ -301,15 +298,15 @@ void SimWireICARUS::produce(art::Event& evt)
     
     // vectors for working in the following for loop
     std::vector<short>  adcvec(fNTimeSamples, 0);
-    std::vector<double> chargeWork(nTicks,0.);
-    std::vector<double> zeroCharge(nTicks,0.);
-    std::vector<float>  noisetmp(nTicks,0.);
+    icarusutil::TimeVec chargeWork(fNTimeSamples,0.);
+    icarusutil::TimeVec zeroCharge(fNTimeSamples,0.);
+    icarusutil::TimeVec noisetmp(fNTimeSamples,0.);
     
     // make sure chargeWork is correct size
     if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
     
     //detector properties information
-    auto const* detprop = lar::providerFrom<detinfo::DetectorPropertiesService>();
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
     
     // Let the tools know to update to the next event
     for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
@@ -319,49 +316,49 @@ void SimWireICARUS::produce(art::Event& evt)
     // motherboard) then we keep all of those wires. This so we can implment noise mitigation techniques
     // with the simulation
     //
-    // So... first step is to build a map of motherboard and true information
+    
+    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
+    using ChannelPair    = std::pair<raw::ChannelID_t,raw::ChannelID_t>;
+    using ChannelPairVec = std::vector<ChannelPair>;
+
+    ChannelPairVec channelPairVec;
+   
+    for (geo::TPCID const& tpcid : fTPCVec) 
+    {
+        for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
+        {
+            raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
+            raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
+
+            channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
+        } // for planes in TPC
+    }
+
+    // Ok, define the structure for the MB info....
     using MBWithSignalSet = std::set<raw::ChannelID_t>;
     
     MBWithSignalSet mbWithSignalSet;
     
-    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
-    raw::ChannelID_t firstChannel(0);
-    raw::ChannelID_t endChannel(maxChannel);
-    
-    if (!fProcessAllTPCs)
+    for(const ChannelPair& channelPair : channelPairVec)
     {
-        firstChannel = maxChannel;
-        endChannel   = 0;
-        
-        for(unsigned int plane = 0; plane < fGeometry.Nplanes(fTPC,fCryostat); plane++)
+        // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
+        if (!fSuppressNoSignal)
         {
-            raw::ChannelID_t planeStartChannel = fGeometry.PlaneWireToChannel(plane,0,fTPC,fCryostat);
-            
-            if (planeStartChannel < firstChannel) firstChannel = planeStartChannel;
-            
-            raw::ChannelID_t planeEndChannel = planeStartChannel + fGeometry.Nwires(plane,fTPC,fCryostat);
-            
-            if (planeEndChannel > endChannel) endChannel = planeEndChannel;
+            raw::ChannelID_t firstMBIdx(channelPair.first / fNumChanPerMB);
+            raw::ChannelID_t endMBIdx(channelPair.second / fNumChanPerMB);
+        
+            for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
         }
-    }
-    
-    // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
-    if (!fSuppressNoSignal)
-    {
-        raw::ChannelID_t firstMBIdx(firstChannel / fNumChanPerMB);
-        raw::ChannelID_t endMBIdx(endChannel / fNumChanPerMB);
-        
-        for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
-    }
-    else
-    {
-        for(const auto& simChan : channels)
+        else
         {
-            if (simChan)
+            for(const auto& simChan : channels)
             {
-                raw::ChannelID_t channel = simChan->Channel();
+                if (simChan)
+                {
+                    raw::ChannelID_t channel = simChan->Channel();
                 
-                if (channel >= firstChannel && channel < endChannel) mbWithSignalSet.insert(channel/fNumChanPerMB);
+                    if (channel >= channelPair.first && channel < channelPair.second) mbWithSignalSet.insert(channel/fNumChanPerMB);
+                }
             }
         }
     }
@@ -376,7 +373,7 @@ void SimWireICARUS::produce(art::Event& evt)
         {
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
-            noisetmp.resize(nTicks, 0.);     //just in case
+            noisetmp.resize(fNTimeSamples, 0.);     //just in case
             
             //use channel number to set some useful numbers
             std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
@@ -393,9 +390,14 @@ void SimWireICARUS::produce(art::Event& evt)
             
             //Generate Noise
             double noise_factor(0.);
-            auto   tempNoiseVec = sss->GetNoiseFactVec();
-            double shapingTime  = sss->GetShapingTime(0);
+            auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
+            double shapingTime  = fSignalShapingService->GetShapingTime(channel);
+            double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+            int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
             
+            // Recover the response function information for this channel
+            const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
+
             if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
                 noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
             //Throw exception...
@@ -414,6 +416,7 @@ void SimWireICARUS::produce(art::Event& evt)
             fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
                                                 noisetmp,
+                                                detProp,
                                                 noise_factor,
                                                 channel);
             
@@ -423,14 +426,12 @@ void SimWireICARUS::produce(art::Event& evt)
             // If there is something on this wire, and it is not dead, then add the signal to the wire
             if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
             {
-                double gain=sss->GetASICGain(channel) * detprop->SamplingRate() * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-                
                 std::fill(chargeWork.begin(), chargeWork.end(), 0.);
                 
                 // loop over the tdcs and grab the number of electrons for each
-                for(int tick = 0; tick < (int)nTicks; tick++)
+                for(size_t tick = 0; tick < fNTimeSamples; tick++)
                 {
-                    int tdc = ts->TPCTick2TDC(tick);
+                    int tdc = clockData.TPCTick2TDC(tick);
                     
                     // continue if tdc < 0
                     if( tdc < 0 ) continue;
@@ -441,7 +442,7 @@ void SimWireICARUS::produce(art::Event& evt)
                 } // loop over tdcs
                 // now we have the tempWork for the adjacent wire of interest
                 // convolve it with the appropriate response function
-                sss->Convolute(channel, chargeWork);
+                fFFT->convolute(chargeWork, response.getConvKernel(), timeOffset);
                 
                 // "Make" the ADC vector
                 MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
@@ -480,8 +481,8 @@ void SimWireICARUS::produce(art::Event& evt)
     return;
 }
 //-------------------------------------------------
-void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, std::vector<float> const& noisevec,
-                               std::vector<double> const& chargevec, float ped_mean) const
+void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, icarusutil::TimeVec const& noisevec,
+                               icarusutil::TimeVec const& chargevec, float ped_mean) const
 {
     for(unsigned int i = 0; i < fNTimeSamples; ++i)
     {

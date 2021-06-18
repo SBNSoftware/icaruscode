@@ -1,4 +1,4 @@
-	BEGIN_PROLOG
+BEGIN_PROLOG
 
 
 NoiseFromHistTool:
@@ -55,30 +55,24 @@ NoNoiseTool:
     tool_type:         NoNoise
 }
 
-standard_simwire:
+icarus_standard_simwire:
 {
     module_type:        "SimWireICARUS"
     DriftEModuleLabel:  "largeant"
-    ProcessAllTPCs:     false
-    Cryostat:           0
-    TPC:                0
     CompressionType:    "none"
     SimDeadChannels:    false
     SuppressNoSignal:   true
     SmearPedestals:     true
-    Test:               false
-    TestWire:           0
-    TestIndex:          [ 0. ]
-    TestCharge:         [ 0. ]
-    Sample:             -1
     MakeHistograms:     "true"
+    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
+    
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
     NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
     # This switches to an updated model, currently under development (Sep 2019), based on FNAL running
     #NoiseGenToolVec:    [@local::SBNNoiseTool, @local::SBNNoiseTool, @local::SBNNoiseTool]
 }
 
-icarus_simwire:  @local::standard_simwire
+icarus_simwire:  @local::icarus_standard_simwire
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
 # Below overrides for SBN Noise tool

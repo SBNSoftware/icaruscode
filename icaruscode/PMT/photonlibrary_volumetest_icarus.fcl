@@ -1,0 +1,118 @@
+#
+# File:    photonlibrary_volumetest_icarus.fcl
+# Purpose: test the extent of the volume to be covered by the photon library.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 30, 2020
+# Version: 1.0
+#
+# This job runs only the first part of the photon library creation, where many
+# scintillation photons are generated in each voxel.
+# 
+# The output log can be used to determine whether it is possible to trim the
+# borders of the covered volume. For example, if all voxels at x = -417.5 cm
+# have no generated scintillation photon, meaning that there is no liquid argon
+# in them, the volume can be reduced by one voxel on that side.
+# 
+# This is a sort of LAr volume Monte Carlo integration. We are content if we
+# determine even just one location where a photon can be produced, i.e. just
+# a single liquid argon point. We try NMaxFactor times to find that single
+# point: this is the parameter that actually decides the precision of the
+# "integration". Failing a 100'000 point search in a (5 cm)^3 volume means that
+# there is a volume of LAr smaller than 1.25 mm^3 (and, of course,
+# 0.001% = 1/100'000 of the volume).
+# 
+# This configuration reuses existing code, and as such some additional log
+# analysis is necessary to draw conclusions after running the job.
+# 
+# Example code to get how many voxel slices are fully non-LAr at the border:
+# 
+# lar -c photonlibrary_volumetest_icarus.fcl > photonlibrary_volumetest_icarus.log
+# # ... wait for loooong time... it took me almost 4 hours for 2.76M voxels ...
+# grep -F "Generated " photonlibrary_volumetest_icarus.log | cut -d' ' -f2 > VoxelMap.dat
+# python <<EOC
+# import numpy
+# Dims = ( 80, 86, 402 )
+# data = numpy.fromfile("VoxelMap.dat", dtype=int, sep=" ").reshape(Dims, order='F')
+# assert Dims[0] * Dims[1] * Dims[2] == data.size
+# for i in range(Dims[0]):
+#     if not data[i,:,:].any(): continue
+#     print("First x voxel non-empty: %d (excess: %d)" % (i, i))
+#     break
+# for i in range(Dims[1]):
+#     if not data[:,i,:].any(): continue
+#     print("First y voxel non-empty: %d (excess: %d)" % (i, i))
+#     break
+# for i in range(Dims[2]):
+#     if not data[:,:,i].any(): continue
+#     print("First z voxel non-empty: %d (excess: %d)" % (i, i))
+#     break
+# for i in reversed(range(Dims[0])):
+#     if not data[i,:,:].any(): continue
+#     print("Last x voxel non-empty: %d (excess: %d)" % (i, Dims[0] - i - 1))
+#     break
+# for i in reversed(range(Dims[1])):
+#     if not data[:,i,:].any(): continue
+#     print("Lasy y voxel non-empty: %d (excess: %d)" % (i, Dims[1] - i - 1))
+#     break
+# for i in reversed(range(Dims[2])):
+#     if not data[:,:,i].any(): continue
+#     print("Last z voxel non-empty: %d (excess: %d)" % (i, Dims[2] - i - 1))
+#     break
+# EOC
+# 
+# This runs the configuration, parses the log for one entry per voxel, 0 or 1
+# for no LAr and some LAr in that voxel, shove only the 0 and 1 into a file;
+# then summon Python/numpy to read that file, treat it as a 3D array, and check
+# the slice borders.
+# The "excess" lines taught me that I consistently had, for example, 3 empty
+# voxels at low x and 3 at high x.
+#
+
+
+
+# services
+#include "services_icarus_simulation.fcl"
+
+# modules
+#include "opticaldetectormodules.fcl"
+#include "opticaldetectorservices.fcl"
+#include "emptyevent_icarus.fcl"
+#include "largeantmodules_icarus.fcl"
+
+# base configuration
+#include "photonlibrary_builder_icarus.fcl"
+
+process_name: LibVolCheck
+
+physics.producers.generator.N:                1
+physics.producers.generator.NMaxFactor:  100000
+physics.producers.generator.FirstVoxel:       0
+physics.producers.generator.LastVoxel:       -1
+
+source.maxEvents: 2765760 # this needs to be the total number of voxels
+
+
+################################################################################
+###  service configuration
+################################################################################
+
+services.TFileService:              @erase
+services.DetectorClocksService:     @erase
+services.LArPropertiesService:      @erase
+services.DetectorPropertiesService: @erase
+services.LArG4Parameters:           @erase
+services.MagneticField:             @erase
+services.OpDetResponse:             @erase
+
+services.PhotonVisibilityService.LibraryBuildJob: false
+
+
+################################################################################
+###  workflow configuration
+################################################################################
+
+physics.producers.largeant: @erase
+physics.analyzers: @erase
+
+physics.simulate:  [ generator ]
+physics.analyzeIt: @erase

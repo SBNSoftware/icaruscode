@@ -1,1 +1,1 @@
-#include "icarus_ci_nucosmics_reco_basic_quick_test_icaruscode.fcl"
+#include "icarus_ci_nucosmics_reco_quick_test_icaruscode.fcl"

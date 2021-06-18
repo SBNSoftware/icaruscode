@@ -1,0 +1,18 @@
+#
+# File:    simulation_genie_icarus_numi_volDetEnclosure.fcl
+# Purpose: Simulation of neutrinos from NuMI on a single ICARUS cryostat.
+# Date:    August 19, 2019
+# Version: 1.0
+#
+# GENIE is instructed to use `volDetEnclosure` volume for neutrino interactions.
+# This is way larger than it would need to be, and filtering is likely wanted
+# after this generation. Also, this generation is going to be quite inefficient
+# if LAr interactions are seeked. On the "positive" side, this is the only way
+# we know to generate neutrino events in both ICRAUS cryostats.
+#
+
+#include "simulation_genie_icarus_numi.fcl"
+
+physics.producers.generator.TopVolume:  "volDetEnclosure"
+
+outputs.rootoutput.fileName: "simulation_genie_icarus_numi_volDetEnclosure_%tc-%p.root"

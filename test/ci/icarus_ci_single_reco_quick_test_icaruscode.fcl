@@ -1,6 +1,1 @@
-#include "services_icarus.fcl"
-#include "sbnmar18_icarus_driver_reco_all.fcl"
-
-services: {
-  @table::icarus_wirecalibration_services
-}
+#include "reco_icarus_driver_reco_multitpc_gauss.fcl"

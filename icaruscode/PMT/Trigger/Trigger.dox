@@ -1,0 +1,5 @@
+/**
+ * @namespace icarus::trigger
+ * @brief Trigger simulation for ICARUS.
+ */
+

@@ -24,7 +24,9 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
 #include "art_root_io/TFileService.h"
+#include "larcore/CoreUtils/ServiceUtil.h"
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
@@ -33,14 +35,13 @@
 
 namespace icarus_tool
 {
-    class IWaveformTool;
     class IFilter;
 }
 
 namespace caldata
 {
     
-class RawDigitFFTAlg
+template <class T> class RawDigitFFTAlg
 {
 public:
 
@@ -50,13 +51,17 @@ public:
 
     // Provide for reinitialization if necessary
     void reconfigure(fhicl::ParameterSet const & pset);
-    void initializeHists(art::ServiceHandle<art::TFileService>&);
+    void initializeHists(detinfo::DetectorClocksData const& clockData,
+                         detinfo::DetectorPropertiesData const& detProp,
+                         art::ServiceHandle<art::TFileService>&);
     
-    template <class T> void getFFTCorrection(std::vector<T>&, double) const;
+    void getFFTCorrection(std::vector<T>&, double) const;
     
-    template <class T> void getFFTCorrection(std::vector<T>&, size_t) const;
+    void getFFTCorrection(std::vector<T>&, size_t) const;
     
-    void filterFFT(std::vector<short>&, size_t, size_t, float pedestal=0.);
+    void filterFFT(detinfo::DetectorClocksData const& clockData,
+                   detinfo::DetectorPropertiesData const& detProp,
+                   std::vector<short>&, size_t, size_t, float pedestal=0.);
     
 private:
     
@@ -67,7 +72,7 @@ private:
     std::vector<size_t>                                    fHiWireByPlane;         ///< Hi wire for individual wire histograms
     
     // Try to optimize the filter FFT function with static memory...
-    std::map<size_t,std::vector<std::complex<float>>>      fFilterVec;
+    std::map<size_t,std::vector<std::complex<float>>>      fFilterVecMap;
     std::vector<float>                                     fFFTInputVec;
     std::vector<std::complex<float>>                       fFFTOutputVec;
     std::vector<float>                                     fPowerVec;
@@ -77,13 +82,12 @@ private:
     std::vector<TProfile*>                                 fConvFFTPowerVec;
     std::vector<TProfile*>                                 fFilterFuncVec;
 
-    std::unique_ptr<icarus_tool::IWaveformTool>            fWaveformTool;
+    icarus_signal_processing::WaveformTools<T>                        fWaveformTool;
     std::map<size_t,std::unique_ptr<icarus_tool::IFilter>> fFilterToolMap;
     
     std::unique_ptr<Eigen::FFT<float>>                     fEigenFFT;
 
     // Useful services, keep copies for now (we can update during begin run periods)
-    detinfo::DetectorProperties const* fDetectorProperties = lar::providerFrom<detinfo::DetectorPropertiesService>();   ///< Detector properties service
 };
     
 } // end caldata namespace

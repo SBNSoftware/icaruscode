@@ -1,0 +1,12 @@
+#
+# File:    evd_overburden_icarus.fcl
+# Purpose: Overburden single-wire version of `evd_icarus.fcl`.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 13, 2020
+#
+
+#include "evd_icarus.fcl"
+
+# turn to overburden geometry:
+#include "use_overburden_geometry_icarus.fcl"
+

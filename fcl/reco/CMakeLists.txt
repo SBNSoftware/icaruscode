@@ -8,8 +8,10 @@ FILE(GLOB fcl_files *.fcl)
 install_source( EXTRAS ${fcl_files} )
 
 # add subdirectories
+add_subdirectory(FlashMatchSimple)
 add_subdirectory(SBNNov17)
 add_subdirectory(SBNMar18)
 add_subdirectory(June18)
 add_subdirectory(MCC1)
+add_subdirectory(overburden)
 

@@ -106,10 +106,10 @@
 #include "lardataobj/RawData/BeamInfo.h"
 // #include "larcore/DetectorInfoServices/LArPropertiesService.h"
 // #include "larcore/Utilities/AssociationUtil.h"
-// #include "larcore/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "larsim/MCCheater/BackTrackerService.h"
 #include "larsim/MCCheater/ParticleInventoryService.h"
+#include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RecoBase/Track.h"
 #include "lardataobj/RecoBase/Cluster.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -680,7 +680,7 @@ namespace icarus {
 
   private:
 
-    void   HitsPurity(std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe);
+    void   HitsPurity(detinfo::DetectorClocksData const& clockData, std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe);
     double length(const recob::Track& track);
     double length(const simb::MCParticle& part, TVector3& start, TVector3& end);
     double bdist(const recob::tracking::Point_t& pos);
@@ -1786,6 +1786,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
   
   int nGeniePrimaries = 0, nGEANTparticles = 0, nMCNeutrinos = 0;
   
+  auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(evt);
   art::Ptr<simb::MCTruth> mctruth;
   //Brailsford 2017/10/16
   //Fix for issue 17917
@@ -1804,7 +1805,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
       if (isfirsttime){
 	for (size_t i = 0; i<hitlist.size(); i++){
 	  //if (hitlist[i]->View() == geo::kV){//collection view
-	  std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(hitlist[i]);
+          std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(clockData, hitlist[i]);
 	  for (size_t e = 0; e<eveIDs.size(); e++){
 	    art::Ptr<simb::MCTruth> ev_mctruth = partInventory->TrackIdToMCTruth_P(eveIDs[e].trackID);
 	    //mctruthemap[ev_mctruth]+=eveIDs[e].energy;
@@ -2244,11 +2245,11 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
         }
         
         for (size_t ipl = 0; ipl < 3; ++ipl){
-          TrackerData.trkidtruth_recoutils_totaltrueenergy[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalTrueEnergy(hits[ipl]);
-          TrackerData.trkidtruth_recoutils_totalrecocharge[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalRecoCharge(hits[ipl]);
-          TrackerData.trkidtruth_recoutils_totalrecohits[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalRecoHits(hits[ipl]);
+          TrackerData.trkidtruth_recoutils_totaltrueenergy[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalTrueEnergy(clockData, hits[ipl]);
+          TrackerData.trkidtruth_recoutils_totalrecocharge[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalRecoCharge(clockData, hits[ipl]);
+          TrackerData.trkidtruth_recoutils_totalrecohits[iTrk][ipl] = RecoUtils::TrueParticleIDFromTotalRecoHits(clockData, hits[ipl]);
           double maxe = 0;
-          HitsPurity(hits[ipl],TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl],maxe);
+          HitsPurity(clockData, hits[ipl],TrackerData.trkidtruth[iTrk][ipl],TrackerData.trkpurtruth[iTrk][ipl],maxe);
         //std::cout<<"\n"<<iTracker<<"\t"<<iTrk<<"\t"<<ipl<<"\t"<<trkidtruth[iTracker][iTrk][ipl]<<"\t"<<trkpurtruth[iTracker][iTrk][ipl]<<"\t"<<maxe;
           if (TrackerData.trkidtruth[iTrk][ipl]>0){
             const art::Ptr<simb::MCTruth> mc = partInventory->TrackIdToMCTruth_P(TrackerData.trkidtruth[iTrk][ipl]);
@@ -2662,7 +2663,7 @@ void icarus::AnalysisTree::analyze(const art::Event& evt)
   }
 } // icarus::AnalysisTree::analyze()
 
-void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe){
+void icarus::AnalysisTree::HitsPurity(detinfo::DetectorClocksData const& clockData, std::vector< art::Ptr<recob::Hit> > const& hits, Int_t& trackid, Float_t& purity, double& maxe){
 
   trackid = -1;
   purity = -1;
@@ -2676,7 +2677,7 @@ void icarus::AnalysisTree::HitsPurity(std::vector< art::Ptr<recob::Hit> > const&
     art::Ptr<recob::Hit> hit = hits[h];
     std::vector<sim::IDE> ides;
    
-    std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(hit);
+    std::vector<sim::TrackIDE> eveIDs = backTracker->HitToEveTrackIDEs(clockData, hit);
 
     for(size_t e = 0; e < eveIDs.size(); ++e){
       //std::cout<<h<<" "<<e<<" "<<eveIDs[e].trackID<<" "<<eveIDs[e].energy<<" "<<eveIDs[e].energyFrac<<std::endl;
@@ -2859,4 +2860,3 @@ namespace icarus{
 }
 
 #endif
-

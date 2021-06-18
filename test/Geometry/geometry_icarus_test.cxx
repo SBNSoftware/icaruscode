@@ -13,10 +13,10 @@
  */
 
 // ICARUS libraries
-#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
+#include "icarusalg/Geometry/ChannelMapIcarusAlg.h"
+#include "test/Geometry/geometry_unit_test_icarus.h"
 
 // LArSoft libraries
-#include "test/Geometry/geometry_unit_test_icarus.h"
 #include "test/Geometry/GeometryTestAlg.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 

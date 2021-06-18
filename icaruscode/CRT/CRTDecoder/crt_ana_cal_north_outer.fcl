@@ -1,0 +1,5 @@
+#include "crt_ana.fcl"
+
+physics.analyzers.crtAna.calibrate: true
+physics.analyzers.crtAna.region: 0
+physics.analyzers.crtAna.layer: 0

@@ -1,0 +1,80 @@
+#
+# File:    maketriggerplots_icarus.fcl
+# Purpose: Runs `icarus::trigger::MajorityTriggerEfficiencyPlots` module.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    January 9, 2020
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Required inputs
+# ----------------
+# 
+#  * discriminated waveforms (with threshold)
+#
+
+#include "services_common_icarus.fcl"
+#include "trigger_icarus.fcl"
+
+process_name: TrgPlots
+
+
+services: {
+  
+  # this provides: file service, random management (unused),
+  #                Geometry, detector properties and clocks
+  @table::icarus_common_services
+  
+  # currently unused (remove the line if they start mattering):
+  LArPropertiesService:      @erase
+  DetectorPropertiesService: @erase
+  
+} # services
+
+
+physics: {
+  
+  analyzers: {
+  
+    triggerplots: {
+      
+      module_type: MajorityTriggerEfficiencyPlots
+      
+      TriggerGatesTag: lvdsgates
+      
+      # select the thresholds to process (mandatory)
+      Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
+      
+      # minimum number of trigger primitives required for the trigger to fire
+      MinimumPrimitives: [ 1, 2, 3, 4, 5, 8, 12, 20, 50 ]
+      
+      # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # message facility stream
+      LogCategory: "MajorityTriggerEfficiencyPlots"
+      
+    } # triggerplots
+    
+  } # analyzers
+  
+  plots: [ triggerplots ]
+  
+  trigger_paths: []
+  end_paths: [ plots ]
+  
+} # physics
+
+
+#
+# add debug output to its own file
+#
+services.message.destinations.MajorityTriggerEfficiencyPlotsLog: {
+  type:       file
+  filename:  "MajorityTriggerEfficiencyPlots.log"
+  threshold:  DEBUG
+  categories: {
+    MajorityTriggerEfficiencyPlots: { limit: -1 }
+    default:                        { limit: 0 }
+  }
+} # services.messages.destinations.MajorityTriggerEfficiencyPlotsLog
+

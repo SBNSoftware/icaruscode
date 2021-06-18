@@ -14,6 +14,11 @@
 
 #include "fhiclcpp/ParameterSet.h"
 #include "CLHEP/Random/RandomEngine.h"
+#include "icaruscode/TPC/Utilities/tools/SignalProcessingDefs.h"
+
+namespace detinfo {
+  class DetectorPropertiesData;
+}
 
 class TComplex;
 
@@ -30,7 +35,9 @@ namespace icarus_tool
         
         virtual void generateNoise(CLHEP::HepRandomEngine& noise_engine,
                                    CLHEP::HepRandomEngine& cornoise_engine,
-                                   std::vector<float>&, double, unsigned int = 0) = 0;
+                                   icarusutil::TimeVec&,
+                                   detinfo::DetectorPropertiesData const& detProp,
+                                   double, unsigned int = 0) = 0;
     };
 }
 

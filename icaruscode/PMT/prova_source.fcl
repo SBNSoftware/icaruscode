@@ -6,7 +6,7 @@
 #include "opticaldetectormodules.fcl"
 #include "opticaldetectorservices.fcl"
 #include "lightsource.fcl"
-# #include "services_icarus.fcl"
+# #include "services_common_icarus.fcl"
 #include "services_icarus_simulation.fcl"
 
 process_name: ProvaSource
@@ -24,11 +24,6 @@ services:
 services.PhotonVisibilityService: @local::standard_photonvisibilityservice
 
 services.SignalShapingServiceICARUS: @erase
-
-services.Geometry.GDML: "icarus_12jul.gdml"
-services.Geometry.ROOT: "icarus_12jul.gdml"
-#services.Geometry.GDML: "test_traspCathode_nocrt.gdml"
-#services.Geometry.ROOT: "test_traspCathode_nocrt.gdml"
 
 services.LArG4Parameters.ReflectiveSurfaceNames: [
          "STEEL_STAINLESS_Fe7Cr2Ni"

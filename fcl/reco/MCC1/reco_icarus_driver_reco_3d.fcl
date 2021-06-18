@@ -1,4 +1,4 @@
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
@@ -7,7 +7,7 @@
 process_name: McReco3D
 
 services: {
-  @table::icarus_basic_services
+  @table::icarus_common_services
   @table::icarus_wirecalibration_services
   @table::icarus_backtracking_services # from `simulationservices_icarus.fcl`
 }

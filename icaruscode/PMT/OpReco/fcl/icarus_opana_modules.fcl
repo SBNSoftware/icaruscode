@@ -24,7 +24,7 @@ FakeFlash: {
 ICARUSMCOpHit: {
     module_type: "ICARUSMCOpHit"
     MergePeriod: 0.01
-    SimPhotonsProducer: "opdaq"
+    SimPhotonsProducer: "largeant"
     SPEArea: @local::SPE.Area
     SPEAmplitude: @local::SPE.Amplitude
 }

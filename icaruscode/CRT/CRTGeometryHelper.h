@@ -31,26 +31,19 @@ namespace crt{
   class CRTGeometryHelper : public geo::AuxDetExptGeoHelperInterface {
   public:
 
-    CRTGeometryHelper(fhicl::ParameterSet const & pset,
-                      art::ActivityRegistry &);
+    explicit CRTGeometryHelper(fhicl::ParameterSet const & pset);
 
   private:
 
-    void doConfigureAuxDetChannelMapAlg(
-        fhicl::ParameterSet const& sortingParameters,
-        geo::AuxDetGeometryCore* geom) override;
-
-    AuxDetChannelMapAlgPtr_t doGetAuxDetChannelMapAlg() const override;
+    AuxDetChannelMapAlgPtr_t
+    doConfigureAuxDetChannelMapAlg(fhicl::ParameterSet const& sortingParameters) const override;
 
     fhicl::ParameterSet fPset; ///< Copy of configuration parameter set
-    std::shared_ptr<geo::CRTChannelMapAlg> fCRTChannelMap; ///< Channel map
-
   };
 
 }  //namespace crt
 }  // namespace icarus
 
-DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, LEGACY)
+DECLARE_ART_SERVICE_INTERFACE_IMPL(icarus::crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface, SHARED)
 
 #endif  // ICARUS_CRTExptGeoHelperInterface_h
-

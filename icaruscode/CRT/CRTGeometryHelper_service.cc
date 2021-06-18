@@ -20,30 +20,19 @@ namespace crt{
 
   //------------------------------------------------------------------------
   CRTGeometryHelper::CRTGeometryHelper(
-      fhicl::ParameterSet const& pset, art::ActivityRegistry &)
-  : fPset(pset), fCRTChannelMap() {}
-
-  //------------------------------------------------------------------------
-  void CRTGeometryHelper::doConfigureAuxDetChannelMapAlg(
-      fhicl::ParameterSet const& sortingParameters,
-      geo::AuxDetGeometryCore* geom) {
-
-    fCRTChannelMap = std::make_shared<geo::CRTChannelMapAlg>(sortingParameters);
-
-    if (fCRTChannelMap) {
-      geom->ApplyChannelMap(fCRTChannelMap);
-    }
-    else std::cout << "AuxDetChannelMap not initilized properly!" << std::endl;
-  }
+      fhicl::ParameterSet const& pset)
+  : fPset(pset) {}
 
   //------------------------------------------------------------------------
   CRTGeometryHelper::AuxDetChannelMapAlgPtr_t
-  CRTGeometryHelper::doGetAuxDetChannelMapAlg() const {
-    return fCRTChannelMap;
+  CRTGeometryHelper::doConfigureAuxDetChannelMapAlg(
+      fhicl::ParameterSet const& sortingParameters) const {
+
+    return std::make_unique<geo::CRTChannelMapAlg>(sortingParameters);
+
   }
 
 }  // namespace crt
 }  // namespace icarus
 
 DEFINE_ART_SERVICE_INTERFACE_IMPL(icarus::crt::CRTGeometryHelper, geo::AuxDetExptGeoHelperInterface)
-

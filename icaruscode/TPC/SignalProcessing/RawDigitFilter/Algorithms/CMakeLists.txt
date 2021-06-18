@@ -1,3 +1,6 @@
+
+add_definitions(-DEIGEN_FFTW_DEFAULT)
+
 art_make( 
           LIB_LIBRARIES 
                           lardataobj_RawData
@@ -14,7 +17,8 @@ art_make(
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
                           lardataobj_RecoBase
-                          icaruscode_Utilities_SignalShapingServiceICARUS_service
+                          icaruscode_TPC_Utilities_SignalShapingICARUSService_service
+                          ${ICARUS_FFTW_LIBRARIES}
                           ${ART_FRAMEWORK_CORE}
                           ${ART_FRAMEWORK_PRINCIPAL}
                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -32,7 +36,9 @@ art_make(
                           ${ROOT_GDML}
                           ${ROOT_FFTW}
                           ${ROOT_BASIC_LIB_LIST}
+
           TOOL_LIBRARIES  icaruscode_TPC_SignalProcessing_RawDigitFilter_Algorithms
+                          icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                           lardataobj_RawData
                           lardataobj_RecoBase
                           lardata_Utilities
@@ -42,7 +48,7 @@ art_make(
                           larcore_Geometry_Geometry_service
                           larevt_CalibrationDBI_IOVData
                           larevt_CalibrationDBI_Providers
-                          icaruscode_Utilities_SignalShapingServiceICARUS_service
+                          ${ICARUS_FFTW_LIBRARIES}
                           ${ART_FRAMEWORK_CORE}
                           ${ART_FRAMEWORK_PRINCIPAL}
                           ${ART_FRAMEWORK_SERVICES_REGISTRY}

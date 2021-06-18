@@ -1,56 +1,75 @@
-////////////////////////////////////////////////////////////////////////////////
-/// \file IcarusGeometryHelper_service.cc
-///
-/// \version $Id
-/// \author  rs@fnal.gov
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * @file    icaruscode/Geometry/IcarusGeometryHelper_service.cc
+ * @brief   Geometry helper service for ICARUS geometries: implementation file.
+ * @see     `icaruscode/Geometry/IcarusGeometryHelper.h`
+ */
 
-// Migration note:
-// Geometry --> Icarus/Geometry
+// library header
 #include "icaruscode/Geometry/IcarusGeometryHelper.h"
-#include "icaruscode/Geometry/ChannelMapIcarusAlg.h"
 
-//#include "larcorealg/Geometry/ChannelMapAlg.h"
-#include "larcorealg/Geometry/GeometryCore.h" // larcore. geo::GeometryData_t
+// LArSoft libraries
+#include "larcore/Geometry/ChannelMapSetupTool.h"
+#include "larcorealg/Geometry/ChannelMapAlg.h"
 
-#include "TString.h"
+// framework libraries
+#include "art/Utilities/make_tool.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
+
+// C/C++ standard libraries
+#include <string>
 
 
-namespace Icarus
+
+//------------------------------------------------------------------------------
+namespace {
+
+  // name of the tool to create the default channel mapping algorithm
+  std::string const DefaultChannelMapSetupTool
+    = "ICARUSsingleInductionChannelMapSetupTool";
+
+} // local namespace
+
+
+//------------------------------------------------------------------------------
+auto icarus::IcarusGeometryHelper::doConfigureChannelMapAlg(
+  fhicl::ParameterSet const& /* sortingParameters */,
+  std::string const& detectorName
+  ) const -> ChannelMapAlgPtr_t
 {
+  //
+  // detector type check
+  //
+  if (detectorName.find("icarus") == std::string::npos) {
+    MF_LOG_WARNING("IcarusGeometryHelper")
+      << "Using a ICARUS channel mapping with an unsupported (non-ICARUS?)"
+         " detector geometry";
+  } // if not ICARUS detector
 
-IcarusGeometryHelper::IcarusGeometryHelper( fhicl::ParameterSet const & pset, art::ActivityRegistry & reg )
-:  fPset( pset )
-   //fReg( reg )
-{}
+  //
+  // channel mapping creation and setup
+  //
+  return makeChannelMapping(fPset);
 
-IcarusGeometryHelper::~IcarusGeometryHelper() throw()
-{}  
+} // icarus::IcarusGeometryHelper::doConfigureChannelMapAlg()
 
-void IcarusGeometryHelper::doConfigureChannelMapAlg( fhicl::ParameterSet const & sortingParameters, geo::GeometryCore* geom ) 
+
+//------------------------------------------------------------------------------
+std::unique_ptr<geo::ChannelMapAlg>
+icarus::IcarusGeometryHelper::makeChannelMapping
+  (fhicl::ParameterSet const& parameters) const
 {
-    fChannelMap.reset();
-    std::string const detectorName = geom->DetectorName();
+  fhicl::ParameterSet mapperDefaultSet;
+  mapperDefaultSet.put("tool_type", DefaultChannelMapSetupTool);
+  auto channelMapSetupTool = art::make_tool<geo::ChannelMapSetupTool>
+    (parameters.get<fhicl::ParameterSet>("Mapper", mapperDefaultSet));
 
-    if ( detectorName.find("icarus") == std::string::npos ) {
-        std::cout << __PRETTY_FUNCTION__ << ": WARNING USING CHANNEL MAP ALG WITH NON-ICARUS GEO!" << std::endl;
-    }
+  return channelMapSetupTool->setupChannelMap();
+} // icarus::IcarusGeometryHelper::makeChannelMapping()
 
-//    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset, sortingParameters );
-    fChannelMap = std::make_shared<geo::ChannelMapIcarusAlg>( fPset );
 
-    if ( fChannelMap )
-    {
-        geom->ApplyChannelMap(fChannelMap); // calls Initialize(fGeoData) for us
-    }
+//------------------------------------------------------------------------------
+DEFINE_ART_SERVICE_INTERFACE_IMPL
+  (icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface)
 
-}
 
-std::shared_ptr<const geo::ChannelMapAlg> IcarusGeometryHelper::doGetChannelMapAlg() const
-{
-    return fChannelMap;
-}
-
-}
-
-DEFINE_ART_SERVICE_INTERFACE_IMPL(Icarus::IcarusGeometryHelper, geo::ExptGeoHelperInterface)
+//------------------------------------------------------------------------------

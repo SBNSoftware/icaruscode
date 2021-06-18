@@ -1,15 +1,173 @@
-add_subdirectory(Data)
 add_subdirectory(Algorithms)
+add_subdirectory(Utilities)
 
 art_make(
-  TOOL_LIBRARIES
+  EXCLUDE
+    "MajorityTriggerSimulation_module.cc"
+    "SlidingWindowTrigger_module.cc"
+    "TriggerEfficiencyPlots_module.cc"
+    "MajorityTriggerEfficiencyPlots_module.cc"
+    "SlidingWindowTriggerEfficiencyPlots_module.cc"
+    "MakeTriggerSimulationTree_module.cc"
+  LIB_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
-    icaruscode_PMT_Trigger_Data
+    icaruscode_PMT_Trigger_Utilities
+    sbnobj_ICARUS_PMT_Trigger_Data
+    larcore_Geometry_Geometry_service
+    lardataalg_MCDumpers
+    larcorealg_Geometry
+    lardataobj_RawData
+    nusimdata_SimulationBase
+    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+    ${ART_ROOT_IO_TFILE_SUPPORT}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_FRAMEWORK_CORE}
+    ${ART_PERSISTENCY_PROVENANCE}
+    ${ART_UTILITIES}
+    ${CANVAS}
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    ${CETLIB_EXCEPT}
+    ${ROOT_GENVECTOR}
+    ${ROOT_HIST}
+    ${ROOT_TREE}
+    ${ROOT_CORE}
+  MODULE_LIBRARIES
+    icaruscode_PMT_Trigger_Algorithms
+    sbnobj_ICARUS_PMT_Trigger_Data
     lardataalg_DetectorInfo
     lardataobj_RawData
-    MF_MessageLogger
-    fhiclcpp
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    ${ROOT_CORE}
+    ${ROOT_PHYSICS}
+  TOOL_LIBRARIES
+    icaruscode_PMT_Trigger_Algorithms
+    sbnobj_ICARUS_PMT_Trigger_Data
+    lardataalg_DetectorInfo
+    lardataobj_RawData
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
   )
+
+simple_plugin(SlidingWindowTrigger module
+  icaruscode_PMT_Trigger_Algorithms
+  sbnobj_ICARUS_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  icaruscode_PMT_Algorithms
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Core
+  )
+
+simple_plugin(MajorityTriggerSimulation module
+  icaruscode_PMT_Trigger_Algorithms
+  sbnobj_ICARUS_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Hist
+  ROOT::Core
+  )
+
+simple_plugin(TriggerEfficiencyPlots module
+  icaruscode_PMT_Trigger_Utilities
+  sbnobj_ICARUS_PMT_Trigger_Data
+  larcore_Geometry_Geometry_service
+  lardataalg_MCDumpers
+  larcorealg_Geometry
+  lardataobj_RawData
+  nusimdata_SimulationBase
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ${ROOT_GENVECTOR}
+  ${ROOT_HIST}
+  ${ROOT_TREE}
+  ${ROOT_CORE}
+  )
+
+simple_plugin(MakeTriggerSimulationTree module
+  icaruscode_PMT_Trigger_Algorithms
+  icaruscode_PMT_Trigger_Utilities
+  sbnobj_ICARUS_PMT_Trigger_Data
+  larcore_Geometry_Geometry_service
+  lardataalg_MCDumpers
+  larcorealg_Geometry
+  nusimdata_SimulationBase
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ${ROOT_GENVECTOR}
+  ${ROOT_TREE}
+  ${ROOT_CORE}
+  )
+
+# trigger efficiency plot modules with the same build configuration:
+foreach(TriggerEfficiencyPlotsModule
+  MajorityTriggerEfficiencyPlots
+  SlidingWindowTriggerEfficiencyPlots
+)
+
+  simple_plugin(${TriggerEfficiencyPlotsModule} module
+    icaruscode_PMT_Trigger_Algorithms
+    icaruscode_PMT_Trigger
+    icaruscode_PMT_Trigger_Utilities
+    sbnobj_ICARUS_PMT_Trigger_Data
+    larcore_Geometry_Geometry_service
+    lardataalg_MCDumpers
+    larcorealg_Geometry
+    lardataobj_RawData
+    nusimdata_SimulationBase
+    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+    ${ART_ROOT_IO_TFILE_SUPPORT}
+    ${ART_FRAMEWORK_SERVICES_REGISTRY}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${ART_FRAMEWORK_CORE}
+    ${ART_FRAMEWORK_PRINCIPAL}
+    ${CANVAS}
+    ${MF_MESSAGELOGGER}
+    ${FHICLCPP}
+    ${CETLIB_EXCEPT}
+    ${ROOT_GENVECTOR}
+    ${ROOT_HIST}
+    ${ROOT_TREE}
+    ${ROOT_CORE}
+    )
+
+endforeach()
 
 install_headers()
 install_source()

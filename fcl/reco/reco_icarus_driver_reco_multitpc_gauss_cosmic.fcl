@@ -1,0 +1,15 @@
+#include "reco_icarus_driver_reco_multitpc_gauss.fcl"
+
+# fix memory bug
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms: true
+
+# point to cosmic truth
+physics.producers.cheatopflashTPC0.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC1.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC2.MCTruthProducer: "cosmgen"
+physics.producers.cheatopflashTPC3.MCTruthProducer: "cosmgen"
+
+physics.producers.mcopflashTPC0.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC1.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC2.MCTruthProducer: "cosmgen"
+physics.producers.mcopflashTPC3.MCTruthProducer: "cosmgen"

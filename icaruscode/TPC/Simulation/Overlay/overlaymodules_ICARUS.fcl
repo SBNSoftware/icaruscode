@@ -1,0 +1,14 @@
+BEGIN_PROLOG
+
+
+icarus_standard_overlay:
+{
+    module_type:        "OverlayICARUS"
+    InputRawDataLabel:  "daq"
+    DriftEModuleLabel:  "largeant"
+    CompressionType:    "none"
+}
+
+icarus_simwire:  @local::icarus_standard_simwire
+
+END_PROLOG

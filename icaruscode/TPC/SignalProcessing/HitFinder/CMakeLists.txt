@@ -18,7 +18,6 @@ art_make(
 			           lardataobj_RecoBase
 			           lardata_ArtDataHelper
 			           larreco_RecoAlg
-			           icaruscode_Utilities_SignalShapingServiceICARUS_service
                        ${ART_FRAMEWORK_CORE}
 			           ${ART_FRAMEWORK_PRINCIPAL}
 			           ${ART_FRAMEWORK_SERVICES_REGISTRY}

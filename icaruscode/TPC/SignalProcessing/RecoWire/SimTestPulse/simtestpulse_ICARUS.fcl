@@ -1,0 +1,42 @@
+
+BEGIN_PROLOG
+
+icarus_simtestpulse:
+{
+    module_type:       "SimTestPulse"
+    TriggerTime_us:    1050
+    SimTimeArray_us:   [ 1500 ] #[1050, 1200, 1350, 1500, 1650, 1800 ]
+    NumElectronsArray: [ 10000 ] #[10000, 15000, 20000, 25000, 30000, 50000]
+    YArray_cm:         [ 0 ] #[-50, -25, 0, 25, 50, 75 ]
+    ZArray_cm:         [ 500 ] #[500, 500, 500, 500, 500, 500 ]
+    Verbose:           false
+}
+
+icarus_simtestpulsewire:
+{
+    module_type:       "SimTestPulseWire"
+    TriggerTime_us:    1050
+    SimTimeArray_us:   [ 1500 ] 
+    Cryostat:          0
+    TPC:               0
+    Plane0Wires:       [ 600 ]
+    Plane1Wires:       [ 1750 ]
+    Plane2Wires:       [ 1250 ]
+    NumElectronsArray: [ 10000 ] #[10000, 15000, 20000, 25000, 30000, 50000]
+    Verbose:           false
+}
+
+
+icarus_simtestanalysis: 
+{ 
+    module_type:           "SimTestPulseAna"
+    HitProducer:           "gaushit"
+    WireProducer:          "decon1droi"
+    RawDigitProducer:      "daq"
+    FilteredDigitProducer: "rawdigitfilter"
+    RecoTickOffset:        0
+    NumSample:             40
+    Verbose:               false
+}
+
+END_PROLOG

@@ -33,7 +33,6 @@
 //LArSoft
 #include "larcore/Geometry/Geometry.h"
 #include "larevt/Filters/ChannelFilter.h"
-#include "lardata/Utilities/LArFFT.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
 #include "lardataobj/RecoBase/Hit.h"
@@ -401,8 +400,13 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
       if(fThetaAngle==60) {minWireC=2539; maxWireC=2905;}
       if(fThetaAngle==70) {minWireC=2539; maxWireC=2805;}
       if(fThetaAngle==80) {minWireC=2539; maxWireC=2740;}
-      
-    
+
+      //GET THE LIST OF BAD CHANNELS.
+      lariov::ChannelStatusProvider const& channelStatus
+        = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
+
+      lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
+        = channelStatus.BadChannels();
  
       unsigned int minWireI2=2539; //empirical
       unsigned int maxWireI2=4700;
@@ -433,7 +437,7 @@ double                fChi2NDF;                  ///maximum Chisquared / NDF all
           geo::PlaneID::PlaneID_t plane = wid.Plane;
           size_t cryostat=wid.Cryostat;
           size_t tpc=wid.TPC;
-size_t iWire=wid.Wire;
+          size_t iWire=wid.Wire;
 
 
       holder.clear();
@@ -459,14 +463,9 @@ size_t iWire=wid.Wire;
       else{
         raw::Uncompress(rawdigits->ADCs(), rawadc, rawdigits->Compression());
       }
+      
+      mf::LogDebug("ICARUSHitFinder")  << " pedestal " <<rawdigits->GetPedestal() << std::endl;
 
-      //GET THE LIST OF BAD CHANNELS.
-      lariov::ChannelStatusProvider const& channelStatus
-        = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
-
-      lariov::ChannelStatusProvider::ChannelSet_t const BadChannels
-        = channelStatus.BadChannels();
-          mf::LogDebug("ICARUSHitFinder")  << " pedestal " <<rawdigits->GetPedestal() << std::endl;
       for(unsigned int bin = 0; bin < fDataSize; ++bin){ 
         //holder[bin]=(rawadc[bin]-rawdigits->GetPedestal());
           holder[bin]=signal[bin];
@@ -990,7 +989,6 @@ void ICARUSHitFinder::expandHit(reco_tool::ICandidateHitFinder::HitCandidate& h,
         float samples1[bigw];   //list to contain samples bellow the startTick
         float samples2[bigw];   //list to contain samples above the stopTick
         
-        reco_tool::ICandidateHitFinder::MergeHitCandidateVec::iterator hiter;
         reco_tool::ICandidateHitFinder::MergeHitCandidateVec hlist;
 
         float min1;

@@ -25,10 +25,8 @@ namespace geo{
 
     CRTGeoObjectSorter(fhicl::ParameterSet const& p);
 
-    ~CRTGeoObjectSorter();
-
-    void SortAuxDets (std::vector<geo::AuxDetGeo*>& adgeo) const;
-    void SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo*>& adsgeo) const;
+    void SortAuxDets (std::vector<geo::AuxDetGeo>& adgeo) const;
+    void SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo>& adsgeo) const;
 
   };
 
@@ -36,4 +34,3 @@ namespace geo{
 //} //namespace icarus
 
 #endif  // ICARUS_CRTGeoObjectSorter_h
-
