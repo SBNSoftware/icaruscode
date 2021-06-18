@@ -7,6 +7,11 @@
  * Changes
  * --------
  * 
+ * * version 7:
+ *     * contiguous empty voxel warning threshold changed from 10 voxels to 1 m
+ *     * logic of empty voxel block detection rewritten to reduce memory usage
+ *     * added a parameter to control (and disable) empty voxel check
+ * 
  * * version 6:
  *     * added autodetection of the number of channels; overrides input metadata
  * 
@@ -65,6 +70,7 @@
 #include "Compression.h" // ROOT::kLZ4
 #include "TFile.h"
 #include "TDirectory.h"
+#include "TKey.h"
 #include "TChain.h"
 #include "TChainElement.h"
 #include "TObjArray.h"
@@ -88,10 +94,10 @@
 
 
 // -----------------------------------------------------------------------------
-static std::string const ScriptName { "MergePhotonLibrary.C" };
-static unsigned int const ScriptVersion { 6 };
+std::string const ScriptName { "MergePhotonLibrary.C" };
+constexpr unsigned int const ScriptVersion { 7 };
 
-static unsigned int MinMissingVoxelBlockReport = 10U;
+constexpr double MinMissingVoxelBlockLengthReport = 100.0; // cm
 
 
 // -----------------------------------------------------------------------------
@@ -183,6 +189,15 @@ void writeMetadata(MetadataSet_t const& metadata, TDirectory& outDir);
 MetadataSet_t collectSourceMetadata(TChain& tree);
 
 
+/// Reads a real value from metadata.
+double readMetadataDouble
+  (MetadataSet_t const& metadata, std::string const& key, double defValue = 0.);
+
+/// Reads an integral value from metadata.
+int readMetadataInt
+  (MetadataSet_t const& metadata, std::string const& key, int defValue = 0);
+
+
 /// Extracts the number of expected voxels from the metadata.
 unsigned int extractNVoxels(MetadataSet_t const& metadata);
 
@@ -224,6 +239,10 @@ unsigned int populateTreeFromFileList(
  *                          takes longer and compresses more)
  * @param compressionAlgo (default: `ROOT::kLZMA`) compression algorithm
  *                        (see `ROOT::ECompressionAlgorithm`)
+ * @param missingBlockWarningLength (default: `MinMissingVoxelBlockLengthReport`)
+ *        length [cm] of the block size in order to trigger a missing voxel
+ *        warning; if this value is negative, the check is skipped altogether;
+ *        if this value is `0`, all missing voxels will be reported.
  * @return an error code, `0` on success
  * 
  * This script reads the trees with name `inputTreeName` from ROOT directory
@@ -257,7 +276,7 @@ unsigned int populateTreeFromFileList(
  *  ZLib    `4`        5'    20 MB     110 MB        370 MB    500 MB     34"
  *  ZLib    `8`       16'    10 MB      60 MB        280 MB    350 MB     37"
  *  ZLib    `9`       20'    10 MB      55 MB        280 MB    345 MB     34"
- *  LZ4     `4`        8'    20 MB      80 MB        370 MB    470 MB     40" 
+ *  LZ4     `4`        8'    20 MB      80 MB        370 MB    470 MB     40"
  *  LZ4     `8`       14'    20 MB      65 MB        335 MB    420 MB     41"
  *  LZMA    `5`       22'     5 MB      45 MB        200 MB    250 MB     49"
  *  LZMA    `7`       30'     5 MB      45 MB        195 MB    245 MB     48"
@@ -270,6 +289,9 @@ unsigned int populateTreeFromFileList(
  * time is the CPU time reported by `ReadPhotonLibrary()` macro, so the actual
  * time spent in reading the library will present an overhead, especially with
  * remote data source, proportional to the compressed size.
+ * 
+ * ROOT 6.22 introduces another algorithm (`ROOT.kZSTD`) which is faster than
+ * LZ4 but still less compressing than ZLMA.
  *
  *
  * Return codes
@@ -290,7 +312,8 @@ int MergePhotonLibrary(
   std::string const& inputTreeName = "PhotonLibraryData",
   std::string const& inputTreeDir = "pmtresponse",
   int compressionLevel = 8,
-  ROOT::ECompressionAlgorithm compressionAlgo = ROOT::kLZMA
+  ROOT::ECompressionAlgorithm compressionAlgo = ROOT::kLZMA,
+  double missingBlockWarningLength = MinMissingVoxelBlockLengthReport
 ) {
   
   // protect the global state that ROOT so much loves
@@ -421,11 +444,17 @@ int MergePhotonLibrary(
   
   //
   // collect the list of voxels;
-  // report missing blocks only if 10-voxel or larger
+  // report missing blocks only if `missingBlockWarningLength` or larger
   //
-  unsigned int const nLargeMissingBlocks
-    = voxelCheck(*pDestTree, metadata, MinMissingVoxelBlockReport);
-  if (nLargeMissingBlocks > 0U) ErrorCode = 4;
+  
+  if (missingBlockWarningLength >= 0.0) {
+    double const voxelLengthX = readMetadataDouble(metadata, "StepX", 5.0);
+    unsigned int MinMissingVoxelBlockReport = static_cast<unsigned int>
+      (std::ceil(missingBlockWarningLength / voxelLengthX));
+    unsigned int const nLargeMissingBlocks
+      = voxelCheck(*pDestTree, metadata, MinMissingVoxelBlockReport);
+    if (nLargeMissingBlocks > 0U) ErrorCode = 4;
+  } // if check for missing blocks
   
   //
   // close and go
@@ -716,15 +745,41 @@ MetadataSet_t collectSourceMetadata(TChain& tree) {
 
 
 // -----------------------------------------------------------------------------
+template
+  <typename SrcType, typename DestType = SrcType, typename IntType = DestType>
+DestType readMetadataImpl(
+  MetadataSet_t const& metadata, std::string const& key,
+  DestType defValue = DestType{}
+) {
+  auto const& md = metadata.index;
+  auto const iMeta = md.find(key);
+  if (iMeta == md.end()) return defValue;
+  
+  auto metaObj = dynamic_cast<SrcType const*>(iMeta->second.get());
+  return metaObj? DestType(IntType(*metaObj)): defValue;
+  
+} // readMetadataImpl()
+
+
+// -----------------------------------------------------------------------------
+double readMetadataDouble(
+  MetadataSet_t const& metadata, std::string const& key,
+  double defValue /* = 0. */
+) {
+  return readMetadataImpl<RooDouble, double, Double_t>(metadata, key, defValue); 
+}
+
+int readMetadataInt(
+  MetadataSet_t const& metadata, std::string const& key, int defValue /* = 0 */
+  )
+{ return readMetadataImpl<RooInt, int, Int_t>(metadata, key, defValue); }
+
+
+// -----------------------------------------------------------------------------
 unsigned int extractNVoxels(MetadataSet_t const& metadata) {
   
-  auto readInt = [&md = metadata.index](std::string const& key)
-    {
-      auto const iMeta = md.find(key);
-      if (iMeta == md.end()) return 0;
-      auto metaObj = dynamic_cast<RooInt const*>(iMeta->second.get());
-      return metaObj? int(Int_t(*metaObj)): 0;
-    };
+  auto readInt = [&metadata](std::string const& key)
+    { return readMetadataInt(metadata, key); };
   
   int NVoxels = readInt("NVoxels");
   if (NVoxels <= 0) {
@@ -748,13 +803,21 @@ unsigned int voxelCheck(
    */
   TStopwatch timer;
   
+  std::size_t const NExpectedVoxels
+    = static_cast<std::size_t>(extractNVoxels(metadata));
+  if (NExpectedVoxels > 0)
+    std::cout << NExpectedVoxels << " voxels are expected." << std::endl;
+  else
+    std::cout << "The total number of voxels is not known." << std::endl;    
+  
   //
   // collect the number of all voxels in the library (automatically sorted)
   //
   auto const nEntries = tree.GetEntriesFast();
   std::cout << "Extracting the list of voxels from " << nEntries
     << " entries in the merged photon library..." << std::endl;
-  std::set<int> voxelsFound;
+  // index is voxel number, value is if voxel is found; need to save memory...
+  std::vector<bool> voxelsFound(NExpectedVoxels, false);
   
   std::string const VoxelBranchName = "Voxel";
   
@@ -764,7 +827,18 @@ unsigned int voxelCheck(
   tree.SetBranchAddress(VoxelBranchName.c_str(), &branchVoxel);
   Long64_t iEntry = 0;
   timer.Start();
-  while (tree.GetEntry(iEntry++) > 0) voxelsFound.insert(branchVoxel);
+  if (NExpectedVoxels > 0) {
+    while (tree.GetEntry(iEntry++) > 0) voxelsFound[branchVoxel] = true;
+  }
+  else {
+    // special mode: auto-expand the vector (slow)
+    while (tree.GetEntry(iEntry++) > 0) {
+      std::size_t const voxelID = static_cast<std::size_t>(branchVoxel);
+      if (voxelsFound.size() <= voxelID)
+        voxelsFound.resize(voxelID + 1U, false);
+      voxelsFound[branchVoxel] = true;
+    } // while
+  } // if ... else
   timer.Stop();
   if (--iEntry != nEntries) {
     std::cerr << "ERROR: " << nEntries << " entries expected in the tree, but "
@@ -776,56 +850,39 @@ unsigned int voxelCheck(
   }
   
   //
-  // find the gaps; if no metadata is provided, missing voxels at the end might
-  // pass undetected
+  // find the gaps;
+  // if no metadata is provided, missing voxels at the end will go undetected
   //
-  int NExpectedVoxels = extractNVoxels(metadata);
-  if (NExpectedVoxels > 0)
-    std::cout << NExpectedVoxels << " voxels are expected." << std::endl;
-  else
-    std::cout << "The total number of voxels is not known." << std::endl;    
-  
   unsigned int nMissingVoxels = 0U;
   unsigned int nMissingBlocks = 0U;
   unsigned int nLargeMissingBlocks = 0U;
   int firstMissing = 0;
-  for (int const voxel: voxelsFound) {
+  int voxel = 0;
+  auto const vend = voxelsFound.cend();
+  for (auto iVoxel = voxelsFound.cbegin(); iVoxel != vend;
+       ++iVoxel, ++firstMissing
+  ) {
+    if (*iVoxel) continue;
     
-    if (voxel == firstMissing) { // not actually missing...
-      ++firstMissing;
-      continue;
-    }
-    else {
-      auto const missingInBlock
-        = static_cast<unsigned int>(voxel - firstMissing);
-      if (missingInBlock >= minBlockSize) {
-        std::cerr << "Missing voxels: " << firstMissing;
-        if (missingInBlock > 1)
-          std::cerr << " to " << (voxel - 1) << " (" << missingInBlock << ")";
-        std::cerr << std::endl;
-        ++nLargeMissingBlocks;
-      }
-      nMissingVoxels += missingInBlock;
-      ++nMissingBlocks;
-    }
-    firstMissing = voxel + 1;
-  } // for
-  if (firstMissing < NExpectedVoxels) {
-    auto const missingInBlock
-      = static_cast<unsigned int>(NExpectedVoxels - firstMissing);
+    ++nMissingBlocks;
+    unsigned int missingInBlock = 1U;
+    while (++iVoxel != vend) {
+      if (*iVoxel) break;
+      ++missingInBlock;
+    } // while
+    
+    nMissingVoxels += missingInBlock;
     if (missingInBlock >= minBlockSize) {
       std::cerr << "Missing voxels: " << firstMissing;
       if (missingInBlock > 1) {
-        std::cerr << " to " << (NExpectedVoxels - 1)
+        std::cerr << " to " << (firstMissing + missingInBlock - 1)
           << " (" << missingInBlock << ")";
       }
       std::cerr << std::endl;
       ++nLargeMissingBlocks;
     }
-    nMissingVoxels += missingInBlock;
-    ++nMissingBlocks;
-  }
-  
+    if (iVoxel == vend) break;
+  } // for
   if (nMissingVoxels > 0U) {
     std::cerr << " => " << nMissingVoxels << " voxels missing in "
       << nMissingBlocks << " blocks (" << nLargeMissingBlocks
