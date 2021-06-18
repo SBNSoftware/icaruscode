@@ -31,6 +31,7 @@
 #include "TObjArray.h"
 #include "TTree.h"
 #include "TNamed.h"
+#include "TKey.h"
 // #include "TStopwatch.h"
 
 // C/C++ libraries
@@ -265,6 +266,7 @@ std::string CompressionAlgorithmName(ROOT::ECompressionAlgorithm algo) {
     case ROOT::kLZMA: return "LZMA";
     case ROOT::kOldCompressionAlgo: return "ZLib (legacy)";
     case ROOT::kLZ4: return "LZ4";
+    case ROOT::kZSTD: return "ZSTD";
     case ROOT::kUndefinedCompressionAlgorithm: return "undefined";
     default: return "unknown?!?";
   } // switch

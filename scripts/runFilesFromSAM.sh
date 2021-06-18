@@ -8,13 +8,15 @@
 # Date:   March 2021
 #
 # Changes:
-# 20210411 (petrillo@slac.fnal.gov) [1.0]
+# 20210429 (petrillo@slac.stanford.edu) [1.1]
+#   added --max option
+# 20210411 (petrillo@slac.stanford.edu) [1.0]
 #   first public version
 #
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.0"
+SCRIPTVERSION="1.1"
 
 declare -r RawType='raw'
 declare -r DecodeType='decoded'
@@ -27,7 +29,7 @@ declare -r DefaultSchema="$XRootDschema"
 declare -r DefaultLocation="$dCacheLocation"
 declare -r DefaultDecoderStageName="stage0" # used to be 'decoder' up to a certain time
 
-declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSCHEMA%%DASHLOCATION%.filelist"
+declare -r DefaultOutputPattern="%TYPE%-run%RUN%%DASHSCHEMA%%DASHLOCATION%%DASHLIMIT%.filelist"
 
 # ------------------------------------------------------------------------------
 function isFlagSet() {
@@ -101,9 +103,13 @@ Options:
     use PATTERN for the standard output file list (see option \`-O\` above);
     the following tags in PATTERN are replaced: \`%RUN%\` by the run number;
     \`%SCHEMA%\` by the URL schema; \`%LOCATION%\` by the storage location;
-    \`%TYPE%\` by the file content type; and all tags prepended by \`DASH\`
-    (e.g. \`%DASHTYPE%\`) are replaced by a dash (\`-\`) and the value of the
-    tag only if the content of that tag is not empty
+    \`%TYPE%\` by the file content type; \`%LIMIT%\` by the number of requested
+    entry, only if \`--max\` option is specified;
+    and all tags prepended by \`DASH\` (e.g. \`%DASHTYPE%\`) are replaced
+    by a dash (\`-\`) and the value of the tag only if the content of that tag
+    is not empty
+--max=LIMIT
+    retrieves only the first LIMIT files from SAM (only when querying run numbers)
 
 --quiet , -q
     do not print non-fatal information on screen while running
@@ -189,7 +195,7 @@ function BuildOutputFilePath() {
   
   local -A Replacements
   local VarName VarValue
-  for VarName in Run Type Schema Location ; do
+  for VarName in Run Type Schema Location Limit ; do
     VarValue="${!VarName}"
     Replacements["${VarName^^}"]="$VarValue"
     Replacements["DASH${VarName^^}"]="${VarValue:+"-${VarValue}"}"
@@ -220,7 +226,8 @@ declare OutputFile
 declare Type="$DefaultType"
 declare Schema="$DefaultSchema"
 declare Location="$DefaultLocation"
-declare OutputPattern="$DefaultOutputPattern" # not an option yet
+declare OutputPattern="$DefaultOutputPattern"
+declare EntryLimit=''
 declare -i iParam
 for (( iParam=1 ; iParam <= $# ; ++iParam )); do
   Param="${!iParam}"
@@ -242,6 +249,7 @@ for (( iParam=1 ; iParam <= $# ; ++iParam )); do
       ( "--outputpattern="* )             OutputPattern="${Param#--*=}" ;;
       ( "--outputdir="* )                 OutputDir="${Param#--*=}" ;;
       ( "-O" )                            UseDefaultOutputFile=1 ;;
+      ( "--max="* | "--limit="* )         EntryLimit="${Param#--*=}" ;;
       
       ( '--debug' )                       DEBUG=1 ;;
       ( '--debug='* )                     DEBUG="${Param#--*=}" ;;
@@ -280,6 +288,8 @@ fi
 
 trap Cleanup EXIT
 
+[[ "${EntryLimit:-0}" -gt 0 ]] && Limit="max${EntryLimit}"
+
 declare Constraints=''
 case "${Type,,}" in
   ( 'raw' )     Constraints+=" and data_tier=raw" ;;
@@ -294,6 +304,7 @@ case "${Type,,}" in
 #   echo "Type '${Type}' not supported!" >&2
 #   exit 1
 esac
+[[ "${EntryLimit:-0}" -gt 0 ]] && Constraints+=" with limit ${EntryLimit}"
 
 
 declare -i nErrors=0

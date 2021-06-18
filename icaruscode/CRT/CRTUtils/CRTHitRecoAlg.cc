@@ -231,7 +231,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
-
+    int plane = fCrtutils->AuxDetRegionNameToNum(region);
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
@@ -316,7 +316,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;
@@ -331,7 +331,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
-
+    int plane =fCrtutils->AuxDetRegionNameToNum(region);
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0.;
@@ -382,7 +382,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.Length()/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;
@@ -399,7 +399,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //	      << "  with module number " << adid <<std::endl; 
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
-
+    int plane =fCrtutils->AuxDetRegionNameToNum(region);
 
 
     double hitpoint[3], hitpointerr[3];
@@ -554,7 +554,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     }
 
     //generate hit
-    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;

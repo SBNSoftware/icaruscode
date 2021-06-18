@@ -10,19 +10,23 @@ icarus_simple_flashmatch_0: {
   OpHitProducer: "ophit"
   BeamWindowStart: -0.2 # us
   BeamWindowEnd: 2.0 # us
-  LightWindowStart: -0.02 # us, wrt flash time
-  LightWindowEnd: 0.08 # us, wrt flash time
+  FlashStart: -0.02 # us, wrt flash time
+  FlashEnd: 0.08 # us, wrt flash time
   SelectNeutrino: true
+  OnlyPrimaries: true
   UseOppVolMetric: true
   # UseCalo: false
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
   MakeTree: false
+  MinHitQ: 0.
+  MinSliceQ: 0.
+  QScale:  0.001
+  MinOpHPE: 0.
   MinFlashPE: 0.
-  PEscale: 1.0
+  PEScale: 1.0
   ChargeToNPhotonsShower: 1.0
   ChargeToNPhotonsTrack: 1.0
-  VUVToVIS: 1.
 
   ThresholdTerm: 30.
 

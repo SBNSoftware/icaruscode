@@ -29,7 +29,7 @@ icarus_recowireroi:
 icarus_decon1droi:
 {
     module_type:                "Decon1DROI"
-    DigitModuleLabel:           "daq"
+    RawDigitLabelVec:         [ "daq" ]
     NoiseSource:                3
     SaveWireWF:                 0
     MinAllowedChannelStatus:    3 # All channels greater than or equal to this status level are considered
@@ -87,10 +87,16 @@ icarus_recowireraw:
 
 icarus_roifinder:
 {
-    module_type:     ROIFinder
-    WireModuleLabel: "decon1droi"
-    ROIFinder:       @local::icarus_morphologicalroifinder
-#    ROIFinder:       @local::icarus_cannyedgedetector
+    module_type:        ROIFinder
+    WireModuleLabel:    "decon1droi"
+    ROIFinderToolVec: {
+        ROIFinderPlane0: @local::morphologicalfinder_0
+        ROIFinderPlane1: @local::morphologicalfinder_1
+        ROIFinderPlane2: @local::morphologicalfinder_2
+#        ROIFinderPlane0: @local::cannyedgedetector_0
+#        ROIFinderPlane1: @local::cannyedgedetector_1
+#        ROIFinderPlane2: @local::cannyedgedetector_2
+    }
 }
 
 END_PROLOG

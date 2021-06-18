@@ -125,6 +125,11 @@ namespace icarus::trigger::ns::fhicl {
  *       inMainWindow:               5
  *       inDownstreamWindow:         2
  *       requireDownstreamWindow: true
+ *     },
+ *     {
+ *       # M1S8
+ *       inMainWindow:         4
+ *       sumOfOppositeWindows: 8
  *     }
  *   ]
  * }
@@ -161,6 +166,13 @@ struct icarus::trigger::ns::fhicl::WindowPatternConfig {
       ),
     0U // default
     };
+  Atom<unsigned int> sumOfOppositeWindows {
+    Name("sumOfOppositeWindows"),
+    Comment(
+      "minimum fired primitives in the main plus opposite window"
+      ),
+    0U // default
+    };
   
   Atom<bool> requireUpstreamWindow {
     Name("requireUpstreamWindow"),
@@ -187,6 +199,7 @@ namespace icarus::trigger::ns::fhicl {
       config.inUpstreamWindow(),       // minInUpstreamWindow
       config.inDownstreamWindow(),     // minInDownstreamWindow
       config.inOppositeWindow(),       // minInOppositeWindow
+      config.sumOfOppositeWindows(),   // minSumInOppositeWindows
       config.requireUpstreamWindow(),  // requireUpstreamWindow
       config.requireDownstreamWindow() // requireDownstreamWindow
       };

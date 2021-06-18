@@ -176,7 +176,7 @@ Decon1DROI::Decon1DROI(fhicl::ParameterSet const & pset, art::ProcessingFrame co
 void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
-    fRawDigitLabelVec     = pset.get< std::vector<art::InputTag>> ("RawDigitLabelVec", std::vector<art::InputTag>()={"daqTPC"});
+    fRawDigitLabelVec     = pset.get< std::vector<art::InputTag>> ("RawDigitLabelVec", {"daqTPC"});
     fNoiseSource          = pset.get< unsigned short            > ("NoiseSource",                                            3);
     fSaveWireWF           = pset.get< int                       > ("SaveWireWF"                                               );
     fMinAllowedChanStatus = pset.get< int                       > ("MinAllowedChannelStatus"                                  );

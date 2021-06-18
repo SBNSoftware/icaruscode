@@ -4,9 +4,12 @@ art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
                         DumpPMTconfiguration_module.cc
-                  #      BernCRTTranslator.cc
-
+                        DumpArtDAQfragments_module.cc
+                        DaqDecoderICARUSPMT_module.cc
           MODULE_LIBRARIES
+                        icarus_signal_processing
+                        icarus_signal_processing_Detection
+                        icarus_signal_processing_Filters
                         sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq-core_Utilities
                         larcorealg_Geometry
@@ -15,10 +18,6 @@ art_make(
                         larevt_Filters
                         lardataobj_RawData
                         lardata_ArtDataHelper
-                        # sbndaq-artdaq-core_Overlays_Common
-                      #  artdaq-core_Data
-                       #BERN_CRT_TRANSLATOR
-                      #  sbnobj_Common_CRT
                         ${ROOT_BASIC_LIB_LIST}
                         ${LIBWDA}
                         ${ART_FRAMEWORK_CORE}
@@ -35,8 +34,24 @@ art_make(
                         ${FHICLCPP}
                         cetlib cetlib_except
                         ${TBB}
- 
-)
+        )
+
+simple_plugin(DaqDecoderICARUSPMT module
+  sbnobj_Common_PMT_Data
+  icaruscode_Decode_DecoderTools_Dumpers
+  icaruscode_Decode_DecoderTools
+  sbndaq-artdaq-core_Overlays_Common
+  sbndaq-artdaq-core_Overlays
+  lardataobj_RawData
+  artdaq-core_Data
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  cetlib_except
+  ROOT::Tree
+  )
 
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
@@ -53,6 +68,13 @@ simple_plugin(DumpPMTconfiguration module
   cetlib_except
   )
 
+simple_plugin(DumpArtDAQfragments module
+  icaruscode_Decode_DecoderTools_Dumpers
+  artdaq-core_Data
+  ${MF_MESSAGELOGGER}
+  fhiclcpp
+  cetlib_except
+  )
 
 install_headers()
 install_fhicl()

@@ -4,7 +4,9 @@ cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
 
 include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
-art_make(
+add_subdirectory("Dumpers")
+
+art_make( SUBDIRS details
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
@@ -22,6 +24,7 @@ art_make(
                         icarus_signal_processing_Filters
                         icaruscode_TPC_Utilities_SignalShapingICARUSService_service
                         icaruscode_Decode_DecoderTools
+                        icaruscode_Decode_DecoderTools_Dumpers
                         icaruscode_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
