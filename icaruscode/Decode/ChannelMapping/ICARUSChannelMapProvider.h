@@ -42,7 +42,10 @@ public:
     // Section for PMT channel mapping
     bool                                    hasPMTDigitizerID(const unsigned int)   const override;
     const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const override;
-    
+
+    // Section for CRT channel mapping    
+    unsigned int                            getSimMacAddress(const unsigned int)    const override;
+
 private:
     
     bool fDiagnosticOutput;
@@ -52,6 +55,8 @@ private:
     IChannelMapping::TPCReadoutBoardToChannelMap   fReadoutBoardToChannelMap;
 
     IChannelMapping::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
+
+    IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 

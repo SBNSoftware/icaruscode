@@ -68,15 +68,29 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
 
     // Do the channel mapping initialization
     if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
-    {
-        throw cet::exception("PMTDecoder") << "Cannot recover the Fragment ID channel map from the database \n";
-    }
+      {
+	throw cet::exception("PMTDecoder") << "Cannot recover the Fragment ID channel map from the database \n";
+      }
     else if (fDiagnosticOutput)
-    {
-        std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
+      {
+	std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
         for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " << std::dec << pair.second.size() << std::endl;
-    }
-
+      }
+    
+    // Do the channel mapping initialization for CRT
+    if (fChannelMappingTool->BuildCRTChannelIDToHWtoSimMacAddressPairMap(fCRTChannelIDToHWtoSimMacAddressPairMap))
+      {
+        throw cet::exception("CRTDecoder") << "Cannot recover the HW MAC Address  from the database \n";
+      }
+    else if (fDiagnosticOutput)
+      {
+	std::cout << "ChannelID to MacAddress map has " << fCRTChannelIDToHWtoSimMacAddressPairMap.size() << " Channel IDs";
+        for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap) std::cout <<" ChannelID: "<< pair.first
+                                                                                  << ", hw mac address: " << pair.second.first
+                                                                                  <<", sim mac address: " << pair.second.second << std::endl;
+      }
+    
+    
     theClockReadoutIDs.stop();
 
     double readoutIDsTime = theClockReadoutIDs.accumulated_real_time();
@@ -155,6 +169,15 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
       
 }
 
-
+  unsigned int ICARUSChannelMap::getSimMacAddress(const unsigned int hwmacaddress)  const
+  {
+    unsigned int   simmacaddress = -99999;
+    for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap){
+      if (pair.second.first == hwmacaddress)
+        simmacaddress = pair.second.second;
+    }
+    return simmacaddress;
+  }
+  
 } // end namespace
 

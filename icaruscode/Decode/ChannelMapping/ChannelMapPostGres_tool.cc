@@ -67,6 +67,14 @@ public:
      */
     virtual int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const override;
 
+
+  /**
+   *  @brief Define the returned data structures for a mapping between CRT hardware mac_address
+   *         to the simulated mac_address.
+   *         Then define the function interface to fill these data structures
+   */
+  virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap&) const override;
+
 private:
     // Recover data from postgres database
     int GetDataset(const std::string&, const std::string&, const std::string&, Dataset&) const;
@@ -121,7 +129,7 @@ int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutI
 {
     const unsigned int tpcIdentifier(0x00001000);
     const std::string  name("icarus_hw_readoutboard");
-    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("readout_boards");
     Dataset            dataset;
     // Recover the data from the database
@@ -268,8 +276,8 @@ int ChannelMapPostGres::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutI
 const unsigned int CHANNELSPERBOARD = 64;
 int ChannelMapPostGres::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap) const
 {
-    const std::string  name("icarus_hardware_dev");
-    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+    const std::string  name("icarus_hardware_prd");
+    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("daq_channels");
     Dataset            dataset;
     // Recover the data from the database
@@ -321,7 +329,7 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
     fragmentToDigitizerChannelMap.clear();
     // Recover the information from the database on the mapping 
     const std::string  name("Pmt_placement");
-    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_dev");
+    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
     const std::string  dataType("pmt_placements");
     Dataset            dataset;
     // Recover the data from the database
@@ -359,5 +367,47 @@ int ChannelMapPostGres::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerCh
     return error;
 }
 
+  
+//******************* CRT Channel Mapping ***********************
+  
+  int ChannelMapPostGres::BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap) const
+  {
+    // clearing is cleansing
+    crtChannelIDToHWtoSimMacAddressPairMap.clear();
+    // Recover the information from the database on the mapping 
+    const std::string  name("Feb_channels");
+    const std::string  dburl("https://dbdata0vm.fnal.gov:9443/QE/hw/app/SQ/query?dbname=icarus_hardware_prd");
+    const std::string  dataType("feb_channels");
+    Dataset            dataset;
+    // Recover the data from the database
+    int error = GetDataset(name,dburl,dataType,dataset);
+    // If there was an error the function above would have printed a message so bail out
+    if (error) throw(std::exception());
+    // Ok, now we can start extracting the information
+    // We do this by looping through the database and building the map from that
+    for(int row = 1; row < getNtuples(dataset); row++)
+    {
+        // Recover the row
+        Tuple tuple = getTuple(dataset, row);
+        if (tuple != NULL)
+        {
+	  // Recover the simmacaddress
+            unsigned int simmacaddress = getLongValue(tuple, 11, &error);
+            if (error) throw std::runtime_error("Encountered error when trying to recover the CRT simmacaddress");
+            // Now recover the hwmacaddress
+            unsigned int hwmacaddress = getLongValue(tuple, 12, &error);
+            if (error) throw std::runtime_error("Encountered error when trying to recover the CRT hwmacaddress");
+            // Finally, get the LArsoft channel ID
+            unsigned int channelID = getLongValue(tuple, 10, &error);
+            if (error) throw std::runtime_error("Encountered error when trying to recover the CRT channel ID");
+            // Fill the map
+            crtChannelIDToHWtoSimMacAddressPairMap[channelID]=std::make_pair(hwmacaddress,simmacaddress);
+            releaseTuple(tuple);
+        }
+    }
+
+    return error;
+  }
+ 
 DEFINE_ART_CLASS_TOOL(ChannelMapPostGres)
 } // namespace lar_cluster3d

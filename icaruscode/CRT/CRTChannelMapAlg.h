@@ -40,6 +40,7 @@ namespace geo{
         std::string const& auxDetName,
         std::vector<geo::AuxDetGeo> const& auxDets) const override;
 
+
   private:
     geo::CRTGeoObjectSorter fSorter; ///< Class to sort geo objects
   };

@@ -46,13 +46,15 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
   
         uint8_t mac = crtList[febdat_i]->fMac5;
         int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
+	//	std::cout << "In CRTHitRecoAlg::CreateCRTHits functions mac is " << (int)mac 
+	//	  << "  with module number " << adid <<std::endl; 
         string region = fCrtutils->GetAuxDetRegion(adid);
         char type = fCrtutils->GetAuxDetType(adid);
         CRTHit hit;
 
         //if(fVerbose) 
-        //    std::cout << "found data with mac5 = " << (int)mac << ", " << string(1,type) 
-        //          << " type, region " << region << std::endl;
+	//std::cout << "found data with mac5 = " << (int)mac << ", " << string(1,type) 
+	//	    << " type, region " << region << std::endl;
  
         dataIds.clear();
   
@@ -97,69 +99,84 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 
     vector<size_t> unusedDataIndex;
     for(auto const& regIndices : sideRegionToIndices) {
-
+      // if(!(regIndices.first=="North")) continue;
         if(fVerbose) 
             std::cout << "searching for side CRT hits in region, " << regIndices.first << std::endl;
-        vector<size_t> indices = regIndices.second;
-
+    
+	vector<size_t> indices = regIndices.second;
+	
         for(size_t index_i=0; index_i < indices.size(); index_i++) {
-
-            dataIds.clear();
-            dataIds.push_back(indices[index_i]);
-            vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
-
- 
-            //inner loop over data after data_i in time
-            for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
-
-                if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
-                    mf::LogError("CRTHitRecoAlg::CreateCRTHits") <<
-                        "bad time ordering!" << '\n';
-
-                if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
-                    coinData.push_back(crtList[indices[index_j]]);
-                    dataIds.push_back(indices[index_j]);
-                }
-
-                //out of coinWindow
-                if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow
-                   || index_j==indices.size()-1) 
-                { 
-
-                    if(fVerbose)
-                        std::cout << "attempting to produce MINOS hit from " << coinData.size() 
-                              << " data products..." << std::endl;
-
-                    CRTHit hit = MakeSideHit(coinData);
-
-                    if(IsEmptyHit(hit)){
-                        unusedDataIndex.push_back(indices[index_i]);
-                        nMissM++;
-                    }
-                    else {
-                        if(fVerbose)
-                            std::cout << "MINOS hit produced" << std::endl;
-
-                        returnHits.push_back(std::make_pair(hit,dataIds));
-
-                        if ((regs.insert(regIndices.first)).second) 
-                            regCounts[regIndices.first] = 1;
-                        else 
-                            regCounts[regIndices.first]++;
-
-                        nHitM++;
-                    }
-                    index_i = index_j-1;
-                    if(index_j==indices.size()-1)
-                        index_i++;
-                    
-                    break;
-                }//if jth data out of coinc window
-
+	  
+	  dataIds.clear();
+	  dataIds.push_back(indices[index_i]);
+	  vector<art::Ptr<CRTData>> coinData = {crtList[indices[index_i]]};
+	  
+	  if(fVerbose)
+	    std::cout << "size ..  " << coinData.size()
+			<< " data products..." << std::endl;
+	  
+	  //inner loop over data after data_i in time
+	  for (size_t index_j=index_i+1; index_j<indices.size(); index_j++) {
+	    
+	    if(fVerbose)
+	      std::cout << "\t"<<index_i << "\t"<<index_j << "\t"<<crtList[indices[index_j]]->fTs0 << "\t"<<crtList[indices[index_i]]->fTs0 
+			<< "\t"<<crtList[indices[index_i]]->fTs0+ fCoinWindow <<std::endl;
+	    
+	    if(crtList[indices[index_j]]->fTs0 < crtList[indices[index_i]]->fTs0)
+	      mf::LogError("CRTHitRecoAlg::CreateCRTHits") <<
+		"bad time ordering!" << '\n';
+	    //		if(fVerbose) std::cout<< "should not enter this line" << std::endl;
+	    //}
+	    
+	    
+	    if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
+	      //		  if(fVerbose) std::cout<< "should not enter this line....." << std::endl;
+	      coinData.push_back(crtList[indices[index_j]]);
+	      dataIds.push_back(indices[index_j]);
+	    }
+	    
+	    //out of coinWindow
+	    if(crtList[indices[index_j]]->fTs0 > crtList[indices[index_i]]->fTs0 + fCoinWindow
+		 || index_j==indices.size()-1) 
+		{ 
+		  
+		  if(fVerbose)
+		    std::cout <<  "  " << index_j << "\t" << indices.size() <<"\t" <<indices.size()-1
+			      << " data products..." << std::endl;
+		  if(fVerbose)
+		    std::cout << "attempting to produce MINOS hit from " << coinData.size() 
+			      << " data products..." << std::endl;
+		  
+		  CRTHit hit = MakeSideHit(coinData);
+		  
+		  if(IsEmptyHit(hit)){
+		    unusedDataIndex.push_back(indices[index_i]);
+		    nMissM++;
+		  }
+		  else {
+		    if(fVerbose)
+		      std::cout << "MINOS hit produced" << std::endl;
+		    //	std::cout << "MINOS hit produced" << std::endl;
+		    returnHits.push_back(std::make_pair(hit,dataIds));
+		    
+		    if ((regs.insert(regIndices.first)).second) 
+		      regCounts[regIndices.first] = 1;
+		    else 
+		      regCounts[regIndices.first]++;
+			
+		    nHitM++;
+		  }
+		  index_i = index_j-1;
+		  if(index_j==indices.size()-1)
+		    index_i++;
+		  
+		  break;
+		}//if jth data out of coinc window
+	      
             }//inner loop over data
         }// outer loop over data
     }//loop over side CRTData products
-  
+    
     if(fVerbose) {
           mf::LogInfo("CRT") << returnHits.size() << " CRT hits produced!" << '\n'
               << "  nHitC: " << nHitC  << " , nHitD: " << nHitD  << " , nHitM: " << nHitM  << '\n'
@@ -214,7 +231,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
-
+    int plane = fCrtutils->AuxDetRegionNameToNum(region);
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0., pemaxx=0., pemaxz=0.;
@@ -299,7 +316,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.HalfWidth1()*2/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;
@@ -314,7 +331,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     int adid  = fCrtutils->MacToAuxDetID(mac,0); //module ID
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
-
+    int plane =fCrtutils->AuxDetRegionNameToNum(region);
     double hitpoint[3], hitpointerr[3], hitlocal[3];
     TVector3 hitpos (0.,0.,0.);
     float petot = 0., pemax=0.;
@@ -365,7 +382,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitpointerr[1] = adGeo.HalfHeight();
     hitpointerr[2] = adsGeo.Length()/sqrt(12);
 
-    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit({mac},pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;
@@ -378,8 +395,12 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
     int adid  = fCrtutils->MacToAuxDetID(coinData[0]->fMac5,0); //module ID
+    //std::cout << "In CRTHitRecoAlg::MakeSideHit functions mac is " << (int)coinData[0]->fMac5 
+    //	      << "  with module number " << adid <<std::endl; 
     auto const& adGeo = fGeometryService->AuxDet(adid); //module
     string region = fCrtutils->GetAuxDetRegion(adid);
+    int plane =fCrtutils->AuxDetRegionNameToNum(region);
+
 
     double hitpoint[3], hitpointerr[3];
     TVector3 hitpos (0.,0.,0.);
@@ -396,25 +417,33 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //loop over FEBs
     for(auto const& data : coinData) {
 
+      // if(!(region=="North")) continue;
         macs.push_back(data->fMac5);
         adid  = fCrtutils->MacToAuxDetID(macs.back(),0);
+	if(fVerbose)
+	  std::cout << "In CRTHitRecoAlg::MakeSideHit functions mac is " << (int)macs.back()
+		    << "  with module number " << adid <<std::endl;
 
         //loop over channels
         for(int chan=0; chan<32; chan++) {
-
-            float pe = (data->fAdc[chan]-fQPed)/fQSlope;
+	  
+	  float pe = (data->fAdc[chan]-fQPed)/fQSlope;
             if(pe<=fPEThresh) continue;
             nabove++;
-
+	    
             int adsid = fCrtutils->ChannelToAuxDetSensitiveID(macs.back(),chan);
             petot += pe;
             pesmap[macs.back()].push_back(std::make_pair(chan,pe));
-
+	    
             //inner or outer layer
             int layer = fCrtutils->GetMINOSLayerID(adid);
             layID.insert(layer);    
             TVector3 postmp = fCrtutils->ChanToWorldCoords(macs.back(),chan);
 
+
+	    //if (region=="North") std::cout << "module id:\t" << fCrtutils->MacToAuxDetID(macs.back(),chan) << " ,chan:\t "<< chan 
+	    //				   << " ,x: \t"<< postmp.X() <<" ,y: \t" << postmp.Y()  <<" ,z: \t" << postmp.Z()<< std::endl;
+	    
             //East/West Walls (all strips along z-direction) or
             // North/South inner walls (all strips along x-direction)
             if(!(region=="South" && layer==1)) {
@@ -447,10 +476,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
             //nz = ny
             hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
-            if(postmp.X()<xmin)
-                zmin = postmp.X();
-            if(postmp.X()>xmax)
-                zmax = postmp.X();
+            if(postmp.Z()<zmin)
+                zmin = postmp.Z();
+            if(postmp.Z()>zmax)
+                zmax = postmp.Z();
 
             //identify trigger channel
             if(pe>pemax) {
@@ -461,6 +490,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
 
         }//loop over channels
+
 
         //correct trigger time for propegation delay
         auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger stripi
@@ -489,6 +519,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     hitpoint[0] = hitpos.X();
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
+
+    //    if (region=="North") std::cout << "module id:\t" << fCrtutils->MacToAuxDetID(macs.back(),0) << " , feb: " << (int)macs.back()
+    //				   << " ,x: \t"<< hitpoint[0] <<" ,y: \t" << hitpoint[1]  <<" ,z: \t" << hitpoint[2]<< std::endl;
 
     //time stamp averaged over all FEBs
     double thit = 0.;//, thit_0 = 0., thit_1 = 0.;
@@ -521,7 +554,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     }
 
     //generate hit
-    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,0,hitpoint[0],hitpointerr[0],
+    CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);
 
     return hit;

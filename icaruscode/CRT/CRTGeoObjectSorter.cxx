@@ -56,20 +56,110 @@ namespace geo{
   }
 
   //----------------------------------------------------------------------------
+  // Define sort order for AuxDets in co-ordinate system
+
+  static bool CRTIncreaseX(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
+    return xyz1[0] < xyz2[0];
+  }
+  
+  static bool CRTDecreaseY(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
+    return xyz1[1] > xyz2[1];
+  }
+  
+  static bool CRTIncreaseZ(const AuxDetGeo& ad1, const AuxDetGeo& ad2) {
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+
+    ad1.GetCenter(xyz1); ad2.GetCenter(xyz2);
+    return xyz1[2] < xyz2[2];
+  }
+  
+
+  //----------------------------------------------------------------------------
+  // Define sort order for AuxDetSensitive in co-ordinate system
+
+  static bool CRTSensitiveIncreaseX(std::pair<int , geo::AuxDetSensitiveGeo> ads1, 
+				    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
+    return xyz1[0] < xyz2[0];
+  }
+
+
+  static bool CRTSensitiveDecreaseY(std::pair<int , geo::AuxDetSensitiveGeo> ads1,
+                                    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
+    return xyz1[1] > xyz2[1];
+  }
+
+  static bool CRTSensitiveIncreaseZ(std::pair<int , geo::AuxDetSensitiveGeo> ads1,
+                                    std::pair<int , geo::AuxDetSensitiveGeo> ads2){
+    double xyz1[3] = {0.};
+    double xyz2[3] = {0.};
+
+    ads1.second.GetCenter(xyz1); ads2.second.GetCenter(xyz2);
+    return xyz1[2] < xyz2[2];
+  }
+
+
+  //----------------------------------------------------------------------------
   CRTGeoObjectSorter::CRTGeoObjectSorter(
       fhicl::ParameterSet const&) {}
 
   //----------------------------------------------------------------------------
-  void CRTGeoObjectSorter::SortAuxDets(
-      std::vector<geo::AuxDetGeo> & adgeo) const {
+  void CRTGeoObjectSorter::SortAuxDets(std::vector<geo::AuxDetGeo> & adgeo) const {
     std::sort(adgeo.begin(), adgeo.end(), sortAuxDetICARUS);
   }
 
   //----------------------------------------------------------------------------
-  void CRTGeoObjectSorter::SortAuxDetSensitive(
-      std::vector<geo::AuxDetSensitiveGeo> & adsgeo) const {
+  void CRTGeoObjectSorter::SortAuxDetSensitive(std::vector<geo::AuxDetSensitiveGeo> & adsgeo) const {
     std::sort(adsgeo.begin(), adsgeo.end(), sortAuxDetSensitiveICARUS);
   }
+  
+  //----------------------------------------------------------------------------
+  // sorting CRT co-ordiantes  decreasing vertical coordinate, 
+  // next increasing beam coordinate, and next increasing drift direction
+
+  void CRTGeoObjectSorter::SortCRTs(std::vector<geo::AuxDetGeo> & adgeo) const {
+
+    // 3. stable sort by increasing drift direction (_x_)
+    std::stable_sort (adgeo.begin(), adgeo.end(), CRTIncreaseX);
+
+
+    // 2. stable sort by increasing beam coordinate (_z_)
+    std::stable_sort (adgeo.begin(), adgeo.end(), CRTIncreaseZ);
+
+    // 1. sort by decreasing vertical coordinate (_y_)
+    std::stable_sort (adgeo.begin(), adgeo.end(), CRTDecreaseY);
+  }
+
+
+  //----------------------------------------------------------------------------
+  // sorting CRTs Sensitive with co-ordiantes  decreasing vertical coordinate,
+  // next increasing beam coordinate, and next increasing drift direction
+  
+  void CRTGeoObjectSorter::SortCRTSensitive(std::vector<std::pair <int ,geo::AuxDetSensitiveGeo> > & adsgeo) const {
+    
+    // 3. stable sort by increasing drift direction (_x_)
+    std::stable_sort (adsgeo.begin(), adsgeo.end(), CRTSensitiveIncreaseX);
+    
+
+    // 2. stable sort by increasing beam coordinate (_z_)
+    std::stable_sort (adsgeo.begin(), adsgeo.end(), CRTSensitiveIncreaseZ);
+    
+    // 1. sort by decreasing vertical coordinate (_y_)
+    std::stable_sort (adsgeo.begin(), adsgeo.end(), CRTSensitiveDecreaseY);
+  }
+  
 
 } //namespace crt
 //} //namespace icarus
