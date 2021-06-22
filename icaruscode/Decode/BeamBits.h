@@ -17,6 +17,7 @@
 // C/C++ standard libraries
 #include <stdexcept> // std::runtime_error
 #include <string>
+#include <vector>
 #include <initializer_list>
 #include <type_traits> // std::underlying_type_t
 
@@ -66,9 +67,8 @@ namespace sbn {
     std::string name(EnumType bit);
     
     /// Returns a list of the names of all the bits set in `mask`.
-    /// Mask is interpreted as made of only bits of type `EnumType`.
-    template <typename Mask>
-    std::vector<std::string> names(Mask mask);
+    template <typename EnumType>
+    std::vector<std::string> names(mask_t<EnumType> mask);
     
     /// @}
     // --- END ---- Generic bit functions --------------------------------------
