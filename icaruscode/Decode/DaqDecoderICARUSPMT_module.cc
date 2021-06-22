@@ -11,6 +11,9 @@
 #include "icaruscode/Decode/DecoderTools/details/PMTDecoderUtils.h"
 #include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+// #include "sbnobj/Common/Trigger/ExtraTriggerInfo.h" // future location of:
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+// #include "sbnobj/Common/Trigger/BeamBits.h" // future location of:
 #include "icaruscode/Decode/BeamBits.h" // sbn::triggerSource
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 #include "icarusalg/Utilities/BinaryDumpUtils.h" // icarus::ns::util::bin()
@@ -30,7 +33,6 @@
 #include "larcorealg/CoreUtils/counter.h"
 
 #include "lardataobj/RawData/OpDetWaveform.h"
-#include "lardataobj/RawData/ExternalTrigger.h"
 #include "lardataobj/RawData/TriggerData.h"
 
 // artDAQ
@@ -131,10 +133,10 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     which have a setup (`BoardSetup`) are required to be included in the DAQ
  *     configuration of the input file, or an exception is thrown; if not set,
  *     missing readout boards are unnoticed.
- * * `TriggerTag` (data product tag): tag for the information (currently
- *     required to be a collection of `raw::ExternalTrigger`, in the future it
- *     should become `raw::Trigger`); if not specified, the _art_ event
- *     timestamp will be used as trigger time (*not* recommended).
+ * * `TriggerTag` (data product tag): tag for the information
+ *     (`sbn::ExtraTriggerInfo`, produced by trigger decoding); if not
+ *     specified, the _art_ event timestamp will be used as trigger time (*not*
+ *     recommended).
  * * `TTTresetEverySecond` (optional): if set, the decoder will take advantage
  *     of the assumption that the Trigger Time Tag of all PMT readout boards is
  *     synchronised with the global trigger time and reset at every change of
@@ -269,6 +271,9 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *       trigger decoder), in nanoseconds from The Epoch.
  *     * `triggerSec`, `triggerNS` (32-bit integer each): same time as `trigger`
  *       branch, split into second and nanosecond components.
+ *     * `relBeamGateNS`, (32-bit integer): beam gate time opening relative to
+ *       the trigger time, in nanoseconds; it may be affected by rounding.
+ *       branch, split into second and nanosecond components.
  *     * `fragTime` (64-bit signed integer), `fragTimeSec` (32-bit signed
  *       integer): the timestamp of the PMT fragment, assigned by the board
  *       reader constructing the fragment.
@@ -279,6 +284,7 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     * `waveformSize` (unsigned integer): number of ticks for the waveforms
  *       from this fragment.
  *     * `triggerBits` (unsigned integer): bits from the `raw::Trigger`.
+ *     * `gateCount` (unsigned integer): number of this gate from run start.
  *     * `onGlobalTrigger` (boolean): whether the waveform covers the nominal
  *       trigger time (which should be equivalent to whether the fragment was
  *       triggered by the global trigger).
@@ -469,7 +475,7 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     
     fhicl::OptionalAtom<art::InputTag> TriggerTag {
       Name("TriggerTag"),
-      Comment("input tag for the global trigger object (raw::ExternalTrigger)")
+      Comment("input tag for the global trigger object (sbn::ExtraTriggerInfo)")
       };
     
     fhicl::OptionalAtom<bool> TTTresetEverySecond {
@@ -542,7 +548,9 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   /// Collection of information about the global trigger.
   struct TriggerInfo_t {
     SplitTimestamp_t time; ///< Time of the trigger (absolute).
+    long int relBeamGateTime; ///< Time of beam gate relative to trigger [ns].
     unsigned int bits = 0x0; ///< Trigger bits.
+    unsigned int gateCount = 0U; ///< Gate number from the beginning of run.
   }; // TriggerInfo_t
 
   // --- BEGIN -- Configuration parameters -------------------------------------
@@ -703,12 +711,16 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       
       SplitTimestamp_t fragTime; ///< PMT fragment time stamp.
       
+      long int relBeamGate; ///< Beam gate start relative to trigger [ns].
+      
       /// Time assigned to the waveforms.
       double waveformTime = std::numeric_limits<double>::lowest();
       
       unsigned int waveformSize = 0U; ///< Ticks in the waveforms.
       
       unsigned int triggerBits = 0x0; ///< Trigger bits, from `raw::Trigger`.
+      
+      unsigned int gateCount = 0U; ///< The number of gate from run start.
       
       ///< Whether waveforms cover nominal trigger time.
       bool onGlobalTrigger = false;
@@ -771,6 +783,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
     NeededBoardInfo_t const& boardInfo,
     SplitTimestamp_t triggerTime
     ) const;
+  
+  
+  /// Returns the timestamp difference `a - b`.
+  static long long int timestampDiff(std::uint64_t a, std::uint64_t b)
+    { return static_cast<long long int>(a) - static_cast<long long int>(b); }
+  
   
   /// Returns the fragment ID to be used with databases.
   static constexpr std::size_t effectivePMTboardFragmentID
@@ -1079,7 +1097,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
     consumes<artdaq::Fragments>(inputTag);
   if (fPMTconfigTag) consumes<sbn::PMTconfiguration>(*fPMTconfigTag);
   if (fTriggerTag) {
-    consumes<std::vector<raw::ExternalTrigger>>(*fTriggerTag);
+    consumes<std::vector<sbn::ExtraTriggerInfo>>(*fTriggerTag);
     if (contains(params().DataTrees(), treeName(DataTrees::Fragments)))
       consumes<std::vector<raw::Trigger>>(*fTriggerTag);
   } // if trigger
@@ -1183,6 +1201,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
       }
       log << " }";
     } // if
+    if (fTriggerTag) log << ", spill count: " << triggerInfo.gateCount;
   } // local block
   
   //
@@ -1543,16 +1562,21 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
     return { SplitTimestamp_t(event.time().value()), 0U };
   
   
-  auto const& extTriggers
-    = event.getByLabel<std::vector<raw::ExternalTrigger>>(*fTriggerTag);
-  if (extTriggers.size() != 1U) {
-    // if this is hit, the decoder needs some development to correctly deal
-    // with input with no trigger, or more than one
+  auto const& extraTrigger
+    = event.getByLabel<sbn::ExtraTriggerInfo>(*fTriggerTag);
+  if (!extraTrigger.isValid()) {
+    // this means there is some problem from trigger decoder;
+    // while we might recover additional information from other data products,
+    // we expect those to be as problematic.
     throw cet::exception("DaqDecoderICARUSPMT")
-      << "Found " << extTriggers.size() << " raw::ExternalTrigger from '"
-      << fTriggerTag->encode() << "', can deal only with 1.\n";
+      << "Extra trigger information from '"
+      << fTriggerTag->encode() << "' is marked as invalid!\n";
   }
-  raw::ExternalTrigger const& extTrigger = extTriggers.front();
+  
+  if (fDiagnosticOutput) {
+    mf::LogVerbatim(fLogCategory)
+      << "Extended trigger information:\n" << extraTrigger;
+  }
   
   auto const& triggers
     = event.getByLabel<std::vector<raw::Trigger>>(*fTriggerTag);
@@ -1565,8 +1589,18 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   }
   raw::Trigger const& trigger = triggers.front();
   
-  return
-    { SplitTimestamp_t{ extTrigger.GetTrigTime() }, trigger.TriggerBits() };
+  long long int const relBeamGate = timestampDiff
+    (extraTrigger.beamGateTimestamp, extraTrigger.triggerTimestamp);
+  
+  unsigned int const gateCount = extraTrigger.gateID;
+  
+  return {
+      SplitTimestamp_t
+        { static_cast<long long int>(extraTrigger.triggerTimestamp) }
+    , relBeamGate
+    , trigger.TriggerBits()
+    , gateCount
+    };
   
 } // icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp()
 
@@ -1907,11 +1941,13 @@ void icarus::DaqDecoderICARUSPMT::fillPMTfragmentTree(
   fTreeFragment->data.fragCount = fragInfo.eventCounter;
   fTreeFragment->data.TriggerTimeTag = fragInfo.TTT;
   fTreeFragment->data.trigger = triggerInfo.time;
+  fTreeFragment->data.relBeamGate = triggerInfo.relBeamGateTime;
   fTreeFragment->data.fragTime
     = { static_cast<long long int>(fragInfo.fragmentTimestamp) };
   fTreeFragment->data.waveformTime = waveformTimestamp.value();
   fTreeFragment->data.waveformSize = fragInfo.nSamplesPerChannel;
   fTreeFragment->data.triggerBits = triggerInfo.bits;
+  fTreeFragment->data.gateCount = triggerInfo.gateCount;
   fTreeFragment->data.onGlobalTrigger
     = containsGlobalTrigger(waveformTimestamp, fragInfo.nSamplesPerChannel);
   assignEventInfo(fTreeFragment->data);
@@ -2331,9 +2367,11 @@ void icarus::DaqDecoderICARUSPMT::initFragmentsTree() {
   tree->Branch("trigger", &data.trigger.time, "trigger/L"); // ROOT 6.24 can't detect 64-bit
   tree->Branch("triggerSec", &data.trigger.split.seconds);
   tree->Branch("triggerNS", &data.trigger.split.nanoseconds);
+  tree->Branch("relBeamGateNS", &data.relBeamGate, "relBeamGateNS/I"); // ROOT 6.24 can't handle `long` neither
   tree->Branch("waveformTime", &data.waveformTime);
   tree->Branch("waveformSize", &data.waveformSize);
   tree->Branch("triggerBits", &data.triggerBits);
+  tree->Branch("gateCount", &data.gateCount);
   tree->Branch("onGlobal", &data.onGlobalTrigger);
   
 } // icarus::DaqDecoderICARUSPMT::initFragmentsTree()

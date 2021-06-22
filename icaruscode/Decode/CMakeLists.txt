@@ -39,6 +39,7 @@ art_make(
 simple_plugin(DaqDecoderICARUSPMT module
   sbnobj_Common_PMT_Data
   icaruscode_Decode_DecoderTools_Dumpers
+  icaruscode_Decode_DataProducts # should become sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools
   sbndaq-artdaq-core_Overlays_Common
   sbndaq-artdaq-core_Overlays
@@ -83,5 +84,6 @@ install_source()
 # Add our tools directory
 add_subdirectory(DecoderTools)
 add_subdirectory(ChannelMapping)
+add_subdirectory(DataProducts)
 add_subdirectory(fcl)
 
