@@ -14,15 +14,19 @@ icarus_simple_flashmatch_0: {
   FlashEnd: 0.08 # us, wrt flash time
   SelectNeutrino: true
   OnlyCollectionWires: false
+  ForceConcurrence: true
   UseOppVolMetric: true
   # UseCalo: false
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
   MakeTree: false
   MinHitQ: 0.
+  MinSpacePointQ: 0.
+  MinParticleQ: 0.
   MinSliceQ: 0.
+  MaxFlashes: 2
   MinOpHPE: 0.
-  MinFlashPE: 0.
+  MinFlashPE: 50.
   ChargeToNPhotonsShower: 1.0
   ChargeToNPhotonsTrack: 1.0
 
@@ -37,8 +41,11 @@ icarus_simple_flashmatch_0: {
   score_hist_low: 0.
   score_hist_up: 50.
 
-  n_bins: 30
   DriftDistance: 150.
+  XBinWidth: 5.
+
+  YBiasSlope: 0.4
+  ZBiasSlope: 0.
 
   dy_bins: 75
   dy_low: -200.
@@ -46,12 +53,14 @@ icarus_simple_flashmatch_0: {
   dz_bins: 75
   dz_low: -200.
   dz_up: 200.
-  rr_bins: 75
+  rr_bins: 50
   rr_low: 0.
   rr_up: 200.
-  pe_bins: 37
-  pe_low: 0.
-  pe_up: 1.
+  rr_TF1_fit: "pol3"
+  ratio_bins: 50
+  ratio_low: 0.
+  ratio_up: 0.7
+  ratio_TF1_fit: "pol3"
 }
 
 icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
