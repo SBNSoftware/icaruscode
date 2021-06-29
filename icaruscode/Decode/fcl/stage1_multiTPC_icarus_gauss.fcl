@@ -4,10 +4,10 @@ process_name: stage1
 
 physics.reco: [ flashfilter,
                 @sequence::icarus_reco_Gauss_CryoE ,
-                @sequence::icarus_reco_Gauss_CryoW ,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+                @sequence::icarus_reco_Gauss_CryoW ] #,
+#                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ purityinfoana0, purityinfoana1, caloskimE, caloskimW]
+physics.outana:            [ purityinfoana0, purityinfoana1 ] #, caloskimE, caloskimW]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
