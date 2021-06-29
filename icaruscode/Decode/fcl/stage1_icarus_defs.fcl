@@ -53,6 +53,10 @@ icarus_stage1_producers:
 #  pandoraGausCaloCryoE:		        @local::icarus_calomc
 #  pandoraGausPidCryoE:		        @local::icarus_chi2pid
 
+  # Placeholder uncalibrated calorimetry
+  caloskimCalorimetryCryoE: @local::caloskim_calorimetry
+  caloskimCalorimetryCryoW: @local::caloskim_calorimetry
+
   ### Purity monitoring
   purityana0: { module_type: "ICARUSPurityDQM" }
   purityana1: { module_type: "ICARUSPurityDQM" }
@@ -88,7 +92,10 @@ icarus_stage1_analyzers:
 }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
+icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+
 icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
+icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
@@ -177,6 +184,9 @@ icarus_stage1_producers.pandoraGausCryoE.HitFinderModuleLabel:                  
 icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                                   "pandoraGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
+
+icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
