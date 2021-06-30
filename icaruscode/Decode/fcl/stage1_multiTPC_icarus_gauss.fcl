@@ -4,10 +4,10 @@ process_name: stage1
 
 physics.reco: [ flashfilter,
                 @sequence::icarus_reco_Gauss_CryoE ,
-                @sequence::icarus_reco_Gauss_CryoW ] #,
-#                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+                @sequence::icarus_reco_Gauss_CryoW ,
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ purityinfoana0, purityinfoana1 ] #, caloskimE, caloskimW]
+physics.outana:            [ caloskimE, caloskimW]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"
@@ -18,10 +18,6 @@ outputs.out1.outputCommands: [
   "drop *_caloskimCalorimetryCryoE_*_*",
   "drop *_caloskimCalorimetryCryoW_*_*"
 ]
-
-## Need overrides for the purity monitor
-physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
-physics.producers.purityana1.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
 
 # Disabled Space-Charge service for calorimetry
 services.SpaceChargeService: {
