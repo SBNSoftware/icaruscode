@@ -155,7 +155,7 @@ icarus_pmtsimulationalg_noise: {
   ThresholdADC:              18             # ADC counts
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
-  TriggerOffsetPMT:          "-1.15 ms"     #Time relative to trigger when readout begins
+  TriggerOffsetPMT:          "-1.0 ms"      #Time relative to trigger when readout begins
   ReadoutEnablePeriod:       "2.0 ms"       #Time for which pmt readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
   BeamGateTriggerRepPeriod:  "2.0 us"       #Repetition Period for BeamGateTriggers
