@@ -13,8 +13,9 @@ physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icar
 physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT,      @sequence::icarus_stage0_multiTPC ]
 
 ## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
 physics.trigger_paths: [ pathBNB, pathNUMI, pathUnknown ]
-physics.end_paths:     [ streamBNB, streamNUMI, streamUnknown ]
+physics.end_paths:     [ outana, streamBNB, streamNUMI, streamUnknown ]
 
 outputs.outBNB.fileName: "BNB_%ifb_%tc-%p.root"
 outputs.outBNB.SelectEvents: [ pathBNB ]
@@ -42,3 +43,7 @@ physics.producers.roifinder.WireModuleLabelVec:  ["decon1droi:PHYSCRATEDATATPCWW
 ## Need overrides for the purity monitor
 physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
 physics.producers.purityana1.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+
+## Modify the event selection for the purity analyzers
+physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]

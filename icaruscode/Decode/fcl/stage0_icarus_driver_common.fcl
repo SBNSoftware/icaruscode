@@ -38,12 +38,17 @@ physics:
      @table::icarus_stage0_filters
  }
 
+ analyzers:
+ {
+     @table::icarus_stage0_analyzers
+ }
+
  #reco sequence and trigger_paths to be defined elsewhere
 
  streamBNB:     [ outBNB ]
  streamNUMI:    [ outNUMI ]
  streamUnknown: [ outUnknown ]
- end_paths:     [streamBNB]
+ end_paths:     [ streamBNB ]
 
 }
 
