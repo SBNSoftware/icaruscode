@@ -9,7 +9,7 @@
 #include "trackfindermodules_icarus.fcl"
 #include "showerfindermodules_icarus.fcl"
 #include "icarus_flashfinder.fcl"
-##include "icarus_trackcalo_skimmer.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
 
 BEGIN_PROLOG
 
@@ -54,13 +54,8 @@ icarus_stage1_producers:
 #  pandoraGausPidCryoE:		        @local::icarus_chi2pid
 
   # Placeholder uncalibrated calorimetry
-#  caloskimCalorimetryCryoE: @local::caloskim_calorimetry
-#  caloskimCalorimetryCryoW: @local::caloskim_calorimetry
-
-  ### Purity monitoring
-  purityana0: { module_type: "ICARUSPurityDQM" }
-  purityana1: { module_type: "ICARUSPurityDQM" }
-
+  caloskimCalorimetryCryoE: @local::caloskim_calorimetry
+  caloskimCalorimetryCryoW: @local::caloskim_calorimetry
 }
 
 icarus_stage1_filters:
@@ -76,26 +71,15 @@ icarus_stage1_filters:
 
 icarus_stage1_analyzers:
 {
-  purityinfoana0: { module_type:     "TPCPurityInfoAna"
-                    PurityInfoLabel: "purityana0"
-                    PrintInfo:       true
-                    SelectEvents:    [ reco ]
-                  }
-  purityinfoana1: { module_type:     "TPCPurityInfoAna"
-                    PurityInfoLabel: "purityana1"
-                    PrintInfo:       true
-                    SelectEvents:    [ reco ]
-                  }
-
-#  caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
-#  caloskimW: @local::caloskim_cryow_nodigits_goldentracks
+  caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
+  caloskimW: @local::caloskim_cryow_nodigits_goldentracks
 }
 
-#icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
-#icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
+icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
+icarus_stage1_analyzers.caloskimE.CALOproducer: caloskimCalorimetryCryoE 
 
-#icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
-#icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
+icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
+icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
@@ -120,26 +104,17 @@ icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
                                      pandoraKalmanTrackGausCryoE
                                    ]
 
-icarus_purity_monitor:             [
-                                     purityana0,
-                                     purityana1
-
-                                   ]
-
 icarus_reco_Gauss:                 [
-                                     @sequence::icarus_purity_monitor,
                                      @sequence::icarus_reco_cluster3d,
                                      @sequence::icarus_reco_pandoraGaus
                                    ]
 
 icarus_reco_Gauss_CryoW:           [ 
-                                     purityana0,
                                      @sequence::icarus_reco_cluster3DCryoW,
                                      @sequence::icarus_reco_pandoraGausCryoW
                                    ]
 
 icarus_reco_Gauss_CryoE:           [ 
-                                     purityana1,
                                      @sequence::icarus_reco_cluster3DCryoE,
                                      @sequence::icarus_reco_pandoraGausCryoE
                                    ]
@@ -185,35 +160,13 @@ icarus_stage1_producers.pandoraTrackGausCryoE.PFParticleLabel:                  
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.inputCollection:                             "pandoraGausCryoE"
 icarus_stage1_producers.pandoraKalmanTrackGausCryoE.trackInputTag:                               "pandoraTrackGausCryoE"
 
-#icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
-#icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
+icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:                               "pandoraTrackGausCryoE"
+icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
 ## Switch pandora back to just gaushits?
 #icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
-
-## Default purity monitor settings (single TPC readout assumed)
-icarus_stage1_producers.purityana0.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
-icarus_stage1_producers.purityana0.ValoreTauFCL:                                                 600000.
-icarus_stage1_producers.purityana0.CryostatFCL:                                                  0
-icarus_stage1_producers.purityana0.PlaneFCL:                                                     2
-icarus_stage1_producers.purityana0.ThresholdFCL:                                                 3
-icarus_stage1_producers.purityana0.PersistPurityInfo:                                            false
-icarus_stage1_producers.purityana0.FillAnaTuple:                                                 false
-icarus_stage1_producers.purityana0.PersistPurityInfo:                                            false
-icarus_stage1_producers.purityana0.FillAnaTuple:                                                 false
-
-icarus_stage1_producers.purityana1.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
-icarus_stage1_producers.purityana1.ValoreTauFCL:                                                 600000.
-icarus_stage1_producers.purityana1.CryostatFCL:                                                  1
-icarus_stage1_producers.purityana1.PlaneFCL:                                                     2
-icarus_stage1_producers.purityana1.ThresholdFCL:                                                 3
-icarus_stage1_producers.purityana1.PersistPurityInfo:                                            false
-icarus_stage1_producers.purityana1.FillAnaTuple:                                                 false
-icarus_stage1_producers.purityana1.PersistPurityInfo:                                            false
-icarus_stage1_producers.purityana1.FillAnaTuple:                                                 false
-
 
 
 END_PROLOG
