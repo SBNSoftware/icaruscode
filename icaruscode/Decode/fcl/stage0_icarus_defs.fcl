@@ -14,10 +14,24 @@
 
 BEGIN_PROLOG
 
+### Analyzers employed during stage 0 processing ###
+icarus_stage0_analyzers:
+{
+  purityinfoana0: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana0"
+                    PrintInfo:       true
+                    SelectEvents:    [ reco ]
+                  }
+  purityinfoana1: { module_type:     "TPCPurityInfoAna"
+                    PurityInfoLabel: "purityana1"
+                    PrintInfo:       true
+                    SelectEvents:    [ reco ]
+                  }
+}
+
 # set the name of our `extractPMTconfig` and trigger decoder modules
 decodePMT.PMTconfigTag: pmtconfig
 decodePMT.TriggerTag:   daqTrigger
-
 
 ### This is the complete list of all producers! ###
 icarus_stage0_producers:
@@ -79,6 +93,10 @@ icarus_stage0_producers:
   ophitfull:                      @local::icarus_ophitdebugger_data
   opflashCryoE:                   @local::ICARUSSimpleFlashDataCryoE
   opflashCryoW:                   @local::ICARUSSimpleFlashDataCryoW
+
+  ### Purity monitoring
+  purityana0:                     { module_type: "ICARUSPurityDQM" }
+  purityana1:                     { module_type: "ICARUSPurityDQM" }
 }
 
 icarus_stage0_filters:
@@ -151,6 +169,11 @@ icarus_stage0_WestHits_TPC:        [ gaushitTPCWW,
                                      gaushitTPCWE
                                    ]
 
+icarus_purity_monitor:             [
+                                     purityana0,
+                                     purityana1
+                                   ]
+
 icarus_stage0_PMT:                 [ daqTrigger,
                                      pmtconfig,
                                      daqPMT,
@@ -169,12 +192,14 @@ icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
 
 icarus_stage0_single:              [ @sequence::icarus_stage0_PMT,
                                      flashfilterBNB,
-                                     @sequence::icarus_stage0_single_TPC
+                                     @sequence::icarus_stage0_single_TPC,
+                                     @sequence::icarus_purity_monitor
                                    ]
 
 icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
-                                     @sequence::icarus_stage0_WestHits_TPC
+                                     @sequence::icarus_stage0_WestHits_TPC,
+                                     @sequence::icarus_purity_monitor
                                    ]
 
 ### Below we include overrides for the modules above
@@ -274,8 +299,28 @@ icarus_stage0_producers.recowireraw.DigitModuleLabel:                           
 icarus_stage0_producers.icarushit.CalDataModuleLabel:                                          "recowireraw"
 
 ### Optical hit finding
-
 icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
 icarus_stage0_producers.ophit.InputLabels:                                                     []
+
+### Default purity monitor settings (single TPC readout assumed)
+icarus_stage0_producers.purityana0.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana0.ValoreTauFCL:                                                 600000.
+icarus_stage0_producers.purityana0.CryostatFCL:                                                  0
+icarus_stage0_producers.purityana0.PlaneFCL:                                                     2
+icarus_stage0_producers.purityana0.ThresholdFCL:                                                 3
+icarus_stage0_producers.purityana0.PersistPurityInfo:                                            false
+icarus_stage0_producers.purityana0.FillAnaTuple:                                                 false
+icarus_stage0_producers.purityana0.PersistPurityInfo:                                            false
+icarus_stage0_producers.purityana0.FillAnaTuple:                                                 false
+
+icarus_stage0_producers.purityana1.RawModuleLabel:                                               ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana1.ValoreTauFCL:                                                 600000.
+icarus_stage0_producers.purityana1.CryostatFCL:                                                  1
+icarus_stage0_producers.purityana1.PlaneFCL:                                                     2
+icarus_stage0_producers.purityana1.ThresholdFCL:                                                 3
+icarus_stage0_producers.purityana1.PersistPurityInfo:                                            false
+icarus_stage0_producers.purityana1.FillAnaTuple:                                                 false
+icarus_stage0_producers.purityana1.PersistPurityInfo:                                            false
+icarus_stage0_producers.purityana1.FillAnaTuple:                                                 false
 
 END_PROLOG
