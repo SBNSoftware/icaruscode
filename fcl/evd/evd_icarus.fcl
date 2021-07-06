@@ -51,6 +51,9 @@ services.SimulationDrawingOptions.ShowMCTruthTrajectories: true
 services.SimulationDrawingOptions.MinimumEnergyDeposition: 0.0001  # in GeV
 
 services.RecoDrawingOptions.HitModuleLabels:               ["gaushit"]
-services.RecoDrawingOptions.WireModuleLabels:              ["decon1droi"] 
+services.RecoDrawingOptions.WireModuleLabels:              ["decon1droi"]
+
+#Turn off DuplicateEventTracker
+services.DuplicateEventTracker: @erase
 
 
