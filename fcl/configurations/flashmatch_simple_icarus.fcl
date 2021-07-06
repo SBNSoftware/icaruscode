@@ -41,8 +41,9 @@ icarus_simple_flashmatch_0: {
   score_hist_low: 0.
   score_hist_up: 50.
 
-  DriftDistance: 150.
-  XBinWidth: 5.
+  DriftDistance: 149.115 # only used for metrics creation
+  XBins: 30
+  # XBinWidth approx 5.
 
   YBiasSlope: 0.4
   ZBiasSlope: 0.
