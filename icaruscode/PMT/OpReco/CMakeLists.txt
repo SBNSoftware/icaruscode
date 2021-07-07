@@ -9,7 +9,7 @@ art_make(
 			nusimdata_SimulationBase
 			nurandom_RandomUtils_NuRandomService_service
 			larsim_PhotonPropagation_PhotonVisibilityService_service
-                        ${ART_FRAMEWORK_CORE}
+            ${ART_FRAMEWORK_CORE}
 			${ART_FRAMEWORK_PRINCIPAL}
 			${ART_FRAMEWORK_SERVICES_REGISTRY}
 			${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
@@ -20,14 +20,18 @@ art_make(
 			canvas
 			${MF_MESSAGELOGGER}
 			${MF_UTILITIES}
-	                ${FHICLCPP}
+	        ${FHICLCPP}
 			${CETLIB}
 			${CLHEP}
-                        ${ROOT_GEOM}
-                        ${ROOT_XMLIO}
-                        ${ROOT_GDML}
+            ${ROOT_GEOM}
+            ${ROOT_XMLIO}
+            ${ROOT_GDML}
 			${ROOT_FFTW}
 			${ROOT_BASIC_LIB_LIST}
+
+			sbndaq-artdaq-core_Overlays
+			artdaq-core_Data
+			icaruscode_Decode_DecoderTools
         )
 
 install_headers()

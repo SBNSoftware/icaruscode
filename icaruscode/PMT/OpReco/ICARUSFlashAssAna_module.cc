@@ -37,6 +37,12 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 
+#include "artdaq-core/Data/Fragment.hh"
+#include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
+#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
+#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
+#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
+
 #include "TTree.h"
 
 #include <vector>
@@ -57,6 +63,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
+
+      fhicl::Atom<art::InputTag> TriggerFragmentLabel {
+        Name("TriggerFragmentLabel"),
+        Comment("Label for the Trigger fragment label")
+      };
 
       fhicl::Sequence<art::InputTag> OpHitLabels {
         Name("OpHitLabels"),
@@ -96,8 +107,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
                         float &sum_pe_left, float &sum_pe_right, 
                         float *xyz, TTree *ophittree   ); 
 
+    static std::string_view firstLine(std::string const& s, const char* endl = "\r");
+
   private:
 
+    art::InputTag fTriggerFragmentLabel;
     std::vector<art::InputTag> fOpHitLabel;
     std::vector<art::InputTag> fFlashLabels;
     float fPEOpHitThreshold;
@@ -145,6 +159,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
 opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   : EDAnalyzer(config)
+  , fTriggerFragmentLabel( config().TriggerFragmentLabel() )
   , fOpHitLabel( config().OpHitLabels() )
   , fFlashLabels( config().FlashLabels() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
@@ -334,6 +349,61 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
   m_timestamp = e.time().timeHigh(); // precision to the second 
 
 
+  // We work out the trigger information here 
+  if( !fTriggerFragmentLabel.empty() ) { 
+
+      art::Handle<artdaq::Fragments> trigger_handle;
+      e.getByLabel( fTriggerFragmentLabel, trigger_handle );
+
+      if( trigger_handle.isValid() ) {
+
+        for( auto const & fragment : *trigger_handle ) {
+
+          icarus::ICARUSTriggerUDPFragment triggerFragment(fragment);
+
+          std::string data = triggerFragment.GetDataString();
+
+          std::cout << data << std::endl;
+
+          /*
+          std::string_view const dataLine = firstLine(data);
+
+          try {
+            
+            auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
+
+            fBeamGateSec = parsedData.findItem("Beam_TS")->getNumber<unsigned int>(1U);
+            fBeamGateNSec = parsedData.findItem("Beam_TS")->getNumber<unsigned int>(2U);
+
+            //std::cout << fBeamGateSec << " " << fBeamGateNSec << " " << std::endl;
+
+          }
+
+          catch(icarus::details::KeyedCSVparser::Error const& e) {
+            std::cout 
+              << "Error parsing " << dataLine.length()
+              << "-char long trigger string:\n==>|" << dataLine
+              << "|<==\nError message: " << e.what() << std::endl;
+              // Still store the beam information 
+          }
+          */
+
+        }
+
+      }
+
+      else {
+        std::cout << "Invalid Trigger Data product " << fTriggerFragmentLabel.label() << "\n" ;
+      }
+
+  }
+
+  else {
+     std::cout << "Trigger Data product " << fTriggerFragmentLabel.label() << " not found!\n" ;
+  }
+
+
+  // Now we take care of the labels
   if ( !fFlashLabels.empty() ) {
 
     for ( size_t i=0; i<fFlashLabels.size(); i++  ) {
