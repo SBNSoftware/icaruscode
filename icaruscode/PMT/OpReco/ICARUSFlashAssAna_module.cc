@@ -94,7 +94,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     void processOpHits( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
                         int &multiplicity_left, int &multiplicity_right, 
                         float &sum_pe_left, float &sum_pe_right, 
-                        float *xyz  ); 
+                        float *xyz, TTree *ophittree   ); 
 
   private:
 
@@ -105,6 +105,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
     TTree *fEventTree;
     std::vector<TTree*> fOpFlashTrees;
+    std::vector<TTree*> fOpHitTrees;
 
     int m_run;
     int m_event;
@@ -120,8 +121,20 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_sum_pe_right;
     float m_flash_time;
     float m_flash_x;
+    float m_flash_width_x;
     float m_flash_y;
+    float m_flash_width_y;
     float m_flash_z;
+    float m_flash_width_z;
+
+    int m_channel_id;
+    float m_integral; // in ADC x tick
+    float m_amplitude; // in ADC
+    float m_start_time;
+    float m_width;
+    float m_abs_start_time;
+    float m_pe;
+    float m_fast_to_total;
 
     std::vector<float> m_pmt_x;
     std::vector<float> m_pmt_y;
@@ -154,6 +167,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
 
     geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
 
+    //std::cout << PMTxyz[0] << " " << PMTxyz[1] << " " << PMTxyz[2] << std::endl;
+
     m_pmt_x.push_back(PMTxyz[0]);
     m_pmt_y.push_back(PMTxyz[1]);
     m_pmt_z.push_back(PMTxyz[2]);
@@ -169,28 +184,11 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("nflashes", &m_nflashes, "nflashes/I");
   fEventTree->Branch("nophits", &m_nophit, "nophits/I");
 
-  /*
-  if ( !fOpHitLabels.empty() ) {
-
-    for( auto const & label : fOpHitLabels ) {
-
-        std::string name = label+"_ophittree"
-        std::string info = "Three for the recob::OpHit with label "+label;
-
-        auto ttree = tfs->make<TTree>(name.c_str(), info.c_str() );
-        ttree->Branch("run", &m_run, "run/I");
-        ttree->Branch("event" &m_event, "event/I");
-        //ttree->Branch("flash_id", &m_flash_id, "flash_id/I");
-
-        fOpHitTrees.push_back( ttree );
-    }
-  }
-  */
-
   if ( !fFlashLabels.empty() ) {
 
     for( auto const & label : fFlashLabels ) {
 
+        // TTree for the flash in a given cryostat
         std::string name = label.label()+"_flashtree";
         std::string info = "Three for the recob::Flashes with label "+label.label();
 
@@ -203,14 +201,38 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ttree->Branch("multiplicity_right", &m_multiplicity_right, "multiplicity_right/I" );
         ttree->Branch("multiplicity_left", &m_multiplicity_left, "multiplicity_left/I" );
         ttree->Branch("sum_pe", &m_sum_pe, "sum_pe/F");
-        //ttree->Branch("sum_pe_right", &m_sum_pe_right, "sum_pe_right/F");
-        //ttree->Branch("sum_pe_left", &m_sum_pe_left, "sum_pe_left/F");
+        ttree->Branch("sum_pe_right", &m_sum_pe_right, "sum_pe_right/F");
+        ttree->Branch("sum_pe_left", &m_sum_pe_left, "sum_pe_left/F");
         ttree->Branch("flash_time", &m_flash_time, "flash_time/F");
-        //ttree->Branch("flash_x", &m_flash_x, "flash_x/F");
-        //ttree->Branch("flash_y", &m_flash_y, "flash_y/F");
-        //ttree->Branch("flash_z", &m_flash_z, "flash_z/F");
+        ttree->Branch("flash_x", &m_flash_x, "flash_x/F");
+        ttree->Branch("flash_width_x", &m_flash_width_x, "flash_width_x/F");
+        ttree->Branch("flash_y", &m_flash_y, "flash_y/F");
+        ttree->Branch("flash_width_y", &m_flash_width_y, "flash_width_y/F");
+        ttree->Branch("flash_z", &m_flash_z, "flash_z/F");
+        ttree->Branch("flash_width_z", &m_flash_width_z, "flash_width_z/F");
 
         fOpFlashTrees.push_back( ttree );
+
+        // Now the ttree for the OpHit associated in the flash
+        name = label.label()+"_ophittree";
+        info = "Three for the recob::OpHit associated with an OpHitFlash"+label.label();
+
+        TTree* ophittree = tfs->make<TTree>(name.c_str(), info.c_str() );
+        ophittree->Branch("run", &m_run, "run/I");
+        ophittree->Branch("event", &m_event, "event/I");
+        ophittree->Branch("timestamp", &m_timestamp, "timestamp/I");
+        ophittree->Branch("flash_id", &m_flash_id, "flash_id/I");
+        ophittree->Branch("channel_id", &m_channel_id, "channel_id/I");
+        ophittree->Branch("integral", &m_integral, "integral/F");
+        ophittree->Branch("amplitude", &m_amplitude, "amplitude/F");
+        ophittree->Branch("start_time", &m_start_time, "start_time/F");
+        ophittree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
+        ophittree->Branch("pe", &m_pe, "pe/F");
+        ophittree->Branch("width", &m_width, "width/F");
+        ophittree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
+
+        fOpHitTrees.push_back( ophittree );
+
     }
   }
 }
@@ -243,7 +265,7 @@ int opana::ICARUSFlashAssAna::getSideByChannel( const int channel ) {
 void opana::ICARUSFlashAssAna::processOpHits( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
                                               int &multiplicity_left, int &multiplicity_right, 
                                               float &sum_pe_left, float &sum_pe_right, 
-                                              float *xyz  ) {
+                                              float *xyz, TTree *ophittree  ) {
 
 
   std::unordered_map<int, float > sumpe_map;
@@ -257,21 +279,44 @@ void opana::ICARUSFlashAssAna::processOpHits( std::vector<art::Ptr<recob::OpHit>
 
     sumpe_map[ channel_id ]+=ophit->PE() ;
 
-    xyz[0] = m_pmt_x[channel_id]*ophit->PE();
-    xyz[1] = m_pmt_y[channel_id]*ophit->PE();
-    xyz[2] = m_pmt_z[channel_id]*ophit->PE();
+    //xyz[0] += m_pmt_x[channel_id]*ophit->PE();
+    //xyz[1] += m_pmt_y[channel_id]*ophit->PE();
+    //xyz[2] += m_pmt_z[channel_id]*ophit->PE();
+
+    m_channel_id = channel_id;
+    m_integral = ophit->Area(); // in ADC x tick
+    m_amplitude = ophit->Amplitude(); // in ADC
+    m_start_time = ophit->PeakTime();
+    m_width = ophit->Width();
+    m_abs_start_time = ophit->PeakTimeAbs();
+    m_pe = ophit->PE();
+    m_fast_to_total = ophit->FastToTotal();
+
+    ophittree->Fill();
 
   }
 
-  //m_multiplicity_left = sumpe_map[0].size();
+  m_multiplicity_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
+					 [&](int value, const std::map<int, float>::value_type& p) {
+					   return getSideByChannel(p.first)==0 ? ++value : value ;
+					 });
 
-  //m_multiplicity_right = sumpe_map[1].size();
+  m_multiplicity_right =std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
+					 [&](int value, const std::map<int, float>::value_type& p) {
+					   return getSideByChannel(p.first)==1 ? ++value : value ;
+					 });
 
-  //m_sum_pe_left = std::accumulate( sumpe_map[0].begin(), sumpe_map[0].end(), 0 );
+  m_sum_pe_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0, 
+				   [&](int value, const std::map<int, float>::value_type& p) {
+				     return getSideByChannel(p.first)==0 ? value+p.second : value ; 
+				   });
   
-  //m_sum_pe_right = std::accumulate( sumpe_map[1].begin(), sumpe_map[1].end(), 0 );  
+  m_sum_pe_right = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
+                                   [&](int value, const std::map<int, float>::value_type& p) {
+                                     return getSideByChannel(p.first)==1 ? value+p.second : value ;
+                                   }); 
 
-  for( int i=0; i<3; i++ ){ xyz[i] /= m_sum_pe_left+ m_sum_pe_right; }
+  //for( int i=0; i<3; i++ ){ xyz[i] /= (m_sum_pe_left+ m_sum_pe_right); }
   
 }
 
@@ -316,19 +361,26 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           float xyz[3] = {0.0, 0.0, 0.0};
           processOpHits( ophits, 
                          m_multiplicity_left, m_multiplicity_right, 
-                         m_sum_pe_left, m_sum_pe_right, xyz );
+                         m_sum_pe_left, m_sum_pe_right, xyz, fOpHitTrees[i] );
 
-          //std::cout << "\tflash id: " << idx << ", time: " << m_flash_time;
-          //std::cout << ", multiplicity left: " << m_multiplicity_left << ", multiplicity right: " << m_multiplicity_right;
-          //std::cout << ", sum pe left: " << m_sum_pe_left << ", sum pe right: " << m_sum_pe_right;
-          //std::cout << " coor: [" << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << "]";
-          //std::cout  << "\n";
+          /*
+          std::cout << "\tflash id: " << idx << ", time: " << m_flash_time;
+          std::cout << ", multiplicity left: " << m_multiplicity_left << ", multiplicity right: " << m_multiplicity_right;
+          std::cout << ", sum pe left: " << m_sum_pe_left << ", sum pe right: " << m_sum_pe_right;
+          std::cout << " coor: [" << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << "]";
+          std::cout << " coor: [" << 0.0 << ", " << flash.YCenter() << ", " << flash.ZCenter() << "]";
+          std::cout << " coor: [" << 0.0 << ", " << flash.YWidth() << ", " << flash.ZWidth() << "]";
+	        std::cout  << "\n";
+          */
 
           m_multiplicity = m_multiplicity_left+m_multiplicity_right;
 
-          m_flash_x = xyz[0];
-          m_flash_y = xyz[1];
-          m_flash_z = xyz[2];
+          m_flash_x = 0.0;
+          m_flash_width_x = 0.0;
+          m_flash_y = flash.YCenter(); 
+          m_flash_width_y = flash.YWidth();
+          m_flash_z = flash.ZCenter();
+          m_flash_width_x = flash.ZWidth();
 
           fOpFlashTrees[i]->Fill();
 
