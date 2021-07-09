@@ -407,15 +407,20 @@ auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextOpening()
 {
   if (atEnd()) return {};
   
+  using ClockDiff_t = decltype( ClockTick_t{} - ClockTick_t{} );
+  
   ClockTick_t const start = nextStart;
   ClockTick_t closing;
   do {
     std::tie(closing, nextStart) = findNextCloseAndOpen(nextStart);
     if (nextStart == Gate_t::MaxTick) break;
-  } while((closing - start < minWidth()) || (nextStart - closing < minGap()));
+  } while(
+    (closing - start < static_cast<ClockDiff_t>(minWidth()))
+    || (nextStart - closing < static_cast<ClockDiff_t>(minGap()))
+  );
   
   return std::optional<OpeningInfo_t>{ std::in_place,
-    detinfo::DetectorTimings::optical_tick{ start },
+    detinfo::timescales::optical_tick{ start },
     gate.openingCount(gate.findMaxOpen(start, closing)),
     location()
     };
