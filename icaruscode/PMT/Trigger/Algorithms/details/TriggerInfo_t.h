@@ -220,11 +220,14 @@ struct icarus::trigger::details::TriggerInfo_t {
  *   if (info) triggerInfo.add(info.value());
  * } // while
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * fills `triggerInfo` with all the openings above level `6U`.
- * Each opening is defined as from when `gate` reaches the specified threshold
- * to when it goes below it, with no dead time afterward.
+ * fills `triggerInfo` with all the openings equal or above level `6U`.
+ * Each opening is defined as from when `gate` reaches a specified threshold
+ * ("opening threshold") to when it reaches or goes below another one ("closing
+ * threshold"), with no dead time afterward.
  * The time of the opening is the time when threshold is passed, but
  * _the reported level is the maximum in the opening range_.
+ * By default, the closing threshold is one less than the opening one (i.e. as
+ * soon as the level goes below the opening threshold, the gate closes).
  * 
  * This algorithm will not work in multi-threading.
  */
@@ -260,7 +263,7 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
       , location(location)
       {}
     
-    Config_t(OpeningCount_t threshold): Config_t(threshold, threshold) {}
+    Config_t(OpeningCount_t threshold): Config_t(threshold, threshold - 1) {}
     
   }; // struct Config_t
   
