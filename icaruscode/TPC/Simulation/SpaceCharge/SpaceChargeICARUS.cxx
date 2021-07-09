@@ -235,10 +235,10 @@ void spacecharge::SpaceChargeICARUS::fixCoords(double* xx, double* yy, double* z
   //handle the edge cases by projecting SCE corrections onto boundaries
   *xx = abs(*xx);
   if(*xx<71.94){*xx=71.94;}
-  if(*xx>368.49){*xx=368.49;}
+  if(*xx>368.489){*xx=368.489;}
   if(*yy<-181.86){*yy=-181.86;}
   if(*yy>134.96){*yy=134.96;}
   if(*zz<-894.951){*zz=-894.951;}
-  if(*zz>894.951){*zz=894.951;}
+  if(*zz>894.9509){*zz=894.9509;}
 }
 
