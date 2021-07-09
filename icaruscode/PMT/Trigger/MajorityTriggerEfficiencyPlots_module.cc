@@ -749,14 +749,16 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
     if (maxPrimitivesInCryo.second > maxPrimitives.second)
       maxPrimitives = maxPrimitivesInCryo;
 
-    mf::LogTrace(helper().logCategory())
-      << "Max primitive count in " << threshold << " for C:" << iCryo << ": "
-      << maxPrimitivesInCryo.second << " at tick "
-      << maxPrimitivesInCryo.first << " ("
-      << detinfo::DetectorTimings(clockData).toElectronicsTime
-        (detinfo::DetectorTimings::optical_tick{ maxPrimitivesInCryo.first })
-      << ")"
-      ;
+    mf::LogTrace log { helper().logCategory() };
+    log << "Max primitive count in " << threshold << " for C:" << iCryo << ": "
+      << maxPrimitivesInCryo.second;
+    if (maxPrimitivesInCryo.second > 0) {
+      log << " at tick " << maxPrimitivesInCryo.first << " ("
+        << detinfo::DetectorTimings(clockData).toElectronicsTime
+          (detinfo::DetectorTimings::optical_tick{ maxPrimitivesInCryo.first })
+        << ")"
+        ;
+    } // if
   } // for
   
   PMTInfo_t const PMTinfo { threshold, channelList };
@@ -906,21 +908,13 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
       << "Simulating trigger response with ADC threshold " << threshold
       << " for " << cryoID << " (" << gates.size() << " primitives)";
 
-    if (gates.empty()) { // this is unexpected...
-      mf::LogWarning(helper().logCategory())
-        << "No trigger primitive found for threshold " << threshold
-        << " in " << cryoID;
-      return {};
-    } // if no gates
-
     cryoCombinedGate.push_back(icarus::trigger::sumGates(gates));
   } // for
 
   //
-  // largest number of trigger primitives at any time for any cryostat
+  // largest number of trigger primitives at any time, per cryostat
   //
   return cryoCombinedGate;
-//   return icarus::trigger::maxGates(cryoCombinedGate);
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives()
 
