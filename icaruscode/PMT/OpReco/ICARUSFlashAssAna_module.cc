@@ -37,12 +37,6 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 
-#include "artdaq-core/Data/Fragment.hh"
-#include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
-#include "sbndaq-artdaq-core/Overlays/ICARUS/ICARUSTriggerUDPFragment.hh"
-#include "icaruscode/Decode/DecoderTools/details/KeyedCSVparser.h"
-#include "icaruscode/Decode/DecoderTools/Dumpers/FragmentDumper.h"
-
 #include "TTree.h"
 
 #include <vector>
@@ -64,8 +58,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
       using Name = fhicl::Name;
       using Comment = fhicl::Comment;
 
-      fhicl::Atom<art::InputTag> TriggerFragmentLabel {
-        Name("TriggerFragmentLabel"),
+      fhicl::Atom<art::InputTag> TriggerLabel {
+        Name("TriggerLabel"),
         Comment("Label for the Trigger fragment label")
       };
 
@@ -111,7 +105,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
   private:
 
-    art::InputTag fTriggerFragmentLabel;
+    art::InputTag fTriggerLabel;
     std::vector<art::InputTag> fOpHitLabel;
     std::vector<art::InputTag> fFlashLabels;
     float fPEOpHitThreshold;
@@ -126,6 +120,9 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     int m_timestamp;
     int m_nflashes;
     int m_nophit;
+    float m_beam_gate_start;
+    float m_beam_gate_width;
+    int m_beam_type;
     int m_flash_id;
     int m_multiplicity;
     int m_multiplicity_left;
@@ -134,8 +131,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_sum_pe_left;
     float m_sum_pe_right;
     float m_flash_time;
-    float m_flash_x;
-    float m_flash_width_x;
+    //float m_flash_x;
+    //float m_flash_width_x;
     float m_flash_y;
     float m_flash_width_y;
     float m_flash_z;
@@ -159,7 +156,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
 opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   : EDAnalyzer(config)
-  , fTriggerFragmentLabel( config().TriggerFragmentLabel() )
+  , fTriggerLabel( config().TriggerLabel() )
   , fOpHitLabel( config().OpHitLabels() )
   , fFlashLabels( config().FlashLabels() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
@@ -198,6 +195,9 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("timestamp", &m_timestamp, "timestamp/I");
   fEventTree->Branch("nflashes", &m_nflashes, "nflashes/I");
   fEventTree->Branch("nophits", &m_nophit, "nophits/I");
+  fEventTree->Branch("beam_gate_start", &m_beam_gate_start, "beam_gate_start/F");
+  fEventTree->Branch("beam_gate_width", &m_beam_gate_width, "beam_gate_width/F");
+  fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");
 
   if ( !fFlashLabels.empty() ) {
 
@@ -219,8 +219,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ttree->Branch("sum_pe_right", &m_sum_pe_right, "sum_pe_right/F");
         ttree->Branch("sum_pe_left", &m_sum_pe_left, "sum_pe_left/F");
         ttree->Branch("flash_time", &m_flash_time, "flash_time/F");
-        ttree->Branch("flash_x", &m_flash_x, "flash_x/F");
-        ttree->Branch("flash_width_x", &m_flash_width_x, "flash_width_x/F");
+        //ttree->Branch("flash_x", &m_flash_x, "flash_x/F");
+        //ttree->Branch("flash_width_x", &m_flash_width_x, "flash_width_x/F");
         ttree->Branch("flash_y", &m_flash_y, "flash_y/F");
         ttree->Branch("flash_width_y", &m_flash_width_y, "flash_width_y/F");
         ttree->Branch("flash_z", &m_flash_z, "flash_z/F");
@@ -321,15 +321,15 @@ void opana::ICARUSFlashAssAna::processOpHits( std::vector<art::Ptr<recob::OpHit>
 					   return getSideByChannel(p.first)==1 ? ++value : value ;
 					 });
 
-  m_sum_pe_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0, 
-				   [&](int value, const std::map<int, float>::value_type& p) {
+  m_sum_pe_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0.0, 
+				   [&](float value, const std::map<int, float>::value_type& p) {
 				     return getSideByChannel(p.first)==0 ? value+p.second : value ; 
 				   });
   
-  m_sum_pe_right = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
-                                   [&](int value, const std::map<int, float>::value_type& p) {
-                                     return getSideByChannel(p.first)==1 ? value+p.second : value ;
-                                   }); 
+  m_sum_pe_right = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0.0,
+            [&](float value, const std::map<int, float>::value_type& p) {
+              return getSideByChannel(p.first)==1 ? value+p.second : value ;
+            }); 
 
   //for( int i=0; i<3; i++ ){ xyz[i] /= (m_sum_pe_left+ m_sum_pe_right); }
   
@@ -350,56 +350,31 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
 
   // We work out the trigger information here 
-  if( !fTriggerFragmentLabel.empty() ) { 
+  if( !fTriggerLabel.empty() ) { 
 
-      art::Handle<artdaq::Fragments> trigger_handle;
-      e.getByLabel( fTriggerFragmentLabel, trigger_handle );
+      art::Handle<std::vector<sim::BeamGateInfo>> beamgate_handle;
+      e.getByLabel( fTriggerLabel, beamgate_handle );
 
-      if( trigger_handle.isValid() ) {
+      if( beamgate_handle.isValid() ) {
 
-        for( auto const & fragment : *trigger_handle ) {
+        for( auto const & beamgate : *beamgate_handle ) {
 
-          icarus::ICARUSTriggerUDPFragment triggerFragment(fragment);
-
-          std::string data = triggerFragment.GetDataString();
-
-          std::cout << data << std::endl;
-
-          /*
-          std::string_view const dataLine = firstLine(data);
-
-          try {
-            
-            auto const parsedData = icarus::details::KeyedCSVparser{}(dataLine);
-
-            fBeamGateSec = parsedData.findItem("Beam_TS")->getNumber<unsigned int>(1U);
-            fBeamGateNSec = parsedData.findItem("Beam_TS")->getNumber<unsigned int>(2U);
-
-            //std::cout << fBeamGateSec << " " << fBeamGateNSec << " " << std::endl;
-
-          }
-
-          catch(icarus::details::KeyedCSVparser::Error const& e) {
-            std::cout 
-              << "Error parsing " << dataLine.length()
-              << "-char long trigger string:\n==>|" << dataLine
-              << "|<==\nError message: " << e.what() << std::endl;
-              // Still store the beam information 
-          }
-          */
+          m_beam_gate_start = beamgate.Start(); 
+          m_beam_gate_width = beamgate.Width(); 
+          m_beam_type = beamgate.BeamType() ;
 
         }
 
       }
 
       else {
-        std::cout << "Invalid Trigger Data product " << fTriggerFragmentLabel.label() << "\n" ;
+        std::cout << "Invalid Trigger Data product " << fTriggerLabel.label() << "\n" ;
       }
 
   }
 
   else {
-     std::cout << "Trigger Data product " << fTriggerFragmentLabel.label() << " not found!\n" ;
+     std::cout << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
   }
 
 
@@ -445,12 +420,12 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           m_multiplicity = m_multiplicity_left+m_multiplicity_right;
 
-          m_flash_x = 0.0;
-          m_flash_width_x = 0.0;
+          //m_flash_x = 0.0;
+          //m_flash_width_x = 0.0;
           m_flash_y = flash.YCenter(); 
           m_flash_width_y = flash.YWidth();
           m_flash_z = flash.ZCenter();
-          m_flash_width_x = flash.ZWidth();
+          m_flash_width_z = flash.ZWidth();
 
           fOpFlashTrees[i]->Fill();
 

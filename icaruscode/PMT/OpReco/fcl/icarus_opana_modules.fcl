@@ -101,7 +101,7 @@ ICARUSParticleAna: {
 
 ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
-    TriggerFragmentLabel: "ICARUSTriggerUDP"
+    TriggerLabel: "daqTrigger"
     OpHitLabels: ["ophit"]
     FlashLabels: ["opFlashCryoW", "opFlashCryoE"]
     PEOpHitThreshold: 0

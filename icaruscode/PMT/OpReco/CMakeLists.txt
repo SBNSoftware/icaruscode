@@ -29,9 +29,6 @@ art_make(
 			${ROOT_FFTW}
 			${ROOT_BASIC_LIB_LIST}
 
-			sbndaq-artdaq-core_Overlays
-			artdaq-core_Data
-			icaruscode_Decode_DecoderTools
         )
 
 install_headers()
