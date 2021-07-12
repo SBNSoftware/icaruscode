@@ -181,6 +181,8 @@ private:
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
 
+    const std::string                                           fLogCategory;                ///< Output category when logging messages
+
     // fhicl parameters
     std::vector<size_t>                                         fStructuringElement;         ///< Structuring element for morphological filter
     std::vector<float>                                          fThreshold;                  ///< Threshold to apply for saving signal
@@ -251,7 +253,7 @@ DEFINE_ART_MODULE(DaqDecoderICARUSTPCwROI)
 ///
 DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset, art::ProcessingFrame const& frame) :
                           art::ReplicatedProducer(pset, frame),
-                          fNumEvent(0), fNumROPs(0)
+                          fLogCategory("DaqDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
@@ -308,7 +310,7 @@ DaqDecoderICARUSTPCwROI::DaqDecoderICARUSTPCwROI(fhicl::ParameterSet const & pse
                 }
 
                 // Diagnostic output if requested
-                if (fDiagnosticOutput) std::cout << "Initializing C/T/P: " << planeID.Cryostat << "/" << planeID.TPC << "/" << planeID.Plane << ", base channel: " << fPlaneToWireOffsetMap[planeID] << ", ROP: " << ropID << ", index: " << ropID.ROP << std::endl;
+                mf::LogDebug(fLogCategory) << "Initializing C/T/P: " << planeID.Cryostat << "/" << planeID.TPC << "/" << planeID.Plane << ", base channel: " << fPlaneToWireOffsetMap[planeID] << ", ROP: " << ropID << ", index: " << ropID.ROP;
 
             }
         }
@@ -457,10 +459,10 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
             channelArrayPair.first.resize(fROPToNumWiresMap[ropIdx]);
             channelArrayPair.second.resize(fROPToNumWiresMap[ropIdx],icarus_signal_processing::VectorFloat(4096));
 
-            std::cout << "**> Initializing ropIdx: " << ropIdx << " channelPairVec to " << channelArrayPair.first.size() << " channels with " << channelArrayPair.second[0].size() << " ticks" << std::endl;
+            mf::LogDebug("DaqDecoderICARUSTPCwROI") << "**> Initializing ropIdx: " << ropIdx << " channelPairVec to " << channelArrayPair.first.size() << " channels with " << channelArrayPair.second[0].size() << " ticks" << std::endl;
         }
 
-        std::cout << "****> Let's get ready to rumble!" << std::endl;
+        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "****> Let's get ready to rumble!" << std::endl;
     
         // ... Launch multiple threads with TBB to do the deconvolution and find ROIs in parallel
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
@@ -482,10 +484,10 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
         std::sort(rawDigitCollection->begin(),rawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
 
         // What did we get back?
-        std::cout << "****> Total size of map: " << planeIdxToImageMap.size() << std::endl;
+        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "****> Total size of map: " << planeIdxToImageMap.size() << std::endl;
         for(const auto& planeImagePair : planeIdxToImageMap)
         {
-            std::cout << "      - plane: " << planeImagePair.first << " has " << planeImagePair.second.size() << " wires" << std::endl;
+            mf::LogDebug("DaqDecoderICARUSTPCwROI") << "      - plane: " << planeImagePair.first << " has " << planeImagePair.second.size() << " wires" << std::endl;
         }
     
         // Now transfer ownership to the event store
@@ -522,7 +524,7 @@ void DaqDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame c
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("DaqDecoderICARUSTPCwROI") << "==> DaqDecoderICARUSTPCwROI total time: " << totalTime << std::endl;
+    mf::LogInfo(fLogCategory) << "==> DaqDecoderICARUSTPCwROI total time: " << totalTime << std::endl;
 
     return;
 }
@@ -556,7 +558,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
     // Recover the Fragment id:
     artdaq::detail::RawFragmentHeader::fragment_id_t fragmentID = fragmentPtr->fragmentID();
 
-    if (fDiagnosticOutput) std::cout << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << std::endl;
+    mf::LogDebug(fLogCategory) << "==> Recovered fragmentID: " << std::hex << fragmentID << std::dec << std::endl;
 
     // Look for special case of diagnostic running
     if (!fChannelMap->hasFragmentID(fragmentID))
@@ -578,11 +580,8 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         // Look up the channels associated to this board
         if (!fChannelMap->hasBoardID(boardID))
         {
-            if (fDiagnosticOutput)
-            {
-                std::cout << "*** COULD NOT FIND BOARD ***" << std::endl;
-                std::cout << "    - boardID: " << std::hex << boardID << ", board map size: " << readoutIDVec.size() << ", nBoardsPerFragment: " << nBoardsPerFragment << std::endl;
-            }
+            mf::LogDebug(fLogCategory) << "*** COULD NOT FIND BOARD ***\n" <<
+                                          "    - boardID: " << std::hex << boardID << ", board map size: " << readoutIDVec.size() << ", nBoardsPerFragment: " << nBoardsPerFragment;
 
             return;
         }
@@ -592,12 +591,11 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         boardIDVec[boardSlot] = boardID;
     }
 
-    if (fDiagnosticOutput)
-    {
-        std::cout << "   - # boards: " << boardIDVec.size() << ", boards: ";
-        for(const auto& id : boardIDVec) std::cout << id << " ";
-        std::cout << std::endl;
-    }
+    std::string boardIDs = "";
+
+    for(const auto& id : boardIDVec) boardIDs += id + " ";
+
+    mf::LogDebug(fLogCategory) << "   - # boards: " << boardIDVec.size() << ", boards: " << boardIDs;
 
     cet::cpu_timer theClockPedestal;
 
@@ -618,14 +616,16 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
         uint32_t boardSlot = physCrateFragment.DataTileHeader(board)->StatusReg_SlotID();
 
-        if (fDiagnosticOutput)
-        {
-            std::cout << "********************************************************************************" << std::endl;
-            std::cout << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard << std::endl;
-        }
+        std::stringstream outputString;
+        outputString << "********************************************************************************\n"
+                     << "FragmentID: " << std::hex << fragmentID << ", Crate: " << crateName << std::dec << ", boardID: " << boardSlot << "/" << nBoardsPerFragment << ", size " << channelPlanePairVec.size() << "/" << nChannelsPerBoard;
+
+        mf::LogInfo("TPCDecoderFilter1D") << outputString.str();
 
         // Get the pointer to the start of this board's block of data
         const icarus::A2795DataBlock::data_t* dataBlock = physCrateFragment.BoardData(board);
+
+        std::stringstream channelString;
 
         // Copy to input data array
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
@@ -633,14 +633,16 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             // Get the channel number on the Fragment
             raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
 
-            if (fDiagnosticOutput) std::cout << channel << "-";
+            channelString << channel << "-";
             
             std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
 
             // Skip the channels which are not physically connected
             if (wireIDVec.empty())
             {
-                if (fDiagnosticOutput) std::cout << "skip * ";
+                channelString << "skip * ";
+                mf::LogDebug(fLogCategory) << channelString.str();
+
                 continue;
             }
 
@@ -659,10 +661,11 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             channelArrayPairVec[planeIndex].first[wire] = channel;
 
             if (fDiagnosticOutput)
-                std::cout << wireIDVec[0].Cryostat << "/" << wireIDVec[0].TPC << "/" << wireIDVec[0].Plane << "/" << wireIDVec[0].Wire  
-                          << " idx/wire: " << planeIndex << "/" << wire << " * ";
+                channelString << wireIDVec[0].Cryostat << "/" << wireIDVec[0].TPC << "/" << wireIDVec[0].Plane << "/" << wireIDVec[0].Wire  
+                              << " idx/wire: " << planeIndex << "/" << wire << " * ";
         }
-        if (fDiagnosticOutput) std::cout << std::endl;
+
+        mf::LogInfo(fLogCategory) << channelString.str();
     }
 
     // We need to make sure the channelID information is not preserved when less than 9 boards in the fragment
@@ -676,7 +679,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
     double totalTime = theClockProcess.accumulated_real_time();
 
-    mf::LogDebug("DaqDecoderICARUSTPCwROI") << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
+    mf::LogDebug(fLogCategory) << "--> Exiting fragment processing for thread: " << tbb::this_task_arena::current_thread_index() << ", time: " << totalTime << std::endl;
     return;
 }
 
@@ -784,7 +787,7 @@ void DaqDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::Arra
 
         raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
 
-        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
+        mf::LogDebug(fLogCategory) << "    --> saving rawdigits for " << dataArray.size() << " channels" << std::endl;
 
         // Loop over the channels to recover the RawDigits after filtering
         for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
@@ -805,7 +808,7 @@ void DaqDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::Arra
 
         double totalTime = theClockSave.accumulated_real_time();
 
-        mf::LogDebug("DaqDecoderICARUSTPCwROI") << "    --> done with save, time: " << totalTime << std::endl;
+        mf::LogDebug(fLogCategory) << "    --> done with save, time: " << totalTime << std::endl;
     }
 
     return;
@@ -815,7 +818,7 @@ void DaqDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::Arra
 /// End job method.
 void DaqDecoderICARUSTPCwROI::endJob(art::ProcessingFrame const&)
 {
-    mf::LogInfo("DaqDecoderICARUSTPCwROI") << "Looked at " << fNumEvent << " events" << std::endl;
+    mf::LogInfo(fLogCategory) << "Looked at " << fNumEvent << " events" << std::endl;
 }
 
 } // end of namespace
