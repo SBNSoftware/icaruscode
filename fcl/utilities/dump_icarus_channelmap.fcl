@@ -37,8 +37,7 @@ services: {
         type:       "cout"
         threshold:  "INFO"
         categories:{
-          default:{ limit: -1 }
-          GeometryBadInputPoint: { limit: 5 timespan: 1000}
+          default:{ }
         }
       }
       LogStandardError: {
