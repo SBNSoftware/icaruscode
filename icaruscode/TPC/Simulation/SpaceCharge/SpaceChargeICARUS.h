@@ -88,7 +88,6 @@ namespace spacecharge
       // DECLARE SUPPLEMENTAL FUNCTIONS
       ////////////////////////////////
       void fixCoords(double* xx, double* yy, double* zz) const;
-      void fixCoords(double* xx, double* yy, double* zz, int* TPCid) const;
     }; // class SpaceChargeICARUS
 } //namespace spacecharge
 #endif // SPACECHARGE_SPACECHARGEICARUS_H
