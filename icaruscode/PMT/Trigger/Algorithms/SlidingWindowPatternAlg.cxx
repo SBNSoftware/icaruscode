@@ -13,6 +13,7 @@
 
 // ICARUS libraries
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -250,14 +251,15 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
   TriggerGateData_t trigPrimitive
     = mainPlusOpposite? *mainPlusOpposite: gates[windowInfo.index];
     
-  mfLogTrace() << "  base: " << trigPrimitive;
+  mfLogTrace() << "  base: " << compactdump(trigPrimitive);
   
   // main window
   if (pattern.minInMainWindow > 0U) {
     trigPrimitive.Mul
       (discriminate(gates[windowInfo.index], pattern.minInMainWindow));
     mfLogTrace()
-      << "  main >= " << pattern.minInMainWindow << ": " << trigPrimitive;
+      << "  main >= " << pattern.minInMainWindow << ": "
+      << compactdump(trigPrimitive);
   } // if
   
   // add opposite window requirement (if any)
@@ -265,7 +267,8 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
     trigPrimitive.Mul
       (discriminate(gates[windowInfo.opposite], pattern.minInOppositeWindow));
     mfLogTrace() << "  opposite [#" << windowInfo.opposite << "]: "
-      << gates[windowInfo.opposite] << "\n  => " << trigPrimitive;
+      << compactdump(gates[windowInfo.opposite])
+      << "\n  => " << compactdump(trigPrimitive);
   } // if
   
   // add main plus opposite window requirement (if any)
@@ -274,7 +277,8 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
     trigPrimitive.Mul
       (discriminate(*mainPlusOpposite, pattern.minSumInOppositeWindows));
     mfLogTrace() << "  sum [+ #" << windowInfo.opposite << "]: "
-      << *mainPlusOpposite << "\n  => " << trigPrimitive;
+      << compactdump(*mainPlusOpposite)
+      << "\n  => " << compactdump(trigPrimitive);
     
   } // if
   
@@ -292,7 +296,7 @@ auto icarus::trigger::SlidingWindowPatternAlg::applyWindowPattern(
       );
   } // if
   
-  mfLogTrace() << "  final: " << trigPrimitive;
+  mfLogTrace() << "  final: " << compactdump(trigPrimitive);
   
   //
   // 4. find the trigger time, fill the trigger information accordingly
