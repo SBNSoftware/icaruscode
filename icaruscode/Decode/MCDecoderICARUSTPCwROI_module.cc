@@ -224,8 +224,8 @@ DEFINE_ART_MODULE(MCDecoderICARUSTPCwROI)
 /// pset - Fcl parameters.
 ///
 MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset, art::ProcessingFrame const& frame) :
-                          art::ReplicatedProducer(pset, frame),
-                          fLogCategory("MCDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
+                        art::ReplicatedProducer(pset, frame),
+                        fLogCategory("MCDecoderICARUSTPCwROI"),fNumEvent(0), fNumROPs(0)
 {
     fGeometry = art::ServiceHandle<geo::Geometry const>{}.get();
 
