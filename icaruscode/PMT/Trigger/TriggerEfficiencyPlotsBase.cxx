@@ -460,7 +460,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories {
       { return info.hasGenerated() && info.isWeakNeutralCurrent() && info.isNu_e(); }
     },
 
-  PlotCategory{
+  /*PlotCategory{
     "NoActivity", "no energy deposited in active volume during beam gate",
     [](EventInfo_t const& info)
       {
@@ -468,7 +468,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories {
         return info.hasDepEnergy()
           && (info.DepositedEnergyInSpillInActiveVolume() == 0.0_GeV);
       }
-    }
+    }*/
 
 }; // icarus::trigger::TriggerEfficiencyPlotsBase::DefaultPlotCategories[]
 

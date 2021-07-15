@@ -1,0 +1,3 @@
+#include "maketriggerplots_icarus.fcl"
+
+physics.analyzers.triggerplots.TriggerGatesTag: "lvdsgates"

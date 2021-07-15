@@ -93,8 +93,8 @@ BEGIN_PROLOG
 gates_config: {
   
   # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
-  BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
   #BeamGateDuration:  @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
+  BeamGateDuration:  @local::BNB_settings.spill_duration # from trigger_icarus.fcl
   
 } # gates_config
 
@@ -233,6 +233,22 @@ physics: {
 
       TriggerGatesTag: discrimopdaq
 
+      #IgnoreChannels: [ 70 ]
+      IgnoreChannels: [ 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 
+		        193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 
+			206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 
+			219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 
+			232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 
+			245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 
+			258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 
+			271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 
+			284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 
+			297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 
+			310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 
+			323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 
+			336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 
+			349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359 ]
+
       # select the thresholds to process (mandatory)
       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
@@ -241,6 +257,7 @@ physics: {
 
       # use the standard ICARUS pairing
       ChannelPairing: @local::icarus_trigger_channel_pairings
+
 
       # message facility stream
       LogCategory: "LVDSgatesAND"
@@ -275,6 +292,22 @@ physics: {
 
       TriggerGatesTag: discrimopdaq
 
+      #IgnoreChannels: [ 70 ]
+      IgnoreChannels: [ 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 
+		        193, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 
+			206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 
+			219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 
+			232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 
+			245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 
+			258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 
+			271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 
+			284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 
+			297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 
+			310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 
+			323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 
+			336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 
+			349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359 ]
+
       # select the thresholds to process (mandatory)
       Thresholds: @local::icarus_triggergate_basic.ChannelThresholds # from trigger_icarus.fcl
 
@@ -283,6 +316,7 @@ physics: {
 
       # use the standard ICARUS pairing
       ChannelPairing: @local::icarus_trigger_channel_pairings
+
 
       # message facility stream
       LogCategory: "LVDSgatesOR"
@@ -331,7 +365,10 @@ physics: {
       MinimumPrimitives: @local::MinimumSingleTriggerPrimitives
 
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      #BeamGateDuration: @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
       BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
+
+      # ignore some channels
 
       # write event information in a simple for further investigation
       #EventTreeName: "EventsSingleAND"
@@ -357,10 +394,12 @@ physics: {
       MinimumPrimitives: @local::MinimumSingleTriggerPrimitives
 
       # duration of the beam gate (BNB: 1.6 us; NuMI: 9.5 us)
+      #BeamGateDuration: @local::NuMI_settings.spill_duration # from trigger_icarus.fcl
       BeamGateDuration: @local::BNB_settings.spill_duration # from trigger_icarus.fcl
 
+
       # write event information in a simple tree for further investigation (disabled)
-      # EventTreeName: "EventsSingleOR"
+      #EventTreeName: "EventsSingleOR"
 
       # dump event information on screen (disabled)
       # EventDetailsLogCategory: ""

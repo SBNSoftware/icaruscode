@@ -120,8 +120,7 @@ simple_plugin(TriggerEfficiencyPlots module
 simple_plugin(ExtractEnergyDepositionSummary module
   icaruscode_PMT_Trigger_Algorithms
   icaruscode_PMT_Trigger_Utilities
-  icaruscode_PMT_Trigger_Data
-  icaruscode_IcarusObj
+  sbnobj_ICARUS_PMT_Trigger_Data
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_Simulation

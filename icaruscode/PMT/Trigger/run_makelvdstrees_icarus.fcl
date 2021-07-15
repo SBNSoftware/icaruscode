@@ -2,5 +2,5 @@
 
 physics.analyzers.treegger.TriggerGatesTag: "lvdsgatesOR:200"
 services.DetectorClocksService: @local::icarus_detectorclocks_data_notiming # from services_common_icarus.fcl
-services.DetectorClocksService.DefaultBeamTime: 50.0 # microseconds
-services.DetectorClocksService.DefaultTrigTime: 50.0 # microseconds //look at the pretrigger
+services.DetectorClocksService.DefaultBeamTime: 7.0 # microseconds
+services.DetectorClocksService.DefaultTrigTime: 7.0 # microseconds //look at the pretrigger
