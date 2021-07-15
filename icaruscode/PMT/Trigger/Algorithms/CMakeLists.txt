@@ -1,7 +1,3 @@
-if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-endif()
-
 cet_make(
   SUBDIRS
     "details"
