@@ -667,18 +667,18 @@ void icarus::opdet::PMTsimulationAlg::ApplySaturation
 void icarus::opdet::PMTsimulationAlg::ClipWaveform
   (Waveform_t& waveform, ADCcount min, ADCcount max)
 {
-  auto const clamper =
+ auto const clamper =
     (min == std::numeric_limits<ADCcount>::min())
       ? ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [](ADCcount s){ return s; } }
-        : std::function{ [max](ADCcount s){ return std::min(s, max); } }
+        ? std::function<ADCcount(ADCcount)>{ [](ADCcount s){ return s; } }
+        : std::function<ADCcount(ADCcount)>{ [max](ADCcount s){ return std::min(s, max); } }
         )
       : ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [min](ADCcount s){ return std::max(s, min); } }
-        : std::function{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
+        ? std::function<ADCcount(ADCcount)>{ [min](ADCcount s){ return std::max(s, min); } }
+        : std::function<ADCcount(ADCcount)>{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
         )
       ;
-  
+
   std::for_each(waveform.begin(), waveform.end(),
     [clamper](ADCcount& s){ s = clamper(s); });
   

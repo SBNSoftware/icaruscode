@@ -199,7 +199,7 @@ private:
     unsigned int                                                fCoherentNoiseGrouping;      ///< Number of consecutive channels in coherent noise subtraction
     unsigned int                                                fCoherentNoiseOffset;        ///< Offset for the midplane...
     unsigned int                                                fMorphologicalWindow;        ///< Window size for filter
-    bool                                                        fOutputStats;                ///< Output of timiing statistics?
+//    bool                                                        fOutputStats;                ///< Output of timiing statistics?
     float                                                       fCoherentThresholdFactor;    ///< Threshold factor for coherent noise removal
 
     // Parameters for the ROI finding
@@ -593,7 +593,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
     std::string boardIDs = "";
 
-    for(const auto& id : boardIDVec) boardIDs += id + " ";
+    for(const auto& id : boardIDVec) boardIDs += id + std::string(" ");
 
     mf::LogDebug(fLogCategory) << "   - # boards: " << boardIDVec.size() << ", boards: " << boardIDs;
 

@@ -58,7 +58,7 @@ public:
 
   // Required functions.
   void analyze(art::Event const& e) override;
-  void beginSubRun(art::SubRun const& sr);
+  void beginSubRun(art::SubRun const& sr) override;
 
   using Point_t = std::array<double, 3>;
 

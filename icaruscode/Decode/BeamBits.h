@@ -64,6 +64,9 @@ namespace sbn {
     /// Returns the name of the specified `bit`. Delegates to `bitName()`.
     template <typename EnumType>
     std::string name(EnumType bit);
+
+    template <typename EnumType>
+    std::vector<std::string> names(mask_t<EnumType> mask);
     
     /// Returns a list of the names of all the bits set in `mask`.
     /// Mask is interpreted as made of only bits of type `EnumType`.

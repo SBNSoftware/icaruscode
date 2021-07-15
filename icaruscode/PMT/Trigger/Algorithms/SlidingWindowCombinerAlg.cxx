@@ -55,7 +55,7 @@ auto icarus::trigger::SlidingWindowCombinerAlg::sortChannels
   (std::vector<raw::Channel_t> channels) -> std::vector<raw::Channel_t>
 {
   std::sort(channels.begin(), channels.end());
-  return std::move(channels); // is move() needed?
+  return channels; // is move() needed?
 } // icarus::trigger::SlidingWindowCombinerAlg::sortChannels
 
 
