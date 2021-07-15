@@ -593,7 +593,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
     std::string boardIDs = "";
 
-    for(const auto& id : boardIDVec) boardIDs += id + std::string(" ");
+    for(const auto& id : boardIDVec) boardIDs += std::to_string(id) + " ";
 
     mf::LogDebug(fLogCategory) << "   - # boards: " << boardIDVec.size() << ", boards: " << boardIDs;
 
