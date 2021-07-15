@@ -69,9 +69,9 @@ class Decon1DROI : public art::ReplicatedProducer
     // an fft to remove the electronics shaping.     
     explicit Decon1DROI(fhicl::ParameterSet const &, art::ProcessingFrame const&);
     
-    void produce(art::Event& evt, art::ProcessingFrame const&); 
-    void beginJob(); 
-    void endJob();                 
+    void produce(art::Event& evt, art::ProcessingFrame const&) override; 
+ //   void beginJob() override;  
+ //   void endJob() override;                 
     void reconfigure(fhicl::ParameterSet const& p);
     
   private:
@@ -170,6 +170,7 @@ Decon1DROI::Decon1DROI(fhicl::ParameterSet const & pset, art::ProcessingFrame co
         produces< std::vector<recob::Wire> >(rawDigit.instance());
         produces<art::Assns<raw::RawDigit, recob::Wire>>(rawDigit.instance());
     }
+	fEventCount = 0;
 }
 
 //////////////////////////////////////////////////////
@@ -245,7 +246,7 @@ void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 }
 
 //-------------------------------------------------
-void Decon1DROI::beginJob()
+/*void Decon1DROI::beginJob()
 {
     fEventCount = 0;
 } // beginJob
@@ -253,7 +254,7 @@ void Decon1DROI::beginJob()
 //////////////////////////////////////////////////////
 void Decon1DROI::endJob()
 {
-}
+}*/
   
 //////////////////////////////////////////////////////
 void Decon1DROI::produce(art::Event& evt, art::ProcessingFrame const& frame)

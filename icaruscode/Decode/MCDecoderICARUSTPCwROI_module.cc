@@ -172,7 +172,7 @@ private:
     unsigned int                                                fCoherentNoiseGrouping;      ///< Number of consecutive channels in coherent noise subtraction
     unsigned int                                                fCoherentNoiseOffset;        ///< Offset for the midplane...
     unsigned int                                                fMorphologicalWindow;        ///< Window size for filter
-    bool                                                        fOutputStats;                ///< Output of timiing statistics?
+//    bool                                                        fOutputStats;                ///< Output of timiing statistics?
     float                                                       fCoherentThresholdFactor;    ///< Threshold factor for coherent noise removal
 
     // Parameters for the ROI finding

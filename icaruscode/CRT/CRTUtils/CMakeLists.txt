@@ -1,5 +1,6 @@
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-
+endif()
 art_make(    LIBRARY_NAME icaruscode_CRTUtils
              LIB_LIBRARIES larcorealg_Geometry
                            larcore_Geometry_Geometry_service

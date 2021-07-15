@@ -406,10 +406,10 @@ public:
     virtual void configure(const fhicl::ParameterSet&) override;
 
     /// Reads the PMT configuration from the run.
-    virtual void setupRun(art::Run const& run);
+    virtual void setupRun(art::Run const& run) override;
 
     /// Will read trigger information one day if needed.
-    virtual void setupEvent(art::Event const& event);
+    virtual void setupEvent(art::Event const& event) override;
     
     /**
      *  @brief Initialize any data products the tool will output
@@ -800,6 +800,21 @@ void daq::PMTDecoder::initializeDataProducts()
     fOpDetWaveformCollection = OpDetWaveformCollectionPtr(new OpDetWaveformCollection);
 }
 
+
+template <std::size_t NBits, typename T>
+constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
+daq::PMTDecoder::setBitIndices(T value) noexcept{
+
+    std::pair<std::array<std::size_t, NBits>, std::size_t> res;
+    auto& [ indices, nSetBits ] = res;
+    for (std::size_t& index: indices) {
+        index = (value & 1)? nSetBits++: NBits;
+        value >>= 1;
+    } // for
+    return res;
+
+} // daq::PMTDecoder::setBitIndices()
+
 void daq::PMTDecoder::process_fragment(const artdaq::Fragment &artdaqFragment)
 {
     size_t const fragment_id = artdaqFragment.fragmentID();
@@ -1134,9 +1149,9 @@ auto daq::PMTDecoder::fetchNeededBoardInfo
 
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-template <std::size_t NBits, typename T>
+/*template <std::size_t NBits, typename T>
 constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
-daq::PMTDecoder::setBitIndices(T value) noexcept {
+daq::PMTDecoder::setBitIndices(T value) noexcept{
     
     std::pair<std::array<std::size_t, NBits>, std::size_t> res;
     auto& [ indices, nSetBits ] = res;
@@ -1147,7 +1162,7 @@ daq::PMTDecoder::setBitIndices(T value) noexcept {
     return res;
     
 } // daq::PMTDecoder::setBitIndices()
-
+*/
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 void daq::PMTDecoder::initTrees(std::vector<std::string> const& treeNames) {

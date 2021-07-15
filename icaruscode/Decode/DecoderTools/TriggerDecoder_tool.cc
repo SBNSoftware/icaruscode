@@ -108,7 +108,9 @@ namespace daq
     bool fDebug; //< Use this for debugging this tool
     int fOffset; //< Use this to determine additional correction needed for TAI->UTC conversion from White Rabbit timestamps. Needs to be changed if White Rabbit firmware is changed and the number of leap seconds changes! 
     //Add in trigger data member information once it is selected, current LArSoft object likely not enough as is
-    uint64_t fLastTimeStamp = 0;
+    
+    // uint64_t fLastTimeStamp = 0;
+   
     long fLastEvent = 0;
     
     detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.

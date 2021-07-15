@@ -80,7 +80,7 @@ class icarus::PMTconfigurationExtractorBase {
   
   /// Finalizes the content of `config` and returns it.
   ConfigurationData_t finalize(ConfigurationData_t config) const
-    { return std::move(config); }
+    { return config; }
   
   
   /// @}

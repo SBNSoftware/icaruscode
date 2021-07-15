@@ -185,7 +185,7 @@ sbn::PMTconfiguration icarus::PMTconfigurationExtractor::finalize
     
   } // for boards
   
-  return std::move(config);
+  return config;
 } // icarus::PMTconfigurationExtractor::finalize()
 
 
