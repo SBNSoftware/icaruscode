@@ -67,8 +67,8 @@ namespace sbn {
     
     /// Returns a list of the names of all the bits set in `mask`.
     /// Mask is interpreted as made of only bits of type `EnumType`.
-    template <typename Mask>
-    std::vector<std::string> names(Mask mask);
+    template <typename EnumType>
+    std::vector<std::string> names(mask_t<EnumType> mask);
     
     /// @}
     // --- END ---- Generic bit functions --------------------------------------
