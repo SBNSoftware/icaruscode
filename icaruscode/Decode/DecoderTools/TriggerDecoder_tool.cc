@@ -319,7 +319,15 @@ namespace daq
     auto const parsedData = icarus::details::KeyedCSVparser{}(firstLine(data));
     unsigned int beamgate_count { std::numeric_limits<unsigned int>::max() };
     std::uint64_t beamgate_ts { wr_ts }; // we cheat
-    if (auto pBeamGateInfo = parsedData.findItem("Beam_TS"); pBeamGateInfo) {
+    /* [20210717, petrillo@slac.stanford.edu] `(pBeamGateInfo->nValues() == 3)`:
+     * this is an attempt to "support" a few Run0 runs (6017 to roughly 6043)
+     * which have the beam gate information truncated; this workaround should
+     * be removed when there is enough ICARUS data that these runs become
+     * uninteresting.
+     */
+    if (auto pBeamGateInfo = parsedData.findItem("Beam_TS");
+      pBeamGateInfo && (pBeamGateInfo->nValues() == 3)
+    ) {
       // if gate information is found, it must be complete
       beamgate_count = pBeamGateInfo->getNumber<unsigned int>(0U);
       // use the same linear correction for the beam gate timestamp as it was
