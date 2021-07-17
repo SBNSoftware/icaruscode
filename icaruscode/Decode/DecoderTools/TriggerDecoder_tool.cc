@@ -38,6 +38,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <string_view>
 #include <memory>
 
 
@@ -166,6 +167,13 @@ namespace daq
     
     detinfo::DetectorTimings const fDetTimings; ///< Detector clocks and timings.
     
+    /// Creates a `ICARUSTriggerInfo` from a generic fragment.
+    icarus::ICARUSTriggerUDPFragment makeTriggerFragment
+      (artdaq::Fragment const& fragment) const;
+    
+    /// Parses the trigger data packet with the "standard" parser.
+    icarus::ICARUSTriggerInfo parseTriggerString(std::string_view data) const;
+    
     /// Name of the data product instance for the current trigger.
     static std::string const CurrentTriggerInstanceName;
     
@@ -237,17 +245,63 @@ namespace daq
     fTriggerExtra = std::make_unique<sbn::ExtraTriggerInfo>();
     return;
   }
+  
+  
+  icarus::ICARUSTriggerUDPFragment TriggerDecoder::makeTriggerFragment
+    (artdaq::Fragment const& fragment) const
+  {
+    try {
+      return icarus::ICARUSTriggerUDPFragment { fragment };
+    }
+    catch(std::exception const& e) {
+      mf::LogSystem("TriggerDecoder")
+        << "Error while creating trigger fragment from:\n"
+          << sbndaq::dumpFragment(fragment)
+        << "\nError message: " << e.what();
+      throw;
+    }
+    catch(...) {
+      mf::LogSystem("TriggerDecoder")
+        << "Unidentified exception while creating trigger fragment from:"
+          << sbndaq::dumpFragment(fragment);
+      throw;
+    }
+  } // TriggerDecoder::parseTriggerString()
+
+  
+  icarus::ICARUSTriggerInfo TriggerDecoder::parseTriggerString
+    (std::string_view data) const
+  {
+    try {
+      return icarus::parse_ICARUSTriggerString(data.data());
+    }
+    catch(std::exception const& e) {
+      mf::LogSystem("TriggerDecoder")
+        << "Error while running standard parser on " << data.length()
+        << "-char long trigger string:\n==>|" << data
+        << "|<==\nError message: " << e.what();
+      throw;
+    }
+    catch(...) {
+      mf::LogSystem("TriggerDecoder")
+        << "Unidentified exception while running standard parser on "
+        << data.length() << "-char long trigger string:\n==>|" << data << "|.";
+      throw;
+    }
+  } // TriggerDecoder::parseTriggerString()
+
+  
 
   void TriggerDecoder::process_fragment(const artdaq::Fragment &fragment)
   {
     uint64_t artdaq_ts = fragment.timestamp();
-    icarus::ICARUSTriggerUDPFragment frag(fragment);
+    icarus::ICARUSTriggerUDPFragment frag { makeTriggerFragment(fragment) };
     std::string data = frag.GetDataString();
     char *buffer = const_cast<char*>(data.c_str());
     // --- BEGIN -- TEMPORARY --------------------------------------------------
     // restore OLD CODE when SBNSoftware/sbndaq-artdaq-core pull request #31 is in:
     // https://github.com/SBNSoftware/sbndaq-artdaq-core/pull/31
-    icarus::ICARUSTriggerInfo datastream_info = icarus::parse_ICARUSTriggerString(buffer);
+    icarus::ICARUSTriggerInfo datastream_info = parseTriggerString(buffer);
     uint64_t wr_ts = getNanoseconds_since_UTC_epoch_fix(datastream_info) + fOffset;
     // OLD CODE:
 //     uint64_t wr_ts = datastream_info.getNanoseconds_since_UTC_epoch() + fOffset;
@@ -312,7 +366,6 @@ namespace daq
       if (fDebug) { // this grows tiresome quickly when processing many events
         std::cout << "Trigger packet content:\n" << dataLine
           << "\nFull trigger fragment dump:"
-        
           << sbndaq::dumpFragment(fragment) << std::endl;
       }
     }
