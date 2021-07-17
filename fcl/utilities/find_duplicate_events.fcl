@@ -1,0 +1,57 @@
+#
+# File:    find_duplicate_events.fcl
+# Purpose: Prints a list of the duplicate events in the input.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 5, 2021
+#
+# This configuration requires to read the content of the input files,
+# and it prints a summary of duplicate events into a
+# `DuplicateEventSummary.log` file.
+# Note that if the production file naming convention allows, it may be
+# much faster to detect duplicate files from that naming convention.
+#
+# Example of usage:
+#     
+#     lar -c find_duplicate_events.fcl -S input.list
+#     
+# will report in `DuplicateEventSummary.log` (and on screen)
+# about all the duplicate events in the files listed in `input.list`.
+# 
+
+process_name: CheckDupl
+
+services: {
+  
+  message: {
+    destinations: {
+      console: {
+        type: cout
+        threshold: INFO
+      } # console
+      summary: {
+        type:      file
+        filename: "DuplicateEventSummary.log"
+        categories: {
+          DuplicateEventTracker: { limit: -1 }
+          default:               { limit:  0 }
+        }
+      } # summary
+    } # destinations
+  } # message
+  
+  DuplicateEventTracker: {
+    # just emit a warning on screen instead of throwing an exception
+    WarningOnly: true
+    
+    # do print a summary of the duplicate events at end of job
+    SkipSummary: false  # default
+
+    # in case of duplicate, wait until the end of job to throw an exception
+    ExceptionAtEnd: true
+
+    LogCategory: "DuplicateEventTracker"  # default
+  }
+  
+} # services
+  
+
