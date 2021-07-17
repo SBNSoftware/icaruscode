@@ -109,9 +109,17 @@ std::ostream& sbn::operator<< (std::ostream& out, ExtraTriggerInfo const& info)
       << "most recent trigger was from source "
       << name(info.anyPreviousTriggerSourceType) << " at "
       << dumpTimestamp(info.anyPreviousTriggerTimestamp)
+    ;
+  if (sbn::ExtraTriggerInfo::isValidTimestamp(info.anyPreviousTriggerTimestamp)
+    && sbn::ExtraTriggerInfo::isValidTimestamp(info.triggerTimestamp))
+  {
+    out
       << " ("
       << dumpTimestamp(info.triggerTimestamp - info.anyPreviousTriggerTimestamp)
-      << " earlier), and "
+      << " earlier)";
+  }
+  out
+      << ", and "
       << dumpTriggerCount(info.anyGateCountFromAnyPreviousTrigger)
       << " gates from any source have opened since"
     ;
