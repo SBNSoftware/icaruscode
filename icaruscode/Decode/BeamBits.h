@@ -17,6 +17,7 @@
 // C/C++ standard libraries
 #include <stdexcept> // std::runtime_error
 #include <string>
+#include <vector>
 #include <initializer_list>
 #include <type_traits> // std::underlying_type_t
 

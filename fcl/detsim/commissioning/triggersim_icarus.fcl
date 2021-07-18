@@ -168,6 +168,10 @@ services: {
   #                Geometry, detector properties and clocks
   @table::icarus_common_services
 
+  # art resource tracking services may take a lot of memory on the long run
+  MemoryTracker: @erase
+  TimeTracker:   @erase
+
   # currently unused (remove the line if they start mattering):
   LArPropertiesService:      @erase
   DetectorPropertiesService: @erase
