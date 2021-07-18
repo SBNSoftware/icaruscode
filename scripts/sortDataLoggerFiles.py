@@ -351,7 +351,6 @@ if __name__ == "__main__":
     firstLogger = detectFirstLogger(firstPassFiles)
   else: firstLogger = args.firstlogger if args.firstlogger is not None else 4
   
-  print(f"{firstLogger=}")
   FileInfoClass.setFirstDataLogger(firstLogger)
   
   fileInfo.sort() # uses internal FileInfoClass ordering
