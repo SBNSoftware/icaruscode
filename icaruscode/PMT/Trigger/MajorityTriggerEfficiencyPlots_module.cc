@@ -770,7 +770,9 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    * Note that in this type of plots each event appears in all bins
    * (may be with "fired" or "not fired" on each bin)
    */
-  PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
+
+  // PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
+
   bool fired = true; // the final trigger response (changes with requirement)
   
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {

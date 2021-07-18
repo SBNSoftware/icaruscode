@@ -1036,6 +1036,24 @@ namespace icarus {
 //------------------------------------------------------------------------------
 // --- icarus::DaqDecoderICARUSPMT
 //------------------------------------------------------------------------------
+// --- template implementation
+//------------------------------------------------------------------------------
+template <std::size_t NBits, typename T>
+constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
+icarus::DaqDecoderICARUSPMT::setBitIndices(T value) noexcept {
+  
+  std::pair<std::array<std::size_t, NBits>, std::size_t> res;
+  auto& [ indices, nSetBits ] = res;
+  for (std::size_t& index: indices) {
+    index = (value & 1)? nSetBits++: NBits;
+    value >>= 1;
+  } // for
+  return res;
+  
+} // icarus::DaqDecoderICARUSPMT::setBitIndices()
+
+
+//------------------------------------------------------------------------------
 icarus::DaqDecoderICARUSPMT::TreeNameList_t const
 icarus::DaqDecoderICARUSPMT::TreeNames
   = icarus::DaqDecoderICARUSPMT::initTreeNames();
@@ -2265,7 +2283,8 @@ unsigned int icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag
   sbndaq::CAENV1730Fragment const V1730fragment { fragment };
   sbndaq::CAENV1730EventHeader const header = V1730fragment.Event()->Header;
   
-  return { header.triggerTimeTag }; // prevent narrowing
+  unsigned int TTT { header.triggerTimeTag }; // prevent narrowing
+  return TTT;
   
 } // icarus::DaqDecoderICARUSPMT::extractTriggerTimeTag()
 
@@ -2285,22 +2304,6 @@ void icarus::DaqDecoderICARUSPMT::sortWaveforms
   std::sort(waveforms.begin(), waveforms.end(), byChannelThenTime);
 
 } // icarus::DaqDecoderICARUSPMT::sortWaveforms()
-
-
-//------------------------------------------------------------------------------
-template <std::size_t NBits, typename T>
-constexpr std::pair<std::array<std::size_t, NBits>, std::size_t>
-icarus::DaqDecoderICARUSPMT::setBitIndices(T value) noexcept {
-  
-  std::pair<std::array<std::size_t, NBits>, std::size_t> res;
-  auto& [ indices, nSetBits ] = res;
-  for (std::size_t& index: indices) {
-    index = (value & 1)? nSetBits++: NBits;
-    value >>= 1;
-  } // for
-  return res;
-  
-} // icarus::DaqDecoderICARUSPMT::setBitIndices()
 
 
 //------------------------------------------------------------------------------
