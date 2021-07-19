@@ -76,7 +76,7 @@ namespace icarus::trigger {
   auto compactdump
     (ReadoutTriggerGate<Tick, TickInterval, ChannelIDType> const& gate)
     -> details::CompactFormatter<ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>>
-    { return { gate }; }
+    { return  {{gate}} ; }
   
   
 } // namespace icarus::trigger
