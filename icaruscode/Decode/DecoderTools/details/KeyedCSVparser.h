@@ -55,9 +55,12 @@ struct icarus::details::KeyValuesData {
     bool operator< (Item const& other) const noexcept
       { return key < other.key; }
     
+    /// Converts the value to `T`, throws on failure.
     template <typename T>
     T getNumber(std::size_t index) const;
     
+    /// Converts the value to `T`, throws on conversion failures
+    /// unless `ignoreFormatErrors` is `true`.
     template <typename T>
     std::optional<T> getOptionalNumber
       (std::size_t index, bool ignoreFormatErrors = false) const;

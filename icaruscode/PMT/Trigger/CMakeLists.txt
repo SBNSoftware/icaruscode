@@ -1,8 +1,6 @@
-
-cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-
 add_subdirectory(Algorithms)
 add_subdirectory(Utilities)
+add_subdirectory(scripts)
 
 art_make(
   EXCLUDE

@@ -14,7 +14,6 @@ cet_test(geometry_icarus HANDBUILT
 # FCL files need to be copied to the test area (DATAFILES directive) since they
 # are not installed.
 cet_test(dump_channel_map_icarus_test HANDBUILT
-  DATAFILES dump_icarus_channelmap.fcl
   TEST_EXEC lar
   TEST_ARGS --rethrow-all --config ./dump_icarus_channelmap.fcl
 )
@@ -164,6 +163,4 @@ cet_test(geometry_overburden_channel_mapping_dump_icarus HANDBUILT
 )
 
 
-install_headers()
 install_fhicl()
-install_source()

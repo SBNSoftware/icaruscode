@@ -220,11 +220,14 @@ struct icarus::trigger::details::TriggerInfo_t {
  *   if (info) triggerInfo.add(info.value());
  * } // while
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * fills `triggerInfo` with all the openings above level `6U`.
- * Each opening is defined as from when `gate` reaches the specified threshold
- * to when it goes below it, with no dead time afterward.
+ * fills `triggerInfo` with all the openings equal or above level `6U`.
+ * Each opening is defined as from when `gate` reaches a specified threshold
+ * ("opening threshold") to when it reaches or goes below another one ("closing
+ * threshold"), with no dead time afterward.
  * The time of the opening is the time when threshold is passed, but
  * _the reported level is the maximum in the opening range_.
+ * By default, the closing threshold is one less than the opening one (i.e. as
+ * soon as the level goes below the opening threshold, the gate closes).
  * 
  * This algorithm will not work in multi-threading.
  */
@@ -260,7 +263,7 @@ class icarus::trigger::details::GateOpeningInfoExtractor {
       , location(location)
       {}
     
-    Config_t(OpeningCount_t threshold): Config_t(threshold, threshold) {}
+    Config_t(OpeningCount_t threshold): Config_t(threshold, threshold - 1) {}
     
   }; // struct Config_t
   
@@ -407,15 +410,20 @@ auto icarus::trigger::details::GateOpeningInfoExtractor<Gate>::findNextOpening()
 {
   if (atEnd()) return {};
   
+  using ClockDiff_t = decltype( ClockTick_t{} - ClockTick_t{} );
+  
   ClockTick_t const start = nextStart;
   ClockTick_t closing;
   do {
     std::tie(closing, nextStart) = findNextCloseAndOpen(nextStart);
     if (nextStart == Gate_t::MaxTick) break;
-  } while((closing - start < minWidth()) || (nextStart - closing < minGap()));
+  } while(
+    (closing - start < static_cast<ClockDiff_t>(minWidth()))
+    || (nextStart - closing < static_cast<ClockDiff_t>(minGap()))
+  );
   
   return std::optional<OpeningInfo_t>{ std::in_place,
-    detinfo::DetectorTimings::optical_tick{ start },
+    detinfo::timescales::optical_tick{ start },
     gate.openingCount(gate.findMaxOpen(start, closing)),
     location()
     };
