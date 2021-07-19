@@ -7,7 +7,7 @@ physics.reco: [ flashfilter,
                 @sequence::icarus_reco_Gauss_CryoW ,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
-physics.outana:            [ caloskimE, caloskimW]
+physics.outana:            [ caloskimE, caloskimW, simpleLightAna]
 physics.trigger_paths:     [ reco ]
 physics.end_paths:         [ outana, stream1 ]
 outputs.out1.fileName:     "%ifb_%tc-%p.root"

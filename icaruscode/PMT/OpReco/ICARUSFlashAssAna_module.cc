@@ -118,11 +118,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     int m_run;
     int m_event;
     int m_timestamp;
-    int m_nflashes;
-    int m_nophit;
-    float m_beam_gate_start;
-    float m_beam_gate_width;
-    int m_beam_type;
+    //int m_nflashes;
+    //int m_nophit;
+    float m_beam_gate_start=-99999;
+    float m_beam_gate_width=-99999;
+    int m_beam_type=-1;
     int m_flash_id;
     int m_multiplicity;
     int m_multiplicity_left;
@@ -193,8 +193,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("run", &m_run, "run/I");
   fEventTree->Branch("event", &m_event, "event/I");
   fEventTree->Branch("timestamp", &m_timestamp, "timestamp/I");
-  fEventTree->Branch("nflashes", &m_nflashes, "nflashes/I");
-  fEventTree->Branch("nophits", &m_nophit, "nophits/I");
+  //fEventTree->Branch("nflashes", &m_nflashes, "nflashes/I");
+  //fEventTree->Branch("nophits", &m_nophit, "nophits/I");
   fEventTree->Branch("beam_gate_start", &m_beam_gate_start, "beam_gate_start/F");
   fEventTree->Branch("beam_gate_width", &m_beam_gate_width, "beam_gate_width/F");
   fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");

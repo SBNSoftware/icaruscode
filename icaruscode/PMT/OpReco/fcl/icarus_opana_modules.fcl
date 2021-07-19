@@ -103,7 +103,7 @@ ICARUSFlashAssAna: {
     module_type: "ICARUSFlashAssAna"
     TriggerLabel: "daqTrigger"
     OpHitLabels: ["ophit"]
-    FlashLabels: ["opFlashCryoW", "opFlashCryoE"]
+    FlashLabels: ["opflashCryoE", "opflashCryoW"]
     PEOpHitThreshold: 0
 }
 

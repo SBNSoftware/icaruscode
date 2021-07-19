@@ -10,6 +10,7 @@
 #include "showerfindermodules_icarus.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_trackcalo_skimmer.fcl"
+#include "icarus_opana_modules.fcl"
 
 BEGIN_PROLOG
 
@@ -73,6 +74,7 @@ icarus_stage1_analyzers:
 {
   caloskimE: @local::caloskim_cryoe_nodigits_goldentracks
   caloskimW: @local::caloskim_cryow_nodigits_goldentracks
+  simpleLightAna: @local::ICARUSFlashAssAna
 }
 
 icarus_stage1_analyzers.caloskimE.SelectEvents: [reco]
