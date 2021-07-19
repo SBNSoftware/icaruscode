@@ -6,8 +6,8 @@ icarus_BasicHitAnalysis:
 {
   module_type:             "TrackHitAna"
   HitModuleLabel:          ["gaushit"]
-  PFParticleProducerLabel: ["cluster3d"]
-  TrackProducerLabel:      ["trackkalmanhit"]
+  PFParticleProducerLabel: ["cluster3DCryo0"]
+  TrackProducerLabel:      ["pandoraKalmanTrackGausCryo0"]
   WireProducerLabel:       ["caldata"]
   HitHistogramToolList:    [ @local::BasicHitAnalysisTool ]
 }

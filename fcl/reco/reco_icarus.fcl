@@ -144,6 +144,8 @@ icarus_reco_producers:
   pandoraTrackICARUSCryo1:        @local::icarus_pandoraTrackCreation
   #pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
+  pandorabdtGausCryo0:            @local::icarus_pandora
+
   # pandora CALO and PID
   pandoraGausCaloCryo0:		        @local::icarus_calomc
   pandoraGausPidCryo0:		        @local::icarus_chi2pid
@@ -493,6 +495,11 @@ icarus_crtophit_reconstruction:    [ @sequence::icarus_reco_crt,
 
 ### Below we include overrides for the modules above
 
+icarus_reco_producers.pandorabdtGausCryo0.HitFinderModuleLabel:                  "cluster3DCryo0" #ADDED
+icarus_reco_producers.pandorabdtGausCryo0.inputTracksLabel:                          "pandoraTrackGausCryo0" #ADDED
+icarus_reco_producers.pandorabdtGausCryo0.inputShowersLabel:                         "pandoraShowerGausCryo0" #ADDED
+icarus_reco_producers.pandorabdtGausCryo0.ConfigFile:                 "PandoraSettings_Master_ICARUS.xml" #ADDED
+
 ### Definitions for a single instance of the RawDigitFilter
 icarus_reco_producers.rawdigitfilter.ProcessNoise:                                             false
 icarus_reco_producers.rawdigitfilter.NumWiresToGroup:                                          [1, 1, 1]
@@ -771,5 +778,13 @@ icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat:                         
 
 icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:                                 "pandoraTrackGausSCECryo1"
 icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel:                           "pandoraGausSCECaloCryo1"
+
+icarus_reco_pandorabdtGausCryo0: [ pandorabdtGausCryo0 ]
+
+icarus_reco_BDT_Gaus_Cryo0:                                                                   [ @sequence::icarus_reco_SigProcTPC0Gauss,
+												@sequence::icarus_reco_SigProcTPC1Gauss,
+												@sequence::icarus_reco_cluster3DCryo0,
+												@sequence::icarus_reco_Gauss_Cryo0,
+												@sequence::icarus_reco_pandorabdtGausCryo0 ] #ADDED
 
 END_PROLOG

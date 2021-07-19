@@ -327,7 +327,7 @@
     <TrackPfoListName>TrackParticles3D</TrackPfoListName>
     <ShowerPfoListName>ShowerParticles3D</ShowerPfoListName>
     <UseThreeDInformation>true</UseThreeDInformation>
-    <MvaFileName>PandoraBdt_v08_33_00_SBND.xml</MvaFileName>
+    <MvaFileName>PandoraBdt_v08_43_00_ICARUS_vertex_bnb.xml</MvaFileName>
     <MvaName>PfoCharBDT</MvaName>
     <MvaFileNameNoChargeInfo>PandoraBdt_v08_33_00_SBND.xml</MvaFileNameNoChargeInfo>
     <MvaNameNoChargeInfo>PfoCharBDTNoChargeInfo</MvaNameNoChargeInfo>

@@ -12,7 +12,7 @@
 #
 #
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "rawdigitfilter_icarus.fcl"
 #include "recowire_icarus.fcl"
 
@@ -36,7 +36,7 @@
 #include "crtsimhitproducer.fcl"
 #include "crttrackproducer_icarus.fcl"
 
-#include "services_icarus.fcl"
+#include "services_common_icarus.fcl"
 #include "simulationservices_icarus.fcl"
 #include "correctionservices_icarus.fcl"
 #include "calibrationservices_icarus.fcl"
@@ -169,9 +169,9 @@ physics:
     pandoraKalmanTrackICARUSCryo1:  @local::icarus_pandora_kalmantrack
 
     ## Shower finding modules
-    SBNShowerGaus:                  @local::standard_sbnshower_stan
-    SBNShowerGausCryo0:             @local::standard_sbnshower_stan
-    SBNShowerGausCryo1:             @local::standard_sbnshower_stan
+    SBNShowerGaus:                  @local::icarus_pandorashower_3dTraj
+    SBNShowerGausCryo0:             @local::icarus_pandorashower_3dTraj
+    SBNShowerGausCryo1:             @local::icarus_pandorashower_3dTraj
 
     ## MCS modules
     mcsICARUSRaw:                   @local::mcsfitproducericarus_raw

@@ -5,7 +5,7 @@ icarus_basicpandora:
     module_type:                                 "StandardPandora"
     GeantModuleLabel:                            "largeant"
     HitFinderModuleLabel:                        "gaushit"
-    EnableMCParticles:                           false
+    EnableMCParticles:                           true
     EnableProduction:                            true
     EnableLineGaps:                              true
     UseGlobalCoordinates:                        true
