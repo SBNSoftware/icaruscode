@@ -2,7 +2,8 @@
 
 process_name: stage1
 
-physics.reco: [ @sequence::icarus_reco_Gauss_CryoE ,
+physics.reco: [ TPCHitFilter,
+                @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
