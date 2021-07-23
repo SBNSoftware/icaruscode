@@ -1,0 +1,74 @@
+# 
+# File:    services_compat_icarus-v09_18_00-v09_24_02_02.fcl
+# Purpose: Configuration override for legacy samples.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    July 22, 2021
+# 
+# This configuration override is supposed to allow to process with the current
+# `icaruscode` version samples which were produced with any `icaruscode` version
+# between v09_18_00 and v09_24_02_02 included.
+# 
+# The identifier of this legacy configuration is: `icarus_v2`
+# 
+# In that period, the geometry definition was `icarus_v2`; the updated geometry
+# `icarus_v3` moved the cryostats in such a way that the compatibility was
+# broken. This kind of change requires also modifications to the photon
+# visibility service configuration, which has the coordinates of the detector
+# more or less hard-coded.
+# 
+# 
+# Configured services
+# --------------------
+# 
+# The services configured here include:
+# 
+# * `Geometry` (and related services)
+# * `PhotonVisibilityService`
+# 
+# 
+# Target samples
+# ---------------
+# 
+# The targeted samples can be recognised for using the geometry file:
+# `icarus_complete_20210311_no_overburden_rotUV.gdml`
+# and the photon library file:
+# `PhotonLibrary-20201209.root`
+# 
+# 
+# Usage
+# ------
+# 
+# This is a configuration override file: it needs to be included at the end of
+# the configuration file that needs to be amended. Since it overwrites values
+# quite blindly, configurations with special customizations should make sure
+# that these customizations are not lost.
+# 
+# Example of turning a standard GEANT4 configuration into a legacy one:
+#     
+#     #include "standard_g4_icarus.fcl"
+#     
+#     # legacy configuration for older samples:
+#     #include "services_compat_icarus-v09_18_00-v09_24_02_02.fcl"
+#     
+# 
+# Requirements
+# -------------
+# 
+# The base job configuration (`standard_g4_icarus.fcl` in the
+# example) must have included the geometry service configuration file
+# (`geometry_icarus.fcl`) and the photon propagation service configuration file
+# (`photpropservices_icarus.fcl`).
+# 
+# 
+# Last recorded check: v09_26_01
+#
+
+services: {
+                           @table::services
+  
+                           @table::icarus_geometry_services_legacy_icarus_v2
+  
+  PhotonVisibilityService: @local::icarus_photonvisibilityservice_icarus_v2
+  
+} # services
+
