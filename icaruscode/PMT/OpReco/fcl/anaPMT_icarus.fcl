@@ -1,0 +1,47 @@
+# Simple off-the-shelf example to run the light analysis
+
+#include "services_common_icarus.fcl"
+#include "icarus_opana_modules.fcl"
+
+process_name: opana
+
+services:
+{
+  @table::icarus_art_services    # from services_common_icarus.fcl
+  @table::icarus_basic_services  # from services_basic_icarus.fcl
+  TFileService: { fileName: "Supplemental-%ifb-%p.root" }
+}
+
+
+# Make sure to get rid of NuRandomSvc (not thread save)
+services.NuRandomService: @erase
+
+# turn off the sam metadata for testing
+services.FileCatalogMetadata: {}
+
+#Look at the input files
+source:
+{
+  module_type: RootInput
+  fileNames:  [ "data.root" ]
+  maxEvents:   -1       # Number of events to create
+}
+
+physics:
+{
+
+    analyzers: 
+    {
+      flashana:     @local::ICARUSFlashAssAna
+    }
+
+
+    my_producer_module: []
+    
+    a: [ flashana ]
+
+    end_paths: [a]
+}
+
+
+

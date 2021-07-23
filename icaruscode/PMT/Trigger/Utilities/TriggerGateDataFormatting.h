@@ -26,6 +26,8 @@ namespace icarus::trigger {
     struct GateWrapper {
       Gate const& gate;
     };
+    template <typename Gate>
+    GateWrapper(Gate const&) ->GateWrapper<Gate>;
     
     /// Wrapper to format a gate as "compact".
     template <typename Gate>
@@ -76,7 +78,7 @@ namespace icarus::trigger {
   auto compactdump
     (ReadoutTriggerGate<Tick, TickInterval, ChannelIDType> const& gate)
     -> details::CompactFormatter<ReadoutTriggerGate<Tick, TickInterval, ChannelIDType>>
-    { return { gate }; }
+    { return { details::GateWrapper{ gate } }; }
   
   
 } // namespace icarus::trigger
