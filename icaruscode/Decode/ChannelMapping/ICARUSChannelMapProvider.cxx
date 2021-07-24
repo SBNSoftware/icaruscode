@@ -69,7 +69,7 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     // Do the channel mapping initialization
     if (fChannelMappingTool->BuildFragmentToDigitizerChannelMap(fFragmentToDigitizerMap))
       {
-	throw cet::exception("PMTDecoder") << "Cannot recover the Fragment ID channel map from the database \n";
+	throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the Fragment ID channel map from the database \n";
       }
     else if (fDiagnosticOutput)
       {
@@ -106,6 +106,12 @@ bool ICARUSChannelMapProvider::hasFragmentID(const unsigned int fragmentID) cons
     return fFragmentToReadoutMap.find(fragmentID) != fFragmentToReadoutMap.end();
 }
 
+
+unsigned int ICARUSChannelMapProvider::nTPCfragmentIDs() const {
+  return fFragmentToReadoutMap.size();
+}
+
+
 const std::string&  ICARUSChannelMapProvider::getCrateName(const unsigned int fragmentID) const
 {
     IChannelMapping::TPCFragmentIDToReadoutIDMap::const_iterator fragToReadoutItr = fFragmentToReadoutMap.find(fragmentID);
@@ -132,6 +138,12 @@ bool ICARUSChannelMapProvider::hasBoardID(const unsigned int boardID)  const
     return fReadoutBoardToChannelMap.find(boardID) != fReadoutBoardToChannelMap.end();
 }
 
+
+unsigned int ICARUSChannelMapProvider::nTPCboardIDs() const {
+  return fReadoutBoardToChannelMap.size();
+}
+
+
 unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID)  const
 {
     IChannelMapping::TPCReadoutBoardToChannelMap::const_iterator readoutBoardItr = fReadoutBoardToChannelMap.find(boardID);
@@ -157,6 +169,12 @@ bool ICARUSChannelMapProvider::hasPMTDigitizerID(const unsigned int fragmentID) 
 {
     return fFragmentToDigitizerMap.find(fragmentID) != fFragmentToDigitizerMap.end();
 }
+
+
+unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
+  return fFragmentToDigitizerMap.size();
+}
+
 
 const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
 {

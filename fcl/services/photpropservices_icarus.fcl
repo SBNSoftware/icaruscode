@@ -6,6 +6,9 @@
 # * `icarus_photonvisibilityservice`: default configuration of
 #     `PhotonVisibilityService` used in higher level standard scripts
 #     (defined at the bottom of this configuration file)
+# * `icarus_photonvisibilityservice_icarus_v2`: legacy configuration
+#     for use with geometry `icarus_v2`
+#     (e.g. `icarus_geometry_services_legacy_icarus_v2`)
 # * `icarus_photonvisibilityservice_direct`: configuration of
 #     `PhotonVisibilityService` using a photon visibility library and no mapping
 # * `icarus_photonvisibilityservice_mapped`: configuration of
@@ -26,6 +29,43 @@
 
 BEGIN_PROLOG
 
+
+#################################################################################
+#
+# Geometry coordinates for different library files and geometries
+#
+# Each configuration includes the library file version (e.g. 20201209)
+# and the geometry name (e.g. `icarus_v3`)
+#
+icarus_photonlibrary_coordinates_20201209_icarusv2: {
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20201209.root"
+
+  # this stuff is also included in the metadata
+  XMin: -405.0  # cm
+  XMax:  -35.0  # cm
+  YMin: -215.0  # cm
+  YMax:  170.0  # cm
+  ZMin: -985.0  # cm
+  ZMax:  985.0  # cm
+  
+} # icarus_photonlibrary_coordinates_icarusv2
+
+
+icarus_photonlibrary_coordinates_20201209_icarusv3: {
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20201209.root"
+
+  # this stuff is also included in the metadata;
+  # modified for icarus_v3 geometry (metadata in icarus_data v09_26_01 and earlier encodes icarus_v2)
+  XMin: -395.0  # cm
+  XMax:  -25.0  # cm
+  YMin: -215.0  # cm
+  YMax:  170.0  # cm
+  ZMin: -985.0  # cm
+  ZMax:  985.0  # cm
+
+} # icarus_photonlibrary_coordinates_20201209_icarusv3
+
+
 ################################################################################
 #
 # PhotonVisibilityService configuration
@@ -43,13 +83,8 @@ icarus_photonvisibilityservice_direct: {
   UseCryoBoundary:  false
   DoNotLoadLibrary: false
   
-  # this stuff is also included in the metadata
-  XMin: -405.0  # cm
-  XMax:  -35.0  # cm
-  YMin: -215.0  # cm
-  YMax:  170.0  # cm
-  ZMin: -985.0  # cm
-  ZMax:  985.0  # cm
+  # coordinates are hard-coded and delegated to:
+  @table::icarus_photonlibrary_coordinates_20201209_icarusv3
   NX:     74
   NY:     77
   NZ:    394
@@ -89,6 +124,37 @@ icarus_photonvisibilityservice_mapped: {
 ###
 ### Legacy configurations
 ###
+# ----------------------------------------------------------------------------
+#
+# This configuration should be used with samples processed with icarus_v2
+# geometry, that was the default for icaruscode versions 
+#
+
+icarus_photonvisibilityservice_icarus_v2: {
+  
+  @table::photon_propagation_timing_icarus # from photon_propogation_timing_icarus.fcl
+  
+  LibraryFile:      "PhotonLibrary/PhotonLibrary-20201209.root"
+  UseCryoBoundary:  false
+  DoNotLoadLibrary: false
+  
+  # coordinates are hard-coded and delegated to:
+  @table::icarus_photonlibrary_coordinates_20201209_icarusv2
+  NX:     74
+  NY:     77
+  NZ:    394
+
+  IncludePropTime: true
+  
+  Mapping: {
+    tool_type: ICARUSPhotonMappingTransformations
+  } # Mapping
+ 
+} # icarus_photonvisibilityservice_icarus_v2
+
+
+
+# ----------------------------------------------------------------------------
 #
 # This configuration should be used with the "old" PMT channel mapping.
 # PMT channel mapping reflects the optical detector sorting.
@@ -131,6 +197,8 @@ icarus_photonvisibilityservice_noPMTremapping: {
 } # icarus_photonvisibilityservice_noPMTremapping
 
 
+
+# ----------------------------------------------------------------------------
 #
 # This is the configuration used by the "standard" ICARUS job configurations
 # until icaruscode v08_50_00.
@@ -148,6 +216,7 @@ icarus_legacy_photonvisibilityservice_v08_50_00: @local::icarus_photonvisibility
 
 
 
+# ----------------------------------------------------------------------------
 #
 # This configuration fits a previous photon library (August 2018) which
 # was current until `icaruscode` `v09_00_01`.
@@ -211,6 +280,7 @@ icarus_photonvisibilityservice_2018: {
   } # Mapping
 
 } # icarus_photonvisibilityservice_2018
+
 
 
 ###############################################################################
