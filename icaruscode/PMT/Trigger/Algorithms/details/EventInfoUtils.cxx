@@ -232,7 +232,10 @@ auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
-  std::vector<art::InputTag> edepTags,
+  std::variant<
+    std::vector<art::InputTag>, // LArSoft energy deposition collections
+    SimEnergyDepositSummaryInputTag // ICARUS energy deposition summary
+  > edepTags,
   geo::GeometryCore const& geom,
   std::string logCategory
   )
