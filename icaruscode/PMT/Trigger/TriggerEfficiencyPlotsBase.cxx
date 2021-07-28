@@ -897,21 +897,30 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
 
-  plots.make<TH1F>(
-    "OpeningTicks",
-    "Start Time of Trigger Gate"
-     ";opening time (us)"
-     ";opened trigger gates",
-     10000,0,100
-     );
+  detinfo::timescales::electronics_time const startTime = std::min(
+    beamGate.asElectronicsTimeRange().start(),
+    preSpillWindow.asElectronicsTimeRange().start()
+    );
+  detinfo::timescales::electronics_time const endTime = std::max(
+    beamGate.asElectronicsTimeRange().end(),
+    preSpillWindow.asElectronicsTimeRange().end()
+    );
   
   plots.make<TH1F>(
-    "MainTick",
-    "Start Time of Trigger Gate"
-     ";opening time (us)"
-     ";opened trigger gates",
-     1000,0,100
-     );
+    "OpeningTimes",
+    "Times at which trigger logic was satisfied"
+      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";opened trigger gates",
+    10000, startTime.value(), endTime.value()
+    );
+  
+  plots.make<TH1F>(
+    "TriggerTime",
+    "Time of the trigger"
+      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";opened trigger gates",
+    1000, startTime.value(), endTime.value()
+    );
 
   //
   // plots independent of the trigger primitive requirements
@@ -1133,7 +1142,6 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   HistGetter const getTrigEff { plots };
   
   bool const fired = triggerInfo.fired();
-  double timeOffset = 0;
 
   // efficiency plots
   if (useEDep()) {
@@ -1145,7 +1153,6 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
       (fired, double(eventInfo.DepositedEnergyInSpillInActiveVolume()));
     getTrigEff.Eff("EffVsEnergyInPreSpillActive"s).Fill
       (fired, double(eventInfo.DepositedEnergyInPreSpillInActiveVolume()));
-    timeOffset = 1500.0;
   } // if use energy deposits
   if (useGen()) {
     if (eventInfo.isNeutrino()) {
@@ -1157,20 +1164,26 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   } // if use generated information
   
   if (fired) {
+    detinfo::timescales::electronics_time const nominalBeamTime
+      = detTimings.BeamGateTime();
+    
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
+    
+    // converts the tick in the argument into electronics time:
+    auto openingTime = [&detTimings](OpeningInfo_t const& info)
+      { return detTimings.toElectronicsTime(info.tick); };
 
-    getTrigEff.Hist("MainTick"s).Fill(double(detTimings.toElectronicsTime(triggerInfo.main().tick)));
+    getTrigEff.Hist("TriggerTime"s).Fill
+      ((openingTime(triggerInfo.main()) - nominalBeamTime).value());
 
     std::vector<OpeningInfo_t> const& allTriggerOpenings = triggerInfo.all();
 
     for (OpeningInfo_t const& opening : allTriggerOpenings) {
-      //std::cout << double(detTimings.toElectronicsTime(opening.tick)) << std::endl;
-      getTrigEff.Hist("OpeningTicks"s).Fill(double(detTimings.toElectronicsTime(opening.tick))-timeOffset);
-    }
-  }
-
-
-
+      getTrigEff.Hist("OpeningTimes"s).Fill
+        ((openingTime(opening) - nominalBeamTime).value());
+    } // for all trigger openings
+    
+  } // if fired
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 

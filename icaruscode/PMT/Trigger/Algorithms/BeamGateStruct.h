@@ -101,9 +101,13 @@ struct icarus::trigger::BeamGateStruct {
   TimeRange<optical_tick> const& asOptTickRange() const
     { return fRangeOpt; }
   
+  /// Returns the gate as start/stop pair in electronics time scale.
+  TimeRange<electronics_time> const& asElectronicsTimeRange() const
+    { return fRangeElec; }
+  
   /// Returns the time duration of the gate in the specified time unit.
   template <typename Time = microseconds>
-  Time duration() const { return { asSimulationRange().duration() }; }
+  Time duration() const { return { asElectronicsTimeRange().duration() }; }
   
   /// @}
   // --- END -- Access ---------------------------------------------------------
@@ -121,6 +125,8 @@ struct icarus::trigger::BeamGateStruct {
   
   icarus::trigger::OpticalTriggerGate const fGate;
   
+  TimeRange<electronics_time> const fRangeElec;
+  
   TimeRange<simulation_time> const fRangeSim;
   
   TimeRange<optical_tick> const fRangeOpt;
@@ -136,15 +142,20 @@ icarus::trigger::BeamGateStruct::BeamGateStruct(
   detinfo::DetectorTimings const& detTimings
   )
   : fGate(icarus::trigger::BeamGateMaker{detTimings}(duration, delay))
+  , fRangeElec
+    {
+      detTimings.BeamGateTime() + delay,
+      detTimings.BeamGateTime() + delay + duration
+    }
   , fRangeSim
     {
-      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay),
-      detTimings.toSimulationTime(detTimings.BeamGateTime() + delay + duration)
+      detTimings.toSimulationTime(fRangeElec.start()),
+      detTimings.toSimulationTime(fRangeElec.end())
     }
   , fRangeOpt
     {
-      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay),
-      detTimings.toOpticalTick(detTimings.BeamGateTime() + delay + duration)
+      detTimings.toOpticalTick(fRangeElec.start()),
+      detTimings.toOpticalTick(fRangeElec.end())
     }
 {} // icarus::trigger::BeamGateStruct::BeamGateStruct()
 
