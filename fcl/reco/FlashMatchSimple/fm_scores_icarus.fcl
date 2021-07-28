@@ -38,7 +38,3 @@ outputs: {
     outputCommands: [ ]
   }
 }
-
-# override variables
-# physics.producers.fmatchCryo0.ThresholdTerm: 10.
-# physics.producers.fmatchCryo0.InputFileName: "FlashMatch/fm_metrics_sbnd.root"
