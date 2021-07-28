@@ -2,6 +2,9 @@
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
+# #include "backtrackerservice.fcl" //uncomment for creating metrics
+# #include "particleinventoryservice.fcl" //uncomment for creating metrics
+
 #include "flashmatch_simple_icarus.fcl"
 
 process_name: FlashMatch
@@ -9,7 +12,9 @@ process_name: FlashMatch
 services:{
   TFileService: { fileName: "flashmatch_icarus.root" }
   @table::icarus_basic_services
-  message:                         @local::icarus_message_services
+  message:                     @local::icarus_message_services
+  # BackTrackerService:          @local::standard_backtrackerservice //uncomment for creating metrics
+  # ParticleInventoryService:    @local::standard_particleinventoryservice //uncomment for creating metrics
 }
 
 

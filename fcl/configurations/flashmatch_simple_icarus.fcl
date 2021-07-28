@@ -1,4 +1,4 @@
-BEGIN_PROLOG
+BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
 icarus_simple_flashmatch_0: {
   module_type: FlashPredict
@@ -18,7 +18,8 @@ icarus_simple_flashmatch_0: {
   UseOppVolMetric: true
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
-  MakeTree: false
+  # MakeTree: true //uncomment for creating metrics
+  # StoreCheatMCT0: true //uncomment for creating metrics
   MinHitQ: 0.
   MinSpacePointQ: 0.
   MinParticleQ: 0.
@@ -70,4 +71,4 @@ icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
 # icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
 icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1
 
-END_PROLOG
+END_PROLOG #comment to run generate_simple_weighted_template.py
