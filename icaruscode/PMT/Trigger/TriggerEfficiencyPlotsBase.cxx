@@ -14,8 +14,9 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
@@ -507,7 +508,8 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fEventInfoExtractorMaker(
       config.GeneratorTags(),              // truthTags
-      config.EnergyDepositTags(),          // edepTags
+      makeEdepTag(config.EnergyDepositTags, config.EnergyDepositSummaryTag),
+                                           // edepTags
       fGeom,                               // geom
       nullptr,                             // detProps
       nullptr,                             // detTimings
@@ -1171,9 +1173,6 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
       getTrigEff.Hist("OpeningTicks"s).Fill(double(detTimings.toElectronicsTime(opening.tick))-timeOffset);
     }
   }
-
-
-
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 
@@ -1445,6 +1444,29 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::makeChannelCryostatMap
   return channelCryostatMap;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::makeChannelCryostatMap()
+
+
+//------------------------------------------------------------------------------
+icarus::trigger::details::EventInfoExtractor::EDepTags_t
+icarus::trigger::TriggerEfficiencyPlotsBase::makeEdepTag(
+  fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
+  fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+) {
+  
+  if (auto summaryTag = util::fhicl::getOptionalValue(EnergyDepositSummaryTag))
+  {
+    return {
+      icarus::trigger::details::EventInfoExtractor::SimEnergyDepositSummaryInputTag
+        { *summaryTag }
+      };
+  }
+  else {
+    
+    return { EnergyDepositTags() };
+    
+  }
+  
+} // icarus::trigger::MakeTriggerSimulationTree::makeEdepTag()
 
 
 //------------------------------------------------------------------------------

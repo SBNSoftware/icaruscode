@@ -13,17 +13,17 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/TreeHolder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
-#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
-#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
-#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
+#include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
 #include "icaruscode/Utilities/DataProductPointerMap.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
+#include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -31,12 +31,12 @@
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time, ...
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
+#include "lardataalg/Utilities/quantities_fhicl.h" // for ADCCounts_t parameters
 #include "larcorealg/Geometry/geo_vectors_utils.h" // MiddlePointAccumulator
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/CoreUtils/enumerate.h"
-#include "lardataalg/Utilities/quantities_fhicl.h" // for ADCCounts_t parameters
-#include "lardataobj/RawData/OpDetWaveform.h"
 #include "larcorealg/CoreUtils/values.h" // util::const_values()
+#include "lardataobj/RawData/OpDetWaveform.h"
 
 // framework libraries
 #include "art_root_io/TFileService.h"
