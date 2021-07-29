@@ -15,9 +15,12 @@
 #include "icaruscode/IcarusObj/SimEnergyDepositSummary.h"
 
 // LArSoft libraries
+#include "lardataalg/DetectorInfo/DetectorTimings.h"
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // simulation_time
 #include "lardataalg/Utilities/quantities/energy.h" // gigaelectronvolt, ...
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimChannel.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_vectors.h" // geo::Point_t
 #include "nusimdata/SimulationBase/MCTruth.h"
 
@@ -76,6 +79,22 @@ namespace icarus::trigger::details {
  *    if a `art::ConsumesCollector` object is provided;
  * 4. the data product can be read with the usual means.
  *
+ * 
+ * Energy deposition
+ * ------------------
+ * 
+ * The energy deposition information is event-wide and does not select
+ * depositions from any specific interaction.
+ * 
+ * The energy depositions are grouped according to whether they are within the
+ * time interval of the beam spill window, a pre-spill window, or at any time;
+ * and whether they are in the active volume or anywhere.
+ * The depositions can be collected from a `sim::SimEnergyDeposit` list of data
+ * products or (not recommended) from a single `sim::SimChannel` data product.
+ * In the latter case, the depositions are extracted from the channels on the
+ * first interaction plane (always plane `0` according to LArSoft definitions),
+ * which is usually the largest of the planes.
+ *
  */
 class icarus::trigger::details::EventInfoExtractor {
   
@@ -84,29 +103,49 @@ class icarus::trigger::details::EventInfoExtractor {
   using simulation_time = detinfo::timescales::simulation_time;
   using TimeSpan_t = std::pair<simulation_time, simulation_time>;
   
-  /// Utility tag to identify a parameter as for SimEnergyDepositSummary tag.
-  struct SimEnergyDepositSummaryInputTag {
+  /// Enumerator of possible inputs.
+  enum class InputType {
+    EnergyDeposits,
+    EnergyDepositSummary,
+    SimChannels,
+    Unknown
+  }; // InputType
+  
+  /// Utility tag to identify a parameter as a specific type of tag.
+  template <InputType Category>
+  struct CategorizedInputTag {
     
-    explicit SimEnergyDepositSummaryInputTag(art::InputTag tag)
-      : fTag(std::move(tag)) {}
+    static constexpr InputType InputCategory { Category };
+    using InputTag_t = CategorizedInputTag<InputCategory>;
+    
+    explicit CategorizedInputTag(art::InputTag tag): fTag(std::move(tag)) {}
     
     art::InputTag const& tag() const { return fTag; }
     explicit operator art::InputTag const& () const { return tag(); }
     
-    bool operator== (SimEnergyDepositSummaryInputTag const& other) const
+    bool operator== (InputTag_t const& other) const
       { return fTag == other.fTag; }
-    bool operator!= (SimEnergyDepositSummaryInputTag const& other) const
+    bool operator!= (InputTag_t const& other) const
       { return fTag != other.fTag; }
     
       private:
     art::InputTag fTag;
-  }; // SimEnergyDepositSummaryInputTag
+  }; // CategorizedInputTag
+
+
+  /// Utility tag to identify a parameter as for SimEnergyDepositSummary tag.
+  using SimEnergyDepositSummaryInputTag
+    = CategorizedInputTag<InputType::EnergyDepositSummary>;
+
+  /// Utility tag to identify a parameter as for `sim::SimChannel` tag.
+  using SimChannelsInputTag = CategorizedInputTag<InputType::SimChannels>;
 
   
   /// Type to specify the source of energy deposition information, if any.
   using EDepTags_t = std::variant<
     std::vector<art::InputTag>, // LArSoft energy deposition collections
-    SimEnergyDepositSummaryInputTag // ICARUS energy deposition summary
+    SimEnergyDepositSummaryInputTag, // ICARUS energy deposition summary
+    SimChannelsInputTag // LArSoft SimChannel objects
     >;
   
   /**
@@ -124,6 +163,7 @@ class icarus::trigger::details::EventInfoExtractor {
    * @param inSpillTimes start and end of spill, in simulation time
    * @param inPreSpillTimes start and end of pre-spill, in simulation time
    * @param geom LArSoft geometry service provider
+   * @param detTimingsPtr pointer to LArSoft detector timings utility
    * @param logCategory name of message facility stream to sent messages to
    * @see `EventInfoExtractor(std::vector<art::InputTag> const&, ConsumesColl&)`
    * 
@@ -143,6 +183,8 @@ class icarus::trigger::details::EventInfoExtractor {
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
+    detinfo::DetectorPropertiesData const* detProps,
+    detinfo::DetectorTimings const* detTimings,
     std::string logCategory = "EventInfoExtractor"
     );
   
@@ -154,6 +196,7 @@ class icarus::trigger::details::EventInfoExtractor {
    * @param inSpillTimes start and end of spill, in simulation time
    * @param inPreSpillTimes start and end of pre-spill, in simulation time
    * @param geom LArSoft geometry service provider
+   * @param detTimings LArSoft detector timings utility
    * @param logCategory name of message facility stream to sent messages to
    * @param consumesCollector object to declare the consumed products to
    * 
@@ -173,6 +216,8 @@ class icarus::trigger::details::EventInfoExtractor {
     TimeSpan_t inSpillTimes,
     TimeSpan_t inPreSpillTimes,
     geo::GeometryCore const& geom,
+    detinfo::DetectorPropertiesData const* detProps,
+    detinfo::DetectorTimings const* detTimings,
     std::string logCategory,
     ConsumesColl& consumesCollector
     );
@@ -241,6 +286,12 @@ class icarus::trigger::details::EventInfoExtractor {
   
   geo::GeometryCore const& fGeom; ///< Geometry service provider.
   
+  ///< Detector properties information.
+  detinfo::DetectorPropertiesData const* fDetProps = nullptr;
+  
+  ///< Detector timing conversion utility.
+  detinfo::DetectorTimings const* fDetTimings = nullptr;
+  
   TimeSpan_t const fInSpillTimes; ///< Start and stop time for "in spill" label.
   
   /// Start and stop time for "pre-spill" label.
@@ -282,6 +333,10 @@ class icarus::trigger::details::EventInfoExtractor {
   void addEnergyDepositionInfo(
     EventInfo_t& info, std::vector<sim::SimEnergyDeposit> const& energyDeposits
     ) const;
+  
+  /// Adds the energy depositions from `channels` into `info` record.
+  void addEnergyDepositionInfo
+    (EventInfo_t& info, std::vector<sim::SimChannel> const& channels) const;
 
   /// Returns in which TPC volume `point` falls in (`nullptr` if none).
   geo::TPCGeo const* pointInTPC(geo::Point_t const& point) const;
@@ -321,6 +376,8 @@ class icarus::trigger::details::EventInfoExtractorMaker {
     std::vector<art::InputTag> truthTags,
     EDepTags_t edepTags,
     geo::GeometryCore const& geom,
+    detinfo::DetectorPropertiesData const* detProps,
+    detinfo::DetectorTimings const* detTimings,
     std::string logCategory
     );
   
@@ -331,6 +388,8 @@ class icarus::trigger::details::EventInfoExtractorMaker {
     std::vector<art::InputTag> truthTags,
     EDepTags_t edepTags,
     geo::GeometryCore const& geom,
+    detinfo::DetectorPropertiesData const* detProps,
+    detinfo::DetectorTimings const* detTimings,
     std::string logCategory,
     ConsumesColl& consumesCollector
     );
@@ -361,6 +420,8 @@ class icarus::trigger::details::EventInfoExtractorMaker {
   EDepTags_t fEnergyDepositTags;
   std::string const fLogCategory;
   geo::GeometryCore const& fGeom;
+  detinfo::DetectorPropertiesData const* fDetProps = nullptr;
+  detinfo::DetectorTimings const* fDetTimings = nullptr;
   
 }; // class icarus::trigger::details::EventInfoExtractor
 
@@ -400,12 +461,15 @@ icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
+  detinfo::DetectorPropertiesData const* detProps,
+  detinfo::DetectorTimings const* detTimings,
   std::string logCategory,
   ConsumesColl& consumesCollector
   )
   : EventInfoExtractor{
       std::move(truthTags), std::move(edepTags),
-      inSpillTimes, inPreSpillTimes, geom, std::move(logCategory)
+      inSpillTimes, inPreSpillTimes,
+      geom, detProps, detTimings, std::move(logCategory)
     }
 {
   declareConsumables(consumesCollector, fGeneratorTags, fEnergyDepositTags);
@@ -456,12 +520,26 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
     info.SetDepositedEnergyInPreSpillInActiveVolume(GeV(energyDeposits.PreSpillActive));
     
   }
+  else if
+    (auto* channelsTag = std::get_if<SimChannelsInputTag>(&fEnergyDepositTags))
+  {
+    
+    auto const& channels
+      = event.template getByLabel<std::vector<sim::SimChannel>>
+        (channelsTag->tag())
+      ;
+    mf::LogTrace(fLogCategory)
+      << "Event " << event.id() << " has " << channels.size()
+      << " energy deposits recorded in '" << channelsTag->tag().encode() << "'";
+    
+    addEnergyDepositionInfo(info, channels);
+    
+  }
   else if (
     auto* edepListTag
       = std::get_if<std::vector<art::InputTag>>(&fEnergyDepositTags)
   ) {
     
-    //for (art::InputTag const& edepTag: *edepListTag) {
     for (art::InputTag const& edepTag: *edepListTag) {
       
       auto const& energyDeposits
@@ -530,11 +608,15 @@ icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
   EDepTags_t edepTags,
   geo::GeometryCore const& geom,
+  detinfo::DetectorPropertiesData const* detProps,
+  detinfo::DetectorTimings const* detTimings,
   std::string logCategory,
   ConsumesColl& consumesCollector
   )
-  : EventInfoExtractorMaker
-    (std::move(truthTags), std::move(edepTags), geom, std::move(logCategory))
+  : EventInfoExtractorMaker(
+      std::move(truthTags), std::move(edepTags),
+      geom, detProps, detTimings, std::move(logCategory)
+      )
 {
   EventInfoExtractor::declareConsumables
     (consumesCollector, fGeneratorTags, fEnergyDepositTags);

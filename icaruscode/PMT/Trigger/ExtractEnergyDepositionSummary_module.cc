@@ -1,8 +1,7 @@
 /**
  * @file   ExtractEnergyDepositionSummary_module.cc
- * @brief  Module producing discriminated waveforms.
+ * @brief  Module producing a summary deposited energy data product.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
- * @date   December 4, 2019
  */
 
 // ICARUS libraries
@@ -11,27 +10,30 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
-#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icaruscode/IcarusObj/SimEnergyDepositSummary.h"
-// #include "icaruscode/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
+#include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
+#include "lardataalg/DetectorInfo/DetectorTimings.h" // detinfo::DetectorTimings
+#include "lardataalg/DetectorInfo/DetectorPropertiesData.h"
+#include "lardataalg/DetectorInfo/DetectorClocksData.h"
 #include "lardataalg/Utilities/intervals_fhicl.h" // microseconds from FHiCL
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "lardataobj/Simulation/SimEnergyDeposit.h"
+#include "lardataobj/Simulation/SimChannel.h"
 
 // framework libraries
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/EDProducer.h"
 #include "art/Framework/Principal/Event.h"
 #include "canvas/Utilities/InputTag.h"
-/*
-#include "art/Framework/Principal/Handle.h"
-*/
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "fhiclcpp/types/Atom.h"
 
@@ -49,25 +51,25 @@ namespace icarus::trigger { class ExtractEnergyDepositionSummary; }
 /**
  * @brief Produces energy deposition summary data products.
  * 
- * This data product is an alternatice to storing the whole energy deposition,
- * which can be huge.
+ * The data product produced by this module is an alternative to storing the
+ * whole energy deposition, which can be huge.
  * 
- * Thresholds are ultimately chosen by the tool in charge of actually run the
- * discrimination algorithm. Out of the thresholds that this algorithm produces,
- * it is possible to choose only a subset of them (`SelectThresholds`).
+ * This module takes its information from `sim::SimEnergyDeposits` data product
+ * in input, simply providing a sum of it within the specified time interval.
  * 
  * 
  * Output data products
  * =====================
  * 
- * * a single `icarus::SimEnergyDepositSummary`
+ * * a single `icarus::SimEnergyDepositSummary`: sums of energies in a spill
+ *   time, in a pre-spill time, and total, everywhere and in active volume only.
  * 
  * 
  * Input data products
  * ====================
  * 
- * * `std::vector<sim::SimEnergyDeposits>`: sums of energies in a spill time,
- *   in a pre-spill time, and total, everywhere and in active volume only.
+ * * `std::vector<sim::SimEnergyDeposits>` (multiple supported) _or_
+ *   `std::vector<sim::SimChannel>` to extract the deposited energy from.
  * 
  * 
  * Service requirements
@@ -76,7 +78,10 @@ namespace icarus::trigger { class ExtractEnergyDepositionSummary; }
  * The following services are _required_:
  * 
  * * `Geometry` for the determination of the active volume(s)
- * * `DetectorClocksService` for the determination of beam gate
+ * * `DetectorClocksService` for the determination of beam gate and for time 
+ *     backtracking if energy deposition information is from `sim::SimChannel`
+ * * `DetectorPropertiesService` for time backtracking if energy deposition
+ * *   information is from `sim::SimChannel`
  * * _art_ message facility
  * 
  * 
@@ -88,18 +93,25 @@ namespace icarus::trigger { class ExtractEnergyDepositionSummary; }
  * 
  * * `EnergyDepositTags`
  *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
- *     data products with energy depositions;
+ *     data products with energy depositions. In alternative, `SimChannelTag`
+ *     can be specified instead.
+ * * `SimChannelTag` (input tag): tag of the data product with
+ *     `sim::SimChannels` to extract the energy information from. If specified,
+ *     it overrides `EnergyDepositTags` and extracts energy information from the
+ *     `sim::SimChannel` data product identified by this tag. This option is
+ *     for flawed input samples only, and `EnergyDepositTags` is recommended
+ *     instead.
  * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
  *     gate; _the time requires the unit to be explicitly specified_: use
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
  *     `BNB_settings.spill_duration` and `NuMI_settings.spill_duration` in
- *     `trigger_icarus.fcl`);
+ *     `trigger_icarus.fcl`).
  * * `BeamGateStart` (time, default: 0 &micro;s): open the beam gate this long
- *      after the nominal beam gate time;
+ *      after the nominal beam gate time.
  * * `PreSpillWindow` (time, default: 10 &micro;s): duration of the pre-spill
- *      window;
+ *      window.
  * * `PreSpillWindowGap` (time, default: 0 &micro;s): gap from the end of
- *      pre-spill window to the start of beam gate;
+ *      pre-spill window to the start of beam gate.
  * * `OutputCategory` (string, default: `"ExtractEnergyDepositionSummary"`): label
  *   for the category of messages in the console output; this is the label
  *   that can be used for filtering messages via MessageFacility service
@@ -122,6 +134,11 @@ class icarus::trigger::ExtractEnergyDepositionSummary: public art::EDProducer {
       Name("EnergyDepositTags"),
       Comment("label of energy deposition data product(s) in the detector"),
       std::vector<art::InputTag>{ "largeant:TPCActive" }
+      };
+
+    fhicl::OptionalAtom<art::InputTag> SimChannelTag {
+      Name("SimChannelTag"),
+      Comment("label of source sim::SimChannels data product in the detector"),
       };
 
     fhicl::Atom<microseconds> BeamGateDuration {
@@ -162,12 +179,6 @@ class icarus::trigger::ExtractEnergyDepositionSummary: public art::EDProducer {
   // --- BEGIN Constructors ----------------------------------------------------
   explicit ExtractEnergyDepositionSummary(Parameters const& config);
   
-  // Plugins should not be copied or assigned.
-  ExtractEnergyDepositionSummary(ExtractEnergyDepositionSummary const&) = delete;
-  ExtractEnergyDepositionSummary(ExtractEnergyDepositionSummary&&) = delete;
-  ExtractEnergyDepositionSummary& operator=(ExtractEnergyDepositionSummary const&) = delete;
-  ExtractEnergyDepositionSummary& operator=(ExtractEnergyDepositionSummary&&) = delete;
-  
   // --- END Constructors ------------------------------------------------------
   
   
@@ -180,6 +191,9 @@ class icarus::trigger::ExtractEnergyDepositionSummary: public art::EDProducer {
   
   
     private:
+  
+  using EDepTags_t = details::EventInfoExtractorMaker::EDepTags_t; // alias
+  
   
   // --- BEGIN Configuration variables -----------------------------------------
   
@@ -200,7 +214,32 @@ class icarus::trigger::ExtractEnergyDepositionSummary: public art::EDProducer {
   
   // --- BEGIN Service variables -----------------------------------------------
   
+  struct TimingPack_t {
+    
+    /// Detector clocks information.
+    detinfo::DetectorClocksData const detClocks;
+    
+    /// Detector properties information.
+    detinfo::DetectorPropertiesData const detProps;
+    
+    /// Detector timing conversion utility.
+    detinfo::DetectorTimings const detTimings;
+    
+    TimingPack_t(
+      detinfo::DetectorClocksData clocksData,
+      detinfo::DetectorPropertiesData propsData
+      )
+      : detClocks{ std::move(clocksData) }
+      , detProps{ std::move(propsData) }
+      , detTimings{ detinfo::makeDetectorTimings(detClocks) }
+      {}
+    
+  }; // TimingPack_t
+  
   geo::GeometryCore const& fGeom; ///< Access to detector geometry information.
+  
+  /// All information about detector timings and properties.
+  std::optional<TimingPack_t> fDetProps;
   
   // --- END Service variables -------------------------------------------------
   
@@ -216,6 +255,11 @@ class icarus::trigger::ExtractEnergyDepositionSummary: public art::EDProducer {
   // --- END Algorithms --------------------------------------------------------
   
   
+  /// Fills a energy deposition tag object from the specified configuration.
+  static EDepTags_t makeEnergyDepSourceTag(
+    fhicl::Sequence<art::InputTag> const& energyDepositTags,
+    fhicl::OptionalAtom<art::InputTag> const& simChannelTag
+    );
   
 }; // icarus::trigger::ExtractEnergyDepositionSummary
 
@@ -238,13 +282,26 @@ icarus::trigger::ExtractEnergyDepositionSummary::ExtractEnergyDepositionSummary
   , fLogCategory(config().OutputCategory())
   // services
   , fGeom(*(lar::providerFrom<geo::Geometry>()))
+  , fDetProps{
+      config().SimChannelTag.hasValue()
+        ? std::make_optional<TimingPack_t>(
+          art::ServiceHandle<detinfo::DetectorClocksService const>()
+            ->DataForJob(),
+          art::ServiceHandle<detinfo::DetectorPropertiesService const>()
+            ->DataForJob()
+          )
+        : std::nullopt
+      }
   // algorithms
   , fEventInfoExtractorMaker(
-    {},                                    // truthTags: none
-    { config().EnergyDepositTags() },      // edepTags
-    fGeom,                                 // geom
-    fLogCategory,                          // logCategory
-    consumesCollector()                    // consumesCollector
+      {}                                               // truthTags: none
+    , makeEnergyDepSourceTag(config().EnergyDepositTags, config().SimChannelTag)
+                                                       // edepTags
+    , fGeom                                            // geom
+    , (fDetProps? &(fDetProps->detProps): nullptr)     // detProps
+    , (fDetProps? &(fDetProps->detTimings): nullptr)   // detTimings
+    , fLogCategory                                     // logCategory
+    , consumesCollector()                              // consumesCollector
     )
 {
   produces<icarus::SimEnergyDepositSummary>();
@@ -297,6 +354,27 @@ void icarus::trigger::ExtractEnergyDepositionSummary::produce(art::Event& event)
     (std::make_unique<icarus::SimEnergyDepositSummary>(std::move(summary)));
   
 } // icarus::trigger::ExtractEnergyDepositionSummary::produce()
+
+
+//------------------------------------------------------------------------------
+auto icarus::trigger::ExtractEnergyDepositionSummary::makeEnergyDepSourceTag(
+  fhicl::Sequence<art::InputTag> const& energyDepositTags,
+  fhicl::OptionalAtom<art::InputTag> const& simChannelTag
+  ) -> EDepTags_t
+{
+  EDepTags_t edepTags;
+  
+  if (auto const tag = util::fhicl::getOptionalValue(simChannelTag)) {
+    edepTags
+     = icarus::trigger::details::EventInfoExtractor::SimChannelsInputTag{ *tag }
+     ;
+  }
+  else {
+    edepTags = energyDepositTags();
+  }
+  
+  return edepTags;
+} // icarus::trigger::ExtractEnergyDepositionSummary::makeEnergyDepSourceTag()
 
 
 //------------------------------------------------------------------------------

@@ -553,6 +553,8 @@ icarus::trigger::MakeTriggerSimulationTree::MakeTriggerSimulationTree
     makeEdepTag(config().EnergyDepositTags, config().EnergyDepositSummaryTag),
                                            // edepTags
     fGeom,                                 // geom
+    nullptr,                               // detProps
+    nullptr,                               // detTimings
     fLogCategory,                          // logCategory
     consumesCollector()                    // consumesCollector
     )

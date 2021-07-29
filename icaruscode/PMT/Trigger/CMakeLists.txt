@@ -34,10 +34,10 @@ art_make(
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
     ${CETLIB_EXCEPT}
-    ${ROOT_GENVECTOR}
-    ${ROOT_HIST}
-    ${ROOT_TREE}
-    ${ROOT_CORE}
+    ROOT::GenVector
+    ROOT::Hist
+    ROOT::Tree
+    ROOT::Core
   MODULE_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     sbnobj_ICARUS_PMT_Trigger_Data
@@ -46,8 +46,8 @@ art_make(
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
-    ${ROOT_CORE}
-    ${ROOT_PHYSICS}
+    ROOT::Core
+    ROOT::Physics
   TOOL_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     sbnobj_ICARUS_PMT_Trigger_Data
@@ -150,10 +150,10 @@ simple_plugin(TriggerEfficiencyPlots module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
-  ${ROOT_GENVECTOR}
-  ${ROOT_HIST}
-  ${ROOT_TREE}
-  ${ROOT_CORE}
+  ROOT::GenVector
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::Core
   )
 
 simple_plugin(MakeTriggerSimulationTree module
@@ -173,9 +173,9 @@ simple_plugin(MakeTriggerSimulationTree module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
-  ${ROOT_GENVECTOR}
-  ${ROOT_TREE}
-  ${ROOT_CORE}
+  ROOT::GenVector
+  ROOT::Tree
+  ROOT::Core
   )
 
 # trigger efficiency plot modules with the same build configuration:
@@ -204,10 +204,10 @@ foreach(TriggerEfficiencyPlotsModule
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
     ${CETLIB_EXCEPT}
-    ${ROOT_GENVECTOR}
-    ${ROOT_HIST}
-    ${ROOT_TREE}
-    ${ROOT_CORE}
+    ROOT::GenVector
+    ROOT::Hist
+    ROOT::Tree
+    ROOT::Core
     )
 
 endforeach()

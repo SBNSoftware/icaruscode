@@ -18,6 +18,7 @@
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
 
 // LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
@@ -508,6 +509,8 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       config.GeneratorTags(),              // truthTags
       config.EnergyDepositTags(),          // edepTags
       fGeom,                               // geom
+      nullptr,                             // detProps
+      nullptr,                             // detTimings
       fLogCategory,                        // logCategory
       consumer                             // consumesCollector
     )
