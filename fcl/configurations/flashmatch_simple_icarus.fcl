@@ -18,8 +18,9 @@ icarus_simple_flashmatch_0: {
   UseOppVolMetric: true
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
-  # MakeTree: true //uncomment for creating metrics
-  # StoreCheatMCT0: true //uncomment for creating metrics
+  MakeTree: false
+  StoreTrueNus: false
+  StoreCheatMCT0: false
   MinHitQ: 0.
   MinSpacePointQ: 0.
   MinParticleQ: 0.
