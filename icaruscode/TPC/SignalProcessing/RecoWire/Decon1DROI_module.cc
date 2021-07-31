@@ -446,116 +446,106 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     if (digitVec->GetPedestal() < 0.) return;
 
     float pedestal = 0.;
+        
+    // Recover the plane info
+    std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
     
     // skip bad channels
-    if( fChannelFilter->Status(channel) >= fMinAllowedChanStatus)
-    {
-        size_t dataSize = digitVec->Samples();
-        
-        // Recover the plane info
-        std::vector<geo::WireID> wids; //    = fGeometry->ChannelToWire(channel);
-        try
-        {
-            wids = fGeometry->ChannelToWire(channel);
-        }
-        catch(...)
-        {
-            std::cout << "Not able to find channel: " << channel << std::endl;
-            return;
-        }
-        
-        const geo::PlaneID& planeID = wids[0].planeID();
+    if( fChannelFilter->Status(channel) < fMinAllowedChanStatus) return;
 
-        // vector holding uncompressed adc values
-        std::vector<short> rawadc(dataSize);
-        
-        // uncompress the data
-        raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
-        
-        // loop over all adc values and subtract the pedestal
-        // When we have a pedestal database, can provide the digit timestamp as the third argument of GetPedestalMean
-        try
-        {
-            pedestal = fPedRetrievalAlg->PedMean(channel);
-        }
-        catch(...)
-        {
-            mf::LogDebug("Decon1DROI_module") << "Pedestal lookup fails with channel: " << channel << std::endl;
-            return;
-        }
-        
-        
-        // Get the pedestal subtracted data, centered in the deconvolution vector
-        std::vector<float> rawAdcLessPedVec(dataSize);
-        
-        std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
-        
-        // It seems there are deviations from the pedestal when using wirecell for noise filtering
-        float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
-        
-        // Recover a measure of the noise on the channel for use in the ROI finder
-        //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
-        
-        // Try smoothing the input waveform
-//        std::vector<float> rawAdcSmoothVec;
+    size_t dataSize = digitVec->Samples();
+    
+    const geo::PlaneID& planeID = wids[0].planeID();
+
+    // vector holding uncompressed adc values
+    std::vector<short> rawadc(dataSize);
+    
+    // uncompress the data
+    raw::Uncompress(digitVec->ADCs(), rawadc, digitVec->Compression());
+    
+    // loop over all adc values and subtract the pedestal
+    // When we have a pedestal database, can provide the digit timestamp as the third argument of GetPedestalMean
+    try
+    {
+        pedestal = fPedRetrievalAlg->PedMean(channel);
+    }
+    catch(...)
+    {
+        mf::LogDebug("Decon1DROI_module") << "Pedestal lookup fails with channel: " << channel << std::endl;
+        return;
+    }
+    
+    
+    // Get the pedestal subtracted data, centered in the deconvolution vector
+    std::vector<float> rawAdcLessPedVec(dataSize);
+    
+    std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
+    
+    // It seems there are deviations from the pedestal when using wirecell for noise filtering
+    float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+    
+    // Recover a measure of the noise on the channel for use in the ROI finder
+    //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
+    
+    // Try smoothing the input waveform
+//    std::vector<float> rawAdcSmoothVec;
 //        fWaveformTool->medianSmooth(rawAdcLessPedVec,rawAdcSmoothVec);
         
-        // Make a dummy candidate roi vec
-        icarus_tool::IROIFinder::CandidateROIVec deconROIVec;
-        
-        deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size() - 1));
-        
-        // Do the deconvolution on the full waveform
-        auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
-        fDeconvolution->Deconvolve(rawAdcLessPedVec, sampling_rate(clockData), channel, deconROIVec, deconVec);
-        
-        // Recover the deconvolved waveform
-        const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();
-
-        // vector of candidate ROI begin and end bins
-        icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
-        
-        // Now find the candidate ROI's
-        fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
-        
-        std::vector<float> holder;
-        
-        // We need to copy the deconvolved (and corrected) waveform ROI's
-        for(const auto& candROI : candRoiVec)
-        {
-            // First up: copy out the relevent ADC bins into the ROI holder
-            size_t roiLen = candROI.second - candROI.first + 1;
-            
-            holder.resize(roiLen);
-            
-            std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
-            
-            // Now we do the baseline determination and correct the ROI
-            //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
-            float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
-            
-            std::transform(holder.begin(),holder.end(),holder.begin(),[base](auto& adcVal){return adcVal - base;});
-
-            // add the range into ROIVec
-            ROIVec.add_range(candROI.first, std::move(holder));
-        }
-
-        // Make some histograms?
-        if (fOutputHistograms)
-        {
-            fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
-            
-            for(const auto& pair : candRoiVec)
-                fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
-        
-            float fullRMS = std::inner_product(deconvolvedWaveform.begin(), deconvolvedWaveform.end(), deconvolvedWaveform.begin(), 0.);
-        
-            fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(deconvolvedWaveform.size())));
+    // Make a dummy candidate roi vec
+    icarus_tool::IROIFinder::CandidateROIVec deconROIVec;
     
-            fFullRMSVec[planeID.Plane]->Fill(fullRMS, 1.);
-        }
-    } // end if not a bad channel
+    deconROIVec.push_back(icarus_tool::IROIFinder::CandidateROI(0,rawAdcLessPedVec.size() - 1));
+    
+    // Do the deconvolution on the full waveform
+    auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event);
+    fDeconvolution->Deconvolve(rawAdcLessPedVec, sampling_rate(clockData), channel, deconROIVec, deconVec);
+    
+    // Recover the deconvolved waveform
+    const std::vector<float>& deconvolvedWaveform = deconVec.get_ranges().front().data();
+
+    // vector of candidate ROI begin and end bins
+    icarus_tool::IROIFinder::CandidateROIVec candRoiVec;
+    
+    // Now find the candidate ROI's
+    fROIFinderVec.at(planeID.Plane)->FindROIs(deconvolvedWaveform, channel, fEventCount, raw_noise, candRoiVec);
+    
+    std::vector<float> holder;
+    
+    // We need to copy the deconvolved (and corrected) waveform ROI's
+    for(const auto& candROI : candRoiVec)
+    {
+        // First up: copy out the relevent ADC bins into the ROI holder
+        size_t roiLen = candROI.second - candROI.first + 1;
         
+        holder.resize(roiLen);
+        
+        std::copy(deconvolvedWaveform.begin()+candROI.first, deconvolvedWaveform.begin()+candROI.second, holder.begin());
+        
+        // Now we do the baseline determination and correct the ROI
+        //float base = fBaseline->GetBaseline(holder, channel, roiStart, roiLen);
+        float base = fBaseline->GetBaseline(holder, channel, 0, roiLen);
+        
+        std::transform(holder.begin(),holder.end(),holder.begin(),[base](auto& adcVal){return adcVal - base;});
+
+        // add the range into ROIVec
+        ROIVec.add_range(candROI.first, std::move(holder));
+    }
+
+    // Make some histograms?
+    if (fOutputHistograms)
+    {
+        fNumROIsHistVec.at(planeID.Plane)->Fill(candRoiVec.size(), 1.);
+        
+        for(const auto& pair : candRoiVec)
+            fROILenHistVec.at(planeID.Plane)->Fill(pair.second-pair.first, 1.);
+    
+        float fullRMS = std::inner_product(deconvolvedWaveform.begin(), deconvolvedWaveform.end(), deconvolvedWaveform.begin(), 0.);
+    
+        fullRMS = std::sqrt(std::max(float(0.),fullRMS / float(deconvolvedWaveform.size())));
+
+        fFullRMSVec[planeID.Plane]->Fill(fullRMS, 1.);
+    }
+
     // Don't save empty wires
     if (ROIVec.empty()) return;
 
