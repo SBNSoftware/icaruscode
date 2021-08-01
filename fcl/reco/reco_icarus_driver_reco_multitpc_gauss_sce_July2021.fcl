@@ -1,0 +1,9 @@
+#include "reco_icarus_driver_reco_multitpc_gauss_sce.fcl"
+
+process_name: McRecoGauss
+
+
+physics.producers.rawDigitFilterTPC0.DigitModuleLabel:                                     "daq0:PHYSCRATEDATATPCEE"
+physics.producers.rawDigitFilterTPC1.DigitModuleLabel:                                     "daq1:PHYSCRATEDATATPCEW"
+physics.producers.rawDigitFilterTPC2.DigitModuleLabel:                                     "daq2:PHYSCRATEDATATPCWE"
+physics.producers.rawDigitFilterTPC3.DigitModuleLabel:                                     "daq3:PHYSCRATEDATATPCWW"
