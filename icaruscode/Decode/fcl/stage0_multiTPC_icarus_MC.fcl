@@ -1,0 +1,46 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "decoderdefs_mc_icarus.fcl"
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: MCstage0
+
+## Add the MC module to the list of producers
+physics.producers: {
+					  @table::icarus_stage0_producers
+
+            MCDecodeTPCROI: @local::MCDecodeTPCROI
+}
+
+
+## Use the following to run the full defined stage0 set of modules
+physics.reco: [ MCDecodeTPCROI, 
+                decon1droi,
+                roifinder,
+                @sequence::icarus_stage0_EastHits_TPC,
+                @sequence::icarus_stage0_WestHits_TPC
+              ]
+
+## boiler plate...
+physics.trigger_paths: [ reco ]
+outputs.outBNB.fileName: "%ifb_%tc-%p.root"
+outputs.outBNB.dataTier: "reconstructed"
+
+# Drop the artdaq format files on output
+#outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:      ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0: @local::decoderroifinder_0
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1: @local::decoderroifinder_1
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2: @local::decoderroifinder_2
+
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+
+physics.producers.roifinder.WireModuleLabelVec: ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
