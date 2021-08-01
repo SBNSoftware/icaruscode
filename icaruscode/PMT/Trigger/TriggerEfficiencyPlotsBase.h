@@ -658,7 +658,12 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * * `EnergyDepositTags`
  *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
  *     data products with energy depositions; if empty, plots or categories
- *     requiring energy deposition information will be omitted;
+ *     requiring energy deposition information will be omitted; in alternative,
+ *     `EnergyDepositSummaryTag` can be specified with the same purpose;
+ * * `EnergyDepositSummaryTag` (input tags, optional): if specified, overrides
+ *     `EnergyDepositTags` and uses for the energy deposition the information
+ *     from the summary in the specified data product; such summary may be
+ *     created for example by `ExtractEnergyDepositionSummary` module;
  * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
  *     gate; _the time requires the unit to be explicitly specified_: use
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
@@ -983,6 +988,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       Name("EnergyDeposits"),
       Comment("label of energy deposition data product(s) in the detector"),
       std::vector<art::InputTag>{ "largeant:TPCActive" }
+      };
+
+    fhicl::OptionalAtom<art::InputTag> EnergyDepositSummaryTag {
+      Name("EnergyDepositSummaryTag"),
+      Comment("label of energy deposition summary data product")
       };
 
     fhicl::Atom<std::string> TriggerGatesTag {
@@ -1534,6 +1544,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
   
+  /// Creates a `EDepTags_t` out of the module configuration.
+  static icarus::trigger::details::EventInfoExtractor::EDepTags_t makeEdepTag(
+    fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
+    fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+    );
   
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
 
