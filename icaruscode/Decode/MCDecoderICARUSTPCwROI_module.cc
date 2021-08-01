@@ -43,6 +43,8 @@
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "lardataobj/RawData/RawDigit.h"
 #include "lardataobj/RawData/raw.h"
+#include "lardataobj/RecoBase/Wire.h"         // This for outputting the ROIs
+#include "lardata/ArtDataHelper/WireCreator.h"
 
 #include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
@@ -76,7 +78,10 @@ public:
     // Define the RawDigit collection
     using RawDigitCollection    = std::vector<raw::RawDigit>;
     using RawDigitCollectionPtr = std::unique_ptr<RawDigitCollection>;
+    using WireCollection        = std::vector<recob::Wire>;
+    using WireCollectionPtr     = std::unique_ptr<WireCollection>;
     using ConcurrentRawDigitCol = tbb::concurrent_vector<raw::RawDigit>;
+    using ConcurrentWireCol     = tbb::concurrent_vector<recob::Wire>;
 
     // Define data structures for organizing the decoded fragments
     // The idea is to form complete "images" organized by "logical" TPC. Here we are including
@@ -99,7 +104,8 @@ public:
                             const ChannelArrayPairVec&,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
-                            ConcurrentRawDigitCol&) const;
+                            ConcurrentRawDigitCol&,
+                            ConcurrentWireCol&) const;
 
 private:
 
@@ -111,32 +117,35 @@ private:
     class multiThreadImageProcessing
     {
     public:
-        multiThreadImageProcessing(MCDecoderICARUSTPCwROI     const& parent,
+        multiThreadImageProcessing(MCDecoderICARUSTPCwROI      const& parent,
                                    detinfo::DetectorClocksData const& clockData,
                                    ChannelArrayPairVec         const& channelArrayPairVec,
                                    ConcurrentRawDigitCol&             concurrentRawDigits,
                                    ConcurrentRawDigitCol&             concurrentRawRawDigits,
-                                   ConcurrentRawDigitCol&             coherentRawDigits)
+                                   ConcurrentRawDigitCol&             coherentRawDigits,
+                                   ConcurrentWireCol&                 concurrentROIs)
             : fMCDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
               fChannelArrayPairVec(channelArrayPairVec),
               fConcurrentRawDigits(concurrentRawDigits),
               fConcurrentRawRawDigits(concurrentRawRawDigits),
-              fCoherentRawDigits(coherentRawDigits)
+              fCoherentRawDigits(coherentRawDigits),
+              fConcurrentROIs(concurrentROIs)
         {}
 
         void operator()(const tbb::blocked_range<size_t>& range) const
         {
             for (size_t idx = range.begin(); idx < range.end(); idx++)
-              fMCDecoderICARUSTPCwROI.processSingleImage(idx, fClockData, fChannelArrayPairVec, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits);
+              fMCDecoderICARUSTPCwROI.processSingleImage(idx, fClockData, fChannelArrayPairVec, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits, fConcurrentROIs);
         }
     private:
-        const MCDecoderICARUSTPCwROI&     fMCDecoderICARUSTPCwROI;
+        const MCDecoderICARUSTPCwROI&      fMCDecoderICARUSTPCwROI;
         const detinfo::DetectorClocksData& fClockData;
         const ChannelArrayPairVec&         fChannelArrayPairVec;
         ConcurrentRawDigitCol&             fConcurrentRawDigits;
         ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
         ConcurrentRawDigitCol&             fCoherentRawDigits;
+        ConcurrentWireCol&                 fConcurrentROIs;
     };
 
     // Function to save our RawDigits
@@ -242,6 +251,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     for(const auto& rawDigitLabel : fRawDigitLabelVec)
     {
         produces<std::vector<raw::RawDigit>>(rawDigitLabel.instance());
+        produces<std::vector<recob::Wire>>(rawDigitLabel.instance());
 
         if (fOutputRawWaveform)
             produces<std::vector<raw::RawDigit>>(rawDigitLabel.instance() + fOutputRawWavePath);
@@ -251,6 +261,8 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     }
 
     // Set up a WireID to ROP plane number table
+    PlaneToWireOffsetMap planeToLastWireOffsetMap; 
+
     for(size_t cryoIdx = 0; cryoIdx < 2; cryoIdx++)
     {
         for(size_t logicalTPCIdx = 0; logicalTPCIdx < 4; logicalTPCIdx++)
@@ -263,12 +275,13 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
 
                 readout::ROPID ropID = fGeometry->ChannelToROP(channel);
 
-                fPlaneToROPPlaneMap[planeID]   = ropID.ROP;
-                fPlaneToWireOffsetMap[planeID] = channel;
-                fROPToNumWiresMap[ropID.ROP]   = fGeometry->Nwires(planeID);
+                fPlaneToROPPlaneMap[planeID]      = ropID.ROP;
+                fPlaneToWireOffsetMap[planeID]    = channel;
+                planeToLastWireOffsetMap[planeID] = fGeometry->PlaneWireToChannel(planeID.Plane, fGeometry->Nwires(planeID), planeID.TPC, planeID.Cryostat);
+                fROPToNumWiresMap[ropID.ROP]      = fGeometry->Nwires(planeID);
 
                 // Special case handling
-                if (ropID.ROP > 1) fROPToNumWiresMap[ropID.ROP] *= 2;
+//                if (ropID.ROP > 1) fROPToNumWiresMap[ropID.ROP] *= 2;
 
                 if (ropID.ROP > fNumROPs) fNumROPs = ropID.ROP;
 
@@ -278,6 +291,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
                     geo::PlaneID tempID(cryoIdx,logicalTPCIdx-1,planeIdx);
 
                     fPlaneToWireOffsetMap[planeID] = fPlaneToWireOffsetMap[tempID];
+                    fROPToNumWiresMap[ropID.ROP]   = planeToLastWireOffsetMap[planeID] - fPlaneToWireOffsetMap[planeID];
                 }
 
                 // Diagnostic output if requested
@@ -307,7 +321,7 @@ MCDecoderICARUSTPCwROI::~MCDecoderICARUSTPCwROI()
 ///
 void MCDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
-    fRawDigitLabelVec          = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fRawDigitLabelVec           = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
     fOutputRawWaveform          = pset.get<bool                      >("OutputRawWaveform",                                               false);
     fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                                                false);
     fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
@@ -397,10 +411,6 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
 
     mf::LogDebug("MCDecoderICARUSTPCwROI") << "     ==> concurrency: " << max_concurrency << std::endl;
 
-
-    std::cout << "------------------------------------------------------------------------------------------" << std::endl;
-    std::cout << "===> Run: " << event.id().run() << ", subrn: " << event.id().subRun() << ", event: " << event.id().event() << std::endl;
-
     cet::cpu_timer theClockTotal;
 
     theClockTotal.start();
@@ -416,6 +426,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
         ConcurrentRawDigitCol concurrentRawDigits;
         ConcurrentRawDigitCol concurrentRawRawDigits;
         ConcurrentRawDigitCol coherentRawDigits;
+        ConcurrentWireCol     concurrentROIs;
 
         PlaneIdxToImageMap   planeIdxToImageMap;
         PlaneIdxToChannelMap planeIdxToChannelMap;
@@ -441,7 +452,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
         // Now let's process the resulting images
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
 
-        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits);
+        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
         tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
     
@@ -461,6 +472,14 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
     
         // Now transfer ownership to the event store
         event.put(std::move(rawDigitCollection), rawDigitLabel.instance());
+
+        // Do the same to output the candidate ROIs
+        WireCollectionPtr wireCollection = std::make_unique<std::vector<recob::Wire>>(std::move_iterator(concurrentROIs.begin()),
+                                                                                      std::move_iterator(concurrentROIs.end()));
+
+        std::sort(wireCollection->begin(),wireCollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
+
+        event.put(std::move(wireCollection), rawDigitLabel.instance());
     
         if (fOutputRawWaveform)
         {
@@ -524,7 +543,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
         std::sort(rawDigitVec.begin(),rawDigitVec.end(),[](const raw::RawDigit* left, const raw::RawDigit* right) {return left->Channel() < right->Channel();});
 
         // Declare a temporary digit holder and resize it if downsizing the waveform
-        unsigned int            dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
+        unsigned int               dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
         raw::RawDigit::ADCvector_t rawDataVec(dataSize);
 
         // Commence looping over raw digits
@@ -532,26 +551,31 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
         for(const auto& rawDigit : rawDigitVec)
         {
             raw::ChannelID_t channel = rawDigit->Channel();
-
-            // Decode the channel
-            std::vector<geo::WireID> wids    = fGeometry->ChannelToWire(channel);
-            const geo::PlaneID&      planeID = wids[0].planeID();
                 
             // Decompress data into local holder
             raw::Uncompress(rawDigit->ADCs(), rawDataVec, rawDigit->Compression());
+
+            // Get the wireIDs for this channel
+            std::vector<geo::WireID> wids = fGeometry->ChannelToWire(channel);
+
+            // Since we work with channels we can ignore the case in the middle of the TPC where there are 
+            // wires crossing the midplane and just work with the first wire ID
+            const geo::WireID&  wireID =  wids[0];
+            const geo::PlaneID& planeID = wireID.planeID();
 
             // Ok, now store things...
             unsigned int planeIndex = fPlaneToROPPlaneMap.find(planeID)->second;
             unsigned int wire       = channel - fPlaneToWireOffsetMap.find(planeID)->second;
 
-            icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPairVec[planeIndex].second[wire];
+            if (wire >= channelArrayPairVec[planeIndex].second.size()) continue;
 
-            for(size_t tick = 0; tick < dataSize; tick++) rawDataVec[tick] = rawDataVec[tick];
+            icarus_signal_processing::VectorFloat& dataVec = channelArrayPairVec[planeIndex].second[wire];
+
+            for(size_t tick = 0; tick < dataSize; tick++) dataVec[tick] = rawDataVec[tick];
 
             // Keep track of the channel
             channelArrayPairVec[planeIndex].first[wire] = channel;
         }
-
     }
 
     theClockProcess.stop();
@@ -564,11 +588,12 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
 }
 
 void MCDecoderICARUSTPCwROI::processSingleImage(size_t                             idx,
-                                                 const detinfo::DetectorClocksData& clockData,
-                                                 const ChannelArrayPairVec&         channelArrayPairVec,
-                                                 ConcurrentRawDigitCol&             concurrentRawDigitCol,
-                                                 ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
-                                                 ConcurrentRawDigitCol&             coherentRawDigitCol) const
+                                                const detinfo::DetectorClocksData& clockData,
+                                                const ChannelArrayPairVec&         channelArrayPairVec,
+                                                ConcurrentRawDigitCol&             concurrentRawDigitCol,
+                                                ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
+                                                ConcurrentRawDigitCol&             coherentRawDigitCol,
+                                                ConcurrentWireCol&                 concurrentROIs) const
 {
     // Tools. We love tools
     icarus_signal_processing::WaveformTools<float> waveformTools;
@@ -594,7 +619,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     (*fROIFinder2D)(dataArray,fullEvent,outputROIs,waveLessCoherent,medianVals,coherentRMS,morphedWaveforms,finalErosion);
 
     // Now set up for output
-    raw::RawDigit::ADCvector_t wvfm(dataArray[0].size());
+    raw::RawDigit::ADCvector_t wvfm(numTicks);
 
     // Placeholders
     icarus_signal_processing::VectorFloat pedCorDataVec(dataArray[0].size());
@@ -606,7 +631,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     float sigmaForTruncation(3.5);
 
     // Loop over the channels to recover the RawDigits after filtering
-    for(size_t chanIdx = 0; chanIdx != dataArray.size(); chanIdx++)
+    for(size_t chanIdx = 0; chanIdx != numChannels; chanIdx++)
     {
         if (fOutputRawWaveform)
         {
@@ -640,24 +665,58 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
          // Now the coherent subtracted 
         const icarus_signal_processing::VectorFloat& coherentVec = waveLessCoherent[chanIdx];
 
-         // Need to convert from float to short int
+        if (coherentVec.size() != wvfm.size()) 
+        {
+            std::cout << "******* data size mismatch! chanIdx: " << chanIdx << ", coherent: " << coherentVec.size() << ", wvfm size: " << wvfm.size() << std::endl;
+        }
+
+        // Need to convert from float to short int
         std::transform(coherentVec.begin(),coherentVec.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
         //std::copy(dataVec.begin(),dataVec.end(),wvfm.begin());
 
-         ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
+        ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channelVec[chanIdx],wvfm.size(),wvfm); 
 
-         newObjItr->SetPedestal(0.,0.);
+        newObjItr->SetPedestal(0.,0.);
 
+        // And, finally, the ROIs 
+        const icarus_signal_processing::VectorBool& chanROIs = outputROIs[chanIdx];
+        recob::Wire::RegionsOfInterest_t            ROIVec;
+
+        if (chanROIs.size() > 4096) 
+        {
+            std::cout << "MCDecoder is finding output ROI size over max ticks - size: " << chanROIs.size() << ", channel: " << chanIdx << std::endl;
+        }
+
+        // Go through candidate ROIs and create Wire ROIs
+        size_t roiIdx = 0;
+
+        while(roiIdx < chanROIs.size())
+        {
+            size_t roiStartIdx = roiIdx;
+
+            while(roiIdx < chanROIs.size() && chanROIs[roiIdx]) roiIdx++;
+
+            if (roiIdx > roiStartIdx)
+            {
+                std::vector<float> holder(roiIdx - roiStartIdx, 10.);
+
+                ROIVec.add_range(roiStartIdx, std::move(holder));
+            }
+
+            roiIdx++;
+        }
+
+        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channelVec[chanIdx],fGeometry->View(channelVec[chanIdx])).move());
     }//loop over channel indices
 
     return;
 }
 
 void MCDecoderICARUSTPCwROI::saveRawDigits(const icarus_signal_processing::ArrayFloat&  dataArray, 
-                                            const icarus_signal_processing::VectorFloat& pedestalVec,
-                                            const icarus_signal_processing::VectorFloat& rmsVec,
-                                            const icarus_signal_processing::VectorInt&   channelVec,
-                                            ConcurrentRawDigitCol&                       rawDigitCol) const
+                                           const icarus_signal_processing::VectorFloat& pedestalVec,
+                                           const icarus_signal_processing::VectorFloat& rmsVec,
+                                           const icarus_signal_processing::VectorInt&   channelVec,
+                                           ConcurrentRawDigitCol&                       rawDigitCol) const
 {
     if (!dataArray.empty())
     {

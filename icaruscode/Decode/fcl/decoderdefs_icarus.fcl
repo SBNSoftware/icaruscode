@@ -31,7 +31,7 @@ decodeTPC: {
 
 decodeTPCROI: {
                     module_type:        DaqDecoderICARUSTPCwROI
-                    FragmentsLabel:     "daq:PHYSCRATEDATA"
+                    FragmentsLabelVec:  [ "daq:PHYSCRATEDATA" ]
                     OutputRawWaveform:  false
                     OutputCorrection:   false
                     OutputRawWavePath:  "RAW"
