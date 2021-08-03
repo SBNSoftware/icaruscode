@@ -2,6 +2,8 @@
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
 #include "stage1_icarus_driver_common.fcl"
 
 process_name: MCstage1
@@ -58,6 +60,10 @@ services.SpaceChargeService: {
     RepresentationType: "Voxelized_TH3"
     service_provider: "SpaceChargeServiceICARUS"
 }
+
+services.BackTrackerService:        @local::standard_backtrackerservice
+services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
 
 services.message.destinations :
 {
