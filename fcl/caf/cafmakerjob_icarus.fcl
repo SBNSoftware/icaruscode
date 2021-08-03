@@ -1,0 +1,58 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "correctionservices_icarus.fcl"
+#include "seedservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "backtrackerservice.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+
+#include "cafmaker_defs.fcl"
+
+process_name: CAFmaker
+
+services:
+{
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+  @table::icarus_wirecalibration_minimum_services
+
+  SpaceChargeService: @local::icarus_spacecharge
+  NuRandomService: @local::per_event_NuRandomService
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs:
+{
+  outpid:
+  {
+    dataTier: cafana # for grid test
+    streamName: out1 # for grid test
+    module_type: RootOutput
+    fileName:    "pid_r%r_s%s.root"
+    fastCloning: false
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ 
+  producers: {
+    @table::caf_ana_producers
+  }
+
+  runprod: [ @sequence::caf_ana_sequence, cafmaker]
+  stream1:       [  ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
