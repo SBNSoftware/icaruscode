@@ -1,11 +1,11 @@
 #include "cafmakerjob_icarus.fcl"
 
 # Turn on SpaceCharge in services
-services.SpaceChargeServiceEnableCalEfieldSCE: true
-services.SpaceChargeServiceEnableCalSpatialSCE: true
-services.SpaceChargeServiceEnableCorrSCE: true
-services.SpaceChargeServiceEnableSimEfieldSCE: true
-services.SpaceChargeServiceEnableSimSpatialSCE: true
+services.SpaceChargeService.EnableCalEfieldSCE: true
+services.SpaceChargeService.EnableCalSpatialSCE: true
+services.SpaceChargeService.EnableCorrSCE: true
+services.SpaceChargeService.EnableSimEfieldSCE: true
+services.SpaceChargeService.EnableSimSpatialSCE: true
 
 # Different sequence
 physics.runprod: [ @sequence::caf_ana_sce_sequence, cafmaker]
