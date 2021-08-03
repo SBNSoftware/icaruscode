@@ -95,7 +95,7 @@ icarus_art_services: {
 icarus_random_services:
 {
     RandomNumberGenerator:               {}
-    NuRandomService:                     @local::per_event_NuRandomService
+    NuRandomService:                     @local::random_NuRandomService
 
 } # icarus_random_services
 
