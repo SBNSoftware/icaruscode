@@ -119,13 +119,17 @@ recoana_sce_producers: {
 }
 
 # Overwrite labels
+
 recoana_sce_producers.pandoraGausSCECryoE.PFPLabel: pandoraGausCryoE
 recoana_sce_producers.pandoraGausSCECryoE.TrackLabel: pandoraTrackGausCryoE
-recoana_sce_producers.pandoraGausSCECryoE.T0Labels: []
+# Don't rely on T0's when doing SpaceCharge corrections
+recoana_sce_producers.pandoraGausSCECryoE.T0Labels: [] 
 recoana_sce_producers.pandoraGausSCECryoE.T0LabelsCorrectT0: []
 recoana_sce_producers.pandoraGausSCECryoE.CorrectNoT0Tag: true
+
 recoana_sce_producers.pandoraGausSCECryoW.PFPLabel: pandoraGausCryoW
 recoana_sce_producers.pandoraGausSCECryoW.TrackLabel: pandoraTrackGausCryoW
+# Don't rely on T0's when doing SpaceCharge corrections
 recoana_sce_producers.pandoraGausSCECryoW.T0Labels: []
 recoana_sce_producers.pandoraGausSCECryoW.T0LabelsCorrectT0: []
 recoana_sce_producers.pandoraGausSCECryoW.CorrectNoT0Tag: true
@@ -133,24 +137,24 @@ recoana_sce_producers.pandoraGausSCECryoW.CorrectNoT0Tag: true
 recoana_sce_producers.pandoraTrackGausSCECryoE.PFParticleLabel: pandoraGausSCECryoE
 recoana_sce_producers.pandoraTrackGausSCECryoW.PFParticleLabel: pandoraGausSCECryoW
 
-recoana_sce_producers.pandoraGausSCECaloCryoE.TrackModuleLabel: "pandoraTrackGausSCECryoE"
-recoana_sce_producers.pandoraGausSCECaloCryoW.TrackModuleLabel: "pandoraTrackGausSCECryoW"
+recoana_sce_producers.pandoraCaloGausSCECryoE.TrackModuleLabel: "pandoraTrackGausSCECryoE"
+recoana_sce_producers.pandoraCaloGausSCECryoW.TrackModuleLabel: "pandoraTrackGausSCECryoW"
 
-recoana_sce_producers.pandoraGausSCEPidCryoE.TrackModuleLabel: "pandoraTrackGausSCECryoE"
-recoana_sce_producers.pandoraGausSCEPidCryoE.CalorimetryModuleLabel: "pandoraGausSCECaloCryoE"
-recoana_sce_producers.pandoraGausSCEPidCryoW.TrackModuleLabel: "pandoraTrackGausSCECryoW"
-recoana_sce_producers.pandoraGausSCEPidCryoW.CalorimetryModuleLabel: "pandoraGausSCECaloCryoW"
+recoana_sce_producers.pandoraPidGausSCECryoE.TrackModuleLabel: "pandoraTrackGausSCECryoE"
+recoana_sce_producers.pandoraPidGausSCECryoE.CalorimetryModuleLabel: "pandoraCaloGausSCECryoE"
+recoana_sce_producers.pandoraPidGausSCECryoW.TrackModuleLabel: "pandoraTrackGausSCECryoW"
+recoana_sce_producers.pandoraPidGausSCECryoW.CalorimetryModuleLabel: "pandoraCaloGausSCECryoW"
 
-recoana_sce_producers.pandoraTrackSCEMCSCryoE.TrackLabel: pandoraTrackSCEGausCryoE
-recoana_sce_producers.pandoraTrackSCEMCSCryoW.TrackLabel: pandoraTrackSCEGausCryoW
-recoana_sce_producers.pandoraTrackSCERangeCryoE.TrackLabel: pandoraTrackSCEGausCryoE
-recoana_sce_producers.pandoraTrackSCERangeCryoW.TrackLabel: pandoraTrackSCEGausCryoW
+recoana_sce_producers.pandoraTrackSCEMCSCryoE.TrackLabel: pandoraTrackGausSCECryoE
+recoana_sce_producers.pandoraTrackSCEMCSCryoW.TrackLabel: pandoraTrackGausSCECryoW
+recoana_sce_producers.pandoraTrackSCERangeCryoE.TrackLabel: pandoraTrackGausSCECryoE
+recoana_sce_producers.pandoraTrackSCERangeCryoW.TrackLabel: pandoraTrackGausSCECryoW
 
 # Setup CaloAlg for VertexCharge
-recoana_caf_ana_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
-recoana_caf_ana_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_sce_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_sce_producers.vertexChargeCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_sce_producers.vertexStubCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
+recoana_sce_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalgmc 
 
 # All the producers together
 caf_ana_producers: {

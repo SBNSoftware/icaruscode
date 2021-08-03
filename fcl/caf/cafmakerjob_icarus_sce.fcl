@@ -7,6 +7,12 @@ services.SpaceChargeService.EnableCorrSCE: true
 services.SpaceChargeService.EnableSimEfieldSCE: true
 services.SpaceChargeService.EnableSimSpatialSCE: true
 
+# More producers
+physics.producers: {
+  @table::physics.producers
+  @table::recoana_sce_producers # also overwrites some, which is ok
+}
+
 # Different sequence
 physics.runprod: [ @sequence::caf_ana_sce_sequence, cafmaker]
 
