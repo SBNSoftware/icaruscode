@@ -1,0 +1,49 @@
+#include "services_icarus_simulation.fcl"
+#include "detsimmodules_ICARUS.fcl"
+#include "opdetsim_pmt_icarus.fcl"
+#include "crtsimmodules_icarus.fcl"
+#include "rootoutput_icarus.fcl"
+
+process_name: DetSim
+
+services: {
+  @table::icarus_detsim_services
+} # services
+
+# replace the single `daq` with four
+physics:
+{
+  producers:
+  {  
+    crtdaq: @local::icarus_crtsim
+    opdaq:  @local::icarus_simpmt_nonoise # turn off the noise so it runs more quickly
+    rns:    { module_type: "RandomNumberSaver" }
+  
+    daq0:   @local::icarus_simwire
+    daq1:   @local::icarus_simwire
+    daq2:   @local::icarus_simwire
+    daq3:   @local::icarus_simwire
+  }
+  
+  simulate: [ rns, opdaq, daq0, daq1, daq2, daq3, crtdaq ]
+  
+  # define the output stream, there could be more than one if using filters
+  stream:  [ rootoutput ]
+}
+
+outputs: {
+  rootoutput: @local::icarus_rootoutput
+}
+
+#
+# point each of the SimWire instances to a different TPC set
+#
+physics.producers.daq0.OutputInstanceLabel: "PHYSCRATEDATATPCEE"
+physics.producers.daq0.TPCVec:              [ [0, 0], [0, 1] ]
+physics.producers.daq1.OutputInstanceLabel: "PHYSCRATEDATATPCEW"
+physics.producers.daq1.TPCVec:              [ [0, 2], [0, 3] ]
+physics.producers.daq2.OutputInstanceLabel: "PHYSCRATEDATATPCWE"
+physics.producers.daq2.TPCVec:              [ [1, 0], [1, 1] ]
+physics.producers.daq3.OutputInstanceLabel: "PHYSCRATEDATATPCWW"
+physics.producers.daq3.TPCVec:              [ [1, 2], [1, 3] ]
+
