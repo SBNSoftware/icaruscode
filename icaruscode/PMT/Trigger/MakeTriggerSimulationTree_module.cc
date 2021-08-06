@@ -688,7 +688,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
   mf::LogTrace(fLogCategory)
     << "Information from '" << fTriggerGatesTag.encode() << "' ("
     << gates.size() << " trigger gates, " << nOpenChannels
-    << ") written to tree."
+    << " channels) written to tree."
     ;
   
   return info;

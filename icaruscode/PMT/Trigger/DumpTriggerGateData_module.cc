@@ -7,6 +7,7 @@
  */
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h" // compactdump()
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
@@ -109,14 +110,6 @@ class icarus::trigger::DumpTriggerGateData: public art::EDAnalyzer {
       "DumpTriggerGateData"
       };
 
-    /*
-    fhicl::Atom<art::InputTag> OpticalWaveforms{
-      Name("OpticalWaveforms"),
-      Comment("label of input digitized optical waveform data product"),
-      "opdaq" // tradition demands
-      };
-    */
-
   }; // struct Config
   
   using Parameters = art::EDAnalyzer::Table<Config>;
@@ -206,16 +199,15 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
     : nullptr
     ;
   
-  using AssnIter_t = std::decay_t<decltype(*gateToWaveforms)>::const_iterator;
   auto maybeItOpDetWave { gateToWaveforms
-    ? std::make_optional<AssnIter_t>(gateToWaveforms->begin()): std::nullopt
+    ? std::make_optional(gateToWaveforms->begin()): std::nullopt
     };
 
   mf::LogVerbatim log(fOutputCategory);
   log << event.id() << ": '" << fTriggerGateDataTag.encode() << "' has "
     << gates.size() << " trigger gates:";
   for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
-    log << "\n[#" << iGate << "] " << gate;
+    log << "\n[#" << iGate << "] " << compactdump(gate);
     if (gateToWaveforms) {
       auto& itOpDetWave = maybeItOpDetWave.value();
       auto const owend = gateToWaveforms->end();
