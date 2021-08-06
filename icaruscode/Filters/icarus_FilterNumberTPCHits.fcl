@@ -1,0 +1,10 @@
+BEGIN_PROLOG
+
+icarus_FilterNumberTPCHits:
+{ 
+  module_type:     "FilterNumberTPCHits"
+  HitDataLabelVec: ["gaushitTPCEW", "gaushitTPCEE", "gaushitTPCWW", "gaushitTPCWE"]
+  MaximumHits:     50000    # Maximum hits for any single data instance
+}
+
+END_PROLOG

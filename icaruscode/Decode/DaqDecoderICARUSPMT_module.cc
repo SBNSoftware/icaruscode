@@ -1177,6 +1177,17 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       ;
   }
   
+  
+  //
+  // sanity checks
+  //
+  
+  if (fChannelMap.nPMTfragmentIDs() == 0) {
+    throw cet::exception("DaqDecoderICARUSPMT")
+      << "Channel mapping database does not report any PMT fragment ID!\n";
+  } // if no PMT in database
+  
+  
 } // icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT()
 
 

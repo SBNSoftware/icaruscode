@@ -107,8 +107,8 @@ local wcls_output = {
       // anode: wc.tn(tools.anode),
       anode: wc.tn(mega_anode),
       digitize: false,  // true means save as RawDigit, else recob::Wire
-      frame_tags: ['gauss', 'wiener'],
-      frame_scale: [0.025, 0.025],
+      frame_tags: ['gauss', 'wiener', 'looseLf'],
+      frame_scale: [0.1, 0.1, 0.1],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,
@@ -129,7 +129,7 @@ local chndb = [{
 local nf_maker = import 'pgrapher/experiment/icarus/nf.jsonnet';
 local nf_pipes = [nf_maker(params, tools.anodes[n], chndb[n], n, name='nf%d' % n) for n in std.range(0, std.length(tools.anodes) - 1)];
 
-local sp = sp_maker(params, tools, { sparse: sigoutform == 'sparse', use_roi_debug_mode: false, });
+local sp = sp_maker(params, tools, { sparse: sigoutform == 'sparse', use_roi_debug_mode: true, });
 local sp_pipes = [sp.make_sigproc(a) for a in tools.anodes];
 
 local util = import 'pgrapher/experiment/icarus/funcs.jsonnet';
@@ -191,6 +191,8 @@ local fanin_tag_rules = [
               ['gauss%d'%ind]:'gauss%d'%ind,
               ['wiener%d'%ind]:'wiener%d'%ind,
               ['threshold%d'%ind]:'threshold%d'%ind,
+              // ['tight_lf%d'%ind]:'tight_lf%d'%ind,
+              ['loose_lf%d'%ind]:'loose_lf%d'%ind,
             },
 
           }
@@ -211,6 +213,8 @@ local retagger = g.pnode({
       merge: {
         'gauss\\d\\d\\d': 'gauss',
         'wiener\\d\\d\\d': 'wiener',
+        // 'tight_lf\\d\\d\\d': 'tightLf',
+        'loose_lf\\d\\d\\d': 'looseLf',
       },
     }],
   },

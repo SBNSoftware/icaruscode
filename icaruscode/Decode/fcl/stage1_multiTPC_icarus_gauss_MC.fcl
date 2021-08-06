@@ -1,11 +1,39 @@
+
+#include "mchitmodules.fcl"
+#include "mcreco.fcl"
+#include "mctrutht0matching.fcl"
 #include "stage1_icarus_driver_common.fcl"
 
-process_name: stage1
+process_name: MCstage1
 
-physics.reco: [ flashfilter,
+## Add the MC module to the list of producers
+physics.producers: {
+            @table::icarus_stage1_producers
+
+
+            mcophit:                        @local::ICARUSMCOpHit
+            mcopflashTPC0:                  @local::ICARUSMCOpFlashTPC0
+            mcopflashTPC1:                  @local::ICARUSMCOpFlashTPC1
+            mcopflashTPC2:                  @local::ICARUSMCOpFlashTPC2
+            mcopflashTPC3:                  @local::ICARUSMCOpFlashTPC3
+          
+            cheatopflashTPC0:               @local::ICARUSCheatOpFlashTPC0
+            cheatopflashTPC1:               @local::ICARUSCheatOpFlashTPC1
+            cheatopflashTPC2:               @local::ICARUSCheatOpFlashTPC2
+            cheatopflashTPC3:               @local::ICARUSCheatOpFlashTPC3
+
+            ### mc producers
+            mchitfinder:                    @local::standard_mchitfinder
+            mcassociationsGausCryoE:        @local::standard_mcparticlehitmatching
+            mcassociationsGausCryoW:        @local::standard_mcparticlehitmatching
+}
+
+physics.reco: [ 
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
-                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
+                caloskimCalorimetryCryoE, caloskimCalorimetryCryoW,
+                mcassociationsGausCryoE,  mcassociationsGausCryoW
+              ]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna]
 physics.trigger_paths:     [ reco ]

@@ -99,4 +99,12 @@ ICARUSParticleAna: {
 		TrajectoryProducer: "largeant"
 }
 
+ICARUSFlashAssAna: {
+    module_type: "ICARUSFlashAssAna"
+    TriggerLabel: "daqTrigger"
+    OpHitLabels: ["ophit"]
+    FlashLabels: ["opflashCryoE", "opflashCryoW"]
+    PEOpHitThreshold: 0
+}
+
 END_PROLOG

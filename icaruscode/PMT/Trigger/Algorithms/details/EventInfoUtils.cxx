@@ -11,26 +11,105 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 
 // LArSoft libraries
+#include "lardataalg/Utilities/quantities/spacetime.h" // microseconds
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/TPCGeo.h"
 
 // C/C++ standard libraries
 #include <utility> // std::move()
+#include <cassert>
+
+
+// -----------------------------------------------------------------------------
+namespace {
+  
+  /// Returns in which active TPC volume `point` falls in (`nullptr` if none).
+  geo::TPCGeo const* pointInActiveTPC
+    (geo::GeometryCore const& geom, geo::Point_t const& point)
+    {
+      geo::TPCGeo const* tpc = geom.PositionToTPCptr(point);
+      return (tpc && tpc->ActiveBoundingBox().ContainsPosition(point))
+        ? tpc: nullptr;
+    } // pointInActiveTPC()
+  
+  
+  /// Helper tracking energy depositions.
+  struct EnergyAccumulator {
+    
+    using TimeSpan_t = icarus::trigger::details::EventInfoExtractor::TimeSpan_t;
+    using GeV = util::quantities::gigaelectronvolt;
+    
+    GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 }, inPreSpillEnergy { 0.0 };
+    GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 },
+      inPreSpillActiveEnergy { 0.0 };
+    
+    EnergyAccumulator(
+      TimeSpan_t inSpillTimes,
+      TimeSpan_t inPreSpillTimes,
+      geo::GeometryCore const& geom
+      )
+      : fGeom(geom)
+      , fInSpillTimes(inSpillTimes)
+      , fInPreSpillTimes(inPreSpillTimes)
+      {}
+    
+    void add(
+      GeV energy,
+      detinfo::timescales::simulation_time time,
+      geo::Point_t const& location
+      ) {
+        
+        bool const inSpill
+          = (time >= fInSpillTimes.first) && (time <= fInSpillTimes.second);
+        bool const inPreSpill =
+          (time >= fInPreSpillTimes.first) && (time <= fInPreSpillTimes.second);
+        
+        totalEnergy += energy;
+        if (inSpill) inSpillEnergy += energy;
+        if (inPreSpill) inPreSpillEnergy += energy;
+        
+        if (pointInActiveTPC(location)) {
+          activeEnergy += energy;
+          if (inSpill) inSpillActiveEnergy += energy;
+          if (inPreSpill) inPreSpillActiveEnergy += energy;
+        }
+      } // add()
+    
+      private:
+    geo::GeometryCore const& fGeom; ///< Geometry service provider.
+    
+    /// Start and stop time for "in spill" label.
+    TimeSpan_t const fInSpillTimes;
+    
+    /// Start and stop time for "pre-spill" label.
+    TimeSpan_t const fInPreSpillTimes;
+    
+    /// Returns in which active TPC volume `point` falls in (`nullptr` if none).
+    geo::TPCGeo const* pointInActiveTPC(geo::Point_t const& point) const
+      { return ::pointInActiveTPC(fGeom, point); }
+
+  }; // EnergyAccumulator
+  
+} // local namespace
 
 
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractor::EventInfoExtractor(
   std::vector<art::InputTag> truthTags,
-  std::vector<art::InputTag> edepTags,
+  EDepTags_t edepTags,
   TimeSpan_t inSpillTimes,
   TimeSpan_t inPreSpillTimes,
   geo::GeometryCore const& geom,
+  detinfo::DetectorPropertiesData const* detProps,
+  detinfo::DetectorTimings const* detTimings,
   std::string logCategory
   )
   : fGeneratorTags(std::move(truthTags))
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
+  , fDetProps(detProps)
+  , fDetTimings(detTimings)
   , fInSpillTimes(std::move(inSpillTimes))
   , fInPreSpillTimes(std::move(inPreSpillTimes))
 {
@@ -151,49 +230,95 @@ void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
   const
 {
   using MeV = util::quantities::megaelectronvolt;
-  using GeV = util::quantities::gigaelectronvolt;
   
-  //
-  // propagation in the detector
-  //
-  GeV totalEnergy { 0.0 }, inSpillEnergy { 0.0 }, inPreSpillEnergy { 0.0 };
-  GeV activeEnergy { 0.0 }, inSpillActiveEnergy { 0.0 },
-    inPreSpillActiveEnergy { 0.0 };
+  auto Eacc = EnergyAccumulator(fInSpillTimes, fInPreSpillTimes, fGeom);
   
   for (sim::SimEnergyDeposit const& edep: energyDeposits) {
     
-    MeV const e { edep.Energy() }; // assuming it's stored in MeV
-    
-    detinfo::timescales::simulation_time const t { edep.Time() };
-    bool const inSpill
-      = (t >= fInSpillTimes.first) && (t <= fInSpillTimes.second);
-    bool const inPreSpill
-      = (t >= fInPreSpillTimes.first) && (t <= fInPreSpillTimes.second);
-    
-    totalEnergy += e;
-    if (inSpill) inSpillEnergy += e;
-    if (inPreSpill) inPreSpillEnergy += e;
-    
-    if (pointInActiveTPC(edep.MidPoint())) {
-      activeEnergy += e;
-      if (inSpill) inSpillActiveEnergy += e;
-      if (inPreSpill) inPreSpillActiveEnergy += e;
-    }
+    Eacc.add(
+        MeV{ edep.Energy() } // assuming it's stored in MeV
+      , detinfo::timescales::simulation_time{ edep.Time() }
+      , edep.MidPoint()
+      );
     
   } // for all energy deposits in the data product
   
   info.SetDepositedEnergy
-    (info.DepositedEnergy() + totalEnergy);
+    (info.DepositedEnergy() + Eacc.totalEnergy);
   info.SetDepositedEnergyInSpill
-    (info.DepositedEnergyInSpill() + inSpillEnergy);
+    (info.DepositedEnergyInSpill() + Eacc.inSpillEnergy);
   info.SetDepositedEnergyInPreSpill
-    (info.DepositedEnergyInPreSpill() + inPreSpillEnergy);
+    (info.DepositedEnergyInPreSpill() + Eacc.inPreSpillEnergy);
   info.SetDepositedEnergyInActiveVolume
-    (info.DepositedEnergyInActiveVolume() + activeEnergy);
+    (info.DepositedEnergyInActiveVolume() + Eacc.activeEnergy);
   info.SetDepositedEnergyInSpillInActiveVolume
-    (info.DepositedEnergyInSpillInActiveVolume() + inSpillActiveEnergy);
-  info.SetDepositedEnergyInPreSpillInActiveVolume
-    (info.DepositedEnergyInPreSpillInActiveVolume() + inPreSpillActiveEnergy);
+    (info.DepositedEnergyInSpillInActiveVolume() + Eacc.inSpillActiveEnergy);
+  info.SetDepositedEnergyInPreSpillInActiveVolume(
+    info.DepositedEnergyInPreSpillInActiveVolume() + Eacc.inPreSpillActiveEnergy
+    );
+  
+} // icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo()
+
+
+// -----------------------------------------------------------------------------
+void icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo
+  (EventInfo_t& info, std::vector<sim::SimChannel> const& channels) const
+{
+  assert(fDetProps);
+  assert(fDetTimings);
+  
+  using MeV = util::quantities::megaelectronvolt;
+  
+  auto Eacc = EnergyAccumulator(fInSpillTimes, fInPreSpillTimes, fGeom);
+  
+  double const driftVel = fDetProps->DriftVelocity(); // cm/us
+  
+  for (sim::SimChannel const& channel: channels) {
+    
+    // only channels on any of the first induction planes
+    std::vector<geo::WireID> const& wires
+      = fGeom.ChannelToWire(channel.Channel());
+    if (empty(wires)) continue; // ghost channel or something; move on
+    if (wires.front().Plane != 0) continue; // not the first induction plane
+    
+    geo::PlaneGeo const& plane = fGeom.Plane(wires.front());
+    
+    for (auto const& [ tdc, IDEs ]: channel.TDCIDEMap()) {
+      
+      // collection tick: includes also drift time, diffusion and what-not
+      detinfo::timescales::electronics_tick const tick { tdc };
+      detinfo::timescales::simulation_time const time
+         = fDetTimings->toSimulationTime(tick);
+      
+      for (sim::IDE const& IDE: IDEs) {
+        MeV const energy { IDE.energy }; // assuming it's stored in MeV
+        geo::Point_t const location { IDE.x, IDE.y, IDE.z };
+        
+        // tentative estimation of drift length:
+        double const d = plane.DistanceFromPlane(location); // cm
+        util::quantities::intervals::microseconds const driftTime
+          { d / driftVel };
+        
+        Eacc.add(energy, time - driftTime, location);
+      } // all deposits at this time tick
+      
+    } // all time ticks in this channel
+    
+  } // for all channels
+  
+  info.SetDepositedEnergy
+    (info.DepositedEnergy() + Eacc.totalEnergy);
+  info.SetDepositedEnergyInSpill
+    (info.DepositedEnergyInSpill() + Eacc.inSpillEnergy);
+  info.SetDepositedEnergyInPreSpill
+    (info.DepositedEnergyInPreSpill() + Eacc.inPreSpillEnergy);
+  info.SetDepositedEnergyInActiveVolume
+    (info.DepositedEnergyInActiveVolume() + Eacc.activeEnergy);
+  info.SetDepositedEnergyInSpillInActiveVolume
+    (info.DepositedEnergyInSpillInActiveVolume() + Eacc.inSpillActiveEnergy);
+  info.SetDepositedEnergyInPreSpillInActiveVolume(
+    info.DepositedEnergyInPreSpillInActiveVolume() + Eacc.inPreSpillActiveEnergy
+    );
   
 } // icarus::trigger::details::EventInfoExtractor::addEnergyDepositionInfo()
 
@@ -211,9 +336,7 @@ geo::TPCGeo const*
 icarus::trigger::details::EventInfoExtractor::pointInActiveTPC
   (geo::Point_t const& point) const
 {
-  geo::TPCGeo const* tpc = pointInTPC(point);
-  return
-    (tpc && tpc->ActiveBoundingBox().ContainsPosition(point))? tpc: nullptr;
+  return ::pointInActiveTPC(fGeom, point);
 } // icarus::trigger::TriggerEfficiencyPlotsBase::pointInActiveTPC()
 
 
@@ -232,14 +355,18 @@ auto icarus::trigger::details::EventInfoExtractor::getInteractionTime
 // -----------------------------------------------------------------------------
 icarus::trigger::details::EventInfoExtractorMaker::EventInfoExtractorMaker(
   std::vector<art::InputTag> truthTags,
-  std::vector<art::InputTag> edepTags,
+  EDepTags_t edepTags,
   geo::GeometryCore const& geom,
+  detinfo::DetectorPropertiesData const* detProps,
+  detinfo::DetectorTimings const* detTimings,
   std::string logCategory
   )
   : fGeneratorTags(std::move(truthTags))
   , fEnergyDepositTags(std::move(edepTags))
   , fLogCategory(std::move(logCategory))
   , fGeom(geom)
+  , fDetProps(detProps)
+  , fDetTimings(detTimings)
   {}
 
 
@@ -251,7 +378,7 @@ icarus::trigger::details::EventInfoExtractorMaker::make
   return EventInfoExtractor{
     fGeneratorTags, fEnergyDepositTags,
     inSpillTimes, inPreSpillTimes,
-    fGeom, fLogCategory
+    fGeom, fDetProps, fDetTimings, fLogCategory
     };
 } // icarus::trigger::details::EventInfoExtractorMaker::make()
 
