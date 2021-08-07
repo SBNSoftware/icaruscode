@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       TPCNoise
+// Class:       TPCNoiseMC
 // Plugin Type: producer (art v3_05_01)
-// File:        TPCNoise_module.cc
+// File:        TPCNoiseMC_module.cc
 //
 // Generated at Thu Jan 21 16:22:15 2021 by Justin Mueller using cetskelgen
 // from cetlib version v3_10_00.
@@ -56,22 +56,22 @@
 #include <fstream>
 #include <memory>
 
-namespace tpcnoise {
-  class TPCNoise;
+namespace TPCNoiseMC {
+  class TPCNoiseMC;
 }
 
 
-class tpcnoise::TPCNoise : public art::EDAnalyzer {
+class TPCNoiseMC::TPCNoiseMC : public art::EDAnalyzer {
 public:
-  explicit TPCNoise(fhicl::ParameterSet const& p);
+  explicit TPCNoiseMC(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  //TPCNoise(TPCNoise const&) = delete;
-  //TPCNoise(TPCNoise&&) = delete;
-  //TPCNoise& operator=(TPCNoise const&) = delete;
-  //TPCNoise& operator=(TPCNoise&&) = delete;
+  //TPCNoiseMC(TPCNoiseMC const&) = delete;
+  //TPCNoiseMC(TPCNoiseMC&&) = delete;
+  //TPCNoiseMC& operator=(TPCNoiseMC const&) = delete;
+  //TPCNoiseMC& operator=(TPCNoiseMC&&) = delete;
 
   void analyze(const art::Event& e);
   void reconfigure(fhicl::ParameterSet const& pset);
@@ -84,9 +84,7 @@ private:
   // Various FHiCL parameters.
   std::string fRawDigitModuleLabel;
   std::string fRawDigitProcess;
-  std::string fRawInstance;
-  std::string fIntrinsicInstance;
-std::string fCoherentInstance;
+  std::string fRawDigitInstance;
 std::string fHistoFileName;
 
 
@@ -107,12 +105,6 @@ std::vector< std::vector<float> > fCoherentPowerI1;
   std::vector< std::vector<float> > fRawPowerI2;
   std::vector< std::vector<float> > fIntrinsicPowerI2;
 std::vector< std::vector<float> > fCoherentPowerI2;
-
-int ctI1, ctI2, ctC;
-
-
-
-
 
 // average FFT histos
 TH1D* fRawPowerHistoI1;
@@ -174,7 +166,7 @@ TH1D* fMediaHistoC;
 };
 
 
-tpcnoise::TPCNoise::TPCNoise(fhicl::ParameterSet const& p)
+TPCNoiseMC::TPCNoiseMC::TPCNoiseMC(fhicl::ParameterSet const& p)
   : EDAnalyzer(p),
     NEvents(0)
 {
@@ -183,7 +175,6 @@ tpcnoise::TPCNoise::TPCNoise(fhicl::ParameterSet const& p)
   NumberTimeSamples = detProp.NumberTimeSamples();
 
   std::cout << "Number of time samples: " << NumberTimeSamples << std::endl;
-ctI1=0; ctI2=0; ctC=0;
 
   fRawPowerC.resize(1);
   for(auto &it : fRawPowerC)
@@ -265,7 +256,21 @@ fMediaHistoI2=new TH1D("mediaI2","mediaI2",100,-10.,10.);
 fIntrinsicRMSHistoI2=new TH1D("intRMSI2","intRMSI2",100,0.,30.);
 fCoherentRMSHistoI2=new TH1D("cohRMSI2","cohRMSI2",100,0.,30.);
 
+std::cout << " end constructor " << std::endl;
+}
 
+void TPCNoiseMC::TPCNoiseMC::analyze(const art::Event& e)
+{
+std::cout << " begin analyze " << std::endl;
+   art::ServiceHandle<geo::Geometry> geom;
+
+  // Clear vectors before filling for this event.
+  fChannel.clear();
+std::cout << " after clearing " << std::endl;
+  fPed.clear();
+  fRawMeanC.clear();
+fRawMeanI1.clear();
+fRawMeanI2.clear();
   fRawRMSC.clear();
   fCoherentRMSC.clear();
   fRawRMSTrim.clear();
@@ -278,22 +283,6 @@ fRawRMSI2.clear();
 fIntrinsicRMSI1.clear();
 fIntrinsicRMSI2.clear();
   fIntrinsicRMSTrim.clear();
-
-std::cout << " end constructor " << std::endl;
-}
-
-void tpcnoise::TPCNoise::analyze(const art::Event& e)
-{
-std::cout << " begin analyze " << std::endl;
-   art::ServiceHandle<geo::Geometry> geom;
-
-  // Clear vectors before filling for this event.
-  fChannel.clear();
-std::cout << " after clearing " << std::endl;
-  fPed.clear();
-  fRawMeanC.clear();
-fRawMeanI1.clear();
-fRawMeanI2.clear();
 std::cout << " after clearing " << std::endl;
   
   // Fill event level variables.
@@ -311,10 +300,9 @@ std::cout << " run " << fRun << std::endl;
   ///////////////////////////
 
   art::Handle< std::vector<raw::RawDigit> > RawDigitHandle;
-  e.getByLabel(fRawDigitModuleLabel, fRawInstance, fRawDigitProcess, RawDigitHandle);
+  e.getByLabel(fRawDigitModuleLabel, fRawDigitInstance,fRawDigitProcess, RawDigitHandle);
 
-  std::cout << " raw instance " << fRawInstance << std::endl;
-
+ // int ctI1=0; int ctI2=0; int ctC=0;
   for(const auto& RawDigit : *RawDigitHandle)
     {
       // Grab raw waveform, ensuring that the size is set appropriately.
@@ -333,8 +321,9 @@ std::cout << " run " << fRun << std::endl;
 std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
         size_t                   plane  = widVec[0].Plane;
  size_t                   wire  = widVec[0].Wire;
-
-
+size_t                   tpc  = widVec[0].TPC;
+size_t                   cryostat  = widVec[0].Cryostat;
+std::cout << " cryo " << cryostat << " tpc " << tpc << " plane " << plane <<" wire " << wire << std::endl; 
       // Remove pedestal of waveform.
       std::vector<float> ADCLessPed;
       ADCLessPed.resize(SortedADC.size());
@@ -358,209 +347,56 @@ std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
       std::vector<double> RawLessPed;
       RawLessPed.resize(RawADC.size());
       std::transform(RawADC.begin(),RawADC.end(),RawLessPed.begin(),std::bind(std::minus<double>(),std::placeholders::_1,median));
-    fFFT->getFFTPower(RawLessPed, power);
+      fFFT->getFFTPower(RawLessPed, power);
 
-
-    
-if(plane==0&&wire!=32&&wire<3000)  {
-std::transform(fRawPowerI1.at(0).begin(), fRawPowerI1.at(0).end(), power.begin(), fRawPowerI1.at(0).begin(), std::plus<float>());  ctI1++; }
-if(plane==1)  { std::transform(fRawPowerI2.at(0).begin(), fRawPowerI2.at(0).end(), power.begin(), fRawPowerI2.at(0).begin(), std::plus<float>()); ctI2++; }
-
-if(plane==2)  { std::transform(fRawPowerC.at(0).begin(), fRawPowerC.at(0).end(), power.begin(), fRawPowerC.at(0).begin(), std::plus<float>()); ctC++; }  
+if(plane==0)  { 
+std::transform(fRawPowerI1.at(0).begin(), fRawPowerI1.at(0).end(), power.begin(), fRawPowerI1.at(0).begin(), std::plus<float>());  }
+if(plane==1)  { std::transform(fRawPowerI2.at(0).begin(), fRawPowerI2.at(0).end(), power.begin(), fRawPowerI2.at(0).begin(), std::plus<float>()); }
+if(plane==2)  { std::transform(fRawPowerC.at(0).begin(), fRawPowerC.at(0).end(), power.begin(), fRawPowerC.at(0).begin(), std::plus<float>()); }  
 
 
       fPed.push_back(median);
    if(plane==2)   fRawMeanC.push_back(mean);
 if(plane==1)   fRawMeanI2.push_back(mean);
 if(plane==0)   fRawMeanI1.push_back(mean);
-  if(plane==2)   { fRawRMSC.push_back(rms);  }
-if(plane==0&&wire!=32&&wire<3000) {  fRawRMSI1.push_back(rms);   }
- if(plane==1) { fRawRMSI2.push_back(rms); }
+  if(plane==2)   { fRawRMSC.push_back(rms);}
+ if(plane==0) {  fRawRMSI1.push_back(rms);   }
+ if(plane==1) { fRawRMSI2.push_back(rms);if(wire==0) for(int j=0;j<4096;j++) std::cout << " wire 0 tick " << j << " signal " << RawADC.at(j) << std::endl;
+ }
       fRawRMSTrim.push_back(truncrms);
     
       fChannel.push_back(RawDigit.Channel());
 
     }
-float intI1=0, intI2=0, intC=0;
-std::vector<float> rpi1=fRawPowerI1.at(0);
-std::vector<float> rpi2=fRawPowerI2.at(0);
-std::vector<float> rpc=fRawPowerC.at(0);
-for (unsigned int j=0; j< rpi1.size(); j++) intI1+=rpi1.at(j); 
-for (unsigned int j=0; j< rpi2.size(); j++) intI2+=rpi2.at(j); 
-for (unsigned int j=0; j< rpc.size(); j++) intC+=rpc.at(j); 
 
-std::cout << " integral i1 " << intI1 << " integral i2 " << intI2 << " integral c " << intC << std::endl;
-  ///////////////////////////
-  // "Intrinsic" RawDigits.
-  ///////////////////////////
-   art::Handle< std::vector<raw::RawDigit> > IntrinsicHandle;
-  e.getByLabel(fRawDigitModuleLabel, fIntrinsicInstance, fRawDigitProcess, IntrinsicHandle);
-
-  //std::cerr << RawDigitHandle << std::endl;
- //ctI1=0; ctI2=0; ctC=0;
-std::cout << " intrinsic instance " << fIntrinsicInstance << std::endl;
-  for(const auto& RawDigit : *IntrinsicHandle)
-    {
-      // Grab raw waveform, ensuring that the size is set appropriately.
-      unsigned int DataSize = RawDigit.Samples();
-      std::vector<short> RawADC;
-      RawADC.resize(DataSize);
-      raw::Uncompress(RawDigit.ADCs(), RawADC, RawDigit.Compression());
-
-      // We need a sorted waveform (by absolute value) for the truncated RMS and median calculation.
-      std::vector<short> SortedADC(RawADC);
-      std::sort(SortedADC.begin(),SortedADC.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
-      float median(SortedADC.at(SortedADC.size()/2));
-
-      // Calculate mean values.
-      float mean(float(std::accumulate(SortedADC.begin(),SortedADC.end(),0))/float(SortedADC.size()));
-
-      // Remove pedestal of waveform.
-      std::vector<short> ADCLessPed;
-      ADCLessPed.resize(SortedADC.size());
-      std::transform(SortedADC.begin(),SortedADC.end(),ADCLessPed.begin(),std::bind(std::minus<float>(),std::placeholders::_1,median));
-
-      // Calculate full RMS.
-      float rms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.end(), ADCLessPed.begin(), 0.) / float(ADCLessPed.size())));
-
-      // Calculate the truncated RMS.
-      unsigned int MinBins((1.0 - 0.2)*ADCLessPed.size());
-      //unsigned int BinsToKeep;
-      //for(BinsToKeep = 0; BinsToKeep < ADCLessPed.size(); ++BinsToKeep)
-      //{
-      //  if(std::fabs(ADCLessPed.at(BinsToKeep)) >= 3*rms) break;
-      //}
-      //float truncrms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.begin() + BinsToKeep, ADCLessPed.begin(), 0.) / float(BinsToKeep)));
-      float truncrms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.begin() + MinBins, ADCLessPed.begin(), 0.) / float(MinBins)));
-
-      // Calculate the power.
-      std::vector<double> power(DataSize);
-      std::vector<double> RawLessPed;
-      RawLessPed.resize(RawADC.size());
-      std::transform(RawADC.begin(),RawADC.end(),RawLessPed.begin(),std::bind(std::minus<double>(),std::placeholders::_1,median));
-      fFFT->getFFTPower(RawLessPed, power);
-std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
-        size_t                   plane  = widVec[0].Plane;
-
-if(plane==0)  { std::transform(fIntrinsicPowerI1.at(0).begin(), fIntrinsicPowerI1.at(0).end(), power.begin(), fIntrinsicPowerI1.at(0).begin(), std::plus<float>());  }
-if(plane==1)  { std::transform(fIntrinsicPowerI2.at(0).begin(), fIntrinsicPowerI2.at(0).end(), power.begin(), fIntrinsicPowerI2.at(0).begin(), std::plus<float>()); }
-if(plane==2)  { std::transform(fIntrinsicPowerC.at(0).begin(), fIntrinsicPowerC.at(0).end(), power.begin(), fIntrinsicPowerC.at(0).begin(), std::plus<float>());  }   
-     // std::transform(fIntrinsicPower.at(RawDigit.Channel()).begin(), fIntrinsicPower.at(RawDigit.Channel()).end(), power.begin(), fIntrinsicPower.at(RawDigit.Channel()).begin(), std::plus<float>());
-
-      fIntrinsicMean.push_back(mean);
-  if(plane==2)  {  fIntrinsicRMSC.push_back(rms);}
- if(plane==0)fIntrinsicRMSI1.push_back(rms);
- if(plane==1) {fIntrinsicRMSI2.push_back(rms); }
-
-      fIntrinsicRMSTrim.push_back(truncrms);
-    }
-
-  ///////////////////////////
-  // "Coherent" RawDigits.
-  ///////////////////////////
-  
-  //RawDigitHandle.clear();
-  //e.getByLabel(art::InputTag(fRawDigitModuleLabel), RawDigitHandle);
-
-   art::Handle< std::vector<raw::RawDigit> > CoherentHandle;
-  e.getByLabel(fRawDigitModuleLabel, fCoherentInstance, fRawDigitProcess, CoherentHandle);
-std::cout << " coherent instance " << fCoherentInstance << std::endl;
-  //std::cerr << RawDigitHandle << std::endl;
-//ctI1=0; ctI2=0; ctC=0;
-  for(const auto& RawDigit : *CoherentHandle)
-    {
-
-      // Grab raw waveform, ensuring that the size is set appropriately.
-      unsigned int DataSize = RawDigit.Samples();
-      std::vector<short> RawADC;
-      RawADC.resize(DataSize);
-      raw::Uncompress(RawDigit.ADCs(), RawADC, RawDigit.Compression());
-
-      // We need a sorted waveform (by absolute value) for the truncated RMS and median calculation.
-      std::vector<short> SortedADC(RawADC);
-      std::sort(SortedADC.begin(),SortedADC.end(),[](const auto& left, const auto& right){return std::fabs(left) < std::fabs(right);});
-      float median(SortedADC.at(SortedADC.size()/2));
-//for(unsigned int jadc=0;jadc<SortedADC.size();jadc++)
- //if(SortedADC.at(jadc))
-  //std::cout << " sorted adc " << SortedADC.at(jadc) << std::endl;
-
-      // Calculate mean values.
-      float mean(float(std::accumulate(SortedADC.begin(),SortedADC.end(),0))/float(SortedADC.size()));
-
-      // Remove pedestal of waveform.
-      std::vector<short> ADCLessPed;
-      ADCLessPed.resize(SortedADC.size());
-      std::transform(SortedADC.begin(),SortedADC.end(),ADCLessPed.begin(),std::bind(std::minus<float>(),std::placeholders::_1,median));
-
-      // Calculate full RMS.
-      float rms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.end(), ADCLessPed.begin(), 0.) / float(ADCLessPed.size())));
-
-      // Calculate the truncated RMS.
-      unsigned int MinBins((1.0 - 0.2)*ADCLessPed.size());
-      //unsigned int BinsToKeep;
-      //for(BinsToKeep = 0; BinsToKeep < ADCLessPed.size(); ++BinsToKeep)
-      //{
-      //  if(std::fabs(ADCLessPed.at(BinsToKeep)) >= 3*rms) break;
-      //}
-      //float truncrms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.begin() + BinsToKeep, ADCLessPed.begin(), 0.) / float(BinsToKeep)));
-      float truncrms(std::sqrt(std::inner_product(ADCLessPed.begin(), ADCLessPed.begin() + MinBins, ADCLessPed.begin(), 0.) / float(MinBins)));
-
-      // Calculate the power.
-      std::vector<double> power(DataSize);
-      std::vector<double> RawLessPed;
-      RawLessPed.resize(RawADC.size());
-      std::transform(RawADC.begin(),RawADC.end(),RawLessPed.begin(),std::bind(std::minus<double>(),std::placeholders::_1,median));
-      fFFT->getFFTPower(RawLessPed, power);
-std::vector<geo::WireID> widVec = geom->ChannelToWire(RawDigit.Channel());
-        size_t                   plane  = widVec[0].Plane;
-     
-if(plane==0)  { std::transform(fCoherentPowerI1.at(0).begin(), fCoherentPowerI1.at(0).end(), power.begin(), fCoherentPowerI1.at(0).begin(), std::plus<float>());  }
-if(plane==1)  { std::transform(fCoherentPowerI2.at(0).begin(), fCoherentPowerI2.at(0).end(), power.begin(), fCoherentPowerI2.at(0).begin(), std::plus<float>()); }
-if(plane==2)  { std::transform(fCoherentPowerC.at(0).begin(), fCoherentPowerC.at(0).end(), power.begin(), fCoherentPowerC.at(0).begin(), std::plus<float>());  }
-
-//if(rms) std::cout << " coherent mean " << mean << " rms " << rms << std::endl;
-      fCoherentMean.push_back(mean);
-if(rms) {
-  if(plane==2)  {  fCoherentRMSC.push_back(rms);}
- if(plane==0)fCoherentRMSI1.push_back(rms);
- if(plane==1) { fCoherentRMSI2.push_back(rms);    }
-      fCoherentRMSTrim.push_back(truncrms);
-}
-    }
+    
 //std::cout << " cohrms size " << fCoherentRMSC.size() << std::endl;
 //for(int j=0;j<10;j++) std::cout << " j " << j << " cohrms C " << fCoherentRMSC.at(j) << " cohrms I2 " << fCoherentRMSI2.at(j) << std::endl;
   fNoiseTree->Fill();
-
-
   ++NEvents;
 
   return;
 
 }
 
-void tpcnoise::TPCNoise::reconfigure(fhicl::ParameterSet const& p)
+void TPCNoiseMC::TPCNoiseMC::reconfigure(fhicl::ParameterSet const& p)
 {
   fRawDigitModuleLabel = p.get< std::string >("RawDigitModuleLabel", std::string("daqTPC"));
-  //std::cerr << "fRawDigitModuleLabel: " << fRawDigitModuleLabel << std::endl;
+  //std::cerr << "fRawDigitModuleLabel: "  << fRawDigitModuleLabel << std::endl;
   fRawDigitProcess = p.get< std::string >("RawDigitProcess", std::string("decode"));
   //std::cerr << "fRawDigitProcess: " << fRawDigitProcess << std::endl;
-  fRawInstance = p.get< std::string >("RawInstance", std::string("RAW"));
-  //std::cerr << "fRawInstance: " << fRawInstance << std::endl;
-  fIntrinsicInstance = p.get< std::string >("IntrinsicInstance", std::string("."));
-  //std::cerr << "fIntrinsicInstance: " << fIntrinsicInstance << std::endl;
-fCoherentInstance = p.get< std::string >("CoherentInstance", std::string("Cor"));
- // std::cout << "fCoherentInstance: " << fCoherentInstance << std::endl;
+  fRawDigitInstance = p.get< std::string >("RawDigitInstance", std::string(""));
 fHistoFileName = p.get< std::string >("HistoFileName");
 
   return;
 
 }
 
-void tpcnoise::TPCNoise::beginJob()
+void TPCNoiseMC::TPCNoiseMC::beginJob()
 {
   art::ServiceHandle<art::TFileService> tfs;
 
-  fNoiseTree = tfs->makeAndRegister<TTree>("TPCNoise_t", "TPC Noise");
+  fNoiseTree = tfs->makeAndRegister<TTree>("TPCNoiseMC_t", "TPC Noise");
   fRawPowerTree = tfs->makeAndRegister<TTree>("TPCRawPower_t", "TPC Raw Power");
   fIntrinsicPowerTree = tfs->makeAndRegister<TTree>("TPCIntrinsicPower_t", "TPC Intrinsic Power");
 fCoherentPowerTree = tfs->makeAndRegister<TTree>("TPCCoherentPower_t", "TPC Coherent Power");
@@ -582,80 +418,25 @@ fCoherentPowerTree = tfs->makeAndRegister<TTree>("TPCCoherentPower_t", "TPC Cohe
   return;
 }
 
-void tpcnoise::TPCNoise::endJob()
+void TPCNoiseMC::TPCNoiseMC::endJob()
 {
 double freqBin=0.6103515625;
-
-
-std::cout << " ctI1 " << ctI1 << " ctI2 " << ctI2 << " ctC " << ctC << std::endl;
-
-for(unsigned int j=0;j<(fRawPowerI1.at(0)).size();j++) {(fRawPowerI1.at(0)).at(j)/=2110;}
-for(unsigned int j=0;j<(fCoherentPowerI1.at(0)).size();j++) {(fCoherentPowerI1.at(0)).at(j)/=2110;}
-for(unsigned int j=0;j<(fIntrinsicPowerI1.at(0)).size();j++) {(fIntrinsicPowerI1.at(0)).at(j)/=2110;}
-for(unsigned int j=0;j<(fRawPowerI2.at(0)).size();j++) {(fRawPowerI2.at(0)).at(j)/=5600;}
-for(unsigned int j=0;j<(fCoherentPowerI2.at(0)).size();j++) {(fCoherentPowerI2.at(0)).at(j)/=5600;}
-for(unsigned int j=0;j<(fIntrinsicPowerI2.at(0)).size();j++) {(fIntrinsicPowerI2.at(0)).at(j)/=5600;}
-for(unsigned int j=0;j<(fRawPowerC.at(0)).size();j++) {(fRawPowerC.at(0)).at(j)/=5600;}
-for(unsigned int j=0;j<(fCoherentPowerC.at(0)).size();j++) {(fCoherentPowerC.at(0)).at(j)/=5600;}
-for(unsigned int j=0;j<(fIntrinsicPowerC.at(0)).size();j++) {(fIntrinsicPowerC.at(0)).at(j)/=5600;}
-
-
   // Average the power vectors.
   std::cout << "Averaging power vectors..." << std::endl;
   std::vector<float> TMPVect;
   fRawPowerTree->Branch("Power", &TMPVect);
-int count=0;
   for(auto &it : fRawPowerC)
     {
-count++;
       std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
       TMPVect = it;
    //   fRawPowerTree->Fill();
      std::cout << " tmpvect size " << TMPVect.size() << std::endl;
-for(unsigned int jv=0;jv<TMPVect.size();jv++) {
- std::cout << " filling raw power " << jv*freqBin << std::endl;
-//if(jv==100)
-  fRawPowerHistoC->Fill(jv*freqBin,TMPVect[jv]);
-
-    }
-}
-std::cout << " raw power entries " << fRawPowerHistoC->GetEntries() << std::endl;
-std::cout << " raw power count " << count << std::endl;
-fRawPowerHistoC->Scale(1./count);
-std::cout << " after filling raw power histo " << std::endl;
-  fIntrinsicPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fIntrinsicPowerC)
-    {
-count++;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-  std::cout << " tmpvect size " << TMPVect.size() << std::endl;
-   //   fIntrinsicPowerTree->Fill();
-  std::cout << " after fill tmpvect size " << TMPVect.size() << std::endl;
-for(unsigned int jv=0;jv<TMPVect.size();jv++) {
-//std::cout << " filling jv " << jv << std::endl; 
-
- fIntrinsicPowerHistoC->Fill(jv*freqBin,TMPVect[jv]);
-}
-fIntrinsicPowerHistoC->Scale(1./count);
-std::cout << " after filling intrinsic power histo " << std::endl;
-    }
-
-  fCoherentPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fCoherentPowerC)
-    {
-count++;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-
-    //  fCoherentPowerTree->Fill();
-
 for(unsigned int jv=0;jv<TMPVect.size();jv++)
-  fCoherentPowerHistoC->Fill(jv*freqBin,TMPVect[jv]);
+  fRawPowerHistoC->Fill(jv*freqBin,TMPVect[jv]);
     }
-fCoherentPowerHistoC->Scale(1./count);
+std::cout << " after filling raw power histo " << std::endl;
+ 
+
 std::cout << " frawrmsc size " << fRawRMSC.size() << std::endl;
  for(unsigned int jj=0;jj<fRawRMSC.size();jj++)
   fRawRMSHistoC->Fill(fRawRMSC.at(jj));
@@ -666,21 +447,11 @@ std::cout << " filling media " << std::endl;
 }
 std::cout << " after filling media histo " << std::endl;
 
-for(unsigned int jj=0;jj<fIntrinsicRMSC.size();jj++)
-  fIntrinsicRMSHistoC->Fill(fIntrinsicRMSC.at(jj));
-
-std::cout << " fillhisto cohrms size " << fCoherentRMSC.size() << std::endl;
-
-for(unsigned int j=0;j<fCoherentRMSC.size();j++) {
-//std::cout << " filling coherent RMS " << fCoherentRMSC.at(j) << std::endl;
-  fCoherentRMSHistoC->Fill(fCoherentRMSC.at(j));
-}
-
   // Average the power vectors.
   std::cout << "Averaging power vectors..." << std::endl;
   //std::vector<float> TMPVect;
   fRawPowerTree->Branch("Power", &TMPVect);
-count=0;
+int count=0;
   for(auto &it : fRawPowerI1)
     {
      std::cout << " i1 counter " << count++ << std::endl;
@@ -689,43 +460,11 @@ count=0;
      // fRawPowerTree->Fill();
     // std::cout << " tmpvect size " << TMPVect.size() << std::endl;
 for(unsigned int jv=0;jv<TMPVect.size();jv++)
-//if(jv==100)
   fRawPowerHistoI1->Fill(jv*freqBin,TMPVect[jv]);
     }
-fRawPowerHistoI1->Scale(1./count);
 std::cout << " after filling raw power histo " << std::endl;
-  fIntrinsicPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fIntrinsicPowerI1)
-    {
- std::cout << " i1 counter " << count++ << std::endl;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-  //astd::cout << " tmpvect size " << TMPVect.size() << std::endl;
-    //  fIntrinsicPowerTree->Fill();
- // std::cout << " after fill tmpvect size " << TMPVect.size() << std::endl;
-for(unsigned int jv=0;jv<TMPVect.size();jv++) {
-//std::cout << " filling jv " << jv << std::endl; 
- fIntrinsicPowerHistoI1->Fill(jv*freqBin,TMPVect[jv]);
-}
-fIntrinsicPowerHistoI1->Scale(1./count);
-std::cout << " after filling intrinsic power histo " << std::endl;
-    }
+  
 
-  fCoherentPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fCoherentPowerI1)
-    {
- std::cout << " i1 counter " << count++ << std::endl;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-
-     // fCoherentPowerTree->Fill();
-
-for(unsigned int jv=0;jv<TMPVect.size();jv++)
-  fCoherentPowerHistoI1->Fill(jv*freqBin,TMPVect[jv]);
-    }
-fCoherentPowerHistoI1->Scale(1./count);
 std::cout << " rawrmsi1 size " << fRawRMSI1.size() << std::endl;
  for(unsigned int jj=0;jj<fRawRMSI1.size();jj++) {
 std::cout << " filling rawrmsi1 value " << fRawRMSI1.at(jj) << std::endl;
@@ -752,53 +491,17 @@ std::cout << " filling coherent RMS " << fCoherentRMSI1.at(j) << std::endl;
   std::cout << "Averaging power vectors..." << std::endl;
   //std::vector<float> TMPVect;
   fRawPowerTree->Branch("Power", &TMPVect);
-count=0;
   for(auto &it : fRawPowerI2)
     {
-count++;
       std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
       TMPVect = it;
      // fRawPowerTree->Fill();
      std::cout << " tmpvect size " << TMPVect.size() << std::endl;
 for(unsigned int jv=0;jv<TMPVect.size();jv++)
-//if(jv==100)
   fRawPowerHistoI2->Fill(jv*freqBin,TMPVect[jv]);
     }
 std::cout << " after filling raw power histo " << std::endl;
-fRawPowerHistoI2->Scale(1./count);
-  fIntrinsicPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fIntrinsicPowerI2)
-    {
-count++;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-  std::cout << " tmpvect size " << TMPVect.size() << std::endl;
-   //   fIntrinsicPowerTree->Fill();
-  std::cout << " after fill tmpvect size " << TMPVect.size() << std::endl;
-for(unsigned int jv=0;jv<TMPVect.size();jv++) {
-//std::cout << " filling jv " << jv << std::endl; 
- fIntrinsicPowerHistoI2->Fill(jv*freqBin,TMPVect[jv]);
-}
-fIntrinsicPowerHistoI2->Scale(1./count);
-std::cout << " after filling intrinsic power histo " << std::endl;
-    }
-
-  fCoherentPowerTree->Branch("Power", &TMPVect);
-count=0;
-  for(auto &it : fCoherentPowerI2)
-    {
-count++;
-      std::transform(it.begin(), it.end(), it.begin(), std::bind(std::divides<float>(), std::placeholders::_1, NEvents));
-      TMPVect = it;
-
-    //  fCoherentPowerTree->Fill();
-
-for(unsigned int jv=0;jv<TMPVect.size();jv++)
-  fCoherentPowerHistoI2->Fill(jv*freqBin,TMPVect[jv]);
-    }
-fCoherentPowerHistoI2->Scale(1./count);
-std::cout << " after filling coherent power histo " << std::endl;
+  
  for(unsigned int jj=0;jj<fRawRMSI2.size();jj++)
   fRawRMSHistoI2->Fill(fRawRMSI2.at(jj));
 std::cout << " after filling raw rms histo " << std::endl;
@@ -808,47 +511,31 @@ for(unsigned int j=0;j<fRawMeanI2.size(); j++) {
 }
 std::cout << " after filling media histo " << std::endl;
 
-for(unsigned int jj=0;jj<fIntrinsicRMSI2.size();jj++)
-  fIntrinsicRMSHistoI2->Fill(fIntrinsicRMSI2.at(jj));
-
-std::cout << " fillhisto cohrms size " << fCoherentRMSI2.size() << std::endl;
-
-for(unsigned int j=0;j<fCoherentRMSI2.size();j++) {
-std::cout << " filling coherent RMS " << fCoherentRMSI2.at(j) << std::endl;
-  fCoherentRMSHistoI2->Fill(fCoherentRMSI2.at(j));
-}
-
  TFile *f = new TFile(fHistoFileName.c_str(),"RECREATE");
     
 std::cout << " coherent rms histo entries "<< std::endl;
 
   fRawPowerHistoI2->Write();
-fIntrinsicPowerHistoI2->Write();
-fCoherentPowerHistoI2->Write();
+
  fRawRMSHistoI2->Write();
 fMediaHistoI2->Write();
-fIntrinsicRMSHistoI2->Write();
-fCoherentRMSHistoI2->Write();
+
 
 std::cout << " after filling i2 histos " << std::endl;
 
   fRawPowerHistoI1->Write();
-fIntrinsicPowerHistoI1->Write();
-fCoherentPowerHistoI1->Write();
+
  fRawRMSHistoI1->Write();
 fMediaHistoI1->Write();
-fIntrinsicRMSHistoI1->Write();
-fCoherentRMSHistoI1->Write();
+
 
 std::cout << " after filling i1 histos " << std::endl;
 
   fRawPowerHistoC->Write();
-fIntrinsicPowerHistoC->Write();
-fCoherentPowerHistoC->Write();
+
  fRawRMSHistoC->Write();
 fMediaHistoC->Write();
-fIntrinsicRMSHistoC->Write();
-fCoherentRMSHistoC->Write();
+
   f->Close();
         f->Delete();
 std::cout << " after filling c histos " << std::endl;
@@ -857,4 +544,4 @@ std::cout << " after filling c histos " << std::endl;
   return;
 }
 
-DEFINE_ART_MODULE(tpcnoise::TPCNoise)
+DEFINE_ART_MODULE(TPCNoiseMC::TPCNoiseMC)

@@ -37,7 +37,7 @@ tpcnoiseEE:  { module_type: "TPCNoiseMC" }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
-# ana: [ tpcnoiseEW ]
+# ana: [ tpcnoiseEE ]
 ana: [ tpcnoiseEW, tpcnoiseEE, tpcnoiseWW, tpcnoiseWE ]
  end_paths:     [ana]  
 }
@@ -70,17 +70,17 @@ physics.analyzers.tpcnoise.CharacterizationAlg: {
   						FillHistograms:        false
 						}
 
-physics.analyzers.tpcnoiseEW.RawDigitModuleLabel: "daq0"
-physics.analyzers.tpcnoiseEW.RawDigitProcess: "DetSim"
+physics.analyzers.tpcnoiseEE.RawDigitModuleLabel: "daq0"
+physics.analyzers.tpcnoiseEE.RawDigitProcess: "DetSim"
 
-physics.analyzers.tpcnoiseWW.RawDigitModuleLabel: "daq1"
-physics.analyzers.tpcnoiseWW.RawDigitProcess: "DetSim"
+physics.analyzers.tpcnoiseEW.RawDigitModuleLabel: "daq1"
+physics.analyzers.tpcnoiseW.RawDigitProcess: "DetSim"
 
 physics.analyzers.tpcnoiseWE.RawDigitModuleLabel: "daq2"
 physics.analyzers.tpcnoiseWE.RawDigitProcess: "DetSim"
 
-physics.analyzers.tpcnoiseEE.RawDigitModuleLabel: "daq3"
-physics.analyzers.tpcnoiseEE.RawDigitProcess: "DetSim"
+physics.analyzers.tpcnoiseWW.RawDigitModuleLabel: "daq3"
+physics.analyzers.tpcnoiseWW.RawDigitProcess: "DetSim"
 
 
 

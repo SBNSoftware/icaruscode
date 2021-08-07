@@ -306,9 +306,8 @@ noise_factor=1;
     //std::cout <<  " generating uncorrelated noise " << std::endl;
     // If applying incoherent noise call the generator
    GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel, index);  
-int board;
-if(fPlane) board=iWire/32;
-else board=iWire/64;
+int board=iWire/32;
+
 
 float cf=corrFactors[board][index];
 
