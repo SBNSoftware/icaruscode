@@ -41,8 +41,7 @@ sbncode                   v09_28_00
 icarusalg                 v09_28_00
 icarusutil                v09_26_00
 icarus_signal_processing  v09_26_01
-icarus_data               v09_28_00
-genie_xsec                v3_00_04a
+icarus_data               v09_28_00 
 fftw                      v3_3_8a
 libwda                    v2_29_1
 

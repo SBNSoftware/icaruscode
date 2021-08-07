@@ -1,0 +1,14 @@
+#include "backtrackerservice.fcl"
+#include "particleinventoryservice.fcl"
+
+#include "fm_scores_icarus.fcl"
+
+services.BackTrackerService:        @local::standard_backtrackerservice
+services.ParticleInventoryService:  @local::standard_particleinventoryservice
+
+physics.producers.fmatchCryo0.MakeTree:       true
+physics.producers.fmatchCryo0.StoreTrueNus:   true
+physics.producers.fmatchCryo0.StoreCheatMCT0: true
+physics.producers.fmatchCryo1.MakeTree:       true
+physics.producers.fmatchCryo1.StoreTrueNus:   true
+physics.producers.fmatchCryo1.StoreCheatMCT0: true
