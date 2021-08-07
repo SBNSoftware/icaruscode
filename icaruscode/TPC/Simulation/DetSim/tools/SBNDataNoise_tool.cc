@@ -14,6 +14,8 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "art_root_io/TFileService.h"
 
+#include "larcore/Geometry/Geometry.h"
+
 // art extensions
 #include "nurandom/RandomUtils/NuRandomService.h"
 
@@ -28,19 +30,10 @@
 #include "TProfile.h"
 #include "TFile.h"
 
-#include <complex.h>
 #include <Eigen/Core>
 #include <unsupported/Eigen/FFT>
 
 #include <fstream>
-
-
-//LArSoft From FFT
-#include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/CryostatGeo.h"
-#include "larcorealg/Geometry/TPCGeo.h"
-#include "larcorealg/Geometry/PlaneGeo.h"
 
 namespace icarus_tool
 {
