@@ -49,6 +49,11 @@ icarus_stage1_producers:
   pandoraKalmanTrackICARUSCryoW:  @local::icarus_pandora_kalmantrack
   pandoraKalmanTrackICARUSCryoE:  @local::icarus_pandora_kalmantrack
 
+  ### Showers
+  SBNShowerGaus:                  @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoW:             @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
+
   # pandora CALO and PID
 #  pandoraGausCaloCryoW:		        @local::icarus_calomc
 #  pandoraGausPidCryoW:		        @local::icarus_chi2pid
@@ -101,12 +106,14 @@ icarus_reco_pandoraGaus:           [ pandoraGaus,
 
 icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
                                      pandoraTrackGausCryoW,
-                                     pandoraKalmanTrackGausCryoW
+                                     pandoraKalmanTrackGausCryoW,
+                                     SBNShowerGausCryoW
                                    ]
 
 icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
                                      pandoraTrackGausCryoE,
-                                     pandoraKalmanTrackGausCryoE
+                                     pandoraKalmanTrackGausCryoE,
+                                     SBNShowerGausCryoE
                                    ]
 
 icarus_reco_Gauss:                 [
@@ -173,5 +180,9 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
+## Definitions for shower finding (both single and by cryostat)
+icarus_stage1_producers.SBNShowerGaus.PFParticleLabel:                                           "pandoraGaus"
+icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
 
 END_PROLOG

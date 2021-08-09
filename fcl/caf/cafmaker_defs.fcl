@@ -19,6 +19,7 @@
 #include "flashmatch_simple_icarus.fcl"
 #include "scecorrections.fcl"
 #include "trackfindermodules_icarus.fcl"
+#include "showerfindermodules_icarus.fcl"
 #include "sbn_stub.fcl"
 #include "transfer_flashmatch_producer.fcl"
 
@@ -92,8 +93,10 @@ recoana_caf_ana_producers.vertexStubCryoW.CaloAlg: @local::icarus_calorimetryalg
 recoana_sce_producers: {
   pandoraGausSCECryoE:            @local::scecorrection
   pandoraGausSCECryoW:            @local::scecorrection
-  pandoraTrackGausSCECryoE:       @local::icarus_pandoraTrackCreation 
-  pandoraTrackGausSCECryoW:       @local::icarus_pandoraTrackCreation 
+  pandoraTrackGausSCECryoE:       @local::icarus_pandoraTrackCreation
+  pandoraTrackGausSCECryoW:       @local::icarus_pandoraTrackCreation
+  SBNShowerGausSCECryoE:          @local::icarus_pandorashower_3dTraj
+  SBNShowerGausSCECryoW:          @local::icarus_pandorashower_3dTraj
 
   # Calo on SCE stuff
   pandoraCaloGausSCECryoE: @local::recoana_calo_producers.pandoraCaloGausCryoE
@@ -136,6 +139,15 @@ recoana_sce_producers.pandoraGausSCECryoW.CorrectNoT0Tag: true
 
 recoana_sce_producers.pandoraTrackGausSCECryoE.PFParticleLabel: pandoraGausSCECryoE
 recoana_sce_producers.pandoraTrackGausSCECryoW.PFParticleLabel: pandoraGausSCECryoW
+
+recoana_sce_producers.SBNShowerGausSCECryoE.PFParticleLabel:                                   "pandoraGausSCECryoE"
+recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectEField:             true
+recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCECorrectPitch:              true
+recoana_sce_producers.SBNShowerGausSCECryoE.ShowerFinderTools[7].SCEInputCorrected:            true
+recoana_sce_producers.SBNShowerGausSCECryoW.PFParticleLabel:                                   "pandoraGausSCECryoW"
+recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectEField:             true
+recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCECorrectPitch:              true
+recoana_sce_producers.SBNShowerGausSCECryoW.ShowerFinderTools[7].SCEInputCorrected:            true
 
 recoana_sce_producers.pandoraCaloGausSCECryoE.TrackModuleLabel: "pandoraTrackGausSCECryoE"
 recoana_sce_producers.pandoraCaloGausSCECryoW.TrackModuleLabel: "pandoraTrackGausSCECryoW"
@@ -187,8 +199,10 @@ caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, genieweight]
 caf_ana_sce_sequence: [ mcreco,
   # Run the SCE correction
   pandoraGausSCECryoE, pandoraGausSCECryoW,
-  # Then remake tracks (TODO: + showers)
+  # Then remake tracks
   pandoraTrackGausSCECryoE, pandoraTrackGausSCECryoW,
+  # Then showers
+  SBNShowerGausSCECryoE, SBNShowerGausSCECryoW,
   # Run calorimetry w/ SCE
   pandoraCaloGausSCECryoE, pandoraCaloGausSCECryoW,
   pandoraPidGausSCECryoE, pandoraPidGausSCECryoW,
