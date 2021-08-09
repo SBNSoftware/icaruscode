@@ -3,7 +3,7 @@
 # Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
 # Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    February 8, 2021
-# Version: 1.0
+# Version: 1.1
 #
 # This is a top-level configuration that can be run directly.
 # The selection of thresholds and trigger configurations reflects the ones used
@@ -22,33 +22,13 @@
 # 
 # 20210208 (petrillo@slac.stanford.edu) [v1.0]
 # :   original version based on `triggersim_singlewindow_icarus.fcl` v1.0
+# 20210728 (petrillo@slac.stanford.edu) [v1.1]
+# :   timing override removed, as modern run are decoded with proper timing
 #
 
 #include "channelmapping_icarus.fcl"
 
 #include "triggersim_singlewindow_icarus.fcl"
-
-#
-# detector timings are quite different...
-#
-services.DetectorClocksService: {
-  @table::services.DetectorClocksService
-  
-  # timestamps are set to 0 (and it is in electronics time);
-  # 50 us PMT window with post trigger 70% means beam 15 us after the start
-  #   of the waveform, i.e. 15 us from electronics time start
-  DefaultBeamTime: 15
-  DefaultTrigTime: 15
-  
-  G4RefTime: 0
-  
-  InheritClockConfig: false # after we spend time to override it, just leave it alone!
-  
-#  TriggerOffsetTPC: -340
-  
-} # services.DetectorClocksService
-
-physics.analyzers.effSlidingOR6m.BeamGateStart: "-2 us"
 
 
 #

@@ -11,6 +11,10 @@
 # * trigger gate builder tool configurations: tools to create discriminated
 #     waveforms out of full PMT waveforms
 # 
+# Changes:
+# 20210727 (petrillo@slac.stanford.edu)
+#   updated the selection of thresholds
+# 
 #
 
 #include "pmtsimulation_icarus.fcl"
@@ -72,13 +76,13 @@ NuMI_settings: {
 icarus_triggergate_basic: {
   
   # waveform baseline [ADC counts]
-#  Baseline: 8000
+#  Baseline: 15000
   
   # thresholds for channel trigger gate opening [ADC counts]
   # roughly equivalent to the amplitudes of
-  # [ 0.5, 1.0, 1.5, 2.5, 4.0, 6.0, 10.0, 15.0 ] photoelectrons or
-  # [ 3.5, 6, 10, 12, 16, 24, 37, 70, 100 ] mV
-  ChannelThresholds: [ 30, 50, 80, 100, 130, 200, 330, 550, 830 ]
+  # [ 0.5, 4.0, 7.0, 12.0 ] photoelectrons or
+  # [ 3.5, 25.0, 50.0, 75.0 ] mV
+  ChannelThresholds: [ 30, 200, 400, 600 ]
   
 } # icarus_triggergate_basic
 
@@ -210,7 +214,7 @@ icarus_fixedtriggergate: {
 icarus_region_finder: {
   
   # waveform baseline [ADC counts]
-  Baseline: 8000
+  Baseline: 15000
   
   # minimum sampled value for a region to start
   EnablingThreshold: @local::icarus_triggergate_basic.ChannelThresholds[0]

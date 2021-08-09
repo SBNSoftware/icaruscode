@@ -1,0 +1,92 @@
+# #include "seedservice.fcl"
+# #include "singles.fcl"
+# #include "larproperties.fcl"
+# #include "magfield_larsoft.fcl"
+# #include "largeantmodules.fcl"
+# #include "mcreco.fcl"
+#include "services_common_icarus.fcl"
+#include "reco_icarus.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+process_name: TPCNoise
+
+#Start each new event with an empty event.
+source:
+{
+  module_type:     RootInput
+  maxEvents:       10          # Number of events to create
+}
+
+#services:
+#{
+# TFileService: { fileName: "Run4398" }
+#}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ analyzers:
+ {
+   tpcnoiseEW:  { module_type: "TPCNoiseMC" }
+tpcnoiseWW:  { module_type: "TPCNoiseMC" }
+tpcnoiseWE:  { module_type: "TPCNoiseMC" }
+tpcnoiseEE:  { module_type: "TPCNoiseMC" }
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+# ana: [ tpcnoiseEE ]
+ana: [ tpcnoiseEW, tpcnoiseEE, tpcnoiseWW, tpcnoiseWE ]
+ end_paths:     [ana]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "out_tpcnoise_icarus.root"
+   dataTier:    "reco-simulated"
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+physics.analyzers.tpcnoise.CharacterizationAlg: {
+  						TruncMeanFraction:     0.15
+  						RMSRejectionCutHi:     [100., 100., 100.]
+  						RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+  						RMSSelectionCut:       [1.40, 1.40, 1.40]
+  						MinMaxSelectionCut:    [2, 2, 1]
+  						TheChosenWire:         1200
+  						MaxPedestalDiff:       10.
+  						FFTHistsWireGroup:     [1, 33, 34]
+  						NumWiresToGroup:       [32, 32, 32]
+  						FillHistograms:        false
+						}
+
+physics.analyzers.tpcnoiseEE.RawDigitModuleLabel: "daq0"
+physics.analyzers.tpcnoiseEE.RawDigitProcess: "DetSim"
+
+physics.analyzers.tpcnoiseEW.RawDigitModuleLabel: "daq1"
+physics.analyzers.tpcnoiseW.RawDigitProcess: "DetSim"
+
+physics.analyzers.tpcnoiseWE.RawDigitModuleLabel: "daq2"
+physics.analyzers.tpcnoiseWE.RawDigitProcess: "DetSim"
+
+physics.analyzers.tpcnoiseWW.RawDigitModuleLabel: "daq3"
+physics.analyzers.tpcnoiseWW.RawDigitProcess: "DetSim"
+
+
+
+physics.analyzers.tpcnoiseEW.HistoFileName: "mcFFTHistosEW.root"
+physics.analyzers.tpcnoiseEE.HistoFileName: "mcFFTHistosEE.root"
+physics.analyzers.tpcnoiseWW.HistoFileName: "mcFFTHistosWW.root"
+physics.analyzers.tpcnoiseWE.HistoFileName: "mcFFTHistosWE.root"
+
+#services.Geometry.Name: "icarus_splitwires"

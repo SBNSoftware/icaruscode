@@ -192,7 +192,7 @@ physics: {
 
       # PMT baselines
       # Baselines: "pmtbaselines" # from data products
-      Baseline: 8000
+      Baseline: 15000
       
       #
       # choosing the discrimination algorithm: fixed length gates

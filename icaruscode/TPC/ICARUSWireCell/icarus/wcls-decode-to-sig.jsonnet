@@ -107,8 +107,10 @@ local wcls_output = {
       // anode: wc.tn(tools.anode),
       anode: wc.tn(mega_anode),
       digitize: false,  // true means save as RawDigit, else recob::Wire
-      frame_tags: ['gauss', 'wiener', 'looseLf'],
-      frame_scale: [0.1, 0.1, 0.1],
+      // frame_tags: ['gauss', 'wiener', 'looseLf'],
+      // frame_scale: [0.1, 0.1, 0.1],
+      frame_tags: ['looseLf'],
+      frame_scale: [0.1],
       // nticks: params.daq.nticks,
       chanmaskmaps: [],
       nticks: -1,

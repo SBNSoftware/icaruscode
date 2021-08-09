@@ -244,7 +244,7 @@ cafmaker.CRTHitLabel: "" # unavailable
 cafmaker.CRTTrackLabel: "" # unavailable
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
-cafmaker.SystWeightLabel:   "genieweight"
+cafmaker.SystWeightLabels: ["genieweight"]
 
 # Add CAFMaker to the list of producers
 caf_ana_producers.cafmaker: @local::cafmaker
