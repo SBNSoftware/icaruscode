@@ -594,14 +594,21 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * primitives `XX`.
  * 
  * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
- *   deposited during the beam gate;
+ *   deposited during the beam gate.
  * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
- *   deposited in the TPC active volumes during the beam gate;
+ *   deposited in the TPC active volumes during the beam gate.
  * * `EffVsNeutrinoEnergy`, `EffVsLeptonEnergy`: trigger efficiency as function
  *   of the true energy of the first interacting neutrino, and of the outgoing
- *   lepton in the final state of the interaction, respectively;
- * * `TriggerTick`: time of the earliest trigger. Only triggering events
- *   contribute.
+ *   lepton in the final state of the interaction, respectively.
+ * * `TriggerTick`: time of the earliest trigger, in ticks. Only triggering
+ *   events contribute.
+ * * `TriggerTime`: the time (relative to the nominal beam gate opening) of the
+ *   "main" trigger (the earliest in the triggering window). Only triggering
+ *   events contribute.
+ * * `OpeningTimes`: the time (relative to the nominal beam gate opening) of
+ *   all the times the trigger requirements were satisfied (limited to the
+ *   time interval where the trigger emulation is performed). Only triggering
+ *   events contribute.
  * 
  * The parameters are defined in the same way as in the
  * @ref TriggerEfficiencyPlotsBase_SelectionPlots "selection plots", unless stated
@@ -1386,7 +1393,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /**
    * @brief Creates a `GatePack_t` from the specified event
-   * @param event the event to extract beam for (if `nullptr`, uses job info(
+   * @param event the event to extract beam for (if `nullptr`, uses job info)
    * @return a set of relevant gates
    * 
    * Use it C++17-fancy!

@@ -355,7 +355,7 @@ function checkoutGITtagIfExists() {
   local -r Tag="$1"
   local -r Directory="$2"
   
-  hasGITtag && git${Directory:+ -C "$Directory"} checkout "$Tag"
+  hasGITtag "$Tag" && git${Directory:+ -C "$Directory"} checkout "$Tag"
   
   git${Directory:+ -C "$Directory"} rebase
 
