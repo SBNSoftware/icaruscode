@@ -33,6 +33,6 @@ physics.producers.cosmgen: @local::icarus_corsika_p
 # output file names
 #
 
-services.TFileService.fileName: "Supplemental-prodcorsika_genie_protononly_icarus_%tc-%p.root"
-outputs.out1.fileName:    "prodcorsika_genie_protononly_icarus_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-prodcorsika_bnb_genie_protononly_icarus_%tc-%p.root"
+outputs.out1.fileName:    "prodcorsika_bnb_genie_protononly_icarus_%tc-%p.root"
 
