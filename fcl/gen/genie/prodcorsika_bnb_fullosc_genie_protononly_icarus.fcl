@@ -1,0 +1,42 @@
+#
+# File:    prodcorsika_bnb_fullosc_genie_protononly_icarus.fcl
+# Purpose: Generation of interactions of fully oscillated neutrinos from BNB and cosmic rays.
+# Author:  Gianluca Petrillo (petrillo@slac.standard.edu), Joseph Zennamo (jaz8600@fnal.gov)
+# Date:    Aug 10, 2021
+#
+# 
+# 
+# Output
+# -------
+# 
+# See `prodcorsika_genie_standard_icarus.fcl`.
+# The main output is an _art_ ROOT file with content:
+#  * `generator`: fully oscillated neutrino interaction(s) from GENIE
+#                 (with flux, GENIE truth and beam gate information)
+#  * `cosmgen`:   generated cosmic rays from CORSIKA
+# 
+
+#include "prodcorsika_genie_standard_icarus.fcl"
+
+
+process_name: GenBNBbkgr
+
+#
+# change comsic ray model
+#
+
+physics.producers.cosmgen: @local::icarus_corsika_p
+
+#
+# Swap the PDG codes for the neutrinos coming from the beam simulation
+#
+
+physics.producers.generator.MixerConfig: "map 14:12 -14:-12 12:14 -12:-14"
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-prodcorsika_bnb_fullosc_genie_protononly_icarus_%tc-%p.root"
+outputs.out1.fileName:    "prodcorsika_bnb_fullosc_genie_protononly_icarus_%tc-%p.root"
+

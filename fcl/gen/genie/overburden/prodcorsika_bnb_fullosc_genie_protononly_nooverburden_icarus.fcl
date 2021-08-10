@@ -1,0 +1,13 @@
+#
+# File:    prodcorsika_bnb_fullosc_genie_protononly_nooverburden_icarus.fcl
+# Purpose: No-overburden version of `prodcorsika_bnb_fullosc_genie_protononly_icarus.fcl`.
+# Author: Joseph Zennamo (jaz8600@fnal.gov)
+#
+
+#include "prodcorsika_bnb_fullosc_genie_protononly_icarus.fcl"
+
+# turn to no-overburden geometry:
+#include "use_nooverburden_geometry_icarus.fcl"
+
+outputs.out1.fileName:          "prodcorsika_bnb_fullosc_genie_protononly_nooverburden_icarus_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-prodcorsika_bnb_fullosc_genie_protononly_nooverburden_icarus_%tc-%p.root"
