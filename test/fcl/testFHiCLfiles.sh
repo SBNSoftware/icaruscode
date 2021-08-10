@@ -107,6 +107,12 @@ Options:
     shortcut for \`--test=dump\`
 --validate
     shortcut for \`--test=validate\`
+--exclude=PATTERN
+    exclude all files and directories that match this pattern (Bash regex)
+--exclude-from=FILE
+    equivalent to \`--exclude=PATTERN\` for all patterns in FILE; each line
+    in FILE is interpreted as a pattern, except for the lines starting with
+    a '#' (no spaces allowed before it)
 --quiet
     will print only errors or a single success message
 --debug[=LEVEL]
@@ -167,6 +173,40 @@ function SelectTest() {
 } # SelectTest()
 
 
+function isExcluded() {
+  
+  local Path="$1"
+  
+  local ExcludePattern
+  for ExcludePattern in "${ExcludedPatterns[@]}" ; do
+    [[ "$Path" =~ $ExcludePattern ]] && return 0
+  done
+  return 1
+
+} # isExcluded()
+
+
+function ExcludeFromFile() {
+  
+  local File="$1"
+  
+  [[ -r "$File" ]] || FATAL 2 "Can't read exclusion file '${File}'!"
+  
+  local -i nExcluded=0
+  local Pattern
+  while read Pattern ; do
+    [[ -z "$Pattern" ]] && continue
+    [[ "${Pattern:0:1}" == '#' ]] && continue
+    DBGN 2 "Exclude pattern: '${Pattern}'"
+    ExcludedPatterns+=( "$Pattern" )
+    let ++nExcluded
+  done < "$File"
+  
+  DBGN 1 "${nExcluded} exclusion patterns loaded from '${File}'."
+  
+} # ExcludeFromFile()
+
+
 ################################################################################
 function Test_dump_prep() {
   
@@ -188,7 +228,7 @@ function Test_dump() {
   [[ "$FHiCLpath" =~ / ]] && WithPath=1
   
   local -a Options
-  [[ "$WithPath" == 1 ]] && Options+=( '-l' '3' )
+  [[ "$WithPath" == 1 ]] && Options+=( '-l' 'after1' )
   
   $fhicldump --quiet "${Options[@]}" --config "$FHiCLpath"
   local -i res=$?
@@ -238,6 +278,11 @@ function TestFHiCLfile() {
   
   local FilePath="$1"
   
+  if isExcluded "$FilePath" ; then
+    echo "Skipping '${FilePath}' (excluded)"
+    return
+  fi
+  
   "$TestProc" "$FilePath"
   local -i res=$?
   if [[ $res != 0 ]]; then
@@ -255,6 +300,11 @@ function TestFHiCLdirectory() {
   if [[ ! -d "$DirPath" ]]; then
     ERROR "Path '${DirPath}' is not a directory."
     return 1
+  fi
+  
+  if isExcluded "$DirPath" ; then
+    echo "Skipping '${DirPath}' and subdirectories (excluded)"
+    return
   fi
   
   local -i nErrors=0
@@ -284,6 +334,7 @@ function TestFHiCLpath() {
 ### argument parsing
 ###
 declare -a InputPaths
+declare -a ExcludedPatterns
 declare TestType="$DefaultTest"
 declare -i DoHelp=0 DoListTests=0 UseColors=1 Quiet=0
 declare -i NoMoreOptions=0
@@ -292,6 +343,8 @@ for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
   if [[ $NoMoreOptions == 0 ]] && [[ "${Param:0:1}" == '-' ]]; then
     case "$Param" in
       ( '--test='* )             TestType="${Param#--*=}" ;;
+      ( '--exclude='* )          ExcludedPatterns+=( "${Param#--*=}" ) ;;
+      ( '--exclude-from='* )     ExcludedPatternFiles+=( "${Param#--*=}" ) ;;
       ( '--listtests' | '-L' )   DoListTests=1 ;;
       ( '--color' )              UseColors=1 ;;
       ( '--no-color' )           UseColors=0 ;;
@@ -311,6 +364,10 @@ for (( iParam = 1 ; iParam <= $# ; ++iParam )); do
   else
     InputPaths+=( "$Param" )
   fi
+done
+
+for File in "${ExcludedPatternFiles[@]}" ; do
+  ExcludeFromFile "$File"
 done
 
 ################################################################################
