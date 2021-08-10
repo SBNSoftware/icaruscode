@@ -18,6 +18,8 @@
 #include "larcore/Geometry/AuxDetExptGeoHelperInterface.h"
 #include "larcorealg/Geometry/AuxDetChannelMapAlg.h"
 #include "icaruscode/CRT/CRTChannelMapAlg.h"
+#include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include <memory>
 
 namespace geo

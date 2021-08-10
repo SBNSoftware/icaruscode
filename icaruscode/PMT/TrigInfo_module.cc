@@ -196,8 +196,9 @@ std::vector<recob::OpHit> const& hit        = *(evt.getValidHandle<std::vector<r
 
 event = evt.id().event();
 
-std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
-evt.getManyByType(type);
+//std::vector< art::Handle< std::vector<simb::MCTruth> > > type;
+//evt.getManyByType(type);
+auto type = evt.getMany< std::vector<simb::MCTruth> >();
 
 for(size_t mcl = 0; mcl < type.size(); ++mcl)
 {	

@@ -1,6 +1,7 @@
 #include <cmath>
 #include <algorithm>
 #include <vector>
+#include <numeric> // std::accumulate
 
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range.h"

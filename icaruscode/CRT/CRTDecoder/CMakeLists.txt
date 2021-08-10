@@ -117,7 +117,7 @@ art_make_library(
         sbndaq-artdaq-core_Overlays
         sbndaq-artdaq-core_Overlays_Common
         ${ART_PERSISTENCY_PROVENANCE}
-        artdaq-core_Data
+        artdaq_core::artdaq-core_Data
 )
 
 install_headers()
@@ -130,7 +130,7 @@ simple_plugin( BernCRTAna "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   BERN_CRT_TRANSLATOR
 )
 
@@ -143,7 +143,7 @@ simple_plugin( CrtNoiseMonTool "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   BERN_CRT_TRANSLATOR
 )
 
@@ -156,7 +156,7 @@ simple_plugin( CrtCalAnalysis "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   CRT_CAL
   BERN_CRT_TRANSLATOR
 )
@@ -170,7 +170,7 @@ simple_plugin( AnaProducer "module"
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
   CRT_RAW_TREE
@@ -197,7 +197,7 @@ simple_plugin( DecoderICARUSCRT "module"
   ${ROOT_BASIC_LIB_LIST}
   ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   BERN_CRT_TRANSLATOR
   sbnobj_Common_CRT
 )

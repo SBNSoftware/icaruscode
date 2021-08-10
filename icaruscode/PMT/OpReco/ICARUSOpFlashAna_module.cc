@@ -25,6 +25,8 @@
 #include <TFile.h>
 #include <TLorentzVector.h>
 
+#include <numeric> // std::accumulate
+
 class ICARUSOpFlashAna;
 
 class ICARUSOpFlashAna : public art::EDAnalyzer {

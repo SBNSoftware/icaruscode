@@ -32,10 +32,11 @@
 // C++ standard libaries
 #include <chrono> // std::chrono::high_resolution_clock
 #include <unordered_map>
-#include <algorithm> // std::accumulate()
+#include <algorithm>
 #include <utility> // std::move(), std::cref(), ...
 #include <limits> // std::numeric_limits
 #include <cmath> // std::signbit(), std::pow()
+#include <numeric> // std::accumulate
 
 
 // -----------------------------------------------------------------------------

@@ -18,7 +18,7 @@
 #include "icaruscode/Utilities/EventRegistry.h"
 
 // framework libraries
-#include "art/Framework/Services/Registry/ServiceMacros.h"
+#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 #include "art/Framework/Services/Registry/ServiceTable.h"
 #include "fhiclcpp/types/Atom.h"
 #include "cetlib_except/exception.h" // courtesy

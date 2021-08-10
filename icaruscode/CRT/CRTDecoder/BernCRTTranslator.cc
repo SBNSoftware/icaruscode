@@ -147,8 +147,9 @@ std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::anal
 std::vector<icarus::crt::BernCRTTranslator> icarus::crt::BernCRTTranslator::getCRTData(art::Event const & evt) {
   std::vector<icarus::crt::BernCRTTranslator> out;
 
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
+  //std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  //evt.getManyByType(fragmentHandles);
+  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
   for (auto handle : fragmentHandles) {
     if (!handle.isValid() || handle->size() == 0)
       continue;

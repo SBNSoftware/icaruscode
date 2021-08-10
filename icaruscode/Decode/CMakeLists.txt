@@ -44,7 +44,7 @@ simple_plugin(DaqDecoderICARUSPMT module
   sbndaq-artdaq-core_Overlays_Common
   sbndaq-artdaq-core_Overlays
   lardataobj_RawData
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
   ${ART_ROOT_IO_TFILE_SUPPORT}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -71,7 +71,7 @@ simple_plugin(DumpPMTconfiguration module
 
 simple_plugin(DumpArtDAQfragments module
   icaruscode_Decode_DecoderTools_Dumpers
-  artdaq-core_Data
+  artdaq_core::artdaq-core_Data
   ${MF_MESSAGELOGGER}
   fhiclcpp
   cetlib_except

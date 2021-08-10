@@ -2,6 +2,7 @@
 #define IC_CRTCOMMONUTILS_CC
 
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
+#include <fstream>
 
 using namespace icarus::crt;
 

@@ -13,6 +13,7 @@
 // framework libraries
 #include "art/Framework/Services/Registry/ActivityRegistry.h"
 #include "art/Framework/Principal/Event.h" 
+#include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "canvas/Persistency/Provenance/EventID.h"
 #include "messagefacility/MessageLogger/MessageLogger.h" 
 

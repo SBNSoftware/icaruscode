@@ -68,6 +68,7 @@
 #include "nurandom/RandomUtils/NuRandomService.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Persistency/Common/PtrVector.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "art/Persistency/Common/PtrMaker.h"
 
 //larsoft includes
