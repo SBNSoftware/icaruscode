@@ -1,7 +1,6 @@
 
 BEGIN_PROLOG
 
-
 MCDecodeTPCROI: {
                     module_type:        MCDecoderICARUSTPCwROI
                     FragmentsLabelVec:  [ "daq:PHYSCRATEDATA" ]
