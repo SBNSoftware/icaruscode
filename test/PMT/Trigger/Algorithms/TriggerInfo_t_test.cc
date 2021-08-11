@@ -159,31 +159,31 @@ void GateOpeningInfoExtractor_test() {
   BOOST_CHECK((!extract.atEnd()));
   
   auto opening = extract.findNextOpening();
-  BOOST_CHECK((opening));
+  BOOST_CHECK((!!opening));
   BOOST_TEST((opening.value().tick.value() ==  -4));
   BOOST_TEST((opening.value().level ==          2));
   BOOST_CHECK((!extract.atEnd()));
   
   opening = extract.findNextOpening();
-  BOOST_CHECK((opening));
+  BOOST_CHECK((!!opening));
   BOOST_TEST((opening.value().tick.value() ==   4));
   BOOST_TEST((opening.value().level ==          2));
   BOOST_CHECK((!extract.atEnd()));
   
   opening = extract.findNextOpening();
-  BOOST_CHECK((opening));
+  BOOST_CHECK((!!opening));
   BOOST_TEST((opening.value().tick.value() ==  10));
   BOOST_TEST((opening.value().level ==          4));
   BOOST_CHECK((!extract.atEnd()));
   
   opening = extract.findNextOpening();
-  BOOST_CHECK((opening));
+  BOOST_CHECK((!!opening));
   BOOST_TEST((opening.value().tick.value() ==  26));
   BOOST_TEST((opening.value().level ==          2));
   BOOST_CHECK((!extract.atEnd()));
   
   opening = extract.findNextOpening();
-  BOOST_CHECK((opening));
+  BOOST_CHECK((!!opening));
   BOOST_TEST((opening.value().tick.value() ==  34));
   BOOST_TEST((opening.value().level ==          4));
   BOOST_CHECK((extract.atEnd()));
