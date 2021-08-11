@@ -1,2 +1,3 @@
 add_subdirectory(Data)
-add_subdirectory(Algorithms)
+# FIXME: problems with boost v1_75_0
+##add_subdirectory(Algorithms)
