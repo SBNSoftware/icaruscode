@@ -11,7 +11,7 @@ art_make(
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
                         sbndaq-artdaq-core_Overlays_ICARUS 
-                        artdaq-core_Utilities
+                        artdaq_core::artdaq-core_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
                         lardata_Utilities
