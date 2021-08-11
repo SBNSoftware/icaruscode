@@ -21,6 +21,7 @@
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "canvas/Utilities/InputTag.h"
+#include "canvas/Persistency/Common/Assns.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 
@@ -194,8 +195,8 @@ void icarus::trigger::DumpTriggerGateData::analyze(art::Event const& event) {
   auto const& gates =
    *(event.getValidHandle<std::vector<TriggerGateData_t>>(fTriggerGateDataTag));
   auto const* gateToWaveforms = fPrintChannels
-    ? event.getPointerByLabel<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
-      (fTriggerGateDataTag)
+    ? event.getHandle<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
+      (fTriggerGateDataTag).product()
     : nullptr
     ;
   

@@ -166,9 +166,9 @@ void sbn::DumpArtDAQfragments::dumpFragments(
 ) const {
   
   art::Handle<artdaq::Fragments> fragmentHandle;
-  bool found = event.getByToken(inputToken, fragmentHandle);
+  //bool found = event.getByToken(inputToken, fragmentHandle);
   
-  if (!found) {
+  if ( !(fragmentHandle = event.getHandle<artdaq::Fragments>(inputToken)) ) {
     mf::LogVerbatim(fOutputCategory)
       << "No fragment collection found as '" << inputTag.encode() << "'.";
     return;

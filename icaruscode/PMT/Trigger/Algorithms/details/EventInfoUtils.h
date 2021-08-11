@@ -490,7 +490,7 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
   for (art::InputTag const& inputTag: fGeneratorTags) {
   
     auto const& truthRecords
-      = event.template getByLabel<std::vector<simb::MCTruth>>(inputTag);
+      = event.template getProduct<std::vector<simb::MCTruth>>(inputTag);
     
     for (simb::MCTruth const& truth: truthRecords) {
       
@@ -510,7 +510,7 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
     using GeV = util::quantities::gigaelectronvolt;
     
     auto const& energyDeposits = event
-      .template getByLabel<icarus::SimEnergyDepositSummary>(summaryTag->tag());
+      .template getProduct<icarus::SimEnergyDepositSummary>(summaryTag->tag());
     
     info.SetDepositedEnergy                        (GeV(energyDeposits.Total));
     info.SetDepositedEnergyInSpill                 (GeV(energyDeposits.Spill));
@@ -525,7 +525,7 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
   {
     
     auto const& channels
-      = event.template getByLabel<std::vector<sim::SimChannel>>
+      = event.template getProduct<std::vector<sim::SimChannel>>
         (channelsTag->tag())
       ;
     mf::LogTrace(fLogCategory)
@@ -543,7 +543,7 @@ auto icarus::trigger::details::EventInfoExtractor::extractInfo
     for (art::InputTag const& edepTag: *edepListTag) {
       
       auto const& energyDeposits
-        = event.template getByLabel<std::vector<sim::SimEnergyDeposit>>(edepTag);
+        = event.template getProduct<std::vector<sim::SimEnergyDeposit>>(edepTag);
       mf::LogTrace(fLogCategory)
         << "Event " << event.id() << " has " << energyDeposits.size()
         << " energy deposits recorded in '" << edepTag.encode() << "'";
