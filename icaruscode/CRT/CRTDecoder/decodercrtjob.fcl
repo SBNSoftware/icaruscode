@@ -37,7 +37,7 @@ physics:
 
  producers:
  {
-   crtdata:{
+   crtdaq:{
       module_type: "DecoderICARUSCRT"
    }     
  }

@@ -70,6 +70,6 @@ services.message.destinations :
   }
 }
 
-#physics.producers.crthit.CrtModuleLabel: "crtdata"
+#physics.producers.crthit.CrtModuleLabel: "crtdaq"
 physics.producers.crthit.HitAlg.CoinWindow: 150
 physics.producers.crthit.HitAlg.PEThresh: 6.5
