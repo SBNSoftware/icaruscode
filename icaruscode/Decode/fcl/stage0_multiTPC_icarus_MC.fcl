@@ -16,12 +16,7 @@ physics.producers: {
 
 
 ## Use the following to run the full defined stage0 set of modules
-physics.reco: [ MCDecodeTPCROI, 
-                decon1droi,
-                roifinder,
-                @sequence::icarus_stage0_EastHits_TPC,
-                @sequence::icarus_stage0_WestHits_TPC
-              ]
+physics.reco: [ @sequence::icarus_stage0_PMT, MCDecodeTPCROI, @sequence::icarus_stage0_multiTPC ]
 
 ## boiler plate...
 physics.trigger_paths: [ reco ]
