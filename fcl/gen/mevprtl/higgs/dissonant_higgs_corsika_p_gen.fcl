@@ -1,0 +1,5 @@
+#include "corsika_icarus.fcl"
+#include "dissonant_higgs_gen.fcl"
+
+physics.producers.cosmgen: @local::icarus_corsika_p
+physics.runprod: [@sequence::physics.runprod, cosmgen]
