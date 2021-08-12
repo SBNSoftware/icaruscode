@@ -12,6 +12,8 @@
 #include "icarus_trackcalo_skimmer.fcl"
 #include "icarus_opana_modules.fcl"
 #include "icarus_FilterNumberTPCHits.fcl"
+### JCZ: Add simple flashmatch to this area
+#include "flashmatch_simple_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -58,6 +60,11 @@ icarus_stage1_producers:
   # Placeholder uncalibrated calorimetry
   caloskimCalorimetryCryoE: @local::caloskim_calorimetry
   caloskimCalorimetryCryoW: @local::caloskim_calorimetry
+
+  ## Attempt to include simple flash matching here
+  ## Simple Flash Matching, right now cryo0 and 1 are identical
+  fmatchCryoE:                    @local::icarus_simple_flashmatch_0
+  fmatchCryoW:                    @local::icarus_simple_flashmatch_1
 }
 
 icarus_stage1_filters:
@@ -87,6 +94,10 @@ icarus_stage1_analyzers.caloskimW.SelectEvents: [reco]
 icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW 
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
+
+#Add flash matching
+icarus_reco_fm:                    [ fmatchCryoE,
+                                     fmatchCryoW ]
 
 icarus_reco_cluster3d:             [ cluster3d ]
 
