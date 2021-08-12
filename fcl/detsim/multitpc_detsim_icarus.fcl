@@ -38,7 +38,7 @@ outputs: {
 #
 # Temporarily tone down the noise level
 #
-services.SignalShapingICARUSService.NoiseFactVec:  [ [ 0.5, 0.5, 0.5 ], [ 0.5, 0.5, 0.5 ], [ 0.5, 0.5, 0.5] ]
+services.SignalShapingICARUSService.NoiseFactVec:  [ [ 0.6, 0.6, 0.6 ], [ 0.6, 0.6, 0.6 ], [ 0.6, 0.6, 0.6] ]
 
 #
 # point each of the SimWire instances to a different TPC set
