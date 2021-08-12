@@ -407,7 +407,7 @@ void SimWireICARUS::produce(art::Event& evt)
             {
                 throw cet::exception("SimWireICARUS")
                 << "\033[93m"
-                << "Shaping Time received from signalservices_microboone.fcl is not one of allowed values"
+                << "Shaping Time received from signalservices_icarus.fcl is not one of allowed values"
                 << std::endl
                 << "Allowed values: 0.6, 1.0, 1.3, 3.0 usec"
                 << "\033[00m"

@@ -1,0 +1,46 @@
+#include "icarus_ophitfinder.fcl"
+#include "icarus_flashfinder.fcl"
+#include "icarus_opana_modules.fcl"
+
+#include "crttruehitproducer.fcl"
+#include "crtsimhitproducer.fcl"
+#include "crttrackproducer_icarus.fcl"
+
+BEGIN_PROLOG
+
+icarus_stage0_mc_producers:
+{
+    # This defines a "decoder" for MC (which expects RawDigits for input, not artdaq format data)
+    MCDecodeTPCROI:    {
+                           module_type:        MCDecoderICARUSTPCwROI
+                           FragmentsLabelVec:  [ "daq:PHYSCRATEDATA" ]
+                           OutputRawWaveform:  false
+                           OutputCorrection:   false
+                           OutputRawWavePath:  "RAW"
+                           OutputCoherentPath: "Cor"
+                           DiagnosticOutput:   false
+                       }
+  
+    mcophit:           @local::ICARUSMCOpHit
+
+    ## crt producer   
+    crttruehit:        @local::standard_crttruehitproducer
+    crthit:            @local::standard_crtsimhitproducer
+    crttrack:          @local::standard_crttrackproducer
+}  
+
+# make the following modifications to job flow for MC vs the data
+icarus_stage0_mc_PMT:  [ ophit,
+                         mcophit,
+                         opflashCryoE,
+                         opflashCryoW
+                       ]
+
+
+icarus_reco_crt:       [ crttruehit,
+                         crthit,
+                         #crttzero 
+                         crttrack 
+                       ]
+
+END_PROLOG
