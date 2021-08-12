@@ -1,35 +1,8 @@
-#
-# File:    prodcorsika_genie_protononly_icarus_numi.fcl
-# Purpose: Generation of interactions of neutrinos from NuMI and cosmic rays.
-# Author:  Gianluca Petrillo (petrillo@slac.standard.edu)
-# Date:    March 2, 2021
-#
-# This job configuration generates events with the same neutrino configuration 
-# as `prodcorsika_genie_standard_icarus_numi.fcl`, but with a different cosmic
-# ray model (proton rays only).
-# 
-# Output
-# -------
-# 
-# See `prodcorsika_genie_standard_icarus_numi.fcl`.
-# The main output is an _art_ ROOT file with content:
-# 
-
 #include "prodcorsika_genie_standard_icarus_numi.fcl"
-
-
-process_name: GenNuMIbkgr
-
-#
-# change comsic ray model
-#
 
 physics.producers.cosmgen: @local::icarus_corsika_p
 
-#
 # output file names
-#
-
 services.TFileService.fileName: "Supplemental-prodcorsika_genie_protononly_icarus_numi_%tc-%p.root"
 outputs.rootoutput.fileName:    "prodcorsika_genie_protononly_icarus_numi_%tc-%p.root"
 
