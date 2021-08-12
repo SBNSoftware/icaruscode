@@ -56,9 +56,6 @@ recoana_calo_producers.pandoraCaloGausCryoW.FieldDistortionEfield: true
 recoana_caf_ana_producers: {
   mcreco: @local::standard_mcreco
 
-  fmatchCryoE: @local::icarus_simple_flashmatch_0
-  fmatchCryoW: @local::icarus_simple_flashmatch_1
-
   pandoraTrackMCSCryoE: @local::mcs_sbn
   pandoraTrackMCSCryoW: @local::mcs_sbn
 
@@ -190,7 +187,6 @@ caf_ana_sequence: [ mcreco,
     # Track Momentum Estimation
     pandoraTrackMCSCryoE, pandoraTrackMCSCryoW, 
     pandoraTrackRangeCryoE, pandoraTrackRangeCryoW
-    # TODO: flash matching
     # TODO: rns??
     ]
 
@@ -210,8 +206,9 @@ caf_ana_sce_sequence: [ mcreco,
   vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
   # Run Track momentum calcs w/ SCE
   pandoraTrackSCEMCSCryoE, pandoraTrackSCEMCSCryoW, 
-  pandoraTrackSCERangeCryoE, pandoraTrackSCERangeCryoW
-  # TODO: flash matching
+  pandoraTrackSCERangeCryoE, pandoraTrackSCERangeCryoW,
+  # Transfer flash-match T0 to the space-charge corrected slice
+  fmatchSCECryoE, fmatchSCECryoW
   # TODO: rns??
 ]
 
