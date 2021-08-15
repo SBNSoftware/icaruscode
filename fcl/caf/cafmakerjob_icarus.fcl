@@ -22,22 +22,15 @@ services:
   NuRandomService: @local::per_event_NuRandomService
 }
 
-#Start each new event with an empty event.
-source:
-{
-  module_type: RootInput
-  maxEvents:   -1        # Number of events to create
-}
 
 outputs:
 {
   outpid:
   {
-    dataTier: cafana # for grid test
-    streamName: out1 # for grid test
+    dataTier: cafana # for grid
+    streamName: out1 # for grid
     module_type: RootOutput
-    fileName:    "pid_r%r_s%s.root"
-    fastCloning: false
+    fileName:    "stage2_r%r_s%s.root"
   }
 }
 
