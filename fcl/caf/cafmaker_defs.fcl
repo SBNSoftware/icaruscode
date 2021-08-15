@@ -237,8 +237,8 @@ cafmaker.CRTHitMatchLabel: "" # unavailable
 cafmaker.CRTTrackMatchLabel: "" # unavailable
 cafmaker.TrackMCSLabel: "pandoraTrackMCS"
 cafmaker.TrackRangeLabel: "pandoraTrackRange"
-cafmaker.CRTHitLabel: "" # unavailable
-cafmaker.CRTTrackLabel: "" # unavailable
+cafmaker.CRTHitLabel: "crthit"
+cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
 cafmaker.SystWeightLabels: ["genieweight"]
