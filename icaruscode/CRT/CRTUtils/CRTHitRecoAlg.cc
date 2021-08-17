@@ -134,7 +134,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
                         << " data products before coincidence" << std::endl;
             // in coincidence
             //      if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
-            if(std::llabs(crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) {
+	    //            if(std::llabs(crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) {
+	    if( (crtList[indices[index_j]]->fTs0>=crtList[indices[index_i]]->fTs0 && (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
+		(crtList[indices[index_j]]->fTs0<crtList[indices[index_i]]->fTs0 && (crtList[indices[index_i]]->fTs0 - crtList[indices[index_j]]->fTs0) < fCoinWindow)) {
               if(fVerbose)
                 std::cout <<  " in coincidence: i \t " << index_i << " ,j: \t" << index_j <<",i mac: \t" 
                           << (int)crtList[indices[index_i]]->fMac5 << ", j mac: \t" <<(int)crtList[indices[index_j]]->fMac5<< std::endl;
@@ -780,6 +782,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (long int)infn.t0;
+
       /*
       if(fVerbose)
 	std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0
@@ -788,6 +791,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
                  << " ,propagation delay: "<< fPropDelay << ", pos z: "
                  << 0.5*(adsGeo.Length()-(std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0)*fPropDelay)) << std::endl;
       */
+
       if(fVerbose)
 	std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0
 		 << " ,2nd mac5: "<<(int)informationB[i+1].mac5s << ", 2nd time " << (long int)informationB[i+1].t0 << " , deltaT: "
