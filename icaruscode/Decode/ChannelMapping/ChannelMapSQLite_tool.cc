@@ -406,9 +406,9 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap = *(IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap*)dataIn;
     
     // Start extracting info
-    unsigned int channelID         = strcmp(argv[10],"None")==0 ? 0 : std::stol(argv[10]);
-    unsigned int simmacaddress     = strcmp(argv[11],"None")==0 ? 0 : std::stol(argv[11]);
-    unsigned int hwmacaddress      = strcmp(argv[12],"None")==0 ? 0 : std::stol(argv[12]);
+    unsigned int channelID         = std::stol(argv[10]);
+    unsigned int simmacaddress     = std::stol(argv[11]);
+    unsigned int hwmacaddress      = std::stol(argv[12]);
 
         
     // Fill the map

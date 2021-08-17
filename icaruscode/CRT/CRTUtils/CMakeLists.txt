@@ -30,7 +30,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ROOT_GEOM}
                            ${ROOT_XMLIO}
                            ${ROOT_GDML}
-                           ROOT::GenVector
+                           ${ROOT_GENVECTOR}
                            ${ROOT_BASIC_LIB_LIST}
                            ${Boost_SYSTEM_LIBRARY}
                            icaruscode_CRT
