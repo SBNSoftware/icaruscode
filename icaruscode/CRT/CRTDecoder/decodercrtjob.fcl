@@ -72,4 +72,4 @@ outputs:
  }
 }
 
-services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
+#services.IICARUSChannelMap.ChannelMappingTool: @local::ChannelMappingPostGres
