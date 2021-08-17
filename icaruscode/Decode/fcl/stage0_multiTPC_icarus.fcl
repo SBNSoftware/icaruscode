@@ -7,7 +7,7 @@
 process_name: stage0
 
 ## Use the following to run the full defined stage0 set of modules
-physics.reco: [@sequence::icarus_stage0_multiTPC]
+physics.reco: [daqTPC, @sequence::icarus_stage0_multiTPC]
 
 ## Use the following to run only the decoding and noise filtering
 ## ==> Set as default for production processing for lifetime measurements - Jan, 2021

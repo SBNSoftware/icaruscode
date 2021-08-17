@@ -72,13 +72,12 @@ public:
   //TPCNoiseMC(TPCNoiseMC&&) = delete;
   //TPCNoiseMC& operator=(TPCNoiseMC const&) = delete;
   //TPCNoiseMC& operator=(TPCNoiseMC&&) = delete;
-
   void analyze(const art::Event& e);
   void reconfigure(fhicl::ParameterSet const& pset);
   void beginJob();
-  void beginRun();
+ // void beginRun();
   void endJob();
-  void endRun();
+ // void endRun();
 
 private:
   // Various FHiCL parameters.
