@@ -702,7 +702,10 @@ auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
 template <typename Rand>
 double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
   (double const n)
-  { return fRandomGain? (n * fRandomGain->fire() / fReferenceGain): n; }
+{
+  return fRandomGain
+    ? (fRandomGain->fire(n * fReferenceGain) / fReferenceGain): n; 
+}
 
 
 // -----------------------------------------------------------------------------
