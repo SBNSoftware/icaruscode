@@ -21,6 +21,8 @@
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
 
+#include "flashmatch_simple_icarus.fcl"
+
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
@@ -792,5 +794,6 @@ icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat:                         
 
 icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:                                 "pandoraTrackGausSCECryo1"
 icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel:                           "pandoraGausSCECaloCryo1"
+
 
 END_PROLOG

@@ -286,7 +286,7 @@ if(cryostat==1&&tpc>1) index=3;
 //std::cout << " index " << index << std::endl;
 //std::cout << " totalrms size " << totalRMS.size() << std::endl;
 
-noise_factor=1;
+//  noise_factor=1;  ****** not sure why this was done? 
 //noise_factor=totalRMS[index]/3.9;
 
 //std::cout <<  " index " << index << " generating noise totalRMS " << totalRMS[index] << std::endl;

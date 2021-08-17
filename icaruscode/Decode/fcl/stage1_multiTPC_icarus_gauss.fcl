@@ -5,6 +5,7 @@ process_name: stage1
 physics.reco: [ flashfilter,
                 @sequence::icarus_reco_Gauss_CryoE ,
                 @sequence::icarus_reco_Gauss_CryoW ,
+		@sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 
 physics.outana:            [ caloskimE, caloskimW, simpleLightAna]

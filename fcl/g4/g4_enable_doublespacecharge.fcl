@@ -1,10 +1,6 @@
 #include "standard_g4_icarus.fcl"
 
-
-services.SpaceChargeService.EnableSimSpatialSCE: true
-services.SpaceChargeService.EnableSimEfieldSCE: true
-
-services.SpaceChargeService.RepresentationType: "Voxelized_TH3"
+#include "enable_spacecharge.fcl"
 
 services.SpaceChargeService.InputFilename: 'SCEoffsets/SCEoffsets_ICARUS_E500_DoubleCharge_voxelTH3.root'
 #services.SpaceChargeService.InputFilename: 'users/rlazur/SCEoffsets/SCEoffsets_ICARUS_E500_DoubleCharge_voxelTH3.root' #if cannot find double spacecharge file in icarus_data

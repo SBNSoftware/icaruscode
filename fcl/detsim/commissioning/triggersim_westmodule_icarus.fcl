@@ -46,7 +46,7 @@ BEGIN_PROLOG
 
 
 # list of the sliding windows that are enabled (all others are disabled)
-EnabledWindows         @protect_error : [ 10, 11, 12, 13, 14, 15 ]
+EnabledWindows         @protect_ignore: [ 10, 11, 12, 13, 14, 15 ]
 EnabledWindowsSliding  @protect_ignore: [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
 EnabledWindowsE        @protect_ignore: [ 10, 11, 12 ]
 EnabledWindowsSlidingE @protect_ignore: [ 10, 11, 12, 13, 14 ]

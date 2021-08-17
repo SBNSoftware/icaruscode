@@ -1,0 +1,6 @@
+#include "cafmakerjob_icarus.fcl"
+
+# Turn off "CAFMaker"
+physics.runprod: [ @sequence::caf_ana_sequence ]
+# Turn on output art ROOT file
+physics.sream1: [ outpid ]

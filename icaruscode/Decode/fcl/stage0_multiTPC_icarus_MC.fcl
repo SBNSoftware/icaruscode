@@ -2,7 +2,7 @@
 ## This fhicl file is used to run "stage0" processing specifically for the case where all
 ## TPC data is included in an artdaq data product from a single instance
 ##
-#include "decoderdefs_mc_icarus.fcl"
+#include "stage0_icarus_mc_defs.fcl"
 #include "stage0_icarus_driver_common.fcl"
 
 process_name: MCstage0
@@ -11,17 +11,11 @@ process_name: MCstage0
 physics.producers: {
 					  @table::icarus_stage0_producers
 
-            MCDecodeTPCROI: @local::MCDecodeTPCROI
-}
-
+                      @table::icarus_stage0_mc_producers
+                   }
 
 ## Use the following to run the full defined stage0 set of modules
-physics.reco: [ MCDecodeTPCROI, 
-                decon1droi,
-                roifinder,
-                @sequence::icarus_stage0_EastHits_TPC,
-                @sequence::icarus_stage0_WestHits_TPC
-              ]
+physics.reco: [ @sequence::icarus_stage0_mc_PMT, MCDecodeTPCROI, @sequence::icarus_stage0_multiTPC, @sequence::icarus_reco_crt ]
 
 ## boiler plate...
 physics.trigger_paths: [ reco ]
@@ -30,6 +24,9 @@ outputs.outBNB.dataTier: "reconstructed"
 
 # Drop the artdaq format files on output
 outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Set the expected input for ophit
+physics.producers.ophit.InputModule: "opdaq"
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.MCDecodeTPCROI.FragmentsLabelVec: ["daq3:PHYSCRATEDATATPCWW","daq2:PHYSCRATEDATATPCWE","daq1:PHYSCRATEDATATPCEW","daq0:PHYSCRATEDATATPCEE"]
