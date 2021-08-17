@@ -21,45 +21,27 @@ BEGIN_PROLOG
 icarus_stage1_producers:
 {
   ### Cluster3D
-  cluster3d:                      @local::icarus_cluster3d
   cluster3DCryoW:                 @local::icarus_cluster3d
   cluster3DCryoE:                 @local::icarus_cluster3d
 
   ### pandora
-  pandoraGaus:                    @local::icarus_pandora
-  pandoraTrackGaus:               @local::icarus_pandoraTrackCreation
   pandoraGausCryoW:               @local::icarus_pandora
   pandoraTrackGausCryoW:          @local::icarus_pandoraTrackCreation
   pandoraGausCryoE:               @local::icarus_pandora
   pandoraTrackGausCryoE:          @local::icarus_pandoraTrackCreation
 
-  pandoraICARUS:                  @local::icarus_pandora_rawicarus
-  pandoraTrackICARUS:             @local::icarus_pandoraTrackCreation
-  pandoraICARUSCryoW:             @local::icarus_pandora_rawicarus
-  pandoraTrackICARUSCryoW:        @local::icarus_pandoraTrackCreation
-  pandoraICARUSCryoE:             @local::icarus_pandora_rawicarus
-  pandoraTrackICARUSCryoE:        @local::icarus_pandoraTrackCreation
-
   ### PM algorithm for pandora
-  pandoraKalmanTrackGaus:         @local::icarus_pandora_kalmantrack
-
   pandoraKalmanTrackGausCryoW:    @local::icarus_pandora_kalmantrack
   pandoraKalmanTrackGausCryoE:    @local::icarus_pandora_kalmantrack
 
-  pandoraKalmanTrackICARUS:       @local::icarus_pandora_kalmantrack
-
-  pandoraKalmanTrackICARUSCryoW:  @local::icarus_pandora_kalmantrack
-  pandoraKalmanTrackICARUSCryoE:  @local::icarus_pandora_kalmantrack
-
   ### Showers
-  SBNShowerGaus:                  @local::icarus_pandorashower_3dTraj
   SBNShowerGausCryoW:             @local::icarus_pandorashower_3dTraj
   SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
 
   # pandora CALO and PID
-#  pandoraGausCaloCryoW:		        @local::icarus_calomc
+#  pandoraGausCaloCryoW:		      @local::icarus_calomc
 #  pandoraGausPidCryoW:		        @local::icarus_chi2pid
-#  pandoraGausCaloCryoE:		        @local::icarus_calomc
+#  pandoraGausCaloCryoE:		      @local::icarus_calomc
 #  pandoraGausPidCryoE:		        @local::icarus_chi2pid
 
   # Placeholder uncalibrated calorimetry
@@ -104,16 +86,9 @@ icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
 
-icarus_reco_cluster3d:             [ cluster3d ]
-
 icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
 
 icarus_reco_cluster3DCryoE:        [ cluster3DCryoE ]
-
-icarus_reco_pandoraGaus:           [ pandoraGaus,
-                                     pandoraTrackGaus,
-                                     pandoraKalmanTrackGaus
-                                   ]
 
 icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
                                      pandoraTrackGausCryoW,
@@ -127,11 +102,6 @@ icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
                                      SBNShowerGausCryoE
                                    ]
 
-icarus_reco_Gauss:                 [
-                                     @sequence::icarus_reco_cluster3d,
-                                     @sequence::icarus_reco_pandoraGaus
-                                   ]
-
 icarus_reco_Gauss_CryoW:           [ 
                                      @sequence::icarus_reco_cluster3DCryoW,
                                      @sequence::icarus_reco_pandoraGausCryoW
@@ -143,15 +113,6 @@ icarus_reco_Gauss_CryoE:           [
                                    ]
 
 ### Below we include overrides for the modules above
-
-
-## Standard 3D hit building
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg:                                               @local::standard_snippethit3dbuilder
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.PulseHeightFraction:                           0. #0.75 #0.25
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.PHLowSelection:                                0. #4.0 # 20.
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:                               1000000.
-icarus_stage1_producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:                              false
 
 ## Definitions for running the 3D clustering by Cryostat
 icarus_stage1_producers.cluster3DCryoW.Hit3DBuilderAlg:                                          @local::standard_snippethit3dbuilder
@@ -168,10 +129,6 @@ icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.PHLowSelection:          
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.MaxHitChiSquare:                          1000000.
 icarus_stage1_producers.cluster3DCryoE.Hit3DBuilderAlg.OutputHistograms:                         false
 
-### Definitions for a single pandora instance
-icarus_stage1_producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
-icarus_stage1_producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
-
 ### Definitions for a pandora by cryostat
 icarus_stage1_producers.pandoraGausCryoW.HitFinderModuleLabel:                                   "cluster3DCryoW"
 icarus_stage1_producers.pandoraTrackGausCryoW.PFParticleLabel:                                   "pandoraGausCryoW"
@@ -187,12 +144,10 @@ icarus_stage1_producers.caloskimCalorimetryCryoE.TrackModuleLabel:              
 icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:                               "pandoraTrackGausCryoW"
 
 ## Switch pandora back to just gaushits?
-#icarus_stage1_producers.pandoraGaus.ConfigFile:                                                  "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
 ## Definitions for shower finding (both single and by cryostat)
-icarus_stage1_producers.SBNShowerGaus.PFParticleLabel:                                           "pandoraGaus"
 icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
 icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
 
