@@ -3,10 +3,10 @@ BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 icarus_simple_flashmatch_0: {
   module_type: FlashPredict
   Cryostat: 0
-  PandoraProducer: "pandoraGausCryo0"
-  # TrackProducer: "pandoraTrackGausCryo0"
-  # CaloProducer: "pandoraGausCaloCryo0"
-  SpacePointProducer: "pandoraGausCryo0"
+  PandoraProducer: "pandoraGausCryoE"
+  TrackProducer: "pandoraTrackGausCryoE"
+  #CaloProducer: "pandoraGausCaloCryoE"
+  SpacePointProducer: "pandoraGausCryoE"
   OpHitProducer: "ophit"
   BeamWindowStart: -50 # us
   BeamWindowEnd: 50.0 # us
@@ -75,9 +75,9 @@ icarus_simple_flashmatch_0: {
 
 icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
 icarus_simple_flashmatch_1.Cryostat: 1
-icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
-# icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryo1
+icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryoW
+icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryoW
 # icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
-icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1
+icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryoW
 
 END_PROLOG #comment to run generate_simple_weighted_template.py

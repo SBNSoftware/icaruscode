@@ -13,14 +13,11 @@ process_name: GenCry
 
 services:
 {
-  scheduler:    { defaultExceptions: false }    # Make all uncaught exceptions fatal.
   # Load the service that manages root files for histograms.
-  TFileService: { fileName: "single_hist_uboone.root" }
-  TimeTracker:  {}
-  MemoryTracker:     { ignoreTotal: 1 } # default is one
-  RandomNumberGenerator: {} #ART native random number generator
+  TFileService: { fileName: "simulation_cosmics_icarus.root" }
   #FileCatalogMetadata:  @local::art_file_catalog_mc
   @table::icarus_gen_services
+  NuRandomService: @local::per_event_NuRandomService
 }
 
 services.Geometry.SurfaceY:  560 # This value has been introduced because at the moment using 690 cry provides an error... maybe related to Geometry.. to be fixed!

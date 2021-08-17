@@ -20,7 +20,8 @@ process_name: BackgroundGen
 
 services: {
   
-  @table::icarus_common_services # from services_common_icarus.fcl
+                   @table::icarus_common_services # from services_common_icarus.fcl
+  NuRandomService: @local::per_event_NuRandomService  
   
 } # services
 

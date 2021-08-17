@@ -38,8 +38,8 @@ process_name: GenNuMIbkgr
 # plug comsic rays in
 #
 
-physics.producers.cosmicrays: @local::icarus_corsika_cmc
-physics.simulate: [ @sequence::physics.simulate, cosmicrays ]
+physics.producers.cosmgen: @local::icarus_corsika_cmc
+physics.simulate: [ @sequence::physics.simulate, cosmgen ]
 
 #
 # output file names

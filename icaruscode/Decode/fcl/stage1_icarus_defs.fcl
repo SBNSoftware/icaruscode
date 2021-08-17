@@ -12,6 +12,8 @@
 #include "icarus_trackcalo_skimmer.fcl"
 #include "icarus_opana_modules.fcl"
 #include "icarus_FilterNumberTPCHits.fcl"
+### JCZ: Add simple flashmatch to this area
+#include "flashmatch_simple_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -49,6 +51,11 @@ icarus_stage1_producers:
   pandoraKalmanTrackICARUSCryoW:  @local::icarus_pandora_kalmantrack
   pandoraKalmanTrackICARUSCryoE:  @local::icarus_pandora_kalmantrack
 
+  ### Showers
+  SBNShowerGaus:                  @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoW:             @local::icarus_pandorashower_3dTraj
+  SBNShowerGausCryoE:             @local::icarus_pandorashower_3dTraj
+
   # pandora CALO and PID
 #  pandoraGausCaloCryoW:		        @local::icarus_calomc
 #  pandoraGausPidCryoW:		        @local::icarus_chi2pid
@@ -58,6 +65,11 @@ icarus_stage1_producers:
   # Placeholder uncalibrated calorimetry
   caloskimCalorimetryCryoE: @local::caloskim_calorimetry
   caloskimCalorimetryCryoW: @local::caloskim_calorimetry
+
+  ## Attempt to include simple flash matching here
+  ## Simple Flash Matching, right now cryo0 and 1 are identical
+  fmatchCryoE:                    @local::icarus_simple_flashmatch_0
+  fmatchCryoW:                    @local::icarus_simple_flashmatch_1
 }
 
 icarus_stage1_filters:
@@ -88,6 +100,10 @@ icarus_stage1_analyzers.caloskimW.CALOproducer: caloskimCalorimetryCryoW
 
 ### Below are a list of convenient sequences that can be used for production/typical users. ###
 
+#Add flash matching
+icarus_reco_fm:                    [ fmatchCryoE,
+                                     fmatchCryoW ]
+
 icarus_reco_cluster3d:             [ cluster3d ]
 
 icarus_reco_cluster3DCryoW:        [ cluster3DCryoW ]
@@ -101,12 +117,14 @@ icarus_reco_pandoraGaus:           [ pandoraGaus,
 
 icarus_reco_pandoraGausCryoW:      [ pandoraGausCryoW,
                                      pandoraTrackGausCryoW,
-                                     pandoraKalmanTrackGausCryoW
+                                     pandoraKalmanTrackGausCryoW,
+                                     SBNShowerGausCryoW
                                    ]
 
 icarus_reco_pandoraGausCryoE:      [ pandoraGausCryoE,
                                      pandoraTrackGausCryoE,
-                                     pandoraKalmanTrackGausCryoE
+                                     pandoraKalmanTrackGausCryoE,
+                                     SBNShowerGausCryoE
                                    ]
 
 icarus_reco_Gauss:                 [
@@ -173,5 +191,9 @@ icarus_stage1_producers.caloskimCalorimetryCryoW.TrackModuleLabel:              
 #icarus_stage1_producers.pandoraGausCryoW.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 #icarus_stage1_producers.pandoraGausCryoE.ConfigFile:                                             "PandoraSettings_Master_ICARUS_RawICARUS.xml"
 
+## Definitions for shower finding (both single and by cryostat)
+icarus_stage1_producers.SBNShowerGaus.PFParticleLabel:                                           "pandoraGaus"
+icarus_stage1_producers.SBNShowerGausCryoW.PFParticleLabel:                                      "pandoraGausCryoW"
+icarus_stage1_producers.SBNShowerGausCryoE.PFParticleLabel:                                      "pandoraGausCryoE"
 
 END_PROLOG

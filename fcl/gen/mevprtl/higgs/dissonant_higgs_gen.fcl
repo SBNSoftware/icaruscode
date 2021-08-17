@@ -52,3 +52,4 @@ outputs: {
 }
 
 services.NuRandomService.policy: "random"
+outputs.out.fileName: "simulation_higgs_icarus_numi_%tc-%p.root"

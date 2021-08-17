@@ -57,7 +57,9 @@ icarus_gen_services: {
 # this is mostly a helper
 icarus_simulation_basic_services: {
   
-    @table::icarus_common_services
+                                           @table::icarus_common_services
+
+    NuRandomService:                       @local::per_event_NuRandomService
 
     LArG4Parameters:                       @local::icarus_largeantparameters
     LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
@@ -70,7 +72,7 @@ icarus_simulation_basic_services: {
 icarus_g4_dark_services: {
     
     @table::icarus_simulation_basic_services
-    
+
     MagneticField:                         @local::no_mag_larsoft
     
 } # icarus_g4_dark_services
