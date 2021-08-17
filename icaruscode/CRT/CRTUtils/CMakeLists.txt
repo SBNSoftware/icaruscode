@@ -11,6 +11,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            lardataobj_RawData
                            lardataobj_RecoBase
                            lardata_RecoObjects  
+                           lardataalg_DetectorInfo
                            larpandora_LArPandoraInterface
                            nusimdata_SimulationBase
                            cetlib cetlib_except
@@ -29,6 +30,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ROOT_GEOM}
                            ${ROOT_XMLIO}
                            ${ROOT_GDML}
+                           ROOT::GenVector
                            ${ROOT_BASIC_LIB_LIST}
                            ${Boost_SYSTEM_LIBRARY}
                            icaruscode_CRT
