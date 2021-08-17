@@ -21,7 +21,7 @@
 process_name: GenNuMIbkgr
 
 #
-# change comsic ray model
+# change cosmic ray model
 #
 
 physics.producers.cosmgen: @local::icarus_corsika_p
