@@ -1,0 +1,48 @@
+#
+# File:    prodcorsika_genie_protononly_icarus_numi_nue.fcl
+# Purpose: Generation of interactions of electron neutrinos from NuMI and
+#          cosmic rays with proton composition only.
+# Author:  Gianluca Petrillo (petrillo@slac.standard.edu)
+# Date:    August 17, 2021
+#
+# This job generates interaction equivalent to its parent configuration
+# `prodcorsika_genie_protononly_icarus_numi.fcl`, but selecting only electron
+# neutrino and antineutrino interactions.
+# Note that this implies that no mixed events will be present which have a
+# electron neutrino and a muon neutrino piling up: only electron neutrinos
+# will appear (potentially in pile up too).
+# 
+# 
+# Output
+# -------
+# 
+# The main output is an _art_ ROOT file with content:
+#  * `cosmgen`: generated cosmic rays (`simb::MCTruth`)
+#  * `generator`: generated neutrino interactions (`simb::MCTruth`),
+#      beam information (`sim::BeamGateInfo`, `sumdata::POTSummary`),
+#      flux (`simb::MCFlux`) and GENIE-specific information (`simb::GTruth`)
+#      and relevant _art_ associations
+# 
+# 
+# Service dependencies
+# ---------------------
+# 
+# Services are inherited from the NuMI generation job.
+# No further services appear to be needed.
+# 
+#
+
+#include "prodcorsika_genie_protononly_icarus_numi.fcl"
+
+#
+# select only electron neutrino and antineutrino interactions
+#
+
+physics.producers.generator.GenFlavors: [ -12, 12 ]
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-prodcorsika_genie_protononly_icarus_numi_nue_%tc-%p.root"
+outputs.rootoutput.fileName:    "prodcorsika_genie_protononly_icarus_numi_nue_%tc-%p.root"

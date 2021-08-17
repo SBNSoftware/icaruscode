@@ -145,8 +145,12 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<
             }
         }
 
-        sbn::crt::CRTHit aveHit = DoAverage(aveHits);
-        vector<int> ids;
+	//std::cout << "size of aveHits: " << aveHits.size() << std::endl;
+	// Checking if we have Average CRTHits
+	if (aveHits.size() > 0){ 
+	  //aveHit = DoAverage(aveHits);
+	  sbn::crt::CRTHit aveHit = DoAverage(aveHits);
+	  vector<int> ids;
         for(size_t i = 0; i < aveHits.size(); i++){
             ids.push_back(hitIds[aveHits[i]]);
         }
@@ -156,9 +160,9 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTTrackRecoAlg::AverageHits(vector<
         //Do this recursively
         vector<pair<sbn::crt::CRTHit, vector<int>>> moreHits = AverageHits(spareHits, hitIds);
         returnHits.insert(returnHits.end(), moreHits.begin(), moreHits.end());
-
+	}
         return returnHits;
-
+       
     }//endif hits
     else { //no hits returns empty vector
         return returnHits;
@@ -212,6 +216,7 @@ vector<sbn::crt::CRTHit> CRTTrackRecoAlg::AverageHits(vector<art::Ptr<sbn::crt::
 // Take a list of hits and find average parameters
 sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> hits)
 {
+  //std::cout << "hits inside CRTTrackRecoAlg::DoAverage:++++++++++++++++ "<< hits[0] << std::endl;
   // Initialize values
   std::string tagger = hits[0]->tagger;
   double xpos = 0.; 
@@ -246,6 +251,8 @@ sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> h
   sbn::crt::CRTHit crtHit = hitAlg.FillCRTHit(hits[0]->feb_id, hits[0]->pesmap, hits[0]->peshit, 
                                   (ts0_ns/nhits)*1e-3, (ts1_ns/nhits)*1e-3, 0, xpos/nhits, (xmax-xmin)/2,
                                   ypos/nhits, (ymax-ymin)/2., zpos/nhits, (zmax-zmin)/2., tagger);
+
+  //  std::cout << "hits inside CRTTrackRecoAlg::DoAverage:++++++++++++++++ returning......... line 251"  << std::endl;
   return crtHit;
 
 } // CRTTrackRecoAlg::DoAverage()

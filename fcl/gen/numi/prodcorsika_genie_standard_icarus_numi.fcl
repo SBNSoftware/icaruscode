@@ -12,7 +12,7 @@
 # -------
 # 
 # The main output is an _art_ ROOT file with content:
-#  * `cosmicrays`: generated cosmic rays (`simb::MCTruth`)
+#  * `cosmgen`: generated cosmic rays (`simb::MCTruth`)
 #  * `generator`: generated neutrino interactions (`simb::MCTruth`),
 #      beam information (`sim::BeamGateInfo`, `sumdata::POTSummary`),
 #      flux (`simb::MCFlux`) and GENIE-specific information (`simb::GTruth`)
