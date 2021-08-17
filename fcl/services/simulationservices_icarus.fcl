@@ -67,7 +67,11 @@ icarus_largeantparameters: {
     LarqlChi0D: 0.000129379
     LarqlAlpha: 0.0372
     LarqlBeta: 0.0124
-    # IonAndScintCalculator: "NEST"
+    # adopt the "correlated" model for ionization and scintillation (SBN DocDB 17964)
+    IonAndScintCalculator: "Correlated"
+    # this enables some improvements on top of the correlated model
+    # (LArQL, using the parameters above; see SBN DocDB 21270)
+    # UseModLarqlRecomb: true
 
     # The following parameters specify details of wireplanes or similar
     #  areas with optically parameterized transmissions (Ben J 2013)
