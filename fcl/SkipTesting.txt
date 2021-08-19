@@ -8,10 +8,11 @@
 # (e.g. designed to be included at the end of another one to modify it)
 #
 
+g4_only_energydeposits.fcl
+
 detectorclocks_icarus_run5837pre09_22_03_01.fcl
 detectorclocks_icarus_run5252.fcl
 services_compat_icarus-v09_18_00-v09_24_02_02.fcl
-
 
 
 ################################################################################
@@ -35,7 +36,6 @@ services_compat_icarus-v09_18_00-v09_24_02_02.fcl
 job/OnlineDecoder.fcl
 job/bnbanaicarus21apr21.fcl
 job/dirtanaicarus21apr21.fcl
-job/g4_only_energydeposits.fcl
 job/icarus_ci_nucosmics_anatree_quick_test_icaruscode.fcl
 job/icarus_ci_nucosmics_anatree_seq_test_icaruscode.fcl
 job/icarus_ci_single_anatree_quick_test_icaruscode.fcl
