@@ -49,12 +49,10 @@ function MakeUpName() {
   local Name="$TemplateName"
   
   while true ; do
-  
-    Name="${Name/_standard/_${Tag}}"
-    [[ "$Name" != "$TemplateName" ]] && break
     
-    Name="${Name/standard_/${Tag}_}"
-    [[ "$Name" != "$TemplateName" ]] && break
+    # policy change: always a modifier, does not replace "standard"
+    # Name="${Name/standard_/${Tag}_}"
+    # [[ "$Name" != "$TemplateName" ]] && break
     
     Name+="_${Tag}"
     
