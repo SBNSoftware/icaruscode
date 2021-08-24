@@ -14,7 +14,7 @@ ChannelMappingSQLite: {
 icarus_channelmappinggservice:
 {
     service_provider:   ICARUSChannelMap
-    DiagnosticOutput:   true
+    DiagnosticOutput:   false
     ChannelMappingTool: @local::ChannelMappingSQLite
 }
 
