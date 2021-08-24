@@ -71,10 +71,6 @@ icarus_stage0_producers:
   gaushitTPCWE:                   @local::gaus_hitfinder_icarus
   gaushitTPCEW:                   @local::gaus_hitfinder_icarus
   gaushitTPCEE:                   @local::gaus_hitfinder_icarus
-  gaushitSTPCWW:                  @local::gaus_hitfinder_icarus
-  gaushitSTPCWE:                  @local::gaus_hitfinder_icarus
-  gaushitSTPCEW:                  @local::gaus_hitfinder_icarus
-  gaushitSTPCEE:                  @local::gaus_hitfinder_icarus
 
   ### Optical hit finder
   ophit:                          @local::icarus_ophit_data
