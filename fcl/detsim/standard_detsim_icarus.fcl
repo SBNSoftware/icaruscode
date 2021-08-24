@@ -93,4 +93,4 @@ outputs.rootoutput: @local::icarus_rootoutput
 
 # Temporarily tone down the noise level
 #
-services.SignalShapingICARUSService.NoiseFactVec:  [ [ 0.6, 0.6, 0.6 ], [ 0.6, 0.6, 0.6 ], [ 0.6, 0.6, 0.6] ]
+services.SignalShapingICARUSService.NoiseFactVec:  [ [ 0.8, 0.8, 0.8 ], [ 0.8, 0.8, 0.8 ], [ 0.8, 0.8, 0.8] ]
