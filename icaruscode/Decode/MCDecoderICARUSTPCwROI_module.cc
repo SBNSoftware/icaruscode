@@ -157,6 +157,7 @@ private:
 
     // Fcl parameters.
     std::vector<art::InputTag>                                  fRawDigitLabelVec;           ///< The input artdaq fragment label vector (for more than one)
+    std::vector<std::string>                                    fOutInstanceLabelVec;        ///< The output instance labels to apply
     bool                                                        fOutputRawWaveform;          ///< Should we output pedestal corrected (not noise filtered)?
     bool                                                        fOutputCorrection;           ///< Should we output the coherent noise correction vectors?
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
@@ -248,16 +249,16 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     // Set up our "produces" 
     // Note that we can have multiple instances input to the module
     // Our convention will be to create a similar number of outputs with the same instance names
-    for(const auto& rawDigitLabel : fRawDigitLabelVec)
+    for(const auto& instanceLabel : fOutInstanceLabelVec)
     {
-        produces<std::vector<raw::RawDigit>>(rawDigitLabel.instance());
-        produces<std::vector<recob::Wire>>(rawDigitLabel.instance());
+        produces<std::vector<raw::RawDigit>>(instanceLabel);
+        produces<std::vector<recob::Wire>>(instanceLabel);
 
         if (fOutputRawWaveform)
-            produces<std::vector<raw::RawDigit>>(rawDigitLabel.instance() + fOutputRawWavePath);
+            produces<std::vector<raw::RawDigit>>(instanceLabel + fOutputRawWavePath);
 
         if (fOutputCorrection)
-            produces<std::vector<raw::RawDigit>>(rawDigitLabel.instance() + fOutputCoherentPath);
+            produces<std::vector<raw::RawDigit>>(instanceLabel + fOutputCoherentPath);
     }
 
     // Set up a WireID to ROP plane number table
@@ -321,12 +322,13 @@ MCDecoderICARUSTPCwROI::~MCDecoderICARUSTPCwROI()
 ///
 void MCDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
-    fRawDigitLabelVec           = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
-    fOutputRawWaveform          = pset.get<bool                      >("OutputRawWaveform",                                               false);
-    fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                                                false);
-    fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
-    fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
-    fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                                                false);
+    fRawDigitLabelVec           = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",   {"daq:PHYSCRATEDATA"});
+    fOutInstanceLabelVec        = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",     {"PHYSCRATEDATA"});
+    fOutputRawWaveform          = pset.get<bool                      >("OutputRawWaveform",                   false);
+    fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                    false);
+    fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                   "raw");
+    fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                  "Cor");
+    fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                    false);
 
     // Recover parameters for noise/ROI
     fStructuringElement         = pset.get<std::vector<size_t>       >("StructuringElement",                       std::vector<size_t>()={8,16});
@@ -418,6 +420,8 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
     // Loop through the list of input daq fragment collections one by one 
     // We are not trying to multi thread at this stage because we are trying to control
     // overall memory usage at this level. We'll multi thread internally...
+    size_t instanceIdx(0);
+
     for(const auto& rawDigitLabel : fRawDigitLabelVec)
     {
         art::Handle<artdaq::Fragments> daq_handle;
@@ -471,7 +475,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
         }
     
         // Now transfer ownership to the event store
-        event.put(std::move(rawDigitCollection), rawDigitLabel.instance());
+        event.put(std::move(rawDigitCollection), fOutInstanceLabelVec[instanceIdx]);
 
         // Do the same to output the candidate ROIs
         WireCollectionPtr wireCollection = std::make_unique<std::vector<recob::Wire>>(std::move_iterator(concurrentROIs.begin()),
@@ -479,7 +483,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
 
         std::sort(wireCollection->begin(),wireCollection->end(),[](const auto& left, const auto& right){return left.Channel() < right.Channel();});
 
-        event.put(std::move(wireCollection), rawDigitLabel.instance());
+        event.put(std::move(wireCollection), fOutInstanceLabelVec[instanceIdx]);
     
         if (fOutputRawWaveform)
         {
@@ -491,7 +495,7 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
             std::sort(rawRawDigitCollection->begin(),rawRawDigitCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
     
             // Now transfer ownership to the event store
-            event.put(std::move(rawRawDigitCollection),rawDigitLabel.instance() + fOutputRawWavePath);
+            event.put(std::move(rawRawDigitCollection),fOutInstanceLabelVec[instanceIdx] + fOutputRawWavePath);
         }
     
         if (fOutputCorrection)
@@ -504,8 +508,10 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
             std::sort(coherentCollection->begin(),coherentCollection->end(),[](const auto& left,const auto&right){return left.Channel() < right.Channel();});
     
             // Now transfer ownership to the event store
-            event.put(std::move(coherentCollection),rawDigitLabel.instance() + fOutputCoherentPath);
+            event.put(std::move(coherentCollection),fOutInstanceLabelVec[instanceIdx] + fOutputCoherentPath);
         }
+
+        instanceIdx++;
     }
 
     theClockTotal.stop();

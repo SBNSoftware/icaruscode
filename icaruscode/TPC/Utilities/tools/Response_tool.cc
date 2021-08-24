@@ -69,7 +69,6 @@ private:
     size_t                                            fThisPlane;
     double                                            f3DCorrection;
     double                                            fTimeScaleFactor;
-    int                                               fDeconvPol;
     
     using IFieldResponsePtr       = std::unique_ptr<icarus_tool::IFieldResponse>;
     using IElectronicsResponsePtr = std::unique_ptr<icarus_tool::IElectronicsResponse>;
@@ -104,7 +103,6 @@ void Response::configure(const fhicl::ParameterSet& pset)
     fThisPlane           = pset.get<size_t>("Plane");
     f3DCorrection        = pset.get<size_t>("Correction3D");
     fTimeScaleFactor     = pset.get<size_t>("TimeScaleFactor");
-    fDeconvPol           = pset.get<int   >("DeconvPol");
 
     fResponseHasBeenSet  = false;
 
