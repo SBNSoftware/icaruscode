@@ -1,4 +1,4 @@
-#include "g4_enable_spacecharge.fcl"
+#include "standard_g4_icarus_sce.fcl"
 
 process_name: G4
 
