@@ -12,13 +12,14 @@ icarus_stage0_mc_producers:
 {
     # This defines a "decoder" for MC (which expects RawDigits for input, not artdaq format data)
     MCDecodeTPCROI:    {
-                           module_type:        MCDecoderICARUSTPCwROI
-                           FragmentsLabelVec:  [ "daq:PHYSCRATEDATA" ]
-                           OutputRawWaveform:  false
-                           OutputCorrection:   false
-                           OutputRawWavePath:  "RAW"
-                           OutputCoherentPath: "Cor"
-                           DiagnosticOutput:   false
+                           module_type:         MCDecoderICARUSTPCwROI
+                           FragmentsLabelVec:   [ "daq:PHYSCRATEDATA" ]
+                           OutInstanceLabelVec: ["PHYSCRATEDATA"]
+                           OutputRawWaveform:   false
+                           OutputCorrection:    false
+                           OutputRawWavePath:   "RAW"
+                           OutputCoherentPath:  "Cor"
+                           DiagnosticOutput:    false
                        }
   
     mcophit:           @local::ICARUSMCOpHit
