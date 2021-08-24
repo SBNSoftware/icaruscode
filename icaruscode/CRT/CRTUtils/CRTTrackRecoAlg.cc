@@ -249,7 +249,7 @@ sbn::crt::CRTHit CRTTrackRecoAlg::DoAverage(vector<art::Ptr<sbn::crt::CRTHit>> h
 
   // Create a hit
   sbn::crt::CRTHit crtHit = hitAlg.FillCRTHit(hits[0]->feb_id, hits[0]->pesmap, hits[0]->peshit, 
-                                  (ts0_ns/nhits)*1e-3, (ts1_ns/nhits)*1e-3, 0, xpos/nhits, (xmax-xmin)/2,
+                                  (ts0_ns/nhits)*1e-3, (ts1_ns/nhits)*1e-3, hits[0]->plane, xpos/nhits, (xmax-xmin)/2,
                                   ypos/nhits, (ymax-ymin)/2., zpos/nhits, (zmax-zmin)/2., tagger);
 
   //  std::cout << "hits inside CRTTrackRecoAlg::DoAverage:++++++++++++++++ returning......... line 251"  << std::endl;
