@@ -33,12 +33,13 @@ physics.producers.MCDecodeTPCROI.FragmentsLabelVec:   ["daq3:PHYSCRATEDATATPCWW"
 physics.producers.MCDecodeTPCROI.OutInstanceLabelVec: ["PHYSCRATEDATATPCWW",     "PHYSCRATEDATATPCWE",     "PHYSCRATEDATATPCEW",     "PHYSCRATEDATATPCEE"]
 physics.producers.decon1droi.RawDigitLabelVec:        ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0: @local::decoderroifinder_0
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1: @local::decoderroifinder_1
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2: @local::decoderroifinder_2
+# Temporarily removing these overrides to revert to "old" ROI finding method to better match data
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0: @local::decoderroifinder_0
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1: @local::decoderroifinder_1
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2: @local::decoderroifinder_2
 
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
-physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane0.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane1.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
+#physics.producers.roifinder.ROIFinderToolVec.ROIFinderPlane2.ROILabelVec: ["MCDecodeTPCROI:PHYSCRATEDATATPCWW","MCDecodeTPCROI:PHYSCRATEDATATPCWE","MCDecodeTPCROI:PHYSCRATEDATATPCEW","MCDecodeTPCROI:PHYSCRATEDATATPCEE"]
 
 physics.producers.roifinder.WireModuleLabelVec: ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
