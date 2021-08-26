@@ -1,5 +1,7 @@
 cet_enable_asserts()
 
+cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
+
 art_make(
           EXCLUDE
                         PMTconfigurationExtraction_module.cc
@@ -19,7 +21,7 @@ art_make(
                         lardataobj_RawData
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}

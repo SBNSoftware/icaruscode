@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode LANGUAGES CXX)
+project(icaruscode VERSION 09.28.01.01 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -58,6 +58,7 @@ find_ups_product( libwda )
 find_ups_product( postgresql )
 find_ups_product( eigen )
 find_ups_product( fftw )
+find_ups_product( libwda )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_root()
@@ -78,11 +79,11 @@ cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
 
 # deal with fftw
-cet_find_library(ICARUS_FFTW3_LIBRARY  NAMES fftw3  PATHS $ENV{FFTW_LIBRARY} )
-cet_find_library(ICARUS_FFTW3F_LIBRARY NAMES fftw3f PATHS $ENV{FFTW_LIBRARY} )
-cet_find_library(ICARUS_FFTW3L_LIBRARY NAMES fftw3l PATHS $ENV{FFTW_LIBRARY} )
-cet_find_library(ICARUS_FFTW3Q_LIBRARY NAMES fftw3q PATHS $ENV{FFTW_LIBRARY} )
-set(ICARUS_FFTW_LIBRARIES ${ICARUS_FFTW3_LIBRARY} ${ICARUS_FFTW3F_LIBRARY} ${ICARUS_FFTW3L_LIBRARY} ${ICARUS_FFTW3Q_LIBRARY})
+cet_find_library(ICARUS_FFTW3_LIBRARY  NAMES fftw3  PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
+cet_find_library(ICARUS_FFTW3F_LIBRARY NAMES fftw3f PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
+cet_find_library(ICARUS_FFTW3L_LIBRARY NAMES fftw3l PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
+cet_find_library(ICARUS_FFTW3Q_LIBRARY NAMES fftw3q PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
+set(ICARUS_FFTW_LIBRARIES ICARUS_FFTW3_LIBRARY ICARUS_FFTW3F_LIBRARY ICARUS_FFTW3L_LIBRARY ICARUS_FFTW3Q_LIBRARY)
 include_directories( $ENV{EIGEN_INC} )
 
 # macros for dictionary and simple_plugin
