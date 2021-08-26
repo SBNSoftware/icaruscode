@@ -1,0 +1,85 @@
+#
+# Unit test `testFHiCLfiles_icarus.sh` in `test/fcl` tests all FHiCL files,
+# with the exception of the ones listed in this file.
+#
+
+################################################################################
+# Configurations that are intentionally incomplete
+# (e.g. designed to be included at the end of another one to modify it)
+#
+
+g4_only_energydeposits.fcl
+
+detectorclocks_icarus_run5837pre09_22_03_01.fcl
+detectorclocks_icarus_run5252.fcl
+services_compat_icarus-v09_18_00-v09_24_02_02.fcl
+
+
+################################################################################
+# broken, won't fix
+#
+###
+### HEY!!!
+### Broken configurations do not belong to the primary `fcl` directory tree.
+### Fix them; or remove them; or if they are unfixable but have a historical
+### value, move them to an `archive` directory.
+###
+
+
+################################################################################
+# transitional: configurations that were broken when this test was introduced;
+# these should be fixed/removed/archived, but if we wait for that to happen
+# for all of them before we enable the test, it will just never happen.
+# This should at least allow the issues not to grow.
+#
+
+job/OnlineDecoder.fcl
+job/bnbanaicarus21apr21.fcl
+job/dirtanaicarus21apr21.fcl
+job/icarus_ci_nucosmics_anatree_quick_test_icaruscode.fcl
+job/icarus_ci_nucosmics_anatree_seq_test_icaruscode.fcl
+job/icarus_ci_single_anatree_quick_test_icaruscode.fcl
+job/icarus_ci_single_anatree_seq_test_icaruscode.fcl
+job/icarus_prodsingle_fastoptical.fcl
+job/mctruthmatching_uboone.fcl
+job/noobanaicarus21apr21.fcl
+job/obanaicarus21apr21.fcl
+job/optical_electronic.fcl
+job/overlaymodules_ICARUS.fcl
+job/prodcosmics_corsika_proton_21apr21_noob.fcl
+job/prodcosmics_corsika_proton_21apr21_ob.fcl
+job/prodgenie_nu_spill_indirt.fcl
+job/prodsingle_full_optical_electronic.fcl
+job/prodsingle_optical_electronic.fcl
+job/run_flashfilter_data.fcl
+job/run_icarus_flashfinder.fcl
+job/run_opreco.fcl
+job/run_opreco_data.fcl
+job/stage0_EastCryo_icarus.fcl
+job/stage0_multiTPC_splitstream_east_icarus.fcl
+job/stage0_multiTPC_splitstream_west_icarus.fcl
+job/standard_g4_icarus_21apr21_noob.fcl
+job/standard_g4_icarus_21apr21_ob.fcl
+job/study_ophit_singlep.fcl
+job/study_ophit_singlep_230.fcl
+job/study_ophit_singlep_250.fcl
+job/study_ophit_singlep_270.fcl
+job/study_ophit_singlep_290.fcl
+job/study_ophit_singlep_310.fcl
+job/study_ophit_singlep_330.fcl
+job/study_ophit_singlep_350.fcl
+job/testDecoderFilter.fcl
+job/var_10pe_5hits_1us_020ns.fcl
+job/var_20pe_5hits_1us_020ns.fcl
+job/var_30pe_5hits_1us_020ns.fcl
+job/var_40pe_5hits_1us_020ns.fcl
+job/var_50pe_2hits_1us_020ns.fcl
+job/var_50pe_3hits_1us_020ns.fcl
+job/var_50pe_4hits_1us_020ns.fcl
+job/var_50pe_5hits_1us_010ns.fcl
+job/var_50pe_5hits_1us_020ns.fcl
+job/var_50pe_5hits_1us_030ns.fcl
+job/var_50pe_5hits_1us_040ns.fcl
+job/var_50pe_5hits_3us_020ns.fcl
+job/var_50pe_5hits_5us_020ns.fcl
+job/var_50pe_5hits_7us_020ns.fcl

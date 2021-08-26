@@ -1,0 +1,4 @@
+#include "cafmakerjob_icarus.fcl"
+
+# Turn off analysis
+physics.runprod: [ cafmaker ]

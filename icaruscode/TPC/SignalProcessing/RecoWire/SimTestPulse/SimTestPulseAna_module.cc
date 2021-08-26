@@ -58,10 +58,10 @@ private:
     TTree* _wire_tree;
     TTree* _raw_digit_tree;
     TTree* _filtered_digit_tree;
-    std::string _hit_producer;
-    std::string _wire_producer;
-    std::string _raw_digit_producer;
-    std::string _filtered_digit_producer;
+    art::InputTag _hit_producer;
+    art::InputTag _wire_producer;
+    art::InputTag _raw_digit_producer;
+    art::InputTag _filtered_digit_producer;
     size_t _num_samples;
     size_t _reco_tick_offset;
     bool _verbose;
@@ -115,13 +115,13 @@ SimTestPulseAna::SimTestPulseAna(fhicl::ParameterSet const & p)
   , _raw_digit_tree(nullptr)
   , _filtered_digit_tree(nullptr)
 {
-      _verbose                 = p.get<bool>       ("Verbose",false);
-      _hit_producer            = p.get<std::string>("HitProducer","");
-      _wire_producer           = p.get<std::string>("WireProducer","");
-      _raw_digit_producer      = p.get<std::string>("RawDigitProducer","");
-      _filtered_digit_producer = p.get<std::string>("FilteredDigitProducer","");
-      _reco_tick_offset        = p.get<size_t>     ("RecoTickOffset",2400);
-      _num_samples             = p.get<size_t>     ("NumSample",10);
+      _verbose                 = p.get<bool>         ("Verbose",false);
+      _hit_producer            = p.get<art::InputTag>("HitProducer","");
+      _wire_producer           = p.get<art::InputTag>("WireProducer","");
+      _raw_digit_producer      = p.get<art::InputTag>("RawDigitProducer","");
+      _filtered_digit_producer = p.get<art::InputTag>("FilteredDigitProducer","");
+      _reco_tick_offset        = p.get<size_t>       ("RecoTickOffset",2400);
+      _num_samples             = p.get<size_t>       ("NumSample",10);
     
       if(_num_samples<1)
       {
@@ -181,10 +181,10 @@ TTree* SimTestPulseAna::CreateHitTree(std::string name)
 
 void SimTestPulseAna::beginJob()
 {
-    _hit_tree = ( _hit_producer.empty() ? nullptr : this->CreateHitTree(_hit_producer));
-    _wire_tree = ( _wire_producer.empty() ? nullptr : this->CreateTree(_wire_producer) );
-    _raw_digit_tree = ( _raw_digit_producer.empty() ? nullptr : this->CreateTree(_raw_digit_producer) );
-    _filtered_digit_tree = ( _filtered_digit_producer.empty() ? nullptr : this->CreateTree(_filtered_digit_producer) );
+    _hit_tree = ( _hit_producer.empty() ? nullptr : this->CreateHitTree(_hit_producer.label()));
+    _wire_tree = ( _wire_producer.empty() ? nullptr : this->CreateTree(_wire_producer.label()));
+    _raw_digit_tree = ( _raw_digit_producer.empty() ? nullptr : this->CreateTree(_raw_digit_producer.label()) );
+    _filtered_digit_tree = ( _filtered_digit_producer.empty() ? nullptr : this->CreateTree(_filtered_digit_producer.label()+"_f") );
 }
 
 void SimTestPulseAna::endJob()

@@ -1,0 +1,22 @@
+#
+# File:    simulation_genie_icarus_numi_volDetEnclosure_tpc.fcl
+# Purpose: Simulation of neutrinos from NuMI on a single ICARUS cryostat.
+# Date:    August 3, 2021
+# Version: 1.0
+#
+# Run Genie with the "volDetEnclosure" TopVolume, which makes neutrinos in
+# both cryostats. Also turn on the fiducial cut to filter the interactions
+# outside a box covering the TPC's in both cryostats. The only remaining 
+# inefficiency is the gap between the two cryostats
+
+#include "simulation_genie_icarus_numi_volDetEnclosure.fcl"
+
+outputs.rootoutput.fileName: "simulation_genie_icarus_numi_volDetEnclosure_tpc_%tc-%p.root"
+
+# mbox is set as "xmin,ymin,zmin,xmax,ymax,zmax"
+# Add 10cm on side of each dimmension for some wiggle
+#
+# Because this is hardcoded, it needs to be updated for 
+# updates to the geometry. This is updates as of 
+# geometry: icarus_complete_20210527_no_overburden.gdml
+physics.producers.generator.FiducialCut: "mbox: -378.49,-191.86,-904.950652270838,378.49,144.96,904.950652270838"

@@ -117,7 +117,11 @@ def copyTable(postGres, dbCurs, dbName, table, columns):
                     fieldEntry = rowList[idx].upper()
                 insertString += "\'" + fieldEntry + "\'"
             else:
-                insertString += "\'" +rowList[idx]+ "\'"
+                if "none" in rowList[idx]:
+                    #print("Found none in column data, field:",columns[idx],", value: ",rowList[idx])
+                    insertString += '0'
+                else:
+                    insertString += "\'" +rowList[idx]+ "\'"
         insertString += ")"
         if table == "daq_channels":
             print("idx:",rowIdx,"  -->",insertString)

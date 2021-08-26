@@ -131,13 +131,13 @@ SlidingWindowTriggerPatternsOppositeWindows: [
   { inMainWindow: 2   sumOfOppositeWindows:  4 },
   { inMainWindow: 4   sumOfOppositeWindows:  8 },
   { inMainWindow: 5   sumOfOppositeWindows: 10 },
-  { inMainWindow: 6   sumOfOppositeWindows: 12 },
+  { inMainWindow: 6   sumOfOppositeWindows: 12 }
 ] # SlidingWindowTriggerPatternsOppositeWindows
 
 
 SlidingWindowTriggerPatterns: [
   @sequence::SlidingWindowTriggerPatternsSingleWindow,
-  @sequence::SlidingWindowTriggerPatternsWindowPair
+  @sequence::SlidingWindowTriggerPatternsWindowPair,
   @sequence::SlidingWindowTriggerPatternsOppositeWindows
 ] # SlidingWindowTriggerPatterns
 

@@ -174,12 +174,14 @@ namespace crt {
           for(size_t i = 0; i<CRTTzeroVect.size(); i++){
     
               //loop over hits for this tzero, sort by tagger
-              map<string, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
+              //map<string, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
+	    map<int, vector<art::Ptr<sbn::crt::CRTHit>>> hits;
     
               for (size_t ah = 0; ah< CRTTzeroVect[i].size(); ++ah){        
     
-                  string ip = CRTTzeroVect[i][ah]->tagger;       
-                  hits[ip].push_back(CRTTzeroVect[i][ah]);
+		//string ip = CRTTzeroVect[i][ah]->tagger;       
+		int ip = CRTTzeroVect[i][ah]->plane;       
+		hits[ip].push_back(CRTTzeroVect[i][ah]);
               } // loop over hits
               
               //loop over planes and calculate average hits
@@ -187,9 +189,13 @@ namespace crt {
     
               for (auto &keyVal : hits){
     
-                  string ip = keyVal.first;
-                  vector<pair<sbn::crt::CRTHit, vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
+		// string ip = keyVal.first;
+		int ip = keyVal.first;
+		vector<pair<sbn::crt::CRTHit, vector<int>>> ahits = trackAlg.AverageHits(hits[ip], hitIds);
+
+		allHits.insert(allHits.end(), ahits.begin(), ahits.end());
     
+		/*
                   if(fUseTopPlane && ip == "volTaggerTopHigh_0"){ 
                       allHits.insert(allHits.end(), ahits.begin(), ahits.end());
                   }
@@ -197,6 +203,7 @@ namespace crt {
                   else if(ip != "volTaggerTopHigh_0"){ 
                       allHits.insert(allHits.end(), ahits.begin(), ahits.end());
                   }
+		*/
               }
     
               //Create tracks with hits at the same tzero
