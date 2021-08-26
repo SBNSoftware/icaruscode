@@ -37,15 +37,15 @@ table_fragment_end
 # Add the dependent product and version
 
 product                   version
-sbncode                   v09_28_01_01
-icarusalg                 v09_28_01
-icarusutil                v09_26_00
+sbncode                   v09_28_02_01
+icarusalg                 v09_28_01_01
+icarusutil                v09_26_00_01
 icarus_signal_processing  v09_26_01
 icarus_data               v09_28_01
 fftw                      v3_3_9
 libwda                    v2_29_1
 
-cetbuildtools	          v8_14_02	-	only_for_build
+cetbuildtools	          v8_15_00	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
