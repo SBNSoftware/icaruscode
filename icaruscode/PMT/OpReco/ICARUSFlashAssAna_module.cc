@@ -33,6 +33,7 @@
 #include "canvas/Persistency/Common/Assns.h"
 
 #include "larcore/Geometry/Geometry.h"
+#include "lardataobj/RawData/OpDetWaveform.h"
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
@@ -63,6 +64,16 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
         Comment("Label for the Trigger fragment label")
       };
 
+      fhicl::Atom<bool> DumpWaveformsInfo {
+        Name("DumpWaveformsInfo"),
+        Comment("Set the option to save some aggregated waveform information")
+      };
+
+      fhicl::Sequence<art::InputTag> OpDetWaveformLabels {
+        Name("OpDetWaveformLabels"),
+        Comment("Tags for the raw::OpDetWaveform data products")
+      };
+
       fhicl::Sequence<art::InputTag> OpHitLabels {
         Name("OpHitLabels"),
         Comment("Tags for the recob::OpHit data products")
@@ -76,6 +87,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
       fhicl::Atom<float> PEOpHitThreshold {
         Name("PEOpHitThreshold"),
         Comment("Threshold in PE for an OpHit to be considered in the information calculated for a flash")
+      };
+
+      fhicl::Atom<bool> Debug {
+        Name("Debug"),
+        Comment("Be more verbose")
       };
 
     };
@@ -94,9 +110,15 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     void beginJob() override;
     void endJob() override;
 
+    template<typename T> T Median( std::vector<T> data ) const;
+
+    int getCryostatByChannel( const int channel );
+
     int getSideByChannel( const int channel );
 
-    void processOpHits( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
+    void processOpHits( art::Event const& e, int cryo );
+
+    void processOpHitsFlash( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
                         int &multiplicity_left, int &multiplicity_right, 
                         float &sum_pe_left, float &sum_pe_right, 
                         float *xyz, TTree *ophittree   ); 
@@ -106,20 +128,28 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
   private:
 
     art::InputTag fTriggerLabel;
-    std::vector<art::InputTag> fOpHitLabel;
+    bool fSaveWaveformInfo;
+    std::vector<art::InputTag> fOpDetWaveformLabels;
+    std::vector<art::InputTag> fOpHitLabels;
     std::vector<art::InputTag> fFlashLabels;
     float fPEOpHitThreshold;
+    bool fDebug;
 
 
     TTree *fEventTree;
+    std::vector<TTree*> fOpDetWaveformTrees;
     std::vector<TTree*> fOpFlashTrees;
     std::vector<TTree*> fOpHitTrees;
+    std::vector<TTree*> fOpHitFlashTrees;
 
     int m_run;
     int m_event;
     int m_timestamp;
     //int m_nflashes;
     //int m_nophit;
+    short m_baseline;
+    short m_chargesum;
+    int m_nticks;
     float m_beam_gate_start=-99999;
     float m_beam_gate_width=-99999;
     int m_beam_type=-1;
@@ -157,9 +187,12 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   : EDAnalyzer(config)
   , fTriggerLabel( config().TriggerLabel() )
-  , fOpHitLabel( config().OpHitLabels() )
+  , fSaveWaveformInfo( config().DumpWaveformsInfo() )
+  , fOpDetWaveformLabels( config().OpDetWaveformLabels() )
+  , fOpHitLabels( config().OpHitLabels() )
   , fFlashLabels( config().FlashLabels() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
+  , fDebug( config().Debug() )
 { }
 
 
@@ -199,13 +232,69 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("beam_gate_width", &m_beam_gate_width, "beam_gate_width/F");
   fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");
 
+
+  // This tree will hold some aggregated optical waveform information
+  // The flag must be enabled to have the information saved
+  if( !fOpDetWaveformLabels.empty() && fSaveWaveformInfo ) { 
+  
+    for( auto const & label : fOpDetWaveformLabels ) {
+
+      std::string name = label.label()+"wfttree";
+      std::string info = "TTree with aggregated optical waveform information with label: " + label.label();
+
+      TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
+      ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("event", &m_event, "event/I");
+      ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
+      ttree->Branch("channel_id", &m_channel_id, "channel_id/I");
+      ttree->Branch("baseline", &m_baseline, "baseline/s");
+      ttree->Branch("chargesum", &m_chargesum, "chargesum/s");
+      ttree->Branch("nticks", &m_nticks, "nticks/I");
+   
+      fOpDetWaveformTrees.push_back(ttree);
+
+    }
+
+  }
+
+
+  // This ttree will hold the ophit information when a flash is not found in the event
+  // NB: information of the optical hits in events where flashes are present are lost
+  
+  if ( !fOpHitLabels.empty() ) { 
+    
+    for( auto const & label : fOpHitLabels ) { 
+
+      std::string name = label.label()+"_ttree"; 
+      std::string info = "TTree for the recob::OpHit objects with label " + label.label() + " in events without flashes.";
+
+      TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str());
+      ttree->Branch("run", &m_run, "run/I");
+      ttree->Branch("event", &m_event, "event/I");
+      ttree->Branch("timestamp", &m_timestamp, "timestamp/I");
+      ttree->Branch("channel_id", &m_channel_id, "channel_id/I");
+      ttree->Branch("integral", &m_integral, "integral/F");
+      ttree->Branch("amplitude", &m_amplitude, "amplitude/F");
+      ttree->Branch("start_time", &m_start_time, "start_time/F");
+      ttree->Branch("abs_start_time", &m_abs_start_time, "abs_start_time/F");
+      ttree->Branch("pe", &m_pe, "pe/F");
+      ttree->Branch("width", &m_width, "width/F");
+      ttree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
+
+      fOpHitTrees.push_back(ttree);
+
+    }
+  }
+
+
+
   if ( !fFlashLabels.empty() ) {
 
     for( auto const & label : fFlashLabels ) {
 
         // TTree for the flash in a given cryostat
         std::string name = label.label()+"_flashtree";
-        std::string info = "Three for the recob::Flashes with label "+label.label();
+        std::string info = "TTree for the recob::Flashes with label "+label.label();
 
         TTree* ttree = tfs->make<TTree>(name.c_str(), info.c_str() );
         ttree->Branch("run", &m_run, "run/I");
@@ -246,10 +335,39 @@ void opana::ICARUSFlashAssAna::beginJob() {
         ophittree->Branch("width", &m_width, "width/F");
         ophittree->Branch("fast_to_total", &m_fast_to_total, "fast_to_total/F");
 
-        fOpHitTrees.push_back( ophittree );
+        fOpHitFlashTrees.push_back( ophittree );
 
     }
   }
+
+}
+
+
+    
+template<typename T>
+  T opana::ICARUSFlashAssAna::Median( std::vector<T> data ) const {
+
+    std::nth_element( data.begin(), data.begin() + data.size()/2, data.end() );
+    
+    return data[ data.size()/2 ];
+
+  }
+
+
+
+int opana::ICARUSFlashAssAna::getCryostatByChannel( const int channel ) {
+
+
+  /*
+  - [0:180]: East cryostat
+  - [180:360]: West cryostat
+  */
+
+
+  int cryo = channel / 180; // always round down
+
+  return cryo;
+
 }
 
 
@@ -277,7 +395,64 @@ int opana::ICARUSFlashAssAna::getSideByChannel( const int channel ) {
 }
 
 
-void opana::ICARUSFlashAssAna::processOpHits( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
+void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
+
+
+  if( !fOpHitLabels.empty() ){  
+
+    for( size_t i=0; i<fOpHitLabels.size(); i++ ) { 
+
+      auto const label = fOpHitLabels[i];
+
+      art::Handle<std::vector<recob::OpHit>> ophit_handle;
+      e.getByLabel( label, ophit_handle );
+
+
+      // We want our flashes to be valid and not empty
+      if( ophit_handle.isValid() && !ophit_handle->empty() ) {
+
+
+        for( auto const & ophit : *ophit_handle ) {
+
+          //auto const & ophit = (*ophit_handle)[idx];
+
+          const int channel_id = ophit.OpChannel(); 
+
+          if( getCryostatByChannel(channel_id) != cryo ){ continue; }
+
+          m_channel_id = channel_id;
+          m_integral = ophit.Area(); // in ADC x tick
+          m_amplitude = ophit.Amplitude(); // in ADC
+          m_start_time = ophit.PeakTime();
+          m_width = ophit.Width();
+          m_abs_start_time = ophit.PeakTimeAbs();
+          m_pe = ophit.PE();
+          m_fast_to_total = ophit.FastToTotal();
+
+          fOpHitTrees[i]->Fill();
+
+        }
+      }
+
+      else { 
+        if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
+              << "Invalid recob::OpHit with label"+label.label()+"\n"; }
+      }
+    }
+  }
+
+  else {
+    if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
+                << "No recob::OpHit labels selected\n"; }
+
+  }
+
+  return;
+
+} 
+
+
+void opana::ICARUSFlashAssAna::processOpHitsFlash( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
                                               int &multiplicity_left, int &multiplicity_right, 
                                               float &sum_pe_left, float &sum_pe_right, 
                                               float *xyz, TTree *ophittree  ) {
@@ -312,19 +487,19 @@ void opana::ICARUSFlashAssAna::processOpHits( std::vector<art::Ptr<recob::OpHit>
   }
 
   m_multiplicity_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
-					 [&](int value, const std::map<int, float>::value_type& p) {
-					   return getSideByChannel(p.first)==0 ? ++value : value ;
-					 });
+           [&](int value, const std::map<int, float>::value_type& p) {
+             return getSideByChannel(p.first)==0 ? ++value : value ;
+           });
 
   m_multiplicity_right =std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0,
-					 [&](int value, const std::map<int, float>::value_type& p) {
-					   return getSideByChannel(p.first)==1 ? ++value : value ;
-					 });
+           [&](int value, const std::map<int, float>::value_type& p) {
+             return getSideByChannel(p.first)==1 ? ++value : value ;
+           });
 
   m_sum_pe_left = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0.0, 
-				   [&](float value, const std::map<int, float>::value_type& p) {
-				     return getSideByChannel(p.first)==0 ? value+p.second : value ; 
-				   });
+           [&](float value, const std::map<int, float>::value_type& p) {
+             return getSideByChannel(p.first)==0 ? value+p.second : value ; 
+           });
   
   m_sum_pe_right = std::accumulate( sumpe_map.begin(), sumpe_map.end(), 0.0,
             [&](float value, const std::map<int, float>::value_type& p) {
@@ -349,6 +524,11 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
   m_timestamp = e.time().timeHigh(); // precision to the second 
 
 
+  /*
+  This part is for the trigger information
+  */
+
+
   // We work out the trigger information here 
   if( !fTriggerLabel.empty() ) { 
 
@@ -368,17 +548,51 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       }
 
       else {
-        std::cout << "Invalid Trigger Data product " << fTriggerLabel.label() << "\n" ;
+        if( fDebug) { std::cout << "Invalid Trigger Data product " << fTriggerLabel.label() << "\n" ; }
       }
 
   }
 
   else {
-     std::cout << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ;
+     if( fDebug ){ std::cout << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; }
   }
 
 
-  // Now we take care of the labels
+  /* 
+  Now we work on the waveforms if we are allowed to
+  */
+
+    if( !fOpDetWaveformLabels.empty() && fSaveWaveformInfo ) { 
+    
+      for( size_t i=0; i<fOpDetWaveformLabels.size(); i++ ) {
+
+        auto const label = fOpDetWaveformLabels[i];
+
+        art::Handle<std::vector<raw::OpDetWaveform>> wfm_handle;
+        e.getByLabel( label, wfm_handle );
+
+        if( wfm_handle.isValid() && !wfm_handle->empty() ) {
+
+          for( auto const & wave : *wfm_handle ){
+
+            m_channel_id = wave.ChannelNumber();
+            m_nticks = wave.Waveform().size();
+            m_baseline = Median( wave.Waveform() ); 
+            m_chargesum = std::accumulate( wave.Waveform().begin(), wave.Waveform().end(), 0, 
+             [ & ](short x, short y){ return ((m_baseline-x) + (m_baseline-y)) ; } );
+
+            fOpDetWaveformTrees[i]->Fill();
+            
+          }
+        }
+      }
+    }
+
+
+  /*
+    Now we take care of the flashes: we separate the case where we have a flash and the case where we have not a flash
+  */
+
   if ( !fFlashLabels.empty() ) {
 
     for ( size_t i=0; i<fFlashLabels.size(); i++  ) {
@@ -388,9 +602,12 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       art::Handle<std::vector<recob::OpFlash>> flash_handle;
       e.getByLabel( label, flash_handle );
 
-      if( flash_handle.isValid() ) {
+
+      // We want our flashes to be valid and not empty
+      if( flash_handle.isValid() && !flash_handle->empty() && flash_handle->size() > 0 ) {
 
         art::FindManyP<recob::OpHit> ophitsPtr( flash_handle, e, label );
+
 
         for ( size_t idx=0; idx<flash_handle->size(); idx++ ) {
 
@@ -404,9 +621,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           // Get the multiplicity, the position and the number of PE per Side
           float xyz[3] = {0.0, 0.0, 0.0};
-          processOpHits( ophits, 
-                         m_multiplicity_left, m_multiplicity_right, 
-                         m_sum_pe_left, m_sum_pe_right, xyz, fOpHitTrees[i] );
+          processOpHitsFlash( ophits, 
+                              m_multiplicity_left, m_multiplicity_right, 
+                                m_sum_pe_left, m_sum_pe_right, xyz, fOpHitFlashTrees[i] );
 
           /*
           std::cout << "\tflash id: " << idx << ", time: " << m_flash_time;
@@ -415,7 +632,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           std::cout << " coor: [" << xyz[0] << ", " << xyz[1] << ", " << xyz[2] << "]";
           std::cout << " coor: [" << 0.0 << ", " << flash.YCenter() << ", " << flash.ZCenter() << "]";
           std::cout << " coor: [" << 0.0 << ", " << flash.YWidth() << ", " << flash.ZWidth() << "]";
-	        std::cout  << "\n";
+          std::cout  << "\n";
           */
 
           m_multiplicity = m_multiplicity_left+m_multiplicity_right;
@@ -435,17 +652,27 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
       else {
 
-        mf::LogError("ICARUSFlashAssAna")
-           << "Invalid recob::OpFlash with label"+label.label()+"\n";
+        if( fDebug) { mf::LogError("ICARUSFlashAssAna")
+           << "Invalid recob::OpFlash with label"+label.label()+"\n"; }
+
+
+        // We save the ophits anyways in absence of flashes
+        processOpHits(e, i);
+
       }
 
-    } // end for on flash input tags
-
+    } 
   }
 
   else {
-    mf::LogError("ICARUSFlashAssAna")
-          << "No recob::OpFlash labels selected\n";
+    
+    if( fDebug ) { mf::LogError("ICARUSFlashAssAna")
+          << "No recob::OpFlash labels selected\n"; }
+
+    // We save the ophits anyways even in absence of flashes
+    processOpHits(e, 0);
+    processOpHits(e, 1);
+
   }
 
 
