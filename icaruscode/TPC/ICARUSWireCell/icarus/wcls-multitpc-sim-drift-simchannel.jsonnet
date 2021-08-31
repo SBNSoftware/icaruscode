@@ -69,7 +69,7 @@ local duoanodes = [
   }, 
 }
 for n in std.range(0,3)];
-
+local volname = ["EE", "EW", "WE", "WW"];
 local wcls_output = {
   // ADC output from simulation
   // sim_digits: wcls.output.digits(name="simdigits", tags=["orig"]),
@@ -81,7 +81,8 @@ local wcls_output = {
       // anode: wc.tn(tools.anode),
       anode: wc.tn(duoanodes[n]),
       digitize: true,  // true means save as RawDigit, else recob::Wire
-      frame_tags: ['daq%d' %n],
+      //frame_tags: ['daq%d' %n],
+      frame_tags: ['TPC%s' %volname[n]],
       // Three options for nticks:
       // - If nonzero, force number of ticks in output waveforms.
       // - If zero, use whatever input data has. (default)
@@ -201,7 +202,7 @@ local coherent_noises = [add_coherent_noise(n) for n in std.range(0,3)];
 
 // local digitizer = sim.digitizer(mega_anode, name="digitizer", tag="orig");
 local digitizers = [
-    sim.digitizer(mega_anode, name="digitizer%d-" %n + mega_anode.name, tag="daq%d"%n)
+    sim.digitizer(mega_anode, name="digitizer%d-" %n + mega_anode.name, tag="TPC%s"%volname[n])
     for n in std.range(0,3)];
 
 local retaggers = [
