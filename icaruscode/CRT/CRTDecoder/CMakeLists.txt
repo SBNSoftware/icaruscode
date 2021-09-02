@@ -6,7 +6,6 @@ art_make(
 	CRTRawTree.cc
 	CRTPreProcessTree.cc
 	CRTMergePreProcessTrees.cxx
-        BernCRTTranslator.cc
 	
  NO_PLUGINS # WAnt different link lists for modues
  BASENAME_ONLY
@@ -104,22 +103,6 @@ art_make_library(
 	CRT_PREPROCESS_TREE
 )
 
-art_make_library(
-    LIBRARY_NAME
-        BERN_CRT_TRANSLATOR
-    SOURCE
-        BernCRTTranslator.cc
-    LIBRARIES 
-        cetlib_except
-        ${CANVAS}
-        ${ARTDAQ_DAQDATA}
-        ${ART_FRAMEWORK_PRINCIPAL}
-        sbndaq-artdaq-core_Overlays
-        sbndaq-artdaq-core_Overlays_Common
-        ${ART_PERSISTENCY_PROVENANCE}
-        artdaq-core_Data
-)
-
 install_headers()
 install_source()
 
@@ -131,7 +114,6 @@ simple_plugin( BernCRTAna "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtNoiseMonTool "module"
@@ -144,7 +126,6 @@ simple_plugin( CrtNoiseMonTool "module"
         ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CrtCalAnalysis "module"
@@ -158,7 +139,6 @@ simple_plugin( CrtCalAnalysis "module"
   sbndaq-artdaq-core_Overlays_Common 
   artdaq-core_Data
   CRT_CAL
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( AnaProducer "module"
@@ -175,7 +155,6 @@ simple_plugin( AnaProducer "module"
   CRT_CAL_TREE
   CRT_RAW_TREE
   CRT_TIMING
-  BERN_CRT_TRANSLATOR
 )
 
 simple_plugin( CRTEventProducer "module"
@@ -198,7 +177,6 @@ simple_plugin( DecoderICARUSCRT "module"
   ${ARTDAQ-CORE_UTILITIES}
   sbndaq-artdaq-core_Overlays_Common
   artdaq-core_Data
-  BERN_CRT_TRANSLATOR
   sbnobj_Common_CRT
 )
 
