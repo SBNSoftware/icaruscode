@@ -37,7 +37,7 @@ table_fragment_end
 # Add the dependent product and version
 
 product                   version
-sbncode                   v09_28_02
+sbncode                   v09_28_04
 icarusalg                 v09_28_02
 icarusutil                v09_26_00
 icarus_signal_processing  v09_26_01
