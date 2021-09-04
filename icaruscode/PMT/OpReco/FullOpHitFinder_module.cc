@@ -251,8 +251,14 @@ namespace opdet {
       for(auto const& waveform : (*wfHandle)) {
 	
 	_ch = static_cast< int >(waveform.ChannelNumber());
+
+	if(fChannelMasks.size()>0 && fChannelMasks.find(_ch) != fChannelMasks.end())
+	  continue;
+
 	_tstart = waveform.TimeStamp();
-	
+
+	//std::cout << "Analyzing channel " << _ch << " Tstart " << _tstart << " size " << waveform.size() << std::endl;
+
 	_wf.clear();
 	_wf.resize(waveform.size());
 	for(size_t idx=0; idx<_wf.size(); ++idx)

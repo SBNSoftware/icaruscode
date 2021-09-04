@@ -25,7 +25,10 @@ ICARUSMCOpHit: {
     module_type: "ICARUSMCOpHit"
     MergePeriod: 0.01
     SimPhotonsProducer: "largeant"
+    TimeStart: -10000
+    TimeEnd:    10000
     SPEArea: @local::SPE.Area
+    SPEAmplitude: @local::SPE.Amplitude
 }
 
 ICARUSMCOpFlash: {
@@ -33,18 +36,16 @@ ICARUSMCOpFlash: {
     StoreEmptyFlash: true
     MCTruthProducer: "generator"
     OpHitProducer:   "mcophit"
+    TimeStart: -10000
+    TimeEnd:    10000
     MergePeriod: 8
     OpChannelRange: [0,359]
 }
 
-ICARUSMCOpFlashTPC0: @local::ICARUSMCOpFlash
-ICARUSMCOpFlashTPC0.OpChannelRange: [0,89]
-ICARUSMCOpFlashTPC1: @local::ICARUSMCOpFlash
-ICARUSMCOpFlashTPC1.OpChannelRange: [90,179]
-ICARUSMCOpFlashTPC2: @local::ICARUSMCOpFlash
-ICARUSMCOpFlashTPC2.OpChannelRange: [180,269]
-ICARUSMCOpFlashTPC3: @local::ICARUSMCOpFlash
-ICARUSMCOpFlashTPC3.OpChannelRange: [270,359]
+ICARUSMCOpFlashCryoE: @local::ICARUSMCOpFlash
+ICARUSMCOpFlashCryoE.OpChannelRange: [0,179]
+ICARUSMCOpFlashCryoW: @local::ICARUSMCOpFlash
+ICARUSMCOpFlashCryoW.OpChannelRange: [180,359]
 
 ICARUSCheatOpFlash: {
     module_type: "ICARUSMCOpFlash"
@@ -55,14 +56,10 @@ ICARUSCheatOpFlash: {
     OpChannelRange: [0,359]
 }
 
-ICARUSCheatOpFlashTPC0: @local::ICARUSCheatOpFlash
-ICARUSCheatOpFlashTPC0.OpChannelRange: [0,89]
-ICARUSCheatOpFlashTPC1: @local::ICARUSCheatOpFlash
-ICARUSCheatOpFlashTPC1.OpChannelRange: [90,179]
-ICARUSCheatOpFlashTPC2: @local::ICARUSCheatOpFlash
-ICARUSCheatOpFlashTPC2.OpChannelRange: [180,269]
-ICARUSCheatOpFlashTPC3: @local::ICARUSCheatOpFlash
-ICARUSCheatOpFlashTPC3.OpChannelRange: [270,359]
+ICARUSCheatOpFlashCryoE: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashCryoE.OpChannelRange: [0,179]
+ICARUSCheatOpFlashCryoW: @local::ICARUSCheatOpFlash
+ICARUSCheatOpFlashCryoW.OpChannelRange: [180,359]
 
 ICARUSOpHitAna: {
     module_type:       "ICARUSOpHitAna"

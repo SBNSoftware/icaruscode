@@ -12,32 +12,16 @@ ICARUSSimpleFlash:
   PECalib         : @local::NoCalib
 }
 
-ICARUSSimpleFlashCryo0: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashCryo0.AlgoConfig: @local::SimpleFlashCryo0
+ICARUSSimpleFlashCryoE: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryoE.AlgoConfig: @local::SimpleFlashCryoE
 
-ICARUSSimpleFlashCryo1: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashCryo1.AlgoConfig: @local::SimpleFlashCryo1
+ICARUSSimpleFlashCryoW: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashCryoW.AlgoConfig: @local::SimpleFlashCryoW
 
-ICARUSSimpleFlashDataCryo0: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashDataCryo0.AlgoConfig: @local::SimpleFlashDataCryo0
+ICARUSSimpleFlashDataCryoE: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryoE.AlgoConfig: @local::SimpleFlashDataCryoE
 
-ICARUSSimpleFlashDataCryo1: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashDataCryo1.AlgoConfig: @local::SimpleFlashDataCryo1
-
-################################
-# CONFIGS BELOW ARE DEPRECATED #
-################################
-
-ICARUSSimpleFlashTPC0: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashTPC0.AlgoConfig: @local::SimpleFlashTPC0
-
-ICARUSSimpleFlashTPC1: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashTPC1.AlgoConfig: @local::SimpleFlashTPC1
-
-ICARUSSimpleFlashTPC2: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashTPC2.AlgoConfig: @local::SimpleFlashTPC2
-
-ICARUSSimpleFlashTPC3: @local::ICARUSSimpleFlash
-ICARUSSimpleFlashTPC3.AlgoConfig: @local::SimpleFlashTPC3
+ICARUSSimpleFlashDataCryoW: @local::ICARUSSimpleFlash
+ICARUSSimpleFlashDataCryoW.AlgoConfig: @local::SimpleFlashDataCryoW
 
 END_PROLOG

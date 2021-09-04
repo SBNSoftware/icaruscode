@@ -47,6 +47,7 @@ private:
   // Declare member data here.
 
   double _merge_period;
+  double _time_start,_time_end;
   std::string _simph_producer;
   double _spe_area, _spe_amp;
 };
@@ -59,6 +60,8 @@ ICARUSMCOpHit::ICARUSMCOpHit(fhicl::ParameterSet const& p)
   _simph_producer = p.get<std::string>("SimPhotonsProducer");
   _spe_area = p.get<double>("SPEArea");
   _spe_amp  = p.get<double>("SPEAmplitude");
+  _time_start   = p.get<double>("TimeStart",-10000);
+  _time_end   = p.get<double>("TimeEnd", 10000);
   produces<std::vector<recob::OpHit> >();
 }
 
@@ -100,6 +103,9 @@ void ICARUSMCOpHit::produce(art::Event& e)
     for(auto const& time_photon_pair : time_m) {
 
       auto const& this_time = time_photon_pair.first;
+
+      if(this_time < _time_start) continue;
+      if(this_time > _time_end) continue;
 
       if(this_time > (oph_time + _merge_period) && in_window) {
 	recob::OpHit oph(opch, 
