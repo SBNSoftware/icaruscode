@@ -1,3 +1,5 @@
+#include "simulationservices_icarus.fcl"
+
 BEGIN_PROLOG
 
 icarus_simwire_wirecell: 
