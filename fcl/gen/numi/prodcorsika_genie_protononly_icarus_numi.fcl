@@ -21,10 +21,10 @@
 process_name: GenNuMIbkgr
 
 #
-# change comsic ray model
+# change cosmic ray model
 #
 
-physics.producers.cosmicrays: @local::icarus_corsika_p
+physics.producers.cosmgen: @local::icarus_corsika_p
 
 #
 # output file names

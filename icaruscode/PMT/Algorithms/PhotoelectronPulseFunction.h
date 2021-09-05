@@ -12,7 +12,6 @@
 
 
 // LArSoft libraries
-#include "lardataalg/Utilities/intervals.h" // FIXME bug in lardataalg/Utilities/quantities/electronics.h
 #include "lardataalg/Utilities/quantities/electronics.h" // counts_f
 
 // C++ standard library

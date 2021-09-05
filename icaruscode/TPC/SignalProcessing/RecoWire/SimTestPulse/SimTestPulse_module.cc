@@ -187,7 +187,9 @@ void SimTestPulse::produce(art::Event & e)
             << " as it results in negative TDC (invalid)" << std::endl;
             continue;
         }
-        
+
+        // Assume C=0, T=1
+        xyz[0] = 0.;        
         xyz[1] = fY_v[index];
         xyz[2] = fZ_v[index];
         
@@ -196,8 +198,15 @@ void SimTestPulse::produce(art::Event & e)
         pulse_record.num_electrons = fNumElectrons_v[index];
         pulse_record.tick = clockData.TPCTDC2Tick(tdc);
         for(size_t plane=0; plane<3; ++plane) {
+            geo::PlaneID planeID(0,0,plane);
+            std::cout << "++ Searching for nearest wire id for planeID: " << planeID << ", xyz: "  << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
+            geo::WireID nearestID = geo->NearestWireID(xyz,plane);
+            std::cout << "   WireID: " << nearestID << std::endl;
+            std::cout << "** Searching for nearest channel with plane: " << plane << ", xyz: " << xyz[0] << "," << xyz[1] << "," << xyz[2] << std::endl;
             auto channel = geo->NearestChannel(xyz,plane);
+            std::cout << "   Returned with channel: " << channel << std::endl;
             auto wire = geo->ChannelToWire(channel).front().Wire;
+            std::cout << "   which gives wire: " << wire << std::endl;
             if(fVerbose) std::cout << "[BUFFOON!]    plane " << plane << " channel "
                 << channel << " ... wire " << wire << std::endl;
             pulse_record.channel_list[plane] = channel;

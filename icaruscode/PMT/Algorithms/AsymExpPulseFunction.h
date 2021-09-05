@@ -37,7 +37,7 @@ namespace icarus::opdet {
  *
  * This functor (class behaving like a function) describes the shape of the
  * response to a single photoelectron as an exponentially raising and then
- * ecponentially falling shape:
+ * exponentially falling shape:
  * @f[ A \left[ exp(-(t - t_{0})/\tau_{s}) - exp(-(t - t_{0})/\tau) \right] @f]
  * with @f$ \tau_{s} @f$ the rise time and @f$ \tau @f$ the fall time;
  * @f$ t_{0} @f$ is the start of the signal formation, i.e. the time at which

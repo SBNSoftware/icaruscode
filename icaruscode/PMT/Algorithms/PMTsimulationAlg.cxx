@@ -667,20 +667,20 @@ void icarus::opdet::PMTsimulationAlg::ApplySaturation
 void icarus::opdet::PMTsimulationAlg::ClipWaveform
   (Waveform_t& waveform, ADCcount min, ADCcount max)
 {
-  auto const clamper =
+  using ClamperFunc_t = std::function<ADCcount(ADCcount)>;
+  ClamperFunc_t const clamper =
     (min == std::numeric_limits<ADCcount>::min())
       ? ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [](ADCcount s){ return s; } }
-        : std::function{ [max](ADCcount s){ return std::min(s, max); } }
+        ? ClamperFunc_t{ [](ADCcount s){ return s; } }
+        : ClamperFunc_t{ [max](ADCcount s){ return std::min(s, max); } }
         )
       : ((max == std::numeric_limits<ADCcount>::max())
-        ? std::function{ [min](ADCcount s){ return std::max(s, min); } }
-        : std::function{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
+        ? ClamperFunc_t{ [min](ADCcount s){ return std::max(s, min); } }
+        : ClamperFunc_t{ [min,max](ADCcount s){ return std::clamp(s, min, max); } }
         )
       ;
   
-  std::for_each(waveform.begin(), waveform.end(),
-    [clamper](ADCcount& s){ s = clamper(s); });
+  std::transform(waveform.cbegin(), waveform.cend(), waveform.begin(), clamper);
   
 } // icarus::opdet::PMTsimulationAlg::ClipWaveform()
 
@@ -702,7 +702,10 @@ auto icarus::opdet::PMTsimulationAlg::TimeToTickAndSubtickConverter::operator()
 template <typename Rand>
 double icarus::opdet::PMTsimulationAlg::GainFluctuator<Rand>::operator()
   (double const n)
-  { return fRandomGain? (n * fRandomGain->fire() / fReferenceGain): n; }
+{
+  return fRandomGain
+    ? (fRandomGain->fire(n * fReferenceGain) / fReferenceGain): n; 
+}
 
 
 // -----------------------------------------------------------------------------

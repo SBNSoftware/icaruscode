@@ -1,0 +1,71 @@
+#
+# File:    triggersim_westmodule_icarus.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 18, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+#
+#
+# The steps are:
+#
+#  * pmtbaselines (PMTWaveformBaselines): computes baselines for all PMT
+#      waveforms
+#  * discrimopdaq (DiscriminatePMTwaveforms): from each PMT extracts a gate
+#      signal according to each of the configured thresholds;
+#      for each threshold all gates are stored in their own data product
+#  * lvdsgatesOR (LVDSgates): pairs each of the discriminated waveforms above
+#      to reproduce the 192 hardware channels from PMT feeding the trigger
+#      the pairing is performed as an OR of the two gates in the pair;
+#  * trigtilewindowORN (SlidingWindowTrigger): applies a sliding window of 30
+#      PMT and keeps only the ones on east cryostat (C:0); it uses OR paired
+#      output from LVDS simulation;
+#  * effTiledORN (SlidingWindowTriggerEfficiencyPlots): produces plots of
+#      efficiency of a trigger requiring patterns of sliding window triggers,
+#      with minimum LVDS trigger primitives in each sliding window, to be
+#      present at the same time and in coincidence with a 1.6 us beam gate;
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `opdaq`
+#
+#
+# Changes
+# --------
+# 
+# 20210318 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_eastmodule_icarus.fcl` v1.0
+#
+
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+
+# list of the sliding windows that are enabled (all others are disabled)
+EnabledWindows         @protect_ignore: [ 10, 11, 12, 13, 14, 15 ]
+EnabledWindowsSliding  @protect_ignore: [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 ]
+EnabledWindowsE        @protect_ignore: [ 10, 11, 12 ]
+EnabledWindowsSlidingE @protect_ignore: [ 10, 11, 12, 13, 14 ]
+EnabledWindowsW        @protect_ignore: [ 13, 14, 15 ]
+EnabledWindowsSlidingW @protect_ignore: [ 15, 16, 17, 18, 19 ]
+EnabledWindowsS        @protect_ignore: [ 10, 13 ]
+EnabledWindowsSE       @protect_ignore: [ 10 ]
+EnabledWindowsSW       @protect_ignore: [ 13 ]
+EnabledWindowsC        @protect_ignore: [ 11, 14 ]
+EnabledWindowsCE       @protect_ignore: [ 11 ]
+EnabledWindowsCW       @protect_ignore: [ 14 ]
+EnabledWindowsN        @protect_ignore: [ 12, 15 ]
+EnabledWindowsNE       @protect_ignore: [ 12 ]
+EnabledWindowsNW       @protect_ignore: [ 15 ]
+
+
+END_PROLOG
+# ------------------------------------------------------------------------------
+
+#include "triggersim_eastmodule_icarus.fcl"
+
+# ------------------------------------------------------------------------------

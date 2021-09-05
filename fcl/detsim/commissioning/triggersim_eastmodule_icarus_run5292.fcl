@@ -1,0 +1,56 @@
+#
+# File:    triggersim_eastmodule_icarus_run5292.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on the east
+#          cryostat on ICARUS run 5292.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    March 29, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Run 5292:
+# * started March 18, 2021
+# * lasted ~8 hours
+# * collected 101k events
+# * trigger: minimum bias, in sync with BNB spill
+# * includes the whole detector: TPC, PMT, CRT and trigger fragments
+# * PMT buffer: 25 us, always all channels, always only around trigger time
+# * post-trigger fraction: 60%
+# * info at: https://docs.google.com/spreadsheets/d/1VabkSa9ogYl8pkoGGjin9DLpe3lCVOsfQtgKX4QrutM
+#
+# Settings are the same as the "standard" minimum bias run (e.g. run 5252)
+# but with the whole detector.
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#
+#
+# Changes
+# --------
+# 
+# 20210318 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_westmodule_icarus_run5252.fcl` v1.0
+#
+
+
+
+# ------------------------------------------------------------------------------
+BEGIN_PROLOG
+
+
+BeamGateDuration @protect_ignore: "2.0 us" # for the simulation
+
+
+END_PROLOG
+# ------------------------------------------------------------------------------
+
+#include "triggersim_eastmodule_icarus_data.fcl"
+
+### override DetectorClocks configuration
+#include "detectorclocks_icarus_run5252.fcl"
+
+# ------------------------------------------------------------------------------
+

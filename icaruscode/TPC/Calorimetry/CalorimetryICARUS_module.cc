@@ -391,7 +391,7 @@ void calo::CalorimetryICARUS::produce(art::Event &evt)
           {
             if (vhit[ii].key() == allHits[hits[ipl][ihit]].key())
             {
-              if (vmeta[ii]->Index() == std::numeric_limits<int>::max())
+              if (vmeta[ii]->Index() == std::numeric_limits<unsigned int>::max())
               {
                 fBadhit = true;
                 continue;

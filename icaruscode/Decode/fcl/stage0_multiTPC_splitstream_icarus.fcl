@@ -1,0 +1,49 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the paths we'll execute depending on data
+#physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
+physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT_BNB,  daqTPC, @sequence::icarus_stage0_multiTPC ]
+physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT_NuMI, daqTPC, @sequence::icarus_stage0_multiTPC ]
+physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT,      daqTPC, @sequence::icarus_stage0_multiTPC ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ pathBNB, pathNUMI, pathUnknown ]
+physics.end_paths:     [ outana, streamBNB, streamNUMI, streamUnknown ]
+
+outputs.outBNB.fileName: "BNB_%ifb_%tc-%p.root"
+outputs.outBNB.SelectEvents: [ pathBNB ]
+
+outputs.outNUMI.fileName: "NUMI_%ifb_%tc-%p.root"
+outputs.outNUMI.SelectEvents: [ pathNUMI ]
+
+outputs.outUnknown.fileName: "UNK_%ifb_%tc-%p.root"
+outputs.outUnknown.SelectEvents: [ pathUnknown ]
+
+# Drop the artdaq format files on output
+outputs.outBNB.outputCommands:     ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands:    ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outUnknown.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Temporarily overrie pmt configuration
+#physics.producers.daqPMT.FragmentsLabel:         "daq:CAENV1730"   # expect single window readout
+physics.producers.daqPMT.RequireBoardConfig:     false
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.daqTPC.FragmentsLabelVec:      ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:   ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.roifinder.WireModuleLabelVec:  ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+
+## Need overrides for the purity monitor
+physics.producers.purityana0.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.purityana1.RawModuleLabel:  ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+
+## Modify the event selection for the purity analyzers
+physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]

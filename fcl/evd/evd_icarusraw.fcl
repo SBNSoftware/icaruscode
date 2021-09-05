@@ -53,4 +53,7 @@ services.RecoDrawingOptions.HitModuleLabels:               ["icarushit"]
 services.RecoDrawingOptions.ClusterModuleLabels:               ["linecluster"]
 services.RecoDrawingOptions.WireModuleLabels:              ["recowireraw"]
 
+#Turn off DuplicateEventTracker
+services.DuplicateEventTracker: @erase
+
 

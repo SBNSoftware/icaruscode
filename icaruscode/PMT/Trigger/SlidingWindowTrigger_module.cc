@@ -357,7 +357,7 @@ namespace {
   Cont filter(Cont const& coll, Indices const& indices) {
     
     Cont selected;
-    for (auto const index: indices) selected.push_back(coll[index]);
+    for (auto const index: indices) selected.push_back(coll.at(index));
     return selected;
     
   } // filter()

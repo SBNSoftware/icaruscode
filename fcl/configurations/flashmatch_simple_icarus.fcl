@@ -1,29 +1,37 @@
+BEGIN_PROLOG #comment to run generate_simple_weighted_template.py
 
 icarus_simple_flashmatch_0: {
   module_type: FlashPredict
   Cryostat: 0
-  PandoraProducer: "pandoraGausCryo0"
-  # TrackProducer: "pandoraTrackGausCryo0"
-  # CaloProducer: "pandoraGausCaloCryo0"
-  SpacePointProducer: "pandoraGausCryo0"
+  PandoraProducer: "pandoraGausCryoE"
+  TrackProducer: "pandoraTrackGausCryoE"
+  #CaloProducer: "pandoraGausCaloCryoE"
+  SpacePointProducer: "pandoraGausCryoE"
   OpHitProducer: "ophit"
-  BeamWindowStart: -0.2 # us
-  BeamWindowEnd: 2.0 # us
-  LightWindowStart: -0.02 # us, wrt flash time
-  LightWindowEnd: 0.08 # us, wrt flash time
+  BeamWindowStart: -50 # us
+  BeamWindowEnd: 50.0 # us
+  FlashStart: -0.02 # us, wrt flash time
+  FlashEnd: 0.08 # us, wrt flash time
   SelectNeutrino: true
+  OnlyCollectionWires: false
+  ForceConcurrence: true
   UseOppVolMetric: true
-  # UseCalo: false
   InputFileName: "FlashMatch/fm_metrics_icarus.root"
   NoAvailableMetrics: false
   MakeTree: false
-  MinFlashPE: 0.
-  PEscale: 1.0
+  StoreTrueNus: false
+  StoreCheatMCT0: false
+  MinHitQ: 0.
+  MinSpacePointQ: 0.
+  MinParticleQ: 0.
+  MinSliceQ: 0.
+  MaxFlashes: 3
+  MinOpHPE: 0.
+  MinFlashPE: 10.
   ChargeToNPhotonsShower: 1.0
   ChargeToNPhotonsTrack: 1.0
-  VUVToVIS: 1.
 
-  ThresholdTerm: 30.
+  ThresholdTerm: 50.
 
   PDMapAlg: {
     tool_type: PDMapAlgSimple
@@ -34,8 +42,20 @@ icarus_simple_flashmatch_0: {
   score_hist_low: 0.
   score_hist_up: 50.
 
-  n_bins: 30
-  DriftDistance: 150.
+  DriftDistance: 149.115 # only used for metrics creation
+  XBins: 30
+  # XBinWidth approx 5.
+
+  # block for Y and Z ophit distributions, used for unbiassing
+  # TODO: find adequate values, these are OKish
+  YBins: 5
+  YLow: -135.
+  YHigh: 85.
+  YBiasSlope: 0.4
+  ZBins: 18
+  ZLow: -900.
+  YHigh: 900.
+  ZBiasSlope: 0. # TODO: find adequate value, currently no Z unbiassing
 
   dy_bins: 75
   dy_low: -200.
@@ -43,17 +63,21 @@ icarus_simple_flashmatch_0: {
   dz_bins: 75
   dz_low: -200.
   dz_up: 200.
-  rr_bins: 75
+  rr_bins: 50
   rr_low: 0.
   rr_up: 200.
-  pe_bins: 37
-  pe_low: 0.
-  pe_up: 1.
+  rr_TF1_fit: "pol3"
+  ratio_bins: 50
+  ratio_low: 0.
+  ratio_up: 0.7
+  ratio_TF1_fit: "pol3"
 }
 
 icarus_simple_flashmatch_1: @local::icarus_simple_flashmatch_0
 icarus_simple_flashmatch_1.Cryostat: 1
-icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryo1
-# icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryo1
+icarus_simple_flashmatch_1.PandoraProducer: pandoraGausCryoW
+icarus_simple_flashmatch_1.TrackProducer: pandoraTrackGausCryoW
 # icarus_simple_flashmatch_1.CaloProducer: pandoraGausCaloCryo1
-icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryo1
+icarus_simple_flashmatch_1.SpacePointProducer: pandoraGausCryoW
+
+END_PROLOG #comment to run generate_simple_weighted_template.py

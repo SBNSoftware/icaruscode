@@ -16,8 +16,8 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()...
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/mfLoggingClass.h"
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/rounding.h" // icarus::ns::util::roundup()
@@ -540,6 +540,8 @@ class icarus::trigger::MajorityTriggerSimulation
   
   /**
    * @brief Simulates the trigger response within a single cryostat.
+   * @param beamGate the beam gate to be applied
+   * @param iCryo index of the cryostat being processed
    * @param gates the trigger primitives to be considered
    * @return the outcome and details of the trigger simulation
    * 
@@ -549,8 +551,11 @@ class icarus::trigger::MajorityTriggerSimulation
    * configured (`MinimumPrimitives`).
    * The time is the earliest one when that requirement is met.
    */
-  TriggerInfo_t simulateCryostat(ApplyBeamGateClass const& clockData,
-                                 TriggerGates_t const& gates) const;
+  TriggerInfo_t simulateCryostat(
+    ApplyBeamGateClass const& beamGate,
+    std::size_t iCryo,
+    TriggerGates_t const& gates
+    ) const;
   
   
   /**
@@ -839,13 +844,15 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
   // to use the splitter we need a *copy* of the gates
   auto const& cryoGates = fChannelSplitter.byCryostat(TriggerGates_t{ gates });
   
-  // NOTE to allow for distinction between cryostats, the logic needs to be reworked
   TriggerInfo_t triggerInfo; // not fired by default
-  for (auto const& gatesInCryo: cryoGates) {
+  for (auto const& [ iCryo, gatesInCryo ]: util::enumerate(cryoGates)) {
     
-    triggerInfo.replaceIfEarlier(simulateCryostat(beamGate, gatesInCryo));
+    triggerInfo.addAndReplaceIfEarlier
+      (simulateCryostat(beamGate, iCryo, gatesInCryo));
     
   } // for gates in cryostat
+  
+  triggerInfo.sortOpenings();
   
   return triggerInfo;
   
@@ -853,11 +860,14 @@ auto icarus::trigger::MajorityTriggerSimulation::simulate
 
 
 //------------------------------------------------------------------------------
-auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
-  (ApplyBeamGateClass const& beamGate, TriggerGates_t const& gates) const
+auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat(
+  ApplyBeamGateClass const& beamGate,
+  std::size_t iCryo, TriggerGates_t const& gates
+  ) const
   -> TriggerInfo_t
 {
-
+  using detinfo::timescales::optical_tick;
+  
   /* 
    * 1. combine the trigger primitives
    * 2. apply the beam gate on the combination
@@ -866,13 +876,15 @@ auto icarus::trigger::MajorityTriggerSimulation::simulateCryostat
   
   auto const combinedCount = beamGate.apply(fCombiner.combine(gates));
   
-  // the first tick with enough opened gates:
-  TriggerGateData_t::ClockTick_t const tick
-    = combinedCount.findOpen(fMinimumPrimitives);
-  bool const fired = (tick != TriggerGateData_t::MaxTick);
-  
   TriggerInfo_t triggerInfo;
-  if (fired) triggerInfo.emplace(optical_tick{ tick });
+  icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+    { combinedCount, fMinimumPrimitives };
+  extractOpeningInfo.setLocation(iCryo);
+  while (extractOpeningInfo) {
+    auto info = extractOpeningInfo();
+    if (info) triggerInfo.add(info.value());
+  } // while
+  
   return triggerInfo;
   
 } // icarus::trigger::MajorityTriggerSimulation::simulateCryostat()

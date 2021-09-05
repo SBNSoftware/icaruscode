@@ -51,6 +51,7 @@ function(params, tools, override = {}) {
       gauss_tag: 'gauss%d' % anode.data.ident,
 
       use_roi_debug_mode: false,
+      use_roi_refinement: false, // default: true
       tight_lf_tag: 'tight_lf%d' % anode.data.ident,
       loose_lf_tag: 'loose_lf%d' % anode.data.ident,
       cleanup_roi_tag: 'cleanup_roi%d' % anode.data.ident,

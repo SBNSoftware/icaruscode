@@ -81,6 +81,8 @@ icarus_art_services: {
     }
   }
 
+  DuplicateEventTracker: {}
+
 } # icarus_art_services
 
 
@@ -93,7 +95,7 @@ icarus_art_services: {
 icarus_random_services:
 {
     RandomNumberGenerator:               {}
-    NuRandomService:                     @local::per_event_NuRandomService
+    NuRandomService:                     @local::random_NuRandomService
 
 } # icarus_random_services
 
@@ -151,7 +153,7 @@ icarus_wirecalibration_minimum_services: {
 
                                     @table::icarus_calibration_services
 
-} # icarus_wirecalibration_services
+} # icarus_wirecalibration_minimum_services
 
 
 ################################################################################
@@ -163,9 +165,10 @@ icarus_wirecalibration_minimum_services: {
 #
 icarus_wirecalibration_services: {
 
-    @table::icarus_wirecalibration_minimum_services
+                     @table::icarus_wirecalibration_minimum_services
 
-    @table::icarus_random_services
+                     @table::icarus_random_services
+    NuRandomService: @local::per_event_NuRandomService
 
 } # icarus_wirecalibration_services
 

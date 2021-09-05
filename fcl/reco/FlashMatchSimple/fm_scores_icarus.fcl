@@ -9,9 +9,8 @@ process_name: FlashMatch
 services:{
   TFileService: { fileName: "flashmatch_icarus.root" }
   @table::icarus_basic_services
-  message:                         @local::icarus_message_services
+  message:                     @local::icarus_message_services
 }
-
 
 source:{
   module_type:     RootInput
@@ -38,7 +37,3 @@ outputs: {
     outputCommands: [ ]
   }
 }
-
-# override variables
-# physics.producers.fmatchCryo0.ThresholdTerm: 10.
-# physics.producers.fmatchCryo0.InputFileName: "FlashMatch/fm_metrics_sbnd.root"

@@ -242,7 +242,8 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const& clo
     if (fThresholdVec.empty())           fThresholdVec           = icarus_signal_processing::VectorFloat(nChannelsPerFragment);
 
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+                
+//    icarus_signal_processing::Denoiser2D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
@@ -289,19 +290,17 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const& clo
     std::unique_ptr<icarus_signal_processing::IMorphologicalFunctions2D> filterFunctionPtr 
         = std::make_unique<icarus_signal_processing::Gradient2D>(fStructuringElement[0],fStructuringElement[1]);
 
+    icarus_signal_processing::Denoiser2D denoiser(filterFunctionPtr.get(), fThresholdVec, fCoherentNoiseGrouping, fMorphWindow);
+
     // Run the coherent filter
-    denoiser.removeCoherentNoise2D(fWaveLessCoherent.begin(),
-                                   fPedSubtractedWaveforms.begin(),
-                                   fMorphedWaveforms.begin(),
-                                   fIntrinsicRMS.begin(),
-                                   fSelectVals.begin(),
-                                   fROIVals.begin(),
-                                   fCorrectedMedians.begin(),
-                                   filterFunctionPtr.get(),
-                                   fThresholdVec.begin(), 
-                                   fPedSubtractedWaveforms.size(),
-                                   fCoherentNoiseGrouping,
-                                   fMorphWindow);
+    denoiser(fWaveLessCoherent.begin(),
+             fPedSubtractedWaveforms.begin(),
+             fMorphedWaveforms.begin(),
+             fIntrinsicRMS.begin(),
+             fSelectVals.begin(),
+             fROIVals.begin(),
+             fCorrectedMedians.begin(),
+             fPedSubtractedWaveforms.size());
 
     return;
 }

@@ -35,39 +35,48 @@ namespace icarusDB {
 class ChannelMapSQLite : virtual public IChannelMapping
 {
 public:
-    /**
-     *  @brief  Constructor
-     *
-     *  @param  pset
-     */
-    explicit ChannelMapSQLite(fhicl::ParameterSet const &pset);
-
-    /**
-     *  @brief  Destructor
-     */
-    ~ChannelMapSQLite();
-
-    /**
-     *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
-     *         and the related crate and readout information. 
-     *         Then define the function interface to fill these data structures 
-     */
-    virtual int BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap&) const override;
-
-    /**
-     *  @brief Define the returned data structures for a mapping between TPC readout boards
-     *         and the channel information 
-     *         Then define the function interface to fill these data structures 
-     */
-    virtual int BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap&) const override;
-
-    /**
-     *  @brief Define the returned data structures for a mapping between PMT Fragment IDs
-     *         and the related crate and readout information. 
-     *         Then define the function interface to fill these data structures 
-     */
-    virtual int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const override;
-
+  /**
+   *  @brief  Constructor
+   *
+   *  @param  pset
+   */
+  explicit ChannelMapSQLite(fhicl::ParameterSet const &pset);
+  
+  /**
+   *  @brief  Destructor
+   */
+  ~ChannelMapSQLite();
+  
+  /**
+   *  @brief Define the returned data structures for a mapping between TPC Fragment IDs
+   *         and the related crate and readout information. 
+   *         Then define the function interface to fill these data structures 
+   */
+  virtual int BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap&) const override;
+  
+  /**
+   *  @brief Define the returned data structures for a mapping between TPC readout boards
+   *         and the channel information 
+   *         Then define the function interface to fill these data structures 
+   */
+  virtual int BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap&) const override;
+  
+  /**
+   *  @brief Define the returned data structures for a mapping between PMT Fragment IDs
+   *         and the related crate and readout information. 
+   *         Then define the function interface to fill these data structures 
+   */
+  virtual int BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap&) const override;
+  
+  
+  /**
+   *  @brief Define the returned data structures for a mapping between CRT hardware mac_address
+   *         to the simulated mac_address.
+   *         Then define the function interface to fill these data structures
+   */
+  virtual int BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap&) const override;
+  
+  
 private:
     // Recover data from postgres database
     int GetDataset(const std::string&, int func(void*,int,char**,char**), void*) const;
@@ -279,115 +288,151 @@ int buildTPCFragmentIDToReadoutIDMap_callback(void* dataIn, int argc, char**argv
     return 0;
 }
 
-// -----------------------------------------------------
-// The aim of this function is to build a map between the
-// TPC Fragment IDs and the readout board IDs. Here we 
-// expect there will be some number of boards per Fragment
-//-----------------------------------------------------
-int ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
-{
+  // -----------------------------------------------------
+  // The aim of this function is to build a map between the
+  // TPC Fragment IDs and the readout board IDs. Here we 
+  // expect there will be some number of boards per Fragment
+  //-----------------------------------------------------
+  int ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap(TPCFragmentIDToReadoutIDMap& fragmentBoardMap) const
+  {
     const std::string dataType("readout_boards");
-
+    
     // Recover the data from the database
     int error = GetDataset(dataType,buildTPCFragmentIDToReadoutIDMap_callback,&fragmentBoardMap);
-
+    
     // If there was an error the function above would have printed a message so bail out
     if (error)
-        throw cet::exception("ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap") << "Encountered error in reading the database: '" << error << "'\n";
-
+      throw cet::exception("ChannelMapSQLite::BuildTPCFragmentIDToReadoutIDMap") << "Encountered error in reading the database: '" << error << "'\n";
+    
     return error;
-}
-
-// -----------------------------------------------------
-// The aim of this function is to build a map between the
-// TPC readout board IDs and the associated channels. So for
-// each readout board ID we expect a number of channels back
-// from the data base. So the returned data structure will 
-// be a map of readout ID to a vector of channels
-//-----------------------------------------------------
-const unsigned int CHANNELSPERBOARD = 64;
-int buildTPCReadoutBoardToChannelMap_callback(void* dataIn, int argc, char**argv, char** azColName)
-{
+  }
+  
+  // -----------------------------------------------------
+  // The aim of this function is to build a map between the
+  // TPC readout board IDs and the associated channels. So for
+  // each readout board ID we expect a number of channels back
+  // from the data base. So the returned data structure will 
+  // be a map of readout ID to a vector of channels
+  //-----------------------------------------------------
+  const unsigned int CHANNELSPERBOARD = 64;
+  int buildTPCReadoutBoardToChannelMap_callback(void* dataIn, int argc, char**argv, char** azColName)
+  {
     IChannelMapping::TPCReadoutBoardToChannelMap& rbChanMap = *(IChannelMapping::TPCReadoutBoardToChannelMap*)dataIn;
-
+    
     unsigned int readoutBoardID = std::stol(argv[2]);
-
+    
     if (rbChanMap.find(readoutBoardID) == rbChanMap.end())
-    {
+      {
         unsigned int readoutBoardSlot = std::stol(argv[4]);
-
+	
         rbChanMap[readoutBoardID].first = readoutBoardSlot;
         rbChanMap[readoutBoardID].second.resize(CHANNELSPERBOARD);
-    }
-
+      }
+    
     unsigned int channelNum = std::stol(argv[5]);
     unsigned int channelID  = std::stol(argv[0]);
-
+    
     std::string fragmentBuffer = argv[10];
-
+    
     // Make sure lower case... (sigh...)
     std::transform(fragmentBuffer.begin(),fragmentBuffer.end(),fragmentBuffer.begin(),[](char c){return std::tolower(c);});
-
+    
     unsigned int plane(3);
-
+    
     if      (fragmentBuffer.find("collection")  != std::string::npos) plane = 2;
     else if (fragmentBuffer.find("induction 2") != std::string::npos) plane = 1;
     else if (fragmentBuffer.find("induction 1") != std::string::npos) plane = 0;
 
     if (plane > 2) std::cout << "YIKES!!! Plane is " << plane << " for channel " << channelID << " with type " << std::string(fragmentBuffer) << std::endl;
-
+    
     rbChanMap[readoutBoardID].second[channelNum] = IChannelMapping::ChannelPlanePair(channelID,plane);
-
+    
     return 0;
-}
-
-int ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap) const
-{
+  }
+  
+  int ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap(TPCReadoutBoardToChannelMap& rbChanMap) const
+  {
     const std::string  dataType("daq_channels");
-
+    
     // Recover the data from the database
     int error = GetDataset(dataType,buildTPCReadoutBoardToChannelMap_callback,&rbChanMap);
-
+    
     // If there was an error the function above would have printed a message so bail out
     if (error)
-        throw cet::exception("ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap") << "Encountered error in reading the database: '" << error << "'\n";
-
+      throw cet::exception("ChannelMapSQLite::BuildTPCReadoutBoardToChannelMap") << "Encountered error in reading the database: '" << error << "'\n";
+    
     return error;
-}
-
-//******************* PMT Channel Mapping ***********************
-int buildFragmentToDigitizerChannelMap_callback(void* dataIn, int argc, char**argv, char** azColName)
-{
+  }
+  
+  //******************* PMT Channel Mapping ***********************
+  int buildFragmentToDigitizerChannelMap_callback(void* dataIn, int argc, char**argv, char** azColName)
+  {
     IChannelMapping::FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap = *(IChannelMapping::FragmentToDigitizerChannelMap*)dataIn;
-
+    
     // Start extracting info
-//    std::string  digitizerBuffer    = argv[8];
+    //    std::string  digitizerBuffer    = argv[8];
     unsigned int fragmentID         = std::stol(argv[18]);
     unsigned int digitizerChannelNo = std::stol(argv[9]);
     unsigned int channelID          = std::stol(argv[17]);
 
     // Fill the map
     fragmentToDigitizerChannelMap[fragmentID].emplace_back(digitizerChannelNo,channelID);
-
+    
     return 0;
-}
-
-int ChannelMapSQLite::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
-{
+  }
+  
+  int ChannelMapSQLite::BuildFragmentToDigitizerChannelMap(FragmentToDigitizerChannelMap& fragmentToDigitizerChannelMap) const
+  {
     // clearing is cleansing
     fragmentToDigitizerChannelMap.clear();
     // Recover the information from the database on the mapping 
     const std::string  dataType("pmt_placements");
-
+    
     // Recover the data from the database
     int error = GetDataset(dataType,buildFragmentToDigitizerChannelMap_callback,&fragmentToDigitizerChannelMap);
-
+    
     // If there was an error the function above would have printed a message so bail out
     if (error)
-        throw cet::exception("ChannelMapSQLite::BuildFragmentToDigitizerChannelMap") << "Encountered error in reading the database: '" << error << "'\n";
-
+      throw cet::exception("ChannelMapSQLite::BuildFragmentToDigitizerChannelMap") << "Encountered error in reading the database: '" << error << "'\n";
+    
     return error;
-}
+  }
 
-DEFINE_ART_CLASS_TOOL(ChannelMapSQLite)
+  
+  //******************* CRT Channel Mapping ***********************
+  
+  int buildCRTChannelIDToHWtoSimMacAddressPairMap_callback(void* dataIn, int argc, char**argv, char** azColName)
+  {
+    IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap = *(IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap*)dataIn;
+    
+    // Start extracting info
+    unsigned int channelID         = std::stol(argv[10]);
+    unsigned int simmacaddress     = std::stol(argv[11]);
+    unsigned int hwmacaddress      = std::stol(argv[12]);
+
+        
+    // Fill the map
+    crtChannelIDToHWtoSimMacAddressPairMap[channelID]=std::make_pair(hwmacaddress, simmacaddress);
+
+    return 0;
+  }
+  
+  int ChannelMapSQLite::BuildCRTChannelIDToHWtoSimMacAddressPairMap(CRTChannelIDToHWtoSimMacAddressPairMap& crtChannelIDToHWtoSimMacAddressPairMap) const
+  {
+    // clearing is cleansing
+    crtChannelIDToHWtoSimMacAddressPairMap.clear();
+    // Recover the information from the database on the mapping
+    const std::string  dataType("feb_channels");
+    
+    // Recover the data from the database
+    int error = GetDataset(dataType,buildCRTChannelIDToHWtoSimMacAddressPairMap_callback,&crtChannelIDToHWtoSimMacAddressPairMap);
+    
+    // If there was an error the function above would have printed a message so bail out
+    if (error)
+      throw cet::exception("ChannelMapSQLite::BuildCRTChannelIDToHWtoSimMacAddressPairMap") << "Encountered error in reading the database: '" << error << "'\n";
+    
+    return error;
+  }
+  
+  DEFINE_ART_CLASS_TOOL(ChannelMapSQLite)
 } // namespace lar_cluster3d

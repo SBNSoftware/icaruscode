@@ -104,18 +104,48 @@ function isExperiment() {
   # Returns 0 on success, 1 if deduction failed, and 2 if more than one
   # experiments match.
   #
-  
-  # trick: look for the BlueArc mounts
-  
-  local CandidateData
-  local -a Experiments
-  for CandidateData in /*/data ; do
-    local Candidate="$(dirname "${CandidateData#/}")"
-    
-    # is there an 'app' directory too?
-    [[ -d "/${Candidate}/app" ]] || continue
-    Experiments+=( "$Candidate" )
+
+  local -ar ExperimentNames=( 'MicroBooNE' 'DUNE' 'SBND' 'LArIAT' 'ArgoNeuT' 'ICARUS' )
+  local -A ExperimentHostNames ExptDirs
+  local Name
+  for Name in "${ExperimentNames[@]}" ; do
+    ExperimentHostNames[$Name]="${Name,,}"
+    ExperimentDirectories[$Name]="${Name,,}"
   done
+  ExperimentHostNames['MicroBooNE']='uboone'
+  ExperimentDirectories['MicroBooNE']='uboone'
+
+  local -a Experiments
+  local ExperimentCandidate ExperimentHostName
+  local HostName="$(hostname)"
+  if [[ -n "$HostName" ]]; then
+    for ExperimentCandidate in "${!ExperimentHostNames[@]}" ; do
+      [[ "$HostName" =~ ^${ExperimentHostNames[$ExperimentCandidate]} ]] || continue
+      Experiments+=( "$ExperimentCandidate" )
+      break
+    done
+  fi
+  
+  # back up to directory presence for known experiments
+  if [[ "${#Experiments[@]}" == 0 ]]; then
+    local ExperimentDir
+    for ExperimentCandidate in "${!ExperimentHostNames[@]}" ; do
+      ExperimentDir="/${ExperimentDirectories[$ExperimentCandidate]}"
+      [[ -d "$ExperimentDir" ]] && Experiments+=( "$ExperimentCandidate" )
+    done
+  fi
+  
+  # back up to directory discovery
+  if [[ "${#Experiments[@]}" == 0 ]]; then
+    local CandidateData
+    for CandidateData in /*/data ; do
+      local Candidate="$(dirname "${CandidateData#/}")"
+      
+      # is there an 'app' directory too?
+      [[ -d "/${Candidate}/app" ]] || continue
+      Experiments+=( "$Candidate" )
+    done
+  fi
   
   case "${#Experiments[@]}" in
     ( 0 ) return 1 ;;
@@ -127,6 +157,8 @@ function isExperiment() {
 } # isExperiment()
 
 
+
+
 function FindExperiment() {
   #
   # Prints the name of the experiment the directory or machine belongs to.
@@ -135,13 +167,7 @@ function FindExperiment() {
   
   [[ -r "$ExperimentNameFile" ]] && cat "$ExperimentNameFile" && return
   
-  local ExperimentName
-  ExperimentName="$(isExperiment 2> /dev/null)"
-  
-  [[ $? != 0 ]] && ExperimentName="$(basename "$(pwd)")"
-  
-  echo "$ExperimentName"
-  [[ -n "$ExperimentName" ]]
+  isExperiment
   
 } # FindExperiment()
 
@@ -329,7 +355,7 @@ function checkoutGITtagIfExists() {
   local -r Tag="$1"
   local -r Directory="$2"
   
-  hasGITtag && git${Directory:+ -C "$Directory"} checkout "$Tag"
+  hasGITtag "$Tag" && git${Directory:+ -C "$Directory"} checkout "$Tag"
   
   git${Directory:+ -C "$Directory"} rebase
 

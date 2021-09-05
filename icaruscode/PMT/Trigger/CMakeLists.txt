@@ -1,14 +1,13 @@
-
-cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-
 add_subdirectory(Algorithms)
 add_subdirectory(Utilities)
+add_subdirectory(scripts)
 
 art_make(
   EXCLUDE
     "DiscriminatePMTwaveformsByChannel_module.cc"
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
+    "SlidingWindowTriggerSimulation_module.cc"
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
@@ -33,10 +32,10 @@ art_make(
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
     ${CETLIB_EXCEPT}
-    ${ROOT_GENVECTOR}
-    ${ROOT_HIST}
-    ${ROOT_TREE}
-    ${ROOT_CORE}
+    ROOT::GenVector
+    ROOT::Hist
+    ROOT::Tree
+    ROOT::Core
   MODULE_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     sbnobj_ICARUS_PMT_Trigger_Data
@@ -45,8 +44,8 @@ art_make(
     ${ART_FRAMEWORK_SERVICES_REGISTRY}
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
-    ${ROOT_CORE}
-    ${ROOT_PHYSICS}
+    ROOT::Core
+    ROOT::Physics
   TOOL_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     sbnobj_ICARUS_PMT_Trigger_Data
@@ -112,6 +111,26 @@ simple_plugin(MajorityTriggerSimulation module
   ROOT::Core
   )
 
+simple_plugin(SlidingWindowTriggerSimulation module
+  icaruscode_PMT_Trigger_Algorithms
+  sbnobj_ICARUS_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_RawData
+  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+  ${ART_ROOT_IO_TFILE_SUPPORT}
+  ${ART_FRAMEWORK_SERVICES_REGISTRY}
+  ${ART_FRAMEWORK_PRINCIPAL}
+  ${ART_FRAMEWORK_CORE}
+  ${CANVAS}
+  ${MF_MESSAGELOGGER}
+  ${FHICLCPP}
+  ${CETLIB_EXCEPT}
+  ROOT::Hist
+  ROOT::Core
+  )
+
 simple_plugin(TriggerEfficiencyPlots module
   icaruscode_PMT_Trigger_Utilities
   sbnobj_ICARUS_PMT_Trigger_Data
@@ -129,10 +148,10 @@ simple_plugin(TriggerEfficiencyPlots module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
-  ${ROOT_GENVECTOR}
-  ${ROOT_HIST}
-  ${ROOT_TREE}
-  ${ROOT_CORE}
+  ROOT::GenVector
+  ROOT::Hist
+  ROOT::Tree
+  ROOT::Core
   )
 
 simple_plugin(MakeTriggerSimulationTree module
@@ -152,9 +171,9 @@ simple_plugin(MakeTriggerSimulationTree module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
-  ${ROOT_GENVECTOR}
-  ${ROOT_TREE}
-  ${ROOT_CORE}
+  ROOT::GenVector
+  ROOT::Tree
+  ROOT::Core
   )
 
 # trigger efficiency plot modules with the same build configuration:
@@ -183,10 +202,10 @@ foreach(TriggerEfficiencyPlotsModule
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
     ${CETLIB_EXCEPT}
-    ${ROOT_GENVECTOR}
-    ${ROOT_HIST}
-    ${ROOT_TREE}
-    ${ROOT_CORE}
+    ROOT::GenVector
+    ROOT::Hist
+    ROOT::Tree
+    ROOT::Core
     )
 
 endforeach()

@@ -23,15 +23,27 @@ TrackHitEfficiencyAnalysisTool:
   MinAllowedChannelStatus: 1
 }
 
-SpacePointAnalysisTool:
+SpacePointAnalysisMCTool:
 {
-  tool_type:               "SpacePointAnalysis"
+  tool_type:               "SpacePointAnalysisMC"
 
   SpacePointLabelVec:      [ "cluster3DCryo0","cluster3DCryo1" ]
   HitLabelVec:             [ "cluster3DCryo0","cluster3DCryo1" ]
   MCParticleLabel:         "largeant"
   SimChannelLabel:         "largeant"
   SimEnergyLabel:          "ionization"
+  LocalDirName:            "EfficHists"
+  OffsetVec:               [0,0,0]
+  SigmaVec:                [1.,1.,1.]
+  MinAllowedChannelStatus: 1
+}
+
+SpacePointAnalysisTool:
+{
+  tool_type:               "SpacePointAnalysis"
+
+  SpacePointLabelVec:      [ "cluster3DCryo0","cluster3DCryo1" ]
+  HitLabelVec:             [ "cluster3DCryo0","cluster3DCryo1" ]
   LocalDirName:            "EfficHists"
   OffsetVec:               [0,0,0]
   SigmaVec:                [1.,1.,1.]

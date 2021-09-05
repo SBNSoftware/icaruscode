@@ -13,6 +13,7 @@ ICARUSSimpleFlash:
 }
 
 ICARUSSimpleFlashCryoE: @local::ICARUSSimpleFlash
+
 ICARUSSimpleFlashCryoE.AlgoConfig: @local::SimpleFlashCryoE
 
 ICARUSSimpleFlashCryoW: @local::ICARUSSimpleFlash

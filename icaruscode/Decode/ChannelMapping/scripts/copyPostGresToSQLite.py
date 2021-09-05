@@ -71,6 +71,20 @@ pmtPlacementColumns = ['pmt_id integer',
                        'channel_id integer',
                        'fragment_id integer']
 
+crtFEBChannelsColumns = ['feb_id text',
+                         'feb_channel integer',
+                         'pedestal float',
+                         'threshold_adjust integer',
+                         'bias integer',
+                         'hg integer',
+                         'create_time text',
+                         'update_user text',
+                         'update_time text',
+                         'create_user text',
+                         'channel_id integer',
+                         'feb_index integer',
+                         'mac_address integer']
+
 # Define the function to create and fill each table
 def copyTable(postGres, dbCurs, dbName, table, columns):
     createString = "CREATE TABLE " + table + " ("
@@ -103,7 +117,11 @@ def copyTable(postGres, dbCurs, dbName, table, columns):
                     fieldEntry = rowList[idx].upper()
                 insertString += "\'" + fieldEntry + "\'"
             else:
-                insertString += rowList[idx]
+                if "none" in rowList[idx]:
+                    #print("Found none in column data, field:",columns[idx],", value: ",rowList[idx])
+                    insertString += '0'
+                else:
+                    insertString += "\'" +rowList[idx]+ "\'"
         insertString += ")"
         if table == "daq_channels":
             print("idx:",rowIdx,"  -->",insertString)
@@ -116,11 +134,12 @@ dataQuery = DataQuery(queryurl)
 
 print(dataQuery)
 
-dbName             = "icarus_hardware_dev"
+dbName             = "icarus_hardware_prd"
 readoutBoardsTable = "readout_boards"
 daqChannelsTable   = "daq_channels"
 flangesTable       = "flanges"
 pmtPlacementTable  = "pmt_placements"
+crtfebchannelsTable= "feb_channels"
 
 ##################################################################################
 
@@ -138,6 +157,7 @@ copyTable(dataQuery, dbCurs, dbName, flangesTable, flangesColumns)
 
 copyTable(dataQuery, dbCurs, dbName, pmtPlacementTable, pmtPlacementColumns)
 
+copyTable(dataQuery, dbCurs, dbName, crtfebchannelsTable, crtFEBChannelsColumns)
 ###################################################################################
 
 sqliteDB.commit()

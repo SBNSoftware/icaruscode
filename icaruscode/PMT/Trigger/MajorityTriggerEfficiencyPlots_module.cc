@@ -37,6 +37,7 @@
 #include <algorithm> // std::sort()
 #include <vector>
 #include <memory> // std::unique_ptr
+#include <optional>
 #include <utility> // std::pair<>, std::move()
 #include <cstddef> // std::size_t
 
@@ -395,16 +396,17 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    * @param threshold PMT threshold in ADC counts (for printing)
    * @param plotSets set of plot boxes to fill (from `initializePlotSet()`)
    * @param eventInfo event information for plotting
-   * @param combinedTrigger combined trigger primitive
+   * @param combinedCounts combined trigger primitives, per cryostat
    * 
    * For each of the trigger requirements (`MinimumPrimitives`), this method:
    * 
-   * 1. applies the requirement to the `combinedTrigger` trigger primitive
-   * 2. computes the event trigger
+   * 1. applies the requirement to the `combinedCounts` trigger primitive
+   * 2. computes the event triggers (including the main one)
    * 3. fills all plots in all the plot sets for this requirement accordingly
    * 
-   * The input combined trigger primitive contains the maximum number of
-   * trigger primitives active at each optical clock tick.
+   * The input combined trigger primitives contain the maximum number of
+   * trigger primitives active at each optical clock tick, one entry for each
+   * cryostat.
    * It is assumed that the beam gate has already been "applied" so that outside
    * it no trigger primitive is considered open.
    * 
@@ -426,7 +428,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     std::size_t iThr, std::string const& threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
-    TriggerGateData_t const& combinedTrigger,
+    std::vector<TriggerGateData_t> const& combinedCounts,
     std::vector<ChannelID_t> const& channelList
     );
   
@@ -445,7 +447,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    * The event trigger is not finalized here, and the cryostat trigger
    * primitives are all returned.
    */
-  TriggerGateData_t combineTriggerPrimitives(
+  std::vector<TriggerGateData_t> combineTriggerPrimitives(
     TriggerGatesPerCryostat_t const& cryoGates,
     std::string const& threshold
     ) const;
@@ -690,7 +692,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   auto const& beamGate = helper().makeMyBeamGate(clockData);
   
   /* 
-   * 1. combine the trigger primitives (`combineTriggerPrimitives()`)
+   * 1. combine trigger primitives per cryostat (`combineTriggerPrimitives()`)
    * 2. apply the beam gate on the combination (`applyBeamGate()`)
    * 3. and compute the trigger response (`plotResponses()`)
    * 4. fill plots with the result (also `plotResponses()`)
@@ -698,7 +700,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::simulateAndPlot(
   plotResponses(
     thresholdIndex, threshold, selectedPlots, eventInfo,
     clockData,
-    beamGate.apply(combineTriggerPrimitives(gates, threshold)),
+    beamGate.applyToAll(combineTriggerPrimitives(gates, threshold)),
     helper().extractActiveChannels(gates)
     );
   
@@ -712,7 +714,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
-  TriggerGateData_t const& combinedCount,
+  std::vector<TriggerGateData_t> const& combinedCounts,
   std::vector<ChannelID_t> const& channelList
 ) {
   
@@ -739,17 +741,25 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
-  auto const maxPrimitiveTime { combinedCount.findMaxOpen() };
-  PrimitiveCount_t const maxPrimitives
-    { maxPrimitiveTime, combinedCount.openingCount(maxPrimitiveTime) };
+  PrimitiveCount_t maxPrimitives { ClockTick_t{ 0 } /* dummy */, 0U };
+  for (auto const& [ iCryo, combinedCount ]: util::enumerate(combinedCounts)) {
+    auto const maxPrimitiveTime { combinedCount.findMaxOpen() };
+    PrimitiveCount_t const maxPrimitivesInCryo
+      { maxPrimitiveTime, combinedCount.openingCount(maxPrimitiveTime) };
+    if (maxPrimitivesInCryo.second > maxPrimitives.second)
+      maxPrimitives = maxPrimitivesInCryo;
 
-  mf::LogTrace(helper().logCategory())
-    << "Max primitive count in " << threshold << ": "
-    << maxPrimitives.second << " at tick " << maxPrimitives.first << " ("
-    << detinfo::DetectorTimings(clockData).toElectronicsTime
-      (detinfo::DetectorTimings::optical_tick{ maxPrimitives.first })
-    << ")"
-    ;
+    mf::LogTrace log { helper().logCategory() };
+    log << "Max primitive count in " << threshold << " for C:" << iCryo << ": "
+      << maxPrimitivesInCryo.second;
+    if (maxPrimitivesInCryo.second > 0) {
+      log << " at tick " << maxPrimitivesInCryo.first << " ("
+        << detinfo::DetectorTimings(clockData).toElectronicsTime
+          (detinfo::DetectorTimings::optical_tick{ maxPrimitivesInCryo.first })
+        << ")"
+        ;
+    } // if
+  } // for
   
   PMTInfo_t const PMTinfo { threshold, channelList };
   
@@ -760,31 +770,51 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    * Note that in this type of plots each event appears in all bins
    * (may be with "fired" or "not fired" on each bin)
    */
-  PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
+
+  // PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
+
   bool fired = true; // the final trigger response (changes with requirement)
   
   for (auto [ iReq, minCount ]: util::enumerate(fMinimumPrimitives)) {
     
-    // in this check, `fired` remembers the outcome from the previous threshold
-    if (fired && (lastMinCount.second < minCount)) {
-      // if we haven't passed this minimum yet
-      ClockTick_t const time = combinedCount.findOpen(minCount);
-      if (time == TriggerGateData_t::MaxTick) {
-        mf::LogTrace(helper().logCategory())
-          << "Never got at " << minCount << " primitives or above.";
-        fired = false;
-      }
-      else {
-        lastMinCount = { time, combinedCount.openingCount(time) };
-        mf::LogTrace(helper().logCategory())
-          << "Reached " << minCount << " primitives or above ("
-          << lastMinCount.second << ") at " << lastMinCount.first << ".";
-      }
-    } // if
-    
     TriggerInfo_t triggerInfo;
-    if (fired) triggerInfo.emplace(optical_tick{ lastMinCount.first });
-
+    if (fired) { // this is still the previous requirement
+      for (auto const& [ iCryo, cryoGate ]: util::enumerate(combinedCounts)) {
+        
+        icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
+          { cryoGate, minCount };
+        extractOpeningInfo.setLocation(iCryo);
+        while (extractOpeningInfo) {
+          auto info = extractOpeningInfo();
+          if (info) triggerInfo.add(info.value());
+        } // while
+      } // for all cryostats
+      triggerInfo.sortOpenings(); // sort in time
+      fired = triggerInfo.fired();
+    } // if previous fired
+    
+    if (fired) {
+      mf::LogTrace log(helper().logCategory());
+      log
+        << " => fired (>" << minCount << ") at " << triggerInfo.atTick()
+        << " (level " << triggerInfo.level() << ") from"
+        ;
+      if (triggerInfo.hasLocation()) log << " C:" << triggerInfo.location();
+      else log << " unknown location";
+      log << ", " << triggerInfo.nTriggers() << " triggers total:";
+      for (auto const& [iTrigger, info ]: util::enumerate(triggerInfo.all())) {
+        log << " [" << iTrigger << "] at " << info.tick;
+        if (info.hasLocation()) log << " of C:" << info.locationID;
+        else log << " [unknown location]";
+        log << " (level=" << info.level << ")";
+      } // for
+      
+    } // if fired
+    else {
+      mf::LogTrace(helper().logCategory())
+        << " => not fired (>" << minCount << ")";
+    }
+    
     // at this point we know we have minCount or more trigger primitives,
     // and the time of this one is in lastMinCount.first (just in case)
     
@@ -865,7 +895,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
 auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   TriggerGatesPerCryostat_t const& cryoGates,
   std::string const& threshold
-) const -> TriggerGateData_t {
+) const -> std::vector<TriggerGateData_t> {
 
   //
   // simple count
@@ -880,20 +910,13 @@ auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
       << "Simulating trigger response with ADC threshold " << threshold
       << " for " << cryoID << " (" << gates.size() << " primitives)";
 
-    if (gates.empty()) { // this is unexpected...
-      mf::LogWarning(helper().logCategory())
-        << "No trigger primitive found for threshold " << threshold
-        << " in " << cryoID;
-      return {};
-    } // if no gates
-
     cryoCombinedGate.push_back(icarus::trigger::sumGates(gates));
   } // for
 
   //
-  // largest number of trigger primitives at any time for any cryostat
+  // largest number of trigger primitives at any time, per cryostat
   //
-  return icarus::trigger::maxGates(cryoCombinedGate);
+  return cryoCombinedGate;
   
 } // icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives()
 

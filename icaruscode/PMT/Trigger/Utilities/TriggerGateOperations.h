@@ -213,7 +213,8 @@ GateObj icarus::trigger::discriminate(
   auto const closeToOpen
     = static_cast<typename GateObj::OpeningDiff_t>(pass - fail);
   
-  // ... except for the data, which we do want to touch
+  // ... except for the data, which we do want to touch:
+  discrGate.clear();
   
   // set the starting level according to the discrimination
   auto lastTick = discrGate.MinTick;

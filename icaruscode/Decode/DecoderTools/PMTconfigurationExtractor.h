@@ -80,7 +80,7 @@ class icarus::PMTconfigurationExtractorBase {
   
   /// Finalizes the content of `config` and returns it.
   ConfigurationData_t finalize(ConfigurationData_t config) const
-    { return std::move(config); }
+    { return config; }
   
   
   /// @}
@@ -380,6 +380,11 @@ class icarus::PMTconfigurationExtractor
    */
   std::optional<fhicl::ParameterSet> readBoardConfig
     (fhicl::ParameterSet const& pset, std::string const& key) const;
+  
+  
+  /// Returns the fragment ID of the specified board as known by the database.
+  static unsigned int readoutBoardDBfragmentID
+    (sbn::V1730Configuration const& boardConfig);
   
 }; // icarus::PMTconfigurationExtractor
 

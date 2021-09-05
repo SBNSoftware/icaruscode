@@ -246,7 +246,7 @@ void TPCDecoderOverlayFilter1D::process_fragment(detinfo::DetectorClocksData con
     if (fRangeBins.empty())        fRangeBins        = icarus_signal_processing::VectorInt(nChannelsPerFragment);
 
     // Allocate the de-noising object
-    icarus_signal_processing::Denoising            denoiser;
+    icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
     cet::cpu_timer theClockPedestal;

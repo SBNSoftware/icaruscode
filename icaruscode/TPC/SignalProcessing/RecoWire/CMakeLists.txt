@@ -1,8 +1,10 @@
-
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
+endif()
 
 # Add the subfolder containing the deconvolution tools
 add_subdirectory(DeconTools)
+add_subdirectory(ROITools)
 add_subdirectory(SimTestPulse)
 
 add_definitions(-DEIGEN_FFTW_DEFAULT)

@@ -1,5 +1,6 @@
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 cet_add_compiler_flags(CXX -Wno-maybe-uninitialized)
-
+endif()
 art_make(    LIBRARY_NAME icaruscode_CRTUtils
              LIB_LIBRARIES larcorealg_Geometry
                            larcore_Geometry_Geometry_service
@@ -11,6 +12,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            lardataobj_RawData
                            lardataobj_RecoBase
                            lardata_RecoObjects  
+                           lardataalg_DetectorInfo
                            larpandora_LArPandoraInterface
                            nusimdata_SimulationBase
                            cetlib cetlib_except
@@ -29,6 +31,7 @@ art_make(    LIBRARY_NAME icaruscode_CRTUtils
                            ${ROOT_GEOM}
                            ${ROOT_XMLIO}
                            ${ROOT_GDML}
+                           ${ROOT_GENVECTOR}
                            ${ROOT_BASIC_LIB_LIST}
                            ${Boost_SYSTEM_LIBRARY}
                            icaruscode_CRT

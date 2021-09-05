@@ -1,5 +1,5 @@
 #include "services_common_icarus.fcl"
-#include "decoderDefs.fcl"
+#include "decoderdefs_icarus.fcl"
 #include "recowire_icarus.fcl"
 #include "hitfindermodules_icarus.fcl"
 
@@ -47,7 +47,7 @@ physics.producers.daq.OutputCorrection:             true
 physics.producers.daq.DecoderTool.CoherentGrouping: 32
 
 # Setup for the 1D deconvolution
-physics.producers.decon1droi.DigitModuleLabel:      "daq"
+physics.producers.decon1droi.RawDigitLabelVec:    [ "daq" ]
 
 outputs: 
 {

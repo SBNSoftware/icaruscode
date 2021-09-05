@@ -594,14 +594,21 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * primitives `XX`.
  * 
  * * `EffVsEnergyInSpill`: trigger efficiency as function of the total energy
- *   deposited during the beam gate;
+ *   deposited during the beam gate.
  * * `EffVsEnergyInSpillActive`: trigger efficiency as function of the energy
- *   deposited in the TPC active volumes during the beam gate;
+ *   deposited in the TPC active volumes during the beam gate.
  * * `EffVsNeutrinoEnergy`, `EffVsLeptonEnergy`: trigger efficiency as function
  *   of the true energy of the first interacting neutrino, and of the outgoing
- *   lepton in the final state of the interaction, respectively;
- * * `TriggerTick`: time of the earliest trigger. Only triggering events
- *   contribute.
+ *   lepton in the final state of the interaction, respectively.
+ * * `TriggerTick`: time of the earliest trigger, in ticks. Only triggering
+ *   events contribute.
+ * * `TriggerTime`: the time (relative to the nominal beam gate opening) of the
+ *   "main" trigger (the earliest in the triggering window). Only triggering
+ *   events contribute.
+ * * `OpeningTimes`: the time (relative to the nominal beam gate opening) of
+ *   all the times the trigger requirements were satisfied (limited to the
+ *   time interval where the trigger emulation is performed). Only triggering
+ *   events contribute.
  * 
  * The parameters are defined in the same way as in the
  * @ref TriggerEfficiencyPlotsBase_SelectionPlots "selection plots", unless stated
@@ -658,7 +665,12 @@ struct icarus::trigger::details::PlotInfoTree: public TreeHolder {
  * * `EnergyDepositTags`
  *     (list of input tags, default: `[ "largeant:TPCActive" ]`): a list of
  *     data products with energy depositions; if empty, plots or categories
- *     requiring energy deposition information will be omitted;
+ *     requiring energy deposition information will be omitted; in alternative,
+ *     `EnergyDepositSummaryTag` can be specified with the same purpose;
+ * * `EnergyDepositSummaryTag` (input tags, optional): if specified, overrides
+ *     `EnergyDepositTags` and uses for the energy deposition the information
+ *     from the summary in the specified data product; such summary may be
+ *     created for example by `ExtractEnergyDepositionSummary` module;
  * * `BeamGateDuration` (time, _mandatory_): the duration of the beam
  *     gate; _the time requires the unit to be explicitly specified_: use
  *     `"1.6 us"` for BNB, `9.5 us` for NuMI (also available as
@@ -985,6 +997,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       std::vector<art::InputTag>{ "largeant:TPCActive" }
       };
 
+    fhicl::OptionalAtom<art::InputTag> EnergyDepositSummaryTag {
+      Name("EnergyDepositSummaryTag"),
+      Comment("label of energy deposition summary data product")
+      };
+
     fhicl::Atom<std::string> TriggerGatesTag {
       Name("TriggerGatesTag"),
       Comment("label of the input trigger gate data product (no instance name)")
@@ -1029,6 +1046,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
       Comment
         ("only events within TPC active volume are plot (if that makes sense)"),
       true
+      };
+    
+    fhicl::Sequence<std::string> OnlyPlotCategories {
+      Name("OnlyPlotCategories"),
+      Comment
+        ("if specified, plot categories not in this list are not considered"),
+      std::vector<std::string>{}
       };
     
     fhicl::OptionalAtom<std::string> EventTreeName {
@@ -1369,7 +1393,7 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   /**
    * @brief Creates a `GatePack_t` from the specified event
-   * @param event the event to extract beam for (if `nullptr`, uses job info(
+   * @param event the event to extract beam for (if `nullptr`, uses job info)
    * @return a set of relevant gates
    * 
    * Use it C++17-fancy!
@@ -1439,11 +1463,13 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   
   bool fPlotOnlyActiveVolume; ///< Plot only events in active volume.
   
+  ///< Only apply these categories (empty applies all).
+  std::vector<std::string> fOnlyPlotCategories;
+  
   /// Message facility stream category for output.
   std::string const fLogCategory;
 
   std::string fLogEventDetails; ///< Steam where to print event info.
-  
   
   /// Plot categories (via `initializePlots()`).
   PlotCategories_t fPlotCategories;
@@ -1525,6 +1551,11 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
     (PlotSandbox const& box, std::string const& category)
     { return thrAndCatName(box.name(), category); }
   
+  /// Creates a `EDepTags_t` out of the module configuration.
+  static icarus::trigger::details::EventInfoExtractor::EDepTags_t makeEdepTag(
+    fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
+    fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+    );
   
 }; // icarus::trigger::TriggerEfficiencyPlotsBase
 

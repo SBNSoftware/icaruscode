@@ -14,10 +14,12 @@
 #include "icaruscode/PMT/Trigger/Algorithms/BeamGateMaker.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
+#include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
+#include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "larcore/CoreUtils/ServiceUtil.h" // lar::providerFrom()
@@ -66,6 +68,18 @@
 #include <utility> // std::pair<>, std::move()
 #include <cassert>
 
+
+//------------------------------------------------------------------------------
+namespace {
+  
+  /// Returns a sorted copy of the specified collection.
+  template <typename Coll>
+  Coll sortCollection(Coll cont) {
+    std::sort(cont.begin(), cont.end());
+    return cont;
+  }
+  
+} // local namespace
 
 //------------------------------------------------------------------------------
 //---  icarus::trigger::details::TriggerPassCounters
@@ -486,6 +500,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
       (fBeamGateStart - config.PreSpillWindowGap() - fPreSpillWindow)
   , fTriggerTimeResolution(config.TriggerTimeResolution())
   , fPlotOnlyActiveVolume (config.PlotOnlyActiveVolume())
+  , fOnlyPlotCategories   (sortCollection(config.OnlyPlotCategories()))
   , fLogCategory          (config.LogCategory())
   // services
   , fGeom      (*lar::providerFrom<geo::Geometry>())
@@ -493,8 +508,11 @@ icarus::trigger::TriggerEfficiencyPlotsBase::TriggerEfficiencyPlotsBase
   // cached
   , fEventInfoExtractorMaker(
       config.GeneratorTags(),              // truthTags
-      config.EnergyDepositTags(),          // edepTags
+      makeEdepTag(config.EnergyDepositTags, config.EnergyDepositSummaryTag),
+                                           // edepTags
       fGeom,                               // geom
+      nullptr,                             // detProps
+      nullptr,                             // detTimings
       fLogCategory,                        // logCategory
       consumer                             // consumesCollector
     )
@@ -690,6 +708,22 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
 
   fBeamGateChangeCheck(beamGate);
   
+  if (fOnlyPlotCategories.empty()) fPlotCategories = std::move(categories);
+  else {
+    auto const plotThisCategory = [this](std::string const& name)
+      {
+        return std::binary_search
+          (fOnlyPlotCategories.begin(), fOnlyPlotCategories.end(), name);
+      };
+    
+    fPlotCategories.clear();
+    for (auto&& plotCategory: categories) {
+      if (!plotThisCategory(plotCategory.name())) continue;
+      fPlotCategories.push_back(std::move(plotCategory));
+    } // for
+  }
+  
+  
   {
     mf::LogTrace(fLogCategory)
       << "Beam gate:"
@@ -704,10 +738,15 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::initializePlots
       log << "\n * " << thresholdTag << " (from '" << dataTag.encode() << "')";
     log << "\nBeam gate for plots is " << beamGate.asSimulationRange();
     
+    log << "\nConfigured " << fPlotCategories.size() << " plot categories"
+      << (fPlotCategories.empty()? '.': ':');
+    for (auto const& plotCategory: fPlotCategories) {
+      log << "\n ['" << plotCategory.name() << "'] "
+        << plotCategory.description();
+    } // for
+    
   } // local block
   
-  
-  fPlotCategories = std::move(categories);
   
   for (std::string const& thresholdTag: util::get_elements<0U>(fADCthresholds))
   {
@@ -862,7 +901,32 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.duration() / triggerResolutionTicks,
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
+
+  detinfo::timescales::electronics_time const startTime = std::min(
+    beamGate.asElectronicsTimeRange().start(),
+    preSpillWindow.asElectronicsTimeRange().start()
+    );
+  detinfo::timescales::electronics_time const endTime = std::max(
+    beamGate.asElectronicsTimeRange().end(),
+    preSpillWindow.asElectronicsTimeRange().end()
+    );
   
+  plots.make<TH1F>(
+    "OpeningTimes",
+    "Times at which trigger logic was satisfied"
+      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";opened trigger gates",
+    10000, startTime.value(), endTime.value()
+    );
+  
+  plots.make<TH1F>(
+    "TriggerTime",
+    "Time of the trigger"
+      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";opened trigger gates",
+    1000, startTime.value(), endTime.value()
+    );
+
   //
   // plots independent of the trigger primitive requirements
   //
@@ -1037,8 +1101,8 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEventPlots
       );
   }
   if (useGen()) {
-    assert(eventInfo.hasGenerated());
     if (eventInfo.isNeutrino()) {
+      assert(eventInfo.hasGenerated());
       getTrig.Hist("NeutrinoEnergy"s).Fill(double(eventInfo.NeutrinoEnergy()));
       getTrig.Hist("InteractionType"s).Fill(eventInfo.InteractionType());
       getTrig.Hist("LeptonEnergy"s).Fill(double(eventInfo.LeptonEnergy()));
@@ -1076,11 +1140,14 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
 ) const {
   
   using namespace std::string_literals;
-  
+  using OpeningInfo_t = icarus::trigger::details::TriggerInfo_t::OpeningInfo_t;
+
+  auto const detTimings = icarus::ns::util::makeDetTimings();
+
   HistGetter const getTrigEff { plots };
   
   bool const fired = triggerInfo.fired();
-  
+
   // efficiency plots
   if (useEDep()) {
     getTrigEff.Eff("EffVsEnergyInSpill"s).Fill
@@ -1102,8 +1169,26 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   } // if use generated information
   
   if (fired) {
+    detinfo::timescales::electronics_time const nominalBeamTime
+      = detTimings.BeamGateTime();
+    
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
-  }
+    
+    // converts the tick in the argument into electronics time:
+    auto openingTime = [&detTimings](OpeningInfo_t const& info)
+      { return detTimings.toElectronicsTime(info.tick); };
+
+    getTrigEff.Hist("TriggerTime"s).Fill
+      ((openingTime(triggerInfo.main()) - nominalBeamTime).value());
+
+    std::vector<OpeningInfo_t> const& allTriggerOpenings = triggerInfo.all();
+
+    for (OpeningInfo_t const& opening : allTriggerOpenings) {
+      getTrigEff.Hist("OpeningTimes"s).Fill
+        ((openingTime(opening) - nominalBeamTime).value());
+    } // for all trigger openings
+    
+  } // if fired
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots()
 
@@ -1375,6 +1460,29 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::makeChannelCryostatMap
   return channelCryostatMap;
   
 } // icarus::trigger::TriggerEfficiencyPlotsBase::makeChannelCryostatMap()
+
+
+//------------------------------------------------------------------------------
+icarus::trigger::details::EventInfoExtractor::EDepTags_t
+icarus::trigger::TriggerEfficiencyPlotsBase::makeEdepTag(
+  fhicl::Sequence<art::InputTag> const& EnergyDepositTags,
+  fhicl::OptionalAtom<art::InputTag> const& EnergyDepositSummaryTag
+) {
+  
+  if (auto summaryTag = util::fhicl::getOptionalValue(EnergyDepositSummaryTag))
+  {
+    return {
+      icarus::trigger::details::EventInfoExtractor::SimEnergyDepositSummaryInputTag
+        { *summaryTag }
+      };
+  }
+  else {
+    
+    return { EnergyDepositTags() };
+    
+  }
+  
+} // icarus::trigger::MakeTriggerSimulationTree::makeEdepTag()
 
 
 //------------------------------------------------------------------------------

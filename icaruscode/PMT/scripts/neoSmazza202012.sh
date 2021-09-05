@@ -35,7 +35,7 @@
 #
 
 SCRIPTNAME="$(basename "$0")"
-SCRIPTVERSION="1.5"
+SCRIPTVERSION="1.6"
 
 
 ################################################################################
@@ -70,7 +70,7 @@ declare -i PhotonsPerVoxel=1000000
 # Job configuration for the generation in a few voxels (template):
 # icaruscode version and FHiCL name
 #
-declare -r ProductionVersion="${ICARUSCODE_VERSION:-"v09_10_01"}"
+declare -r ProductionVersion="${ICARUS_VERSION:-v09_22_01}"
 declare -r ReferenceConfiguration='photonlibrary_builder_icarus.fcl'
 
 declare -ir VoxelsPerJob=814 # estimate: 70s/ 1M photons
@@ -81,7 +81,7 @@ declare -r DefaultCampaignTag="$(date '+%Y%m%d')" # current date in format YYYYM
 #
 # Technical details that may need update because world goes on
 #
-declare -r Qualifiers="${MRB_QUALS:-"e19:prof"}" # default: GCC 8.2.0
+declare -r Qualifiers='e20:prof' # GCC 9.3.0
 declare -r ExecutionNodeOS='SL7' # Scientific Linux [Fermi] 7
 declare    ExpectedJobTime='48h'
 declare -r ExpectedMemoryUsage='2000'
@@ -92,7 +92,7 @@ declare -r GeneratorLabel='generator'
 #
 if [[ "${THISISATEST:-0}" != "0" ]]; then
   if [[ "$THISISATEST" == 1 ]]; then
-    PhotonsPerVoxel=10000
+    PhotonsPerVoxel=$((${PhotonsPerVoxel:-1000000} / 100)) # 1% of the regular job
   else
     PhotonsPerVoxel="$THISISATEST"
   fi
@@ -156,32 +156,49 @@ LastJob=$((NJobs - 1))
 function STDERR() { echo "$@" >&2 ; }
 function FATAL() {
   local -i Code="$1"
+  export KEEPTEMP=1
   shift
   STDERR "FATAL (${Code}): $*"
+  if [[ -r "$ErrorLog" ]]; then
+    echo "FATAL (${Code}): $*" >> "$ErrorLog"
+    STDERR "  (log file available at: '${ErrorLog}')"
+  fi
   exit "$Code"
 } # FATAL()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-declare -a TempFiles
 function ClearTemporary() {
-  local TempFile
-  for TempFile in "${TempFiles[@]}" ; do
-    rm -f "$TempFile"
-  done
+  [[ -d "$MyTempDir" ]] || return
+  if [[ "${KEEPTEMP:-0}" != 0 ]]; then
+    # if the temporary directory is empty, we remove it anyway.
+    rmdir -p "$MyTempDir" >& /dev/null || STDERR "WARNING: temporary files in '${MyTempDir}' have been left behind."
+  else
+    rm -Rf "$MyTempDir"
+  fi
 } # ClearTemporary()
+trap ClearTemporary EXIT
+declare -r MyTempDir="$(mktemp --directory --tmpdir "${SCRIPTNAME%.sh}-${USER}-tmpXXXXXX" )"
 
-function CreateTemporary() {
+
+function ScheduleForTransfer() {
+  # adds the specified file in the list of files to transfer to ScriptOutputDir;
+  # if the path is relative to our temporary directory, its relative path is preserved
   
-  local Pattern="$1"
+  [[ -n "$MyTempDir" ]] || FATAL 1 "Logic error: temporary directory not defined!"
+  [[ -n "$TransferListTempFile" ]] || FATAL 1 "Logic error: transfer file not defined!"
+  [[ -n "$ScriptOutputDir" ]] || FATAL 1 "Logic error: script output directory not defined!"
   
-  [[ "${#TempFiles[@]}" == 0 ]] && trap ClearTemporary EXIT
+  local SourceFile RelSourcePath DestPath
+  for SourceFile in "$@" ; do
+    RelSourcePath="${SourceFile#${MyTempDir}/}"
+    [[ "${RelSourcePath:0:1}" == '/' ]] && RelSourcePath="$(basename "$SourceFile")"
+    DestPath="${ScriptOutputDir%/}/${RelSourcePath}"
   
-  local TempFile="$(mktemp --tmpdir ${Pattern} )"
-  TempFiles+=( "$TempFile" )
-  echo "$TempFile"
+    echo "${SourceFile} ${DestPath}" >> "$TransferListTempFile"
+  done
   
-} # CreateTemporary()
+} # ScheduleForTransfer()
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -222,6 +239,22 @@ function Pager() {
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+function CreateDirectoryFor() {
+  local Dest
+  for Dest in "$@" ; do
+    
+    if [[ "${Dest: -1}" == '/' ]]; then
+      Dir="$Dest"
+    else
+      Dir="$(dirname "$Dest")"
+    fi
+    
+    [[ -d "$Dir" ]] && continue
+    mkdir "$Dir" || FATAL $? "Can't create a directory for '${Dest}'."
+  done
+} # CreateDirectoryFor()
+
+
 function FHiCLtoXMLname() {
   local TemplateName="$1"
   echo "${TemplateName%.fcl}.xml"
@@ -236,6 +269,9 @@ function CreateFHiCL() {
   local ConfigurationFileName="$4"
   local JobTag="$5"
   
+  # ----------------------------------------------------------------------------
+  # ---  BEGIN FCL HERE
+  # ----------------------------------------------------------------------------
   local ConfigurationFileBaseName
   if [[ -n "$ConfigurationFileName" ]]; then
     ConfigurationFileBaseName="$(basename "${ConfigurationFileName%.fcl}")"
@@ -247,7 +283,7 @@ EOH
   
   cat <<EOF
 #
-#  Configuration file for ${NVoxels} voxels starting from ${FirstVoxel}${JobTag:+" (${JobTag})"}
+#  Configuration file for ${NVoxels} voxels starting from ${FirstVoxel}${JobTag:+" (${JobTag}${NJobs:+" / ${NJobs} jobs"})"}
 #
 #  Template configuration file: '${TemplateFHiCL}'
 #  
@@ -304,6 +340,9 @@ ${ConfigurationFileBaseName:+"services.TFileService.fileName: '${ConfigurationFi
 # ------------------------------------------------------------------------------
 
 EOF
+  # ----------------------------------------------------------------------------
+  # ---  END FCL
+  # ----------------------------------------------------------------------------
   
 } # CreateFHiCL()
 
@@ -320,7 +359,9 @@ function CreateXML() {
   local -r JobConfigurationDir="$(dirname "$JobConfiguration")"
   
   
-  # INPUT DATACARD
+  # ----------------------------------------------------------------------------
+  # ---  BEGIN XML HERE
+  # ----------------------------------------------------------------------------
   cat <<EOF
 <?xml version="1.0"?>
 
@@ -349,6 +390,7 @@ function CreateXML() {
     <resource>DEDICATED,OPPORTUNISTIC</resource>
     <cpu>1</cpu>
     <memory>${ExpectedMemoryUsage}</memory>
+    <disk>5GB</disk>
 
     <!-- LArSoft information -->
     <larsoft>
@@ -369,7 +411,13 @@ function CreateXML() {
       <datatier>generated</datatier>
       
       <!-- AutoRelease+Grace: if expected life time is exceeded, ask for the job to be rescheduled with 1.5 more days -->
-      <jobsub>--expected-lifetime ${ExpectedJobTime} --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceLifetime=129600'${ExtraJobsubOptions:+ "${ExtraJobsubOptions[@]}"}</jobsub>
+      <!-- jobsub>--expected-lifetime ${ExpectedJobTime} --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceLifetime=129600'${ExtraJobsubOptions:+ "${ExtraJobsubOptions[@]}"}</jobsub -->
+      <!-- AutoRelease+Grace: release, with the same time requirement -->
+      <!-- jobsub>--expected-lifetime ${ExpectedJobTime} --lines '+FERMIHTC_AutoRelease=True' --lines '+FERMIHTC_GraceLifetime=0'${ExtraJobsubOptions:+ "${ExtraJobsubOptions[@]}"}</jobsub -->
+      
+      <!-- if the job has been held (JobStatus==5) for more than 10 minutes ((CurrentTime-EnteredCurrentStatus)>600) and has not restarted fewer than 4 times (NumJobStarts<4),
+           then release it; this is Vito's magic -->
+      <jobsub>--expected-lifetime ${ExpectedJobTime} --lines='+PeriodicRelease=(JobStatus==5)&amp;&amp;(NumJobStarts&lt;4)&amp;&amp;((CurrentTime-EnteredCurrentStatus)&gt;600)'</jobsub>
       
       <TFileName>&name;-PhotonLibraryData.root</TFileName>
       
@@ -389,6 +437,9 @@ function CreateXML() {
 
 </job>
 EOF
+  # ----------------------------------------------------------------------------
+  # ---  END XML
+  # ----------------------------------------------------------------------------
 } # CreateXML()
 
 
@@ -457,22 +508,57 @@ fi
 # preparation of directories and scripts
 #
 
-# dCache does not support appending output to a file: we build the list locally and then we move it later
-XMLlistTempFile="$(mktemp --tmpdir "${SCRIPTNAME%.sh}-${XMLlistName}.tmpXXXXXX")"
-SubmitTempFile="$(mktemp --tmpdir "${SCRIPTNAME%.sh}-${SubmitScriptName}.tmpXXXXXX")"
+# start the log (will be deleted on successful termination);
+# not everything is going to be logged...
+declare ErrorLog="${MyTempDir}/${SCRIPTNAME%.sh}.log"
+cat <<EOH > "$ErrorLog"
+================================================================================
+${SCRIPTNAME} log file started at $(date) by ${USER}
 
-if [[ ! -d "$FHiCLdir" ]]; then
-  mkdir -p "$FHiCLdir" || FATAL 3 "Can't create FHiCL output directory '${FHiCLdir}'"
-fi
+Working directory: $(pwd)
+
+Command: $*
+
+================================================================================
+EOH
+
+
+# test the transfer to destination:
+# we don't want to find out we can't transfer only at the end!
+mkdir -p "$ScriptOutputDir" || FATAL $? "Can't create output directory '${ScriptOutputDir}'."
+TestFile='test.file'
+rm -f "$TestFile" "${ScriptOutputDir}/${TestFile}"
+echo "Test file ($(date))" > "$TestFile"
+declare -a Cmd=( ifdh cp '-D' "$TestFile" "$ScriptOutputDir" )
+echo -n "Testing IFDH file transfer..."
+cat <<EOM >> "$ErrorLog"
+$(date) - testing IFDH file transfer...
+CMD> ${Cmd[@]}
+EOM
+"${Cmd[@]}" >> "$ErrorLog" 2>&1 || FATAL $? "Test transfer failed."
+[[ -r "${ScriptOutputDir}/${TestFile}" ]] || FATAL 2 "Test transfer completed, but test file is not available at '${ScriptOutputDir}/${TestFile}'."
+rm -f "$TestFile" "${ScriptOutputDir}/${TestFile}"
+echo " done."
+cat <<EOM >> "$ErrorLog"
+$(date) - IFDH file transfer test successful
+--------------------------------------------------------------------------------
+CMD> ${Cmd[@]}
+EOM
+
+# this file holds the temporary files and their final destination;
+# IFDH will take care of the transfer at the end of the script.
+TransferListTempFile="${MyTempDir}/TransferFileList.txt"
+
+
+XMLlistTempFile="${MyTempDir}/${XMLlistName}"
+SubmitTempFile="${MyTempDir}/${SubmitScriptName}"
+CreateDirectoryFor "${MyTempDir}/fcl/" "${MyTempDir}/xml/" || FATAL 2 "Can't create temporary directories!"
+ScheduleForTransfer "$XMLlistTempFile" "$SubmitTempFile"
+
+CreateDirectoryFor "${FHiCLdir}/" "${XMLdir}/" "$XMLlistPath" "$SubmitScriptPath"
 AbsFHiCLdir="$(readlink -f "$FHiCLdir")"
 
-if [[ ! -d "$XMLdir" ]]; then
-  mkdir -p "$XMLdir" || FATAL 3 "Can't create XML output directory '${XMLdir}'"
-fi
-rm -f "$XMLlistPath"
-touch "$XMLlistPath" || FATAL 2 "Can't create XML file list '${XMLlistPath}'!"
 
-rm -f "$SubmitScriptPath"
 cat <<EOH > "$SubmitTempFile"
 #!/usr/bin/env bash
 #
@@ -493,6 +579,7 @@ EOH
 #
 # job loop
 #
+echo -n "$(date) - Creating ${NJobs} job XML and FHiCL files:"
 declare -ri JobPadding="$(CounterPadding "$NJobs")"
 
 declare -i FirstVoxel=0
@@ -511,18 +598,21 @@ while [[ $FirstVoxel -lt $TotalVoxels ]]; do
   # create the configuration file
   #
   JobConfigurationFileName="${ReferenceBaseName}-${JobTag}.fcl"
-  JobConfigurationFile="${AbsFHiCLdir}/${JobConfigurationFileName}"
-  JobConfigurationXML="${XMLdir}/$(FHiCLtoXMLname "$JobConfigurationFileName")"
+  JobConfigurationTempPath="${MyTempDir}/fcl/${JobConfigurationFileName}"
+  JobConfigurationPath="${ScriptOutputDir%/}/fcl/${JobConfigurationFileName}"
+  JobConfigurationXMLTempPath="${MyTempDir}/xml/$(FHiCLtoXMLname "$JobConfigurationFileName")"
+  JobConfigurationXML="${ScriptOutputDir%/}/xml/$(FHiCLtoXMLname "$JobConfigurationFileName")"
   JobOutputDir="${BaseJobOutputDir%/}/${JobTag}"
   
   # for fast debug of the loop:
 #   echo "Job ${iJob}: ${JobVoxels} voxels from ${FirstVoxel} => ${JobConfigurationXML}"
   
   # dCache also does not support overwriting with redirection...
-  rm -f "$JobConfigurationFile" "$JobConfigurationXML"
-  CreateFHiCL  "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" "$JobConfigurationFileName" "$JobTag" > "$JobConfigurationFile"
-  CreateXML "$JobOutputDir" "$JobConfigurationFile" "$JobVoxels" "$JobTag" > "$JobConfigurationXML"
+  rm -f "$JobConfigurationTempPath" "$JobConfigurationXMLTempPath"
+  CreateFHiCL  "$(basename "$ReferenceConfiguration")" "$FirstVoxel" "$JobVoxels" "$JobConfigurationFileName" "$JobTag" > "$JobConfigurationTempPath"
+  CreateXML "$JobOutputDir" "$JobConfigurationPath" "$JobVoxels" "$JobTag" > "$JobConfigurationXMLTempPath"
   
+  ScheduleForTransfer "$JobConfigurationTempPath" "$JobConfigurationXMLTempPath"
   echo "$JobConfigurationXML" >> "$XMLlistTempFile"
   
   echo "echo '[${JobTag}] ${JobConfigurationXML}' ; project.py --xml \"${JobConfigurationXML}\" --stage \"${StageName}\" \"\${Arguments[@]}\" || let ++nErrors" >> "$SubmitTempFile"
@@ -536,6 +626,12 @@ while [[ $FirstVoxel -lt $TotalVoxels ]]; do
 #   [[ $iJob -ge 4 ]] && break # another debug shortcut
 done
 
+# some sanity checks
+[[ $FirstVoxel == $TotalVoxels ]] || FATAL 1 "Stop everything!! there should be ${TotalVoxels} in total, but we covered ${FirstVoxel}!!"
+[[ $iJob == $NJobs ]] || FATAL 1 "Stop everything!! there should be ${NJobs} in total, but we created ${iJob}!!"
+
+Pager "$iJob" "$NJobs" '20' # complete paging output
+
 #
 # finish
 #
@@ -545,17 +641,38 @@ echo "Execution of ${NJobs} commands completed (\${nErrors} errors)."
 [[ \$nErrors == 0 ]]
 EOF
 
-mkdir -p "$(dirname "$XMLlistPath")"
-mv "$XMLlistTempFile" "$XMLlistPath"
-mkdir -p "$(dirname "$SubmitScriptPath")"
-mv "$SubmitTempFile" "$SubmitScriptPath"
+#
+# transfer files to the final destination;
+# in principle if IFDH is not available we could work around it with NFS/POSIX,
+# but we are trying to avoid that.
+# 
+# while read Source Dest ; do
+#   cp -a "$Source" "$Dest"
+# done < "$TransferListTempFile"
+#
+#
+
+# remove the old versions of the output files, if any
+# (except for the XML and FHiCL)
+rm -f "$SubmitScriptPath" "$XMLlistPath"
+
+
+echo -n "$(date) - Transferring the files to the final destination (it may take a while)..."
+Cmd=( ifdh cp '-f' "$TransferListTempFile" )
+cat <<EOM >> "$ErrorLog"
+$(date) - final file transfer
+CMD> ${Cmd[@]}
+EOM
+"${Cmd[@]}" >> "$ErrorLog" 2>&1 || FATAL $? "Error transferring the files to '${ScriptOutputDir}'."
 chmod a+x "$SubmitScriptPath"
+echo " done."
 
-# some sanity checks
-[[ $FirstVoxel == $TotalVoxels ]] || FATAL 1 "Stop everything!! there should be ${TotalVoxels} in total, but we covered ${FirstVoxel}!!"
-[[ $iJob == $NJobs ]] || FATAL 1 "Stop everything!! there should be ${NJobs} in total, but we created ${iJob}!!"
+cat <<EOM >> "$ErrorLog"
+$(date) - final file transfer completed.
+--------------------------------------------------------------------------------
+EOM
 
-Pager "$iJob" "$NJobs" '20' # complete paging output
+echo "$(date) - all done."
 
 
 ################################################################################

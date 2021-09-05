@@ -27,7 +27,8 @@
 #   added explicit noise configuration, and made standard an alias of it
 # 20210212 (petrillo@slac.stanford.edu)
 #   updated baseline to reflect the one in data
-#
+# 20210615 (petrillo@slac.stanford.edu)
+#  updated PMT readout enable window to 2 ms
 #
 
 #include "opticalproperties_icarus.fcl"
@@ -154,8 +155,8 @@ icarus_pmtsimulationalg_noise: {
   ThresholdADC:              18             # ADC counts
 
   PulsePolarity:             -1             #Pulse polarity (1 = positive, -1 = negative)
-  TriggerOffsetPMT:          "-1.15 ms"     #Time relative to trigger when readout begins
-  ReadoutEnablePeriod:       "2.55 ms"      #Time for which pmt readout is enabled
+  TriggerOffsetPMT:          "-1.0 ms"      #Time relative to trigger when readout begins
+  ReadoutEnablePeriod:       "2.0 ms"       #Time for which pmt readout is enabled
   CreateBeamGateTriggers:    true           #Option to create unbiased readout around beam spill
   BeamGateTriggerRepPeriod:  "2.0 us"       #Repetition Period for BeamGateTriggers
   BeamGateTriggerNReps:      10             #Number of beamgate trigger reps to produce

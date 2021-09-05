@@ -1,0 +1,231 @@
+#
+# File:    triggersim_icarus_data.fcl
+# Purpose: Runs a chain to simulate ICARUS trigger primitives on ICARUS data.
+# Author:  Gianluca Petrillo (petrillo@slac.stanford.edu)
+# Date:    May 17, 2021
+# Version: 1.0
+#
+# This is a top-level configuration that can be run directly.
+# 
+# Assumptions:
+# 
+# * pre-trigger: 9 us ( = (buffer length) x (1 - post_trigger_fraction) = 30 us x (1 - 70%))
+# * beam gate: 1.6 us opening at trigger time (centered with a 25% margin)
+#
+#
+# Required inputs
+# ----------------
+#
+#  * optical detector readout: `daqPMT`
+#  * PMT configuration: `PMTconfig` (run data product)
+#
+#
+# Changes
+# --------
+# 
+# 20210517 (petrillo@slac.stanford.edu) [v1.0]
+# :   original version based on `triggersim_singlemodule_icarus.fcl` v1.0
+# 20210721 (petrillo@slac.stanford.edu) [v1.1]
+# :   rely on `PMTconfig` from decoding (by now it's "standard")
+#
+
+#include "channelmapping_icarus.fcl"
+
+
+BEGIN_PROLOG
+
+BeamGateDuration @protect_ignore: "2.0 us" # a bit of margin to hit the beam
+BeamGateStart    @protect_ignore: "-0.2 us"
+
+END_PROLOG
+
+
+#include "triggersim_icarus.fcl"
+
+
+#
+# different input labels
+#
+physics.producers.discrimopdaq.OpticalWaveforms: "daqPMT"
+physics.producers.pmtbaselines.OpticalWaveforms: "daqPMT"
+
+#
+# additional modules:
+#  * PMT configuration from data product
+#  * baseline from PMT configuration
+#  * discrimination from PMT configuration
+#
+services.IICARUSChannelMap: @local::icarus_channelmappinggservice
+
+
+physics.producers.pmtconfigbaselines: {
+
+  module_type: PMTWaveformBaselinesFromReadoutConfiguration
+
+  # label of input digitized optical waveform data product
+  OpticalWaveforms: "daqPMT"
+  
+  # label of PMT configuration
+  PMTconfigurationTag: "PMTconfig"
+
+  # produce plots on the extracted baseline
+  PlotBaselines: true  # default
+  
+  # print on screen the baselines (good for debugging)
+  PrintBaselines: true
+  
+  # tag of the module output to console via message facility
+  OutputCategory: "PMTWaveformBaselines"  # default
+
+} # physics.producers.pmtconfigbaselines
+
+
+physics.producers.pmtthr: {
+
+  module_type: DiscriminatePMTwaveformsByChannel
+
+  # input optical waveform data product tag:
+  OpticalWaveforms: "daqPMT"
+
+  # PMT baselines
+  Baselines: "pmtconfigbaselines" # from data products
+  
+  # threshold configuration
+  ThresholdsFromPMTconfig: "PMTconfig"
+  NChannels:                360 # to be safe...
+  
+  #
+  # choosing the discrimination algorithm: fixed length gates
+  #
+  TriggerGateBuilder: {
+    @table::icarus_fixedtriggergate     # from trigger_icarus.fcl
+    
+    ChannelThresholds: @local::PMTthresholds  # ignored: overridden by module
+    
+    GateDuration: @local::LVDSsignalWidth
+    
+  } # TriggerGateBuilder
+
+
+  # message facility stream
+  OutputCategory: "DiscriminatePMTwaveforms"
+
+} # physics.producers.pmtthr
+
+
+physics.producers.lvdsgatesOR.Thresholds: [ "pmtthr:" ]
+
+physics.producers.trigtilewindowOR.Thresholds:   [ pmtthr ]
+physics.producers.trigtilewindowORE.Thresholds:  [ pmtthr ]
+physics.producers.trigtilewindowORW.Thresholds:  [ pmtthr ]
+physics.producers.trigslidewindowOR.Thresholds:  [ pmtthr ]
+physics.producers.trigslidewindowORE.Thresholds: [ pmtthr ]
+physics.producers.trigslidewindowORW.Thresholds: [ pmtthr ]
+
+physics.producers.simTiledORM1.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM2.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM3.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM4.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM5.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM6.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM3O3.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM4O4.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM5O5.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM6O6.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM2S4.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM4S8.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM5S10.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM6S12.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM1.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM2.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM3.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM4.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM5.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM6.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM3O3.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM4O4.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM5O5.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM6O6.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM2S4.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM4S8.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM5S10.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM6S12.Thresholds: [ pmtthr ]
+
+
+physics.analyzers.effTiledOR.Thresholds: @local::physics.producers.trigtilewindowOR.Thresholds
+physics.analyzers.effTiledORE.Thresholds: @local::physics.producers.trigtilewindowORE.Thresholds
+physics.analyzers.effTiledORW.Thresholds: @local::physics.producers.trigtilewindowORW.Thresholds
+physics.analyzers.effSlidingOR.Thresholds: @local::physics.producers.trigslidewindowOR.Thresholds
+physics.analyzers.effSlidingORE.Thresholds: @local::physics.producers.trigslidewindowORE.Thresholds
+physics.analyzers.effSlidingORW.Thresholds: @local::physics.producers.trigslidewindowORW.Thresholds
+
+physics.producers.discrimopdaq: @erase
+physics.producers.pmtbaselines: @erase
+
+physics.triggerOR: [
+  pmtconfigbaselines, pmtthr,
+
+  lvdsgatesOR,
+  
+  # tiling
+  trigtilewindowOR, trigtilewindowORE, trigtilewindowORW,
+  # sliding
+  trigslidewindowOR, trigslidewindowORE, trigslidewindowORW,
+  
+  # trigger simulation: tiling
+  simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
+  simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
+  simTiledORM2S4, simTiledORM4S8, simTiledORM5S10, simTiledORM6S12,
+  # trigger simulation: sliding
+  simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
+  simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
+  simSlidingORM2S4, simSlidingORM4S8, simSlidingORM5S10, simSlidingORM6S12
+]
+
+
+#
+# disable truth information
+#
+physics.analyzers.effTiledOR.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effTiledOR.GeneratorTags:       []
+physics.analyzers.effTiledOR.DetectorParticleTag: @erase
+physics.analyzers.effTiledOR.EnergyDeposits:      []
+
+physics.analyzers.effTiledORE.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effTiledORE.GeneratorTags:       []
+physics.analyzers.effTiledORE.DetectorParticleTag: @erase
+physics.analyzers.effTiledORE.EnergyDeposits:      []
+
+physics.analyzers.effTiledORW.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effTiledORW.GeneratorTags:       []
+physics.analyzers.effTiledORW.DetectorParticleTag: @erase
+physics.analyzers.effTiledORW.EnergyDeposits:      []
+
+physics.analyzers.effSlidingOR.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSlidingOR.GeneratorTags:       []
+physics.analyzers.effSlidingOR.DetectorParticleTag: @erase
+physics.analyzers.effSlidingOR.EnergyDeposits:      []
+
+physics.analyzers.effSlidingORE.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSlidingORE.GeneratorTags:       []
+physics.analyzers.effSlidingORE.DetectorParticleTag: @erase
+physics.analyzers.effSlidingORE.EnergyDeposits:      []
+
+physics.analyzers.effSlidingORW.OnlyPlotCategories:  [ "All" ]
+physics.analyzers.effSlidingORW.GeneratorTags:       []
+physics.analyzers.effSlidingORW.DetectorParticleTag: @erase
+physics.analyzers.effSlidingORW.EnergyDeposits:      []
+
+
+
+# ------------------------------------------------------------------------------
+# --- Configuration override guide
+# ------------------------------------------------------------------------------
+#
+# The default values of the trigger configuration are in one way or the other
+# coming from `trigger_icarus.fcl`.
+#
+
+
+# ------------------------------------------------------------------------------
+

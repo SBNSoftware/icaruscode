@@ -33,18 +33,25 @@ public:
 
     // Section to access fragment to board mapping
     virtual bool                                    hasFragmentID(const unsigned int)       const = 0;
+    /// Returns the number of TPC fragment IDs known to the service.
+    virtual unsigned int                            nTPCfragmentIDs() const = 0;
     virtual const std::string&                      getCrateName(const unsigned int)        const = 0;
     virtual const ReadoutIDVec&                     getReadoutBoardVec(const unsigned int)  const = 0;
 
     // Section to access channel information for a given board
     virtual bool                                    hasBoardID(const unsigned int)          const = 0;
+    /// Returns the number of TPC board IDs known to the service.
+    virtual unsigned int                            nTPCboardIDs() const = 0;
     virtual unsigned int                            getBoardSlot(const unsigned int)        const = 0;
     virtual const ChannelPlanePairVec&              getChannelPlanePair(const unsigned int) const = 0;
 
     // Section for recovering PMT information
     virtual bool                                    hasPMTDigitizerID(const unsigned int)   const = 0;
+    /// Returns the number of PMT fragment IDs known to the service.
+    virtual unsigned int                            nPMTfragmentIDs() const = 0;
     virtual const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const = 0;
-    
+
+    virtual unsigned int                            getSimMacAddress(const unsigned int)    const = 0;    
 };
 
 } // end of namespace

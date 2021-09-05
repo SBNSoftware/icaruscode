@@ -127,9 +127,8 @@ base {
 
         fields: ["garfield-icarus-fnal-commissioning.json.bz2"],
 
-        noise: "sbn_fd_incoherent_noise.json.bz2",
-        coherent_noise: "sbn_fd_coherent_noise.json.bz2",
-
+	noise: ["icarus_noise_model_int_TPCEE.json.bz2","icarus_noise_model_int_TPCEW.json.bz2","icarus_noise_model_int_TPCWE.json.bz2","icarus_noise_model_int_TPCWW.json.bz2"],
+        coherent_noise: ["icarus_noise_model_coh_TPCEE.json.bz2","icarus_noise_model_coh_TPCEW.json.bz2","icarus_noise_model_coh_TPCWE.json.bz2","icarus_noise_model_coh_TPCWW.json.bz2"],
 
         chresp: null,
     },

@@ -21,6 +21,8 @@
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
 
+#include "flashmatch_simple_icarus.fcl"
+
 #include "mchitmodules.fcl"
 #include "mcreco.fcl"
 #include "mctrutht0matching.fcl"
@@ -145,9 +147,9 @@ icarus_reco_producers:
   #pandoraShowerICARUSCryo1:       @local::icarus_pandoraShowerCreation
 
   # pandora CALO and PID
-  pandoraGausCaloCryo0:		        @local::icarus_calomc
+  pandoraGausCaloCryo0:		        @local::icarus_gnewcalomc
   pandoraGausPidCryo0:		        @local::icarus_chi2pid
-  pandoraGausCaloCryo1:		        @local::icarus_calomc
+  pandoraGausCaloCryo1:		        @local::icarus_gnewcalomc
   pandoraGausPidCryo1:		        @local::icarus_chi2pid
 
   pandoraGausSCECaloCryo0:        @local::icarus_gnewcalomc
@@ -363,6 +365,9 @@ icarus_reco_pandoraICARUSCryo1:    [ pandoraICARUSCryo1,
 icarus_reco_Gauss_SCE_Cryo0:       [ pandoraGausSCECryo0, pandoraTrackGausSCECryo0, SBNShowerGausSCECryo0, SBNShowerTestGausSCECryo0, pandoraGausSCECaloCryo0, pandoraGausSCEPidCryo0]
 icarus_reco_Gauss_SCE_Cryo1:       [ pandoraGausSCECryo1, pandoraTrackGausSCECryo1, SBNShowerGausSCECryo1, SBNShowerTestGausSCECryo1, pandoraGausSCECaloCryo1, pandoraGausSCEPidCryo1]
 
+icarus_reco_calorimetry_noSCE: [ pandoraGausCaloCryo0, pandoraGausCaloCryo1 ]
+icarus_reco_calorimetry_SCE: [ pandoraGausSCECaloCryo0, pandoraGausSCECaloCryo1 ]
+
 icarus_reco_Gauss_Cryo0:           [ @sequence::icarus_reco_SigProcTPC0Gauss,
                                      @sequence::icarus_reco_SigProcTPC1Gauss,
                                      @sequence::icarus_reco_cluster3DCryo0,
@@ -522,13 +527,13 @@ icarus_reco_producers.rawDigitFilterTPC3.FFTNoise:                              
 icarus_reco_producers.rawDigitFilterTPC3.FFTAlg.FillHistograms:                                false
 
 ### Definitions for a single instance of the deconvolution
-icarus_reco_producers.decon1droi.DigitModuleLabel:                                             "rawdigitfilter"
+icarus_reco_producers.decon1droi.RawDigitLabelVec:                                             [ "rawdigitfilter" ]
 
 ### Definitions for instances by TPC
-icarus_reco_producers.decon1DroiTPC0.DigitModuleLabel:                                         "rawDigitFilterTPC0"
-icarus_reco_producers.decon1DroiTPC1.DigitModuleLabel:                                         "rawDigitFilterTPC1"
-icarus_reco_producers.decon1DroiTPC2.DigitModuleLabel:                                         "rawDigitFilterTPC2"
-icarus_reco_producers.decon1DroiTPC3.DigitModuleLabel:                                         "rawDigitFilterTPC3"
+icarus_reco_producers.decon1DroiTPC0.RawDigitLabelVec:                                         [ "rawDigitFilterTPC0" ]
+icarus_reco_producers.decon1DroiTPC1.RawDigitLabelVec:                                         [ "rawDigitFilterTPC1" ]
+icarus_reco_producers.decon1DroiTPC2.RawDigitLabelVec:                                         [ "rawDigitFilterTPC2" ]
+icarus_reco_producers.decon1DroiTPC3.RawDigitLabelVec:                                         [ "rawDigitFilterTPC3" ]
 
 icarus_reco_producers.recowireraw.DigitModuleLabel:                                            "rawdigitfilter"
 
@@ -585,6 +590,8 @@ icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:      
 icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
 icarus_reco_producers.pandoraShowerGaus.PFParticleLabel:                                       "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.inputCollection:                                  "pandoraGaus"
+icarus_reco_producers.pandoraKalmanTrackGaus.trackInputTag:                                    "pandoraTrackGaus"
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputPFParticleLabel:                      "pandoraGaus"
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputTracksLabel:                          "pandoraTrackGaus"
 icarus_reco_producers.pandoraKalmanTrackGaus.inputs.inputShowersLabel:                         "pandoraShowerGaus"
@@ -597,6 +604,8 @@ icarus_reco_producers.pandoraKalmanTrackGaus.options.showerFromPF:              
 icarus_reco_producers.pandoraGausCryo0.HitFinderModuleLabel:                                   "cluster3DCryo0"
 icarus_reco_producers.pandoraTrackGausCryo0.PFParticleLabel:                                   "pandoraGausCryo0"
 icarus_reco_producers.pandoraShowerGausCryo0.PFParticleLabel:                                  "pandoraGausCryo0"
+icarus_reco_producers.pandoraKalmanTrackGausCryo0.inputCollection:                             "pandoraGausCryo0"
+icarus_reco_producers.pandoraKalmanTrackGausCryo0.trackInputTag:                               "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraKalmanTrackGausCryo0.inputs.inputPFParticleLabel:                 "pandoraGausCryo0"
 icarus_reco_producers.pandoraKalmanTrackGausCryo0.inputs.inputTracksLabel:                     "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraKalmanTrackGausCryo0.inputs.inputShowersLabel:                    "pandoraShowerGausCryo0"
@@ -626,6 +635,8 @@ icarus_reco_producers.pandoraTrackGausSCECryo1.PFParticleLabel:                 
 icarus_reco_producers.pandoraGausCryo1.HitFinderModuleLabel:                                   "cluster3DCryo1"
 icarus_reco_producers.pandoraTrackGausCryo1.PFParticleLabel:                                   "pandoraGausCryo1"
 icarus_reco_producers.pandoraShowerGausCryo1.PFParticleLabel:                                  "pandoraGausCryo1"
+icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputCollection:                             "pandoraGausCryo1"
+icarus_reco_producers.pandoraKalmanTrackGausCryo1.trackInputTag:                               "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputs.inputPFParticleLabel:                 "pandoraGausCryo1"
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputs.inputTracksLabel:                     "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraKalmanTrackGausCryo1.inputs.inputShowersLabel:                    "pandoraShowerGausCryo1"
@@ -649,6 +660,8 @@ icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:    
 icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                                      "icarushit"
 icarus_reco_producers.pandoraTrackICARUS.PFParticleLabel:                                      "pandoraICARUS"
 icarus_reco_producers.pandoraShowerICARUS.PFParticleLabel:                                     "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.inputCollection:                                "pandoraICARUS"
+icarus_reco_producers.pandoraKalmanTrackICARUS.trackInputTag:                                  "pandoraTrackICARUS"
 icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputPFParticleLabel:                    "pandoraICARUS"
 icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputTracksLabel:                        "pandoraTrackICARUS"
 icarus_reco_producers.pandoraKalmanTrackICARUS.inputs.inputShowersLabel:                       "pandoraShowerICARUS"
@@ -661,6 +674,8 @@ icarus_reco_producers.pandoraKalmanTrackICARUS.options.showerFromPF:            
 icarus_reco_producers.pandoraICARUSCryo0.HitFinderModuleLabel:                                 "hitMergerCryo0"
 icarus_reco_producers.pandoraTrackICARUSCryo0.PFParticleLabel:                                 "pandoraICARUSCryo0"
 icarus_reco_producers.pandoraShowerICARUSCryo0.PFParticleLabel:                                "pandoraICARUSCryo0"
+icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputCollection:                           "pandoraICARUSCryo0"
+icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.trackInputTag:                             "pandoraTrackICARUSCryo0"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputPFParticleLabel:               "pandoraICARUSCryo0"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputTracksLabel:                   "pandoraTrackICARUSCryo0"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.inputs.inputShowersLabel:                  "pandoraShowerICARUSCryo0"
@@ -672,6 +687,8 @@ icarus_reco_producers.pandoraKalmanTrackICARUSCryo0.options.showerFromPF:       
 icarus_reco_producers.pandoraICARUSCryo1.HitFinderModuleLabel:                                 "hitMergerCryo1"
 icarus_reco_producers.pandoraTrackICARUSCryo1.PFParticleLabel:                                 "pandoraICARUSCryo1"
 icarus_reco_producers.pandoraShowerICARUSCryo1.PFParticleLabel:                                "pandoraICARUSCryo1"
+icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.inputCollection:                           "pandoraICARUSCryo1"
+icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.trackInputTag:                             "pandoraTrackICARUSCryo1"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.inputs.inputPFParticleLabel:               "pandoraICARUSCryo1"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.inputs.inputTracksLabel:                   "pandoraTrackICARUSCryo1"
 icarus_reco_producers.pandoraKalmanTrackICARUSCryo1.inputs.inputShowersLabel:                  "pandoraShowerICARUSCryo1"
@@ -744,11 +761,15 @@ icarus_reco_producers.mcassociationsGausICARUSCryo1.TrackModuleLabel:           
 icarus_reco_producers.mcassociationsGausICARUSCryo1.HitModuleLabel:                            ["hitMergerCryo1"]
 icarus_reco_producers.mcassociationsGausICARUSCryo1.makeT0Assns:                               false
 
+
 # point the pandora CALO modules to pandora output
 icarus_reco_producers.pandoraGausCaloCryo0.TrackModuleLabel:                                   "pandoraTrackGausCryo0"
-icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel:                              "pandoraGausCryo0"
+#icarus_reco_producers.pandoraGausCaloCryo0.SpacePointModuleLabel:                              "pandoraGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.TrackModuleLabel:                                    "pandoraTrackGausCryo0"
 icarus_reco_producers.pandoraGausPidCryo0.CalorimetryModuleLabel:                              "pandoraGausCaloCryo0"
+icarus_reco_producers.pandoraGausCaloCryo0.FieldDistortion:                                 false
+icarus_reco_producers.pandoraGausCaloCryo0.TrackIsFieldDistortionCorrected:                 false
+icarus_reco_producers.pandoraGausCaloCryo0.FieldDistortionEfield:                           false
 
 icarus_reco_producers.pandoraGausSCECaloCryo0.TrackModuleLabel:                                "pandoraTrackGausSCECryo0"
 icarus_reco_producers.pandoraGausSCECaloCryo0.FieldDistortion:                                 true
@@ -759,10 +780,12 @@ icarus_reco_producers.pandoraGausSCEPidCryo0.CalorimetryModuleLabel:            
 
 
 icarus_reco_producers.pandoraGausCaloCryo1.TrackModuleLabel:                                   "pandoraTrackGausCryo1"
-icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel:                              "pandoraGausCryo1"
+#icarus_reco_producers.pandoraGausCaloCryo1.SpacePointModuleLabel:                              "pandoraGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.TrackModuleLabel:                                    "pandoraTrackGausCryo1"
 icarus_reco_producers.pandoraGausPidCryo1.CalorimetryModuleLabel:                              "pandoraGausCaloCryo1"
-
+icarus_reco_producers.pandoraGausCaloCryo1.FieldDistortion:                                 false
+icarus_reco_producers.pandoraGausCaloCryo1.TrackIsFieldDistortionCorrected:                 false
+icarus_reco_producers.pandoraGausCaloCryo1.FieldDistortionEfield:                           false
 icarus_reco_producers.pandoraGausSCECaloCryo1.TrackModuleLabel:                                "pandoraTrackGausSCECryo1"
 icarus_reco_producers.pandoraGausSCECaloCryo1.FieldDistortion:                                 true
 icarus_reco_producers.pandoraGausSCECaloCryo1.TrackIsFieldDistortionCorrected:                 true
@@ -771,5 +794,6 @@ icarus_reco_producers.pandoraGausSCECaloCryo1.Cryostat:                         
 
 icarus_reco_producers.pandoraGausSCEPidCryo1.TrackModuleLabel:                                 "pandoraTrackGausSCECryo1"
 icarus_reco_producers.pandoraGausSCEPidCryo1.CalorimetryModuleLabel:                           "pandoraGausSCECaloCryo1"
+
 
 END_PROLOG

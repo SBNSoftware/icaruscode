@@ -252,7 +252,7 @@ function PrepareRepository() {
     GIToldCommit="$(cd "$CodeRepoPath" && git reflog -n 1 --format='format:%H')"
     local OldScriptChecksum="$(md5sum < "$0")"
     
-    git -C "$CodeRepoPath" checkout "$CodeBranch"
+    git -c 'advice.detachedHead=false' -C "$CodeRepoPath" checkout "$CodeBranch"
     local -i res=$?
     if [[ $res != 0 ]]; then
       RestoreGITrepository "$CodeRepoPath" "$GIToldCommit" "$GITstashed"
@@ -263,7 +263,7 @@ function PrepareRepository() {
       fi
     fi
     
-    if [[ -n "$CodeBranch" ]] && ! isGITtag "$CodeBranch" ; then
+    if [[ -n "$CodeBranch" ]] && ! hasGITtag "$CodeBranch" ; then
       echo "Updating the GIT branch..."
       git -C "$CodeRepoPath" rebase
       if [[ $res != 0 ]]; then

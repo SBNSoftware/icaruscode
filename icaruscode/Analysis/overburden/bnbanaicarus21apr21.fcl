@@ -1,0 +1,3 @@
+#include "noobanaicarus21apr21.fcl"
+
+physics.analyzers.obana.SimulatingDirt: false
