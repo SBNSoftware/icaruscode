@@ -1,4 +1,5 @@
-#include "simulationservices_icarus.fcl"
+#include "services_basic_icarus.fcl"       // We need this for Detector Properties
+#include "simulationservices_icarus.fcl"   // We need this for diffusion
 
 BEGIN_PROLOG
 
