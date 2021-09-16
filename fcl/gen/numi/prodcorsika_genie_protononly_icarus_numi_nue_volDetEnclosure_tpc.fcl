@@ -1,3 +1,10 @@
+# Author: Joseph Zennamo (jaz8600@fnal.gov)
+#
+# This generates only electron neutrinos from the NuMI beamline in ICARUS
+#
+# Future improvement: Currently this also generates NC interactions, this can likely be reduced to only CC events
+#
+
 #include "prodcorsika_genie_protononly_icarus_numi_volDetEnclosure_tpc.fcl"
 
 # output file names
