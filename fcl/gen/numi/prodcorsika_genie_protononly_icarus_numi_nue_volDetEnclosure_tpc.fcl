@@ -1,0 +1,11 @@
+#include "prodcorsika_genie_protononly_icarus_numi_volDetEnclosure_tpc.fcl"
+
+# output file names
+services.TFileService.fileName: "Supplemental-prodcorsika_genie_protononly_icarus_numi_nue_%tc-%p.root"
+outputs.rootoutput.fileName:    "prodcorsika_genie_protononly_icarus_numi_nue_%tc-%p.root"
+
+#
+# only generate electron neutrinos
+#
+
+physics.producers.generator.GenFlavors: [ 12, -12 ]
