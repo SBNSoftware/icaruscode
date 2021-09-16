@@ -60,6 +60,7 @@ private:
   int _run, _event;
   std::vector<TTree*> _flashtree_v;
   double _time;
+  double _time_width;
   double _pe_sum;
   std::vector<double> _pe_v;
   double _time_true;
@@ -104,6 +105,7 @@ void ICARUSOpFlashAna::beginJob()
     flashtree->Branch("run",&_run,"run/I");
     flashtree->Branch("event",&_event,"event/I");
     flashtree->Branch("time",&_time,"time/D");
+    flashtree->Branch("time_width",&_time_width,"time_width/D");
     flashtree->Branch("pe_v",&_pe_v);
     flashtree->Branch("pe_sum",&_pe_sum,"pe_sum/D");
     if(!_mctruth_label.empty() && !_mcflash_label.empty()) {
@@ -221,6 +223,7 @@ void ICARUSOpFlashAna::analyze(art::Event const& e)
     for(auto const& flash : (*flash_h)) {
       // fill simple info
       _time = flash.Time();
+      _time_width = flash.TimeWidth();
       _pe_v = flash.PEs();
       _pe_sum = flash.TotalPE();//std::accumulate(_pe_v.begin(),_pe_v.end());
 
