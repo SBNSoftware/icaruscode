@@ -34,8 +34,8 @@
 
 BEGIN_PROLOG
 
-BeamGateDuration @protect_ignore: "2.0 us" # a bit of margin to hit the beam
-BeamGateStart    @protect_ignore: "-0.2 us"
+BeamGateDuration @protect_ignore: "1.70 us" # a bit of margin to hit the beam
+BeamGateStart    @protect_ignore: "-0.05 us"
 
 END_PROLOG
 
@@ -66,7 +66,7 @@ physics.producers.pmtconfigbaselines: {
   OpticalWaveforms: "daqPMT"
   
   # label of PMT configuration
-  PMTconfigurationTag: "PMTconfig"
+  PMTconfigurationTag: "pmtconfig"
 
   # produce plots on the extracted baseline
   PlotBaselines: true  # default
@@ -91,7 +91,7 @@ physics.producers.pmtthr: {
   Baselines: "pmtconfigbaselines" # from data products
   
   # threshold configuration
-  ThresholdsFromPMTconfig: "PMTconfig"
+  ThresholdsFromPMTconfig: "pmtconfig"
   NChannels:                360 # to be safe...
   
   #
@@ -132,10 +132,11 @@ physics.producers.simTiledORM3O3.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM4O4.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM5O5.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM6O6.Thresholds: [ pmtthr ]
-physics.producers.simTiledORM2S4.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM2S3.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM3S5.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM4S8.Thresholds: [ pmtthr ]
 physics.producers.simTiledORM5S10.Thresholds: [ pmtthr ]
-physics.producers.simTiledORM6S12.Thresholds: [ pmtthr ]
+physics.producers.simTiledORM8S15.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM1.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM2.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM3.Thresholds: [ pmtthr ]
@@ -146,10 +147,11 @@ physics.producers.simSlidingORM3O3.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM4O4.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM5O5.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM6O6.Thresholds: [ pmtthr ]
-physics.producers.simSlidingORM2S4.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM2S3.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM3S5.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM4S8.Thresholds: [ pmtthr ]
 physics.producers.simSlidingORM5S10.Thresholds: [ pmtthr ]
-physics.producers.simSlidingORM6S12.Thresholds: [ pmtthr ]
+physics.producers.simSlidingORM8S15.Thresholds: [ pmtthr ]
 
 
 physics.analyzers.effTiledOR.Thresholds: @local::physics.producers.trigtilewindowOR.Thresholds
@@ -175,11 +177,11 @@ physics.triggerOR: [
   # trigger simulation: tiling
   simTiledORM1, simTiledORM2, simTiledORM3, simTiledORM4, simTiledORM5, simTiledORM6,
   simTiledORM3O3, simTiledORM4O4, simTiledORM5O5, simTiledORM6O6,
-  simTiledORM2S4, simTiledORM4S8, simTiledORM5S10, simTiledORM6S12,
+  simTiledORM2S3, simTiledORM3S5, simTiledORM4S8, simTiledORM5S10, simTiledORM8S15,
   # trigger simulation: sliding
   simSlidingORM1, simSlidingORM2, simSlidingORM3, simSlidingORM4, simSlidingORM5, simSlidingORM6,
   simSlidingORM3O3, simSlidingORM4O4, simSlidingORM5O5, simSlidingORM6O6,
-  simSlidingORM2S4, simSlidingORM4S8, simSlidingORM5S10, simSlidingORM6S12
+  simSlidingORM2S3, simSlidingORM3S5, simSlidingORM4S8, simSlidingORM5S10, simSlidingORM8S15
 ]
 
 
