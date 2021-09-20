@@ -902,35 +902,21 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
 
-  detinfo::timescales::electronics_time const nominalBeamTime
-    = detTimings.BeamGateTime();
-  
-  detinfo::timescales::time_interval const startTime {
-    std::min(
-      beamGate.asElectronicsTimeRange().start(),
-      preSpillWindow.asElectronicsTimeRange().start()
-      )
-    - nominalBeamTime
-    };
-  detinfo::timescales::time_interval const endTime {
-    std::max(
-      beamGate.asElectronicsTimeRange().end(),
-      preSpillWindow.asElectronicsTimeRange().end()
-      )
-      - nominalBeamTime
-    };
-
-  // bins are not necessarily exactly `fTriggerTimeResolution`, but very close
-  int const TriggerResolutionTimeBins {
-    static_cast<int>(std::ceil((endTime - startTime) / fTriggerTimeResolution))
-    };
+  detinfo::timescales::electronics_time const startTime = std::min(
+    beamGate.asElectronicsTimeRange().start(),
+    preSpillWindow.asElectronicsTimeRange().start()
+    );
+  detinfo::timescales::electronics_time const endTime = std::max(
+    beamGate.asElectronicsTimeRange().end(),
+    preSpillWindow.asElectronicsTimeRange().end()
+    );
   
   plots.make<TH1F>(
     "OpeningTimes",
     "Times at which trigger logic was satisfied"
       ";trigger time (relative to nominal beam gate time)  [ us ]"
       ";opened trigger gates",
-    TriggerResolutionTimeBins, startTime.value(), endTime.value()
+    10000, startTime.value(), endTime.value()
     );
   
   plots.make<TH1F>(
@@ -938,7 +924,7 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     "Time of the trigger"
       ";trigger time (relative to nominal beam gate time)  [ us ]"
       ";opened trigger gates",
-    TriggerResolutionTimeBins, startTime.value(), endTime.value()
+    1000, startTime.value(), endTime.value()
     );
 
   //
