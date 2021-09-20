@@ -165,14 +165,15 @@ icarus_pmtsimulationalg_noise: {
   FluctuateGain:             true           # apply per-photoelectron gain fluctuations
   
   PMTspecs: {
-    DynodeK:                   0.75           # gain on a PMT multiplication stage
-                                              # is proportional to dV^k
-    # relative multiplication stage resistors in Hamamatsu 5912,
-    # from their datasheet; if the resistor on first stage is 17.4 R, the one on
-    # the second stage is 3.4 R, etc. The value of R is not necessary.
+    DynodeK:                 0.75           # gain on a PMT multiplication stage
+                                            # is proportional to dV^k
+    # relative multiplication stage resistors in Hamamatsu 5912, from
+    # JINST 13 (2018) 10, P10030 (https://doi.org/10.1088/1748-0221/13/10/P10030);
+    # if the resistor on first stage is 17.4 R, the one on the second stage is 3.4 R,
+    # etc. The value of R is not necessary.
     # Only multiplication stages are included.
     VoltageDistribution:    [ 17.4, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
-    Gain:                   1e7            # total typical PMT gain
+    Gain:                    1e7            # total typical PMT gain
   } # PMTspecs
 
 } # icarus_pmtsimulationalg_noise
