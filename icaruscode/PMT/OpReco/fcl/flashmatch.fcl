@@ -1,0 +1,152 @@
+
+FlashMatchConfig: {
+
+  #
+  # Manager configuration
+  #
+  FlashMatchManager: {
+    Verbosity: 3
+    AllowReuseFlash: false
+    StoreFullResult: false
+    ProhibitAlgo:    "TimeCompatMatch"
+    HypothesisAlgo:  "PhotonLibHypothesis"
+    TouchMatchAlgo:  "AnodeMatch"
+    MatchAlgo:       "QLLMatch"
+    CustomAlgo:      ["LightPath"]
+    FlashFilterAlgo: "NPEFlashFilter"
+    TPCFilterAlgo:   "NPtFilter"
+    MatchSelectionAlgo: "SelectionGreedy"
+  }
+
+  #
+  # ToyMC configuration
+  #
+  ToyMC: {
+    PEVariation: 0.00 # channel-to-channel (PMT-wise) variation in (fake) reco PE amount
+    LightYieldVariation: 0.00  # light yield variation per point in QCluster_t
+    NumTracks: 10
+    PeriodTPC: [-1305.,1298.4] # in micro-second, [-340-965(drift time),1698.4-340]
+    PeriodPMT: [-1150., 2300.] # in micro-second, [-1150, 3450-1150]
+    TimeAlgo: "same" # random, periodic, same
+    TrackAlgo: "random" # random, top-bottom
+    QClusterAlgo: "LightPath"
+    NumpySeed: 1 # -1 is time seed
+    #MinTrackLength: 1.0 # minimum track length to be matched in cm
+    #MinFlashPE: 20. # minimum flash pe sum to be matched
+    TruncateTPC: 0 # 1=truncate TPC trajectory mimicing readout effect
+    MatchingWindow: 0.05  # in us, 50ns
+  }
+
+  #
+  # ROOTInput
+  #
+  ROOTInput: {
+    PeriodTPC: [-1305.,1298.4] # in micro-second, [-340-965(drift time),1698.4-340]
+    QClusterAlgo: "LightPath"
+    NumpySeed: 1 # -1 is time seed
+    TruncateTPCReadout: 0 # 1=truncate TPC trajectory mimicing readout effect
+    TruncateTPCActive:  1 # 1=truncate TPC trajectory
+    MatchingWindow: 0.1  # in us, 50ns
+    ExcludeReflashing: 0
+    TPCTreeName: "largeant_particletree"
+    PMTTreeName: "opflash_flashtree" #"cheatflash_flashtree"
+    ShiftXForMC: 1
+    Clustering: 1
+    ClusteringThreshold: 10. # in cm
+    ClusteringTimeWindow: 10000 # in ns
+    MatchingWindowOpflash: [-1, 1] # in us
+  }
+
+  #
+  # Algorithms
+  #
+  QLLMatch: {
+    Verbosity: 3
+    RecordHistory: true
+    NormalizeHypothesis: false
+    QLLMode: 3 # 3 for WeightedLL, 6 for PEWeightedLL
+    PEPenaltyThreshold: []
+    PEPenaltyValue:     []
+    PEObservationThreshold: 0.01
+    PEHypothesisThreshold: 0.01
+    XPenaltyThreshold: 30
+    ZPenaltyThreshold: 30
+    MIGRADTolerance: 1e3
+    MinuitXBuffer: 15.0
+    Offset: 0.0
+    BeamTimeShift: 0.05
+    CheckTouchingTrack: true
+    TouchingTrackWindow: 20.
+    PhotonDecayFractions: [0.23,0.77]
+    PhotonDecayTimes: [0.002,1.5]
+  }
+
+  NPtFilter: {
+    MinNumPoint: 2
+  }
+
+  NPEFlashFilter: {
+    NPEThreshold: 20
+  }
+
+  TimeCompatMatch: {
+    Verbosity: 3
+    TouchingWindow: 0.8
+    BeamTimeShift: 0.05
+  }
+
+
+  #MaxNPEWindow: {
+  #    TimeUpperBound:  8.0
+  #    TimeLowerBound: -0.1
+  #    NPEThreshold:   10.0
+  #}
+
+  PhotonLibHypothesis:
+  {
+    Verbosity: 3
+    GlobalQE: 0.121 #0.121 #0.07 #0.0093
+    RecoPECalibFactor: 1.1058041280259385
+    CCVCorrection: []
+    ExtendTracks: false
+    SegmentSize: 0.5
+    ExtensionProximityThreshold: 3.0
+    ExtensionTrackLengthMaxThreshold: 20.0
+  }
+
+  AnodeMatch:
+  {
+    Verbosity: 3
+    TimeWindow:  0.8
+    PEThreshold: 1000
+    DistanceToPMTs: 100
+  }
+
+  SelectionGreedy:
+  {
+    ScoreMinThreshold: 0.0001
+    ScoreMaxCeiling:   1.0
+    AllowReuseFlash:   false
+  }
+
+  #ChargeAnalytical:
+  #{
+  #  GlobalQE: 0.07
+  #  CCVCorrection: [1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]
+  #}
+
+  #MCQCluster: {
+  #    UseMCdEdX:    false
+  #    UseXShift:    true
+  #    OpROStart:    -2400000
+  #    OpROEnd:      2400000
+  #    Extension:    10
+  #    DefaultTriggerTime: 4046.5312
+  #}
+
+  LightPath: {
+      Verbosity: 3
+      SegmentSize: 0.5
+  }
+
+}
