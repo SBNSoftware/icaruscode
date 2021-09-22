@@ -1,0 +1,22 @@
+# Author: Joseph Zennamo (jaz8600@fnal.gov)
+#
+# This configuration takes the flux and swaps all the electron (anti)neutrinos for muon (anti)neutrinos and 
+# all the muon (anti)neutrinos for electron (anti)neutrinos. This replaces a complete (or full) oscillation 
+# of one flavor to the other 
+#
+# Future improvement: Currently this also generates NC interactions, this can likely be reduced to only CC events
+#
+
+
+#include "prodcorsika_genie_protononly_icarus_numi_volDetEnclosure_tpc.fcl"
+
+# output file names
+services.TFileService.fileName: "Supplemental-prodcorsika_genie_protononly_icarus_numi_fullosc_%tc-%p.root"
+outputs.rootoutput.fileName:    "prodcorsika_genie_protononly_icarus_numi_fullosc_%tc-%p.root"
+
+#
+# Swap the PDG codes for the neutrinos coming from the beam simulation
+#
+
+physics.producers.generator.MixerConfig: "map 14:12 -14:-12 12:14 -12:-14"
+
