@@ -1,0 +1,11 @@
+BEGIN_PROLOG
+standard_hepmcfilegen:
+{
+  module_type:   "HepMCFileGen"
+  # FileSearchPaths: "/sbnd/app/users/mdeltutt/nuwro/nuwro_workdir/eventsout_hepmc/"
+  FileSearchPaths: "/icarus/app/users/achatter/July19/srcs/icaruscode/icaruscode/EventGen/HepMC/"
+  FilePatterns:    ["ldm-test.root_ldm.hepmc"]
+  #EventsPerPOT:    1 # Currently not implemented
+  #FluxCopyMethod:  "DIRECT"
+}
+END_PROLOG 
