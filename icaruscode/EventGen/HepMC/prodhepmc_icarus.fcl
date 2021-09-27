@@ -52,7 +52,7 @@ outputs:
  out1:
  {
    module_type: RootOutput
-   fileName:    "MC_Truth_ldm_aug27.root"
+   fileName:    "MC_Truth_ldm.root"
    dataTier:    "generated"
    compressionLevel: 1
  }
