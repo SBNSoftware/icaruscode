@@ -15,6 +15,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h" // FillTriggerGates()
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetTimings()
+#include "icarusalg/Utilities/BinningSpecs.h"
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
@@ -603,7 +604,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::process
   auto const [ detTimings, beamGate, preSpillWindow ] = makeGatePack(&event);
   
   if (auto oldGate = fBeamGateChangeCheck(beamGate); oldGate) {
-    mf::LogWarning(fLogCategory)
+    mf::LogDebug(fLogCategory)
       << "Beam gate has changed from " << oldGate->asOptTickRange()
       << " to " << beamGate.asOptTickRange() << " (optical tick)!";
   }
@@ -902,43 +903,40 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
     beamGateOpt.start().value(), beamGateOpt.end().value()
     );
 
-  detinfo::timescales::electronics_time const nominalBeamTime
-    = detTimings.BeamGateTime();
-  
-  detinfo::timescales::time_interval const startTime {
-    std::min(
-      beamGate.asElectronicsTimeRange().start(),
-      preSpillWindow.asElectronicsTimeRange().start()
-      )
-    - nominalBeamTime
-    };
-  detinfo::timescales::time_interval const endTime {
-    std::max(
-      beamGate.asElectronicsTimeRange().end(),
-      preSpillWindow.asElectronicsTimeRange().end()
-      )
-      - nominalBeamTime
-    };
-
-  // bins are not necessarily exactly `fTriggerTimeResolution`, but very close
-  int const TriggerResolutionTimeBins {
-    static_cast<int>(std::ceil((endTime - startTime) / fTriggerTimeResolution))
-    };
+  // plots will be relative to the beam gate:
+  constexpr util::quantities::intervals::microseconds beamPlotPadding { 4_us };
+  icarus::ns::util::BinningSpecs const beamGateBinning = alignBinningTo(
+    icarus::ns::util::BinningSpecs{
+      (std::min(
+        preSpillWindow.asElectronicsTimeRange().start()
+          - beamGate.asElectronicsTimeRange().start(),
+        beamGate.asElectronicsTimeRange().start()
+          - beamGate.asElectronicsTimeRange().start() // yep, this is 0
+        ) - beamPlotPadding).value(),
+      (std::max(
+        preSpillWindow.asElectronicsTimeRange().end()
+          - beamGate.asElectronicsTimeRange().start(),
+        beamGate.duration()
+        ) + beamPlotPadding).value(),
+      fTriggerTimeResolution.value()
+      },
+      0.0
+    );
   
   plots.make<TH1F>(
     "OpeningTimes",
     "Times at which trigger logic was satisfied"
-      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";trigger time (relative to beam gate opening)  [ us ]"
       ";opened trigger gates",
-    TriggerResolutionTimeBins, startTime.value(), endTime.value()
+    beamGateBinning.nBins(), beamGateBinning.lower(), beamGateBinning.upper()
     );
   
   plots.make<TH1F>(
     "TriggerTime",
     "Time of the trigger"
-      ";trigger time (relative to nominal beam gate time)  [ us ]"
+      ";trigger time (relative to beam gate opening)  [ us ]"
       ";opened trigger gates",
-    TriggerResolutionTimeBins, startTime.value(), endTime.value()
+    beamGateBinning.nBins(), beamGateBinning.lower(), beamGateBinning.upper()
     );
 
   //
@@ -1183,7 +1181,7 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
   } // if use generated information
   
   if (fired) {
-    detinfo::timescales::electronics_time const nominalBeamTime
+    detinfo::timescales::electronics_time const beamGateTime
       = detTimings.BeamGateTime();
     
     getTrigEff.Hist("TriggerTick"s).Fill(triggerInfo.atTick().value());
@@ -1193,13 +1191,13 @@ void icarus::trigger::TriggerEfficiencyPlotsBase::fillEfficiencyPlots(
       { return detTimings.toElectronicsTime(info.tick); };
 
     getTrigEff.Hist("TriggerTime"s).Fill
-      ((openingTime(triggerInfo.main()) - nominalBeamTime).value());
+      ((openingTime(triggerInfo.main()) - beamGateTime).value());
 
     std::vector<OpeningInfo_t> const& allTriggerOpenings = triggerInfo.all();
 
     for (OpeningInfo_t const& opening : allTriggerOpenings) {
       getTrigEff.Hist("OpeningTimes"s).Fill
-        ((openingTime(opening) - nominalBeamTime).value());
+        ((openingTime(opening) - beamGateTime).value());
     } // for all trigger openings
     
   } // if fired

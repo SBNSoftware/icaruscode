@@ -42,6 +42,16 @@ END_PROLOG
 
 #include "triggersim_icarus.fcl"
 
+#
+# We can set the beam gate and trigger time according to the decoded trigger;
+# for a minimum bias run, trigger and beam gate opening happen at the same time;
+# while for a run with active trigger logic, trigger time is fixed while the
+# beam gate opening time varies event by event and is expressed with respect to
+# the trigger. Note that in simulation the opposite happens: beam gate time is
+# fixed and triggers can be simulated relative to it.
+#
+services.DetectorClocksService.TrigModuleName: "daqTrigger"
+
 
 #
 # different input labels
