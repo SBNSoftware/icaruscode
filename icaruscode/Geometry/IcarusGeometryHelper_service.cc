@@ -25,7 +25,7 @@ namespace {
 
   // name of the tool to create the default channel mapping algorithm
   std::string const DefaultChannelMapSetupTool
-    = "ICARUSsingleInductionChannelMapSetupTool";
+    = "ICARUSsplitInductionChannelMapSetupTool";
 
 } // local namespace
 
