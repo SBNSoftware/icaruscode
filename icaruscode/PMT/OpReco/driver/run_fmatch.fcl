@@ -20,7 +20,7 @@ physics: {
   analyzers: { 
     fmatch: {
     module_type: ICARUSMCFlashMatch
-      Verbosity: 1
+      Verbosity: 3
       OutputFileName: "fmatch.root"
       MCParticleProducer: "largeant"
       SimEnergyDepositProducer: "largeant:TPCActive"
@@ -28,6 +28,8 @@ physics: {
       LightPathName: "LightPath"
       ClusteringPeriod: 8
       EnableCryostats: [0]
+      SaveTupleInput: false #true
+      SaveTupleMatch: false #true
       FlashMatchConfig: { @table::FlashMatchConfig }
       DetectorSpecs: { 
         LightYield: 24000
