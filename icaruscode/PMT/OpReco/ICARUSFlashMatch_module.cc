@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////////////
-// Class:       ICARUSMCFlashMatch
+// Class:       ICARUSFlashMatch
 // Plugin Type: analyzer (art v3_02_06)
-// File:        ICARUSMCFlashMatch_module.cc
+// File:        ICARUSFlashMatch_module.cc
 //
 // Generated at Fri Oct 11 12:08:44 2019 by Laura Domine using cetskelgen
 // from cetlib version v3_07_02.
@@ -31,20 +31,20 @@
 #include <TFile.h>
 #include <TLorentzVector.h>
 
-class ICARUSMCFlashMatch;
+class ICARUSFlashMatch;
 
 
-class ICARUSMCFlashMatch : public art::EDAnalyzer {
+class ICARUSFlashMatch : public art::EDAnalyzer {
 public:
-  explicit ICARUSMCFlashMatch(fhicl::ParameterSet const& p);
+  explicit ICARUSFlashMatch(fhicl::ParameterSet const& p);
   // The compiler-generated destructor is fine for non-base
   // classes without bare pointers or other resource use.
 
   // Plugins should not be copied or assigned.
-  ICARUSMCFlashMatch(ICARUSMCFlashMatch const&) = delete;
-  ICARUSMCFlashMatch(ICARUSMCFlashMatch&&) = delete;
-  ICARUSMCFlashMatch& operator=(ICARUSMCFlashMatch const&) = delete;
-  ICARUSMCFlashMatch& operator=(ICARUSMCFlashMatch&&) = delete;
+  ICARUSFlashMatch(ICARUSFlashMatch const&) = delete;
+  ICARUSFlashMatch(ICARUSFlashMatch&&) = delete;
+  ICARUSFlashMatch& operator=(ICARUSFlashMatch const&) = delete;
+  ICARUSFlashMatch& operator=(ICARUSFlashMatch&&) = delete;
 
   // Required functions.
   void analyze(art::Event const& e) override;
@@ -125,7 +125,7 @@ private:
 };
 
 
-ICARUSMCFlashMatch::ICARUSMCFlashMatch(fhicl::ParameterSet const& p)
+ICARUSFlashMatch::ICARUSFlashMatch(fhicl::ParameterSet const& p)
   : EDAnalyzer{p}, _mgr(nullptr), _light_path(nullptr)
   // More initializers here.
 {
@@ -153,7 +153,7 @@ ICARUSMCFlashMatch::ICARUSMCFlashMatch(fhicl::ParameterSet const& p)
 		_light_path = (flashmatch::LightPath*)(_mgr->GetCustomAlgo(_light_path_name));
 }
 
-void ICARUSMCFlashMatch::beginJob()
+void ICARUSFlashMatch::beginJob()
 {
 	if(_save_tuple_input || _save_tuple_match)
 		_f = TFile::Open(_output_fname.c_str(), "RECREATE");
@@ -216,7 +216,7 @@ void ICARUSMCFlashMatch::beginJob()
 	}
 }
 
-void ICARUSMCFlashMatch::endJob()
+void ICARUSFlashMatch::endJob()
 {
 	if(_save_tuple_input || _save_tuple_match) {
 		_f->cd();
@@ -227,7 +227,7 @@ void ICARUSMCFlashMatch::endJob()
 }
 
 
-void ICARUSMCFlashMatch::AppendFlashToTuple(const flashmatch::Flash_t& flash)
+void ICARUSFlashMatch::AppendFlashToTuple(const flashmatch::Flash_t& flash)
 {
 	_n_flash++;
 	_ftime.push_back(flash.time);
@@ -239,7 +239,7 @@ void ICARUSMCFlashMatch::AppendFlashToTuple(const flashmatch::Flash_t& flash)
 }
 
 
-void ICARUSMCFlashMatch::AppendQClusterToTuple(const flashmatch::QCluster_t& qcluster)
+void ICARUSFlashMatch::AppendQClusterToTuple(const flashmatch::QCluster_t& qcluster)
 {
 	_n_tpc++;
 	_qx.reserve(_qx.size()+qcluster.size());
@@ -258,7 +258,7 @@ void ICARUSMCFlashMatch::AppendQClusterToTuple(const flashmatch::QCluster_t& qcl
 }
 
 
-void ICARUSMCFlashMatch::ClearTupleInfo()
+void ICARUSFlashMatch::ClearTupleInfo()
 {
 	_n_tpc = 0;
 	_n_flash = 0;
@@ -277,7 +277,7 @@ void ICARUSMCFlashMatch::ClearTupleInfo()
 }
 
 void
-ICARUSMCFlashMatch::QClusterFromMCParticle(
+ICARUSFlashMatch::QClusterFromMCParticle(
 	flashmatch::QCluster_t& destination,
 	const simb::MCParticle& part) const
 {
@@ -294,7 +294,7 @@ ICARUSMCFlashMatch::QClusterFromMCParticle(
 }
 
 flashmatch::QCluster_t
-ICARUSMCFlashMatch::QClusterFromMCParticle(const simb::MCParticle& part) const
+ICARUSFlashMatch::QClusterFromMCParticle(const simb::MCParticle& part) const
 {
 	flashmatch::QCluster_t result;
 	this->QClusterFromMCParticle(result,part);
@@ -302,7 +302,7 @@ ICARUSMCFlashMatch::QClusterFromMCParticle(const simb::MCParticle& part) const
 }
 
 void
-ICARUSMCFlashMatch::QClusterFromGeoTrajectory(
+ICARUSFlashMatch::QClusterFromGeoTrajectory(
 	flashmatch::QCluster_t& destination,
 	const geoalgo::Trajectory& trj
 	) const
@@ -319,7 +319,7 @@ ICARUSMCFlashMatch::QClusterFromGeoTrajectory(
 
 
 void
-ICARUSMCFlashMatch::CreateQClusterFromMC(
+ICARUSFlashMatch::CreateQClusterFromMC(
 	flashmatch::QClusterArray_t& result,
 	const std::vector<simb::MCParticle>& part_v,
 	const std::vector<sim::SimEnergyDeposit>& edep_v) const
@@ -505,7 +505,7 @@ ICARUSMCFlashMatch::CreateQClusterFromMC(
 }
 
 
-void ICARUSMCFlashMatch::analyze(art::Event const& e)
+void ICARUSFlashMatch::analyze(art::Event const& e)
 {
     // Implementation of required member function here.
 	_event = e.id().event();
@@ -660,4 +660,4 @@ void ICARUSMCFlashMatch::analyze(art::Event const& e)
 	if(_save_tuple_input) _input_tree->Fill();
 }
 
-DEFINE_ART_MODULE(ICARUSMCFlashMatch)
+DEFINE_ART_MODULE(ICARUSFlashMatch)
