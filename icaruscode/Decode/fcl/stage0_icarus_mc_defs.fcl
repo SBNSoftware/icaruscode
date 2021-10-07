@@ -1,6 +1,7 @@
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
+#include "decoderToolsMC_icarus.fcl"
 
 #include "crttruehitproducer.fcl"
 #include "crtsimhitproducer.fcl"
@@ -20,6 +21,7 @@ icarus_stage0_mc_producers:
                            OutputRawWavePath:   "RAW"
                            OutputCoherentPath:  "Cor"
                            DiagnosticOutput:    false
+                           DecoderTool:         @local::MCTPCDecoderToolCannyFilter
                        }
   
     mcophit:           @local::ICARUSMCOpHit

@@ -70,6 +70,8 @@ services.SpaceChargeService: {
 services.BackTrackerService:        @local::standard_backtrackerservice
 services.ParticleInventoryService:  @local::standard_particleinventoryservice
 
+physics.producers.mcassociationsGausCryoE.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoE"]
+physics.producers.mcassociationsGausCryoW.HitParticleAssociations.HitModuleLabelVec: ["cluster3DCryoW"]
 
 services.message.destinations :
 {
