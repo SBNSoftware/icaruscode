@@ -24,7 +24,7 @@
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
 #include "icaruscode/CRT/CRTDecoder/CrtCal.h"
 
-#include "BernCRTTranslator.hh"
+#include "sbndaq-artdaq-core/Overlays/Common/BernCRTTranslator.hh"
 
 //ROOT includes
 #include "art_root_io/TFileService.h"
@@ -210,7 +210,20 @@ void icarus::crt::CrtCalAnalyzer::beginJob(){
 
 void icarus::crt::CrtCalAnalyzer::analyze(art::Event const & evt)
 {
-  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
+  std::vector<icarus::crt::BernCRTTranslator> hit_vector;
+
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  evt.getManyByType(fragmentHandles);
+  for (auto  handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
+
+    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
+
+    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
+
+  }
 
   for(auto & hit : hit_vector) {
 

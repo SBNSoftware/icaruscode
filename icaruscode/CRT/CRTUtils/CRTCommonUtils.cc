@@ -534,9 +534,9 @@ void CRTCommonUtils::FillFebMap() {
     std::ifstream fin;
     fin.open(fullFileName,std::ios::in);
 
-    if(fin.good())
-        std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
-    else
+    if(!fin.good())
+//        std::cout << "opened file 'feb_map.txt' for reading..." << std::endl;
+//    else
         throw cet::exception("CRTDetSim::FillFebMap")
           << "Unable to find/open file 'feb_map.txt'" << std::endl;
 
@@ -557,18 +557,18 @@ void CRTCommonUtils::FillFebMap() {
         fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
         fAuxDetIdToChanGroup[mod]=pos;
         fFebToAuxDetId[mac5].push_back(mod);
-        std::cout << "mod: " << mod << ", mac: " << (int)mac5 << ", pos: " << pos;
+//        std::cout << "mod: " << mod << ", mac: " << (int)mac5 << ", pos: " << pos;
         if(row.size()>3) { //if dual ended readout MINOS module
             mac5 = (uint8_t)std::stoi(row[3]);
             fAuxDetIdToFeb[mod].push_back(std::make_pair(mac5,pos));
             fFebToAuxDetId[mac5].push_back(mod);
-            if(pos!=std::stoi(row[4])) //feb channel block same on both febs
-              std::cout << "WARNING in CRTComUtil: 2 unique chan groups for ADId!" << std::endl;
-            std::cout << ", mac: " << (int)mac5;
+//            if(pos!=std::stoi(row[4])) //feb channel block same on both febs
+//              std::cout << "WARNING in CRTComUtil: 2 unique chan groups for ADId!" << std::endl;
+//            std::cout << ", mac: " << (int)mac5;
         }
-        std::cout << std::endl;
+//        std::cout << std::endl;
     }
-    std::cout << "filled febMap with " << fAuxDetIdToFeb.size() << " entries" << std::endl;
+//    std::cout << "filled febMap with " << fAuxDetIdToFeb.size() << " entries" << std::endl;
     fin.close();
 }
 
