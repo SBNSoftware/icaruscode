@@ -112,7 +112,7 @@ simple_plugin( BernCRTAna "module"
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::sbndaq-artdaq-core_Overlays_Common 
   artdaq_core::artdaq-core_Data
 )
 
@@ -124,7 +124,7 @@ simple_plugin( CrtNoiseMonTool "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::sbndaq-artdaq-core_Overlays_Common 
   artdaq_core::artdaq-core_Data
 )
 
@@ -136,7 +136,7 @@ simple_plugin( CrtCalAnalysis "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::sbndaq-artdaq-core_Overlays_Common 
   artdaq_core::artdaq-core_Data
   CRT_CAL
 )
@@ -149,7 +149,7 @@ simple_plugin( AnaProducer "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
+  artdaq_core::sbndaq-artdaq-core_Overlays_Common 
   artdaq_core::artdaq-core_Data
   CRT_CAL
   CRT_CAL_TREE
@@ -175,7 +175,7 @@ simple_plugin( DecoderICARUSCRT "module"
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
   ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common
+  artdaq_core::sbndaq-artdaq-core_Overlays_Common
   artdaq-core_Data
   sbnobj_Common_CRT
 )
