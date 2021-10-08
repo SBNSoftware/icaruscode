@@ -45,8 +45,8 @@ icarus_stage1_producers:
 #  pandoraGausPidCryoE:		        @local::icarus_chi2pid
 
   # Placeholder uncalibrated calorimetry
-  caloskimCalorimetryCryoE: @local::caloskim_calorimetry
-  caloskimCalorimetryCryoW: @local::caloskim_calorimetry
+  caloskimCalorimetryCryoE:       @local::caloskim_calorimetry
+  caloskimCalorimetryCryoW:       @local::caloskim_calorimetry
 
   ## Attempt to include simple flash matching here
   ## Simple Flash Matching, right now cryo0 and 1 are identical
