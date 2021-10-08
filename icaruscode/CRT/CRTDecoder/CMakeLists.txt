@@ -124,7 +124,7 @@ simple_plugin( CrtNoiseMonTool "module"
   #art_Framework_Services_Optional_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
         ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common 
+  sbndaq_artdaq_core_Overlays_Common 
   artdaq_core::artdaq-core_Data
 )
 
