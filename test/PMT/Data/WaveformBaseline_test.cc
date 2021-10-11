@@ -18,8 +18,7 @@
 
 // Boost libraries
 #define BOOST_TEST_MODULE ( WaveformBaseline_test )
-#include <cetlib/quiet_unit_test.hpp> // BOOST_AUTO_TEST_CASE()
-#include <boost/test/test_tools.hpp> // BOOST_CHECK_EQUAL()
+#include <boost/test/unit_test.hpp>
 
 // C/C++ standard library
 #include <sstream>
@@ -37,9 +36,9 @@ void WaveformBaseline_value_test() {
   
   icarus::WaveformBaseline const baseline { baselineValue };
   
-  BOOST_CHECK_EQUAL(baseline.fBaseline, baselineValue);
-  BOOST_CHECK_EQUAL(baseline.baseline(), baselineValue);
-  BOOST_CHECK_EQUAL(baseline(), baselineValue);
+  BOOST_TEST((baseline.fBaseline ==  baselineValue));
+  BOOST_TEST((baseline.baseline() ==  baselineValue));
+  BOOST_TEST((baseline() ==  baselineValue));
   
   std::ostringstream sstr;
   sstr << baseline;
@@ -48,7 +47,7 @@ void WaveformBaseline_value_test() {
   sstr << baselineValue;
   std::string const baselineValueStr { sstr.str() };
   
-  BOOST_CHECK_EQUAL(baselineStr, baselineValueStr);
+  BOOST_TEST((baselineStr ==  baselineValueStr));
   
 } // WaveformBaseline_value_test()
 
@@ -68,7 +67,7 @@ void WaveformBaseline_documentation1_test() {
   sstr << "Baseline: " << baseline << " ADC";
   
   
-  BOOST_CHECK_EQUAL(sstr.str(), "Baseline: 1.2 ADC");
+  BOOST_TEST((sstr.str() ==  "Baseline: 1.2 ADC"));
   
 } // WaveformBaseline_documentation1_test()
 
@@ -103,11 +102,11 @@ void WaveformBaseline_documentation2_test() {
   //
   // checks
   //
-  BOOST_CHECK_EQUAL(subtracted.size(), data.size());
+  BOOST_TEST((subtracted.size() ==  data.size()));
   
-  BOOST_CHECK_EQUAL(subtracted[0U], ADCCount_t{ 4 });
-  BOOST_CHECK_EQUAL(subtracted[1U], ADCCount_t{ 6 });
-  BOOST_CHECK_EQUAL(subtracted[2U], ADCCount_t{ 0 });
+  BOOST_TEST((subtracted[0U] ==  ADCCount_t{ 4 }));
+  BOOST_TEST((subtracted[1U] ==  ADCCount_t{ 6 }));
+  BOOST_TEST((subtracted[2U] ==  ADCCount_t{ 0 }));
   
 } // WaveformBaseline_documentation2_test()
 

@@ -323,7 +323,7 @@ void icarus::PMTWaveformBaselinesFromReadoutConfiguration::beginRun
   (art::Run& run)
 {
   auto const& PMTconfig
-    = run.getByLabel<sbn::PMTconfiguration>(fPMTconfigurationTag);
+    = run.getProduct<sbn::PMTconfiguration>(fPMTconfigurationTag);
   
   std::vector<Baseline_t> newBaselines;
   std::tie(fConfigured, newBaselines)

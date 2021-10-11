@@ -135,8 +135,9 @@ namespace simfilter {
       
     // * MC truth information
 
-      std::vector< art::Handle< std::vector<simb::MCTruth> > > allmclists;
-      evt.getManyByType(allmclists);
+      //std::vector< art::Handle< std::vector<simb::MCTruth> > > allmclists;
+      //evt.getManyByType(allmclists);
+      auto allmclists = evt.getMany< std::vector<simb::MCTruth> >();
 
 
       std::cout << fXmin << " " << fXmax << " " << fYmin << " " <<fYmax << " " << fZmin << " " << fZmax << std::endl;

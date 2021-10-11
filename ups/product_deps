@@ -2,7 +2,7 @@
 
 # The *parent* line must the first non-commented line and defines this product and version
 # The version must be of the form vxx_yy_zz (e.g. v01_02_03)
-parent icaruscode v09_29_00
+parent icaruscode v09_32_01
 
 defaultqual e20
 
@@ -37,15 +37,15 @@ table_fragment_end
 # Add the dependent product and version
 
 product                   version
-sbncode                   v09_29_00
-icarusalg                 v09_29_00
-icarusutil                v09_26_00
-icarus_signal_processing  v09_26_01
+sbncode                   v09_32_01
+icarusalg                 v09_32_01
+icarusutil                v09_32_01
+icarus_signal_processing  v09_32_01
 icarus_data               v09_29_00
-fftw                      v3_3_8a
+fftw                      v3_3_9
 libwda                    v2_29_1
 
-cetbuildtools	          v7_17_01	-	only_for_build
+cetbuildtools	          v8_18_04	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
@@ -53,12 +53,12 @@ end_product_list
 # Make a table by adding columns before "notes".
 # e15  - with gcc 6.4.0 and -std=c++1y
 qualifier  sbncode    icarusalg    icarusutil   icarus_signal_processing   icarus_data  fftw        libwda notes
-e20:debug  e20:debug  e20:debug    e20:debug    e20:debug                  -nq-         debug       -nq-
-e20:prof   e20:prof   e20:prof     e20:prof     e20:prof                   -nq-         prof        -nq-
-e19:debug  e19:debug  e19:debug    e19:debug    e19:debug                  -nq-         debug       -nq-
-e19:prof   e19:prof   e19:prof     e19:prof     e19:prof                   -nq-         prof        -nq-
-c7:debug   c7:debug   c7:debug     c7:debug     c7:debug                   -nq-         debug       -nq-
-c7:prof    c7:prof    c7:prof      c7:prof      c7:prof                    -nq-         prof        -nq-
+e20:debug  e20:debug  e20:debug    e20:debug    e20:debug                  -nq-         -nq-        -nq-
+e20:prof   e20:prof   e20:prof     e20:prof     e20:prof                   -nq-         -nq-        -nq-
+e19:debug  e19:debug  e19:debug    e19:debug    e19:debug                  -nq-         -nq-        -nq-
+e19:prof   e19:prof   e19:prof     e19:prof     e19:prof                   -nq-         -nq-        -nq-
+c7:debug   c7:debug   c7:debug     c7:debug     c7:debug                   -nq-         -nq-        -nq-
+c7:prof    c7:prof    c7:prof      c7:prof      c7:prof                    -nq-         -nq-        -nq-
 end_qualifier_list
 
 # Preserve tabs and formatting in emacs and vi / vim:

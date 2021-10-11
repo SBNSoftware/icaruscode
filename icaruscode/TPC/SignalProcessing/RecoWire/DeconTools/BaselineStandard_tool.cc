@@ -15,6 +15,7 @@
 #include "TH1D.h"
 
 #include <fstream>
+#include <numeric> // std::accumulate
 
 namespace icarus_tool
 {
