@@ -175,8 +175,8 @@ simple_plugin( DecoderICARUSCRT "module"
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
   ${ARTDAQ-CORE_UTILITIES}
-  sbndaq-artdaq-core_Overlays_Common
-  artdaq-core_Data
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  artdaq_core::artdaq-core_Data
   sbnobj_Common_CRT
 )
 

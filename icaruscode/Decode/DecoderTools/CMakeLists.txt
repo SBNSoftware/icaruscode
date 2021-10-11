@@ -15,7 +15,7 @@ art_make( SUBDIRS details
                         ROOT::RIO
                         ROOT::Core
           TOOL_LIBRARIES
-                        sbndaq-artdaq-core_Overlays_ICARUS 
+                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq_core::artdaq-core_Utilities
                         icarus_signal_processing
                         icarus_signal_processing_Detection

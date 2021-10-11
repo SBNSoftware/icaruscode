@@ -12,7 +12,7 @@ art_make(
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
-                        sbndaq-artdaq-core_Overlays_ICARUS 
+                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
                         artdaq_core::artdaq-core_Utilities
                         larcorealg_Geometry
                         larcore_Geometry_Geometry_service
@@ -43,8 +43,8 @@ simple_plugin(DaqDecoderICARUSPMT module
   icaruscode_Decode_DecoderTools_Dumpers
   icaruscode_Decode_DataProducts # should become sbnobj_Common_Trigger
   icaruscode_Decode_DecoderTools
-  sbndaq-artdaq-core_Overlays_Common
-  sbndaq-artdaq-core_Overlays
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_Common
+  sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
   lardataobj_RawData
   artdaq_core::artdaq-core_Data
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
