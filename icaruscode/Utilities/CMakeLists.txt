@@ -7,7 +7,7 @@ art_make(
     "DuplicateEventTracker_service.cc"
   LIB_LIBRARIES
     ${ART_ROOT_IO_ROOTDB}
-    ${ICARUS_SQLITE3_LIBRARY}
+    SQLite::SQLite3
     cetlib_except
     cetlib
     fhiclcpp

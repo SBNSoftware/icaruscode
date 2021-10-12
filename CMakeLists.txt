@@ -116,6 +116,7 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
+  "\n-- SQLITE3: ${SQLITE3}, ICARUS_SQLITE3_LIBRARY: ${ICARUS_SQLITE3_LIBRARY}"
   "\n-- "
   )
 

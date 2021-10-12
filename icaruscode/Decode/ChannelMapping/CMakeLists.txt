@@ -28,7 +28,6 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${TBB}
           TOOL_LIBRARIES
                         lardata_Utilities
                         lardata_ArtDataHelper
@@ -47,8 +46,7 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${ICARUS_SQLITE3_LIBRARY}
-                        ${TBB}
+                        SQLite::SQLite3
         )
 
 art_make_exec(NAME "PMTChannelMapDumper"
