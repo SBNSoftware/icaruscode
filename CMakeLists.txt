@@ -62,6 +62,7 @@ find_ups_product( libwda )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_root()
+find_ups_boost()
 
 find_ups_product( sbnobj )
 find_ups_product( sbncode )
