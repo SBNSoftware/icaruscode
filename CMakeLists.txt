@@ -74,13 +74,9 @@ find_ups_product( icarus_data )
 find_ups_product( artdaq_core )
 find_ups_product( sbndaq_artdaq_core )
 
-cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   NAMES nurandom_RandomUtils_NuRandomService_service
                   PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
-
-# deal with sqlite3
-cet_find_library(ICARUS_SQLITE3_LIBRARY NAMES sqlite3_ups PATHS ENV SQLITE_LIB NO_DEFAULT_PATH )
 
 # deal with fftw
 cet_find_library(ICARUS_FFTW3_LIBRARY  NAMES fftw3  PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )
@@ -116,7 +112,7 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
-  "\n-- SQLITE3: ${SQLITE3}, ICARUS_SQLITE3_LIBRARY: ${ICARUS_SQLITE3_LIBRARY}"
+  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 
