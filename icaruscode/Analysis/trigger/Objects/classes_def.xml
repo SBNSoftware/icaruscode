@@ -6,4 +6,5 @@
   <class name="art::Wrapper<std::vector<art::Ptr<recob::PFParticle>>>"/>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
 </lcgdict>
