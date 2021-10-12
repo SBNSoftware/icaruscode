@@ -62,7 +62,6 @@ find_ups_product( libwda )
 find_ups_product( ifdh_art )
 find_ups_product( guideline_sl )
 find_ups_root()
-find_ups_boost()
 
 find_ups_product( sbnobj )
 find_ups_product( sbncode )
@@ -78,6 +77,9 @@ cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   NAMES nurandom_RandomUtils_NuRandomService_service
                   PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
+
+# deal with sqlite3
+cet_find_library(ICARUS_SQLITE3_LIBRARY NAMES sqlite3_ups PATHS ENV SQLITE_LIB NO_DEFAULT_PATH )
 
 # deal with fftw
 cet_find_library(ICARUS_FFTW3_LIBRARY  NAMES fftw3  PATHS ENV FFTW_LIBRARY NO_DEFAULT_PATH )

@@ -47,7 +47,7 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${SQLITE3}
+                        ${ICARUS_SQLITE3_LIBRARY}
                         ${TBB}
         )
 
