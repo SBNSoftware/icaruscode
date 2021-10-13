@@ -89,7 +89,24 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
-    
+  // Implementation of required member function here.
+  //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
+  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
+  
+  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
+  std::vector<icarus::crt::BernCRTTranslator> hit_vector;
+
+  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
+  for (auto  handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
+
+    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
+
+    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
+
+  }
+
   struct Recipe_t {
     
     unsigned int destMac5;
@@ -105,18 +122,6 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   // vector: Mac5 -> its CRT data
   std::vector<icarus::crt::CRTData> allCRTdata ( 305 + 1); // TODO size this correctly!
   
-  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
-  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
-  for (auto  handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-    
-    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
-    
-    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
-    
-  }
-
   for (auto & hit : hit_vector){ 
 
     std::array<Recipe_t, 3U> allRecipes;
@@ -379,7 +384,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   } // for all input data
   
   // move the data which is actually present in the final data product
-  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
+  //  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
   for (icarus::crt::CRTData& crtDataElem: allCRTdata) {
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
