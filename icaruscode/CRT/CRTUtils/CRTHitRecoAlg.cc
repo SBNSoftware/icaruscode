@@ -2,6 +2,8 @@
 
 using namespace icarus::crt;
 
+//string filename = "filename.txt";
+
 //----------------------------------------------------------------------
 CRTHitRecoAlg::CRTHitRecoAlg(const Config& config){
     this->reconfigure(config);
@@ -26,6 +28,10 @@ void CRTHitRecoAlg::reconfigure(const Config& config){
     fPropDelay = config.PropDelay(); 
     fPEThresh = config.PEThresh();
     fCoinWindow = config.CoinWindow();
+    foutCSVFile = config.outCSVFile();
+    fCSVFile = config.CSVFile();
+    if (foutCSVFile) 
+      filecsv.open(fCSVFile.c_str());
     return;
 }
 //---------------------------------------------------------------------------------------
@@ -135,8 +141,10 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
             // in coincidence
             //      if(crtList[indices[index_j]]->fTs0 <= crtList[indices[index_i]]->fTs0 + fCoinWindow) {
 	    //            if(std::llabs(crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) {
-	    if( (crtList[indices[index_j]]->fTs0>=crtList[indices[index_i]]->fTs0 && (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
-		(crtList[indices[index_j]]->fTs0<crtList[indices[index_i]]->fTs0 && (crtList[indices[index_i]]->fTs0 - crtList[indices[index_j]]->fTs0) < fCoinWindow)) {
+	    if( (crtList[indices[index_j]]->fTs0>=crtList[indices[index_i]]->fTs0 && 
+		 (crtList[indices[index_j]]->fTs0 - crtList[indices[index_i]]->fTs0) < fCoinWindow) ||
+		(crtList[indices[index_j]]->fTs0<crtList[indices[index_i]]->fTs0 && 
+		 (crtList[indices[index_i]]->fTs0 - crtList[indices[index_j]]->fTs0) < fCoinWindow)) {
               if(fVerbose)
                 std::cout <<  " in coincidence: i \t " << index_i << " ,j: \t" << index_j <<",i mac: \t" 
                           << (int)crtList[indices[index_i]]->fMac5 << ", j mac: \t" <<(int)crtList[indices[index_j]]->fMac5<< std::endl;
@@ -402,6 +410,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
 //-----------------------------------------------------------------------------------
 sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) {
 
+  //  std::ofstream filecsv;
+  //filecsv.open("filename.txt");
+
     vector<uint8_t> macs;
     map< uint8_t, vector< pair<int,float> > > pesmap;
     map< uint8_t, vector< pair<int,TVector3> > > chantopos;
@@ -595,8 +606,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	  // North/South inner walls (all strips along x-direction)
 	  // All the horizontal layers measure Y first,
 	  if(!(region=="South" && layer==1)) {
-	    // hitpos.SetY(pe*postmp.Y()+hitpos.Y());
-	    hitpos.SetY(1.0*postmp.Y()+hitpos.Y());
+	    hitpos.SetY(pe*postmp.Y()+hitpos.Y());
+	    // hitpos.SetY(1.0*postmp.Y()+hitpos.Y());
+	    if (fVerbose){
+	      std::cout << "!(region==South && layer==1) : \t" << " feb: " << (int)macs.back() << " ,chan : \t" << chan
+			<< " ,pe: \t"<< pe << ", adc:\t" << data->fAdc[chan] << ", time: \t"<< data->fTs0
+			<< " ,x: \t"<< postmp.X() <<" ,y: \t" << postmp.Y()  <<" ,z: \t" << postmp.Z()<< std::endl;
+	    }
 	    ny++;
 	    pey+=pe;
 	    if(postmp.Y()<ymin)
@@ -604,8 +620,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	    if(postmp.Y()>ymax)
 	      ymax = postmp.Y();
 	    if(region!="South") { //region is E/W/N
-	      //  hitpos.SetX(pe*postmp.X()+hitpos.X());
-	      hitpos.SetX(1.0*postmp.X()+hitpos.X());
+	      hitpos.SetX(pe*postmp.X()+hitpos.X());
+	      //hitpos.SetX(1.0*postmp.X()+hitpos.X());
 	      nx++;
 	      pex+=pe;
 	      if(postmp.X()<xmin)
@@ -615,8 +631,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	    }
 	  } 
 	  else { //else vertical strips in South wall
-	    //hitpos.SetX(pe*postmp.X()+hitpos.X());
-	    hitpos.SetX(1.0*postmp.X()+hitpos.X());
+	    hitpos.SetX(pe*postmp.X()+hitpos.X());
+	    //  hitpos.SetX(1.0*postmp.X()+hitpos.X());
+	    if (fVerbose){
+	    std::cout << "vertical strips in South wall : \t" << " feb: " << (int)macs.back() << " ,chan : \t" << chan
+                      << " ,pe: \t"<< pe << ", adc:\t" << data->fAdc[chan] << ", time: \t"<< data->fTs0
+                      << " ,x: \t"<< postmp.X() <<" ,y: \t" << postmp.Y()  <<" ,z: \t" << postmp.Z()<< std::endl;
+	    }
 	    nx++;
 	    pex+=pe;
 	    if(postmp.X()<xmin)
@@ -626,10 +647,15 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	  }
 	  
 	  //nz = ny
-	  //hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
-	  hitpos.SetZ(1.0*postmp.Z()+hitpos.Z());
+	  hitpos.SetZ(pe*postmp.Z()+hitpos.Z());
+	  //  hitpos.SetZ(1.0*postmp.Z()+hitpos.Z());
 	  nz++;
-
+	  if (fVerbose){
+	    if(region =="South")
+	      std::cout << " South wall z: \t" << " feb: " << (int)macs.back() << " ,chan : \t" << chan
+			<< " ,pe: \t"<< pe << ", adc:\t" << data->fAdc[chan] << ", time: \t"<< data->fTs0
+			<< " ,x: \t"<< postmp.X() <<" ,y: \t" << postmp.Y()  <<" ,z: \t" << postmp.Z()<< " petotal : "<< petot<< std::endl;
+	  }
 	  if(postmp.Z()<zmin)
 	    zmin = postmp.Z();
 	  if(postmp.Z()>zmax)
@@ -657,12 +683,13 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	//double deltat = (adsGeo.Length()-2*hitpos[2])/fPropDelay;
          
 	// ttrigs[layer].push_back(data->fTs0);// - adsGeo.HalfLength()*fPropDelay);
-        ttrigs.push_back(data->fTs0 - adsGeo.HalfLength()*fPropDelay);
+        ttrigs.push_back(data->fTs0 - uint64_t(adsGeo.HalfLength()*fPropDelay));
 	tpos.push_back(postrig);
 	ntrig++;
 	    
 	if(fVerbose)
-	  std::cout <<  "T0: " << data->fTs0 << " ,half lenth : \t" << adsGeo.HalfLength() << " ,delay: \t" <<fPropDelay << std::endl;
+	  std::cout <<  "raw T0: " << data->fTs0 << " ,half lenth : \t" << adsGeo.HalfLength() << " ,delay: \t" <<fPropDelay 
+		    << " ,corrected time: " << data->fTs0 - uint64_t(adsGeo.HalfLength()*fPropDelay) << std::endl;
     }//loop over FEBs
     
 
@@ -712,6 +739,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     // T2 = t_hit + (L/2 - x)/v_propagation;
     // double deltat(T1-T2) = 2*x/v_propagation;
     //---------------------------------------------------------------------
+    //std::ofstream o(filename.c_str());
     
     geo::Point_t posA; geo::Point_t posB;
     bool layer1 = false; 
@@ -719,26 +747,47 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
     geo::Point_t crossfebpos;
 
-    long int t0_1=-5; long int t0_2=-5;
+    uint64_t t0_1=-5; uint64_t t0_2=-5;
+    uint64_t t1_1=-5; uint64_t t1_2=-5;
+    uint64_t t2_1=-5; uint64_t t2_2=-5;
     int mac5_1=-5; int mac5_2 = -5;
-    float halflength = 400.;
+    //float halflength = 400.;
     geo::Point_t center;
 
     for(auto const&  infn: informationA) {    
       auto i = &infn - informationA.data();
       auto const& adsGeo = adGeo.SensitiveVolume(infn.strip); //trigger stripi
-      mac5_1 = (int)infn.mac5s;
-      t0_1 = (long int)infn.t0;
+      //mac5_1 = (int)infn.mac5s;
+      //t0_1 = (long int)infn.t0;
       center = adsGeo.GetCenter();
 
       if(fVerbose)
-	std::cout<< "A type ----------> time: " << infn.t0 << " ,macs "<< (int)infn.mac5s  //<< std::endl;
+	std::cout<< "A type ----------> time: " << (long long int)infn.t0 << " ,macs "<< (int)infn.mac5s  //<< std::endl;
                  << " ,chal "<< infn.channel
                  << " ,  position "<<infn.pos[2] << std::endl;
     
       if ((int)infn.mac5s != (int)informationA[i+1].mac5s and i < (int)informationA.size()-1){
 	layer1 = true;
-	float zaxixpos = 0.5*(std::llabs((long int)infn.t0 - (long int)informationA[i+1].t0)*fPropDelay);
+
+	if ((int)infn.mac5s % 2 == 0) t1_1 = infn.t0;
+	else t1_1 = informationA[i+1].t0;
+	if ((int)informationA[i+1].mac5s % 2 != 0) t1_2 = informationA[i+1].t0;
+	else t1_2 = infn.t0;
+	if(fVerbose)
+	  std::cout<< "t1: " << t1_1 << ", t2:"<< t1_2 << ", deltat : "<< int64_t(t1_1 - t1_2) << std::endl;
+
+	//if (foutCSVFile)
+	//if (!filecsv.is_open()) throw cet::exception("CRTHitRecoAlg") << "Failed to create CSV file!\n";
+	//std::cout<<"line 775: "<< plane << "\t"<<  int64_t(t1_1 - t1_2) << "\n";
+	//if (foutCSVFile)
+	//if (!filecsv) throw cet::exception("CRTHitRecoAlg") << "CSV file is in a bad state before writing!\n"; 
+	if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t1_1 - t1_2) << "\n";
+	//if (foutCSVFile)
+	//if (!filecsv) throw cet::exception("CRTHitRecoAlg") << "CSV file is in a bad state after writing!\n"; 
+	//std::cout<<"line 777: "<< plane << "\t"<<  int64_t(t1_1 - t1_2) << "\n";
+ 	float zaxixpos = 0.5*(int64_t(t1_1 - t1_2)/fPropDelay);
+	//float zaxixpos = 0.5*(std::llabs((long int)infn.t0 - (long int)informationA[i+1].t0)*fPropDelay);
+	//float zaxixpos = 0.5*((long int)infn.t0 - (long int)informationA[i+1].t0)/fPropDelay;
 	/*
 	if(fVerbose)
 	  std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0 
@@ -748,17 +797,29 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 		   << 0.5*(adsGeo.Length()-(std::llabs((long int)infn.t0 - (long int)informationA[i+1].t0)*fPropDelay)) << std::endl;
 	*/
 
-	if(fVerbose)
-	  std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0 
-		   << " ,2nd mac5: "<<(int)informationA[i+1].mac5s << ", 2nd time " << (long int)informationA[i+1].t0 << " , deltaT: "
-		   << std::llabs((long int)infn.t0 - (long int)informationA[i+1].t0) << " , length: " << adsGeo.Length() 
-		   << " ,propagation delay: "<< fPropDelay << " , pos z: "
-		   << 0.5*(std::llabs((long int)infn.t0 - (long int)informationA[i+1].t0)*fPropDelay) 
-		   << " , center: " << adsGeo.GetCenter() << " , zaxis: "<< geo::Zaxis() <<  " , half length:  " << adsGeo.HalfLength()
-		   << " , actual pos w.rt. z: "
-		   << adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength()) << std::endl;
 
-	posA = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
+	/*	if (zaxixpos > 0){
+	  posA = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
+	  std::cout<< "posA (>0): "<< posA<< std::endl;	
+	}else if (zaxixpos < 0){
+	  posA = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos + adsGeo.HalfLength());
+	  std::cout<< "posA (<0): "<< posA<< std::endl;
+	}else {
+	*/
+	posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
+	std::cout<< "posA (==0): "<< posA<< std::endl;
+	  //}
+
+	if(fVerbose)
+	  std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long long int)infn.t0 
+		   << " ,2nd mac5: "<<(int)informationA[i+1].mac5s << ", 2nd time " << (long long int)informationA[i+1].t0 << " , deltaT: "
+		   << int64_t(t1_1 - t1_2) << " , length: " << adsGeo.Length()
+	    //	   << (long int)infn.t0 - (long int)informationA[i+1].t0 << " , length: " << adsGeo.Length() 
+		   << " ,propagation delay: "<< fPropDelay << " , pos z: " << zaxixpos
+	    //<< 0.5*((long long int)infn.t0 - (long long int)informationA[i+1].t0)/fPropDelay 
+		   << " , center: " << adsGeo.GetCenter() << " , zaxis: "<< geo::Zaxis() <<  " , half length:  " << adsGeo.HalfLength()
+		   << " , actual pos w.rt. z: " << posA << std::endl;
+	    //<< adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength()) << std::endl;
       }
     }
 
@@ -778,12 +839,30 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       // T1 = t_hit + (L-x)/v_propagation;
       //double deltat = (adsGeo.Length()-2*hitpos[2])/fPropDelay;
       if ((int)infn.mac5s != (int)informationB[i+1].mac5s and i < (int)informationB.size()-1){
-      float zaxixpos = 0.5*(std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0)*fPropDelay);
+	//float zaxixpos = 0.5*(std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0)*fPropDelay);
+	//      float zaxixpos = 0.5*((long int)infn.t0 - (long int)informationB[i+1].t0)/fPropDelay;
+
+
+
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (long int)infn.t0;
 
+
+      if ((int)infn.mac5s % 2 == 0) t2_1 = infn.t0;
+      else t2_1 = informationB[i+1].t0;
+      if ((int)informationB[i+1].mac5s % 2 != 0) t2_2 = informationB[i+1].t0;
+      else t2_2 = infn.t0;
+
+      if(fVerbose)
+	std::cout<< "t1: " << t2_1 <<", t2:"<< t2_2 << ", deltat : "<< int64_t(t2_1 - t2_2) << std::endl;
+      if (foutCSVFile) filecsv << plane << "\t"<<  int64_t(t2_1 - t2_2) << "\n";
+      float zaxixpos = 0.5*(int64_t(t2_1 - t2_2)/fPropDelay);
+
+      //if (foutCSVFile) filecsv.close();
+
       /*
+
       if(fVerbose)
 	std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0
                  << " ,2nd mac5: "<<(int)informationB[i+1].mac5s << ", 2nd time " << (long int)informationB[i+1].t0 << " , deltaT: "
@@ -792,17 +871,31 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
                  << 0.5*(adsGeo.Length()-(std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0)*fPropDelay)) << std::endl;
       */
 
+      /*
+      if (zaxixpos > 0){
+	posB = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
+	std::cout<< "posB (>0): "<< posB<< std::endl;
+      }else if (zaxixpos < 0){
+	posB = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos + adsGeo.HalfLength());
+	std::cout<< "posB (< 0): "<< posB<< std::endl;
+      }else {
+      */
+	posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
+	std::cout<< "posB (== 0): "<< posB<< std::endl;
+	//}
+      //posB = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
+
       if(fVerbose)
-	std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long int)infn.t0
-		 << " ,2nd mac5: "<<(int)informationB[i+1].mac5s << ", 2nd time " << (long int)informationB[i+1].t0 << " , deltaT: "
-		 << std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0) << " , length: " << adsGeo.Length()
-		 << " ,propagation delay: "<< fPropDelay << " , pos z: "
-		 << 0.5*(std::llabs((long int)infn.t0 - (long int)informationB[i+1].t0)*fPropDelay)
+	std::cout<< i << " ,1st mac5: "<< (int)infn.mac5s << " 1st time: " << (long long int)infn.t0
+		 << " ,2nd mac5: "<<(int)informationB[i+1].mac5s << ", 2nd time " << (long long int)informationB[i+1].t0 << " , deltaT: "
+		 << int64_t(t2_1 - t2_2) << " , length: " << adsGeo.Length()
+	  //	 << (long int)infn.t0 - (long int)informationB[i+1].t0 << " , length: " << adsGeo.Length()
+		 << " ,propagation delay: "<< fPropDelay << " , pos z: " << zaxixpos
+	  //	 << 0.5*((long long int)infn.t0 - (long long int)informationB[i+1].t0)/fPropDelay
 		 << " , center: " << adsGeo.GetCenter() << " , zaxis: "<< geo::Zaxis() <<  " , half length:  " << adsGeo.HalfLength()
-		 << " , actual pos w.rt. z: "
-		 << adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength()) << std::endl;
-	
-      posB = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
+		 << " , actual pos w.rt. z: " << posB << std::endl;
+	  //<< adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength()) << std::endl;
+
       }
       
     }
@@ -829,8 +922,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     if (layer1 && layer2 && region!="South" && region!="North" ){//&& nx==4){
       float avg = 0.5*(posA.Z() + posB.Z());
       hitpos.SetZ(avg);
-      hitpos.SetX(hitpos.X()*1.0/nx);
-      hitpos.SetY(hitpos.Y()*1.0/nx);
+      //hitpos.SetX(hitpos.X()*1.0/nx);
+      //      hitpos.SetY(hitpos.Y()*1.0/nx);
+      hitpos.SetX(hitpos.X()*1.0/petot);
+      hitpos.SetY(hitpos.Y()*1.0/petot);
       if(fVerbose)
 	std::cout << "z position in layer 1: "<< posA.Z() << " and in layer 2 "<< posB.Z() 
 		  << " average is "<< (posA.Z()+ posB.Z())/2. << " ,hitpos z " << hitpos[2] << std::endl;
@@ -839,33 +934,53 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     }else if ((int)informationA.size()==1 and (int)informationB.size()==1
 	      and (crossfeb == 7 or crossfeb == 5) and 
 	      region!="South" && region!="North"){
-      int z_pos =  0.5*(std::llabs(t0_1 - t0_2)*fPropDelay);
-      crossfebpos =  center + geo::Zaxis()*(z_pos - halflength);
+      //      int z_pos =  0.5*(std::llabs(t0_1 - t0_2)*fPropDelay);
+      int z_pos =  int64_t(t0_1 - t0_2)/(uint64_t(2*fPropDelay));
+      /*
+      if (z_pos > 0){
+	crossfebpos =  center + geo::Zaxis()*(z_pos - halflength);
+	
+      }else if (z_pos < 0){
+	crossfebpos =  center + geo::Zaxis()*(z_pos + halflength);
+
+      }else {
+      */
+      crossfebpos =  center + geo::Zaxis()*z_pos;
+	//}
+
+      // crossfebpos =  center + geo::Zaxis()*(z_pos - halflength);
       hitpos.SetZ(crossfebpos.Z());
-      hitpos.SetX(hitpos.X()*1.0/nx);
-      hitpos.SetY(hitpos.Y()*1.0/nx);
-      
+      // hitpos.SetX(hitpos.X()*1.0/nx);
+      //      hitpos.SetY(hitpos.Y()*1.0/nx);
+      hitpos.SetX(hitpos.X()*1.0/petot);
+      hitpos.SetY(hitpos.Y()*1.0/petot);
       if(fVerbose)
 	std::cout << "hello hi namaskar,  hitpos z " << hitpos[2] << std::endl;
       // side crt and only single layer match
     }else if (layer1 && region!="South" && region!="North"){// && nx==1){
       hitpos.SetZ(posA.Z());
-      hitpos.SetX(hitpos.X()*1.0/nx);
-      hitpos.SetY(hitpos.Y()*1.0/nx);
+      //      hitpos.SetX(hitpos.X()*1.0/nx);
+      //hitpos.SetY(hitpos.Y()*1.0/nx);
+      hitpos.SetX(hitpos.X()*1.0/petot);
+      hitpos.SetY(hitpos.Y()*1.0/petot);
       if(fVerbose)
 	std::cout << " same layer coincidence:  z position in layer 1: "<< posA.Z() << " ,hitpos z " << hitpos[2] << std::endl;
       
       // side crt and only single layer match
     }else if (layer2 && region!="South" && region!="North" ){//&& nx==1){
       hitpos.SetZ(posB.Z());
-      hitpos.SetX(hitpos.X()*1.0/nx);
-      hitpos.SetY(hitpos.Y()*1.0/nx);
+      //hitpos.SetX(hitpos.X()*1.0/nx);
+      //hitpos.SetY(hitpos.Y()*1.0/nx);
+      hitpos.SetX(hitpos.X()*1.0/petot);
+      hitpos.SetY(hitpos.Y()*1.0/petot);
       if(fVerbose)
 	std::cout << " same layer coincidence: z position in layer 2 "<< posB.Z() << " ,hitpos z " << hitpos[2] << std::endl;
       
     }else if (region!="South" && region!="North" ){//&& nx==2){
-       hitpos*=1.0/nx;
-       //hitpos.SetZ(hitpos.Z()*1.0/petot);
+      //  hitpos*=1.0/nx;
+      hitpos.SetX(hitpos.X()*1.0/petot);
+      hitpos.SetY(hitpos.Y()*1.0/petot);
+      hitpos.SetZ(hitpos.Z()*1.0/petot);
       if (fVerbose) std::cout << " In side CRTs [E/W] x: \t"<< hitpos[0] <<" ,y: \t" << hitpos[1]  <<" ,z: \t" << hitpos[2]<< std::endl;
     }/*else {
       hitpos.SetX(-99999);
@@ -876,21 +991,22 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 
     //finish averaging and fill hit point array
     if(region=="South") {
-      /*
+      
       hitpos.SetX(hitpos.X()*1.0/pex);
       hitpos.SetY(hitpos.Y()*1.0/pey);
       hitpos.SetZ(hitpos.Z()*1.0/petot);
-      */
+      /*
 	hitpos.SetX(hitpos.X()/nx);
 	hitpos.SetY(hitpos.Y()/ny);
 	hitpos.SetZ(hitpos.Z()/nz);
-	// */
+        */
 	// }else
       //hitpos*=1.0/petot; //hit position weighted by deposited charge
    
     }else if (region=="North"){
-      //hitpos*=1.0/petot;
-      hitpos*=1.0/nz;
+      hitpos*=1.0/petot;
+      //hitpos*=1.0/nz;
+
       //}else if (region!="South" && region!="North"){
       // hitpos.SetX(hitpos.X()*1.0/petot);
       //hitpos.SetY(hitpos.Y()*1.0/petot);
@@ -903,6 +1019,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     hitpoint[0] = hitpos.X();
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
+    //if (fVerbose){
+    if (region=="South" && hitpoint[0] >= 366. && hitpoint[1] > 200.)
+      std::cout << "I am looking for south wall :   macs " << (int)macs.back() << " x: \t"<< hitpoint[0] 
+		<<" ,y: \t" << hitpoint[1]  <<" ,z: \t" << hitpoint[2] << std::endl;
+    //}
     if (fVerbose){
       if (region=="North") std::cout << "north wall x: \t"<< hitpoint[0] <<" ,y: \t" << hitpoint[1]  <<" ,z: \t" << hitpoint[2]<< std::endl;
     } 
@@ -914,9 +1035,9 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //for(double const t : ttrigs[0]) 
     //    thit_0 += t;
     for(double const t : ttrigs)
-      thit += t;
+      thit +=   uint64_t(t);
     //thit_0
-    thit*=1.0/ttrigs.size();
+    thit*=1.0/uint64_t(ttrigs.size());
 
     if (fVerbose) std::cout << " <time>: \t"<< thit <<" size ttrig: \t" <<   ttrigs.size()<< std::endl;    
 
@@ -941,6 +1062,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       hitpointerr[2] = (zmax-zmin)/sqrt(12);
     }
     
+
     //generate hit
     CRTHit hit = FillCRTHit(macs,pesmap,petot,thit,thit,plane,hitpoint[0],hitpointerr[0],
                             hitpoint[1],hitpointerr[1],hitpoint[2],hitpointerr[2],region);

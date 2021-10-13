@@ -393,9 +393,9 @@ namespace crt {
     fNHit = 0;
     if (isCRTHit) {
 
-        //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
-        art::FindManyP<icarus::crt::CRTData> findManyData(crtHitHandle, event, fCRTHitProducerLabel);
-        std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
+      //art::fill_ptr_vector(crtSimHits,crtSimHitHandle);
+      // art::FindManyP<icarus::crt::CRTData> findManyData(crtHitHandle, event, fCRTHitProducerLabel);
+      //std::vector<art::Ptr<icarus::crt::CRTData>> data = findManyData.at(0);
 
         std::cout << "looping over sim hits..." << std::endl;
         for ( auto const& hit : *crtHitHandle )

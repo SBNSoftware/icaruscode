@@ -5,6 +5,8 @@
 //
 // Generated at Sat May  1 20:19:33 2021 by Biswaranjan Behera using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Thanks to Gianluca Petrillo for helping me on improving the decoder 
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -77,58 +79,300 @@ private:
 
 
 crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
-  : EDProducer{p}  // ,
-// More initializers here.
-
+  : EDProducer{p}
 {
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  // Call appropriate produces<>() functions here.
   produces< std::vector<icarus::crt::CRTData> >();
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  
 }
 
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
-  // Implementation of required member function here.
-  //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
-  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
-  
   const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+  
+  struct Recipe_t {
+    
+    unsigned int destMac5;
+    unsigned int firstSourceChannel;
+    unsigned int lastSourceChannel;
+    unsigned int firstDestChannel;
+    unsigned int lastDestChannel;
+    
+    int direction; // +1 or -1
+    
+  };
+
+  // vector: Mac5 -> its CRT data
+  std::vector<icarus::crt::CRTData> allCRTdata ( 305 + 1); // TODO size this correctly!
   
   for (auto & hit : hit_vector){ 
 
-    icarus::crt::CRTData data;
-    data.fMac5  = fChannelMap->getSimMacAddress(hit.mac5);
-    data.fTs0   = hit.ts0;
-    data.fTs1   = hit.ts1;
-    // data.fEntry = hit.entry;
-    //data.coinc    = hit.coinc;
+    std::array<Recipe_t, 3U> allRecipes;
+    //
+    // fill the recipe
+    //
+    if (!((hit.mac5 >= 88 && hit.mac5 <= 91)
+	  || hit.mac5 == 96 || hit.mac5 == 97
+	  || hit.mac5 ==  1 || hit.mac5 ==  3
+	  || hit.mac5 ==  6 || hit.mac5 ==  7)) { // look for FEB those are not between 88 to 91 
+      
+      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+      
+      Recipe_t recipe;
+      
+      // 
+      // first block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      
+      recipe.firstSourceChannel =  2;
+      recipe.lastSourceChannel  = 11;
+      
+      recipe.firstDestChannel   =  0;
+      recipe.lastDestChannel    =  9;
+      recipe.direction          = +1;
+      allRecipes[0] = recipe;
+      
+      // 
+      // second block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel = 12;
+      recipe.lastSourceChannel  = 21;
+      
+      recipe.firstDestChannel   = 10;
+      recipe.lastDestChannel    = 19;
+      recipe.direction          = +1;
+      allRecipes[1] = recipe;
+      
+      // 
+      // third block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel  = 22;
+      recipe.lastSourceChannel   = 31;
+      
+      recipe.firstDestChannel    = 20;
+      recipe.lastDestChannel     = 29;
+      recipe.direction           = +1;
+      allRecipes[2] = recipe;
+      
+      
+    } // "normal assignment"
+    else if (hit.mac5 ==  97) { // south wall - east side top horizontal module channels are reversed
+      
+      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+      
+      Recipe_t recipe;
+      
+      // 
+      // first block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      
+      recipe.firstSourceChannel =  2;
+      recipe.lastSourceChannel  = 11;
+      
+      recipe.firstDestChannel   =  0;
+      recipe.lastDestChannel    =  9;
+      recipe.direction          = +1;
+      allRecipes[0] = recipe;
+      
+      // 
+      // second block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel = 12;
+      recipe.lastSourceChannel  = 21;
+      
+      recipe.firstDestChannel   = 10;
+      recipe.lastDestChannel    = 19;
+      recipe.direction          = +1;
+      allRecipes[1] = recipe;
+      
+      // 
+      // third block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel  = 22;
+      recipe.lastSourceChannel   = 31;
+      
+      recipe.firstDestChannel    = 29;
+      recipe.lastDestChannel     = 20;
+      recipe.direction           = -1;
+      allRecipes[2] = recipe;
+      
+      
+    } 
+    else if (hit.mac5 == 1 || hit.mac5 == 3 ||
+	     hit.mac5 == 6 || hit.mac5 == 7 ||
+	     hit.mac5 == 96) { // north wall inner layer and south wall west side top three horizontal layer orientation is reversed 
 
-    for(int ch=0; ch<32; ch++) {
+      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
 
-      // East-center wall
-      if (hit.mac5 == 27 || hit.mac5 == 28
-          || hit.mac5 == 33 || hit.mac5 == 34){
-        if (ch > 19) {
-          data.fAdc[ch] = 0.;
-        }else {data.fAdc[ch] = hit.adc[ch+2];}
+      Recipe_t recipe;
 
-	// West-center wall
-      }else if (hit.mac5 == 21 || hit.mac5 == 22
-                || hit.mac5 == 13 || hit.mac5 == 14){
-        if (ch > 19) {
-          data.fAdc[ch] = 0.;
-        }else {data.fAdc[ch] = hit.adc[ch+2];}
-	// All side-crt walls
-      } else  if (ch > 29){
-	data.fAdc[ch] = 0.;
-      }else {
-	data.fAdc[ch] = hit.adc[ch+2];
-      }
+      //
+      // first block of 10 channels from source
+      //
+      recipe.destMac5 = destMac5;
+
+      recipe.firstSourceChannel  =  2;
+      recipe.lastSourceChannel   = 11;
+
+      recipe.firstDestChannel    =  9;
+      recipe.lastDestChannel     =  0;
+      recipe.direction           = -1;
+      allRecipes[0] = recipe;
+
+      //
+      // second block of 10 channels from source
+      //
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel = 12;
+      recipe.lastSourceChannel  = 21;
+
+      recipe.firstDestChannel   = 19;
+      recipe.lastDestChannel    = 10;
+      recipe.direction          = -1;
+      allRecipes[1] = recipe;
+
+      //
+      // third block of 10 channels from source: special mapping
+      //
+      recipe.destMac5 = destMac5;
+      recipe.firstSourceChannel = 22;
+      recipe.lastSourceChannel  = 31;
+
+      recipe.firstDestChannel   = 29;
+      recipe.lastDestChannel    = 20;
+      recipe.direction          = -1;
+      allRecipes[2] = recipe;
+
     }
-    crtdata->push_back(std::move(data));
-  }
+    else if (hit.mac5 == 88) {
+      
+      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5);
+      
+      Recipe_t recipe;
+      
+      // 
+      // first block of 10 channels from source
+      // 
+      recipe.destMac5 = 79; 
+      
+      recipe.firstSourceChannel  =  2;
+      recipe.lastSourceChannel   = 11;
+      
+      recipe.firstDestChannel    =  29;
+      recipe.lastDestChannel     =  20;
+      recipe.direction           =  -1;
+      allRecipes[0] = recipe;
+      
+      // 
+      // second block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5; 
+      recipe.firstSourceChannel = 12;
+      recipe.lastSourceChannel  = 21;
+      
+      recipe.firstDestChannel   = 10;
+      recipe.lastDestChannel    = 19;
+      recipe.direction          = +1;
+      allRecipes[1] = recipe;
+      
+      // 
+      // third block of 10 channels from source: special mapping
+      // 
+      recipe.destMac5 = destMac5; 
+      recipe.firstSourceChannel = 22;
+      recipe.lastSourceChannel  = 31;
+      
+      recipe.firstDestChannel   =  0;
+      recipe.lastDestChannel    =  9;
+      recipe.direction          = +1;
+      allRecipes[2] = recipe;
+      
+    } 
+    else if ((hit.mac5 >= 89) && (hit.mac5 <= 91)) {
+      
+      int const destMac5 = fChannelMap->getSimMacAddress(hit.mac5); 
+      
+      Recipe_t recipe;
+      
+      // 
+      // first block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5; 
+      
+      recipe.firstSourceChannel  =  2;
+      recipe.lastSourceChannel   = 11;
+      
+      recipe.firstDestChannel    = 19;
+      recipe.lastDestChannel     = 10;
+      recipe.direction           = -1;
+      allRecipes[0] = recipe;
+      
+      // 
+      // second block of 10 channels from source
+      // 
+      recipe.destMac5 = destMac5; 
+      recipe.firstSourceChannel = 12;
+      recipe.lastSourceChannel  = 21;
+      
+      recipe.firstDestChannel   =  9;
+      recipe.lastDestChannel    =  0;
+      recipe.direction          = -1;
+      allRecipes[1] = recipe;
+      
+      // 
+      // third block of 10 channels from source: special mapping
+      // 
+      recipe.destMac5 = destMac5 - 1; 
+      recipe.firstSourceChannel  = 22;
+      recipe.lastSourceChannel   = 31;
+      
+      recipe.firstDestChannel    = 29;
+      recipe.lastDestChannel     = 20;
+      recipe.direction           = -1;
+      
+      allRecipes[2] = recipe;
+      
+    } // if not 88
+    
+      
+    //
+    // cook the crtdata
+    //
+    for (Recipe_t const& recipe: allRecipes) {
+      if (recipe.firstSourceChannel == recipe.lastSourceChannel) continue;
+      
+      icarus::crt::CRTData& data = allCRTdata.at(recipe.destMac5);
+      data.fMac5  = recipe.destMac5;
+      //data.fTs0   = hit.ts0;
+      data.fTs0   = hit.timestamp;
+      data.fTs1   = hit.ts1;
+      
+
+      unsigned destCh = recipe.firstDestChannel;
+      for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
+
+        data.fAdc[destCh] = hit.adc[srcCh];
+        destCh += recipe.direction; // increase or decrease the source
+
+      }
+      
+    } // for all recipes
+    
+  } // for all input data
   
+  // move the data which is actually present in the final data product
+  auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
+  for (icarus::crt::CRTData& crtDataElem: allCRTdata) {
+    if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
+    crtdata->push_back(std::move(crtDataElem));
+  }
+    
   evt.put(std::move(crtdata));
  
 }
