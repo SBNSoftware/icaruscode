@@ -89,21 +89,7 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
-  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
-  std::vector<icarus::crt::BernCRTTranslator> hit_vector;
-
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
-  for (auto  handle : fragmentHandles) {
-    if (!handle.isValid() || handle->size() == 0)
-      continue;
-
-    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
-
-    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
-
-  }
-  
+    
   struct Recipe_t {
     
     unsigned int destMac5;
@@ -119,6 +105,21 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   // vector: Mac5 -> its CRT data
   std::vector<icarus::crt::CRTData> allCRTdata ( 305 + 1); // TODO size this correctly!
   
+  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
+  std::vector<icarus::crt::BernCRTTranslator> hit_vector;
+  
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  evt.getManyByType(fragmentHandles);
+  for (auto  handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
+    
+    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
+    
+    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
+    
+  }
+
   for (auto & hit : hit_vector){ 
 
     std::array<Recipe_t, 3U> allRecipes;
