@@ -1,3 +1,4 @@
+link_directories( $ENV{ROOTSYS}/lib)
 add_subdirectory(Objects)
 add_subdirectory(scripts)
 
@@ -26,14 +27,14 @@ simple_plugin(TimeTrackTreeStorage module
   art_root_io
   art_root_io_dict
   ${ART_FRAMEWORK_CORE}
+  ${ART_FRAMEWORK_SERVICES}
   ${ART_FRAMEWORK_SERVICES_REGISTRY}
   ${ART_ROOT_IO_TFILESERVICE_SERVICE}
   ${ART_FRAMEWORK_PRINCIPAL}
   art_Persistency_Common
   art_Utilities canvas
 )
-				 
-
+		
 install_headers()
 install_source()
 install_fhicl()

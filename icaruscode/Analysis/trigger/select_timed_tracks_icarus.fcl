@@ -47,7 +47,8 @@ physics: {
   } # filters
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  selection: [ "t0selectorW", "t0selectorE" ]
+  selectionW: [ "t0selectorW" ]
+  selectionE: [ "t0selectorE" ]
   
   streams: [ "rootoutput" ]
   

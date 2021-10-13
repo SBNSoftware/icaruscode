@@ -1,8 +1,8 @@
-<lcgdict>
+<lcgdict>  
 
-  <class name="sbn::selTrackInfo">
+  <class name="sbn::selTrackInfo" Classversion="10" >
+    <version ClassVersion="10" />
   </class>
 
-  <class name="std::vector<sbn::selTrackInfo>" />
-  
+  <class name="std::vector<sbn::selTrackInfo>" /> 
 </lcgdict>

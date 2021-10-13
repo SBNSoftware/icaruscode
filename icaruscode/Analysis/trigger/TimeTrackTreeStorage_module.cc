@@ -52,6 +52,7 @@
 
 namespace sbn {
   class TimeTrackTreeStorage;
+  
   struct selTrackInfo {
     int trackID;
     double t0;
@@ -65,9 +66,21 @@ namespace sbn {
     float dir_x;
     float dir_y;
     float dir_z;
-    TVector3 cross_cath_point; //JCZ: Need to figure out how one gets this information                     
+    selTrackInfo():
+      trackID(-1),
+      t0(-1),
+      start_x(-1),
+      start_y(-1),
+      start_z(-1),
+      end_x(-1),
+      end_y(-1),
+      end_z(-1),
+      length(-1),
+      dir_x(-1),
+      dir_y(-1),
+      dir_z(-1)
+    {}
   };
-
 }
 
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
@@ -93,8 +106,10 @@ private:
   art::InputTag fTrackProducer;
   art::InputTag fT0selProducer;
 
-  std::vector<selTrackInfo> *vTrackInfo;
-  selTrackInfo fTrackInfo;
+  std::vector<sbn::selTrackInfo> vTrackInfo;
+  sbn::selTrackInfo fTrackInfo;
+  
+  std::vector<int> fTrackID;
   
   //std::string const fLogCategory;
 
@@ -125,6 +140,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   fStoreTree->Branch("run", &fRun);
   fStoreTree->Branch("subrun", &fSubRun);
   fStoreTree->Branch("event", &fEvent);
+  fStoreTree->Branch("trackID", &fTrackID);
   fStoreTree->Branch("selTracks", &vTrackInfo);
 }
 
@@ -134,7 +150,11 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   unsigned int run = e.run();
   unsigned int subrun = e.subRun();
   unsigned int event = e.event();
-  vTrackInfo->clear();
+  fTrackID.clear();
+  //std::cout << "Here!" << std::endl;
+  if(vTrackInfo.size() > 0)
+    vTrackInfo.clear();
+  //std::cout << "Here!" << std::endl;
   fEvent = event;
   fSubRun = subrun;
   fRun = run;
@@ -182,12 +202,13 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   {
     art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
     //std::cout << particlePtr.key() << std::endl;
-    art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart);
-    //fTrackID.push_back(trackPtr->ID());
+    art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart); 
     if(!(trackPtr.isNull())) 
     {
       //std::cout << "Track Pointer: " << trackPtr << std::endl;
       std::cout << "PFP Pointer: " << particlePtr << std::endl;
+      fTrackID.push_back(trackPtr->ID());
+      
       fTrackInfo.trackID = trackPtr->ID();
       fTrackInfo.start_x = trackPtr->Start().X();
       fTrackInfo.start_y = trackPtr->Start().Y();
@@ -199,7 +220,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       fTrackInfo.dir_y = trackPtr->StartDirection().Y();
       fTrackInfo.dir_z = trackPtr->StartDirection().Z();
       fTrackInfo.length = trackPtr->Length();
-      vTrackInfo->push_back(fTrackInfo);
+      vTrackInfo.push_back(fTrackInfo);
+      
       ++processed;
       ++fTotalProcessed;
     }
