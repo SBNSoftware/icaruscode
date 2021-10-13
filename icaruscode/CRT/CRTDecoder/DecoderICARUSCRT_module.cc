@@ -28,8 +28,7 @@
 #include "artdaq-core/Data/Fragment.hh"
 #include "artdaq-core/Data/ContainerFragment.hh"
 #include "sbndaq-artdaq-core/Overlays/FragmentType.hh"
-#include "icaruscode/CRT/CRTDecoder/BernCRTTranslator.hh"
-
+#include "sbndaq-artdaq-core/Overlays/Common/BernCRTTranslator.hh"
 #include "icaruscode/Decode/DecoderTools/IDecoder.h"
 #include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
@@ -88,7 +87,21 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
 
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
-  const std::vector<icarus::crt::BernCRTTranslator> hit_vector =  icarus::crt::BernCRTTranslator::getCRTData(evt);
+
+  //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
+  std::vector<icarus::crt::BernCRTTranslator> hit_vector;
+
+  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
+  evt.getManyByType(fragmentHandles);
+  for (auto  handle : fragmentHandles) {
+    if (!handle.isValid() || handle->size() == 0)
+      continue;
+
+    auto this_hit_vector = icarus::crt::BernCRTTranslator::getCRTData(*handle);
+
+    hit_vector.insert(hit_vector.end(),this_hit_vector.begin(),this_hit_vector.end());
+
+  }
   
   struct Recipe_t {
     
