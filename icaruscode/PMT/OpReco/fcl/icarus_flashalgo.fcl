@@ -17,31 +17,48 @@ SimpleFlashStandard:
   DebugMode: false
 }
 
-SimpleFlashCryoE: @local::SimpleFlashStandard
-SimpleFlashCryoE.OpChannelRange: [0,179]
+SimpleFlashCryo0: @local::SimpleFlashStandard
+SimpleFlashCryo0.OpChannelRange: [0,179]
 
-SimpleFlashCryoW: @local::SimpleFlashStandard
-SimpleFlashCryoW.OpChannelRange: [180,359]
+SimpleFlashCryo1: @local::SimpleFlashStandard
+SimpleFlashCryo1.OpChannelRange: [180,359]
 
 
-SimpleFlashDataCryoE: @local::SimpleFlashCryoE
-SimpleFlashDataCryoE.PEThreshold:    100
-SimpleFlashDataCryoE.PEThresholdHit: 1.0
-SimpleFlashDataCryoE.MinPECoinc:     100
-SimpleFlashDataCryoE.MinMultCoinc:   5
-SimpleFlashDataCryoE.IntegralTime:   1.
-SimpleFlashDataCryoE.PreSample:      0.02
-SimpleFlashDataCryoE.VetoSize:       1.
-SimpleFlashDataCryoE.TimeResolution: 0.01
+SimpleFlashDataCryo0: @local::SimpleFlashCryo0
+SimpleFlashDataCryo0.PEThreshold:    100
+SimpleFlashDataCryo0.PEThresholdHit: 1.0
+SimpleFlashDataCryo0.MinPECoinc:     100
+SimpleFlashDataCryo0.MinMultCoinc:   5
+SimpleFlashDataCryo0.IntegralTime:   1.
+SimpleFlashDataCryo0.PreSample:      0.02
+SimpleFlashDataCryo0.VetoSize:       1.
+SimpleFlashDataCryo0.TimeResolution: 0.01
 
-SimpleFlashDataCryoW: @local::SimpleFlashCryoW
-SimpleFlashDataCryoW.PEThreshold:    100
-SimpleFlashDataCryoW.PEThresholdHit: 1.0
-SimpleFlashDataCryoW.MinPECoinc:     100
-SimpleFlashDataCryoW.MinMultCoinc:   5
-SimpleFlashDataCryoW.IntegralTime:   1.
-SimpleFlashDataCryoW.PreSample:      0.02
-SimpleFlashDataCryoW.VetoSize:       1.
-SimpleFlashDataCryoW.TimeResolution: 0.01
+SimpleFlashDataCryo1: @local::SimpleFlashCryo1
+SimpleFlashDataCryo1.PEThreshold:    100
+SimpleFlashDataCryo1.PEThresholdHit: 1.0
+SimpleFlashDataCryo1.MinPECoinc:     100
+SimpleFlashDataCryo1.MinMultCoinc:   5
+SimpleFlashDataCryo1.IntegralTime:   1.
+SimpleFlashDataCryo1.PreSample:      0.02
+SimpleFlashDataCryo1.VetoSize:       1.
+SimpleFlashDataCryo1.TimeResolution: 0.01
+
+################################
+# CONFIGS BELOW ARE DEPRECATED #
+################################
+
+SimpleFlashTPC0: @local::SimpleFlashStandard
+SimpleFlashTPC0.OpChannelRange: [0,89]
+
+SimpleFlashTPC1: @local::SimpleFlashStandard
+SimpleFlashTPC1.OpChannelRange: [90,179]
+
+SimpleFlashTPC2: @local::SimpleFlashStandard
+SimpleFlashTPC2.OpChannelRange: [180,269]
+
+SimpleFlashTPC3: @local::SimpleFlashStandard
+SimpleFlashTPC3.OpChannelRange: [270,359]
+
 
 END_PROLOG
