@@ -1,0 +1,5 @@
+#include "cafmakerjob_icarus_sce.fcl"
+
+services.RandomNumberGenerator: {}
+
+physics.runprod: [ @sequence::caf_ana_sce_evtw_sequence, cafmaker]
