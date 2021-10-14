@@ -21,8 +21,11 @@ icarus_opreco_pedestal_rmsslider.BeamGateSamples:   1
 icarus_opreco_pedestal_rmsslider.SampleSize:        20
 icarus_opreco_pedestal_rmsslider.Threshold:         1.5
 icarus_opreco_pedestal_rmsslider.Verbose:           false
-icarus_opreco_pedestal_rmsslider.NWaveformsToFile:  0
+icarus_opreco_pedestal_rmsslider.NWaveformsToFile:  1000
 icarus_opreco_pedestal_rmsslider.MaxSigma:          1.5
+icarus_opreco_pedestal_rmsslider.CatchSaturation:   true
+icarus_opreco_pedestal_rmsslider.SatRangeMax:       200
+icarus_opreco_pedestal_rmsslider.SatRangeMin:       0
 icarus_opreco_pedestal_rmsslider.PedRangeMax:       8003
 icarus_opreco_pedestal_rmsslider.PedRangeMin:       7995
 icarus_opreco_pedestal_rmsslider.NumPreSample:      10
@@ -82,10 +85,6 @@ icarus_ophit:
    #PedAlgoPset:    @local::icarus_opreco_pedestal_rollingmean
 }
 
-icarus_ophitdebugger: @local::icarus_ophit
-icarus_ophitdebugger.module_type: "FullOpHitFinder"
-icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
-
 icarus_ophit_data: @local::icarus_ophit
 icarus_ophit_data.InputModule: "daqPMT"
 icarus_ophit_data.PedAlgoPset.Threshold: 4.0
@@ -100,6 +99,21 @@ icarus_ophit_data.HitAlgoPset.MinPulseWidth: 5
 icarus_ophitdebugger_data: @local::icarus_ophit_data
 icarus_ophitdebugger_data.module_type: "FullOpHitFinder"
 icarus_ophitdebugger_data.OutputFile:  "ophit_debug.root"
+
+icarus_ophit_data: @local::icarus_ophit
+icarus_ophit.InputModule: "opdaq"
+icarus_ophit.PedAlgoPset.Threshold: 4.0
+icarus_ophit.PedAlgoPset.MaxSigma: 4.0
+icarus_ophit.PedAlgoPset.PedRangeMax: 15200
+icarus_ophit.PedAlgoPset.PedRangeMin: 14640
+icarus_ophit.HitAlgoPset.ADCThreshold: 10
+icarus_ophit.HitAlgoPset.TailADCThreshold: 6
+icarus_ophit.HitAlgoPset.EndADCThreshold: 2
+icarus_ophit.HitAlgoPset.MinPulseWidth: 5
+
+icarus_ophitdebugger: @local::icarus_ophit
+icarus_ophitdebugger.module_type: "FullOpHitFinder"
+icarus_ophitdebugger.OutputFile:  "ophit_debug.root"
 
 
 END_PROLOG
