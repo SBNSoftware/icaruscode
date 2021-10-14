@@ -56,8 +56,6 @@ private:
   double _merge_period;
   double _pe_threshold;
   bool   _store_empty_flash;
-  double _time_start;
-  double _time_end;
   std::string _hit_label;
   std::string _mct_label;
   std::vector<bool> _enabled_opch_v;
@@ -73,8 +71,6 @@ ICARUSMCOpFlash::ICARUSMCOpFlash(fhicl::ParameterSet const& p)
   _mct_label = p.get<std::string>("MCTruthProducer");
   _hit_label = p.get<std::string>("OpHitProducer");
   _merge_period = p.get<double>("MergePeriod");
-  _time_start = p.get<double>("TimeStart",-10000);
-  _time_end = p.get<double>("TimeEnd",10000);
   _enabled_opch_v.clear();
   std::vector<size_t> enabled_ch_v;
   enabled_ch_v = p.get<std::vector<size_t> >("OpChannel",enabled_ch_v);
@@ -126,7 +122,6 @@ void ICARUSMCOpFlash::produce(art::Event& e)
       auto const& part = mct.GetParticle(i);
       if( (int)(part.StatusCode()) != 1 ) continue;
       double flash_time = clockData.G4ToElecTime(part.T()) - clockData.TriggerTime();
-      if(flash_time < _time_start || flash_time > _time_end) continue;
       flash_time_s.insert(flash_time);
     }
   }

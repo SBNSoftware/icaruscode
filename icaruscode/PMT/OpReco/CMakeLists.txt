@@ -2,9 +2,6 @@
 art_make(
 	  MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
-            sbncode_OpT0Finder_flashmatch_Base
-            sbncode_OpT0Finder_flashmatch_GeoAlgo
-            sbncode_OpT0Finder_flashmatch_Algorithms
 			lardataobj_RecoBase
 			lardataobj_Simulation
 			larcoreobj_SummaryData
