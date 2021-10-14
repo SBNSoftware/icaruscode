@@ -7,6 +7,11 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
-                     
+  <class name="sbn::selTrackInfo" ClassVersion="11">
+   <version ClassVersion="11" checksum="2588527011"/>
+   <version ClassVersion="10" checksum="1586061224"/>
+  </class>
+
+  <class name="std::vector<sbn::selTrackInfo>" />    
 
 </lcgdict>

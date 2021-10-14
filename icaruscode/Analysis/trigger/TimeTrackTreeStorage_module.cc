@@ -47,40 +47,13 @@
 #include "larcore/Geometry/Geometry.h"
 #include "larcorealg/Geometry/GeometryCore.h"
 
+#include "Objects/TrackTreeStoreObj.h"
+
 #include <vector>
 #include <string>
 
 namespace sbn {
   class TimeTrackTreeStorage;
-  
-  struct selTrackInfo {
-    int trackID;
-    double t0;
-    float start_x;
-    float start_y;
-    float start_z;
-    float end_x;
-    float end_y;
-    float end_z;
-    float length;
-    float dir_x;
-    float dir_y;
-    float dir_z;
-    selTrackInfo():
-      trackID(-1),
-      t0(-1),
-      start_x(-1),
-      start_y(-1),
-      start_z(-1),
-      end_x(-1),
-      end_y(-1),
-      end_z(-1),
-      length(-1),
-      dir_x(-1),
-      dir_y(-1),
-      dir_z(-1)
-    {}
-  };
 }
 
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
@@ -108,8 +81,6 @@ private:
 
   std::vector<sbn::selTrackInfo> vTrackInfo;
   sbn::selTrackInfo fTrackInfo;
-  
-  std::vector<int> fTrackID;
   
   //std::string const fLogCategory;
 
@@ -140,7 +111,6 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   fStoreTree->Branch("run", &fRun);
   fStoreTree->Branch("subrun", &fSubRun);
   fStoreTree->Branch("event", &fEvent);
-  fStoreTree->Branch("trackID", &fTrackID);
   fStoreTree->Branch("selTracks", &vTrackInfo);
 }
 
@@ -149,12 +119,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   // Implementation of required member function here.
   unsigned int run = e.run();
   unsigned int subrun = e.subRun();
-  unsigned int event = e.event();
-  fTrackID.clear();
-  //std::cout << "Here!" << std::endl;
+  unsigned int event = e.event(); 
   if(vTrackInfo.size() > 0)
     vTrackInfo.clear();
-  //std::cout << "Here!" << std::endl;
   fEvent = event;
   fSubRun = subrun;
   fRun = run;
@@ -163,53 +130,24 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   if(pfparticles.size() == 0)
     return;
 
-  //std::vector<art::Ptr<recob::PFParticle>> PFParticles;
-  //try {
-  //art::ValidHandle<std::vector<art::Ptr<recob::PFParticle>>> pfparticles = e.getValidHandle<std::vector<art::Ptr<recob::PFParticle>>>(fT0selProducer);
-    //art::fill_ptr_vector(PFParticles, pfparticles);
-    //}
-    //catch(...) {
-    //std::cout << "PFP's with tag: " << fT0selProducer << " not present.\n";
-    //throw;
-    //}
-  //PFParticles = pfparticles;
-
-  /*
-      for (art::InputTag const& inputTag: fTrackTimeTags) {
-
-    auto const& T0toTrack
-    = event.getByLabel<art::Assns<anab::T0, recob::PFParticle>>(inputTag);
-    unsigned int const newTracks = selectTracks(T0toTrack, selectedTracks);
-
-    mf::LogTrace(fLogCategory)
-    << "From '" << inputTag.encode() << "': "
-    << newTracks << " tracks selected"
-      ;
-
-  } // for 
-  */
-
-  //art::FindManyP<anab::T0> T0List(pfparticles, e, fT0selProducer);
-  //art::ValidHandle<std::vector<recob::Track>> tracks = e.getValidHandle<std::vector<recob::Track>>(fTrackProducer);
-  //auto assns = std::make_unique<art::Assns<art::Ptr<recob::PFParticle>, recob::Track>>;
-  //auto const& PFPtoTrack = e.getByLabel<art::Assns<art::Ptr<recob::PFParticle>, recob::Track>> (fT0selProducer);
-  //art::FindManyP<art::Ptr<recob::Track>> particleTracks(pfparticles, e, fTrackProducer);
   std::cout << "HERE!" << std::endl;
   art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
+  art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
   std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
   int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
     art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
     //std::cout << particlePtr.key() << std::endl;
-    art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart); 
+    art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart);
+    art::Ptr<anab::T0> t0Ptr = t0Tracks.at(iPart);
+    float track_t0 = -999.0;
     if(!(trackPtr.isNull())) 
     {
-      //std::cout << "Track Pointer: " << trackPtr << std::endl;
+      track_t0 = t0Ptr->Time();
       std::cout << "PFP Pointer: " << particlePtr << std::endl;
-      fTrackID.push_back(trackPtr->ID());
-      
       fTrackInfo.trackID = trackPtr->ID();
+      fTrackInfo.t0 = track_t0/1e9; //is this in nanoseconds? Will convert to seconds so I can understand better
       fTrackInfo.start_x = trackPtr->Start().X();
       fTrackInfo.start_y = trackPtr->Start().Y();
       fTrackInfo.start_z = trackPtr->Start().Z();
@@ -227,19 +165,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     }
   }
   std::cout << "Particles Processed: " << processed << std::endl;
-  std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl; 
-  /*
-  for(art::Ptr<recob::PFParticle> this_pfp: pfparticles) 
-  {
-    const std::vector<art::Ptr<recob::Track>> track = sel_tracks.at(this_pfp.key());
-    if(track.size() != 1)
-      continue;
-
-    art::Ptr<recob::Track> trk = track.at(0);
-    fTrackID.push_back(trk->ID());
-    std::cout << "This track ID is: " << trk->ID() << std::endl; 
-  }
-  */
+  std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl;
   fStoreTree->Fill();
 
 }
