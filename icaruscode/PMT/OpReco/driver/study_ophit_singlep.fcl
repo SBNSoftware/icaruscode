@@ -1,6 +1,5 @@
 
 #include "services_icarus_simulation.fcl"
-#include "services_icarus.fcl"
 #include "singles_icarus.fcl"
 #include "largeantmodules_icarus.fcl"
 #include "detsimmodules_ICARUS.fcl"
@@ -8,19 +7,11 @@
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
-##include "use_singlewire_geometry_icarus.fcl"
 process_name: OpReco
 
 services:
 {
-  @table::icarus_wirecalibration_services
-  LArG4Parameters:                       @local::icarus_largeantparameters
-  LArVoxelCalculator:                    @local::icarus_larvoxelcalculator
-  SpaceChargeService:                    @local::icarus_spacecharge
-  MagneticField:                         @local::no_mag_larsoft
-  PhotonVisibilityService:         @local::icarus_photonvisibilityservice
-  @table::icarus_single_induction_geometry_services
-
+  @table::icarus_g4_services
 }
 
 source:

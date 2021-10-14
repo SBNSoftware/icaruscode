@@ -2,8 +2,8 @@
 
 services: {
        @table::services
-       @table::icarus_single_induction_overburden_geometry_services
-       #@table::icarus_single_induction_nooverburden_geometry_services
+       @table::icarus_overburden_geometry_services
+       #@table::icarus_nooverburden_geometry_services
 }
 
 process_name: SinglesGen
