@@ -78,32 +78,40 @@ class icarus::crt::CRTHitRecoAlg {
     using Comment = fhicl::Comment;
     fhicl::Atom<bool> UseReadoutWindow {
       Name("UseReadoutWindow"),
-      Comment("Only reconstruct hits within readout window")
-    };
+	Comment("Only reconstruct hits within readout window")
+	};
     fhicl::Atom<double> QPed {
       Name("QPed"),
-      Comment("Pedestal offset [ADC]")
-    };
+	Comment("Pedestal offset [ADC]")
+	};
     fhicl::Atom<double> QSlope {
       Name("QSlope"),
-      Comment("Pedestal slope [ADC/photon]")
-    };
+	Comment("Pedestal slope [ADC/photon]")
+	};
     fhicl::Atom<bool> Verbose {
       Name("Verbose"),
-      Comment("Output verbosity")
-    };
+	Comment("Output verbosity")
+	};
+    fhicl::Atom<bool> outCSVFile {
+      Name("outCSVFile"),
+	Comment("Output a csv file")
+	};
+    fhicl::Atom<std::string> CSVFile {
+      Name("CSVFile"),
+	Comment("file name for output CSV File")
+        };
     fhicl::Atom<double> PropDelay {
       Name("PropDelay"),
-      Comment("group velocity in WLS fiber [ns/cm]")
-    };
+	Comment("group velocity in WLS fiber [ns/cm]")
+	};
     fhicl::Atom<double> PEThresh {
       Name("PEThresh"),
-      Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
-    };
+	Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
+	};
     fhicl::Atom<uint32_t> CoinWindow {
       Name("CoinWindow"),
-      Comment("window for finding side CRT trigger coincidences [ns]")
-    };
+	Comment("window for finding side CRT trigger coincidences [ns]")
+	};
   };//Config
 
   //constructors
@@ -130,12 +138,15 @@ class icarus::crt::CRTHitRecoAlg {
 
   //Params from fcl file
   bool fVerbose;          ///< print info
+  bool foutCSVFile;       ///<FCL input: Write a CSV File?
+  std::string fCSVFile;   ///<FCL input: file name for output CSV File
   bool fUseReadoutWindow; ///< Only reconstruct hits within TPC readout window
   double fQPed;           ///< Pedestal offset of SiPMs [ADC]
   double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
   double fPropDelay;      ///< propegation time [ns/cm]
   double fPEThresh;       ///< threshold[PE] above which charge amplitudes used in hit reco
   uint32_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
+  std::ofstream filecsv;
 
   //Given top CRTData product, produce CRTHit
   CRTHit MakeTopHit(art::Ptr<CRTData> data);

@@ -5,6 +5,8 @@
 //
 // Generated at Sat May  1 20:19:33 2021 by Biswaranjan Behera using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Thanks to Gianluca Petrillo for helping me on improving the decoder 
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -77,18 +79,16 @@ private:
 
 
 crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
-  : EDProducer{p}  // ,
-// More initializers here.
-
+  : EDProducer{p}
 {
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  // Call appropriate produces<>() functions here.
   produces< std::vector<icarus::crt::CRTData> >();
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  
 }
 
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
+
   // Implementation of required member function here.
   //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
