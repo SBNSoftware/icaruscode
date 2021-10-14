@@ -8,7 +8,7 @@ icarus_simple_flashmatch_0: {
   #CaloProducer: "pandoraGausCaloCryoE"
   SpacePointProducer: "pandoraGausCryoE"
   OpHitProducer: "ophit"
-  BeamWindowStart: -50 # us
+  BeamWindowStart: -50.0 # us
   BeamWindowEnd: 50.0 # us
   FlashStart: -0.02 # us, wrt flash time
   FlashEnd: 0.08 # us, wrt flash time
@@ -47,11 +47,11 @@ icarus_simple_flashmatch_0: {
   # XBinWidth approx 5.
 
   # block for Y and Z ophit distributions, used for unbiassing
-  # TODO: find adequate values, these are OKish
+  # TODO: find adequate values, these are NOT OK!
   YBins: 5
   YLow: -135.
   YHigh: 85.
-  YBiasSlope: 0.4
+  YBiasSlope: 0. # TODO: find adequate value, currently no Y unbiassing
   ZBins: 18
   ZLow: -900.
   YHigh: 900.
