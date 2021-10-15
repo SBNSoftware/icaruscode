@@ -114,7 +114,7 @@ namespace icarus {
 
     std::vector<art::InputTag>  fDigitModuleLabel;
     //short fPrintLevel;
-
+    int cryo;
     float fValoretaufcl; 
     int fcryofcl;
     int fplanefcl;
@@ -278,7 +278,7 @@ namespace icarus{
     purity_info.Run = evt.run();
     purity_info.Subrun = evt.subRun();
     purity_info.Event = evt.event();
-
+   
     for(const auto& digitlabel : fDigitModuleLabel)
       {
 	evt.getByLabel(digitlabel, digitVecHandle);
@@ -339,6 +339,9 @@ namespace icarus{
 	    int cryostat=wid.Cryostat;
 	    size_t tpc=wid.TPC;
 	    size_t iWire=wid.Wire;
+
+	    //cryo = cryostat;
+	    //	    // std::cout << cryo<< " " << cryostat << " " <<std::endl;
 	    //std::cout << plane << " " << tpc << " " << cryostat << " " << iWire << std::endl;
 	    fDataSize = rawDigit->Samples();
 	    rawadc.resize(fDataSize);
@@ -353,8 +356,8 @@ namespace icarus{
 	    float massimo=0;
 	    float quale_sample_massimo;
 	    //    if (plane==0) {
-	    if ((int)plane==fplanefcl && cryostat==fcryofcl){
-
+	    if ((int)plane==fplanefcl && cryostat== fcryofcl){
+	      cryo = cryostat;
               TH1F *h111 = new TH1F("h111","delta aree",20000,0,0);
               for (unsigned int ijk=0; ijk<(fDataSize); ijk++)
                 {
@@ -992,6 +995,7 @@ namespace icarus{
 			purity_info.Run = evt.run();
 			purity_info.Subrun = evt.subRun();
 			purity_info.Event = evt.event();
+			purity_info.Cryostat = fcryofcl;//cryo;
 			purity_info.TPC = tpc_number;
 			purity_info.Wires = clusters_dw[icl];
                         purity_info.Ticks = clusters_ds[icl];
@@ -999,19 +1003,8 @@ namespace icarus{
 			//if(purity_info.TPC<2) purity_info.Cryostat=0;
 			//else purity_info.Cryostat=1;
 			
-			purity_info.Cryostat=fcryofcl;
-
-			// near/far from cathode tracks                                                                                        
-
-			  if((clusters_dw[icl]< 200)&&(clusters_ds[icl]>2250)){
-			    purity_info.AttenuationNEAR = slope_purity_exo*-1.;
-			  }
-			  else purity_info.AttenuationNEAR = 0;
-			  if((clusters_dw[icl]> 600)&&(clusters_ds[icl]<1250)){
-                            purity_info.AttenuationFAR = slope_purity_exo*-1.;
-                          }
-			  else purity_info.AttenuationFAR = 0;
-       			purity_info.Attenuation = slope_purity_exo*-1.;
+			//			purity_info.Cryostat=cryostat;
+			purity_info.Attenuation = slope_purity_exo*-1.;
 			purity_info.FracError = error_slope_purity_exo / slope_purity_exo;
                         //purity_info.Attenuation_2 = slope_purity_2*-1.;
                         //purity_info.FracError_2 = error_slope_purity_2 / slope_purity_2;
@@ -1020,7 +1013,7 @@ namespace icarus{
 			//                        purity_info.Ticks = clusters_ds[icl];
 
 			if(fFillAnaTuple)
-			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.AttenuationNEAR,purity_info.AttenuationFAR,purity_info.Attenuation);
+			  purityTuple->Fill(purity_info.Run,purity_info.Event,purity_info.Cryostat,purity_info.TPC,purity_info.Wires,purity_info.Ticks,purity_info.Attenuation);
 
 			std::cout << "Calling again after filling attenuation … " << std::endl;
 			purity_info.Print();

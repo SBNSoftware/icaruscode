@@ -22,8 +22,6 @@ namespace anab {
     unsigned int Cryostat;
     unsigned int TPC;
 
-    double AttenuationNEAR;
-    double AttenuationFAR;
     double Attenuation;
     double FracError;
 
