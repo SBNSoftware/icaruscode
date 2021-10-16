@@ -1,0 +1,81 @@
+#include "stage1_icarus_driver_common.fcl"
+
+process_name: stage1
+
+physics.filters.TPCHitFilter.HitDataLabelVec:  ["gaushit"]
+physics.filters.TPCHitFilter.MaximumHits:  500000
+
+physics.producers.caloskimCalorimetry: @local::caloskim_calorimetry
+physics.producers.caloskimCalorimetry.TrackModuleLabel: "pandoraTrackGaus"
+
+physics.analyzers.caloskim: {
+  module_type: TrackCaloSkimmer
+  CALOproducer: "caloskimCalorimetry"
+  TRKproducer:  "pandoraTrackGaus"
+  T0producer: "pandoraGaus"
+  PFPproducer: "pandoraGaus"
+  G4producer: ""
+  SimChannelproducer: ""
+  HITproducer: "cluster3d"
+  RawDigitproducers: [ ]
+  RequireT0: true
+  HitRawDigitsTickCollectWidth: 50
+  DoTailFit: false
+  SilenceMissingDataProducts: true
+  SelectionTools: [@local::stopping_selection, @local::a2c_selection, @local::throughgoing_selection]
+  SelectEvents: [reco]
+}
+
+physics.reco: [ TPCHitFilter,
+                @sequence::icarus_reco_Gauss,
+                caloskimCalorimetry ]
+
+physics.outana:            [ caloskim ]
+physics.trigger_paths:     [ reco ]
+physics.end_paths:         [ outana, stream1 ]
+outputs.out1.fileName:     "%ifb_%tc-%p.root"
+outputs.out1.dataTier:     "reconstructed"
+outputs.out1.SelectEvents: [ reco ]
+outputs.out1.outputCommands: [
+  "keep *_*_*_*",
+  "drop *_caloskimCalorimetry_*_*"
+]
+
+# Disabled Space-Charge service for calorimetry
+services.SpaceChargeService: {
+    EnableCalEfieldSCE: false
+    EnableCalSpatialSCE: false
+    EnableCorrSCE: false
+    EnableSimEfieldSCE: false
+    EnableSimSpatialSCE: false
+    InputFilename: "SCEoffsets/SCEoffsets_ICARUS_E500_voxelTH3.root"
+    RepresentationType: "Voxelized_TH3"
+    service_provider: "SpaceChargeServiceICARUS"
+}
+
+services.message.destinations :
+{
+  STDCOUT:
+  {
+     type:      "cout"      #tells the message service to output this destination to cout
+     threshold: "DEBUG"     #tells the message service that this destination applies to WARNING and higher level messages
+     categories:
+     {
+       Cluster3D:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       PMAlgTracker:
+       {
+         limit: -1
+         reportEvery: 1
+       }
+       default:
+       {
+         limit: 0  #don't print anything at the infomsg level except the explicitly named categories
+         reportEvery: 0
+       }
+     }
+  }
+}
