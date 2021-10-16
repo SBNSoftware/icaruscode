@@ -58,7 +58,7 @@ icarus_genie_NuMI_base: {
   BeamName:             "numi"
   DetectorLocation:     "icarus-numi"
   FluxSearchPaths:      "/pnfs/icarus/persistent/numiflux_sample/neutrino_flux/"
-  FluxFiles:            ["g4numiv6_dk2nu_minervame*.root"]
+  FluxFiles:            ["g4numiv6_minervame*.root"]
   
   POTPerSpill:          6.0e13 # same as BnB per batch, but 6 batches in spill
   
