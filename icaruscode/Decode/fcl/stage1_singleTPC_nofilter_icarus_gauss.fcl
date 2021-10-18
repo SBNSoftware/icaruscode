@@ -2,11 +2,11 @@
 
 process_name: stage1
 
-physics.filters.TPCHitFilter.HitDataLabelVec:  ["gaushit"]
-physics.filters.TPCHitFilter.MaximumHits:  500000
-
+physics.producers.cluster3d: @local::icarus_cluster3d
+physics.producers.pandoraGaus: @local::icarus_pandora
+physics.producers.pandoraTrackGaus: @local::icarus_pandoraTrackCreation
+physics.producers.pandoraKalmanTrackGaus: @local::icarus_pandora_kalmantrack
 physics.producers.caloskimCalorimetry: @local::caloskim_calorimetry
-physics.producers.caloskimCalorimetry.TrackModuleLabel: "pandoraTrackGaus"
 
 physics.analyzers.caloskim: {
   module_type: TrackCaloSkimmer
@@ -26,9 +26,7 @@ physics.analyzers.caloskim: {
   SelectEvents: [reco]
 }
 
-physics.reco: [ TPCHitFilter,
-                @sequence::icarus_reco_Gauss,
-                caloskimCalorimetry ]
+physics.reco: [ TPCHitFilter, cluster3d, pandoraGaus, pandoraTrackGaus, pandoraKalmanTrackGaus, caloskimCalorimetry ]
 
 physics.outana:            [ caloskim ]
 physics.trigger_paths:     [ reco ]
@@ -79,3 +77,20 @@ services.message.destinations :
      }
   }
 }
+
+physics.filters.TPCHitFilter.HitDataLabelVec:  ["gaushit"]
+physics.filters.TPCHitFilter.MaximumHits:  500000
+
+physics.producers.cluster3d.Hit3DBuilderAlg:                                               @local::standard_snippethit3dbuilder
+physics.producers.cluster3d.Hit3DBuilderAlg.HitFinderTagVec:                               ["gaushit"]
+physics.producers.cluster3d.Hit3DBuilderAlg.PulseHeightFraction:                           0. #0.75 #0.25
+physics.producers.cluster3d.Hit3DBuilderAlg.PHLowSelection:                                0. #4.0 # 20.
+physics.producers.cluster3d.Hit3DBuilderAlg.MaxHitChiSquare:                               1000000.
+physics.producers.cluster3d.Hit3DBuilderAlg.OutputHistograms:                              false
+
+physics.producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
+physics.producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.inputCollection:                             	   "pandoraGaus"
+physics.producers.pandoraKalmanTrackGaus.trackInputTag:                               	   "pandoraTrackGaus"
+
+physics.producers.caloskimCalorimetry.TrackModuleLabel:					   "pandoraTrackGaus"

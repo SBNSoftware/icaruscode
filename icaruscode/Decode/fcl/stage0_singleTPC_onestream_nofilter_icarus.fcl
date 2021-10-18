@@ -7,7 +7,7 @@
 process_name: stage0
 
 ## Define the paths we'll execute depending on data
-physics.pathTPC:     [ @sequence::icarus_stage0_multiTPC_TPC, gaushit ]
+physics.pathTPC:     [ daqTPC, @sequence::icarus_stage0_multiTPC_TPC, gaushit ]
 
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
