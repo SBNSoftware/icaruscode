@@ -148,6 +148,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       std::cout << "PFP Pointer: " << particlePtr << std::endl;
       fTrackInfo.trackID = trackPtr->ID();
       fTrackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
+      if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
+	std::cout << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID() << std::endl;
       fTrackInfo.start_x = trackPtr->Start().X();
       fTrackInfo.start_y = trackPtr->Start().Y();
       fTrackInfo.start_z = trackPtr->Start().Z();
