@@ -1006,7 +1006,7 @@ void icarus::trigger::SlidingWindowTriggerSimulation::plotTriggerResponse(
       { thisTriggerTimeVsHWtrig - beamGateTime };
     
     mf::LogTrace(fLogCategory)
-      << "Trigger at tick " << thisTriggerTick
+      << "Trigger " << fPattern.tag() << " at tick " << thisTriggerTick
       << " (" << thisTriggerTimeVsHWtrig << " vs. HW trigger, "
       << thisTriggerTimeVsBeamGate << " vs. beam gate)"
       ;
