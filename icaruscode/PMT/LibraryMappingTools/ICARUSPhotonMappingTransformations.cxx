@@ -20,9 +20,10 @@
 #include "messagefacility/MessageLogger/MessageLogger.h" // MF_LOG_DEBUG()
 
 // C/C++ standard libraries
-#include <algorithm> // std::iota()
+#include <algorithm>
 #include <string> // std::to_string()
 #include <cassert>
+#include <numeric> // std::iota()
 
 
 //------------------------------------------------------------------------------

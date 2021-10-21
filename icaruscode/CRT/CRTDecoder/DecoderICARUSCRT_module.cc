@@ -5,6 +5,8 @@
 //
 // Generated at Sat May  1 20:19:33 2021 by Biswaranjan Behera using cetskelgen
 // from cetlib version v3_11_01.
+//
+// Thanks to Gianluca Petrillo for helping me on improving the decoder 
 ////////////////////////////////////////////////////////////////////////
 
 #include "art/Framework/Core/EDProducer.h"
@@ -48,6 +50,7 @@
 #include <vector>
 #include <iostream>
 #include<stdlib.h>
+#include <map>
 
 namespace crt {
   class DecoderICARUSCRT;
@@ -70,25 +73,52 @@ public:
   void produce(art::Event& evt) override;
 
 private:
+  uint64_t CalculateTimestamp(icarus::crt::BernCRTTranslator& hit);
 
   // Declare member data here.
   const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
+
+  std::map<uint8_t, int32_t> FEB_delay; //<mac5, delay in ns>
 };
 
 
 crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
-  : EDProducer{p}  // ,
-// More initializers here.
-
+  : EDProducer{p}
 {
   fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-  // Call appropriate produces<>() functions here.
   produces< std::vector<icarus::crt::CRTData> >();
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+
+  std::vector<std::vector<int32_t> > delays =  p.get<std::vector<std::vector<int32_t> > >("FEB_delay");
+  for(auto & feb : delays) {
+    int32_t & mac = feb[0];
+    int32_t & d   = feb[1];
+    FEB_delay[mac] = d;
+    std::cout<<"Read delay for mac5 "<<std::setw(3)<<(int)mac<<": "<<std::setw(4)<<d<<" ns\n";
+  }
+}
+
+uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslator& hit) {
+  /**
+   * Calculate timestamp based on nanosecond from FEB and poll times measured by server
+   * see: https://sbn-docdb.fnal.gov/cgi-bin/private/DisplayMeeting?sessionid=7783
+   */
+  int32_t ts0  = hit.ts0; //must be signed int
+
+  //add PPS cable length offset modulo 1s
+  ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
+  if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
+
+  uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
+  int mean_poll_time_ns = mean_poll_time % (1000'000'000); 
+  
+  return mean_poll_time - mean_poll_time_ns + ts0
+    + (ts0 - mean_poll_time_ns < -500'000'000) * 1000'000'000
+    - (ts0 - mean_poll_time_ns >  500'000'000) * 1000'000'000;
 }
 
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
+
   // Implementation of required member function here.
   //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
@@ -96,8 +126,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
+  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
   for (auto  handle : fragmentHandles) {
     if (!handle.isValid() || handle->size() == 0)
       continue;
@@ -112,7 +141,7 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
 
     icarus::crt::CRTData data;
     data.fMac5  = fChannelMap->getSimMacAddress(hit.mac5);
-    data.fTs0   = hit.ts0;
+    data.fTs0   = CalculateTimestamp(hit);
     data.fTs1   = hit.ts1;
     // data.fEntry = hit.entry;
     //data.coinc    = hit.coinc;

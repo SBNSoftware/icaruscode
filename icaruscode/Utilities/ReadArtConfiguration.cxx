@@ -13,7 +13,7 @@
 
 // framework libraries
 #include "art_root_io/RootDB/SQLite3Wrapper.h"
-#include "fhiclcpp/make_ParameterSet.h"
+#include "fhiclcpp/ParameterSet.h"
 
 
 // -----------------------------------------------------------------------------
@@ -61,9 +61,8 @@ util::readConfigurationFromArtFile(TFile& file)
     // reinterpretation: `unsigned char*` -> `char*`
     std::string const psetIDstr
       = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 0));
-    fhicl::ParameterSet pset;
-    fhicl::make_ParameterSet
-      (reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)), pset);
+    auto pset = fhicl::ParameterSet::make
+      (reinterpret_cast<const char*>(sqlite3_column_text(stmt, 1)));
     config.emplace(fhicl::ParameterSetID{ psetIDstr }, std::move(pset));
     
   } // while

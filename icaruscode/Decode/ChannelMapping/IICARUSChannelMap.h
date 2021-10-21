@@ -12,7 +12,7 @@
 #ifndef IICARUSChannelMap_H
 #define IICARUSChannelMap_H
 
-#include "art/Framework/Services/Registry/ServiceMacros.h"
+#include "art/Framework/Services/Registry/ServiceDeclarationMacros.h"
 
 #include <vector>
 #include <string>

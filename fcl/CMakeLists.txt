@@ -9,7 +9,6 @@ add_subdirectory(reco)
 add_subdirectory(caf)
 add_subdirectory(services)
 add_subdirectory(utilities)
-add_subdirectory(calorimetry)
 add_subdirectory(compatibility)
 
 install_fhicl()

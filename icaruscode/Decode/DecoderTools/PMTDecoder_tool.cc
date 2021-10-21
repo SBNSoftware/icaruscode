@@ -759,7 +759,7 @@ void daq::PMTDecoder::configure(fhicl::ParameterSet const&) {
 void daq::PMTDecoder::setupRun(art::Run const& run)
 {
     sbn::PMTconfiguration const* PMTconfig = fPMTconfigTag
-      ? run.getPointerByLabel<sbn::PMTconfiguration>(*fPMTconfigTag): nullptr;
+      ? run.getHandle<sbn::PMTconfiguration>(*fPMTconfigTag).product(): nullptr;
     
     UpdatePMTConfiguration(PMTconfig);
 }
@@ -772,7 +772,7 @@ void daq::PMTDecoder::setupEvent(art::Event const& event)
     // global trigger
     //
     auto const& triggers
-      = event.getByLabel<std::vector<raw::ExternalTrigger>>(fTriggerTag);
+      = event.getProduct<std::vector<raw::ExternalTrigger>>(fTriggerTag);
     if (triggers.size() != 1) {
       // if this is hit, the decoder needs some development to correctly deal
       // with input with no trigger, or more than one

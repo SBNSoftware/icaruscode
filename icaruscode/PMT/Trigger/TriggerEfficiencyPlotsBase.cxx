@@ -907,12 +907,14 @@ icarus::trigger::TriggerEfficiencyPlotsBase::initializeEfficiencyPerTriggerPlots
   constexpr util::quantities::intervals::microseconds beamPlotPadding { 4_us };
   icarus::ns::util::BinningSpecs const beamGateBinning = alignBinningTo(
     icarus::ns::util::BinningSpecs{
-      (std::min(
-        preSpillWindow.asElectronicsTimeRange().start()
-          - beamGate.asElectronicsTimeRange().start(),
-        beamGate.asElectronicsTimeRange().start()
-          - beamGate.asElectronicsTimeRange().start() // yep, this is 0
-        ) - beamPlotPadding).value(),
+      (
+        std::min(
+          preSpillWindow.asElectronicsTimeRange().start(),
+          beamGate.asElectronicsTimeRange().start()
+        )
+        - beamGate.asElectronicsTimeRange().start()
+        - beamPlotPadding
+      ).value(),
       (std::max(
         preSpillWindow.asElectronicsTimeRange().end()
           - beamGate.asElectronicsTimeRange().start(),

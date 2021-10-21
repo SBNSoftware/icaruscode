@@ -50,7 +50,7 @@ bool filter::FilterNumberTPCHits::filter(art::Event &event)
 
     for(auto const& hitDataLabel : fHitDataLabelVec)
     {
-       auto const& hitData = event.getByLabel<std::vector<recob::Hit>>(hitDataLabel);
+       auto const& hitData = event.getProduct<std::vector<recob::Hit>>(hitDataLabel);
 
 //       std::cout << "FilterNumberTPCHits: label: " << hitDataLabel << " has " << hitData.size() << " hits (rejection is " << fMaximumHits << ")" << std::endl;
 

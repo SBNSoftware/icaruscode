@@ -14,7 +14,7 @@ art_make(
                         lardata_Utilities
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -28,12 +28,11 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${TBB}
           TOOL_LIBRARIES
                         lardata_Utilities
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
@@ -47,8 +46,7 @@ art_make(
                         ${MF_UTILITIES}
                         ${FHICLCPP}
                         cetlib cetlib_except
-                        ${SQLITE3}
-                        ${TBB}
+                        SQLite::SQLite3
         )
 
 art_make_exec(NAME "PMTChannelMapDumper"

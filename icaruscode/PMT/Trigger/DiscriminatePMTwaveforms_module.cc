@@ -398,7 +398,7 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   std::vector<icarus::WaveformBaseline> const* baselines = nullptr;
   if (fBaselineTag) {
     baselines =
-      &(event.getByLabel<std::vector<icarus::WaveformBaseline>>(*fBaselineTag));
+      &(event.getProduct<std::vector<icarus::WaveformBaseline>>(*fBaselineTag));
   }
   else {
     fixedBaselines.resize

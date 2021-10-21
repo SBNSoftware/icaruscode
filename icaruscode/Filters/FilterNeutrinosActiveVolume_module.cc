@@ -375,8 +375,9 @@ bool icarus::simfilter::FilterNeutrinosActiveVolume::filter(art::Event& event) {
    * Consider all truth information available in the event.
    * Any record of any truth data product will be enough to pass the event.
    */
-  std::vector<art::Handle<std::vector<simb::MCTruth>>> allTruth;
-  event.getManyByType(allTruth);
+  //std::vector<art::Handle<std::vector<simb::MCTruth>>> allTruth;
+  //event.getManyByType(allTruth);
+  auto allTruth = event.getMany<std::vector<simb::MCTruth>>();
   
   if (allTruth.empty()) { // is this real data?
     throw art::Exception(art::errors::ProductNotFound)

@@ -189,11 +189,13 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
 
   unsigned int ICARUSChannelMapProvider::getSimMacAddress(const unsigned int hwmacaddress)  const
   {
-    unsigned int   simmacaddress = -99999;
+    unsigned int   simmacaddress = 0;
+
     for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap){
       if (pair.second.first == hwmacaddress)
-        simmacaddress = pair.second.second;
+	simmacaddress = pair.second.second;
     }
+
     return simmacaddress;
   }
   

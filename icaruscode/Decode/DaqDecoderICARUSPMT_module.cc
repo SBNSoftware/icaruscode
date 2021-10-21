@@ -1206,8 +1206,10 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
 //------------------------------------------------------------------------------
 void icarus::DaqDecoderICARUSPMT::beginRun(art::Run& run) {
   
+  //sbn::PMTconfiguration const* PMTconfig = fPMTconfigTag
+  //  ? run.getPointerByLabel<sbn::PMTconfiguration>(*fPMTconfigTag): nullptr;
   sbn::PMTconfiguration const* PMTconfig = fPMTconfigTag
-    ? run.getPointerByLabel<sbn::PMTconfiguration>(*fPMTconfigTag): nullptr;
+    ? run.getHandle<sbn::PMTconfiguration>(*fPMTconfigTag).product(): nullptr;
   
   UpdatePMTConfiguration(PMTconfig);
   
@@ -1608,7 +1610,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   
   
   auto const& extraTrigger
-    = event.getByLabel<sbn::ExtraTriggerInfo>(*fTriggerTag);
+    = event.getProduct<sbn::ExtraTriggerInfo>(*fTriggerTag);
   if (!extraTrigger.isValid()) {
     // this means there is some problem from trigger decoder;
     // while we might recover additional information from other data products,
@@ -1624,7 +1626,7 @@ auto icarus::DaqDecoderICARUSPMT::fetchTriggerTimestamp
   }
   
   auto const& triggers
-    = event.getByLabel<std::vector<raw::Trigger>>(*fTriggerTag);
+    = event.getProduct<std::vector<raw::Trigger>>(*fTriggerTag);
   if (triggers.size() != 1U) {
     // if this is hit, the decoder needs some development to correctly deal
     // with input with no trigger, or more than one

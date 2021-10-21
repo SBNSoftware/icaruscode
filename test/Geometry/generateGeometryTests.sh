@@ -3,7 +3,7 @@
 # note that the default test is ignored by this definition:
 # its name would be an empty string, and it is not enclosed in quote marks
 declare -ar DefaultTests=(
-  {_{single,split}_induction,}{_{no,}overburden,}
+  {_split_induction,}{_{no,}overburden,}
 )
 
 declare -r ConfigurationTag='_CONFIGURATION'

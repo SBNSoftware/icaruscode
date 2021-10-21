@@ -11,7 +11,7 @@
 #include "icaruscode/Decode/DecoderTools/PMTconfigurationExtractor.h"
 
 // framework libraries
-#include "fhiclcpp/make_ParameterSet.h"
+#include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // C/C++ standard libraries
@@ -44,7 +44,7 @@ icarus::PMTconfigurationExtractorBase::convertConfigurationDocuments(
     
     fhicl::ParameterSet pset;
     try {
-      fhicl::make_ParameterSet(psetStr, pset);
+      auto pset = fhicl::ParameterSet::make(psetStr);
     }
     catch (cet::exception& e) {
       throw cet::exception{ "convertConfigurationDocuments", "", e }

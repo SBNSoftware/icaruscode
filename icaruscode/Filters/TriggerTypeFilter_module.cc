@@ -56,7 +56,7 @@ bool filter::TriggerTypeFilter::filter(art::Event &event)
 {
     bool filterPass = false;
 
-    auto const& triggerVec = event.getByLabel<std::vector<raw::Trigger>>(fTriggerDataLabel);
+    auto const& triggerVec = event.getProduct<std::vector<raw::Trigger>>(fTriggerDataLabel);
 
     if (!triggerVec.empty())
     {

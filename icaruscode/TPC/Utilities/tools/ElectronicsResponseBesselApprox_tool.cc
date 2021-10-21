@@ -16,6 +16,7 @@
 #include "TProfile.h"
 
 #include <fstream>
+#include <numeric>
 
 namespace icarus_tool
 {

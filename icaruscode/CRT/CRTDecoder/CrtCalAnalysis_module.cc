@@ -213,8 +213,7 @@ void icarus::crt::CrtCalAnalyzer::analyze(art::Event const & evt)
   //WK 09/02/21. Update to BernCRTTranslator in sbndaq_artdaq_core
   std::vector<icarus::crt::BernCRTTranslator> hit_vector;
 
-  std::vector<art::Handle<artdaq::Fragments>> fragmentHandles;
-  evt.getManyByType(fragmentHandles);
+  auto fragmentHandles = evt.getMany<artdaq::Fragments>();
   for (auto  handle : fragmentHandles) {
     if (!handle.isValid() || handle->size() == 0)
       continue;

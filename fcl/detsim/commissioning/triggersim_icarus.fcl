@@ -127,17 +127,17 @@ SlidingWindowTriggerPatternsSingleWindow: [
 
 
 SlidingWindowTriggerPatternsWindowPair: [
-  { inMainWindow: 1   inOppositeWindow: 1 },       # [0]
-  { inMainWindow: 2   inOppositeWindow: 2 },       # [1]
-  { inMainWindow: 3   inOppositeWindow: 3 },       # [2]
-  { inMainWindow: 4   inOppositeWindow: 4 },       # [3]
-  { inMainWindow: 5   inOppositeWindow: 5 },       # [4]
-  { inMainWindow: 6   inOppositeWindow: 6 },       # [5]
-  { inMainWindow: 2   sumOfOppositeWindows:  3 },  # [6]
-  { inMainWindow: 3   sumOfOppositeWindows:  5 },  # [7]
-  { inMainWindow: 4   sumOfOppositeWindows:  8 },  # [8]
-  { inMainWindow: 5   sumOfOppositeWindows: 10 },  # [9]
-  { inMainWindow: 8   sumOfOppositeWindows: 15 }   # [10]
+  { inMainWindow: 1   inOppositeWindow: 1 },
+  { inMainWindow: 2   inOppositeWindow: 2 },
+  { inMainWindow: 3   inOppositeWindow: 3 },
+  { inMainWindow: 4   inOppositeWindow: 4 },
+  { inMainWindow: 5   inOppositeWindow: 5 },
+  { inMainWindow: 6   inOppositeWindow: 6 },
+  { inMainWindow: 2   sumOfOppositeWindows:  3 },
+  { inMainWindow: 3   sumOfOppositeWindows:  5 },
+  { inMainWindow: 4   sumOfOppositeWindows:  8 },
+  { inMainWindow: 5   sumOfOppositeWindows: 10 },
+  { inMainWindow: 8   sumOfOppositeWindows: 15 }
 ] # SlidingWindowTriggerPatternsWindowPair
 
 

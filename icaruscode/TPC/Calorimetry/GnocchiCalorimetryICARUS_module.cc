@@ -10,6 +10,7 @@
 #include <optional>
 #include <cmath>
 #include <limits> // std::numeric_limits<>
+#include <numeric> // std::accumulate
 
 #include "larreco/Calorimetry/CalorimetryAlg.h"
 #include "larcoreobj/SimpleTypesAndConstants/PhysicalConstants.h"

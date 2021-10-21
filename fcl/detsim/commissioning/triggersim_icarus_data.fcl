@@ -17,7 +17,7 @@
 # ----------------
 #
 #  * optical detector readout: `daqPMT`
-#  * PMT configuration: `PMTconfig` (run data product)
+#  * PMT configuration: `pmtconfig` (run data product)
 #
 #
 # Changes
@@ -26,7 +26,7 @@
 # 20210517 (petrillo@slac.stanford.edu) [v1.0]
 # :   original version based on `triggersim_singlemodule_icarus.fcl` v1.0
 # 20210721 (petrillo@slac.stanford.edu) [v1.1]
-# :   rely on `PMTconfig` from decoding (by now it's "standard")
+# :   rely on `pmtconfig` from decoding (by now it's "standard")
 #
 
 #include "channelmapping_icarus.fcl"
@@ -34,8 +34,8 @@
 
 BEGIN_PROLOG
 
-BeamGateDuration @protect_ignore: "1.70 us" # a bit of margin to hit the beam
-BeamGateStart    @protect_ignore: "-0.05 us"
+BeamGateDuration @protect_ignore: "2.0 us" # a bit of margin to hit the beam
+BeamGateStart    @protect_ignore: "-0.2 us"
 
 END_PROLOG
 

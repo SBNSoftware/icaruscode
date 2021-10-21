@@ -1,9 +1,0 @@
-<lcgdict>
-
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- recob::PFParticle -->
-  <class name="std::vector<art::Ptr<recob::PFParticle>>"/>
-  <class name="art::Wrapper<std::vector<art::Ptr<recob::PFParticle>>>"/>
-
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-</lcgdict>

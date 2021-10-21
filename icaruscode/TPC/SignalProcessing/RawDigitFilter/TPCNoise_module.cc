@@ -55,6 +55,7 @@
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <numeric> // std::accumulate
 
 namespace tpcnoise {
   class TPCNoise;

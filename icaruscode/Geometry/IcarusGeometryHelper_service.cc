@@ -13,6 +13,7 @@
 
 // framework libraries
 #include "art/Utilities/make_tool.h"
+#include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // C/C++ standard libraries
@@ -25,7 +26,7 @@ namespace {
 
   // name of the tool to create the default channel mapping algorithm
   std::string const DefaultChannelMapSetupTool
-    = "ICARUSsingleInductionChannelMapSetupTool";
+    = "ICARUSsplitInductionChannelMapSetupTool";
 
 } // local namespace
 

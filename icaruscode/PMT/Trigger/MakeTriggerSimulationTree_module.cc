@@ -661,7 +661,7 @@ TriggerGatesInfo icarus::trigger::MakeTriggerSimulationTree::extractTriggerInfo
   // 1. get the data product from the event
   //
   auto const& gates
-    = event.getByLabel<std::vector<OpticalTriggerGateData_t>>(fTriggerGatesTag);
+    = event.getProduct<std::vector<OpticalTriggerGateData_t>>(fTriggerGatesTag);
   
   //
   // 2. fill one "channel" of `TriggerGateInfo` per entry in the data product
