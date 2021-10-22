@@ -126,7 +126,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fSubRun = subrun;
   fRun = run;
 
-  std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getByLabel<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
+  std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getProduct<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
   if(pfparticles.size() == 0)
     return;
 

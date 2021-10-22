@@ -290,7 +290,7 @@ bool sbn::TimedTrackSelector::filter
   std::vector<art::Ptr<recob::PFParticle>> selectedTracks;
   for (art::InputTag const& inputTag: fTrackTimeTags) {
     auto const& T0toTrack
-      = event.getByLabel<art::Assns<anab::T0, recob::PFParticle>>(inputTag);
+      = event.getProduct<art::Assns<anab::T0, recob::PFParticle>>(inputTag);
     unsigned int const newTracks = selectTracks(T0toTrack, selectedTracks);
     
     mf::LogTrace(fLogCategory)
