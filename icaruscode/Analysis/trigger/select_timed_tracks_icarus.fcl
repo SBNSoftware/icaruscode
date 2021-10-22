@@ -28,12 +28,18 @@ physics: {
   filters: {
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    t0selector: {
+    t0selectorW: {
       module_type: TimedTrackSelector
       
-      TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
-      
-    } # t0selector
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ pandoraGausCryoW ]
+            
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelector
+      TrackTimeTags: [ pandoraGausCryoE ]
+    }
     
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -41,7 +47,8 @@ physics: {
   } # filters
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  selection: [ "t0selector" ]
+  selectionW: [ "t0selectorW" ]
+  selectionE: [ "t0selectorE" ]
   
   streams: [ "rootoutput" ]
   

@@ -223,6 +223,9 @@ class sbn::TimedTrackSelector: public art::SharedFilter {
 // -----------------------------------------------------------------------------
 // ---  Implementation
 // -----------------------------------------------------------------------------
+
+int fTotalTracks = 0;
+
 sbn::TimedTrackSelector::TimedTrackSelector
   (Parameters const& params, art::ProcessingFrame const&)
   : art::SharedFilter{ params }
@@ -286,10 +289,8 @@ bool sbn::TimedTrackSelector::filter
   //
   std::vector<art::Ptr<recob::PFParticle>> selectedTracks;
   for (art::InputTag const& inputTag: fTrackTimeTags) {
-    
     auto const& T0toTrack
       = event.getByLabel<art::Assns<anab::T0, recob::PFParticle>>(inputTag);
-    
     unsigned int const newTracks = selectTracks(T0toTrack, selectedTracks);
     
     mf::LogTrace(fLogCategory)
@@ -298,6 +299,7 @@ bool sbn::TimedTrackSelector::filter
       ;
     
   } // for
+
   unsigned int const nSelectedTracks = selectedTracks.size();
   
   
@@ -305,11 +307,17 @@ bool sbn::TimedTrackSelector::filter
   // save track list in the event
   //
   
-  // after this, selectedTracks may be empty
+  // after this, selectedTracks may be empty. JCZ: Not quite, I think the access to selectedTracks[0] in the log statement throws a segfault it it's empty, now fixed
   if (fSaveTracks) {
     event.put(
-      std::make_unique<std::vector<art::Ptr<recob::PFParticle>>>(selectedTracks)
-      );
+	      std::make_unique<std::vector<art::Ptr<recob::PFParticle>>>(selectedTracks)
+	      );
+    if(selectedTracks.size() > 0)
+    {
+      mf::LogTrace(fLogCategory)
+	<< "InputTag for this product is: "
+	<< event.getProductDescription(selectedTracks[0].id())->inputTag();
+    }
   }
   
   
@@ -321,10 +329,13 @@ bool sbn::TimedTrackSelector::filter
   fPassRate.add(passed);
   mf::LogTrace(fLogCategory) << event.id()
     << ' ' << (passed? "passed": "rejected") << " (" << nSelectedTracks
-    << " selected tracks)."; // funny fact: we don't know the total track count
+    << " selected tracks)."; // funny fact: we don't know the total track count, JCZ: I think I fixed that fact although I could be completely wrong
   
   
   mf::LogDebug(fLogCategory) << "Completed " << event.id();
+
+  mf::LogDebug(fLogCategory) << "There are now " << fTotalTracks << " total tracks selected.";
+
   return passed;
   
 } // sbn::TimedTrackSelector::filter()
@@ -359,7 +370,7 @@ unsigned int sbn::TimedTrackSelector::selectTracks(
     
     selectedTracks.push_back(trackPtr);
     ++nSelectedTracks;
-    
+    ++fTotalTracks;
   } // for
   
   return nSelectedTracks;
