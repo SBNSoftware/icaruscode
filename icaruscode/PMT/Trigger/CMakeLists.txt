@@ -15,6 +15,7 @@ art_make(
   LIB_LIBRARIES
     icaruscode_PMT_Trigger_Algorithms
     icaruscode_PMT_Trigger_Utilities
+    icarusalg_Utilities
     sbnobj_ICARUS_PMT_Trigger_Data
     larcore_Geometry_Geometry_service
     lardataalg_MCDumpers
@@ -93,6 +94,7 @@ simple_plugin(SlidingWindowTrigger module
 
 simple_plugin(MajorityTriggerSimulation module
   icaruscode_PMT_Trigger_Algorithms
+  icarusalg_Utilities
   sbnobj_ICARUS_PMT_Trigger_Data
   icaruscode_PMT_Trigger_Utilities
   larcore_Geometry_Geometry_service
@@ -113,6 +115,7 @@ simple_plugin(MajorityTriggerSimulation module
 
 simple_plugin(SlidingWindowTriggerSimulation module
   icaruscode_PMT_Trigger_Algorithms
+  icarusalg_Utilities
   sbnobj_ICARUS_PMT_Trigger_Data
   icaruscode_PMT_Trigger_Utilities
   larcore_Geometry_Geometry_service
@@ -186,6 +189,7 @@ foreach(TriggerEfficiencyPlotsModule
     icaruscode_PMT_Trigger_Algorithms
     icaruscode_PMT_Trigger
     icaruscode_PMT_Trigger_Utilities
+    icarusalg_Utilities
     sbnobj_ICARUS_PMT_Trigger_Data
     larcore_Geometry_Geometry_service
     lardataalg_MCDumpers

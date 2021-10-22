@@ -13,6 +13,7 @@
 #include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
+#include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
@@ -503,13 +504,19 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     = icarus::trigger::transformIntoOpticalTriggerGate
     (combinedGates, makeGatePtr, waveformMap);
 
-  mf::LogTrace(fLogCategory)
-    << "Threshold " << threshold << " ('" << dataTag.encode() << "'): "
-    << gates.size() << " input channels, "
-    << outputGates.size() << " output channels (+"
-    << outputAssns.size() << " associations to waveforms) into '"
-    << moduleDescription().moduleLabel() << ":" << dataTag.instance() << "'"
-    ;
+  {
+    mf::LogTrace log { fLogCategory };
+    log
+      << "Threshold " << threshold << " ('" << dataTag.encode() << "'): "
+      << gates.size() << " input channels, "
+      << outputGates.size() << " output channels (+"
+      << outputAssns.size() << " associations to waveforms) into '"
+      << moduleDescription().moduleLabel() << ":" << dataTag.instance() << "'"
+      ;
+    for (auto const& [ iGate, gate ]: util::enumerate(outputGates)) {
+      log << "\n [#" << iGate << "] " << compactdump(gate);
+    } // for
+  } // local scope
 
   event.put(
     std::make_unique<std::vector<OpticalTriggerGateData_t>>

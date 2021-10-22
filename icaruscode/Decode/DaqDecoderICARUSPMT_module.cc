@@ -147,6 +147,9 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     option is set to `true` unless `TriggerTag` is specified empty.
  * * `DataTrees` (list of strings, default: none): list of data trees to be
  *     produced; if none (default), then `TFileService` is not required.
+ * * `SkipWaveforms` (flag, default: `false`) if set, waveforms won't be
+ *     produced; this is intended as a debugging option for jobs where only the
+ *     `DataTrees` are desired.
  * * `LogCategory` (string, default: `DaqDecoderICARUSPMT`): name of the message
  *     facility category where the output is sent.
  * 
@@ -335,8 +338,6 @@ namespace icarus { class DaqDecoderICARUSPMT; }
  *     time stamp of the (SPEXi) global trigger that acquired the event.
  * 
  * 
- * @todo Merge contiguous waveforms on the same channel
- * 
  */
 class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
@@ -491,6 +492,12 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
       std::vector<std::string>{} // default
       };
     
+    fhicl::Atom<bool> SkipWaveforms {
+      Name("SkipWaveforms"),
+      Comment("do not decode and produce waveforms"),
+      false // default
+      };
+    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category for message stream"),
@@ -581,6 +588,8 @@ class icarus::DaqDecoderICARUSPMT: public art::EDProducer {
   
   /// All board setup settings.
   std::vector<daq::details::BoardSetup_t> const fBoardSetup;
+  
+  bool const fSkipWaveforms; ///< Whether to skip waveform decoding.
   
   std::string const fLogCategory; ///< Message facility category.
   
@@ -1101,6 +1110,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       .value_or(fTriggerTag.has_value())
     }
   , fBoardSetup{ params().BoardSetup() }
+  , fSkipWaveforms{ params().SkipWaveforms() }
   , fLogCategory{ params().LogCategory() }
   , fDetTimings
     { art::ServiceHandle<detinfo::DetectorClocksService const>()->DataForJob() }
@@ -1123,7 +1133,7 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
   //
   // produced data products declaration
   //
-  produces<std::vector<raw::OpDetWaveform>>();
+  if (!fSkipWaveforms) produces<std::vector<raw::OpDetWaveform>>();
   
   //
   // additional initialization
@@ -1176,7 +1186,9 @@ icarus::DaqDecoderICARUSPMT::DaqDecoderICARUSPMT(Parameters const& params)
       << params().PMTconfigTag.name() << "`"
       ;
   }
-  
+  if (fSkipWaveforms) {
+    log << "\n * PMT WAVEFORMS WILL NOT BE DECODED AND STORED";
+  }
   
   //
   // sanity checks
@@ -1245,7 +1257,7 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   // output data product initialization
   //
-  std::vector<raw::OpDetWaveform> opDetWaveforms;
+  std::vector<raw::OpDetWaveform> opDetWaveforms; // empty if `fSkipWaveforms`
   
   
   // ---------------------------------------------------------------------------
@@ -1315,18 +1327,22 @@ void icarus::DaqDecoderICARUSPMT::produce(art::Event& event) {
   //
   sortWaveforms(opDetWaveforms);
   
-  std::vector<raw::OpDetWaveform const*> waveformsWithTrigger
-    = findWaveformsWithNominalTrigger(opDetWaveforms);
-  mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
-    << opDetWaveforms.size() << " decoded waveforms include trigger time ("
-    << fNominalTriggerTime << ").";
+  if (!fSkipWaveforms) {
+    std::vector<raw::OpDetWaveform const*> waveformsWithTrigger
+      = findWaveformsWithNominalTrigger(opDetWaveforms);
+    mf::LogTrace(fLogCategory) << waveformsWithTrigger.size() << "/"
+      << opDetWaveforms.size() << " decoded waveforms include trigger time ("
+      << fNominalTriggerTime << ").";
+  }
   
   // ---------------------------------------------------------------------------
   // output
   //
-  event.put(
-    std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(opDetWaveforms))
-    );
+  if (!fSkipWaveforms) {
+    event.put(
+      std::make_unique<std::vector<raw::OpDetWaveform>>(std::move(opDetWaveforms))
+      );
+  }
   
 } // icarus::DaqDecoderICARUSPMT::produce()
 
@@ -1756,7 +1772,7 @@ auto icarus::DaqDecoderICARUSPMT::processFragment(
     
   if (fTreeFragment) fillPMTfragmentTree(fragInfo, triggerInfo, timeStamp);
   
-  return (timeStamp != NoTimestamp)
+  return ((timeStamp != NoTimestamp) && !fSkipWaveforms)
     ? createFragmentWaveforms(fragInfo, timeStamp)
     : std::vector<raw::OpDetWaveform>{}
     ;
