@@ -1,11 +1,6 @@
 <lcgdict>
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-  <!-- recob::PFParticle -->
-  <class name="std::vector<art::Ptr<recob::PFParticle>>"/>
-  <class name="art::Wrapper<std::vector<art::Ptr<recob::PFParticle>>>"/>
-
-  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
   <class name="sbn::selTrackInfo" ClassVersion="11">
    <version ClassVersion="11" checksum="2588527011"/>
