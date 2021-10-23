@@ -44,7 +44,7 @@ icarus::PMTconfigurationExtractorBase::convertConfigurationDocuments(
     
     fhicl::ParameterSet pset;
     try {
-      auto pset = fhicl::ParameterSet::make(psetStr);
+      pset = fhicl::ParameterSet::make(psetStr);
     }
     catch (cet::exception& e) {
       throw cet::exception{ "convertConfigurationDocuments", "", e }
