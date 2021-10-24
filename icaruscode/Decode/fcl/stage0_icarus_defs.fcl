@@ -178,6 +178,7 @@ icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
 
 ### Handle multiple TPC readout with single instances
 icarus_stage0_producers.daqTPC.FragmentsLabelVec:                                              ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.daqTPCROI.FragmentsLabelVec:                                           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
 
 ### Set up for the 1D deconvolution - turn OFF ROI finding
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0:                       @local::icarus_noproifinder_0
