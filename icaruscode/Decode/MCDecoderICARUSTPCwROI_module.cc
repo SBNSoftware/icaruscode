@@ -46,9 +46,9 @@
 #include "lardataobj/RecoBase/Wire.h"         // This for outputting the ROIs
 #include "lardata/ArtDataHelper/WireCreator.h"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilterMC.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
-namespace daqMC 
+namespace daq 
 {
 
 class MCDecoderICARUSTPCwROI : public art::ReplicatedProducer
@@ -195,7 +195,7 @@ private:
     unsigned int                                                fNumROPs;
 
     // Tools for decoding fragments depending on type
-    std::vector<std::unique_ptr<IDecoderFilterMC>>              fDecoderToolVec;       ///< Decoder tools
+    std::vector<std::unique_ptr<INoiseFilter>>                  fDecoderToolVec;       ///< Decoder tools
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                                    fGeometry;             ///< pointer to Geometry service
@@ -231,7 +231,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     for(auto& decoderTool : fDecoderToolVec)
     {
         // Get instance of tool
-        decoderTool = art::make_tool<IDecoderFilterMC>(decoderToolParams);
+        decoderTool = art::make_tool<INoiseFilter>(decoderToolParams);
     }
 
     // Set up our "produces" 
@@ -547,7 +547,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     std::cout << "Process Single Image, found: " << numChannels << " channels, begin looping over channels" << std::endl;
 
     // Recover pointer to the decoder needed here
-    IDecoderFilterMC* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
+    INoiseFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
     decoderTool->process_fragment(clockData, channelVec, dataArray);

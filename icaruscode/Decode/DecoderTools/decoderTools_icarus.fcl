@@ -42,24 +42,60 @@ TPCDecoderFilter2DTool: {
     FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]
 }
 
-TPCDecoderOverlayFilter1DTool: {
-    tool_type:          TPCDecoderOverlayFilter1D
-    fragment_id_offset: 0
-    CoherentGrouping:   64
-    StructuringElement: 20
-    FilterWindow:       10
-    Threshold:          7.5
-    FakeParticle:       @local::FakeParticleTool
+TPCNoiseFilterCannyTool: 
+{
+    tool_type:                  TPCNoiseFilterCanny
+    NSigmaForTrucation:         3.5 
+    CoherentGrouping:           64 
+    UseFFTFilter:               true 
+    DiagnosticOutput:           false 
+    FilterModeVec:              ["e","g","d"]
+          
+    FFTSigmaVals:               [[1.5,20.], [1.5,20.], [2.0,20.]]
+    FFTCutoffVals:              [[8.,800.], [8.,800.], [0.0,800.]] 
+    
+    
+    StructuringElement:         [8,16] 
+    Threshold:                  [2.75,2.75,2.75] 
+    
+    ButterworthOrder:           2 
+    ButterworthThreshld:        30 
+
+    Morph2DStructuringElementX: 7 
+    Morph2DStructuringElementX: 28 
+
+    CoherentNoiseGrouping:      32 
+    CoherentNoiseOffset:        24 
+    MorphologicalWindow:        10 
+    CoherentThresholdFactor:    2.5 
+
+    ADFilter_SX:                7 
+    ADFilter_SY:                7 
+    Sigma_x:                    10.0 
+    Sigma_y:                    10.0 
+    Sigma_r:                    30.0 
+    
+    LowThreshold:               10.0 
+    HighThreshold:              20.0  
+    
+    BinaryDilation_SX:          31 
+    BinaryDilation_SY:          31 
 }
 
-TPCDecoderOverlayFilter2DTool: {
-    tool_type:          TPCDecoderOverlayFilter2D
+
+TPCNoiseFilter1DTool: {
+    tool_type:          TPCNoiseFilter1D
     fragment_id_offset: 0
-    CoherentGrouping:   64
-    StructuringElement: [7,20]
+    NSigmaForTrucation: 3.5
+    CoherentGrouping:   32
+    StructuringElement: 16
     FilterWindow:       10
-    Threshold:          7.5
-    FakeParticle:       @local::FakeParticleTool
+    Threshold:          [2.75, 2.75, 2.75]
+    FilterModeVec:      ["e","g","d"]
+    UseFFTFilter:       false
+    FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [2.0,20.] ]
+    FFTCutoffVals:      [ [8.,800.], [8.,800.], [3.0,800.] ]
+    FragmentIDMap:      [ [0,0x140C], [1,0x140E], [2,0x1410], [6,0x1414], [8,0x150E], [9,0x1510] ]
 }
 
 PMTDecoderTool: {
