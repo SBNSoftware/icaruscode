@@ -1,10 +1,4 @@
-#################################################################################################
-#
-#  Note that this file assumes that this comes later in the fhicl file processing chain so that
-#  one has already done 
-#  #include "decoderTools_icarus.fcl"
-#
-#################################################################################################
+#include "decoderTools_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
 #include "icarus_opana_modules.fcl"
