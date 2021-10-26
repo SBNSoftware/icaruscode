@@ -66,7 +66,10 @@ struct PlaneWireData
         icarus_signal_processing::ArrayFloat data;
         data.resize(wires.size());
         for (auto [ iWire, wire ]: util::enumerate(wires))
+        {
           if (wire) data[iWire] = wire->Signal();
+          else      data[iWire] = std::vector<float>(4096,0.);
+        }
       return data;
 }
 private:
@@ -248,6 +251,8 @@ void ROIFinder::produce(art::Event& evt)
             raw::ChannelID_t channel = wire.Channel();
             
             std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+
+            if (wireIDVec.empty()) continue;
     
             for(const auto& wireID : wireIDVec)
             {
