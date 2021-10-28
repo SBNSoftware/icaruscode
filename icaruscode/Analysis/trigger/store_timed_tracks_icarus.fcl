@@ -21,11 +21,27 @@ services: {
   message:     @local::icarus_message_services_interactive_debug
   TimeTracker: {}
   TFileService: {
-    fileName: "timedtracks_store.root"
+    fileName: "timedtracks_store_test.root"
   }
 }
 
 physics: {
+  filters: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    t0selectorW: {
+      module_type: TimedTrackSelector
+
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ pandoraGausCryoW ]
+
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelector
+      TrackTimeTags: [ pandoraGausCryoE ]
+    }
+  }
+
   analyzers: {
     t0TreeStoreW: {
       module_type: "TimeTrackTreeStorage"
@@ -43,6 +59,9 @@ physics: {
       TrackProducer: "pandoraTrackGausCryoE"
       }
   } #analyzers
+  
+  selectionW: [ "t0selectorW" ]
+  selectionE: [ "t0selectorE" ]
 
   ana: [ t0TreeStoreW, t0TreeStoreE ]	  
   streams: [ "rootoutput" ]

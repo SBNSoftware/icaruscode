@@ -130,14 +130,14 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   if(pfparticles.size() == 0)
     return;
 
-  std::cout << "HERE!" << std::endl;
+  //std::cout << "HERE!" << std::endl;
   art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
   art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
-  std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
+  //std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
   int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
-    art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
+    //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
     //std::cout << particlePtr.key() << std::endl;
     art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart);
     art::Ptr<anab::T0> t0Ptr = t0Tracks.at(iPart);
@@ -145,11 +145,11 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     if(!(trackPtr.isNull())) 
     {
       track_t0 = t0Ptr->Time();
-      std::cout << "PFP Pointer: " << particlePtr << std::endl;
+      //std::cout << "PFP Pointer: " << particlePtr << std::endl;
       fTrackInfo.trackID = trackPtr->ID();
       fTrackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
-      if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
-	std::cout << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID() << std::endl;
+      //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
+      //std::cout << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID() << std::endl;
       fTrackInfo.start_x = trackPtr->Start().X();
       fTrackInfo.start_y = trackPtr->Start().Y();
       fTrackInfo.start_z = trackPtr->Start().Z();
@@ -166,8 +166,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       ++fTotalProcessed;
     }
   }
-  std::cout << "Particles Processed: " << processed << std::endl;
-  std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl;
+  //std::cout << "Particles Processed: " << processed << std::endl;
+  //std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl;
   fStoreTree->Fill();
 
 }
