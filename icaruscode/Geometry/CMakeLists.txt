@@ -1,4 +1,6 @@
 
+add_subdirectory(GeometryWrappers)
+
 art_make(
   SERVICE_LIBRARIES
       icarusalg_Geometry
