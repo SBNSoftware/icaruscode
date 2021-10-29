@@ -82,6 +82,7 @@ void ExtractUncorrelatedRMS(float&, int, int) const;
     std::string                                 fTotalRMSHistoName;
 
 float corrFactors[175][4];
+float corrFactors64[33][4];
 
     using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
@@ -277,6 +278,7 @@ void SBNDataNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
           size_t cryostat=wid.Cryostat;
           size_t tpc=wid.TPC;
           size_t iWire=wid.Wire;
+ size_t plane=wid.Plane;
 //std::cout << " generating noise cryostat " << cryostat << " tpc " << tpc << " wire " << iWire << std::endl;
 int index=-1;
 if(cryostat==0&&tpc<2) index=0;
@@ -298,16 +300,25 @@ if(cryostat==1&&tpc>1) index=3;
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
     //std::cout <<  " generating uncorrelated noise " << std::endl;
     // If applying incoherent noise call the generator
-   GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel, index);  
-int board=iWire/32;
+  //GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel, index);  
+int nWB=32;
+if(plane==0) nWB=64;
+if(plane==1&&!(index%2)&&iWire<544) nWB=64;
+if(plane==2&&(index%2)&&iWire<544) nWB=64;
+if(plane==1&&(index%2)&&iWire>=5184) nWB=64;
+if(plane==2&&!(index%2)&&iWire>=5184) nWB=64;
+int board=iWire/nWB;
+if(((plane==1&&(index%2))||(plane==2&&!(index%2)))&&iWire>=5184) board=(iWire-5184)/nWB;
 
+float cf=0;
+if(nWB==32) cf=corrFactors[board][index];
+if(nWB==64) cf=corrFactors64[board][index];
 
-float cf=corrFactors[board][index];
 
 
    GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor*cf, board, index);
-
-   // std::cout <<  " summing noise " << std::endl;
+ 
+  // std::cout <<  " generating coherent noise channel " << channel << " index " << index <<  " plane " << plane << " wire " << iWire <<" board " << board <<  " amplitude " << cf << std::endl;
     // Take the noise as the simple sum of the two contributions
     std::transform(noise_unc.begin(),noise_unc.end(),noise_corr.begin(),noise.begin(),std::plus<float>());
     
@@ -453,8 +464,12 @@ float meanRMS=histo->GetMean();
 for(int j=0;j<175;j++) { 
 float rndRMS=histo->GetRandom();
 corrFactors[j][i]=rndRMS/meanRMS; 
-
-}}
+}
+for(int j=0;j<33;j++) { 
+float rndRMS=histo->GetRandom();
+corrFactors64[j][i]=rndRMS/meanRMS; 
+}
+}
 }
 void SBNDataNoise::ExtractUncorrelatedRMS(float& cf, int channel, int index) const
 {
