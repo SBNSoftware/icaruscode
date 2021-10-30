@@ -325,136 +325,156 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = fChannelMap->getReadoutBoardToChannelMap();
 
     std::cout << "*******************************************************************************" << std::endl;
+    std::cout << "*** TPCS: ";
+    for (const auto& tpcid : fTPCVec) std::cout << tpcid << " ";
+    std::cout << "**************" << std::endl;
+
+    unsigned int physicalTPC = 2 * fTPCVec[0].Cryostat + fTPCVec[0].TPC / 2;
+
+    std::cout << "*** Physical TPC: " << physicalTPC << std::endl;
+
+    unsigned int boardCount(0);
 
     for(const auto& boardPair : readoutBoardToChannelMap)
     {
-        // Quick output to check
-        std::cout << "--> working with readout board " << boardPair.first << " which has " << boardPair.second.second.size() << " channels" << std::endl;
+        // A little song and dance to make sure this board is in our TPC group
+        // What we need is a proper mapping but because we can have channels which are not valid for the geometry
+        // service we have a little thing we have to go through here...
+        std::vector<geo::WireID> wireIDVec;
 
-        unsigned int boardID = boardPair.first;
+        for(const auto& channelPair : boardPair.second.second)
+        {
+            wireIDVec = fGeometry.ChannelToWire(channelPair.first);
+
+            if (wireIDVec.size() > 0) break;
+        }
+        
+        bool goodBoard(false);
+
+        for(geo::TPCID const& tpcid : fTPCVec)
+            if (tpcid.Cryostat == wireIDVec[0].Cryostat && tpcid.TPC == wireIDVec[0].TPC) goodBoard = true;
+
+        if (!goodBoard) continue;
+
+        std::cout << "---- Processing board ID: " << boardPair.first << " which is " << boardCount << std::endl;
 
         // For this board loop over channels
         for(const auto& channelPair : boardPair.second.second)
         {
+            raw::ChannelID_t channel = channelPair.first;
+
             // Check where this wire is located
-            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channelPair.first);
+            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
 
             // For now skip the channels with no info
             if (widVec.empty()) continue;
 
-            // Match to our TPC 
-            for (geo::TPCID const& tpcid : fTPCVec) 
+            std::cout << "--> Cryo/TPC: " << widVec[0].Cryostat << "/" << widVec[0].TPC << ", channel: " << channel << ", wire: " << widVec[0].Wire << std::endl;
+
+            //clean up working vectors from previous iteration of loop
+            adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
+            noisetmp.resize(fNTimeSamples, 0.);     //just in case
+
+            //use channel number to set some useful numbers
+            size_t plane  = widVec[0].Plane;
+
+            //Get pedestal with random gaussian variation
+            float ped_mean = pedestalRetrievalAlg.PedMean(channel);
+
+            if (fSmearPedestals )
             {
-                if (tpcid.Cryostat == widVec[0].Cryostat && tpcid.TPC == widVec[0].TPC)
+                CLHEP::RandGaussQ rGaussPed(fPedestalEngine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+                ped_mean += rGaussPed.fire();
+            }
+
+            //Generate Noise
+            double noise_factor(0.);
+            auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
+            double shapingTime  = fSignalShapingService->GetShapingTime(channel);
+            double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+            int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
+
+            // Recover the response function information for this channel
+            const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
+
+            if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
+                noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
+            //Throw exception...
+            else
+            {
+                throw cet::exception("SimReadoutBoardICARUS")
+                << "\033[93m"
+                << "Shaping Time received from signalservices_icarus.fcl is not one of allowed values"
+                << std::endl
+                << "Allowed values: 0.6, 1.0, 1.3, 3.0 usec"
+                << "\033[00m"
+                << std::endl;
+            }
+
+            // Use the desired noise tool to actually generate the noise on this wire
+            fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
+                                                fCorNoiseEngine,
+                                                noisetmp,
+                                                detProp,
+                                                noise_factor,
+                                                channel,
+                                                boardCount);
+
+            // Recover the SimChannel (if one) for this channel
+            const sim::SimChannel* simChan = channels[channel];
+
+            // If there is something on this wire, and it is not dead, then add the signal to the wire
+            if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
+            {
+                std::fill(chargeWork.begin(), chargeWork.end(), 0.);
+
+                // loop over the tdcs and grab the number of electrons for each
+                for(size_t tick = 0; tick < fNTimeSamples; tick++)
                 {
-                    raw::ChannelID_t channel = channelPair.first;
+                    int tdc = clockData.TPCTick2TDC(tick);
 
-                    std::cout << "  --> channel: " << channel << " for Cryostat: " << tpcid.Cryostat << ", TPC: " << tpcid.TPC << std::endl;
+                    // continue if tdc < 0
+                    if( tdc < 0 ) continue;
 
-                    //clean up working vectors from previous iteration of loop
-                    adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
-                    noisetmp.resize(fNTimeSamples, 0.);     //just in case
+                    double charge = simChan->Charge(tdc);  // Charge returned in number of electrons
 
-                    //use channel number to set some useful numbers
-                    size_t plane  = widVec[0].Plane;
+                    chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
+                } // loop over tdcs
+                // now we have the tempWork for the adjacent wire of interest
+                // convolve it with the appropriate response function
+                fFFT->convolute(chargeWork, response.getConvKernel(), timeOffset);
 
-                    //Get pedestal with random gaussian variation
-                    float ped_mean = pedestalRetrievalAlg.PedMean(channel);
+                // "Make" the ADC vector
+                MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
+            }
+            // "Make" an ADC vector with zero charge added
+            else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
 
-                    if (fSmearPedestals )
-                    {
-                        CLHEP::RandGaussQ rGaussPed(fPedestalEngine, 0.0, pedestalRetrievalAlg.PedRms(channel));
-                        ped_mean += rGaussPed.fire();
-                    }
+            // add this digit to the collection;
+            // adcvec is copied, not moved: in case of compression, adcvec will show
+            // less data: e.g. if the uncompressed adcvec has 9600 items, after
+            // compression it will have maybe 5000, but the memory of the other 4600
+            // is still there, although unused; a copy of adcvec will instead have
+            // only 5000 items. All 9600 items of adcvec will be recovered for free
+            // and used on the next loop.
+            raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
 
-                    //Generate Noise
-                    double noise_factor(0.);
-                    auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
-                    double shapingTime  = fSignalShapingService->GetShapingTime(channel);
-                    double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-                    int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
+            if(fMakeHistograms && plane==2)
+            {
+                short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
 
-                    // Recover the response function information for this channel
-                    const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
-
-                    if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
-                        noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
-                    //Throw exception...
-                    else
-                    {
-                        throw cet::exception("SimReadoutBoardICARUS")
-                        << "\033[93m"
-                        << "Shaping Time received from signalservices_icarus.fcl is not one of allowed values"
-                        << std::endl
-                        << "Allowed values: 0.6, 1.0, 1.3, 3.0 usec"
-                        << "\033[00m"
-                        << std::endl;
-                    }
-
-                    // Use the desired noise tool to actually generate the noise on this wire
-                    fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
-                                                        fCorNoiseEngine,
-                                                        noisetmp,
-                                                        detProp,
-                                                        noise_factor,
-                                                        channel,
-                                                        boardID);
-
-                    // Recover the SimChannel (if one) for this channel
-                    const sim::SimChannel* simChan = channels[channel];
-
-                    // If there is something on this wire, and it is not dead, then add the signal to the wire
-                    if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
-                    {
-                        std::fill(chargeWork.begin(), chargeWork.end(), 0.);
-
-                        // loop over the tdcs and grab the number of electrons for each
-                        for(size_t tick = 0; tick < fNTimeSamples; tick++)
-                        {
-                            int tdc = clockData.TPCTick2TDC(tick);
-
-                            // continue if tdc < 0
-                            if( tdc < 0 ) continue;
-
-                            double charge = simChan->Charge(tdc);  // Charge returned in number of electrons
-
-                            chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
-                        } // loop over tdcs
-                        // now we have the tempWork for the adjacent wire of interest
-                        // convolve it with the appropriate response function
-                        fFFT->convolute(chargeWork, response.getConvKernel(), timeOffset);
-
-                        // "Make" the ADC vector
-                        MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
-                    }
-                    // "Make" an ADC vector with zero charge added
-                    else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
-
-                    // add this digit to the collection;
-                    // adcvec is copied, not moved: in case of compression, adcvec will show
-                    // less data: e.g. if the uncompressed adcvec has 9600 items, after
-                    // compression it will have maybe 5000, but the memory of the other 4600
-                    // is still there, although unused; a copy of adcvec will instead have
-                    // only 5000 items. All 9600 items of adcvec will be recovered for free
-                    // and used on the next loop.
-                    raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
-
-                    if(fMakeHistograms && plane==2)
-                    {
-                        short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
-
-                        if(area>0)
-                        {
-                            fSimCharge->Fill(area);
-                            fSimChargeWire->Fill(widVec[0].Wire,area);
-                        }
-                    }
-
-                    rd.SetPedestal(ped_mean);
-                    digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
+                if(area>0)
+                {
+                    fSimCharge->Fill(area);
+                    fSimChargeWire->Fill(widVec[0].Wire,area);
                 }
             }
+
+            rd.SetPedestal(ped_mean);
+            digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
         }
+
+        boardCount++;
     }
     
     evt.put(std::move(digcol), fOutInstanceLabel);
