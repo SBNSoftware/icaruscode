@@ -224,7 +224,7 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
 
-    std::cout << "TPCNoiseFilter1DMC - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
+    std::cout << "TPCNoiseFilter1D - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
 
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -273,8 +273,6 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / fCoherentNoiseGrouping);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
-
-    std::cout <<"  -->process_fragment with " << numChannels << " channels and " << numTicks << " ticks, array sizes: " << fCorrectedMedians.size() << ", " << fCorrectedMedians[1].size() <<  std::endl;
 
     icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
@@ -346,13 +344,11 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
              fCoherentNoiseOffset,
              fMorphWindow);
 
-    std::cout << "  --> have returned from denoising" << std::endl;
-
     theClockTotal.stop();
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("TPCNoiseFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
+    mf::LogDebug("TPCNoiseFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
 
     return;
 }
