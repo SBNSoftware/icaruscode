@@ -324,15 +324,6 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     // Get the board ids for this fragment
     const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = fChannelMap->getReadoutBoardToChannelMap();
 
-    std::cout << "*******************************************************************************" << std::endl;
-    std::cout << "*** TPCS: ";
-    for (const auto& tpcid : fTPCVec) std::cout << tpcid << " ";
-    std::cout << "**************" << std::endl;
-
-    unsigned int physicalTPC = 2 * fTPCVec[0].Cryostat + fTPCVec[0].TPC / 2;
-
-    std::cout << "*** Physical TPC: " << physicalTPC << std::endl;
-
     unsigned int boardCount(0);
 
     for(const auto& boardPair : readoutBoardToChannelMap)
@@ -356,8 +347,6 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
         if (!goodBoard) continue;
 
-        std::cout << "---- Processing board ID: " << boardPair.first << " which is " << boardCount << std::endl;
-
         // For this board loop over channels
         for(const auto& channelPair : boardPair.second.second)
         {
@@ -368,8 +357,6 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
             // For now skip the channels with no info
             if (widVec.empty()) continue;
-
-            std::cout << "--> Cryo/TPC: " << widVec[0].Cryostat << "/" << widVec[0].TPC << ", channel: " << channel << ", wire: " << widVec[0].Wire << std::endl;
 
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
