@@ -380,6 +380,8 @@ void SimWireICARUS::produce(art::Event& evt)
             //use channel number to set some useful numbers
             std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
             size_t                   plane  = widVec[0].Plane;
+            size_t                   wire   = widVec[0].Wire;
+            size_t                   board  = wire / 32;
             
             //Get pedestal with random gaussian variation
             float ped_mean = pedestalRetrievalAlg.PedMean(channel);
@@ -420,7 +422,8 @@ void SimWireICARUS::produce(art::Event& evt)
                                                 noisetmp,
                                                 detProp,
                                                 noise_factor,
-                                                channel);
+                                                channel,
+                                                board);
             
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
