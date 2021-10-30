@@ -48,7 +48,7 @@ public:
                        CLHEP::HepRandomEngine&,
                        icarusutil::TimeVec&,
                        detinfo::DetectorPropertiesData const&,
-                       double, unsigned int) override;
+                       double, unsigned int, unsigned int) override;
     
 private:
     // Member variables from the fhicl file
@@ -120,7 +120,8 @@ void NoiseFromHist::generateNoise(CLHEP::HepRandomEngine& engine,
                                   icarusutil::TimeVec& noise,
                                   detinfo::DetectorPropertiesData const& detProp,
                                   double noise_factor,
-                                  unsigned int channel)
+                                  unsigned int channel,
+                                  unsigned int board)
 {    
     CLHEP::RandFlat flat(engine,-1,1);
     

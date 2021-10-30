@@ -54,7 +54,8 @@ public:
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
-                       unsigned int wire) override;
+                       unsigned int wire,
+                       unsigned int board) override;
     
 private:
     void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int, unsigned int);
@@ -81,7 +82,7 @@ void ExtractUncorrelatedRMS(float&, int, int) const;
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
 
-float corrFactors[175][4];
+    float corrFactors[175][4];  // this will be sparse, could use a map here I bet
 
     using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
@@ -263,7 +264,8 @@ void SBNDataNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     icarusutil::TimeVec&     noise,
                              detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
-                                    unsigned int            channel)
+                                    unsigned int            channel,
+                                    unsigned int            board)
 {
 //std::cout << " generating noise channel " << channel << std::endl;
    //GET THE GEOMETRY.
@@ -299,7 +301,7 @@ if(cryostat==1&&tpc>1) index=3;
     //std::cout <<  " generating uncorrelated noise " << std::endl;
     // If applying incoherent noise call the generator
    GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel, index);  
-int board=iWire/32;
+//int board=iWire/32;
 
 
 float cf=corrFactors[board][index];

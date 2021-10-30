@@ -37,7 +37,9 @@ namespace icarus_tool
                                    CLHEP::HepRandomEngine& cornoise_engine,
                                    icarusutil::TimeVec&,
                                    detinfo::DetectorPropertiesData const& detProp,
-                                   double, unsigned int = 0) = 0;
+                                   double, 
+                                   unsigned int = 0,           // channel
+                                   unsigned int = 0) = 0;      // board ID
     };
 }
 
