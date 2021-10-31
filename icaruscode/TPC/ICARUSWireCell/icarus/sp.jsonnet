@@ -28,7 +28,7 @@ function(params, tools, override = {}) {
       fft_flag: 0,  // 1 is faster but higher memory, 0 is slightly slower but lower memory
       elecresponse : wc.tn(tools.elec_resp),
       postgain: 1,  // default 1.2
-      ADC_mV: 4096 / (1400.0 * wc.mV),  // default 4096/2000
+      ADC_mV: 4096 / (3300.0 * wc.mV),  // default 4096/2000
       troi_col_th_factor: 5.0,  // default 5
       troi_ind_th_factor: 3.0,  // default 3
       lroi_rebin: 6, // default 6
