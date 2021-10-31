@@ -396,7 +396,7 @@ void  ROIFinder::processPlane(size_t                      idx,
     using CandidateROI    = std::pair<size_t, size_t>;
     using CandidateROIVec = std::vector<CandidateROI>;
 
-    size_t leadTrail(1);
+    size_t leadTrail(10);
 
     for(size_t waveIdx = 0; waveIdx < selectedVals.size(); waveIdx++)
     {

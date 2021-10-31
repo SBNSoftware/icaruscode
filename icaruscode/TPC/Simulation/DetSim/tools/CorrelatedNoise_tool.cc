@@ -53,7 +53,8 @@ public:
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
-                       unsigned int wire) override;
+                       unsigned int wire,
+                       unsigned int board) override;
     
 private:
     void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
@@ -231,7 +232,8 @@ void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     icarusutil::TimeVec&    noise,
                                     detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
-                                    unsigned int            channel)
+                                    unsigned int            channel,
+                                    unsigned int            board)
 {
     // Define a couple of vectors to hold intermediate work
     icarusutil::TimeVec noise_unc(noise.size(),0.);
@@ -243,7 +245,7 @@ void CorrelatedNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
     // If applying incoherent noise call the generator
     if (fIncoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
     
-    int board=channel/32;
+//    int board=channel/32;
 
     // If applying coherent noise call the generator
     if (fIncoherentNoiseFrac < 1.) GenerateCorrelatedNoise(engine_corr, noise_corr, noise_factor, board);
