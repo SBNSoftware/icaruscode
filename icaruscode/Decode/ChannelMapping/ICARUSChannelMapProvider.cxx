@@ -133,6 +133,12 @@ const ReadoutIDVec& ICARUSChannelMapProvider::getReadoutBoardVec(const unsigned 
 
 }
 
+const TPCReadoutBoardToChannelMap& ICARUSChannelMapProvider::getReadoutBoardToChannelMap() const
+{
+    return fReadoutBoardToChannelMap;
+}
+
+
 bool ICARUSChannelMapProvider::hasBoardID(const unsigned int boardID)  const
 {
     return fReadoutBoardToChannelMap.find(boardID) != fReadoutBoardToChannelMap.end();

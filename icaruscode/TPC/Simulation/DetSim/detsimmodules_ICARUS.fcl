@@ -125,17 +125,39 @@ icarus_standard_simwire:
 
 }
 
-icarus_simwire:  @local::icarus_standard_simwire
+icarus_standard_simreadoutboard:
+{
+    module_type:        "SimReadoutBoardICARUS"
+    DriftEModuleLabel:  "largeant"
+    CompressionType:    "none"
+    SimDeadChannels:    false
+    SuppressNoSignal:   false
+    SmearPedestals:     true
+    MakeHistograms:     "true"
+    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
+    
+    # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
+    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
+    # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
+    NoiseGenToolVec:    [@local::SBNDataNoiseInd1Tool, @local::SBNDataNoiseInd2Tool, @local::SBNDataNoiseCollTool]
+
+}
+
+icarus_simwire:         @local::icarus_standard_simwire
+icarus_simreadoutboard: @local::icarus_standard_simreadoutboard
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
+icarus_simwreadoutboard.NoiseGenToolVec[0].Plane:    0
 # Below overrides for SBN Noise tool
 
 
 icarus_simwire.NoiseGenToolVec[1].Plane:             1
+icarus_simwreadoutboard.NoiseGenToolVec[1].Plane:    1
 # Below overrides for SBN Noise model
 
 
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
+icarus_simwreadoutboard.NoiseGenToolVec[2].Plane:    2
 # Below overrides for SBN Noise model
 
 

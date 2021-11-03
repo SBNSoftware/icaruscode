@@ -563,7 +563,7 @@ void TPCDecoderFilter1D::process_fragment(detinfo::DetectorClocksData const&,
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("TPCDecoderFilter1D") << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << ", ped cor: " << cohPedSubTime << std::endl;
+    mf::LogDebug("TPCDecoderFilter1D") << "    *totalTime: " << totalTime << ", pedestal: " << pedestalTime << ", noise: " << denoiseTime << ", ped cor: " << cohPedSubTime << std::endl;
 
     return;
 }

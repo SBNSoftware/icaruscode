@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.34.00 LANGUAGES CXX)
+project(icaruscode VERSION 09.35.00 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -46,6 +46,7 @@ find_ups_product( lardataobj )
 find_ups_product( lardataalg )
 find_ups_product( larcore )
 find_ups_product( lardata )
+find_ups_product( larevt )
 find_ups_product( larsim )
 find_ups_product( larreco )
 find_ups_product( larana )
