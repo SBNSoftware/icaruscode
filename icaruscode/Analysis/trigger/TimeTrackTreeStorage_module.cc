@@ -14,45 +14,43 @@
 
 #define MF_DEBUG
 
+// ICARUS libraries
+#include "Objects/TrackTreeStoreObj.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
+
+// LArSoft libraries
+// #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+// #include "larcore/Geometry/Geometry.h"
+// #include "larcorealg/Geometry/GeometryCore.h"
+#include "lardataobj/AnalysisBase/T0.h"
+#include "lardataobj/RecoBase/PFParticle.h"
+#include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/PFParticleMetadata.h"
+#include "lardataobj/Simulation/BeamGateInfo.h"
+
+// framework libraries
+#include "art_root_io/TFileService.h"
 #include "art/Framework/Core/EDAnalyzer.h"
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Principal/Event.h"
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
-#include "art/Framework/Principal/SubRun.h"
+#include "canvas/Persistency/Common/FindOneP.h"
+#include "canvas/Persistency/Common/Assns.h"
+#include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+// ROOT libraries
 #include "TTree.h"
 #include "TVector3.h"
-#include "art_root_io/TFileService.h"
 
-#include "canvas/Persistency/Common/FindMany.h"
-#include "canvas/Persistency/Common/FindManyP.h"
-#include "canvas/Persistency/Common/FindOneP.h"
-#include "canvas/Persistency/Common/Ptr.h"
-#include "canvas/Persistency/Common/PtrVector.h"
-#include "canvas/Persistency/Common/Assns.h"
-
-#include "lardataobj/RecoBase/PFParticle.h"
-#include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/AnalysisBase/T0.h"
-#include "lardataobj/RecoBase/PFParticleMetadata.h"
-
-#include "larevt/SpaceChargeServices/SpaceChargeService.h"
-#include "lardataalg/DetectorInfo/DetectorPropertiesStandard.h"
-#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
-#include "lardata/DetectorInfoServices/DetectorClocksService.h"
-#include "larcore/Geometry/Geometry.h"
-#include "larcorealg/Geometry/GeometryCore.h"
-
-#include "Objects/TrackTreeStoreObj.h"
-#include "lardataobj/Simulation/BeamGateInfo.h"
-#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
-
+// C/C++ libraries
+#include <iostream>
 #include <vector>
 #include <string>
+
 
 namespace sbn {
   class TimeTrackTreeStorage;
