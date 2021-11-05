@@ -1,16 +1,12 @@
-////////////////////////////////////////////////////////////////////////
-// Class:       TimeTrackTreeStorage
-// Plugin Type: analyzer (art v3_06_03)
-// File:        TimeTrackTreeStorage_module.cc
-//
-// Generated at Tue Sep 21 10:33:10 2021 by Jacob Zettlemoyer using cetskelgen
-// Authors: Jacob Zettlemoyer (FNAL, jzettle@fnal.gov)
-//          Animesh Chatterjee (U. Pittsburgh, anc238@pitt.edu)
-//          Gianluca Petrillo (SLAC, petrillo@slac.stanford.edu)
-//
-// Borrowed heavily from Gray Putnam's existing TrackCaloSkimmer
-// from cetlib version v3_11_01.
-////////////////////////////////////////////////////////////////////////
+/**
+ * @file    TimeTrackTreeStorage_module.cc
+ * @authors Jacob Zettlemoyer (FNAL, jzettle@fnal.gov),
+ *          Animesh Chatterjee (U. Pittsburgh, anc238@pitt.edu),
+ *          Gianluca Petrillo (SLAC, petrillo@slac.stanford.edu)
+ * @date    Tue Sep 21 10:33:10 2021
+ * 
+ * Borrowed heavily from Gray Putnam's existing TrackCaloSkimmer
+ */
 
 #define MF_DEBUG
 
@@ -59,16 +55,7 @@ namespace sbn {
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
 public:
   explicit TimeTrackTreeStorage(fhicl::ParameterSet const& p);
-  // The compiler-generated destructor is fine for non-base
-  // classes without bare pointers or other resource use.
 
-  // Plugins should not be copied or assigned.
-  TimeTrackTreeStorage(TimeTrackTreeStorage const&) = delete;
-  TimeTrackTreeStorage(TimeTrackTreeStorage&&) = delete;
-  TimeTrackTreeStorage& operator=(TimeTrackTreeStorage const&) = delete;
-  TimeTrackTreeStorage& operator=(TimeTrackTreeStorage&&) = delete;
-
-  // Required functions.
   void analyze(art::Event const& e) override;
 
 private:
