@@ -18,6 +18,8 @@ simple_plugin(TimedTrackSelector module
 simple_plugin(TimeTrackTreeStorage module				   
   lardataobj_AnalysisBase  
   lardataobj_RecoBase
+  lardataobj_Simulation
+  lardataobj_RawData
   ${MF_MESSAGELOGGER}
   ROOT::Core
   ${ROOT_EVE_LIB_LIST}

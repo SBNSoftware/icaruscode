@@ -48,6 +48,8 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 
 #include "Objects/TrackTreeStoreObj.h"
+#include "lardataobj/Simulation/BeamGateInfo.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 #include <vector>
 #include <string>
@@ -78,19 +80,21 @@ private:
   art::InputTag fT0Producer;
   art::InputTag fTrackProducer;
   art::InputTag fT0selProducer;
+  art::InputTag fBeamGateProducer;
+  art::InputTag fTriggerProducer;
 
   std::vector<sbn::selTrackInfo> vTrackInfo;
   sbn::selTrackInfo fTrackInfo;
+  sbn::selBeamInfo fBeamInfo;
+  sbn::selTriggerInfo fTriggerInfo;
   
   //std::string const fLogCategory;
 
   TTree *fStoreTree;
 
-  //variables, maybe put in struct later after getting art parts correct
   unsigned int fEvent;
   unsigned int fRun;
   unsigned int fSubRun;
-
   int fTotalProcessed = 0;
   
 };
@@ -105,12 +109,16 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   fT0Producer = p.get< art::InputTag > ("T0Producer", "pandoraGausCryoW");
   fT0selProducer = p.get< art::InputTag > ("T0selProducer", "pandoraGausCryoW");
   fTrackProducer = p.get< art::InputTag > ("TrackProducer", "pandoraTrackGausCryoW");
+  fBeamGateProducer = p.get< art::InputTag > ("BeamGateProducer", "daqTrigger"); 
+  fTriggerProducer = p.get< art::InputTag > ("TriggerProducer", "daqTrigger");
   //fLogCategory = p.get< std::string const > ("LogCategory", "");
   art::ServiceHandle<art::TFileService> tfs;
   fStoreTree = tfs->make<TTree>("TimedTrackStorage", "Timed Track Tree");
   fStoreTree->Branch("run", &fRun);
   fStoreTree->Branch("subrun", &fSubRun);
   fStoreTree->Branch("event", &fEvent);
+  fStoreTree->Branch("beamInfo", &fBeamInfo);
+  fStoreTree->Branch("triggerInfo", &fTriggerInfo);
   fStoreTree->Branch("selTracks", &vTrackInfo);
 }
 
@@ -125,14 +133,32 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fEvent = event;
   fSubRun = subrun;
   fRun = run;
-
+  fBeamInfo = {};
+  fTriggerInfo = {};
+  
   std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getProduct<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
   if(pfparticles.size() == 0)
     return;
 
+  std::vector<sim::BeamGateInfo> const& beamgate = e.getProduct<std::vector<sim::BeamGateInfo>> (fBeamGateProducer);
+  if(beamgate.size() == 0)
+    std::cout << "No Beam Gate Information!" << std::endl;
+  if(beamgate.size() > 1)
+    std::cout << "Event has multiple beam gate info labels! (maybe this changes later to be standard)" << std::endl;
+  fBeamInfo.beamGateSimStart = beamgate[0].Start();
+  fBeamInfo.beamGateDuration = beamgate[0].Width();
+  fBeamInfo.beamGateType = beamgate[0].BeamType();
+
+  sbn::ExtraTriggerInfo const &triggerinfo = e.getProduct<sbn::ExtraTriggerInfo> (fTriggerProducer);
+  //fTriggerInfo.beamType = triggerinfo.sourceType;
+  fTriggerInfo.triggerTime = triggerinfo.triggerTimestamp;
+  fTriggerInfo.beamGateTime = triggerinfo.beamGateTimestamp;
+  fTriggerInfo.triggerID = triggerinfo.triggerID;
+  fTriggerInfo.gateID = triggerinfo.gateID;
   //std::cout << "HERE!" << std::endl;
   art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
   art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
+  //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
   int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
@@ -160,6 +186,16 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       fTrackInfo.dir_y = trackPtr->StartDirection().Y();
       fTrackInfo.dir_z = trackPtr->StartDirection().Z();
       fTrackInfo.length = trackPtr->Length();
+      /*
+      for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
+      {
+	TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
+	TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
+	if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
+	  //interpolate to get cathode crossing point
+	  
+      }	  
+      */
       vTrackInfo.push_back(fTrackInfo);
       
       ++processed;

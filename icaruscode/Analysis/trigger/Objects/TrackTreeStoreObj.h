@@ -31,6 +31,33 @@ namespace sbn {
       dir_z(-1)
     {}
   };
+
+  struct selBeamInfo {
+    uint64_t beamGateSimStart;
+    float beamGateDuration;
+    unsigned int beamGateType;
+  selBeamInfo():
+    beamGateSimStart(0),
+      beamGateDuration(-1),
+    beamGateType(999)
+    {}
+  };
+  
+  struct selTriggerInfo {
+    unsigned int beamType;
+    uint64_t triggerTime;
+    uint64_t beamGateTime;
+    uint64_t triggerID;
+    uint64_t gateID;
+  selTriggerInfo():
+    beamType(0),
+    triggerTime(0),
+      beamGateTime(0),
+      triggerID(0),
+      gateID(0)
+    {}
+  };
+    
 }
 
 #endif
