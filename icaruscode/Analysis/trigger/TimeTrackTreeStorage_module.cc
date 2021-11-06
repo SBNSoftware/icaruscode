@@ -42,7 +42,6 @@
 #include "TTree.h"
 
 // C/C++ libraries
-#include <iostream>
 #include <vector>
 #include <string>
 
@@ -146,9 +145,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 
   std::vector<sim::BeamGateInfo> const& beamgate = e.getProduct<std::vector<sim::BeamGateInfo>> (fBeamGateProducer);
   if(beamgate.empty())
-    std::cout << "No Beam Gate Information!" << std::endl;
+    mf::LogWarning(fLogCategory) << "No Beam Gate Information!";
   if(beamgate.size() > 1)
-    std::cout << "Event has multiple beam gate info labels! (maybe this changes later to be standard)" << std::endl;
+    mf::LogWarning(fLogCategory) << "Event has multiple beam gate info labels! (maybe this changes later to be standard)";
   fBeamInfo.beamGateSimStart = beamgate[0].Start();
   fBeamInfo.beamGateDuration = beamgate[0].Width();
   fBeamInfo.beamGateType = beamgate[0].BeamType();
@@ -159,29 +158,29 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fTriggerInfo.beamGateTime = triggerinfo.beamGateTimestamp;
   fTriggerInfo.triggerID = triggerinfo.triggerID;
   fTriggerInfo.gateID = triggerinfo.gateID;
-  //std::cout << "HERE!" << std::endl;
+  //mf::LogTrace(fLogCategory) << "HERE!";
   art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
   art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
-  //std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
+  //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
   unsigned int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
     //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
-    //std::cout << particlePtr.key() << std::endl;
+    //mf::LogTrace(fLogCategory) << particlePtr.key();
     art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart);
     art::Ptr<anab::T0> t0Ptr = t0Tracks.at(iPart);
     float track_t0 = -999.0;
     if(!(trackPtr.isNull())) 
     {
       track_t0 = t0Ptr->Time();
-      //std::cout << "PFP Pointer: " << particlePtr << std::endl;
+      //mf::LogTrace(fLogCategory) << "PFP Pointer: " << particlePtr;
       
       sbn::selTrackInfo trackInfo;
       trackInfo.trackID = trackPtr->ID();
       trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
       //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
-      //std::cout << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID() << std::endl;
+      //mf::LogTrace(fLogCategory) << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID();
       trackInfo.start_x = trackPtr->Start().X();
       trackInfo.start_y = trackPtr->Start().Y();
       trackInfo.start_z = trackPtr->Start().Z();
@@ -208,8 +207,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       ++fTotalProcessed;
     }
   }
-  //std::cout << "Particles Processed: " << processed << std::endl;
-  //std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl;
+  //mf::LogInfo(fLogCategory) << "Particles Processed: " << processed
+  //mf::LogTrace(fLogCategory) << "Total Particles Processed: " << fTotalProcessed;
   fStoreTree->Fill();
   fTrackInfo.clear();
 
