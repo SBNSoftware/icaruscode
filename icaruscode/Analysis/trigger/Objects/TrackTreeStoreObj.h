@@ -5,19 +5,21 @@
 
 namespace sbn {
 
+  constexpr float NoPosition = -999999.0;
+
   struct selTrackInfo {
     int trackID = -1;
-    float t0 = -1.0;
-    float start_x = -1.0;
-    float start_y = -1.0;
-    float start_z = -1.0;
-    float end_x = -1.0;
-    float end_y = -1.0;
-    float end_z = -1.0;
+    float t0 = NoPosition;
+    float start_x = NoPosition;
+    float start_y = NoPosition;
+    float start_z = NoPosition;
+    float end_x = NoPosition;
+    float end_y = NoPosition;
+    float end_z = NoPosition;
     float length = -1.0;
-    float dir_x = -1.0;
-    float dir_y = -1.0;
-    float dir_z = -1.0;
+    float dir_x = NoPosition;
+    float dir_y = NoPosition;
+    float dir_z = NoPosition;
   };  // selTrackInfo
 
   struct selBeamInfo {
