@@ -55,6 +55,8 @@ public:
   explicit TimeTrackTreeStorage(fhicl::ParameterSet const& p);
 
   void analyze(art::Event const& e) override;
+  
+  void endJob() override;
 
 private:
 
@@ -212,6 +214,15 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 
 } // sbn::TimeTrackTreeStorage::analyze()
 
+
+// -----------------------------------------------------------------------------
+void sbn::TimeTrackTreeStorage::endJob() {
+  
+  mf::LogInfo(fLogCategory) << "Processed " << fTotalProcessed << " tracks.";
+  
+} // sbn::TimeTrackTreeStorage::endJob()
+
+// -----------------------------------------------------------------------------
 
 
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
