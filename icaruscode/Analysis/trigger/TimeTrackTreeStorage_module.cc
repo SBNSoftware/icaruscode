@@ -164,7 +164,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //std::cout << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size() << std::endl;
-  int processed = 0;
+  unsigned int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
     //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
