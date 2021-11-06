@@ -60,43 +60,48 @@ public:
 
 private:
 
-  // Declare member data here.
-  art::InputTag fPFPproducer;
-  art::InputTag fT0Producer;
-  art::InputTag fTrackProducer;
-  art::InputTag fT0selProducer;
-  art::InputTag fBeamGateProducer;
-  art::InputTag fTriggerProducer;
-
-  std::vector<sbn::selTrackInfo> vTrackInfo;
-  sbn::selTrackInfo fTrackInfo;
-  sbn::selBeamInfo fBeamInfo;
-  sbn::selTriggerInfo fTriggerInfo;
+  // --- BEGIN -- configuration parameters -------------------------------------
   
-  //std::string const fLogCategory;
+  art::InputTag const fPFPproducer;
+  art::InputTag const fT0Producer;
+  art::InputTag const fT0selProducer;
+  art::InputTag const fTrackProducer;
+  art::InputTag const fBeamGateProducer;
+  art::InputTag const fTriggerProducer;
+  std::string const fLogCategory;
+  
+  // --- END ---- configuration parameters -------------------------------------
 
-  TTree *fStoreTree;
-
+  // --- BEGIN -- tree buffers -------------------------------------------------
+  
   unsigned int fEvent;
   unsigned int fRun;
   unsigned int fSubRun;
-  int fTotalProcessed = 0;
   
-};
+  std::vector<sbn::selTrackInfo> fTrackInfo;
+  sbn::selBeamInfo fBeamInfo;
+  sbn::selTriggerInfo fTriggerInfo;
+  
+  // --- END ---- tree buffers -------------------------------------------------
+  
+  TTree *fStoreTree = nullptr;
+
+  unsigned int fTotalProcessed = 0;
+  
+}; // sbn::TimeTrackTreeStorage
 
 
 sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
-  : EDAnalyzer{p}  // ,
-  // More initializers here.
+  : EDAnalyzer{p}
+  , fPFPproducer      { p.get< art::InputTag > ("PFPproducer",      "pandoraGausCryoW") }
+  , fT0Producer       { p.get< art::InputTag > ("T0Producer",       "pandoraGausCryoW") }
+  , fT0selProducer    { p.get< art::InputTag > ("T0selProducer",    "pandoraGausCryoW") }
+  , fTrackProducer    { p.get< art::InputTag > ("TrackProducer",    "pandoraTrackGausCryoW") }
+  , fBeamGateProducer { p.get< art::InputTag > ("BeamGateProducer", "daqTrigger") }
+  , fTriggerProducer  { p.get< art::InputTag > ("TriggerProducer",  "daqTrigger") }
+  , fLogCategory      { p.get< std::string >   ("LogCategory", "TimeTrackTreeStorage") }
 {
   // Call appropriate consumes<>() for any products to be retrieved by this module.
-  fPFPproducer = p.get< art::InputTag > ("PFPproducer", "pandoraGausCryoW");
-  fT0Producer = p.get< art::InputTag > ("T0Producer", "pandoraGausCryoW");
-  fT0selProducer = p.get< art::InputTag > ("T0selProducer", "pandoraGausCryoW");
-  fTrackProducer = p.get< art::InputTag > ("TrackProducer", "pandoraTrackGausCryoW");
-  fBeamGateProducer = p.get< art::InputTag > ("BeamGateProducer", "daqTrigger"); 
-  fTriggerProducer = p.get< art::InputTag > ("TriggerProducer", "daqTrigger");
-  //fLogCategory = p.get< std::string const > ("LogCategory", "");
   art::ServiceHandle<art::TFileService> tfs;
   fStoreTree = tfs->make<TTree>("TimedTrackStorage", "Timed Track Tree");
   fStoreTree->Branch("run", &fRun);
