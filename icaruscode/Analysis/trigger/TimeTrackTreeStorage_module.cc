@@ -125,11 +125,13 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fBeamInfo = {};
   
   std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getProduct<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
-  if(pfparticles.size() == 0)
+  if(pfparticles.empty()) {
+    mf::LogDebug(fLogCategory) << "No particles in '" << fT0selProducer.encode() << "'.";
     return;
+  }
 
   std::vector<sim::BeamGateInfo> const& beamgate = e.getProduct<std::vector<sim::BeamGateInfo>> (fBeamGateProducer);
-  if(beamgate.size() == 0)
+  if(beamgate.empty())
     std::cout << "No Beam Gate Information!" << std::endl;
   if(beamgate.size() > 1)
     std::cout << "Event has multiple beam gate info labels! (maybe this changes later to be standard)" << std::endl;
