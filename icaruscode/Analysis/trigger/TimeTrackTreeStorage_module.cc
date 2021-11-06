@@ -21,7 +21,7 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
-#include "lardataobj/RecoBase/PFParticleMetadata.h"
+// #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 
 // framework libraries
@@ -32,7 +32,7 @@
 #include "art/Framework/Principal/Handle.h"
 #include "art/Framework/Principal/Run.h"
 #include "canvas/Persistency/Common/FindOneP.h"
-#include "canvas/Persistency/Common/Assns.h"
+// #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
 #include "fhiclcpp/ParameterSet.h"
@@ -40,7 +40,6 @@
 
 // ROOT libraries
 #include "TTree.h"
-#include "TVector3.h"
 
 // C/C++ libraries
 #include <iostream>
@@ -181,12 +180,12 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       /*
       for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
       {
-	TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
-	TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
-	if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
-	  //interpolate to get cathode crossing point
-	  
-      }	  
+        TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
+        TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
+        if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
+          //interpolate to get cathode crossing point
+          
+      }
       */
       fTrackInfo.push_back(trackInfo);
       
