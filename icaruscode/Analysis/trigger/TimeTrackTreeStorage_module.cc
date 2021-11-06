@@ -109,7 +109,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   fStoreTree->Branch("event", &fEvent);
   fStoreTree->Branch("beamInfo", &fBeamInfo);
   fStoreTree->Branch("triggerInfo", &fTriggerInfo);
-  fStoreTree->Branch("selTracks", &vTrackInfo);
+  fStoreTree->Branch("selTracks", &fTrackInfo);
 }
 
 void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
@@ -118,13 +118,11 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   unsigned int run = e.run();
   unsigned int subrun = e.subRun();
   unsigned int event = e.event(); 
-  if(vTrackInfo.size() > 0)
-    vTrackInfo.clear();
+  
   fEvent = event;
   fSubRun = subrun;
   fRun = run;
   fBeamInfo = {};
-  fTriggerInfo = {};
   
   std::vector<art::Ptr<recob::PFParticle>> const& pfparticles = e.getProduct<std::vector<art::Ptr<recob::PFParticle>>> (fT0selProducer);
   if(pfparticles.size() == 0)
@@ -162,20 +160,22 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     {
       track_t0 = t0Ptr->Time();
       //std::cout << "PFP Pointer: " << particlePtr << std::endl;
-      fTrackInfo.trackID = trackPtr->ID();
-      fTrackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
+      
+      sbn::selTrackInfo trackInfo;
+      trackInfo.trackID = trackPtr->ID();
+      trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
       //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
       //std::cout << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID() << std::endl;
-      fTrackInfo.start_x = trackPtr->Start().X();
-      fTrackInfo.start_y = trackPtr->Start().Y();
-      fTrackInfo.start_z = trackPtr->Start().Z();
-      fTrackInfo.end_x = trackPtr->End().X();
-      fTrackInfo.end_y = trackPtr->End().Y();
-      fTrackInfo.end_z = trackPtr->End().Z();
-      fTrackInfo.dir_x = trackPtr->StartDirection().X();
-      fTrackInfo.dir_y = trackPtr->StartDirection().Y();
-      fTrackInfo.dir_z = trackPtr->StartDirection().Z();
-      fTrackInfo.length = trackPtr->Length();
+      trackInfo.start_x = trackPtr->Start().X();
+      trackInfo.start_y = trackPtr->Start().Y();
+      trackInfo.start_z = trackPtr->Start().Z();
+      trackInfo.end_x = trackPtr->End().X();
+      trackInfo.end_y = trackPtr->End().Y();
+      trackInfo.end_z = trackPtr->End().Z();
+      trackInfo.dir_x = trackPtr->StartDirection().X();
+      trackInfo.dir_y = trackPtr->StartDirection().Y();
+      trackInfo.dir_z = trackPtr->StartDirection().Z();
+      trackInfo.length = trackPtr->Length();
       /*
       for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
       {
@@ -186,7 +186,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 	  
       }	  
       */
-      vTrackInfo.push_back(fTrackInfo);
+      fTrackInfo.push_back(trackInfo);
       
       ++processed;
       ++fTotalProcessed;
@@ -195,7 +195,10 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   //std::cout << "Particles Processed: " << processed << std::endl;
   //std::cout << "Total Particles Processed: " << fTotalProcessed << std::endl;
   fStoreTree->Fill();
+  fTrackInfo.clear();
 
-}
+} // sbn::TimeTrackTreeStorage::analyze()
+
+
 
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)
