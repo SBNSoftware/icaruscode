@@ -100,7 +100,21 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   , fTriggerProducer  { p.get< art::InputTag > ("TriggerProducer",  "daqTrigger") }
   , fLogCategory      { p.get< std::string >   ("LogCategory", "TimeTrackTreeStorage") }
 {
-  // Call appropriate consumes<>() for any products to be retrieved by this module.
+  
+  //
+  // declaration of input
+  //
+  
+  // consumes<std::vector<recob::PFParticle>>(fPFPproducer); // not yet?
+  consumes<std::vector<art::Ptr<recob::PFParticle>>>(fT0selProducer);
+  consumes<sbn::ExtraTriggerInfo>(fTriggerProducer);
+  consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
+  consumes<art::Assns<recob::PFParticle, recob::Track>>(fTrackProducer);
+  consumes<art::Assns<recob::PFParticle, anab::T0>>(fT0Producer);
+  
+  //
+  // tree creation
+  //
   art::ServiceHandle<art::TFileService> tfs;
   fStoreTree = tfs->make<TTree>("TimedTrackStorage", "Timed Track Tree");
   fStoreTree->Branch("run", &fRun);
@@ -109,7 +123,8 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
   fStoreTree->Branch("beamInfo", &fBeamInfo);
   fStoreTree->Branch("triggerInfo", &fTriggerInfo);
   fStoreTree->Branch("selTracks", &fTrackInfo);
-}
+  
+} // sbn::TimeTrackTreeStorage::TimeTrackTreeStorage()
 
 void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 {
