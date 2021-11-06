@@ -129,9 +129,9 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
 void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
 {
   // Implementation of required member function here.
-  unsigned int run = e.run();
-  unsigned int subrun = e.subRun();
-  unsigned int event = e.event(); 
+  unsigned int const run = e.run();
+  unsigned int const subrun = e.subRun();
+  unsigned int const event = e.event(); 
   
   fEvent = event;
   fSubRun = subrun;
