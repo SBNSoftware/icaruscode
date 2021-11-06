@@ -1,5 +1,5 @@
-#ifndef SBN_TrackTreeStoreObj
-#define SBN_TrackTreeStoreObj
+#ifndef SBN_TRACKTREESTOREOBJ_H
+#define SBN_TRACKTREESTOREOBJ_H
 
 namespace sbn {
 
@@ -57,7 +57,7 @@ namespace sbn {
       gateID(0)
     {}
   };
-    
-}
+  
+} // namespace sbn
 
-#endif
+#endif // SBN_TRACKTREESTOREOBJ_H
