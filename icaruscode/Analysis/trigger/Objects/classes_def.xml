@@ -7,8 +7,7 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
-  <class name="sbn::selTrackInfo" ClassVersion="12">
-   <version ClassVersion="12" checksum="2588527011"/>
+  <class name="sbn::selTrackInfo" ClassVersion="11">
    <version ClassVersion="11" checksum="2588527011"/>
    <version ClassVersion="10" checksum="1586061224"/>
   </class>
@@ -18,7 +17,8 @@
    <version ClassVersion="10" checksum="4079645487"/>
   </class>
 
-  <class name="sbn::selTriggerInfo" ClassVersion="10">
+  <class name="sbn::selTriggerInfo" ClassVersion="11">
+   <version ClassVersion="11" checksum="2335077475"/>
    <version ClassVersion="10" checksum="2486880499"/>
   </class>
 

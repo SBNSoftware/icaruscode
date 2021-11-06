@@ -30,8 +30,8 @@ namespace sbn {
     unsigned int beamType = 0;
     std::uint64_t triggerTime = 0;
     std::uint64_t beamGateTime = 0;
-    std::uint64_t triggerID = 0;
-    std::uint64_t gateID = 0;
+    unsigned int triggerID = 0;
+    unsigned int gateID = 0;
   };
   
 } // namespace sbn
