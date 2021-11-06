@@ -35,7 +35,8 @@
 // #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
 #include "canvas/Utilities/InputTag.h"
-#include "fhiclcpp/ParameterSet.h"
+#include "fhiclcpp/types/Atom.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
 // ROOT libraries
@@ -52,7 +53,59 @@ namespace sbn {
 
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
 public:
-  explicit TimeTrackTreeStorage(fhicl::ParameterSet const& p);
+  
+  struct Config {
+    using Name = fhicl::Name;
+    using Comment = fhicl::Comment;
+    
+    fhicl::Atom<art::InputTag> PFPproducer {
+      Name("PFPproducer"),
+      Comment("tag of the input particle flow objects to process")
+      // mandatory
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> T0Producer {
+      Name("T0Producer"),
+      Comment("tag of the input track time (t0) information [as PFPproducer]")
+      // default: as PFPproducer
+      };
+    
+    fhicl::OptionalAtom<art::InputTag> T0selProducer {
+      Name("T0selProducer"),
+      Comment
+        ("tag of the selected tracks (as a collection of art::Ptr) [as PFPproducer]")
+      // default: as PFPproducer
+      };
+    
+    fhicl::Atom<art::InputTag> TrackProducer {
+      Name("TrackProducer"),
+      Comment("tag of the association of particles to tracks")
+      // mandatory
+      };
+    
+    fhicl::Atom<art::InputTag> BeamGateProducer {
+      Name("BeamGateProducer"),
+      Comment("tag of beam gate information")
+      // mandatory
+      };
+    
+    fhicl::Atom<art::InputTag> TriggerProducer {
+      Name("TriggerProducer"),
+      Comment("tag of hardware trigger information")
+      // mandatory
+      };
+    
+    fhicl::Atom<std::string> LogCategory {
+      Name("LogCategory"),
+      Comment("label for output messages of this module instance"),
+      "TimeTrackTreeStorage" // default
+      };
+    
+  }; // Config
+  
+  using Parameters = art::EDAnalyzer::Table<Config>;
+  
+  explicit TimeTrackTreeStorage(Parameters const& p);
 
   void analyze(art::Event const& e) override;
   
@@ -91,15 +144,15 @@ private:
 }; // sbn::TimeTrackTreeStorage
 
 
-sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(fhicl::ParameterSet const& p)
+sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   : EDAnalyzer{p}
-  , fPFPproducer      { p.get< art::InputTag > ("PFPproducer",      "pandoraGausCryoW") }
-  , fT0Producer       { p.get< art::InputTag > ("T0Producer",       "pandoraGausCryoW") }
-  , fT0selProducer    { p.get< art::InputTag > ("T0selProducer",    "pandoraGausCryoW") }
-  , fTrackProducer    { p.get< art::InputTag > ("TrackProducer",    "pandoraTrackGausCryoW") }
-  , fBeamGateProducer { p.get< art::InputTag > ("BeamGateProducer", "daqTrigger") }
-  , fTriggerProducer  { p.get< art::InputTag > ("TriggerProducer",  "daqTrigger") }
-  , fLogCategory      { p.get< std::string >   ("LogCategory", "TimeTrackTreeStorage") }
+  , fPFPproducer      { p().PFPproducer() }
+  , fT0Producer       { p().T0Producer().value_or(fPFPproducer) }
+  , fT0selProducer    { p().T0selProducer().value_or(fPFPproducer) }
+  , fTrackProducer    { p().TrackProducer() }
+  , fBeamGateProducer { p().BeamGateProducer() }
+  , fTriggerProducer  { p().TriggerProducer() }
+  , fLogCategory      { p().LogCategory() }
 {
   
   //

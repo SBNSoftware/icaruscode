@@ -12,6 +12,16 @@
 #include "rootoutput_icarus.fcl"
 #include "services_common_icarus.fcl"
 
+BEGIN_PROLOG
+
+timetracktreestorage_base: {
+  module_type: "TimeTrackTreeStorage"
+  BeamGateProducer: "daqTrigger"
+  TriggerProducer:  "daqTrigger"
+}
+
+END_PROLOG
+
 # ------------------------------------------------------------------------------
 process_name: storeTree
 
@@ -44,19 +54,21 @@ physics: {
 
   analyzers: {
     t0TreeStoreW: {
-      module_type: "TimeTrackTreeStorage"
+      @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoW"
       T0Producer: "pandoraGausCryoW"
       T0selProducer: "t0selectorW"
       TrackProducer: "pandoraTrackGausCryoW"
+      LogCategory: "TimeTrackTreeStorageCryoW"
       }
 
     t0TreeStoreE: {
-      module_type: "TimeTrackTreeStorage"
+      @table::timetracktreestorage_base
       PFPproducer: "pandoraGausCryoE"
       T0Producer: "pandoraGausCryoE"
       T0selProducer: "t0selectorE"
       TrackProducer: "pandoraTrackGausCryoE"
+      LogCategory: "TimeTrackTreeStorageCryoE"
       }
   } #analyzers
   
