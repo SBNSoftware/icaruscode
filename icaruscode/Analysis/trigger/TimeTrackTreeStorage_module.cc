@@ -168,45 +168,43 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   {
     //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
     //mf::LogTrace(fLogCategory) << particlePtr.key();
-    art::Ptr<recob::Track> trackPtr = particleTracks.at(iPart);
-    art::Ptr<anab::T0> t0Ptr = t0Tracks.at(iPart);
-    float track_t0 = -999.0;
-    if(!(trackPtr.isNull())) 
+    art::Ptr<recob::Track> const trackPtr = particleTracks.at(iPart);
+    if(trackPtr.isNull()) continue;
+    
+    art::Ptr<anab::T0> const t0Ptr = t0Tracks.at(iPart);
+    float const track_t0 = t0Ptr->Time();
+    //mf::LogTrace(fLogCategory) << "PFP Pointer: " << particlePtr;
+    
+    sbn::selTrackInfo trackInfo;
+    trackInfo.trackID = trackPtr->ID();
+    trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
+    //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
+    //mf::LogTrace(fLogCategory) << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID();
+    trackInfo.start_x = trackPtr->Start().X();
+    trackInfo.start_y = trackPtr->Start().Y();
+    trackInfo.start_z = trackPtr->Start().Z();
+    trackInfo.end_x = trackPtr->End().X();
+    trackInfo.end_y = trackPtr->End().Y();
+    trackInfo.end_z = trackPtr->End().Z();
+    trackInfo.dir_x = trackPtr->StartDirection().X();
+    trackInfo.dir_y = trackPtr->StartDirection().Y();
+    trackInfo.dir_z = trackPtr->StartDirection().Z();
+    trackInfo.length = trackPtr->Length();
+    /*
+    for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
     {
-      track_t0 = t0Ptr->Time();
-      //mf::LogTrace(fLogCategory) << "PFP Pointer: " << particlePtr;
-      
-      sbn::selTrackInfo trackInfo;
-      trackInfo.trackID = trackPtr->ID();
-      trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better
-      //if(track_t0/1e3 < 10 && track_t0/1e3 > -10)
-      //mf::LogTrace(fLogCategory) << track_t0/1e3 << " Run is: " << fRun << " SubRun is: " << fSubRun << " Event is: " << fEvent << " Track ID is: " << trackPtr->ID();
-      trackInfo.start_x = trackPtr->Start().X();
-      trackInfo.start_y = trackPtr->Start().Y();
-      trackInfo.start_z = trackPtr->Start().Z();
-      trackInfo.end_x = trackPtr->End().X();
-      trackInfo.end_y = trackPtr->End().Y();
-      trackInfo.end_z = trackPtr->End().Z();
-      trackInfo.dir_x = trackPtr->StartDirection().X();
-      trackInfo.dir_y = trackPtr->StartDirection().Y();
-      trackInfo.dir_z = trackPtr->StartDirection().Z();
-      trackInfo.length = trackPtr->Length();
-      /*
-      for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
-      {
-        TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
-        TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
-        if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
-          //interpolate to get cathode crossing point
-          
-      }
-      */
-      fTrackInfo.push_back(trackInfo);
-      
-      ++processed;
-      ++fTotalProcessed;
+      TVector3 cur_point(trackPtr->TrajectoryPoint(traj_p).position.X(), trackPtr->TrajectoryPoint(traj_p).position.Y(), trackPtr->TrajectoryPoint(traj_p).position.Z());
+      TVector3 next_point(trackPtr->TrajectoryPoint(traj_p+1).position.X(), trackPtr->TrajectoryPoint(traj_p+1).position.Y(), trackPtr->TrajectoryPoint(traj_p+1).position.Z());
+      if(abs(cur_point.X()) < 170 && abs(next_point.X()) > 170)
+        //interpolate to get cathode crossing point
+        
     }
-  }
+    */
+    fTrackInfo.push_back(trackInfo);
+    
+    ++processed;
+    ++fTotalProcessed;
+  } // for particle
   //mf::LogInfo(fLogCategory) << "Particles Processed: " << processed
   //mf::LogTrace(fLogCategory) << "Total Particles Processed: " << fTotalProcessed;
   fStoreTree->Fill();
