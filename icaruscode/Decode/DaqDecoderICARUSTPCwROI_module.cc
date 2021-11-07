@@ -96,7 +96,7 @@ public:
     using PlaneIdxToChannelPair = std::pair<unsigned int,ChannelVec>;
     using PlaneIdxToChannelMap  = std::map<unsigned int,ChannelVec>;
 
-    using ChannelArrayPair      = std::pair<ChannelVec,icarus_signal_processing::ArrayFloat>;
+    using ChannelArrayPair      = std::pair<daq::INoiseFilter::ChannelPlaneVec,icarus_signal_processing::ArrayFloat>;
     using ChannelArrayPairVec   = std::vector<ChannelArrayPair>;
 
 
@@ -523,10 +523,10 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(nSamplesPerChannel);
 
-    int cryoIdx = crateName.find("W",0,1) != std::string::npos ? 1 : 0;
-    int tpcIdx  = cryoIdx + (crateName.find("W",1,1) != std::string::npos ? 1 : 0);
+//    int cryoIdx = crateName.find("W",0,1) != std::string::npos ? 1 : 0;
+//    int tpcIdx  = cryoIdx + (crateName.find("W",1,1) != std::string::npos ? 1 : 0);
 
-    std::cout << "***** Fragment ID: " << fragmentID << ", crateName: " << crateName << ", cryoIdx: " << cryoIdx << ", tpcIdx: " << tpcIdx << ", indices: " << crateName.find("W",0,1) << ", " << crateName.find("W",1,1) << std::endl;
+//    std::cout << "***** Fragment ID: " << fragmentID << ", crateName: " << crateName << ", cryoIdx: " << cryoIdx << ", tpcIdx: " << tpcIdx << ", indices: " << crateName.find("W",0,1) << ", " << crateName.find("W",1,1) << std::endl;
 
     // The first task is to recover the data from the board data block, determine and subtract the pedestals
     // and store into vectors useful for the next steps
@@ -556,7 +556,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
             // Get the channel number on the Fragment
-            raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
+//            raw::ChannelID_t channel = channelPlanePairVec[chanIdx].first;
 
             icarus_signal_processing::VectorFloat& rawDataVec = channelArrayPair.second[chanIdx];
 
@@ -564,9 +564,10 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 rawDataVec[tick] = -dataBlock[chanIdx + tick * nChannelsPerBoard];
 
             // Keep track of the channel
-            channelArrayPair.first[chanIdx] = channel;
+            channelArrayPair.first[chanIdx] = channelPlanePairVec[chanIdx];
 
-            std::cout << "      board: " << board << ", channel: " << channel << std::endl;
+//            std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(channel);
+//            std::cout << "      board: " << board << ", channel: " << channel << ", plane: " << channelPlanePairVec[chanIdx].second << ", size: " << widVec.size() << std::endl;
         }
 
         //process_fragment(event, rawfrag, product_collection, header_collection);
@@ -588,7 +589,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 ConcurrentRawDigitCol::iterator newRawObjItr = concurrentRawRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
                 newRawObjItr->SetPedestal(decoderTool->getPedestalVals()[chanIdx],decoderTool->getFullRMSVals()[chanIdx]);
-                std::cout << "      --> done outputting raw waveform" << std::endl;
             }
 
             if (fOutputCorrection)
@@ -602,7 +602,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 ConcurrentRawDigitCol::iterator newRawObjItr = coherentRawDigitCol.push_back(raw::RawDigit(channel,wvfm.size(),wvfm)); 
 
                 newRawObjItr->SetPedestal(0.,0.);
-                std::cout << "      --> done outputting correction" << std::endl;
             }
 
             // Recover the denoised waveform
@@ -614,8 +613,6 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
             newObjItr->SetPedestal(0.,decoderTool->getTruncRMSVals()[chanIdx]);
-
-            std::cout << "      --> done outputting coherent corrected" << std::endl;
 
             // And, finally, the ROIs 
             const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
@@ -640,9 +637,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 roiIdx++;
             }
         
-            concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channelArrayPair.first[chanIdx])).move());
-
-            std::cout << "      --> done with ROIs" << std::endl;
+            concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
         }
     }
 

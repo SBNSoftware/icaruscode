@@ -53,12 +53,12 @@ public:
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
-                       unsigned int wire,
+                       const geo::PlaneID&,
                        unsigned int board) override;
     
 private:
     void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
-    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
+    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double);
     void GenNoise(std::function<void (double[])>&, const icarusutil::TimeVec&, icarusutil::TimeVec&, float);
     void ComputeRMSs();
     void makeHistograms();
@@ -241,7 +241,7 @@ void SBNNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     icarusutil::TimeVec&     noise,
                              detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
-                                    unsigned int            channel,
+                                    const geo::PlaneID&     planeID,
                                     unsigned int            board)
 {
 noise_factor=totalRMS;
@@ -254,7 +254,7 @@ noise_factor=totalRMS;
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
     //std::cout <<  " generating uncorrelated noise " << std::endl;
     // If applying incoherent noise call the generator
-    if (fIncoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel);
+    if (fIncoherentNoiseFrac > 0.) GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor);
     
 //    int board=channel/64;
 //std::cout <<  " generating correlated noise " << std::endl;
@@ -267,7 +267,7 @@ noise_factor=totalRMS;
     return;
 }
     
-void SBNNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int channel)
+void SBNNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor)
 {
     // Here we aim to produce a waveform consisting of incoherent noise
     // Note that this is expected to be the dominate noise contribution

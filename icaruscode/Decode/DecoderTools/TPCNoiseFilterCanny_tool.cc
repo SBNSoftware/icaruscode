@@ -73,7 +73,7 @@ public:
      *  @param fragment            The artdaq fragment to process
      */
     virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const daq::INoiseFilter::ChannelVec&,
+                                  const daq::INoiseFilter::ChannelPlaneVec&,
                                   const icarus_signal_processing::ArrayFloat&) override;
 
     /**
@@ -330,7 +330,7 @@ void TPCNoiseFilterCannyMC::configure(fhicl::ParameterSet const &pset)
 }
 
 void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
-                                               const daq::INoiseFilter::ChannelVec&  channelVec,
+                                               const daq::INoiseFilter::ChannelPlaneVec&  channelPlaneVec,
                                                const icarus_signal_processing::ArrayFloat& dataArray)
 {
     cet::cpu_timer theClockTotal;
@@ -372,7 +372,7 @@ void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
         // Keep track of the channel
-        fChannelIDVec[idx] = channelVec[idx];
+        fChannelIDVec[idx] = channelPlaneVec[idx].first;
 
         // We need to recover info on which plane we have
         std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
