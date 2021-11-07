@@ -108,7 +108,7 @@ public:
     DoubleVec2                    GetNoiseFactVec() { return fNoiseFactVec; }
     
     double                        GetASICGain(unsigned int const channel)            const;
-    double                        GetShapingTime(unsigned int const channel)         const;
+    double                        GetShapingTime(unsigned int const planeIdx)        const;
     
     double                        GetRawNoise(unsigned int const channel)            const;
     double                        GetDeconNoise(unsigned int const channel)          const;

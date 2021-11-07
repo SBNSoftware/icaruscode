@@ -50,10 +50,11 @@ public:
      *  @param ChannelVec           list of channels associated to input data array
      *  @param ArrayFloat           array by channel of the waveforms
      */
-    using ChannelVec = std::vector<unsigned int>;
+    using ChannelPlanePair = std::pair<unsigned int,unsigned int>;
+    using ChannelPlaneVec  = std::vector<ChannelPlanePair>;
 
     virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const daq::INoiseFilter::ChannelVec&,
+                                  const daq::INoiseFilter::ChannelPlaneVec&,
                                   const icarus_signal_processing::ArrayFloat&) = 0;
 
     /**
