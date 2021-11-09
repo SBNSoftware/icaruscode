@@ -11,7 +11,8 @@
 #include "calorimetry_icarus.fcl"
 #include "particleid_icarus.fcl"
 
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
+#include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
