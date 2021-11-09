@@ -1,5 +1,5 @@
 #include "cafmakerjob_icarus_sce.fcl"
 
-physics.runprod: [ @sequence::caf_ana_sce_evtw_sequence, cafmaker, genieweight, fluxweight]
+physics.runprod: [ @sequence::caf_ana_sce_evtw_sequence, genieweight, fluxweight, cafmaker ]
 
 physics.producers.cafmaker.SystWeightLabels: ["genieweight","fluxweight"]
