@@ -32,6 +32,7 @@
 #include "canvas/Utilities/InputTag.h"
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 #include "fhiclcpp/types/Sequence.h"
 #include "cetlib_except/exception.h"
@@ -173,10 +174,9 @@ class icarus::trigger::LVDSgates: public art::EDProducer {
         { ComboMode::OR,      "OR" }
       };
     
-    fhicl::Atom<std::string> TriggerGatesTag {
+    fhicl::OptionalAtom<std::string> TriggerGatesTag {
       Name("TriggerGatesTag"),
-      Comment("label of trigger gate extraction module (no instance name)"),
-      "discrimopdaq"
+      Comment("label of trigger gate extraction module (no instance name)")
       };
 
     fhicl::Sequence<std::string> Thresholds {
@@ -381,7 +381,7 @@ icarus::trigger::LVDSgates::LVDSgates
   //
   // more complex parameter parsing
   //
-  std::string const discrModuleLabel = config().TriggerGatesTag();
+  std::string const discrModuleLabel = config().TriggerGatesTag().value_or("");
   for (std::string const& thresholdStr: config().Thresholds()) {
     art::InputTag const inputTag = makeTag(thresholdStr, discrModuleLabel);
     fADCthresholds[thresholdStr]
@@ -791,9 +791,14 @@ icarus::trigger::LVDSgates::ReadTriggerGates(
 art::InputTag icarus::trigger::LVDSgates::makeTag
   (std::string const& thresholdStr, std::string const& defModule)
 {
-  return (thresholdStr.find(':') == std::string::npos)
-    ? art::InputTag{ defModule, thresholdStr }
-    : art::InputTag{ thresholdStr }
+  return (thresholdStr.find(':') != std::string::npos)
+    ? art::InputTag{ thresholdStr }
+    : defModule.empty()
+      ? throw (art::Exception(art::errors::Configuration)
+        << "No default module label (`TriggerGatesTag`) specified"
+           ", and it's needed for threshold '"
+        << thresholdStr << "'.\n")
+      : art::InputTag{ defModule, thresholdStr }
     ;
 } // icarus::trigger::LVDSgates::makeTag()
 
