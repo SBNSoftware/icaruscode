@@ -2,4 +2,4 @@
 
 physics.runprod: [ @sequence::caf_ana_sce_evtw_sequence, cafmaker, genieweight, fluxweight]
 
-hysics.producers.mycafmaker.SystWeightLabels: ["genieweight","fluxweight"]
+hysics.producers.cafmaker.SystWeightLabels: ["genieweight","fluxweight"]
