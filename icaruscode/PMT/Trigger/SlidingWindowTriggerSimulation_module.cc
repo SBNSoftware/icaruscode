@@ -58,6 +58,7 @@
 #include "canvas/Utilities/Exception.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Sequence.h"
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 
 // ROOT libraries
@@ -133,6 +134,15 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  *     `"60"`, supposedly 60 ADC counts, and with `TriggerGatesTag` set to
  *     `"TrigSlidingWindows"`, the data product tag would be
  *     `TrigSlidingWindows:60`).
+ * * `KeepThresholdName` (flag, optional): by default, output data products have
+ *     each an instance name according to their threshold (from the `Threshold`
+ *     parameter), unless there is only one threshold specified. If this
+ *     parameter is specified as `true`, the output data product always
+ *     includes the threshold instance name, even when there is only one
+ *     threshold specified. If this parameter is specified as `false`, if there
+ *     is only one threshold the default behaviour (of not adding an instance
+ *     name) is confirmed; otherwise, it is a configuration error to have this
+ *     parameter set to `false`.
  * * `Pattern` (configuration table, mandatory): describes the sliding window
  *     pattern; the configuration format for a pattern is described under
  *     `icarus::trigger::ns::fhicl::WindowPatternConfig`.
@@ -159,8 +169,9 @@ namespace icarus::trigger { class SlidingWindowTriggerSimulation; }
  * * `std::vector<raw::Trigger>` (one instance per ADC threshold):
  *   list of triggers fired according to the configured trigger definition;
  *   there is one collection (and data product) per ADC threshold, and the
- *   data product has the same instance name as the input data one
- *   (see `TriggerGatesTag` and `Thresholds` configuration parameters);
+ *   data product has the same instance name as the input data one, unless
+ *   there is only one threshold (see `TriggerGatesTag`, `Thresholds` and
+ *   `KeepThresholdName` configuration parameters);
  *   currently only at most one trigger is emitted, with time stamp matching
  *   the first time the trigger criteria are satisfied. All triggers feature
  *   the bits specified in `BeamBits` configuration parameter.
@@ -264,6 +275,12 @@ class icarus::trigger::SlidingWindowTriggerSimulation
     fhicl::Sequence<std::string> Thresholds {
       Name("Thresholds"),
       Comment("tags of the thresholds to consider")
+      };
+
+    fhicl::OptionalAtom<bool> KeepThresholdName {
+      Name("KeepThresholdName"),
+      Comment
+        ("add threshold to output product tag even with only one threshold")
       };
 
     icarus::trigger::ns::fhicl::WindowPatternTable Pattern {
@@ -394,6 +411,9 @@ class icarus::trigger::SlidingWindowTriggerSimulation
 
   
   // --- BEGIN Internal variables ----------------------------------------------
+  
+  /// Output data product instance names (same order as `fADCthresholds`).
+  std::vector<std::string> fOutputInstances;
   
   /// Mapping of each sliding window with location and topological information.
   // mutable = not thread-safe
@@ -603,8 +623,23 @@ icarus::trigger::SlidingWindowTriggerSimulation::SlidingWindowTriggerSimulation
   //
   // output data declaration
   //
-  for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds))
-    produces<std::vector<raw::Trigger>>(inputDataTag.instance());
+  // keepThresholdName is true if we write instance name in output data products
+  bool const keepThresholdName
+    = config().KeepThresholdName().value_or(config().Thresholds().size() > 1);
+  if (!keepThresholdName && (config().Thresholds().size() > 1)) {
+    throw art::Exception(art::errors::Configuration)
+      << config().KeepThresholdName.name()
+      << " can be set to `true` only when a single threshold is specified ("
+      << config().Thresholds.name() << " has " << config().Thresholds().size()
+      << ")";
+  }
+  
+  for (auto const& inputDataTag: util::const_values(fADCthresholds)) {
+    std::string const outputInstance
+      = keepThresholdName? inputDataTag.instance(): "";
+    produces<std::vector<raw::Trigger>>(outputInstance);
+    fOutputInstances.push_back(outputInstance);
+  }
   
   {
     mf::LogInfo log(fLogCategory);
@@ -960,7 +995,7 @@ auto icarus::trigger::SlidingWindowTriggerSimulation::produceForThreshold(
     triggers->push_back
       (triggerInfoToTriggerData(detTimings, fTriggerCount[iThr], triggerInfo));
   } // if
-  event.put(std::move(triggers), dataTag.instance());
+  event.put(std::move(triggers), fOutputInstances[iThr]);
   
   return triggerInfo;
   
