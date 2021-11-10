@@ -80,7 +80,7 @@ outputs: {
     outputCommands: [
       "drop *",
       "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*", "keep *_*_*_stage1",
-      "keep *_*_*_TrgEmu"
+      "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
       ]
   }
 }
