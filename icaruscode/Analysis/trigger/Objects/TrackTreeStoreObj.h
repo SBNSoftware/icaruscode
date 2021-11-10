@@ -1,36 +1,49 @@
-#ifndef SBN_TrackTreeStoreObj
-#define SBN_TrackTreeStoreObj
+#ifndef SBN_TRACKTREESTOREOBJ_H
+#define SBN_TRACKTREESTOREOBJ_H
+
+#include "cstdint" // std::uint64_t
 
 namespace sbn {
 
   struct selTrackInfo {
-    int trackID;
-    float t0;
-    float start_x;
-    float start_y;
-    float start_z;
-    float end_x;
-    float end_y;
-    float end_z;
-    float length;
-    float dir_x;
-    float dir_y;
-    float dir_z;
-  selTrackInfo():
-    trackID(-1),
-      t0(-1),
-      start_x(-1),
-      start_y(-1),
-      start_z(-1),
-      end_x(-1),
-      end_y(-1),
-      end_z(-1),
-      length(-1),
-      dir_x(-1),
-      dir_y(-1),
-      dir_z(-1)
-    {}
-  };
-}
+    static constexpr float NoPosition = -999999.0;
+    
+    int trackID = -1;
+    float t0 = NoPosition;
+    float start_x = NoPosition;
+    float start_y = NoPosition;
+    float start_z = NoPosition;
+    float end_x = NoPosition;
+    float end_y = NoPosition;
+    float end_z = NoPosition;
+    float length = -1.0;
+    float dir_x = NoPosition;
+    float dir_y = NoPosition;
+    float dir_z = NoPosition;
+  };  // selTrackInfo
 
-#endif
+  struct selBeamInfo {
+    std::uint64_t beamGateSimStart = 0;
+    float beamGateDuration = -1.0;
+    unsigned int beamGateType = 999;
+  };
+  
+  struct selTriggerInfo {
+    unsigned int beamType = 0;
+    std::uint64_t triggerTime = 0;
+    std::uint64_t beamGateTime = 0;
+    unsigned int triggerID = 0;
+    unsigned int gateID = 0;
+  };
+  
+  struct selSimTriggerInfo {
+    
+    static constexpr double NoTime = -999999.0;
+    
+    double time = NoTime; ///< Time of the trigger in electronics time scale.
+    
+  };
+  
+} // namespace sbn
+
+#endif // SBN_TRACKTREESTOREOBJ_H

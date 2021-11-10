@@ -11,6 +11,8 @@
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 #include "services_common_icarus.fcl"
+#include "trigger_icarus.fcl"
+#include "triggeremu_data_config_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -29,13 +31,44 @@ process_name: storeTree
 # ------------------------------------------------------------------------------
 services: {
   message:     @local::icarus_message_services_interactive_debug
+  @table::triggeremu_data_config_icarus.services # from triggeremu_data_config_icarus.fcl
+  @table::icarus_common_services
   TimeTracker: {}
   TFileService: {
-    fileName: "timedtracks_store_test.root"
+    fileName: "timedtracks_store_triggeremu.root"
   }
 }
 
+# customization of message destinations from trigger emulation
+services.message.destinations: {
+  @table::services.message.destinations
+  @table::triggeremu_data_config_icarus.messagedestinations
+}
+
+
 physics: {
+  filters: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    t0selectorW: {
+      module_type: TimedTrackSelector
+
+      #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
+      TrackTimeTags: [ pandoraGausCryoW ]
+
+    } # t0selectorW
+
+    t0selectorE: {
+      module_type: TimedTrackSelector
+      TrackTimeTags: [ pandoraGausCryoE ]
+    }
+  }
+
+  producers: {
+     @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+   }
+
+  triggeremuE: @local::triggeremu_data_config_icarus.producerpathE
+  triggeremuW: @local::triggeremu_data_config_icarus.producerpathW
 
   analyzers: {
     t0TreeStoreW: {
@@ -72,7 +105,11 @@ physics: {
       LogCategory: "TimeTrackTreeStorageCryoE"
       }
   } #analyzers
-
+  
+  selectionW: [ "t0selectorW" ]
+  selectionE: [ "t0selectorE" ]
+  
+  trigger_paths: [ selectionW, selectionE, triggeremuW, triggeremuE ]
   ana: [ t0TreeStoreW, t0TreeStoreE ]	  
   streams: [ "rootoutput" ]
   end_paths: [ ana ]
@@ -83,7 +120,12 @@ physics: {
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
-    outputCommands: [ "drop *", "keep *_*_*_stage1", "keep *_*_*_T0sel", "keep *_*_*_treestore" ]
+    outputCommands: [
+      "drop *",
+      "keep sbn::PMTconfiguration_*_*_*", "keep *_daqTrigger_*_*", "keep *_*_*_stage1",
+      "keep *_*_*_TrgEmu", "keep *_*_*_T0sel"
+      ]
+
   }
 }
 

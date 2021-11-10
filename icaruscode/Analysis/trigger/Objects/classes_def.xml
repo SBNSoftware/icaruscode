@@ -6,7 +6,18 @@
    <version ClassVersion="11" checksum="2588527011"/>
    <version ClassVersion="10" checksum="1586061224"/>
   </class>
+  
+  <class name="sbn::selBeamInfo" ClassVersion="11">
+   <version ClassVersion="11" checksum="3281323980"/>
+   <version ClassVersion="10" checksum="4079645487"/>
+  </class>
+
+  <class name="sbn::selTriggerInfo" ClassVersion="11">
+   <version ClassVersion="11" checksum="2335077475"/>
+   <version ClassVersion="10" checksum="2486880499"/>
+  </class>
 
   <class name="std::vector<sbn::selTrackInfo>" />    
-
+  <class name="std::vector<sbn::selBeamInfo>" />
+  <class name="std::vector<sbn::selTriggerInfo>" />
 </lcgdict>
