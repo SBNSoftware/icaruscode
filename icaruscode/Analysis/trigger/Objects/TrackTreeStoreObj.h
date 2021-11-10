@@ -5,9 +5,9 @@
 
 namespace sbn {
 
-  constexpr float NoPosition = -999999.0;
-
   struct selTrackInfo {
+    static constexpr float NoPosition = -999999.0;
+    
     int trackID = -1;
     float t0 = NoPosition;
     float start_x = NoPosition;
@@ -34,6 +34,14 @@ namespace sbn {
     std::uint64_t beamGateTime = 0;
     unsigned int triggerID = 0;
     unsigned int gateID = 0;
+  };
+  
+  struct selSimTriggerInfo {
+    
+    static constexpr double NoTime = -999999.0;
+    
+    double time = NoTime; ///< Time of the trigger in electronics time scale.
+    
   };
   
 } // namespace sbn
