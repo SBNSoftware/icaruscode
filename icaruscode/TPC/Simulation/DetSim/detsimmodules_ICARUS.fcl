@@ -1,3 +1,4 @@
+#include "channelmapping_icarus.fcl"
 BEGIN_PROLOG
 
 
@@ -95,6 +96,23 @@ SBNDataNoiseCollTool:
     CorrelatedRMSHistoName:    "cohRMSC"
     UncorrelatedRMSHistoName:  "intRMSC"
 }
+SBNDataNoiseBoardTool:
+{
+    tool_type:                 SBNDataNoiseBoard
+    Plane:                     2                # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           true
+   NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
+#NoiseHistFileName:         [ "dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root"  ]
+    CorrelatedHistogramName:   "cohpowerC"
+    UncorrelatedHistogramName: "intpowerC"
+    TotalRMSHistoName:         "rawRMSC"
+    CorrelatedRMSHistoName:    "cohRMSC"
+    UncorrelatedRMSHistoName:  "intRMSC"
+}
 
 
 WhiteNoiseTool:
@@ -134,12 +152,12 @@ icarus_standard_simreadoutboard:
     SuppressNoSignal:   false
     SmearPedestals:     true
     MakeHistograms:     "true"
-    TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
-    
+   # TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
+    TPCVec:             [ [0,0] ]
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
     #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
     # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
-    NoiseGenToolVec:    [@local::SBNDataNoiseInd1Tool, @local::SBNDataNoiseInd2Tool, @local::SBNDataNoiseCollTool]
+    NoiseTool:    @local::SBNDataNoiseBoardTool
 
 }
 
@@ -159,6 +177,8 @@ icarus_simwreadoutboard.NoiseGenToolVec[1].Plane:    1
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
 icarus_simwreadoutboard.NoiseGenToolVec[2].Plane:    2
 # Below overrides for SBN Noise model
+
+
 
 
 END_PROLOG

@@ -102,8 +102,10 @@ private:
     bool                         fSmearPedestals;    ///< If True then we smear the pedestals
     int                          fNumChanPerMB;      ///< Number of channels per motherboard
     
-    std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
+   // std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
     
+std::unique_ptr<icarus_tool::IGenNoise> fNoiseTool; ///< Tool for generating noise
+
     bool                         fMakeHistograms;
     bool                         fTest; // for forcing a test case
     std::vector<sim::SimChannel> fTestSimChannel_v;
@@ -183,7 +185,8 @@ void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
     fTestWire          = p.get< size_t              >("TestWire",                               0);
     fTestIndex         = p.get< std::vector<size_t> >("TestIndex",          std::vector<size_t>());
     fTestCharge        = p.get< std::vector<double> >("TestCharge",         std::vector<double>());
-
+//fNoiseTool = p.get< std::string         >("NoiseTool",                   "");
+      fNoiseTool  = art::make_tool<icarus_tool::IGenNoise>(p.get<fhicl::ParameterSet>("NoiseTool"));
     using TPCValsPair = std::pair<unsigned int, unsigned int>; // Assume cryostat, TPC 
     using TPCValsVec  = std::vector<TPCValsPair>;
 
@@ -197,11 +200,9 @@ void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
-    std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
+
     
-    for(auto& noiseToolParams : noiseToolParamSetVec) {
-        fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
-    }
+    
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
@@ -316,7 +317,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
     
     // Let the tools know to update to the next event
-    for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
+    fNoiseTool->nextEvent();
 
     // Plan is to loop over readout boards, rejecting any that are not in the TPC list
     // For any good readout boards we loop through the channels. 
@@ -397,9 +398,9 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 << "\033[00m"
                 << std::endl;
             }
-
+std::cout << " plane " << widVec[0].Plane << " wire " << widVec[0].Wire << " board " << boardCount << std::endl;
             // Use the desired noise tool to actually generate the noise on this wire
-            fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
+            fNoiseTool->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
                                                 noisetmp,
                                                 detProp,
