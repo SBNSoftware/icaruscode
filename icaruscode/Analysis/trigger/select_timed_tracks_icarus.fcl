@@ -59,7 +59,13 @@ physics: {
 outputs: {
   rootoutput: {
     @table::icarus_rootoutput
-    outputCommands: [ "drop *", "keep *_*_*_stage1", "keep *_*_*_T0sel" ]
+    outputCommands: [
+      "drop *", "keep *_pmtconfig_*_stage0",
+      "keep *_daqTrigger_*_stage0",
+      "keep *_daqPMT_*_stage0",
+      "keep *_*_*_stage1",
+      "keep *_*_*_T0sel"
+      ]
   }
 }
 
