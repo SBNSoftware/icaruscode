@@ -96,7 +96,7 @@ namespace icarus::trigger { class DiscriminatePMTwaveformsByChannel; }
  *      optical detector activity; the activity belongs to a single channel, but
  *      there may be multiple waveforms on the same channel. The time stamp is
  *      expected to be from the
- *      @anchor DetectorClocksElectronicsTime "electronics time scale"
+ *      @ref DetectorClocksElectronicsTime "electronics time scale"
  *      and therefore expressed in microseconds.
  * 
  * 
