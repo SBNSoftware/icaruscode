@@ -21,7 +21,7 @@ namespace detinfo {
 }
 
 namespace geo {
-    class PlaneID;
+    struct PlaneID;
 }
 
 class TComplex;
