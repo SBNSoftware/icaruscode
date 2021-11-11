@@ -3,6 +3,8 @@ set( IFDH_ART_DIR $ENV{IFDH_ART_DIR} )
 
 add_subdirectory(IcarusObj) 
 
+add_subdirectory(2021CMTutorial)
+
 add_subdirectory(Analysis)
 add_subdirectory(CRT)
 add_subdirectory(Decode)

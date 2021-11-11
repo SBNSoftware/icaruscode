@@ -1,0 +1,42 @@
+#include "services_common_icarus.fcl"
+
+process_name: DemoRecoAna
+
+services:
+{
+  @table::icarus_basic_services 
+
+}
+
+#Start each new event with an empty event.
+source:
+{
+  module_type: RootInput
+  maxEvents:   -1        # Number of events to create
+}
+
+outputs: {}
+
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+  producers:{}
+
+  filters: {}
+
+  analyzers:
+  {
+    ana: {
+      module_type: DemoRecoAna
+      PandoraLabel: pandoraGausCryoE
+      TrackLabel: pandoraTrackGausCryoE
+    }
+  }
+
+  stream1:       [ ana ]
+  trigger_paths: [] 
+  end_paths:     [ stream1 ]
+}
