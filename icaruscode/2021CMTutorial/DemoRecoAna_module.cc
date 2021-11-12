@@ -52,7 +52,7 @@ public:
   // Required functions.
   void analyze(art::Event const& e) override;
 
-  ~DemoRecoAna();
+  void endJob();
 
 private:
 
@@ -63,10 +63,9 @@ private:
 
 };
 
-icarus::DemoRecoAna::~DemoRecoAna() {
+void icarus::DemoRecoAna::endJob() {
   fNuTrklen->Write();
 }
-
 
 icarus::DemoRecoAna::DemoRecoAna(fhicl::ParameterSet const& p)
   : EDAnalyzer{p},
