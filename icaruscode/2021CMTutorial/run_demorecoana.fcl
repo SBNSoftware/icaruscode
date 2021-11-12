@@ -6,6 +6,9 @@ services:
 {
   @table::icarus_basic_services 
 
+  TFileService: {
+    fileName: "output.root"
+  }
 }
 
 #Start each new event with an empty event.

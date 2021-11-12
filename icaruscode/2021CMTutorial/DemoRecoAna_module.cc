@@ -17,6 +17,10 @@
 #include "fhiclcpp/ParameterSet.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include "TH1D.h"
+
+#include "art_root_io/TFileService.h"
+
 #include "canvas/Persistency/Common/FindManyP.h"
 
 #include "lardataobj/RecoBase/Hit.h"
@@ -48,12 +52,20 @@ public:
   // Required functions.
   void analyze(art::Event const& e) override;
 
+  ~DemoRecoAna();
+
 private:
 
   art::InputTag fPandoraLabel;
   art::InputTag fTrackLabel;
 
+  TH1D *fNuTrklen;
+
 };
+
+icarus::DemoRecoAna::~DemoRecoAna() {
+  fNuTrklen->Write();
+}
 
 
 icarus::DemoRecoAna::DemoRecoAna(fhicl::ParameterSet const& p)
@@ -62,6 +74,11 @@ icarus::DemoRecoAna::DemoRecoAna(fhicl::ParameterSet const& p)
     fTrackLabel(p.get<art::InputTag>("TrackLabel", "pandoraTrackGausCryoE"))
   // More initializers here.
 {
+
+  art::ServiceHandle<art::TFileService> tfs;
+
+  fNuTrklen = tfs->make<TH1D>("nu_trklen", "nu_trklen", 50, 0, 500);
+
 }
 
 void icarus::DemoRecoAna::analyze(art::Event const& e)
@@ -131,6 +148,11 @@ void icarus::DemoRecoAna::analyze(art::Event const& e)
       const recob::Track &track = *maybe_track[0];
 
       std::cout << "Track ID: " << track.ID() << " len: " << track.Length() << std::endl; 
+
+      // Fill a histogram
+      if (!is_cosmic) {
+        fNuTrklen->Fill(track.Length());
+      }
 
       // Now that you have the track, you can pull in further information like:
       //   -Calorimetry
