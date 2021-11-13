@@ -37,6 +37,7 @@
 #include "lardataobj/RecoBase/OpHit.h"
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
+#include "lardataobj/RawData/TriggerData.h"
 
 #include "TTree.h"
 
@@ -154,6 +155,7 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     float m_beam_gate_start=-99999;
     float m_beam_gate_width=-99999;
     int m_beam_type=-1;
+    int m_gate_type=-1;
     int m_flash_id;
     int m_multiplicity;
     int m_multiplicity_left;
@@ -232,6 +234,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("beam_gate_start", &m_beam_gate_start, "beam_gate_start/F");
   fEventTree->Branch("beam_gate_width", &m_beam_gate_width, "beam_gate_width/F");
   fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");
+  fEventTree->Branch("gate_type", &m_gate_type, "beam_type/I");
 
 
   // This tree will hold some aggregated optical waveform information
@@ -533,23 +536,44 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
   // We work out the trigger information here 
   if( !fTriggerLabel.empty() ) { 
 
+      // Beam information
       art::Handle<std::vector<sim::BeamGateInfo>> beamgate_handle;
       e.getByLabel( fTriggerLabel, beamgate_handle );
-
+      
       if( beamgate_handle.isValid() ) {
 
         for( auto const & beamgate : *beamgate_handle ) {
 
           m_beam_gate_start = beamgate.Start(); 
           m_beam_gate_width = beamgate.Width(); 
-          m_beam_type = beamgate.BeamType() ;
+          m_beam_type = beamgate.BeamType() ; // Possibilites ... 
 
         }
 
       }
 
       else {
-        if( fDebug) { std::cout << "Invalid Trigger Data product " << fTriggerLabel.label() << "\n" ; }
+        if( fDebug) { std::cout << "No sim::BeamGateInfo associated to label: " << fTriggerLabel.label() << "\n" ; }
+      }
+
+      // Now trigger information
+      art::Handle<std::vector<raw::Trigger>> trigger_handle;
+      e.getByLabel( fTriggerLabel, trigger_handle );
+
+      if( trigger_handle.isValid() ) {
+
+        for( auto const & trigger : *trigger_handle ){
+
+          m_gate_type = trigger.TriggerBits(); // Possibilites ...
+          std::cout << m_gate_type << std::endl;
+          //m_trigger_time_sec = 
+          //m_trigger_time_nsec = 
+
+        }
+
+      }
+      else{
+        if( fDebug ){ std::cout << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; }
       }
 
   }
