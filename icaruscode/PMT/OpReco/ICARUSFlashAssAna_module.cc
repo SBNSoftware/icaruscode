@@ -38,6 +38,7 @@
 #include "lardataobj/RecoBase/OpFlash.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 #include "TTree.h"
 
@@ -557,19 +558,19 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       }
 
       // Now trigger information
-      art::Handle<std::vector<raw::Trigger>> trigger_handle;
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
       e.getByLabel( fTriggerLabel, trigger_handle );
 
       if( trigger_handle.isValid() ) {
 
-        for( auto const & trigger : *trigger_handle ){
+        //for( auto const & trigger : *trigger_handle ){
 
-          m_gate_type = trigger.TriggerBits(); // Possibilites ...
-          std::cout << m_gate_type << std::endl;
+        m_gate_type = (unsigned int)trigger_handle->sourceType; // Possibilites ...
+        std::cout << "Gate type: " << m_gate_type << std::endl;
           //m_trigger_time_sec = 
           //m_trigger_time_nsec = 
 
-        }
+        //}
 
       }
       else{
