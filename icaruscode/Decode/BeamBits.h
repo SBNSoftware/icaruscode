@@ -81,9 +81,11 @@ namespace sbn {
     
     /// Type of beam or beam gate or other trigger source.
     enum class triggerSource: unsigned int {
-      Unknown, ///< Type of beam unknown.
-      BNB,     ///< Type of beam: BNB.
-      NuMI,    ///< Type of beam: NuMI.
+      Unknown,     ///< Type of beam unknown.
+      BNB,         ///< Type of beam: BNB.
+      NuMI,        ///< Type of beam: NuMI.
+      OffbeamBNB,  ///< Type of Offbeam: BNB
+      OffbeamNuMI, ///< Type of Offbeam: NuMI
       // ==> add here if more are needed <==
       NBits    ///< Number of bits currently supported.
     }; // triggerSource
@@ -161,10 +163,12 @@ inline std::string sbn::bits::bitName(triggerSource bit) {
   
   using namespace std::string_literals;
   switch (bit) {
-    case triggerSource::Unknown: return "unknown"s;
-    case triggerSource::BNB:     return "BNB"s;
-    case triggerSource::NuMI:    return "NuMI"s;
-    case triggerSource::NBits:   return "<invalid>"s;
+    case triggerSource::Unknown:     return "unknown"s;
+    case triggerSource::BNB:         return "BNB"s;
+    case triggerSource::NuMI:        return "NuMI"s;
+    case triggerSource::OffbeamBNB:  return "OffbeamBNB"s;
+    case triggerSource::OffbeamNuMI: return "OffbeamNuMI"s;
+    case triggerSource::NBits:       return "<invalid>"s;
   } // switch
   throw std::runtime_error("sbn::bits::bitName(triggerSource{ "s
     + std::to_string(value(bit)) + " }): unknown bit"s);
