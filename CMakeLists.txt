@@ -15,7 +15,7 @@
 
 cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
-project(icaruscode VERSION 09.32.01.01 LANGUAGES CXX)
+project(icaruscode VERSION 09.35.01 LANGUAGES CXX)
 
 message(STATUS
   "\n-- ============================================================================="
@@ -46,6 +46,7 @@ find_ups_product( lardataobj )
 find_ups_product( lardataalg )
 find_ups_product( larcore )
 find_ups_product( lardata )
+find_ups_product( larevt )
 find_ups_product( larsim )
 find_ups_product( larreco )
 find_ups_product( larana )
@@ -56,6 +57,7 @@ find_ups_product( canvas )
 find_ups_product( messagefacility )
 find_ups_product( libwda )
 find_ups_product( postgresql )
+find_ups_product( sqlite )
 find_ups_product( eigen )
 find_ups_product( fftw )
 find_ups_product( libwda )
@@ -73,7 +75,6 @@ find_ups_product( icarus_data )
 find_ups_product( artdaq_core )
 find_ups_product( sbndaq_artdaq_core )
 
-cet_find_library( PQ NAMES pq PATHS ENV POSTGRESQL_LIBRARIES NO_DEFAULT_PATH )
 cet_find_library( NURANDOM_RANDOMUTILS_NURANDOMSERVICE_SERVICE
                   NAMES nurandom_RandomUtils_NuRandomService_service
                   PATHS ENV NURANDOM_LIB NO_DEFAULT_PATH )
@@ -112,6 +113,7 @@ message(STATUS
   "\n-- ==="
   "\n-- === *** End of configuration of ${PROJECT_NAME} ***"
   "\n-- ============================================================================="
+  "\n-- SQLITE3: ${SQLITE3}"
   "\n-- "
   )
 

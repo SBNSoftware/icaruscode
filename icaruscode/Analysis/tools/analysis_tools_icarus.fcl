@@ -48,6 +48,7 @@ SpacePointAnalysisTool:
   OffsetVec:               [0,0,0]
   SigmaVec:                [1.,1.,1.]
   MinAllowedChannelStatus: 1
+  TickCorrectionArray:     [[[0.,0.,0.],[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]],[[0.,0.,0.],[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]]]
 }
 
 WireAnalysisTool:

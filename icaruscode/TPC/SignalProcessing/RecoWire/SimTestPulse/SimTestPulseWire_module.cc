@@ -16,8 +16,10 @@
 #include "art/Framework/Principal/Run.h"
 #include "art/Framework/Principal/SubRun.h"
 #include "art_root_io/TFileService.h"
-//#include "art/Utilities/InputTag.h"
+
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
+#include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
+#include "lardataobj/Simulation/SimEnergyDeposit.h"
 #include "fhiclcpp/ParameterSet.h"
 #include "larcoreobj/SummaryData/RunData.h"
 #include <memory>
@@ -94,6 +96,7 @@ SimTestPulseWire::SimTestPulseWire(fhicl::ParameterSet const & p)
 // Initialize member data here.
 {
     produces< std::vector<sim::SimChannel> >();
+    produces< std::vector<sim::SimEnergyDeposit> >();
     produces< std::vector<raw::Trigger> >();
     produces< sumdata::RunData, art::InRun >();
     
@@ -168,11 +171,15 @@ void SimTestPulseWire::produce(art::Event & e)
     trigger_v->push_back(raw::Trigger(0,fTriggerTime,fTriggerTime,1));
     
     std::unique_ptr<std::vector<sim::SimChannel> > simch_v(new std::vector<sim::SimChannel> );
+
+    std::unique_ptr<std::vector<sim::SimEnergyDeposit>> simDep_v(new std::vector<sim::SimEnergyDeposit>);
     
-    double xyz[3] = {0., 0., 0.};
+    geo::Point_t chargeDepCoords = {0., 0., 0.};
 
     auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(e);
     art::ServiceHandle<geo::Geometry> geo;
+
+    auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataForJob(clockData);
 
     for(size_t idx = 0; idx < fPlaneChannelVec.size(); idx++)
     {
@@ -201,10 +208,24 @@ void SimTestPulseWire::produce(art::Event & e)
             continue;
         }
         
+        const geo::PlaneGeo& planeGeo = geo->Plane(geo::PlaneID(fCryostat,fTPC,0)); // Get the coordinates of the first wire plane
+
+        TVector3 planeCoords = planeGeo.GetCenter();
+        TVector3 planeNormal = planeGeo.GetNormalDirection();
+
+        // Assume C=0, T=1
+        chargeDepCoords = geo::Point_t(planeCoords[0] + 1. * planeNormal[0],planeCoords[1],planeCoords[2]);
+
         alternative::TruthHit pulse_record;
         pulse_record.tdc = tdc;
         pulse_record.num_electrons = fNumElectrons_v[index];
         pulse_record.tick = clockData.TPCTDC2Tick(tdc);
+
+        double nElecADC = detProp.ElectronsToADC() * fNumElectrons_v[index];
+
+        std::cout << "==> x position of plane 0: " << planeCoords[0] << ", normal: " << planeNormal[0] << ", nElec: " << fNumElectrons_v[index] << ", nElecADC: " << nElecADC << std::endl;
+
+        simDep_v->emplace_back(0,fNumElectrons_v[index],0.,nElecADC,chargeDepCoords,chargeDepCoords);
 
         for(size_t plane=0; plane<3; ++plane) 
         {
@@ -225,9 +246,11 @@ void SimTestPulseWire::produce(art::Event & e)
             // Recover the positions 
             const geo::WireGeo& wireGeo = geo->Wire(wireID);
 
-            xyz[0] = 0.;
+            double xyz[3];
 
             wireGeo.GetCenter(xyz);
+
+            xyz[0] = chargeDepCoords.X();
 
             Position position = {xyz[0],xyz[1],xyz[2]};
 
@@ -256,6 +279,7 @@ void SimTestPulseWire::produce(art::Event & e)
     
     fTupleTree->Fill();
     e.put(std::move(simch_v));
+    e.put(std::move(simDep_v));
     e.put(std::move(trigger_v));
     
     return;

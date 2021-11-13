@@ -43,7 +43,7 @@ physics:
 
       CRTHitLabel:   "crthit"
 
-      CRTDAQLabel:  "eveprod"
+      CRTDAQLabel:  "crtdaq"
 
 
     }

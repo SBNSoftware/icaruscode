@@ -190,7 +190,7 @@ caf_ana_sequence: [ mcreco,
     # TODO: rns??
     ]
 
-caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, genieweight]
+caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, rns, genieweight]
 
 caf_ana_sce_sequence: [ mcreco,
   # Run the SCE correction
@@ -211,6 +211,8 @@ caf_ana_sce_sequence: [ mcreco,
   fmatchSCECryoE, fmatchSCECryoW
   # TODO: rns??
 ]
+
+caf_ana_sce_evtw_sequence: [@sequence::caf_ana_sce_sequence, rns, genieweight]
 
 # CAFMaker config
 cafmaker: @local::standard_cafmaker

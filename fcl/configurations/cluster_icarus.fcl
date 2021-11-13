@@ -1,6 +1,7 @@
 #include "hitalgorithms.fcl"
 #include "clustermodules.fcl"
 #include "calorimetry_icarus.fcl"
+#include "cluster3dalgorithms_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -53,10 +54,6 @@ icarus_cluster3d.SkeletonAlg:                                               @loc
 icarus_cluster3d.SeedFinderAlg:                                             @local::icarus_cluster3dhoughseedfinderalg
 icarus_cluster3d.PCASeedFinderAlg:                                          @local::icarus_cluster3dpcaseedfinderalg
 icarus_cluster3d.ParallelHitsAlg:                                           @local::icarus_cluster3dparallelhitsseedfinderalg
-
-icarus_cluster3d.Hit3DBuilderAlg.NumSigmaPeakTime:                          3.0
-icarus_cluster3d.Hit3DBuilderAlg.HitWidthScaleFactor:                       3.0
-icarus_cluster3d.Hit3DBuilderAlg.DeltaPeakTimeSig:                          1.75
 
 icarus_cluster3d.ClusterAlg:                                                @local::standard_cluster3ddbscanalg
 icarus_cluster3d.EnableMonitoring:                                          true

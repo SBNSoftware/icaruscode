@@ -1,0 +1,40 @@
+###
+## This fhicl file is used to run "stage0" processing specifically for the case where all
+## TPC data is included in an artdaq data product from a single instance
+##
+#include "stage0_icarus_driver_common.fcl"
+
+process_name: stage0
+
+## Define the paths we'll execute depending on data
+physics.pathTPC:     [ daqTPC, @sequence::icarus_stage0_multiTPC_TPC, gaushit ]
+
+## boiler plate...
+physics.outana:        [ purityinfoana0, purityinfoana1 ]
+physics.trigger_paths: [ pathTPC ]
+physics.end_paths:     [ streamTPC ]
+
+physics.streamTPC:     [ outTPC ]
+
+outputs:
+{
+ outTPC:
+ {
+   module_type: RootOutput
+   dataTier: "reconstructed"
+   compressionLevel: 1
+   saveMemoryObjectThreshold: 0
+ }
+}
+
+outputs.outTPC.fileName: "%ifb_%tc-%p.root"
+outputs.outTPC.SelectEvents: [ pathTPC ]
+
+# Drop the artdaq format files on output
+outputs.outTPC.outputCommands:     ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+
+# Set up for the single module mutliple TPC mode...
+physics.producers.daqTPC.FragmentsLabelVec:      ["daq:PHYSCRATEDATA"]
+physics.producers.decon1droi.RawDigitLabelVec:   ["daqTPC:PHYSCRATEDATA"]
+physics.producers.roifinder.WireModuleLabelVec:  ["decon1droi:PHYSCRATEDATA"]
+physics.producers.gaushit.CalDataModuleLabel:    "roifinder:PHYSCRATEDATA"

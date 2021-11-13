@@ -133,6 +133,12 @@ const ReadoutIDVec& ICARUSChannelMapProvider::getReadoutBoardVec(const unsigned 
 
 }
 
+const TPCReadoutBoardToChannelMap& ICARUSChannelMapProvider::getReadoutBoardToChannelMap() const
+{
+    return fReadoutBoardToChannelMap;
+}
+
+
 bool ICARUSChannelMapProvider::hasBoardID(const unsigned int boardID)  const
 {
     return fReadoutBoardToChannelMap.find(boardID) != fReadoutBoardToChannelMap.end();
@@ -189,11 +195,13 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
 
   unsigned int ICARUSChannelMapProvider::getSimMacAddress(const unsigned int hwmacaddress)  const
   {
-    unsigned int   simmacaddress = -99999;
+    unsigned int   simmacaddress = 0;
+
     for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap){
       if (pair.second.first == hwmacaddress)
-        simmacaddress = pair.second.second;
+	simmacaddress = pair.second.second;
     }
+
     return simmacaddress;
   }
   

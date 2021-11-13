@@ -1,7 +1,7 @@
 ///////////////////////////////////////////////////////////////////////
-// $Id: SimWireICARUS.cxx,v 1.22 2010/04/23 20:30:53 seligman Exp $
+// $Id: SimReadoutBoardICARUS.cxx,v 1.22 2010/04/23 20:30:53 seligman Exp $
 //
-// SimWireICARUS class designed to simulate signal on a wire in the TPC
+// SimReadoutBoardICARUS class designed to simulate signal on a wire in the TPC
 //
 // katori@fnal.gov
 //
@@ -61,18 +61,19 @@
 #include "larevt/CalibrationDBI/Interface/ChannelStatusProvider.h"
 #include "tools/IGenNoise.h"
 #include "icarus_signal_processing/Filters/ICARUSFFT.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
 
 using namespace util;
 ///Detector simulation of raw signals on wires
 namespace detsim {
     
 // Base class for creation of raw signals on wires.
-class SimWireICARUS : public art::EDProducer
+class SimReadoutBoardICARUS : public art::EDProducer
 {
 public:
     
-    explicit SimWireICARUS(fhicl::ParameterSet const& pset);
-    virtual ~SimWireICARUS();
+    explicit SimReadoutBoardICARUS(fhicl::ParameterSet const& pset);
+    virtual ~SimReadoutBoardICARUS();
     
     // read/write access to event
     void produce (art::Event& evt);
@@ -139,17 +140,19 @@ private:
     //services
     const geo::GeometryCore&                fGeometry;
     icarusutil::SignalShapingICARUSService* fSignalShapingService;  //< Access to the response functions
+    const icarusDB::IICARUSChannelMap*      fChannelMap;
     
-}; // class SimWireICARUS
-DEFINE_ART_MODULE(SimWireICARUS)
+}; // class SimReadoutBoardICARUS
+DEFINE_ART_MODULE(SimReadoutBoardICARUS)
     
 //-------------------------------------------------
-SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
+SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     : EDProducer{pset}
     , fPedestalEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "pedestal", pset, "SeedPedestal"))
     , fUncNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "noise",    pset, "Seed"))
     , fCorNoiseEngine(art::ServiceHandle<rndm::NuRandomService>()->createEngine(*this, "HepJamesRandom", "cornoise", pset, "Seed"))
     , fGeometry(*lar::providerFrom<geo::Geometry>())
+    , fChannelMap(art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get())
 {
     this->reconfigure(pset);
     
@@ -157,13 +160,15 @@ SimWireICARUS::SimWireICARUS(fhicl::ParameterSet const& pset)
     fCompression = raw::kNone;
     TString compression(pset.get< std::string >("CompressionType"));
     if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
+
+    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
     
     return;
 }
 //-------------------------------------------------
-SimWireICARUS::~SimWireICARUS() {}
+SimReadoutBoardICARUS::~SimReadoutBoardICARUS() {}
 //-------------------------------------------------
-void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
+void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
     fDriftEModuleLabel = p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
     fOutInstanceLabel  = p.get< std::string         >("OutputInstanceLabel",                   "");
@@ -212,7 +217,7 @@ void SimWireICARUS::reconfigure(fhicl::ParameterSet const& p)
     return;
 }
 //-------------------------------------------------
-void SimWireICARUS::beginJob()
+void SimReadoutBoardICARUS::beginJob()
 {
     // get access to the TFile service
     art::ServiceHandle<art::TFileService> tfs;
@@ -246,9 +251,9 @@ void SimWireICARUS::beginJob()
     return;
 }
 //-------------------------------------------------
-void SimWireICARUS::endJob()
+void SimReadoutBoardICARUS::endJob()
 {}
-void SimWireICARUS::produce(art::Event& evt)
+void SimReadoutBoardICARUS::produce(art::Event& evt)
 {
     //--------------------------------------------------------------------
     //
@@ -257,7 +262,7 @@ void SimWireICARUS::produce(art::Event& evt)
     //--------------------------------------------------------------------
     
     //get pedestal conditions
-    const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
+//    const lariov::DetPedestalProvider& pedestalRetrievalAlg = art::ServiceHandle<lariov::DetPedestalService>()->GetPedestalProvider();
     
     //channel status for simulating dead channels
     const lariov::ChannelStatusProvider& ChannelStatusProvider = art::ServiceHandle<lariov::ChannelStatusService>()->GetProvider();
@@ -266,6 +271,8 @@ void SimWireICARUS::produce(art::Event& evt)
     
     // get the geometry to be able to figure out signal types and chan -> plane mappings
     const raw::ChannelID_t maxChannel = fGeometry.Nchannels();
+
+    std::cout << "**** Det Sim has maxChannel: " << maxChannel << std::endl;
 
     //--------------------------------------------------------------------
     //
@@ -305,7 +312,7 @@ void SimWireICARUS::produce(art::Event& evt)
     icarusutil::TimeVec noisetmp(fNTimeSamples,0.);
     
     // make sure chargeWork is correct size
-    if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimWireICARUS: chargeWork vector too small");
+    if (chargeWork.size() < fNTimeSamples) throw std::range_error("SimReadoutBoardICARUS: chargeWork vector too small");
     
     //detector properties information
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
@@ -313,101 +320,95 @@ void SimWireICARUS::produce(art::Event& evt)
     // Let the tools know to update to the next event
     for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
 
-    // The original implementation would allow the option to skip channels for which there was no MC signal
-    // present. We want to update this so that if there is an MC signal on any wire in a common group (a
-    // motherboard) then we keep all of those wires. This so we can implment noise mitigation techniques
-    // with the simulation
-    //
-    
-    // Here we determine the first and last channel numbers based on whether we are outputting a single TPC or all
-    using ChannelPair    = std::pair<raw::ChannelID_t,raw::ChannelID_t>;
-    using ChannelPairVec = std::vector<ChannelPair>;
+    // Plan is to loop over readout boards, rejecting any that are not in the TPC list
+    // For any good readout boards we loop through the channels. 
 
-    ChannelPairVec channelPairVec;
-   
-    for (geo::TPCID const& tpcid : fTPCVec) 
+    // Get the board ids for this fragment
+    const icarusDB::TPCReadoutBoardToChannelMap& readoutBoardToChannelMap = fChannelMap->getReadoutBoardToChannelMap();
+
+    unsigned int boardCount(0);
+
+    std::set<raw::ChannelID_t> channelIDSet;
+
+    for(const auto& boardPair : readoutBoardToChannelMap)
     {
-        for (geo::PlaneGeo const& plane : fGeometry.IteratePlanes(tpcid)) 
-        {
-            raw::ChannelID_t const planeStartChannel = fGeometry.PlaneWireToChannel({ plane.ID(), 0U });
-            raw::ChannelID_t const planeEndChannel = fGeometry.PlaneWireToChannel({ plane.ID(), plane.Nwires() - 1U }) + 1;
+        // A little song and dance to make sure this board is in our TPC group
+        // What we need is a proper mapping but because we can have channels which are not valid for the geometry
+        // service we have a little thing we have to go through here...
+        std::vector<geo::WireID> wireIDVec;
 
-            channelPairVec.emplace_back(planeStartChannel, planeEndChannel);            
-        } // for planes in TPC
-    }
-
-    // Ok, define the structure for the MB info....
-    using MBWithSignalSet = std::set<raw::ChannelID_t>;
-    
-    MBWithSignalSet mbWithSignalSet;
-    
-    for(const ChannelPair& channelPair : channelPairVec)
-    {
-        // If we are not suppressing the signal then we need to make sure there is an entry in the set for every motherboard
-        if (!fSuppressNoSignal)
+        for(const auto& channelPair : boardPair.second.second)
         {
-            raw::ChannelID_t firstMBIdx(channelPair.first / fNumChanPerMB);
-            raw::ChannelID_t endMBIdx(channelPair.second / fNumChanPerMB);
-        
-            for(raw::ChannelID_t mbIdx = firstMBIdx; mbIdx < endMBIdx; mbIdx++) mbWithSignalSet.insert(mbIdx);
+            wireIDVec = fGeometry.ChannelToWire(channelPair.first);
+
+            if (wireIDVec.size() > 0) break;
         }
-        else
+
+        if (wireIDVec.empty()) continue;  // Can this happen?
+        
+        bool         goodBoard(false);
+        unsigned int cryostat(0);
+        unsigned int tpc(0);
+
+        for(geo::TPCID const& tpcid : fTPCVec)
         {
-            for(const auto& simChan : channels)
+            if (tpcid.Cryostat == wireIDVec[0].Cryostat && tpcid.TPC == wireIDVec[0].TPC)
             {
-                if (simChan)
-                {
-                    raw::ChannelID_t channel = simChan->Channel();
-                
-                    if (channel >= channelPair.first && channel < channelPair.second) mbWithSignalSet.insert(channel/fNumChanPerMB);
-                }
+                goodBoard = true;
+                cryostat  = tpcid.Cryostat;
+                tpc       = tpcid.TPC;
+                break;
             }
         }
-    }
-    
-    // Ok, now we can simply loop over MB's...
-    for(const auto& mb : mbWithSignalSet)
-    {
-        raw::ChannelID_t baseChannel = fNumChanPerMB * mb;
-        
-        // And for a given MB we can loop over the channels it contains
-        for(raw::ChannelID_t channel = baseChannel; channel < baseChannel + fNumChanPerMB; channel++)
+
+        if (!goodBoard) continue;
+
+        // For this board loop over channels
+        for(const auto& channelPair : boardPair.second.second)
         {
+            // Recover channel and plane info
+            raw::ChannelID_t channel = channelPair.first;
+            size_t           plane   = channelPair.second;
+            geo::PlaneID     planeID(cryostat,tpc,plane);
+
+            if (channelIDSet.find(channel) != channelIDSet.end())
+            {
+                std::cout << "############### Found already used channel! channelID: " << channel << std::endl;
+            }
+            channelIDSet.insert(channel);
+
+            // Check where this wire is located
+//            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+
+            // For now skip the channels with no info
+//            if (widVec.empty()) continue;
+
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
             noisetmp.resize(fNTimeSamples, 0.);     //just in case
-            
+
             //use channel number to set some useful numbers
-            std::vector<geo::WireID> widVec  = fGeometry.ChannelToWire(channel);
-            size_t                   plane   = widVec[0].Plane;
-            size_t                   wire    = widVec[0].Wire;
-            size_t                   board   = wire / 32;
-            
+
             //Get pedestal with random gaussian variation
-            float ped_mean = pedestalRetrievalAlg.PedMean(channel);
-            
+            float ped_mean = 2048; //pedestalRetrievalAlg.PedMean(channel);
+
             if (fSmearPedestals )
             {
-                CLHEP::RandGaussQ rGaussPed(fPedestalEngine, 0.0, pedestalRetrievalAlg.PedRms(channel));
+                CLHEP::RandGaussQ rGaussPed(fPedestalEngine, 0.0, 3.0); //pedestalRetrievalAlg.PedRms(channel));
                 ped_mean += rGaussPed.fire();
             }
-            
+
             //Generate Noise
             double noise_factor(0.);
-            auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
             double shapingTime  = fSignalShapingService->GetShapingTime(plane);
-            double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
-            int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
-            
-            // Recover the response function information for this channel
-            const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
+            auto   tempNoiseVec = fSignalShapingService->GetNoiseFactVec();
 
             if (fShapingTimeOrder.find( shapingTime ) != fShapingTimeOrder.end() )
                 noise_factor = tempNoiseVec[plane].at( fShapingTimeOrder.find( shapingTime )->second );
             //Throw exception...
             else
             {
-                throw cet::exception("SimWireICARUS")
+                throw cet::exception("SimReadoutBoardICARUS")
                 << "\033[93m"
                 << "Shaping Time received from signalservices_icarus.fcl is not one of allowed values"
                 << std::endl
@@ -415,46 +416,52 @@ void SimWireICARUS::produce(art::Event& evt)
                 << "\033[00m"
                 << std::endl;
             }
-            
+
             // Use the desired noise tool to actually generate the noise on this wire
             fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
                                                 noisetmp,
                                                 detProp,
                                                 noise_factor,
-                                                widVec[0],
-                                                board);
-            
+                                                planeID,
+                                                boardCount);
+
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
-            
+
             // If there is something on this wire, and it is not dead, then add the signal to the wire
             if(simChan && !(fSimDeadChannels && (ChannelStatusProvider.IsBad(channel) || !ChannelStatusProvider.IsPresent(channel))))
             {
-                std::fill(chargeWork.begin(), chargeWork.end(), 0.);
+                double gain         = fSignalShapingService->GetASICGain(channel) * sampling_rate(clockData) * 1.e-3; // Gain returned is electrons/us, this converts to electrons/tick
+                int    timeOffset   = fSignalShapingService->ResponseTOffset(channel);
+
+                // Recover the response function information for this channel
+                const icarus_tool::IResponse& response = fSignalShapingService->GetResponse(channel);
                 
+                std::fill(chargeWork.begin(), chargeWork.end(), 0.);
+
                 // loop over the tdcs and grab the number of electrons for each
                 for(size_t tick = 0; tick < fNTimeSamples; tick++)
                 {
                     int tdc = clockData.TPCTick2TDC(tick);
-                    
+
                     // continue if tdc < 0
                     if( tdc < 0 ) continue;
-                    
+
                     double charge = simChan->Charge(tdc);  // Charge returned in number of electrons
-                    
+
                     chargeWork[tick] += charge/gain;  // # electrons / (# electrons/tick)
                 } // loop over tdcs
                 // now we have the tempWork for the adjacent wire of interest
                 // convolve it with the appropriate response function
                 fFFT->convolute(chargeWork, response.getConvKernel(), timeOffset);
-                
+
                 // "Make" the ADC vector
                 MakeADCVec(adcvec, noisetmp, chargeWork, ped_mean);
             }
             // "Make" an ADC vector with zero charge added
             else MakeADCVec(adcvec, noisetmp, zeroCharge, ped_mean);
-            
+
             // add this digit to the collection;
             // adcvec is copied, not moved: in case of compression, adcvec will show
             // less data: e.g. if the uncompressed adcvec has 9600 items, after
@@ -463,30 +470,39 @@ void SimWireICARUS::produce(art::Event& evt)
             // only 5000 items. All 9600 items of adcvec will be recovered for free
             // and used on the next loop.
             raw::RawDigit rd(channel, fNTimeSamples, adcvec, fCompression);
-            
+
             if(fMakeHistograms && plane==2)
             {
                 short area = std::accumulate(adcvec.begin(),adcvec.end(),0,[](const auto& val,const auto& sum){return sum + val - 400;});
-                
+
                 if(area>0)
                 {
+                    std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+
                     fSimCharge->Fill(area);
                     fSimChargeWire->Fill(widVec[0].Wire,area);
                 }
             }
-            
+
             rd.SetPedestal(ped_mean);
             digcol->push_back(std::move(rd)); // we do move the raw digit copy, though
-
         }
+
+        boardCount++;
     }
-    
+
+    std::cout << "**** Processed " << channelIDSet.size() << " unique channels, output collection size: " << digcol->size() << std::endl;
+    raw::ChannelID_t firstChannel = *channelIDSet.begin();
+    raw::ChannelID_t lastChannel  = firstChannel;
+    for(const auto& channel : channelIDSet) lastChannel = channel;
+    std::cout << "     min: " << firstChannel << ", max: " << lastChannel << std::endl;
+
     evt.put(std::move(digcol), fOutInstanceLabel);
     
     return;
 }
 //-------------------------------------------------
-void SimWireICARUS::MakeADCVec(std::vector<short>& adcvec, icarusutil::TimeVec const& noisevec,
+void SimReadoutBoardICARUS::MakeADCVec(std::vector<short>& adcvec, icarusutil::TimeVec const& noisevec,
                                icarusutil::TimeVec const& chargevec, float ped_mean) const
 {
     for(unsigned int i = 0; i < fNTimeSamples; ++i)

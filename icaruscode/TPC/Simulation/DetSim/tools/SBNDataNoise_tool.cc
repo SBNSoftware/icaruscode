@@ -54,16 +54,17 @@ public:
                        icarusutil::TimeVec& noise,
                        detinfo::DetectorPropertiesData const&,
                        double noise_factor,
-                       unsigned int wire) override;
+                       const geo::PlaneID&,
+                       unsigned int board) override;
     
 private:
     void GenerateCorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int, unsigned int);
-    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int, unsigned int);
+    void GenerateUncorrelatedNoise(CLHEP::HepRandomEngine&, icarusutil::TimeVec&, double, unsigned int);
     void GenNoise(std::function<void (double[])>&, const icarusutil::TimeVec&, icarusutil::TimeVec&, float);
     void ComputeRMSs();
     void makeHistograms();
 void SampleCorrelatedRMSs() ;
-void ExtractUncorrelatedRMS(float&, int, int) const;    
+void ExtractUncorrelatedRMS(float&, int) const;    
 
     // Member variables from the fhicl file
     size_t                                      fPlane;
@@ -81,7 +82,7 @@ void ExtractUncorrelatedRMS(float&, int, int) const;
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
 
-float corrFactors[175][4];
+    float corrFactors[216][4];  // this will be sparse, could use a map here I bet
 
     using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
@@ -103,7 +104,7 @@ float corrFactors[175][4];
     
     // Histograms
     TProfile*                                   fInputNoiseHist;
-    TH1D*                                   fMediaNoiseHist;
+    TH1D*                                       fMediaNoiseHist;
     TProfile*                                   fPeakNoiseHist;
   
     std::vector<TH1D*>                                       corrRMSHistPtr;
@@ -239,7 +240,6 @@ std::cout << " after filling vectors " << std::endl;
         float maxFreq     = 1.e6 / (2. * sampleRate);
         float minFreq     = 1.e6 / (2. * sampleRate * readOutSize);
         int   numSamples  = readOutSize / 2;
-std::cout << " readoutsize " << readOutSize << std::endl;
         
         fInputNoiseHist   = dir.make<TProfile>("InNoise",   ";freq(kHz)", numSamples, minFreq, maxFreq);
         fMediaNoiseHist  = dir.make<TH1D>("MedNoise",  ";ADC", 100, -10., -10.);;
@@ -263,20 +263,21 @@ void SBNDataNoise::generateNoise(CLHEP::HepRandomEngine& engine_unc,
                                     icarusutil::TimeVec&     noise,
                              detinfo::DetectorPropertiesData const&,
                                     double                  noise_factor,
-                                    unsigned int            channel)
+                                    const geo::PlaneID&     planeID,
+                                    unsigned int            board)
 {
 //std::cout << " generating noise channel " << channel << std::endl;
    //GET THE GEOMETRY.
-    art::ServiceHandle<geo::Geometry> geom;
+//    art::ServiceHandle<geo::Geometry> geom;
     // get the WireID for this hit
-          std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
+//          std::vector<geo::WireID> wids = geom->ChannelToWire(channel);
           // for now, just take the first option returned from ChannelToWire
-          geo::WireID wid  = wids[0];
+//          geo::WireID wid  = wids[0];
           // We need to know the plane to look up parameters
          
-          size_t cryostat=wid.Cryostat;
-          size_t tpc=wid.TPC;
-          size_t iWire=wid.Wire;
+          size_t cryostat=planeID.Cryostat;
+          size_t tpc=planeID.TPC;
+//          size_t iWire=wid.Wire;
 //std::cout << " generating noise cryostat " << cryostat << " tpc " << tpc << " wire " << iWire << std::endl;
 int index=-1;
 if(cryostat==0&&tpc<2) index=0;
@@ -298,8 +299,8 @@ if(cryostat==1&&tpc>1) index=3;
     if (fNoiseFrequencyVec.size() != noise.size()) fNoiseFrequencyVec.resize(noise.size(),std::complex<float>(0.,0.));
     //std::cout <<  " generating uncorrelated noise " << std::endl;
     // If applying incoherent noise call the generator
-   GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,channel, index);  
-int board=iWire/32;
+   GenerateUncorrelatedNoise(engine_unc,noise_unc,noise_factor,index);  
+//int board=iWire/32;
 
 
 float cf=corrFactors[board][index];
@@ -313,12 +314,12 @@ float cf=corrFactors[board][index];
     
  float mediaNoise=0;
  for(unsigned int jn=0;jn<noise.size();jn++) {
-if(!cryostat&&!tpc&&!fPlane&&iWire<2) 
-{
+//if(!cryostat&&!tpc&&!fPlane&&iWire<2) 
+//{
 //std::cout << " jn " << jn << " noise sum " << noise.at(jn) << std::endl; 
 //std::cout << " jn " << jn << " noise unc " << noise_unc.at(jn) << std::endl; 
 //std::cout << " jn " << jn << " noise corr " << noise_corr.at(jn) << std::endl; 
-}
+//}
   mediaNoise+=noise.at(jn);
 }
 
@@ -329,7 +330,7 @@ fMediaNoiseHist->Fill(mediaNoise);
     return;
 }
     
-void SBNDataNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int channel, unsigned int index)
+void SBNDataNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, icarusutil::TimeVec &noise, double noise_factor, unsigned int index)
 {
     // Here we aim to produce a waveform consisting of incoherent noise
     // Note that this is expected to be the dominate noise contribution
@@ -345,7 +346,7 @@ void SBNDataNoise::GenerateUncorrelatedNoise(CLHEP::HepRandomEngine& engine, ica
     
     std::function<void (double[])> randGenFunc = [&noiseGen](double randArray[]){noiseGen.fireArray(2,randArray);};
 float cf;
-ExtractUncorrelatedRMS(cf,channel,index);
+ExtractUncorrelatedRMS(cf,index);
     float  scaleFactor = cf*noise_factor;
    //std::cout << " fraction " << fraction <<" unc scale Factor " << scaleFactor << std::endl;
     GenNoise(randGenFunc, fIncoherentNoiseVec[index], noise, scaleFactor);
@@ -450,13 +451,13 @@ void SBNDataNoise::SampleCorrelatedRMSs()
 for(int i=0;i<4;i++) {
 TH1D* histo=corrRMSHistPtr[i];
 float meanRMS=histo->GetMean();
-for(int j=0;j<175;j++) { 
+for(int j=0;j<216;j++) { 
 float rndRMS=histo->GetRandom();
 corrFactors[j][i]=rndRMS/meanRMS; 
 
 }}
 }
-void SBNDataNoise::ExtractUncorrelatedRMS(float& cf, int channel, int index) const
+void SBNDataNoise::ExtractUncorrelatedRMS(float& cf, int index) const
 {
 TH1D* histo=uncorrRMSHistPtr[index];
 

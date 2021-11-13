@@ -1,5 +1,5 @@
 /**
- *  @file   TPCDecoderFilter1DMC_tool.cc
+ *  @file   TPCNoiseFilter1DMC_tool.cc
  *
  *  @brief  This tool converts from daq to LArSoft format with noise filtering
  *
@@ -22,7 +22,7 @@
 
 #include "sbndaq-artdaq-core/Overlays/ICARUS/PhysCrateFragment.hh"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilterMC.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
 #include "icarus_signal_processing/WaveformTools.h"
 #include "icarus_signal_processing/Denoising.h"
@@ -36,11 +36,11 @@
 //------------------------------------------------------------------------------------------------------------------------------------------
 // implementation follows
 
-namespace daqMC {
+namespace daq {
 /**
- *  @brief  TPCDecoderFilter1DMC class definiton
+ *  @brief  TPCNoiseFilter1DMC class definiton
  */
-class TPCDecoderFilter1DMC : virtual public IDecoderFilterMC
+class TPCNoiseFilter1DMC : virtual public INoiseFilter
 {
 public:
     /**
@@ -48,12 +48,12 @@ public:
      *
      *  @param  pset
      */
-    explicit TPCDecoderFilter1DMC(fhicl::ParameterSet const &pset);
+    explicit TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset);
 
     /**
      *  @brief  Destructor
      */
-    ~TPCDecoderFilter1DMC();
+    ~TPCNoiseFilter1DMC();
 
     /**
      *  @brief Interface for configuring the particular algorithm tool
@@ -68,7 +68,7 @@ public:
      *  @param fragment            The artdaq fragment to process
      */
     virtual void process_fragment(detinfo::DetectorClocksData const&,
-                                  const daqMC::IDecoderFilterMC::ChannelVec&,
+                                  const daq::INoiseFilter::ChannelPlaneVec&,
                                   const icarus_signal_processing::ArrayFloat&) override;
 
     /**
@@ -180,7 +180,7 @@ private:
     icarus_signal_processing::FFTFilterFunctionVec fFFTFilterFunctionVec;
 };
 
-TPCDecoderFilter1DMC::TPCDecoderFilter1DMC(fhicl::ParameterSet const &pset)
+TPCNoiseFilter1DMC::TPCNoiseFilter1DMC(fhicl::ParameterSet const &pset)
 {
     this->configure(pset);
 
@@ -204,12 +204,12 @@ TPCDecoderFilter1DMC::TPCDecoderFilter1DMC(fhicl::ParameterSet const &pset)
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-TPCDecoderFilter1DMC::~TPCDecoderFilter1DMC()
+TPCNoiseFilter1DMC::~TPCNoiseFilter1DMC()
 {
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
-void TPCDecoderFilter1DMC::configure(fhicl::ParameterSet const &pset)
+void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 {
     fSigmaForTruncation    = pset.get<float                   >("NSigmaForTrucation",  3.5);
     fCoherentNoiseGrouping = pset.get<size_t                  >("CoherentGrouping",     64);
@@ -224,7 +224,7 @@ void TPCDecoderFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
 
-    std::cout << "TPCDecoderFilter1DMC - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
+    std::cout << "TPCNoiseFilter1D - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
 
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
@@ -242,9 +242,9 @@ void TPCDecoderFilter1DMC::configure(fhicl::ParameterSet const &pset)
     return;
 }
 
-void TPCDecoderFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
-                                               const daqMC::IDecoderFilterMC::ChannelVec&  channelVec,
-                                               const icarus_signal_processing::ArrayFloat& dataArray)
+void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
+                                          const daq::INoiseFilter::ChannelPlaneVec&   channelPlaneVec,
+                                          const icarus_signal_processing::ArrayFloat& dataArray)
 {
     cet::cpu_timer theClockTotal;
 
@@ -274,8 +274,6 @@ void TPCDecoderFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
-    std::cout <<"  -->process_fragment with " << numChannels << " channels and " << numTicks << " ticks, array sizes: " << fCorrectedMedians.size() << ", " << fCorrectedMedians[1].size() <<  std::endl;
-
     icarus_signal_processing::Denoiser1D           denoiser;
     icarus_signal_processing::WaveformTools<float> waveformTools;
 
@@ -285,13 +283,13 @@ void TPCDecoderFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         icarus_signal_processing::VectorFloat& pedCorDataVec = fPedCorWaveforms[idx];
 
         // Keep track of the channel
-        fChannelIDVec[idx] = channelVec[idx];
+        fChannelIDVec[idx] = channelPlaneVec[idx].first;
 
         // We need to recover info on which plane we have
         std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
 
         // Handle the filter function to use for this channel
-        unsigned int plane = widVec[0].Plane;
+        unsigned int plane = channelPlaneVec[idx].second;
 
         // Set the threshold which toggles between planes
         fThresholdVec[idx / fCoherentNoiseGrouping] = fThreshold[plane];
@@ -314,7 +312,7 @@ void TPCDecoderFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                 fFilterFunctionVec[idx] = std::make_unique<icarus_signal_processing::Median1D>(fStructuringElement);
                 break;
             default:
-                std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCDecoderFilter1DMC" << std::endl;
+                std::cout << "***** FOUND NO MATCH FOR TYPE: " << fFilterModeVec[plane] << ", plane " << plane << " DURING INITIALIZATION OF FILTER FUNCTIONS IN TPCNoiseFilter1DMC" << std::endl;
                 break;
         }
 
@@ -346,17 +344,15 @@ void TPCDecoderFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
              fCoherentNoiseOffset,
              fMorphWindow);
 
-    std::cout << "  --> have returned from denoising" << std::endl;
-
     theClockTotal.stop();
 
     double totalTime = theClockTotal.accumulated_real_time();
 
-    mf::LogInfo("TPCDecoderFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
+    mf::LogDebug("TPCNoiseFilter1DMC") << "    *totalTime: " << totalTime << std::endl;
 
     return;
 }
 
 
-DEFINE_ART_CLASS_TOOL(TPCDecoderFilter1DMC)
+DEFINE_ART_CLASS_TOOL(TPCNoiseFilter1DMC)
 } // namespace lar_cluster3d

@@ -563,9 +563,6 @@ outputs: {
  # }
 #} # services.messages.destinations.SlidingORplotsLog
 
-#services.Geometry: @local::icarus_single_induction_nooverburden_geometry
-#services.ExptGeoHelperInterface:
-#@local::icarus_single_induction_geometry_helper
 
 # ------------------------------------------------------------------------------
 # --- Configuration override guide

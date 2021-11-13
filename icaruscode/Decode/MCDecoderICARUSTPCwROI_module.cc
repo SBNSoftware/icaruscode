@@ -46,9 +46,9 @@
 #include "lardataobj/RecoBase/Wire.h"         // This for outputting the ROIs
 #include "lardata/ArtDataHelper/WireCreator.h"
 
-#include "icaruscode/Decode/DecoderTools/IDecoderFilterMC.h"
+#include "icaruscode/Decode/DecoderTools/INoiseFilter.h"
 
-namespace daqMC 
+namespace daq 
 {
 
 class MCDecoderICARUSTPCwROI : public art::ReplicatedProducer
@@ -85,7 +85,7 @@ public:
     using PlaneIdxToChannelPair = std::pair<unsigned int,ChannelVec>;
     using PlaneIdxToChannelMap  = std::map<unsigned int,ChannelVec>;
 
-    using ChannelArrayPair      = std::pair<ChannelVec,icarus_signal_processing::ArrayFloat>;
+    using ChannelArrayPair      = std::pair<daq::INoiseFilter::ChannelPlaneVec,icarus_signal_processing::ArrayFloat>;
     using ChannelArrayPairVec   = std::vector<ChannelArrayPair>;
 
     // Function to do the work
@@ -195,7 +195,7 @@ private:
     unsigned int                                                fNumROPs;
 
     // Tools for decoding fragments depending on type
-    std::vector<std::unique_ptr<IDecoderFilterMC>>              fDecoderToolVec;       ///< Decoder tools
+    std::vector<std::unique_ptr<INoiseFilter>>                  fDecoderToolVec;       ///< Decoder tools
 
     // Useful services, keep copies for now (we can update during begin run periods)
     geo::GeometryCore const*                                    fGeometry;             ///< pointer to Geometry service
@@ -231,7 +231,7 @@ MCDecoderICARUSTPCwROI::MCDecoderICARUSTPCwROI(fhicl::ParameterSet const & pset,
     for(auto& decoderTool : fDecoderToolVec)
     {
         // Get instance of tool
-        decoderTool = art::make_tool<IDecoderFilterMC>(decoderToolParams);
+        decoderTool = art::make_tool<INoiseFilter>(decoderToolParams);
     }
 
     // Set up our "produces" 
@@ -513,7 +513,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&          event,
             for(size_t tick = 0; tick < dataSize; tick++) dataVec[tick] = rawDataVec[tick];
 
             // Keep track of the channel
-            channelArrayPairVec[planeIndex].first[wire] = channel;
+            channelArrayPairVec[planeIndex].first[wire] = daq::INoiseFilter::ChannelPlanePair(channel,planeID.Plane);
         }
     }
 
@@ -538,7 +538,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     const ChannelArrayPair& channelArrayPair = channelArrayPairVec[idx];
 
     // Let's go through and fill the output vector
-    const ChannelVec&                           channelVec = channelArrayPair.first;
+    const daq::INoiseFilter::ChannelPlaneVec&   channelVec = channelArrayPair.first;
     const icarus_signal_processing::ArrayFloat& dataArray  = channelArrayPair.second;
 
     unsigned int numChannels = dataArray.size();
@@ -547,7 +547,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     std::cout << "Process Single Image, found: " << numChannels << " channels, begin looping over channels" << std::endl;
 
     // Recover pointer to the decoder needed here
-    IDecoderFilterMC* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
+    INoiseFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
     decoderTool->process_fragment(clockData, channelVec, dataArray);
@@ -555,10 +555,12 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(numTicks);
 
+    std::cout << "--> storing output after processing" << std::endl;
+
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx < numChannels; chanIdx++)
     {
-        raw::ChannelID_t channel = channelVec[chanIdx];
+        raw::ChannelID_t channel = channelVec[chanIdx].first;
 
         if (fOutputRawWaveform)
         {
@@ -597,7 +599,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
 
         // And, finally, the ROIs 
         const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
-        recob::Wire::RegionsOfInterest_t           ROIVec;
+        recob::Wire::RegionsOfInterest_t            ROIVec;
 
         // Go through candidate ROIs and create Wire ROIs
         size_t roiIdx = 0;
@@ -620,7 +622,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(size_t                          
 
 //        std::cout << "    ROIVec size: " << ROIVec.size() << std::endl;
 
-        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channelVec[chanIdx])).move());
+        concurrentROIs.push_back(recob::WireCreator(std::move(ROIVec),channel,fGeometry->View(channel)).move());
     }//loop over channel indices
 
     return;

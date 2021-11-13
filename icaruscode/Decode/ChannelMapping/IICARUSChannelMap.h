@@ -26,6 +26,11 @@ using ChannelPlanePairVec              = std::vector<ChannelPlanePair>;
 using DigitizerChannelChannelIDPair    = std::pair<size_t,size_t>;
 using DigitizerChannelChannelIDPairVec = std::vector<DigitizerChannelChannelIDPair>;
 
+using ChannelPlanePair                 = std::pair<unsigned int, unsigned int>;
+using ChannelPlanePairVec              = std::vector<ChannelPlanePair>;
+using SlotChannelVecPair               = std::pair<unsigned int, ChannelPlanePairVec>;
+using TPCReadoutBoardToChannelMap      = std::map<unsigned int, SlotChannelVecPair>;
+
 class IICARUSChannelMap //: private lar::EnsureOnlyOneSchedule
 {
 public:
@@ -37,6 +42,7 @@ public:
     virtual unsigned int                            nTPCfragmentIDs() const = 0;
     virtual const std::string&                      getCrateName(const unsigned int)        const = 0;
     virtual const ReadoutIDVec&                     getReadoutBoardVec(const unsigned int)  const = 0;
+    virtual const TPCReadoutBoardToChannelMap&      getReadoutBoardToChannelMap()           const = 0;
 
     // Section to access channel information for a given board
     virtual bool                                    hasBoardID(const unsigned int)          const = 0;

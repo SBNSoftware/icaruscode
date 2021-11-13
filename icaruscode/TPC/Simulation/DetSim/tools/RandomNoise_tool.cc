@@ -37,6 +37,7 @@ public:
                        icarusutil::TimeVec&,
                        detinfo::DetectorPropertiesData const&,
                        double,
+                       const geo::PlaneID&,
                        unsigned int) override;
     
 private:
@@ -71,6 +72,7 @@ void RandomNoise::generateNoise(CLHEP::HepRandomEngine& engine,
                                 icarusutil::TimeVec& noise,
                                 detinfo::DetectorPropertiesData const&,
                                 double noise_factor,
+                                const geo::PlaneID&,
                                 unsigned int)
 {
     CLHEP::RandGaussQ                              rGauss(engine, 0.0, noise_factor);
