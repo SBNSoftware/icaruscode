@@ -537,7 +537,7 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::beginRun
 {
   if (fThresholdsFromPMTconfig) {
     auto const& PMTconfig
-      = run.getByLabel<sbn::PMTconfiguration>(fThresholdsFromPMTconfig.value());
+      = run.getProduct<sbn::PMTconfiguration>(fThresholdsFromPMTconfig.value());
     
     if (!fPMTconfig || (fPMTconfig != PMTconfig)) {
       fPMTconfig = PMTconfig;
@@ -577,7 +577,7 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
   if (fBaselineTag) {
     // read and assign from the data product; configured baselines are ignored
     
-    baselines = event.getByLabel<std::vector<icarus::WaveformBaseline>>
+    baselines = event.getProduct<std::vector<icarus::WaveformBaseline>>
       (fBaselineTag.value());
     
   } // if baselines from event

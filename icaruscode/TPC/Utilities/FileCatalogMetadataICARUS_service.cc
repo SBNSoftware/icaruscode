@@ -10,6 +10,7 @@
 
 #include "icaruscode/TPC/Utilities/FileCatalogMetadataICARUS.h"
 #include "art/Framework/Services/Registry/ServiceHandle.h"
+#include "art/Framework/Services/Registry/ServiceDefinitionMacros.h"
 #include "art/Framework/Services/System/FileCatalogMetadata.h"
 
 //--------------------------------------------------------------------

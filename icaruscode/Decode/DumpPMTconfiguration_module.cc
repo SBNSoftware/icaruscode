@@ -167,7 +167,7 @@ void sbn::DumpPMTconfiguration::beginRun(art::Run const& run) {
   } // if skip duplicates
   
   auto const& config
-    = run.getByLabel<sbn::PMTconfiguration>(fPMTconfigurationTag);
+    = run.getProduct<sbn::PMTconfiguration>(fPMTconfigurationTag);
   
   std::ostringstream sstr;
   config.dump(sstr, "  ", "", fVerbosity);

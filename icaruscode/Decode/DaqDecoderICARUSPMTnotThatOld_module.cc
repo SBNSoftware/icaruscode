@@ -136,7 +136,7 @@ void DaqDecoderICARUSPMT::produce(art::Event & event)
     try
     {
         // Recover the data fragments for the PMT 
-        auto const& fragments = event.getByLabel<artdaq::Fragments>(fInputTag);
+        auto const& fragments = event.getProduct<artdaq::Fragments>(fInputTag);
     
         // Make sure data available
         if (!fragments.empty())

@@ -1,4 +1,4 @@
-#include "decodertools.fcl"
+#include "decoderTools_icarus.fcl"
 
 BEGIN_PROLOG
 

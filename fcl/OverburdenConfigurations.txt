@@ -3,9 +3,12 @@
 # prodcorsika_genie_protononly_icarus.fcl
 
 standard_g4_icarus.fcl
+standard_g4_icarus_sce.fcl
 cosmics_g4_icarus.fcl
+cosmics_g4_icarus_sce.fcl
 cosmics_g4_icarus_volCryostat.fcl
 cosmics_g4_icarus_volDetEnc.fcl
+intime_g4_icarus_sce.fcl
 
 standard_detsim_icarus.fcl
 

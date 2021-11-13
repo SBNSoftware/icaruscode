@@ -16,6 +16,7 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "art/Framework/Core/FileBlock.h"
 #include "art/Framework/Principal/Run.h"
+#include "messagefacility/MessageLogger/MessageLogger.h"
 #include "fhiclcpp/types/Atom.h"
 #include "cetlib_except/exception.h"
 

@@ -177,13 +177,13 @@ Decon1DROI::Decon1DROI(fhicl::ParameterSet const & pset, art::ProcessingFrame co
 void Decon1DROI::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
-    fRawDigitLabelVec     = pset.get< std::vector<art::InputTag>> ("RawDigitLabelVec", {"daqTPC"});
-    fNoiseSource          = pset.get< unsigned short            > ("NoiseSource",                                            3);
-    fSaveWireWF           = pset.get< int                       > ("SaveWireWF"                                               );
-    fMinAllowedChanStatus = pset.get< int                       > ("MinAllowedChannelStatus"                                  );
-    fTruncRMSThreshold    = pset.get< float                     > ("TruncRMSThreshold",                                     6.);
-    fTruncRMSMinFraction  = pset.get< float                     > ("TruncRMSMinFraction",                                  0.6);
-    fOutputHistograms     = pset.get< bool                      > ("OutputHistograms",                                    true);
+    fRawDigitLabelVec     = pset.get< std::vector<art::InputTag>> ("RawDigitLabelVec",       {"daqTPC"});
+    fNoiseSource          = pset.get< unsigned short            > ("NoiseSource",                     3);
+    fSaveWireWF           = pset.get< int                       > ("SaveWireWF"                        );
+    fMinAllowedChanStatus = pset.get< int                       > ("MinAllowedChannelStatus"           );
+    fTruncRMSThreshold    = pset.get< float                     > ("TruncRMSThreshold",              6.);
+    fTruncRMSMinFraction  = pset.get< float                     > ("TruncRMSMinFraction",           0.6);
+    fOutputHistograms     = pset.get< bool                      > ("OutputHistograms",             true);
     
     // Recover the vector of fhicl parameters for the ROI tools
     const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");

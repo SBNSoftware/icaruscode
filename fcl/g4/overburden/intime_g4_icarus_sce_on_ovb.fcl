@@ -1,6 +1,0 @@
-#include "intime_g4_icarus.fcl"
-
-#include "use_overburden_geometry_icarus.fcl"
-
-#include "enable_spacecharge.fcl"
-

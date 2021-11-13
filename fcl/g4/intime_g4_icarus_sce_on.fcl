@@ -1,4 +1,0 @@
-#include "intime_g4_icarus.fcl"
-
-#include "enable_spacecharge.fcl"
-

@@ -4,6 +4,8 @@
 #include "art/Framework/Core/ModuleMacros.h"
 #include "messagefacility/MessageLogger/MessageLogger.h"
 
+#include <numeric> // std::accumulate and std::inner_product
+
 namespace caldata
 {
 //----------------------------------------------------------------------------

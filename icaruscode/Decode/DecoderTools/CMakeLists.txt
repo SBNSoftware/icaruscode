@@ -1,8 +1,6 @@
 cet_enable_asserts()
 
-cet_find_library(LIBWDA NAMES wda PATHS ENV LIBWDA_LIB NO_DEFAULT_PATH)
-
-include_directories($ENV{LIBWDA_FQ_DIR}/include)
+##include_directories($ENV{LIBWDA_FQ_DIR}/include)
 
 add_subdirectory("Dumpers")
 
@@ -17,8 +15,8 @@ art_make( SUBDIRS details
                         ROOT::RIO
                         ROOT::Core
           TOOL_LIBRARIES
-                        sbndaq-artdaq-core_Overlays_ICARUS 
-                        artdaq-core_Utilities
+                        sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays_ICARUS 
+                        artdaq_core::artdaq-core_Utilities
                         icarus_signal_processing
                         icarus_signal_processing_Detection
                         icarus_signal_processing_Filters
@@ -34,7 +32,7 @@ art_make( SUBDIRS details
                         lardataobj_RawData
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
-                        ${LIBWDA}
+                        LIBWDA
                         ${ART_FRAMEWORK_CORE}
                         ${ART_FRAMEWORK_PRINCIPAL}
                         ${ART_FRAMEWORK_SERVICES_REGISTRY}
