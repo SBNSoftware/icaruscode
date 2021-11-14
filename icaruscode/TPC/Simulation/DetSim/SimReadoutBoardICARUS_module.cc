@@ -160,8 +160,6 @@ SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     fCompression = raw::kNone;
     TString compression(pset.get< std::string >("CompressionType"));
     if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
-
-    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
     
     return;
 }
@@ -202,6 +200,7 @@ void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
     for(auto& noiseToolParams : noiseToolParamSetVec) {
         fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
     }
+
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
@@ -341,6 +340,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
         {
             wireIDVec = fGeometry.ChannelToWire(channelPair.first);
 
+//            if (wireIDVec.empty()) std::cout << "--> Readout board: " << boardPair.first << ", channel: " << channelPair.first << std::endl;
+
             if (wireIDVec.size() > 0) break;
         }
 
@@ -363,6 +364,16 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
         if (!goodBoard) continue;
 
+//        if (cryostat == 0 && tpc == 0) std::cout << "*** Processing board " << boardPair.first << ", bourdCount: " << boardCount << std::endl;
+
+//        if (!(boardPair.first == 708 || boardPair.first == 800))
+//        {
+//            boardCount++;
+//            continue;
+//        }
+
+//        int wireIdx(0);
+
         // For this board loop over channels
         for(const auto& channelPair : boardPair.second.second)
         {
@@ -376,12 +387,6 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 std::cout << "############### Found already used channel! channelID: " << channel << std::endl;
             }
             channelIDSet.insert(channel);
-
-            // Check where this wire is located
-//            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-
-            // For now skip the channels with no info
-//            if (widVec.empty()) continue;
 
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
@@ -417,6 +422,16 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 << std::endl;
             }
 
+            // Check where this wire is located
+            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+
+            // For now skip the channels with no info
+//            if (widVec.empty()) continue;
+//            unsigned int wire(0);
+//            if (widVec.size() > 0) wire = widVec[0].Wire;
+
+//            if (cryostat == 0 && tpc == 0) std::cout << "    -wireIdx " << wireIdx++ << ", wire: " << wire << ", plane " << plane << " channel " << channel << ", noise_factor: " << noise_factor << ", planeID: " << planeID << std::endl;
+
             // Use the desired noise tool to actually generate the noise on this wire
             fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
@@ -424,7 +439,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                                                 detProp,
                                                 noise_factor,
                                                 planeID,
-                                                boardCount);
+                                                boardPair.first);
+//                                                boardCount);
 
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
