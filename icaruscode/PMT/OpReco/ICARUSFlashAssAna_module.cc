@@ -158,6 +158,10 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     int m_beam_type=-1;
     unsigned int m_gate_type;
     std::string m_gate_name;
+    int m_trigger_timestamp;
+    uint32_t m_gate_start_timestamp;
+    uint32_t m_trigger_gate_diff;
+
     int m_flash_id;
     int m_multiplicity;
     int m_multiplicity_left;
@@ -238,8 +242,10 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");
   fEventTree->Branch("gate_type", &m_gate_type, "gate_type/b");
   fEventTree->Branch("gate_name", &m_gate_name);
-
-
+  fEventTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/i");
+  fEventTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/i");
+  fEventTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/i");
+  
   // This tree will hold some aggregated optical waveform information
   // The flag must be enabled to have the information saved
   if( !fOpDetWaveformLabels.empty() && fSaveWaveformInfo ) { 
@@ -549,7 +555,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
           m_beam_gate_start = beamgate.Start(); 
           m_beam_gate_width = beamgate.Width(); 
-          m_beam_type = beamgate.BeamType() ; // Possibilites ... 
+          m_beam_type = beamgate.BeamType() ; 
 
         }
 
@@ -567,8 +573,13 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
         sbn::triggerSource bit = trigger_handle->sourceType;
 
-        m_gate_type = (unsigned int)bit; // Possibilites ...
+        m_gate_type = (unsigned int)bit; 
         m_gate_name = bitName(bit);
+        m_trigger_timestamp = trigger_handle->triggerTimestamp;
+        m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
+        m_trigger_gate_diff = m_trigger_timestamp-m_gate_start_timestamp;
+
+        std::cout << m_trigger_timestamp << "; " << m_gate_start_timestamp << " ;" << m_trigger_gate_diff << std::endl;
 
       }
       else{
