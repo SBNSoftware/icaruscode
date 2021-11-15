@@ -1,0 +1,106 @@
+# #include "seedservice.fcl"
+# #include "singles.fcl"
+# #include "larproperties.fcl"
+# #include "magfield_larsoft.fcl"
+# #include "largeantmodules.fcl"
+# #include "mcreco.fcl"
+
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+#include "reco_icarus.fcl"
+#include "reco_icarus_driver_common.fcl"
+
+
+process_name: TPCNoise
+
+#Start each new event with an empty event.
+source:
+{
+  module_type:     RootInput
+  maxEvents:       10          # Number of events to create
+}
+
+#services:
+#{
+# TFileService: { fileName: "Run4398" }
+#}
+services: 
+{ 
+@table::icarus_common_services
+  IICARUSChannelMap:        @local::icarus_channelmappinggservice                           
+}
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ analyzers:
+ {
+   tpcnoiseEW:  { module_type: "TPCNoiseBoard" }
+tpcnoiseWW:  { module_type: "TPCNoiseBoard" }
+tpcnoiseWE:  { module_type: "TPCNoiseBoard" }
+tpcnoiseEE:  { module_type: "TPCNoiseBoard" }
+ }
+
+ #define the producer and filter modules for this path, order matters, 
+ #filters reject all following items.  see lines starting physics.producers below
+# ana: [ tpcnoiseEW ]
+ana: [ tpcnoiseEW, tpcnoiseEE, tpcnoiseWW, tpcnoiseWE ]
+ end_paths:     [ana]  
+}
+
+#block to define where the output goes.  if you defined a filter in the physics
+#block and put it in the trigger_paths then you need to put a SelectEvents: {SelectEvents: [XXX]}
+#entry in the output stream you want those to go to, where XXX is the label of the filter module(s)
+outputs:
+{
+ out1:
+ {
+   module_type: RootOutput
+   fileName:    "out_tpcnoise_icarus.root"
+   dataTier:    "reco-simulated"
+   compressionLevel: 1
+   fastCloning: false
+ }
+}
+
+physics.analyzers.tpcnoise.CharacterizationAlg: {
+  						TruncMeanFraction:     0.15
+  						RMSRejectionCutHi:     [100., 100., 100.]
+  						RMSRejectionCutLow:    [0.70, 0.70, 0.70]
+  						RMSSelectionCut:       [1.40, 1.40, 1.40]
+  						MinMaxSelectionCut:    [2, 2, 1]
+  						TheChosenWire:         1200
+  						MaxPedestalDiff:       10.
+  						FFTHistsWireGroup:     [1, 33, 34]
+  						NumWiresToGroup:       [32, 32, 32]
+  						FillHistograms:        false
+						}
+
+physics.analyzers.tpcnoiseEW.RawDigitModuleLabel: "daqTPC"
+physics.analyzers.tpcnoiseEW.RawDigitProcess: "stage0"
+physics.analyzers.tpcnoiseEW.RawInstance: "PHYSCRATEDATATPCEWRAW"
+physics.analyzers.tpcnoiseEW.IntrinsicInstance: "PHYSCRATEDATATPCEW"
+physics.analyzers.tpcnoiseEW.CoherentInstance: "PHYSCRATEDATATPCEWCor"
+physics.analyzers.tpcnoiseWW.RawDigitModuleLabel: "daqTPC"
+physics.analyzers.tpcnoiseWW.RawDigitProcess: "stage0"
+physics.analyzers.tpcnoiseWW.RawInstance: "PHYSCRATEDATATPCWWRAW"
+physics.analyzers.tpcnoiseWW.IntrinsicInstance: "PHYSCRATEDATATPCWW"
+physics.analyzers.tpcnoiseWW.CoherentInstance: "PHYSCRATEDATATPCWWCor"
+physics.analyzers.tpcnoiseWE.RawDigitModuleLabel: "daqTPC"
+physics.analyzers.tpcnoiseWE.RawDigitProcess: "stage0"
+physics.analyzers.tpcnoiseWE.RawInstance: "PHYSCRATEDATATPCWERAW"
+physics.analyzers.tpcnoiseWE.IntrinsicInstance: "PHYSCRATEDATATPCWE"
+physics.analyzers.tpcnoiseWE.CoherentInstance: "PHYSCRATEDATATPCWECor"
+physics.analyzers.tpcnoiseEE.RawDigitModuleLabel: "daqTPC"
+physics.analyzers.tpcnoiseEE.RawDigitProcess: "stage0"
+physics.analyzers.tpcnoiseEE.RawInstance: "PHYSCRATEDATATPCEERAW"
+physics.analyzers.tpcnoiseEE.IntrinsicInstance: "PHYSCRATEDATATPCEE"
+physics.analyzers.tpcnoiseEE.CoherentInstance: "PHYSCRATEDATATPCEECor"
+
+physics.analyzers.tpcnoiseEW.HistoFileName: "dataFFTBoardHistos.root"
+physics.analyzers.tpcnoiseEE.HistoFileName: "dataFFTBoardHistos.root"
+physics.analyzers.tpcnoiseWW.HistoFileName: "dataFFTBoardHistos.root"
+physics.analyzers.tpcnoiseWE.HistoFileName: "dataFFTBoardHistos.root"
+
+services.Geometry.Name: "icarus_v3"
