@@ -104,14 +104,14 @@ SBNDataNoiseBoardTool:
     NoiseRand:                 0.
     CorrelatedSeed:            1000
     UncorrelatedSeed:          5000
-    StoreHistograms:           true
-   NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
-#NoiseHistFileName:         [ "dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root"  ]
-    CorrelatedHistogramName:   "cohpowerC"
-    UncorrelatedHistogramName: "intpowerC"
-    TotalRMSHistoName:         "rawRMSC"
-    CorrelatedRMSHistoName:    "cohRMSC"
-    UncorrelatedRMSHistoName:  "intRMSC"
+    StoreHistograms:           false
+
+NoiseHistFileName:         "dataFFTBoardHistos.root"
+    CorrelatedHistogramName:   "cohFFT"
+    UncorrelatedHistogramName: "intFFT"
+    TotalRMSHistoName:         "rawRMS"
+    CorrelatedRMSHistoName:    "cohRMS"
+    UncorrelatedRMSHistoName:  "intRMS"
 }
 
 

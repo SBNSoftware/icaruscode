@@ -164,7 +164,7 @@ SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
 
     fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
-    
+    std::cout << " end constructor " << std::endl;
     return;
 }
 //-------------------------------------------------
@@ -172,6 +172,7 @@ SimReadoutBoardICARUS::~SimReadoutBoardICARUS() {}
 //-------------------------------------------------
 void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
 {
+std::cout << " reconfiguring " << std::endl;
     fDriftEModuleLabel = p.get< art::InputTag       >("DriftEModuleLabel",             "largeant");
     fOutInstanceLabel  = p.get< std::string         >("OutputInstanceLabel",                   "");
     fProcessAllTPCs    = p.get< bool                >("ProcessAllTPCs",                     false);
@@ -214,7 +215,7 @@ void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
     fSignalShapingService = art::ServiceHandle<icarusutil::SignalShapingICARUSService>{}.get();
 
     fFFT = std::make_unique<icarus_signal_processing::ICARUSFFT<double>>(fNTimeSamples);
-    
+    std::cout << " end reconfiguring " << std::endl;
     return;
 }
 //-------------------------------------------------
@@ -256,6 +257,7 @@ void SimReadoutBoardICARUS::endJob()
 {}
 void SimReadoutBoardICARUS::produce(art::Event& evt)
 {
+std::cout << " produce " << std::endl;
     //--------------------------------------------------------------------
     //
     // Get all of the services we will be using
@@ -398,7 +400,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 << "\033[00m"
                 << std::endl;
             }
-std::cout << " plane " << widVec[0].Plane << " wire " << widVec[0].Wire << " board " << boardCount << std::endl;
+std::cout << " plane " << widVec[0].Plane << " wire " << widVec[0].Wire << " board " << boardPair.first << std::endl;
+//fNoiseTool->makeBoardHistos(boardCount);
             // Use the desired noise tool to actually generate the noise on this wire
             fNoiseTool->generateNoise(fUncNoiseEngine,
                                                 fCorNoiseEngine,
@@ -406,7 +409,7 @@ std::cout << " plane " << widVec[0].Plane << " wire " << widVec[0].Wire << " boa
                                                 detProp,
                                                 noise_factor,
                                                 channel,
-                                                boardCount);
+                                                boardPair.first);
 
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
