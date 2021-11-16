@@ -94,7 +94,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
       fhicl::Atom<bool> Debug {
         Name("Debug"),
-        Comment("Be more verbose")
+        Comment("Be more verbose"),
+        false
       };
 
     };
