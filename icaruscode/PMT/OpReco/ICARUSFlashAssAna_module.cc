@@ -694,7 +694,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       else {
 
         if( fDebug) { mf::LogError("ICARUSFlashAssAna")
-           << "Invalid recob::OpFlash with label"+label.label()+"\n"; }
+           << "Invalid recob::OpFlash with label '" << label.encode() << "'"; }
 
 
         // We save the ophits anyways in absence of flashes
