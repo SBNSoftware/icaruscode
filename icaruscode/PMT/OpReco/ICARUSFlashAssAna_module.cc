@@ -116,6 +116,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
     template<typename T> T Median( std::vector<T> data ) const;
 
+    int getCryostatByLabel( const std::string label ); 
+
     int getCryostatByChannel( const int channel );
 
     int getSideByChannel( const int channel );
@@ -159,9 +161,9 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     int m_beam_type=-1;
     unsigned int m_gate_type;
     std::string m_gate_name;
-    int m_trigger_timestamp;
-    uint32_t m_gate_start_timestamp;
-    uint32_t m_trigger_gate_diff;
+    uint64_t m_trigger_timestamp;
+    uint64_t m_gate_start_timestamp;
+    uint64_t m_trigger_gate_diff;
 
     int m_flash_id;
     int m_multiplicity;
@@ -243,9 +245,9 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fEventTree->Branch("beam_type", &m_beam_type, "beam_type/I");
   fEventTree->Branch("gate_type", &m_gate_type, "gate_type/b");
   fEventTree->Branch("gate_name", &m_gate_name);
-  fEventTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/i");
-  fEventTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/i");
-  fEventTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/i");
+  fEventTree->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
+  fEventTree->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
+  fEventTree->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
   
   // This tree will hold some aggregated optical waveform information
   // The flag must be enabled to have the information saved
@@ -274,10 +276,8 @@ void opana::ICARUSFlashAssAna::beginJob() {
 
   // This ttree will hold the ophit information when a flash is not found in the event
   // NB: information of the optical hits in events where flashes are present are lost
-  
-  if ( !fOpHitLabels.empty() ) { 
-    
-    for( auto const & label : fOpHitLabels ) { 
+      
+  for( auto const & label : fOpHitLabels ) { 
 
       std::string name = label.label()+"_ttree"; 
       std::string info = "TTree for the recob::OpHit objects with label " + label.label() + " in events without flashes.";
@@ -297,9 +297,7 @@ void opana::ICARUSFlashAssAna::beginJob() {
 
       fOpHitTrees.push_back(ttree);
 
-    }
   }
-
 
 
   if ( !fFlashLabels.empty() ) {
@@ -365,7 +363,32 @@ template<typename T>
     
     return data[ data.size()/2 ];
 
+}
+
+
+
+int opana::ICARUSFlashAssAna::getCryostatByLabel( const std::string label ) { 
+
+  int cryoId;
+  const char *cryoName = &label.back();
+
+  switch(*cryoName){
+    case 'E':
+      cryoId=0; 
+      break;
+    case 'W':
+      cryoId=1;
+      break;
+    default:
+      mf::LogError("ICARUSFlashAssAna") << "Impossible to attribute cryostat with Name: " << label << "\n";
+      throw std::runtime_error("Please verify label");
   }
+
+
+  return cryoId;
+
+}
+
 
 
 
@@ -413,15 +436,15 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
 
 
   if( fOpHitLabels.empty() ){
-    if( fDebug ){
+    
       mf::LogError("ICARUSFlashAssAna") << "No recob::OpHit labels selected.";
-    }
+    
     return;
   }
 
-    for( size_t i=0; i<fOpHitLabels.size(); i++ ) { 
+  for( size_t iOpHitLabel=0; iOpHitLabel<fOpHitLabels.size(); iOpHitLabel++ ) { 
 
-      auto const label = fOpHitLabels[i];
+      auto const label = fOpHitLabels[iOpHitLabel];
 
       art::Handle<std::vector<recob::OpHit>> ophit_handle;
       e.getByLabel( label, ophit_handle );
@@ -429,13 +452,13 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
 
       // We want our flashes to be valid and not empty
       if( !ophit_handle.isValid() || ophit_handle->empty() ) {
-        if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
-              << "Invalid recob::OpHit with label '" << label.encode() << "'"; }
+         mf::LogError("ICARUSFlashAssAna")
+              << "Invalid recob::OpHit with label '" << label.encode() << "'"; 
         continue;
       }
 
 
-        for( auto const & ophit : *ophit_handle ) {
+      for( auto const & ophit : *ophit_handle ) {
 
           //auto const & ophit = (*ophit_handle)[idx];
 
@@ -452,22 +475,9 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
           m_pe = ophit.PE();
           m_fast_to_total = ophit.FastToTotal();
 
-          fOpHitTrees[i]->Fill();
+          fOpHitTrees[iOpHitLabel]->Fill();
 
-        }
       }
-
-      else { 
-        if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
-              << "Invalid recob::OpHit with label"+label.label()+"\n"; }
-      }
-    }
-  }
-
-  else {
-    if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
-                << "No recob::OpHit labels selected\n"; }
-
   }
 
   return;
@@ -572,7 +582,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
       }
 
       else {
-        if( fDebug) { std::cout << "No sim::BeamGateInfo associated to label: " << fTriggerLabel.label() << "\n" ; }
+        mf::LogError("ICARUSFlashAssAna") << "No sim::BeamGateInfo associated to label: " << fTriggerLabel.label() << "\n" ;
       }
 
       // Now trigger information
@@ -589,17 +599,15 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
         m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
 
-        std::cout << m_trigger_timestamp << "; " << m_gate_start_timestamp << " ;" << m_trigger_gate_diff << std::endl;
-
       }
       else{
-        if( fDebug ){ std::cout << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; }
+         mf::LogError("ICARUSFlashAssAna") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; 
       }
 
   }
 
   else {
-     if( fDebug ){ std::cout << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; }
+     mf::LogError("ICARUSFlashAssAna") << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; 
   }
 
 
@@ -640,13 +648,12 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
   if ( !fFlashLabels.empty() ) {
 
-    for ( size_t i=0; i<fFlashLabels.size(); i++  ) {
+    for ( size_t iFlashLabel=0; iFlashLabel<fFlashLabels.size(); iFlashLabel++  ) {
 
-      auto const label = fFlashLabels[i];
+      auto const label = fFlashLabels[iFlashLabel];
 
       art::Handle<std::vector<recob::OpFlash>> flash_handle;
       e.getByLabel( label, flash_handle );
-
 
       // We want our flashes to be valid and not empty
       if( flash_handle.isValid() && !flash_handle->empty()) {
@@ -668,7 +675,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           float xyz[3] = {0.0, 0.0, 0.0};
           processOpHitsFlash( ophits, 
                               m_multiplicity_left, m_multiplicity_right, 
-                                m_sum_pe_left, m_sum_pe_right, xyz, fOpHitFlashTrees[i] );
+                                m_sum_pe_left, m_sum_pe_right, xyz, fOpHitFlashTrees[iFlashLabel] );
 
           /*
           std::cout << "\tflash id: " << idx << ", time: " << m_flash_time;
@@ -689,7 +696,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_flash_z = flash.ZCenter();
           m_flash_width_z = flash.ZWidth();
 
-          fOpFlashTrees[i]->Fill();
+          fOpFlashTrees[iFlashLabel]->Fill();
 
         }
 
@@ -697,12 +704,12 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
       else {
 
-        if( fDebug) { mf::LogError("ICARUSFlashAssAna")
-           << "Invalid recob::OpFlash with label '" << label.encode() << "'"; }
+        mf::LogError("ICARUSFlashAssAna")
+           << "Not found a recob::OpFlash with label '" << label.encode() << "'"; 
 
-
-        // We save the ophits anyways in absence of flashes
-        processOpHits(e, i);
+        // We try to save the ophits anyways in absence of flashes
+        int cryo = getCryostatByLabel(label.encode());
+        processOpHits(e, cryo);
 
       }
 
@@ -711,8 +718,8 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
   else {
     
-    if( fDebug ) { mf::LogError("ICARUSFlashAssAna")
-          << "No recob::OpFlash labels selected\n"; }
+     mf::LogError("ICARUSFlashAssAna")
+          << "No recob::OpFlash labels selected\n"; 
 
     // We save the ophits anyways even in absence of flashes
     processOpHits(e, 0);
