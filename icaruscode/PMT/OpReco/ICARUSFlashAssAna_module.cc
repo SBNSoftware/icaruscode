@@ -645,7 +645,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
 
       // We want our flashes to be valid and not empty
-      if( flash_handle.isValid() && !flash_handle->empty() && flash_handle->size() > 0 ) {
+      if( flash_handle.isValid() && !flash_handle->empty()) {
 
         art::FindManyP<recob::OpHit> ophitsPtr( flash_handle, e, label );
 
