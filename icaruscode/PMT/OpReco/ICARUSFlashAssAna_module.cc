@@ -412,7 +412,12 @@ int opana::ICARUSFlashAssAna::getSideByChannel( const int channel ) {
 void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
 
 
-  if( !fOpHitLabels.empty() ){  
+  if( fOpHitLabels.empty() ){
+    if( fDebug ){
+      mf::LogError("ICARUSFlashAssAna") << "No recob::OpHit labels selected.";
+    }
+    return;
+  }
 
     for( size_t i=0; i<fOpHitLabels.size(); i++ ) { 
 
