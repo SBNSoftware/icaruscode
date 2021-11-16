@@ -583,7 +583,7 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
         m_gate_name = bitName(bit);
         m_trigger_timestamp = trigger_handle->triggerTimestamp;
         m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
-        m_trigger_gate_diff = m_trigger_timestamp-m_gate_start_timestamp;
+        m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
 
         std::cout << m_trigger_timestamp << "; " << m_gate_start_timestamp << " ;" << m_trigger_gate_diff << std::endl;
 
