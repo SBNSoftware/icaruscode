@@ -428,7 +428,11 @@ void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
 
 
       // We want our flashes to be valid and not empty
-      if( ophit_handle.isValid() && !ophit_handle->empty() ) {
+      if( !ophit_handle.isValid() || ophit_handle->empty() ) {
+        if( fDebug ){ mf::LogError("ICARUSFlashAssAna")
+              << "Invalid recob::OpHit with label '" << label.encode() << "'"; }
+        continue;
+      }
 
 
         for( auto const & ophit : *ophit_handle ) {
