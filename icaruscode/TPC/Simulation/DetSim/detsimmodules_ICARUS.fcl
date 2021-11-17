@@ -70,6 +70,24 @@ SBNDataNoiseTool:
     UncorrelatedRMSHistoName:  "intRMSC"
 }
 
+SBNDataNoiseBoardTool:
+{
+    tool_type:                 SBNDataNoiseBoard
+    Plane:                     2                # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           false
+
+    NoiseHistFileName:         "dataFFTBoardHistos.root"
+    CorrelatedHistogramName:   "cohFFT"
+    UncorrelatedHistogramName: "intFFT"
+    TotalRMSHistoName:         "rawRMS"
+    CorrelatedRMSHistoName:    "cohRMS"
+    UncorrelatedRMSHistoName:  "intRMS"
+}
+
 WhiteNoiseTool:
 {
     tool_type:         RandomNoise
@@ -109,10 +127,8 @@ icarus_standard_simreadoutboard:
     MakeHistograms:     "true"
     TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
     
-    # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
-    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
     # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
-    NoiseGenToolVec:    [ @local::SBNDataNoiseTool, @local::SBNDataNoiseTool, @local::SBNDataNoiseTool ]
+    NoiseGenTool:       @local::SBNDataNoiseBoardTool
 
 }
 
@@ -120,27 +136,12 @@ icarus_simwire:         @local::icarus_standard_simwire
 icarus_simreadoutboard: @local::icarus_standard_simreadoutboard
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
-icarus_simreadoutboard.NoiseGenToolVec[0].Plane:     0
 # Below overrides for SBN Noise tool
-icarus_simreadoutboard.NoiseGenToolVec[0].CorrelatedHistogramName:   "cohpowerI1"
-icarus_simreadoutboard.NoiseGenToolVec[0].UncorrelatedHistogramName: "intpowerI1"
-icarus_simreadoutboard.NoiseGenToolVec[0].TotalRMSHistoName:         "rawRMSI1"
-icarus_simreadoutboard.NoiseGenToolVec[0].CorrelatedRMSHistoName:    "cohRMSI1"
-icarus_simreadoutboard.NoiseGenToolVec[0].UncorrelatedRMSHistoName:  "intRMSI1"
-
 
 icarus_simwire.NoiseGenToolVec[1].Plane:             1
-icarus_simreadoutboard.NoiseGenToolVec[1].Plane:     1
 # Below overrides for SBN Noise model
-icarus_simreadoutboard.NoiseGenToolVec[1].CorrelatedHistogramName:   "cohpowerI2"
-icarus_simreadoutboard.NoiseGenToolVec[1].UncorrelatedHistogramName: "intpowerI2"
-icarus_simreadoutboard.NoiseGenToolVec[1].TotalRMSHistoName:         "rawRMSI2"
-icarus_simreadoutboard.NoiseGenToolVec[1].CorrelatedRMSHistoName:    "cohRMSI2"
-icarus_simreadoutboard.NoiseGenToolVec[1].UncorrelatedRMSHistoName:  "intRMSI2"
-
 
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
-icarus_simreadoutboard.NoiseGenToolVec[2].Plane:     2
 # Below overrides for SBN Noise model
 
 
