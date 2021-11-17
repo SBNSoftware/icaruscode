@@ -19,6 +19,7 @@
 
 #include <string>
 #include <iostream>
+#include <cassert>
 
 namespace icarusDB
 {
@@ -173,7 +174,7 @@ unsigned int ICARUSChannelMapProvider::getBoardSlot(const unsigned int boardID) 
 
 bool ICARUSChannelMapProvider::hasPMTDigitizerID(const unsigned int fragmentID)   const
 {
-    return fFragmentToDigitizerMap.find(fragmentID) != fFragmentToDigitizerMap.end();
+    return findPMTfragmentEntry(fragmentID) != nullptr;
 }
 
 
@@ -184,13 +185,11 @@ unsigned int ICARUSChannelMapProvider::nPMTfragmentIDs() const {
 
 const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPairVec(const unsigned int fragmentID) const
 {
-    IChannelMapping::FragmentToDigitizerChannelMap::const_iterator digitizerItr = fFragmentToDigitizerMap.find(fragmentID);
-
-    if (digitizerItr == fFragmentToDigitizerMap.end())
-        throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
-
-    return digitizerItr->second;
-      
+    DigitizerChannelChannelIDPairVec const* digitizerPair = findPMTfragmentEntry(fragmentID);
+    
+    if (digitizerPair) return *digitizerPair;
+    throw cet::exception("ICARUSChannelMapProvider") << "Fragment ID " << fragmentID << " not found in lookup map when looking for PMT channel info \n";
+    
 }
 
   unsigned int ICARUSChannelMapProvider::getSimMacAddress(const unsigned int hwmacaddress)  const
@@ -205,5 +204,49 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
     return simmacaddress;
   }
   
+
+
+auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const
+  -> DigitizerChannelChannelIDPairVec const*
+{
+  auto it = fFragmentToDigitizerMap.find(PMTfragmentIDtoDBkey(fragmentID));
+  return (it == fFragmentToDigitizerMap.end())? nullptr: &(it->second);
+}
+
+
+constexpr unsigned int ICARUSChannelMapProvider::PMTfragmentIDtoDBkey
+  (unsigned int fragmentID)
+{
+  /*
+   * PMT channel mapping database stores the board number (0-23) as key.
+   * Fragment ID are currently in the pattern 0x20xx, with xx the board number.
+   */
+  
+  // protest if this is a fragment not from the PMT;
+  // but make an exception for old PMT fragment IDs (legacy)
+  assert(((fragmentID & ~0xFF) == 0x00) || ((fragmentID & ~0xFF) == 0x20));
+  
+  return fragmentID & 0xFF;
+  
+} // ICARUSChannelMapProvider::PMTfragmentIDtoDBkey()
+
+
+constexpr unsigned int ICARUSChannelMapProvider::DBkeyToPMTfragmentID
+  (unsigned int DBkey)
+{
+  /*
+   * PMT channel mapping database stores the board number (0-23) as key.
+   * Fragment ID are currently in the pattern 0x20xx, with xx the board number.
+   */
+  
+  // protest if this is a fragment not from the PMT;
+  // but make an exception for old PMT fragment IDs (legacy)
+  assert((DBkey & 0xFF) < 24);
+  
+  return (DBkey & 0xFF) | 0x2000;
+  
+} // ICARUSChannelMapProvider::PMTfragmentIDtoDBkey()
+
+
 } // end namespace
 
