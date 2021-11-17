@@ -83,8 +83,6 @@ private:
     std::string                                 fUncorrelatedRMSHistoName;
     std::string                                 fTotalRMSHistoName;
 
-    float corrFactors[216][4];  // this will be sparse, could use a map here I bet
-
     using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
     WaveformTools                               fWaveformTool;
