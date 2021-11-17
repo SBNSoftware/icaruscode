@@ -179,26 +179,6 @@ std::cout << " configuring tool " << std::endl;
     if (!fHistogramFile->IsOpen())
         throw cet::exception("NoiseFromHist::configure") << "Unable to open input file: " << fInputNoiseHistFileName << std::endl;
 
-    TList* keyListPtr = fHistogramFile->GetListOfKeys();
-
-    std::cout << "==> Opened file: " << fullFileName << std::endl;
-    std::cout << "    keyListPtr name: " << keyListPtr->GetName() << std::endl;
-
-    int numKeys = keyListPtr->GetEntries();
-
-    std::cout << "Input file has " << numKeys << " keys" << std::endl;
-
-//    TList* histList = fHistogramFile->GetList();
-
-    TIter nextList(keyListPtr);
-
-    while(TObject* obj = (TObject*)nextList())
-    {
-        bool isHist = obj->InheritsFrom(TH1::Class());
-
-        std::cout << "   -> name: " << obj->GetName() << ", is a hist? " << isHist << std::endl;
-    }
-
     std::cout << " end configuring tool " << std::endl;
     return;
 }
