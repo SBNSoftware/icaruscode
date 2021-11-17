@@ -11,7 +11,8 @@
 #include "calorimetry_icarus.fcl"
 #include "particleid_icarus.fcl"
 
-#include "eventweight_genie3_sbn_A.fcl"
+#include "eventweight_genie_sbn.fcl"
+#include "eventweight_flux_sbn.fcl"
 #include "mcreco.fcl"
 #include "mcsproducer.fcl"
 #include "rangeproducer.fcl"
@@ -69,7 +70,8 @@ recoana_caf_ana_producers: {
 
   crtconvhit: @local::crthitconverter_icarus
   rns: { module_type: "RandomNumberSaver" }
-  genieweight: @local::sbn_genie_eventweight
+  genieweight: @local::sbn_eventweight_genie
+  fluxweight: @local::sbn_eventweight_flux
 }
 
 # Overwrite labels
@@ -79,6 +81,7 @@ recoana_caf_ana_producers.pandoraTrackRangeCryoE.TrackLabel: pandoraTrackGausCry
 recoana_caf_ana_producers.pandoraTrackRangeCryoW.TrackLabel: pandoraTrackGausCryoW
 
 recoana_caf_ana_producers.genieweight.weight_functions: @local::recoana_caf_ana_producers.genieweight.weight_functions_genie
+recoana_caf_ana_producers.fluxweight.weight_functions: @local::recoana_caf_ana_producers.fluxweight.weight_functions_flux
 
 # Setup CaloAlg for VertexCharge
 recoana_caf_ana_producers.vertexChargeCryoE.CaloAlg: @local::icarus_calorimetryalgmc 
@@ -190,7 +193,7 @@ caf_ana_sequence: [ mcreco,
     # TODO: rns??
     ]
 
-caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, rns, genieweight]
+caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, rns, genieweight, fluxweight]
 
 caf_ana_sce_sequence: [ mcreco,
   # Run the SCE correction
@@ -212,7 +215,7 @@ caf_ana_sce_sequence: [ mcreco,
   # TODO: rns??
 ]
 
-caf_ana_sce_evtw_sequence: [@sequence::caf_ana_sce_sequence, rns, genieweight]
+caf_ana_sce_evtw_sequence: [@sequence::caf_ana_sce_sequence, rns, genieweight, fluxweight]
 
 # CAFMaker config
 cafmaker: @local::standard_cafmaker
@@ -243,7 +246,7 @@ cafmaker.CRTHitLabel: "crthit"
 cafmaker.CRTTrackLabel: "crttrack"
 cafmaker.FlashTrigLabel: "" # unavailable
 cafmaker.SimChannelLabel: "largeant"
-cafmaker.SystWeightLabels: ["genieweight"]
+cafmaker.SystWeightLabels: ["genieweight", "fluxweight"]
 
 # Add CAFMaker to the list of producers
 caf_ana_producers.cafmaker: @local::cafmaker
