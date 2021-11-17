@@ -40,7 +40,7 @@ icarus_largeantparameters: {
     SkipWireSignalInTPCs:     []     # put here TPC id's which should not receive ionization electrons - used to simulate TPC geom volumes which are actually dead LAr volumes in protoDUNE
     FillSimEnergyDeposits:    true
     UseModBoxRecomb:          true   # use Modified Box recombination instead of Birks
-    UseModLarqlRecomb:        false   # use LArQL recombination corrections (dependence on EF)
+    UseModLarqlRecomb:        true   # use LArQL recombination corrections (dependence on EF)
    
     #* Recombination factor coefficients come from Nucl.Instrum.Meth.A523:275-286,2004
     #* * @f$ dE/dx @f$ is given by the voxel energy deposition, but have to convert it to MeV/cm from GeV/voxel width
