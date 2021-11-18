@@ -74,9 +74,9 @@ private:
     float                                       fNoiseRand;
     long                                        fCorrelatedSeed;
     long                                        fUncorrelatedSeed;
-    std::vector<float>                                      fIncoherentNoiseFrac;
+    std::vector<float>                          fIncoherentNoiseFrac;
     bool                                        fStoreHistograms;
-    std::vector<std::string>                                 fInputNoiseHistFileName;
+    std::vector<std::string>                    fInputNoiseHistFileName;
     std::string                                 fHistogramName;
     std::string                                 fCorrelatedHistogramName;
     std::string                                 fUncorrelatedHistogramName;
@@ -87,8 +87,6 @@ private:
     using CorrFactorsMap = std::map<unsigned int, std::vector<float>>;
 
     CorrFactorsMap                              fCorrFactorsMap;
-
-    float corrFactors[216][4];  // this will be sparse, could use a map here I bet
 
     using WaveformTools = icarus_signal_processing::WaveformTools<icarusutil::SigProcPrecision>;
 
@@ -494,16 +492,8 @@ void SBNDataNoise::SampleCorrelatedRMSs()
     
         fCoherentNoiseService->resetCoherentNoiseFactors(noiseHist);
     }
-
-for(int i=0;i<4;i++) {
-TH1D* histo=corrRMSHistPtr[i];
-float meanRMS=histo->GetMean();
-for(int j=0;j<216;j++) { 
-float rndRMS=histo->GetRandom();
-corrFactors[j][i]=rndRMS/meanRMS; 
-
-}}
 }
+
 void SBNDataNoise::ExtractUncorrelatedRMS(float& cf, int index) const
 {
 TH1D* histo=uncorrRMSHistPtr[index];
