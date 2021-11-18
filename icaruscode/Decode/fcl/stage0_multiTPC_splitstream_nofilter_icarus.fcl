@@ -8,9 +8,9 @@ process_name: stage0
 
 ## Define the paths we'll execute depending on data
 #physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
-physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT, daqTPC, @sequence::icarus_stage0_multiTPC ]
-physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT, daqTPC, @sequence::icarus_stage0_multiTPC ]
-physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT, daqTPC, @sequence::icarus_stage0_multiTPC ]
+physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
+physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
+physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
 
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
@@ -36,7 +36,7 @@ outputs.outUnknown.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_d
 #physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
-physics.producers.daqTPC.FragmentsLabelVec:      ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
+physics.producers.daqTPCROI.FragmentsLabelVec:   ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
 physics.producers.decon1droi.RawDigitLabelVec:   ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE","daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
 physics.producers.roifinder.WireModuleLabelVec:  ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
 

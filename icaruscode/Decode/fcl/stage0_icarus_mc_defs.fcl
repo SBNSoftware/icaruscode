@@ -21,7 +21,7 @@ icarus_stage0_mc_producers:
                            OutputRawWavePath:   "RAW"
                            OutputCoherentPath:  "Cor"
                            DiagnosticOutput:    false
-                           DecoderTool:         @local::TPCNoiseFilterCannyTool
+                           DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
   
     mcophit:           @local::ICARUSMCOpHit
