@@ -99,10 +99,6 @@ private:
 
     using BoardToHistMap = std::unordered_map<unsigned int, TH1D*>;
 
-    BoardToHistMap                              fBoardToCorRMSHistMap;
-    BoardToHistMap                              fBoardToUncorRMSHistMap;
-    BoardToHistMap                              fBoardToTotalRMSHistMap;
-
     // Container for doing the work
     icarusutil::FrequencyVec                    fNoiseFrequencyVec;
     
@@ -190,16 +186,10 @@ void SBNDataNoiseBoard::makeBoardHistos(unsigned int board)
         if (!corrHistPtr)
             throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << fCorrelatedHistogramName+std::to_string(board) << std::endl;
 
-        TH1D*  corrRMSHistPtr=(TH1D*)fHistogramFile->Get((fCorrelatedRMSHistoName+std::to_string(board)).c_str());    
-        if (!corrRMSHistPtr)
-            throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << fCorrelatedRMSHistoName << std::endl;
-
         icarusutil::TimeVec& noiseVec = fCoherentBoardToNoiseVecMap[board];
 
         noiseVec.resize(corrHistPtr->GetNbinsX(),0.);
         for(size_t histIdx = 0; histIdx < size_t(corrHistPtr->GetNbinsX()); histIdx++) noiseVec[histIdx] = corrHistPtr->GetBinContent(histIdx+1);
-
-        fBoardToCorRMSHistMap[board] = corrRMSHistPtr;
     }
 
     if(fIncoherentBoardToNoiseVecMap.find(board) == fIncoherentBoardToNoiseVecMap.end())
@@ -208,25 +198,10 @@ void SBNDataNoiseBoard::makeBoardHistos(unsigned int board)
         if (!uncorrHistPtr)
             throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << fUncorrelatedHistogramName << std::endl;
 
-        TH1D* uncorrRMSHistPtr=(TH1D*)fHistogramFile->Get((fCorrelatedRMSHistoName+std::to_string(board)).c_str()); 
-        if (!uncorrRMSHistPtr)
-            throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << fUncorrelatedRMSHistoName << std::endl;
-
         icarusutil::TimeVec& noiseVec = fIncoherentBoardToNoiseVecMap[board];
 
         noiseVec.resize(uncorrHistPtr->GetNbinsX(),0.);
         for(size_t histIdx = 0; histIdx < size_t(uncorrHistPtr->GetNbinsX()); histIdx++) noiseVec[histIdx] = uncorrHistPtr->GetBinContent(histIdx+1);
-
-        fBoardToUncorRMSHistMap[board] = uncorrRMSHistPtr;
-    }
-
-    if (fBoardToTotalRMSHistMap.find(board) == fBoardToTotalRMSHistMap.end())
-    {
-        TH1D* totalRMSHistPtr=(TH1D*)fHistogramFile->Get((fTotalRMSHistoName+std::to_string(board)).c_str()); 
-        if (!totalRMSHistPtr)
-            throw cet::exception("NoiseFromHist::configure") << "Unable to recover desired histogram: " << fTotalRMSHistoName << std::endl;
-
-        fBoardToTotalRMSHistMap[board] = totalRMSHistPtr;
     }
 
     // Should we store hists?
