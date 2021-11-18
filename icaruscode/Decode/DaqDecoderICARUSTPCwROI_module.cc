@@ -581,7 +581,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
             // Are we storing the raw waveforms?
             if (fOutputRawWaveform)
             {
-                const icarus_signal_processing::VectorFloat& waveform = decoderTool->getRawWaveforms()[chanIdx];
+                const icarus_signal_processing::VectorFloat& waveform = decoderTool->getPedCorWaveforms()[chanIdx];
 
                 // Need to convert from float to short int
                 std::transform(waveform.begin(),waveform.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});

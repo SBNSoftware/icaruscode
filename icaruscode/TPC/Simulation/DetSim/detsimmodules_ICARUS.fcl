@@ -1,6 +1,12 @@
 BEGIN_PROLOG
 
 
+icarus_CoherentNoiseFactorService:
+{
+    service_provider:   CoherentNoiseFactor
+    DiagnosticOutput:   false
+}
+
 NoiseFromHistTool:
 {
     tool_type:         NoiseFromHist
@@ -44,51 +50,19 @@ SBNNoiseTool:
     CorrelatedRMSHistoName:    "RMSBhisto"
     UncorrelatedRMSHistoName:  "RMSUhisto"
 }
-SBNDataNoiseInd1Tool:
+
+# Define the SBN Data noise tool with defaults for the collection plane.
+# set overrides below for induction planes
+SBNDataNoiseTool:
 {
     tool_type:                 SBNDataNoise
-    Plane:                     0                 # All default values are for induction 1 (first induction)
+    Plane:                     2                 # All default values are for induction 1 (first induction)
     MedianNumBins:             25
     NoiseRand:                 0.
     CorrelatedSeed:            1000
     UncorrelatedSeed:          5000
     StoreHistograms:           true
     NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
-#NoiseHistFileName:         [ "dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root"  ]
-    CorrelatedHistogramName:   "cohpowerI1"
-    UncorrelatedHistogramName: "intpowerI1"
-    TotalRMSHistoName:         "rawRMSI1"
-    CorrelatedRMSHistoName:    "cohRMSI1"
-    UncorrelatedRMSHistoName:  "intRMSI1"
-}
-SBNDataNoiseInd2Tool:
-{
-    tool_type:                 SBNDataNoise
-    Plane:                     1                 # All default values are for induction 1 (first induction)
-    MedianNumBins:             25
-    NoiseRand:                 0.
-    CorrelatedSeed:            1000
-    UncorrelatedSeed:          5000
-    StoreHistograms:           true
-   NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
-#NoiseHistFileName:         [ "dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root"  ]
-    CorrelatedHistogramName:   "cohpowerI2"
-    UncorrelatedHistogramName: "intpowerI2"
-    TotalRMSHistoName:         "rawRMSI2"
-    CorrelatedRMSHistoName:    "cohRMSI2"
-    UncorrelatedRMSHistoName:  "intRMSI2"
-}
-SBNDataNoiseCollTool:
-{
-    tool_type:                 SBNDataNoise
-    Plane:                     2                # All default values are for induction 1 (first induction)
-    MedianNumBins:             25
-    NoiseRand:                 0.
-    CorrelatedSeed:            1000
-    UncorrelatedSeed:          5000
-    StoreHistograms:           true
-   NoiseHistFileName:         [ "dataFFTHistosEE.root", "dataFFTHistosEW.root", "dataFFTHistosWE.root", "dataFFTHistosWW.root" ]
-#NoiseHistFileName:         [ "dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root" ,"dataFFTHistosEW.root"  ]
     CorrelatedHistogramName:   "cohpowerC"
     UncorrelatedHistogramName: "intpowerC"
     TotalRMSHistoName:         "rawRMSC"
@@ -96,6 +70,23 @@ SBNDataNoiseCollTool:
     UncorrelatedRMSHistoName:  "intRMSC"
 }
 
+SBNDataNoiseBoardTool:
+{
+    tool_type:                 SBNDataNoiseBoard
+    Plane:                     2                # All default values are for induction 1 (first induction)
+    MedianNumBins:             25
+    NoiseRand:                 0.
+    CorrelatedSeed:            1000
+    UncorrelatedSeed:          5000
+    StoreHistograms:           false
+
+    NoiseHistFileName:         "dataFFTBoardHistos.root"
+    CorrelatedHistogramName:   "cohFFT"
+    UncorrelatedHistogramName: "intFFT"
+    TotalRMSHistoName:         "rawRMS"
+    CorrelatedRMSHistoName:    "cohRMS"
+    UncorrelatedRMSHistoName:  "intRMS"
+}
 
 WhiteNoiseTool:
 {
@@ -121,7 +112,7 @@ icarus_standard_simwire:
     # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
     #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
     # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
-    NoiseGenToolVec:    [@local::SBNDataNoiseInd1Tool, @local::SBNDataNoiseInd2Tool, @local::SBNDataNoiseCollTool]
+    NoiseGenToolVec:    [@local::SBNDataNoiseTool, @local::SBNDataNoiseTool, @local::SBNDataNoiseTool]
 
 }
 
@@ -136,10 +127,8 @@ icarus_standard_simreadoutboard:
     MakeHistograms:     "true"
     TPCVec:             [ [0,0], [0,1], [1,0], [1,1] ]
     
-    # current default (Sep 2019) is to run the noise model based on Gran Sasso experience
-    #NoiseGenToolVec:    [@local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool, @local::CorrelatedNoiseTool]
     # This switches to an updated model, currently under development (Jul 2021), based on FNAL running
-    NoiseGenToolVec:    [@local::SBNDataNoiseInd1Tool, @local::SBNDataNoiseInd2Tool, @local::SBNDataNoiseCollTool]
+    NoiseGenTool:       @local::SBNDataNoiseBoardTool
 
 }
 
@@ -147,17 +136,12 @@ icarus_simwire:         @local::icarus_standard_simwire
 icarus_simreadoutboard: @local::icarus_standard_simreadoutboard
 
 icarus_simwire.NoiseGenToolVec[0].Plane:             0
-icarus_simwreadoutboard.NoiseGenToolVec[0].Plane:    0
 # Below overrides for SBN Noise tool
 
-
 icarus_simwire.NoiseGenToolVec[1].Plane:             1
-icarus_simwreadoutboard.NoiseGenToolVec[1].Plane:    1
 # Below overrides for SBN Noise model
 
-
 icarus_simwire.NoiseGenToolVec[2].Plane:             2
-icarus_simwreadoutboard.NoiseGenToolVec[2].Plane:    2
 # Below overrides for SBN Noise model
 
 

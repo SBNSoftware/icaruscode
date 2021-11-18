@@ -55,6 +55,13 @@ public:
 
     // Section for CRT channel mapping    
     unsigned int                            getSimMacAddress(const unsigned int)    const override;
+    
+    
+    /// Returns the channel mapping database key for the specified PMT fragment ID.
+    static constexpr unsigned int PMTfragmentIDtoDBkey(unsigned int fragmentID);
+    
+    /// Returns the PMT fragment ID for the specified channel mapping database key.
+    static constexpr unsigned int DBkeyToPMTfragmentID(unsigned int DBkey);
 
 private:
     
@@ -69,6 +76,11 @@ private:
     IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
+
+    /// Returns the list of board channel-to-PMT channel ID mapping within the specified fragment.
+    /// @returns a pointer to the mapping list, or `nullptr` if invalid fragment
+    DigitizerChannelChannelIDPairVec const* findPMTfragmentEntry
+      (unsigned int fragmentID) const;
 
 }; // icarusDB::ICARUSChannelMapProvider
 

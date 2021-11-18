@@ -88,40 +88,40 @@ private:
 
     using TPCIDVec  = std::vector<geo::TPCID>;
     
-    art::InputTag                fDriftEModuleLabel; ///< module making the ionization electrons
-    std::string                  fOutInstanceLabel;  ///< The label to apply to the output data product
-    bool                         fProcessAllTPCs;    ///< If true we process all TPCs
-    unsigned int                 fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
-    TPCIDVec                     fTPCVec;            ///< List of TPCs to process for this instance of the module
-    raw::Compress_t              fCompression;       ///< compression type to use
-    unsigned int                 fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
-    std::map< double, int >      fShapingTimeOrder;
+    art::InputTag                          fDriftEModuleLabel; ///< module making the ionization electrons
+    std::string                            fOutInstanceLabel;  ///< The label to apply to the output data product
+    bool                                   fProcessAllTPCs;    ///< If true we process all TPCs
+    unsigned int                           fCryostat;          ///< If ProcessAllTPCs is false then cryostat to use
+    TPCIDVec                               fTPCVec;            ///< List of TPCs to process for this instance of the module
+    raw::Compress_t                        fCompression;       ///< compression type to use
+    unsigned int                           fNTimeSamples;      ///< number of ADC readout samples in all readout frames (per event)
+    std::map< double, int >                fShapingTimeOrder;
+              
+    bool                                   fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
+    bool                                   fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
+    bool                                   fSmearPedestals;    ///< If True then we smear the pedestals
+    int                                    fNumChanPerMB;      ///< Number of channels per motherboard
     
-    bool                         fSimDeadChannels;   ///< if True, simulate dead channels using the ChannelStatus service.  If false, do not simulate dead channels
-    bool                         fSuppressNoSignal;  ///< If no signal on wire (simchannel) then suppress the channel
-    bool                         fSmearPedestals;    ///< If True then we smear the pedestals
-    int                          fNumChanPerMB;      ///< Number of channels per motherboard
+   std::unique_ptr<icarus_tool::IGenNoise> fNoiseTool;         ///< Tool for generating noise
     
-    std::vector<std::unique_ptr<icarus_tool::IGenNoise>> fNoiseToolVec; ///< Tool for generating noise
-    
-    bool                         fMakeHistograms;
-    bool                         fTest; // for forcing a test case
-    std::vector<sim::SimChannel> fTestSimChannel_v;
-    size_t                       fTestWire;
-    std::vector<size_t>          fTestIndex;
-    std::vector<double>          fTestCharge;
-    
-    TH1F*                        fSimCharge;
-    TH2F*                        fSimChargeWire;
-    
-    // Random engines
-    CLHEP::HepRandomEngine&      fPedestalEngine;
-    CLHEP::HepRandomEngine&      fUncNoiseEngine;
-    CLHEP::HepRandomEngine&      fCorNoiseEngine;
+    bool                                   fMakeHistograms;
+    bool                                   fTest; // for forcing a test case
+    std::vector<sim::SimChannel>           fTestSimChannel_v;
+    size_t                                 fTestWire;
+    std::vector<size_t>                    fTestIndex;
+    std::vector<double>                    fTestCharge;
+              
+    TH1F*                                  fSimCharge;
+    TH2F*                                  fSimChargeWire;
+              
+    // Random engines          
+    CLHEP::HepRandomEngine&                fPedestalEngine;
+    CLHEP::HepRandomEngine&                fUncNoiseEngine;
+    CLHEP::HepRandomEngine&                fCorNoiseEngine;
 
     //define max ADC value - if one wishes this can
     //be made a fcl parameter but not likely to ever change
-    const float                  adcsaturation = 4095;
+    const float                            adcsaturation = 4095;
     
     // little helper class to hold the params of each charge dep
     class ResponseParams {
@@ -160,8 +160,6 @@ SimReadoutBoardICARUS::SimReadoutBoardICARUS(fhicl::ParameterSet const& pset)
     fCompression = raw::kNone;
     TString compression(pset.get< std::string >("CompressionType"));
     if(compression.Contains("Huffman",TString::kIgnoreCase)) fCompression = raw::kHuffman;
-
-    fChannelMap = art::ServiceHandle<icarusDB::IICARUSChannelMap const>{}.get();
     
     return;
 }
@@ -197,11 +195,8 @@ void SimReadoutBoardICARUS::reconfigure(fhicl::ParameterSet const& p)
     if(fTestIndex.size() != fTestCharge.size())
         throw cet::exception(__FUNCTION__)<<"# test pulse mismatched: check TestIndex and TestCharge fcl parameters...";
     
-    std::vector<fhicl::ParameterSet> noiseToolParamSetVec = p.get<std::vector<fhicl::ParameterSet>>("NoiseGenToolVec");
-    
-    for(auto& noiseToolParams : noiseToolParamSetVec) {
-        fNoiseToolVec.push_back(art::make_tool<icarus_tool::IGenNoise>(noiseToolParams));
-    }
+    fNoiseTool = art::make_tool<icarus_tool::IGenNoise>(p.get<fhicl::ParameterSet>("NoiseGenTool"));
+
     //Map the Shaping Times to the entry position for the noise ADC
     //level in fNoiseFactInd and fNoiseFactColl
     fShapingTimeOrder = { {0.6, 0}, {1, 1}, {1.3, 2}, {3.0, 3} };
@@ -318,7 +313,7 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
     auto const detProp = art::ServiceHandle<detinfo::DetectorPropertiesService const>()->DataFor(evt);
     
     // Let the tools know to update to the next event
-    for(const auto& noiseTool : fNoiseToolVec) noiseTool->nextEvent();
+    fNoiseTool->nextEvent();
 
     // Plan is to loop over readout boards, rejecting any that are not in the TPC list
     // For any good readout boards we loop through the channels. 
@@ -340,6 +335,8 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
         for(const auto& channelPair : boardPair.second.second)
         {
             wireIDVec = fGeometry.ChannelToWire(channelPair.first);
+
+//            if (wireIDVec.empty()) std::cout << "--> Readout board: " << boardPair.first << ", channel: " << channelPair.first << std::endl;
 
             if (wireIDVec.size() > 0) break;
         }
@@ -363,6 +360,16 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
 
         if (!goodBoard) continue;
 
+//        if (cryostat == 0 && tpc == 0) std::cout << "*** Processing board " << boardPair.first << ", bourdCount: " << boardCount << std::endl;
+
+//        if (!(boardPair.first == 708 || boardPair.first == 800))
+//        {
+//            boardCount++;
+//            continue;
+//        }
+
+//        int wireIdx(0);
+
         // For this board loop over channels
         for(const auto& channelPair : boardPair.second.second)
         {
@@ -376,12 +383,6 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 std::cout << "############### Found already used channel! channelID: " << channel << std::endl;
             }
             channelIDSet.insert(channel);
-
-            // Check where this wire is located
-//            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
-
-            // For now skip the channels with no info
-//            if (widVec.empty()) continue;
 
             //clean up working vectors from previous iteration of loop
             adcvec.resize(fNTimeSamples, 0);  //compression may have changed the size of this vector
@@ -417,14 +418,24 @@ void SimReadoutBoardICARUS::produce(art::Event& evt)
                 << std::endl;
             }
 
+            // Check where this wire is located
+            std::vector<geo::WireID> widVec = fGeometry.ChannelToWire(channel);
+
+            // For now skip the channels with no info
+//            if (widVec.empty()) continue;
+//            unsigned int wire(0);
+//            if (widVec.size() > 0) wire = widVec[0].Wire;
+
+//            if (cryostat == 0 && tpc == 0) std::cout << "    -wireIdx " << wireIdx++ << ", wire: " << wire << ", plane " << plane << " channel " << channel << ", noise_factor: " << noise_factor << ", planeID: " << planeID << std::endl;
+
             // Use the desired noise tool to actually generate the noise on this wire
-            fNoiseToolVec[plane]->generateNoise(fUncNoiseEngine,
-                                                fCorNoiseEngine,
-                                                noisetmp,
-                                                detProp,
-                                                noise_factor,
-                                                planeID,
-                                                boardCount);
+            fNoiseTool->generateNoise(fUncNoiseEngine,
+                                      fCorNoiseEngine,
+                                      noisetmp,
+                                      detProp,
+                                      noise_factor,
+                                      planeID,
+                                      boardPair.first);
 
             // Recover the SimChannel (if one) for this channel
             const sim::SimChannel* simChan = channels[channel];
