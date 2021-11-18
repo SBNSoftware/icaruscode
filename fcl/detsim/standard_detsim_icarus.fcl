@@ -55,10 +55,10 @@ physics:
     
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    daq0:   @local::icarus_simwire
-    daq1:   @local::icarus_simwire
-    daq2:   @local::icarus_simwire
-    daq3:   @local::icarus_simwire
+    daq0:   @local::icarus_simreadoutboard
+    daq1:   @local::icarus_simreadoutboard
+    daq2:   @local::icarus_simreadoutboard
+    daq3:   @local::icarus_simreadoutboard
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     rns:    { module_type: "RandomNumberSaver" }
