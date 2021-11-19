@@ -1,0 +1,5 @@
+#include "dissonant_higgs_gen.fcl"
+
+higgsM: 0.20
+physics.producers.generator.Flux.KDAROnly: true
+#include "set_higgsM.fcl"
