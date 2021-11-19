@@ -1,0 +1,6 @@
+BEGIN_PROLOG
+standard_hepmcfilegen:
+{
+  module_type:   "HepMCFileGen"
+}
+END_PROLOG 
