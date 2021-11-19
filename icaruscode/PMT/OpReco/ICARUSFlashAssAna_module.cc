@@ -116,13 +116,11 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
 
     template<typename T> T Median( std::vector<T> data ) const;
 
-    int getCryostatByLabel( const std::string label ); 
-
-    int getCryostatByChannel( const int channel );
+    geo::CryostatID::CryostatID_t getCryostatByChannel( int channel );
 
     int getSideByChannel( const int channel );
 
-    void processOpHits( art::Event const& e, int cryo );
+    void processOpHits( art::Event const& e, unsigned int cryo );
 
     void processOpHitsFlash( std::vector<art::Ptr<recob::OpHit>> const &ophits, 
                         int &multiplicity_left, int &multiplicity_right, 
@@ -193,6 +191,8 @@ class opana::ICARUSFlashAssAna : public art::EDAnalyzer {
     std::vector<float> m_pmt_y;
     std::vector<float> m_pmt_z;
 
+    geo::GeometryCore const* fGeom;
+
 };
 
 
@@ -205,7 +205,9 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   , fFlashLabels( config().FlashLabels() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
   , fDebug( config().Debug() )
-{ }
+{ 
+  fGeom=lar::providerFrom<geo::Geometry>();
+}
 
 
 void opana::ICARUSFlashAssAna::beginJob() {
@@ -217,12 +219,10 @@ void opana::ICARUSFlashAssAna::beginJob() {
   fGeoTree->Branch("pmt_y",&m_pmt_y);
   fGeoTree->Branch("pmt_z",&m_pmt_z);
   
-  auto const geop = lar::providerFrom<geo::Geometry>();
-
   double PMTxyz[3];
-  for(size_t opch=0; opch<geop->NOpChannels(); ++opch) {
+  for(size_t opch=0; opch<fGeom->NOpChannels(); ++opch) {
 
-    geop->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
+    fGeom->OpDetGeoFromOpChannel(opch).GetCenter(PMTxyz);
 
     //std::cout << PMTxyz[0] << " " << PMTxyz[1] << " " << PMTxyz[2] << std::endl;
 
@@ -366,44 +366,13 @@ template<typename T>
 }
 
 
-
-int opana::ICARUSFlashAssAna::getCryostatByLabel( const std::string label ) { 
-
-  int cryoId;
-  const char *cryoName = &label.back();
-
-  switch(*cryoName){
-    case 'E':
-      cryoId=0; 
-      break;
-    case 'W':
-      cryoId=1;
-      break;
-    default:
-      mf::LogError("ICARUSFlashAssAna") << "Impossible to attribute cryostat with Name: " << label << "\n";
-      throw std::runtime_error("Please verify label");
-  }
+geo::CryostatID::CryostatID_t opana::ICARUSFlashAssAna::getCryostatByChannel( int channel ) {
 
 
-  return cryoId;
+  const geo::OpDetGeo opdetgeo = fGeom->OpDetGeoFromOpChannel(channel);
+  geo::CryostatID::CryostatID_t cid = fGeom->FindCryostatAtPosition(opdetgeo.GetCenter());
 
-}
-
-
-
-
-int opana::ICARUSFlashAssAna::getCryostatByChannel( const int channel ) {
-
-
-  /*
-  - [0:180]: East cryostat
-  - [180:360]: West cryostat
-  */
-
-
-  int cryo = channel / 180; // always round down
-
-  return cryo;
+  return cid;
 
 }
 
@@ -432,7 +401,7 @@ int opana::ICARUSFlashAssAna::getSideByChannel( const int channel ) {
 }
 
 
-void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, int cryo ) {
+void opana::ICARUSFlashAssAna::processOpHits( art::Event const& e, unsigned int cryo ) {
 
 
   if( fOpHitLabels.empty() ){
@@ -648,6 +617,10 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
 
   if ( !fFlashLabels.empty() ) {
 
+    // Hold the cryostat information
+    std::vector<unsigned int> cids; 
+              
+
     for ( size_t iFlashLabel=0; iFlashLabel<fFlashLabels.size(); iFlashLabel++  ) {
 
       auto const label = fFlashLabels[iFlashLabel];
@@ -670,6 +643,14 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_sum_pe = flash.TotalPE();
             
           auto const & ophits = ophitsPtr.at(idx);
+
+          // We keep track of the cryistats where the flashes are found; 
+          geo::CryostatID::CryostatID_t cid = getCryostatByChannel(ophits.front()->OpChannel());
+      
+          auto const found = std::find(cids.begin(), cids.end(), cid);
+          if( found != cids.end() ){
+            cids.push_back( cid );
+          }
 
           // Get the multiplicity, the position and the number of PE per Side
           float xyz[3] = {0.0, 0.0, 0.0};
@@ -697,23 +678,25 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           m_flash_width_z = flash.ZWidth();
 
           fOpFlashTrees[iFlashLabel]->Fill();
-
         }
-
       }
 
       else {
 
         mf::LogError("ICARUSFlashAssAna")
            << "Not found a recob::OpFlash with label '" << label.encode() << "'"; 
-
-        // We try to save the ophits anyways in absence of flashes
-        int cryo = getCryostatByLabel(label.encode());
-        processOpHits(e, cryo);
-
       }
-
     } 
+
+    // If the flashes did not cover all three cryostats.. 
+    // ..well, we save the ophits on what is missing
+    for( unsigned int cid=0; cid<fGeom->Ncryostats(); cid++ ){
+
+      auto const found = std::find( cids.begin(), cids.end(), cid );
+      if( found == cids.end() ){
+         processOpHits(e, cid);
+       }
+    }
   }
 
   else {
@@ -722,8 +705,9 @@ void opana::ICARUSFlashAssAna::analyze(art::Event const& e) {
           << "No recob::OpFlash labels selected\n"; 
 
     // We save the ophits anyways even in absence of flashes
-    processOpHits(e, 0);
-    processOpHits(e, 1);
+    for( unsigned int cid=0; cid<fGeom->Ncryostats(); cid++ ){
+         processOpHits(e, cid);
+    }
 
   }
 
