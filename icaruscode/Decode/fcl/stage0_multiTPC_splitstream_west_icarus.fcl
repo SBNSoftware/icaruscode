@@ -31,5 +31,5 @@ physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.daqTPCROI.FragmentsLabelVec:           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE"]
-physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPC:PHYSCRATEDATATPCWW","daqTPC:PHYSCRATEDATATPCWE"]
+physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE"]
 physics.producers.roifinder.WireModuleLabelVec:          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE"]
