@@ -4,6 +4,7 @@ add_subdirectory(scripts)
 
 art_make(
   EXCLUDE
+    "WriteBeamGateInfo_module.cc"
     "DiscriminatePMTwaveformsByChannel_module.cc"
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
@@ -54,6 +55,10 @@ art_make(
     lardataobj_RawData
     ${MF_MESSAGELOGGER}
     ${FHICLCPP}
+  )
+
+simple_plugin(WriteBeamGateInfo module
+  lardataobj_Simulation
   )
 
 simple_plugin(DiscriminatePMTwaveformsByChannel module
