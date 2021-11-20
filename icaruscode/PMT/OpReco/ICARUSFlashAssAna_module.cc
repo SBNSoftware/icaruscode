@@ -205,9 +205,8 @@ opana::ICARUSFlashAssAna::ICARUSFlashAssAna(Parameters const& config)
   , fFlashLabels( config().FlashLabels() )
   , fPEOpHitThreshold( config().PEOpHitThreshold() )
   , fDebug( config().Debug() )
-{ 
-  fGeom=lar::providerFrom<geo::Geometry>();
-}
+  , fGeom( lar::providerFrom<geo::Geometry>() )
+{ }
 
 
 void opana::ICARUSFlashAssAna::beginJob() {
@@ -369,8 +368,8 @@ template<typename T>
 geo::CryostatID::CryostatID_t opana::ICARUSFlashAssAna::getCryostatByChannel( int channel ) {
 
 
-  const geo::OpDetGeo opdetgeo = fGeom->OpDetGeoFromOpChannel(channel);
-  geo::CryostatID::CryostatID_t cid = fGeom->FindCryostatAtPosition(opdetgeo.GetCenter());
+  const geo::OpDetGeo& opdetgeo = fGeom->OpDetGeoFromOpChannel(channel);
+  geo::CryostatID::CryostatID_t cid = opdetgeo.ID().Cryostat ; 
 
   return cid;
 
