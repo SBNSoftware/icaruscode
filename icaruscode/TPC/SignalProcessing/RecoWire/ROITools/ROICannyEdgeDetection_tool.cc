@@ -34,8 +34,9 @@ public:
     ~ROICannyEdgeDetection();
     
     void configure(const fhicl::ParameterSet& pset) override;
+    void initializeHistograms(art::TFileDirectory&) override {return;}
     
-    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&)    const override;
+    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
     
 private:
 
@@ -86,7 +87,7 @@ void ROICannyEdgeDetection::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROICannyEdgeDetection::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
+void ROICannyEdgeDetection::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs)
 {
     unsigned int numChannels = inputImage.size();
     unsigned int numTicks    = inputImage[0].size();
