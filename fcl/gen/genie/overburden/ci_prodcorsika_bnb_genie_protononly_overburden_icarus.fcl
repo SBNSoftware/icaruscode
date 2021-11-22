@@ -1,0 +1,10 @@
+# file: ci_prodcorsika_bnb_genie_protononly_overburden_icarus.fcl
+# author: chilgenb@fnal.gov
+# created: Nov 22 2021
+# description: wrapper around prodcorsika_bnb_genie_protononly_overburden_icarus.fcl
+#              that enables IFDH access of the input flux
+#              files instead of DIRECT, required to run on grid
+
+#include "prodcorsika_bnb_genie_protononly_overburden_icarus.fcl"
+
+physics.producers.generator.FluxCopyMethod:       "IFDH"
