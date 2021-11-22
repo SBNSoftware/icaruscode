@@ -629,7 +629,9 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
 
                 if (roiIdx > roiStartIdx)
                 {
-                    std::vector<float> holder(roiIdx - roiStartIdx, 10.);
+                    std::vector<float> holder(roiIdx - roiStartIdx);
+
+                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = denoised[roiStartIdx+idx];
 
                     ROIVec.add_range(roiStartIdx, std::move(holder));
                 }
