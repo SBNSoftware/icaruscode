@@ -188,6 +188,8 @@ namespace daq
     struct TriggerGateTypes {
       static constexpr int BNB { 1 };
       static constexpr int NuMI { 2 };
+      static constexpr int OffbeamBNB { 3 };
+      static constexpr int OffbeamNuMI { 4 };
     }; 
     
     static constexpr nanoseconds BNBgateDuration { 1600. };
@@ -385,9 +387,11 @@ namespace daq
     //
     sbn::triggerSource beamGateBit;
     switch (gate_type) {
-      case TriggerGateTypes::BNB:  beamGateBit = sbn::triggerSource::BNB;  break;
-      case TriggerGateTypes::NuMI: beamGateBit = sbn::triggerSource::NuMI; break;
-      default:                     beamGateBit = sbn::triggerSource::Unknown;
+      case TriggerGateTypes::BNB:         beamGateBit = sbn::triggerSource::BNB;         break;
+      case TriggerGateTypes::NuMI:        beamGateBit = sbn::triggerSource::NuMI;        break;
+      case TriggerGateTypes::OffbeamBNB:  beamGateBit = sbn::triggerSource::OffbeamBNB;  break;
+      case TriggerGateTypes::OffbeamNuMI: beamGateBit = sbn::triggerSource::OffbeamNuMI; break;
+      default:                            beamGateBit = sbn::triggerSource::Unknown;
     } // switch gate_type
     
     fTriggerExtra->sourceType = beamGateBit;
