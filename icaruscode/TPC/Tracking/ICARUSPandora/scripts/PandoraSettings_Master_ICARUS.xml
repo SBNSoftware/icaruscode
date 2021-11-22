@@ -49,14 +49,6 @@
         <VisualizeOverallRecoStatus>false</VisualizeOverallRecoStatus>
     </algorithm>
 
-    <algorithm type = "LArTrackParticleBuilding">
-        <PfoListName>RecreatedPfos</PfoListName>
-        <VertexListName>RecreatedVertices</VertexListName>
-    </algorithm>
-    <algorithm type = "LArPcaShowerParticleBuilding">
-        <PfoListName>RecreatedPfos</PfoListName>
-        <VertexListName>RecreatedVertices</VertexListName>
-    </algorithm>
     <algorithm type = "LArVisualMonitoring">
         <ShowCurrentPfos>true</ShowCurrentPfos>
         <ShowDetector>true</ShowDetector>
