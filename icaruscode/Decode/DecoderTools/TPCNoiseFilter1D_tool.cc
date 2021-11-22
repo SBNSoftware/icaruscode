@@ -254,11 +254,11 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     unsigned int numChannels = dataArray.size();
     unsigned int numTicks    = dataArray[0].size();
 
-    if (fSelectVals.size()       < numChannels)  fSelectVals.resize(numChannels, icarus_signal_processing::VectorBool(numTicks));
-    if (fROIVals.size()          < numChannels)  fROIVals.resize(numChannels,  icarus_signal_processing::VectorBool(numTicks));
-    if (fRawWaveforms.size()     < numChannels)  fRawWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
-    if (fPedCorWaveforms.size()  < numChannels)  fPedCorWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
-    if (fIntrinsicRMS.size()     < numChannels)  fIntrinsicRMS.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
+    if (fSelectVals.size()       < numChannels)  fSelectVals.resize(numChannels,       icarus_signal_processing::VectorBool(numTicks));
+    if (fROIVals.size()          < numChannels)  fROIVals.resize(numChannels,          icarus_signal_processing::VectorBool(numTicks));
+    if (fRawWaveforms.size()     < numChannels)  fRawWaveforms.resize(numChannels,     icarus_signal_processing::VectorFloat(numTicks));
+    if (fPedCorWaveforms.size()  < numChannels)  fPedCorWaveforms.resize(numChannels,  icarus_signal_processing::VectorFloat(numTicks));
+    if (fIntrinsicRMS.size()     < numChannels)  fIntrinsicRMS.resize(numChannels,     icarus_signal_processing::VectorFloat(numTicks));
     if (fCorrectedMedians.size() < numChannels)  fCorrectedMedians.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
     if (fWaveLessCoherent.size() < numChannels)  fWaveLessCoherent.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
     if (fMorphedWaveforms.size() < numChannels)  fMorphedWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
