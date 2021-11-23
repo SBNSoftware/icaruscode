@@ -200,7 +200,8 @@ private:
   unsigned int fRun;
   unsigned int fSubRun;
   
-  std::vector<sbn::selTrackInfo> fTrackInfo;
+  //std::vector<sbn::selTrackInfo> fTrackInfo;
+  sbn::selTrackInfo fTrackInfo; //change to one entry per track instead of per event 
   sbn::selBeamInfo fBeamInfo;
   sbn::selTriggerInfo fTriggerInfo;
   
@@ -368,6 +369,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     trackInfo.dir_y = trackPtr->StartDirection().Y();
     trackInfo.dir_z = trackPtr->StartDirection().Z();
     trackInfo.length = trackPtr->Length();
+    fTrackInfo = trackInfo;
     /*
     for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
     {
@@ -378,15 +380,16 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
         
     }
     */
-    fTrackInfo.push_back(trackInfo);
+    //fTrackInfo.push_back(trackInfo);
     
     ++processed;
     ++fTotalProcessed;
+    fStoreTree->Fill();
   } // for particle
   //mf::LogInfo(fLogCategory) << "Particles Processed: " << processed
   //mf::LogTrace(fLogCategory) << "Total Particles Processed: " << fTotalProcessed;
-  fStoreTree->Fill();
-  fTrackInfo.clear();
+  //fStoreTree->Fill();
+  //fTrackInfo.clear();
 
 } // sbn::TimeTrackTreeStorage::analyze()
 
