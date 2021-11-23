@@ -106,7 +106,6 @@ public:
   void beginRun(art::Run & run)                   override;
   void endSubRun(art::SubRun& sr)     override;
 private:
-
   std::ifstream open_file();
   std::string fInputFilePath; ///< Path to the HEPMC input file, relative to `FW_SEARCH_PATH`.
   std::ifstream* fInputFile;
@@ -172,7 +171,6 @@ std::ifstream evgen::HepMCFileGen::open_file()
     << "HEPMC input file '" << fInputFilePath << "' can't be opened.\n";
   
 } // evgen::HepMCFileGen::open_file()
-
 
 
 //------------------------------------------------------------------------------
