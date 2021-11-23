@@ -424,7 +424,7 @@ void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
     std::cout << "  --> calling icarus_signal_processing code" << std::endl;
 
     // Now pass the entire data array to the denoisercoherent
-    (*fROIFinder2D)(fPedCorWaveforms,fRawWaveforms,fROIVals,fWaveLessCoherent,fCorrectedMedians,fIntrinsicRMS,fMorphedWaveforms,finalErosion);
+    (*fROIFinder2D)(fPedCorWaveforms,fRawWaveforms,fROIVals); //,fWaveLessCoherent,fCorrectedMedians,fIntrinsicRMS,fMorphedWaveforms,finalErosion);
 
     std::cout << "  --> have returned from denoising" << std::endl;
 

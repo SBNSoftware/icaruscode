@@ -181,7 +181,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
     fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
     fDiagnosticOutput    = pset.get< bool                     >("DaignosticOutput",                                          false);
-    fOutputHistograms    = pset.get< bool                     >("OutputHistograms",                                           true);
+    fOutputHistograms    = pset.get< bool                     >("OutputHistograms",                                          false);
         
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
@@ -233,8 +233,6 @@ void ROIFinder::produce(art::Event& evt)
         std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     
         std::unique_ptr<std::vector<recob::Wire>> morphedCol(new std::vector<recob::Wire>);
-    
-        std::cout << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
 
         mf::LogInfo("ROIFinder") << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
     
@@ -243,8 +241,6 @@ void ROIFinder::produce(art::Event& evt)
         art::Handle< std::vector<recob::Wire>> wireVecHandle;
         
         evt.getByLabel(wireLabel, wireVecHandle);
-    
-        std::cout << "Recovered Wire data, size: " << wireVecHandle->size() << std::endl;
 
         mf::LogInfo("ROIFinder") << "--> Recovered wire data, size: " << wireVecHandle->size() << std::endl;
     
