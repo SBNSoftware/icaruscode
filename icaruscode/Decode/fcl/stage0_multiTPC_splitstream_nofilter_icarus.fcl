@@ -10,12 +10,16 @@ process_name: stage0
 #physics.pathOptical: [ @sequence::icarus_stage0_pmt ]
 physics.pathBNB:     [ @sequence::icarus_stage0_trigger_BNB,     @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
 physics.pathNUMI:    [ @sequence::icarus_stage0_trigger_NuMI,    @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
+
+physics.pathOffbeamBNB:     [ @sequence::icarus_stage0_trigger_OffbeamBNB,  @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
+physics.pathOffbeamNUMI:    [ @sequence::icarus_stage0_trigger_OffbeamNuMI, @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
+
 physics.pathUnknown: [ @sequence::icarus_stage0_trigger_Unknown, @sequence::icarus_stage0_PMT, daqTPCROI, @sequence::icarus_stage0_multiTPC ]
 
 ## boiler plate...
 physics.outana:        [ purityinfoana0, purityinfoana1 ]
-physics.trigger_paths: [ pathBNB, pathNUMI, pathUnknown ]
-physics.end_paths:     [ outana, streamBNB, streamNUMI, streamUnknown ]
+physics.trigger_paths: [ pathBNB, pathNUMI, pathOffbeamBNB, pathOffbeamNUMI, pathUnknown ]
+physics.end_paths:     [ outana, streamBNB, streamNUMI, streamOffbeamBNB, streamOffbeamNUMI, streamUnknown ]
 
 outputs.outBNB.fileName: "BNB_%ifb_%tc-%p.root"
 outputs.outBNB.SelectEvents: [ pathBNB ]
@@ -23,13 +27,21 @@ outputs.outBNB.SelectEvents: [ pathBNB ]
 outputs.outNUMI.fileName: "NUMI_%ifb_%tc-%p.root"
 outputs.outNUMI.SelectEvents: [ pathNUMI ]
 
+outputs.outOffbeamBNB.fileName: "OffbeamBNB_%ifb_%tc-%p.root"
+outputs.outOffbeamBNB.SelectEvents: [ pathOffbeamBNB ]
+
+outputs.outOffbeamNUMI.fileName: "OffbeamNUMI_%ifb_%tc-%p.root"
+outputs.outOffbeamNUMI.SelectEvents: [ pathOffbeamNUMI ]
+
 outputs.outUnknown.fileName: "UNK_%ifb_%tc-%p.root"
 outputs.outUnknown.SelectEvents: [ pathUnknown ]
 
 # Drop the artdaq format files on output
-outputs.outBNB.outputCommands:     ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
-outputs.outNUMI.outputCommands:    ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
-outputs.outUnknown.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outBNB.outputCommands:         ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands:        ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outOffbeamBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outOffbeamNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outUnknown.outputCommands:     ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration
 #physics.producers.daqPMT.FragmentsLabel:         "daq:ContainerCAENV1730"   # expect multiple window readout
@@ -45,5 +57,5 @@ physics.producers.purityana0.RawModuleLabel:  ["daqTPCROI:PHYSCRATEDATATPCWW","d
 physics.producers.purityana1.RawModuleLabel:  ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 
 ## Modify the event selection for the purity analyzers
-physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]
-physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathUnknown ]
+physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamBNB, pathUnknown ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamNUMI, pathUnknown ]

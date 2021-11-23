@@ -100,15 +100,26 @@ icarus_stage0_filters:
                       WindowEndTime:        9.8 
                     }
 
-   triggerfilterBNB:      {  module_type:        "TriggerTypeFilter"
-                             TriggerDataLabel:   "daqTrigger"
-                             TriggerType:        "BNB"
-                          }
+   triggerfilterBNB:       {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "BNB"
+                           }
 
-   triggerfilterNuMI:     {  module_type:        "TriggerTypeFilter"
-                             TriggerDataLabel:   "daqTrigger"
-                             TriggerType:        "NuMI"
-                          }
+   triggerfilterNuMI:      {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "NuMI"
+                           }
+
+   triggerfilterOffbeamBNB:  {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamBNB"
+                             }
+
+   triggerfilterOffbeamNuMI: {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamNuMI"
+                             }
+
 
    triggerfilterUnknown:  {  module_type:        "TriggerTypeFilter"
                              TriggerDataLabel:   "daqTrigger"
@@ -125,6 +136,14 @@ icarus_stage0_trigger_BNB:         [ daqTrigger,
 
 icarus_stage0_trigger_NuMI:        [ daqTrigger,
                                      triggerfilterNuMI 
+                                   ]
+
+icarus_stage0_trigger_OffbeamBNB:  [ daqTrigger,
+                                     triggerfilterOffbeamBNB 
+                                   ]
+
+icarus_stage0_trigger_OffbeamNuMI: [ daqTrigger,
+                                     triggerfilterOffbeamNuMI 
                                    ]
 
 icarus_stage0_trigger_Unknown:     [ daqTrigger,
