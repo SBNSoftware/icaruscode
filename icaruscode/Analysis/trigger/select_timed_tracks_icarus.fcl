@@ -11,6 +11,23 @@
 #include "messages_icarus.fcl"
 #include "rootoutput_icarus.fcl"
 
+BEGIN_PROLOG
+
+gatesFromTracks_icarus: {
+
+  module_type: BeamGateInfoFromTracks
+  
+  GateStartOffset: "-15 us"
+  GateEndOffset:   "+15 us"
+  
+  T0Producer:    @nil  # must override
+  T0selProducer: @nil  # must override
+  
+} # gatesFromTracks_icarus
+
+
+END_PROLOG
+
 
 # ------------------------------------------------------------------------------
 process_name: T0sel
@@ -25,6 +42,29 @@ services: {
 
 # ------------------------------------------------------------------------------
 physics: {
+
+  producers: {
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+    gatesFromTracksE: {
+      @table::gatesFromTracks_icarus
+    
+      T0Producer:    pandoraGausCryoE
+      T0selProducer: t0selectorE
+    }
+    
+    gatesFromTracksW: {
+      @table::gatesFromTracks_icarus
+      
+      T0Producer:    pandoraGausCryoW
+      T0selProducer: t0selectorW
+    }
+    
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    
+  } # producers
+  
+  
   filters: {
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -33,7 +73,7 @@ physics: {
       
       #TrackTimeTags: [ pandoraGausCryoW, pandoraGausCryoE ]
       TrackTimeTags: [ pandoraGausCryoW ]
-            
+      
     } # t0selectorW
 
     t0selectorE: {
@@ -46,9 +86,9 @@ physics: {
     
   } # filters
   
-  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  selectionW: [ "t0selectorW" ]
-  selectionE: [ "t0selectorE" ]
+  # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  selectionW: [ "t0selectorW", "gatesFromTracksW" ]
+  selectionE: [ "t0selectorE", "gatesFromTracksE" ]
   
   streams: [ "rootoutput" ]
   

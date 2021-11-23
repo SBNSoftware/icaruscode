@@ -9,6 +9,7 @@ art_make(
     "MajorityTriggerSimulation_module.cc"
     "SlidingWindowTrigger_module.cc"
     "SlidingWindowTriggerSimulation_module.cc"
+    "TriggerSimulationOnGates_module.cc"
     "TriggerEfficiencyPlots_module.cc"
     "MajorityTriggerEfficiencyPlots_module.cc"
     "SlidingWindowTriggerEfficiencyPlots_module.cc"
@@ -135,6 +136,28 @@ simple_plugin(SlidingWindowTriggerSimulation module
   ${MF_MESSAGELOGGER}
   ${FHICLCPP}
   ${CETLIB_EXCEPT}
+  ROOT::Hist
+  ROOT::Core
+  )
+
+simple_plugin(TriggerSimulationOnGates module
+  icaruscode_PMT_Trigger_Algorithms
+  icarusalg_Utilities
+  sbnobj_ICARUS_PMT_Trigger_Data
+  icaruscode_PMT_Trigger_Utilities
+  larcore_Geometry_Geometry_service
+  larcorealg_Geometry
+  lardataobj_Simulation
+  lardataobj_RawData
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except
   ROOT::Hist
   ROOT::Core
   )

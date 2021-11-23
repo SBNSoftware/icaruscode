@@ -5,6 +5,7 @@ add_subdirectory(scripts)
 art_make(
   EXCLUDE
     "TimedTrackSelector_module.cc"
+    "BeamGateInfoFromTracks_module.cc"
     "TimeTrackTreeStorage_module.cc"
   )
 
@@ -15,8 +16,14 @@ simple_plugin(TimedTrackSelector module
   ROOT::Core
   )
 
-simple_plugin(TimeTrackTreeStorage module				   
-  lardataobj_AnalysisBase  
+simple_plugin(BeamGateInfoFromTracks module
+  lardataobj_Simulation
+  lardataobj_AnalysisBase
+  lardataobj_RecoBase
+  )
+
+simple_plugin(TimeTrackTreeStorage module
+  lardataobj_AnalysisBase
   lardataobj_RecoBase
   lardataobj_Simulation
   lardataobj_RawData

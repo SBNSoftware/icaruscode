@@ -76,11 +76,6 @@ class icarus::trigger::WriteBeamGateInfo: public art::SharedProducer {
   
     public:
   
-#if 0
-  /// Available operations for the combination of channels.
-  enum class ComboMode { disable, Input1, Input2, AND, OR };
-#endif // 0
-  
   // --- BEGIN Configuration ---------------------------------------------------
   struct Config {
     

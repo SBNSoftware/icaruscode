@@ -77,11 +77,16 @@ triggeremu_data_config_icarus.settings: {
   # bad PMT channels (off or too noisy)
   missing_pmt_channels: @local::icarus_trigger_channel_ignore_202101
 
-  # beam gate window duration (BNB: 1.6 us; NuMI: 9.5 us; and some buffer)
-  BeamGateDuration: "1.70 us"
+  # beam gate window
+  BeamGate: {
+  
+    # beam gate window duration (BNB: 1.6 us; NuMI: 9.5 us; and some buffer)
+    Duration: "1.70 us"
 
-  # beam gate window start offset
-  BeamGateStart:    "-0.05 us"
+    # window start offset
+    Start:    "-0.05 us"
+    
+  }
 
   # discrimination thresholds:
   PMTthresholds: [ "pmtthr" ]
@@ -297,7 +302,7 @@ triggeremu_data_config_icarus.producers: {
   
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   simTiledORM1: {
-    module_type: SlidingWindowTriggerSimulation
+    module_type: TriggerSimulationOnGates
 
     TriggerGatesTag: "trigtilewindowOR"
 
@@ -307,8 +312,7 @@ triggeremu_data_config_icarus.producers: {
     Pattern: @local::triggeremu_data_config_icarus.settings.SlidingWindowTriggerPatternsSingleWindow[0]
 
     # Beam gate:
-    BeamGateDuration: @local::triggeremu_data_config_icarus.settings.BeamGateDuration
-    BeamGateStart:    @local::triggeremu_data_config_icarus.settings.BeamGateStart
+    BeamGates: @nil # needs to be overridden
     
     # Bits set into the raw::Trigger objects
     BeamBits:         @local::BNB_settings.trigger_bits   # from trigger_icarus.fcl

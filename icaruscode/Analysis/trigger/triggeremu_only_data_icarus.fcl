@@ -4,12 +4,23 @@
 # Authors: Gianluca Petrillo (petrillo@slac.stanford.edu)
 # Date:    November 9, 2021
 #
+#
+# This configuration runs the trigger emulation on ime intervals ("beam gates")
+# provided as input, allegedly around the time of reconstructed cathode-crossing
+# tracks.
+# The required data products with track times (beam-gate-like intervals) must be
+# called `gatesFromTracksE` and `gatesFromTracksW`.
+#
+#
 # Changes
 # --------
 # 
 # 20211109 (petrillo@slac.stanford.edu) [v1.0]
 # :   original version based on `triggersim_data_icarus.fcl` v1.1
 #     and `triggersim_icarus_data.fcl` v1.0
+# 20211122 (petrillo@slac.stanford.edu) [v2.0]
+# :   using TriggerSimulationOnGates instead of SlidingWindowTriggerSimulation;
+#     requires non-standard external input
 # 
 
 #include "services_common_icarus.fcl"
@@ -71,6 +82,70 @@ physics: {
   # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   
 } # physics
+
+
+# we need to tell the simulation in which time intervals to run:
+physics.producers.simTiledORM1E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM2E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM3E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM4E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM5E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM6E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM3O3E  .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM4O4E  .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM5O5E  .BeamGates: gatesFromTracksE
+physics.producers.simTiledORM6O6E  .BeamGates: gatesFromTracksE
+physics.producers.simTiledORS3E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORS5E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORS8E    .BeamGates: gatesFromTracksE
+physics.producers.simTiledORS10E   .BeamGates: gatesFromTracksE
+physics.producers.simTiledORS15E   .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM1E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM2E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM3E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM4E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM5E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM6E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM3O3E.BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM4O4E.BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM5O5E.BeamGates: gatesFromTracksE
+physics.producers.simSlidingORM6O6E.BeamGates: gatesFromTracksE
+physics.producers.simSlidingORS3E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORS5E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORS8E  .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORS10E .BeamGates: gatesFromTracksE
+physics.producers.simSlidingORS15E .BeamGates: gatesFromTracksE
+
+physics.producers.simTiledORM1W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM2W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM3W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM4W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM5W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM6W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM3O3W  .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM4O4W  .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM5O5W  .BeamGates: gatesFromTracksW
+physics.producers.simTiledORM6O6W  .BeamGates: gatesFromTracksW
+physics.producers.simTiledORS3W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORS5W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORS8W    .BeamGates: gatesFromTracksW
+physics.producers.simTiledORS10W   .BeamGates: gatesFromTracksW
+physics.producers.simTiledORS15W   .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM1W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM2W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM3W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM4W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM5W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM6W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM3O3W.BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM4O4W.BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM5O5W.BeamGates: gatesFromTracksW
+physics.producers.simSlidingORM6O6W.BeamGates: gatesFromTracksW
+physics.producers.simSlidingORS3W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORS5W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORS8W  .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORS10W .BeamGates: gatesFromTracksW
+physics.producers.simSlidingORS15W .BeamGates: gatesFromTracksW
 
 
 # ------------------------------------------------------------------------------
