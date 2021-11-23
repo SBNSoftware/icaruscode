@@ -503,8 +503,6 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
         unsigned int               dataSize = art::Ptr<raw::RawDigit>(digitVecHandle,0)->Samples(); //size of raw data vectors
         raw::RawDigit::ADCvector_t rawDataVec(dataSize);
 
-        std::cout << "******* processSingleLabel with " << inputLabel << " finds data with size " << dataSize << std::endl;
-
         using BoardToChannelArrayPairMap = std::map<unsigned int, ChannelArrayPair>;
 
         BoardToChannelArrayPairMap  boardToChannelArrayPairMap;

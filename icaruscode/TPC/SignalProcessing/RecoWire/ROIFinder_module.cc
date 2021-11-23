@@ -145,6 +145,7 @@ private:
     std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
     bool                                                       fOutputMorphed;              ///< Output the morphed waveforms
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
+    bool                                                       fOutputHistograms;           ///< Output tuples/histograms?
     size_t                                                     fEventCount;                 ///< count of event processed
     
     std::map<size_t,std::unique_ptr<icarus_tool::IROILocator>> fROIToolMap;
@@ -180,7 +181,12 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
     fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
     fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
     fDiagnosticOutput    = pset.get< bool                     >("DaignosticOutput",                                          false);
-    
+    fOutputHistograms    = pset.get< bool                     >("OutputHistograms",                                          false);
+        
+    // Access ART's TFileService, which will handle creating and writing
+    // histograms and n-tuples for us.
+    art::ServiceHandle<art::TFileService> tfs;
+     
     // Recover the list of ROI finding tools
     const fhicl::ParameterSet& roiFinderTools = pset.get<fhicl::ParameterSet>("ROIFinderToolVec");
 
@@ -192,6 +198,15 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
         size_t                     planeIdx              = roiFinderToolParamSet.get<size_t>("Plane");
         
         fROIToolMap[planeIdx] = art::make_tool<icarus_tool::IROILocator> (roiFinderToolParamSet);
+
+        if (fOutputHistograms)
+        { 
+            std::string dirName = "ROIFinder_" + std::to_string(planeIdx);
+
+            art::TFileDirectory dir = tfs->mkdir(dirName);
+
+            fROIToolMap[planeIdx]->initializeHistograms(dir);
+        }
     }
     
     return;
@@ -218,8 +233,6 @@ void ROIFinder::produce(art::Event& evt)
         std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     
         std::unique_ptr<std::vector<recob::Wire>> morphedCol(new std::vector<recob::Wire>);
-    
-        std::cout << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
 
         mf::LogInfo("ROIFinder") << "ROIFinder, looking for decon1droi data at " << wireLabel << std::endl;
     
@@ -228,8 +241,6 @@ void ROIFinder::produce(art::Event& evt)
         art::Handle< std::vector<recob::Wire>> wireVecHandle;
         
         evt.getByLabel(wireLabel, wireVecHandle);
-    
-        std::cout << "Recovered Wire data, size: " << wireVecHandle->size() << std::endl;
 
         mf::LogInfo("ROIFinder") << "--> Recovered wire data, size: " << wireVecHandle->size() << std::endl;
     

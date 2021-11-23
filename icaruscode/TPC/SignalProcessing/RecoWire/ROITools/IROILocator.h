@@ -17,6 +17,8 @@
 #include "larcore/Geometry/Geometry.h"
 #include "art/Framework/Principal/Event.h" 
 
+namespace art { class TFileDirectory; }
+
 namespace icarus_tool
 {
     class IROILocator
@@ -24,7 +26,8 @@ namespace icarus_tool
     public:
         virtual ~IROILocator() noexcept = default;
         
-        virtual void   configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void configure(const fhicl::ParameterSet& pset) = 0;
+        virtual void initializeHistograms(art::TFileDirectory&) = 0;
         
         // Define the waveform container
         using VectorBool  = std::vector<bool>;
@@ -35,7 +38,7 @@ namespace icarus_tool
         using PlaneIDVec  = std::vector<geo::PlaneID>;
         
         // Find the ROI's
-        virtual void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) const = 0;
+        virtual void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) = 0;
     };
 }
 

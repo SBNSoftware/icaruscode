@@ -89,6 +89,7 @@ icarus_roifinder:
 {
     module_type:        ROIFinder
     WireModuleLabel:    "decon1droi"
+    OutputHistograms:   false
     ROIFinderToolVec: {
         ROIFinderPlane0: @local::morphologicalfinder_0
         ROIFinderPlane1: @local::morphologicalfinder_1

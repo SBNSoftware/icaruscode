@@ -90,7 +90,7 @@ TPCNoiseFilter1DTool: {
     CoherentGrouping:   64
     StructuringElement: 16
     FilterWindow:       10
-    Threshold:          [2.75, 2.75, 2.75]
+    Threshold:          [8., 7.0 , 8.0] #[2.75, 2.75, 2.75] # changing threshold scheme
     FilterModeVec:      ["e","g","d"]
     UseFFTFilter:       false
     FFTSigmaVals:       [ [1.5,20.], [1.5,20.], [2.0,20.] ]
