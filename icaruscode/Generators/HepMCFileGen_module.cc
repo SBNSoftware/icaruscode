@@ -121,6 +121,7 @@ private:
 //  void ExpandInputFilePatternsDirect();
 //  void ExpandInputFilePatternsIFDH();
   void open_file();
+  std::string fInputFilePath; ///< Path to the HEPMC input file, relative to `FW_SEARCH_PATH`.
   std::ifstream* fInputFile;
 //  std::string              fFileSearchPaths; ///< colon separated set of path stems (to be set)
 //  std::vector<std::string> fFilePatterns;    ///< wildcard patterns files containing histograms or ntuples, or txt (to be set)
@@ -134,7 +135,8 @@ private:
 //------------------------------------------------------------------------------
 evgen::HepMCFileGen::HepMCFileGen(fhicl::ParameterSet const & p)
   : EDProducer{p}
-  , fInputFile(0)
+  , fInputFilePath(p.get<std::string>("InputFilePath"))
+  , fInputFile(nullptr)
 //  , fFileSearchPaths{p.get<std::string>("FileSearchPaths")}
 //  , fFilePatterns{p.get<std::vector<std::string>>("FilePatterns")}
 //  , fFileCopyMethod{p.get<std::string>("FluxCopyMethod","DIRECT")}
@@ -155,7 +157,7 @@ void evgen::HepMCFileGen::open_file()
 
    std::string fullFileName;
     cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("Darkmatterfile/ldm-test.root_ldm.hepmc",fullFileName);
+    searchPath.find_file(fInputFilePath,fullFileName);
     std::cout<<fullFileName<<std::endl;
     //std::ifstream fin;
     //fInputFile->open(fullFileName,std::ios::in);
