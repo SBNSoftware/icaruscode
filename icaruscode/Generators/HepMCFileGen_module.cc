@@ -176,7 +176,6 @@ std::ifstream evgen::HepMCFileGen::open_file()
 //------------------------------------------------------------------------------
 void evgen::HepMCFileGen::beginJob()
 {
- 
   fInputFile = new std::ifstream(open_file());
   
 }
