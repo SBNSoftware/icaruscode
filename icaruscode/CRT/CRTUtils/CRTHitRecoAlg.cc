@@ -717,8 +717,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     //no channels above threshold or no intermodule coincidences? return empty hit
     //    if(nabove==0 || layID.size()!=2) {
     if(nabove==0 || layID.size() < 2) {
-      if(nabove==0) std::cout << "no channels above threshold!" << std::endl;
-      if(layID.size()<2) std::cout << "no coincidence found" << std::endl;
+      if(nabove==0 && fVerbose) std::cout << "no channels above threshold!" << std::endl;
+      if(layID.size()<2 && fVerbose) std::cout << "no coincidence found" << std::endl;
       return FillCRTHit({},{},0,0,0,0,0,0,0,0,0,0,"");
     }
     
@@ -807,7 +807,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
 	}else {
 	*/
 	posA = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
-	std::cout<< "posA (==0): "<< posA<< std::endl;
+	if (fVerbose) std::cout<< "posA (==0): "<< posA<< std::endl;
 	  //}
 
 	if(fVerbose)
@@ -881,7 +881,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       }else {
       */
 	posB = adsGeo.GetCenter() + geo::Zaxis() * zaxixpos;
-	std::cout<< "posB (== 0): "<< posB<< std::endl;
+	if (fVerbose) std::cout<< "posB (== 0): "<< posB<< std::endl;
 	//}
       //posB = adsGeo.GetCenter() + geo::Zaxis() * (zaxixpos - adsGeo.HalfLength());
 
@@ -1020,7 +1020,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     hitpoint[1] = hitpos.Y();
     hitpoint[2] = hitpos.Z();
     //if (fVerbose){
-    if (region=="South" && hitpoint[0] >= 366. && hitpoint[1] > 200.)
+    if (region=="South" && hitpoint[0] >= 366. && hitpoint[1] > 200. && fVerbose)
       std::cout << "I am looking for south wall :   macs " << (int)macs.back() << " x: \t"<< hitpoint[0] 
 		<<" ,y: \t" << hitpoint[1]  <<" ,z: \t" << hitpoint[2] << std::endl;
     //}
