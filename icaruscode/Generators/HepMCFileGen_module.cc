@@ -91,22 +91,10 @@
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
-#include "ifdh.h"       // use bare
+#include "ifdh.h"
+#include "IFDH_service.h" // ifdh_ns::IFDH
 #undef USE_IFDH_SERVICE // ifdh for now
-// #ifndef NO_IFDH_LIB
-//   #define USE_IFDH_SERVICE 1
-//   // IFDHC
-//   #ifdef USE_IFDH_SERVICE
-//     #include "IFDH_service.h"
-//   #else
-//     // bare IFDHC
-//     #include "ifdh.h"
-//   #endif
-// #else
-//   #undef USE_IFDH_SERVICE
-//   // nothing doing ... use ifdef to hide any reference that might need header
-//   #include <cassert>
-// #endif
+
 namespace evgen {
   class HepMCFileGen;
 }
@@ -118,14 +106,10 @@ public:
   void beginRun(art::Run & run)                   override;
   void endSubRun(art::SubRun& sr)     override;
 private:
-//  void ExpandInputFilePatternsDirect();
-//  void ExpandInputFilePatternsIFDH();
-  void open_file();
+
+  std::ifstream open_file();
+  std::string fInputFilePath; ///< Path to the HEPMC input file, relative to `FW_SEARCH_PATH`.
   std::ifstream* fInputFile;
-//  std::string              fFileSearchPaths; ///< colon separated set of path stems (to be set)
-//  std::vector<std::string> fFilePatterns;    ///< wildcard patterns files containing histograms or ntuples, or txt (to be set)
-//  std::vector<std::string> fSelectedFiles;   ///< flux files selected after wildcard expansion and subset selection
-//  std::string              fFileCopyMethod;  ///< "DIRECT" = old direct access method, otherwise = ifdh approach schema ("" okay)
   
   double         fEventsPerPOT;     ///< Number of events per POT (to be set)
   int            fEventsPerSubRun;  ///< Keeps track of the number of processed events per subrun
@@ -134,74 +118,68 @@ private:
 //------------------------------------------------------------------------------
 evgen::HepMCFileGen::HepMCFileGen(fhicl::ParameterSet const & p)
   : EDProducer{p}
-  , fInputFile(0)
-//  , fFileSearchPaths{p.get<std::string>("FileSearchPaths")}
-//  , fFilePatterns{p.get<std::vector<std::string>>("FilePatterns")}
-//  , fFileCopyMethod{p.get<std::string>("FluxCopyMethod","DIRECT")}
+  , fInputFilePath(p.get<std::string>("InputFilePath"))
+  , fInputFile(nullptr)
   , fEventsPerPOT{p.get<double>("EventsPerPOT", -1.)}
   , fEventsPerSubRun(0)
 {
-  srand (time(0));
   produces< std::vector<simb::MCTruth>   >();
   produces< sumdata::RunData, art::InRun >();
   produces< sumdata::POTSummary, art::InSubRun >();
 }
 //------------------------------------------------------------------------------
 
-//************** Animesh modified it to include file from ICARUS_data area ********************//
-
-void evgen::HepMCFileGen::open_file()
+std::ifstream evgen::HepMCFileGen::open_file()
 {
-
-   std::string fullFileName;
-    cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file("Darkmatterfile/ldm-test.root_ldm.hepmc",fullFileName);
-    std::cout<<fullFileName<<std::endl;
-    //std::ifstream fin;
-    //fInputFile->open(fullFileName,std::ios::in);
-
- // int random_file_index = rand() / double(RAND_MAX) * fSelectedFiles.size(); 
- // mf::LogInfo("HepMCFileGen")
- //     << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;;
-  fInputFile = new std::ifstream(fullFileName, std::fstream::in);
-//  std::cout << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;
-  // check that the file is a good one
-  if( !fInputFile->good() )
-    throw cet::exception("HepMCFileGen") << "input text file "
-        //  << fSelectedFiles.at(random_file_index)
-          << " cannot be read.\n";
-}
-
-//************** Animesh modified it to include file from ICARUS_data area ********************//
-
-//------------------------------------------------------------------------------
-//void evgen::HepMCFileGen::open_file()
-//{
-//  int random_file_index = rand() / double(RAND_MAX) * fSelectedFiles.size(); 
-//  mf::LogInfo("HepMCFileGen")
-//      << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;;
-//  fInputFile = new std::ifstream(fSelectedFiles.at(random_file_index).c_str(), std::fstream::in);
-//  std::cout << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;
-  // check that the file is a good one
-//  if( !fInputFile->good() )
-//    throw cet::exception("HepMCFileGen") << "input text file "
-//          << fSelectedFiles.at(random_file_index)
-//          << " cannot be read.\n";
-//}
+  /*
+   * The plan:
+   *  1. expand the path in FW_SEARCH_PATH (only if relative path)
+   *  2. copy it into scratch area (only if starts with `/pnfs`)
+   *  3. open the file (original or copy) and return the opened file
+   * 
+   * Throws a cet::exception if eventually file is not found.
+   */
+  
+  std::string fullFileName = fInputFilePath;
+  
+  cet::search_path searchPath("FW_SEARCH_PATH");
+  if (searchPath.find_file(fInputFilePath, fullFileName)) {
+    mf::LogDebug("HepMCFileGen")
+      << "Input file '" << fInputFilePath << "' found in FW_SEARCH_PATH:\n"
+      << fullFileName
+      ;
+  }
+  
+  //
+  // prepare the file with IFDH, if path starts with `/pnfs`
+  //
+  if (fullFileName.compare(0, 6, "/pnfs/") == 0) { 
+    fullFileName = art::ServiceHandle<IFDH>()->fetchInput(fullFileName);
+    mf::LogDebug("HepMCFileGen")
+      << "IFDH fetch: '" << fInputFilePath << "' -> '" << fullFileName << "'";
+  }
+  
+  //
+  // attempt to open
+  //
+  mf::LogDebug("HepMCFileGen")
+    << "Reading input file '" << fInputFilePath << "' as:\n" << fullFileName;
+  std::ifstream inputFile(fullFileName);
+  if (inputFile) return inputFile;
+  
+  // all attempts failed, give up:
+  throw cet::exception("HepMCFileGen")
+    << "HEPMC input file '" << fInputFilePath << "' can't be opened.\n";
+  
+} // evgen::HepMCFileGen::open_file()
 
 
 
 //------------------------------------------------------------------------------
 void evgen::HepMCFileGen::beginJob()
 {
- // if (fFileCopyMethod == "DIRECT")       ExpandInputFilePatternsDirect();
- // else if (fFileCopyMethod == "IFDH")    ExpandInputFilePatternsIFDH();
-//  else {
-//    throw cet::exception("HepMCFileGen") << "FluxCopyMethod "
-//          << fFileCopyMethod
- //         << " not supported.\n";
- // }
-  open_file();
+ 
+  fInputFile = new std::ifstream(open_file());
   
 }
 //------------------------------------------------------------------------------
@@ -315,143 +293,5 @@ void evgen::HepMCFileGen::produce(art::Event & e)
   fEventsPerSubRun++;
   return;
 }
-/*
-void evgen::HepMCFileGen::ExpandInputFilePatternsDirect() {
-  std::vector<std::string> dirs;
-  cet::split_path(fFileSearchPaths,dirs);
-  glob_t g;
-  int flags = GLOB_TILDE;   // expand ~ home directories
-  std::ostringstream patterntext;  // for info/error messages
-  std::ostringstream dirstext;     // for info/error messages
-  std::vector<std::string>::const_iterator uitr = fFilePatterns.begin();
-  int ipatt = 0;
-  for ( ; uitr != fFilePatterns.end(); ++uitr, ++ipatt ) {
-    std::string userpattern = *uitr;
-    patterntext << "\n\t" << userpattern;
-    std::vector<std::string>::const_iterator ditr = dirs.begin();
-    for ( ; ditr != dirs.end(); ++ditr ) {
-      std::string dalt = *ditr;
-      // if non-null, does it end with a "/"?  if not add one
-      size_t len = dalt.size();
-      if ( len > 0 && dalt.rfind('/') != len-1 ) dalt.append("/");
-      if ( uitr == fFilePatterns.begin() ) dirstext << "\n\t" << dalt;
-      std::string filepatt = dalt + userpattern;
-      glob(filepatt.c_str(),flags,NULL,&g);
-      if ( g.gl_pathc > 0 ) flags |= GLOB_APPEND; // next glob() will append to list
-    }  // loop over FluxSearchPaths dirs
-  }  // loop over user patterns
-  std::ostringstream paretext;
-  std::ostringstream flisttext;
-  int nfiles = g.gl_pathc;
-  if ( nfiles == 0 ) {
-    paretext << "\n  expansion resulted in a null list for flux files";
-  } else { 
-    // some sets of files should be left in order
-    // and no size limitations imposed ... just copy the list
-    paretext << "\n  list of files will be processed in order";
-    for (int i=0; i<nfiles; ++i) {
-      std::string afile(g.gl_pathv[i]);
-      fSelectedFiles.push_back(afile);
-      flisttext << "[" << std::setw(3) << i << "] "
-                << afile << "\n";
-    }
-    mf::LogInfo("HepMCFileGen")
-      << "ExpandFilePatternsDirect initially found " << nfiles
-      << " files for user patterns:"
-      << patterntext.str() << "\n  using FileSearchPaths of: "
-      << dirstext.str() <<  "\n" << paretext.str();
-      //<< "\"" << cet::getenv("FW_SEARCH_PATH") << "\"";
-    mf::LogDebug("HepMCFileGen") << "\n" << flisttext.str();
-    // done with glob list
-    globfree(&g);
-  }
-}
-void evgen::HepMCFileGen::ExpandInputFilePatternsIFDH() {
-#ifdef NO_IFDH_LIB
-    std::ostringstream fmesg;
-    std::string marker = "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n";
-    fmesg << marker
-          << __FILE__ << ":" << __LINE__
-          << "\nno IFDH implemented on this platform\n"
-          << marker;
-    // make sure the message goes everywhere
-    std::cout << fmesg.str() << std::flush;
-    std::cerr << fmesg.str();
-    throw cet::exception("Attempt to use ifdh class") << fmesg.str();
-    assert(0);
-#else
-    // if "method" just an identifier and not a scheme then clear it
-    if ( fFileCopyMethod.find("IFDH") == 0 ) fFileCopyMethod = "";
-  #ifdef USE_IFDH_SERVICE
-    art::ServiceHandle<IFDH> ifdhp;
-  #else
-    if ( ! fIFDH ) fIFDH = new ifdh_ns::ifdh;
-  #endif
-    std::string spaths = fFileSearchPaths;
-    const char* ifdh_debug_env = std::getenv("IFDH_DEBUG_LEVEL");
-    if ( ifdh_debug_env ) {
-      mf::LogInfo("HepMCFileGen") << "IFDH_DEBUG_LEVEL: " << ifdh_debug_env;
-      fIFDH->set_debug(ifdh_debug_env);
-    }
-    // filenames + size
-    std::vector<std::pair<std::string,long>> partiallist, fulllist, selectedlist, locallist;
-    std::ostringstream patterntext;  // stringification of vector of patterns
-    std::ostringstream fulltext;     // for info on full list of matches
-    std::ostringstream selectedtext; // for info on selected files
-    std::ostringstream localtext;    // for info on local files
-    fulltext << "search paths: " << spaths;
-    //std::vector<std::string>::const_iterator uitr = fFilePatterns.begin();
-    // loop over possible patterns
-    // IFDH handles various stems but done a list of globs
-    size_t ipatt=0;
-    auto uitr = fFilePatterns.begin();
-    for ( ; uitr != fFilePatterns.end(); ++uitr, ++ipatt ) {
-      std::string userpattern = *uitr;
-      patterntext << "\npattern [" << std::setw(3) << ipatt << "] " << userpattern;
-      fulltext    << "\npattern [" << std::setw(3) << ipatt << "] " << userpattern;
-  #ifdef USE_IFDH_SERVICE
-      partiallist = ifdhp->findMatchingFiles(spaths,userpattern);
-  #else
-      partiallist = fIFDH->findMatchingFiles(spaths,userpattern);
-  #endif
-      fulllist.insert(fulllist.end(),partiallist.begin(),partiallist.end());
-      // make a complete list ...
-      fulltext << " found " << partiallist.size() << " files";
-      for (auto pitr = partiallist.begin(); pitr != partiallist.end(); ++pitr) {
-        fulltext << "\n  " << std::setw(10) << pitr->second << " " << pitr->first;
-      }
-      partiallist.clear();
-    }  // loop over user patterns
-    size_t nfiles = fulllist.size();
-    mf::LogInfo("HepMCFileGen")
-      << "ExpandFilePatternsIFDH initially found " << nfiles << " files";
-    mf::LogDebug("HepMCFileGen")
-      << fulltext.str();
-    if ( nfiles == 0 ) {
-      selectedtext << "\n  expansion resulted in a null list for flux files";
-    } else {
-      // some sets of files should be left in order
-      // and no size limitations imposed ... just copy the list
-      selectedtext << "\n  list of files will be processed in order";
-      selectedlist.insert(selectedlist.end(),fulllist.begin(),fulllist.end());
-    } 
-    mf::LogInfo("HepMCFileGen") << "Fetching files." << std::endl;
-    // have a selected list of remote files
-    // get paths to local copies
-  // #ifdef USE_IFDH_SERVICE
-  //   locallist = ifdhp->fetchSharedFiles(selectedlist,fFileCopyMethod);
-  // #else
-  //   locallist = fIFDH->fetchSharedFiles(selectedlist,fFileCopyMethod);
-  // #endif
-    localtext << "final list of files:";
-    size_t i=0;
-    for (auto litr = selectedlist.begin(); litr != selectedlist.end(); ++litr, ++i) {
-        fSelectedFiles.push_back(litr->first);
-        localtext << "\n\t[" << std::setw(3) << i << "]\t" << litr->first;
-      }
-    mf::LogInfo("HepMCFileGen") << localtext.str();
-    // no null path allowed for at least these
-#endif  // 'else' code only if NO_IFDH_LIB not defined
-  }*/
 DEFINE_ART_MODULE(evgen::HepMCFileGen)
 

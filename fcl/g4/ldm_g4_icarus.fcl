@@ -1,0 +1,5 @@
+#include "mcreco.fcl"
+#include "standard_g4_icarus.fcl"
+
+physics.producers.mcreco: @local::standard_mcreco  # from mcreco.fcl
+physics.producers.simulate: [ @local::physics.producers.simulate, mcreco ]
