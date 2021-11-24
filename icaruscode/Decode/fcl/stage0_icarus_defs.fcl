@@ -10,6 +10,7 @@
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
+#include "crt_decoderdefs_icarus.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 
 BEGIN_PROLOG
@@ -49,6 +50,8 @@ icarus_stage0_producers:
 
   pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
+
+  daqCRT:                         @local::crtdaq_icarus
 
   daqTrigger:                     @local::decodeTrigger
 
@@ -191,6 +194,17 @@ icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
                                      @sequence::icarus_stage0_WestHits_TPC,
                                      @sequence::icarus_purity_monitor
+                                   ]
+
+icarus_stage0_crt:                 [
+                                     daqCRT
+                                   ]
+
+icarus_stage0_data:                [
+                                     @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_multiTPC,
+                                     @sequence::icarus_stage0_crt
                                    ]
 
 ### Below we include overrides for the modules above
