@@ -39,9 +39,6 @@ art_make(
                   art_Persistency_Common
                   art_Utilities
                   canvas
-                  ifdh
-                  ${IFDH}
-                  ${IFDH_AS_SERVICE_LIB_LIST}
                   ${MF_MESSAGELOGGER}
                   ${MF_UTILITIES}
                   #${BOOST_LIB}
@@ -66,6 +63,7 @@ art_make(
                   lardataobj_RawData    
                   lardataobj_RecoBase
                   lardataobj_AnalysisBase
+                  IFDH_service
                   ${ART_FRAMEWORK_CORE}
                   ${ART_FRAMEWORK_BASIC}
                   ${ART_FRAMEWORK_IO_PRODUCTMIX}
@@ -84,9 +82,6 @@ art_make(
                   art_Utilities
                   canvas
                   ifdh
-                  IFDH
-                  #${IFDH}
-                  #${IFDH_AS_SERVICE_LIB_LIST}
                   ${MF_MESSAGELOGGER}
                   ${MF_UTILITIES}
                   #${BOOST_LIB}
