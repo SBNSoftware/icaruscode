@@ -91,7 +91,8 @@
 #include "larcoreobj/SummaryData/POTSummary.h"
 #include "nusimdata/SimulationBase/MCTruth.h"
 #include "nusimdata/SimulationBase/MCParticle.h"
-#include "ifdh.h"       // use bare
+#include "ifdh.h"
+#include "IFDH_service.h" // ifdh_ns::IFDH
 #undef USE_IFDH_SERVICE // ifdh for now
 // #ifndef NO_IFDH_LIB
 //   #define USE_IFDH_SERVICE 1
@@ -120,7 +121,7 @@ public:
 private:
 //  void ExpandInputFilePatternsDirect();
 //  void ExpandInputFilePatternsIFDH();
-  void open_file();
+  std::ifstream open_file();
   std::string fInputFilePath; ///< Path to the HEPMC input file, relative to `FW_SEARCH_PATH`.
   std::ifstream* fInputFile;
 //  std::string              fFileSearchPaths; ///< colon separated set of path stems (to be set)
@@ -143,38 +144,56 @@ evgen::HepMCFileGen::HepMCFileGen(fhicl::ParameterSet const & p)
   , fEventsPerPOT{p.get<double>("EventsPerPOT", -1.)}
   , fEventsPerSubRun(0)
 {
-  srand (time(0));
   produces< std::vector<simb::MCTruth>   >();
   produces< sumdata::RunData, art::InRun >();
   produces< sumdata::POTSummary, art::InSubRun >();
 }
 //------------------------------------------------------------------------------
 
-//************** Animesh modified it to include file from ICARUS_data area ********************//
-
-void evgen::HepMCFileGen::open_file()
+std::ifstream evgen::HepMCFileGen::open_file()
 {
+  /*
+   * The plan:
+   *  1. expand the path in FW_SEARCH_PATH (only if relative path)
+   *  2. copy it into scratch area (only if starts with `/pnfs`)
+   *  3. open the file (original or copy) and return the opened file
+   * 
+   * Throws a cet::exception if eventually file is not found.
+   */
+  
+  std::string fullFileName = fInputFilePath;
+  
+  cet::search_path searchPath("FW_SEARCH_PATH");
+  if (searchPath.find_file(fInputFilePath, fullFileName)) {
+    mf::LogDebug("HepMCFileGen")
+      << "Input file '" << fInputFilePath << "' found in FW_SEARCH_PATH:\n"
+      << fullFileName
+      ;
+  }
+  
+  //
+  // prepare the file with IFDH, if path starts with `/pnfs`
+  //
+  if (fullFileName.compare(0, 6, "/pnfs/") == 0) { 
+    fullFileName = art::ServiceHandle<IFDH>()->fetchInput(fullFileName);
+    mf::LogDebug("HepMCFileGen")
+      << "IFDH fetch: '" << fInputFilePath << "' -> '" << fullFileName << "'";
+  }
+  
+  //
+  // attempt to open
+  //
+  mf::LogDebug("HepMCFileGen")
+    << "Reading input file '" << fInputFilePath << "' as:\n" << fullFileName;
+  std::ifstream inputFile(fullFileName);
+  if (inputFile) return inputFile;
+  
+  // all attempts failed, give up:
+  throw cet::exception("HepMCFileGen")
+    << "HEPMC input file '" << fInputFilePath << "' can't be opened.\n";
+  
+} // evgen::HepMCFileGen::open_file()
 
-   std::string fullFileName;
-    cet::search_path searchPath("FW_SEARCH_PATH");
-    searchPath.find_file(fInputFilePath,fullFileName);
-    std::cout<<fullFileName<<std::endl;
-    //std::ifstream fin;
-    //fInputFile->open(fullFileName,std::ios::in);
-
- // int random_file_index = rand() / double(RAND_MAX) * fSelectedFiles.size(); 
- // mf::LogInfo("HepMCFileGen")
- //     << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;;
-  fInputFile = new std::ifstream(fullFileName, std::fstream::in);
-//  std::cout << "Opening file " << fSelectedFiles.at(random_file_index) << std::endl;
-  // check that the file is a good one
-  if( !fInputFile->good() )
-    throw cet::exception("HepMCFileGen") << "input text file "
-        //  << fSelectedFiles.at(random_file_index)
-          << " cannot be read.\n";
-}
-
-//************** Animesh modified it to include file from ICARUS_data area ********************//
 
 //------------------------------------------------------------------------------
 //void evgen::HepMCFileGen::open_file()
@@ -203,7 +222,7 @@ void evgen::HepMCFileGen::beginJob()
 //          << fFileCopyMethod
  //         << " not supported.\n";
  // }
-  open_file();
+  fInputFile = new std::ifstream(open_file());
   
 }
 //------------------------------------------------------------------------------

@@ -10,6 +10,7 @@ services:
   TimeTracker:           {}
   MemoryTracker:         {} # default is one
   RandomNumberGenerator: {} #ART native random number generator
+  IFDH:                  {}
 #  FileCatalogMetadata:   @local::art_file_catalog_mc
    @table::icarus_geometry_services
 }
