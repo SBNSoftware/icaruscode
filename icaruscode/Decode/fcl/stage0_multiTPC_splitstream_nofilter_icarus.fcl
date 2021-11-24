@@ -57,5 +57,5 @@ physics.producers.purityana0.RawModuleLabel:  ["daqTPCROI:PHYSCRATEDATATPCWW","d
 physics.producers.purityana1.RawModuleLabel:  ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 
 ## Modify the event selection for the purity analyzers
-physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamBNB, pathUnknown ]
-physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamNUMI, pathUnknown ]
+physics.analyzers.purityinfoana0.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamBNB, pathOffbeamNUMI, pathUnknown ]
+physics.analyzers.purityinfoana1.SelectEvents:    [ pathBNB, pathNUMI, pathOffbeamBNB, pathOffbeamNUMI, pathUnknown ]
