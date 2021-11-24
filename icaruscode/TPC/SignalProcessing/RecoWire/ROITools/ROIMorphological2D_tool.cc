@@ -61,7 +61,7 @@ private:
     
 //----------------------------------------------------------------------
 // Constructor.
-ROIMorphological2D::ROIMorphological2D(const fhicl::ParameterSet& pset)
+ROIMorphological2D::ROIMorphological2D(const fhicl::ParameterSet& pset) : fOutputHistograms(false)
 {
     configure(pset);
 }
