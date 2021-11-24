@@ -60,7 +60,7 @@ namespace daq
     if(info.wr_seconds >= 1483228800)
       correction = 37;
     uint64_t const corrected_ts
-      { (info.wr_seconds-correction)*1'000'000'000ULL + info.wr_nanoseconds };
+      { (info.wr_seconds-correction)*1000000000ULL + info.wr_nanoseconds };
     return corrected_ts;
 
   } // getNanoseconds_since_UTC_epoch_fix()
@@ -200,7 +200,7 @@ namespace daq
     
     /// Combines second and nanosecond counts into a 64-bit timestamp.
     static std::uint64_t makeTimestamp(unsigned int s, unsigned int ns)
-      { return s * 1'000'000'000ULL + ns; }
+      { return s * 1000000000ULL + ns; }
     /// Returns the difference `a - b`.
     static long long int timestampDiff(std::uint64_t a, std::uint64_t b)
       { return static_cast<long long int>(a) - static_cast<long long int>(b); }
@@ -234,7 +234,7 @@ namespace daq
   {
     fDiagnosticOutput = pset.get<bool>("DiagnosticOutput", false);
     fDebug = pset.get<bool>("Debug", false);
-    fOffset = pset.get<long long int>("TAIOffset", 2'000'000'000);
+    fOffset = pset.get<long long int>("TAIOffset", 2000000000);
     return;
   }
   
@@ -448,6 +448,14 @@ namespace daq
           (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
         break;
       case TriggerGateTypes::NuMI:
+        fBeamGateInfo->emplace_back
+          (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
+        break;
+      case TriggerGateTypes::OffbeamBNB:
+        fBeamGateInfo->emplace_back
+          (simGateStart.value(), BNBgateDuration.value(), sim::kBNB);
+        break;
+      case TriggerGateTypes::OffbeamNuMI:
         fBeamGateInfo->emplace_back
           (simGateStart.value(), NuMIgateDuration.value(), sim::kNuMI);
         break;
