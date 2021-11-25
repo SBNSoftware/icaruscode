@@ -12,6 +12,7 @@
 
 // ICARUS libraries
 #include "Objects/TrackTreeStoreObj.h"
+#include "icaruscode/Analysis/trigger/details/TriggerResponseManager.h"
 #include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h"
 
 // LArSoft libraries
@@ -23,7 +24,7 @@
 #include "lardataobj/RecoBase/Track.h"
 // #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
-#include "lardataobj/RawData/TriggerData.h"
+#include "lardataobj/RawData/TriggerData.h" // raw::Trigger
 
 // framework libraries
 #include "art_root_io/TFileService.h"
@@ -44,22 +45,77 @@
 
 // ROOT libraries
 #include "TTree.h"
-#include "TBranch.h"
 
 // C/C++ libraries
 #include <vector>
 #include <string>
 
 
-namespace sbn {
-  class TimeTrackTreeStorage;
-}
 
+// -----------------------------------------------------------------------------
+namespace sbn { class TimeTrackTreeStorage; }
+/**
+ * @brief Fills a ROOT tree with track-based triggering information.
+ * 
+ * 
+ * Trigger information
+ * ====================
+ * 
+ * There are two distinct groups of information about triggers in the tree.
+ * The first one is the hardware trigger, that is the trigger that was actually
+ * used to decide to record the event. That is the same information for all
+ * tracks within the same event (and the same in both cryostats, too).
+ * The other group of information is from trigger logic simulation on the
+ * collected data (optical detector waveforms): there may be multiple branches
+ * in this group, one for each simulated trigger logic, and each tree entry,
+ * corresponding to a selected track, may have its own value for each trigger
+ * logic response.
+ * 
+ * 
+ * Simulated trigger information
+ * ------------------------------
+ * 
+ * A branch is added for each configured trigger logic.
+ * This module actually ignores the details of the logic yielding the results:
+ * a trigger result is a group of data products under the same tag.
+ * For example, a tag `M1` (presumably, a very loose trigger logic requiring
+ * just one PMT pair above threshold anywhere in the detector, with no hint of
+ * which that threshold is) will produce a branch with name `"M1"` including
+ * information from the `M1` data products (so far, only a collection of
+ * `raw::Trigger` is read).
+ * It is assumed that there is one trigger result for each selected track
+ * (as found in the data product from `T0selProducer` configuration parameter).
+ * Note that a trigger object is expected to be present _regardless whether
+ * the trigger fired or not_. It is assumed that the trigger fired if at least
+ * one of the `raw::Trigger::TriggerBits()` is set, not fired otherwise.
+ * 
+ * Each branch mirrors a data record, `TriggerInfo_t`, reporting the response
+ * for one simulated trigger logic.
+ * The structure and interpretation of the trigger response branch is described
+ * in ROOT TTree code by the string in
+ * `TriggerInfo_t::TriggerResponseBranchStructure`, and its meaning is:
+ * * `fired` (boolean): whether this trigger has triggered at all during the
+ *   considered trigger gate.
+ * * `time` (double): time of the trigger, taken directly from
+ *   `raw::Trigger::TriggerTime()`; it is expected to be measurent in
+ *   microseconds and relative to the nominal time reference of the event,
+ *   which for data is the hardware trigger time and for simulation is the
+ *   "hardware" beam gate time (however that is defined).
+ * * `gate` (double): start time of the gate where the trigger logic was
+ *   simulated. It is in the same time scale as the trigger time, and
+ *   directly taken from `raw::Trigger::BeamGateTime()`.
+ * 
+ * 
+ */
 class sbn::TimeTrackTreeStorage : public art::EDAnalyzer {
   
-  struct TriggerInputSpec_t;
+  using TriggerInputSpec_t
+    = sbn::details::TriggerResponseManager::TriggerInputSpec_t;
   
 public:
+  
+  /// Data record the trigger response branch is based on.
+  using TriggerInfo_t = sbn::details::TriggerResponseManager::TriggerInfo_t;
   
   struct Config {
     using Name = fhicl::Name;
@@ -142,45 +198,6 @@ public:
 
 private:
   
-  // --- BEGIN -- Trigger response data structures -----------------------------
-  
-  /// Configuration specifications for the emulation of a trigger logic.
-  struct TriggerInputSpec_t {
-    std::string name;
-    art::InputTag inputTag;
-  }; // TriggerInputSpec_t
-
-  /**
-   * @brief Information about a single trigger logic (hardware or emulated).
-   * 
-   * This data structure is the base for the tree branch.
-   * Each instance of the data structure represents a single trigger logic
-   * response.
-   * 
-   * Default constructor represents a trigger that did not fire at all.
-   */
-  struct TriggerInfo_t {
-    /// Mnemonic value for absence of trigger time information
-    static constexpr double NotTriggeredTime = -999999.0;
-    
-    /// Time of the trigger
-    /// (@ref DetectorClocksElectronicsTime "electronics time scale").
-    double triggerTime = NotTriggeredTime;
-    
-    bool fired = false; ///< Whether this trigger fired.
-    
-  }; // TriggerInfo_t
-  
-  /// Data for a single trigger logic output branch.
-  struct TriggerInfoBranch_t {
-    std::string name;
-    art::InputTag triggerTag;
-    std::unique_ptr<TriggerInfo_t> data = std::make_unique<TriggerInfo_t>();
-    TBranch* branch = nullptr;
-  }; // TriggerInfoBranch_t
-  
-  // --- END ---- Trigger response data structures -----------------------------
-  
   
   // --- BEGIN -- Configuration parameters -------------------------------------
   
@@ -205,8 +222,6 @@ private:
   sbn::selBeamInfo fBeamInfo;
   sbn::selTriggerInfo fTriggerInfo;
   
-  std::vector<TriggerInfoBranch_t> fSimTriggerBranches;
-  
   // --- END ---- Tree buffers -------------------------------------------------
   
   TTree *fStoreTree = nullptr;
@@ -220,27 +235,10 @@ private:
   
   // --- BEGIN -- Trigger response branches ------------------------------------
   
-  /// Declares the data products consumed to store the trigger responses.
-  void consumesTriggerResponseData
-    (std::vector<TriggerInputSpec_t> const& specs);
-
-  /// Creates all the branches needed for all trigger response information.
-  void createTriggerResponseBranches
-    (TTree& tree, std::vector<TriggerInputSpec_t> const& specs);
-  
-  /// Creates and returns a branch for a trigger response.
-  TriggerInfoBranch_t createTriggerResponseBranch
-    (TTree& tree, TriggerInputSpec_t const& spec) const;
-  
-  /// Fills the buffers with information from the trigger response.
-  void extractTriggerResponseBranches(art::Event const& event) const;
-  
-  /// Fills the buffers with information from the trigger response.
-  void extractTriggerResponseBranch
-    (art::Event const& event, TriggerInfoBranch_t const& info) const;
+  ///< Manages filling of trigger result branches.
+  sbn::details::TriggerResponseManager fTriggerResponses;
   
   // --- END ---- Trigger response branches ------------------------------------
-  
   
 }; // sbn::TimeTrackTreeStorage
 
@@ -263,6 +261,7 @@ namespace sbn {
 // -----------------------------------------------------------------------------
 sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   : EDAnalyzer{p}
+  // configuration
   , fPFPproducer      { p().PFPproducer() }
   , fT0Producer       { p().T0Producer().value_or(fPFPproducer) }
   , fT0selProducer    { p().T0selProducer().value_or(fPFPproducer) }
@@ -270,6 +269,13 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fBeamGateProducer { p().BeamGateProducer() }
   , fTriggerProducer  { p().TriggerProducer() }
   , fLogCategory      { p().LogCategory() }
+  // algorithms
+  , fStoreTree {
+      art::ServiceHandle<art::TFileService>()->make<TTree>
+        ("TimedTrackStorage", "Timed Track Tree")
+      }
+  , fTriggerResponses
+      { p().EmulatedTriggers(), consumesCollector(), *fStoreTree }
 {
   
   //
@@ -282,21 +288,16 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
   consumes<art::Assns<recob::PFParticle, recob::Track>>(fTrackProducer);
   consumes<art::Assns<recob::PFParticle, anab::T0>>(fT0Producer);
-  consumesTriggerResponseData(p().EmulatedTriggers());
 
   //
-  // tree creation
+  // tree population
   //
-  art::ServiceHandle<art::TFileService> tfs;
-  fStoreTree = tfs->make<TTree>("TimedTrackStorage", "Timed Track Tree");
   fStoreTree->Branch("run", &fRun);
   fStoreTree->Branch("subrun", &fSubRun);
   fStoreTree->Branch("event", &fEvent);
   fStoreTree->Branch("beamInfo", &fBeamInfo);
   fStoreTree->Branch("triggerInfo", &fTriggerInfo);
   fStoreTree->Branch("selTracks", &fTrackInfo);
-  
-  createTriggerResponseBranches(*fStoreTree, p().EmulatedTriggers());
   
 } // sbn::TimeTrackTreeStorage::TimeTrackTreeStorage()
 
@@ -335,13 +336,17 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fTriggerInfo.triggerID = triggerinfo.triggerID;
   fTriggerInfo.gateID = triggerinfo.gateID;
   
-  extractTriggerResponseBranches(e);
-  
   //mf::LogTrace(fLogCategory) << "HERE!";
   art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
   art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
+  
+  
+  // get an extractor bound to this event
+  sbn::details::TriggerResponseManager::Extractors triggerResponseExtractors
+    = fTriggerResponses.extractorsFor(e);
+  
   unsigned int processed = 0;
   for(unsigned int iPart = 0; iPart < pfparticles.size(); ++iPart)
   {
@@ -382,6 +387,8 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     */
     //fTrackInfo.push_back(trackInfo);
     
+    triggerResponseExtractors.fetch(iPart); // TODO no check performed; need to find a way
+  
     ++processed;
     ++fTotalProcessed;
     fStoreTree->Fill();
@@ -403,78 +410,5 @@ void sbn::TimeTrackTreeStorage::endJob() {
 
 
 // -----------------------------------------------------------------------------
-void sbn::TimeTrackTreeStorage::consumesTriggerResponseData
-  (std::vector<TriggerInputSpec_t> const& specs)
-{
-  
-  for (TriggerInputSpec_t const& spec: specs) {
-    consumes<raw::Trigger>(spec.inputTag);
-  }
-  
-} // sbn::TimeTrackTreeStorage::consumesTriggerResponseData()
-
-
-// -----------------------------------------------------------------------------
-void sbn::TimeTrackTreeStorage::createTriggerResponseBranches
-  (TTree& tree, std::vector<TriggerInputSpec_t> const& specs)
-{
-  
-  for (TriggerInputSpec_t const& spec: specs)
-    fSimTriggerBranches.push_back(createTriggerResponseBranch(tree, spec));
-  
-} // sbn::TimeTrackTreeStorage::createTriggerResponseBranches()
-
-
-// -----------------------------------------------------------------------------
-auto sbn::TimeTrackTreeStorage::createTriggerResponseBranch
-  (TTree& tree, TriggerInputSpec_t const& spec) const -> TriggerInfoBranch_t
-{
-  TriggerInfoBranch_t branchInfo {
-      spec.name     // name
-    , spec.inputTag // triggerTag
-    }; // TriggerInfoBranch_t
-  
-  branchInfo.branch = tree.Branch
-    (spec.name.c_str(), branchInfo.data.get(), "time/D:fired/O");
-  
-  return branchInfo;
-} // sbn::TimeTrackTreeStorage::createTriggerResponseBranch()
-
-
-// -----------------------------------------------------------------------------
-void sbn::TimeTrackTreeStorage::extractTriggerResponseBranches
-  (art::Event const& event) const
-{
-  
-  for (TriggerInfoBranch_t const& branchInfo: fSimTriggerBranches)
-    extractTriggerResponseBranch(event, branchInfo);
-  
-} // sbn::TimeTrackTreeStorage::extractTriggerResponseBranches()
-
-
-// -----------------------------------------------------------------------------
-void sbn::TimeTrackTreeStorage::extractTriggerResponseBranch
-  (art::Event const& event, TriggerInfoBranch_t const& info) const
-{
-  TriggerInfo_t& data = *(info.data);
-  
-  auto const& triggers
-    = event.getProduct<std::vector<raw::Trigger>>(info.triggerTag);
-  
-  if (triggers.empty()) {
-    data = TriggerInfo_t{}; // default value is set for no trigger
-    return;
-  }
-
-  raw::Trigger const& trigger = triggers.front();
-  
-  data.fired = true;
-  data.triggerTime = trigger.TriggerTime();
-  
-} // sbn::TimeTrackTreeStorage::extractTriggerResponseBranch()
-
-
-// -----------------------------------------------------------------------------
-
 
 DEFINE_ART_MODULE(sbn::TimeTrackTreeStorage)

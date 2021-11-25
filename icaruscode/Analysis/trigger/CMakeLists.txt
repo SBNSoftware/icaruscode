@@ -1,12 +1,20 @@
-link_directories( $ENV{ROOTSYS}/lib)
+#link_directories( $ENV{ROOTSYS}/lib)
 add_subdirectory(Objects)
 add_subdirectory(scripts)
 
 art_make(
+  SUBDIRS details
   EXCLUDE
     "TimedTrackSelector_module.cc"
     "BeamGateInfoFromTracks_module.cc"
     "TimeTrackTreeStorage_module.cc"
+  LIB_LIBRARIES
+    lardataobj_RawData
+    art::Framework_Principal
+    art::Framework_Core
+    canvas
+    messagefacility::MF_MessageLogger
+    ROOT::Tree
   )
 
 simple_plugin(TimedTrackSelector module
@@ -23,6 +31,7 @@ simple_plugin(BeamGateInfoFromTracks module
   )
 
 simple_plugin(TimeTrackTreeStorage module
+  icaruscode_Analysis_trigger
   lardataobj_AnalysisBase
   lardataobj_RecoBase
   lardataobj_Simulation
