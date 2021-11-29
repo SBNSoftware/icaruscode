@@ -1,0 +1,56 @@
+#include "services_common_icarus.fcl"
+#include "channelmapping_icarus.fcl"
+
+#include "correctionservices_icarus.fcl"
+#include "seedservice.fcl"
+#include "particleinventoryservice.fcl"
+#include "backtrackerservice.fcl"
+#include "photonbacktrackerservice.fcl"
+#include "mccheatermodules.fcl"
+
+#include "cafmaker_defs.fcl"
+
+process_name: CAFmaker
+
+services:
+{
+  ParticleInventoryService:  @local::standard_particleinventoryservice
+  BackTrackerService:        @local::standard_backtrackerservice
+  @table::icarus_wirecalibration_minimum_services
+
+  SpaceChargeService: @local::icarus_spacecharge
+  NuRandomService: @local::per_event_NuRandomService
+}
+
+
+outputs:
+{
+  outpid:
+  {
+    dataTier: cafana # for grid
+    streamName: out1 # for grid
+    module_type: RootOutput
+    fileName:    "stage2_r%r_s%s.root"
+  }
+}
+
+# Define and configure some modules to do work on each event.
+# First modules are defined; they are scheduled later.
+# Modules are grouped by type.
+physics:
+{
+ 
+  producers: {
+    @table::caf_ana_producers
+  }
+
+  runprod: [ @sequence::caf_ana_data_sequence, cafmaker]
+  stream1:       [  ]
+  trigger_paths: [ runprod ] 
+  end_paths:     [ stream1 ]
+}
+
+physics.producers.cafmaker.G4Label: ""
+physics.producers.cafmaker.GenLabel: ""
+physics.producers.cafmaker.SimChannelLabel: ""
+physics.producers.cafmaker.SystWeightLabels: [] #["genieweight", "fluxweight"]
