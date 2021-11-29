@@ -53,4 +53,4 @@ physics:
 physics.producers.cafmaker.G4Label: ""
 physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
-physics.producers.cafmaker.SystWeightLabels: [] #["genieweight", "fluxweight"]
+physics.producers.cafmaker.SystWeightLabels: []
