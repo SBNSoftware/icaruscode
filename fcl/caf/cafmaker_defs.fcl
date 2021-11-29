@@ -193,6 +193,18 @@ caf_ana_sequence: [ mcreco,
     # TODO: rns??
     ]
 
+caf_ana_data_sequence: [
+    # Calorimetry
+    pandoraCaloGausCryoE, pandoraCaloGausCryoW,
+    pandoraPidGausCryoE, pandoraPidGausCryoW,
+    # Low Energy Proton Reco
+    vertexChargeCryoE, vertexChargeCryoW, vertexStubCryoE, vertexStubCryoW,
+    # Track Momentum Estimation
+    pandoraTrackMCSCryoE, pandoraTrackMCSCryoW,
+    pandoraTrackRangeCryoE, pandoraTrackRangeCryoW
+    # TODO: rns??
+    ]
+
 caf_ana_evtw_sequence: [@sequence::caf_ana_sequence, rns, genieweight, fluxweight]
 
 caf_ana_sce_sequence: [ mcreco,
