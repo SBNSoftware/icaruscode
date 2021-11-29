@@ -73,7 +73,7 @@ physics: {
       }
   } #analyzers
 
-  ana: [ t0TreeStoreW, t0TreeStoreE ]	  
+  ana: [ t0TreeStoreW, t0TreeStoreE ]
   streams: [ "rootoutput" ]
   end_paths: [ ana ]
 } # physics
