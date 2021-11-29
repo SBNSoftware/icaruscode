@@ -93,7 +93,7 @@ physics: {
     
     generator: {
       module_type:    TextFileGen
-      InputFileName: "/cvmfs/icarus.opensciencegrid.org/products/icarus/icarus_data/v09_28_01/icarus_data/HiggsPortal/feature/jdyer_HiggsPortalKDFIee/150MeV_mySim_unweighted_master.txt"
+      InputFileName: "/cvmfs/icarus.opensciencegrid.org/products/icarus/icarus_data/v09_28_01/icarus_data/HiggsPortal/feature/jdyer_HiggsPortalKDIFee/150MeV_mySim_unweighted_master.txt"
     }
     
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
