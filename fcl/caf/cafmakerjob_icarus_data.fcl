@@ -22,21 +22,6 @@ services:
   NuRandomService: @local::per_event_NuRandomService
 }
 
-
-outputs:
-{
-  outpid:
-  {
-    dataTier: cafana # for grid
-    streamName: out1 # for grid
-    module_type: RootOutput
-    fileName:    "stage2_r%r_s%s.root"
-  }
-}
-
-# Define and configure some modules to do work on each event.
-# First modules are defined; they are scheduled later.
-# Modules are grouped by type.
 physics:
 {
  
@@ -44,13 +29,13 @@ physics:
     @table::caf_ana_producers
   }
 
-  runprod: [ @sequence::caf_ana_data_sequence, cafmaker]
-  stream1:       [  ]
+  runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
   trigger_paths: [ runprod ] 
-  end_paths:     [ stream1 ]
 }
 
 physics.producers.cafmaker.G4Label: ""
 physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
+
+physics.producers.cafmaker.StubLabel: ""
