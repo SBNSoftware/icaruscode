@@ -2,6 +2,6 @@
 
 services.RandomNumberGenerator: {}
 
-physics.runprod: [ @sequence::caf_ana_sce_evtw_sequence, genieweight, cafmaker ]
+physics.runprod: [ @sequence::caf_ana_sce_sequence, rns, genieweight, cafmaker ]
 
 physics.producers.cafmaker.SystWeightLabels: ["genieweight"]
