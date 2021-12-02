@@ -41,10 +41,10 @@ physics:
 {
  
   producers: {
-    @table::caf_ana_producers
+    @table::caf_preprocess_producers
   }
 
-  runprod: [ @sequence::caf_ana_sequence, cafmaker]
+  runprod: [ @sequence::caf_preprocess_sequence, cafmaker]
   stream1:       [  ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]
