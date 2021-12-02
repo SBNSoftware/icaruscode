@@ -37,5 +37,3 @@ physics.producers.cafmaker.G4Label: ""
 physics.producers.cafmaker.GenLabel: ""
 physics.producers.cafmaker.SimChannelLabel: ""
 physics.producers.cafmaker.SystWeightLabels: []
-
-physics.producers.cafmaker.StubLabel: ""
