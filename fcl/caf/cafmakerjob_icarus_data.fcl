@@ -3,10 +3,6 @@
 
 #include "correctionservices_icarus.fcl"
 #include "seedservice.fcl"
-#include "particleinventoryservice.fcl"
-#include "backtrackerservice.fcl"
-#include "photonbacktrackerservice.fcl"
-#include "mccheatermodules.fcl"
 
 #include "cafmaker_defs.fcl"
 
@@ -14,8 +10,6 @@ process_name: CAFmaker
 
 services:
 {
-  ParticleInventoryService:  @local::standard_particleinventoryservice
-  BackTrackerService:        @local::standard_backtrackerservice
   @table::icarus_wirecalibration_minimum_services
 
   SpaceChargeService: @local::icarus_spacecharge
