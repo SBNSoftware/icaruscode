@@ -26,7 +26,7 @@ physics:
 {
  
   producers: {
-    @table::caf_ana_producers
+    @table::caf_preprocess_producers
   }
 
   runprod: [ @sequence::caf_preprocess_data_sequence, cafmaker]
