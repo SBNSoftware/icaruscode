@@ -83,6 +83,8 @@ void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inp
 {
     icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(inputImage[0].size(),0.));
 
+    for(auto& morph : morphedWaveforms) std::fill(morph.begin(),morph.end(),0.);  // explicit initialization
+
     // Use this to get the 2D Dilation of each waveform
     icarus_signal_processing::Dilation2D(fStructuringElement[0],fStructuringElement[1])(inputImage.begin(),inputImage.size(),morphedWaveforms.begin());
 
@@ -115,7 +117,9 @@ void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inp
         // Right size the selected values array
         VectorBool& selVals = outputROIs[waveIdx];
 
-        selVals.resize(morphedWave.size(),false);
+        if (selVals.size() != morphedWave.size()) selVals.resize(morphedWave.size());
+
+        std::fill(selVals.begin(),selVals.end(),false);
 
         bool hasROI(false);
 
