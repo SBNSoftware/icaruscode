@@ -190,7 +190,8 @@ icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
                                      flashfilterNuMI
                                    ]
 
-icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
+icarus_stage0_multiTPC:            [ daqTPCROI, 
+                                     @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
                                      @sequence::icarus_stage0_WestHits_TPC,
                                      @sequence::icarus_purity_monitor
@@ -202,7 +203,6 @@ icarus_stage0_crt:                 [
 
 icarus_stage0_data:                [
                                      @sequence::icarus_stage0_PMT, 
-                                     daqTPCROI, 
                                      @sequence::icarus_stage0_multiTPC,
                                      @sequence::icarus_stage0_crt
                                    ]
@@ -214,6 +214,7 @@ icarus_stage0_producers.daqTPC.FragmentsLabelVec:                               
 icarus_stage0_producers.daqTPCROI.FragmentsLabelVec:                                           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
 
 ### Set up for the 1D deconvolution - turn OFF ROI finding
+icarus_stage0_producers.decon1droi.RawDigitLabelVec:                                           ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0:                       @local::icarus_noproifinder_0
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1:                       @local::icarus_noproifinder_1
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2:                       @local::icarus_noproifinder_2
@@ -250,7 +251,8 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
 
 ### Set up to output ROIs from full waveforms
-icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi"]
+
+icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder.OutputMorphed:                                               false
 
 ### Set up hit finding for multiple TPC readout
@@ -304,7 +306,7 @@ icarus_stage0_producers.ophit.InputModule:                                      
 icarus_stage0_producers.ophit.InputLabels:                                                     []
 
 ### Default purity monitor settings (single TPC readout assumed)
-icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.purityana0.ValoreTauFCL:                                               600000.
 icarus_stage0_producers.purityana0.CryostatFCL:                                                0
 icarus_stage0_producers.purityana0.PlaneFCL:                                                   2
@@ -314,7 +316,7 @@ icarus_stage0_producers.purityana0.FillAnaTuple:                                
 icarus_stage0_producers.purityana0.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana0.FillAnaTuple:                                               false
 
-icarus_stage0_producers.purityana1.RawModuleLabel:                                             ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana1.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.purityana1.ValoreTauFCL:                                               600000.
 icarus_stage0_producers.purityana1.CryostatFCL:                                                1
 icarus_stage0_producers.purityana1.PlaneFCL:                                                   2
