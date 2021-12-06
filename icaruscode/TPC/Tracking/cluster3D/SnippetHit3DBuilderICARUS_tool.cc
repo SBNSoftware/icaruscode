@@ -240,56 +240,69 @@ private:
      */
     using TickCorrectionArray = std::vector<std::vector<std::vector<float>>>;
 
-    std::vector<art::InputTag>           m_hitFinderTagVec;
-    float                                m_hitWidthSclFctr;
-    float                                m_deltaPeakTimeSig;
-    float                                m_rangeNumSig;
-    float                                m_LongHitStretchFctr;
-    float                                m_pulseHeightFrac;
-    float                                m_PHLowSelection;
-    std::vector<int>                     m_invalidTPCVec;
-    float                                m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
-    float                                m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
-    bool                                 m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
+    std::vector<art::InputTag>              m_hitFinderTagVec;
+    float                                   m_hitWidthSclFctr;
+    float                                   m_deltaPeakTimeSig;
+    float                                   m_rangeNumSig;
+    float                                   m_LongHitStretchFctr;
+    float                                   m_pulseHeightFrac;
+    float                                   m_PHLowSelection;
+    std::vector<int>                        m_invalidTPCVec;
+    float                                   m_wirePitchScaleFactor;  ///< Scaling factor to determine max distance allowed between candidate pairs
+    float                                   m_maxHit3DChiSquare;     ///< Provide ability to select hits based on "chi square"
+    bool                                    m_outputHistograms;      ///< Take the time to create and fill some histograms for diagnostics
+   
+    bool                                    m_enableMonitoring;      ///<
+    float                                   m_wirePitch[3];
+    mutable std::vector<float>              m_timeVector;            ///<
+   
+    float                                   m_zPosOffset;
+   
+    TickCorrectionArray                     m_TickCorrectionArray;
+   
+    // Define some basic histograms   
+    TTree*                                  m_tupleTree;             ///< output analysis tree
 
-    bool                                 m_enableMonitoring;      ///<
-    float                                m_wirePitch[3];
-    mutable std::vector<float>           m_timeVector;            ///<
+    mutable std::vector<float>              m_deltaPeakTimePlane0Vec;
+    mutable std::vector<float>              m_deltaPeakSigmaPlane0Vec;
+    mutable std::vector<float>              m_deltaPeakTimePlane1Vec;
+    mutable std::vector<float>              m_deltaPeakSigmaPlane1Vec;
+    mutable std::vector<float>              m_deltaPeakTimePlane2Vec;
+    mutable std::vector<float>              m_deltaPeakSigmaPlane2Vec;
 
-    float                                m_zPosOffset;
-
-    TickCorrectionArray                  m_TickCorrectionArray;
-
-    // Define some basic histograms
-    TTree*                               m_tupleTree;             ///< output analysis tree
-
-    mutable std::vector<float>           m_deltaTimeVec;
-    mutable std::vector<float>           m_chiSquare3DVec;
-    mutable std::vector<float>           m_maxPullVec;
-    mutable std::vector<float>           m_overlapFractionVec;
-    mutable std::vector<float>           m_overlapRangeVec;
-    mutable std::vector<float>           m_maxDeltaPeakVec;
-    mutable std::vector<float>           m_maxSideVecVec;
-    mutable std::vector<float>           m_pairWireDistVec;
-    mutable std::vector<float>           m_smallChargeDiffVec;
-    mutable std::vector<int>             m_smallIndexVec;
-    mutable std::vector<float>           m_qualityMetricVec;
-    mutable std::vector<float>           m_spacePointChargeVec;
-    mutable std::vector<float>           m_hitAsymmetryVec;
-
+    mutable std::vector<float>              m_deltaTimeVec;
+    mutable std::vector<float>              m_deltaTime0Vec;
+    mutable std::vector<float>              m_deltaSigma0Vec;
+    mutable std::vector<float>              m_deltaTime1Vec;
+    mutable std::vector<float>              m_deltaSigma1Vec;
+    mutable std::vector<float>              m_deltaTime2Vec;
+    mutable std::vector<float>              m_deltaSigma2Vec;
+    mutable std::vector<float>              m_chiSquare3DVec;
+    mutable std::vector<float>              m_maxPullVec;
+    mutable std::vector<float>              m_overlapFractionVec;
+    mutable std::vector<float>              m_overlapRangeVec;
+    mutable std::vector<float>              m_maxDeltaPeakVec;
+    mutable std::vector<float>              m_maxSideVecVec;
+    mutable std::vector<float>              m_pairWireDistVec;
+    mutable std::vector<float>              m_smallChargeDiffVec;
+    mutable std::vector<int>                m_smallIndexVec;
+    mutable std::vector<float>              m_qualityMetricVec;
+    mutable std::vector<float>              m_spacePointChargeVec;
+    mutable std::vector<float>              m_hitAsymmetryVec;
+   
     // Get instances of the primary data structures needed
-    mutable Hit2DList                    m_clusterHit2DMasterList;
-    mutable PlaneToSnippetHitMap         m_planeToSnippetHitMap;
-    mutable PlaneToWireToHitSetMap       m_planeToWireToHitSetMap;
+    mutable Hit2DList                       m_clusterHit2DMasterList;
+    mutable PlaneToSnippetHitMap            m_planeToSnippetHitMap;
+    mutable PlaneToWireToHitSetMap          m_planeToWireToHitSetMap;
 
 
-    mutable ChannelStatusByPlaneVec      m_channelStatus;
-    mutable size_t                       m_numBadChannels;
+    mutable ChannelStatusByPlaneVec         m_channelStatus;
+    mutable size_t                          m_numBadChannels;
 
-    mutable bool                         m_weHaveAllBeenHereBefore = false;
+    mutable bool                            m_weHaveAllBeenHereBefore = false;
 
-    const geo::Geometry*                 m_geometry;              //< pointer to the Geometry service
-    const lariov::ChannelStatusProvider* m_channelFilter;
+    const geo::Geometry*                    m_geometry;              //< pointer to the Geometry service
+    const lariov::ChannelStatusProvider*    m_channelFilter;
 };
 
 SnippetHit3DBuilderICARUS::SnippetHit3DBuilderICARUS(fhicl::ParameterSet const &pset) :
@@ -345,7 +358,20 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
 
         clear();
 
+        m_tupleTree->Branch("DeltaPeakTimePair0",  "std::vector<float>", &m_deltaPeakTimePlane0Vec);
+        m_tupleTree->Branch("DeltaPeakSigmaPair0", "std::vector<float>", &m_deltaPeakSigmaPlane0Vec);
+        m_tupleTree->Branch("DeltaPeakTimePair1",  "std::vector<float>", &m_deltaPeakTimePlane1Vec);
+        m_tupleTree->Branch("DeltaPeakSigmaPair1", "std::vector<float>", &m_deltaPeakSigmaPlane1Vec);
+        m_tupleTree->Branch("DeltaPeakTimePair2",  "std::vector<float>", &m_deltaPeakTimePlane2Vec);
+        m_tupleTree->Branch("DeltaPeakSigmaPair2", "std::vector<float>", &m_deltaPeakSigmaPlane2Vec);
+
         m_tupleTree->Branch("DeltaTime2D",     "std::vector<float>", &m_deltaTimeVec);
+        m_tupleTree->Branch("DeltaTime2D0",    "std::vector<float>", &m_deltaTime0Vec);
+        m_tupleTree->Branch("DeltaSigma2D0",   "std::vector<float>", &m_deltaSigma0Vec);
+        m_tupleTree->Branch("DeltaTime2D1",    "std::vector<float>", &m_deltaTime1Vec);
+        m_tupleTree->Branch("DeltaSigma2D1",   "std::vector<float>", &m_deltaSigma1Vec);
+        m_tupleTree->Branch("DeltaTime2D2",    "std::vector<float>", &m_deltaTime2Vec);
+        m_tupleTree->Branch("DeltaSigma2D2",   "std::vector<float>", &m_deltaSigma2Vec);
         m_tupleTree->Branch("ChiSquare3D",     "std::vector<float>", &m_chiSquare3DVec);
         m_tupleTree->Branch("MaxPullValue",    "std::vector<float>", &m_maxPullVec);
         m_tupleTree->Branch("OverlapFraction", "std::vector<float>", &m_overlapFractionVec);
@@ -365,7 +391,20 @@ void SnippetHit3DBuilderICARUS::configure(fhicl::ParameterSet const &pset)
 
 void SnippetHit3DBuilderICARUS::clear()
 {
+    m_deltaPeakTimePlane0Vec.clear();
+    m_deltaPeakSigmaPlane0Vec.clear();
+    m_deltaPeakTimePlane1Vec.clear();
+    m_deltaPeakSigmaPlane1Vec.clear();
+    m_deltaPeakTimePlane1Vec.clear();
+    m_deltaPeakSigmaPlane1Vec.clear();
+
     m_deltaTimeVec.clear();
+    m_deltaTime0Vec.clear();
+    m_deltaSigma0Vec.clear();
+    m_deltaTime1Vec.clear();
+    m_deltaSigma1Vec.clear();
+    m_deltaTime2Vec.clear();
+    m_deltaSigma2Vec.clear();
     m_chiSquare3DVec.clear();
     m_maxPullVec.clear();
     m_overlapFractionVec.clear();
@@ -855,10 +894,10 @@ void SnippetHit3DBuilderICARUS::findGoodTriplets(HitMatchTripletVecMap& pair12Ma
 }
 
 bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
-                                      const reco::ClusterHit2D* hit1,
-                                      const reco::ClusterHit2D* hit2,
-                                      float                     hitWidthSclFctr,
-                                      size_t                    hitPairCntr) const
+                                            const reco::ClusterHit2D* hit1,
+                                            const reco::ClusterHit2D* hit2,
+                                            float                     hitWidthSclFctr,
+                                            size_t                    hitPairCntr) const
 {
     // Assume failure
     bool result(false);
@@ -891,6 +930,34 @@ bool SnippetHit3DBuilderICARUS::makeHitPair(reco::ClusterHit3D&       hitPair,
         float hit2SigSq     = std::pow(hit2Sigma,2);
         float deltaPeakTime = std::fabs(hit1Peak - hit2Peak);
         float sigmaPeakTime = std::sqrt(hit1SigSq + hit2SigSq);
+
+        if (m_outputHistograms)
+        {
+            // brute force... sigh... 
+            int plane1   = hit1->WireID().Plane;
+            int plane2   = hit2->WireID().Plane;
+            int planeIdx = (plane1 + plane2) - 1;     // should be 0 for 0-1, 1 for 0-2 and 2 for 1-2
+
+            float deltaTicks = hit2Peak - hit1Peak;
+
+            if (plane1 > plane2) deltaTicks = -deltaTicks;
+
+            if (planeIdx == 0)
+            {
+                m_deltaPeakTimePlane0Vec.emplace_back(deltaTicks);
+                m_deltaPeakSigmaPlane0Vec.emplace_back(sigmaPeakTime);
+            }
+            else if (planeIdx == 1)
+            {
+                m_deltaPeakTimePlane1Vec.emplace_back(deltaTicks);
+                m_deltaPeakSigmaPlane1Vec.emplace_back(sigmaPeakTime);
+            }
+            else
+            {
+                m_deltaPeakTimePlane2Vec.emplace_back(deltaTicks);
+                m_deltaPeakSigmaPlane2Vec.emplace_back(sigmaPeakTime);
+            }
+        }
 
         // delta peak time consistency check here
         if (deltaPeakTime < m_deltaPeakTimeSig * sigmaPeakTime)    // 2 sigma consistency? (do this way to avoid divide)
@@ -1158,11 +1225,34 @@ bool SnippetHit3DBuilderICARUS::makeHitTriplet(reco::ClusterHit3D&       hitTrip
                         }
 
                         // Take opportunity to look at peak time diff
-                        float deltaPeakTime = hitVector[leftIdx]->getTimeTicks() - hitVector[rightIdx]->getTimeTicks();
+                        float deltaPeakTime = hitVector[rightIdx]->getTimeTicks() - hitVector[leftIdx]->getTimeTicks();
 
                         if (std::abs(deltaPeakTime) > maxDeltaPeak) maxDeltaPeak = std::abs(deltaPeakTime);
 
-                        if (m_outputHistograms) m_deltaTimeVec.push_back(deltaPeakTime);
+                        if (m_outputHistograms) 
+                        {
+                            int   deltaTimeIdx = (hitVector[leftIdx]->WireID().Plane + hitVector[rightIdx]->WireID().Plane) - 1;
+                            float combRMS      = std::sqrt(std::pow(hitVector[leftIdx]->getHit()->RMS(),2) + std::pow(hitVector[rightIdx]->getHit()->RMS(),2));
+
+                            m_deltaTimeVec.push_back(deltaPeakTime);
+
+                            // Want to get the sign of the difference correct...
+                            if (deltaTimeIdx == 0)  // This is planes 1 and 0
+                            {
+                                m_deltaTime0Vec.emplace_back(float(hitVector[1]->getTimeTicks() - hitVector[0]->getTimeTicks()));
+                                m_deltaSigma0Vec.emplace_back(combRMS);
+                            }
+                            else if (deltaTimeIdx == 1)  // This is planes 0 and 2
+                            {
+                                m_deltaTime1Vec.emplace_back(float(hitVector[2]->getTimeTicks() - hitVector[0]->getTimeTicks()));
+                                m_deltaSigma1Vec.emplace_back(combRMS);
+                            }
+                            else // must be planes 1 and 2
+                            {
+                                m_deltaTime2Vec.emplace_back(float(hitVector[2]->getTimeTicks() - hitVector[1]->getTimeTicks()));
+                                m_deltaSigma2Vec.emplace_back(combRMS);
+                            }
+                        }
                     }
 
                     float chargeAsymmetry = (chargeAveVec[chargeIndex] - chargeVec[chargeIndex]) / (chargeAveVec[chargeIndex] + chargeVec[chargeIndex]);
@@ -1590,13 +1680,15 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
 
             // What we want here are the relative offsets between the planes
             // Note that plane 0 is assumed the "first" plane and is the reference
-            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
+//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,0)] = 0.;
+//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = m_TickCorrectionArray[cryoIdx][tpcIdx][0];
+//            planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = m_TickCorrectionArray[cryoIdx][tpcIdx][1];
             planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,1)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,1))
                                                            - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           - m_TickCorrectionArray[cryoIdx][tpcIdx][0];
+                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][0];
             planeOffsetMap[geo::PlaneID(cryoIdx,tpcIdx,2)] = det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,2))
                                                            - det_prop.GetXTicksOffset(geo::PlaneID(cryoIdx,tpcIdx,0))
-                                                           - m_TickCorrectionArray[cryoIdx][tpcIdx][1];
+                                                           + m_TickCorrectionArray[cryoIdx][tpcIdx][1];
 
             // Should we provide output?
             if (!m_weHaveAllBeenHereBefore)
@@ -1615,8 +1707,6 @@ void SnippetHit3DBuilderICARUS::CollectArtHits(const art::Event& evt) const
     if (!m_weHaveAllBeenHereBefore)
     {
         mf::LogDebug("Cluster3D") << debugMessage << std::endl;
-
-        std::cout << debugMessage << std::endl;
 
         m_weHaveAllBeenHereBefore = true;
     }
