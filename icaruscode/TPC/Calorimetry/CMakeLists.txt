@@ -10,17 +10,17 @@ art_make( MODULE_LIBRARIES
            lardataalg_DetectorInfo
            larcorealg_Geometry
            lardataobj_AnalysisBase
-           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-           ${ART_UTILITIES}
-           canvas
-           ${FHICLCPP}
-           cetlib_except
+           art::Framework_Services_Registry
+           art::Utilities
+           canvas::canvas
+           fhiclcpp::fhiclcpp
+           cetlib_except::cetlib_except
            ROOT::Core
            ROOT::Physics
            ROOT::Core
            ROOT::Hist
            ROOT::Physics
-           ${MF_MESSAGELOGGER}
+           messagefacility::MF_MessageLogger
          )
 
 install_headers()

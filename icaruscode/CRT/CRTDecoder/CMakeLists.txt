@@ -21,12 +21,12 @@ art_make_library(
     SOURCE
         CrtCal.cc
     LIBRARIES 
-        cetlib_except
+        cetlib_except::cetlib_except
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${ROOT_CORE}
-        ${CETLIB}
+        ROOT::Geom
+        ROOT::Core
+        cetlib::cetlib
 )
 
 art_make_library(
@@ -35,12 +35,12 @@ art_make_library(
     SOURCE
         CrtCalTree.cxx
     LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
+        cetlib_except::cetlib_except
+        ROOT::Core
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
+        ROOT::Geom
+        cetlib::cetlib
 )
 
 art_make_library(
@@ -49,12 +49,12 @@ art_make_library(
     SOURCE
         CRTRawTree.cc
     LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
+        cetlib_except::cetlib_except
+        ROOT::Core
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
+        ROOT::Geom
+        cetlib::cetlib
 )
 
 art_make_library(
@@ -63,12 +63,12 @@ art_make_library(
     SOURCE
         CRTTiming.cc
     LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
+        cetlib_except::cetlib_except
+        ROOT::Core
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
+        ROOT::Geom
+        cetlib::cetlib
 	CRT_RAW_TREE
 	CRT_PREPROCESS_TREE
 )
@@ -79,12 +79,12 @@ art_make_library(
     SOURCE
         CRTPreProcessTree.cc
     LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
+        cetlib_except::cetlib_except
+        ROOT::Core
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
+        ROOT::Geom
+        cetlib::cetlib
 )
 
 art_make_library(
@@ -93,12 +93,12 @@ art_make_library(
     SOURCE
         CRTMergePreProcessTrees.cxx
     LIBRARIES 
-        cetlib_except
-        ${ROOT_CORE}
+        cetlib_except::cetlib_except
+        ROOT::Core
         ${ROOT_BASIC_LIB_LIST}
         ${ROOT_SPECTRUM}
-        ${ROOT_GEOM}
-        ${CETLIB}
+        ROOT::Geom
+        cetlib::cetlib
 	CRT_TIMING
 	CRT_PREPROCESS_TREE
 )
@@ -107,7 +107,7 @@ install_headers()
 install_source()
 
 simple_plugin( BernCRTAna "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}
@@ -117,7 +117,7 @@ simple_plugin( BernCRTAna "module"
 )
 
 simple_plugin( CrtNoiseMonTool "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   #art_Framework_Services_Optional
@@ -129,7 +129,7 @@ simple_plugin( CrtNoiseMonTool "module"
 )
 
 simple_plugin( CrtCalAnalysis "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   #art_Framework_Services_Optional
@@ -142,7 +142,7 @@ simple_plugin( CrtCalAnalysis "module"
 )
 
 simple_plugin( AnaProducer "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   #art_Framework_Services_Optional
@@ -158,7 +158,7 @@ simple_plugin( AnaProducer "module"
 )
 
 simple_plugin( CRTEventProducer "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   #art_Framework_Services_Optional
@@ -170,7 +170,7 @@ simple_plugin( CRTEventProducer "module"
 )
 
 simple_plugin( DecoderICARUSCRT "module"
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   art_root_io_tfile_support
   art_root_io_TFileService_service
   ${ROOT_BASIC_LIB_LIST}

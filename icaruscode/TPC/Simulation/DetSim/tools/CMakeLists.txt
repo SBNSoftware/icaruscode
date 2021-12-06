@@ -3,15 +3,15 @@ cet_enable_asserts()
 add_definitions(-DEIGEN_FFTW_DEFAULT)
 
 art_make( 
-          LIB_LIBRARIES      art_Utilities
-                             canvas
-                             ${FHICLCPP}
-                             ${MF_MESSAGELOGGER}
+          LIB_LIBRARIES      art::Utilities
+                             canvas::canvas
+                             fhiclcpp::fhiclcpp
+                             messagefacility::MF_MessageLogger
 							 ${ART_FRAMEWORK_SERVICES_BASIC}
-							 ${ART_FRAMEWORK_SERVICES_REGISTRY}
-							 ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-							 cetlib_except
-                             cetlib
+							 art::Framework_Services_Registry
+							 art_root_io::tfile_support ROOT::Core
+							 cetlib_except::cetlib_except
+                             cetlib::cetlib
 							 
 		  SERVICE_LIBRARIES  icaruscode_TPC_Simulation_DetSim_tools
 		  					 icaruscode_Decode_ChannelMapping
@@ -19,19 +19,19 @@ art_make(
 						     lardata_ArtDataHelper
 						     ${ROOT_BASIC_LIB_LIST}
 						     LIBWDA
-						     ${ART_FRAMEWORK_CORE}
-						     ${ART_FRAMEWORK_PRINCIPAL}
-						     ${ART_FRAMEWORK_SERVICES_REGISTRY}
-						     ${ART_ROOT_IO_TFILE_SUPPORT}
-						     ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-						     ${ART_UTILITIES}
-						     art_Persistency_Common canvas
-						     art_Persistency_Provenance canvas
-						     art_Utilities canvas
-						     ${MF_MESSAGELOGGER}
-						     ${MF_UTILITIES}
-						     ${FHICLCPP}
-						     cetlib cetlib_except
+						     art::Framework_Core
+						     art::Framework_Principal
+						     art::Framework_Services_Registry
+						     art_root_io::tfile_support
+						     art_root_io::TFileService_service
+						     art::Utilities
+						     art::Persistency_Common canvas
+						     art::Persistency_Provenance canvas
+						     art::Utilities canvas
+						     messagefacility::MF_MessageLogger
+						     
+						     fhiclcpp::fhiclcpp
+						     cetlib::cetlib cetlib_except
 
 		  TOOL_LIBRARIES     larcorealg_Geometry
 			                 larevt_CalibrationDBI_IOVData
@@ -41,27 +41,27 @@ art_make(
 			                 larcore_Geometry_Geometry_service
 			                 lardata_Utilities
                              lardataalg_DetectorInfo
-			                 nurandom_RandomUtils_NuRandomService_service
+			                 nurandom::RandomUtils_NuRandomService_service
                              ${ICARUS_FFTW_LIBRARIES}
-  			                 ${ART_FRAMEWORK_CORE}
-			                 ${ART_FRAMEWORK_PRINCIPAL}
-			                 ${ART_FRAMEWORK_SERVICES_REGISTRY}
-			                 art_Persistency_Common
-			                 art_Persistency_Provenance
+  			                 art::Framework_Core
+			                 art::Framework_Principal
+			                 art::Framework_Services_Registry
+			                 art::Persistency_Common
+			                 art::Persistency_Provenance
 			                 ${ART_FRAMEWORK_SERVICES_BASIC}
-			                 ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                             ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-			                 ${ART_ROOT_IO_TFILESERVICE_SERVICE}
+			                 art_root_io::tfile_support ROOT::Core
+                             art::Framework_Services_Optional_RandomNumberGenerator_service
+			                 art_root_io::TFileService_service
 			                 ${ART_FRAMEWORK_SERVICES_SYSTEM_FILECATALOGMETADATA_SERVICE}
-			                 art_Utilities
-			                 canvas
-			                 ${MF_MESSAGELOGGER}
-			                 ${MF_UTILITIES}
-			                 ${FHICLCPP}
-			                 ${CETLIB}
-			                 ${Boost_FILESYSTEM_LIBRARY}
-			                 ${Boost_SYSTEM_LIBRARY}
-                             ${CLHEP}
+			                 art::Utilities
+			                 canvas::canvas
+			                 messagefacility::MF_MessageLogger
+			                 
+			                 fhiclcpp::fhiclcpp
+			                 cetlib::cetlib
+			                 Boost::filesystem
+			                 
+                             CLHEP::CLHEP
 			                 ${ROOT_BASIC_LIB_LIST}
 	  )
 

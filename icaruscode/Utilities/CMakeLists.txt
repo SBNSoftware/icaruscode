@@ -6,10 +6,10 @@ art_make(
     "DummyProducer_module.cc"
     "DuplicateEventTracker_service.cc"
   LIB_LIBRARIES
-    ${ART_ROOT_IO_ROOTDB}
+    art_root_io::RootDB
     SQLite::SQLite3
-    cetlib_except
-    cetlib
+    cetlib_except::cetlib_except
+    cetlib::cetlib
     fhiclcpp
     hep_concurrency # required by fhicl::ParameterSetRegistry
     ROOT::Tree
@@ -18,24 +18,24 @@ art_make(
 )
 
 simple_plugin(SaveConfigurationIntoTFile "module"
-              ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-              ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-              ${ART_FRAMEWORK_SERVICES_REGISTRY}
-              ${ART_FRAMEWORK_PRINCIPAL}
-              ${ART_FRAMEWORK_CORE}
-              canvas
-              ${MF_MESSAGELOGGER}
+              art_root_io::TFileService_service
+              art_root_io::tfile_support ROOT::Core
+              art::Framework_Services_Registry
+              art::Framework_Principal
+              art::Framework_Core
+              canvas::canvas
+              messagefacility::MF_MessageLogger
               hep_concurrency
-              ${FHICLCPP}
-              ${CETLIB}
-              ${ROOT_CORE}
+              fhiclcpp::fhiclcpp
+              cetlib::cetlib
+              ROOT::Core
 )
 
 
 simple_plugin(DuplicateEventTracker "service"
               icaruscode_Utilities
-              ${ART_FRAMEWORK_PRINCIPAL}
-              ${MF_MESSAGELOGGER}
+              art::Framework_Principal
+              messagefacility::MF_MessageLogger
 )
 
 simple_plugin(DummyFilter "module")

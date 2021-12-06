@@ -3,5 +3,5 @@ art_make_library(
     "FragmentDumper.cxx"
   LIBRARIES
     artdaq_core::artdaq-core_Data
-    ${CETLIB_EXCEPT}
+    cetlib_except::cetlib_except
   )

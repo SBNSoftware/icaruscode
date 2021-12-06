@@ -20,18 +20,18 @@ art_make(
     lardataalg_MCDumpers
     larcorealg_Geometry
     lardataobj_RawData
-    nusimdata_SimulationBase
-    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-    ${ART_ROOT_IO_TFILE_SUPPORT}
-    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-    ${ART_FRAMEWORK_PRINCIPAL}
-    ${ART_FRAMEWORK_CORE}
-    ${ART_PERSISTENCY_PROVENANCE}
-    ${ART_UTILITIES}
-    ${CANVAS}
-    ${MF_MESSAGELOGGER}
-    ${FHICLCPP}
-    ${CETLIB_EXCEPT}
+    nusimdata::SimulationBase
+    art_root_io::TFileService_service
+    art_root_io::tfile_support
+    art::Framework_Services_Registry
+    art::Framework_Principal
+    art::Framework_Core
+    art::Persistency_Provenance
+    art::Utilities
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
+    cetlib_except::cetlib_except
     ROOT::GenVector
     ROOT::Hist
     ROOT::Tree
@@ -41,9 +41,9 @@ art_make(
     sbnobj_ICARUS_PMT_Trigger_Data
     lardataalg_DetectorInfo
     lardataobj_RawData
-    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-    ${MF_MESSAGELOGGER}
-    ${FHICLCPP}
+    art::Framework_Services_Registry
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
     ROOT::Core
     ROOT::Physics
   TOOL_LIBRARIES
@@ -51,8 +51,8 @@ art_make(
     sbnobj_ICARUS_PMT_Trigger_Data
     lardataalg_DetectorInfo
     lardataobj_RawData
-    ${MF_MESSAGELOGGER}
-    ${FHICLCPP}
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
   )
 
 simple_plugin(DiscriminatePMTwaveformsByChannel module
@@ -63,13 +63,13 @@ simple_plugin(DiscriminatePMTwaveformsByChannel module
   icaruscode_PMT_Trigger_Utilities
   icaruscode_PMT_Algorithms
   lardataobj_RawData
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::Core
   )
 
@@ -81,13 +81,13 @@ simple_plugin(SlidingWindowTrigger module
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_RawData
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::Core
   )
 
@@ -98,15 +98,15 @@ simple_plugin(MajorityTriggerSimulation module
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_RawData
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
   )
@@ -118,15 +118,15 @@ simple_plugin(SlidingWindowTriggerSimulation module
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_RawData
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::Hist
   ROOT::Core
   )
@@ -138,16 +138,16 @@ simple_plugin(TriggerEfficiencyPlots module
   lardataalg_MCDumpers
   larcorealg_Geometry
   lardataobj_RawData
-  nusimdata_SimulationBase
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::GenVector
   ROOT::Hist
   ROOT::Tree
@@ -161,16 +161,16 @@ simple_plugin(MakeTriggerSimulationTree module
   larcore_Geometry_Geometry_service
   lardataalg_MCDumpers
   larcorealg_Geometry
-  nusimdata_SimulationBase
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_CORE}
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB_EXCEPT}
+  nusimdata::SimulationBase
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  art::Framework_Principal
+  art::Framework_Core
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::GenVector
   ROOT::Tree
   ROOT::Core
@@ -191,17 +191,17 @@ foreach(TriggerEfficiencyPlotsModule
     lardataalg_MCDumpers
     larcorealg_Geometry
     lardataobj_RawData
-    nusimdata_SimulationBase
-    ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-    ${ART_ROOT_IO_TFILE_SUPPORT}
-    ${ART_FRAMEWORK_SERVICES_REGISTRY}
-    ${ART_FRAMEWORK_PRINCIPAL}
-    ${ART_FRAMEWORK_CORE}
-    ${ART_FRAMEWORK_PRINCIPAL}
-    ${CANVAS}
-    ${MF_MESSAGELOGGER}
-    ${FHICLCPP}
-    ${CETLIB_EXCEPT}
+    nusimdata::SimulationBase
+    art_root_io::TFileService_service
+    art_root_io::tfile_support
+    art::Framework_Services_Registry
+    art::Framework_Principal
+    art::Framework_Core
+    art::Framework_Principal
+    canvas::canvas
+    messagefacility::MF_MessageLogger
+    fhiclcpp::fhiclcpp
+    cetlib_except::cetlib_except
     ROOT::GenVector
     ROOT::Hist
     ROOT::Tree

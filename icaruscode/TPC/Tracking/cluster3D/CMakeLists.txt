@@ -11,7 +11,7 @@ art_make(LIB_LIBRARIES
            art::Framework_Principal
            art::Framework_Services_Registry
            art_root_io::tfile_support
-           ${ART_UTILITIES}
+           art::Utilities
            ROOT::Core
            ROOT::Gpad
            ROOT::Hist

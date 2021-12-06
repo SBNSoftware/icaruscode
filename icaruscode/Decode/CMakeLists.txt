@@ -22,19 +22,19 @@ art_make(
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
                         LIBWDA
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        ${ART_UTILITIES}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
+                        art::Framework_Core
+                        art::Framework_Principal
+                        art::Framework_Services_Registry
+                        art_root_io::tfile_support
+                        art_root_io::TFileService_service
+                        art::Utilities
+                        art::Persistency_Common canvas
+                        art::Persistency_Provenance canvas
+                        art::Utilities canvas
+                        messagefacility::MF_MessageLogger
+                        
+                        fhiclcpp::fhiclcpp
+                        cetlib::cetlib cetlib_except
                         ${TBB}
         )
 
@@ -47,36 +47,36 @@ simple_plugin(DaqDecoderICARUSPMT module
   sbndaq_artdaq_core::sbndaq-artdaq-core_Overlays
   lardataobj_RawData
   artdaq_core::artdaq-core_Data
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  cetlib_except
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib_except::cetlib_except
   ROOT::Tree
   )
 
 simple_plugin(PMTconfigurationExtraction module
   icaruscode_Decode_DecoderTools
   sbnobj_Common_PMT_Data
-  art_Framework_Services_Registry
+  art::Framework_Services_Registry
   fhiclcpp
-  cetlib_except
+  cetlib_except::cetlib_except
   )
 
 simple_plugin(DumpPMTconfiguration module
   sbnobj_Common_PMT_Data
-  ${MF_MESSAGELOGGER}
+  messagefacility::MF_MessageLogger
   fhiclcpp
-  cetlib_except
+  cetlib_except::cetlib_except
   )
 
 simple_plugin(DumpArtDAQfragments module
   icaruscode_Decode_DecoderTools_Dumpers
   artdaq_core::artdaq-core_Data
-  ${MF_MESSAGELOGGER}
+  messagefacility::MF_MessageLogger
   fhiclcpp
-  cetlib_except
+  cetlib_except::cetlib_except
   )
 
 install_headers()

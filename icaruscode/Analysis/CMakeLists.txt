@@ -3,7 +3,7 @@ add_subdirectory(overburden)
 
 art_make( MODULE_LIBRARIES larcorealg_Geometry
                            larcore_Geometry_Geometry_service
-                           larsim_Simulation nug4_ParticleNavigation
+                           larsim_Simulation nug4::ParticleNavigation
                            lardataobj_Simulation
                            lardata_Utilities
                            larevt_Filters
@@ -11,27 +11,27 @@ art_make( MODULE_LIBRARIES larcorealg_Geometry
                            larsim_MCCheater_ParticleInventoryService_service
                            lardataobj_RawData
                            larevt_CalibrationDBI_Providers
-                           nurandom_RandomUtils_NuRandomService_service
+                           nurandom::RandomUtils_NuRandomService_service
 			   sbnobj_Common_Analysis
-                           ${ART_FRAMEWORK_CORE}
-                           ${ART_FRAMEWORK_PRINCIPAL}
-                           ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                           ${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-                           ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                           ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                           art_Persistency_Common
-                           art_Persistency_Provenance
-                           art_Utilities
-                           canvas
-                           ${MF_MESSAGELOGGER}
-                           ${MF_UTILITIES}
-                           ${FHICLCPP}
-                           ${CETLIB}
-                           cetlib_except
-                           ${CLHEP}
-                           ${ROOT_GEOM}
-                           ${ROOT_XMLIO}
-                           ${ROOT_GDML}
+                           art::Framework_Core
+                           art::Framework_Principal
+                           art::Framework_Services_Registry
+                           art_root_io::tfile_support ROOT::Core
+                           art::Framework_Services_Optional_RandomNumberGenerator_service
+                           art_root_io::TFileService_service
+                           art::Persistency_Common
+                           art::Persistency_Provenance
+                           art::Utilities
+                           canvas::canvas
+                           messagefacility::MF_MessageLogger
+                           
+                           fhiclcpp::fhiclcpp
+                           cetlib::cetlib
+                           cetlib_except::cetlib_except
+                           CLHEP::CLHEP
+                           ROOT::Geom
+                           ROOT::XMLIO
+                           ROOT::Gdml
                            ${ROOT_BASIC_LIB_LIST}
                            icaruscode_RecoUtils
         )

@@ -13,21 +13,21 @@ simple_plugin(SimPMTIcarus "module"
   icaruscode_PMT_Algorithms
   lardataobj_RawData
   lardataobj_Simulation
-  nurandom_RandomUtils_NuRandomService_service
-  ${ART_FRAMEWORK_CORE}
-  ${ART_FRAMEWORK_PRINCIPAL}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  art_Persistency_Provenance
-  ${CANVAS}
-  ${MF_MESSAGELOGGER}
-  ${FHICLCPP}
-  ${CETLIB}
-  cetlib_except
+  nurandom::RandomUtils_NuRandomService_service
+  art::Framework_Core
+  art::Framework_Principal
+  art::Framework_Services_Registry
+  art::Framework_Services_Optional_RandomNumberGenerator_service
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Persistency_Provenance
+  canvas::canvas
+  messagefacility::MF_MessageLogger
+  fhiclcpp::fhiclcpp
+  cetlib::cetlib
+  cetlib_except::cetlib_except
   ${ROOT_BASIC_LIB_LIST}
-  ${Boost_SYSTEM_LIBRARY}
+  
   )
 
 simple_plugin(PMTWaveformBaselines "module"
@@ -36,10 +36,10 @@ simple_plugin(PMTWaveformBaselines "module"
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_RawData
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${MF_MESSAGELOGGER}
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  messagefacility::MF_MessageLogger
   ROOT::Hist
   ROOT::Core
   )
@@ -50,10 +50,10 @@ simple_plugin(PMTWaveformBaselinesFromReadoutConfiguration "module"
   larcore_Geometry_Geometry_service
   larcorealg_Geometry
   lardataobj_RawData
-  ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-  ${ART_ROOT_IO_TFILE_SUPPORT}
-  ${ART_FRAMEWORK_SERVICES_REGISTRY}
-  ${MF_MESSAGELOGGER}
+  art_root_io::TFileService_service
+  art_root_io::tfile_support
+  art::Framework_Services_Registry
+  messagefacility::MF_MessageLogger
   ROOT::Hist
   ROOT::Core
   )
@@ -85,10 +85,10 @@ art_make(
             lardataobj_RawData
             lardataobj_RecoBase
             lardata_Utilities
-            ${FHICLCPP}
-			${CETLIB}
+            fhiclcpp::fhiclcpp
+			cetlib::cetlib
 			${ROOT_BASIC_LIB_LIST}
-			${Boost_SYSTEM_LIBRARY}
+			
 	        MODULE_LIBRARIES larcorealg_Geometry
 	  		larcore_Geometry_Geometry_service
 	        lardata_Utilities
@@ -98,29 +98,29 @@ art_make(
 			larevt_CalibrationDBI_Providers
 			lardataobj_RecoBase
 			lardata_ArtDataHelper
-			nusimdata_SimulationBase
-            nurandom_RandomUtils_NuRandomService_service
-			${CLHEP}
-            ${ART_FRAMEWORK_CORE}
-			${ART_FRAMEWORK_PRINCIPAL}
-			${ART_FRAMEWORK_SERVICES_REGISTRY}
-			${ART_ROOT_IO_TFILE_SUPPORT} ${ROOT_CORE}
-			${ART_ROOT_IO_TFILESERVICE_SERVICE}
-			art_Persistency_Common
-			art_Persistency_Provenance
-			art_Utilities
-			canvas
-			${MF_MESSAGELOGGER}
-			${MF_UTILITIES}
-	        ${FHICLCPP}
-			${CETLIB}
-			cetlib_except
-            ${ROOT_GEOM}
-            ${ROOT_XMLIO}
-            ${ROOT_GDML}
-			${ROOT_FFTW}
+			nusimdata::SimulationBase
+            nurandom::RandomUtils_NuRandomService_service
+			CLHEP::CLHEP
+            art::Framework_Core
+			art::Framework_Principal
+			art::Framework_Services_Registry
+			art_root_io::tfile_support ROOT::Core
+			art_root_io::TFileService_service
+			art::Persistency_Common
+			art::Persistency_Provenance
+			art::Utilities
+			canvas::canvas
+			messagefacility::MF_MessageLogger
+			
+	        fhiclcpp::fhiclcpp
+			cetlib::cetlib
+			cetlib_except::cetlib_except
+            ROOT::Geom
+            ROOT::XMLIO
+            ROOT::Gdml
+			ROOT::FFTW
 			${ROOT_BASIC_LIB_LIST}
-			${Boost_SYSTEM_LIBRARY}
+			
         )
 
 install_headers()

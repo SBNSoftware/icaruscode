@@ -5,7 +5,7 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nug4_ParticleNavigation lardataobj_Simulation
+                              nug4::ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
@@ -19,29 +19,29 @@ art_make(
                               larreco_RecoAlg_CMTool_CMTAlgPriority
                               larreco_RecoAlg_CMTool_CMTAlgMatch
                               larreco_RecoAlg_CMTool_CMToolApp
-                              ${ROOT_MATHCORE}
+                              ROOT::MathCore
                               ${ROOT_GENVECTOR}
-                              ${ROOT_GEOM}
+                              ROOT::Geom
                               ${ROOT_BASIC_LIB_LIST}
                               larreco_RecoAlg_TCAlg
                               larreco_RecoAlg_ImagePatternAlgs_DataProvider
                               larreco_RecoAlg_PMAlg
-                              nusimdata_SimulationBase
-                              ${ART_FRAMEWORK_CORE}
-                              ${ART_FRAMEWORK_PRINCIPAL}
-                              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                              nusimdata::SimulationBase
+                              art::Framework_Core
+                              art::Framework_Principal
+                              art::Framework_Services_Registry
                               ${ART_FRAMEWORK_SERVICES_BASIC}
                               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-                              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                              art_Persistency_Common
-                              art_Persistency_Provenance
-                              art_Utilities
-                              canvas
-                              ${MF_MESSAGELOGGER}
-                              ${FHICLCPP}
-                              cetlib cetlib_except
-                              ${CLHEP}
+                              
+                              art::Framework_Services_Optional_RandomNumberGenerator_service
+                              art::Persistency_Common
+                              art::Persistency_Provenance
+                              art::Utilities
+                              canvas::canvas
+                              messagefacility::MF_MessageLogger
+                              fhiclcpp::fhiclcpp
+                              cetlib::cetlib cetlib_except
+                              CLHEP::CLHEP
                               ${ROOT_BASIC_LIB_LIST}
                               ${ROOT_MINUIT}
                               ${ROOT_MINUIT2}
@@ -51,7 +51,7 @@ art_make(
                               lardataobj_RecoBase
                               lardata_ArtDataHelper
                               larsim_Simulation 
-                              nug4_ParticleNavigation lardataobj_Simulation
+                              nug4::ParticleNavigation lardataobj_Simulation
                               larevt_Filters
                               larcorealg_Geometry
                               larcore_Geometry_Geometry_service
@@ -65,29 +65,29 @@ art_make(
                               larreco_RecoAlg_CMTool_CMTAlgPriority
                               larreco_RecoAlg_CMTool_CMTAlgMatch
                               larreco_RecoAlg_CMTool_CMToolApp
-                              ${ROOT_MATHCORE}
+                              ROOT::MathCore
                               ${ROOT_GENVECTOR}
-                              ${ROOT_GEOM}
+                              ROOT::Geom
                               ${ROOT_BASIC_LIB_LIST}
                               larreco_RecoAlg_TCAlg
                               larreco_RecoAlg_ImagePatternAlgs_DataProvider
                               larreco_RecoAlg_PMAlg
-                              nusimdata_SimulationBase
-                              ${ART_FRAMEWORK_CORE}
-                              ${ART_FRAMEWORK_PRINCIPAL}
-                              ${ART_FRAMEWORK_SERVICES_REGISTRY}
+                              nusimdata::SimulationBase
+                              art::Framework_Core
+                              art::Framework_Principal
+                              art::Framework_Services_Registry
                               ${ART_FRAMEWORK_SERVICES_BASIC}
                               ${ART_FRAMEWORK_SERVICES_OPTIONAL}
-                              ${ART_FRAMEWORK_SERVICES_OPTIONAL_TFILESERVICE_SERVICE}
-                              ${ART_FRAMEWORK_SERVICES_OPTIONAL_RANDOMNUMBERGENERATOR_SERVICE}
-                              art_Persistency_Common
-                              art_Persistency_Provenance
-                              art_Utilities
-                              canvas
-                              ${MF_MESSAGELOGGER}
-                              ${FHICLCPP}
-                              cetlib cetlib_except
-                              ${CLHEP}
+                              
+                              art::Framework_Services_Optional_RandomNumberGenerator_service
+                              art::Persistency_Common
+                              art::Persistency_Provenance
+                              art::Utilities
+                              canvas::canvas
+                              messagefacility::MF_MessageLogger
+                              fhiclcpp::fhiclcpp
+                              cetlib::cetlib cetlib_except
+                              CLHEP::CLHEP
                               ${ROOT_BASIC_LIB_LIST}
                               ${ROOT_MINUIT}
                               ${ROOT_MINUIT2}

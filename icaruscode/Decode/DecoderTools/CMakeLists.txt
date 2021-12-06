@@ -8,10 +8,10 @@ art_make( SUBDIRS details
           LIB_LIBRARIES
                         icaruscode_Utilities
                         sbnobj_Common_PMT_Data
-                        ${MF_MESSAGELOGGER}
-                        ${FHICLCPP}
-                        cetlib_except
-                        cetlib
+                        messagefacility::MF_MessageLogger
+                        fhiclcpp::fhiclcpp
+                        cetlib_except::cetlib_except
+                        cetlib::cetlib
                         ROOT::RIO
                         ROOT::Core
           TOOL_LIBRARIES
@@ -33,19 +33,19 @@ art_make( SUBDIRS details
                         lardata_ArtDataHelper
                         ${ROOT_BASIC_LIB_LIST}
                         LIBWDA
-                        ${ART_FRAMEWORK_CORE}
-                        ${ART_FRAMEWORK_PRINCIPAL}
-                        ${ART_FRAMEWORK_SERVICES_REGISTRY}
-                        ${ART_ROOT_IO_TFILE_SUPPORT}
-                        ${ART_ROOT_IO_TFILESERVICE_SERVICE}
-                        ${ART_UTILITIES}
-                        art_Persistency_Common canvas
-                        art_Persistency_Provenance canvas
-                        art_Utilities canvas
-                        ${MF_MESSAGELOGGER}
-                        ${MF_UTILITIES}
-                        ${FHICLCPP}
-                        cetlib cetlib_except
+                        art::Framework_Core
+                        art::Framework_Principal
+                        art::Framework_Services_Registry
+                        art_root_io::tfile_support
+                        art_root_io::TFileService_service
+                        art::Utilities
+                        art::Persistency_Common canvas
+                        art::Persistency_Provenance canvas
+                        art::Utilities canvas
+                        messagefacility::MF_MessageLogger
+                        
+                        fhiclcpp::fhiclcpp
+                        cetlib::cetlib cetlib_except
         )
 
 install_headers()

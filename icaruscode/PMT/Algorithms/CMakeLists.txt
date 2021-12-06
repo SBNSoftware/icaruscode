@@ -10,18 +10,18 @@ art_make(
 #    lardata_Utilities
 #    larcorealg_Geometry
 #    lardata_ArtDataHelper
-#    nusimdata_SimulationBase
-     canvas
-     ${MF_MESSAGELOGGER}
-     ${MF_UTILITIES}
-     ${FHICLCPP}
-     ${CETLIB}
-     cetlib_except
-     ${ROOT_FFTW}
+#    nusimdata::SimulationBase
+     canvas::canvas
+     messagefacility::MF_MessageLogger
+     
+     fhiclcpp::fhiclcpp
+     cetlib::cetlib
+     cetlib_except::cetlib_except
+     ROOT::FFTW
      ${ROOT_GENVECTOR}
      ${ROOT_BASIC_LIB_LIST}
-     ${CLHEP}
-#    ${Boost_SYSTEM_LIBRARY}
+     CLHEP::CLHEP
+#    
   )
 
 install_headers()
