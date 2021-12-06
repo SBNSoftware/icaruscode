@@ -97,4 +97,11 @@ icarus_roifinder:
     }
 }
 
+icarus_waveformintegrity:
+{
+    module_type:          WaveformIntegrity
+    NewRawDigitLabelVec:  [ "daqTPCROI" ]
+    OldRawDigitLabelVec:  [ "daqTPCROI" ]
+}
+
 END_PROLOG
