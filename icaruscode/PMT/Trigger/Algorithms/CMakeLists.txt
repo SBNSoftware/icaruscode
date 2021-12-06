@@ -9,7 +9,8 @@ cet_make(
     lardataobj_RawData
     nusimdata::SimulationBase
     messagefacility::MF_MessageLogger
-    fhiclcpp
+    fhiclcpp::fhiclcpp
+    range-v3::range-v3
   )
 
 install_headers(SUBDIRS "details")

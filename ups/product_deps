@@ -45,7 +45,7 @@ icarus_data               v09_37_01
 fftw                      v3_3_9
 libwda                    v2_29_1
 
-cetbuildtools	          v8_18_04	-	only_for_build
+cetbuildtools	          v8_18_09	-	only_for_build
 end_product_list
 
 # Restore this temporarily...
