@@ -151,11 +151,11 @@ namespace icarus{
       produces< std::vector<anab::TPCPurityInfo> >("",art::Persistable::No);      
 
     
-    for(const auto& digitlabel2 : fDigitModuleLabel)
-      {
-	
-	std::cout<<"fDigitModuleLabel "<<digitlabel2<<"\n";
-      }
+//    for(const auto& digitlabel2 : fDigitModuleLabel)
+//      {
+//	
+//	std::cout<<"fDigitModuleLabel "<<digitlabel2<<"\n";
+//      }
  
   }
   
@@ -254,7 +254,7 @@ namespace icarus{
   void ICARUSPurityDQM::produce(art::Event& evt)
   {
     
-      std::cout << " Inizia Purity ICARUS Ana - upgraded by WES and OLIVIA " << std::endl;
+//      std::cout << " Inizia Purity ICARUS Ana - upgraded by WES and OLIVIA " << std::endl;
       // code stolen from TrackAna_module.cc
       art::ServiceHandle<geo::Geometry>      geom;
       unsigned int  fDataSize;
@@ -263,8 +263,8 @@ namespace icarus{
       //InputTag cluster_tag { "fuzzycluster" }; //CH comment trovato con eventdump code
       
       //to get run and event info, you use this "eventAuxillary()" object.
-      art::Timestamp ts = evt.time();
-      std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
+//      art::Timestamp ts = evt.time();
+//      std::cout << "Processing for Purity " << " Run " << evt.run() << ", " << "Event " << evt.event() << " and Time " << ts.value() << std::endl;
     
       //fRun->Fill(evt.run());
       //fRunSub->Fill(evt.run(),evt.subRun());
@@ -672,7 +672,7 @@ namespace icarus{
           for (unsigned int ijk2=0; ijk2<6000; ijk2++) {
 	    if(clusters_creation[ijk][ijk2]>50)
               {
-		std::cout<<clusters_creation[ijk][ijk2] << " CLUSTER MINE " << clusters_swire[ijk][ijk2] << " " << clusters_lwire[ijk][ijk2] << " " << clusters_ssample[ijk][ijk2] << " " << clusters_lsample[ijk][ijk2] << std::endl;
+//		std::cout<<clusters_creation[ijk][ijk2] << " CLUSTER MINE " << clusters_swire[ijk][ijk2] << " " << clusters_lwire[ijk][ijk2] << " " << clusters_ssample[ijk][ijk2] << " " << clusters_lsample[ijk][ijk2] << std::endl;
 		clusters_qq[quanti_clusters]=clusters_creation[ijk][ijk2];
 		clusters_vi[quanti_clusters]=ijk;
 		clusters_nn[quanti_clusters]=ijk2;
@@ -686,7 +686,7 @@ namespace icarus{
 	
 	for(int icl = 0; icl < quanti_clusters; ++icl){
 	  if (clusters_qq[icl]>0) {
-	    std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_nn[icl] << std::endl;
+//	    std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << clusters_vi[icl] << " " << clusters_dw[icl] << " " << clusters_ds[icl] << " " << clusters_nn[icl] << std::endl;
 	    int tpc_number=clusters_vi[icl];//qui andrebbe messo il numero di TPC
 	    
 	    if (clusters_ds[icl]>1100 && clusters_dw[icl]>100)
@@ -743,7 +743,7 @@ namespace icarus{
 		}
 		
 		
-		std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << whc->size() << std::endl;
+//		std::cout << " CLUSTER INFO " << icl << " " << clusters_qq[icl] << " " << whc->size() << std::endl;
 		
 		
 		if(whc->size()>30)//prima 0
@@ -774,7 +774,7 @@ namespace icarus{
 			      }
 			    //////std::cout << quanti << std::endl;
 			    TGraphErrors *gr3 = new TGraphErrors(quanti,wires,samples,ex,ey);
-			    gr3->Fit("pol1");
+			    gr3->Fit("pol1","Q");
 			    TF1 *fitfunc = gr3->GetFunction("pol1");
 			    pendenza=fitfunc->GetParameter(1);
 			    intercetta=fitfunc->GetParameter(0);
@@ -794,7 +794,7 @@ namespace icarus{
 			    if(found_max==0)found_ok=1;
 			  }
 		      }
-		    std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
+//		    std::cout << escluse->size() << " escluse " << whc->size() << " " << found_ok << std::endl;
 		    delete escluse;
 		    std::vector<float> *hittime=new std::vector<float>;
 		    std::vector<float> *hitwire=new std::vector<float>;
@@ -831,11 +831,11 @@ namespace icarus{
 			Double_t ey[10000];
 			Double_t ek[10000];
 			Double_t ez[10000];
-			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
+//			std::cout <<  hitarea->size() << " dimensione hitarea" << std::endl;
 
-			std::cout<<""<<std::endl;
-			std::cout<<"HERE line 802"<<std::endl;
-			std::cout<<""<<std::endl;
+//			std::cout<<""<<std::endl;
+//			std::cout<<"HERE line 802"<<std::endl;
+//			std::cout<<""<<std::endl;
 
 			if(hitarea->size()>100)//prima 30
 			  {
@@ -905,12 +905,12 @@ namespace icarus{
 				    ey[k]=0.23;
 				  }
 			      }
-			    std::cout<<""<<std::endl;
-			    std::cout<<"HERE line 872"<<std::endl;
-			    std::cout<<""<<std::endl;
+//			    std::cout<<""<<std::endl;
+//			    std::cout<<"HERE line 872"<<std::endl;
+//			    std::cout<<""<<std::endl;
 			    TGraphErrors *gr31 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
 			    //TGraphErrors *gr4 = new TGraphErrors(hitareagood->size(),tempo,nologarea,ex,ey);
-			    gr31->Fit("pol1");
+			    gr31->Fit("pol1","Q");
 			    TF1 *fit = gr31->GetFunction("pol1");
 			    float slope_purity=fit->GetParameter(1);
 			    //float error_slope_purity=fit->GetParError(1);
@@ -924,12 +924,12 @@ namespace icarus{
 				sum_per_rms_test+=(area[k]-slope_purity*tempo[k]-intercetta_purezza)*(area[k]-slope_purity*tempo[k]-intercetta_purezza);
 			      }
                        
-                        h111->Fit("gaus");
+                        h111->Fit("gaus","Q");
                         TF1 *fitg = h111->GetFunction("gaus");
                         float error=fitg->GetParameter(2);
-                        std::cout << " error " << error << std::endl;
-                        float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
-                        std::cout << " error vero" << error_2 << std::endl;
+//                        std::cout << " error " << error << std::endl;
+//                        float error_2=sqrt(sum_per_rms_test/(hitareagood->size()-2));
+//                        std::cout << " error vero" << error_2 << std::endl;
                         h111->Delete();
                         for(int k=0;k<(int)hitareagood->size();k++)
                           {
@@ -940,12 +940,12 @@ namespace icarus{
                                 ey[k]=error;
                               }
                           }
-			std::cout<<""<<std::endl;
-			std::cout<<"HERE line 906"<<std::endl;
-			std::cout<<""<<std::endl;
+//			std::cout<<""<<std::endl;
+//			std::cout<<"HERE line 906"<<std::endl;
+//			std::cout<<""<<std::endl;
 
                         TGraphErrors *gr32 = new TGraphErrors(hitareagood->size(),tempo,area,ex,ey);
-                        gr32->Fit("pol1");
+                        gr32->Fit("pol1","Q");
                   
                         TF1 *fit2 = gr32->GetFunction("pol1");
                         float slope_purity_2=fit2->GetParameter(1);
@@ -959,7 +959,7 @@ namespace icarus{
                         //std::cout << -1/(slope_purity_2+error_slope_purity_2)+1/slope_purity_2 << std::endl;
                         //std::cout << 1/slope_purity_2-1/(slope_purity_2-error_slope_purity_2) << std::endl;
                         TGraphAsymmErrors *gr41 = new TGraphAsymmErrors (hitareagood->size(),tempo,nologarea,ex,ex,ez,ek);
-                        gr41->Fit("expo");
+                        gr41->Fit("expo","Q");
                         TF1 *fitexo = gr41->GetFunction("expo");
                         float slope_purity_exo=fitexo->GetParameter(1);
                         float error_slope_purity_exo=fitexo->GetParError(1);
@@ -1017,8 +1017,8 @@ namespace icarus{
 					    purity_info.Ticks,
 					    purity_info.Attenuation);
 
-			std::cout << "Calling again after filling attenuation … " << std::endl;
-			purity_info.Print();
+//			std::cout << "Calling again after filling attenuation … " << std::endl;
+//			purity_info.Print();
 			outputPtrVector->push_back(purity_info);
                         }
 			//std::cout << ts << " is time event " << std::endl;
@@ -1028,7 +1028,7 @@ namespace icarus{
                         //goodpur << timeevent << " is time event " << std::endl;
 			  }
 		      }
-		    std::cout << "Delete hit stuff." << std::endl;
+//		    std::cout << "Delete hit stuff." << std::endl;
 
 		    delete hittime;
 		    delete hitarea;
@@ -1038,7 +1038,7 @@ namespace icarus{
 		    delete hitwire;
 		  }
 		
-		std::cout << "Delete cluster stuff." << std::endl;
+//		std::cout << "Delete cluster stuff." << std::endl;
 		
 		delete shc;
 		delete ahc;
@@ -1049,7 +1049,7 @@ namespace icarus{
 	  }
 	}
 
-	std::cout << "Delete big stuff." << std::endl;
+//	std::cout << "Delete big stuff." << std::endl;
 
 	delete www0;
 	delete sss0;
@@ -1078,8 +1078,8 @@ namespace icarus{
 
       }
 
-    std::cout << "Checking everything in the output..." << std::endl;
-    std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
+//    std::cout << "Checking everything in the output..." << std::endl;
+//    std::cout << "There are " << outputPtrVector->size() << " objects in the output vector." << std::endl;
     /* //don't need this printed here.    
     for (size_t i_info = 0; i_info<outputPtrVector->size(); ++i_info){
       auto info = outputPtrVector->at(i_info);
