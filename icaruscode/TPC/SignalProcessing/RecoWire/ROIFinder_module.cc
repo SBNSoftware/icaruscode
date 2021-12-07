@@ -71,7 +71,8 @@ struct PlaneWireData
           else      data[iWire] = std::vector<float>(4096,0.);
         }
       return data;
-}
+    }
+    const recob::Wire* getWirePtr(size_t idx) const {return wires[idx];}
 private:
     std::vector<recob::Wire const*> wires;
 }; // PlaneWireData
@@ -260,7 +261,7 @@ void ROIFinder::produce(art::Event& evt)
         for(const auto& wire : *wireVecHandle)
         {
             raw::ChannelID_t channel = wire.Channel();
-            
+           
             std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
 
             if (wireIDVec.empty()) continue;
@@ -343,9 +344,9 @@ void ROIFinder::produce(art::Event& evt)
         if (fOutputMorphed) evt.put(std::move(morphedCol), wireLabel.instance()+"M");
     }
 
-  fEventCount++;
+    fEventCount++;
 
-  return;
+    return;
 } // produce
 
 void  ROIFinder::processPlane(size_t                      idx,
@@ -395,8 +396,10 @@ void  ROIFinder::processPlane(size_t                      idx,
 
             ROIVec.add_range(0, std::move(outputArray[waveIdx]));
 
-            raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
+            raw::ChannelID_t channel = channelVec[waveIdx];
             geo::View_t      view    = fGeometry->View(channel);
+        
+            std::vector<geo::WireID> chanIDVec = fGeometry->ChannelToWire(channel);
 
             morphedVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
         }
@@ -407,20 +410,26 @@ void  ROIFinder::processPlane(size_t                      idx,
     using CandidateROI    = std::pair<size_t, size_t>;
     using CandidateROIVec = std::vector<CandidateROI>;
 
-    size_t leadTrail(10);
+    size_t leadTrail(0);
 
     for(size_t waveIdx = 0; waveIdx < selectedVals.size(); waveIdx++)
     {
         // Skip if a bad channel
-        if (channelVec[waveIdx] >= 100000) continue;
+        if (channelVec[waveIdx] >= 100000)
+        {
+            std::cout << "==> found an unexpected channel number: " << channelVec[waveIdx] << std::endl;
+            continue;
+        }
 
         // Set up an object... 
         CandidateROIVec candidateROIVec;
 
         // Search for ROIs in current waveform
-        icarus_signal_processing::VectorBool& selVals = selectedVals[waveIdx];
+        const icarus_signal_processing::VectorBool& selVals = selectedVals[waveIdx];
 
-        for(size_t idx = 0; idx < selVals.size(); idx++)
+        size_t idx(2);
+
+        while(idx < selVals.size())
         {
             if (selVals[idx])
             {
@@ -432,6 +441,8 @@ void  ROIFinder::processPlane(size_t                      idx,
 
                 candidateROIVec.emplace_back(startTick, stopTick);
             }
+
+            idx++;
         }
 
         // merge overlapping (or touching) ROI's
@@ -447,7 +458,7 @@ void  ROIFinder::processPlane(size_t                      idx,
             for(auto& roi : candidateROIVec)
             {
                 // Should we merge roi's?
-                if (roi.first <= stopRoi + 50)
+                if (roi.first <= stopRoi)
                 { 
                     // Make sure the merge gets the right start/end times
                     startRoi = std::min(startRoi,roi.first);
@@ -463,71 +474,84 @@ void  ROIFinder::processPlane(size_t                      idx,
             }
 
             // Make sure to get the last one
-            tempRoiVec.push_back(CandidateROI(startRoi,stopRoi));
+            tempRoiVec.emplace_back(startRoi,stopRoi);
 
             candidateROIVec = tempRoiVec;
         }
 
-        // vector that will be moved into the Wire object
-        recob::Wire::RegionsOfInterest_t ROIVec;
-
-        const icarus_signal_processing::VectorFloat& waveform = dataArray[waveIdx];
-        icarus_signal_processing::VectorFloat holder;
-
-        // We need to copy the deconvolved (and corrected) waveform ROI's
-        for(const auto& candROI : candidateROIVec)
+        // If no candidates no need for further effort
+        if (!candidateROIVec.empty())
         {
-            // First up: copy out the relevent ADC bins into the ROI holder
-            size_t roiLen = candROI.second - candROI.first;
+            // vector that will be moved into the Wire object
+            recob::Wire::RegionsOfInterest_t ROIVec;
 
-            holder.resize(roiLen);
-
-            std::copy(waveform.begin()+candROI.first, waveform.begin()+candROI.second, holder.begin());
-
-            // Now we do the baseline determination and correct the ROI
-            // For now we are going to reset to the minimum element
-            // Get slope/offset from first to last ticks
-            if (holder.size() < 40)
+            // Check if we have possible overlap wires where we need to merge the previous results with new results
+            if (planeID.Plane > 0)
             {
-                float dADC   = (holder.back() - holder.front()) / float(holder.size());
-                float offset = holder.front();
+                raw::ChannelID_t channel = channelVec[waveIdx];
 
-                for(auto& adcVal : holder)
+                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+
+                if (wireIDVec.size() > 1)
                 {
-                    adcVal -= offset;
-                    offset += dADC;
+                    std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
+
+                    if (wireItr != wireColVec.end()) 
+                    {
+                        ROIVec = wireItr->SignalROI();
+
+                        // Avoid duplicate entries by erasing the previous instance
+                        wireColVec.erase(wireItr);
+                    }
                 }
             }
 
-            // add the range into ROIVec
-            ROIVec.add_range(candROI.first, std::move(holder));
-        }
+            const icarus_signal_processing::VectorFloat& waveform = dataArray[waveIdx];
 
-        // Check for emptiness
-        if (!ROIVec.empty())
-        {
-            // First get a lock to make sure we don't conflict
-            tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
-
-            raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
-            geo::View_t      view    = fGeometry->View(channel);
-
-            // Since we process logical TPC images we need to watch for duplicating entries 
-            // We can do that by checking to see if a channel has already been added...
-            std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
-
-            if (wireIDVec.size() > 1)
+            // We need to copy the deconvolved (and corrected) waveform ROI's
+            for(const auto& candROI : candidateROIVec)
             {
-                std::vector<recob::Wire>::iterator wireItr = std::find_if(wireColVec.begin(),wireColVec.end(),[channel](const auto& wire){return wire.Channel() == channel;});
+                // First up: copy out the relevent ADC bins into the ROI holder
+                size_t roiLen = candROI.second - candROI.first;
 
-                if (wireItr != wireColVec.end())
+                icarus_signal_processing::VectorFloat holder(roiLen);
+
+                std::copy(waveform.begin()+candROI.first, waveform.begin()+candROI.second, holder.begin());
+
+                // Now we do the baseline determination and correct the ROI
+                // For now we are going to reset to the minimum element
+                // Get slope/offset from first to last ticks
+                if (holder.size() < 40)
                 {
-                    if (fDiagnosticOutput) std::cout << "******************* Found duplicate entry for channel " << channel << " ************************" << std::endl;
-                    continue;
+                    float dADC   = (holder.back() - holder.front()) / float(holder.size());
+                    float offset = holder.front();
+
+                    for(auto& adcVal : holder)
+                    {
+                        adcVal -= offset;
+                        offset += dADC;
+                    }
                 }
+
+                // add the range into ROIVec
+                ROIVec.add_range(candROI.first, std::move(holder));
             }
 
-            wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+            // Check for emptiness
+            if (!ROIVec.empty())
+            {
+                // First get a lock to make sure we don't conflict
+                tbb::spin_mutex::scoped_lock lock(roifinderSpinMutex);
+
+                raw::ChannelID_t channel = channelVec[waveIdx];
+                geo::View_t      view    = fGeometry->View(channel);
+
+                // Since we process logical TPC images we need to watch for duplicating entries 
+                // We can do that by checking to see if a channel has already been added...
+                std::vector<geo::WireID> wireIDVec = fGeometry->ChannelToWire(channel);
+
+                wireColVec.push_back(recob::WireCreator(std::move(ROIVec),channel,view).move());
+            }
         }
     }
 

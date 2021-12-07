@@ -79,9 +79,9 @@ void ROIMorphological2D::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs)
+void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& morphedWaveforms, ArrayBool& outputROIs)
 {
-    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(inputImage[0].size(),0.));
+    if (morphedWaveforms.size() != inputImage.size()) morphedWaveforms.resize(inputImage.size(),icarus_signal_processing::VectorFloat(inputImage[0].size()));
 
     for(auto& morph : morphedWaveforms) std::fill(morph.begin(),morph.end(),0.);  // explicit initialization
 
@@ -102,14 +102,12 @@ void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inp
     for(size_t waveIdx = 0; waveIdx < morphedWaveforms.size(); waveIdx++)
     {
         // We start working with the morphed waveform
-        const VectorFloat& morphedWave = morphedWaveforms[waveIdx];
+        VectorFloat& morphedWave = morphedWaveforms[waveIdx];
 
         // We need to zero suppress so we can find the rms
         float median = getMedian(morphedWave, morphedWave.size());
 
-        VectorFloat baseVec(morphedWave.size());
-
-        for(size_t idx = 0; idx < morphedWave.size(); idx++) baseVec[idx] = morphedWave[idx] - median;
+        for(auto& val : morphedWave) val -= median;
 
 //        float threshold = rms * fThreshold[planeID.Plane];
         float threshold = fThreshold[planeID.Plane];
@@ -123,9 +121,9 @@ void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inp
 
         bool hasROI(false);
 
-        for(size_t idx = 0; idx < baseVec.size(); idx++)
+        for(size_t idx = 0; idx < morphedWave.size(); idx++)
         {
-            if (baseVec[idx] > threshold) 
+            if (morphedWave[idx] > threshold) 
             {
                 selVals[idx] = true;
                 hasROI       = true;
@@ -134,14 +132,14 @@ void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inp
 
         if (fOutputHistograms)
         {
-            VectorFloat rmsVec = baseVec;
+            VectorFloat rmsVec = morphedWave;
             size_t      maxIdx = 0.75 * rmsVec.size();
 
             std::nth_element(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.end());
 
             float rms    = std::sqrt(std::inner_product(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.begin(), 0.) / float(maxIdx));
-            float minVal = *std::min_element(baseVec.begin(),baseVec.end());
-            float maxVal = *std::max_element(baseVec.begin(),baseVec.end());
+            float minVal = *std::min_element(morphedWave.begin(),morphedWave.end());
+            float maxVal = *std::max_element(morphedWave.begin(),morphedWave.end());
             
             fMedianVec.emplace_back(median);
             fRMSVec.emplace_back(rms);
