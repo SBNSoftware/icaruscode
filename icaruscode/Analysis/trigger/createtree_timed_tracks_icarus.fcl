@@ -26,8 +26,10 @@ gatesFromTracks_icarus: {
 
   module_type: BeamGateInfoFromTracks
   
-  GateStartOffset: "-15 us"
-  GateEndOffset:   "+15 us"
+  GateStartOffset: "-20 us"
+  GateEndOffset:   "+0 us"
+  #GateStartOffset: "0 us"
+  #GateEndOffset:   "+20 us"
   
   T0Producer:    @nil  # must override
   T0selProducer: @nil  # must override
