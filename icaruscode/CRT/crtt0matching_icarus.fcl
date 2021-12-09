@@ -1,0 +1,97 @@
+# A script to run the producer module: CRTT0Matching
+
+#include "services_icarus_simulation.fcl"
+#include "services_common_icarus.fcl"
+#include "crtbacktracker_icarus.fcl"
+#include "crtt0matchingalg_icarus.fcl"
+#include "simulationservices_icarus.fcl"
+
+
+
+##include "messages_icarus.fcl"
+##include "services_icarus.fcl"
+##include "signalservices_icarus.fcl"
+##include "sam_icarus.fcl"
+##include "backtrackerservice.fcl"
+##include "particleinventoryservice.fcl"
+
+
+##include "rootoutput_icarus.fcl"
+
+process_name: CRTT0Matching
+
+services:
+{
+  # Load the service that manages root files for histograms.
+  TFileService:           { fileName: "crtt0_hist.root" }
+ # ParticleInventoryService: @local::standard_particleinventoryservice
+  #BackTrackerService: @local::standard_backtrackerservice
+#  CRTBackTrack: @local::standard_crtbacktracker	
+  # This parameter controls the level of descriptive output from various LArSoft modules.
+  message:                @local::icarus_message_services_prod_debug
+                          @table::icarus_common_services
+
+  #FileCatalogMetadata:       @local::icarus_file_catalog_mc       # from sam_icarus.fcl
+   #                          @table::icarus_services 
+    #                         @table::icarus_random_services       # from services_icarus.fcl
+
+  # This following line defines many default LArSoft resources for this job.
+ # SignalShapingServiceICARUS: @local::icarus_signalshapingservice  # from signalservices_icarus.fcl
+
+} # services
+
+services.SpaceChargeService: @local::icarus_spacecharge
+
+# The 'source' section tells the script to expect an input file with art::Event records.
+source:
+{
+  module_type: RootInput
+
+  # Number of events to analyze; "-1" means all of the events in the input
+  # file. You can override this value with the "-n" option on the command line. 
+  maxEvents:  -1 
+
+}
+
+# This is empty, because we're not writing an output file with art::Event objects.
+outputs:
+{
+  out1:
+  {
+    module_type: RootOutput
+    fileName:    "%ifb_%tc_reco.root"
+    dataTier: "reconstructed"
+    saveMemoryObjectThreshold: 0
+    compressionLevel: 1
+    fastCloning: false
+  }
+}
+
+# The 'physics' section defines and configures some modules to do work on each event.
+physics:
+{
+  producers:
+  {
+    CRTT0Matching:
+    {
+      module_type:         "icaruscode/CRT/CRTT0Matching"
+      CrtHitModuleLabel:   "crthit"           # name of crt hit producer
+      #TpcTrackModuleLabel: ["pandoraTrackGausCryoE", "pandoraTrackGausCryoW"]     # name of tpc track producer
+      TpcTrackModuleLabel: "pandoraTrackGausCryoE"     # name of tpc track producer	
+      T0Alg:                @local::standard_crtt0matchingalg
+      CRTBackTrack: @local::standard_crtbacktracker	
+    }
+  }
+
+  # Schedule job step(s) for execution by defining the analysis module for this job.
+  reco: [ CRTT0Matching ]
+
+  stream1: [ out1 ]
+
+  trigger_paths: [reco]
+
+  # "end_paths" is a keyword and contains the modules that do not modify the art::Event;
+  # i.e., analyzers and output streams.
+  end_paths: [ stream1 ]
+
+}
