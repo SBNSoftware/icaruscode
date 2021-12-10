@@ -4,8 +4,8 @@ icarus_morphologicalroifinder:
 {
     tool_type:           ROIMorphological2D
     Plane:               0
-    StructuringElement:  [8, 16]
-    Threshold:           [8.5, 8.5, 8.] #[9., 9., 8.] 
+    StructuringElement:  [30, 6]          #Note that wire spacing is ~5x tick spacing, in this ticks are first, wires second so this makes a "square"
+    Threshold:           [7.5, 7.5, 6.0] 
 }
 
 morphologicalfinder_0:       @local::icarus_morphologicalroifinder
