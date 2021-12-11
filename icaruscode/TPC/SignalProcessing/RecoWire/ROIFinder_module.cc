@@ -370,8 +370,15 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     const PlaneIDToDataPair& planeIDToDataPair = mapItr->second;
 
-    const icarus_signal_processing::ArrayFloat& dataArray  = planeIDToDataPair.second();
+    //const icarus_signal_processing::ArrayFloat& dataArray  = planeIDToDataPair.second();
+    const icarus_signal_processing::ArrayFloat& dataArrayTmp  = planeIDToDataPair.second();
     const std::vector<raw::ChannelID_t>&        channelVec = planeIDToDataPair.first;
+
+    // get an instance of the waveform tools
+    icarus_signal_processing::WaveformTools<float> waveformTools;
+    icarus_signal_processing::ArrayFloat dataArray = dataArrayTmp;
+
+    for(size_t waveIdx = 0; waveIdx < dataArrayTmp.size(); waveIdx++) waveformTools.triangleSmooth(dataArrayTmp[waveIdx],dataArray[waveIdx]);
 
     // Keep track of our selected values
     icarus_signal_processing::ArrayFloat outputArray(dataArray.size(),icarus_signal_processing::VectorFloat(dataArray[0].size(),0.));
@@ -512,7 +519,8 @@ void  ROIFinder::processPlane(size_t                      idx,
             for(const auto& candROI : candidateROIVec)
             {
                 // First up: copy out the relevent ADC bins into the ROI holder
-                size_t roiLen = candROI.second - candROI.first;
+                size_t roiLen   = candROI.second - candROI.first;
+                size_t firstBin = candROI.first;
 
                 icarus_signal_processing::VectorFloat holder(roiLen);
 
@@ -521,20 +529,39 @@ void  ROIFinder::processPlane(size_t                      idx,
                 // Now we do the baseline determination and correct the ROI
                 // For now we are going to reset to the minimum element
                 // Get slope/offset from first to last ticks
-                if (holder.size() < 40)
+                if (holder.size() > 12 && holder.size() < 512)
                 {
-                    float dADC   = (holder.back() - holder.front()) / float(holder.size());
-                    float offset = holder.front();
+                    // Try to find the minimum value in the leading and trailing bins
+                    size_t nBins = holder.size()/3;
+                    icarus_signal_processing::VectorFloat::iterator firstItr = std::min_element(holder.begin(),holder.begin()+nBins);
+                    icarus_signal_processing::VectorFloat::iterator lastItr  = std::min_element(holder.end()-nBins,holder.end());
 
-                    for(auto& adcVal : holder)
+                    size_t newSize = std::distance(firstItr,lastItr) + 1;
+                    float  dADC    = (*lastItr - *firstItr) / float(newSize);
+                    float  offset  = *firstItr;
+
+                    for(size_t binIdx = 0; binIdx < newSize; binIdx++)
                     {
-                        adcVal -= offset;
-                        offset += dADC;
+                        holder[binIdx]  = *(firstItr + binIdx) - offset;
+                        offset         += dADC;
                     }
+
+                    firstBin += std::distance(holder.begin(),firstItr);
+
+                    holder.resize(newSize);
+
+//                    float dADC   = (holder.back() - holder.front()) / float(holder.size());
+//                    float offset = holder.front();
+//
+//                    for(auto& adcVal : holder)
+//                    {
+//                        adcVal -= offset;
+//                        offset += dADC;
+//                    }
                 }
 
                 // add the range into ROIVec
-                ROIVec.add_range(candROI.first, std::move(holder));
+                ROIVec.add_range(firstBin, std::move(holder));
             }
 
             // Check for emptiness
