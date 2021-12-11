@@ -157,6 +157,7 @@ public:
         tree->Branch("LargestPH",          "std::vector<float>", &fLargestPHVec);
         tree->Branch("AveragePH",          "std::vector<float>", &fAveragePHVec);
         tree->Branch("LargestDelT",        "std::vector<float>", &fLargestDelTVec);
+        tree->Branch("SmallestDelT",       "std::vector<float>", &fSmallestDelTVec);
 
         tree->Branch("SP_x",               "std::vector<float>", &fSP_x);
         tree->Branch("SP_y",               "std::vector<float>", &fSP_y);
@@ -195,6 +196,7 @@ public:
         fLargestPHVec.clear();
         fAveragePHVec.clear();
         fLargestDelTVec.clear();
+        fSmallestDelTVec.clear();
 
         fSP_x.clear();
         fSP_y.clear();
@@ -225,6 +227,7 @@ public:
     std::vector<float> fLargestPHVec;
     std::vector<float> fAveragePHVec;
     std::vector<float> fLargestDelTVec;
+    std::vector<float> fSmallestDelTVec;
 
     std::vector<float> fSP_x;
     std::vector<float> fSP_y;
@@ -530,6 +533,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             float              averagePH       = 0.;
             float              averagePT       = 0.;
             float              largestDelT     = 0.;
+            float              smallestDelT    = 100000.;
             std::vector<float> hitPeakTimeVec  = {-100.,-200.,-300.};
             std::vector<float> hitPeakRMSVec   = {1000.,1000.,1000.};
             int                hitMultProduct  = 1;
@@ -554,7 +558,6 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 recobHitVec[plane] = hitPtr.get();
                 numHits++;
                 averagePH  += peakAmplitude;
-                averagePT  += peakTime;
                 smallestPH  = std::min(peakAmplitude,smallestPH);
                 largestPH   = std::max(peakAmplitude,largestPH);
 
@@ -567,6 +570,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                                       + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
                                       - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
                 hitPeakRMSVec[plane]  = rms;
+                averagePT            += hitPeakTimeVec[plane];
 
                 cryostat = hitPtr->WireID().Cryostat;
                 tpc      = hitPtr->WireID().TPC;
@@ -578,10 +582,11 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             averagePH /= float(numHits);
             averagePT /= float(numHits);
 
-            for(const auto& hitPtr : associatedHits)
+            for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
             {
-                float delT = hitPtr->PeakTime() - averagePT;
-                if (std::abs(delT) > std::abs(largestDelT)) largestDelT = delT;
+                float delT = hitPeakTimeVec[planeIdx] - averagePT;
+                if (std::abs(delT) > std::abs(largestDelT))  largestDelT  = delT;
+                if (std::abs(delT) < std::abs(smallestDelT)) smallestDelT = delT;
             }
 
             // Fill for "all" cases
@@ -594,6 +599,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fLargestPHVec.emplace_back(largestPH);
             fHitSpacePointObj.fAveragePHVec.emplace_back(averagePH);
             fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
+            fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
             fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);
