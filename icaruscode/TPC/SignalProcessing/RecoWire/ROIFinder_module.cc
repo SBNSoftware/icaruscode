@@ -144,6 +144,9 @@ private:
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
 
     std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
+    bool                                                       fCorrectROIBaseline;         ///< Correct the ROI baseline 
+    size_t                                                     fMinSizeForCorrection;       ///< Minimum ROI length to do correction
+    size_t                                                     fMaxSizeForCorrection;       ///< Maximum ROI length for baseline correction
     bool                                                       fOutputMorphed;              ///< Output the morphed waveforms
     bool                                                       fDiagnosticOutput;           ///< secret diagnostics flag
     bool                                                       fOutputHistograms;           ///< Output tuples/histograms?
@@ -179,10 +182,13 @@ ROIFinder::~ROIFinder()
 void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
-    fWireModuleLabelVec  = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",  std::vector<art::InputTag>()={"decon1droi"});
-    fOutputMorphed       = pset.get< bool                     >("OutputMorphed",                                              true);
-    fDiagnosticOutput    = pset.get< bool                     >("DaignosticOutput",                                          false);
-    fOutputHistograms    = pset.get< bool                     >("OutputHistograms",                                          false);
+    fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
+    fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                          true);
+    fMinSizeForCorrection  = pset.get<size_t                    >("MinSizeForCorrection",                                          12);
+    fMaxSizeForCorrection  = pset.get<size_t                    >("MaxSizeForCorrection",                                         512);
+    fOutputMorphed         = pset.get< bool                     >("OutputMorphed",                                               true);
+    fDiagnosticOutput      = pset.get< bool                     >("DaignosticOutput",                                           false);
+    fOutputHistograms      = pset.get< bool                     >("OutputHistograms",                                           false);
         
     // Access ART's TFileService, which will handle creating and writing
     // histograms and n-tuples for us.
@@ -529,7 +535,7 @@ void  ROIFinder::processPlane(size_t                      idx,
                 // Now we do the baseline determination and correct the ROI
                 // For now we are going to reset to the minimum element
                 // Get slope/offset from first to last ticks
-                if (holder.size() > 12 && holder.size() < 512)
+                if (fCorrectROIBaseline && holder.size() > fMinSizeForCorrection && holder.size() < fMaxSizeForCorrection)
                 {
                     // Try to find the minimum value in the leading and trailing bins
                     size_t nBins = holder.size()/3;
@@ -549,15 +555,6 @@ void  ROIFinder::processPlane(size_t                      idx,
                     firstBin += std::distance(holder.begin(),firstItr);
 
                     holder.resize(newSize);
-
-//                    float dADC   = (holder.back() - holder.front()) / float(holder.size());
-//                    float offset = holder.front();
-//
-//                    for(auto& adcVal : holder)
-//                    {
-//                        adcVal -= offset;
-//                        offset += dADC;
-//                    }
                 }
 
                 // add the range into ROIVec

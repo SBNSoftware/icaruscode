@@ -87,9 +87,14 @@ icarus_recowireraw:
 
 icarus_roifinder:
 {
-    module_type:        ROIFinder
-    WireModuleLabel:    "decon1droi"
-    OutputHistograms:   false
+    module_type:           ROIFinder
+    WireModuleLabel:       "decon1droi"
+    CorrectROIBaseline:    true
+    MinSizeForCorrection:  12
+    MaxSizeForCorrection:  512
+    OutputMorphed:         false
+    DaignosticOutput:      false
+    OutputHistograms:      false
     ROIFinderToolVec: {
         ROIFinderPlane0: @local::morphologicalfinder_0
         ROIFinderPlane1: @local::morphologicalfinder_1
