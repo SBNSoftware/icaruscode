@@ -190,8 +190,7 @@ icarus_stage0_PMT_NuMI:            [ @sequence::icarus_stage0_PMT,
                                      flashfilterNuMI
                                    ]
 
-icarus_stage0_multiTPC:            [ daqTPCROI, 
-                                     @sequence::icarus_stage0_multiTPC_TPC,
+icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_stage0_EastHits_TPC,
                                      @sequence::icarus_stage0_WestHits_TPC,
                                      @sequence::icarus_purity_monitor
@@ -203,6 +202,7 @@ icarus_stage0_crt:                 [
 
 icarus_stage0_data:                [
                                      @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
                                      @sequence::icarus_stage0_multiTPC,
                                      @sequence::icarus_stage0_crt
                                    ]
