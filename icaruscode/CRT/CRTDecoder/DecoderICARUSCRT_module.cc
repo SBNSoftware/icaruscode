@@ -93,7 +93,7 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
     int32_t & mac = feb[0];
     int32_t & d   = feb[1];
     FEB_delay[mac] = d;
-    std::cout<<"Read delay for mac5 "<<std::setw(3)<<(int)mac<<": "<<std::setw(4)<<d<<" ns\n";
+//    std::cout<<"Read delay for mac5 "<<std::setw(3)<<(int)mac<<": "<<std::setw(4)<<d<<" ns\n";
   }
 }
 

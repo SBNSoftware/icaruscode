@@ -2,9 +2,8 @@
 
 process_name: stage1
 
-physics.reco: [ TPCHitFilter,
-                @sequence::icarus_reco_Gauss_CryoE ,
-                @sequence::icarus_reco_Gauss_CryoW ,
+physics.reco: [ @sequence::icarus_filter_cluster3D,
+                @sequence::icarus_pandora_Gauss,
 		            @sequence::icarus_reco_fm,
                 caloskimCalorimetryCryoE, caloskimCalorimetryCryoW]
 

@@ -29,7 +29,7 @@ outputs.outBNB.fileName: "%ifb_%tc-%p.root"
 outputs.outBNB.dataTier: "reconstructed"
 
 # Drop the artdaq format files on output
-outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_decon1droi_*_*" ]
+outputs.outBNB.outputCommands: ["keep *_*_*_*", "drop *_MCDecodeTPCROI_*_*", "drop *_decon1droi_*_*","drop raw::RawDigits_*_*_*" ]
 
 # Set the expected input for ophit
 physics.producers.ophit.InputModule: "opdaq"

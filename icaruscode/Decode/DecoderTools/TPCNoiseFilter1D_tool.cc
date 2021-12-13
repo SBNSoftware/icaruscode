@@ -224,8 +224,6 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
 
-    std::cout << "TPCNoiseFilter1D - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
-
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
     fFFTFilterFunctionVec.clear();
@@ -328,6 +326,9 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
         // Convolve with a filter function
         if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+
+        // Make sure our selection and ROI arrays are initialized
+        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
     denoiser(fWaveLessCoherent.begin(),

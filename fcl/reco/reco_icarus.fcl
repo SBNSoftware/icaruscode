@@ -112,10 +112,6 @@ icarus_reco_producers:
   hitMergerCryo0:                 @local::icarus_hitmerger
   hitMergerCryo1:                 @local::icarus_hitmerger
 
-  ### trajcluster
-  trajclusterGaus:                @local::icarus_trajcluster
-  trajclusterICARUS:              @local::icarus_trajcluster
-
   ### Cluster3D
   cluster3d:                      @local::icarus_cluster3d
   cluster3DCryo0:                 @local::icarus_cluster3d
@@ -298,10 +294,6 @@ icarus_reco_SigProcTPC3Raw:        [ recoWireRawTPC3,
 icarus_reco_signalprocessing:      [ @sequence::icarus_reco_signalprocessinggaus,
                                      @sequence::icarus_reco_signalprocessingraw ]
 
-icarus_reco_trajclusterGaus:       [ trajclusterGaus]
-
-icarus_reco_trajclusterICARUS:     [ trajclusterICARUS]
-
 icarus_reco_cluster3d:             [ cluster3d ]
 
 icarus_reco_cluster3DCryo0:        [ cluster3DCryo0 ]
@@ -422,7 +414,6 @@ icarus_reco_crt:                   [ crttruehit,
 icarus_gauss_reconstruction:       [ @sequence::icarus_reco_signalprocessinggaus,
                                      @sequence::icarus_reco_cluster3d,
                                      @sequence::icarus_reco_pandoraGaus,
-                                     #@sequence::icarus_reco_trajclusterGaus,
                                      #@sequence::icarus_reco_pmAlgTrackerGaus,
                                      SBNShowerGaus,
 				     SBNShowerTestGaus,
@@ -432,7 +423,6 @@ icarus_gauss_reconstruction:       [ @sequence::icarus_reco_signalprocessinggaus
 
 icarus_gauss_MultiTPCRecon:        [ @sequence::icarus_reco_Gauss_Cryo0,
                                      @sequence::icarus_reco_Gauss_Cryo1,
-                                     #@sequence::icarus_reco_trajclusterGaus,
                                      #@sequence::icarus_reco_pmAlgTrackerGaus,
                                      @sequence::icarus_reco_mcrecoGausMulti,
                                      @sequence::icarus_reco_wmc_optical
@@ -444,7 +434,6 @@ icarus_gauss_MultiTPCSCERecon:     [ @sequence::icarus_reco_Gauss_SCE_Cryo0, @se
 # Note this stage needs to follow the gauss stage since it uses the rawdigitfilter output
 icarus_raw_reconstruction:         [ @sequence::icarus_reco_signalprocessingraw,
                                      @sequence::icarus_reco_pandoraICARUS,
-                                     #@sequence::icarus_reco_trajclusterICARUS,
                                      #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                      @sequence::icarus_reco_mcrecoICARUS,
                                      @sequence::icarus_reco_crt
@@ -452,7 +441,6 @@ icarus_raw_reconstruction:         [ @sequence::icarus_reco_signalprocessingraw,
 
 icarus_raw_MultiTPCRecon:          [ @sequence::icarus_reco_raw_Cryo0,
                                      @sequence::icarus_reco_raw_Cryo1,
-                                     #@sequence::icarus_reco_trajclusterICARUS,
                                      #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                      @sequence::icarus_reco_mcrecoICARUSMulti,
                                      @sequence::icarus_reco_crt
@@ -461,7 +449,6 @@ icarus_raw_MultiTPCRecon:          [ @sequence::icarus_reco_raw_Cryo0,
 
 #icarus_rawfast_TPC0recon:          [ @sequence::icarus_reco_raw_Cryo0,
 #                                     @sequence::icarus_reco_raw_Cryo1,
-#                                     #@sequence::icarus_reco_trajclusterICARUS,
 #                                     #@sequence::icarus_reco_pmAlgTrackerICARUS,
 #                                     @sequence::icarus_reco_mcrecoICARUSMulti,
 #                                     @sequence::icarus_reco_crt
@@ -470,7 +457,6 @@ icarus_raw_MultiTPCRecon:          [ @sequence::icarus_reco_raw_Cryo0,
 
 icarus_mixed_reconstruction:       [ @sequence::icarus_reco_signalprocessingmixed,
                                      @sequence::icarus_reco_pandoraICARUS,
-                                     #@sequence::icarus_reco_trajclusterICARUS,
                                      #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                      @sequence::icarus_reco_mcrecoICARUS,
                                      @sequence::icarus_reco_crt
@@ -478,7 +464,6 @@ icarus_mixed_reconstruction:       [ @sequence::icarus_reco_signalprocessingmixe
 
 icarus_mixed_MultiTPCRecon:        [ @sequence::icarus_reco_mixed_Cryo0,
                                      @sequence::icarus_reco_mixed_Cryo1,
-                                     #@sequence::icarus_reco_trajclusterICARUS,
                                      #@sequence::icarus_reco_pmAlgTrackerICARUS,
                                      @sequence::icarus_reco_mcrecoICARUSMulti,
                                      @sequence::icarus_reco_crt
@@ -584,8 +569,6 @@ icarus_reco_producers.icarusHitTPC3.CalDataModuleLabel:                         
 icarus_reco_producers.hitMergerCryo0.HitProducerLabelVec:                                      ["icarusHitTPC0","icarusHitTPC1"]
 icarus_reco_producers.hitMergerCryo1.HitProducerLabelVec:                                      ["icarusHitTPC2","icarusHitTPC3"]
 
-icarus_reco_producers.trajclusterGaus.TrajClusterAlg.HitFinderModuleLabel:                     "cluster3d"
-
 ### Definitions for a single pandora instance
 icarus_reco_producers.pandoraGaus.HitFinderModuleLabel:                                        "cluster3d"
 icarus_reco_producers.pandoraTrackGaus.PFParticleLabel:                                        "pandoraGaus"
@@ -652,9 +635,6 @@ icarus_reco_producers.pmAlgTrackerGaus.ClusterModuleLabel:                      
 icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
 
 icarus_reco_producers.pmAlgKalmanTrackGaus.inputs.inputPFParticleLabel:                        "pmAlgTrackerGaus"
-
-### Definitions for a single instance of trajCluster
-icarus_reco_producers.trajclusterICARUS.TrajClusterAlg.HitFinderModuleLabel:                   "icarushit"
 
 ### Definitions for a single pandora instance
 icarus_reco_producers.pandoraICARUS.HitFinderModuleLabel:                                      "icarushit"

@@ -23,8 +23,8 @@ outputs.outNUMI.dataTier:  "reconstructed"
 outputs.outNUMI.SelectEvents: [ pathNUMI ]
 
 # Drop the artdaq format files on output
-outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
-outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration
 physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false

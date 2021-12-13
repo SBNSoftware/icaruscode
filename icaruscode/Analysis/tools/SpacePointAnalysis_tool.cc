@@ -69,6 +69,7 @@ public:
     void setBranches(TTree* tree)
     {
         tree->Branch("TicksTotHit",       "std::vector<int>",   &fTicksTotHitVec);
+        tree->Branch("Tick",              "std::vector<int>",   &fTicksVec);
         tree->Branch("NDF",               "std::vector<int>",   &fNDFHitVec);                //< Number of degrees of freedom of hit fit
         tree->Branch("Multiplicity",      "std::vector<int>",   &fMultiplicityHitVec);       //< Multiplicity of the snippet the hit is on
         tree->Branch("LocalIndex",        "std::vector<int>",   &fLocalIndexHitVec);         //< The index of the hit within the snippet
@@ -92,6 +93,7 @@ public:
     void clear()
     {
         fTicksTotHitVec.clear();
+        fTicksVec.clear();
         fNDFHitVec.clear();
         fMultiplicityHitVec.clear();
         fLocalIndexHitVec.clear();
@@ -107,6 +109,7 @@ public:
     void fillHitInfo(const recob::Hit* hit, int hitWidth, int clusterSize)
     {
         fTicksTotHitVec.emplace_back(hitWidth);
+        fTicksVec.emplace_back(hit->PeakTime());
         fNDFHitVec.emplace_back(hit->DegreesOfFreedom());
         fMultiplicityHitVec.emplace_back(hit->Multiplicity());
         fLocalIndexHitVec.emplace_back(hit->LocalIndex());
@@ -120,6 +123,7 @@ public:
 
     // Define tuple values, these are public so can be diretly accessed for filling
     std::vector<int>   fTicksTotHitVec;
+    std::vector<int>   fTicksVec;
     std::vector<int>   fNDFHitVec;
     std::vector<int>   fMultiplicityHitVec;
     std::vector<int>   fLocalIndexHitVec;
@@ -153,6 +157,7 @@ public:
         tree->Branch("LargestPH",          "std::vector<float>", &fLargestPHVec);
         tree->Branch("AveragePH",          "std::vector<float>", &fAveragePHVec);
         tree->Branch("LargestDelT",        "std::vector<float>", &fLargestDelTVec);
+        tree->Branch("SmallestDelT",       "std::vector<float>", &fSmallestDelTVec);
 
         tree->Branch("SP_x",               "std::vector<float>", &fSP_x);
         tree->Branch("SP_y",               "std::vector<float>", &fSP_y);
@@ -191,6 +196,7 @@ public:
         fLargestPHVec.clear();
         fAveragePHVec.clear();
         fLargestDelTVec.clear();
+        fSmallestDelTVec.clear();
 
         fSP_x.clear();
         fSP_y.clear();
@@ -221,6 +227,7 @@ public:
     std::vector<float> fLargestPHVec;
     std::vector<float> fAveragePHVec;
     std::vector<float> fLargestDelTVec;
+    std::vector<float> fSmallestDelTVec;
 
     std::vector<float> fSP_x;
     std::vector<float> fSP_y;
@@ -482,10 +489,14 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             std::vector<art::Ptr<recob::SpacePoint>> spacePointVec(pfPartSpacePointAssns.at(pfParticle.key()));
 
             pfParticleToNumSPMap[pfParticle.get()] = spacePointVec.size();
+
+//            if (spacePointVec.size() > 50000) std::cout << "SpacePointAnalysis finds PFParticle with " << spacePointVec.size() << " associated space points, run/event: " << event.id() << std::endl;
         }
 
         // Ok now we want the reverse look up
         art::FindManyP<recob::PFParticle> spacePointPFPartAssns(spacePointHandle, event, collectionLabel);
+
+        std::unordered_map<const recob::Hit*,int> uniqueHitMap;
 
         // And now, without further adieu, here we begin the loop that will actually produce some useful output.
         // Loop over all space points and find out their true nature
@@ -522,6 +533,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             float              averagePH       = 0.;
             float              averagePT       = 0.;
             float              largestDelT     = 0.;
+            float              smallestDelT    = 100000.;
             std::vector<float> hitPeakTimeVec  = {-100.,-200.,-300.};
             std::vector<float> hitPeakRMSVec   = {1000.,1000.,1000.};
             int                hitMultProduct  = 1;
@@ -540,27 +552,25 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
                 float rms           = hitPtr->RMS();
                 int   plane         = hitPtr->WireID().Plane;
 
-                // Recover hit time range (in ticks), cast a wide net here
-                int   startTick     = std::max(   0,int(std::floor(peakTime - 3. * rms)));
-                int   endTick       = std::min(4096,int(std::ceil( peakTime + 3. * rms)));
+                // Add to the set
+                uniqueHitMap[hitPtr.get()] = nSpacePointsInPFParticle;
 
                 recobHitVec[plane] = hitPtr.get();
                 numHits++;
-                averagePH += peakAmplitude;
-                averagePT += peakTime;
-                smallestPH = std::min(peakAmplitude,smallestPH);
-                largestPH  = std::max(peakAmplitude,largestPH);
+                averagePH  += peakAmplitude;
+                smallestPH  = std::min(peakAmplitude,smallestPH);
+                largestPH   = std::max(peakAmplitude,largestPH);
 
                 hitMultProduct *= hitPtr->Multiplicity();
 
                 if (hitPtr->DegreesOfFreedom() < 2) numLongHits++;
 
-                hitPeakTimeVec[plane] = peakTime 
+                hitPeakTimeVec[plane] = peakTime
                                       - detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,plane))
+                                      + detProp.GetXTicksOffset(geo::PlaneID(hitPtr->WireID().Cryostat,hitPtr->WireID().TPC,0))
                                       - fTickCorrectionArray[hitPtr->WireID().Cryostat][hitPtr->WireID().TPC][plane]; //clockData.TPCTick2TDC(peakTime);
                 hitPeakRMSVec[plane]  = rms;
-
-                fHitTupleObjVec[plane].fillHitInfo(hitPtr.get(),endTick-startTick+1,nSpacePointsInPFParticle);
+                averagePT            += hitPeakTimeVec[plane];
 
                 cryostat = hitPtr->WireID().Cryostat;
                 tpc      = hitPtr->WireID().TPC;
@@ -572,10 +582,11 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             averagePH /= float(numHits);
             averagePT /= float(numHits);
 
-            for(const auto& hitPtr : associatedHits)
+            for(size_t planeIdx = 0; planeIdx < 3; planeIdx++)
             {
-                float delT = hitPtr->PeakTime() - averagePT;
-                if (std::abs(delT) > std::abs(largestDelT)) largestDelT = delT;
+                float delT = hitPeakTimeVec[planeIdx] - averagePT;
+                if (std::abs(delT) > std::abs(largestDelT))  largestDelT  = delT;
+                if (std::abs(delT) < std::abs(smallestDelT)) smallestDelT = delT;
             }
 
             // Fill for "all" cases
@@ -588,6 +599,7 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fLargestPHVec.emplace_back(largestPH);
             fHitSpacePointObj.fAveragePHVec.emplace_back(averagePH);
             fHitSpacePointObj.fLargestDelTVec.emplace_back(largestDelT);
+            fHitSpacePointObj.fSmallestDelTVec.emplace_back(smallestDelT);
             fHitSpacePointObj.fNumLongHitsVec.emplace_back(numLongHits);
             fHitSpacePointObj.fNumIntersectSetVec.emplace_back(numIntersections);
             fHitSpacePointObj.fClusterNSPVec.emplace_back(nSpacePointsInPFParticle);
@@ -602,6 +614,21 @@ void SpacePointAnalysis::processSpacePoints(const art::Event&                  e
             fHitSpacePointObj.fSP_x.emplace_back(spPosition[0]);
             fHitSpacePointObj.fSP_y.emplace_back(spPosition[1]);
             fHitSpacePointObj.fSP_z.emplace_back(spPosition[2]);
+        }
+
+        // Now include hit information for unique hits
+        for(const auto& hitItr : uniqueHitMap)
+        {
+            // Recover hit time range (in ticks), cast a wide net here
+            const recob::Hit* hit = hitItr.first;
+
+            float peakTime  = hit->PeakTime();
+            float rms       = hit->PeakTime();
+            int   startTick = std::max(   0,int(std::floor(peakTime - 3. * rms)));
+            int   endTick   = std::min(4096,int(std::ceil( peakTime + 3. * rms)));
+
+            fHitTupleObjVec[hit->WireID().Plane].fillHitInfo(hit,endTick-startTick+1,hitItr.second);
+
         }
     }
     // Can we check to see if we have duplicates?
