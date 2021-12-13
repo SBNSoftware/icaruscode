@@ -376,15 +376,8 @@ void  ROIFinder::processPlane(size_t                      idx,
 
     const PlaneIDToDataPair& planeIDToDataPair = mapItr->second;
 
-    //const icarus_signal_processing::ArrayFloat& dataArray  = planeIDToDataPair.second();
-    const icarus_signal_processing::ArrayFloat& dataArrayTmp  = planeIDToDataPair.second();
+    const icarus_signal_processing::ArrayFloat& dataArray  = planeIDToDataPair.second();
     const std::vector<raw::ChannelID_t>&        channelVec = planeIDToDataPair.first;
-
-    // get an instance of the waveform tools
-    icarus_signal_processing::WaveformTools<float> waveformTools;
-    icarus_signal_processing::ArrayFloat dataArray = dataArrayTmp;
-
-    for(size_t waveIdx = 0; waveIdx < dataArrayTmp.size(); waveIdx++) waveformTools.triangleSmooth(dataArrayTmp[waveIdx],dataArray[waveIdx]);
 
     // Keep track of our selected values
     icarus_signal_processing::ArrayFloat outputArray(dataArray.size(),icarus_signal_processing::VectorFloat(dataArray[0].size(),0.));
