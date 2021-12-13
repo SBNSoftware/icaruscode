@@ -144,6 +144,7 @@ private:
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
 
     std::vector<art::InputTag>                                 fWireModuleLabelVec;         ///< vector of modules that made digits
+    std::vector<std::string>                                   fOutInstanceLabelVec;        ///< The output instance labels to apply
     bool                                                       fCorrectROIBaseline;         ///< Correct the ROI baseline 
     size_t                                                     fMinSizeForCorrection;       ///< Minimum ROI length to do correction
     size_t                                                     fMaxSizeForCorrection;       ///< Maximum ROI length for baseline correction
@@ -183,6 +184,7 @@ void ROIFinder::reconfigure(fhicl::ParameterSet const& pset)
 {
     // Recover the parameters
     fWireModuleLabelVec    = pset.get<std::vector<art::InputTag>>("WireModuleLabelVec",   std::vector<art::InputTag>()={"decon1droi"});
+    fOutInstanceLabelVec   = pset.get<std::vector<std::string>>  ("OutInstanceLabelVec",                            {"PHYSCRATEDATA"});
     fCorrectROIBaseline    = pset.get<bool                      >("CorrectROIBaseline",                                          true);
     fMinSizeForCorrection  = pset.get<size_t                    >("MinSizeForCorrection",                                          12);
     fMaxSizeForCorrection  = pset.get<size_t                    >("MaxSizeForCorrection",                                         512);
@@ -234,8 +236,10 @@ void ROIFinder::endJob()
 void ROIFinder::produce(art::Event& evt)
 {
     // We need to loop through the list of Wire data we have been given
-    for(const auto& wireLabel : fWireModuleLabelVec)
+    for(size_t labelIdx = 0; labelIdx < fWireModuleLabelVec.size(); labelIdx++)
     {
+        const art::InputTag& wireLabel = fWireModuleLabelVec[labelIdx];
+
         // make a collection of Wires
         std::unique_ptr<std::vector<recob::Wire>> wireCol(new std::vector<recob::Wire>);
     
@@ -345,9 +349,9 @@ void ROIFinder::produce(art::Event& evt)
         // Time to stroe everything
         if(wireCol->size() == 0) mf::LogWarning("ROIFinder") << "No wires made for this event.";
 
-        evt.put(std::move(wireCol), wireLabel.instance());
+        evt.put(std::move(wireCol), fOutInstanceLabelVec[labelIdx]);
 
-        if (fOutputMorphed) evt.put(std::move(morphedCol), wireLabel.instance()+"M");
+        if (fOutputMorphed) evt.put(std::move(morphedCol), fOutInstanceLabelVec[labelIdx]+"M");
     }
 
     fEventCount++;

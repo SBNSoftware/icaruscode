@@ -253,6 +253,7 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:       
 ### Set up to output ROIs from full waveforms
 
 icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder.OutInstanceLabelVec:                                         ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder.OutputMorphed:                                               false
 
 ### Set up hit finding for multiple TPC readout
