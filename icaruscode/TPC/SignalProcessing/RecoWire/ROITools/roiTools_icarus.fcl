@@ -4,8 +4,8 @@ icarus_morphologicalroifinder:
 {
     tool_type:           ROIMorphological2D
     Plane:               0
-    StructuringElement:  [8, 16]
-    Threshold:           [8.5, 8.5, 8.] #[9., 9., 8.] 
+    StructuringElement:  [ 25, 5 ]  #[30, 6]   #Note that wire spacing is ~5x tick spacing, in this ticks are first, wires second so this makes a "square"
+    Threshold:           [7.5, 7.5, 6.0] 
 }
 
 morphologicalfinder_0:       @local::icarus_morphologicalroifinder
@@ -36,8 +36,8 @@ icarus_cannyedgedetector:
     Sigma_r:                    30.0      
     LowThreshold:               10.0 
     HighThreshold:              20.0  
-    BinaryDilation_SX:          31 
-    BinaryDilation_SY:          31 
+    BinaryDilation_SX:          25 #31        ## "X" will be time direction, "Y" will be wires. Note that ~5 ticks to 1 wire spacing
+    BinaryDilation_SY:          5  #31 
 }
 
 cannyedgedetector_0:        @local::icarus_cannyedgedetector
