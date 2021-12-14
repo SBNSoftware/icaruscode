@@ -112,7 +112,7 @@ private:
   
   double         fEventsPerPOT;     ///< Number of events per POT (to be set)
   int            fEventsPerSubRun;  ///< Keeps track of the number of processed events per subrun
-  ifdh_ns::ifdh* fIFDH;             ///< (optional) flux file handling
+  // ifdh_ns::ifdh* fIFDH;             ///< (optional) flux file handling
 };
 //------------------------------------------------------------------------------
 evgen::HepMCFileGen::HepMCFileGen(fhicl::ParameterSet const & p)
