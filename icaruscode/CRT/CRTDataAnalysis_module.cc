@@ -168,8 +168,8 @@ namespace crt {
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
     int      fDetSubSys;
-    double   fT0;///< signal time w.r.t. global event time
-    double   fT1;///< signal time w.r.t. PPS
+    uint64_t   fT0;///< signal time w.r.t. global event time
+    uint64_t   fT1;///< signal time w.r.t. PPS
     int      fADC[64];///< signal amplitude
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
@@ -182,8 +182,8 @@ namespace crt {
     float    fXErrHit; ///< stat error of CRT hit reco X (cm)
     float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    int32_t    fT0Hit; ///< hit time w.r.t. global event time
-    int32_t    fT1Hit; ///< hit time w.r.t. PPS
+    uint64_t    fT0Hit; ///< hit time w.r.t. global event time
+    uint64_t    fT1Hit; ///< hit time w.r.t. PPS
     //double    fT0CorrHit;
     //double    fT1CorrHit;
     //string ftagger;
@@ -310,8 +310,8 @@ namespace crt {
     // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDAQNtuple->Branch("t0",                    &fT0,                "t0/D");
-    fDAQNtuple->Branch("t1",                    &fT1,                "t1/D");
+    fDAQNtuple->Branch("t0",                    &fT0,                "t0/l");
+    fDAQNtuple->Branch("t1",                    &fT1,                "t1/l");
     fDAQNtuple->Branch("adc",                   fADC);
     fDAQNtuple->Branch("entry",                 &fEntry,             "entry/I");
     fDAQNtuple->Branch("mac5",                  &fMac5,              "mac5/I");
@@ -327,8 +327,8 @@ namespace crt {
     fHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
     fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
-    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
+    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
+    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
