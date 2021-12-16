@@ -10,6 +10,8 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
+#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h" // PMTcoverageInfoMaker
+#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
@@ -86,7 +88,15 @@ namespace icarus::trigger { class DiscriminatePMTwaveformsByChannel; }
  *   they can not be listed in the association; association pairs within
  *   the same optical channel are sorted by optical waveform timestamp;
  *   the type of the association is
- *   `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform>`.
+ *   `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform>`;
+ *   similarly, if `SavePMTcoverage` parameter was set, also an association
+ *   `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::PMTcoverageInfo>`
+ *   is produced.
+ * * `std::vector<sbn::PMTcoverageInfo>` parallel to the input optical
+ *   detector waveforms, if `SavePMTcoverage` parameter is set; each entry in
+ *   the collection is matched with the corresponding one in the input waveform
+ *   collection; an association
+ *   `art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>` is also produced.
  * 
  * 
  * Input data products
@@ -164,6 +174,10 @@ namespace icarus::trigger { class DiscriminatePMTwaveformsByChannel; }
  *   _art_ tool used to discriminate the optional waveforms; the tool interface
  *   is `icarus::trigger::TriggerGateBuilder`. Note that the threshold settings
  *   of this configuration is going to be ignored.
+ * * `SavePMTcoverage` (flag, default: `true`): also produces a collection of
+ *   `sbn::PMTcoverageInfo` representing each of the input waveforms; trigger
+ *   tools can use this information in place for the more space-hungry waveforms
+ *   for further processing.
  * * `OutputCategory` (string, default: `"DiscriminatePMTwaveformsByChannel"`):
  *   label for the category of messages in the console output; this is the label
  *   that can be used for filtering messages via MessageFacility service.
@@ -270,6 +284,12 @@ class icarus::trigger::DiscriminatePMTwaveformsByChannel: public art::EDProducer
       Comment("minimum number of channels to provide (default: all)")
       };
     
+    fhicl::Atom<bool> SavePMTcoverage {
+      Name("SavePMTcoverage"),
+      Comment("write also a sbn::PMTcoverageInfo collection"),
+      true
+      };
+    
     fhicl::Atom<std::string> OutputInstanceName {
       Name("OutputInstanceName"),
       Comment("instance name for the output products (none by default)"),
@@ -297,8 +317,6 @@ class icarus::trigger::DiscriminatePMTwaveformsByChannel: public art::EDProducer
   
   // --- BEGIN Framework hooks -------------------------------------------------
   /// Prepares the plots to be filled.
-  virtual void beginJob() override;
-  
   /// Prepares the plots to be filled.
   virtual void beginRun(art::Run& run) override;
   
@@ -336,6 +354,8 @@ class icarus::trigger::DiscriminatePMTwaveformsByChannel: public art::EDProducer
   std::vector<ChannelInfo_t> const fChannelInfos;
   
   std::string const fOutputInstanceName; ///< Instance name for output.
+  
+  bool const fSavePMTcoverage; ///< Whether to save also `sbn::PMTcoverageInfo`.
   
   /// Category name for the console output stream.
   std::string const fLogCategory;
@@ -467,6 +487,7 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
     (util::fhicl::getOptionalValue(config().ThresholdsFromPMTconfig))
   , fChannelInfos(readChannelInfoSpecs(config().Thresholds()))
   , fOutputInstanceName(config().OutputInstanceName())
+  , fSavePMTcoverage(config().SavePMTcoverage())
   , fLogCategory(config().OutputCategory())
   , fTriggerGateBuilder
     (
@@ -512,7 +533,7 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
   
   if (fThresholdsFromPMTconfig)
     consumes<sbn::PMTconfiguration, art::InRun>(*fThresholdsFromPMTconfig);
-    
+  
   
   //
   // declaration of output
@@ -521,14 +542,15 @@ icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByCh
   produces<std::vector<TriggerGateData_t>>(fOutputInstanceName);
   produces<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>
     (fOutputInstanceName);
+  if (fSavePMTcoverage) {
+    produces<std::vector<sbn::PMTcoverageInfo>>(fOutputInstanceName);
+    produces<art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>>
+      (fOutputInstanceName);
+    produces<art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t>>
+      (fOutputInstanceName);
+  }
   
 } // icarus::trigger::DiscriminatePMTwaveformsByChannel::DiscriminatePMTwaveformsByChannel()
-
-
-//------------------------------------------------------------------------------
-void icarus::trigger::DiscriminatePMTwaveformsByChannel::beginJob() {
-  
-} // icarus::trigger::DiscriminatePMTwaveformsByChannel::beginJob()
 
 
 //------------------------------------------------------------------------------
@@ -695,6 +717,51 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
   auto [ data, assns ] = icarus::trigger::transformIntoOpticalTriggerGate
     (gates, makeGatePtr, opDetWavePtrs);
 
+  if (fSavePMTcoverage) {
+    
+    art::PtrMaker<sbn::PMTcoverageInfo> const makePMTinfoPtr
+      { event, fOutputInstanceName };
+    
+    // PMT info and associations to input waveforms
+    sbn::PMTcoverageInfoMaker const makePMTinfo { detTimings };
+    
+    std::vector<sbn::PMTcoverageInfo> PMTinfo;
+    art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo> WavePMTinfoAssns;
+    art::PtrMaker<raw::OpDetWaveform> const makeWavePtr
+      { event, waveformHandle.id() };
+    
+    for (auto const& [ iWaveform, waveform ]: util::enumerate(waveforms)) {
+      
+      PMTinfo.push_back(makePMTinfo(waveform));
+      
+      WavePMTinfoAssns.addSingle
+        (makeWavePtr(iWaveform), makePMTinfoPtr(iWaveform));
+      
+    } // for
+    
+    // replica of discriminated gate-waveform association replacing the latter
+    // with the PMT coverage with the same index as the waveform
+    art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t> PMTinfoGateAssns;
+    for (auto [ gatePtr, wavePtr ]: assns)
+      PMTinfoGateAssns.addSingle(makePMTinfoPtr(wavePtr.key()), gatePtr);
+    
+    event.put(
+      std::make_unique<std::vector<sbn::PMTcoverageInfo>>(std::move(PMTinfo)),
+      fOutputInstanceName
+      );
+    event.put(
+      std::make_unique<art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>>
+        (std::move(WavePMTinfoAssns)),
+      fOutputInstanceName
+      );
+    event.put(
+      std::make_unique<art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t>>
+        (std::move(PMTinfoGateAssns)),
+      fOutputInstanceName
+      );
+    
+  } // if save PMT coverage
+  
   //
   // move the reformatted data into the event
   //

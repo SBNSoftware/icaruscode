@@ -5,4 +5,29 @@
   </class>
   <class name="art::Wrapper<icarus::SimEnergyDepositSummary>"/>
 
+  <class name="sbn::PMTcoverageInfo" ClassVersion="10" >
+   <version ClassVersion="10" checksum="2555254227"/>
+  </class>
+
+  <class name="art::Ptr<sbn::PMTcoverageInfo>" />
+  <class name="std::vector<sbn::PMTcoverageInfo>" />
+  <class name="art::Wrapper<std::vector<sbn::PMTcoverageInfo>>" />
+  
+  <!-- sbn::PMTcoverageInfo - raw::OpDetWaveform associations -->
+  <class name="std::pair<art::Ptr<sbn::PMTcoverageInfo>, art::Ptr<raw::OpDetWaveform>>" />
+  <class name="std::pair<art::Ptr<raw::OpDetWaveform>, art::Ptr<sbn::PMTcoverageInfo>>" />
+  <class name="art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>" />
+  <class name="art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>" />
+  <class name="art::Wrapper<art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>>" />
+  <class name="art::Wrapper<art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>>" />
+  
+  <!-- sbn::PMTcoverageInfo - icarus::trigger::OpticalTriggerGate::GateData_t associations -->
+  <class name="std::pair<art::Ptr<sbn::PMTcoverageInfo>, art::Ptr<icarus::trigger::OpticalTriggerGate::GateData_t>>" />
+  <class name="std::pair<art::Ptr<icarus::trigger::OpticalTriggerGate::GateData_t>, art::Ptr<sbn::PMTcoverageInfo>>" />
+  <class name="art::Assns<sbn::PMTcoverageInfo, icarus::trigger::OpticalTriggerGate::GateData_t>" />
+  <class name="art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::PMTcoverageInfo>" />
+  <class name="art::Wrapper<art::Assns<sbn::PMTcoverageInfo, icarus::trigger::OpticalTriggerGate::GateData_t>>" />
+  <class name="art::Wrapper<art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::PMTcoverageInfo>>" />
+  
+  
 </lcgdict>

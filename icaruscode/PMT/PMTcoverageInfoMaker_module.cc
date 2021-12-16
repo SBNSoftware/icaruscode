@@ -7,7 +7,8 @@
 
 
 // ICARUS libraries
-#include "icaruscode/Analysis/trigger/Objects/PMTcoverageInfo.h"
+#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
+#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h" // PMTcoverageInfoMaker
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -42,11 +43,13 @@ namespace icarus::trigger { class PMTcoverageInfoMaker; }
 /**
  * @brief Extracts and saves the time coverage of optical detector waveforms.
  * 
- * This module writes a list of `sim::BeamGateInfo` based on the time associated
- * to a selection of reconstructed tracks.
+ * This module writes a list of `sbn::PMTcoverageInfo` objects matching the
+ * information of each optical detector waveform.
  * 
- * It may be used as input to modules which require to operate on beam gates,
- * to select time(s) around the reconstructed (and selected) tracks.
+ * It may be used as input to modules which require all the information of a
+ * PMT waveform except the actual content of the waveform. For such uses,
+ * the large waveforms may be dropped and this summary information be kept
+ * instead.
  * 
  * 
  * Input data products
@@ -203,26 +206,28 @@ void icarus::trigger::PMTcoverageInfoMaker::produce
     (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event))
     ;
   
-  auto const opDetTickPeriod = detTimings.OpticalClockPeriod();
-  electronics_time const triggerTime = detTimings.TriggerTime();
-  electronics_time const beamGateTime = detTimings.BeamGateTime();
-  
   //
   // fetch input
   //
   auto const& waveformHandle
     = event.getValidHandle<std::vector<raw::OpDetWaveform>>(fWaveformTag);
 
-  mf::LogDebug(fLogCategory)
-    << "Event " << event.id() << " has beam gate starting at " << beamGateTime
-    << " and trigger at " << triggerTime << "."
-    << "\nNow extracting information from " << waveformHandle->size()
-      << " waveforms."
-    ;
+  {
+    electronics_time const triggerTime = detTimings.TriggerTime();
+    electronics_time const beamGateTime = detTimings.BeamGateTime();
+    mf::LogDebug(fLogCategory)
+      << "Event " << event.id() << " has beam gate starting at " << beamGateTime
+      << " and trigger at " << triggerTime << "."
+      << "\nNow extracting information from " << waveformHandle->size()
+        << " waveforms."
+      ;
+  }
 
   //
   // create the content
   //
+  sbn::PMTcoverageInfoMaker makePMTcoverageInfo{ detTimings };
+  
   std::vector<sbn::PMTcoverageInfo> PMTinfo;
   art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform> infoToWaveform;
   
@@ -233,39 +238,18 @@ void icarus::trigger::PMTcoverageInfoMaker::produce
   for (auto const& [ iWaveform, waveform ]: util::enumerate(*waveformHandle)) {
     assert(iWaveform == PMTinfo.size());
     
-    raw::Channel_t const channel = waveform.ChannelNumber();
-    electronics_time const startTime { waveform.TimeStamp() };
-    electronics_time const endTime
-      = startTime + waveform.Waveform().size() * opDetTickPeriod;
-    
-    auto const isInWaveform = [startTime,endTime](electronics_time t)
-      { return (t >= startTime) && (t < endTime); };
-    
-    bool const containsTrigger = isInWaveform(triggerTime);
-    bool const containsBeamGateStart = isInWaveform(beamGateTime);
+    PMTinfo.push_back(makePMTcoverageInfo(waveform));
     
     {
+      auto const& info = PMTinfo.back();
       mf::LogTrace log{ fLogCategory };
       log << "Coverage for waveform #" << iWaveform
-        << " on channel " << channel << ": " << startTime << " -- " << endTime;
-      if (containsTrigger) log << "; includes trigger";
-      if (containsBeamGateStart) log << "; includes beam gate start";
+        << " on channel " << info.channel << ": "
+        << info.startTime << " -- " << info.endTime;
+      if (info.withTrigger()) log << "; includes trigger";
+      if (info.withBeamGate()) log << "; includes beam gate start";
     }
     
-    sbn::PMTcoverageInfo info {
-        waveform.ChannelNumber()  // channel
-      , startTime.value()         // startTime
-      , endTime.value()           // endTime
-      /* the following are left default:
-      // setFlags
-      // definedFlags
-      */
-      };
-    
-    info.set(sbn::PMTcoverageInfo::bits::WithTrigger, containsTrigger);
-    info.set(sbn::PMTcoverageInfo::bits::WithBeamGate, containsBeamGateStart);
-    
-    PMTinfo.push_back(std::move(info));
     infoToWaveform.addSingle
       (makeInfoPtr(iWaveform), makeWaveformPtr(iWaveform));
     
