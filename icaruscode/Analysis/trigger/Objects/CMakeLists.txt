@@ -1,4 +1,4 @@
-art_dictionary(DICTIONARY_LIBRARIES lardataobj_RecoBase)
+art_dictionary()
 
 install_headers()
 install_source()

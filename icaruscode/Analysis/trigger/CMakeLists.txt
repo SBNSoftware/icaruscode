@@ -7,7 +7,6 @@ art_make(
   EXCLUDE
     "TimedTrackSelector_module.cc"
     "BeamGateInfoFromTracks_module.cc"
-    "PMTcoverageInfoMaker_module.cc"
     "TimeTrackTreeStorage_module.cc"
   LIB_LIBRARIES
     lardataobj_RawData
@@ -29,11 +28,6 @@ simple_plugin(BeamGateInfoFromTracks  module
   lardataobj_Simulation
   lardataobj_AnalysisBase
   lardataobj_RecoBase
-  )
-
-simple_plugin(PMTcoverageInfoMaker module
-  lardataalg_DetectorInfo
-  lardataobj_RawData
   )
 
 simple_plugin(TimeTrackTreeStorage module
