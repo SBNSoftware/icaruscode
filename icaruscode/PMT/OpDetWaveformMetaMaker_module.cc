@@ -1,14 +1,14 @@
 /**
- * @file   PMTcoverageInfoMaker_module.cc
- * @brief  Writes a collection of sbn::PMTcoverageInfo from PMT waveforms.
+ * @file   OpDetWaveformMetaMaker_module.cc
+ * @brief  Writes a collection of sbn::OpDetWaveformMeta from PMT waveforms.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   November 22, 2021
  */
 
 
 // ICARUS libraries
-#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
-#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h" // PMTcoverageInfoMaker
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -38,12 +38,12 @@
 
 
 //------------------------------------------------------------------------------
-namespace icarus::trigger { class PMTcoverageInfoMaker; }
+namespace icarus::trigger { class OpDetWaveformMetaMaker; }
 
 /**
  * @brief Extracts and saves the time coverage of optical detector waveforms.
  * 
- * This module writes a list of `sbn::PMTcoverageInfo` objects matching the
+ * This module writes a list of `sbn::OpDetWaveformMeta` objects matching the
  * information of each optical detector waveform.
  * 
  * It may be used as input to modules which require all the information of a
@@ -66,10 +66,10 @@ namespace icarus::trigger { class PMTcoverageInfoMaker; }
  * Output data products
  * =====================
  *
- * * `std::vector<sbn::PMTcoverageInfo>`: a collection parallel to the input
+ * * `std::vector<sbn::OpDetWaveformMeta>`: a collection parallel to the input
  *   one (from data product configured by `Waveforms`) with the summary
  *   information on each of them; also an explicit courtesy association
- *   `art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>` for uses where
+ *   `art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>` for uses where
  *   order is not preserved.
  *   The times in these objects are on the same scale as the ones in the source
  *   data product, which is expected to be
@@ -80,17 +80,17 @@ namespace icarus::trigger { class PMTcoverageInfoMaker; }
  * =========================
  * 
  * A terse online description of the parameters is printed by running
- * `lar --print-description PMTcoverageInfoMaker`.
+ * `lar --print-description OpDetWaveformMetaMaker`.
  * 
  * * `Waveforms` (input tag, mandatory): the list of optical detector waveforms
  *   to be processed.
- * * `LogCategory` (string, default: `PMTcoverageInfoMaker`): name of the
+ * * `LogCategory` (string, default: `OpDetWaveformMetaMaker`): name of the
  *     output stream category for console messages (managed by MessageFacility
  *     library).
  * 
  * 
  */
-class icarus::trigger::PMTcoverageInfoMaker: public art::SharedProducer {
+class icarus::trigger::OpDetWaveformMetaMaker: public art::SharedProducer {
   
     public:
   
@@ -110,7 +110,7 @@ class icarus::trigger::PMTcoverageInfoMaker: public art::SharedProducer {
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
-      "PMTcoverageInfoMaker" // default
+      "OpDetWaveformMetaMaker" // default
       };
     
   }; // struct Config
@@ -122,7 +122,7 @@ class icarus::trigger::PMTcoverageInfoMaker: public art::SharedProducer {
   
   // --- BEGIN Constructors ----------------------------------------------------
   
-  explicit PMTcoverageInfoMaker
+  explicit OpDetWaveformMetaMaker
     (Parameters const& config, art::ProcessingFrame const&);
   
   // --- END Constructors ------------------------------------------------------
@@ -148,7 +148,7 @@ class icarus::trigger::PMTcoverageInfoMaker: public art::SharedProducer {
   // --- END Configuration variables -------------------------------------------
   
   
-}; // class icarus::trigger::PMTcoverageInfoMaker
+}; // class icarus::trigger::OpDetWaveformMetaMaker
 
 
 //------------------------------------------------------------------------------
@@ -164,7 +164,7 @@ namespace {
 
 
 //------------------------------------------------------------------------------
-icarus::trigger::PMTcoverageInfoMaker::PMTcoverageInfoMaker
+icarus::trigger::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker
   (Parameters const& config, art::ProcessingFrame const&)
   : art::SharedProducer(config)
   // configuration
@@ -177,8 +177,8 @@ icarus::trigger::PMTcoverageInfoMaker::PMTcoverageInfoMaker
   //
   // output data declaration
   //
-  produces<std::vector<sbn::PMTcoverageInfo>>();
-  produces<art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>>();
+  produces<std::vector<sbn::OpDetWaveformMeta>>();
+  produces<art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>>();
   
   //
   // configuration report (short)
@@ -189,11 +189,11 @@ icarus::trigger::PMTcoverageInfoMaker::PMTcoverageInfoMaker
     << "\n - input waveforms: '" << fWaveformTag.encode() << '\''
     ;
   
-} // icarus::trigger::PMTcoverageInfoMaker::PMTcoverageInfoMaker()
+} // icarus::trigger::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker()
 
 
 //------------------------------------------------------------------------------
-void icarus::trigger::PMTcoverageInfoMaker::produce
+void icarus::trigger::OpDetWaveformMetaMaker::produce
   (art::Event& event, art::ProcessingFrame const&)
 {
   
@@ -226,19 +226,19 @@ void icarus::trigger::PMTcoverageInfoMaker::produce
   //
   // create the content
   //
-  sbn::PMTcoverageInfoMaker makePMTcoverageInfo{ detTimings };
+  sbn::OpDetWaveformMetaMaker makeOpDetWaveformMeta{ detTimings };
   
-  std::vector<sbn::PMTcoverageInfo> PMTinfo;
-  art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform> infoToWaveform;
+  std::vector<sbn::OpDetWaveformMeta> PMTinfo;
+  art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform> infoToWaveform;
   
-  art::PtrMaker<sbn::PMTcoverageInfo> const makeInfoPtr { event };
+  art::PtrMaker<sbn::OpDetWaveformMeta> const makeInfoPtr { event };
   art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr
     { event, waveformHandle.id() };
   
   for (auto const& [ iWaveform, waveform ]: util::enumerate(*waveformHandle)) {
     assert(iWaveform == PMTinfo.size());
     
-    PMTinfo.push_back(makePMTcoverageInfo(waveform));
+    PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
     
     {
       auto const& info = PMTinfo.back();
@@ -261,11 +261,11 @@ void icarus::trigger::PMTcoverageInfoMaker::produce
   event.put(moveToUniquePtr(PMTinfo));
   event.put(moveToUniquePtr(infoToWaveform));
   
-} // icarus::trigger::PMTcoverageInfoMaker::produce()
+} // icarus::trigger::OpDetWaveformMetaMaker::produce()
 
 
 //------------------------------------------------------------------------------
-DEFINE_ART_MODULE(icarus::trigger::PMTcoverageInfoMaker)
+DEFINE_ART_MODULE(icarus::trigger::OpDetWaveformMetaMaker)
 
 
 //------------------------------------------------------------------------------

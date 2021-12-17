@@ -1,16 +1,16 @@
 /**
- * @file   icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h
- * @brief  Writes a collection of sbn::PMTcoverageInfo from PMT waveforms.
+ * @file   icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h
+ * @brief  Writes a collection of sbn::OpDetWaveformMeta from PMT waveforms.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   November 22, 2021
  */
 
-#ifndef ICARUSCODE_PMT_ALGORITHMS_PMTCOVERAGEINFOUTILS_H
-#define ICARUSCODE_PMT_ALGORITHMS_PMTCOVERAGEINFOUTILS_H
+#ifndef ICARUSCODE_PMT_ALGORITHMS_OPDETWAVEFORMMETAUTILS_H
+#define ICARUSCODE_PMT_ALGORITHMS_OPDETWAVEFORMMETAUTILS_H
 
 
 // SBN libraries
-#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimingTypes.h" // electronics_time
@@ -29,27 +29,27 @@ namespace detinfo { class DetectorTimings; }
 // -----------------------------------------------------------------------------
 namespace sbn {
   
-  // --- BEGIN -- Creation of sbn::PMTcoverageInfo from raw::OpDetWaveform -----
+  // --- BEGIN -- Creation of sbn::OpDetWaveformMeta from raw::OpDetWaveform -----
   /**
-   * @name Creation of `sbn::PMTcoverageInfo` from `raw::OpDetWaveform`
+   * @name Creation of `sbn::OpDetWaveformMeta` from `raw::OpDetWaveform`
    * 
-   * The creation of summary objects `sbn::PMTcoverageInfo` from optical
+   * The creation of summary objects `sbn::OpDetWaveformMeta` from optical
    * detector waveforms is possible with two options:
    * 
-   * * one shot: call to convert a single waveform (`makePMTcoverageInfo()`);
+   * * one shot: call to convert a single waveform (`makeOpDetWaveformMeta()`);
    * * bulk: converter object reused for multiple conversions
-   *   (`sbn::PMTcoverageInfoMaker`).
+   *   (`sbn::OpDetWaveformMetaMaker`).
    * 
    * For usage examples, see their respective documentation.
    */
   /// @{
-  class PMTcoverageInfoMaker;
+  class OpDetWaveformMetaMaker;
   
   /**
-   * @brief Creates a `sbn::PMTcoverageInfo` out of a `raw::OpDetWaveform`.
+   * @brief Creates a `sbn::OpDetWaveformMeta` out of a `raw::OpDetWaveform`.
    * @param waveform the input waveform
    * @param detTimings timing service provider
-   * @return a `sbn::PMTcoverageInfo` object with the summary information
+   * @return a `sbn::OpDetWaveformMeta` object with the summary information
    * 
    * Returns a new summary object extracted from the `waveform`.
    * 
@@ -61,20 +61,20 @@ namespace sbn {
    * detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings
    *   (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event));
    * 
-   * sbn::PMTcoverageInfo info = sbn::makePMTcoverageInfo(waveform, detTimings);
+   * sbn::OpDetWaveformMeta info = sbn::makeOpDetWaveformMeta(waveform, detTimings);
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
-  PMTcoverageInfo makePMTcoverageInfo(
+  OpDetWaveformMeta makeOpDetWaveformMeta(
     raw::OpDetWaveform const& waveform,
     detinfo::DetectorTimings const& detTimings
     );
   
   
   /**
-   * @brief Creates a `sbn::PMTcoverageInfo` out of a `raw::OpDetWaveform`.
+   * @brief Creates a `sbn::OpDetWaveformMeta` out of a `raw::OpDetWaveform`.
    * @param waveform the input waveform
    * @param opDetTickPeriod period of the optical detector digitizer
-   * @return a `sbn::PMTcoverageInfo` object with the summary information
+   * @return a `sbn::OpDetWaveformMeta` object with the summary information
    * 
    * Returns a new summary object extracted from the `waveform`.
    * 
@@ -84,16 +84,16 @@ namespace sbn {
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
    * util::quantities::intervals::nanoseconds const opDetPeriod { 2.0 };
    * 
-   * sbn::PMTcoverageInfo info = sbn::makePMTcoverageInfo(waveform, opDetPeriod);
+   * sbn::OpDetWaveformMeta info = sbn::makeOpDetWaveformMeta(waveform, opDetPeriod);
    * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    */
-  PMTcoverageInfo makePMTcoverageInfo(
+  OpDetWaveformMeta makeOpDetWaveformMeta(
     raw::OpDetWaveform const& waveform,
     util::quantities::intervals::microseconds opDetTickPeriod
     );
   
   /// @}
-  // --- END ---- Creation of sbn::PMTcoverageInfo from raw::OpDetWaveform -----
+  // --- END ---- Creation of sbn::OpDetWaveformMeta from raw::OpDetWaveform -----
   
   
 } // namespace sbn
@@ -101,18 +101,18 @@ namespace sbn {
 
 // -----------------------------------------------------------------------------
 /**
- * @brief Converter from `raw::OpDetWaveform` into `sbn::PMTcoverageInfo`.
+ * @brief Converter from `raw::OpDetWaveform` into `sbn::OpDetWaveformMeta`.
  * 
  * An object of this class is initialized once with some timings (e.g. once per
- * event), used to `make()` multiple `sbn::PMTcoverageInfo` and then discarded:
+ * event), used to `make()` multiple `sbn::OpDetWaveformMeta` and then discarded:
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
  * 
  * detinfo::DetectorTimings const detTimings = detinfo::makeDetectorTimings
  *   (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event));
  * 
- * std::vector<sbn::PMTcoverageInfo> PMTinfo;
+ * std::vector<sbn::OpDetWaveformMeta> PMTinfo;
  * for (raw::OpDetWaveform const& waveform: waveforms)
- *   PMTinfo.push_back(makePMTcoverageInfo(waveform));
+ *   PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
  * 
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  * 
@@ -120,25 +120,25 @@ namespace sbn {
  * or not relevant, in which case only the duration in time of a optical
  * detector waveform tick is needed.
  */
-class sbn::PMTcoverageInfoMaker {
+class sbn::OpDetWaveformMetaMaker {
   
     public:
   
   using microseconds = util::quantities::intervals::microseconds;
   
-  /// Constructor: allows creation of `sbn::PMTcoverageInfo` with full
+  /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with full
   /// information.
-  PMTcoverageInfoMaker(detinfo::DetectorTimings const& detTimings);
+  OpDetWaveformMetaMaker(detinfo::DetectorTimings const& detTimings);
   
   
-  /// Constructor: allows creation of `sbn::PMTcoverageInfo` with no
+  /// Constructor: allows creation of `sbn::OpDetWaveformMeta` with no
   /// trigger/beam time information.
-  PMTcoverageInfoMaker(microseconds opDetTickPeriod);
+  OpDetWaveformMetaMaker(microseconds opDetTickPeriod);
   
   //@{
-  /// Creates a `sbn::PMTcoverageInfo` out of the specified `waveform`.
-  sbn::PMTcoverageInfo make(raw::OpDetWaveform const& waveform) const;
-  sbn::PMTcoverageInfo operator() (raw::OpDetWaveform const& waveform) const
+  /// Creates a `sbn::OpDetWaveformMeta` out of the specified `waveform`.
+  sbn::OpDetWaveformMeta make(raw::OpDetWaveform const& waveform) const;
+  sbn::OpDetWaveformMeta operator() (raw::OpDetWaveform const& waveform) const
     { return make(waveform); }
   //@}
   
@@ -151,9 +151,9 @@ class sbn::PMTcoverageInfoMaker {
   std::optional<electronics_time> fTriggerTime; ///< Cached trigger time.
   std::optional<electronics_time> fBeamGateTime; ///< Cached beam gate time.
   
-}; // sbn::PMTcoverageInfoMaker
+}; // sbn::OpDetWaveformMetaMaker
 
 
 // -----------------------------------------------------------------------------
 
-#endif // ICARUSCODE_PMT_ALGORITHMS_PMTCOVERAGEINFOUTILS_H
+#endif // ICARUSCODE_PMT_ALGORITHMS_OPDETWAVEFORMMETAUTILS_H

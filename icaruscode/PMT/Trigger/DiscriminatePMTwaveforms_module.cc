@@ -10,8 +10,8 @@
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
-#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h" // PMTcoverageInfoMaker
-#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
@@ -74,11 +74,11 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  * Output data products
  * =====================
  * 
- * * `std::vector<sbn::PMTcoverageInfo>` parallel to the input optical
+ * * `std::vector<sbn::OpDetWaveformMeta>` parallel to the input optical
  *   detector waveforms, if `SavePMTcoverage` parameter is set; each entry in
  *   the collection is matched with the corresponding one in the input waveform
  *   collection; an association
- *   `art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform>` is also produced.
+ *   `art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform>` is also produced.
  * * for each threshold _thr_ (in ADC counts), data products are created with
  *   an instance name equivalent to the threshold (e.g. for a threshold of 70
  *   ADC counts, the data product instance name will be `"70"`):
@@ -97,7 +97,7 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  *       the type of the association is
  *       `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, raw::OpDetWaveform>`;
  *       similarly, if `SavePMTcoverage` parameter was set, also an association
- *       `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::PMTcoverageInfo>`
+ *       `art::Assns<icarus::trigger::OpticalTriggerGate::GateData_t, sbn::OpDetWaveformMeta>`
  *       is produced.
  * 
  * Input data products
@@ -134,7 +134,7 @@ namespace icarus::trigger { class DiscriminatePMTwaveforms; }
  *   used to discriminate the optional waveforms; the tool interface is
  *   `icarus::trigger::TriggerGateBuilder`.
  * * `SavePMTcoverage` (flag, default: `true`): also produces a collection of
- *   `sbn::PMTcoverageInfo` representing each of the input waveforms; trigger
+ *   `sbn::OpDetWaveformMeta` representing each of the input waveforms; trigger
  *   tools can use this information in place for the more space-hungry waveforms
  *   for further processing.
  * * `OutputCategory` (string, default: `"DiscriminatePMTwaveforms"`): label
@@ -192,7 +192,7 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
     
     fhicl::Atom<bool> SavePMTcoverage {
       Name("SavePMTcoverage"),
-      Comment("write also a sbn::PMTcoverageInfo collection"),
+      Comment("write also a sbn::OpDetWaveformMeta collection"),
       true
       };
     
@@ -249,7 +249,7 @@ class icarus::trigger::DiscriminatePMTwaveforms: public art::EDProducer {
   /// Thresholds selected for saving, and their instance name.
   std::map<icarus::trigger::ADCCounts_t, std::string> fSelectedThresholds;
   
-  bool const fSavePMTcoverage; ///< Whether to save also `sbn::PMTcoverageInfo`.
+  bool const fSavePMTcoverage; ///< Whether to save also `sbn::OpDetWaveformMeta`.
   
   std::string const fLogCategory; ///< Category name for the console output stream.
   
@@ -376,15 +376,15 @@ icarus::trigger::DiscriminatePMTwaveforms::DiscriminatePMTwaveforms
   //
   
   if (fSavePMTcoverage) {
-    produces<std::vector<sbn::PMTcoverageInfo>>();
-    produces<art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>>();
+    produces<std::vector<sbn::OpDetWaveformMeta>>();
+    produces<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>();
   }
   for (std::string const& instanceName: util::const_values(fSelectedThresholds))
   {
     produces<std::vector<TriggerGateData_t>>(instanceName);
     produces<art::Assns<TriggerGateData_t, raw::OpDetWaveform>>(instanceName);
     if (fSavePMTcoverage) {
-      produces<art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t>>
+      produces<art::Assns<sbn::OpDetWaveformMeta, TriggerGateData_t>>
         (instanceName);
     }
   } // for
@@ -476,9 +476,9 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   //
   // prepare output
   //
-  std::optional<art::PtrMaker<sbn::PMTcoverageInfo>> const makePMTinfoPtr
+  std::optional<art::PtrMaker<sbn::OpDetWaveformMeta>> const makePMTinfoPtr
     = fSavePMTcoverage
-    ? std::optional<art::PtrMaker<sbn::PMTcoverageInfo>>(event)
+    ? std::optional<art::PtrMaker<sbn::OpDetWaveformMeta>>(event)
     : std::nullopt
     ;
   
@@ -509,11 +509,11 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
       // replica of discriminated gate-waveform association replacing the latter
       // with the PMT coverage with the same index as the waveform
       assert(makePMTinfoPtr);
-      art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t> assns;
+      art::Assns<sbn::OpDetWaveformMeta, TriggerGateData_t> assns;
       for (auto [ gatePtr, wavePtr ]: waveGateAssns)
         assns.addSingle((*makePMTinfoPtr)(wavePtr.key()), gatePtr);
       event.put(
-        std::make_unique<art::Assns<sbn::PMTcoverageInfo, TriggerGateData_t>>
+        std::make_unique<art::Assns<sbn::OpDetWaveformMeta, TriggerGateData_t>>
           (std::move(assns)),
         instanceName
         );
@@ -539,10 +539,10 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
   if (fSavePMTcoverage) {
     assert(makePMTinfoPtr);
     
-    sbn::PMTcoverageInfoMaker const makePMTinfo { detTimings };
+    sbn::OpDetWaveformMetaMaker const makePMTinfo { detTimings };
     
-    std::vector<sbn::PMTcoverageInfo> PMTinfo;
-    art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo> assns;
+    std::vector<sbn::OpDetWaveformMeta> PMTinfo;
+    art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta> assns;
     art::PtrMaker<raw::OpDetWaveform> const makeWavePtr
       { event, waveformHandle.id() };
     
@@ -555,9 +555,9 @@ void icarus::trigger::DiscriminatePMTwaveforms::produce(art::Event& event) {
     } // for
     
     event.put
-      (std::make_unique<std::vector<sbn::PMTcoverageInfo>>(std::move(PMTinfo)));
+      (std::make_unique<std::vector<sbn::OpDetWaveformMeta>>(std::move(PMTinfo)));
     event.put(
-      std::make_unique<art::Assns<raw::OpDetWaveform, sbn::PMTcoverageInfo>>
+      std::make_unique<art::Assns<raw::OpDetWaveform, sbn::OpDetWaveformMeta>>
         (std::move(assns))
       );
     

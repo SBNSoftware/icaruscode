@@ -1,14 +1,14 @@
 /**
- * @file   icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.cxx
- * @brief  Writes a collection of sbn::PMTcoverageInfo from PMT waveforms.
+ * @file   icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.cxx
+ * @brief  Writes a collection of sbn::OpDetWaveformMeta from PMT waveforms.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date   November 22, 2021
- * @see    icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h
+ * @see    icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h
  */
 
 
 // library header
-#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h"
+#include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h"
 
 // LArSoft libraries
 #include "lardataalg/DetectorInfo/DetectorTimings.h"
@@ -16,9 +16,9 @@
 
 
 // -----------------------------------------------------------------------------
-// ---  sbn::PMTcoverageInfoMaker
+// ---  sbn::OpDetWaveformMetaMaker
 // -----------------------------------------------------------------------------
-sbn::PMTcoverageInfoMaker::PMTcoverageInfoMaker
+sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker
   (detinfo::DetectorTimings const& detTimings)
   : fOpDetTickPeriod{ detTimings.OpticalClockPeriod() }
   , fTriggerTime{ detTimings.TriggerTime() }
@@ -27,25 +27,27 @@ sbn::PMTcoverageInfoMaker::PMTcoverageInfoMaker
 
 
 // -----------------------------------------------------------------------------
-sbn::PMTcoverageInfoMaker::PMTcoverageInfoMaker(microseconds opDetTickPeriod)
+sbn::OpDetWaveformMetaMaker::OpDetWaveformMetaMaker(microseconds opDetTickPeriod)
   : fOpDetTickPeriod{ opDetTickPeriod }
   {}
 
 
 // -----------------------------------------------------------------------------
-sbn::PMTcoverageInfo sbn::PMTcoverageInfoMaker::make
+sbn::OpDetWaveformMeta sbn::OpDetWaveformMetaMaker::make
   (raw::OpDetWaveform const& waveform) const
 {
   
   using detinfo::timescales::electronics_time;
   
   raw::Channel_t const channel = waveform.ChannelNumber();
+  std::size_t const nSamples = waveform.Waveform().size();
   electronics_time const startTime { waveform.TimeStamp() };
   electronics_time const endTime
     = startTime + waveform.Waveform().size() * fOpDetTickPeriod;
   
-  sbn::PMTcoverageInfo info {
+  sbn::OpDetWaveformMeta info {
       channel                   // channel
+    , nSamples                  // nSamples
     , startTime.value()         // startTime
     , endTime.value()           // endTime
     /* the following are left default:
@@ -54,7 +56,7 @@ sbn::PMTcoverageInfo sbn::PMTcoverageInfoMaker::make
     };
   
   auto const setFlag = [&info]
-    (sbn::PMTcoverageInfo::Flags_t::Flag_t flag, bool value)
+    (sbn::OpDetWaveformMeta::Flags_t::Flag_t flag, bool value)
     { if (value) info.flags.set(flag); else info.flags.unset(flag); };
   
   auto const isInWaveform = [startTime,endTime](electronics_time t)
@@ -62,35 +64,35 @@ sbn::PMTcoverageInfo sbn::PMTcoverageInfoMaker::make
   
   if (fTriggerTime) {
     setFlag
-      (sbn::PMTcoverageInfo::bits::WithTrigger, isInWaveform(*fTriggerTime));
+      (sbn::OpDetWaveformMeta::bits::WithTrigger, isInWaveform(*fTriggerTime));
   }
   
   if (fBeamGateTime) {
     setFlag
-      (sbn::PMTcoverageInfo::bits::WithBeamGate, isInWaveform(*fBeamGateTime));
+      (sbn::OpDetWaveformMeta::bits::WithBeamGate, isInWaveform(*fBeamGateTime));
   }
   
   return info;
   
-} // sbn::PMTcoverageInfoMaker::make()
+} // sbn::OpDetWaveformMetaMaker::make()
 
 
 // -----------------------------------------------------------------------------
 // ---  functions
 // -----------------------------------------------------------------------------
-sbn::PMTcoverageInfo sbn::makePMTcoverageInfo(
+sbn::OpDetWaveformMeta sbn::makeOpDetWaveformMeta(
   raw::OpDetWaveform const& waveform,
   detinfo::DetectorTimings const& detTimings
 ) {
-  return sbn::PMTcoverageInfoMaker{ detTimings }.make(waveform);
+  return sbn::OpDetWaveformMetaMaker{ detTimings }.make(waveform);
 }
 
 
-sbn::PMTcoverageInfo sbn::makePMTcoverageInfo(
+sbn::OpDetWaveformMeta sbn::makeOpDetWaveformMeta(
   raw::OpDetWaveform const& waveform,
   util::quantities::intervals::microseconds opDetTickPeriod
 ) {
-  return sbn::PMTcoverageInfoMaker{ opDetTickPeriod }.make(waveform);
+  return sbn::OpDetWaveformMetaMaker{ opDetTickPeriod }.make(waveform);
 }
 
 

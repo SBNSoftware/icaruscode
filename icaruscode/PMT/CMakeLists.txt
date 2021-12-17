@@ -30,7 +30,7 @@ simple_plugin(SimPMTIcarus "module"
   ${Boost_SYSTEM_LIBRARY}
   )
 
-simple_plugin(PMTcoverageInfoMaker module
+simple_plugin(OpDetWaveformMetaMaker module
   icaruscode_PMT_Algorithms
   lardataalg_DetectorInfo
   lardataobj_RawData
@@ -82,7 +82,7 @@ simple_plugin(CustomPulseFunctionTool "tool"
 art_make(
   EXCLUDE
     "SimPMTIcarus_module.cc"
-    "PMTcoverageInfoMaker_module.cc"
+    "OpDetWaveformMetaMaker_module.cc"
     "PMTWaveformBaselines_module.cc"
     "PMTWaveformBaselinesFromReadoutConfiguration_module.cc"
     "AsymGaussPulseFunctionTool_tool.cc"

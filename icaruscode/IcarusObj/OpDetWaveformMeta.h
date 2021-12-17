@@ -1,13 +1,13 @@
 /**
- * @file icaruscode/IcarusObj/PMTcoverageInfo.h
+ * @file icaruscode/IcarusObj/OpDetWaveformMeta.h
  * @brief Derivative information from `raw::OpDetWaveform` data.
  * @author Gianluca Petrillo (petrillo@slac.stanford.edu)
  * @date November 29, 2021
  * 
  */
 
-#ifndef ICARUSCODE_ICARUSOBJ__PMTCOVERAGEINFO_H
-#define ICARUSCODE_ICARUSOBJ__PMTCOVERAGEINFO_H
+#ifndef ICARUSCODE_ICARUSOBJ_OPDETWAVEFORMMETA_H
+#define ICARUSCODE_ICARUSOBJ_OPDETWAVEFORMMETA_H
 
 
 // LArSoft libraries
@@ -19,7 +19,7 @@
 
 
 // -----------------------------------------------------------------------------
-namespace sbn { struct PMTcoverageInfo; }
+namespace sbn { struct OpDetWaveformMeta; }
 /**
  * @brief Derivative information from `raw::OpDetWaveform` data.
  * 
@@ -30,8 +30,9 @@ namespace sbn { struct PMTcoverageInfo; }
  * 
  * Times are in the same scale as for `raw::OpDetWaveform`, that is the
  * @ref DetectorClocksElectronicsStartTime "electronics time scale".
+ * The exact type of that time is `detinfo::timescales::electronics_time`.
  */
-struct sbn::PMTcoverageInfo {
+struct sbn::OpDetWaveformMeta {
   
   // this is the same type used in LArSoft tracking flags: ROOT dictionaries
   // are already provided in there
@@ -64,6 +65,8 @@ struct sbn::PMTcoverageInfo {
   
   raw::Channel_t channel = NoChannel; ///< ID of the PMT channel.
   
+  std::size_t nSamples = 0; ///< Number of samples in the waveform.
+  
   /// Time of the first sample in the waveform [us]
   double startTime = NoTime;
   /// Time at the end of the last sample in the waveform [us]
@@ -72,6 +75,34 @@ struct sbn::PMTcoverageInfo {
   Flags_t flags; ///< All flags (may be set, unset or undefined); see `bits`.
   
   // --- END ---- Data members -------------------------------------------------
+  
+  
+  // --- BEGIN -- raw::OpDetWaveform interface replica -------------------------
+  /**
+   * @name `raw::OpDetWaveform` interface replica
+   * 
+   * Partial mirror of `raw::OpDetWaveform` interface is provided here to
+   * facilitate static polymorphism ("metaprogramming").
+   * This version reflects the interface as found in LArSoft 9.36.00.
+   * 
+   * These methods are supposed to return a value equivalent to the one from
+   * the original waveform.
+   * 
+   * @note At this time `TimeStamp()` returns directly `startTime`, implicitly
+   * assuming that `raw::OpDetWaveform::TimeStamp()` time scale matches the
+   * @ref DetectorClocksElectronicsStartTime "electronics time scale".
+   * If this assumption is broken, an additional data member needs to be added.
+   */
+  /// @{
+  
+  /// Returns the channnel ID of the PMT waveform.
+  raw::Channel_t ChannelNumber() const { return channel; }
+  
+  /// Returns the timestamp at the start of the waveform.
+  raw::TimeStamp_t TimeStamp() const { return startTime; }
+  
+  /// @}
+  // --- END ---- raw::OpDetWaveform interface replica -------------------------
   
   
   // --- BEGIN -- Short bit managing interface ---------------------------------
@@ -104,26 +135,26 @@ struct sbn::PMTcoverageInfo {
   /// @}
   
   
-}; // sbn::PMTcoverageInfo
+}; // sbn::OpDetWaveformMeta
 
 
 // -----------------------------------------------------------------------------
 // ---  inline implementation
 // -----------------------------------------------------------------------------
-inline bool sbn::PMTcoverageInfo::withBeamGate() const {
+inline bool sbn::OpDetWaveformMeta::withBeamGate() const {
   return flags.isDefined(bits::WithBeamGate) && flags.isSet(bits::WithBeamGate);
 }
 
-inline bool sbn::PMTcoverageInfo::withoutBeamGate() const {
+inline bool sbn::OpDetWaveformMeta::withoutBeamGate() const {
   return
     flags.isDefined(bits::WithBeamGate) && flags.isUnset(bits::WithBeamGate);
 }
 
-inline bool sbn::PMTcoverageInfo::withTrigger() const {
+inline bool sbn::OpDetWaveformMeta::withTrigger() const {
   return flags.isDefined(bits::WithTrigger) && flags.isSet(bits::WithTrigger);
 }
 
-inline bool sbn::PMTcoverageInfo::withoutTrigger() const {
+inline bool sbn::OpDetWaveformMeta::withoutTrigger() const {
   return flags.isDefined(bits::WithTrigger) && flags.isUnset(bits::WithTrigger);
 }
 
@@ -131,4 +162,4 @@ inline bool sbn::PMTcoverageInfo::withoutTrigger() const {
 // -----------------------------------------------------------------------------
 
 
-#endif // ICARUSCODE_ICARUSOBJ__PMTCOVERAGEINFO_H
+#endif // ICARUSCODE_ICARUSOBJ_OPDETWAVEFORMMETA_H
