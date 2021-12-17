@@ -7,15 +7,8 @@
 
 
 // ICARUS libraries
-<<<<<<< HEAD:icaruscode/Analysis/trigger/PMTcoverageInfoMaker_module.cc
-#include "icaruscode/Analysis/trigger/Objects/PMTcoverageInfo.h"
-||||||| parent of 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/PMTcoverageInfoMaker_module.cc
-#include "icaruscode/IcarusObj/PMTcoverageInfo.h"
-#include "icaruscode/PMT/Algorithms/PMTcoverageInfoUtils.h" // PMTcoverageInfoMaker
-=======
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
->>>>>>> 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/OpDetWaveformMetaMaker_module.cc
 
 // LArSoft libraries
 #include "lardata/DetectorInfoServices/DetectorClocksService.h"
@@ -50,16 +43,8 @@ namespace icarus::trigger { class OpDetWaveformMetaMaker; }
 /**
  * @brief Extracts and saves the time coverage of optical detector waveforms.
  * 
-<<<<<<< HEAD:icaruscode/Analysis/trigger/PMTcoverageInfoMaker_module.cc
- * This module writes a list of `sim::BeamGateInfo` based on the time associated
- * to a selection of reconstructed tracks.
-||||||| parent of 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/PMTcoverageInfoMaker_module.cc
- * This module writes a list of `sbn::PMTcoverageInfo` objects matching the
- * information of each optical detector waveform.
-=======
  * This module writes a list of `sbn::OpDetWaveformMeta` objects matching the
  * information of each optical detector waveform.
->>>>>>> 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/OpDetWaveformMetaMaker_module.cc
  * 
  * It may be used as input to modules which require to operate on beam gates,
  * to select time(s) around the reconstructed (and selected) tracks.
@@ -239,20 +224,10 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
   //
   // create the content
   //
-<<<<<<< HEAD:icaruscode/Analysis/trigger/PMTcoverageInfoMaker_module.cc
-  std::vector<sbn::PMTcoverageInfo> PMTinfo;
-  art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform> infoToWaveform;
-||||||| parent of 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/PMTcoverageInfoMaker_module.cc
-  sbn::PMTcoverageInfoMaker makePMTcoverageInfo{ detTimings };
-  
-  std::vector<sbn::PMTcoverageInfo> PMTinfo;
-  art::Assns<sbn::PMTcoverageInfo, raw::OpDetWaveform> infoToWaveform;
-=======
   sbn::OpDetWaveformMetaMaker makeOpDetWaveformMeta{ detTimings };
   
   std::vector<sbn::OpDetWaveformMeta> PMTinfo;
   art::Assns<sbn::OpDetWaveformMeta, raw::OpDetWaveform> infoToWaveform;
->>>>>>> 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/OpDetWaveformMetaMaker_module.cc
   
   art::PtrMaker<sbn::OpDetWaveformMeta> const makeInfoPtr { event };
   art::PtrMaker<raw::OpDetWaveform> const makeWaveformPtr
@@ -261,22 +236,7 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
   for (auto const& [ iWaveform, waveform ]: util::enumerate(*waveformHandle)) {
     assert(iWaveform == PMTinfo.size());
     
-<<<<<<< HEAD:icaruscode/Analysis/trigger/PMTcoverageInfoMaker_module.cc
-    raw::Channel_t const channel = waveform.ChannelNumber();
-    electronics_time const startTime { waveform.TimeStamp() };
-    electronics_time const endTime
-      = startTime + waveform.Waveform().size() * opDetTickPeriod;
-    
-    auto const isInWaveform = [startTime,endTime](electronics_time t)
-      { return (t >= startTime) && (t < endTime); };
-    
-    bool const containsTrigger = isInWaveform(triggerTime);
-    bool const containsBeamGateStart = isInWaveform(beamGateTime);
-||||||| parent of 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/PMTcoverageInfoMaker_module.cc
-    PMTinfo.push_back(makePMTcoverageInfo(waveform));
-=======
     PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
->>>>>>> 77e62c26 (Renamed sbn::PMTcoverageInfo into sbn::OpDetWaveformMeta):icaruscode/PMT/OpDetWaveformMetaMaker_module.cc
     
     {
       mf::LogTrace log{ fLogCategory };
