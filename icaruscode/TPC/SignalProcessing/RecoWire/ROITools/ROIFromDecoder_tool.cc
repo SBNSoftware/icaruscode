@@ -31,8 +31,9 @@ public:
     ~ROIFromDecoder();
     
     void configure(const fhicl::ParameterSet& pset) override;
+    void initializeHistograms(art::TFileDirectory&) override {return;}
     
-    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) const override;
+    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
     
 private:
     // A magic map because all tools need them
@@ -76,7 +77,7 @@ void ROIFromDecoder::configure(const fhicl::ParameterSet& pset)
     return;
 }
 
-void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
+void ROIFromDecoder::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs)
 {
     // First thing is find the correct data product to recover ROIs
     TPCIDToLabelMap::const_iterator tpcItr = fTPCIDToLabelMap.find(planeID.asTPCID());

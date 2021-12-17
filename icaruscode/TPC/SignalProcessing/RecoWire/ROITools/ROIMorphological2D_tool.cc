@@ -13,11 +13,14 @@
 #include "lardata/DetectorInfoServices/DetectorPropertiesService.h"
 #include "larcore/Geometry/Geometry.h"
 #include "icarus_signal_processing/WaveformTools.h"
+#include "icarus_signal_processing/Filters/FFTFilterFunctions.h"
 #include "icarus_signal_processing/Denoising.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TProfile.h"
+#include <TTree.h>
+#include <TFile.h>
 
 #include <fstream>
 
@@ -32,21 +35,40 @@ public:
     ~ROIMorphological2D();
     
     void configure(const fhicl::ParameterSet& pset) override;
+    void initializeHistograms(art::TFileDirectory&) override;
     
-    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&)    const override;
+    void FindROIs(const art::Event&, const ArrayFloat&, const geo::PlaneID&, ArrayFloat&, ArrayBool&) override;
     
 private:
     // This is for the baseline...
     float getMedian(const icarus_signal_processing::VectorFloat, const unsigned int) const;
 
+    bool                 fOutputHistograms;           ///< Diagnostic histogram output
+
     // fhicl parameters
     std::vector<size_t>  fStructuringElement;         ///< Structuring element for morphological filter
     std::vector<float>   fThreshold;                  ///< Threshold to apply for saving signal
+
+    // Parameters for Butterworth Filter
+//    unsigned int         fButterworthOrder;           ///< Order parameter for Butterworth filter
+//    unsigned int         fButterworthThreshold;       ///< Threshold for Butterworth filter
+
+    // tuple output if requested
+    std::vector<float>   fMedianVec;
+    std::vector<float>   fRMSVec;
+    std::vector<float>   fMinValVec;
+    std::vector<float>   fMaxValVec;
+    std::vector<float>   fRangeVec;
+    std::vector<bool>    fHasROIVec;
+
+    TTree*               fTupleTree;        ///< output analysis tree
+
+//    std::unique_ptr<icarus_signal_processing::IFFTFilterFunction> fButterworthFilter;
 };
     
 //----------------------------------------------------------------------
 // Constructor.
-ROIMorphological2D::ROIMorphological2D(const fhicl::ParameterSet& pset)
+ROIMorphological2D::ROIMorphological2D(const fhicl::ParameterSet& pset) : fOutputHistograms(false)
 {
     configure(pset);
 }
@@ -58,62 +80,101 @@ ROIMorphological2D::~ROIMorphological2D()
 void ROIMorphological2D::configure(const fhicl::ParameterSet& pset)
 {
     // Start by recovering the parameters
-    fStructuringElement = pset.get<std::vector<size_t> >("StructuringElement", std::vector<size_t>()={8,16});
-    fThreshold          = pset.get<std::vector<float>  >("Threshold",          std::vector<float>()={2.75,2.75,2.75});
+    fStructuringElement   = pset.get<std::vector<size_t> >("StructuringElement", std::vector<size_t>()={8,16});
+    fThreshold            = pset.get<std::vector<float>  >("Threshold",          std::vector<float>()={2.75,2.75,2.75});
+     
+//    fButterworthOrder     = pset.get<unsigned int        >("ButterworthOrder",     2);
+//    fButterworthThreshold = pset.get<unsigned int        >("ButterworthThreshld", 30);
+
+//    fButterworthFilter = std::make_unique<icarus_signal_processing::HighPassButterworthFilter>(fButterworthThreshold,fButterworthOrder,4096);
 
     return;
 }
 
-void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& inputImage, const geo::PlaneID& planeID, ArrayFloat& output, ArrayBool& outputROIs) const
+void ROIMorphological2D::FindROIs(const art::Event& event, const ArrayFloat& constInputImage, const geo::PlaneID& planeID, ArrayFloat& morphedWaveforms, ArrayBool& outputROIs)
 {
-    icarus_signal_processing::ArrayFloat morphedWaveforms(inputImage.size(),icarus_signal_processing::VectorFloat(inputImage[0].size(),0.));
+    if (morphedWaveforms.size() != constInputImage.size()) morphedWaveforms.resize(constInputImage.size(),icarus_signal_processing::VectorFloat(constInputImage[0].size()));
+
+    for(auto& morph : morphedWaveforms) std::fill(morph.begin(),morph.end(),0.);  // explicit initialization
+
+    // Make a local copy of the input image so we can do some smoothing
+    ArrayFloat inputImage(constInputImage.size(),VectorFloat(constInputImage[0].size()));
+
+    // get an instance of the waveform tools
+    icarus_signal_processing::WaveformTools<float> waveformTools;
+
+    for(size_t waveIdx = 0; waveIdx < inputImage.size(); waveIdx++) waveformTools.triangleSmooth(constInputImage[waveIdx],inputImage[waveIdx]);
+
+//    ArrayFloat inputImage(constInputImage);
+
+//    for(auto& waveform : inputImage) (*fButterworthFilter)(waveform);
 
     // Use this to get the 2D Dilation of each waveform
     icarus_signal_processing::Dilation2D(fStructuringElement[0],fStructuringElement[1])(inputImage.begin(),inputImage.size(),morphedWaveforms.begin());
+
+    if (fOutputHistograms)
+    {
+        fMedianVec.clear();
+        fRMSVec.clear();
+        fMinValVec.clear();
+        fMaxValVec.clear();
+        fRangeVec.clear();
+        fHasROIVec.clear();
+    }
 
     // Now traverse each waveform and look for the ROIs
     for(size_t waveIdx = 0; waveIdx < morphedWaveforms.size(); waveIdx++)
     {
         // We start working with the morphed waveform
-        const VectorFloat& morphedWave = morphedWaveforms[waveIdx];
+        VectorFloat& morphedWave = morphedWaveforms[waveIdx];
 
         // We need to zero suppress so we can find the rms
         float median = getMedian(morphedWave, morphedWave.size());
 
-        VectorFloat baseVec(morphedWave.size());
+        for(auto& val : morphedWave) val -= median;
 
-        for(size_t idx = 0; idx < morphedWave.size(); idx++) baseVec[idx] = morphedWave[idx] - median;
-
-        VectorFloat rmsVec = baseVec;
-        size_t      maxIdx = 0.75 * rmsVec.size();
-
-        std::nth_element(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.end());
-
-        float rms       = std::sqrt(std::inner_product(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.begin(), 0.) / float(maxIdx));
-        float threshold = rms * fThreshold[planeID.Plane];
-
-//        std::cout << "==> median: " << median << ", rms: " << rms << ", threshold: " << threshold << std::endl;
+//        float threshold = rms * fThreshold[planeID.Plane];
+        float threshold = fThreshold[planeID.Plane];
 
         // Right size the selected values array
         VectorBool& selVals = outputROIs[waveIdx];
 
-        selVals.resize(morphedWave.size(),false);
+        if (selVals.size() != morphedWave.size()) selVals.resize(morphedWave.size());
 
-        for(size_t idx = 0; idx < baseVec.size(); idx++)
+        std::fill(selVals.begin(),selVals.end(),false);
+
+        bool hasROI(false);
+
+        for(size_t idx = 0; idx < morphedWave.size(); idx++)
         {
-//            if (std::abs(baseVec[idx]) > threshold) selVals[idx] = true;
-            if (baseVec[idx] > threshold) selVals[idx] = true;
+            if (morphedWave[idx] > threshold) 
+            {
+                selVals[idx] = true;
+                hasROI       = true;
+            }
         }
 
-        // Check to see if we should save the baseVec
-//        if (fOutputMorphed)
-//        {
-//            raw::ChannelID_t channel = planeIDToDataPair.first[waveIdx];
-//            geo::View_t      view    = fGeometry->View(channel);
-//
-//            morphedVec.push_back(recob::WireCreator(std::move(baseVec),channel,view).move());
-//        }
+        if (fOutputHistograms)
+        {
+            VectorFloat rmsVec = morphedWave;
+            size_t      maxIdx = 0.75 * rmsVec.size();
+
+            std::nth_element(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.end());
+
+            float rms    = std::sqrt(std::inner_product(rmsVec.begin(), rmsVec.begin() + maxIdx, rmsVec.begin(), 0.) / float(maxIdx));
+            float minVal = *std::min_element(morphedWave.begin(),morphedWave.end());
+            float maxVal = *std::max_element(morphedWave.begin(),morphedWave.end());
+            
+            fMedianVec.emplace_back(median);
+            fRMSVec.emplace_back(rms);
+            fMinValVec.emplace_back(minVal);
+            fMaxValVec.emplace_back(maxVal);
+            fRangeVec.emplace_back(maxVal-minVal);
+            fHasROIVec.emplace_back(hasROI);
+        }
     }
+
+    if (fOutputHistograms) fTupleTree->Fill();
      
     return;
 }
@@ -143,6 +204,26 @@ float ROIMorphological2D::getMedian(icarus_signal_processing::VectorFloat vals, 
     }
 
     return median;
+}
+    
+void ROIMorphological2D::initializeHistograms(art::TFileDirectory& histDir)
+{
+    // It is assumed that the input TFileDirectory has been set up to group histograms into a common
+    // folder at the calling routine's level. Here we create one more level of indirection to keep
+    // histograms made by this tool separate.
+
+    fTupleTree = histDir.make<TTree>("ROIFinder", "Tree by ROIMorphological2D_tool");
+
+    fTupleTree->Branch("medians",  "std::vector<float>", &fMedianVec);
+    fTupleTree->Branch("RMS",      "std::vector<float>", &fRMSVec);
+    fTupleTree->Branch("minvals",  "std::vector<float>", &fMinValVec);
+    fTupleTree->Branch("maxvals",  "std::vector<float>", &fMaxValVec);
+    fTupleTree->Branch("range",    "std::vector<float>", &fRangeVec);
+    fTupleTree->Branch("hasROI",   "std::vector<bool>",  &fHasROIVec);
+
+    fOutputHistograms = true;
+    
+    return;
 }
 
 DEFINE_ART_CLASS_TOOL(ROIMorphological2D)

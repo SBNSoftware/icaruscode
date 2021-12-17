@@ -34,17 +34,14 @@ outputs:
   }
 }
 
-# Define and configure some modules to do work on each event.
-# First modules are defined; they are scheduled later.
-# Modules are grouped by type.
 physics:
 {
  
   producers: {
-    @table::caf_ana_producers
+    @table::caf_preprocess_producers
   }
 
-  runprod: [ @sequence::caf_ana_sequence, cafmaker]
+  runprod: [ @sequence::caf_preprocess_sequence, cafmaker]
   stream1:       [  ]
   trigger_paths: [ runprod ] 
   end_paths:     [ stream1 ]

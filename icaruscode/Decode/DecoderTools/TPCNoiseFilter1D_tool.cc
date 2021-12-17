@@ -224,8 +224,6 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
     fFFTSigmaValsVec       = pset.get<FloatPairVec            >("FFTSigmaVals",        FloatPairVec()={{1.5,20.}, {1.5,20.}, {2.0,20.}});
     fFFTCutoffValsVec      = pset.get<FloatPairVec            >("FFTCutoffVals",       FloatPairVec()={{8.,800.}, {8.,800.}, {0.0,800.}});
 
-    std::cout << "TPCNoiseFilter1D - coherent noise grouping: " << fCoherentNoiseGrouping << ", coherent noise offset: " << fCoherentNoiseOffset << ", thresholds: " << fThreshold[0] << ", " << fThreshold[1] << ", " << fThreshold[2] << std::endl;
-
     fGeometry   = art::ServiceHandle<geo::Geometry const>{}.get();
 
     fFFTFilterFunctionVec.clear();
@@ -254,11 +252,11 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     unsigned int numChannels = dataArray.size();
     unsigned int numTicks    = dataArray[0].size();
 
-    if (fSelectVals.size()       < numChannels)  fSelectVals.resize(numChannels, icarus_signal_processing::VectorBool(numTicks));
-    if (fROIVals.size()          < numChannels)  fROIVals.resize(numChannels,  icarus_signal_processing::VectorBool(numTicks));
-    if (fRawWaveforms.size()     < numChannels)  fRawWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
-    if (fPedCorWaveforms.size()  < numChannels)  fPedCorWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
-    if (fIntrinsicRMS.size()     < numChannels)  fIntrinsicRMS.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
+    if (fSelectVals.size()       < numChannels)  fSelectVals.resize(numChannels,       icarus_signal_processing::VectorBool(numTicks));
+    if (fROIVals.size()          < numChannels)  fROIVals.resize(numChannels,          icarus_signal_processing::VectorBool(numTicks));
+    if (fRawWaveforms.size()     < numChannels)  fRawWaveforms.resize(numChannels,     icarus_signal_processing::VectorFloat(numTicks));
+    if (fPedCorWaveforms.size()  < numChannels)  fPedCorWaveforms.resize(numChannels,  icarus_signal_processing::VectorFloat(numTicks));
+    if (fIntrinsicRMS.size()     < numChannels)  fIntrinsicRMS.resize(numChannels,     icarus_signal_processing::VectorFloat(numTicks));
     if (fCorrectedMedians.size() < numChannels)  fCorrectedMedians.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
     if (fWaveLessCoherent.size() < numChannels)  fWaveLessCoherent.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
     if (fMorphedWaveforms.size() < numChannels)  fMorphedWaveforms.resize(numChannels, icarus_signal_processing::VectorFloat(numTicks));
@@ -328,6 +326,9 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
 
         // Convolve with a filter function
         if (fUseFFTFilter) (*fFFTFilterFunctionVec[plane])(pedCorDataVec);
+
+        // Make sure our selection and ROI arrays are initialized
+        std::fill(fSelectVals[idx].begin(),fSelectVals[idx].end(),false);
     }
 
     denoiser(fWaveLessCoherent.begin(),

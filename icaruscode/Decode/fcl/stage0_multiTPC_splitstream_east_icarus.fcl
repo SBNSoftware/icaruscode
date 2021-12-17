@@ -23,13 +23,13 @@ outputs.outNUMI.dataTier:  "reconstructed"
 outputs.outNUMI.SelectEvents: [ pathNUMI ]
 
 # Drop the artdaq format files on output
-outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
-outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outBNB.outputCommands:  ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
+outputs.outNUMI.outputCommands: ["keep *_*_*_*", "drop *_*_*_DAQ*", "drop *_daqTPCROI_*_*", "drop *_decon1droi_*_*", "drop *_decon1DroiTPC*_*_*" ]
 
 # Temporarily overrie pmt configuration for a single cryostat configuration
 physics.producers.daqPMT.DecoderTool.RequireBoardConfig: false
 
 # Set up for the single module mutliple TPC mode...
 physics.producers.daqTPCROI.FragmentsLabelVec:           ["daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
-physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPC:PHYSCRATEDATATPCEW","daqTPC:PHYSCRATEDATATPCEE"]
+physics.producers.decon1droi.RawDigitLabelVec:           ["daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 physics.producers.roifinder.WireModuleLabelVec:          ["decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]

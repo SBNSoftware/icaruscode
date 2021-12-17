@@ -10,6 +10,7 @@
 #include "hitfindermodules_icarus.fcl"
 #include "icarus_ophitfinder.fcl"
 #include "icarus_flashfinder.fcl"
+#include "crt_decoderdefs_icarus.fcl"
 #include "wcls-decode-to-sig-base.fcl"
 
 BEGIN_PROLOG
@@ -49,6 +50,8 @@ icarus_stage0_producers:
 
   pmtconfig:                      @local::extractPMTconfig
   daqPMT:                         @local::decodePMT
+
+  daqCRT:                         @local::crtdaq_icarus
 
   daqTrigger:                     @local::decodeTrigger
 
@@ -100,15 +103,26 @@ icarus_stage0_filters:
                       WindowEndTime:        9.8 
                     }
 
-   triggerfilterBNB:      {  module_type:        "TriggerTypeFilter"
-                             TriggerDataLabel:   "daqTrigger"
-                             TriggerType:        "BNB"
-                          }
+   triggerfilterBNB:       {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "BNB"
+                           }
 
-   triggerfilterNuMI:     {  module_type:        "TriggerTypeFilter"
-                             TriggerDataLabel:   "daqTrigger"
-                             TriggerType:        "NuMI"
-                          }
+   triggerfilterNuMI:      {  module_type:        "TriggerTypeFilter"
+                              TriggerDataLabel:   "daqTrigger"
+                              TriggerType:        "NuMI"
+                           }
+
+   triggerfilterOffbeamBNB:  {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamBNB"
+                             }
+
+   triggerfilterOffbeamNuMI: {  module_type:        "TriggerTypeFilter"
+                                TriggerDataLabel:   "daqTrigger"
+                                TriggerType:        "OffbeamNuMI"
+                             }
+
 
    triggerfilterUnknown:  {  module_type:        "TriggerTypeFilter"
                              TriggerDataLabel:   "daqTrigger"
@@ -125,6 +139,14 @@ icarus_stage0_trigger_BNB:         [ daqTrigger,
 
 icarus_stage0_trigger_NuMI:        [ daqTrigger,
                                      triggerfilterNuMI 
+                                   ]
+
+icarus_stage0_trigger_OffbeamBNB:  [ daqTrigger,
+                                     triggerfilterOffbeamBNB 
+                                   ]
+
+icarus_stage0_trigger_OffbeamNuMI: [ daqTrigger,
+                                     triggerfilterOffbeamNuMI 
                                    ]
 
 icarus_stage0_trigger_Unknown:     [ daqTrigger,
@@ -174,6 +196,17 @@ icarus_stage0_multiTPC:            [ @sequence::icarus_stage0_multiTPC_TPC,
                                      @sequence::icarus_purity_monitor
                                    ]
 
+icarus_stage0_crt:                 [
+                                     daqCRT
+                                   ]
+
+icarus_stage0_data:                [
+                                     @sequence::icarus_stage0_PMT, 
+                                     daqTPCROI, 
+                                     @sequence::icarus_stage0_multiTPC,
+                                     @sequence::icarus_stage0_crt
+                                   ]
+
 ### Below we include overrides for the modules above
 
 ### Handle multiple TPC readout with single instances
@@ -181,6 +214,7 @@ icarus_stage0_producers.daqTPC.FragmentsLabelVec:                               
 icarus_stage0_producers.daqTPCROI.FragmentsLabelVec:                                           ["daq:PHYSCRATEDATATPCWW","daq:PHYSCRATEDATATPCWE","daq:PHYSCRATEDATATPCEW","daq:PHYSCRATEDATATPCEE"]
 
 ### Set up for the 1D deconvolution - turn OFF ROI finding
+icarus_stage0_producers.decon1droi.RawDigitLabelVec:                                           ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane0:                       @local::icarus_noproifinder_0
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane1:                       @local::icarus_noproifinder_1
 icarus_stage0_producers.decon1droi.ROIFinderToolVec.ROIFinderToolPlane2:                       @local::icarus_noproifinder_2
@@ -217,7 +251,9 @@ icarus_stage0_producers.decon2droiWW.wcls_main.params.tpc_volume_label:         
 icarus_stage0_producers.decon2droiWW.wcls_main.params.signal_output_form:                      "dense"
 
 ### Set up to output ROIs from full waveforms
-icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi"]
+
+icarus_stage0_producers.roifinder.WireModuleLabelVec:                                          ["decon1droi:PHYSCRATEDATATPCWW","decon1droi:PHYSCRATEDATATPCWE","decon1droi:PHYSCRATEDATATPCEW","decon1droi:PHYSCRATEDATATPCEE"]
+icarus_stage0_producers.roifinder.OutInstanceLabelVec:                                         ["PHYSCRATEDATATPCWW","PHYSCRATEDATATPCWE","PHYSCRATEDATATPCEW","PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.roifinder.OutputMorphed:                                               false
 
 ### Set up hit finding for multiple TPC readout
@@ -228,50 +264,50 @@ icarus_stage0_producers.gaushitTPCEE.CalDataModuleLabel:                        
 
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
-icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
-icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
 icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
-icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
-icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
-icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
 icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
-icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCWE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
-icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
-icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
 icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
-icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEW.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0:                     @local::candhitfinder_standard      # Sets hit finding for plane 0
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0.Plane:               0
-icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane0.RoiThreshold:        9.
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1:                     @local::candhitfinder_standard      # Sets hit finding for plane 1
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.Plane:               1
-icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane1.RoiThreshold:        9.5
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2:                     @local::candhitfinder_standard      # Sets hit finding for plane 2
 icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.Plane:               2
-icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        10.
+icarus_stage0_producers.gaushitTPCEE.HitFinderToolVec.CandidateHitsPlane2.RoiThreshold:        9.
 
 ### Optical hit finding
 icarus_stage0_producers.ophit.InputModule:                                                     "daqPMT"
 icarus_stage0_producers.ophit.InputLabels:                                                     []
 
 ### Default purity monitor settings (single TPC readout assumed)
-icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana0.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.purityana0.ValoreTauFCL:                                               600000.
 icarus_stage0_producers.purityana0.CryostatFCL:                                                0
 icarus_stage0_producers.purityana0.PlaneFCL:                                                   2
@@ -281,7 +317,7 @@ icarus_stage0_producers.purityana0.FillAnaTuple:                                
 icarus_stage0_producers.purityana0.PersistPurityInfo:                                          false
 icarus_stage0_producers.purityana0.FillAnaTuple:                                               false
 
-icarus_stage0_producers.purityana1.RawModuleLabel:                                             ["daqTPC:PHYSCRATEDATA"]
+icarus_stage0_producers.purityana1.RawModuleLabel:                                             ["daqTPCROI:PHYSCRATEDATATPCWW","daqTPCROI:PHYSCRATEDATATPCWE","daqTPCROI:PHYSCRATEDATATPCEW","daqTPCROI:PHYSCRATEDATATPCEE"]
 icarus_stage0_producers.purityana1.ValoreTauFCL:                                               600000.
 icarus_stage0_producers.purityana1.CryostatFCL:                                                1
 icarus_stage0_producers.purityana1.PlaneFCL:                                                   2
