@@ -398,7 +398,17 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
       data.fMac5  = recipe.destMac5;
       data.fTs0   = CalculateTimestamp(hit);
       data.fTs1   = hit.ts1;
-      //data.coinc    = hit.coinc;
+
+      data.fFlags                   = hit.flags;
+      data.fThis_poll_start         = hit.this_poll_start;
+      data.fLast_poll_start         = hit.last_poll_start;
+      data.fHits_in_poll            = hit.hits_in_poll;
+
+      data.fCoinc                   = hit.coinc;
+
+      data.fLast_accepted_timestamp = hit.last_accepted_timestamp;
+      data.fLost_hits               = hit.lost_hits;
+
 
       unsigned destCh = recipe.firstDestChannel;
       for (unsigned srcCh = recipe.firstSourceChannel; srcCh <= recipe.lastSourceChannel; ++srcCh) {
