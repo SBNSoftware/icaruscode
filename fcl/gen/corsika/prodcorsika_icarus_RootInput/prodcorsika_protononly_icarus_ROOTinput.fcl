@@ -25,7 +25,7 @@
 #include "prodcorsika_protononly_icarus.fcl"
 
 
-process_name: Gen
+process_name: Corsika
 
 source:
 {
@@ -37,6 +37,6 @@ source:
 # output file names
 #
 
-services.TFileService.fileName: "Supplemental-%ifb_prodcorsika_protononly_icarus_%tc-%p.root"
-outputs.out1.fileName:    "%ifb_prodcorsika_protononly_icarus_%tc-%p.root"
+services.TFileService.fileName: "Supplemental-%ifb_%tc-%p.root"
+outputs.out1.fileName:    "%ifb_%tc-%p.root"
 
