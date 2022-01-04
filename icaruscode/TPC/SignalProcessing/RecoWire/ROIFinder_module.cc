@@ -166,11 +166,11 @@ ROIFinder::ROIFinder(fhicl::ParameterSet const& pset) : EDProducer{pset}
 {
     this->reconfigure(pset);
 
-    for(const auto& wireLabel : fWireModuleLabelVec)
+    for(const auto& wireLabel : fOutInstanceLabelVec)
     {
-        produces< std::vector<recob::Wire>>(wireLabel.instance());
+        produces< std::vector<recob::Wire>>(wireLabel);
 
-        if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel.instance() + "M");
+        if (fOutputMorphed) produces<std::vector<recob::Wire>>(wireLabel+ "M");
     }
 }
 
