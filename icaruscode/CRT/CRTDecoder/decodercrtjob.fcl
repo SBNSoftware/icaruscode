@@ -1,6 +1,7 @@
 #include "services_common_icarus.fcl"
 #include "channelmapping_icarus.fcl"
 #include "crt_decoderdefs_icarus.fcl"
+#include "decoderdefs_icarus.fcl"
 
 process_name: crtdecoder
 
@@ -39,11 +40,13 @@ physics:
  producers:
  {
    crtdaq: @local::crtdaq_icarus
+   daqTrigger: @local::decodeTrigger
+
  }
 
  #define the producer and filter modules for this path, order matters, 
  #filters reject all following items.  see lines starting physics.producers below
- daq: [  crtdaq ]
+ daq: [  crtdaq , daqTrigger]
 
  #define the output stream, there could be more than one if using filters 
  stream1:  [ out1 ]
