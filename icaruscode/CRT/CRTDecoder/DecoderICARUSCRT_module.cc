@@ -93,7 +93,6 @@ crt::DecoderICARUSCRT::DecoderICARUSCRT(fhicl::ParameterSet const& p)
     int32_t & mac = feb[0];
     int32_t & d   = feb[1];
     FEB_delay[mac] = d;
-//    std::cout<<"Read delay for mac5 "<<std::setw(3)<<(int)mac<<": "<<std::setw(4)<<d<<" ns\n";
   }
 }
 
@@ -105,13 +104,15 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
   int32_t ts0  = hit.ts0; //must be signed int
 
   //add PPS cable length offset modulo 1s
-  try {
-    ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
-  } catch(const std::out_of_range & e) {
-    TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
-    throw e;
+  if(!hit.IsReference_TS0() && !hit.IsReference_TS1()) { //don't correct reference T0 and T1 hits for cable length
+    try {
+      ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
+    } catch(const std::out_of_range & e) {
+      TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
+      throw e;
+    }
+    if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
   }
-  if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
 
   uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
   int mean_poll_time_ns = mean_poll_time % (1000'000'000); 
