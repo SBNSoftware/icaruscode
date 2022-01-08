@@ -105,7 +105,12 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
   int32_t ts0  = hit.ts0; //must be signed int
 
   //add PPS cable length offset modulo 1s
-  ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
+  try {
+    ts0 = (ts0 + FEB_delay.at(hit.mac5)) % (1'000'000'000);
+  } catch(const std::out_of_range & e) {
+    TLOG(TLVL_ERROR)<<"CRT MAC "<<(int)(hit.mac5)<<" not found in the FEB_delay array!!! Please update FEB_delay FHiCL file";
+    throw e;
+  }
   if(ts0 < 0) ts0 += 1000'000'000; //just in case the cable offset is negative (should be positive normally)
 
   uint64_t mean_poll_time = hit.last_poll_start/2 + hit.this_poll_end/2;
