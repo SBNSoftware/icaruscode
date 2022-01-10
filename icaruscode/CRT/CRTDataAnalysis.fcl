@@ -44,7 +44,7 @@ physics:
       CRTHitLabel:   "crthit"
 
       CRTDAQLabel:  "crtdaq"
-
+      TriggerLabel: "daqTrigger"
 
     }
   }

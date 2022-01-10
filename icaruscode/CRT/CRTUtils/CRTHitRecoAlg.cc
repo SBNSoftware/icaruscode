@@ -213,7 +213,7 @@ vector<pair<sbn::crt::CRTHit, vector<int>>> CRTHitRecoAlg::CreateCRTHits(vector<
 //--------------------------------------------------------------------------------------------
 // Function to make filling a CRTHit a bit faster
 sbn::crt::CRTHit CRTHitRecoAlg::FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t,vector<pair<int,float>>> tpesmap,
-                            float peshit, double time0, double time1, int plane, 
+                            float peshit, uint64_t time0, uint64_t time1, int plane, 
                             double x, double ex, double y, double ey, double z, double ez, string tagger){
     CRTHit crtHit;
     crtHit.feb_id      = tfeb_id;
@@ -323,6 +323,10 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeTopHit(art::Ptr<CRTData> data){
     
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
     double thit = data->fTs0;
+    std::cout << "double thit: " << thit << "\n";
+    uint64_t thit_64 = data->fTs0;
+    std::cout << "uint64_t thit: " << thit_64 << "\n";
+
     if(adsid_max<8)
         thit -= hitpos.Z()*fPropDelay;
     else
@@ -392,8 +396,11 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeBottomHit(art::Ptr<CRTData> data){
     hitlocal[2] = 0;
 
     auto const& adsGeo = adGeo.SensitiveVolume(adsid_max); //trigger strip
-    double thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
-
+    double thit_dub = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
+    std::cout << "thit_dub: " << thit_dub << "\n";
+    uint64_t thit = data->fTs0 - adsGeo.HalfLength()*fPropDelay;
+    std::cout << "thit: " << thit << "\n";
+    
     adGeo.LocalToWorld(hitlocal,hitpoint); //tranform from module to world coords
 
     hitpointerr[0] = (xmax-xmin+2*adsGeo.HalfWidth1()*2)/sqrt(12);
@@ -451,7 +458,7 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     int adsid_max = -1, nabove=0, nx=0, ny=0, nz = 0, ntrig = 0;
     TVector3 postrig;
     //map<int,vector<double>> ttrigs;
-    vector<int> ttrigs;
+    vector<uint64_t> ttrigs;
     vector<TVector3> tpos;
     double zmin=DBL_MAX, zmax = -DBL_MAX;
     double ymin=DBL_MAX, ymax = -DBL_MAX;
@@ -847,7 +854,8 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
       layer2 = true;
       mac5_2 = (int)infn.mac5s;
       t0_2 = (long int)infn.t0;
-
+      std::cout << "t0_2 (line 849) : " << t0_2 << "\n";
+      std::cout << "t0 (64?): " << uint64_t(infn.t0) << "\n";
 
       if ((int)infn.mac5s % 2 == 0) t2_1 = infn.t0;
       else t2_1 = informationB[i+1].t0;
@@ -1031,14 +1039,27 @@ sbn::crt::CRTHit CRTHitRecoAlg::MakeSideHit(vector<art::Ptr<CRTData>> coinData) 
     if (fVerbose) std::cout << " x: \t"<< hitpoint[0] <<" ,y: \t" << hitpoint[1]  <<" ,z: \t" << hitpoint[2]<< std::endl;
     
     //time stamp averaged over all FEBs
-    double thit = 0.;//, thit_0 = 0., thit_1 = 0.;
+    uint64_t thit = 0.;//, thit_0 = 0., thit_1 = 0.;
+    //uint64_t thit_64 = 0.;
     //for(double const t : ttrigs[0]) 
     //    thit_0 += t;
-    for(double const t : ttrigs)
-      thit +=   uint64_t(t);
-    //thit_0
+    for(uint64_t const t : ttrigs){
+      std::cout << "t in ttrigs " << (long long int)t << "\n";
+      thit += t;
+      //thit +=   uint64_t(t);
+      std::cout << "in loop      thit: " << thit << "\n";
+    }
+      //thit_0
     thit*=1.0/uint64_t(ttrigs.size());
+    std::cout << "thit: " << (long long int)thit << "\n";
 
+    /*for(uint64_t const t_64 : ttrigs){
+      std::cout << "t_64 in ttrigs " << t_64 << "\n";
+      thit_64 +=   uint64_t(t_64);
+      //thit_0                                                                                                                            
+    }
+      thit_64*=1.0/uint64_t(ttrigs.size());
+      std::cout << "thit_64: " << thit_64 << "--------\n";*/
     if (fVerbose) std::cout << " <time>: \t"<< thit <<" size ttrig: \t" <<   ttrigs.size()<< std::endl;    
 
     //error estimates (likely need to be revisted)
