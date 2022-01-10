@@ -41,7 +41,7 @@ sbncode                   v09_37_01_02
 icarusalg                 v09_37_01
 icarusutil                v09_37_01
 icarus_signal_processing  v09_37_01
-icarus_data               v09_37_01_02
+icarus_data               v09_41_00
 fftw                      v3_3_9
 libwda                    v2_29_1
 
