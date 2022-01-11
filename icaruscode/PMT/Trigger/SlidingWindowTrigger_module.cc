@@ -10,11 +10,13 @@
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefinitionAlg.h"
 #include "icaruscode/PMT/Trigger/Algorithms/SlidingWindowDefs.h"
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerTypes.h" // ADCCounts_t
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/OpDetWaveformMetaMatcher.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateDataFormatting.h"
 #include "icaruscode/PMT/Algorithms/PMTverticalSlicingAlg.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
 
 // LArSoft libraries
@@ -122,7 +124,8 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (labels out of
  *   `TriggerGatesTag` and `Thresholds`): full sets of discriminated waveforms,
  *   each waveform possibly covering multiple optical channels,
- *   and their associations to optical waveforms. One set per threshold.
+ *   and their associations to waveform metadata (`sbn::OpDetWaveformMeta`).
+ *   One set per threshold.
  *
  * Requirements
  * -------------
@@ -136,9 +139,19 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * * `std::vector<icarus::trigger::OpticalTriggerGateData_t>` (instance name:
  *   same as the input gates): sets of gates combined according to the window
  *   configuration; one set per input threshold.
+ * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>`
+ *   (instance name: same as the input gates): associations between each
+ *   produced gate and the metadata of optical waveforms providing the original
+ *   data.
  * * `art::Assns<icarus::trigger::OpticalTriggerGateData_t, raw::OpDetWaveform>`
  *   (instance name: same as the input gates): associations between each
  *   produced gate and the optical waveforms providing the original data.
+ *   It is produced only if `ProduceWaveformAssns` configuration parameter is
+ *   `true`, and it relies on the assumption that there is an association
+ *   available between each `sbn::OpDetWaveformMeta` and its
+ *   `raw::OpDetWaveform`, produced by the same module (i.e. with the same input
+ *   tag) as the one of the original `sbn::OpDetWaveformMeta` data product
+ *   itself.
  *
  * If window selection is requested (with `EnableOnlyWindows` or
  * `DisableWindows` configuration parameters), only the selected windows will
@@ -187,6 +200,8 @@ namespace icarus::trigger { class SlidingWindowTrigger; }
  * * `MissingChannels` (list of integers, default: empty): the channels whose ID
  *     is included in this list are expected and required not to be present in
  *     the input (i.e. no input gate should include them).
+ * * `ProduceWaveformAssns` (flag, default: `true`): produce also associations
+ *     between each gate and the `raw::OpDetWaveform` which contributed to it.
  * * `LogCategory` (string): name of the output stream category for console
  *     messages (managed by MessageFacility library).
  *
@@ -199,7 +214,6 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   
     public:
   
-  using TriggerGateData_t = icarus::trigger::OpticalTriggerGate::GateData_t;
   
   // --- BEGIN Configuration ---------------------------------------------------
   struct Config {
@@ -248,6 +262,13 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
       std::vector<raw::Channel_t>{}
       };
 
+    fhicl::Atom<bool> ProduceWaveformAssns {
+      Name("ProduceWaveformAssns"),
+      Comment
+        ("also produce gate/waveform associations together with gate/metadata"),
+      true
+      };
+    
     fhicl::Atom<std::string> LogCategory {
       Name("LogCategory"),
       Comment("name of the category used for the output"),
@@ -285,6 +306,12 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   /// Definition of all windows.
   using WindowDefs_t = icarus::trigger::TriggerWindowDefs_t;
   
+  using TriggerGateData_t = icarus::trigger::OpticalTriggerGate::GateData_t;
+  
+  /// Reconstituted trigger gate type internally used.
+  using TrackedTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
+  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// ADC thresholds to read, and the input tag connected to their data.
@@ -299,6 +326,9 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   /// List of windows to be included.
   std::vector<std::size_t> const fEnabledWindows;
 
+  /// Whether to produce gate/waveform associations.
+  bool fProduceWaveformAssns;
+  
   /// Message facility stream category for output.
   std::string const fLogCategory;
   
@@ -315,18 +345,18 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
   /// Performs the combination for data with a specified threshold.
   void produceThreshold(
     art::Event& event,
-    icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
+    icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap,
     std::string const& threshold,
     art::InputTag const& dataTag
     ) const;
-
+  
   /// Reads a set of input gates from the `event` and updates `waveformMap`.
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> ReadTriggerGates(
+  std::vector<icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>> ReadTriggerGates(
     art::Event const& event,
     art::InputTag const& dataTag,
-    icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap
+    icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap
     ) const;
-
+  
   /// Defines the channels falling in each window.
   WindowDefs_t defineWindows() const;
   
@@ -339,8 +369,8 @@ class icarus::trigger::SlidingWindowTrigger: public art::EDProducer {
 
   /// Adds the waveforms in the specified association to the waveform `map`.
   static void UpdateWaveformMap(
-    icarus::trigger::OpDetWaveformDataProductMap_t& map,
-    art::Assns<TriggerGateData_t, raw::OpDetWaveform> const& assns
+    icarus::trigger::OpDetWaveformMetaDataProductMap_t& map,
+    art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta> const& assns
     );
 
 }; // class icarus::trigger::SlidingWindowTrigger
@@ -381,6 +411,7 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
      fWindowChannels.size(),
      config().EnableOnlyWindows, config().DisableWindows
      ))
+  , fProduceWaveformAssns(config().ProduceWaveformAssns())
   , fLogCategory(config().LogCategory())
     // demand full PMT coverage only if no window was disabled:
   , fCombiner(
@@ -428,7 +459,7 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   //
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
     consumes<std::vector<OpticalTriggerGateData_t>>(inputDataTag);
-    consumes<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
+    consumes<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
       (inputDataTag);
   } // for
 
@@ -438,8 +469,12 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
   //
   for (art::InputTag const& inputDataTag: util::const_values(fADCthresholds)) {
     produces<std::vector<OpticalTriggerGateData_t>>(inputDataTag.instance());
-    produces<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
+    produces<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
       (inputDataTag.instance());
+    if (fProduceWaveformAssns) {
+      produces<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
+        (inputDataTag.instance());
+    }
   } // for
 
   
@@ -449,7 +484,7 @@ icarus::trigger::SlidingWindowTrigger::SlidingWindowTrigger
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTrigger::produce(art::Event& event) {
   
-  icarus::trigger::OpDetWaveformDataProductMap_t waveformMap;
+  icarus::trigger::OpDetWaveformMetaDataProductMap_t waveformMap;
 
   for (auto const& [ thresholdStr, dataTag ]: fADCthresholds) {
 
@@ -479,7 +514,7 @@ auto icarus::trigger::SlidingWindowTrigger::defineWindows() const
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTrigger::produceThreshold(
   art::Event& event,
-  icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap,
+  icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap,
   std::string const& threshold,
   art::InputTag const& dataTag
 ) const {
@@ -490,19 +525,20 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     ;
 
   using icarus::trigger::OpticalTriggerGateData_t; // for convenience
+  using TrackedTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> const& gates
+  std::vector<TrackedTriggerGate_t> const& gates
     = ReadTriggerGates(event, dataTag, waveformMap);
   
-  std::vector<icarus::trigger::MultiChannelOpticalTriggerGate> combinedGates
-    = fCombiner.combine(gates);
+  std::vector<TrackedTriggerGate_t> combinedGates = fCombiner.combine(gates);
 
   // transform the data; after this line, `gates` is not usable any more
   art::PtrMaker<OpticalTriggerGateData_t> const makeGatePtr
     (event, dataTag.instance());
-  auto&& [ outputGates, outputAssns ]
+  auto [ outputGates, outputAssns ]
     = icarus::trigger::transformIntoOpticalTriggerGate
-    (combinedGates, makeGatePtr, waveformMap);
+    (std::move(combinedGates), makeGatePtr, waveformMap);
 
   {
     mf::LogTrace log { fLogCategory };
@@ -518,13 +554,29 @@ void icarus::trigger::SlidingWindowTrigger::produceThreshold(
     } // for
   } // local scope
 
+  if (fProduceWaveformAssns) {
+    
+    // produce one gate-waveform association for each gate-metadata one;
+    // do it now while the gate/metadata association is still locally available
+    icarus::trigger::OpDetWaveformMetaMatcher waveformMetaMatcher{ event };
+    art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform> outputWaveAssns;
+    for (auto const [ gatePtr, metaPtr ]: outputAssns)
+      outputWaveAssns.addSingle(gatePtr, waveformMetaMatcher(metaPtr));
+    
+    event.put(
+      std::make_unique<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
+        (std::move(outputWaveAssns)),
+      dataTag.instance()
+      );
+  } // if fProduceWaveformAssns
+  
   event.put(
     std::make_unique<std::vector<OpticalTriggerGateData_t>>
       (std::move(outputGates)),
     dataTag.instance()
     );
   event.put(
-    std::make_unique<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>
+    std::make_unique<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
       (std::move(outputAssns)),
     dataTag.instance()
     );
@@ -562,33 +614,33 @@ auto icarus::trigger::SlidingWindowTrigger::makeEnabledWindowIndices(
 
 //------------------------------------------------------------------------------
 void icarus::trigger::SlidingWindowTrigger::UpdateWaveformMap(
-  icarus::trigger::OpDetWaveformDataProductMap_t& map,
-  art::Assns<TriggerGateData_t, raw::OpDetWaveform> const& assns
+  icarus::trigger::OpDetWaveformMetaDataProductMap_t& map,
+  art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta> const& assns
 ) {
   
-  for (art::Ptr<raw::OpDetWaveform> const& wave: util::get_elements<1U>(assns))
+  for (art::Ptr<sbn::OpDetWaveformMeta> const& wave: util::get_elements<1U>(assns))
     map.emplace(wave.get(), wave);
   
 } // icarus::trigger::SlidingWindowTrigger::UpdateWaveformMap()
 
 
 //------------------------------------------------------------------------------
-std::vector<icarus::trigger::MultiChannelOpticalTriggerGate>
-icarus::trigger::SlidingWindowTrigger::ReadTriggerGates(
+auto icarus::trigger::SlidingWindowTrigger::ReadTriggerGates(
   art::Event const& event,
   art::InputTag const& dataTag,
-  icarus::trigger::OpDetWaveformDataProductMap_t& waveformMap
-) const {
+  icarus::trigger::OpDetWaveformMetaDataProductMap_t& waveformMap
+) const -> std::vector<TrackedTriggerGate_t> {
   using icarus::trigger::OpticalTriggerGateData_t;
-
+  
   auto const& assns =
-    *(event.getValidHandle<art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag));
-
+    event.getProduct<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>
+    (dataTag);
+  
   UpdateWaveformMap(waveformMap, assns);
-
-  return icarus::trigger::FillTriggerGates<icarus::trigger::MultiChannelOpticalTriggerGate>
-    (*(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag)), assns);
-
+  
+  return icarus::trigger::FillTriggerGates
+    (event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag), assns);
+  
 } // icarus::trigger::SlidingWindowTrigger::ReadTriggerGates()
 
 //------------------------------------------------------------------------------
