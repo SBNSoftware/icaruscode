@@ -8,8 +8,10 @@
 
 
 // ICARUS libraries
-#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DataProductPointerMap.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/enumerate.h"
@@ -38,6 +40,9 @@ namespace icarus::trigger {
   using OpDetWaveformDataProductMap_t
     = util::DataProductPointerMap_t<raw::OpDetWaveform>;
 
+  /// Map `util::DataProductPointerMap_t` for `sbn::OpDetWaveformMeta` objects.
+  using OpDetWaveformMetaDataProductMap_t
+    = util::DataProductPointerMap_t<sbn::OpDetWaveformMeta>;
 
   // ---------------------------------------------------------------------------
   /**
@@ -361,6 +366,187 @@ namespace icarus::trigger {
 
 
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  
+  // ---------------------------------------------------------------------------
+  /**
+   * @brief Returns the trigger gates in serializable format.
+   * @tparam OpDetInfo type of the associated waveforms
+   * @param gates the data to be reformatted (*data will be stolen!*)
+   * @param makeGatePtr _art_ pointer maker for the gate data
+   * @param opDetInfoPtrs map of art pointers to optical waveform information
+   * @return a pair: gate data product and associations to `OpDetInfo`
+   *
+   * This function transfers the data from the original structured `gates` into
+   * a data collection suitable for serialization with _art_, including the
+   * association of each gate with all its contributing waveforms.
+   *
+   * The return value is a tuple of two elements:
+   * * `0`: collection of trigger gate data
+   *     (`icarus::trigger::OpticalTriggerGateData_t`), with data _stolen_
+   *     from `gates`;
+   * * `1`: association between trigger gate data and their optical waveform
+   *     information, as reported by `opDetInfoPtrs`.
+   *
+   * The trigger gates are processed in the same order as they are in `gates`,
+   * and the associations to the waveform information are set gate by gate,
+   * in the same order as they are reported by the tracking information of the
+   * input gate.
+   *
+   * After the function returns, `gates` will have been depleted of all the data
+   * and left in an unspecified state only good for destruction.
+   *
+   * The object `gates` is a sequence of
+   * `icarus::trigger::TrackedOpticalTriggerGate` objects, each of them
+   * containing a trigger gate object
+   * (`icarus::trigger::OpticalTriggerGateData_t`) and a list of tracked sources
+   * in the form of `OpDetInfo` objects.
+   *
+   *
+   * In the following example, we start with trigger gates already serialized
+   * in a _art_ event. The serialization splits a trigger gate object in two
+   * components: the gate levels, and the associated waveform information.
+   * In the first part of the example we recover the information from the event
+   * and we assemble it into the standard trigger gate objects (of type
+   * `icarus::trigger::OpticalTriggerGateData_t`).
+   * After some unspecified and optional processing, `gates` are disassembled
+   * to be saved into the event: this is achieved by a call to
+   * `transformIntoOpticalTriggerGate()` which produces the trigger gate data
+   * and their associations to the waveform information.
+   * In the last part, these components are both stored into the event.
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * using icarus::trigger::OpticalTriggerGateData_t; // for convenience
+   * 
+   * //
+   * // somehow get/build a collection of trigger gates;
+   * // here we use `FillTriggerGates()` to read existing data from the event
+   * //
+   * std::vector<icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>> gates
+   *   = icarus::trigger::FillTriggerGates<sbn::OpDetWaveformMeta>
+   *   (
+   *   event.getProduct<std::vector<OpticalTriggerGateData_t>>("orig"),
+   *   event.getProduct<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>("orig")
+   *   );
+   * 
+   * 
+   * // ...
+   * 
+   * //
+   * // optical waveform information to pointer map is required to create
+   * // associations between the trigger gates and their waveforms
+   * //
+   * auto const& opDetInfoPtrs = util::mapDataProductPointers
+   *   (event, event.getValidHandle<std::vector<raw::OpDetWaveformMeta>>("opdaq"));
+   * // transform the data; after this line, `gates` is not usable any more
+   * auto thresholdData = icarus::trigger::transformIntoOpticalTriggerGate
+   *   (std::move(gates), makeGatePtr, opDetInfoPtrs);
+   * 
+   * //
+   * // use the created vector and associations (e.g. put them into art event)
+   * //
+   * event.put(
+   *   std::make_unique<std::vector<OpticalTriggerGateData_t>>
+   *     (std::move(std::get<0U>(thresholdData)))
+   *   );
+   * event.put(
+   *   std::make_unique<art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformInfo>>
+   *     (std::move(std::get<1U>(thresholdData)))
+   *   );
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * In this example the most convenient waveform information is used,
+   * `sbn::OpDetWaveformMeta`; the same syntax would hold for using the more
+   * traditional, but encumbering, `raw::OpDetWaveform`.
+   */
+  template <typename OpDetInfo = sbn::OpDetWaveformMeta>
+  std::tuple<
+    std::vector<icarus::trigger::OpticalTriggerGateData_t>,
+    art::Assns<icarus::trigger::OpticalTriggerGateData_t, OpDetInfo>
+    >
+  transformIntoOpticalTriggerGate(
+    std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>&& gates,
+    art::PtrMaker<icarus::trigger::OpticalTriggerGateData_t> const& makeGatePtr,
+    util::DataProductPointerMap_t<OpDetInfo> const& opDetInfoPtrs
+    );
+  
+  
+  // ---------------------------------------------------------------------------
+  /**
+   * @brief Creates a gate object out of trigger gate data products.
+   * @tparam OpDetInfo type of the associated waveforms
+   * @param gates collection of data from all the gates
+   * @param gateToWaveformInfo association between each gate and its waveforms
+   * @return a STL vector of `TrackedOpticalTriggerGate` with copy of data from
+   *         `gates`
+   *
+   * Objects like `icarus::trigger::TrackedOpticalTriggerGate` include the gate
+   * level information plus the connections to the source objects (waveforms).
+   * This structure is complicate enoug that they are not saved directly into an
+   * _art_ event. Rather, they are diced into pieces and the pieces are stored.
+   * 
+   * This function stitches the pieces and returns back an object like
+   * `icarus::trigger::TrackedOpticalTriggerGate`.
+   *
+   * Example:
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+   * std::vector<icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>>
+   * readTriggerGates(art::Event const& event, art::InputTag const& dataTag)
+   * {
+   *
+   *   auto const& gates
+   *     = event.getProduct<std::vector<TriggerGateData_t>>(dataTag);
+   *   auto const& gateToWaveforms
+   *     = event.getProduct<art::Assns<TriggerGateData_t, sbn::OpDetWaveformMeta>>
+   *       (dataTag);
+   *   return icarus::trigger::FillTriggerGates<sbn::OpDetWaveformMeta>
+   *     (gates, gateToWaveforms);
+   *
+   * } // readTriggerGates()
+   * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   * will read the information from `dateTag` data products in an _art_ `event`
+   * and return a collection of `icarus::trigger::TrackedOpticalTriggerGate`
+   * objects, each one with a _copy_ of the data of the original data product
+   * and a pointer to each of the associated waveform metadata.
+   *
+   *
+   * Return value
+   * -------------
+   *
+   * The returned collection contains one element for each
+   * `OpticalTriggerGateData_t` object in `gates`, in the same order.
+   * Each of these elements is of type
+   * `icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>`, contains a copy
+   * of the data of the corresponding gate, and a list of optical waveform
+   * information pointers (`OpDetInfo` objects) it is associated to.
+   *
+   *
+   * Requirements
+   * -------------
+   *
+   * The requirements bind the gates to their association to waveforms:
+   * * each gate must be associated to at least one waveform
+   * * the associations must be grouped so that all the association pairs
+   *   pertaining a gate are contiguous
+   *     * within each of these groups, which is made of at least one waveform,
+   *       the waveforms must be ordered by increasing timestamp
+   *     * the groups must be in the same order as their associated gates
+   *   This constitutes the requirement of
+   *   @ref LArSoftProxyDefinitionOneToManySeqAssn "one-to-many sequential association"
+   *   with the addition that each element in `gates` must have at least one
+   *   associated waveform.
+   *
+   */
+  template <typename OpDetInfo>
+  std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+  FillTriggerGates(
+    std::vector<icarus::trigger::OpticalTriggerGateData_t> const& gates,
+    art::Assns<icarus::trigger::OpticalTriggerGateData_t, OpDetInfo> const& gateToWaveformInfo
+    );
+
+  
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
 } // namespace icarus::trigger
 
@@ -448,6 +634,65 @@ icarus::trigger::transformIntoOpticalTriggerGate(
 
 
 // -----------------------------------------------------------------------------
+template <typename OpDetInfo /* = sbn::OpDetWaveformMeta */>
+std::tuple<
+  std::vector<icarus::trigger::OpticalTriggerGateData_t>,
+  art::Assns<icarus::trigger::OpticalTriggerGateData_t, OpDetInfo>
+  >
+icarus::trigger::transformIntoOpticalTriggerGate(
+  std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>&& gates,
+  art::PtrMaker<icarus::trigger::OpticalTriggerGateData_t> const& makeGatePtr,
+  util::DataProductPointerMap_t<OpDetInfo> const& opDetInfoPtrs
+) {
+  using TriggerGateData_t = icarus::trigger::OpticalTriggerGateData_t;
+
+  // note that we rely on the fact that `gates` still contains trigger gates,
+  // and those trigger gates still know about the associated waveforms;
+  // attempting to access their levels, though, would be an error
+  // (if really needed, we can still find them in `gateData`)
+  art::Assns<TriggerGateData_t, OpDetInfo> gateToWaveforms;
+
+  for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
+
+    if (!gate.tracking().hasTracked()) continue;
+
+    //
+    // produce the associations
+    //
+
+    // pointer to the gate data we have just added:
+    art::Ptr<TriggerGateData_t> const& gatePtr = makeGatePtr(iGate);
+    for (OpDetInfo const* waveform: gate.tracking().getTracked()) {
+      
+      gateToWaveforms.addSingle(gatePtr, opDetInfoPtrs.at(waveform));
+
+    } // for all waveform info
+
+  } // for all gates
+
+  //
+  // create objects for the data products
+  //
+#if 0
+  // TODO when the old version of transformIntoOpticalTriggerGate(Gates)
+  // is removed, a new one can be set which works here; maybe.
+  std::vector<TriggerGateData_t> gateData
+    = transformIntoOpticalTriggerGate(icarus::trigger::gatesIn(gates));
+#else
+    
+  std::vector<TriggerGateData_t> gateData;
+
+  for (TriggerGateData_t& gate: icarus::trigger::gatesIn(gates))
+    gateData.push_back(std::move(gate));
+  
+#endif // 0
+  
+  return { std::move(gateData), std::move(gateToWaveforms) };
+
+} // icarus::trigger::transformIntoOpticalTriggerGate()
+
+
+// -----------------------------------------------------------------------------
 template <typename GateObject, typename TriggerGateData>
 std::vector<GateObject> icarus::trigger::FillTriggerGates(
   std::vector<TriggerGateData> const& gates,
@@ -514,6 +759,53 @@ std::vector<GateObject> icarus::trigger::FillTriggerGates(
       gateData.add(*(iEndWaveform++)->second);
 
     allGates.push_back(std::move(gateData));
+    
+  } // for gates
+
+  return allGates;
+} // icarus::trigger::FillTriggerGates()
+
+
+// -----------------------------------------------------------------------------
+template <typename OpDetInfo>
+std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+icarus::trigger::FillTriggerGates(
+  std::vector<icarus::trigger::OpticalTriggerGateData_t> const& gates,
+  art::Assns<icarus::trigger::OpticalTriggerGateData_t, OpDetInfo> const& gateToWaveformInfo
+) {
+
+  std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+    allGates; // the output
+
+  auto iGateToWaveform = gateToWaveformInfo.begin();
+  auto const gwend = gateToWaveformInfo.end();
+
+  for (auto const& [ iGate, gate ]: util::enumerate(gates)) {
+
+    icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo> trackedGate { gate };
+    
+    //
+    // find the relevant waveforms for this gate;
+    // match by index of the element in the data product collection
+    //
+    while (iGateToWaveform != gwend) {
+      if (iGateToWaveform->first.key() == iGate) break;
+      ++iGateToWaveform;
+    } // while
+
+    while (iGateToWaveform != gwend) {
+      if (iGateToWaveform->first.key() != iGate) break;
+      
+      OpDetInfo const& wfInfo = *(iGateToWaveform->second);
+      
+      // add the associated information to the gate:
+      trackedGate.gate().addChannel(wfInfo.ChannelNumber());
+      trackedGate.tracking().add(&wfInfo);
+      
+      ++iGateToWaveform;
+    } // while
+    
+    allGates.push_back(std::move(trackedGate));
     
   } // for gates
 

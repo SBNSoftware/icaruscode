@@ -12,20 +12,16 @@
 
 
 // ICARUS libraries
+#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
-// LArSoft libraries
-// #include "larcorealg/CoreUtils/enumerate.h"
-
 // C/C++ standard libraries
-// #include <vector>
-// #include <tuple>
-// #include <utility> // std::move()
+#include <iterator> // std::iterator_traits
 
 
 namespace icarus::trigger {
 
-  /// --- BEGIN -- Gate operations ---------------------------------------------
+  // --- BEGIN -- Gate operations ----------------------------------------------
   /**
    * @name Gate operations
    *
@@ -126,7 +122,7 @@ namespace icarus::trigger {
   auto sumGates(AGate A, BGate const& B, OTrigGates const&... others);
   
   
-  /// --- END -- Gate operations: sum ------------------------------------------
+  // --- END -- Gate operations: sum -------------------------------------------
   
   
   // --- BEGIN -- Gate operations: max  ----------------------------------------
@@ -183,11 +179,159 @@ namespace icarus::trigger {
   auto maxGates(AGate A, BGate const& B, OTrigGates const&... others);
   
   
-  /// --- END -- Gate operations: sum ------------------------------------------
+  // --- END -- Gate operations: max -------------------------------------------
+  
+  
+  // --- BEGIN -- Gate operations: min  ----------------------------------------
+  
+  /**
+   * @brief Computes the gate with the minimum opening of a sequence of gates.
+   * @tparam BIter type of iterator to the gates to add
+   * @tparam EIter type of iterator past-the-end of the sequence of gates to add
+   * @param begin iterator to the first gate to add
+   * @param end iterator past-the-last gate to add
+   * @return a new gate minimum of all the specified ones
+   * @see `minGates()`
+   * 
+   * For each tick, the minimum opening among all the gates in the sequence is
+   * picked.
+   * The returned gate has the same type as the first gate.
+   */
+  template <typename BIter, typename EIter>
+  auto minGatesSequence(BIter const begin, EIter const end);
+
+
+  /**
+   * @brief Computes the gate with the minimum opening of gates from collection.
+   * @tparam GateColl type of collection of gates
+   * @param gates the collection of gates to sum
+   * @return a new gate minimum of all the `gates`
+   * @see `minGatesSequence()`
+   * 
+   * For each tick, the minimum opening among all the gates in the collection is
+   * picked.
+   * The returned gate has the same type as the gates in the collection.
+   */
+  template <typename GateColl>
+  auto minGates(GateColl const& gates);
+
+
+  /**
+   * @brief Computes the gate with the minimum opening of the specified gates.
+   * @tparam AGate type of the first gate; it determines the return type
+   * @tparam BGate type of the second gate
+   * @tparam OGates type of other gates
+   * @param A first gate
+   * @param B second gate
+   * @param others other gates
+   * @return a new gate minimum of all the argument gates, of same type as `A`
+   * @see `minGatesSequence()`
+   * 
+   * For each tick, the minimum opening among all the specified gates is picked.
+   * The returned gate has the same type as the first gate.
+   * 
+   * @note There must be _at least two_ gates in the arguments.
+   */
+  template <typename AGate, typename BGate, typename... OTrigGates>
+  auto minGates(AGate A, BGate const& B, OTrigGates const&... others);
+  
+  
+  // --- END -- Gate operations: min -------------------------------------------
+
+
+  // --- BEGIN -- Gate operations: generic -------------------------------------
+  
+  /**
+   * @brief Applies an operation to two gates.
+   * @tparam Op type of binary operation `AGate (Op)(AGate, BGate)`
+   * @tparam AGate type of the first gate; it determines the return type
+   * @tparam BGate type of the second gate
+   * @tparam OGates type of other gates
+   * @param op the binary operation to apply (copied)
+   * @param A first gate
+   * @param B second gate
+   * @param others other gates
+   * @return a new gate of same type as `A`, result of the operation.
+   * @see `OpGatesSequence()`, `OpGateColl()`
+   * 
+   * For each tick, the operation `op` is performed between `A`, `B` and the
+   * `others`, and the result is stored into the return value.
+   * The order of operation is the same as in the arguments:
+   * `((A op B) op others...)`.
+   * The returned gate has the same type as the first gate (`A`).
+   * 
+   * Standard operations are provided in namespace `GateOps`.
+   * 
+   * A specific action is performed if the gates are "tracking" (i.e. instances
+   * of `TrackedTriggerGate`), in which case tracking will also be propagated
+   * so that the result includes all the tracked objects of all the operands.
+   * 
+   * @note There must be _at least two_ gates in the arguments.
+   */
+  template <typename Op, typename AGate, typename BGate, typename... OGates>
+  AGate OpGates(Op op, AGate A, BGate const& B, OGates const&... others);
+  
+  /**
+   * @brief Computes the result of an operation on all gates from collection.
+   * @tparam Op type of binary operation `AGate (Op)(AGate, BGate)`
+   * @tparam GateColl type of collection of gates
+   * @param op the binary operation to apply (copied)
+   * @param gates the collection of gates to sum
+   * @return a new gate result of `op` on all the `gates`
+   * @see `OpGates()`, `OpGatesSequence()`
+   * 
+   * This is the sequential application of `op` to all `gates` via `OpGates()`,
+   * according to their order in the collection.
+   * The returned gate has the same type as the gates in the collection.
+   */
+  template <typename Op, typename GateColl>
+  auto OpGateColl(Op op, GateColl const& gates);
+  
+  /**
+   * @brief Computes the result of an operation on all gates in the sequence.
+   * @tparam Op type of binary operation `AGate (Op)(AGate, BGate)`
+   * @tparam BIter type of iterator to the gates to add
+   * @tparam EIter type of iterator past-the-end of the sequence of gates to add
+   * @param op the binary operation to apply (copied)
+   * @param begin iterator to the first gate to add
+   * @param end iterator past-the-last gate to add
+   * @return a new gate result of `op` on all the `gates`
+   * @see `OpGates()`, `OpGateColl()`
+   * 
+   * This is the sequential application of `op` to all gates from `begin` to
+   * `end` via `OpGates()`, following their order in the collection.
+   * The returned gate has the same type as the one pointed by the begin
+   * iterator (`BIter::value_type` for standard iterators).
+   */
+  template <typename Op, typename BIter, typename EIter>
+  auto OpGatesSequence(Op op, BIter const begin, EIter const end);
+  
+  // --- END ---- Gate operations: generic -------------------------------------
+  
+  
+  /// Gate operations expressed as generic functions.
+  namespace GateOps {
+    
+    /**
+     * @name Binary gate operations.
+     * 
+     * The return gate is the same type as the first operand.
+     */
+    /// @{ 
+    
+    inline constexpr auto Min = [](auto A, auto const& B){ A.Min(B); return A; };
+    
+    inline constexpr auto Max = [](auto A, auto const& B){ A.Max(B); return A; };
+    
+    inline constexpr auto Sum = [](auto A, auto const& B){ A.Sum(B); return A; };
+    
+    /// @}
+    
+  } // namespace GateOps
   
   
   /// @}
-  /// --- END -- Gate operations -----------------------------------------------
+  // --- END -- Gate operations ------------------------------------------------
   
   
 } // namespace icarus::trigger
@@ -208,6 +352,7 @@ GateObj icarus::trigger::discriminate(
 {
   // we copy the gate hoping that the copy constructor takes care of everything
   // else that we don't want to touch...
+  // that includes tracking information, if any, which is preserved untouched
   auto discrGate { gate };
   
   auto const closeToOpen
@@ -251,21 +396,67 @@ GateObj icarus::trigger::discriminate(
 
 
 // -----------------------------------------------------------------------------
-// ---  Sum
+// ---  Generic binary operations A -> A op B
 // -----------------------------------------------------------------------------
-template <typename BIter, typename EIter>
-auto icarus::trigger::sumGatesSequence(BIter const begin, EIter const end) {
+template <typename Op, typename AGate, typename BGate, typename... OGates>
+AGate icarus::trigger::OpGates
+  (Op op, AGate A, BGate const& B, OGates const&... others)
+{
   
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (begin == end) return decltype(*begin){};
+  if constexpr(sizeof...(others) == 0U) { // two operands: end of recursion
+    
+    if constexpr(isTrackedTriggerGate_v<AGate>) {
+      A.gate() = op(std::move(A.gate()), B.gate());
+      A.tracking().add(B.tracking());
+      return A;
+    } // if tracking
+    else return op(std::move(A), B);
+  }
+  else {
+    return OpGates(op, OpGates(op, std::move(A), B), others...);
+  }
   
-  auto iGate = begin;
-  auto resGate = *iGate;
-  while (++iGate != end) resGate.Sum(*iGate);
+} // icarus::trigger::OpGates()
+
+
+// -----------------------------------------------------------------------------
+template <typename Op, typename GateColl>
+auto icarus::trigger::OpGateColl(Op op, GateColl const& gates)
+  { return OpGatesSequence(std::move(op), begin(gates), end(gates)); }
+
+
+// -----------------------------------------------------------------------------
+template <typename Op, typename BIter, typename EIter>
+auto icarus::trigger::OpGatesSequence(Op op, BIter const begin, EIter const end)
+{
+  
+  using Gate_t = typename std::iterator_traits<BIter>::value_type;
+  
+  // if `gates` is empty return a default-constructed gate
+  if (begin == end) return Gate_t{};
+  
+  BIter iGate = begin;
+  Gate_t resGate = *iGate;
+  while (++iGate != end)
+    resGate = OpGates(std::move(op), std::move(resGate), *iGate);
   
   return resGate;
   
-} // icarus::trigger::sumGatesSequence()
+} // icarus::trigger::OpGatesSequence()
+
+
+// -----------------------------------------------------------------------------
+// ---  Sum
+// -----------------------------------------------------------------------------
+template <typename AGate, typename BGate, typename... OGates>
+auto icarus::trigger::sumGates(AGate A, BGate const& B, OGates const&... others)
+  { return OpGates(GateOps::Sum, A, B, others...); }
+
+
+// -----------------------------------------------------------------------------
+template <typename BIter, typename EIter>
+auto icarus::trigger::sumGatesSequence(BIter const begin, EIter const end)
+  { return OpGatesSequence(GateOps::Sum, begin, end); }
 
 
 // -----------------------------------------------------------------------------
@@ -275,35 +466,17 @@ auto icarus::trigger::sumGates(GateColl const& gates)
 
 
 // -----------------------------------------------------------------------------
-template <typename AGate, typename BGate, typename... OGates>
-auto icarus::trigger::sumGates(AGate A, BGate const& B, OGates const&... others)
-{
-  if constexpr(sizeof...(others) == 0U) { // only two operands: end of recursion
-    A.Sum(B); // A is already a copy...
-    return A;
-  }
-  else {
-    return sumGates(sumGates(A, B), others...);
-  }
-} // icarus::trigger::sumGates()
-
-
-// -----------------------------------------------------------------------------
 // ---  Max
 // -----------------------------------------------------------------------------
+template <typename AGate, typename BGate, typename... OGates>
+auto icarus::trigger::maxGates(AGate A, BGate const& B, OGates const&... others)
+  { return OpGates(GateOps::Max, A, B, others...); }
+
+
+// -----------------------------------------------------------------------------
 template <typename BIter, typename EIter>
-auto icarus::trigger::maxGatesSequence(BIter const begin, EIter const end) {
-  
-  // if `gates` is empty return a default-constructed gate of the contained type
-  if (begin == end) return decltype(*begin){};
-  
-  auto iGate = begin;
-  auto resGate = *iGate;
-  while (++iGate != end) resGate.Max(*iGate);
-  
-  return resGate;
-  
-} // icarus::trigger::maxGatesSequence()
+auto icarus::trigger::maxGatesSequence(BIter const begin, EIter const end)
+  { return OpGatesSequence(GateOps::Max, begin, end); }
 
 
 // -----------------------------------------------------------------------------
@@ -313,17 +486,23 @@ auto icarus::trigger::maxGates(GateColl const& gates)
 
 
 // -----------------------------------------------------------------------------
+// ---  Min
+// -----------------------------------------------------------------------------
 template <typename AGate, typename BGate, typename... OGates>
-auto icarus::trigger::maxGates(AGate A, BGate const& B, OGates const&... others)
-{
-  if constexpr(sizeof...(others) == 0U) { // only two operands: end of recursion
-    A.Max(B); // A is already a copy...
-    return A;
-  }
-  else {
-    return maxGates(maxGates(A, B), others...);
-  }
-} // icarus::trigger::maxGates()
+auto icarus::trigger::minGates(AGate A, BGate const& B, OGates const&... others)
+  { return OpGates(GateOps::Min, A, B, others...); }
+
+
+// -----------------------------------------------------------------------------
+template <typename BIter, typename EIter>
+auto icarus::trigger::minGatesSequence(BIter const begin, EIter const end)
+  { return OpGatesSequence(GateOps::Min, begin, end); }
+
+
+// -----------------------------------------------------------------------------
+template <typename GateColl>
+auto icarus::trigger::minGates(GateColl const& gates)
+  { return minGatesSequence(begin(gates), end(gates)); }
 
 
 // -----------------------------------------------------------------------------
