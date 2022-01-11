@@ -15,6 +15,7 @@
 #include "larcorealg/Geometry/GeometryCore.h"
 #include "larcorealg/Geometry/AuxDetGeometryCore.h"
 #include "larcoreobj/SimpleTypesAndConstants/geo_types.h"
+#include "icaruscode/Decode/DataProducts/ExtraTriggerInfo.h" 
 
 // Framework includes
 #include "art/Framework/Core/EDAnalyzer.h"
@@ -116,7 +117,11 @@ namespace crt {
         Name("CRTDAQLabel"),
         Comment("tag of the input data product with calibrated CRT data")
         };
-   
+      
+      fhicl::Atom<art::InputTag> TriggerLabel {
+        Name("TriggerLabel"),
+	Comment("Label for the Trigger fragment label")
+	};
 
     }; // Config
     
@@ -139,6 +144,7 @@ namespace crt {
     void FillFebMap();
 
     // The parameters we'll read from the .fcl file.
+    art::InputTag fTriggerLabel;
     art::InputTag fCRTHitProducerLabel;        ///< The name of the producer that created hits
     art::InputTag fCRTDAQProducerLabel;
 
@@ -160,6 +166,14 @@ namespace crt {
     /// @{
     static const int LAR_PROP_DELAY = 1.0/(30.0/1.38); //[ns/cm]
 
+    //add trigger data product vars 
+    unsigned int m_gate_type;
+    std::string m_gate_name;
+    uint64_t m_trigger_timestamp;
+    uint64_t m_gate_start_timestamp;
+    uint64_t m_trigger_gate_diff;
+    uint64_t m_gate_crt_diff;
+
     //CRT data product vars
     //static const int kDetMax = 64;
     int      fDetEvent;
@@ -168,8 +182,8 @@ namespace crt {
     int      fFEBReg; ///< CRT region for this front-end board
     int      fMac5; ///< Mac5 address for this front-end board
     int      fDetSubSys;
-    double   fT0;///< signal time w.r.t. global event time
-    double   fT1;///< signal time w.r.t. PPS
+    uint64_t   fT0;///< signal time w.r.t. global event time
+    uint64_t   fT1;///< signal time w.r.t. PPS
     int      fADC[64];///< signal amplitude
     vector<vector<int>> fTrackID;///< track ID(s) of particle that produced the signal
     vector<vector<int>> fDetPDG; /// signal inducing particle(s)' PDG code
@@ -182,8 +196,8 @@ namespace crt {
     float    fXErrHit; ///< stat error of CRT hit reco X (cm)
     float    fYErrHit; ///< stat error of CRT hit reco Y (cm)
     float    fZErrHit; ///< stat error of CRT hit reco Z (cm)
-    int32_t    fT0Hit; ///< hit time w.r.t. global event time
-    int32_t    fT1Hit; ///< hit time w.r.t. PPS
+    uint64_t    fT0Hit; ///< hit time w.r.t. global event time
+    uint64_t    fT1Hit; ///< hit time w.r.t. PPS
     //double    fT0CorrHit;
     //double    fT1CorrHit;
     //string ftagger;
@@ -236,6 +250,7 @@ namespace crt {
  
   CRTDataAnalysis::CRTDataAnalysis(Parameters const& config)
     : EDAnalyzer(config)
+    , fTriggerLabel( config().TriggerLabel() )
     , fCRTHitProducerLabel(config().CRTHitLabel())
     , fCRTDAQProducerLabel(config().CRTDAQLabel())
     , fCrtutils(new CRTCommonUtils())
@@ -310,13 +325,19 @@ namespace crt {
     // Define the branches of our DetSim n-tuple 
     fDAQNtuple->Branch("event",                 &fDetEvent,          "event/I");
     fDAQNtuple->Branch("nChan",                 &fNChan,             "nChan/I");
-    fDAQNtuple->Branch("t0",                    &fT0,                "t0/D");
-    fDAQNtuple->Branch("t1",                    &fT1,                "t1/D");
+    fDAQNtuple->Branch("t0",                    &fT0,                "t0/l");
+    fDAQNtuple->Branch("t1",                    &fT1,                "t1/l");
     fDAQNtuple->Branch("adc",                   fADC);
     fDAQNtuple->Branch("entry",                 &fEntry,             "entry/I");
     fDAQNtuple->Branch("mac5",                  &fMac5,              "mac5/I");
     fDAQNtuple->Branch("region",                &fFEBReg,            "region/I");
     fDAQNtuple->Branch("subSys",                &fDetSubSys,         "subSys/I");
+    fDAQNtuple->Branch("gate_type", &m_gate_type, "gate_type/b");
+    fDAQNtuple->Branch("gate_name", &m_gate_name);
+    fDAQNtuple->Branch("trigger_timestamp", &m_trigger_timestamp, "trigger_timestamp/l");
+    fDAQNtuple->Branch("gate_start_timestamp", &m_gate_start_timestamp, "gate_start_timestamp/l");
+    fDAQNtuple->Branch("trigger_gate_diff", &m_trigger_gate_diff, "trigger_gate_diff/l");
+    fDAQNtuple->Branch("gate_crt_diff",&m_gate_crt_diff, "gate_crt_diff/l");
 
     // Define the branches of our SimHit n-tuple
     fHitNtuple->Branch("event",       &fHitEvent,    "event/I");
@@ -327,8 +348,8 @@ namespace crt {
     fHitNtuple->Branch("xErr",        &fXErrHit,     "xErr/F");
     fHitNtuple->Branch("yErr",        &fYErrHit,     "yErr/F");
     fHitNtuple->Branch("zErr",        &fZErrHit,     "zErr/F");
-    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/I");
-    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/I");
+    fHitNtuple->Branch("t0",          &fT0Hit,       "t0/l");
+    fHitNtuple->Branch("t1",          &fT1Hit,       "t1/l");
     fHitNtuple->Branch("region",      &fHitReg,      "region/I");  
     //    fHitNtuple->Branch("tagger",      &ftagger,      "tagger/C");  
     fHitNtuple->Branch("subSys",      &fHitSubSys,   "subSys/I");
@@ -353,7 +374,28 @@ namespace crt {
     fSubRun = event.subRun();
 
     FillFebMap();//febMap);
+    
+    //add trigger info 
+    if( !fTriggerLabel.empty() ) { 
 
+      art::Handle<sbn::ExtraTriggerInfo> trigger_handle;
+      event.getByLabel( fTriggerLabel, trigger_handle );
+      if( trigger_handle.isValid() ) {
+	sbn::triggerSource bit = trigger_handle->sourceType;
+	m_gate_type = (unsigned int)bit; 
+	m_gate_name = bitName(bit);
+	m_trigger_timestamp = trigger_handle->triggerTimestamp;
+	m_gate_start_timestamp =  trigger_handle->beamGateTimestamp;
+	m_trigger_gate_diff = trigger_handle->triggerTimestamp - trigger_handle->beamGateTimestamp;
+	
+      }
+      else{
+	mf::LogError("ICARUSFlashAssAna") << "No raw::Trigger associated to label: " << fTriggerLabel.label() << "\n" ; 
+      }
+    }
+    else {
+      std::cout  << "Trigger Data product " << fTriggerLabel.label() << " not found!\n" ; 
+    }
     art::Handle<vector<icarus::crt::CRTData>> crtDAQHandle;
     bool isCRTDAQ = event.getByLabel(fCRTDAQProducerLabel, crtDAQHandle);
 
@@ -368,7 +410,8 @@ namespace crt {
 	fDetSubSys = fCrtutils->MacToTypeCode(fMac5);
         fT0 = febdat.fTs0;
         fT1 = febdat.fTs1;
-
+	m_gate_crt_diff = m_gate_start_timestamp - febdat.fTs0;
+	std::cout << "gate start timestamp - crt DAQ t0: " << m_gate_crt_diff << "\n";
         int maxchan =0;
         if(fDetSubSys!=2) maxchan=32;
         else maxchan = 64;
