@@ -22,6 +22,8 @@
 #include "lardataobj/AnalysisBase/T0.h"
 #include "lardataobj/RecoBase/PFParticle.h"
 #include "lardataobj/RecoBase/Track.h"
+#include "lardataobj/RecoBase/OpFlash.h"
+#include "lardataobj/RecoBase/OpHit.h"
 // #include "lardataobj/RecoBase/PFParticleMetadata.h"
 #include "lardataobj/Simulation/BeamGateInfo.h"
 #include "lardataobj/RawData/TriggerData.h" // raw::Trigger
@@ -175,6 +177,12 @@ public:
       // mandatory
       };
     
+    fhicl::Atom<art::InputTag> FlashProducer {
+      Name("FlashProducer"),
+      Comment("tag of flash information")
+      //mandatory
+      };
+
     fhicl::Sequence<TriggerSpecConfigTable> EmulatedTriggers {
       Name("EmulatedTriggers"),
       Comment("the emulated triggers to include in the tree")
@@ -207,6 +215,7 @@ private:
   art::InputTag const fTrackProducer;
   art::InputTag const fBeamGateProducer;
   art::InputTag const fTriggerProducer;
+  art::InputTag const fFlashProducer;
   std::string const fLogCategory;
   
   // --- END ---- Configuration parameters -------------------------------------
@@ -221,6 +230,7 @@ private:
   sbn::selTrackInfo fTrackInfo; //change to one entry per track instead of per event 
   sbn::selBeamInfo fBeamInfo;
   sbn::selTriggerInfo fTriggerInfo;
+  sbn::selLightInfo fFlashInfo;
   
   // --- END ---- Tree buffers -------------------------------------------------
   
@@ -268,6 +278,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fTrackProducer    { p().TrackProducer() }
   , fBeamGateProducer { p().BeamGateProducer() }
   , fTriggerProducer  { p().TriggerProducer() }
+  , fFlashProducer    { p().FlashProducer() }
   , fLogCategory      { p().LogCategory() }
   // algorithms
   , fStoreTree {
@@ -288,6 +299,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   consumes<std::vector<sim::BeamGateInfo>>(fBeamGateProducer);
   consumes<art::Assns<recob::PFParticle, recob::Track>>(fTrackProducer);
   consumes<art::Assns<recob::PFParticle, anab::T0>>(fT0Producer);
+  consumes<recob::OpFlash>(fFlashProducer);
 
   //
   // tree population
@@ -298,6 +310,7 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   fStoreTree->Branch("beamInfo", &fBeamInfo);
   fStoreTree->Branch("triggerInfo", &fTriggerInfo);
   fStoreTree->Branch("selTracks", &fTrackInfo);
+  fStoreTree->Branch("selFlashes", &fFlashInfo);
   
 } // sbn::TimeTrackTreeStorage::TimeTrackTreeStorage()
 
@@ -337,8 +350,9 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   fTriggerInfo.gateID = triggerinfo.gateID;
   
   //mf::LogTrace(fLogCategory) << "HERE!";
-  art::FindOneP<recob::Track> particleTracks (pfparticles,e,fTrackProducer);
-  art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);
+  art::FindOneP<recob::Track> particleTracks(pfparticles,e,fTrackProducer);
+  art::FindOneP<anab::T0> t0Tracks(pfparticles,e,fT0Producer);  
+  std::vector<recob::OpFlash> const &particleFlashes = e.getProduct<std::vector<recob::OpFlash>>(fFlashProducer);
   //art::FindOneP<recob::SpacePoint> particleSPs(pfparticles, e, fT0selProducer);
   //mf::LogTrace(fLogCategory) << "PFParticles size: " << pfparticles.size() << " art::FindOneP Tracks Size: " << particleTracks.size();
   
@@ -352,13 +366,31 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
   {
     //art::Ptr<recob::PFParticle> particlePtr = pfparticles[iPart];
     //mf::LogTrace(fLogCategory) << particlePtr.key();
+    fFlashInfo = {};
     art::Ptr<recob::Track> const trackPtr = particleTracks.at(iPart);
     if(trackPtr.isNull()) continue;
     
     art::Ptr<anab::T0> const t0Ptr = t0Tracks.at(iPart);
     float const track_t0 = t0Ptr->Time();
-    //mf::LogTrace(fLogCategory) << "PFP Pointer: " << particlePtr;
-    
+    if(!particleFlashes.empty())
+    {
+      float min_flash_t0_diff = 999999.0; 
+      for(unsigned int iFlash = 0; iFlash < particleFlashes.size(); ++iFlash)
+      {
+	recob::OpFlash const flashPtr = particleFlashes.at(iFlash);
+	float const flash_pe = flashPtr.TotalPE();
+	float const flash_time = flashPtr.Time();
+	float flash_t0_diff = flash_time - track_t0/1e3;
+	if(std::abs(flash_t0_diff) < min_flash_t0_diff)
+	{ 
+	  fFlashInfo.flash_id = iFlash;
+	  fFlashInfo.sum_pe = flash_pe;
+	  fFlashInfo.flash_time = flash_time;
+	  fFlashInfo.diff_flash_t0 = flash_t0_diff;
+	  min_flash_t0_diff = std::abs(flash_t0_diff);
+	}
+      }
+    }
     sbn::selTrackInfo trackInfo;
     trackInfo.trackID = trackPtr->ID();
     trackInfo.t0 = track_t0/1e3; //is this in nanoseconds? Will convert to seconds so I can understand better

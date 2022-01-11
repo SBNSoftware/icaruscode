@@ -43,6 +43,14 @@ namespace sbn {
     double time = NoTime; ///< Time of the trigger in electronics time scale.
     
   };
+
+  struct selLightInfo {
+    static constexpr float NoPosition = -999999.0;
+    int flash_id = -1;
+    float sum_pe = NoPosition;
+    float flash_time = NoPosition;
+    float diff_flash_t0 = NoPosition;
+  };
   
 } // namespace sbn
 

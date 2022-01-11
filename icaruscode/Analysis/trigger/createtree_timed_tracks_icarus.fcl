@@ -104,6 +104,7 @@ physics: {
       T0Producer: "pandoraGausCryoW"
       T0selProducer: "t0selectorW"
       TrackProducer: "pandoraTrackGausCryoW"
+      FlashProducer: "opflashCryoW"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1W" },
         { Name:       "S3"    TriggerTag:  "simTiledORS3W" },
@@ -121,6 +122,7 @@ physics: {
       T0Producer: "pandoraGausCryoE"
       T0selProducer: "t0selectorE"
       TrackProducer: "pandoraTrackGausCryoE"
+      FlashProducer: "opflashCryoE"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1E" },
         { Name:       "S3"    TriggerTag:  "simTiledORS3E" },
