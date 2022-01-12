@@ -119,7 +119,7 @@ uint64_t crt::DecoderICARUSCRT::CalculateTimestamp(icarus::crt::BernCRTTranslato
 void crt::DecoderICARUSCRT::produce(art::Event& evt)
 {
 
-  // Implementation of required member function here.'
+  // Implementation of required member function here.
   //  std::unique_ptr< std::vector<icarus::crt::CRTData> > crtdata( new std::vector<icarus::crt::CRTData>);
   //auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
   
@@ -150,9 +150,8 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
   };
 
   // vector: Mac5 -> its CRT data
-  std::vector<icarus::crt::CRTData> allCRTdata;
-  
-  std::cout << "Hit_vector.size(): " << hit_vector.size() << "\n";
+  std::vector<icarus::crt::CRTData> allCRTdata ( 305 + 1); // TODO size this correctly!
+
   for (auto & hit : hit_vector){
 
     std::array<Recipe_t, 3U> allRecipes;
@@ -395,11 +394,10 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
     for (Recipe_t const& recipe: allRecipes) {
       if (recipe.firstSourceChannel == recipe.lastSourceChannel) continue;
 
-      icarus::crt::CRTData data;
+      icarus::crt::CRTData& data = allCRTdata.at(recipe.destMac5);
       data.fMac5  = recipe.destMac5;
       data.fTs0   = CalculateTimestamp(hit);
       data.fTs1   = hit.ts1;
-      
       //data.coinc    = hit.coinc;
 
       unsigned destCh = recipe.firstDestChannel;
@@ -409,25 +407,16 @@ void crt::DecoderICARUSCRT::produce(art::Event& evt)
         destCh += recipe.direction; // increase or decrease the source
 
       }
-      allCRTdata.push_back(data);
+
     } // for all recipes
 
   } // for all input data
-  std::cout << "allCRTdata.size(): " << allCRTdata.size() << "\n";
+
   // move the data which is actually present in the final data product
   auto crtdata = std::make_unique<std::vector<icarus::crt::CRTData>>();
   for (icarus::crt::CRTData& crtDataElem: allCRTdata) {
     if (crtDataElem.fMac5 == 0) continue; // not a valid Mac5, data is not present
     crtdata->push_back(std::move(crtDataElem));
-    std::cout << "fMac5:  " << std::dec <<(int)crtDataElem.fMac5 << "\n";
-    std::cout << "fEntry: " << crtDataElem.fEntry << "\n";
-    std::cout << "fTs0:   " << crtDataElem.fTs0 << "\n";
-    std::cout << "fTs1:   " << crtDataElem.fTs1 << "\n";
-    std::cout << "\t[#ch]: ADC  ";
-    for(size_t i_c=0; i_c<32; ++i_c){
-      std::cout << "\t  ["<<std::setw(2)<<i_c<<"]: " <<std::setw(4)<< crtDataElem.fAdc[i_c];
-    }
-    std::cout << "\n------\n";
   }
 
   evt.put(std::move(crtdata));
