@@ -15,8 +15,9 @@
 #include "icaruscode/PMT/Trigger/Algorithms/WindowPattern.h"
 #include "icaruscode/PMT/Trigger/Algorithms/ApplyBeamGate.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/TriggerInfo_t.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icarusalg/Utilities/mfLoggingClass.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 
 // framework libraries
 #include "cetlib_except/exception.h"
@@ -56,14 +57,15 @@ class icarus::trigger::SlidingWindowPatternAlg
   /// Record of the trigger response.
   using TriggerInfo_t = icarus::trigger::details::TriggerInfo_t;
   
-  /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  /// Type of trigger gate provided as input.
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
 
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
+  /// Type of gate data without channel information (gate levels only).
+  using TriggerGateData_t = icarus::trigger::OpticalTriggerGateData_t;
   
   /// Type holding information about composition and topology of all windows.
   using WindowTopology_t = icarus::trigger::WindowChannelMap;

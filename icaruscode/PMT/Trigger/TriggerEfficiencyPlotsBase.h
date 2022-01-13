@@ -21,8 +21,9 @@
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfoUtils.h"
 #include "icaruscode/PMT/Trigger/Algorithms/details/EventInfo_t.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/MultiChannelOpticalTriggerGate.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedOpticalTriggerGate.h"
 #include "icaruscode/Utilities/DetectorClocksHelpers.h" // makeDetClockData()
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
 #include "icarusalg/Utilities/ChangeMonitor.h" // ThreadSafeChangeMonitor
 #include "icarusalg/Utilities/PassCounter.h"
 
@@ -1218,7 +1219,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   }; // SettingsInfo_t
   
   /// Type of trigger gate extracted from the input event.
-  using InputTriggerGate_t = icarus::trigger::MultiChannelOpticalTriggerGate;
+  using InputTriggerGate_t
+    = icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>;
   
   /// A list of trigger gates from input.
   using TriggerGates_t = std::vector<InputTriggerGate_t>;
@@ -1226,11 +1228,8 @@ class icarus::trigger::TriggerEfficiencyPlotsBase {
   /// Type of lists of gates, one list per cryostat (outer index: cryostat no).
   using TriggerGatesPerCryostat_t = std::vector<TriggerGates_t>;
   
-  /// Type of gate data without channel information.
-  using TriggerGateData_t = InputTriggerGate_t::GateData_t;
-  
   /// Type representing the unique identifier of a optical detector channel.
-  using ChannelID_t = InputTriggerGate_t::ChannelID_t;
+  using ChannelID_t = InputTriggerGate_t::TriggerGate_t::ChannelID_t;
   
   
   /// A collection of useful beam gates. Make one with `makeGatePack()`.

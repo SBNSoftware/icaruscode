@@ -21,7 +21,8 @@
 #include "art/Persistency/Common/PtrMaker.h"
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
-#include "canvas/Utilities/Exception.h"
+#include "canvas/Utilities/InputTag.h"
+#include "cetlib_except/exception.h"
 
 // C/C++ standard libraries
 #include <map>
@@ -30,8 +31,10 @@
 #include <string> // std::to_string()
 #include <stdexcept> // std::out_of_range
 #include <utility> // std::move()
+#include <type_traits> // std::enable_if_t()
 
 
+//------------------------------------------------------------------------------
 namespace icarus::trigger {
 
   // ---------------------------------------------------------------------------
@@ -126,7 +129,7 @@ namespace icarus::trigger {
   std::vector<icarus::trigger::OpticalTriggerGateData_t>
   transformIntoOpticalTriggerGate(Gates&& gates);
 
-
+#if 0
   // ---------------------------------------------------------------------------
   /**
    * @brief Returns the trigger gates in serializable format.
@@ -284,6 +287,8 @@ namespace icarus::trigger {
    * will return a `icarus::trigger::TriggerGateBuilder::TriggerGates` object
    * for the specified threshold, reading the information from `dateTag` data
    * products in an _art_ `event`.
+   * Note that this specific functionality is now wrapped into
+   * `icarus::trigger::ReadTriggerGates()`.
    *
    *
    * Return value
@@ -317,7 +322,7 @@ namespace icarus::trigger {
     std::vector<TriggerGateData> const& gates,
     art::Assns<TriggerGateData, raw::OpDetWaveform> const& gateToWaveforms
     );
-
+#endif // 0
 
   // ---------------------------------------------------------------------------
   /// Associates each optical detector channel to a gate.
@@ -507,6 +512,8 @@ namespace icarus::trigger {
    * and return a collection of `icarus::trigger::TrackedOpticalTriggerGate`
    * objects, each one with a _copy_ of the data of the original data product
    * and a pointer to each of the associated waveform metadata.
+   * Note that this specific functionality is now wrapped into
+   * `icarus::trigger::ReadTriggerGates()`.
    *
    *
    * Return value
@@ -545,10 +552,153 @@ namespace icarus::trigger {
 
   
   // ---------------------------------------------------------------------------
+  template <typename OpDetInfo = sbn::OpDetWaveformMeta>
+  class TriggerGateReader; // documentation is at definition
+  
+  // ---------------------------------------------------------------------------
+  /**
+   * @brief Assembles and returns trigger gates from serialized data.
+   * @tparam OpDetInfo type of object associated to the gates
+   * @tparam Event type of object to read the needed information from
+   * @param event object to read all the needed information from
+   * @param dataTag tag of the data to read from the `event`
+   * @return a collection of "tracking" trigger gates
+   * @throw cet::exception wrapping any `cet::exception` thrown internally
+   *                       (typically a data product not found)
+   * @see `icarus::trigger::TriggerGateReader`, `icarus::trigger::FillTriggerGates()`
+   * 
+   * This function returns "tracking" trigger gates from data read from the data
+   * read from `event`.
+   * It is a one-shot replacement for `TriggerGateReader` to be used when
+   * data to be consumed needn't or can't be declared, or when that declaration
+   * is performed separately.
+   */
+  template <typename OpDetInfo = sbn::OpDetWaveformMeta, typename Event>
+  std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+  ReadTriggerGates(Event const& event, art::InputTag const& dataTag);
+  
+  
+  // ---------------------------------------------------------------------------
   // ---------------------------------------------------------------------------
   // ---------------------------------------------------------------------------
 
 } // namespace icarus::trigger
+
+
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+/**
+ * @brief Assembles and returns trigger gates from serialized data.
+ * @tparam OpDetInfo type of object associated to the gates
+ * @tparam Event type of object to read the needed information from
+ * @param event object to read all the needed information from
+ * @param dataTag tag of the data to read from the `event`
+ * @return a collection of "tracking" trigger gates
+ * @throw cet::exception wrapping any `cet::exception` thrown internally
+ *                       (typically a data product not found)
+ * @see `icarus::trigger::FillTriggerGates()`
+ * 
+ * This class manages reading from a data source trigger gates
+ * (vector of `icarus::trigger::OpticalTriggerGateData_t` elements) and their
+ * associations to a tracking information (`OpDetInfo`: `sbn::OpDetWaveformMeta`
+ * by default, but it may also be e.g. `raw::OpDetWaveform`).
+ * 
+ * All this information is merged into the "tracking" trigger gates, which
+ * wrap _ a copy_ of the trigger gates and a reference to the tracked
+ * information (by simple C pointer).
+ * 
+ * This class is a framework interface to `FillTriggerGates()`;
+ * interaction  with the data source and the framework is driven by the
+ * `Event` object in the `read()` method, which is expected to expose an
+ * `interface similar to _art_'s `art::Event`, and in particular:
+ * * `Event::getProduct<T>(art::InputTag)` to read and return directly
+ *   a reference to the persistent, framework-owned data products of type `T`.
+ * 
+ * In addition, this class provides a shortcut to declare the consumed data
+ * products, again in a _art_-like interface.
+ * A full usage example in a module includes:
+ * 
+ * 1. a reader data member in the module class reading the data:
+ *     
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *     icarus::trigger::TriggerGateReader<> const fGateReader;
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *     
+ * 2. construction in the module constructor initializer list from a configured
+ *     input tag representing the data to be read:
+ *     
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *       , fGateReader{ config().TriggerGateTag() }
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * 
+ * 3. also in the module constructor body, declaration of what is going to be
+ *    read:
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *       fGateReader.declareConsumes(consumesCollector());
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * 
+ * 4. actual reading in a context where the current `event` is known:
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *     std::vector<icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>>
+ *       gates = fGateReader(event);
+ *     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * 
+ * In a context where the consume declaration is not relevant/desired, the first
+ * three steps can be omitted and the reading can happen with a temporary
+ * `TriggerGateReader` object; or the shortcut function
+ * `icarus::trigger::ReadTriggerGates()` can be used instead:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ * std::vector<icarus::trigger::TrackedOpticalTriggerGate<sbn::OpDetWaveformMeta>>
+ *   gates = icarus::trigger::ReadTriggerGates<sbn::OpDetWaveformMeta>(event, dataTag);
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * is equivalent to the last step above. Note that it is still possible to use
+ * temporaries also for the consume declaration: for example, a program using
+ * `icarus::trigger::ReadTriggerGates()` may in the proper place (e.g. a module
+ * constructor) call explicitly the consume declaration:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~{.cpp}
+ *   icarus::trigger::TriggerGateReader<>{ config().TriggerGateTag() }
+ *     .declareConsumes(consumesCollector());
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * is equivalent to the three steps above. The only advantage of the approach
+ * in multiple steps of the first example is that consistency of declaration
+ * and use is guaranteed by construction.
+ * 
+ */
+template <typename OpDetInfo /* = sbn::OpDetWaveformMeta */>
+class icarus::trigger::TriggerGateReader {
+  
+  art::InputTag fDataTag; ///< Data tag of the data products being read.
+  
+    public:
+  
+  using OpDetWaveformMeta_t = OpDetInfo; ///< Type of associated information.
+  
+  /// Type of data objects returned.
+  using TriggerGates_t
+    = icarus::trigger::TrackedOpticalTriggerGate<OpDetWaveformMeta_t>;
+  
+  
+  /// Constructor: configure to read the data with the specified tag.
+  TriggerGateReader(art::InputTag dataTag): fDataTag(std::move(dataTag)) {}
+  
+  /// Declares to the `collector` the data products that are going to be read.
+  template <typename ConsumesCollector>
+  void declareConsumes(ConsumesCollector& collector) const;
+  
+  /// Returns the input tag the data is read from.
+  art::InputTag const& inputTag() const { return fDataTag; }
+  
+  // @{
+  /// Reads the configured data product from the specified `event`.
+  template <typename Event>
+  std::vector<TriggerGates_t> read(Event const& event) const;
+  template <typename Event>
+  std::vector<TriggerGates_t> operator() (Event const& event) const
+    { return read(event); }
+  // @}
+  
+  
+}; // class icarus::trigger::TriggerGateReader
 
 
 // -----------------------------------------------------------------------------
@@ -811,6 +961,60 @@ icarus::trigger::FillTriggerGates(
 
   return allGates;
 } // icarus::trigger::FillTriggerGates()
+
+
+// -----------------------------------------------------------------------------
+// --- icarus::trigger::TriggerGateReader
+// -----------------------------------------------------------------------------
+template <typename OpDetInfo /* = sbd::OpDetWaveformMeta */>
+template <typename ConsumesCollector>
+void icarus::trigger::TriggerGateReader<OpDetInfo>::declareConsumes
+  (ConsumesCollector& collector) const
+{
+
+  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
+
+  collector.template consumes<std::vector<OpticalTriggerGateData_t>>(fDataTag);
+  collector.template consumes<art::Assns<OpticalTriggerGateData_t, OpDetInfo>>
+    (fDataTag);
+  
+} // icarus::trigger::TriggerGateReader::declareConsumes()
+
+
+// -----------------------------------------------------------------------------
+template <typename OpDetInfo /* = sbd::OpDetWaveformMeta */>
+template <typename Event>
+std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+icarus::trigger::TriggerGateReader<OpDetInfo>::read(Event const& event) const {
+
+  using icarus::trigger::OpticalTriggerGateData_t; // for convenience
+
+  // currently the associations are a waste of time memory...
+  auto const& gates
+    = event.template getProduct<std::vector<OpticalTriggerGateData_t>>(fDataTag);
+  auto const& gateToWaveforms = event.template getProduct
+    <art::Assns<OpticalTriggerGateData_t, OpDetInfo>>(fDataTag);
+  
+  try {
+    return icarus::trigger::FillTriggerGates(gates, gateToWaveforms);
+  }
+  catch (cet::exception const& e) {
+    throw cet::exception("readTriggerGates", "", e)
+      << "readTriggerGates() encountered an error while reading data products from '"
+      << fDataTag.encode() << "'\n";
+  }
+
+} // icarus::trigger::TriggerGateReader::read()
+
+
+// -----------------------------------------------------------------------------
+template <typename OpDetInfo /* = sbd::OpDetWaveformMeta */, typename Event>
+std::vector<icarus::trigger::TrackedOpticalTriggerGate<OpDetInfo>>
+icarus::trigger::ReadTriggerGates
+  (Event const& event, art::InputTag const& dataTag)
+{
+  return TriggerGateReader<OpDetInfo>{ dataTag }.read(event);
+} // icarus::trigger::TriggerSimulationOnGates::ReadTriggerGates()
 
 
 // -----------------------------------------------------------------------------
