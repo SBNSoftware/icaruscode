@@ -10,6 +10,8 @@
 #ifndef ICARUSCODE_PMT_TRIGGER_UTILITIES_TRACKEDTRIGGERGATE_H
 #define ICARUSCODE_PMT_TRIGGER_UTILITIES_TRACKEDTRIGGERGATE_H
 
+// SBN libraries
+#include "sbnobj/ICARUS/PMT/Trigger/Data/ReadoutTriggerGate.h"
 
 // LArSoft libraries
 #include "larcorealg/CoreUtils/span.h" // util::make_transformed_span()
@@ -35,19 +37,38 @@ namespace icarus::trigger {
   constexpr bool isTrackedTriggerGate_v = isTrackedTriggerGate<T>::value;
   
   template <typename Gate, typename TrackedType>
-  class TrackedTriggerGate;
+  class TrackedTriggerGate; // see below
   
   template <typename Gate, typename TrackedType>
   std::ostream& operator<<
     (std::ostream& out, TrackedTriggerGate<Gate, TrackedType> const& gate);
   
-  /// Returns an iterable with a reference to the gate of each entry of
+  
+  // --- BEGIN -- TrackedTriggerGate simple helpers ----------------------------
+  /// @name `icarus::trigger::TrackedTriggerGate` simple helpers
+  /// @{
+  
+  /// Returns the readout trigger gate contained in `gate`.
+  template <typename Gate>
+  std::enable_if_t<isReadoutTriggerGate<Gate>::value, Gate>
+  gateIn(Gate&& gate);
+
+  template <typename Gate>
+  auto gateIn(Gate&& gate)
+    -> std::enable_if_t<isTrackedTriggerGate<Gate>::value, decltype(gate.gate())>
+    ;
+
+  /// Returns a sequence of all the readout trigger gates contained in
   /// `trackingGates`.
   template <typename TrackingGateColl>
   auto gatesIn(TrackingGateColl& trackingGates);
   
+  /// @}
+  // --- END ---- TrackedTriggerGate simple helpers ----------------------------
+  
 } // namespace icarus::trigger
 
+// -----------------------------------------------------------------------------
 /**
   * @brief A wrapper to trigger gate objects tracking the input of operations.
   * @tparam Gate type of trigger gate object being wrapped
@@ -56,7 +77,8 @@ namespace icarus::trigger {
   * This object includes its own `Gate` object, plus `tracking()`.
   * 
   * Functions taking as argument a generic sequence of `Gate` objects can be
-  * passed the result of `gatesIn()`, which behaves like a sequence of `Gate`.
+  * passed the result of `icarus::trigger::gatesIn()` (sold separately),
+  * which behaves like a sequence of `Gate`.
   * 
   * Supporting functions can add specific tracking operations when operating
   * of a `TrackedTriggerGate` object. The trait
@@ -70,6 +92,9 @@ namespace icarus::trigger {
   * is complex and externally owned, a pointer or handle should be stored
   * as tracking object instead of the object itself.
   * If an object is already present, it is not added again into the tracking.
+  * 
+  * The `Gate` type is expected to be a trigger gate type, like
+  * `icarus::trigger::ReadoutTriggerGate`.
   */
 template <typename Gate, typename TrackedType>
 class icarus::trigger::TrackedTriggerGate {
@@ -122,8 +147,9 @@ class icarus::trigger::TrackedTriggerGate {
   // @{
   
   /// Returns the enclosed gate.
-  TriggerGate_t const& gate() const { return fGate; }
-  TriggerGate_t& gate() { return fGate; }
+  TriggerGate_t const& gate() const& { return fGate; }
+  TriggerGate_t& gate() & { return fGate; }
+  TriggerGate_t&& gate() && { return std::move(fGate); }
   
   // @}
   
@@ -144,39 +170,25 @@ class icarus::trigger::TrackedTriggerGate {
 // -----------------------------------------------------------------------------
 namespace icarus::trigger {
   
-  template <typename T>
-  struct isTrackedTriggerGate: std::false_type {};
+  namespace details {
+    
+    template <typename T>
+    struct isTrackedTriggerGateImpl: std::false_type {};
+    
+    template <typename Gate, typename TrackedType>
+    struct isTrackedTriggerGateImpl<TrackedTriggerGate<Gate, TrackedType>>
+      : std::true_type
+    {};
   
-  template <typename Gate, typename TrackedType>
-  struct isTrackedTriggerGate<TrackedTriggerGate<Gate, TrackedType>>
-    : std::true_type
+  } // namespace details
+  
+  template <typename T>
+  struct isTrackedTriggerGate
+    : details::isTrackedTriggerGateImpl<std::decay_t<T>>
   {};
   
+  
 } // namespace icarus::trigger
-
-
-// -----------------------------------------------------------------------------
-template <typename TrackingGateColl>
-auto icarus::trigger::gatesIn(TrackingGateColl& trackingGates) {
-  
-  using TrackingGate_t = typename TrackingGateColl::value_type;
-  
-  // C++20: this is definitely a template concept...
-  static_assert(isTrackedTriggerGate_v<TrackingGate_t>,
-    "icarus::trigger::gatesIn() requires a collection of TrackedTriggerGate objects");
-  
-  // constantness is driven by the one of type `TrackedTriggerGate`;
-  // decltype(auto) return preserves referencehood
-  auto getGate = [](auto& gate) -> decltype(auto) { return gate.gate(); };
-  
-#if 0
-  // C++20: this is some
-  return trackingGates | std::ranges::view::transform(getGate);
-#endif // 0
-  
-  return util::make_transformed_span(trackingGates, getGate);
-  
-} // icarus::trigger::gatesIn()
 
 
 // -----------------------------------------------------------------------------
@@ -225,6 +237,39 @@ template <typename Gate, typename TrackedType>
 std::ostream& icarus::trigger::operator<<
   (std::ostream& out, TrackedTriggerGate<Gate, TrackedType> const& gate)
   { return out << gate.gate(); }
+
+
+// -----------------------------------------------------------------------------
+template <typename Gate>
+std::enable_if_t<icarus::trigger::isReadoutTriggerGate<Gate>::value, Gate>
+icarus::trigger::gateIn(Gate&& gate) { return gate; }
+
+
+template <typename Gate>
+auto icarus::trigger::gateIn(Gate&& gate)
+  -> std::enable_if_t<isTrackedTriggerGate<Gate>::value, decltype(gate.gate())>
+  { return gate.gate(); }
+
+
+// -----------------------------------------------------------------------------
+template <typename TrackingGateColl>
+auto icarus::trigger::gatesIn(TrackingGateColl& trackingGates) {
+  
+  // C++20: this is definitely a template concept...
+  
+  // constantness is driven by the one of type `TrackedTriggerGate`;
+  // decltype(auto) return preserves referencehood
+//   auto getGate = [](auto& gate) -> decltype(auto) { return gate.gate(); };
+  auto getGate = [](auto& gate) -> decltype(auto) { return gateIn(gate); };
+  
+#if 0
+  // C++20: this is some
+  return trackingGates | std::ranges::view::transform(getGate);
+#endif // 0
+  
+  return util::make_transformed_span(trackingGates, getGate);
+  
+} // icarus::trigger::gatesIn()
 
 
 // -----------------------------------------------------------------------------

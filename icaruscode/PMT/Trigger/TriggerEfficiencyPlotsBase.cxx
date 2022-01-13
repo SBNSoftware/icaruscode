@@ -1313,15 +1313,12 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::readTriggerGates
 
   // currently the associations are a waste of time memory...
   auto const& gates
-    = *(event.getValidHandle<std::vector<OpticalTriggerGateData_t>>(dataTag));
-  auto const& gateToWaveforms = *(
-    event.getValidHandle
-      <art::Assns<OpticalTriggerGateData_t, raw::OpDetWaveform>>(dataTag)
-    );
+    = event.getProduct<std::vector<OpticalTriggerGateData_t>>(dataTag);
+  auto const& gateToWaveforms = event.getProduct
+      <art::Assns<OpticalTriggerGateData_t, sbn::OpDetWaveformMeta>>(dataTag);
   
   try {
-    return icarus::trigger::FillTriggerGates<InputTriggerGate_t>
-      (gates, gateToWaveforms);
+    return icarus::trigger::FillTriggerGates(gates, gateToWaveforms);
   }
   catch (cet::exception const& e) {
     throw cet::exception("TriggerEfficiencyPlots", "", e)
@@ -1361,8 +1358,7 @@ auto icarus::trigger::TriggerEfficiencyPlotsBase::extractActiveChannels
 
   std::vector<ChannelID_t> channelList;
   for (auto const& gates: cryoGates) {
-    for (auto const& gate: gates) {
-      assert(gate.hasChannels());
+    for (auto const& gate: icarus::trigger::gatesIn(gates)) {
 
       if (gate.alwaysClosed()) continue;
       for (auto const channel: gate.channels()) {
