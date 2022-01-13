@@ -11,6 +11,7 @@
 #include "icaruscode/PMT/Trigger/TriggerEfficiencyPlotsBase.h"
 #include "icaruscode/PMT/Trigger/Utilities/PlotSandbox.h"
 #include "icaruscode/PMT/Trigger/Utilities/TriggerGateOperations.h" // sumGates()
+#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h" // gateIn()
 #include "icarusalg/Utilities/ROOTutils.h" // util::ROOT
 
 // LArSoft libraries
@@ -326,6 +327,10 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
   
     private:
   
+  /// Type of gate data used for internal processing.
+  using WorkingTriggerGate_t = InputTriggerGate_t;
+  
+  
   // --- BEGIN Configuration variables -----------------------------------------
   
   /// Minimum number of trigger primitives for a trigger to happen.
@@ -428,7 +433,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
     std::size_t iThr, std::string const& threshold,
     PlotSandboxRefs_t const& plotSets, EventInfo_t const& eventInfo,
     detinfo::DetectorClocksData const& clockData,
-    std::vector<TriggerGateData_t> const& combinedCounts,
+    std::vector<WorkingTriggerGate_t> const& combinedCounts,
     std::vector<ChannelID_t> const& channelList
     );
   
@@ -447,7 +452,7 @@ class icarus::trigger::MajorityTriggerEfficiencyPlots
    * The event trigger is not finalized here, and the cryostat trigger
    * primitives are all returned.
    */
-  std::vector<TriggerGateData_t> combineTriggerPrimitives(
+  std::vector<WorkingTriggerGate_t> combineTriggerPrimitives(
     TriggerGatesPerCryostat_t const& cryoGates,
     std::string const& threshold
     ) const;
@@ -714,7 +719,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
   PlotSandboxRefs_t const& plotSets,
   EventInfo_t const& eventInfo,
   detinfo::DetectorClocksData const& clockData,
-  std::vector<TriggerGateData_t> const& combinedCounts,
+  std::vector<WorkingTriggerGate_t> const& combinedCounts,
   std::vector<ChannelID_t> const& channelList
 ) {
   
@@ -736,13 +741,15 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    */
   using namespace std::string_literals;
   
-  using ClockTick_t = TriggerGateData_t::ClockTick_t;
-  using OpeningCount_t = TriggerGateData_t::OpeningCount_t;
+  using ClockTick_t = WorkingTriggerGate_t::TriggerGate_t::ClockTick_t;
+  using OpeningCount_t = WorkingTriggerGate_t::TriggerGate_t::OpeningCount_t;
   
   using PrimitiveCount_t = std::pair<ClockTick_t, OpeningCount_t>;
   
   PrimitiveCount_t maxPrimitives { ClockTick_t{ 0 } /* dummy */, 0U };
-  for (auto const& [ iCryo, combinedCount ]: util::enumerate(combinedCounts)) {
+  for (auto const& [ iCryo, combinedCount ]
+    : util::enumerate(gatesIn(combinedCounts)))
+  {
     auto const maxPrimitiveTime { combinedCount.findMaxOpen() };
     PrimitiveCount_t const maxPrimitivesInCryo
       { maxPrimitiveTime, combinedCount.openingCount(maxPrimitiveTime) };
@@ -771,7 +778,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
    * (may be with "fired" or "not fired" on each bin)
    */
 
-  // PrimitiveCount_t lastMinCount { TriggerGateData_t::MinTick, 0 };
+  // PrimitiveCount_t lastMinCount { WorkingTriggerGate_t::MinTick, 0 };
 
   bool fired = true; // the final trigger response (changes with requirement)
   
@@ -782,7 +789,7 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
       for (auto const& [ iCryo, cryoGate ]: util::enumerate(combinedCounts)) {
         
         icarus::trigger::details::GateOpeningInfoExtractor extractOpeningInfo
-          { cryoGate, minCount };
+          { gateIn(cryoGate), minCount };
         extractOpeningInfo.setLocation(iCryo);
         while (extractOpeningInfo) {
           auto info = extractOpeningInfo();
@@ -895,12 +902,12 @@ void icarus::trigger::MajorityTriggerEfficiencyPlots::plotResponses(
 auto icarus::trigger::MajorityTriggerEfficiencyPlots::combineTriggerPrimitives(
   TriggerGatesPerCryostat_t const& cryoGates,
   std::string const& threshold
-) const -> std::vector<TriggerGateData_t> {
+) const -> std::vector<WorkingTriggerGate_t> {
 
   //
   // simple count
   //
-  std::vector<TriggerGateData_t> cryoCombinedGate;
+  std::vector<WorkingTriggerGate_t> cryoCombinedGate;
   cryoCombinedGate.reserve(cryoGates.size());
 
   for (auto const& [ iCryo, gates ]: util::enumerate(cryoGates)) {
