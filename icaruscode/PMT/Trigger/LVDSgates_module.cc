@@ -799,9 +799,6 @@ void icarus::trigger::LVDSgates::checkInput
       if (!gate.hasChannels())
         e << "no channels";
       else {
-        // we are cheating here, because `SingleChannelOpticalTriggerGate`
-        // actually does not want more than one channel;
-        // having them is sort of a logic error
         auto const& channels = gate.channels();
         auto iChannel = channels.begin();
         auto const cend = channels.end();

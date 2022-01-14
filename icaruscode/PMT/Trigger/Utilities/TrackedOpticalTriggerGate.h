@@ -37,7 +37,7 @@ namespace icarus::trigger {
   using TrackedOpticalTriggerGate = icarus::trigger::TrackedTriggerGate
     <icarus::trigger::OpticalTriggerGateData_t, TrackedType const*>;
   
-    
+  
 } // namespace icarus::trigger
 
 // -----------------------------------------------------------------------------
