@@ -10,7 +10,10 @@
 
 // class header
 #include "icaruscode/PMT/Trigger/Algorithms/TriggerGateBuilder.h"
+#include "icaruscode/PMT/Trigger/Utilities/TrackedTriggerGate.h"
+#include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
 #include "icarusalg/Utilities/WaveformOperations.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
 #include "lardataobj/RawData/OpDetWaveform.h"
@@ -47,9 +50,15 @@ namespace {
       { return channel; }
     static raw::Channel_t channelOf(raw::OpDetWaveform const& waveform)
       { return waveform.ChannelNumber(); }
+    static raw::Channel_t channelOf(sbn::OpDetWaveformMeta const& waveformMeta)
+      { return waveformMeta.ChannelNumber(); }
     static raw::Channel_t channelOf
-      (icarus::trigger::SingleChannelOpticalTriggerGate const& gate)
+      (icarus::trigger::OpticalTriggerGateData_t const& gate)
       { return gate.channel(); }
+    template <typename Gate, typename OpDetInfo>
+    static raw::Channel_t channelOf
+      (icarus::trigger::TrackedTriggerGate<Gate, OpDetInfo> const& gate)
+      { return channelOf(gate.gate()); }
     
   }; // struct ChannelComparison
   
@@ -88,25 +97,28 @@ namespace {
 //------------------------------------------------------------------------------
 //--- icarus::trigger::TriggerGateBuilder::TriggerGates
 //------------------------------------------------------------------------------
-icarus::trigger::SingleChannelOpticalTriggerGate&
-icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
-  (raw::OpDetWaveform const& waveform)
+auto icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor
+  (raw::OpDetWaveform const& waveform) -> triggergate_t&
 {
   // keeping the gates sorted by channel
+  raw::Channel_t const channel = waveform.ChannelNumber();
   auto iGate = std::lower_bound
     (fGates.begin(), fGates.end(), waveform, ::ChannelComparison<>());
   if (iGate != fGates.end()) { // found, it's there already
     MF_LOG_TRACE(details::TriggerGateDebugLog)
       << "Appending waveform to trigger gate (thr=" << threshold()
-      << ") of channel " << waveform.ChannelNumber();
-    iGate->add(waveform);
+      << ") of channel " << channel;
+    iGate->tracking().add(&waveform);
     return *iGate; 
   }
   // add the new gate in channel order
   MF_LOG_TRACE(details::TriggerGateDebugLog)
     << "Creating a new trigger gate (thr=" << threshold()
-    << ") for channel " << waveform.ChannelNumber();
-  iGate = fGates.emplace(iGate, waveform);
+    << ") for channel " << channel;
+  // wrap a new trigger gate on `channel` in a also new tracking gate
+  iGate = fGates.emplace(iGate, triggergate_t::TriggerGate_t{ channel });
+//   iGate->addChannel(channel);
+  iGate->tracking().add(&waveform);
   return *iGate;
 } // icarus::trigger::TriggerGateBuilder::TriggerGates::gateFor()
 

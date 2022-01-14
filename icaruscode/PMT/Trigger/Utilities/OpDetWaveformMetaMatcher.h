@@ -12,6 +12,7 @@
 
 // ICARUS libraries
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h" // sbn::OpDetWaveformMeta
+#include "icarusalg/Utilities/CanvasUtils.h" // util::inputTagOf()
 #include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 
 // LArSoft libraries
@@ -20,7 +21,6 @@
 // framework libraries
 #include "canvas/Persistency/Common/Assns.h"
 #include "canvas/Persistency/Common/Ptr.h"
-#include "canvas/Persistency/Provenance/BranchDescription.h"
 #include "canvas/Persistency/Provenance/ProductID.h"
 
 // C/C++ standard libraries
@@ -164,18 +164,18 @@ auto icarus::trigger::OpDetWaveformMetaMatcher<Event>::loadAssociations
   // let's start optimistic: we won't find it
   auto& assnCache = (fAssns[pid] = nullptr);
   
-  // find the product label of pid
-  cet::exempt_ptr<art::BranchDescription const> metaDescr
-    = fEvent.getProductDescription(pid);
-  if (!metaDescr) return nullptr;
+  try {
+    art::InputTag const tag = util::inputTagOf(fEvent, pid);
+    
+    auto const assnsHandle = fEvent.template getHandle<WaveformMetaAssns_t>(tag);
+    if (!assnsHandle.isValid()) return nullptr;
+    return assnCache = assnsHandle.product();
+  }
+  catch (art::Exception const& e) {
+    if (e.categoryCode() == art::errors::ProductNotFound) return nullptr;
+    throw;
+  }
   
-  // shall we check that the product type is the right one? no, we shan't
-  art::InputTag const tag = metaDescr->inputTag();
-  
-  auto const assnsHandle = fEvent.template getHandle<WaveformMetaAssns_t>(tag);
-  if (!assnsHandle.isValid()) return nullptr;
-  
-  return assnCache = assnsHandle.product();
   
 } // icarus::trigger::OpDetWaveformMetaMatcher<>::loadAssociations()
 

@@ -12,8 +12,7 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
+#include "sbnobj/ICARUS/PMT/Trigger/Data/OpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 #include "icaruscode/Utilities/DataProductPointerMap.h"
 #include "icarusalg/Utilities/FHiCLutils.h" // util::fhicl::getOptionalValue()
@@ -586,16 +585,16 @@ icarus::trigger::DiscriminatePMTwaveforms::fillChannelGaps
   
   using GateDataColl_t
     = icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t;
-  using Gate_t = GateDataColl_t::value_type; // SingleChannelOpticalTriggerGate
+  using Gate_t = GateDataColl_t::value_type; // TrackedOpticalTriggerGate
   
   //
   // fill a map channel -> gate (missing channels have a nullptr gate)
   //
   std::vector<Gate_t const*> gateMap(fNOpDetChannels, nullptr);
   for (Gate_t const& gate: gates) {
-    assert(gate.hasChannels());
+    assert(!gate.channels().empty());
     
-    auto const channel = gate.channel();
+    auto const channel = gate.channels().front();
     if (static_cast<std::size_t>(channel) >= gateMap.size())
       gateMap.resize(channel + 1U, nullptr);
     assert(gateMap[channel] == nullptr);
@@ -611,10 +610,14 @@ icarus::trigger::DiscriminatePMTwaveforms::fillChannelGaps
   for (auto const& [ channelNo, gate ]: util::enumerate(gateMap)) {
     
     if (gate) {
-      assert(gate->channel() == channelNo);
+      assert(gate->channels().front() == channelNo);
       allGates.push_back(std::move(*gate));
     }
-    else allGates.emplace_back(Gate_t::ChannelID_t(channelNo));
+    else {
+      allGates.emplace_back(
+        icarus::trigger::OpticalTriggerGateData_t{ raw::Channel_t(channelNo) }
+        );
+    }
     
   } // for
   
