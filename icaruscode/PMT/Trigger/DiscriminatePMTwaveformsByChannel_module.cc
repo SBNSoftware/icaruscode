@@ -12,7 +12,6 @@
 #include "icaruscode/PMT/Trigger/Utilities/TriggerDataUtils.h"
 #include "icaruscode/PMT/Algorithms/OpDetWaveformMetaUtils.h" // OpDetWaveformMetaMaker
 #include "icaruscode/IcarusObj/OpDetWaveformMeta.h"
-#include "sbnobj/ICARUS/PMT/Trigger/Data/SingleChannelOpticalTriggerGate.h"
 #include "sbnobj/ICARUS/PMT/Trigger/Data/TriggerGateData.h"
 #include "sbnobj/ICARUS/PMT/Data/WaveformBaseline.h"
 #include "sbnobj/Common/PMT/Data/PMTconfiguration.h"
@@ -667,7 +666,8 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
   ) {
     auto const channel = static_cast<raw::Channel_t>(channelSlot);
     if (waveInfo.empty()) {
-      gates.emplace_back(channel); // gate associated to channel, always closed
+      // gate associated to channel, always closed
+      gates.emplace_back(icarus::trigger::OpticalTriggerGateData_t{ channel });
       continue;
     }
     
@@ -689,7 +689,7 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
     // if there are waveforms, run the algorithm;
     // save the first collection, i.e. the first (and only) threshold;
     // extract the trigger gates from TriggerGates object immediately,
-    // GateData_t is a collection of SingleChannelOpticalTriggerGate,
+    // GateData_t is a collection of TrackedTriggerGate objects,
     // one per channel; that is, only one entry in this case
     icarus::trigger::TriggerGateBuilder::TriggerGates::GateData_t channelGates
       = std::move(fTriggerGateBuilder->build(waveInfo).front()).gates();
@@ -702,12 +702,12 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
     mf::LogTrace log(fLogCategory);
     log << "Trigger gates:\n";
     unsigned int nOpenGates = gates.size();
-    for (auto const& gate: gates) if (gate.alwaysClosed()) --nOpenGates;
+    for (auto const& gate: gates) if (gate.gate().alwaysClosed()) --nOpenGates;
     log << nOpenGates << "/" << gates.size() << " trigger gates";
     if (nOpenGates) {
       log << ":";
       for (auto const& gate: gates) {
-        if (gate.alwaysClosed()) continue;
+        if (gate.gate().alwaysClosed()) continue;
         log << "\n  " << gate;
       }
     }
@@ -723,7 +723,7 @@ void icarus::trigger::DiscriminatePMTwaveformsByChannel::produce(art::Event& eve
   // reformat the results for the threshold
   //
   auto [ data, assns ] = icarus::trigger::transformIntoOpticalTriggerGate
-    (gates, makeGatePtr, opDetWavePtrs);
+    (std::move(gates), makeGatePtr, opDetWavePtrs);
 
   if (fSavePMTcoverage) {
     

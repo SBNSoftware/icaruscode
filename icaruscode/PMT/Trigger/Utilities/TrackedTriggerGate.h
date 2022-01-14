@@ -47,21 +47,21 @@ namespace icarus::trigger {
   // --- BEGIN -- TrackedTriggerGate simple helpers ----------------------------
   /// @name `icarus::trigger::TrackedTriggerGate` simple helpers
   /// @{
+
+  /// Returns the trigger data (a `TriggerGateData`) from the specofied `gate`.
+  template <typename Gate>
+  decltype(auto) gateDataIn(Gate&& gate);
   
-  /// Returns the readout trigger gate contained in `gate`.
+  /// Returns the trigger gate (a `ReadoutTriggerGate`) from the specified `gate`.
   template <typename Gate>
-  std::enable_if_t<isReadoutTriggerGate<Gate>::value, Gate>
-  gateIn(Gate&& gate);
-
-  template <typename Gate>
-  auto gateIn(Gate&& gate)
-    -> std::enable_if_t<isTrackedTriggerGate<Gate>::value, decltype(gate.gate())>
-    ;
-
+  decltype(auto) gateIn(Gate&& gate);
+  
   /// Returns a sequence of all the readout trigger gates contained in
   /// `trackingGates`.
   template <typename TrackingGateColl>
   auto gatesIn(TrackingGateColl& trackingGates);
+  
+  
   
   /// @}
   // --- END ---- TrackedTriggerGate simple helpers ----------------------------
@@ -233,22 +233,78 @@ auto icarus::trigger::TrackedTriggerGate<Gate, TrackedType>::TrackingInfo::getTr
 // -----------------------------------------------------------------------------
 // ---  free function implementation
 // -----------------------------------------------------------------------------
+namespace icarus::trigger::details {
+  
+  template <typename T, typename = void>
+  struct GateExtractorImpl; // undefined
+  
+  template <typename Gate>
+  struct GateExtractorImpl<
+    Gate,
+    std::enable_if_t<icarus::trigger::isReadoutTriggerGate<Gate>::value>
+    >
+  {
+    // bypass
+    template <typename T>
+    static decltype(auto) gateFrom(T&& gate) { return std::forward<T>(gate); }
+    
+    // TriggerGateData::gateLevels() as of now does not support rvalue refs
+    static typename Gate::GateData_t&& gateDataFrom(Gate&& gate)
+      { return std::move(gateFrom(std::move(gate)).gateLevels()); }
+    static decltype(auto) gateDataFrom(Gate const& gate)
+      { return gateFrom(gate).gateLevels(); }
+    static decltype(auto) gateDataFrom(Gate& gate)
+      { return gateFrom(gate).gateLevels(); }
+  };
+  
+  template <typename Gate>
+  struct GateExtractorImpl<
+    Gate,
+    std::enable_if_t<isTrackedTriggerGate<Gate>::value>
+    >
+  {
+    template <typename T>
+    static decltype(auto) gateFrom(T&& gate)
+      { return std::forward<T>(gate).gate(); }
+    template <typename T>
+    static decltype(auto) gateDataFrom(T&& gate)
+      { return gateDataIn(gateFrom(std::forward<T>(gate))); }
+  };
+  
+  template <typename Tick, typename TickInterval>
+  struct GateExtractorImpl<icarus::trigger::TriggerGateData<Tick, TickInterval>>
+  {
+    // template <typename T>
+    // static decltype(auto) gateFrom(T&& gate); // not defined!
+    template <typename T>
+    static decltype(auto) gateDataFrom(T&& gate)
+      { return std::forward<T>(gate); }
+  };
+  
+} // namespace icarus::trigger::details
+
+
+// -----------------------------------------------------------------------------
 template <typename Gate, typename TrackedType>
 std::ostream& icarus::trigger::operator<<
   (std::ostream& out, TrackedTriggerGate<Gate, TrackedType> const& gate)
-  { return out << gate.gate(); }
+  { return out << gateIn(gate); }
 
 
 // -----------------------------------------------------------------------------
 template <typename Gate>
-std::enable_if_t<icarus::trigger::isReadoutTriggerGate<Gate>::value, Gate>
-icarus::trigger::gateIn(Gate&& gate) { return gate; }
+decltype(auto) icarus::trigger::gateIn(Gate&& gate) {
+  return details::GateExtractorImpl<std::decay_t<Gate>>::gateFrom
+    (std::forward<Gate>(gate));
+}
 
 
+// -----------------------------------------------------------------------------
 template <typename Gate>
-auto icarus::trigger::gateIn(Gate&& gate)
-  -> std::enable_if_t<isTrackedTriggerGate<Gate>::value, decltype(gate.gate())>
-  { return gate.gate(); }
+decltype(auto) icarus::trigger::gateDataIn(Gate&& gate) {
+  return details::GateExtractorImpl<std::decay_t<Gate>>::gateDataFrom
+    (std::forward<Gate>(gate));
+}
 
 
 // -----------------------------------------------------------------------------
@@ -259,7 +315,6 @@ auto icarus::trigger::gatesIn(TrackingGateColl& trackingGates) {
   
   // constantness is driven by the one of type `TrackedTriggerGate`;
   // decltype(auto) return preserves referencehood
-//   auto getGate = [](auto& gate) -> decltype(auto) { return gate.gate(); };
   auto getGate = [](auto& gate) -> decltype(auto) { return gateIn(gate); };
   
 #if 0
