@@ -1,0 +1,42 @@
+#
+# File:    prodcorsika_protononly_icarus_ROOTinput.fcl
+# Purpose: Overlay of cosmic rays using only proton primaries (not CMC) onto signal events.
+# Author:  Jamie Dyer (jamie.dyer@colostate.edu)
+# Date:    December 20, 2021
+#
+#This job configuration uses 'prodcorsika_protononly_icarus.fcl' to overlay 
+#cosmic ray events onto signal events provided in RootInput (as opposed to 
+#empty events).
+
+#'prodcorsika_protononly_icarus.fcl' generates cosmic ray events in ICARUS with a 
+#configuration similar to 'prodcorsika_standard_icarus.fcl', but using 
+#a proton-only composition instead of the Contant Mass Composition.
+#
+#
+# 
+# Output
+# -------
+# 
+# See 'prodcorsika_protononly_icarus.fcl' and `prodcorsika_standard_icarus.fcl`.
+# The main output is an _art_ ROOT file with content:
+#  * `generator`: generated cosmic rays from CORSIKA (`simb::MCTruth` collection)
+# 
+
+#include "prodcorsika_protononly_icarus.fcl"
+
+
+process_name: Corsika
+
+source:
+{
+	module_type: RootInput
+#	skipEvents: 0
+}
+
+#
+# output file names
+#
+
+services.TFileService.fileName: "Supplemental-%ifb_%tc-%p.root"
+outputs.out1.fileName:    "%ifb_%tc-%p.root"
+
