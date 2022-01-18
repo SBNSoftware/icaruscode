@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
 
 set(${PROJECT_NAME}_CMAKE_PROJECT_VERSION_STRING 09.37.01.02-p02)
 
-##project(icaruscode VERSION 09.37.01.02.02 LANGUAGES CXX)
+##project(icaruscode VERSION 09.37.01.03 LANGUAGES CXX)
 project(icaruscode LANGUAGES CXX)
 
 message(STATUS

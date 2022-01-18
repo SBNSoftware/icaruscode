@@ -137,15 +137,15 @@ geo::Vector_t spacecharge::SpaceChargeICARUS::GetPosOffsets(geo::Point_t const& 
     //in larsim, this is how the offsets are used in DriftElectronstoPlane_module
     // DriftDistance += -1.0 * thePosOffsets[0]
     // thus need to apply correction to TPCs "left" of cryostat (tpc_corr)
-    // cathode spans x=210.14 and x=210.29 in pos cryostat
+    // cathode spans x=220.14 and x=220.29 in pos cryostat
     if(xx>0){
       cryo_corr=1.0;
-      if(xx<210.14){
+      if(xx<220.14){
 	tpc_corr=-1.0;
       }
     }else{
       cryo_corr=-1.0;
-      if(xx<-210.29){
+      if(xx<-220.29){
 	tpc_corr=-1.0;
       }
     }
@@ -186,11 +186,11 @@ geo::Vector_t spacecharge::SpaceChargeICARUS::GetPosOffsets(geo::Point_t const& 
     //hard code in the cathode faces (got from dump_icarus_geometry.fcl)
     //
     //Gray Putnam: update this check to the split-wire Geometry
-    if (x_is_pos && (tpcid == 0 || tpcid == 1) && xx > 210.14 ) { xx = 210.14; }
-    if (x_is_pos && (tpcid == 2 || tpcid == 3) && xx < 210.29 ) { xx = 210.29; }
+    if (x_is_pos && (tpcid == 0 || tpcid == 1) && xx > 220.14 ) { xx = 220.14; }
+    if (x_is_pos && (tpcid == 2 || tpcid == 3) && xx < 220.29 ) { xx = 220.29; }
 
-    if (!x_is_pos && (tpcid == 2 || tpcid == 3) && xx > 210.14 ) { xx = 210.14; }
-    if (!x_is_pos && (tpcid == 0 || tpcid == 1) && xx < 210.29 ) { xx = 210.29; }
+    if (!x_is_pos && (tpcid == 2 || tpcid == 3) && xx > 220.14 ) { xx = 220.14; }
+    if (!x_is_pos && (tpcid == 0 || tpcid == 1) && xx < 220.29 ) { xx = 220.29; }
 
     double offset_x=0., offset_y=0., offset_z=0.;
     offset_x = corr*SCEhistograms.at(3)->Interpolate(xx,yy,zz);
@@ -234,8 +234,8 @@ geo::Vector_t spacecharge::SpaceChargeICARUS::GetEfieldOffsets(geo::Point_t cons
 void spacecharge::SpaceChargeICARUS::fixCoords(double* xx, double* yy, double* zz) const{
   //handle the edge cases by projecting SCE corrections onto boundaries
   *xx = abs(*xx);
-  if(*xx<61.94){*xx=61.94;}
-  if(*xx>358.489){*xx=358.489;}
+  if(*xx<71.94){*xx=71.94;}
+  if(*xx>368.489){*xx=368.489;}
   if(*yy<-181.86){*yy=-181.86;}
   if(*yy>134.96){*yy=134.96;}
   if(*zz<-894.951){*zz=-894.951;}
