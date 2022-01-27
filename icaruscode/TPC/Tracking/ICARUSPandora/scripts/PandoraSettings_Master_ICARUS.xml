@@ -38,7 +38,7 @@
 		<MvaName>NeutrinoId</MvaName>
 		<MinimumNeutrinoProbability>0</MinimumNeutrinoProbability>
 		<MaximumNeutrinos>999</MaximumNeutrinos>
-		<ShouldWriteFeatures>true</ShouldWriteFeatures>
+		<PersistFeatures>true</PersistFeatures>
 	    </tool>
         </SliceIdTools>
         <InputHitListName>Input</InputHitListName>
