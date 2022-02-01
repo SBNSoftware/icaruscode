@@ -158,6 +158,7 @@ private:
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
+    float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
 
     const std::string                                           fLogCategory;                ///< Output category when logging messages
 
@@ -292,12 +293,13 @@ DaqDecoderICARUSTPCwROI::~DaqDecoderICARUSTPCwROI()
 ///
 void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
-    fFragmentsLabelVec          = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
-    fOutputRawWaveform          = pset.get<bool                      >("OutputRawWaveform",                                               false);
-    fOutputCorrection           = pset.get<bool                      >("OutputCorrection",                                                false);
-    fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
-    fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
-    fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                                                false);
+    fFragmentsLabelVec   = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fOutputRawWaveform   = pset.get<bool                      >("OutputRawWaveform",                                               false);
+    fOutputCorrection    = pset.get<bool                      >("OutputCorrection",                                                false);
+    fOutputRawWavePath   = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
+    fOutputCoherentPath  = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
+    fDiagnosticOutput    = pset.get<bool                      >("DiagnosticOutput",                                                false);
+    fSigmaForTruncation  = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
 }
 
 //----------------------------------------------------------------------------
@@ -573,6 +575,23 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         //process_fragment(event, rawfrag, product_collection, header_collection);
         decoderTool->process_fragment(clockData, channelArrayPair.first, channelArrayPair.second);
 
+        // We need to recalculate pedestals for the noise corrected waveforms
+        icarus_signal_processing::WaveformTools<float> waveformTools;
+
+        // Local storage for recomputing the the pedestals for the noise corrected data
+        float localPedestal(0.);
+        float localFullRMS(0.);
+        float localTruncRMS(0.);
+        int   localNumTruncBins(0);
+        int   localRangeBins(0);
+
+        float sigmaCut(fSigmaForTruncation);
+
+        // Recover the denoised waveform
+        const icarus_signal_processing::ArrayFloat& denoised = decoderTool->getWaveLessCoherent();
+
+        icarus_signal_processing::VectorFloat       pedCorWaveforms(denoised[0].size());
+
         for(size_t chanIdx = 0; chanIdx < nChannelsPerBoard; chanIdx++)
         {
             // Get the channel number on the Fragment
@@ -604,15 +623,22 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 newRawObjItr->SetPedestal(0.,0.);
             }
 
-            // Recover the denoised waveform
-            const icarus_signal_processing::VectorFloat& denoised = decoderTool->getWaveLessCoherent()[chanIdx];
+            // Now determine the pedestal and correct for it
+            waveformTools.getPedestalCorrectedWaveform(denoised[chanIdx],
+                                                       pedCorWaveforms,
+                                                       sigmaCut,
+                                                       localPedestal,
+                                                       localFullRMS,
+                                                       localTruncRMS,
+                                                       localNumTruncBins,
+                                                       localRangeBins);
 
             // Need to convert from float to short int
-            std::transform(denoised.begin(),denoised.end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
+            std::transform(denoised[chanIdx].begin(),denoised[chanIdx].end(),wvfm.begin(),[](const auto& val){return short(std::round(val));});
 
             ConcurrentRawDigitCol::iterator newObjItr = concurrentRawDigitCol.emplace_back(channel,wvfm.size(),wvfm); 
 
-            newObjItr->SetPedestal(0.,decoderTool->getTruncRMSVals()[chanIdx]);
+            newObjItr->SetPedestal(localPedestal,localFullRMS);
 
             // And, finally, the ROIs 
             const icarus_signal_processing::VectorBool& chanROIs = decoderTool->getROIVals()[chanIdx];
@@ -631,7 +657,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
                 {
                     std::vector<float> holder(roiIdx - roiStartIdx);
 
-                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = denoised[roiStartIdx+idx];
+                    for(size_t idx = 0; idx < holder.size(); idx++) holder[idx] = denoised[chanIdx][roiStartIdx+idx];
 
                     ROIVec.add_range(roiStartIdx, std::move(holder));
                 }

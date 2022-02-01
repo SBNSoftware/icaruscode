@@ -583,6 +583,17 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 //                channelArrayPairVec[planeIndex].first[wire] = daq::INoiseFilter::ChannelPlanePair(channel,planeID.Plane);
             }
         }
+
+        // Some detector simulations don't output channels that don't have any possibility of signal (ghost channels)
+        // Do a cleanup phase here to find these
+        for(auto& boardInfo : boardToChannelArrayPairMap)
+        {
+            if (boardWireCountMap[boardInfo.first] == 32)
+            {
+                std::cout << "****> caught a 32 channel remnant" << std::endl;
+            }
+        }
+
     }
 
     theClockProcess.stop();
