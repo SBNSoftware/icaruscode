@@ -33,5 +33,14 @@ icarus_HitEfficiencyAnalysis:
   HitEfficiencyHistogramToolList: [ @local::TrackHitEfficiencyAnalysisTool ]
 }
 
+icarus_TPCPurityMonitor:
+{
+  module_type:          TPCPurityMonitor
+#  TrackLabel:           ["pandoraKalmanTrackGausCryoW","pandoraKalmanTrackGausCryoE"]
+  TrackLabel:           ["pandoraTrackGausCryoW","pandoraTrackGausCryoE"]
+  SelectedPlane:        2
+  MinTickRange:         150.
+}
+
 END_PROLOG
 
