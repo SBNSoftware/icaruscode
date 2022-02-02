@@ -277,17 +277,17 @@ void TPCPurityMonitor::reconfigure(fhicl::ParameterSet const& p)
 {
     // Read parameters from the .fcl file. The names in the arguments
     // to p.get<TYPE> must match names in the .fcl file.
-    fTrackLabelVec      = p.get< std::vector<art::InputTag> >("TrackLabel",    std::vector<art::InputTag>() = {""});
-    fSelectedPlane      = p.get< unsigned                   >("SelectedPlane",                                   2);
-    fMinNumHits         = p.get< unsigned                   >("MinNumHits",                                    100);
-    fMinTickRange       = p.get< float                      >("MinTickRange",                                 150.);
-    fAssumedELifetime   = p.get< float                      >("AssumedELifetime",                          600000.);
-    fMinRejectFraction  = p.get< float                      >("MinRejectFraction",                            0.05);
-    fMaxRejectFraction  = p.get< float                      >("MaxRejectFraction",                            0.95);
-    fOutlierRejectFrac  = p.get< float                      >("OutlierRejectFrac",                            0.70);
-    fUseHitIntegral     = p.get< bool                       >("UseHitIntegral",                               true);
-    fWeightByChiSq      = p.get< bool                       >("WeightByChiSq",                               false);
-    fDiagnosticTuple    = p.get< bool                       >("DiagnosticTuple",                              true);
+    fTrackLabelVec      = p.get< std::vector<art::InputTag> >("TrackLabel",             {""});
+    fSelectedPlane      = p.get< unsigned                   >("SelectedPlane",             2);
+    fMinNumHits         = p.get< unsigned                   >("MinNumHits",              100);
+    fMinTickRange       = p.get< float                      >("MinTickRange",           150.);
+    fAssumedELifetime   = p.get< float                      >("AssumedELifetime",    600000.);
+    fMinRejectFraction  = p.get< float                      >("MinRejectFraction",      0.05);
+    fMaxRejectFraction  = p.get< float                      >("MaxRejectFraction",      0.95);
+    fOutlierRejectFrac  = p.get< float                      >("OutlierRejectFrac",      0.70);
+    fUseHitIntegral     = p.get< bool                       >("UseHitIntegral",         true);
+    fWeightByChiSq      = p.get< bool                       >("WeightByChiSq",         false);
+    fDiagnosticTuple    = p.get< bool                       >("DiagnosticTuple",        true);
 
     return;
 }
