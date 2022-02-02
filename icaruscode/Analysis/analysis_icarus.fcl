@@ -36,10 +36,18 @@ icarus_HitEfficiencyAnalysis:
 icarus_TPCPurityMonitor:
 {
   module_type:          TPCPurityMonitor
-#  TrackLabel:           ["pandoraKalmanTrackGausCryoW","pandoraKalmanTrackGausCryoE"]
-  TrackLabel:           ["pandoraTrackGausCryoW","pandoraTrackGausCryoE"]
+#  TrackLabel:           ["pandoraKalmanTrackGausCryoW:"pandoraKalmanTrackGausCryoE"]
+  TrackLabel:           ["pandoraTrackGausCryoW:"pandoraTrackGausCryoE"]
   SelectedPlane:        2
+  MinNumHits:           100
   MinTickRange:         150.
+  AssumedELifetime:     600000.
+  MinRejectFraction:    0.05
+  MaxRejectFraction:    0.95
+  OutlierRejectFrac:    0.70
+  UseHitIntegral:       true
+  WeightByChiSq:        false
+  DiagnosticTuple:      true
 }
 
 END_PROLOG

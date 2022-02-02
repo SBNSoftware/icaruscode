@@ -456,8 +456,10 @@ void TPCPurityMonitor::produce(art::Event& event)
 
                 for(const auto& hitPair : hitStatusChargePairVec)
                 {
+                    double charge = fUseHitIntegral ? hitPair.first->Integral() : hitPair.first->SummedADC();
+
                     fTickVec.emplace_back(hitPair.first->PeakTime());
-                    fChargeVec.emplace_back(hitPair.first->Integral());
+                    fChargeVec.emplace_back(charge);
                     fGoodHitVec.emplace_back(hitPair.second.first);
                 }
 
@@ -641,8 +643,10 @@ void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, con
         // We are only interested in the "good" hits here
         if (hitPair.second.first)
         {
+            double charge = fUseHitIntegral ? hitPair.first->Integral() : hitPair.first->SummedADC();
+
             double predLogCharge  = (fSamplingRate * (hitPair.first->PeakTime() - firstHitTime) - avePos[0]) * slope + avePos[1];
-            double deltaLogCharge = std::log(hitPair.first->Integral()) - predLogCharge;
+            double deltaLogCharge = std::log(charge) - predLogCharge;
 
             hitPair.second.second = deltaLogCharge;
         }
