@@ -89,7 +89,7 @@ public:
     // This method is called once, at the start of each run. It's a
     // good place to read databases or files that may have
     // run-dependent information.
-    void beginRun(const art::Run& run);
+   // void beginRun(const art::Run& run);
 
     // The analysis routine, called once per event.
     void produce(art::Event& evt);
@@ -275,14 +275,14 @@ void TPCPurityMonitor::beginJob()
 }
 
 //-----------------------------------------------------------------------
-void TPCPurityMonitor::beginRun(const art::Run& /*run*/)
-{
+//void TPCPurityMonitor::beginRun(const art::Run& /*run*/)
+//{
     // How to convert from number of electrons to GeV.  The ultimate
     // source of this conversion factor is
     // ${LARSIM_DIR}/include/SimpleTypesAndConstants/PhysicalConstants.h.
 //    art::ServiceHandle<sim::LArG4Parameters> larParameters;
 //    fElectronsToGeV = 1./larParameters->GeVToElectrons();
-}
+//}
 
 //-----------------------------------------------------------------------
 void TPCPurityMonitor::reconfigure(fhicl::ParameterSet const& p)
