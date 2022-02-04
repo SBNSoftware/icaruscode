@@ -74,7 +74,8 @@ public:
      */
     virtual void process_fragment(detinfo::DetectorClocksData const&,
                                   const daq::INoiseFilter::ChannelPlaneVec&,
-                                  const icarus_signal_processing::ArrayFloat&) override;
+                                  const icarus_signal_processing::ArrayFloat&,
+                                  const size_t&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -274,7 +275,6 @@ void TPCNoiseFilterCannyMC::configure(fhicl::ParameterSet const &pset)
 
     fMorphologicalFilter = std::make_unique<icarus_signal_processing::Dilation2D>(fMorph2DStructuringElementX,fMorph2DStructuringElementY);
 
-    fCoherentNoiseGrouping      = pset.get<unsigned int            >("CoherentNoiseGrouping",    32);
     fCoherentNoiseOffset        = pset.get<unsigned int            >("CoherentNoiseOffset",      24);
     fMorphologicalWindow        = pset.get<unsigned int            >("MorphologicalWindow",      10);
     fCoherentThresholdFactor    = pset.get<float                   >("CoherentThresholdFactor", 2.5);
@@ -330,8 +330,9 @@ void TPCNoiseFilterCannyMC::configure(fhicl::ParameterSet const &pset)
 }
 
 void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
-                                               const daq::INoiseFilter::ChannelPlaneVec&  channelPlaneVec,
-                                               const icarus_signal_processing::ArrayFloat& dataArray)
+                                               const daq::INoiseFilter::ChannelPlaneVec&   channelPlaneVec,
+                                               const icarus_signal_processing::ArrayFloat& dataArray,
+                                               const size_t&                               coherentNoiseGrouping)
 {
     cet::cpu_timer theClockTotal;
 
@@ -357,7 +358,7 @@ void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.size()     < numChannels)  fNumTruncBins.resize(numChannels);
     if (fRangeBins.size()        < numChannels)  fRangeBins.resize(numChannels);
 
-    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / fCoherentNoiseGrouping);
+    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / coherentNoiseGrouping);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
@@ -381,7 +382,7 @@ void TPCNoiseFilterCannyMC::process_fragment(detinfo::DetectorClocksData const&,
         unsigned int plane = widVec[0].Plane;
 
         // Set the threshold which toggles between planes
-        fThresholdVec[idx / fCoherentNoiseGrouping] = fThreshold[plane];
+        fThresholdVec[idx / coherentNoiseGrouping] = fThreshold[plane];
 
         switch(fFilterModeVec[plane][0])
         {

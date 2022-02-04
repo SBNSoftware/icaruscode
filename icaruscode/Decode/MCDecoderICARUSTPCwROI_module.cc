@@ -92,6 +92,7 @@ public:
     // Function to do the work
     void processSingleImage(const detinfo::DetectorClocksData&,
                             const ChannelArrayPair&,
+                            size_t,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
@@ -104,6 +105,7 @@ private:
                             const art::InputTag&, 
                             detinfo::DetectorClocksData const&,
                             ChannelArrayPairVec const&,
+                            size_t const&,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
                             ConcurrentRawDigitCol&,
@@ -115,6 +117,7 @@ private:
         multiThreadImageProcessing(MCDecoderICARUSTPCwROI      const& parent,
                                    detinfo::DetectorClocksData const& clockData,
                                    ChannelArrayPairVec         const& channelArrayPairVec,
+                                   size_t                      const& coherentNoiseGrouping,
                                    ConcurrentRawDigitCol&             concurrentRawDigits,
                                    ConcurrentRawDigitCol&             concurrentRawRawDigits,
                                    ConcurrentRawDigitCol&             coherentRawDigits,
@@ -122,6 +125,7 @@ private:
             : fMCDecoderICARUSTPCwROI(parent),
               fClockData{clockData},
               fChannelArrayPairVec(channelArrayPairVec),
+              fCoherentNoiseGrouping(coherentNoiseGrouping),
               fConcurrentRawDigits(concurrentRawDigits),
               fConcurrentRawRawDigits(concurrentRawRawDigits),
               fCoherentRawDigits(coherentRawDigits),
@@ -134,13 +138,14 @@ private:
             {
                 const ChannelArrayPair& channelArrayPair = fChannelArrayPairVec[idx];
 
-                fMCDecoderICARUSTPCwROI.processSingleImage(fClockData, channelArrayPair, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits, fConcurrentROIs);
+                fMCDecoderICARUSTPCwROI.processSingleImage(fClockData, channelArrayPair, fCoherentNoiseGrouping, fConcurrentRawDigits, fConcurrentRawRawDigits, fCoherentRawDigits, fConcurrentROIs);
             }
         }
     private:
         const MCDecoderICARUSTPCwROI&      fMCDecoderICARUSTPCwROI;
         const detinfo::DetectorClocksData& fClockData;
         const ChannelArrayPairVec&         fChannelArrayPairVec;
+        size_t                             fCoherentNoiseGrouping;
         ConcurrentRawDigitCol&             fConcurrentRawDigits;
         ConcurrentRawDigitCol&             fConcurrentRawRawDigits;
         ConcurrentRawDigitCol&             fCoherentRawDigits;
@@ -162,6 +167,7 @@ private:
     std::string                                                 fOutputRawWavePath;          ///< Path to assign to the output if asked for
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
+    size_t                                                      fCoherentNoiseGrouping;      ///< # channels in common for coherent noise
 
     const std::string                                           fLogCategory;                ///< Output category when logging messages
 
@@ -329,6 +335,7 @@ void MCDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
     fOutputRawWavePath          = pset.get<std::string               >("OutputRawWavePath",                   "raw");
     fOutputCoherentPath         = pset.get<std::string               >("OutputCoherentPath",                  "Cor");
     fDiagnosticOutput           = pset.get<bool                      >("DiagnosticOutput",                    false);
+    fCoherentNoiseGrouping      = pset.get<size_t                    >("CoherentGrouping",                       64);
 
 }
 
@@ -400,9 +407,9 @@ void MCDecoderICARUSTPCwROI::produce(art::Event & event, art::ProcessingFrame co
         auto const clockData = art::ServiceHandle<detinfo::DetectorClocksService>()->DataFor(event);
     
         // ... repackage the input MC data to format suitable for noise processing
-        processSingleLabel(event, rawDigitLabel, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+        processSingleLabel(event, rawDigitLabel, clockData, channelArrayPairVec, fCoherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
-//        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+//        multiThreadImageProcessing imageProcessing(*this, clockData, channelArrayPairVec, fCoherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 //
 //        tbb::parallel_for(tbb::blocked_range<size_t>(0, fNumROPs), imageProcessing);
     
@@ -473,6 +480,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
                                                 const art::InputTag&               inputLabel,
                                                 detinfo::DetectorClocksData const& clockData,
                                                 ChannelArrayPairVec         const& channelArrayPairVec,
+                                                size_t                      const& coherentNoiseGrouping,
                                                 ConcurrentRawDigitCol&             concurrentRawDigits,
                                                 ConcurrentRawDigitCol&             concurrentRawRawDigits,
                                                 ConcurrentRawDigitCol&             coherentRawDigits,
@@ -533,7 +541,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
             if (boardMapItr == boardToChannelArrayPairMap.end())
             {
                 const auto [mapItr, success] = 
-                    boardToChannelArrayPairMap.insert({readoutBoardID,{daq::INoiseFilter::ChannelPlaneVec(MAXCHANNELS),icarus_signal_processing::ArrayFloat(MAXCHANNELS,icarus_signal_processing::VectorFloat(dataSize))}});
+                    boardToChannelArrayPairMap.insert({readoutBoardID,{daq::INoiseFilter::ChannelPlaneVec(MAXCHANNELS,{0,3}),icarus_signal_processing::ArrayFloat(MAXCHANNELS,icarus_signal_processing::VectorFloat(dataSize))}});
 
                 if (!success) 
                 {
@@ -557,7 +565,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 
             if (++boardWireCountMap[readoutBoardID] == MAXCHANNELS)
             {
-                processSingleImage(clockData, boardMapItr->second, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+                processSingleImage(clockData, boardMapItr->second, coherentNoiseGrouping, concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
 
                 boardToChannelArrayPairMap.erase(boardMapItr);
 
@@ -583,6 +591,23 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 //                channelArrayPairVec[planeIndex].first[wire] = daq::INoiseFilter::ChannelPlanePair(channel,planeID.Plane);
             }
         }
+
+        // Some detector simulations don't output channels that don't have any possibility of signal (ghost channels)
+        // Do a cleanup phase here to find these
+        std::cout << "Size of board map: " << boardToChannelArrayPairMap.size() << std::endl;
+        for(auto& boardInfo : boardToChannelArrayPairMap)
+        {
+            if (boardWireCountMap[boardInfo.first] < 64)
+            {
+                std::cout << "****> caught less than 64 channel remnant: " << boardWireCountMap[boardInfo.first] << std::endl;
+                std::cout << "  channels: ";
+                for(const auto& pair : boardInfo.second.first) std::cout << pair.first << " ";
+                std::cout << std::endl;
+
+                processSingleImage(clockData, boardInfo.second, boardWireCountMap[boardInfo.first], concurrentRawDigits, concurrentRawRawDigits, coherentRawDigits, concurrentROIs);
+            }
+        }
+
     }
 
     theClockProcess.stop();
@@ -596,6 +621,7 @@ void MCDecoderICARUSTPCwROI::processSingleLabel(art::Event&                     
 
 void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksData& clockData,
                                                 const ChannelArrayPair&            channelArrayPair,
+                                                size_t                             coherentNoiseGrouping,
                                                 ConcurrentRawDigitCol&             concurrentRawDigitCol,
                                                 ConcurrentRawDigitCol&             concurrentRawRawDigitCol,
                                                 ConcurrentRawDigitCol&             coherentRawDigitCol,
@@ -612,7 +638,7 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
     INoiseFilter* decoderTool = fDecoderToolVec[tbb::this_task_arena::current_thread_index()].get();
 
     //process_fragment(event, rawfrag, product_collection, header_collection);
-    decoderTool->process_fragment(clockData, channelVec, dataArray);
+    decoderTool->process_fragment(clockData, channelVec, dataArray, coherentNoiseGrouping);
 
     // Now set up for output, we need to convert back from float to short int so use this
     raw::RawDigit::ADCvector_t wvfm(numTicks);
@@ -620,6 +646,9 @@ void MCDecoderICARUSTPCwROI::processSingleImage(const detinfo::DetectorClocksDat
     // Loop over the channels to recover the RawDigits after filtering
     for(size_t chanIdx = 0; chanIdx < numChannels; chanIdx++)
     {
+        // Skip if no channel data (plane is wrong)
+        if (channelVec[chanIdx].second > 2) continue;
+        
         raw::ChannelID_t channel = channelVec[chanIdx].first;
 
         if (fOutputRawWaveform)
