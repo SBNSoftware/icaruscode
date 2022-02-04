@@ -177,6 +177,12 @@ private:
     int                        fTicks;              ///< Number ticks spanned
     double                     fAttenuation;        ///< Attenuation from calc
     double                     fError;              ///< Error from calc
+    std::vector<double>        fTrackStartXVec;     ///< Starting x position of track
+    std::vector<double>        fTrackStartYVec;     ///< Starting y position of track
+    std::vector<double>        fTrackStartZVec;     ///< Starting z position of track
+    std::vector<double>        fTrackDirXVec;       ///< Starting x direction of track
+    std::vector<double>        fTrackDirYVec;       ///< Starting x direction of track
+    std::vector<double>        fTrackDirZVec;       ///< Starting x direction of track
     std::vector<double>        fPCAAxes;            ///< Axes for PCA
     std::vector<double>        fEigenValues;        ///< Eigen values 
     std::vector<double>        fMeanPosition;       ///< Mean position used for PCA
@@ -249,6 +255,12 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("attenuation", &fAttenuation,   "attenuation/D");
         fDiagnosticTree->Branch("error",       &fError,         "error/D");
 
+        fDiagnosticTree->Branch("trkstartx",  "std::vector<double>", &fTrackStartXVec);
+        fDiagnosticTree->Branch("trkstarty",  "std::vector<double>", &fTrackStartYVec);
+        fDiagnosticTree->Branch("trkstartz",  "std::vector<double>", &fTrackStartZVec);
+        fDiagnosticTree->Branch("trkdirx",    "std::vector<double>", &fTrackDirXVec);
+        fDiagnosticTree->Branch("trkdiry",    "std::vector<double>", &fTrackDirYVec);
+        fDiagnosticTree->Branch("trkdirz",    "std::vector<double>", &fTrackDirZVec);
         fDiagnosticTree->Branch("pcavec",     "std::vector<double>", &fPCAAxes);
         fDiagnosticTree->Branch("eigenvec",   "std::vector<double>", &fEigenValues);
         fDiagnosticTree->Branch("meanpos",    "std::vector<double>", &fMeanPosition);
@@ -443,6 +455,16 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fAttenuation  = -attenuation;
                 fError        = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
+                const geo::Point_t& trackStart = track->Start();
+                const geo::Vector_t trackDir   = track->StartDirection();
+
+                fTrackStartXVec.emplace_back(trackStart.X());
+                fTrackStartYVec.emplace_back(trackStart.Y());
+                fTrackStartZVec.emplace_back(trackStart.Z());
+                fTrackDirXVec.emplace_back(trackDir.X());
+                fTrackDirYVec.emplace_back(trackDir.Y());
+                fTrackDirZVec.emplace_back(trackDir.Z());
+
                 for(size_t rowIdx = 0; rowIdx < 2; rowIdx++)
                 {
                     for(size_t colIdx = 0; colIdx < 2; colIdx++) fPCAAxes.emplace_back(eigenVectors.row(rowIdx)[colIdx]);
@@ -465,6 +487,12 @@ void TPCPurityMonitor::produce(art::Event& event)
 
                 fDiagnosticTree->Fill();
 
+                fTrackStartXVec.clear();
+                fTrackStartYVec.clear();
+                fTrackStartZVec.clear();
+                fTrackDirXVec.clear();
+                fTrackDirYVec.clear();
+                fTrackDirZVec.clear();
                 fPCAAxes.clear(); 
                 fEigenValues.clear(); 
                 fMeanPosition.clear();
@@ -654,12 +682,19 @@ void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, con
     }
 
     // Sort hits by their deviation from the prediction
-    std::sort(hitPairVector.begin(),hitPairVector.end(),[](const auto& left, const auto& right){return abs(left.second.second) < abs(right.second.second);});
+    std::sort(hitPairVector.begin(),hitPairVector.end(),[](const auto& left, const auto& right){return left.second.second < right.second.second;});
 
     // Go through and tag those we are rejecting
-    size_t rejectIdx = fOutlierRejectFrac * hitPairVector.size();
+    size_t loRejectIdx = 0.01 * hitPairVector.size();
+    size_t hiRejectIdx = fOutlierRejectFrac * hitPairVector.size();
 
-    for(size_t idx = rejectIdx; idx < hitPairVector.size(); idx++) hitPairVector[idx].second.first = false;
+    const double outlierReject = 0.75;
+
+    for(size_t idx = 0; idx < hitPairVector.size(); idx++)
+    {
+        if (idx < loRejectIdx || idx > hiRejectIdx)            hitPairVector[idx].second.first = false;
+        if (hitPairVector[idx].second.second < -outlierReject) hitPairVector[idx].second.first = false;
+    }
 
     // Put back in time order
     std::sort(hitPairVector.begin(), hitPairVector.end(), [](const auto& left, const auto& right){return left.first->PeakTime() < right.first->PeakTime();});
