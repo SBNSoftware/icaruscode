@@ -55,7 +55,8 @@ public:
 
     virtual void process_fragment(detinfo::DetectorClocksData const&,
                                   const daq::INoiseFilter::ChannelPlaneVec&,
-                                  const icarus_signal_processing::ArrayFloat&) = 0;
+                                  const icarus_signal_processing::ArrayFloat&,
+                                  const size_t&) = 0;
 
     /**
      *  @brief Recover the channels for the processed fragment

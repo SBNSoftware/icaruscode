@@ -436,9 +436,7 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     // The following test is meant to be temporary until the "correct" solution is implemented
     if (!fChannelFilter->IsPresent(channel)) return;
 
-    // Testing an idea about rejecting channels
-    if (digitVec->GetPedestal() < 0.) return;
-
+    // The waveforms should have been set to a 0. pedestal...
     float pedestal = 0.;
         
     // Recover the plane info
@@ -476,7 +474,8 @@ void  Decon1DROI::processChannel(size_t                                  idx,
     std::transform(rawadc.begin(),rawadc.end(),rawAdcLessPedVec.begin(),std::bind(std::minus<short>(),std::placeholders::_1,pedestal));
     
     // It seems there are deviations from the pedestal when using wirecell for noise filtering
-    float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+    //float raw_noise = fixTheFreakingWaveform(rawAdcLessPedVec, channel, rawAdcLessPedVec);
+    float raw_noise = digitVec->GetSigma();
     
     // Recover a measure of the noise on the channel for use in the ROI finder
     //float raw_noise = getTruncatedRMS(rawAdcLessPedVec);
