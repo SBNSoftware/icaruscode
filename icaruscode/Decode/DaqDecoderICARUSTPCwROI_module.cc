@@ -159,6 +159,7 @@ private:
     std::string                                                 fOutputCoherentPath;         ///< Path to assign to the output if asked for
     bool                                                        fDiagnosticOutput;           ///< Set this to get lots of messages
     float                                                       fSigmaForTruncation;         ///< Cut for truncated rms calc
+    size_t                                                      fCoherentNoiseGrouping;      ///< Grouping for removing coherent noise
 
     const std::string                                           fLogCategory;                ///< Output category when logging messages
 
@@ -293,13 +294,14 @@ DaqDecoderICARUSTPCwROI::~DaqDecoderICARUSTPCwROI()
 ///
 void DaqDecoderICARUSTPCwROI::configure(fhicl::ParameterSet const & pset)
 {
-    fFragmentsLabelVec   = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
-    fOutputRawWaveform   = pset.get<bool                      >("OutputRawWaveform",                                               false);
-    fOutputCorrection    = pset.get<bool                      >("OutputCorrection",                                                false);
-    fOutputRawWavePath   = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
-    fOutputCoherentPath  = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
-    fDiagnosticOutput    = pset.get<bool                      >("DiagnosticOutput",                                                false);
-    fSigmaForTruncation  = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
+    fFragmentsLabelVec     = pset.get<std::vector<art::InputTag>>("FragmentsLabelVec",  std::vector<art::InputTag>()={"daq:PHYSCRATEDATA"});
+    fOutputRawWaveform     = pset.get<bool                      >("OutputRawWaveform",                                               false);
+    fOutputCorrection      = pset.get<bool                      >("OutputCorrection",                                                false);
+    fOutputRawWavePath     = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
+    fOutputCoherentPath    = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
+    fDiagnosticOutput      = pset.get<bool                      >("DiagnosticOutput",                                                false);
+    fSigmaForTruncation    = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
+    fCoherentNoiseGrouping = pset.get<size_t                    >("CoherentGrouping",                                                   64);
 }
 
 //----------------------------------------------------------------------------
@@ -573,7 +575,7 @@ void DaqDecoderICARUSTPCwROI::processSingleFragment(size_t                      
         }
 
         //process_fragment(event, rawfrag, product_collection, header_collection);
-        decoderTool->process_fragment(clockData, channelArrayPair.first, channelArrayPair.second);
+        decoderTool->process_fragment(clockData, channelArrayPair.first, channelArrayPair.second, fCoherentNoiseGrouping);
 
         // We need to recalculate pedestals for the noise corrected waveforms
         icarus_signal_processing::WaveformTools<float> waveformTools;
