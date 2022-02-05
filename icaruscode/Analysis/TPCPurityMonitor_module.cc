@@ -581,7 +581,7 @@ void TPCPurityMonitor::GetPrincipalComponents(const HitStatusChargePairVec& hitP
     double          meanWeightSum(0.);
     int             numPairsInt(0);
 
-    float startTime = hitPairVector.front().first->PeakTime();
+    float startTime = 0.; //hitPairVector.front().first->PeakTime();
 
     for (const auto& hitPair : hitPairVector) 
     {
@@ -664,7 +664,7 @@ void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, con
     const Eigen::Vector2d& avePos = pca.getAvePosition(); 
 
     // We assume the input vector has been time ordered
-    double firstHitTime = hitPairVector.front().first->PeakTime();
+    double firstHitTime = 0.; //hitPairVector.front().first->PeakTime();
 
     for(auto& hitPair : hitPairVector)
     {
