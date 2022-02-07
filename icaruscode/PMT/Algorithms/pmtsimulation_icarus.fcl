@@ -40,6 +40,18 @@ BEGIN_PROLOG
 ################################################################################
 
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+### Detector and readout parameters
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+icarus_settings_opdet: {
+  
+  nominalPMTgain: 7.0e6  # PMT multiplication gain factor
+  
+} # icarus_settings_opdet
+
+
+
+### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ### Single photoelectron response configurations
 ### - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
@@ -93,7 +105,7 @@ icarus_photoelectronresponse_exponentials: {
   TransitTime:               "55.1 ns"
   RaiseTimeConstant:         "1.8 ns"
   FallTimeConstant:          "4.2 ns"
-  Gain:                      7e6      # => PeakCurrent: -0.14144 mA
+  Gain:                      @local::icarus_settings_opdet.nominalPMTgain  # Gain = 7.0e6 => PeakCurrent: -0.14144 mA
   ADC:                       409.6  # ADC / mA
   
 } # icarus_photoelectronresponse_exponentials
@@ -176,7 +188,7 @@ icarus_pmtsimulationalg_noise: {
     # the second stage is 3.4 R, etc. The value of R is not necessary.
     # Only multiplication stages are included.
     VoltageDistribution:    [ 17.4, 3.4, 5.0, 3.33, 1.67, 1.0, 1.2, 1.5, 2.2, 3.0 ]
-    Gain:                   1e7            # total typical PMT gain
+    Gain:                   @local::icarus_settings_opdet.nominalPMTgain  # total typical PMT gain
   } # PMTspecs
 
 } # icarus_pmtsimulationalg_noise
