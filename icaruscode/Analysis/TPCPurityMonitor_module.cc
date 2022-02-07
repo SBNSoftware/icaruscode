@@ -188,6 +188,9 @@ private:
     std::vector<double>        fMeanPosition;       ///< Mean position used for PCA
     std::vector<double>        fTickVec;            ///< vector of ticks
     std::vector<double>        fChargeVec;          ///< vector of hit charges
+    std::vector<double>        fGoodnessOfFitVec;   ///< Goodness of the hit's fit
+    std::vector<int>           fDegreesOfFreeVec;   ///< Degrees of freedom
+    std::vector<int>           fSnippetLengthVec;   ///< Lenght from start/end of hit
     std::vector<bool>          fGoodHitVec;         ///< Hits were considered good
 
     TTree*                     fDiagnosticTree;     ///< Pointer to our tree
@@ -255,18 +258,21 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("attenuation", &fAttenuation,   "attenuation/D");
         fDiagnosticTree->Branch("error",       &fError,         "error/D");
 
-        fDiagnosticTree->Branch("trkstartx",  "std::vector<double>", &fTrackStartXVec);
-        fDiagnosticTree->Branch("trkstarty",  "std::vector<double>", &fTrackStartYVec);
-        fDiagnosticTree->Branch("trkstartz",  "std::vector<double>", &fTrackStartZVec);
-        fDiagnosticTree->Branch("trkdirx",    "std::vector<double>", &fTrackDirXVec);
-        fDiagnosticTree->Branch("trkdiry",    "std::vector<double>", &fTrackDirYVec);
-        fDiagnosticTree->Branch("trkdirz",    "std::vector<double>", &fTrackDirZVec);
-        fDiagnosticTree->Branch("pcavec",     "std::vector<double>", &fPCAAxes);
-        fDiagnosticTree->Branch("eigenvec",   "std::vector<double>", &fEigenValues);
-        fDiagnosticTree->Branch("meanpos",    "std::vector<double>", &fMeanPosition);
-        fDiagnosticTree->Branch("tickvec",    "std::vector<double>", &fTickVec);
-        fDiagnosticTree->Branch("chargevec",  "std::vector<double>", &fChargeVec);
-        fDiagnosticTree->Branch("goodhitvec", "std::vector<bool>",   &fGoodHitVec);
+        fDiagnosticTree->Branch("trkstartx",   "std::vector<double>", &fTrackStartXVec);
+        fDiagnosticTree->Branch("trkstarty",   "std::vector<double>", &fTrackStartYVec);
+        fDiagnosticTree->Branch("trkstartz",   "std::vector<double>", &fTrackStartZVec);
+        fDiagnosticTree->Branch("trkdirx",     "std::vector<double>", &fTrackDirXVec);
+        fDiagnosticTree->Branch("trkdiry",     "std::vector<double>", &fTrackDirYVec);
+        fDiagnosticTree->Branch("trkdirz",     "std::vector<double>", &fTrackDirZVec);
+        fDiagnosticTree->Branch("pcavec",      "std::vector<double>", &fPCAAxes);
+        fDiagnosticTree->Branch("eigenvec",    "std::vector<double>", &fEigenValues);
+        fDiagnosticTree->Branch("meanpos",     "std::vector<double>", &fMeanPosition);
+        fDiagnosticTree->Branch("tickvec",     "std::vector<double>", &fTickVec);
+        fDiagnosticTree->Branch("chargevec",   "std::vector<double>", &fChargeVec);
+        fDiagnosticTree->Branch("goodnessvec", "std::vector<double>", &fGoodnessOfFitVec);
+        fDiagnosticTree->Branch("freedomvec",  "std::vector<int>",    &fDegreesOfFreeVec);
+        fDiagnosticTree->Branch("snippetvec",  "std::vector<int>",    &fSnippetLengthVec);
+        fDiagnosticTree->Branch("goodhitvec",  "std::vector<bool>",   &fGoodHitVec);
     }
 
 
@@ -482,6 +488,9 @@ void TPCPurityMonitor::produce(art::Event& event)
 
                     fTickVec.emplace_back(hitPair.first->PeakTime());
                     fChargeVec.emplace_back(charge);
+                    fGoodnessOfFitVec.emplace_back(hitPair.first->GoodnessOfFit());
+                    fDegreesOfFreeVec.emplace_back(hitPair.first->DegreesOfFreedom());
+                    fSnippetLengthVec.emplace_back(hitPair.first->EndTick() - hitPair.first->StartTick());
                     fGoodHitVec.emplace_back(hitPair.second.first);
                 }
 
@@ -498,6 +507,9 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fMeanPosition.clear();
                 fTickVec.clear(); 
                 fChargeVec.clear(); 
+                fGoodnessOfFitVec.clear();
+                fDegreesOfFreeVec.clear();
+                fSnippetLengthVec.clear();
                 fGoodHitVec.clear();
             }
         }
