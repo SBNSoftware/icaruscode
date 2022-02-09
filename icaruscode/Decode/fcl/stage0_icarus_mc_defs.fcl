@@ -21,6 +21,7 @@ icarus_stage0_mc_producers:
                            OutputRawWavePath:   "RAW"
                            OutputCoherentPath:  "Cor"
                            DiagnosticOutput:    false
+                           CoherentGrouping:    64
                            DecoderTool:         @local::TPCNoiseFilter1DTool
                        }
   
