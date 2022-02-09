@@ -69,7 +69,8 @@ public:
      */
     virtual void process_fragment(detinfo::DetectorClocksData const&,
                                   const daq::INoiseFilter::ChannelPlaneVec&,
-                                  const icarus_signal_processing::ArrayFloat&) override;
+                                  const icarus_signal_processing::ArrayFloat&,
+                                  const size_t&) override;
 
     /**
      *  @brief Recover the channels for the processed fragment
@@ -141,7 +142,6 @@ private:
     using FloatPairVec = std::vector<std::pair<float,float>>;
 
     float                                          fSigmaForTruncation;     //< Selection cut for truncated rms calculation
-    size_t                                         fCoherentNoiseGrouping;  //< # channels in common for coherent noise
     size_t                                         fCoherentNoiseOffset;    //< Offset for midplane
     size_t                                         fStructuringElement;     //< Structuring element for morphological filter
     size_t                                         fMorphWindow;            //< Window for filter
@@ -212,7 +212,6 @@ TPCNoiseFilter1DMC::~TPCNoiseFilter1DMC()
 void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 {
     fSigmaForTruncation    = pset.get<float                   >("NSigmaForTrucation",  3.5);
-    fCoherentNoiseGrouping = pset.get<size_t                  >("CoherentGrouping",     64);
     fCoherentNoiseOffset   = pset.get<size_t                  >("CoherentOffset",        0);
     fStructuringElement    = pset.get<size_t                  >("StructuringElement",   20);
     fMorphWindow           = pset.get<size_t                  >("FilterWindow",         10);
@@ -242,7 +241,8 @@ void TPCNoiseFilter1DMC::configure(fhicl::ParameterSet const &pset)
 
 void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
                                           const daq::INoiseFilter::ChannelPlaneVec&   channelPlaneVec,
-                                          const icarus_signal_processing::ArrayFloat& dataArray)
+                                          const icarus_signal_processing::ArrayFloat& dataArray,
+                                          const size_t&                               coherentNoiseGrouping)
 {
     cet::cpu_timer theClockTotal;
 
@@ -268,7 +268,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
     if (fNumTruncBins.size()     < numChannels)  fNumTruncBins.resize(numChannels);
     if (fRangeBins.size()        < numChannels)  fRangeBins.resize(numChannels);
 
-    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / fCoherentNoiseGrouping);
+    if (fThresholdVec.size()     < numChannels)  fThresholdVec.resize(numChannels / coherentNoiseGrouping);
 
     if (fFilterFunctionVec.size() < numChannels) fFilterFunctionVec.resize(numChannels);
 
@@ -287,10 +287,11 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
         std::vector<geo::WireID> widVec = fGeometry->ChannelToWire(fChannelIDVec[idx]);
 
         // Handle the filter function to use for this channel
-        unsigned int plane = channelPlaneVec[idx].second;
+        // Note the modulus... this to enable a workaround for the wirecell 2D drift which misses the channels with no signal
+        unsigned int plane = channelPlaneVec[idx].second % 3;
 
         // Set the threshold which toggles between planes
-        fThresholdVec[idx / fCoherentNoiseGrouping] = fThreshold[plane];
+        fThresholdVec[idx / coherentNoiseGrouping] = fThreshold[plane];
 
         switch(fFilterModeVec[plane][0])
         {
@@ -341,7 +342,7 @@ void TPCNoiseFilter1DMC::process_fragment(detinfo::DetectorClocksData const&,
              fFilterFunctionVec.begin(),
              fThresholdVec,
              numChannels,
-             fCoherentNoiseGrouping,
+             coherentNoiseGrouping,
              fCoherentNoiseOffset,
              fMorphWindow);
 
