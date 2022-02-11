@@ -2,6 +2,7 @@
 #define SBN_TRACKTREESTOREOBJ_H
 
 #include "cstdint" // std::uint64_t
+#include <limits>
 
 namespace sbn {
 
@@ -49,7 +50,32 @@ namespace sbn {
     int flash_id = -1;
     float sum_pe = NoPosition;
     float flash_time = NoPosition;
+    float flash_x = NoPosition;
+    float flash_y = NoPosition;
+    float flash_z = NoPosition;
     float diff_flash_t0 = NoPosition;
+  };
+
+  struct selHitInfo {
+    static constexpr float NoValue = -999999.0;
+    static constexpr uint16_t NoVal = 65535;
+    float integral = NoValue;
+    float sumadc = NoValue;
+    float width = NoValue; ///< RMS
+    float pk_time = NoVal;
+    uint16_t mult = NoVal;
+    uint16_t wire = NoVal;
+    uint16_t plane = NoVal;
+    int channel = NoVal;
+    uint16_t tpc = NoVal;
+    int16_t end = -32767;
+    int16_t start = -32767;
+    int id = NoValue;
+    bool oncalo = false;
+    float pitch = NoValue;
+    float dqdx = NoValue;
+    float rr = NoValue;
+    
   };
   
 } // namespace sbn

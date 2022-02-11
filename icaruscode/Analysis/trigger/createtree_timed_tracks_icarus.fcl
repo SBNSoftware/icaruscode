@@ -13,6 +13,8 @@
 #include "services_common_icarus.fcl"
 #include "trigger_icarus.fcl"
 #include "triggeremu_data_config_icarus.fcl"
+#include "icarus_trackcalo_skimmer.fcl"
+#include "calorimetry_icarus.fcl"
 
 BEGIN_PROLOG
 
@@ -60,6 +62,7 @@ services.message.destinations: {
   @table::triggeremu_data_config_icarus.messagedestinations
 }
 
+services.SpaceChargeService: @local::icarus_spacecharge
 
 physics: {
   filters: {
@@ -95,6 +98,12 @@ physics: {
     }
   
     @table::triggeremu_data_config_icarus.producers # from triggeremu_data_config_icarus.fcl
+
+    #calorimetry
+
+    calorimetryCryoE: @local::caloskim_calorimetry
+    calorimetryCryoW: @local::caloskim_calorimetry
+    
   }
 
   analyzers: {
@@ -104,6 +113,8 @@ physics: {
       T0Producer: "pandoraGausCryoW"
       T0selProducer: "t0selectorW"
       TrackProducer: "pandoraTrackGausCryoW"
+      TrackFitterProducer: "pandoraTrackGausCryoW"
+      CaloProducer: "calorimetryCryoW"
       FlashProducer: "opflashCryoW"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1W" },
@@ -122,6 +133,8 @@ physics: {
       T0Producer: "pandoraGausCryoE"
       T0selProducer: "t0selectorE"
       TrackProducer: "pandoraTrackGausCryoE"
+      TrackFitterProducer: "pandoraTrackGausCryoE"
+      CaloProducer: "calorimetryCryoE"
       FlashProducer: "opflashCryoE"
       EmulatedTriggers: [
         { Name:       "M1"    TriggerTag:  "simTiledORM1E" },
@@ -137,13 +150,15 @@ physics: {
   
   selectionW: [ "t0selectorW", "gatesFromTracksW", @sequence::triggeremu_data_config_icarus.producerpathW ]
   selectionE: [ "t0selectorE", "gatesFromTracksE", @sequence::triggeremu_data_config_icarus.producerpathE ]
-  
-  trigger_paths: [ selectionW, selectionE ]
+  runprod: [calorimetryCryoE, calorimetryCryoW]
+  trigger_paths: [ runprod, selectionW, selectionE]
   ana: [ t0TreeStoreW, t0TreeStoreE ]
   streams: [ "rootoutput" ]
   end_paths: [ ana ]
 } # physics
 
+physics.producers.calorimetryCryoE.TrackModuleLabel: "pandoraTrackGausCryoE"
+physics.producers.calorimetryCryoW.TrackModuleLabel: "pandoraTrackGausCryoW"
 
 # ------------------------------------------------------------------------------
 outputs: {
