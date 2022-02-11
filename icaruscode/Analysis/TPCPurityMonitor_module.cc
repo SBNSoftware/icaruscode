@@ -95,9 +95,13 @@ public:
     void produce(art::Event& evt);
 
 private:
-    // Definie the basic data structure we will use
+    // Define a data structure to keep track of a hit's meta data
+    using HitMetaPair            = std::pair<art::Ptr<recob::Hit>,const recob::TrackHitMeta*>;
+    using HitMetaPairVec         = std::vector<HitMetaPair>;
+
+    // Define the basic data structure we will use
     using StatusChargePair       = std::pair<bool,double>;
-    using HitStatusChargePair    = std::pair<const recob::Hit*,StatusChargePair>;
+    using HitStatusChargePair    = std::pair<HitMetaPair,StatusChargePair>;
     using HitStatusChargePairVec = std::vector<HitStatusChargePair>;
 
     // We also need to define a container for the output of the PCA Analysis
@@ -188,6 +192,7 @@ private:
     std::vector<double>        fMeanPosition;       ///< Mean position used for PCA
     std::vector<double>        fTickVec;            ///< vector of ticks
     std::vector<double>        fChargeVec;          ///< vector of hit charges
+    std::vector<double>        fDeltaXVec;          ///< Keep track of hits path length from track fit
     std::vector<double>        fGoodnessOfFitVec;   ///< Goodness of the hit's fit
     std::vector<int>           fDegreesOfFreeVec;   ///< Degrees of freedom
     std::vector<int>           fSnippetLengthVec;   ///< Lenght from start/end of hit
@@ -269,6 +274,7 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("meanpos",     "std::vector<double>", &fMeanPosition);
         fDiagnosticTree->Branch("tickvec",     "std::vector<double>", &fTickVec);
         fDiagnosticTree->Branch("chargevec",   "std::vector<double>", &fChargeVec);
+        fDiagnosticTree->Branch("deltaxvec",   "std::vector<double>", &fDeltaXVec);
         fDiagnosticTree->Branch("goodnessvec", "std::vector<double>", &fGoodnessOfFitVec);
         fDiagnosticTree->Branch("freedomvec",  "std::vector<int>",    &fDegreesOfFreeVec);
         fDiagnosticTree->Branch("snippetvec",  "std::vector<int>",    &fSnippetLengthVec);
@@ -331,7 +337,18 @@ void TPCPurityMonitor::produce(art::Event& event)
         
         if (!trackHandle.isValid()) continue;
 
-        // Recover the collection of associations between tracks and hits
+        // I don't know another way to do this... but we need to build a map from hit to spacepoint
+        // since we don't seem to have a way to go that direction with what we have for kalman fit
+        // tracks. 
+        using HitToSpacePointMap = std::unordered_map<const recob::Hit*,const recob::SpacePoint*>;
+        
+        HitToSpacePointMap hitToSpacePointMap;
+
+        using PointCloud = std::vector<geo::Point_t>;
+
+        PointCloud pointCloud;
+
+        // Recover the collection of associations between tracks and hits and hits and spacepoints
         art::FindManyP<recob::Hit,recob::TrackHitMeta> trackHitAssns(trackHandle, event, trackLabel);
 
         // Loop over tracks and recover hits
@@ -340,46 +357,81 @@ void TPCPurityMonitor::produce(art::Event& event)
             art::Ptr<recob::Track> track(trackHandle,trackIdx);
 
             const std::vector<art::Ptr<recob::Hit>>&      trackHitsVec(trackHitAssns.at(track.key()));
-//            const std::vector<const recob::TrackHitMeta*> metaHitsVec = trackHitAssns.data(track.key());
+            const std::vector<const recob::TrackHitMeta*> metaHitsVec = trackHitAssns.data(track.key());
 
             // Focus on selected hits:
             // 1) Pick out hits on a single plane given by fhicl parameter
             // 2) multiplicity == 1 which should give us clean gaussian shaped pulses
-            std::vector<art::Ptr<recob::Hit>> selectedTrackHitsVec;
+            using TPCToHitMetaPairVecMap = std::unordered_map<unsigned int,HitMetaPairVec>;
 
-            for(auto& hit : trackHitsVec)
+            TPCToHitMetaPairVecMap selectedHitMetaVecMap;
+
+            for(size_t idx=0; idx<trackHitsVec.size(); idx++)
             {
-                if (hit->WireID().Plane == fSelectedPlane && hit->Multiplicity() == 1) selectedTrackHitsVec.emplace_back(hit);
+                art::Ptr<recob::Hit> hit(trackHitsVec.at(idx));
+
+                if (hit->WireID().Plane == fSelectedPlane && hit->Multiplicity() == 1) selectedHitMetaVecMap[hit->WireID().TPC].emplace_back(hit,metaHitsVec.at(idx));
             }
 
-            // Need a minimum number of hits
-            if (selectedTrackHitsVec.size() < fMinNumHits) continue;
+            if (selectedHitMetaVecMap.empty()) continue;
 
-//            std::cout << "--> trackMeta index: " << metaHitsVec.front()->Index() << ", Dx: " << metaHitsVec.front()->Dx() << ", meta size: " << metaHitsVec.size() << ", track:" << trackHitsVec.size() << std::endl;
+            // Currently we need to limit the analysis to a single TPC and we have tracks which may have been stitched across the cathode... 
+            // For now, we search and find the TPC with the most hits
+            TPCToHitMetaPairVecMap::iterator bestMapItr = selectedHitMetaVecMap.begin();
+
+            for(TPCToHitMetaPairVecMap::iterator mapItr = selectedHitMetaVecMap.begin(); mapItr != selectedHitMetaVecMap.end(); mapItr++)
+            {
+                if (mapItr->second.size() > bestMapItr->second.size()) bestMapItr = mapItr;
+            }
+
+            HitMetaPairVec& selectedHitMetaVec = bestMapItr->second;
+
+            // Need a minimum number of hits
+            if (selectedHitMetaVec.size() < fMinNumHits) continue;
 
             // Sort hits by increasing time 
-            std::sort(selectedTrackHitsVec.begin(),selectedTrackHitsVec.end(),[](const auto& left, const auto& right){return left->PeakTime() < right->PeakTime();});
+            std::sort(selectedHitMetaVec.begin(),selectedHitMetaVec.end(),[](const auto& left, const auto& right){return left.first->PeakTime() < right.first->PeakTime();});
 
             // Require track to have a minimum range in ticks
-            if (selectedTrackHitsVec.back()->PeakTime() - selectedTrackHitsVec.front()->PeakTime() < fMinTickRange) continue;
+            if (selectedHitMetaVec.back().first->PeakTime() - selectedHitMetaVec.front().first->PeakTime() < fMinTickRange) continue;
 
             // At this point we should have a vector of art::Ptrs to hits on the selected plane
             // So we should be able to now transition to computing the attenuation
             // Start by forming a vector of pairs of the time (in ticks) and the ln of charge derated by an assumed lifetime
             HitStatusChargePairVec hitStatusChargePairVec;
 
-            float firstHitTime(selectedTrackHitsVec.front()->PeakTime());
+            float  firstHitTime(selectedHitMetaVec.front().first->PeakTime());
+            double maxDeltaX(1.5);   // Assume a "long hit" would be no more than 1.5 cm in length
+            double wirePitch(0.3);
 
-            for(const auto& hit : selectedTrackHitsVec)
+            for(const auto& hitMetaPair: selectedHitMetaVec)
             {
-                float charge    = fUseHitIntegral ? hit->Integral() : hit->SummedADC(); 
-//                float logCharge = charge * exp(fSamplingRate * (hit->PeakTime() - firstHitTime) / fAssumedELifetime);
+                unsigned int trkHitIndex = hitMetaPair.second->Index();
+                double       deltaX      = 0.3;                         // Set this to 3 mm just in case no corresponding point
+                double       cosTheta    = -100.;
 
-                hitStatusChargePairVec.emplace_back(hit.get(),StatusChargePair(true,log(charge)));
+                if (trkHitIndex != std::numeric_limits<unsigned int>::max() && track->HasValidPoint(trkHitIndex))
+                {
+                    geo::Point_t        hitPos  = track->LocationAtPoint(trkHitIndex);
+                    geo::Vector_t       hitDir  = track->DirectionAtPoint(trkHitIndex);
+                    const geo::WireGeo& wireGeo = fGeometry->Wire(hitMetaPair.first->WireID());
+                    geo::Vector_t       wireDir(wireGeo.Direction()[0],wireGeo.Direction()[1],wireGeo.Direction()[2]);
+
+                    pointCloud.emplace_back(hitPos);
+
+                    cosTheta = std::abs(hitDir.Dot(wireDir));
+
+                    if (cosTheta < 1.)
+                    {
+                        deltaX = std::min(wirePitch / (1. - cosTheta), maxDeltaX);
+                    }
+                    else deltaX = maxDeltaX;
+
+                    double charge = fUseHitIntegral ? hitMetaPair.first->Integral() : hitMetaPair.first->SummedADC(); 
+
+                    hitStatusChargePairVec.emplace_back(hitMetaPair,StatusChargePair(true,charge/deltaX));
+                }
             }
-
-            // Drop the smallest and largest charges
-//            std::sort(HitStatusChargePairVec.begin(),HitStatusChargePairVec.end(),[](const auto& left, const auto& right){return left.second.second < right.second.second;});
 
             size_t numOrig   = hitStatusChargePairVec.size();
             size_t lowCutIdx = fMinRejectFraction * numOrig;
@@ -423,7 +475,7 @@ void TPCPurityMonitor::produce(art::Event& event)
 
             for(const auto& hitPair : hitStatusChargePairVec)
             {
-                unsigned wire = hitPair.first->WireID().Wire;
+                unsigned wire = hitPair.first.first->WireID().Wire;
 
                 usedWiresSet.insert(wire);
 
@@ -431,7 +483,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                 if (wire < minWire) minWire = wire;
             }
 
-            geo::WireID wireID  = hitStatusChargePairVec.front().first->WireID();
+            geo::WireID wireID  = hitStatusChargePairVec.front().first.first->WireID();
 			  
 			anab::TPCPurityInfo purityInfo;
 
@@ -441,7 +493,7 @@ void TPCPurityMonitor::produce(art::Event& event)
             purityInfo.Cryostat    = wireID.Cryostat;
 			purityInfo.TPC         = wireID.TPC;
 			purityInfo.Wires       = usedWiresSet.size(); //maxWire - minWire;
-            purityInfo.Ticks       = hitStatusChargePairVec.back().first->PeakTime() - firstHitTime;
+            purityInfo.Ticks       = hitStatusChargePairVec.back().first.first->PeakTime() - firstHitTime;
             purityInfo.Attenuation = -attenuation;
 			purityInfo.FracError   = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
@@ -457,7 +509,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fTrackIdx     = trackIdx; 
                 fWireRange    = maxWire - minWire;
                 fWires        = usedWiresSet.size();
-                fTicks        = hitStatusChargePairVec.back().first->PeakTime() - firstHitTime;
+                fTicks        = hitStatusChargePairVec.back().first.first->PeakTime() - firstHitTime;
                 fAttenuation  = -attenuation;
                 fError        = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
@@ -484,13 +536,12 @@ void TPCPurityMonitor::produce(art::Event& event)
 
                 for(const auto& hitPair : hitStatusChargePairVec)
                 {
-                    double charge = fUseHitIntegral ? hitPair.first->Integral() : hitPair.first->SummedADC();
-
-                    fTickVec.emplace_back(hitPair.first->PeakTime());
-                    fChargeVec.emplace_back(charge);
-                    fGoodnessOfFitVec.emplace_back(hitPair.first->GoodnessOfFit());
-                    fDegreesOfFreeVec.emplace_back(hitPair.first->DegreesOfFreedom());
-                    fSnippetLengthVec.emplace_back(hitPair.first->EndTick() - hitPair.first->StartTick());
+                    fTickVec.emplace_back(hitPair.first.first->PeakTime());
+                    fChargeVec.emplace_back(hitPair.second.second);
+                    fDeltaXVec.emplace_back(hitPair.first.second->Dx());
+                    fGoodnessOfFitVec.emplace_back(hitPair.first.first->GoodnessOfFit());
+                    fDegreesOfFreeVec.emplace_back(hitPair.first.first->DegreesOfFreedom());
+                    fSnippetLengthVec.emplace_back(hitPair.first.first->EndTick() - hitPair.first.first->StartTick());
                     fGoodHitVec.emplace_back(hitPair.second.first);
                 }
 
@@ -506,7 +557,8 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fEigenValues.clear(); 
                 fMeanPosition.clear();
                 fTickVec.clear(); 
-                fChargeVec.clear(); 
+                fChargeVec.clear();
+                fDeltaXVec.clear();
                 fGoodnessOfFitVec.clear();
                 fDegreesOfFreeVec.clear();
                 fSnippetLengthVec.clear();
@@ -599,14 +651,13 @@ void TPCPurityMonitor::GetPrincipalComponents(const HitStatusChargePairVec& hitP
     {
         if (!hitPair.second.first) continue;
 
-        const recob::Hit* hit = hitPair.first;
+        const recob::Hit* hit = hitPair.first.first.get();
 
         // Weight the hit by the peak time difference significance
         double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.; 
-        double charge = fUseHitIntegral ? hit->Integral() : hit->SummedADC();
 
         meanPos(0) += fSamplingRate * (hit->PeakTime() - startTime) * weight;
-        meanPos(1) += std::log(charge) * weight;
+        meanPos(1) += std::log(hitPair.second.second) * weight;
         numPairsInt++;
 
         meanWeightSum += weight;
@@ -625,13 +676,12 @@ void TPCPurityMonitor::GetPrincipalComponents(const HitStatusChargePairVec& hitP
     {
         if (!hitPair.second.first) continue;
 
-        const recob::Hit* hit = hitPair.first;
+        const recob::Hit* hit = hitPair.first.first.get();
 
         double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.;
-        double charge = fUseHitIntegral ? hit->Integral() : hit->SummedADC();
 
         double x = (fSamplingRate * (hit->PeakTime() - startTime) - meanPos(0)) * weight;
-        double y = (std::log(charge) - meanPos(1)) * weight;
+        double y = (std::log(hitPair.second.second) - meanPos(1)) * weight;
 
         weightSum += weight * weight;
 
@@ -675,41 +725,37 @@ void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, con
     double                 slope  = pca.getEigenVectors().row(1)[1] / pca.getEigenVectors().row(1)[0];
     const Eigen::Vector2d& avePos = pca.getAvePosition(); 
 
-    // We assume the input vector has been time ordered
-    double firstHitTime = 0.; //hitPairVector.front().first->PeakTime();
+    using HitPairDeltaLogChargePair    = std::pair<HitStatusChargePair*,double>;
+    using HitPairDeltaLogChargePairVec = std::vector<HitPairDeltaLogChargePair>;
+
+    HitPairDeltaLogChargePairVec hitPairDeltaLogChargePairVec;
 
     for(auto& hitPair : hitPairVector)
     {
         // We are only interested in the "good" hits here
         if (hitPair.second.first)
         {
-            double charge = fUseHitIntegral ? hitPair.first->Integral() : hitPair.first->SummedADC();
+            double predLogCharge  = (fSamplingRate * hitPair.first.first->PeakTime() - avePos[0]) * slope + avePos[1];
+            double deltaLogCharge = std::log(hitPair.second.second) - predLogCharge;
 
-            double predLogCharge  = (fSamplingRate * (hitPair.first->PeakTime() - firstHitTime) - avePos[0]) * slope + avePos[1];
-            double deltaLogCharge = std::log(charge) - predLogCharge;
-
-            hitPair.second.second = deltaLogCharge;
+            hitPairDeltaLogChargePairVec.emplace_back(&hitPair,deltaLogCharge);
         }
-        else hitPair.second.second = 0.;  // These hits already rejected, don't double count them. 
     }
 
     // Sort hits by their deviation from the prediction
-    std::sort(hitPairVector.begin(),hitPairVector.end(),[](const auto& left, const auto& right){return left.second.second < right.second.second;});
+    std::sort(hitPairDeltaLogChargePairVec.begin(),hitPairDeltaLogChargePairVec.end(),[](const auto& left, const auto& right){return left.second < right.second;});
 
     // Go through and tag those we are rejecting
-    size_t loRejectIdx = 0.01 * hitPairVector.size();
-    size_t hiRejectIdx = fOutlierRejectFrac * hitPairVector.size();
+    size_t loRejectIdx = 0.01 * hitPairDeltaLogChargePairVec.size();
+    size_t hiRejectIdx = fOutlierRejectFrac * hitPairDeltaLogChargePairVec.size();
 
     const double outlierReject = 0.75;
 
-    for(size_t idx = 0; idx < hitPairVector.size(); idx++)
+    for(size_t idx = 0; idx < hitPairDeltaLogChargePairVec.size(); idx++)
     {
-        if (idx < loRejectIdx || idx > hiRejectIdx)            hitPairVector[idx].second.first = false;
-        if (hitPairVector[idx].second.second < -outlierReject) hitPairVector[idx].second.first = false;
+        if (idx < loRejectIdx || idx > hiRejectIdx)                    hitPairDeltaLogChargePairVec[idx].first->second.first = false;
+        if (hitPairDeltaLogChargePairVec[idx].second < -outlierReject) hitPairDeltaLogChargePairVec[idx].first->second.first = false;
     }
-
-    // Put back in time order
-    std::sort(hitPairVector.begin(), hitPairVector.end(), [](const auto& left, const auto& right){return left.first->PeakTime() < right.first->PeakTime();});
 
     return;
 }
