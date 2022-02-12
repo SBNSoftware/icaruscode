@@ -1,0 +1,6 @@
+#include "cosmics_g4_icarus_nooverburden.fcl"
+
+services.LArG4Parameters.TransverseDiffusion: 0
+services.LArG4Parameters.LongitudinalDiffusion: 0
+
+services.DetectorPropertiesService.Electronlifetime: 6000  # introducing a new value for the purity study 

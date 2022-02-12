@@ -1,0 +1,4 @@
+#include "cosmics_g4_icarus_sce_nooverburden.fcl"
+
+services.DetectorPropertiesService.Electronlifetime: 6000  # introducing a new value for the purity study 
+

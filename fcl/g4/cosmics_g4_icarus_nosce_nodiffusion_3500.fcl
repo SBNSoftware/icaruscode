@@ -1,0 +1,4 @@
+#include "cosmics_g4_icarus_nooverburden.fcl"
+
+services.LArG4Parameters.TransverseDiffusion: 0
+services.LArG4Parameters.LongitudinalDiffusion: 0
