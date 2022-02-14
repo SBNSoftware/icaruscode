@@ -104,16 +104,30 @@ private:
     using HitStatusChargePair    = std::pair<HitMetaPair,StatusChargePair>;
     using HitStatusChargePairVec = std::vector<HitStatusChargePair>;
 
-    // We also need to define a container for the output of the PCA Analysis
-    class PrincipalComponents
+    // We would also like to keep tracy of the trajectory points along the track
+    using PointDirPair           = std::pair<geo::Point_t,geo::Vector_t>;
+    using HitPointDirPairMap     = std::unordered_map<const recob::Hit*,PointDirPair>;
+
+    // We also need to define a container for the output of the 2D PCA Analysis
+    class PrincipalComponents2D
     {
     public:
 
         using EigenValues  = Eigen::Vector2d;
         using EigenVectors = Eigen::Matrix2d;
 
-        PrincipalComponents() :
+        PrincipalComponents2D() :
             fSVD_OK(false), fNumHitsUsed(0), fEigenValues(EigenValues::Zero()), fEigenVectors(EigenVectors::Zero()), fAvePosition(Eigen::Vector2d::Zero()) {}
+
+        PrincipalComponents2D(bool ok, int nHits, const EigenValues& eigenValues, const EigenVectors& eigenVecs, const Eigen::Vector2d& avePos) :
+            fSVD_OK(ok), fNumHitsUsed(nHits), fEigenValues(eigenValues), fEigenVectors(eigenVecs), fAvePosition(avePos) {}
+
+        bool                   getSvdOK()                 const {return fSVD_OK;}
+        int                    getNumHitsUsed()           const {return fNumHitsUsed;}
+        const EigenValues&     getEigenValues()           const {return fEigenValues;}
+        const EigenVectors&    getEigenVectors()          const {return fEigenVectors;}
+        const Eigen::Vector2d& getAvePosition()           const {return fAvePosition;}
+        void                   flipAxis(size_t axis)            { fEigenVectors.row(axis) = -fEigenVectors.row(axis);}
 
     private:
 
@@ -122,19 +136,36 @@ private:
         EigenValues     fEigenValues;        ///< Eigen values from SVD decomposition
         EigenVectors    fEigenVectors;       ///< The three principle axes
         Eigen::Vector2d fAvePosition;        ///< Average position of hits fed to PCA
+    };
 
+    // We also need to define a container for the output of the 2D PCA Analysis
+    class PrincipalComponents3D
+    {
     public:
 
-        PrincipalComponents(bool ok, int nHits, const EigenValues& eigenValues, const EigenVectors& eigenVecs, const Eigen::Vector2d& avePos) :
+        using EigenValues  = Eigen::Vector3d;
+        using EigenVectors = Eigen::Matrix3d;
+
+        PrincipalComponents3D() :
+            fSVD_OK(false), fNumHitsUsed(0), fEigenValues(EigenValues::Zero()), fEigenVectors(EigenVectors::Zero()), fAvePosition(Eigen::Vector3d::Zero()) {}
+
+        PrincipalComponents3D(bool ok, int nHits, const EigenValues& eigenValues, const EigenVectors& eigenVecs, const Eigen::Vector3d& avePos) :
             fSVD_OK(ok), fNumHitsUsed(nHits), fEigenValues(eigenValues), fEigenVectors(eigenVecs), fAvePosition(avePos) {}
 
         bool                   getSvdOK()                 const {return fSVD_OK;}
         int                    getNumHitsUsed()           const {return fNumHitsUsed;}
         const EigenValues&     getEigenValues()           const {return fEigenValues;}
         const EigenVectors&    getEigenVectors()          const {return fEigenVectors;}
-        const Eigen::Vector2d& getAvePosition()           const {return fAvePosition;}
-
+        const Eigen::Vector3d& getAvePosition()           const {return fAvePosition;}
         void                   flipAxis(size_t axis)            { fEigenVectors.row(axis) = -fEigenVectors.row(axis);}
+
+    private:
+
+        bool            fSVD_OK;             ///< SVD Decomposition was successful
+        int             fNumHitsUsed;        ///< Number of hits in the decomposition
+        EigenValues     fEigenValues;        ///< Eigen values from SVD decomposition
+        EigenVectors    fEigenVectors;       ///< The three principle axes
+        Eigen::Vector3d fAvePosition;        ///< Average position of hits fed to PCA
     };
 
     // This method reads in any parameters from the .fcl files. This
@@ -144,10 +175,11 @@ private:
     void reconfigure(fhicl::ParameterSet const& pset);
 
     // Compute the principle axes
-    void GetPrincipalComponents(const HitStatusChargePairVec& hitPairVector, PrincipalComponents& pca) const;
+    void GetPrincipalComponents2D(const HitStatusChargePairVec& hitPairVector, PrincipalComponents2D& pca)                      const;
+    void GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirPairMap&, PrincipalComponents3D& pca) const;
 
     // Reject outliers
-    void RejectOutliers(HitStatusChargePairVec& hitPairVector, const PrincipalComponents& pca) const;
+    void RejectOutliers(HitStatusChargePairVec& hitPairVector, const PrincipalComponents2D& pca) const;
 
     // The following typedefs will, obviously, be useful
     double length(const recob::Track* track);
@@ -187,9 +219,12 @@ private:
     std::vector<double>        fTrackDirXVec;       ///< Starting x direction of track
     std::vector<double>        fTrackDirYVec;       ///< Starting x direction of track
     std::vector<double>        fTrackDirZVec;       ///< Starting x direction of track
-    std::vector<double>        fPCAAxes;            ///< Axes for PCA
-    std::vector<double>        fEigenValues;        ///< Eigen values 
-    std::vector<double>        fMeanPosition;       ///< Mean position used for PCA
+    std::vector<double>        fPCAAxes2D;          ///< Axes for PCA
+    std::vector<double>        fEigenValues2D;      ///< Eigen values 
+    std::vector<double>        fMeanPosition2D;     ///< Mean position used for PCA
+    std::vector<double>        fPCAAxes3D;          ///< Axes for PCA 3D
+    std::vector<double>        fEigenValues3D;      ///< Eigen values 3D
+    std::vector<double>        fMeanPosition3D;     ///< Mean position used for PCA
     std::vector<double>        fTickVec;            ///< vector of ticks
     std::vector<double>        fChargeVec;          ///< vector of hit charges
     std::vector<double>        fDeltaXVec;          ///< Keep track of hits path length from track fit
@@ -269,9 +304,12 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("trkdirx",     "std::vector<double>", &fTrackDirXVec);
         fDiagnosticTree->Branch("trkdiry",     "std::vector<double>", &fTrackDirYVec);
         fDiagnosticTree->Branch("trkdirz",     "std::vector<double>", &fTrackDirZVec);
-        fDiagnosticTree->Branch("pcavec",      "std::vector<double>", &fPCAAxes);
-        fDiagnosticTree->Branch("eigenvec",    "std::vector<double>", &fEigenValues);
-        fDiagnosticTree->Branch("meanpos",     "std::vector<double>", &fMeanPosition);
+        fDiagnosticTree->Branch("pcavec2d",    "std::vector<double>", &fPCAAxes2D);
+        fDiagnosticTree->Branch("eigenvec2d",  "std::vector<double>", &fEigenValues2D);
+        fDiagnosticTree->Branch("meanpos2d",   "std::vector<double>", &fMeanPosition2D);
+        fDiagnosticTree->Branch("pcavec3d",    "std::vector<double>", &fPCAAxes3D);
+        fDiagnosticTree->Branch("eigenvec3d",  "std::vector<double>", &fEigenValues3D);
+        fDiagnosticTree->Branch("meanpos3d",   "std::vector<double>", &fMeanPosition3D);
         fDiagnosticTree->Branch("tickvec",     "std::vector<double>", &fTickVec);
         fDiagnosticTree->Branch("chargevec",   "std::vector<double>", &fChargeVec);
         fDiagnosticTree->Branch("deltaxvec",   "std::vector<double>", &fDeltaXVec);
@@ -399,6 +437,7 @@ void TPCPurityMonitor::produce(art::Event& event)
             // So we should be able to now transition to computing the attenuation
             // Start by forming a vector of pairs of the time (in ticks) and the ln of charge derated by an assumed lifetime
             HitStatusChargePairVec hitStatusChargePairVec;
+            HitPointDirPairMap     hitPointDirPairMap;
 
             float  firstHitTime(selectedHitMetaVec.front().first->PeakTime());
             double maxDeltaX(1.5);   // Assume a "long hit" would be no more than 1.5 cm in length
@@ -430,6 +469,7 @@ void TPCPurityMonitor::produce(art::Event& event)
                     double charge = fUseHitIntegral ? hitMetaPair.first->Integral() : hitMetaPair.first->SummedADC(); 
 
                     hitStatusChargePairVec.emplace_back(hitMetaPair,StatusChargePair(true,charge/deltaX));
+                    hitPointDirPairMap[hitMetaPair.first.get()] = PointDirPair(hitPos,hitDir);
                 }
             }
 
@@ -453,17 +493,25 @@ void TPCPurityMonitor::produce(art::Event& event)
             std::transform(hitStatusChargePairVec.begin(),hitStatusChargePairVec.begin()+lowCutIdx,hitStatusChargePairVec.begin(),      [](const auto& hitPair){return HitStatusChargePair(hitPair.first,StatusChargePair(false,hitPair.second.second));});
             std::transform(hitStatusChargePairVec.begin()+hiCutIdx,hitStatusChargePairVec.end(),hitStatusChargePairVec.begin()+hiCutIdx,[](const auto& hitPair){return HitStatusChargePair(hitPair.first,StatusChargePair(false,hitPair.second.second));});
 
-            PrincipalComponents pca;
+            PrincipalComponents2D pca;
 
-            GetPrincipalComponents(hitStatusChargePairVec, pca);
+            GetPrincipalComponents2D(hitStatusChargePairVec, pca);
 
             // Reject the outliers
             RejectOutliers(hitStatusChargePairVec, pca);
 
             // Recompute the pca
-            GetPrincipalComponents(hitStatusChargePairVec, pca);
+            GetPrincipalComponents2D(hitStatusChargePairVec, pca);
 
-            const PrincipalComponents::EigenVectors& eigenVectors = pca.getEigenVectors();
+            // If the PCA faild then we should bail out 
+            if (!pca.getSvdOK()) continue;
+
+            // Now get the 3D PCA so we can use this to help select on track straightness
+            PrincipalComponents3D pca3D;
+
+            GetPrincipalComponents3D(hitStatusChargePairVec, hitPointDirPairMap, pca3D);
+
+            const PrincipalComponents2D::EigenVectors& eigenVectors = pca.getEigenVectors();
 
             double attenuation = eigenVectors.row(1)[1] / eigenVectors.row(1)[0];
 
@@ -523,16 +571,33 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fTrackDirYVec.emplace_back(trackDir.Y());
                 fTrackDirZVec.emplace_back(trackDir.Z());
 
+                // 2D PCA of time vs charge
                 for(size_t rowIdx = 0; rowIdx < 2; rowIdx++)
                 {
-                    for(size_t colIdx = 0; colIdx < 2; colIdx++) fPCAAxes.emplace_back(eigenVectors.row(rowIdx)[colIdx]);
+                    for(size_t colIdx = 0; colIdx < 2; colIdx++) fPCAAxes2D.emplace_back(eigenVectors.row(rowIdx)[colIdx]);
                 }
 
-                fEigenValues.emplace_back(pca.getEigenValues()[0]); 
-                fEigenValues.emplace_back(pca.getEigenValues()[1]); 
+                fEigenValues2D.emplace_back(pca.getEigenValues()[0]); 
+                fEigenValues2D.emplace_back(pca.getEigenValues()[1]); 
 
-                fMeanPosition.emplace_back(pca.getAvePosition()[0]);
-                fMeanPosition.emplace_back(pca.getAvePosition()[1]);
+                fMeanPosition2D.emplace_back(pca.getAvePosition()[0]);
+                fMeanPosition2D.emplace_back(pca.getAvePosition()[1]);
+
+                // 3D PCA of track trajectory points
+                const PrincipalComponents3D::EigenVectors& eigenVectors3D = pca3D.getEigenVectors();
+
+                for(size_t rowIdx = 0; rowIdx < 3; rowIdx++)
+                {
+                    for(size_t colIdx = 0; colIdx < 3; colIdx++) fPCAAxes3D.emplace_back(eigenVectors3D.row(rowIdx)[colIdx]);
+                }
+
+                fEigenValues3D.emplace_back(pca3D.getEigenValues()[0]); 
+                fEigenValues3D.emplace_back(pca3D.getEigenValues()[1]); 
+                fEigenValues3D.emplace_back(pca3D.getEigenValues()[2]); 
+
+                fMeanPosition3D.emplace_back(pca3D.getAvePosition()[0]);
+                fMeanPosition3D.emplace_back(pca3D.getAvePosition()[1]);
+                fMeanPosition3D.emplace_back(pca3D.getAvePosition()[2]);
 
                 for(const auto& hitPair : hitStatusChargePairVec)
                 {
@@ -553,9 +618,12 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fTrackDirXVec.clear();
                 fTrackDirYVec.clear();
                 fTrackDirZVec.clear();
-                fPCAAxes.clear(); 
-                fEigenValues.clear(); 
-                fMeanPosition.clear();
+                fPCAAxes2D.clear(); 
+                fEigenValues2D.clear(); 
+                fMeanPosition2D.clear();
+                fPCAAxes3D.clear(); 
+                fEigenValues3D.clear(); 
+                fMeanPosition3D.clear();
                 fTickVec.clear(); 
                 fChargeVec.clear();
                 fDeltaXVec.clear();
@@ -637,8 +705,7 @@ double TPCPurityMonitor::projectedLength(const recob::Track* track)
 }
 
 
-
-void TPCPurityMonitor::GetPrincipalComponents(const HitStatusChargePairVec& hitPairVector, PrincipalComponents& pca) const
+void TPCPurityMonitor::GetPrincipalComponents2D(const HitStatusChargePairVec& hitPairVector, PrincipalComponents2D& pca) const
 {
     // Run through the HitPairList and get the mean position of all the hits
     Eigen::Vector2d meanPos(Eigen::Vector2d::Zero());
@@ -701,26 +768,114 @@ void TPCPurityMonitor::GetPrincipalComponents(const HitStatusChargePairVec& hitP
 
     if (eigenMat.info() == Eigen::ComputationInfo::Success) 
     {
-        // Now copy output
+        // Now copy outputPrincipalCo
         // The returned eigen values and vectors will be returned in an xyz system where x is the smallest spread,
         // y is the next smallest and z is the largest. Adopt that convention going forward
-        PrincipalComponents::EigenValues  eigenVals = eigenMat.eigenvalues();
-        PrincipalComponents::EigenVectors eigenVecs = eigenMat.eigenvectors().transpose();
+        PrincipalComponents2D::EigenValues  eigenVals = eigenMat.eigenvalues();
+        PrincipalComponents2D::EigenVectors eigenVecs = eigenMat.eigenvectors().transpose();
 
         // Store away
         // NOTE: the major axis will be the second entry, the minor axis will be the first
-        pca = PrincipalComponents(true, numPairsInt, eigenVals, eigenVecs, meanPos);
+        pca = PrincipalComponents2D(true, numPairsInt, eigenVals, eigenVecs, meanPos);
     }
     else 
     {
         mf::LogDebug("Cluster3D") << "PCA decompose failure, numPairs = " << numPairsInt << std::endl;
-        pca = PrincipalComponents();
+        pca = PrincipalComponents2D();
     }
 
     return;
 }
 
-void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, const PrincipalComponents& pca) const
+void TPCPurityMonitor::GetPrincipalComponents3D(const HitStatusChargePairVec& hitPairVector, HitPointDirPairMap& hitPointDirPairMap, PrincipalComponents3D& pca) const
+{
+    // Run through the HitPairList and get the mean position of all the hits
+    Eigen::Vector3d meanPos(Eigen::Vector3d::Zero());
+    double          meanWeightSum(0.);
+    int             numPairsInt(0);
+
+    for (const auto& hitPair : hitPairVector) 
+    {
+        if (!hitPair.second.first) continue;
+
+        const recob::Hit* hit = hitPair.first.first.get();
+
+        geo::Point_t hitPos = hitPointDirPairMap[hit].first;
+
+        // Weight the hit by the peak time difference significance
+        double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.; 
+
+        meanPos += Eigen::Vector3d(hitPos.X(),hitPos.Y(),hitPos.Z());
+
+        numPairsInt++;
+
+        meanWeightSum += weight;
+    }
+
+    meanPos /= meanWeightSum;
+
+    // Define elements of our covariance matrix
+    double xi2(0.);
+    double xiyi(0.);
+    double xizi(0.);
+    double yi2(0.);
+    double yizi(0.);
+    double zi2(0.);
+    double weightSum(0.);
+
+    // Back through the hits to build the matrix
+    for (const auto& hitPair : hitPairVector) 
+    {
+        if (!hitPair.second.first) continue;
+
+        const recob::Hit* hit = hitPair.first.first.get();
+
+        double weight = fWeightByChiSq ? 1./hit->GoodnessOfFit() : 1.;
+
+        geo::Point_t    hitPos         = hitPointDirPairMap[hit].first;
+        Eigen::Vector3d weightedHitPos = Eigen::Vector3d(hitPos.X(),hitPos.Y(),hitPos.Z()) - meanPos;
+
+        weightSum += weight * weight;
+
+        xi2  += weightedHitPos[0] * weightedHitPos[0];
+        xiyi += weightedHitPos[0] * weightedHitPos[1];
+        xizi += weightedHitPos[0] * weightedHitPos[2];
+        yi2  += weightedHitPos[1] * weightedHitPos[1];
+        yizi += weightedHitPos[1] * weightedHitPos[2];
+        zi2  += weightedHitPos[2] * weightedHitPos[2];
+    }
+
+    // Using Eigen package
+    Eigen::Matrix3d sig;
+
+    sig << xi2, xiyi, xizi, xiyi, yi2, yizi, xizi, yizi, zi2;
+
+    sig *= 1. / weightSum;
+
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> eigenMat(sig);
+
+    if (eigenMat.info() == Eigen::ComputationInfo::Success) 
+    {
+        // Now copy outputPrincipalCo
+        // The returned eigen values and vectors will be returned in an xyz system where x is the smallest spread,
+        // y is the next smallest and z is the largest. Adopt that convention going forward
+        PrincipalComponents3D::EigenValues  eigenVals = eigenMat.eigenvalues();
+        PrincipalComponents3D::EigenVectors eigenVecs = eigenMat.eigenvectors().transpose();
+
+        // Store away
+        // NOTE: the major axis will be the second entry, the minor axis will be the first
+        pca = PrincipalComponents3D(true, numPairsInt, eigenVals, eigenVecs, meanPos);
+    }
+    else 
+    {
+        mf::LogDebug("Cluster3D") << "PCA decompose failure, numPairs = " << numPairsInt << std::endl;
+        pca = PrincipalComponents3D();
+    }
+
+    return;
+}
+
+void TPCPurityMonitor::RejectOutliers(HitStatusChargePairVec& hitPairVector, const PrincipalComponents2D& pca) const
 {
     double                 slope  = pca.getEigenVectors().row(1)[1] / pca.getEigenVectors().row(1)[0];
     const Eigen::Vector2d& avePos = pca.getAvePosition(); 
