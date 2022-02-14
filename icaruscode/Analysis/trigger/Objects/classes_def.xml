@@ -2,7 +2,8 @@
 
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
 
-  <class name="sbn::selTrackInfo" ClassVersion="11">
+  <class name="sbn::selTrackInfo" ClassVersion="12">
+   <version ClassVersion="12" checksum="249868847"/>
    <version ClassVersion="11" checksum="2588527011"/>
    <version ClassVersion="10" checksum="1586061224"/>
   </class>
@@ -24,7 +25,8 @@
    <version ClassVersion="10" checksum="364607587"/>
   </class>
 
-  <class name="sbn::selHitInfo" ClassVersion="10" >
+  <class name="sbn::selHitInfo" ClassVersion="11" >
+   <version ClassVersion="11" checksum="2097252913"/>
    <version ClassVersion="10" checksum="2893769828"/>
   </class>
 

@@ -18,6 +18,7 @@ namespace sbn {
     float end_y = NoPosition;
     float end_z = NoPosition;
     float length = -1.0;
+    float energy = NoPosition;
     float dir_x = NoPosition;
     float dir_y = NoPosition;
     float dir_z = NoPosition;
@@ -74,6 +75,7 @@ namespace sbn {
     bool oncalo = false;
     float pitch = NoValue;
     float dqdx = NoValue;
+    float dEdx = NoValue;
     float rr = NoValue;
     
   };

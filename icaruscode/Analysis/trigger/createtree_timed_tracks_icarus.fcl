@@ -125,6 +125,10 @@ physics: {
         { Name:      "S15"    TriggerTag: "simTiledORS15W" }
       ]
       LogCategory: "TimeTrackTreeStorageCryoW"
+      MODA: 0.930
+      MODB: 0.212
+      Wion: 0.0000236016
+      Efield: 0.5
       }
 
     t0TreeStoreE: {
@@ -145,7 +149,12 @@ physics: {
         { Name:      "S15"    TriggerTag: "simTiledORS15E" }
       ]
       LogCategory: "TimeTrackTreeStorageCryoE"
+      MODA: 0.930
+      MODB: 0.212
+      Wion: 0.0000236016
+      Efield: 0.5
       }
+
   } #analyzers
   
   selectionW: [ "t0selectorW", "gatesFromTracksW", @sequence::triggeremu_data_config_icarus.producerpathW ]

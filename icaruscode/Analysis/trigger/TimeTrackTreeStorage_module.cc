@@ -56,7 +56,7 @@
 // C/C++ libraries
 #include <vector>
 #include <string>
-
+#include <cmath>
 
 
 // -----------------------------------------------------------------------------
@@ -211,6 +211,30 @@ public:
       Comment("label for output messages of this module instance"),
       "TimeTrackTreeStorage" // default
       };
+
+    fhicl::Atom<float> MODA {
+      Name("MODA"),
+      Comment("first recombination parameter for dE/dx calculations"),
+      0.930 //default
+      };
+    
+    fhicl::Atom<float> MODB {
+      Name("MODB"),
+      Comment("second recombination parameter for dE/dx calculations"),
+      0.212
+      };
+    
+    fhicl::Atom<float> Wion {
+      Name("Wion"),
+      Comment("work function for recombination"),
+      0.0000236016
+      };
+    
+    fhicl::Atom<float> Efield {
+      Name("Efield"),
+      Comment("Electric field in kV/cm"),
+      0.5
+      };
     
   }; // Config
   
@@ -222,6 +246,12 @@ public:
 			  unsigned hkey,
 			  const std::vector<art::Ptr<anab::Calorimetry>> &calo,
 			  const geo::GeometryCore *geo);
+
+  float dEdx_calc(float dQdx, 
+		  float A,
+		  float B,
+		  float Wion,
+		  float E);
 
   void analyze(art::Event const& e) override;
   
@@ -242,6 +272,10 @@ private:
   art::InputTag const fTriggerProducer;
   art::InputTag const fFlashProducer;
   std::string const fLogCategory;
+  float const fMODA;
+  float const fMODB;
+  float const fWion;
+  float const fEfield;
   
   // --- END ---- Configuration parameters -------------------------------------
 
@@ -309,6 +343,10 @@ sbn::TimeTrackTreeStorage::TimeTrackTreeStorage(Parameters const& p)
   , fTriggerProducer  { p().TriggerProducer() }
   , fFlashProducer    { p().FlashProducer() }
   , fLogCategory      { p().LogCategory() }
+  , fMODA             { p().MODA() }
+  , fMODB             { p().MODB() }
+  , fWion             { p().Wion() }
+  , fEfield           { p().Efield() }
   // algorithms
   , fStoreTree {
       art::ServiceHandle<art::TFileService>()->make<TTree>
@@ -453,8 +491,7 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
     trackInfo.dir_y = trackPtr->StartDirection().Y();
     trackInfo.dir_z = trackPtr->StartDirection().Z();
     trackInfo.length = trackPtr->Length();
-    fTrackInfo = trackInfo;
-    
+        
     //Animesh added hit information - 2/8/2022
 
     unsigned int plane = 0; //hit plane number
@@ -477,6 +514,17 @@ void sbn::TimeTrackTreeStorage::analyze(art::Event const& e)
       //}
 
     }
+    float totE = 0;
+    for (size_t i = 0; i < fHitStore.size(); ++i)
+    {
+      if(fHitStore[i].dEdx > -1)
+      {	
+	float E_hit = fHitStore[i].dEdx*fHitStore[i].pitch; //energy of hit, in MeV?
+	totE += E_hit;
+      }
+    }
+    trackInfo.energy = totE;
+    fTrackInfo = trackInfo;
     /*
     for(size_t trajp = 0; trajp < trackPtr->NumberTrajectoryPoints()-1; ++trajp)
     {
@@ -548,6 +596,7 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
 	hinfo.oncalo = true;
 	hinfo.pitch = c->TrkPitchVec()[i_calo];
 	hinfo.dqdx = c->dQdx()[i_calo];
+	hinfo.dEdx = dEdx_calc(hinfo.dqdx, fMODA, fMODB, fWion, fEfield);
 	hinfo.rr = c->ResidualRange()[i_calo];
 	break;
       }
@@ -558,7 +607,20 @@ sbn::selHitInfo sbn::TimeTrackTreeStorage::makeHit(const recob::Hit &hit,
   return hinfo;
 }
 
-
+float sbn::TimeTrackTreeStorage::dEdx_calc(float dQdx,
+					   float A,
+					   float B,
+					   float Wion,
+					   float E) 
+{
+  float LAr_density_gmL = 1.389875; //LAr density in g/L
+  float alpha = A;
+  float beta = B/(LAr_density_gmL*E);
+  float dEdx = ((std::exp(dQdx*Wion*beta) - alpha)/beta)*3.278;
+ 
+  return dEdx;
+  
+}
 
 
 // -----------------------------------------------------------------------------
