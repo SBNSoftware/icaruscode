@@ -219,6 +219,12 @@ private:
     std::vector<double>        fTrackDirXVec;       ///< Starting x direction of track
     std::vector<double>        fTrackDirYVec;       ///< Starting x direction of track
     std::vector<double>        fTrackDirZVec;       ///< Starting x direction of track
+    std::vector<double>        fTrackEndXVec;       ///< Ending x position of track
+    std::vector<double>        fTrackEndYVec;       ///< Ending y position of track
+    std::vector<double>        fTrackEndZVec;       ///< Ending z position of track
+    std::vector<double>        fTrackEndDirXVec;    ///< Ending x direction of track
+    std::vector<double>        fTrackEndDirYVec;    ///< Ending x direction of track
+    std::vector<double>        fTrackEndDirZVec;    ///< Ending x direction of track
     std::vector<double>        fPCAAxes2D;          ///< Axes for PCA
     std::vector<double>        fEigenValues2D;      ///< Eigen values 
     std::vector<double>        fMeanPosition2D;     ///< Mean position used for PCA
@@ -304,6 +310,12 @@ void TPCPurityMonitor::beginJob()
         fDiagnosticTree->Branch("trkdirx",     "std::vector<double>", &fTrackDirXVec);
         fDiagnosticTree->Branch("trkdiry",     "std::vector<double>", &fTrackDirYVec);
         fDiagnosticTree->Branch("trkdirz",     "std::vector<double>", &fTrackDirZVec);
+        fDiagnosticTree->Branch("trkendx",     "std::vector<double>", &fTrackEndXVec);
+        fDiagnosticTree->Branch("trkendy",     "std::vector<double>", &fTrackEndYVec);
+        fDiagnosticTree->Branch("trkendz",     "std::vector<double>", &fTrackEndZVec);
+        fDiagnosticTree->Branch("trkenddirx",  "std::vector<double>", &fTrackEndDirXVec);
+        fDiagnosticTree->Branch("trkenddiry",  "std::vector<double>", &fTrackEndDirYVec);
+        fDiagnosticTree->Branch("trkenddirz",  "std::vector<double>", &fTrackEndDirZVec);
         fDiagnosticTree->Branch("pcavec2d",    "std::vector<double>", &fPCAAxes2D);
         fDiagnosticTree->Branch("eigenvec2d",  "std::vector<double>", &fEigenValues2D);
         fDiagnosticTree->Branch("meanpos2d",   "std::vector<double>", &fMeanPosition2D);
@@ -561,15 +573,25 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fAttenuation  = -attenuation;
                 fError        = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
-                const geo::Point_t& trackStart = track->Start();
-                const geo::Vector_t trackDir   = track->StartDirection();
+                const geo::Point_t& trackStartPos = track->LocationAtPoint(selectedHitMetaVec.front().second->Index());
+                const geo::Vector_t trackStartDir = track->DirectionAtPoint(selectedHitMetaVec.front().second->Index());
 
-                fTrackStartXVec.emplace_back(trackStart.X());
-                fTrackStartYVec.emplace_back(trackStart.Y());
-                fTrackStartZVec.emplace_back(trackStart.Z());
-                fTrackDirXVec.emplace_back(trackDir.X());
-                fTrackDirYVec.emplace_back(trackDir.Y());
-                fTrackDirZVec.emplace_back(trackDir.Z());
+                fTrackStartXVec.emplace_back(trackStartPos.X());
+                fTrackStartYVec.emplace_back(trackStartPos.Y());
+                fTrackStartZVec.emplace_back(trackStartPos.Z());
+                fTrackDirXVec.emplace_back(trackStartDir.X());
+                fTrackDirYVec.emplace_back(trackStartDir.Y());
+                fTrackDirZVec.emplace_back(trackStartDir.Z());
+
+                const geo::Point_t& trackEndPos = track->LocationAtPoint(selectedHitMetaVec.back().second->Index());
+                const geo::Vector_t trackEndDir = track->DirectionAtPoint(selectedHitMetaVec.back().second->Index());
+
+                fTrackEndXVec.emplace_back(trackEndPos.X());
+                fTrackEndYVec.emplace_back(trackEndPos.Y());
+                fTrackEndZVec.emplace_back(trackEndPos.Z());
+                fTrackEndDirXVec.emplace_back(trackEndDir.X());
+                fTrackEndDirYVec.emplace_back(trackEndDir.Y());
+                fTrackEndDirZVec.emplace_back(trackEndDir.Z());
 
                 // 2D PCA of time vs charge
                 for(size_t rowIdx = 0; rowIdx < 2; rowIdx++)
@@ -618,6 +640,12 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fTrackDirXVec.clear();
                 fTrackDirYVec.clear();
                 fTrackDirZVec.clear();
+                fTrackEndXVec.clear();
+                fTrackEndYVec.clear();
+                fTrackEndZVec.clear();
+                fTrackEndDirXVec.clear();
+                fTrackEndDirYVec.clear();
+                fTrackEndDirZVec.clear();
                 fPCAAxes2D.clear(); 
                 fEigenValues2D.clear(); 
                 fMeanPosition2D.clear();
