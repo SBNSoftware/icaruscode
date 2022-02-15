@@ -573,6 +573,9 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fAttenuation  = -attenuation;
                 fError        = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
+                // Test putting this back into track index order
+                std::sort(hitStatusChargePairVec.begin(),hitStatusChargePairVec.end(),[](const auto& left,const auto& right){return left.first.second->Index() < right.first.second->Index();});
+
                 const geo::Point_t& trackStartPos = track->LocationAtPoint(hitStatusChargePairVec.front().first.second->Index());
                 const geo::Vector_t trackStartDir = track->DirectionAtPoint(hitStatusChargePairVec.front().first.second->Index());
 
