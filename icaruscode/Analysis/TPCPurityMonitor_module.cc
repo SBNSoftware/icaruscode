@@ -573,8 +573,8 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fAttenuation  = -attenuation;
                 fError        = std::sqrt(pca.getEigenValues()[0] / pca.getEigenValues()[1]);
 
-                const geo::Point_t& trackStartPos = track->LocationAtPoint(selectedHitMetaVec.front().second->Index());
-                const geo::Vector_t trackStartDir = track->DirectionAtPoint(selectedHitMetaVec.front().second->Index());
+                const geo::Point_t& trackStartPos = track->LocationAtPoint(hitStatusChargePairVec.front().first.second->Index());
+                const geo::Vector_t trackStartDir = track->DirectionAtPoint(hitStatusChargePairVec.front().first.second->Index());
 
                 fTrackStartXVec.emplace_back(trackStartPos.X());
                 fTrackStartYVec.emplace_back(trackStartPos.Y());
@@ -583,8 +583,8 @@ void TPCPurityMonitor::produce(art::Event& event)
                 fTrackDirYVec.emplace_back(trackStartDir.Y());
                 fTrackDirZVec.emplace_back(trackStartDir.Z());
 
-                const geo::Point_t& trackEndPos = track->LocationAtPoint(selectedHitMetaVec.back().second->Index());
-                const geo::Vector_t trackEndDir = track->DirectionAtPoint(selectedHitMetaVec.back().second->Index());
+                const geo::Point_t& trackEndPos = track->LocationAtPoint(hitStatusChargePairVec.back().first.second->Index());
+                const geo::Vector_t trackEndDir = track->DirectionAtPoint(hitStatusChargePairVec.back().first.second->Index());
 
                 fTrackEndXVec.emplace_back(trackEndPos.X());
                 fTrackEndYVec.emplace_back(trackEndPos.Y());
