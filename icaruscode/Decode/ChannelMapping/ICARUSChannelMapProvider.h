@@ -54,9 +54,12 @@ public:
     const DigitizerChannelChannelIDPairVec& getChannelIDPairVec(const unsigned int) const override;
 
     // Section for CRT channel mapping    
-    unsigned int                            getSimMacAddress(const unsigned int)    const override;
-    
-    
+    unsigned int                            getSimMacAddress   (const unsigned int)    const override;
+    unsigned int                            gettopSimMacAddress(const unsigned int)    const override;
+
+    /// Returns the Gain and Pedestal for Side CRT 
+    std::pair<double, double>               getSideCRTCalibrationMap(int mac5, int chan) const override;    
+
     /// Returns the channel mapping database key for the specified PMT fragment ID.
     static constexpr unsigned int PMTfragmentIDtoDBkey(unsigned int fragmentID);
     
@@ -74,6 +77,10 @@ private:
     IChannelMapping::FragmentToDigitizerChannelMap fFragmentToDigitizerMap; 
 
     IChannelMapping::CRTChannelIDToHWtoSimMacAddressPairMap fCRTChannelIDToHWtoSimMacAddressPairMap;
+
+    IChannelMapping::TopCRTHWtoSimMacAddressPairMap fTopCRTHWtoSimMacAddressPairMap;
+
+    IChannelMapping::SideCRTChannelToCalibrationMap fSideCRTChannelToCalibrationMap;
 
     std::unique_ptr<IChannelMapping>               fChannelMappingTool;
 
