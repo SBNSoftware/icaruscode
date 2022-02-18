@@ -48,6 +48,7 @@
 #include "icaruscode/Decode/DecoderTools/IDecoderFilter.h"
 
 #include "icarus_signal_processing/ICARUSSigProcDefs.h"
+#include "icarus_signal_processing/WaveformTools.h"
 
 namespace daq 
 {
@@ -126,6 +127,7 @@ private:
     std::string                                  fOutputRawWavePath;   ///< Path to assign to the output if asked for
     std::string                                  fOutputCoherentPath;  ///< Path to assign to the output if asked for
     unsigned int                                 fPlaneToSimulate;     ///< Use to get fragment offset
+    float                                        fSigmaForTruncation;  ///< This determines the point at which we truncate bins for the RMS calc
 
     // Statistics.
     int                                          fNumEvent;             ///< Number of events seen.
@@ -234,6 +236,7 @@ void DaqDecoderICARUSTPC::configure(fhicl::ParameterSet const & pset)
     fOutputRawWavePath  = pset.get<std::string               >("OutputRawWavePath",                                               "raw");
     fOutputCoherentPath = pset.get<std::string               >("OutputCoherentPath",                                              "Cor");
     fPlaneToSimulate    = pset.get<unsigned int              >("PlaneToSimulate",                                                     2);
+    fSigmaForTruncation = pset.get<float                     >("NSigmaForTrucation",                                                3.5);
 }
 
 //----------------------------------------------------------------------------
@@ -376,11 +379,35 @@ void DaqDecoderICARUSTPC::processSingleFragment(size_t                          
 
     double totalTime = theClockProcess.accumulated_real_time();
 
-    // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
-    const icarus_signal_processing::VectorFloat  locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
-    const icarus_signal_processing::VectorInt&   channelVec = decoderTool->getChannelIDs();
+    // We need to recalculate pedestals for the noise corrected waveforms
+    icarus_signal_processing::WaveformTools<float> waveformTools;
 
-    saveRawDigits(decoderTool->getWaveLessCoherent(),locPedsVec,decoderTool->getTruncRMSVals(), channelVec, rawDigitCollection);
+    // Save the filtered RawDigitsactive but for corrected raw digits pedestal is zero
+    icarus_signal_processing::VectorFloat       locPedsVec(decoderTool->getWaveLessCoherent().size(),0.);
+    icarus_signal_processing::VectorFloat       locFullRMSVec(locPedsVec.size(),0.);
+    icarus_signal_processing::VectorFloat       locTruncRMSVec(locPedsVec.size(),0.);
+    icarus_signal_processing::VectorInt         locNumTruncBins(locPedsVec.size(),0);
+    icarus_signal_processing::VectorInt         locRangeBins(locPedsVec.size(),0);
+
+    const icarus_signal_processing::VectorInt&  channelVec   = decoderTool->getChannelIDs();
+    const icarus_signal_processing::ArrayFloat& corWaveforms = decoderTool->getWaveLessCoherent();
+
+    icarus_signal_processing::ArrayFloat        pedCorWaveforms(corWaveforms.size(),icarus_signal_processing::VectorFloat(corWaveforms[0].size()));
+
+    for(size_t idx = 0; idx < corWaveforms.size(); idx++)
+    {
+        // Now determine the pedestal and correct for it
+        waveformTools.getPedestalCorrectedWaveform(corWaveforms[idx],
+                                                   pedCorWaveforms[idx],
+                                                   fSigmaForTruncation,
+                                                   locPedsVec[idx],
+                                                   locFullRMSVec[idx],
+                                                   locTruncRMSVec[idx],
+                                                   locNumTruncBins[idx],
+                                                   locRangeBins[idx]);
+    }
+
+    saveRawDigits(pedCorWaveforms, locPedsVec, locTruncRMSVec, channelVec, rawDigitCollection);
 
     // Optionally, save the raw RawDigits
     if (fOutputRawWaveform)
