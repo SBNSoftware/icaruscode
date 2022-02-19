@@ -14,6 +14,7 @@
 #include "icarus_FilterNumberTPCHits.fcl"
 ### JCZ: Add simple flashmatch to this area
 #include "flashmatch_simple_icarus.fcl"
+#include "crtsimhitproducer.fcl"
 
 BEGIN_PROLOG
 
@@ -52,6 +53,8 @@ icarus_stage1_producers:
   ## Simple Flash Matching, right now cryo0 and 1 are identical
   fmatchCryoE:                    @local::icarus_simple_flashmatch_0
   fmatchCryoW:                    @local::icarus_simple_flashmatch_1
+
+  crthit: @local::standard_crthitproducer	
 }
 
 icarus_stage1_filters:
@@ -131,6 +134,8 @@ icarus_pandora_Gauss:              [
 #Add flash matching
 icarus_reco_fm:                    [ fmatchCryoE,
                                      fmatchCryoW ]
+
+icarus_crthit:                     [crthit]
 
 ### Below we include overrides for the modules above
 

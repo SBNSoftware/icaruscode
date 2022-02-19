@@ -50,7 +50,9 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
     {
         std::cout << "FragmentID to Readout ID map has " << fFragmentToReadoutMap.size() << " elements";
-        for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " << pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
+	for(const auto& pair : fFragmentToReadoutMap) std::cout << "   Frag: " << std::hex << pair.first << ", Crate: " 
+								<< pair.second.first << ", # boards: " << std::dec << pair.second.second.size() << std::endl;
+	
     }
 
     theClockFragmentIDs.stop();
@@ -75,7 +77,8 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
       {
 	std::cout << "FragmentID to Readout ID map has " << fFragmentToDigitizerMap.size() << " Fragment IDs";
-        for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " << std::dec << pair.second.size() << std::endl;
+	 for(const auto& pair : fFragmentToDigitizerMap) std::cout << "   Frag: " << std::hex << pair.first << ", # pairs: " 
+								   << std::dec << pair.second.size() << std::endl;
       }
     
     // Do the channel mapping initialization for CRT
@@ -86,11 +89,42 @@ ICARUSChannelMapProvider::ICARUSChannelMapProvider(const fhicl::ParameterSet& ps
     else if (fDiagnosticOutput)
       {
 	std::cout << "ChannelID to MacAddress map has " << fCRTChannelIDToHWtoSimMacAddressPairMap.size() << " Channel IDs";
-        for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap) std::cout <<" ChannelID: "<< pair.first
+	for(const auto& pair : fCRTChannelIDToHWtoSimMacAddressPairMap) std::cout <<" ChannelID: "<< pair.first
                                                                                   << ", hw mac address: " << pair.second.first
                                                                                   <<", sim mac address: " << pair.second.second << std::endl;
+	
       }
     
+    
+    // Do the channel mapping initialization for top CRT
+    if (fChannelMappingTool->BuildTopCRTHWtoSimMacAddressPairMap(fTopCRTHWtoSimMacAddressPairMap))
+      {
+        throw cet::exception("CRTDecoder") << "Cannot recover the Top CRT HW MAC Address  from the database \n";
+      }
+    else if (fDiagnosticOutput)
+      {
+	std::cout << "Top CRT MacAddress map has " << fTopCRTHWtoSimMacAddressPairMap.size() << " rows";
+        for(const auto& pair : fTopCRTHWtoSimMacAddressPairMap) std::cout << ", hw mac address: " << pair.first
+									  <<", sim mac address: " << pair.second << std::endl;
+      }
+    
+
+    // Do the CRT Charge Calibration initialization
+    if (fChannelMappingTool->BuildSideCRTCalibrationMap(fSideCRTChannelToCalibrationMap))
+      {
+	std::cout << "******* FAILED TO CONFIGURE CRT Calibration  ********" << std::endl;
+        throw cet::exception("ICARUSChannelMapProvider") << "Cannot recover the charge calibration information from the database \n";
+      }
+    else if (fDiagnosticOutput)
+      {
+	std::cout << "side crt calibration map has " << fSideCRTChannelToCalibrationMap.size() << " list of rows \n";
+
+	for(const auto& pair : fSideCRTChannelToCalibrationMap) std::cout <<" mac5: "<< pair.first.first
+									  << ", chan: " << pair.first.second
+									  << ", Gain: " << pair.second.first
+									  << ", Pedestal: " << pair.second.second << std::endl;
+
+      }    
     
     theClockReadoutIDs.stop();
 
@@ -204,7 +238,27 @@ const DigitizerChannelChannelIDPairVec& ICARUSChannelMapProvider::getChannelIDPa
     return simmacaddress;
   }
   
+  unsigned int ICARUSChannelMapProvider::gettopSimMacAddress(const unsigned int hwmacaddress)  const
+  {
+    unsigned int   simmacaddress = 0;
 
+    for(const auto& pair : fTopCRTHWtoSimMacAddressPairMap){
+      if (pair.first == hwmacaddress)
+	simmacaddress = pair.second;
+    }
+
+    return simmacaddress;
+  }
+   
+  std::pair<double, double> ICARUSChannelMapProvider::getSideCRTCalibrationMap(int mac5, int chan) const
+  {
+    std::pair<double, double> gainandpedestal(-99, -99);
+    for(const auto& pair : fSideCRTChannelToCalibrationMap){
+      if ((int)pair.first.first == mac5 && (int)pair.first.second == chan)
+        gainandpedestal = std::make_pair(pair.second.first, pair.second.second);
+    }
+    return gainandpedestal;
+  }
 
 auto ICARUSChannelMapProvider::findPMTfragmentEntry(unsigned int fragmentID) const
   -> DigitizerChannelChannelIDPairVec const*
