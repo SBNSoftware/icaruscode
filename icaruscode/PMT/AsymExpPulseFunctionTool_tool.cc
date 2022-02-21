@@ -21,12 +21,15 @@
 // framework libraries
 #include "art/Utilities/ToolConfigTable.h"
 #include "art/Utilities/ToolMacros.h"
+#include "canvas/Utilities/Exception.h"
 
 // framework libraries
+#include "fhiclcpp/types/OptionalAtom.h"
 #include "fhiclcpp/types/Atom.h"
 
 // C/C++ standard libraries
 #include <memory> // std::unique_ptr()
+#include <cmath> // std::exp(), std::log()
 #include <cassert>
 
 
@@ -55,6 +58,10 @@ namespace icarus::opdet { struct AsymExpPulseFunctionTool; }
  * (transforming the charge into a voltage) and the digitization conversion
  * (full digitizer range divided by the largest output value).
  * 
+ * Finally, note that it is also possible to specify the amplitude of the
+ * function in terms of PMT gain (`Gain` parameter) instead of current
+ * (`PeakAmplitude`), in which case the peak current will be calculated to
+ * have a correct total charge.
  */
 struct icarus::opdet::AsymExpPulseFunctionTool
   : public icarus::opdet::SinglePhotonPulseFunctionTool
@@ -72,11 +79,15 @@ struct icarus::opdet::AsymExpPulseFunctionTool
       // mandatory
       };
     // TODO add milliampere to `electromagnetism.h`
-    fhicl::Atom<float> PeakCurrent {
+    fhicl::OptionalAtom<float> PeakCurrent {
       Name("PeakCurrent"),
       Comment("measured charge current at peak [mA]")
-      // mandatory
       };
+    fhicl::OptionalAtom<float> Gain {
+      Name("Gain"),
+      Comment("PMT amplification gain factor")
+      };
+    
     fhicl::Atom<nanoseconds> RaiseTimeConstant {
       Name("RaiseTimeConstant"),
       Comment("raise time constant (exponential raise) [ns]")
@@ -122,6 +133,9 @@ struct icarus::opdet::AsymExpPulseFunctionTool
   static std::unique_ptr<PulseFunction_t> makePulseFunction
     (Config const& config);
   
+  /// Computes the peak current value out of the shape and gain parameters [mA].
+  static float peakCurrentFromGain
+    (float gain, nanoseconds raiseTau, nanoseconds fallTau);
   
 }; // icarus::opdet::AsymExpPulseFunctionTool
 
@@ -136,18 +150,60 @@ auto icarus::opdet::AsymExpPulseFunctionTool::makePulseFunction
   using MyFunction_t = icarus::opdet::AsymExpPulseFunction<nanoseconds>;
   using ADCcount = MyFunction_t::ADCcount;
   
+  // FIXME milliampere not available yet in `electromagnetism.h`
+  double peakCurrent;
+  if (config.Gain().has_value()) { // peak current from gain
+    if (config.PeakCurrent().has_value()) {
+      throw art::Exception(art::errors::Configuration)
+        << "AsymExpPulseFunctionTool: Only one configuration parameter out of '"
+        << config.PeakCurrent.name() << "' (set as " << (*config.PeakCurrent())
+        << ") and '" << config.Gain.name() << "' (set as " << (*config.Gain())
+        << ") can be specified at once!\n";
+    }
+    peakCurrent = peakCurrentFromGain(
+      *config.Gain(),             // gain
+      config.RaiseTimeConstant(), // raiseTau
+      config.FallTimeConstant()   // fallTau
+      );
+  }
+  else { // peak current directly specified
+    if (!config.PeakCurrent().has_value()) {
+      throw art::Exception(art::errors::Configuration)
+        << "AsymExpPulseFunctionTool: either configuration parameter '"
+        << config.PeakCurrent.name() << "' or '" << config.Gain.name()
+        << "' must be specified!\n";
+    }
+    peakCurrent = *config.PeakCurrent();
+  }
+  
   return std::make_unique<MyFunction_t>(
     // amplitude is a charge, so we have to twist the arm of the constructor to
-    // accept it as ADC count (`value()` makes `PeakCurrent()` lose its unit)
-    // FIXME milliampere not available yet in `electromagnetism.h`
-//     ADCcount(config.ADC() * config.PeakCurrent().value()), // amplitude
-    ADCcount(config.ADC() * config.PeakCurrent()),         // amplitude
+    // accept it as ADC count (`value()` makes `peakCurrent` lose its unit)
+//     ADCcount(config.ADC() * config.peakCurrent.value()),   // amplitude
+    ADCcount(config.ADC() * peakCurrent),                  // amplitude
     config.TransitTime(),                                  // peakTime
     config.RaiseTimeConstant(),                            // raiseTau
     config.FallTimeConstant()                              // fallTau
     );
   
 } // icarus::opdet::AsymExpPulseFunctionTool::makePulseFunction()
+
+
+//------------------------------------------------------------------------------
+float icarus::opdet::AsymExpPulseFunctionTool::peakCurrentFromGain
+  (float gain, nanoseconds raiseTau, nanoseconds fallTau)
+{
+  static constexpr double electronCharge = -1.602176634e-7; // picocoulomb
+  
+  nanoseconds const dTau = fallTau - raiseTau; // expected positive
+  float const tauRatioLog = std::log(raiseTau / fallTau); // expected negative
+  
+  return gain * electronCharge / dTau.value() * (
+      std::exp(raiseTau / dTau * tauRatioLog)
+    - std::exp(fallTau  / dTau * tauRatioLog)
+    );
+  
+} // icarus::opdet::AsymExpPulseFunctionTool::peakCurrentFromGain()
 
 
 //------------------------------------------------------------------------------

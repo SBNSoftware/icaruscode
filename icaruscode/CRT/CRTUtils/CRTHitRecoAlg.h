@@ -41,6 +41,9 @@
 #include "sbnobj/ICARUS/CRT/CRTData.hh"
 #include "icaruscode/CRT/CRTUtils/CRTCommonUtils.h"
 
+#include "icaruscode/Decode/ChannelMapping/IChannelMapping.h"
+#include "icaruscode/Decode/ChannelMapping/IICARUSChannelMap.h"
+#include "icaruscode/Decode/ChannelMapping/ICARUSChannelMapProvider.h"
 // c++
 #include <iostream>
 #include <stdio.h>
@@ -50,7 +53,7 @@
 #include <utility>
 #include <cmath> 
 #include <memory>
-
+#include <cstdint>
 // ROOT
 #include "TVector3.h"
 #include "TGeoManager.h"
@@ -92,6 +95,10 @@ class icarus::crt::CRTHitRecoAlg {
       Name("Verbose"),
 	Comment("Output verbosity")
 	};
+    fhicl::Atom<bool> Data {
+      Name("Data"),
+	Comment("choose data/mc")
+	};
     fhicl::Atom<bool> outCSVFile {
       Name("outCSVFile"),
 	Comment("Output a csv file")
@@ -108,9 +115,13 @@ class icarus::crt::CRTHitRecoAlg {
       Name("PEThresh"),
 	Comment("threshold in photoelectrons above which charge amplitudes used in hit reco")
 	};
-    fhicl::Atom<uint32_t> CoinWindow {
+    fhicl::Atom<uint64_t> CoinWindow {
       Name("CoinWindow"),
 	Comment("window for finding side CRT trigger coincidences [ns]")
+	};
+    fhicl::Atom<uint64_t> CrtWindow {
+      Name("CrtWindow"),
+	Comment("window for looking data [ns]")
 	};
   };//Config
 
@@ -122,8 +133,13 @@ class icarus::crt::CRTHitRecoAlg {
 
   //configure module from fcl file
   void reconfigure(const Config& config);
+
   //produce CRTHits with associated data indices from input vector of CRTData
   vector<pair<CRTHit, vector<int>>> CreateCRTHits(vector<art::Ptr<CRTData>> crtList);
+
+  //preselection based on charge in a CRTData
+  vector<art::Ptr<CRTData>> PreselectCRTData(vector<art::Ptr<CRTData>> crtList, uint64_t trigger_timestamp);
+
   // Function to make filling a CRTHit a bit faster
   CRTHit FillCRTHit(vector<uint8_t> tfeb_id, map<uint8_t, vector<pair<int,float>>> tpesmap,
                     float peshit, uint64_t time0, uint64_t time1, int plane,
@@ -145,8 +161,11 @@ class icarus::crt::CRTHitRecoAlg {
   double fQSlope;         ///< Pedestal slope of SiPMs [ADC/photon]
   double fPropDelay;      ///< propegation time [ns/cm]
   double fPEThresh;       ///< threshold[PE] above which charge amplitudes used in hit reco
-  uint32_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
+  uint64_t fCoinWindow;   ///< Coincidence window used for grouping side CRT triggers [ns]
+  uint64_t fCrtWindow;    ///< Looking data window within trigger timestamp [ns]
   std::ofstream filecsv;
+  bool fData;             ///< look for only data
+  const icarusDB::IICARUSChannelMap* fChannelMap = nullptr;
 
   //Given top CRTData product, produce CRTHit
   CRTHit MakeTopHit(art::Ptr<CRTData> data);
@@ -157,6 +176,9 @@ class icarus::crt::CRTHitRecoAlg {
   // Check if a hit is empty
   bool IsEmptyHit(CRTHit hit);
 
+  static  bool compareBytime(art::Ptr<CRTData> const &a, art::Ptr<CRTData> const &b){
+    return a->fTs0 < b->fTs0;
+  }
 }; //class CRTHitRecoAlg
 
 #endif

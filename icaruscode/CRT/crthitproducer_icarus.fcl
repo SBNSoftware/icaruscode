@@ -5,7 +5,7 @@
 #include "channelmapping_icarus.fcl"
 #include "services_common_icarus.fcl"
 
-process_name: CRTSimHitProducer
+process_name: CRTHitproducer
 
 services:
 {
@@ -49,7 +49,7 @@ physics:
 {
   producers:
   {
-    crthit: @local::standard_crtsimhitproducer
+    crthit: @local::standard_crthitproducer
   }
   # Schedule job step(s) for execution by defining the analysis module for this job.
   reco: [ crthit ]
