@@ -204,19 +204,15 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
     (art::ServiceHandle<detinfo::DetectorClocksService const>()->DataFor(event))
     ;
   
-  auto const opDetTickPeriod = detTimings.OpticalClockPeriod();
-  electronics_time const triggerTime = detTimings.TriggerTime();
-  electronics_time const beamGateTime = detTimings.BeamGateTime();
-  
   //
   // fetch input
   //
   auto const& waveformHandle
     = event.getValidHandle<std::vector<raw::OpDetWaveform>>(fWaveformTag);
 
-  mf::LogDebug(fLogCategory)
-    << "Event " << event.id() << " has beam gate starting at " << beamGateTime
-    << " and trigger at " << triggerTime << "."
+  mf::LogDebug(fLogCategory) << "Event " << event.id()
+    << " has beam gate starting at " << detTimings.BeamGateTime()
+    << " and trigger at " << detTimings.TriggerTime() << "."
     << "\nNow extracting information from " << waveformHandle->size()
       << " waveforms."
     ;
@@ -237,31 +233,18 @@ void icarus::trigger::OpDetWaveformMetaMaker::produce
     assert(iWaveform == PMTinfo.size());
     
     PMTinfo.push_back(makeOpDetWaveformMeta(waveform));
-    
-    {
-      mf::LogTrace log{ fLogCategory };
-      log << "Coverage for waveform #" << iWaveform
-        << " on channel " << channel << ": " << startTime << " -- " << endTime;
-      if (containsTrigger) log << "; includes trigger";
-      if (containsBeamGateStart) log << "; includes beam gate start";
-    }
-    
-    sbn::PMTcoverageInfo info {
-        waveform.ChannelNumber()  // channel
-      , startTime.value()         // startTime
-      , endTime.value()           // endTime
-      /* the following are left default:
-      // setFlags
-      // definedFlags
-      */
-      };
-    
-    info.set(sbn::PMTcoverageInfo::bits::WithTrigger, containsTrigger);
-    info.set(sbn::PMTcoverageInfo::bits::WithBeamGate, containsBeamGateStart);
-    
-    PMTinfo.push_back(std::move(info));
     infoToWaveform.addSingle
       (makeInfoPtr(iWaveform), makeWaveformPtr(iWaveform));
+    
+    {
+      sbn::OpDetWaveformMeta const& info = PMTinfo.back();
+      mf::LogTrace log{ fLogCategory };
+      log << "Coverage for waveform #" << iWaveform
+        << " on channel " << waveform.ChannelNumber() << ": "
+        << info.startTime << " -- " << info.endTime;
+      if (info.withTrigger()) log << "; includes trigger";
+      if (info.withBeamGate()) log << "; includes beam gate start";
+    }
     
   } // for
   
