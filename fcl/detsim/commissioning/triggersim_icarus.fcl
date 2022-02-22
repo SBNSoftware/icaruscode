@@ -74,7 +74,7 @@ PMTthresholds: [ 400, 600 ]
 
 
 # PMT discriminated signal width
-LVDSsignalWidth: 0.160 # microseconds
+LVDSsignalWidth: "160 ns"
 
 # special pairing for 30-PMT windows pairing the single PMT together
 icarus_trigger_channel_pairings_nosingle: [
