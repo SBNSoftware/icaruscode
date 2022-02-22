@@ -81,8 +81,6 @@ BEGIN_PROLOG
 # Table `triggeremu_data_config_icarus` is defined in multiple passes to allow
 # internal references.
 
-triggeremu_data_config_icarus: {}
-
 triggeremu_data_config_icarus.settings: {
 
   # bad PMT channels (off or too noisy)
@@ -100,11 +98,11 @@ triggeremu_data_config_icarus.settings: {
   }
 
   # discrimination thresholds:
-  PMTADCthresholds: [ 200, 300, 350, 400 ] # fixed ADC only
+  PMTADCthresholds: [ 100, 150, 200, 250, 300, 350, 400, 500 ] # fixed ADC only
 
 
   # PMT discriminated signal width
-  LVDSsignalWidth: 0.160 # microseconds
+  LVDSsignalWidth: "160 ns"
 
   # special pairing for 30-PMT windows pairing the single PMT together
   trigger_channel_pairings_nosingle: [

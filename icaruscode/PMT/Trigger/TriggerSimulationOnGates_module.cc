@@ -1202,11 +1202,14 @@ icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData(
 ) const {
   
   return {
-    triggerNumber,                                             // counter
-    double(detTimings.toElectronicsTime(info.info.atTick())),  // trigger time
+    triggerNumber,                      // counter
+    info.info.fired()                   // trigger time
+      ? double(detTimings.toElectronicsTime(info.info.atTick()))
+      : std::numeric_limits<double>::lowest()
+      ,
     double(detTimings.toElectronicsTime(beamGate.tickRange().start())),
                                         // beam gate in electronics time scale
-    (info.info.fired()? fBeamBits: 0)                          // bits
+    (info.info.fired()? fBeamBits: 0)   // bits
     };
   
 } // icarus::trigger::TriggerSimulationOnGates::triggerInfoToTriggerData()
